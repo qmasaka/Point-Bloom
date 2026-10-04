@@ -431,6 +431,69 @@ export class UI {
 		if (ws.classList.contains('sidebar-hidden')) this.toggleSidebar(false);
 	}
 
+	async enterEffectsMode() {
+		if (this.effectsEngine.active) {
+			this.effectsEngine.exit();
+			return;
+		}
+		const meshes = this.app.model.meshes().filter((m) => this.app.viewport.isVisibleInTree(m));
+		let cloud = null;
+		if (meshes.length) {
+			this.busy('Создаю частицы из модели…', 0.2);
+			const entries = meshes.map((m) => ({ mesh: m, mats: this.app.display.getOriginal(m) }));
+			cloud = await sampleSurface(entries, 120000, {
+				onProgress: (p) => this.busy('Создаю частицы…', 0.2 + p * 0.75),
+			});
+			this.idle();
+		} else {
+			cloud = generateShapePoints('sphere', 120000);
+		}
+		this.effectsEngine.enter(cloud);
+	}
+
+	makeSidebarDraggable() {
+		const sidebar = $('#sidebar');
+		const handle = $('#sidebarDragHandle');
+		if (!sidebar || !handle) return;
+		let isDragging = false;
+		let startX = 0, startY = 0;
+		let origLeft = 0, origTop = 0;
+
+		handle.addEventListener('mousedown', (e) => {
+			if (e.button !== 0) return;
+			isDragging = true;
+			const rect = sidebar.getBoundingClientRect();
+			startX = e.clientX;
+			startY = e.clientY;
+			origLeft = rect.left;
+			origTop = rect.top;
+			sidebar.classList.add('is-floating');
+			sidebar.style.position = 'fixed';
+			sidebar.style.left = `${origLeft}px`;
+			sidebar.style.top = `${origTop}px`;
+			sidebar.style.right = 'auto';
+			sidebar.style.bottom = 'auto';
+			sidebar.style.zIndex = '50';
+			e.preventDefault();
+		});
+
+		window.addEventListener('mousemove', (e) => {
+			if (!isDragging) return;
+			const dx = e.clientX - startX;
+			const dy = e.clientY - startY;
+			const maxW = window.innerWidth - sidebar.offsetWidth - 10;
+			const maxH = window.innerHeight - 80;
+			const newLeft = Math.max(10, Math.min(maxW, origLeft + dx));
+			const newTop = Math.max(48, Math.min(maxH, origTop + dy));
+			sidebar.style.left = `${newLeft}px`;
+			sidebar.style.top = `${newTop}px`;
+		});
+
+		window.addEventListener('mouseup', () => {
+			isDragging = false;
+		});
+	}
+
 	// --------------------------------------------------------------- статус
 	buildStatus() {
 		this.updateHint();
