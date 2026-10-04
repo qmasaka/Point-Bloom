@@ -8,8 +8,8 @@ import { createMaterialPanel } from './panel-material.js';
 import { createViewPanel, DISPLAY_MODES } from './panel-view.js';
 import { createExportPanel } from './panel-export.js';
 import { createPointsPanel } from './panel-points.js';
-import { createMusicPanel } from './panel-music.js';
-import { MusicEngine } from './music-engine.js';
+import { sampleSurface } from './pointcloud.js';
+import { EffectsEngine, generateShapePoints } from './effects-engine.js';
 import { importFiles, assignTextureFiles, ACCEPT_ALL, MODEL_FORMATS, IMAGE_EXT } from './importers.js';
 import { BACKGROUNDS } from './viewport.js';
 const TOAST_ICON = { ok: 'check-circle', warn: 'warning', error: 'warning-circle', info: 'info' };
@@ -20,7 +20,7 @@ this.tabs = {};
 this.busyTimer = null;
 this.dragDepth = 0;
 this.openMode = 'auto';
-this.musicEngine = new MusicEngine(app);
+this.effectsEngine = new EffectsEngine(app);
 }
 init() {
 const app = this.app;
@@ -61,8 +61,8 @@ buildHeader() {
 const app = this.app;
 $('#btnOpen').addEventListener('click', () => this.openFiles('auto'));
 $('#btnTexture').addEventListener('click', () => this.openTextures());
-$('#btnMusic')?.addEventListener('click', () => this.showTab('music'));
-$('#btnEmptyMusic')?.addEventListener('click', () => this.showTab('music'));
+$('#btnEffects')?.addEventListener('click', () => this.enterEffectsMode());
+$('#btnEmptyEffects')?.addEventListener('click', () => this.enterEffectsMode());
 $('#btnEmptyOpen').addEventListener('click', () => this.openFiles('auto'));
 $('#btnEmptyDemo').addEventListener('click', () => app.loadDemo());
 $('#btnEmptyUrl').addEventListener('click', () => this.openUrl());
@@ -373,21 +373,20 @@ $('#btnOrtho').dataset.tip = app.nav.ortho ? 'Сейчас: ортогональ
 }
 buildSidebar() {
 const app = this.app;
-for (const name of ['scene', 'material', 'points', 'view', 'music']) this.tabs[name] = $(`#panel-${name}`);
+for (const name of ['scene', 'material', 'points', 'view']) this.tabs[name] = $(`#panel-${name}`);
 $$('.tab').forEach((t) => t.addEventListener('click', () => this.showTab(t.dataset.tab)));
 this.scenePanel = createScenePanel(app, this.tabs.scene);
 this.materialPanel = createMaterialPanel(app, this.tabs.material);
 this.viewPanel = createViewPanel(app, this.tabs.view);
 this.pointsPanel = createPointsPanel(app, this.tabs.points);
-this.musicPanel = createMusicPanel(app, this.tabs.music, this.musicEngine);
 this.exportPanel = createExportPanel(app, $('#panel-export'));
 this.buildExportPop();
+this.makeSidebarDraggable();
 }
 showTab(name) {
 $$('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
 for (const [k, el] of Object.entries(this.tabs)) el.hidden = k !== name;
 if (name === 'material') this.materialPanel.refresh();
-if (name === 'music') this.musicPanel?.refresh();
 const ws = $('.workspace');
 if (ws.classList.contains('sidebar-hidden')) this.toggleSidebar(false);
 }
@@ -752,13 +751,17 @@ case 'KeyO':
 return this.openFiles('auto');
 case 'KeyT':
 return this.openTextures();
-case 'KeyM':
-return this.showTab('music');
+case 'KeyE':
+if (!mod) {
+this.enterEffectsMode();
+return;
+}
+break;
 case 'Space':
-if (this.musicEngine?.isolated) {
+if (this.effectsEngine?.active) {
 e.preventDefault();
-if (this.musicEngine.playing) this.musicEngine.pause();
-else this.musicEngine.play();
+if (this.effectsEngine.playing) this.effectsEngine.pause();
+else this.effectsEngine.play();
 return;
 }
 break;
@@ -794,8 +797,8 @@ if (document.activeElement && document.activeElement !== document.body) return;
 e.preventDefault();
 return this.toggleSidebar();
 case 'Escape':
-if (this.musicEngine?.isolated) {
-this.musicEngine.stopIsolated();
+if (this.effectsEngine?.active) {
+this.effectsEngine.exit();
 return;
 }
 if (this.exportPop && !this.exportPop.hidden) {

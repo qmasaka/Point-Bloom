@@ -30,7 +30,7 @@
 		<div class="topbar-group">
 			<button class="btn btn-ghost" id="btnOpen" type="button" data-tip="Открыть модель и текстуры (O)"><span data-icon="folder-open" data-icon-size="17"></span><span class="btn-label">Открыть</span></button>
 			<button class="btn btn-ghost" id="btnTexture" type="button" data-tip="Добавить текстуру к материалу (T)"><span data-icon="image" data-icon-size="17"></span><span class="btn-label">Текстура</span></button>
-			<button class="btn btn-ghost" id="btnMusic" type="button" data-tip="Музыкальный режим точек (M)"><span data-icon="music-notes" data-icon-size="17"></span><span class="btn-label">Музыка</span></button>
+			<button class="btn btn-ghost btn-effects" id="btnEffects" type="button" data-tip="Режим эффектов частиц TouchDesigner (E)"><span data-icon="sparkle" data-icon-size="17"></span><span class="btn-label">Эффекты</span></button>
 			<button class="btn btn-icon" id="btnUrl" type="button" aria-label="Открыть по ссылке" data-tip="Открыть по ссылке (U). Также работает вставка Ctrl+V" data-icon="link" data-icon-size="18"></button>
 		</div>
 		<div class="topbar-group">
@@ -102,7 +102,7 @@
 					<div class="empty-actions">
 						<button class="btn btn-primary btn-lg" id="btnEmptyOpen" type="button"><span data-icon="folder-open" data-icon-size="18"></span><span class="btn-label">Выбрать файлы</span></button>
 						<button class="btn btn-secondary btn-lg" id="btnEmptyDemo" type="button"><span data-icon="sparkle" data-icon-size="18"></span><span class="btn-label">Демо-модель</span></button>
-						<button class="btn btn-secondary btn-lg" id="btnEmptyMusic" type="button"><span data-icon="music-notes" data-icon-size="18"></span><span class="btn-label">Музыкальный режим</span></button>
+						<button class="btn btn-secondary btn-lg" id="btnEmptyEffects" type="button"><span data-icon="sparkle" data-icon-size="18"></span><span class="btn-label">Режим эффектов</span></button>
 						<button class="btn btn-ghost btn-lg" id="btnEmptyUrl" type="button"><span data-icon="link" data-icon-size="18"></span><span class="btn-label">По ссылке</span></button>
 					</div>
 					<div class="chips" id="formatChips" aria-label="Поддерживаемые форматы"></div>
@@ -126,19 +126,21 @@
 		</main>
 
 		<aside class="sidebar" id="sidebar" aria-label="Параметры">
+			<div class="sidebar-drag-handle" id="sidebarDragHandle" title="Зажмите и перетащите панель">
+				<span class="drag-grip">⋮⋮</span>
+				<span class="drag-title">Параметры</span>
+			</div>
 			<div class="tabs" role="tablist" id="tabs">
 				<button class="tab" type="button" role="tab" data-tab="scene" aria-selected="true"><span data-icon="tree-structure" data-icon-size="17"></span><span class="tab-label">Сцена</span></button>
 				<button class="tab" type="button" role="tab" data-tab="material" aria-selected="false"><span data-icon="palette" data-icon-size="17"></span><span class="tab-label">Материал</span></button>
 				<button class="tab" type="button" role="tab" data-tab="points" aria-selected="false"><span data-icon="dots-nine" data-icon-size="17"></span><span class="tab-label">Точки</span></button>
 				<button class="tab" type="button" role="tab" data-tab="view" aria-selected="false"><span data-icon="sliders-horizontal" data-icon-size="17"></span><span class="tab-label">Вид</span></button>
-				<button class="tab" type="button" role="tab" data-tab="music" aria-selected="false"><span data-icon="music-notes" data-icon-size="17"></span><span class="tab-label">Музыка</span></button>
 			</div>
 			<div class="panels">
 				<div class="panel" id="panel-scene" role="tabpanel" data-panel="scene"></div>
 				<div class="panel" id="panel-material" role="tabpanel" data-panel="material" hidden></div>
 				<div class="panel" id="panel-points" role="tabpanel" data-panel="points" hidden></div>
 				<div class="panel" id="panel-view" role="tabpanel" data-panel="view" hidden></div>
-				<div class="panel" id="panel-music" role="tabpanel" data-panel="music" hidden></div>
 			</div>
 		</aside>
 	</div>
