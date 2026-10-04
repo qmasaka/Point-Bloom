@@ -37,6 +37,11 @@
 		</div>
 		<div class="topbar-title" id="docTitle"></div>
 		<div class="topbar-group">
+			<div class="scale-widget" title="Масштаб интерфейса">
+				<button class="btn btn-icon" id="btnScaleDown" type="button" aria-label="Уменьшить интерфейс" data-tip="Уменьшить интерфейс (Ctrl -)" data-icon="minus" data-icon-size="14"></button>
+				<button class="scale-pct" id="btnScaleReset" type="button" data-tip="Сбросить масштаб 100% (Ctrl 0)"><span id="scaleValue">100%</span></button>
+				<button class="btn btn-icon" id="btnScaleUp" type="button" aria-label="Увеличить интерфейс" data-tip="Увеличить интерфейс (Ctrl +)" data-icon="plus" data-icon-size="14"></button>
+			</div>
 			<button class="btn btn-icon" id="btnTheme" type="button" aria-label="Сменить тему" data-tip="Светлая / тёмная тема" data-icon="sun" data-icon-size="18"></button>
 			<button class="btn btn-icon" id="btnHelp" type="button" aria-label="Справка и горячие клавиши" data-tip="Справка и горячие клавиши (?)" data-icon="question" data-icon-size="18"></button>
 			<div class="split-btn">
@@ -124,10 +129,7 @@
 		</main>
 
 		<aside class="sidebar" id="sidebar" aria-label="Параметры">
-			<div class="sidebar-drag-handle" id="sidebarDragHandle" title="Зажмите и перетащите панель">
-				<span class="drag-grip">⋮⋮</span>
-				<span class="drag-title">Параметры</span>
-			</div>
+			<div class="sidebar-resizer" id="sidebarResizer" title="Потяните влево или вправо для изменения ширины (двойной клик — сброс)"></div>
 			<div class="tabs" role="tablist" id="tabs">
 				<button class="tab" type="button" role="tab" data-tab="scene" aria-selected="true"><span data-icon="tree-structure" data-icon-size="17"></span><span class="tab-label">Сцена</span></button>
 				<button class="tab" type="button" role="tab" data-tab="material" aria-selected="false"><span data-icon="palette" data-icon-size="17"></span><span class="tab-label">Материал</span></button>

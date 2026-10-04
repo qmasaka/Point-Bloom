@@ -36,6 +36,7 @@ export class UI {
 		this.dialog = $('#dialog');
 		this.buildChips();
 		this.buildHeader();
+		this.buildUiScale();
 		this.buildToolrail();
 		this.buildViewportOverlays();
 		this.buildSidebar();
@@ -420,7 +421,57 @@ export class UI {
 		this.pointsPanel = createPointsPanel(app, this.tabs.points);
 		this.exportPanel = createExportPanel(app, $('#panel-export'));
 		this.buildExportPop();
-		this.makeSidebarDraggable();
+		this.makeSidebarResizable();
+	}
+
+	buildUiScale() {
+		const SCALES = [0.75, 0.85, 0.92, 1.0, 1.1, 1.2, 1.35];
+		let currentScale = 1.0;
+
+		try {
+			const saved = localStorage.getItem('objglb.ui-scale');
+			if (saved) {
+				const val = parseFloat(saved);
+				if (!isNaN(val) && val >= 0.6 && val <= 2.0) {
+					currentScale = val;
+				}
+			}
+		} catch (_) {}
+
+		const applyScale = (s, persist = true) => {
+			currentScale = Math.round(s * 100) / 100;
+			document.documentElement.style.zoom = String(currentScale);
+			document.documentElement.style.setProperty('--ui-scale', String(currentScale));
+			const label = $('#scaleValue');
+			if (label) label.textContent = `${Math.round(currentScale * 100)}%`;
+			if (persist) {
+				try {
+					localStorage.setItem('objglb.ui-scale', currentScale);
+				} catch (_) {}
+			}
+			setTimeout(() => {
+				if (this.app?.viewport) this.app.viewport.resize();
+			}, 50);
+		};
+
+		applyScale(currentScale, false);
+
+		this.changeUiScale = (dir) => {
+			let idx = SCALES.findIndex((v) => Math.abs(v - currentScale) < 0.04);
+			if (idx === -1) {
+				idx = SCALES.reduce((closest, v, i) => Math.abs(v - currentScale) < Math.abs(SCALES[closest] - currentScale) ? i : closest, 0);
+			}
+			const nextIdx = Math.max(0, Math.min(SCALES.length - 1, idx + dir));
+			applyScale(SCALES[nextIdx], true);
+		};
+
+		this.resetUiScale = () => {
+			applyScale(1.0, true);
+		};
+
+		$('#btnScaleDown')?.addEventListener('click', () => this.changeUiScale(-1));
+		$('#btnScaleUp')?.addEventListener('click', () => this.changeUiScale(1));
+		$('#btnScaleReset')?.addEventListener('click', () => this.resetUiScale());
 	}
 
 	showTab(name) {
@@ -451,46 +502,76 @@ export class UI {
 		this.effectsEngine.enter(cloud);
 	}
 
-	makeSidebarDraggable() {
+	makeSidebarResizable() {
+		const resizer = $('#sidebarResizer');
 		const sidebar = $('#sidebar');
-		const handle = $('#sidebarDragHandle');
-		if (!sidebar || !handle) return;
-		let isDragging = false;
-		let startX = 0, startY = 0;
-		let origLeft = 0, origTop = 0;
+		const ws = $('.workspace');
+		if (!resizer || !sidebar || !ws) return;
 
-		handle.addEventListener('mousedown', (e) => {
+		try {
+			const saved = localStorage.getItem('objglb.sidebar-w');
+			if (saved) {
+				const w = parseInt(saved, 10);
+				if (w >= 200 && w <= 700) {
+					document.documentElement.style.setProperty('--sidebar-w', `${w}px`);
+				}
+			}
+		} catch (_) {}
+
+		let isResizing = false;
+		let startX = 0;
+		let startW = 0;
+
+		const onPointerDown = (e) => {
 			if (e.button !== 0) return;
-			isDragging = true;
-			const rect = sidebar.getBoundingClientRect();
+			isResizing = true;
 			startX = e.clientX;
-			startY = e.clientY;
-			origLeft = rect.left;
-			origTop = rect.top;
-			sidebar.classList.add('is-floating');
-			sidebar.style.position = 'fixed';
-			sidebar.style.left = `${origLeft}px`;
-			sidebar.style.top = `${origTop}px`;
-			sidebar.style.right = 'auto';
-			sidebar.style.bottom = 'auto';
-			sidebar.style.zIndex = '50';
+			startW = sidebar.getBoundingClientRect().width;
+			ws.classList.add('is-resizing');
+			document.body.style.cursor = 'col-resize';
+			try {
+				resizer.setPointerCapture(e.pointerId);
+			} catch (_) {}
 			e.preventDefault();
-		});
+		};
 
-		window.addEventListener('mousemove', (e) => {
-			if (!isDragging) return;
-			const dx = e.clientX - startX;
-			const dy = e.clientY - startY;
-			const maxW = window.innerWidth - sidebar.offsetWidth - 10;
-			const maxH = window.innerHeight - 80;
-			const newLeft = Math.max(10, Math.min(maxW, origLeft + dx));
-			const newTop = Math.max(48, Math.min(maxH, origTop + dy));
-			sidebar.style.left = `${newLeft}px`;
-			sidebar.style.top = `${newTop}px`;
-		});
+		const onPointerMove = (e) => {
+			if (!isResizing) return;
+			const delta = startX - e.clientX;
+			let newW = Math.round(startW + delta);
+			const minW = 200;
+			const maxW = Math.max(minW, Math.min(650, window.innerWidth - 200));
+			newW = Math.max(minW, Math.min(maxW, newW));
+			document.documentElement.style.setProperty('--sidebar-w', `${newW}px`);
+			this.app.viewport.resize();
+		};
 
-		window.addEventListener('mouseup', () => {
-			isDragging = false;
+		const onPointerUp = (e) => {
+			if (!isResizing) return;
+			isResizing = false;
+			ws.classList.remove('is-resizing');
+			document.body.style.cursor = '';
+			try {
+				resizer.releasePointerCapture(e.pointerId);
+			} catch (_) {}
+			const currentW = Math.round(sidebar.getBoundingClientRect().width);
+			try {
+				localStorage.setItem('objglb.sidebar-w', currentW);
+			} catch (_) {}
+			this.app.viewport.resize();
+		};
+
+		resizer.addEventListener('pointerdown', onPointerDown);
+		resizer.addEventListener('pointermove', onPointerMove);
+		resizer.addEventListener('pointerup', onPointerUp);
+		resizer.addEventListener('pointercancel', onPointerUp);
+
+		resizer.addEventListener('dblclick', () => {
+			document.documentElement.style.setProperty('--sidebar-w', '280px');
+			try {
+				localStorage.removeItem('objglb.sidebar-w');
+			} catch (_) {}
+			this.app.viewport.resize();
 		});
 	}
 
@@ -665,7 +746,7 @@ export class UI {
 					group('Навигация', row('Вращение', 'СКМ'), row('Вращение (трекпад)', 'Alt', 'ЛКМ'), row('Сдвиг', 'Shift', 'СКМ'), row('Масштаб', 'Колесо'), row('Центр на точке', 'Двойной клик'), row('Показать всё', 'Home'), row('Показать выбранное', 'F')),
 					group('Виды', row('Спереди / сзади', 'Num 1'), row('Справа / слева', 'Num 3'), row('Сверху / снизу', 'Num 7'), row('Без Numpad', 'Alt', '1 3 7'), row('Ортогональная', 'Num 5', 'P'), row('Шаг вращения', 'Num 4 6 8 2')),
 					group('Правка', row('Выбор', 'Q'), row('Переместить', 'G'), row('Вращать', 'R'), row('Масштаб', 'S'), row('Привязка к шагу', 'N'), row('Оси: мир / локальные', 'L'), row('Дублировать', 'Shift', 'D'), row('Удалить', 'X'), row('Скрыть / показать', 'H', 'Alt+H')),
-					group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть / текстура', 'O', 'T'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Панель справа', 'Tab'), row('Музыкальный режим', 'M'), row('Музыка: пауза / плей', 'Пробел'))
+					group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть / текстура', 'O', 'T'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Панель справа', 'Tab'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
 				),
 				h('div', { class: 'dlg-actions' }, close)
 			)
@@ -818,6 +899,21 @@ export class UI {
 			if (mod && code === 'KeyD') {
 				e.preventDefault();
 				app.ops.duplicateSelected();
+				return;
+			}
+			if (mod && (code === 'Equal' || code === 'NumpadAdd' || e.key === '+' || e.key === '=')) {
+				e.preventDefault();
+				this.changeUiScale?.(1);
+				return;
+			}
+			if (mod && (code === 'Minus' || code === 'NumpadSubtract' || e.key === '-')) {
+				e.preventDefault();
+				this.changeUiScale?.(-1);
+				return;
+			}
+			if (mod && (code === 'Digit0' || code === 'Numpad0')) {
+				e.preventDefault();
+				this.resetUiScale?.();
 				return;
 			}
 			if (mod) return;

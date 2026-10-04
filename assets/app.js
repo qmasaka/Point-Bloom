@@ -89322,6 +89322,7 @@ const ICON_PATHS = {
 	'info': '<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z"/>',
 	'link': '<path d="M240,88.23a54.43,54.43,0,0,1-16,37L189.25,160a54.27,54.27,0,0,1-38.63,16h-.05A54.63,54.63,0,0,1,96,119.84a8,8,0,0,1,16,.45A38.62,38.62,0,0,0,150.58,160h0a38.39,38.39,0,0,0,27.31-11.31l34.75-34.75a38.63,38.63,0,0,0-54.63-54.63l-11,11A8,8,0,0,1,135.7,59l11-11A54.65,54.65,0,0,1,224,48,54.86,54.86,0,0,1,240,88.23ZM109,185.66l-11,11A38.41,38.41,0,0,1,70.6,208h0a38.63,38.63,0,0,1-27.29-65.94L78,107.31A38.63,38.63,0,0,1,144,135.71a8,8,0,0,0,16,.45A54.86,54.86,0,0,0,144,96a54.65,54.65,0,0,0-77.27,0L32,130.75A54.62,54.62,0,0,0,70.56,224h0a54.28,54.28,0,0,0,38.64-16l11-11A8,8,0,0,0,109,185.66Z"/>',
 	'magnet': '<path d="M207,50.25A87.46,87.46,0,0,0,144.6,24h-.33A87.48,87.48,0,0,0,82,49.81L20.61,112a16,16,0,0,0,.06,22.56l28.66,28.66a15.92,15.92,0,0,0,11.32,4.69h.09a16,16,0,0,0,11.36-4.82L133,100.69a16.08,16.08,0,0,1,22.41-.21,15.6,15.6,0,0,1,4.73,11.19,16.89,16.89,0,0,1-4.85,12L93,183.88a16,16,0,0,0-.17,22.79l28.66,28.66a16.06,16.06,0,0,0,22.52.12L205.81,175C240.26,140.5,240.79,84.56,207,50.25ZM60.65,151.89,32,123.24,55.8,99.12l28.52,28.52ZM132.79,224l-28.68-28.65,24.38-23.57L157,200.32Zm61.76-60.44-26.11,25.54L140,160.68l26.44-25.57.1-.09a33,33,0,0,0,9.57-23.5A31.44,31.44,0,0,0,166.47,89a32.2,32.2,0,0,0-44.9.5L95.49,116.18,67,87.74,93.35,61.09A71.51,71.51,0,0,1,144.27,40h.27a71.55,71.55,0,0,1,51.05,21.48C223.25,89.55,222.75,135.38,194.55,163.58Z"/>',
+	'minus': '<path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128Z"/>',
 	'monitor': '<path d="M208,40H48A24,24,0,0,0,24,64V176a24,24,0,0,0,24,24H208a24,24,0,0,0,24-24V64A24,24,0,0,0,208,40Zm8,136a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V64a8,8,0,0,1,8-8H208a8,8,0,0,1,8,8Zm-48,48a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,224Z"/>',
 	'moon': '<path d="M233.54,142.23a8,8,0,0,0-8-2,88.08,88.08,0,0,1-109.8-109.8,8,8,0,0,0-10-10,104.84,104.84,0,0,0-52.91,37A104,104,0,0,0,136,224a103.09,103.09,0,0,0,62.52-20.88,104.84,104.84,0,0,0,37-52.91A8,8,0,0,0,233.54,142.23ZM188.9,190.34A88,88,0,0,1,65.66,67.11a89,89,0,0,1,31.4-26A106,106,0,0,0,96,56,104.11,104.11,0,0,0,200,160a106,106,0,0,0,14.92-1.06A89,89,0,0,1,188.9,190.34Z"/>',
 	'palette': '<path d="M200.77,53.89A103.27,103.27,0,0,0,128,24h-1.07A104,104,0,0,0,24,128c0,43,26.58,79.06,69.36,94.17A32,32,0,0,0,136,192a16,16,0,0,1,16-16h46.21a31.81,31.81,0,0,0,31.2-24.88,104.43,104.43,0,0,0,2.59-24A103.28,103.28,0,0,0,200.77,53.89Zm13,93.71A15.89,15.89,0,0,1,198.21,160H152a32,32,0,0,0-32,32,16,16,0,0,1-21.31,15.07C62.49,194.3,40,164,40,128a88,88,0,0,1,87.09-88h.9a88.35,88.35,0,0,1,88,87.25A88.86,88.86,0,0,1,213.81,147.6ZM140,76a12,12,0,1,1-12-12A12,12,0,0,1,140,76ZM96,100A12,12,0,1,1,84,88,12,12,0,0,1,96,100Zm0,56a12,12,0,1,1-12-12A12,12,0,0,1,96,156Zm88-56a12,12,0,1,1-12-12A12,12,0,0,1,184,100Z"/>',
@@ -133003,6 +133004,7 @@ class UI {
 		this.dialog = $('#dialog');
 		this.buildChips();
 		this.buildHeader();
+		this.buildUiScale();
 		this.buildToolrail();
 		this.buildViewportOverlays();
 		this.buildSidebar();
@@ -133387,7 +133389,57 @@ class UI {
 		this.pointsPanel = createPointsPanel(app, this.tabs.points);
 		this.exportPanel = createExportPanel(app, $('#panel-export'));
 		this.buildExportPop();
-		this.makeSidebarDraggable();
+		this.makeSidebarResizable();
+	}
+
+	buildUiScale() {
+		const SCALES = [0.75, 0.85, 0.92, 1.0, 1.1, 1.2, 1.35];
+		let currentScale = 1.0;
+
+		try {
+			const saved = localStorage.getItem('objglb.ui-scale');
+			if (saved) {
+				const val = parseFloat(saved);
+				if (!isNaN(val) && val >= 0.6 && val <= 2.0) {
+					currentScale = val;
+				}
+			}
+		} catch (_) {}
+
+		const applyScale = (s, persist = true) => {
+			currentScale = Math.round(s * 100) / 100;
+			document.documentElement.style.zoom = String(currentScale);
+			document.documentElement.style.setProperty('--ui-scale', String(currentScale));
+			const label = $('#scaleValue');
+			if (label) label.textContent = `${Math.round(currentScale * 100)}%`;
+			if (persist) {
+				try {
+					localStorage.setItem('objglb.ui-scale', currentScale);
+				} catch (_) {}
+			}
+			setTimeout(() => {
+				if (this.app?.viewport) this.app.viewport.resize();
+			}, 50);
+		};
+
+		applyScale(currentScale, false);
+
+		this.changeUiScale = (dir) => {
+			let idx = SCALES.findIndex((v) => Math.abs(v - currentScale) < 0.04);
+			if (idx === -1) {
+				idx = SCALES.reduce((closest, v, i) => Math.abs(v - currentScale) < Math.abs(SCALES[closest] - currentScale) ? i : closest, 0);
+			}
+			const nextIdx = Math.max(0, Math.min(SCALES.length - 1, idx + dir));
+			applyScale(SCALES[nextIdx], true);
+		};
+
+		this.resetUiScale = () => {
+			applyScale(1.0, true);
+		};
+
+		$('#btnScaleDown')?.addEventListener('click', () => this.changeUiScale(-1));
+		$('#btnScaleUp')?.addEventListener('click', () => this.changeUiScale(1));
+		$('#btnScaleReset')?.addEventListener('click', () => this.resetUiScale());
 	}
 
 	showTab(name) {
@@ -133418,46 +133470,76 @@ class UI {
 		this.effectsEngine.enter(cloud);
 	}
 
-	makeSidebarDraggable() {
+	makeSidebarResizable() {
+		const resizer = $('#sidebarResizer');
 		const sidebar = $('#sidebar');
-		const handle = $('#sidebarDragHandle');
-		if (!sidebar || !handle) return;
-		let isDragging = false;
-		let startX = 0, startY = 0;
-		let origLeft = 0, origTop = 0;
+		const ws = $('.workspace');
+		if (!resizer || !sidebar || !ws) return;
 
-		handle.addEventListener('mousedown', (e) => {
+		try {
+			const saved = localStorage.getItem('objglb.sidebar-w');
+			if (saved) {
+				const w = parseInt(saved, 10);
+				if (w >= 200 && w <= 700) {
+					document.documentElement.style.setProperty('--sidebar-w', `${w}px`);
+				}
+			}
+		} catch (_) {}
+
+		let isResizing = false;
+		let startX = 0;
+		let startW = 0;
+
+		const onPointerDown = (e) => {
 			if (e.button !== 0) return;
-			isDragging = true;
-			const rect = sidebar.getBoundingClientRect();
+			isResizing = true;
 			startX = e.clientX;
-			startY = e.clientY;
-			origLeft = rect.left;
-			origTop = rect.top;
-			sidebar.classList.add('is-floating');
-			sidebar.style.position = 'fixed';
-			sidebar.style.left = `${origLeft}px`;
-			sidebar.style.top = `${origTop}px`;
-			sidebar.style.right = 'auto';
-			sidebar.style.bottom = 'auto';
-			sidebar.style.zIndex = '50';
+			startW = sidebar.getBoundingClientRect().width;
+			ws.classList.add('is-resizing');
+			document.body.style.cursor = 'col-resize';
+			try {
+				resizer.setPointerCapture(e.pointerId);
+			} catch (_) {}
 			e.preventDefault();
-		});
+		};
 
-		window.addEventListener('mousemove', (e) => {
-			if (!isDragging) return;
-			const dx = e.clientX - startX;
-			const dy = e.clientY - startY;
-			const maxW = window.innerWidth - sidebar.offsetWidth - 10;
-			const maxH = window.innerHeight - 80;
-			const newLeft = Math.max(10, Math.min(maxW, origLeft + dx));
-			const newTop = Math.max(48, Math.min(maxH, origTop + dy));
-			sidebar.style.left = `${newLeft}px`;
-			sidebar.style.top = `${newTop}px`;
-		});
+		const onPointerMove = (e) => {
+			if (!isResizing) return;
+			const delta = startX - e.clientX;
+			let newW = Math.round(startW + delta);
+			const minW = 200;
+			const maxW = Math.max(minW, Math.min(650, window.innerWidth - 200));
+			newW = Math.max(minW, Math.min(maxW, newW));
+			document.documentElement.style.setProperty('--sidebar-w', `${newW}px`);
+			this.app.viewport.resize();
+		};
 
-		window.addEventListener('mouseup', () => {
-			isDragging = false;
+		const onPointerUp = (e) => {
+			if (!isResizing) return;
+			isResizing = false;
+			ws.classList.remove('is-resizing');
+			document.body.style.cursor = '';
+			try {
+				resizer.releasePointerCapture(e.pointerId);
+			} catch (_) {}
+			const currentW = Math.round(sidebar.getBoundingClientRect().width);
+			try {
+				localStorage.setItem('objglb.sidebar-w', currentW);
+			} catch (_) {}
+			this.app.viewport.resize();
+		};
+
+		resizer.addEventListener('pointerdown', onPointerDown);
+		resizer.addEventListener('pointermove', onPointerMove);
+		resizer.addEventListener('pointerup', onPointerUp);
+		resizer.addEventListener('pointercancel', onPointerUp);
+
+		resizer.addEventListener('dblclick', () => {
+			document.documentElement.style.setProperty('--sidebar-w', '280px');
+			try {
+				localStorage.removeItem('objglb.sidebar-w');
+			} catch (_) {}
+			this.app.viewport.resize();
 		});
 	}
 
@@ -133632,7 +133714,7 @@ class UI {
 					group('Навигация', row('Вращение', 'СКМ'), row('Вращение (трекпад)', 'Alt', 'ЛКМ'), row('Сдвиг', 'Shift', 'СКМ'), row('Масштаб', 'Колесо'), row('Центр на точке', 'Двойной клик'), row('Показать всё', 'Home'), row('Показать выбранное', 'F')),
 					group('Виды', row('Спереди / сзади', 'Num 1'), row('Справа / слева', 'Num 3'), row('Сверху / снизу', 'Num 7'), row('Без Numpad', 'Alt', '1 3 7'), row('Ортогональная', 'Num 5', 'P'), row('Шаг вращения', 'Num 4 6 8 2')),
 					group('Правка', row('Выбор', 'Q'), row('Переместить', 'G'), row('Вращать', 'R'), row('Масштаб', 'S'), row('Привязка к шагу', 'N'), row('Оси: мир / локальные', 'L'), row('Дублировать', 'Shift', 'D'), row('Удалить', 'X'), row('Скрыть / показать', 'H', 'Alt+H')),
-					group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть / текстура', 'O', 'T'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Панель справа', 'Tab'), row('Музыкальный режим', 'M'), row('Музыка: пауза / плей', 'Пробел'))
+					group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть / текстура', 'O', 'T'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Панель справа', 'Tab'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
 				),
 				h('div', { class: 'dlg-actions' }, close)
 			)
@@ -133785,6 +133867,21 @@ class UI {
 			if (mod && code === 'KeyD') {
 				e.preventDefault();
 				app.ops.duplicateSelected();
+				return;
+			}
+			if (mod && (code === 'Equal' || code === 'NumpadAdd' || e.key === '+' || e.key === '=')) {
+				e.preventDefault();
+				this.changeUiScale?.(1);
+				return;
+			}
+			if (mod && (code === 'Minus' || code === 'NumpadSubtract' || e.key === '-')) {
+				e.preventDefault();
+				this.changeUiScale?.(-1);
+				return;
+			}
+			if (mod && (code === 'Digit0' || code === 'Numpad0')) {
+				e.preventDefault();
+				this.resetUiScale?.();
 				return;
 			}
 			if (mod) return;
