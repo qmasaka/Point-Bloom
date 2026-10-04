@@ -10,8 +10,8 @@ import { createMaterialPanel } from './panel-material.js';
 import { createViewPanel, DISPLAY_MODES } from './panel-view.js';
 import { createExportPanel } from './panel-export.js';
 import { createPointsPanel } from './panel-points.js';
-import { sampleSurface } from './pointcloud.js';
-import { EffectsEngine, generateShapePoints } from './effects-engine.js';
+import { EffectsEngine } from './effects-engine.js';
+import { createEffectsPanel, makeModelProvider } from './panel-effects.js';
 import { importFiles, assignTextureFiles, ACCEPT_ALL, MODEL_FORMATS, IMAGE_EXT } from './importers.js';
 import { BACKGROUNDS } from './viewport.js';
 
@@ -25,6 +25,7 @@ export class UI {
 		this.dragDepth = 0;
 		this.openMode = 'auto';
 		this.effectsEngine = new EffectsEngine(app);
+		this.workspace = 'edit';
 	}
 
 	init() {
@@ -70,8 +71,8 @@ export class UI {
 		const app = this.app;
 		$('#btnOpen').addEventListener('click', () => this.openFiles('auto'));
 		$('#btnTexture').addEventListener('click', () => this.openTextures());
-		$('#btnEffects')?.addEventListener('click', () => this.enterEffectsMode());
-		$('#btnEmptyEffects')?.addEventListener('click', () => this.enterEffectsMode());
+		$$('#modeSwitch [data-ws]').forEach((b) => b.addEventListener('click', () => this.setWorkspace(b.dataset.ws)));
+		$('#btnEmptyEffects')?.addEventListener('click', () => this.setWorkspace('fx'));
 		$('#btnEmptyOpen').addEventListener('click', () => this.openFiles('auto'));
 		$('#btnEmptyDemo').addEventListener('click', () => app.loadDemo());
 		$('#btnEmptyUrl').addEventListener('click', () => this.openUrl());
@@ -420,6 +421,8 @@ export class UI {
 		this.viewPanel = createViewPanel(app, this.tabs.view);
 		this.pointsPanel = createPointsPanel(app, this.tabs.points);
 		this.exportPanel = createExportPanel(app, $('#panel-export'));
+		this.effectsEngine.modelProvider = makeModelProvider(app);
+		this.effectsPanel = createEffectsPanel(app, $('#panel-effects'), this.effectsEngine);
 		this.buildExportPop();
 		this.makeSidebarResizable();
 	}
@@ -475,6 +478,7 @@ export class UI {
 	}
 
 	showTab(name) {
+		if (this.workspace === 'fx') return;
 		$$('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
 		for (const [k, el] of Object.entries(this.tabs)) el.hidden = k !== name;
 		if (name === 'material') this.materialPanel.refresh();
@@ -482,24 +486,32 @@ export class UI {
 		if (ws.classList.contains('sidebar-hidden')) this.toggleSidebar(false);
 	}
 
-	async enterEffectsMode() {
-		if (this.effectsEngine.active) {
-			this.effectsEngine.exit();
-			return;
-		}
-		const meshes = this.app.model.meshes().filter((m) => this.app.viewport.isVisibleInTree(m));
-		let cloud = null;
-		if (meshes.length) {
-			this.busy('Создаю частицы из модели…', 0.2);
-			const entries = meshes.map((m) => ({ mesh: m, mats: this.app.display.getOriginal(m) }));
-			cloud = await sampleSurface(entries, 120000, {
-				onProgress: (p) => this.busy('Создаю частицы…', 0.2 + p * 0.75),
-			});
-			this.idle();
+	/** Рабочее пространство: «edit» (редактор) или «fx» (эффекты для облака точек) */
+	async setWorkspace(ws) {
+		if (ws === this.workspace) return;
+		const fxPanel = $('#panel-effects');
+		if (ws === 'fx') {
+			this.prevTab = $$('.tab').find((t) => t.getAttribute('aria-selected') === 'true')?.dataset.tab || 'scene';
+			this.closeOverlayPop && this.closeOverlayPop();
+			this.toggleExportPop(false);
+			try {
+				await this.effectsEngine.enter();
+			} catch (e) {
+				this.toast('Не удалось запустить эффекты: ' + (e.message || e), 'error');
+				return;
+			}
+			this.workspace = 'fx';
+			for (const el of Object.values(this.tabs)) el.hidden = true;
+			fxPanel.hidden = false;
+			if ($('.workspace').classList.contains('sidebar-hidden') && !window.matchMedia('(max-width: 900px)').matches) this.toggleSidebar(false);
 		} else {
-			cloud = generateShapePoints('sphere', 120000);
+			this.workspace = 'edit';
+			this.effectsEngine.exit();
+			fxPanel.hidden = true;
+			this.showTab(this.prevTab || 'scene');
 		}
-		this.effectsEngine.enter(cloud);
+		$$('#modeSwitch [data-ws]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.ws === this.workspace)));
+		setTimeout(() => this.app.viewport.resize(), 60);
 	}
 
 	makeSidebarResizable() {
@@ -746,7 +758,7 @@ export class UI {
 					group('Навигация', row('Вращение', 'СКМ'), row('Вращение (трекпад)', 'Alt', 'ЛКМ'), row('Сдвиг', 'Shift', 'СКМ'), row('Масштаб', 'Колесо'), row('Центр на точке', 'Двойной клик'), row('Показать всё', 'Home'), row('Показать выбранное', 'F')),
 					group('Виды', row('Спереди / сзади', 'Num 1'), row('Справа / слева', 'Num 3'), row('Сверху / снизу', 'Num 7'), row('Без Numpad', 'Alt', '1 3 7'), row('Ортогональная', 'Num 5', 'P'), row('Шаг вращения', 'Num 4 6 8 2')),
 					group('Правка', row('Выбор', 'Q'), row('Переместить', 'G'), row('Вращать', 'R'), row('Масштаб', 'S'), row('Привязка к шагу', 'N'), row('Оси: мир / локальные', 'L'), row('Дублировать', 'Shift', 'D'), row('Удалить', 'X'), row('Скрыть / показать', 'H', 'Alt+H')),
-					group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть / текстура', 'O', 'T'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Панель справа', 'Tab'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
+					group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть / текстура', 'O', 'T'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Музыка: пуск / пауза', 'Пробел'), row('Панель справа', 'Tab'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
 				),
 				h('div', { class: 'dlg-actions' }, close)
 			)
@@ -976,15 +988,14 @@ export class UI {
 					return this.openTextures();
 				case 'KeyE':
 					if (!mod) {
-						this.enterEffectsMode();
+						this.setWorkspace(this.workspace === 'fx' ? 'edit' : 'fx');
 						return;
 					}
 					break;
 				case 'Space':
-					if (this.effectsEngine?.active) {
+					if (this.workspace === 'fx') {
 						e.preventDefault();
-						if (this.effectsEngine.playing) this.effectsEngine.pause();
-						else this.effectsEngine.play();
+						this.effectsEngine.toggle().catch(() => {});
 						return;
 					}
 					break;
@@ -1021,8 +1032,8 @@ export class UI {
 					e.preventDefault();
 					return this.toggleSidebar();
 				case 'Escape':
-					if (this.effectsEngine?.active) {
-						this.effectsEngine.exit();
+					if (this.workspace === 'fx') {
+						this.setWorkspace('edit');
 						return;
 					}
 					if (this.exportPop && !this.exportPop.hidden) {

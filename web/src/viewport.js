@@ -156,7 +156,7 @@ render() {
 const app = this.app;
 const nav = app.nav;
 const o = app.settings.overlays;
-this.grid.visible = o.grid;
+this.grid.visible = o.grid && !this.fxHide;
 this.grid.material.uniforms.uAxes.value = o.axes ? 1 : 0;
 if (o.grid) this.grid.update(nav, this.camera);
 app.display.updateUniforms(this.camera, this.size, nav);
