@@ -1,0 +1,8 @@
+newmtl demo_knot
+Kd 1 1 1
+Ns 120
+map_Kd demo_texture.png
+
+newmtl demo_base
+Kd 0.20 0.22 0.26
+Ns 30

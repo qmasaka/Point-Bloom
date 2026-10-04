@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>OBJ в GLB: конвертер и 3D-просмотрщик</title>
+	<meta name="description" content="Откройте OBJ, FBX, STL, PLY и другие 3D-форматы, наложите текстуру, осмотритесь в сцене и экспортируйте в GLB.">
+	<meta name="color-scheme" content="dark light">
+	<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='%23e58a45' d='M223.68,66.15,135.68,18h0a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15Z'/%3E%3C/svg%3E">
+	<link rel="stylesheet" href="assets/fonts.css">
+	<link rel="stylesheet" href="assets/style.css">
+	<script>
+		// Тема до отрисовки, чтобы не мигало
+		try {
+			var t = localStorage.getItem('objglb.theme');
+			if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+			else if (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) document.documentElement.setAttribute('data-theme', 'light');
+		} catch (e) {}
+	</script>
+</head>
+<body>
+<div id="app">
+	<header class="topbar">
+		<div class="brand" aria-label="OBJ в GLB">
+			<span class="brand-mark" data-icon="cube" data-icon-size="22"></span>
+			<span class="brand-name">OBJ <span class="brand-arrow">в</span> GLB</span>
+		</div>
+		<div class="topbar-group">
+			<button class="btn btn-ghost" id="btnOpen" type="button" data-tip="Открыть модель и текстуры (O)"><span data-icon="folder-open" data-icon-size="17"></span><span class="btn-label">Открыть</span></button>
+			<button class="btn btn-ghost" id="btnTexture" type="button" data-tip="Добавить текстуру к материалу (T)"><span data-icon="image" data-icon-size="17"></span><span class="btn-label">Текстура</span></button>
+			<button class="btn btn-ghost" id="btnMusic" type="button" data-tip="Музыкальный режим точек (M)"><span data-icon="music-notes" data-icon-size="17"></span><span class="btn-label">Музыка</span></button>
+			<button class="btn btn-icon" id="btnUrl" type="button" aria-label="Открыть по ссылке" data-tip="Открыть по ссылке (U). Также работает вставка Ctrl+V" data-icon="link" data-icon-size="18"></button>
+		</div>
+		<div class="topbar-group">
+			<button class="btn btn-icon" id="btnUndo" type="button" aria-label="Отменить" data-tip="Отменить (Ctrl+Z)" data-icon="arrow-counter-clockwise" data-icon-size="18" disabled></button>
+			<button class="btn btn-icon" id="btnRedo" type="button" aria-label="Повторить" data-tip="Повторить (Ctrl+Shift+Z)" data-icon="arrow-clockwise" data-icon-size="18" disabled></button>
+		</div>
+		<div class="topbar-title" id="docTitle"></div>
+		<div class="topbar-group">
+			<button class="btn btn-icon" id="btnTheme" type="button" aria-label="Сменить тему" data-tip="Светлая / тёмная тема" data-icon="sun" data-icon-size="18"></button>
+			<button class="btn btn-icon" id="btnHelp" type="button" aria-label="Справка и горячие клавиши" data-tip="Справка и горячие клавиши (?)" data-icon="question" data-icon-size="18"></button>
+			<div class="split-btn">
+				<button class="btn btn-primary" id="btnExport" type="button" data-tip="Скачать с текущими настройками (Ctrl+E)"><span data-icon="download-simple" data-icon-size="17"></span><span class="btn-label" id="btnExportLabel">Скачать GLB</span></button>
+				<button class="btn btn-primary split-chev" id="btnExportOpts" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Настройки экспорта" data-tip="Настройки экспорта" data-tip-pos="left"><span data-icon="sliders-horizontal" data-icon-size="17"></span></button>
+			</div>
+		</div>
+	</header>
+
+	<section class="export-pop" id="exportPop" aria-label="Экспорт" hidden>
+		<div class="export-pop-head"><strong>Экспорт</strong><button class="btn btn-icon" id="btnExportClose" type="button" aria-label="Закрыть" data-icon="x" data-icon-size="17"></button></div>
+		<div class="export-body" id="panel-export"></div>
+	</section>
+
+	<div class="workspace">
+		<nav class="toolrail" aria-label="Инструменты">
+			<button class="btn btn-tool" type="button" data-tool="select" data-tip="Выбор (Q)" data-tip-pos="right" aria-label="Выбор" data-icon="cursor" data-icon-size="20"></button>
+			<button class="btn btn-tool" type="button" data-tool="translate" data-tip="Перемещение (G)" data-tip-pos="right" aria-label="Перемещение" data-icon="arrows-out-cardinal" data-icon-size="20"></button>
+			<button class="btn btn-tool" type="button" data-tool="rotate" data-tip="Вращение (R)" data-tip-pos="right" aria-label="Вращение" data-icon="arrows-clockwise" data-icon-size="20"></button>
+			<button class="btn btn-tool" type="button" data-tool="scale" data-tip="Масштаб (S)" data-tip-pos="right" aria-label="Масштаб" data-icon="arrows-out-simple" data-icon-size="20"></button>
+			<span class="rail-sep"></span>
+			<button class="btn btn-tool" type="button" id="btnSnap" data-tip="Привязка к шагу (N)" data-tip-pos="right" aria-label="Привязка к шагу" aria-pressed="false" data-icon="magnet" data-icon-size="20"></button>
+			<button class="btn btn-tool" type="button" id="btnSpace" data-tip="Оси гизмо: глобальные (L)" data-tip-pos="right" aria-label="Оси гизмо" aria-pressed="false" data-icon="compass" data-icon-size="20"></button>
+			<span class="rail-sep"></span>
+			<button class="btn btn-tool" type="button" id="btnFrameAll" data-tip="Показать всё (Home)" data-tip-pos="right" aria-label="Показать всё" data-icon="corners-out" data-icon-size="20"></button>
+			<button class="btn btn-tool" type="button" id="btnFrameSel" data-tip="Показать выбранное (F)" data-tip-pos="right" aria-label="Показать выбранное" data-icon="crosshair-simple" data-icon-size="20"></button>
+		</nav>
+
+		<main id="viewport" class="viewport" aria-label="3D-сцена">
+			<div class="stage"></div>
+
+			<div class="vp-top-left">
+				<div class="vp-pill" id="modeBar" role="radiogroup" aria-label="Режим отображения"></div>
+				<div class="vp-overlay-wrap">
+					<button class="vp-pill vp-btn" id="btnOverlays" type="button" aria-haspopup="true" aria-expanded="false"><span data-icon="stack" data-icon-size="17"></span><span class="btn-label">Оверлеи</span><span data-icon="caret-down" data-icon-size="13"></span></button>
+					<div class="popover" id="overlayPop" hidden></div>
+				</div>
+			</div>
+
+			<div class="vp-top-right">
+				<canvas id="axisCanvas" aria-label="Оси: нажмите на ось, чтобы повернуть вид"></canvas>
+				<div class="vp-pill vp-tools">
+					<button class="btn btn-icon" id="btnOrtho" type="button" data-tip="Перспектива / ортогональная проекция (5)" data-tip-pos="left" aria-label="Проекция" data-icon="perspective" data-icon-size="18"></button>
+					<button class="btn btn-icon" id="btnShot" type="button" data-tip="Сохранить скриншот сцены" data-tip-pos="left" aria-label="Скриншот" data-icon="camera" data-icon-size="18"></button>
+				</div>
+			</div>
+
+			<div class="vp-bottom-left">
+				<div class="vp-pill vp-label" id="viewLabel"></div>
+			</div>
+
+			<div class="vp-bottom-right">
+				<button class="vp-pill vp-btn" id="btnSidebar" type="button" data-tip="Скрыть / показать панель (Tab)" data-tip-pos="left" aria-label="Панель" data-icon="sidebar-simple" data-icon-size="18"></button>
+			</div>
+
+			<div class="empty-state" id="emptyState">
+				<div class="empty-card">
+					<div class="empty-icon" data-icon="cube-focus" data-icon-size="34"></div>
+					<h1 class="empty-title">Перетащите модель сюда</h1>
+					<p class="empty-text">Поддерживаются OBJ, GLB, FBX, STL, PLY и другие форматы. Файлы .mtl и текстуры (PNG, JPG, TGA) можно перетащить вместе с моделью или целой папкой.</p>
+					<div class="empty-actions">
+						<button class="btn btn-primary btn-lg" id="btnEmptyOpen" type="button"><span data-icon="folder-open" data-icon-size="18"></span><span class="btn-label">Выбрать файлы</span></button>
+						<button class="btn btn-secondary btn-lg" id="btnEmptyDemo" type="button"><span data-icon="sparkle" data-icon-size="18"></span><span class="btn-label">Демо-модель</span></button>
+						<button class="btn btn-secondary btn-lg" id="btnEmptyMusic" type="button"><span data-icon="music-notes" data-icon-size="18"></span><span class="btn-label">Музыкальный режим</span></button>
+						<button class="btn btn-ghost btn-lg" id="btnEmptyUrl" type="button"><span data-icon="link" data-icon-size="18"></span><span class="btn-label">По ссылке</span></button>
+					</div>
+					<div class="chips" id="formatChips" aria-label="Поддерживаемые форматы"></div>
+				</div>
+			</div>
+
+			<div class="drop-overlay" id="dropOverlay" hidden>
+				<div class="drop-card">
+					<span data-icon="upload-simple" data-icon-size="32"></span>
+					<strong id="dropTitle">Отпустите файлы</strong>
+					<span id="dropText">Модель, MTL и текстуры загрузятся вместе</span>
+				</div>
+			</div>
+
+			<div class="busy" id="busy" hidden role="status" aria-live="polite">
+				<div class="busy-card">
+					<div class="busy-text" id="busyText">Загрузка</div>
+					<div class="progress"><div class="progress-bar" id="busyBar"></div></div>
+				</div>
+			</div>
+		</main>
+
+		<aside class="sidebar" id="sidebar" aria-label="Параметры">
+			<div class="tabs" role="tablist" id="tabs">
+				<button class="tab" type="button" role="tab" data-tab="scene" aria-selected="true"><span data-icon="tree-structure" data-icon-size="17"></span><span class="tab-label">Сцена</span></button>
+				<button class="tab" type="button" role="tab" data-tab="material" aria-selected="false"><span data-icon="palette" data-icon-size="17"></span><span class="tab-label">Материал</span></button>
+				<button class="tab" type="button" role="tab" data-tab="points" aria-selected="false"><span data-icon="dots-nine" data-icon-size="17"></span><span class="tab-label">Точки</span></button>
+				<button class="tab" type="button" role="tab" data-tab="view" aria-selected="false"><span data-icon="sliders-horizontal" data-icon-size="17"></span><span class="tab-label">Вид</span></button>
+				<button class="tab" type="button" role="tab" data-tab="music" aria-selected="false"><span data-icon="music-notes" data-icon-size="17"></span><span class="tab-label">Музыка</span></button>
+			</div>
+			<div class="panels">
+				<div class="panel" id="panel-scene" role="tabpanel" data-panel="scene"></div>
+				<div class="panel" id="panel-material" role="tabpanel" data-panel="material" hidden></div>
+				<div class="panel" id="panel-points" role="tabpanel" data-panel="points" hidden></div>
+				<div class="panel" id="panel-view" role="tabpanel" data-panel="view" hidden></div>
+				<div class="panel" id="panel-music" role="tabpanel" data-panel="music" hidden></div>
+			</div>
+		</aside>
+	</div>
+
+	<footer class="statusbar">
+		<div class="status-hint" id="statusHint"></div>
+		<div class="status-fps" id="statusFps" hidden></div>
+		<div class="status-stats" id="statusStats"></div>
+	</footer>
+</div>
+
+<div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<input type="file" id="fileInput" multiple hidden>
+<input type="file" id="textureInput" multiple accept="image/*,.tga" hidden>
+<dialog class="dlg" id="dialog"></dialog>
+
+<noscript><div class="fatal">Для работы редактора нужен включённый JavaScript.</div></noscript>
+<div class="fatal" id="fatal" hidden></div>
+<script src="assets/app.js"></script>
+</body>
+</html>
