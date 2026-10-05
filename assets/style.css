@@ -2818,3 +2818,12 @@ body {
 .fx-cam-text b {
 	color: var(--text);
 }
+
+.chip-btn.is-active {
+	background: var(--accent-soft);
+	border-color: var(--accent-line);
+	color: var(--accent-text);
+}
+.fx-forms {
+	margin-bottom: 4px;
+}

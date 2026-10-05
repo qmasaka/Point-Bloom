@@ -51,7 +51,20 @@ k++;
 }
 return { positions: positions.slice(0, k * 3), normals: normals.slice(0, k * 3), colors: colors.slice(0, k * 3), count: k };
 };
+const topObjects = () => root.children.filter((o) => !o.userData.helper && o.name !== '__fx' && (() => { let ok = false; o.traverse((c) => { if (!c.userData.helper && (c.isMesh || c.isPoints)) ok = true; }); return ok; })());
 return {
+objects: () => topObjects().map((o) => ({ id: o.uuid, name: o.name || 'Объект', obj: o })),
+async getOf(obj, count) {
+const cl = [];
+obj.traverse((o) => {
+if (o.isPoints && !o.userData.helper && o.geometry.attributes.position) cl.push(o);
+});
+if (cl.length) return fromClouds(cl, count);
+const list = app.model.meshesOf(obj);
+if (!list.length) return null;
+const entries = list.map((m) => ({ mesh: m, mats: app.display.getOriginal(m) }));
+return sampleSurface(entries, count, {});
+},
 available: () => clouds().length > 0 || meshes().length > 0,
 kind: () => (clouds().length ? 'cloud' : meshes().length ? 'mesh' : 'none'),
 total: () => clouds().reduce((n, o) => n + o.geometry.attributes.position.count, 0),
@@ -127,7 +140,35 @@ const modelNote = h('div', { class: 'field-hint' });
 const countChips = h('div', { class: 'chip-row' });
 for (const n of [100000, 300000, 1000000]) countChips.append(h('button', { type: 'button', class: 'chip-btn', onclick: () => engine.setCount(Math.min(n, cap())) }, formatCount(n)));
 countChips.append(h('button', { type: 'button', class: 'chip-btn', 'data-tip': 'Столько частиц комфортно для вашего компьютера', onclick: () => engine.setCount(Math.min(cap(), Math.max(20000, getDevice(app).limits.comfort))) }, 'Комфортно'));
-const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, tiles, field('Частиц', count.el), countChips, countHint);
+const mc = st.morphCfg;
+const formsBox = h('div', { class: 'chip-row fx-forms' });
+const picked = [];
+const renderForms = () => {
+const list = engine.forms();
+for (let i = picked.length - 1; i >= 0; i--) if (!list.some((f) => f.key === picked[i])) picked.splice(i, 1);
+formsBox.textContent = '';
+for (const f of list) {
+const b = h('button', { type: 'button', class: 'chip-btn' + (picked.includes(f.key) ? ' is-active' : ''), 'data-tip': 'Добавить в морфинг. Порядок: как нажимали' }, f.name);
+b.addEventListener('click', () => {
+const k = picked.indexOf(f.key);
+if (k >= 0) picked.splice(k, 1);
+else picked.push(f.key);
+engine.setPlaylist([...picked]);
+renderForms();
+morphHint.textContent = picked.length < 2 ? 'Отметьте минимум две формы. Объекты сцены редактора появятся здесь как отдельные формы.' : `В морфинге форм: ${picked.length}`;
+});
+formsBox.append(b);
+}
+};
+const morphHint = h('div', { class: 'field-hint' }, 'Отметьте минимум две формы. Объекты сцены редактора появятся здесь как отдельные формы.');
+const morphMode = segmented({ cls: 'seg-tight', options: [{ value: 'manual', label: 'Кнопкой' }, { value: 'beat', label: 'По биту' }, { value: 'timer', label: 'По таймеру' }], value: mc.mode, onChange: (v) => { mc.mode = v; save(); } });
+const morphOrder = segmented({ options: [{ value: 'seq', label: 'По кругу' }, { value: 'random', label: 'Случайно' }], value: mc.order, onChange: (v) => { mc.order = v; save(); } });
+const morphInt = slider({ min: 1, max: 20, step: 0.5, value: mc.interval, digits: 1, unit: ' с', onInput: (v) => { mc.interval = v; }, onChange: save });
+const morphTime = slider({ min: 0.4, max: 6, step: 0.1, value: mc.time, digits: 1, unit: ' с', onInput: (v) => { mc.time = v; }, onChange: save });
+const morphGo = button({ label: 'Следующая форма', icon: 'arrow-right', variant: 'secondary', cls: 'btn-block', onClick: () => engine.morphNext() });
+const morphBody = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, field('Переход', morphMode.el, { wide: true }), field('Порядок', morphOrder.el, { wide: true }), field('Не чаще, чем раз в', morphInt.el), field('Длительность', morphTime.el), morphGo);
+renderForms();
+const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, tiles, field('Частиц', count.el), countChips, countHint, h('div', { class: 'fx-sub' }, 'Морфинг между формами'), morphBody);
 const cards = [];
 const left = document.getElementById('fxList');
 const leftCount = document.getElementById('fxActive');
@@ -187,6 +228,9 @@ cls: 'btn-block',
 onClick: () => engine.clearBrush(),
 });
 body.append(clearBtn);
+} else if (def.id === 'dissolve') {
+const disBtn = button({ label: 'Растворить / собрать', icon: 'snowflake', variant: 'primary', cls: 'btn-block', onClick: () => engine.toggleDissolve() });
+body.append(disBtn);
 } else if (def.id === 'camTrack') {
 const camBtn = button({
 label: engine.camTracker?.running ? 'Выключить камеру' : 'Включить камеру',
@@ -199,6 +243,7 @@ camBtn.querySelector('.btn-label').textContent = engine.camTracker?.running ? '�
 },
 });
 body.append(camBtn);
+body.append(button({ label: 'Вернуть форму после лепки', icon: 'broom', variant: 'secondary', cls: 'btn-block', onClick: () => engine.clearSculpt() }));
 body.append(h('div', { class: 'field-hint' }, 'При первом включении загружается модель распознавания рук (около 10 МБ), нужен интернет. Видео с камеры никуда не отправляется.'));
 }
 body.append(field('Сила', amount.el));
@@ -488,7 +533,10 @@ app.bus.on('device', () => {
 count.setRange(20000, cap());
 sync();
 });
-app.bus.on('scene', sync);
+app.bus.on('scene', () => {
+renderForms();
+sync();
+});
 let recTick = 0;
 engine.onFrame = (lv) => {
 meters.set(lv);
