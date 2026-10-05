@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } from './util.js';
 import { TrackerHud } from './fx-hud.js';
+import { HandTracker } from './hand-tracker.js';
 export const FX_SHAPES = [
 { id: 'model', name: 'Модель', icon: 'cube' },
 { id: 'sphere', name: 'Сфера', icon: 'sphere' },
@@ -38,7 +39,7 @@ export const FX_LAYERS = [
 { id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.3, max: 2, step: 0.05 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
 { id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Рисование курсором по форме: частицы в мазках светятся и оживают, затем след высыхает', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, radius: 0.4, dry: 3.5 }, extras: [{ key: 'radius', label: 'Радиус кисти', min: 0.1, max: 0.9, step: 0.02 }, { key: 'dry', label: 'Высыхание, с', min: 1.0, max: 8.0, step: 0.5 }] },
 { id: 'shock', group: 'Взаимодействие', name: 'Ударная волна', icon: 'aperture', hint: 'Клик по сцене пускает круговую волну по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 1.2, auto: 'off' }, extras: [{ key: 'speed', label: 'Скорость волны', min: 0.4, max: 3, step: 0.05 }, { key: 'auto', label: 'Запуск', type: 'seg', options: [['off', 'Клик'], ['on', 'Клик и авто']] }] },
-{ id: 'camTrack', group: 'Взаимодействие', name: 'Веб-камера', icon: 'video-camera', hint: 'Рука или тело перед камерой двигают курсор: форма следует за движением, резкий взмах пускает волну', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, sens: 0.6, smooth: 0.5, preview: 'on', wave: 'on' }, extras: [{ key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'wave', label: 'Взмах пускает волну', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }] },
+{ id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки и пальцы: ладонь отталкивает форму, щипок притягивает, кулак тянет. Двумя руками форму можно растягивать', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, mode: 'gesture', radius: 0.4, smooth: 0.5, sens: 0.6, pinch: 'rotate', stretch: 'on', trail: 'off', skeleton: 'on', preview: 'on' }, extras: [{ key: 'mode', label: 'Действие пальцев', type: 'seg', options: [['gesture', 'По жесту'], ['push', 'Толкать'], ['pull', 'Тянуть'], ['swirl', 'Вихрь']] }, { key: 'radius', label: 'Радиус пальцев', min: 0.15, max: 0.9, step: 0.05 }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { type: 'title', label: 'Жесты' }, { key: 'pinch', label: 'Щипок (большой + указательный)', type: 'seg', options: [['rotate', 'Вращать'], ['wave', 'Волна'], ['none', 'Нет']] }, { key: 'stretch', label: 'Две руки', type: 'seg', options: [['on', 'Растягивают'], ['off', 'Нет']] }, { key: 'trail', label: 'След от пальцев', type: 'seg', options: [['off', 'Нет'], ['on', 'Светится']] }, { type: 'title', label: 'Показ' }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
 ];
 export const FX_PALETTES = [
 { id: 'brand', name: 'Янтарь', c: ['#e58a45', '#f4b27a', '#fff0dc'] },
@@ -240,6 +241,8 @@ uniform float uMouseOn;
 uniform sampler2D uSpecTex;
 uniform vec4 uCurl, uSpec, uWave, uTwist, uPulse, uVoxel, uJitter, uCursor, uMask, uMaskA, uGlitch, uContact, uShockP, uAlive;
 uniform vec4 uTrk[16];
+uniform vec4 uHand[12];
+uniform vec4 uHandP;
 uniform vec4 uImp[32];
 uniform vec4 uShock[4];
 uniform vec4 uPhysics;
@@ -458,6 +461,29 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 
 		pos = mix(pos, pPhys, smoothstep(0.0, 1.0, uPhysics.x));
 	}
+	if (uHandP.x > 0.001) {
+		for (int i = 0; i < 12; i++) {
+			if (float(i) >= uHandP.w) break;
+			vec3 hd = pos - uHand[i].xyz;
+			float r = uHandP.y;
+			float d2 = dot(hd, hd);
+			if (d2 < r * r) {
+				float f = 1.0 - sqrt(d2) / r;
+				f = f * f * (3.0 - 2.0 * f);
+				float hs = uHand[i].w;
+				if (uHandP.z > 0.5) {
+					float a = f * abs(hs) * uHandP.x * 2.6;
+					float ca = cos(a);
+					float sa = sin(a);
+					vec2 q = pos.xz - uHand[i].xz;
+					pos.xz = uHand[i].xz + vec2(q.x * ca - q.y * sa, q.x * sa + q.y * ca);
+					pos.y += f * abs(hs) * uHandP.x * 0.12;
+				} else {
+					pos += normalize(hd + vec3(1e-3)) * f * hs * uHandP.x * 0.75;
+				}
+			}
+		}
+	}
 	if (uMouseOn > 0.5 && uCursor.x > 0.001) {
 		vec3 tm = pos - uMouse;
 		float r2 = uCursor.y * uCursor.y;
@@ -516,6 +542,17 @@ void main() {
 			}
 		}
 		if (bGlow > 0.001) vColor += uP2 * bGlow * 2.2 * uBrushParam.x;
+	}
+
+	// Руки: подсветка точек возле кончиков пальцев
+	if (uHandP.x > 0.001) {
+		float hg = 0.0;
+		for (int i = 0; i < 12; i++) {
+			if (float(i) >= uHandP.w) break;
+			float hdst = distance(pos, uHand[i].xyz);
+			if (hdst < uHandP.y) hg = max(hg, (1.0 - hdst / uHandP.y) * abs(uHand[i].w));
+		}
+		vColor += uP2 * hg * hg * 1.6 * uHandP.x;
 	}
 
 	// Срез / Изолинии: яркие лазерные срезы пробегают по форме
@@ -1160,23 +1197,35 @@ this.brushHits.length = Math.min(this.brushHits.length, 20);
 async toggleMotionCam() {
 if (this.camTracker && this.camTracker.running) {
 this._stopCam();
-this.app.toast('Веб-камера выключена');
+this.app.toast('Камера выключена');
 this.emit();
 return;
 }
+this._camBusy = true;
+this._mountCam(null, 'Включаю камеру…');
 try {
-if (!this.camTracker) {
-this.camTracker = new MotionCamTracker((f) => this._onCamFrame(f));
-}
-await this.camTracker.start();
+let t = new HandTracker((f) => this._onCamFrame(f), (txt) => this._camStatus(txt));
+this.camTracker = t;
 this.state.layers.camTrack.on = true;
+this._mountCam(t);
+try {
+await t.start();
+this.app.toast('Камера включена: покажите ладонь', 'ok');
+} catch (err) {
+if (!err.handsLoadFailed) throw err;
+t.stop();
+t = new MotionCamTracker((f) => this._onCamFrame(f));
+this.camTracker = t;
+this._mountCam(t);
+await t.start();
+this.app.toast('Не удалось загрузить распознавание рук. Работает по движению в кадре', 'warn');
+}
 this._camPos = null;
-this._mountCam();
-this.app.toast('Камера включена: двигайте рукой перед ней', 'ok');
 } catch (err) {
 this._stopCam();
 this.app.toast('Нет доступа к веб-камере: разрешите её в браузере', 'error');
 }
+this._camBusy = false;
 this.emit();
 }
 _stopCam() {
@@ -1185,46 +1234,113 @@ this.state.layers.camTrack.on = false;
 this.camBox?.remove();
 this.camBox = null;
 this._camActive = false;
+this._handPtrs = [];
+this._hands = [];
+this._stretchTarget = 1;
+if (this.points) this.points.scale.setScalar(1);
 }
-_mountCam() {
+_camStatus(txt) {
+if (this.camHint && txt) this.camHint.textContent = txt;
+}
+_mountCam(tracker, status) {
 this.camBox?.remove();
-const t = this.camTracker;
 this.camHint = document.createElement('div');
 this.camHint.className = 'fx-cam-text';
-this.camHint.textContent = 'Помашите рукой перед камерой';
+this.camHint.textContent = status || 'Покажите ладонь перед камерой';
 this.camBox = document.createElement('div');
 this.camBox.className = 'fx-cam';
-this.camBox.append(t.preview, this.camHint);
+if (tracker) this.camBox.append(tracker.preview);
+this.camBox.append(this.camHint);
 this.camBox.hidden = this.state.layers.camTrack.preview !== 'on';
 document.getElementById('viewport').append(this.camBox);
+}
+_ndcToLocal(x, y, out, depth = 0) {
+const vp = this.app.viewport;
+this._ray.setFromCamera(new THREE.Vector2(x, y), vp.camera);
+const toCam = vp.camera.getWorldDirection(new THREE.Vector3()).negate();
+this._plane.setFromNormalAndCoplanarPoint(toCam, toCam.clone().multiplyScalar(depth));
+const hit = new THREE.Vector3();
+if (!this._ray.ray.intersectPlane(this._plane, hit)) return null;
+return out.copy(this.points.worldToLocal(hit));
 }
 _onCamFrame(f) {
 if (!this.active || !this.points) return;
 const cfg = this.state.layers.camTrack;
-this.camTracker.sens = cfg.sens;
-if (this.camBox) {
-this.camBox.hidden = cfg.preview !== 'on';
+const t = this.camTracker;
+t.sens = cfg.sens;
+t.smooth = cfg.smooth;
+if (this.camBox) this.camBox.hidden = cfg.preview !== 'on';
+if (f.kind === 'hands') return this._onHands(f, cfg);
 const txt = f.active ? 'Движение найдено' : 'Помашите рукой перед камерой';
-if (this.camHint.textContent !== txt) this.camHint.textContent = txt;
-}
+if (this.camHint && this.camHint.textContent !== txt) this.camHint.textContent = txt;
 this._camActive = f.active;
 if (!f.active) return;
 const k = 1 - Math.min(0.92, cfg.smooth) * 0.9;
 this._camPos = this._camPos ? { x: this._camPos.x + (f.x - this._camPos.x) * k, y: this._camPos.y + (f.y - this._camPos.y) * k } : { x: f.x, y: f.y };
-const vp = this.app.viewport;
-this._ray.setFromCamera(new THREE.Vector2(this._camPos.x, this._camPos.y), vp.camera);
-this._plane.setFromNormalAndCoplanarPoint(vp.camera.getWorldDirection(new THREE.Vector3()).negate(), new THREE.Vector3());
-const hit = new THREE.Vector3();
-if (this._ray.ray.intersectPlane(this._plane, hit)) {
-this.mouse.copy(this.points.worldToLocal(hit));
+const loc = this._ndcToLocal(this._camPos.x, this._camPos.y, new THREE.Vector3(), 0.85);
+if (!loc) return;
+this.mouse.copy(loc);
 this.mouseOn = true;
 this._camT = this._time;
-if (this.state.layers.brush.on) this.addBrushHit(this.mouse);
-}
-if (cfg.wave === 'on' && this.state.layers.shock.on && f.energy > 0.16 && this._time - (this._camShockT || 0) > 0.8) {
+this._handsT = this._time;
+this._handPtrs = [{ local: loc.clone(), s: cfg.mode === 'pull' ? -1 : 1, ndc: [this._camPos.x, this._camPos.y] }];
+if (cfg.trail === 'on' || this.state.layers.brush.on) this.addBrushHit(loc);
+if (cfg.pinch === 'wave' && f.energy > 0.16 && this._time - (this._camShockT || 0) > 0.8) {
 this._camShockT = this._time;
-this.addShock(this.mouse);
+this.addShock(loc);
+this._waveT = this._time;
 }
+}
+_onHands(f, cfg) {
+const hands = f.hands;
+this._hands = hands;
+this._camActive = hands.length > 0;
+const txt = hands.length ? (hands.length > 1 ? 'Вижу две руки: можно растягивать форму' : 'Вижу руку: двигайте пальцами') : 'Покажите ладонь перед камерой';
+if (this.camHint && this.camHint.textContent !== txt) this.camHint.textContent = txt;
+const ptrs = [];
+const aspect = f.aspect || 4 / 3;
+for (const hd of hands) {
+let s = cfg.mode === 'push' ? 1 : cfg.mode === 'pull' ? -1 : cfg.mode === 'swirl' ? 1 : Math.max(-1, Math.min(1, (hd.open - 0.45) * 2.2));
+if (cfg.mode === 'gesture' && hd.pinch > 0.6) s = -1;
+const list = [...hd.tips, hd.palm];
+for (let i = 0; i < list.length; i++) {
+const p = list[i];
+const nx = p[0] * 2 - 1;
+const ny = -(p[1] * 2 - 1);
+const loc = this._ndcToLocal(nx, ny, new THREE.Vector3(), 0.85);
+if (loc) ptrs.push({ local: loc, s: i === 5 ? s * 0.8 : s, ndc: [nx, ny], tip: i < 5 });
+}
+const idx = hd.tips[1];
+const ix = this._ndcToLocal(idx[0] * 2 - 1, -(idx[1] * 2 - 1), new THREE.Vector3(), 0.85);
+const st = this._handState || (this._handState = new Map());
+const prev = st.get(hd.id) || { palmX: hd.palm[0], pinch: 0 };
+if (ix) {
+if (hands[0] === hd) {
+this.mouse.copy(ix);
+this.mouseOn = true;
+this._camT = this._time;
+}
+if (cfg.trail === 'on' || this.state.layers.brush.on) for (const tp of hd.tips) {
+const q = this._ndcToLocal(tp[0] * 2 - 1, -(tp[1] * 2 - 1), new THREE.Vector3(), 0.85);
+if (q) this.addBrushHit(q);
+}
+if (cfg.pinch === 'wave' && hd.pinch > 0.8 && prev.pinch <= 0.8 && this._time - (this._camShockT || 0) > 0.5) {
+this._camShockT = this._time;
+this.addShock(ix);
+this._waveT = this._time;
+}
+}
+if (cfg.pinch === 'rotate' && hd.pinch > 0.7 && prev.pinch > 0.5) this.points.rotation.y += (hd.palm[0] - prev.palmX) * 6.5;
+st.set(hd.id, { palmX: hd.palm[0], pinch: hd.pinch });
+}
+for (const key of [...(this._handState?.keys() || [])]) if (!hands.some((h) => h.id === key)) this._handState.delete(key);
+this._stretchTarget = 1;
+if (cfg.stretch === 'on' && hands.length === 2) {
+const d = Math.hypot((hands[0].palm[0] - hands[1].palm[0]) * aspect, hands[0].palm[1] - hands[1].palm[1]);
+this._stretchTarget = clamp(0.45 + d * 2.3, 0.6, 2.4);
+}
+this._handPtrs = ptrs;
+if (hands.length) this._handsT = this._time;
 }
 touch() {
 clearTimeout(this._saveT);
@@ -1452,7 +1568,7 @@ uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
 uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
 uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
-uAlive: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
+uAlive: U(new THREE.Vector4()), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 };
 const mk = (extra) =>
 new THREE.ShaderMaterial({
@@ -1901,7 +2017,7 @@ if (this.collapseProgress <= 0.001) this.collapseTime = 0;
 const physEff = L.physics ? this._eff(L.physics) * this.collapseProgress : 0;
 u.uPhysics.value.set(physEff, L.physics ? L.physics.gravity : 1.2, L.physics ? L.physics.bounce : 0.65, L.physics ? L.physics.wind : 0.4);
 u.uCollapseTime.value = this.collapseTime;
-const brE = L.brush ? this._eff(L.brush) : 0;
+const brE = Math.max(L.brush ? this._eff(L.brush) : 0, this.camTracker?.running && L.camTrack.trail === 'on' ? 1 : 0);
 const brArr = u.uBrushHits.value;
 for (let i = 0; i < 20; i++) {
 const hit = this.brushHits[i];
@@ -1979,6 +2095,23 @@ u.uMaskA.value.set(a0, a1, a2, T * 0.5);
 u.uMaskShow.value = mk.show ? 1 : 0;
 u.uMouse.value.copy(this.mouse);
 u.uMouseOn.value = this.mouseOn ? 1 : 0;
+{
+const cfg = L.camTrack;
+const running = !!this.camTracker?.running;
+const fade = clamp(1 - (this._time - (this._handsT ?? -9)) / 0.35, 0, 1);
+const ptrs = running ? this._handPtrs || [] : [];
+const n = Math.min(12, ptrs.length);
+const arr = u.uHand.value;
+for (let i = 0; i < 12; i++) {
+if (i < n) arr[i].set(ptrs[i].local.x, ptrs[i].local.y, ptrs[i].local.z, ptrs[i].s * fade);
+else arr[i].set(0, 0, 0, 0);
+}
+const he = running && cfg.on ? cfg.amount : 0;
+u.uHandP.value.set(fade > 0 ? he : 0, cfg.radius, cfg.mode === 'swirl' ? 1 : 0, n);
+const target = running ? this._stretchTarget || 1 : 1;
+const sc = this.points.scale.x;
+if (Math.abs(sc - target) > 0.002) this.points.scale.setScalar(sc + (target - sc) * (1 - Math.exp(-dt * 6)));
+}
 if (this.camTracker?.running && this.mouseOn && this._time - (this._moveT ?? -9) > 1 && this._time - (this._camT ?? -9) > 0.7) this.mouseOn = false;
 if (this.hud) {
 this.hud.clear();
@@ -1992,12 +2125,16 @@ const hex = (c) => '#' + new THREE.Color(c).getHexString(THREE.SRGBColorSpace);
 const cols = [hex(pal.c[0]), hex(pal.c[2])];
 if (T.on) this.hud.drawTracking(T, tr, { points: this.points, camera: this.app.viewport.camera, levels: this.levels, colors: T.color && T.color !== 'auto' ? [T.color, T.color] : cols });
 if (L.telemetry && L.telemetry.on) this.hud.drawTelemetry(L.telemetry, this._eff(L.telemetry), { levels: this.levels, spec: this.spec, colors: cols });
-if (this.camTracker?.running && this.mouseOn && this._time - (this._camT ?? -9) < 0.7) {
+if (this.camTracker?.running) {
+const cv = this.app.viewport.canvas;
+if (this._hands?.length && this._time - (this._handsT ?? -9) < 0.35) {
+this.hud.drawHands(this._hands, cv.clientWidth, cv.clientHeight, cols[1], L.camTrack.skeleton === 'on');
+} else if (this.mouseOn && this._time - (this._camT ?? -9) < 0.7 && !(this.camTracker instanceof HandTracker)) {
 const v = this.mouse.clone();
 this.points.localToWorld(v);
 v.project(this.app.viewport.camera);
-const cv = this.app.viewport.canvas;
 this.hud.drawCursor((v.x * 0.5 + 0.5) * cv.clientWidth, (1 - (v.y * 0.5 + 0.5)) * cv.clientHeight, this._camActive ? 1 : 0.4, cols[1]);
+}
 }
 const arr = u.uTrk.value;
 for (let i = 0; i < 16; i++) {
@@ -2018,7 +2155,7 @@ this.hud.time = this._time;
 u.uContact.value.set(ct, T.radius, touchMode ?? 0, ct > 0 ? n : 0);
 u.uShockP.value.z = ni;
 }
-const shE = this._eff(L.shock);
+const shE = Math.max(this._eff(L.shock), this._time - (this._waveT ?? -9) < 5 ? 0.9 : 0);
 if (L.shock.on && L.shock.auto === 'on' && this._time > (this._nextShock || 0) && this.geometry) {
 this._nextShock = this._time + 2.2 + Math.random() * 1.6;
 this.addShock(this.hud ? this.hud._pick(this.geometry, this.morph) : null);

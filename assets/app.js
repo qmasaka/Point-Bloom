@@ -89327,6 +89327,7 @@ const ICON_PATHS = {
 	'ghost': '<path d="M112,116a12,12,0,1,1-12-12A12,12,0,0,1,112,116Zm44-12a12,12,0,1,0,12,12A12,12,0,0,0,156,104Zm68,16v96a8,8,0,0,1-13.07,6.19l-24.26-19.85L162.4,222.19a8,8,0,0,1-10.13,0L128,202.34l-24.27,19.85a8,8,0,0,1-10.13,0L69.33,202.34,45.07,222.19A8,8,0,0,1,32,216V120a96,96,0,0,1,192,0Zm-16,0a80,80,0,0,0-160,0v79.12l16.27-13.31a8,8,0,0,1,10.13,0l24.27,19.85,24.26-19.85a8,8,0,0,1,10.14,0l24.26,19.85,24.27-19.85a8,8,0,0,1,10.13,0L208,199.12Z"/>',
 	'globe': '<path d="M128,24h0A104,104,0,1,0,232,128,104.12,104.12,0,0,0,128,24Zm88,104a87.61,87.61,0,0,1-3.33,24H174.16a157.44,157.44,0,0,0,0-48h38.51A87.61,87.61,0,0,1,216,128ZM102,168H154a115.11,115.11,0,0,1-26,45A115.27,115.27,0,0,1,102,168Zm-3.9-16a140.84,140.84,0,0,1,0-48h59.88a140.84,140.84,0,0,1,0,48ZM40,128a87.61,87.61,0,0,1,3.33-24H81.84a157.44,157.44,0,0,0,0,48H43.33A87.61,87.61,0,0,1,40,128ZM154,88H102a115.11,115.11,0,0,1,26-45A115.27,115.27,0,0,1,154,88Zm52.33,0H170.71a135.28,135.28,0,0,0-22.3-45.6A88.29,88.29,0,0,1,206.37,88ZM107.59,42.4A135.28,135.28,0,0,0,85.29,88H49.63A88.29,88.29,0,0,1,107.59,42.4ZM49.63,168H85.29a135.28,135.28,0,0,0,22.3,45.6A88.29,88.29,0,0,1,49.63,168Zm98.78,45.6a135.28,135.28,0,0,0,22.3-45.6h35.66A88.29,88.29,0,0,1,148.41,213.6Z"/>',
 	'grid-four': '<path d="M200,40H56A16,16,0,0,0,40,56V200a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,80H136V56h64ZM120,56v64H56V56ZM56,136h64v64H56Zm144,64H136V136h64v64Z"/>',
+	'hand': '<path d="M188,48a27.75,27.75,0,0,0-12,2.71V44a28,28,0,0,0-54.65-8.6A28,28,0,0,0,80,60v64l-3.82-6.13a28,28,0,0,0-48.6,27.82c16,33.77,28.93,57.72,43.72,72.69C86.24,233.54,103.2,240,128,240a88.1,88.1,0,0,0,88-88V76A28,28,0,0,0,188,48Zm12,104a72.08,72.08,0,0,1-72,72c-20.38,0-33.51-4.88-45.33-16.85C69.44,193.74,57.26,171,41.9,138.58a6.36,6.36,0,0,0-.3-.58,12,12,0,0,1,20.79-12,1.76,1.76,0,0,0,.14.23l18.67,30A8,8,0,0,0,96,152V60a12,12,0,0,1,24,0v60a8,8,0,0,0,16,0V44a12,12,0,0,1,24,0v76a8,8,0,0,0,16,0V76a12,12,0,0,1,24,0Z"/>',
 	'heart': '<path d="M178,40c-20.65,0-38.73,8.88-50,23.89C116.73,48.88,98.65,40,78,40a62.07,62.07,0,0,0-62,62c0,70,103.79,126.66,108.21,129a8,8,0,0,0,7.58,0C136.21,228.66,240,172,240,102A62.07,62.07,0,0,0,178,40ZM128,214.8C109.74,204.16,32,155.69,32,102A46.06,46.06,0,0,1,78,56c19.45,0,35.78,10.36,42.6,27a8,8,0,0,0,14.8,0c6.82-16.67,23.15-27,42.6-27a46.06,46.06,0,0,1,46,46C224,155.61,146.24,204.15,128,214.8Z"/>',
 	'heartbeat': '<path d="M72,144H32a8,8,0,0,1,0-16H67.72l13.62-20.44a8,8,0,0,1,13.32,0l25.34,38,9.34-14A8,8,0,0,1,136,128h24a8,8,0,0,1,0,16H140.28l-13.62,20.44a8,8,0,0,1-13.32,0L88,126.42l-9.34,14A8,8,0,0,1,72,144ZM178,40c-20.65,0-38.73,8.88-50,23.89C116.73,48.88,98.65,40,78,40a62.07,62.07,0,0,0-62,62c0,.75,0,1.5,0,2.25a8,8,0,1,0,16-.5c0-.58,0-1.17,0-1.75A46.06,46.06,0,0,1,78,56c19.45,0,35.78,10.36,42.6,27a8,8,0,0,0,14.8,0c6.82-16.67,23.15-27,42.6-27a46.06,46.06,0,0,1,46,46c0,53.61-77.76,102.15-96,112.8-10.83-6.31-42.63-26-66.68-52.21a8,8,0,1,0-11.8,10.82c31.17,34,72.93,56.68,74.69,57.63a8,8,0,0,0,7.58,0C136.21,228.66,240,172,240,102A62.07,62.07,0,0,0,178,40Z"/>',
 	'image': '<path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,16V158.75l-26.07-26.06a16,16,0,0,0-22.63,0l-20,20-44-44a16,16,0,0,0-22.62,0L40,149.37V56ZM40,172l52-52,80,80H40Zm176,28H194.63l-36-36,20-20L216,181.38V200ZM144,100a12,12,0,1,1,12,12A12,12,0,0,1,144,100Z"/>',
@@ -131968,11 +131969,234 @@ function createPointsPanel(app, root) {
 }
 
 };
+__defs['src/hand-tracker.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'HAND_LINKS', () => HAND_LINKS);
+__def(__exports, 'TIPS', () => TIPS);
+__def(__exports, 'HandTracker', () => HandTracker);
+// Распознавание рук и пальцев по веб-камере (MediaPipe Hand Landmarker). Модель загружается из сети при первом включении.
+const VISION = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21';
+const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+
+const HAND_LINKS = [
+	[0, 1], [1, 2], [2, 3], [3, 4],
+	[0, 5], [5, 6], [6, 7], [7, 8],
+	[5, 9], [9, 10], [10, 11], [11, 12],
+	[9, 13], [13, 14], [14, 15], [15, 16],
+	[13, 17], [17, 18], [18, 19], [19, 20],
+	[0, 17],
+];
+const TIPS = [4, 8, 12, 16, 20];
+
+let libPromise = null;
+const loadLib = () => (libPromise ||= import(/* @vite-ignore */ VISION + '/vision_bundle.mjs'));
+
+async function createLandmarker(conf) {
+	const lib = await loadLib();
+	const fileset = await lib.FilesetResolver.forVisionTasks(VISION + '/wasm');
+	const make = (delegate) =>
+		lib.HandLandmarker.createFromOptions(fileset, {
+			baseOptions: { modelAssetPath: MODEL, delegate },
+			runningMode: 'VIDEO',
+			numHands: 2,
+			minHandDetectionConfidence: conf,
+			minHandPresenceConfidence: conf,
+			minTrackingConfidence: conf,
+		});
+	try {
+		return await make('GPU');
+	} catch (e) {
+		return make('CPU');
+	}
+}
+
+class HandTracker {
+	constructor(onFrame, onStatus) {
+		this.onFrame = onFrame;
+		this.onStatus = onStatus || (() => {});
+		this.kind = 'hands';
+		this.video = document.createElement('video');
+		this.video.autoplay = true;
+		this.video.playsInline = true;
+		this.video.muted = true;
+		this.preview = document.createElement('canvas');
+		this.preview.width = 240;
+		this.preview.height = 180;
+		this.pctx = this.preview.getContext('2d');
+		this.sens = 0.6;
+		this.smooth = 0.5;
+		this.running = false;
+		this.stream = null;
+		this.landmarker = null;
+		this._timer = null;
+		this._last = -1;
+		this._conf = 0;
+		this._state = new Map();
+	}
+
+	_confFor() {
+		return Math.round((0.75 - this.sens * 0.45) * 100) / 100;
+	}
+
+	async start() {
+		if (this.running) return;
+		try {
+			this.onStatus('Включаю камеру…');
+			this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } });
+			this.video.srcObject = this.stream;
+			await this.video.play();
+			this.running = true;
+			this._draw([]);
+			this.onStatus('Загружаю распознавание рук…');
+			this._conf = this._confFor();
+			this.landmarker = await createLandmarker(this._conf);
+			if (!this.running) return;
+			this.onStatus('');
+			this._tick();
+		} catch (err) {
+			const keepStream = err && err.name !== 'NotAllowedError' && err.name !== 'NotFoundError' && this.stream;
+			if (!keepStream) this.stop();
+			err.handsLoadFailed = !!keepStream;
+			throw err;
+		}
+	}
+
+	_tick() {
+		if (!this.running) return;
+		const v = this.video;
+		if (v.readyState >= 2 && v.currentTime !== this._last) {
+			this._last = v.currentTime;
+			const c = this._confFor();
+			if (c !== this._conf) {
+				this._conf = c;
+				try {
+					this.landmarker.setOptions({ minHandDetectionConfidence: c, minHandPresenceConfidence: c, minTrackingConfidence: c });
+				} catch (e) {
+					/* не критично */
+				}
+			}
+			let res = null;
+			try {
+				res = this.landmarker.detectForVideo(v, performance.now());
+			} catch (e) {
+				res = null;
+			}
+			const hands = this._hands(res, (v.videoWidth || 4) / (v.videoHeight || 3));
+			this._draw(hands);
+			this.onFrame({ kind: 'hands', hands, aspect: (v.videoWidth || 4) / (v.videoHeight || 3) });
+		}
+		this._timer = setTimeout(() => this._tick(), 24);
+	}
+
+	_hands(res, aspect) {
+		const out = [];
+		const seen = new Set();
+		const k = 1 - Math.min(0.95, this.smooth) * 0.88;
+		if (res && res.landmarks) {
+			res.landmarks.forEach((lm, i) => {
+				const label = (res.handedness?.[i]?.[0]?.categoryName || 'H') + i;
+				seen.add(label);
+				let prev = this._state.get(label);
+				const raw = lm.map((p) => [1 - p.x, p.y]);
+				const pts = prev ? raw.map((p, j) => [prev[j][0] + (p[0] - prev[j][0]) * k, prev[j][1] + (p[1] - prev[j][1]) * k]) : raw;
+				this._state.set(label, pts);
+				out.push(measure(pts, aspect, label));
+			});
+		}
+		for (const key of [...this._state.keys()]) if (!seen.has(key)) this._state.delete(key);
+		return out;
+	}
+
+	_draw(hands) {
+		const c = this.pctx;
+		const w = this.preview.width;
+		const h = this.preview.height;
+		c.save();
+		c.scale(-1, 1);
+		c.drawImage(this.video, -w, 0, w, h);
+		c.restore();
+		c.fillStyle = 'rgba(11,13,17,0.18)';
+		c.fillRect(0, 0, w, h);
+		c.lineCap = 'round';
+		for (const hd of hands) {
+			const P = (i) => [hd.pts[i][0] * w, hd.pts[i][1] * h];
+			c.strokeStyle = 'rgba(244,178,122,0.95)';
+			c.lineWidth = 2;
+			c.beginPath();
+			for (const [a, b] of HAND_LINKS) {
+				const A = P(a);
+				const B = P(b);
+				c.moveTo(A[0], A[1]);
+				c.lineTo(B[0], B[1]);
+			}
+			c.stroke();
+			c.fillStyle = '#ffffff';
+			for (let i = 0; i < 21; i++) {
+				const p = P(i);
+				c.beginPath();
+				c.arc(p[0], p[1], TIPS.includes(i) ? 4 : 2.2, 0, Math.PI * 2);
+				c.fillStyle = TIPS.includes(i) ? '#e58a45' : '#ffffff';
+				c.fill();
+			}
+			if (hd.pinch > 0.6) {
+				const a = P(4);
+				const b = P(8);
+				c.strokeStyle = '#fff0dc';
+				c.lineWidth = 2.5;
+				c.beginPath();
+				c.arc((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 11, 0, Math.PI * 2);
+				c.stroke();
+			}
+			const wr = P(0);
+			c.font = '600 11px Geist, system-ui, sans-serif';
+			const text = hd.pinch > 0.6 ? 'Щипок' : hd.open > 0.65 ? 'Ладонь' : hd.open < 0.25 ? 'Кулак' : 'Рука';
+			const tw = c.measureText(text).width;
+			c.fillStyle = 'rgba(20,23,27,0.75)';
+			c.fillRect(wr[0] - tw / 2 - 5, wr[1] + 8, tw + 10, 17);
+			c.fillStyle = '#fff0dc';
+			c.fillText(text, wr[0] - tw / 2, wr[1] + 20);
+		}
+	}
+
+	stop() {
+		this.running = false;
+		clearTimeout(this._timer);
+		if (this.stream) {
+			this.stream.getTracks().forEach((t) => t.stop());
+			this.stream = null;
+		}
+		this.video.srcObject = null;
+		try {
+			this.landmarker?.close();
+		} catch (e) {
+			/* уже закрыт */
+		}
+		this.landmarker = null;
+		this._state.clear();
+	}
+}
+
+const dist = (a, b, aspect) => Math.hypot((a[0] - b[0]) * aspect, a[1] - b[1]);
+
+/** Размер кисти, щипок (0..1) и «раскрытость» ладони (0 кулак .. 1 открытая) */
+function measure(pts, aspect, id) {
+	const size = Math.max(1e-3, dist(pts[0], pts[9], aspect));
+	const pinch = 1 - Math.min(1, Math.max(0, (dist(pts[4], pts[8], aspect) / size - 0.18) / 0.55));
+	let ext = 0;
+	for (const t of [8, 12, 16, 20]) ext += dist(pts[t], pts[0], aspect) / size;
+	ext /= 4;
+	const open = Math.min(1, Math.max(0, (ext - 1.0) / 0.9));
+	const palm = [0, 5, 9, 13, 17].reduce((s, i) => [s[0] + pts[i][0] / 5, s[1] + pts[i][1] / 5], [0, 0]);
+	return { id, pts, tips: TIPS.map((i) => pts[i]), palm, size, pinch, open };
+}
+
+};
 __defs['src/fx-hud.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'TrackerHud', () => TrackerHud);
 // Трекинг-рамки поверх сцены: «захваченные» подвижные области облака и кибер-телеметрия (HUD).
 const THREE = __req('vendor/three/build/three.module.js');
+const { HAND_LINKS, TIPS } = __req('src/hand-tracker.js');
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 
@@ -132176,6 +132400,53 @@ class TrackerHud {
 		}
 	}
 
+	/** Руки с веб-камеры: скелет и кольца на кончиках пальцев поверх сцены */
+	drawHands(hands, w, hgt, color, skeleton) {
+		this._fit();
+		const ctx = this.ctx;
+		ctx.save();
+		ctx.lineCap = 'round';
+		for (const hd of hands) {
+			const P = (i) => [hd.pts[i][0] * w, hd.pts[i][1] * hgt];
+			if (skeleton) {
+				ctx.strokeStyle = rgba(color, 0.35);
+				ctx.lineWidth = 1.4;
+				ctx.beginPath();
+				for (const [a, b] of HAND_LINKS) {
+					const A = P(a);
+					const B = P(b);
+					ctx.moveTo(A[0], A[1]);
+					ctx.lineTo(B[0], B[1]);
+				}
+				ctx.stroke();
+			}
+			for (const ti of TIPS) {
+				const p = P(ti);
+				ctx.strokeStyle = rgba(color, 0.9);
+				ctx.lineWidth = 1.6;
+				ctx.beginPath();
+				ctx.arc(p[0], p[1], 9 + hd.pinch * 3, 0, Math.PI * 2);
+				ctx.stroke();
+				ctx.fillStyle = rgba(color, 1);
+				ctx.beginPath();
+				ctx.arc(p[0], p[1], 2.4, 0, Math.PI * 2);
+				ctx.fill();
+			}
+			if (hd.pinch > 0.6) {
+				const a = P(4);
+				const b = P(8);
+				ctx.strokeStyle = rgba(color, 0.9);
+				ctx.lineWidth = 2;
+				ctx.beginPath();
+				ctx.moveTo(a[0], a[1]);
+				ctx.lineTo(b[0], b[1]);
+				ctx.arc((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 16, 0, Math.PI * 2);
+				ctx.stroke();
+			}
+		}
+		ctx.restore();
+	}
+
 	/** Курсор, которым управляет веб-камера: кольцо с прицелом на форме */
 	drawCursor(x, y, alpha, color) {
 		this._fit();
@@ -132278,6 +132549,7 @@ __def(__exports, 'EffectsEngine', () => EffectsEngine);
 const THREE = __req('vendor/three/build/three.module.js');
 const { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } = __req('src/util.js');
 const { TrackerHud } = __req('src/fx-hud.js');
+const { HandTracker } = __req('src/hand-tracker.js');
 
 // ───────────────────────────────────────────────────────────── описания
 
@@ -132321,7 +132593,7 @@ const FX_LAYERS = [
 	{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.3, max: 2, step: 0.05 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
 	{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Рисование курсором по форме: частицы в мазках светятся и оживают, затем след высыхает', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, radius: 0.4, dry: 3.5 }, extras: [{ key: 'radius', label: 'Радиус кисти', min: 0.1, max: 0.9, step: 0.02 }, { key: 'dry', label: 'Высыхание, с', min: 1.0, max: 8.0, step: 0.5 }] },
 	{ id: 'shock', group: 'Взаимодействие', name: 'Ударная волна', icon: 'aperture', hint: 'Клик по сцене пускает круговую волну по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 1.2, auto: 'off' }, extras: [{ key: 'speed', label: 'Скорость волны', min: 0.4, max: 3, step: 0.05 }, { key: 'auto', label: 'Запуск', type: 'seg', options: [['off', 'Клик'], ['on', 'Клик и авто']] }] },
-	{ id: 'camTrack', group: 'Взаимодействие', name: 'Веб-камера', icon: 'video-camera', hint: 'Рука или тело перед камерой двигают курсор: форма следует за движением, резкий взмах пускает волну', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, sens: 0.6, smooth: 0.5, preview: 'on', wave: 'on' }, extras: [{ key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'wave', label: 'Взмах пускает волну', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }] },
+	{ id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки и пальцы: ладонь отталкивает форму, щипок притягивает, кулак тянет. Двумя руками форму можно растягивать', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, mode: 'gesture', radius: 0.4, smooth: 0.5, sens: 0.6, pinch: 'rotate', stretch: 'on', trail: 'off', skeleton: 'on', preview: 'on' }, extras: [{ key: 'mode', label: 'Действие пальцев', type: 'seg', options: [['gesture', 'По жесту'], ['push', 'Толкать'], ['pull', 'Тянуть'], ['swirl', 'Вихрь']] }, { key: 'radius', label: 'Радиус пальцев', min: 0.15, max: 0.9, step: 0.05 }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { type: 'title', label: 'Жесты' }, { key: 'pinch', label: 'Щипок (большой + указательный)', type: 'seg', options: [['rotate', 'Вращать'], ['wave', 'Волна'], ['none', 'Нет']] }, { key: 'stretch', label: 'Две руки', type: 'seg', options: [['on', 'Растягивают'], ['off', 'Нет']] }, { key: 'trail', label: 'След от пальцев', type: 'seg', options: [['off', 'Нет'], ['on', 'Светится']] }, { type: 'title', label: 'Показ' }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
 ];
 
 const FX_PALETTES = [
@@ -132542,6 +132814,8 @@ uniform float uMouseOn;
 uniform sampler2D uSpecTex;
 uniform vec4 uCurl, uSpec, uWave, uTwist, uPulse, uVoxel, uJitter, uCursor, uMask, uMaskA, uGlitch, uContact, uShockP, uAlive;
 uniform vec4 uTrk[16];
+uniform vec4 uHand[12];
+uniform vec4 uHandP;
 uniform vec4 uImp[32];
 uniform vec4 uShock[4];
 uniform vec4 uPhysics;
@@ -132760,6 +133034,29 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 
 		pos = mix(pos, pPhys, smoothstep(0.0, 1.0, uPhysics.x));
 	}
+	if (uHandP.x > 0.001) {
+		for (int i = 0; i < 12; i++) {
+			if (float(i) >= uHandP.w) break;
+			vec3 hd = pos - uHand[i].xyz;
+			float r = uHandP.y;
+			float d2 = dot(hd, hd);
+			if (d2 < r * r) {
+				float f = 1.0 - sqrt(d2) / r;
+				f = f * f * (3.0 - 2.0 * f);
+				float hs = uHand[i].w;
+				if (uHandP.z > 0.5) {
+					float a = f * abs(hs) * uHandP.x * 2.6;
+					float ca = cos(a);
+					float sa = sin(a);
+					vec2 q = pos.xz - uHand[i].xz;
+					pos.xz = uHand[i].xz + vec2(q.x * ca - q.y * sa, q.x * sa + q.y * ca);
+					pos.y += f * abs(hs) * uHandP.x * 0.12;
+				} else {
+					pos += normalize(hd + vec3(1e-3)) * f * hs * uHandP.x * 0.75;
+				}
+			}
+		}
+	}
 	if (uMouseOn > 0.5 && uCursor.x > 0.001) {
 		vec3 tm = pos - uMouse;
 		float r2 = uCursor.y * uCursor.y;
@@ -132819,6 +133116,17 @@ void main() {
 			}
 		}
 		if (bGlow > 0.001) vColor += uP2 * bGlow * 2.2 * uBrushParam.x;
+	}
+
+	// Руки: подсветка точек возле кончиков пальцев
+	if (uHandP.x > 0.001) {
+		float hg = 0.0;
+		for (int i = 0; i < 12; i++) {
+			if (float(i) >= uHandP.w) break;
+			float hdst = distance(pos, uHand[i].xyz);
+			if (hdst < uHandP.y) hg = max(hg, (1.0 - hdst / uHandP.y) * abs(uHand[i].w));
+		}
+		vColor += uP2 * hg * hg * 1.6 * uHandP.x;
 	}
 
 	// Срез / Изолинии: яркие лазерные срезы пробегают по форме
@@ -133530,23 +133838,36 @@ class EffectsEngine {
 	async toggleMotionCam() {
 		if (this.camTracker && this.camTracker.running) {
 			this._stopCam();
-			this.app.toast('Веб-камера выключена');
+			this.app.toast('Камера выключена');
 			this.emit();
 			return;
 		}
+		this._camBusy = true;
+		this._mountCam(null, 'Включаю камеру…');
 		try {
-			if (!this.camTracker) {
-				this.camTracker = new MotionCamTracker((f) => this._onCamFrame(f));
-			}
-			await this.camTracker.start();
+			let t = new HandTracker((f) => this._onCamFrame(f), (txt) => this._camStatus(txt));
+			this.camTracker = t;
 			this.state.layers.camTrack.on = true;
+			this._mountCam(t);
+			try {
+				await t.start();
+				this.app.toast('Камера включена: покажите ладонь', 'ok');
+			} catch (err) {
+				if (!err.handsLoadFailed) throw err;
+				// без сети распознать руки нельзя: переходим на упрощённый режим по движению
+				t.stop();
+				t = new MotionCamTracker((f) => this._onCamFrame(f));
+				this.camTracker = t;
+				this._mountCam(t);
+				await t.start();
+				this.app.toast('Не удалось загрузить распознавание рук. Работает по движению в кадре', 'warn');
+			}
 			this._camPos = null;
-			this._mountCam();
-			this.app.toast('Камера включена: двигайте рукой перед ней', 'ok');
 		} catch (err) {
 			this._stopCam();
 			this.app.toast('Нет доступа к веб-камере: разрешите её в браузере', 'error');
 		}
+		this._camBusy = false;
 		this.emit();
 	}
 
@@ -133556,49 +133877,123 @@ class EffectsEngine {
 		this.camBox?.remove();
 		this.camBox = null;
 		this._camActive = false;
+		this._handPtrs = [];
+		this._hands = [];
+		this._stretchTarget = 1;
+		if (this.points) this.points.scale.setScalar(1);
 	}
 
-	/** Окно с картинкой камеры: показывает, что именно «видит» трекер */
-	_mountCam() {
+	_camStatus(txt) {
+		if (this.camHint && txt) this.camHint.textContent = txt;
+	}
+
+	/** Окно с картинкой камеры: здесь видно себя и то, что распознал трекер */
+	_mountCam(tracker, status) {
 		this.camBox?.remove();
-		const t = this.camTracker;
 		this.camHint = document.createElement('div');
 		this.camHint.className = 'fx-cam-text';
-		this.camHint.textContent = 'Помашите рукой перед камерой';
+		this.camHint.textContent = status || 'Покажите ладонь перед камерой';
 		this.camBox = document.createElement('div');
 		this.camBox.className = 'fx-cam';
-		this.camBox.append(t.preview, this.camHint);
+		if (tracker) this.camBox.append(tracker.preview);
+		this.camBox.append(this.camHint);
 		this.camBox.hidden = this.state.layers.camTrack.preview !== 'on';
 		document.getElementById('viewport').append(this.camBox);
+	}
+
+	/** Точка на плоскости перед камерой в локальных координатах облака */
+	_ndcToLocal(x, y, out, depth = 0) {
+		const vp = this.app.viewport;
+		this._ray.setFromCamera(new THREE.Vector2(x, y), vp.camera);
+		const toCam = vp.camera.getWorldDirection(new THREE.Vector3()).negate();
+		// depth > 0: плоскость пальцев сдвинута к зрителю, к передней поверхности формы
+		this._plane.setFromNormalAndCoplanarPoint(toCam, toCam.clone().multiplyScalar(depth));
+		const hit = new THREE.Vector3();
+		if (!this._ray.ray.intersectPlane(this._plane, hit)) return null;
+		return out.copy(this.points.worldToLocal(hit));
 	}
 
 	_onCamFrame(f) {
 		if (!this.active || !this.points) return;
 		const cfg = this.state.layers.camTrack;
-		this.camTracker.sens = cfg.sens;
-		if (this.camBox) {
-			this.camBox.hidden = cfg.preview !== 'on';
-			const txt = f.active ? 'Движение найдено' : 'Помашите рукой перед камерой';
-			if (this.camHint.textContent !== txt) this.camHint.textContent = txt;
-		}
+		const t = this.camTracker;
+		t.sens = cfg.sens;
+		t.smooth = cfg.smooth;
+		if (this.camBox) this.camBox.hidden = cfg.preview !== 'on';
+		if (f.kind === 'hands') return this._onHands(f, cfg);
+		// запасной режим: центр движения в кадре
+		const txt = f.active ? 'Движение найдено' : 'Помашите рукой перед камерой';
+		if (this.camHint && this.camHint.textContent !== txt) this.camHint.textContent = txt;
 		this._camActive = f.active;
 		if (!f.active) return;
 		const k = 1 - Math.min(0.92, cfg.smooth) * 0.9;
 		this._camPos = this._camPos ? { x: this._camPos.x + (f.x - this._camPos.x) * k, y: this._camPos.y + (f.y - this._camPos.y) * k } : { x: f.x, y: f.y };
-		const vp = this.app.viewport;
-		this._ray.setFromCamera(new THREE.Vector2(this._camPos.x, this._camPos.y), vp.camera);
-		this._plane.setFromNormalAndCoplanarPoint(vp.camera.getWorldDirection(new THREE.Vector3()).negate(), new THREE.Vector3());
-		const hit = new THREE.Vector3();
-		if (this._ray.ray.intersectPlane(this._plane, hit)) {
-			this.mouse.copy(this.points.worldToLocal(hit));
-			this.mouseOn = true;
-			this._camT = this._time;
-			if (this.state.layers.brush.on) this.addBrushHit(this.mouse);
-		}
-		if (cfg.wave === 'on' && this.state.layers.shock.on && f.energy > 0.16 && this._time - (this._camShockT || 0) > 0.8) {
+		const loc = this._ndcToLocal(this._camPos.x, this._camPos.y, new THREE.Vector3(), 0.85);
+		if (!loc) return;
+		this.mouse.copy(loc);
+		this.mouseOn = true;
+		this._camT = this._time;
+		this._handsT = this._time;
+		this._handPtrs = [{ local: loc.clone(), s: cfg.mode === 'pull' ? -1 : 1, ndc: [this._camPos.x, this._camPos.y] }];
+		if (cfg.trail === 'on' || this.state.layers.brush.on) this.addBrushHit(loc);
+		if (cfg.pinch === 'wave' && f.energy > 0.16 && this._time - (this._camShockT || 0) > 0.8) {
 			this._camShockT = this._time;
-			this.addShock(this.mouse);
+			this.addShock(loc);
+			this._waveT = this._time;
 		}
+	}
+
+	_onHands(f, cfg) {
+		const hands = f.hands;
+		this._hands = hands;
+		this._camActive = hands.length > 0;
+		const txt = hands.length ? (hands.length > 1 ? 'Вижу две руки: можно растягивать форму' : 'Вижу руку: двигайте пальцами') : 'Покажите ладонь перед камерой';
+		if (this.camHint && this.camHint.textContent !== txt) this.camHint.textContent = txt;
+		const ptrs = [];
+		const aspect = f.aspect || 4 / 3;
+		for (const hd of hands) {
+			// «по жесту»: открытая ладонь толкает, кулак и щипок притягивают
+			let s = cfg.mode === 'push' ? 1 : cfg.mode === 'pull' ? -1 : cfg.mode === 'swirl' ? 1 : Math.max(-1, Math.min(1, (hd.open - 0.45) * 2.2));
+			if (cfg.mode === 'gesture' && hd.pinch > 0.6) s = -1;
+			const list = [...hd.tips, hd.palm];
+			for (let i = 0; i < list.length; i++) {
+				const p = list[i];
+				const nx = p[0] * 2 - 1;
+				const ny = -(p[1] * 2 - 1);
+				const loc = this._ndcToLocal(nx, ny, new THREE.Vector3(), 0.85);
+				if (loc) ptrs.push({ local: loc, s: i === 5 ? s * 0.8 : s, ndc: [nx, ny], tip: i < 5 });
+			}
+			const idx = hd.tips[1];
+			const ix = this._ndcToLocal(idx[0] * 2 - 1, -(idx[1] * 2 - 1), new THREE.Vector3(), 0.85);
+			const st = this._handState || (this._handState = new Map());
+			const prev = st.get(hd.id) || { palmX: hd.palm[0], pinch: 0 };
+			if (ix) {
+				if (hands[0] === hd) {
+					this.mouse.copy(ix);
+					this.mouseOn = true;
+					this._camT = this._time;
+				}
+				if (cfg.trail === 'on' || this.state.layers.brush.on) for (const tp of hd.tips) {
+					const q = this._ndcToLocal(tp[0] * 2 - 1, -(tp[1] * 2 - 1), new THREE.Vector3(), 0.85);
+					if (q) this.addBrushHit(q);
+				}
+				if (cfg.pinch === 'wave' && hd.pinch > 0.8 && prev.pinch <= 0.8 && this._time - (this._camShockT || 0) > 0.5) {
+					this._camShockT = this._time;
+					this.addShock(ix);
+					this._waveT = this._time;
+				}
+			}
+			if (cfg.pinch === 'rotate' && hd.pinch > 0.7 && prev.pinch > 0.5) this.points.rotation.y += (hd.palm[0] - prev.palmX) * 6.5;
+			st.set(hd.id, { palmX: hd.palm[0], pinch: hd.pinch });
+		}
+		for (const key of [...(this._handState?.keys() || [])]) if (!hands.some((h) => h.id === key)) this._handState.delete(key);
+		this._stretchTarget = 1;
+		if (cfg.stretch === 'on' && hands.length === 2) {
+			const d = Math.hypot((hands[0].palm[0] - hands[1].palm[0]) * aspect, hands[0].palm[1] - hands[1].palm[1]);
+			this._stretchTarget = clamp(0.45 + d * 2.3, 0.6, 2.4);
+		}
+		this._handPtrs = ptrs;
+		if (hands.length) this._handsT = this._time;
 	}
 
 	// ------------------------------------------------------------ состояние
@@ -133848,7 +134243,7 @@ class EffectsEngine {
 			uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 			uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
 			uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
-			uAlive: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
+			uAlive: U(new THREE.Vector4()), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 		};
 		const mk = (extra) =>
 			new THREE.ShaderMaterial({
@@ -134329,7 +134724,7 @@ class EffectsEngine {
 			u.uCollapseTime.value = this.collapseTime;
 
 			// Кисть
-			const brE = L.brush ? this._eff(L.brush) : 0;
+			const brE = Math.max(L.brush ? this._eff(L.brush) : 0, this.camTracker?.running && L.camTrack.trail === 'on' ? 1 : 0);
 			const brArr = u.uBrushHits.value;
 			for (let i = 0; i < 20; i++) {
 				const hit = this.brushHits[i];
@@ -134416,6 +134811,24 @@ class EffectsEngine {
 			u.uMaskShow.value = mk.show ? 1 : 0;
 			u.uMouse.value.copy(this.mouse);
 			u.uMouseOn.value = this.mouseOn ? 1 : 0;
+			// руки: кончики пальцев как точки воздействия на форму
+			{
+				const cfg = L.camTrack;
+				const running = !!this.camTracker?.running;
+				const fade = clamp(1 - (this._time - (this._handsT ?? -9)) / 0.35, 0, 1);
+				const ptrs = running ? this._handPtrs || [] : [];
+				const n = Math.min(12, ptrs.length);
+				const arr = u.uHand.value;
+				for (let i = 0; i < 12; i++) {
+					if (i < n) arr[i].set(ptrs[i].local.x, ptrs[i].local.y, ptrs[i].local.z, ptrs[i].s * fade);
+					else arr[i].set(0, 0, 0, 0);
+				}
+				const he = running && cfg.on ? cfg.amount : 0;
+				u.uHandP.value.set(fade > 0 ? he : 0, cfg.radius, cfg.mode === 'swirl' ? 1 : 0, n);
+				const target = running ? this._stretchTarget || 1 : 1;
+				const sc = this.points.scale.x;
+				if (Math.abs(sc - target) > 0.002) this.points.scale.setScalar(sc + (target - sc) * (1 - Math.exp(-dt * 6)));
+			}
 			// камера: если рука пропала, курсор отпускает форму
 			if (this.camTracker?.running && this.mouseOn && this._time - (this._moveT ?? -9) > 1 && this._time - (this._camT ?? -9) > 0.7) this.mouseOn = false;
 			// трекер-точки: рамки и касание формы работают от одних и тех же узлов
@@ -134431,12 +134844,16 @@ class EffectsEngine {
 				const cols = [hex(pal.c[0]), hex(pal.c[2])];
 				if (T.on) this.hud.drawTracking(T, tr, { points: this.points, camera: this.app.viewport.camera, levels: this.levels, colors: T.color && T.color !== 'auto' ? [T.color, T.color] : cols });
 				if (L.telemetry && L.telemetry.on) this.hud.drawTelemetry(L.telemetry, this._eff(L.telemetry), { levels: this.levels, spec: this.spec, colors: cols });
-				if (this.camTracker?.running && this.mouseOn && this._time - (this._camT ?? -9) < 0.7) {
-					const v = this.mouse.clone();
-					this.points.localToWorld(v);
-					v.project(this.app.viewport.camera);
+				if (this.camTracker?.running) {
 					const cv = this.app.viewport.canvas;
-					this.hud.drawCursor((v.x * 0.5 + 0.5) * cv.clientWidth, (1 - (v.y * 0.5 + 0.5)) * cv.clientHeight, this._camActive ? 1 : 0.4, cols[1]);
+					if (this._hands?.length && this._time - (this._handsT ?? -9) < 0.35) {
+						this.hud.drawHands(this._hands, cv.clientWidth, cv.clientHeight, cols[1], L.camTrack.skeleton === 'on');
+					} else if (this.mouseOn && this._time - (this._camT ?? -9) < 0.7 && !(this.camTracker instanceof HandTracker)) {
+						const v = this.mouse.clone();
+						this.points.localToWorld(v);
+						v.project(this.app.viewport.camera);
+						this.hud.drawCursor((v.x * 0.5 + 0.5) * cv.clientWidth, (1 - (v.y * 0.5 + 0.5)) * cv.clientHeight, this._camActive ? 1 : 0.4, cols[1]);
+					}
 				}
 				const arr = u.uTrk.value;
 				for (let i = 0; i < 16; i++) {
@@ -134458,7 +134875,7 @@ class EffectsEngine {
 				u.uShockP.value.z = ni;
 			}
 			// ударные волны
-			const shE = this._eff(L.shock);
+			const shE = Math.max(this._eff(L.shock), this._time - (this._waveT ?? -9) < 5 ? 0.9 : 0);
 			if (L.shock.on && L.shock.auto === 'on' && this._time > (this._nextShock || 0) && this.geometry) {
 				this._nextShock = this._time + 2.2 + Math.random() * 1.6;
 				this.addShock(this.hud ? this.hud._pick(this.geometry, this.morph) : null);
@@ -134724,16 +135141,17 @@ function createEffectsPanel(app, root, engine) {
 				body.append(clearBtn);
 			} else if (def.id === 'camTrack') {
 				const camBtn = button({
-					label: engine.camTracker?.running ? 'Остановить камеру' : 'Включить веб-камеру',
+					label: engine.camTracker?.running ? 'Выключить камеру' : 'Включить камеру',
 					icon: 'video-camera',
 					variant: 'secondary',
 					cls: 'btn-block',
 					onClick: async () => {
 						await engine.toggleMotionCam();
-						camBtn.querySelector('.btn-label').textContent = engine.camTracker?.running ? 'Остановить камеру' : 'Включить веб-камеру';
+						camBtn.querySelector('.btn-label').textContent = engine.camTracker?.running ? 'Выключить камеру' : 'Включить камеру';
 					},
 				});
 				body.append(camBtn);
+				body.append(h('div', { class: 'field-hint' }, 'При первом включении загружается модель распознавания рук (около 10 МБ), нужен интернет. Видео с камеры никуда не отправляется.'));
 			}
 			body.append(field('Сила', amount.el));
 			const extraCtl = {};
@@ -134917,7 +135335,7 @@ function createEffectsPanel(app, root, engine) {
 	const collapseBtn = iconButton({ icon: 'atom', title: 'Разрушить / собрать форму («Распад»)', onClick: () => { engine.toggleCollapse(); sync(); } });
 	const brushBtn = iconButton({ icon: 'paint-brush', title: 'Кисть: рисовать по форме', onClick: () => { st.layers.brush.on = !st.layers.brush.on; save(); sync(); } });
 	const orthoBtn = iconButton({ icon: 'perspective', title: 'Проекция: перспектива или ортогональная', onClick: () => { app.nav.toggleOrtho(); sync(); } });
-	const camBtn = iconButton({ icon: 'video-camera', title: 'Веб-камера: управление жестами', onClick: () => engine.toggleMotionCam().then(sync) });
+	const camBtn = iconButton({ icon: 'video-camera', title: 'Камера: управление руками и пальцами', onClick: () => engine.toggleMotionCam().then(sync) });
 	const trackName = h('div', { class: 'fx-track' });
 	const barMeters = makeMeters(true);
 	const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (WebM)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });

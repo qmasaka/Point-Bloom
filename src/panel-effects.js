@@ -203,16 +203,17 @@ export function createEffectsPanel(app, root, engine) {
 				body.append(clearBtn);
 			} else if (def.id === 'camTrack') {
 				const camBtn = button({
-					label: engine.camTracker?.running ? 'Остановить камеру' : 'Включить веб-камеру',
+					label: engine.camTracker?.running ? 'Выключить камеру' : 'Включить камеру',
 					icon: 'video-camera',
 					variant: 'secondary',
 					cls: 'btn-block',
 					onClick: async () => {
 						await engine.toggleMotionCam();
-						camBtn.querySelector('.btn-label').textContent = engine.camTracker?.running ? 'Остановить камеру' : 'Включить веб-камеру';
+						camBtn.querySelector('.btn-label').textContent = engine.camTracker?.running ? 'Выключить камеру' : 'Включить камеру';
 					},
 				});
 				body.append(camBtn);
+				body.append(h('div', { class: 'field-hint' }, 'При первом включении загружается модель распознавания рук (около 10 МБ), нужен интернет. Видео с камеры никуда не отправляется.'));
 			}
 			body.append(field('Сила', amount.el));
 			const extraCtl = {};
@@ -396,7 +397,7 @@ export function createEffectsPanel(app, root, engine) {
 	const collapseBtn = iconButton({ icon: 'atom', title: 'Разрушить / собрать форму («Распад»)', onClick: () => { engine.toggleCollapse(); sync(); } });
 	const brushBtn = iconButton({ icon: 'paint-brush', title: 'Кисть: рисовать по форме', onClick: () => { st.layers.brush.on = !st.layers.brush.on; save(); sync(); } });
 	const orthoBtn = iconButton({ icon: 'perspective', title: 'Проекция: перспектива или ортогональная', onClick: () => { app.nav.toggleOrtho(); sync(); } });
-	const camBtn = iconButton({ icon: 'video-camera', title: 'Веб-камера: управление жестами', onClick: () => engine.toggleMotionCam().then(sync) });
+	const camBtn = iconButton({ icon: 'video-camera', title: 'Камера: управление руками и пальцами', onClick: () => engine.toggleMotionCam().then(sync) });
 	const trackName = h('div', { class: 'fx-track' });
 	const barMeters = makeMeters(true);
 	const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (WebM)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });

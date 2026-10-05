@@ -1,5 +1,6 @@
 // Трекинг-рамки поверх сцены: «захваченные» подвижные области облака и кибер-телеметрия (HUD).
 import * as THREE from 'three';
+import { HAND_LINKS, TIPS } from './hand-tracker.js';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 
@@ -201,6 +202,53 @@ export class TrackerHud {
 				ctx.fillText(`V ${it.speed.toFixed(2)}  Z ${it.pos.z.toFixed(2)}`, tx, y0 + 21);
 			}
 		}
+	}
+
+	/** Руки с веб-камеры: скелет и кольца на кончиках пальцев поверх сцены */
+	drawHands(hands, w, hgt, color, skeleton) {
+		this._fit();
+		const ctx = this.ctx;
+		ctx.save();
+		ctx.lineCap = 'round';
+		for (const hd of hands) {
+			const P = (i) => [hd.pts[i][0] * w, hd.pts[i][1] * hgt];
+			if (skeleton) {
+				ctx.strokeStyle = rgba(color, 0.35);
+				ctx.lineWidth = 1.4;
+				ctx.beginPath();
+				for (const [a, b] of HAND_LINKS) {
+					const A = P(a);
+					const B = P(b);
+					ctx.moveTo(A[0], A[1]);
+					ctx.lineTo(B[0], B[1]);
+				}
+				ctx.stroke();
+			}
+			for (const ti of TIPS) {
+				const p = P(ti);
+				ctx.strokeStyle = rgba(color, 0.9);
+				ctx.lineWidth = 1.6;
+				ctx.beginPath();
+				ctx.arc(p[0], p[1], 9 + hd.pinch * 3, 0, Math.PI * 2);
+				ctx.stroke();
+				ctx.fillStyle = rgba(color, 1);
+				ctx.beginPath();
+				ctx.arc(p[0], p[1], 2.4, 0, Math.PI * 2);
+				ctx.fill();
+			}
+			if (hd.pinch > 0.6) {
+				const a = P(4);
+				const b = P(8);
+				ctx.strokeStyle = rgba(color, 0.9);
+				ctx.lineWidth = 2;
+				ctx.beginPath();
+				ctx.moveTo(a[0], a[1]);
+				ctx.lineTo(b[0], b[1]);
+				ctx.arc((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 16, 0, Math.PI * 2);
+				ctx.stroke();
+			}
+		}
+		ctx.restore();
 	}
 
 	/** Курсор, которым управляет веб-камера: кольцо с прицелом на форме */
