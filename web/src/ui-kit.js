@@ -145,6 +145,7 @@ out.addEventListener('focus', () => out.select());
 paint();
 return {
 el: h('div', { class: 'slider' }, range, out),
+get: cur,
 set(v) {
 range.value = toPos(v);
 paint();

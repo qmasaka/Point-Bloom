@@ -2,8 +2,11 @@ import * as THREE from 'three';
 import { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } from './util.js';
 import { TrackerHud } from './fx-hud.js';
 import { HandTracker } from './hand-tracker.js';
+import { PointMedia } from './point-media.js';
+import { cloudToPoints } from './pointcloud.js';
 export const FX_SHAPES = [
 { id: 'model', name: 'Модель', icon: 'cube' },
+{ id: 'media', name: 'Фото', icon: 'image' },
 { id: 'sphere', name: 'Сфера', icon: 'sphere' },
 { id: 'torus', name: 'Тор', icon: 'circle-notch' },
 { id: 'cube', name: 'Куб', icon: 'cube-transparent' },
@@ -84,6 +87,7 @@ return {
 source: 'sphere',
 count: 150000,
 layers,
+media: { pts: 80000, relief: 'bright', depth: 0.5 },
 morphCfg: { mode: 'beat', interval: 4, time: 1.8, order: 'seq' },
 mask: { mode: 'none', size: 0.5, soft: 0.4, speed: 0.5, invert: false, show: false },
 look: {
@@ -1319,6 +1323,8 @@ this._raf = null;
 this._lastT = 0;
 this.recording = false;
 this.modelProvider = null;
+this.pm = new PointMedia();
+this.mediaProgress = null;
 this.ghosts = [];
 this.linkObj = null;
 this.shocks = [];
@@ -1347,8 +1353,97 @@ this.isCollapsed = v;
 if (v) this.state.layers.physics.on = true;
 this.emit();
 }
+async loadMedia(file) {
+this.app.ui.busy('Читаю файл', 0.3);
+try {
+await this.pm.load(file);
+this.state.look.colorBy = 'model';
+for (const id of ['curl', 'pulse']) this.state.layers[id].on = false;
+if (this.state.source === 'media') {
+this.cache.clear();
+await this._build();
+} else await this.setSource('media');
+this.state.look.autoRotate = false;
+if (this.points) this.points.rotation.set(0, 0, 0);
+this.app.toast(this.pm.kind === 'image' ? 'Фото превращено в точки' : this.pm.kind === 'video' ? 'Видео превращено в точки: можно записать его в точечный ролик' : 'Точечный ролик открыт', 'ok');
+} catch (e) {
+this.app.toast(e.message || 'Не удалось открыть файл', 'error');
+} finally {
+this.app.ui.idle();
+this.emit();
+}
+}
+async setMediaPts(n) {
+this.state.media.pts = n;
+this.touch();
+if (this.state.source === 'media' && this.active && !this.pm.isRec) {
+this.cache.clear();
+await this._build();
+}
+this.emit();
+}
+mediaStyleChanged() {
+this.touch();
+this.pm.dirty = true;
+this._mediaDirty = true;
+}
+async recordMedia({ fps, seconds }) {
+if (this.pm.recording) {
+this._recCancel = true;
+return;
+}
+this._recCancel = false;
+this.mediaProgress = { i: 0, total: 1 };
+this.emit();
+try {
+const rec = await this.pm.record({
+fps,
+seconds,
+cancel: () => this._recCancel,
+onProgress: (i, total) => {
+this.mediaProgress = { i, total };
+if (i % 3 === 0) this.emit();
+},
+});
+if (rec) this.app.toast(`Записано кадров: ${rec.frames.length}. Теперь можно сохранить`, 'ok');
+} catch (e) {
+this.app.toast(e.message || 'Не удалось записать', 'error');
+}
+this.mediaProgress = null;
+this.emit();
+}
+frameToScene() {
+const pm = this.pm;
+if (!pm.ready) return;
+const m = this.state.media;
+const cloud = pm.buildCloud(pm.sample(), m.relief, m.depth);
+const pts = cloudToPoints(cloud, pm.kind === 'image' ? 'Фото в точках' : 'Кадр видео в точках');
+this._muteScene = true;
+this.app.model.add(pts, this.app.viewport.root);
+setTimeout(() => (this._muteScene = false), 1500);
+this.app.toast('Облако точек добавлено в сцену. Скачать его можно кнопкой «Скачать» вверху', 'ok');
+}
+downloadPCV() {
+if (!this.pm.rec) return;
+downloadBlob(this.pm.toPCV(), (this.pm.name.replace(/\.[^.]+$/, '') || 'ролик') + '.pcv');
+}
+downloadPLY() {
+const pm = this.pm;
+if (!pm.ready) return;
+const m = this.state.media;
+const bytes = pm.framePLY(pm.sample(), m.relief, m.depth);
+downloadBlob(new Blob([bytes], { type: 'application/octet-stream' }), (pm.name.replace(/\.[^.]+$/, '') || 'кадр') + '.ply');
+}
+downloadPLYZip() {
+const pm = this.pm;
+if (!pm.rec) return;
+const m = this.state.media;
+const r = pm.toPLYZip(m.relief, m.depth);
+downloadBlob(r.blob, (pm.name.replace(/\.[^.]+$/, '') || 'ролик') + '_ply.zip');
+this.app.toast(r.step > 1 ? `Сохранено кадров: ${r.frames} (каждый ${r.step}-й)` : `Сохранено кадров: ${r.frames}`, 'ok');
+}
 forms() {
-const out = FX_SHAPES.filter((x) => x.id !== 'model').map((x) => ({ key: x.id, name: x.name, icon: x.icon }));
+const out = FX_SHAPES.filter((x) => x.id !== 'model' && x.id !== 'media').map((x) => ({ key: x.id, name: x.name, icon: x.icon }));
 for (const o of this.modelProvider?.objects() || []) out.push({ key: 'obj:' + o.id, name: o.name, icon: 'cube' });
 return out;
 }
@@ -1802,6 +1897,14 @@ if (mp && mp.kind() === 'cloud') return Math.max(1000, Math.min(this.state.count
 return this.state.count;
 }
 async _cloudFor(key) {
+if (key === 'media') {
+const pm = this.pm;
+if (!pm.ready) return null;
+pm.setGrid(this.state.media.pts);
+const m = this.state.media;
+pm.dirty = true;
+return pm.buildCloud(pm.sample(), m.relief, m.depth);
+}
 const n = this._n();
 const ck = key + ':' + n;
 if (this.cache.has(ck)) return this.cache.get(ck);
@@ -1833,7 +1936,7 @@ const count = c.count;
 const g = new THREE.BufferGeometry();
 const idx = new Float32Array(count);
 for (let i = 0; i < count; i++) idx[i] = i / count;
-const model = st.source === 'model' ? c : this.hasModel ? (await this._cloudFor('model').catch(() => null)) || c : c;
+const model = st.source === 'model' || st.source === 'media' ? c : this.hasModel ? (await this._cloudFor('model').catch(() => null)) || c : c;
 g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
 g.setAttribute('aOrigin', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
 g.setAttribute('aTarget', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
@@ -2044,6 +2147,10 @@ stage.style.background = vignette ? `radial-gradient(ellipse at 50% 42%, #${hi.g
 }
 async setSource(key) {
 const st = this.state;
+if (key === 'media' && !this.pm.ready) {
+this.app.toast('Сначала загрузите фото или видео в разделе «Фото и видео»', 'info');
+return;
+}
 if (key === 'model' && !this.hasModel) {
 this.app.toast('Нет модели: добавьте её кнопкой «Добавить модель» или откройте в редакторе', 'info');
 return;
@@ -2095,7 +2202,7 @@ this.app.ui.idle();
 this.emit();
 }
 _onScene() {
-if (!this.active) return;
+if (!this.active || this._muteScene) return;
 clearTimeout(this._sceneT);
 this._sceneT = setTimeout(async () => {
 if (!this.active) return;
@@ -2155,6 +2262,7 @@ const ab = this.state.look.aberration || 0;
 this.post.render(scene, camera, fb, bloom, ab);
 };
 app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 400);
+if (this.pm.playing && this.state.source === 'media') this.pm.play();
 this._lastT = performance.now();
 this._loop();
 this.emit();
@@ -2164,6 +2272,7 @@ exit() {
 if (!this.active) return;
 this.active = false;
 this.stopRecording();
+this.pm.pause();
 this.pause();
 cancelAnimationFrame(this._raf);
 clearTimeout(this._sceneT);
@@ -2341,6 +2450,20 @@ const axVal = { y: 0, x: 1, z: 2, diag: 3 }[sl.axis] ?? 0;
 u.uSlice.value.set(this._eff(sl), (this._time * sl.speed * 0.25) % 1, sl.width, axVal + nLines * 10);
 u.uLookP2.value.set(look.sizeNoise || 0, look.sizeAudio || 0, 0, 0);
 u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
+if (st.source === 'media' && this.pm.ready && this.geometry && !this.morphing && this.geometry.attributes.position.count === this.pm.count) {
+const rgb = this.pm.advance(dt);
+if (rgb) {
+const g = this.geometry;
+const n = this.pm.count;
+if (!this._zbuf || this._zbuf.length !== n * 3) this._zbuf = new Float32Array(n * 3);
+const m = st.media;
+this.pm.applyTo({ positions: this._zbuf, colors: g.attributes.aColor.array }, rgb, m.relief, m.depth);
+const a = g.attributes.position.array, o = g.attributes.aOrigin.array, t = g.attributes.aTarget.array, z = this._zbuf;
+for (let i = 2; i < n * 3; i += 3) a[i] = o[i] = t[i] = z[i];
+g.attributes.aColor.needsUpdate = true;
+g.attributes.position.needsUpdate = g.attributes.aOrigin.needsUpdate = g.attributes.aTarget.needsUpdate = true;
+}
+}
 {
 const mc = st.morphCfg;
 const beatNew = this.levels.beat > 0.9 && (this._bPrev || 0) <= 0.9;

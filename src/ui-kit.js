@@ -161,6 +161,7 @@ export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onCh
 	paint();
 	return {
 		el: h('div', { class: 'slider' }, range, out),
+		get: cur,
 		set(v) {
 			range.value = toPos(v);
 			paint();

@@ -431,7 +431,65 @@ const blend = segmented({ options: [{ value: 'add', label: 'Свечение', t
 const rotate = switchRow('Вращать форму', { value: st.look.autoRotate, onChange: (v) => { st.look.autoRotate = v; save(); } });
 const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
 const secLook = section('Вид', { key: 'fx-look' }, palettes, field('Цвет по', colorBy.el, { wide: true }), field('Размер', size.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el));
-root.append(secInsp.el, secSource.el, secMask.el, secAudio.el, secLook.el);
+const pm = engine.pm;
+const md = st.media;
+const fileIn = h('input', { type: 'file', accept: 'image/*,video/*,.pcv', hidden: true });
+fileIn.addEventListener('change', async () => {
+const f = fileIn.files[0];
+fileIn.value = '';
+if (f) await engine.loadMedia(f);
+});
+const mdLoad = button({ label: 'Загрузить фото или видео…', icon: 'image', variant: 'secondary', cls: 'btn-block', title: 'Фото, видео или сохранённый ролик .pcv', onClick: () => fileIn.click() });
+const mdName = h('div', { class: 'field-hint' }, 'Каждая точка берёт цвет пикселя. К точкам применяются все эффекты слева: гравитация, распад, руки и остальные.');
+const mdPts = slider({ log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: (v) => engine.setMediaPts(v) });
+const mdRelief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; engine.mediaStyleChanged(); } });
+const mdDepth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; engine.mediaStyleChanged(); }, onChange: save });
+const mdPlay = button({ label: 'Пауза', icon: 'pause', variant: 'secondary', onClick: () => { pm.playing ? pm.pause() : pm.play(); sync(); } });
+const mdLoop = switchRow('Повторять', { value: pm.loop, onChange: (v) => pm.setLoop(v) });
+const mdSeek = slider({ min: 0, max: 1, step: 0.01, value: 0, digits: 1, unit: ' с', onInput: (v) => pm.seek(v), onChange: () => {} });
+const mdView = segmented({ options: [{ value: 'live', label: 'Исходник' }, { value: 'rec', label: 'Точечный ролик' }], value: pm.view, onChange: (v) => { pm.setView(v); engine.setSource('media'); sync(); } });
+const recFps = slider({ min: 5, max: 30, step: 1, value: 15, digits: 0, unit: ' к/с' });
+const recSec = slider({ min: 1, max: 30, step: 1, value: 10, digits: 0, unit: ' с' });
+const recBtn2 = button({ label: 'Записать в точки', icon: 'record', variant: 'primary', cls: 'btn-block', title: 'Видео проигрывается кадр за кадром и записывается как точечный ролик', onClick: () => engine.recordMedia({ fps: recFps.get ? recFps.get() : 15, seconds: recSec.get ? recSec.get() : 10 }) });
+const recInfo = h('div', { class: 'field-hint' });
+const saveRow = h('div', { class: 'fx-save-row' });
+const mdPCV = button({ label: 'Сохранить ролик (.pcv)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Компактный файл: его можно снова открыть здесь', onClick: () => engine.downloadPCV() });
+const mdZip = button({ label: 'Кадры PLY (.zip)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Каждый кадр как облако точек с цветом', onClick: () => engine.downloadPLYZip() });
+const mdPly = button({ label: 'Текущий кадр (.ply)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', onClick: () => engine.downloadPLY() });
+const mdScene = button({ label: 'Кадр в сцену редактора', icon: 'cube', variant: 'secondary', cls: 'btn-block', title: 'Облако точек появится в редакторе, оттуда его можно скачать как GLB, PLY и другие форматы', onClick: () => engine.frameToScene() });
+saveRow.append(mdScene, mdPly, mdPCV, mdZip);
+const videoBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-btn-row' }, mdPlay), mdLoop.el, field('Время', mdSeek.el));
+const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recBtn2, recInfo);
+const secMedia = section('Фото и видео', { key: 'fx-media' }, fileIn, mdLoad, mdName, field('Точек', mdPts.el), field('Рельеф', mdRelief.el, { wide: true }), field('Глубина рельефа', mdDepth.el), field('Показывать', mdView.el, { wide: true }), videoBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveRow);
+const syncMedia = () => {
+const ready = pm.ready;
+const isVid = pm.kind === 'video' || pm.kind === 'rec';
+const hasRec = !!pm.rec;
+mdName.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : 'Каждая точка берёт цвет пикселя. К точкам применяются все эффекты слева: гравитация, распад, руки и остальные.';
+mdView.el.hidden = !hasRec || pm.kind === 'rec';
+mdView.set(pm.view);
+mdPts.el.closest('.field').hidden = !ready || pm.isRec;
+mdPts.set(md.pts);
+videoBox.hidden = !isVid;
+recBox.hidden = pm.kind !== 'video';
+mdPlay.querySelector('.btn-label').textContent = pm.playing ? 'Пауза' : 'Играть';
+const dur = pm.duration;
+mdSeek.setRange && mdSeek.setRange(0, Math.max(0.1, dur));
+recSec.setRange && recSec.setRange(1, Math.max(2, Math.min(30, Math.floor(dur) || 10)));
+const prog = engine.mediaProgress;
+recBtn2.querySelector('.btn-label').textContent = pm.recording ? 'Остановить запись' : 'Записать в точки';
+recInfo.textContent = prog ? `Записываю кадр ${prog.i} из ${prog.total}…` : hasRec ? `Записано кадров: ${pm.rec.frames.length}, ${pm.rec.fps} к/с` : 'Видео проигрывается кадр за кадром. Потом ролик можно сохранить и снова открыть.';
+saveRow.hidden = !ready;
+mdPCV.hidden = !hasRec;
+mdZip.hidden = !hasRec;
+mdPly.hidden = hasRec && pm.kind === 'rec' ? false : false;
+};
+setInterval(() => {
+if (pm.kind === 'video' || pm.kind === 'rec') {
+if (!pm.recording && document.activeElement?.closest?.('.slider') == null) mdSeek.set && mdSeek.set(pm.time);
+}
+}, 300);
+root.append(secInsp.el, secSource.el, secMedia.el, secMask.el, secAudio.el, secLook.el);
 const bar = $bar();
 const playBtn = iconButton({ icon: 'play', title: 'Играть / пауза (Пробел)', onClick: () => engine.toggle().catch(() => {}) });
 const collapseBtn = iconButton({ icon: 'atom', title: 'Разрушить / собрать форму («Распад»)', onClick: () => { engine.toggleCollapse(); sync(); } });
@@ -488,11 +546,13 @@ function sync() {
 tileMap.forEach((b, k) => {
 b.setAttribute('aria-checked', String(k === st.source));
 if (k === 'model') b.disabled = !engine.hasModel;
+if (k === 'media') b.disabled = !engine.pm.ready;
 });
 const n = engine.geometry ? engine.geometry.attributes.position.count : st.count;
 countHint.textContent = `Сейчас ${formatInt(n)} частиц, около ${Math.round((n * 128) / 1048576)} МБ памяти. Комфортно до ${formatCount(getDevice(app).limits.comfort)}.`;
 const kind = engine.modelProvider ? engine.modelProvider.kind() : 'none';
 modelNote.textContent = kind === 'cloud' ? `Берётся облако точек из редактора (${formatInt(engine.modelProvider.total())} точек). Больше этого частиц не будет.` : kind === 'mesh' ? 'Берутся точки с поверхности вашей модели.' : 'Модели в сцене нет: показана готовая форма. Добавьте модель, и она заменит её.';
+syncMedia();
 countActive();
 cards.forEach((c) => {
 c.card.classList.toggle('is-on', c.L.on);
