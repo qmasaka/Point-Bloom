@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { sampleSurface } from './pointcloud.js';
 import { getDevice } from './device-card.js';
 import { formatCount } from './capabilities.js';
-import { FX_SHAPES, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } from './effects-engine.js';
+import { FX_SHAPES, FX_ACTIONS, FX_GESTURE_PRESETS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } from './effects-engine.js';
 export function makeModelProvider(app) {
 const root = app.viewport.root;
 const shown = (o) => {
@@ -253,7 +253,23 @@ const after = () => {
 save();
 if (ex.relink) engine.relink();
 };
-if (ex.type === 'title') {
+if (ex.type === 'preset') {
+const row = h('div', { class: 'chip-row' });
+for (const pr of FX_GESTURE_PRESETS) {
+const b = h('button', { type: 'button', class: 'chip-btn', 'data-tip': pr.tip }, pr.name);
+b.addEventListener('click', () => {
+Object.assign(L, pr.v);
+for (const [k, v] of Object.entries(pr.v)) extraCtl[k]?.set(v);
+save();
+});
+row.append(b);
+}
+body.append(field('Готовые схемы', row, { wide: true }));
+} else if (ex.type === 'select') {
+const sl = select({ options: ex.options.map(([value, label]) => ({ value, label })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
+extraCtl[ex.key] = sl;
+body.append(field(ex.label, sl.el, { wide: true }));
+} else if (ex.type === 'title') {
 body.append(h('div', { class: 'fx-sub' }, ex.label));
 } else if (ex.type === 'color') {
 const ctl = colorChoice(L, ex.key, after);
@@ -520,6 +536,8 @@ trackName.append(h('b', {}, label), h('span', {}, engine.playing ? 'играет
 playBtn.textContent = '';
 playBtn.append(h('span', { class: 'ic-wrap', html: icon(engine.playing ? 'pause' : 'play', 18) }));
 collapseBtn.classList.toggle('is-active', engine.isCollapsed);
+const pl = document.querySelector('.fx-insp[data-layer="physics"] .btn-label');
+if (pl) pl.textContent = engine.isCollapsed ? 'Собрать форму' : 'Разрушить форму';
 brushBtn.classList.toggle('is-active', !!st.layers.brush?.on);
 camBtn.classList.toggle('is-active', !!engine.camTracker?.running);
 orthoBtn.classList.toggle('is-active', !!app.nav.ortho);

@@ -132035,6 +132035,9 @@ class HandTracker {
 		this._last = -1;
 		this._conf = 0;
 		this._state = new Map();
+		this._gest = new Map();
+		this.hold = 0.12;
+		this.names = {};
 	}
 
 	_confFor() {
@@ -132103,11 +132106,32 @@ class HandTracker {
 				const raw = lm.map((p) => [1 - p.x, p.y]);
 				const pts = prev ? raw.map((p, j) => [prev[j][0] + (p[0] - prev[j][0]) * k, prev[j][1] + (p[1] - prev[j][1]) * k]) : raw;
 				this._state.set(label, pts);
-				out.push(measure(pts, aspect, label));
+				const hd = measure(pts, aspect, label);
+				hd.gesture = this._stable(label, hd.rawGesture);
+				out.push(hd);
 			});
 		}
-		for (const key of [...this._state.keys()]) if (!seen.has(key)) this._state.delete(key);
+		for (const key of [...this._state.keys()]) if (!seen.has(key)) {
+			this._state.delete(key);
+			this._gest.delete(key);
+		}
 		return out;
+	}
+
+	/** Жест меняется, только если держится дольше «задержки»: нет мерцания между жестами */
+	_stable(key, raw) {
+		const now = performance.now() / 1000;
+		let g = this._gest.get(key);
+		if (!g) g = { cur: raw, cand: raw, t: now };
+		if (raw === g.cur) g.cand = raw;
+		else if (raw === g.cand) {
+			if (now - g.t >= this.hold) g.cur = raw;
+		} else {
+			g.cand = raw;
+			g.t = now;
+		}
+		this._gest.set(key, g);
+		return g.cur;
 	}
 
 	_draw(hands) {
@@ -132141,7 +132165,7 @@ class HandTracker {
 				c.fillStyle = TIPS.includes(i) ? '#e58a45' : '#ffffff';
 				c.fill();
 			}
-			if (hd.pinch > 0.6) {
+			if (hd.gesture === 'pinch') {
 				const a = P(4);
 				const b = P(8);
 				c.strokeStyle = '#fff0dc';
@@ -132152,7 +132176,9 @@ class HandTracker {
 			}
 			const wr = P(0);
 			c.font = '600 11px Geist, system-ui, sans-serif';
-			const text = hd.pinch > 0.6 ? 'Щипок' : hd.open > 0.65 ? 'Ладонь' : hd.open < 0.25 ? 'Кулак' : 'Рука';
+			const GN = { palm: 'Ладонь', fist: 'Кулак', pinch: 'Щипок', point: 'Палец', none: 'Рука' };
+			const act = this.names[hd.gesture];
+			const text = GN[hd.gesture] + (act ? ' \u2192 ' + act : '');
 			const tw = c.measureText(text).width;
 			c.fillStyle = 'rgba(20,23,27,0.75)';
 			c.fillRect(wr[0] - tw / 2 - 5, wr[1] + 8, tw + 10, 17);
@@ -132190,7 +132216,15 @@ function measure(pts, aspect, id) {
 	ext /= 4;
 	const open = Math.min(1, Math.max(0, (ext - 1.0) / 0.9));
 	const palm = [0, 5, 9, 13, 17].reduce((s, i) => [s[0] + pts[i][0] / 5, s[1] + pts[i][1] / 5], [0, 0]);
-	return { id, pts, tips: TIPS.map((i) => pts[i]), palm, size, pinch, open };
+	// пальцы выпрямлены, если кончик дальше от запястья, чем средний сустав
+	const ex = [[8, 6], [12, 10], [16, 14], [20, 18]].map(([t, j]) => dist(pts[t], pts[0], aspect) > dist(pts[j], pts[0], aspect) * 1.12);
+	const count = ex.filter(Boolean).length;
+	let rawGesture = 'none';
+	if (pinch > 0.65) rawGesture = 'pinch';
+	else if (count >= 3) rawGesture = 'palm';
+	else if (ex[0] && count === 1) rawGesture = 'point';
+	else if (count === 0 || open < 0.25) rawGesture = 'fist';
+	return { id, pts, tips: TIPS.map((i) => pts[i]), palm, size, pinch, open, ext: ex, rawGesture };
 }
 
 };
@@ -132537,6 +132571,8 @@ __defs['src/effects-engine.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'FX_SHAPES', () => FX_SHAPES);
 __def(__exports, 'BANDS', () => BANDS);
+__def(__exports, 'FX_ACTIONS', () => FX_ACTIONS);
+__def(__exports, 'FX_GESTURE_PRESETS', () => FX_GESTURE_PRESETS);
 __def(__exports, 'FX_LAYERS', () => FX_LAYERS);
 __def(__exports, 'FX_PALETTES', () => FX_PALETTES);
 __def(__exports, 'COLOR_BY', () => COLOR_BY);
@@ -132575,10 +132611,21 @@ const BANDS = [
 	{ id: 'beat', label: 'Бит', title: 'Удар: вспышка на каждый такт' },
 ];
 
+/** Действия, которые можно назначить жесту руки */
+const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкивать'], ['pull', 'Притягивать'], ['swirl', 'Вихрь'], ['rotate', 'Крутить форму'], ['sculpt', 'Лепить'], ['gravity', 'Гравитация у руки'], ['wave', 'Ударная волна'], ['break', 'Распад, пока держишь'], ['dissolve', 'Растворение, пока держишь'], ['brush', 'Светящийся след']];
+
+/** Готовые схемы жестов */
+const FX_GESTURE_PRESETS = [
+	{ name: 'Игра', tip: 'Ладонь толкает, кулак рассыпает форму, щипок крутит, палец рисует', v: { g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush' } },
+	{ name: 'Скульптор', tip: 'Щипок лепит глину, ладонь крутит, кулак притягивает', v: { g_palm: 'rotate', g_fist: 'pull', g_pinch: 'sculpt', g_point: 'push' } },
+	{ name: 'Космос', tip: 'Ладонь включает гравитацию у руки, кулак притягивает, щипок крутит', v: { g_palm: 'gravity', g_fist: 'pull', g_pinch: 'rotate', g_point: 'brush' } },
+	{ name: 'Магия', tip: 'Ладонь вихрем, кулак растворяет форму, щипок пускает волну', v: { g_palm: 'swirl', g_fist: 'dissolve', g_pinch: 'wave', g_point: 'brush' } },
+];
+
 /** Слои-операторы. group: раздел в левой панели; extras: дополнительные параметры; relink: пересобрать связи */
 const FX_LAYERS = [
 	{ id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Частицы отрываются и плывут по вихрям', max: 2, def: { on: true, amount: 0.8, band: 'bass', react: 0.6, scale: 1.8 }, extras: [{ key: 'scale', label: 'Размер вихрей', min: 0.5, max: 4, step: 0.1 }] },
-	{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма рассыпается на частицы с физикой пола, отскоками и ветром', max: 2, def: { on: false, amount: 1.0, band: 'bass', react: 0.5, gravity: 1.2, bounce: 0.65, wind: 0.4 }, extras: [{ key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.95, step: 0.05 }, { key: 'wind', label: 'Ветер', min: 0.0, max: 2.0, step: 0.1 }] },
+	{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается сверху вниз, осколки взлетают, закручиваются и падают на пол с отскоками. При сборке они возвращаются дугами и складываются обратно', max: 2, def: { on: false, amount: 1.0, band: 'bass', react: 0.5, gravity: 1.2, bounce: 0.55, wind: 0.2, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
 	{ id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма вытягивается по частотам трека', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, axis: 'angle' }, extras: [{ key: 'axis', label: 'Ось', type: 'seg', options: [['angle', 'По кругу'], ['height', 'По высоте']] }] },
 	{ id: 'wave', group: 'Движение', name: 'Волны', icon: 'waves', hint: 'Круги расходятся от центра', max: 2, def: { on: false, amount: 0.7, band: 'mid', react: 0.8, freq: 5 }, extras: [{ key: 'freq', label: 'Частота', min: 1, max: 14, step: 0.5 }] },
 	{ id: 'twist', group: 'Движение', name: 'Скручивание', icon: 'wind', hint: 'Форма закручивается вокруг вертикали', max: 3, def: { on: false, amount: 1, band: 'none', react: 0 }, extras: [] },
@@ -132597,8 +132644,8 @@ const FX_LAYERS = [
 	{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.3, max: 2, step: 0.05 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
 	{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Рисование курсором по форме: частицы в мазках светятся и оживают, затем след высыхает', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, radius: 0.4, dry: 3.5 }, extras: [{ key: 'radius', label: 'Радиус кисти', min: 0.1, max: 0.9, step: 0.02 }, { key: 'dry', label: 'Высыхание, с', min: 1.0, max: 8.0, step: 0.5 }] },
 	{ id: 'shock', group: 'Взаимодействие', name: 'Ударная волна', icon: 'aperture', hint: 'Клик по сцене пускает круговую волну по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 1.2, auto: 'off' }, extras: [{ key: 'speed', label: 'Скорость волны', min: 0.4, max: 3, step: 0.05 }, { key: 'auto', label: 'Запуск', type: 'seg', options: [['off', 'Клик'], ['on', 'Клик и авто']] }] },
-	{ id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки и пальцы: ладонь отталкивает форму, щипок притягивает, кулак тянет. Форму можно крутить щипком', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, mode: 'gesture', fingers: 'all', power: 0.35, radius: 0.35, depth: 0.85, smooth: 0.5, sens: 0.6, pinch: 'rotate', clay: 0.5, elastic: 0.6, spin: 5, inertia: 0.6, axis: 'y', stretch: 'off', keep: 'on', trail: 'off', skeleton: 'on', preview: 'on' }, extras: [{ key: 'mode', label: 'Действие пальцев', type: 'seg', options: [['gesture', 'По жесту'], ['push', 'Толкать'], ['pull', 'Тянуть'], ['swirl', 'Вихрь']] }, { key: 'fingers', label: 'Чем касаться', type: 'seg', options: [['all', 'Всей рукой'], ['tips', 'Кончики'], ['index', 'Указат.'], ['palm', 'Ладонь']] }, { key: 'power', label: 'Мощность касания', min: 0.05, max: 1.5, step: 0.05 }, { key: 'radius', label: 'Радиус пальцев', min: 0.1, max: 0.9, step: 0.05 }, { key: 'depth', label: 'Глубина касания', min: 0.1, max: 1.5, step: 0.05 }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { type: 'title', label: 'Вращение и масштаб' }, { key: 'pinch', label: 'Щипок (большой + указательный)', type: 'seg', options: [['rotate', 'Вращать'], ['sculpt', 'Лепить'], ['wave', 'Волна'], ['none', 'Нет']] }, { key: 'clay', label: 'Размер куска глины', min: 0.2, max: 1.2, step: 0.05 }, { key: 'elastic', label: 'Упругость (возврат формы)', min: 0, max: 3, step: 0.1 }, { key: 'spin', label: 'Скорость вращения', min: 1, max: 14, step: 0.5 }, { key: 'inertia', label: 'Инерция вращения', min: 0, max: 0.98, step: 0.02 }, { key: 'axis', label: 'Оси вращения', type: 'seg', options: [['y', 'Вокруг'], ['xy', 'Свободно']] }, { key: 'stretch', label: 'Две руки меняют размер', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']] }, { key: 'keep', label: 'Запоминать размер', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }, { type: 'title', label: 'Показ' }, { key: 'trail', label: 'След от пальцев', type: 'seg', options: [['off', 'Нет'], ['on', 'Светится']] }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
-	{ id: 'gravity', group: 'Взаимодействие', name: 'Гравитация', icon: 'planet', hint: 'Поле тяготения: точки кружат диском вокруг центра, падают в чёрную дыру или парят в невесомости. Центром может быть курсор или палец', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, mode: 'orbit', target: 'cursor', speed: 1, flatten: 0.35, radius: 1.6 }, extras: [{ key: 'mode', label: 'Вид поля', type: 'seg', options: [['orbit', 'Орбита'], ['hole', 'Дыра'], ['float', 'Невесомость']] }, { key: 'target', label: 'Центр', type: 'seg', options: [['cursor', 'Курсор / палец'], ['center', 'Центр формы']] }, { key: 'radius', label: 'Радиус поля', min: 0.4, max: 3.5, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.1 }, { key: 'flatten', label: 'Сплющивание в диск', min: 0, max: 0.95, step: 0.05 }] },
+	{ id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки и пальцы. Каждому жесту назначается своё действие: ладонь, кулак, щипок, указательный палец', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush', power: 0.35, radius: 0.35, depth: 0.85, spin: 5, inertia: 0.6, axis: 'y', clay: 0.5, elastic: 0.6, stretch: 'off', keep: 'on', smooth: 0.5, sens: 0.6, hold: 0.12, skeleton: 'on', preview: 'on' }, extras: [{ type: 'preset' }, { type: 'title', label: 'Что делает жест' }, { key: 'g_palm', label: 'Ладонь (пальцы раскрыты)', type: 'select', options: FX_ACTIONS }, { key: 'g_fist', label: 'Кулак', type: 'select', options: FX_ACTIONS }, { key: 'g_pinch', label: 'Щипок (большой + указательный)', type: 'select', options: FX_ACTIONS }, { key: 'g_point', label: 'Указательный палец', type: 'select', options: FX_ACTIONS }, { type: 'title', label: 'Касание пальцами' }, { key: 'power', label: 'Мощность', min: 0.05, max: 1.5, step: 0.05 }, { key: 'radius', label: 'Радиус', min: 0.1, max: 0.9, step: 0.05 }, { key: 'depth', label: 'Глубина касания', min: 0.1, max: 1.5, step: 0.05 }, { type: 'title', label: 'Вращение' }, { key: 'spin', label: 'Скорость', min: 1, max: 14, step: 0.5 }, { key: 'inertia', label: 'Инерция', min: 0, max: 0.98, step: 0.02 }, { key: 'axis', label: 'Оси', type: 'seg', options: [['y', 'Вокруг'], ['xy', 'Свободно']] }, { type: 'title', label: 'Лепка' }, { key: 'clay', label: 'Размер куска глины', min: 0.2, max: 1.2, step: 0.05 }, { key: 'elastic', label: 'Упругость (возврат формы)', min: 0, max: 3, step: 0.1 }, { type: 'title', label: 'Две руки' }, { key: 'stretch', label: 'Меняют размер формы', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']] }, { key: 'keep', label: 'Запоминать размер', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }, { type: 'title', label: 'Распознавание и показ' }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'hold', label: 'Задержка жеста, с', min: 0, max: 0.5, step: 0.02 }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
+	{ id: 'gravity', group: 'Взаимодействие', name: 'Гравитация', icon: 'planet', hint: 'Поле тяготения: галактика с дифференциальным вращением, квазар с джетами или невесомость. Центром может быть курсор или рука', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, mode: 'orbit', target: 'cursor', speed: 1, flatten: 0.6, radius: 1.8, tilt: 0.5, precess: 0.15, jet: 1.4 }, extras: [{ key: 'mode', label: 'Вид поля', type: 'seg', options: [['orbit', 'Галактика'], ['hole', 'Квазар'], ['float', 'Невесомость']] }, { key: 'target', label: 'Центр', type: 'seg', options: [['cursor', 'Курсор / рука'], ['center', 'Центр формы']] }, { key: 'radius', label: 'Радиус поля', min: 0.4, max: 3.5, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.1 }, { key: 'flatten', label: 'Сплющивание в диск', min: 0, max: 0.95, step: 0.05 }, { key: 'tilt', label: 'Наклон диска', min: 0, max: 1.5, step: 0.05 }, { key: 'precess', label: 'Покачивание оси', min: 0, max: 1, step: 0.05 }, { key: 'jet', label: 'Длина джетов (квазар)', min: 0, max: 3, step: 0.1 }] },
 ];
 
 const FX_PALETTES = [
@@ -132837,6 +132884,9 @@ uniform vec4 uCurl, uSpec, uWave, uTwist, uPulse, uVoxel, uJitter, uCursor, uMas
 uniform vec4 uTrk[16];
 uniform vec4 uHand[12];
 uniform vec4 uGrav;
+uniform vec4 uGravT;
+uniform vec4 uPhysP;
+uniform float uAsm;
 uniform vec4 uDis;
 uniform float uDisT;
 uniform vec4 uGravP;
@@ -132986,28 +133036,73 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		vec3 gq = pos - uGravP.xyz;
 		float gr = length(gq) + 1e-3;
 		float gin = 1.0 - smoothstep(uGravP.w * 0.7, uGravP.w * 1.7, gr);
-		float ga = uGrav.x * gin;
+		float ga = min(uGrav.x * gin, 1.0);
+		// ось диска: наклонена и медленно покачивается
+		vec3 up = normalize(vec3(sin(uGravT.x) * cos(uGravT.y), cos(uGravT.x), sin(uGravT.x) * sin(uGravT.y)));
+		vec3 ref = abs(up.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+		vec3 e1 = normalize(cross(ref, up));
+		vec3 e2 = cross(up, e1);
+		float lx = dot(gq, e1);
+		float lh = dot(gq, up);
+		float lz = dot(gq, e2);
 		if (uGrav.y < 0.5) {
-			float ang = t * uGrav.z * (0.5 + 1.4 / (gr + 0.3)) * ga;
-			float c = cos(ang);
-			float s = sin(ang);
-			gq.xz = mat2(c, -s, s, c) * gq.xz;
-			gq.y *= 1.0 - uGrav.w * min(ga, 1.0);
+			// галактика: у центра крутится быстрее, закручиваясь в рукава; диск слегка коробится
+			float om = uGrav.z * 1.15 / (0.45 + gr * 0.9);
+			float ang = om * t * ga;
+			float ca = cos(ang);
+			float sa = sin(ang);
+			float nx = lx * ca - lz * sa;
+			float nz = lx * sa + lz * ca;
+			float az = atan(nz, nx);
+			lh = lh * (1.0 - uGrav.w * ga) + 0.07 * gr * sin(az * 2.0 + t * 0.4) * ga;
+			// спиральные рукава: плотность волной уходит от центра к краю
+			float arm = sin(2.0 * az - 3.4 * log(gr + 0.15) + t * 0.25);
+			float ar = 1.0 + 0.3 * arm * ga * uGrav.w;
+			lx = nx * ar;
+			lz = nz * ar;
 		} else if (uGrav.y < 1.5) {
-			float ph = fract(t * 0.18 * uGrav.z + hash11(aIdx * 91.7));
-			float inw = ph * ph;
-			float ang = inw * 7.0 * ga;
-			float c = cos(ang);
-			float s = sin(ang);
-			gq.xz = mat2(c, -s, s, c) * gq.xz;
-			gq *= 1.0 - inw * 0.92 * min(ga, 1.0);
+			// квазар: падение по спирали, сплющивание в диск, затем выброс вдоль оси двумя джетами
+			float h1 = hash11(aIdx * 91.7);
+			float ph = fract(t * 0.16 * uGrav.z + h1);
+			float sg = h1 > 0.5 ? 1.0 : -1.0;
+			float r0 = max(gr, 0.08);
+			if (ph < 0.8 || uGravT.w < 0.01) {
+				float s = clamp(ph / 0.8, 0.0, 1.0);
+				float rr = r0 * pow(1.0 - s, 1.6) + 0.03;
+				float ang = s * s * 11.0 * ga;
+				float az0 = atan(lz, lx);
+				float flt = 1.0 - uGrav.w * s * ga;
+				float ha = lh * flt;
+				float k = mix(1.0, rr / r0, ga);
+				float rl = length(vec2(lx, lz)) * k;
+				lx = cos(az0 + ang) * rl;
+				lz = sin(az0 + ang) * rl;
+				lh = ha * mix(1.0, rr / r0, ga);
+			} else {
+				float u = (ph - 0.8) / 0.2;
+				float len = uGravT.w * (0.4 + h1 * 0.9) * u * u * ga;
+				float az0 = atan(lz, lx) + t * 2.0;
+				lx = cos(az0) * 0.05 * (1.0 - u * 0.5);
+				lz = sin(az0) * 0.05 * (1.0 - u * 0.5);
+				lh = sg * (0.08 + len);
+			}
 		} else {
+			// невесомость: медленное вращение, покачивание в трёх осях и мягкое «дыхание» облака
 			float sd = aIdx * 61.0;
-			gq.y += ga * (0.22 * sin(t * uGrav.z * 0.8 + sd) + 0.1 * t * uGrav.z * 0.0);
-			gq.xz += ga * 0.1 * vec2(sin(t * uGrav.z * 0.6 + sd * 1.7), cos(t * uGrav.z * 0.5 + sd * 0.9));
-			gq *= 1.0 + 0.16 * ga * (0.5 + 0.5 * sin(t * 0.5 * uGrav.z + sd));
+			float ang = 0.14 * uGrav.z * t * ga;
+			float ca = cos(ang);
+			float sa = sin(ang);
+			float nx = lx * ca - lz * sa;
+			float nz = lx * sa + lz * ca;
+			lx = nx + ga * 0.12 * sin(t * 0.55 * uGrav.z + sd * 1.3);
+			lz = nz + ga * 0.12 * cos(t * 0.5 * uGrav.z + sd * 0.8);
+			lh += ga * 0.2 * sin(t * 0.7 * uGrav.z + sd);
+			float br = 1.0 + 0.2 * ga * (0.5 + 0.5 * sin(t * 0.35 * uGrav.z + sd * 0.4));
+			lx *= br;
+			lz *= br;
+			lh *= br;
 		}
-		pos = uGravP.xyz + gq;
+		pos = uGravP.xyz + e1 * lx + up * lh + e2 * lz;
 	}
 	if (uCurl.x > 0.001) {
 		float thr = snoise(base * 1.8 + t * 0.3) * 0.5 + 0.5;
@@ -133079,30 +133174,64 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			}
 		}
 	}
-	// Распад / Физика (гравитация, отскок от пола, ветер)
+	// Распад: раскол сверху вниз, взрыв с закруткой, отскоки от пола; сборка дугами снизу вверх
 	if (uPhysics.x > 0.001) {
 		float seed = hash11(aIdx * 1234.56 + 17.1);
 		float seed2 = hash11(aIdx * 2345.67 + 39.3);
 		float seed3 = hash11(aIdx * 3456.78 + 81.7);
-		vec3 v0 = normalize(base + vec3(seed - 0.5, seed2 - 0.5, seed3 - 0.5) * 1.2) * (0.8 + seed * 1.5);
-		float pt = max(0.0, uCollapseTime - seed * 0.35);
-		float floorY = -1.25;
-		vec3 pPhys = base;
-		pPhys.x += (v0.x * 0.7 + uPhysics.w * 0.9) * pt + sin(pt * 2.5 + seed * 6.28) * 0.12;
-		pPhys.z += v0.z * 0.7 * pt + cos(pt * 2.2 + seed2 * 6.28) * 0.12;
-
+		float yP = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
+		float onset = (1.0 - yP) * uPhysP.y * 1.3 + seed * 0.3;
+		float pt = max(0.0, uCollapseTime - onset);
+		vec3 radd = normalize(base + vec3(1e-3));
+		vec3 tang = normalize(vec3(-base.z, 0.0, base.x) + vec3(1e-3, 0.0, 0.0));
+		vec3 v0 = (radd * (0.5 + seed * 1.1) + tang * uPhysP.z * (0.3 + seed3 * 0.9)) * uPhysP.x;
+		float vy0 = (0.5 + seed2 * 1.0) * uPhysP.x;
 		float g = uPhysics.y * 3.8;
-		float vy0 = max(0.3, v0.y * 1.9);
-		float tBounce = max(0.15, 2.0 * vy0 / g * (1.0 - uPhysics.z * 0.25));
-		float bCount = floor(pt / tBounce);
-		float damp = pow(clamp(uPhysics.z, 0.1, 0.95), bCount);
-		float remT = mod(pt, tBounce);
-		float curVy = vy0 * damp;
-		float curY = floorY + max(0.0, curVy * remT - 0.5 * g * remT * remT);
-		pPhys.y = mix(base.y - 0.5 * g * pt * pt, curY, clamp(pt * 2.0, 0.0, 1.0));
-		if (pPhys.y < floorY) pPhys.y = floorY + abs(sin(pt * 4.0 + seed * 3.0)) * 0.015;
-
-		pos = mix(pos, pPhys, smoothstep(0.0, 1.0, uPhysics.x));
+		float floorY = uYR.x - 0.04;
+		float drag = 1.0 - exp(-pt * 1.5);
+		vec3 pPhys = base;
+		pPhys.x += v0.x * drag / 1.5 + uPhysics.w * 0.35 * pt;
+		pPhys.z += v0.z * drag / 1.5;
+		float h0 = max(base.y - floorY, 0.0);
+		float vimp = sqrt(vy0 * vy0 + 2.0 * g * h0);
+		float t1 = (vy0 + vimp) / g;
+		float yy;
+		if (pt < t1) {
+			yy = base.y + vy0 * pt - 0.5 * g * pt * pt;
+		} else {
+			float tt = pt - t1;
+			float vy = vimp * uPhysics.z;
+			float hh = 0.0;
+			for (int b = 0; b < 4; b++) {
+				float T = 2.0 * vy / g;
+				if (tt < T) {
+					hh = vy * tt - 0.5 * g * tt * tt;
+					break;
+				}
+				tt -= T;
+				vy *= uPhysics.z;
+			}
+			yy = floorY + max(hh, 0.0);
+		}
+		pPhys.y = max(yy, floorY);
+		// вращение осколков вокруг вертикали, пока летят
+		float spinA = (1.0 - exp(-pt * 1.2)) * uPhysP.z * (seed2 - 0.5) * 2.0;
+		vec2 sq = pPhys.xz;
+		float cs = cos(spinA);
+		float sn = sin(spinA);
+		pPhys.xz = vec2(sq.x * cs - sq.y * sn, sq.x * sn + sq.y * cs);
+		float strength = min(1.0, uPhysics.x);
+		vec3 target = mix(pos, pPhys, strength);
+		if (uAsm > 0.0) {
+			float s0 = yP * 0.42 + seed * 0.2;
+			float sA = clamp((uAsm * 1.4 - s0) / 0.55, 0.0, 1.0);
+			float eA = sA * sA * (3.0 - 2.0 * sA);
+			vec3 side = normalize(cross(pPhys - pos, vec3(0.0, 1.0, 0.0)) + vec3(1e-3));
+			target = mix(target, pos, eA);
+			target += side * sin(eA * 3.14159) * 0.45 * (seed3 - 0.3);
+			target.y += sin(eA * 3.14159) * 0.5 * (0.4 + seed);
+		}
+		pos = target;
 	}
 	if (uHandP.x > 0.001) {
 		for (int i = 0; i < 12; i++) {
@@ -133114,13 +133243,14 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 				float f = 1.0 - sqrt(d2) / r;
 				f = f * f * (3.0 - 2.0 * f);
 				float hs = uHand[i].w;
-				if (uHandP.z > 0.5) {
-					float a = f * abs(hs) * uHandP.x * 2.6;
+				if (hs > 1.5) {
+					hs -= 2.0;
+					float a = f * hs * uHandP.x * 2.6;
 					float ca = cos(a);
 					float sa = sin(a);
 					vec2 q = pos.xz - uHand[i].xz;
 					pos.xz = uHand[i].xz + vec2(q.x * ca - q.y * sa, q.x * sa + q.y * ca);
-					pos.y += f * abs(hs) * uHandP.x * 0.12;
+					pos.y += f * hs * uHandP.x * 0.12;
 				} else {
 					pos += normalize(hd + vec3(1e-3)) * f * hs * uHandP.x * 0.75;
 				}
@@ -133197,7 +133327,7 @@ void main() {
 		for (int i = 0; i < 12; i++) {
 			if (float(i) >= uHandP.w) break;
 			float hdst = distance(pos, uHand[i].xyz);
-			if (hdst < uHandP.y) hg = max(hg, (1.0 - hdst / uHandP.y) * abs(uHand[i].w));
+			if (hdst < uHandP.y) hg = max(hg, (1.0 - hdst / uHandP.y) * (uHand[i].w > 1.5 ? uHand[i].w - 2.0 : abs(uHand[i].w)));
 		}
 		vColor += uP2 * hg * hg * 1.6 * uHandP.x;
 	}
@@ -133883,6 +134013,7 @@ class EffectsEngine {
 		this._up = (e) => this._onUp(e);
 		this.isCollapsed = false;
 		this.collapseProgress = 0;
+		this.asm = 0;
 		this.collapseTime = 0;
 		this.brushHits = [];
 		this.post = null;
@@ -133891,8 +134022,13 @@ class EffectsEngine {
 	}
 
 	toggleCollapse() {
-		this.isCollapsed = !this.isCollapsed;
-		this.state.layers.physics.on = true;
+		this.setCollapse(!this.isCollapsed);
+	}
+
+	setCollapse(v) {
+		if (this.isCollapsed === v) return;
+		this.isCollapsed = v;
+		if (v) this.state.layers.physics.on = true;
 		this.emit();
 	}
 
@@ -134032,6 +134168,12 @@ class EffectsEngine {
 		this._stretchTarget = 1;
 		this._stretchBase = null;
 		this._spin = null;
+		this._handGrav = null;
+		this._handDis = false;
+		if (this._handBreak) {
+			this._handBreak = false;
+			this.setCollapse(false);
+		}
 		if (this.points) this.points.scale.setScalar(1);
 	}
 
@@ -134086,9 +134228,9 @@ class EffectsEngine {
 		this.mouseOn = true;
 		this._camT = this._time;
 		this._handsT = this._time;
-		this._handPtrs = [{ local: loc.clone(), s: cfg.mode === 'pull' ? -1 : 1, ndc: [this._camPos.x, this._camPos.y] }];
-		if (cfg.trail === 'on' || this.state.layers.brush.on) this.addBrushHit(loc);
-		if (cfg.pinch === 'wave' && f.energy > 0.16 && this._time - (this._camShockT || 0) > 0.8) {
+		this._handPtrs = [{ local: loc.clone(), s: cfg.g_palm === 'pull' ? -1 : cfg.g_palm === 'swirl' ? 3 : 1, ndc: [this._camPos.x, this._camPos.y] }];
+		if (cfg.g_palm === 'brush' || this.state.layers.brush.on) this.addBrushHit(loc);
+		if (cfg.g_palm === 'wave' && f.energy > 0.16 && this._time - (this._camShockT || 0) > 0.8) {
 			this._camShockT = this._time;
 			this.addShock(loc);
 			this._waveT = this._time;
@@ -134099,68 +134241,84 @@ class EffectsEngine {
 		const hands = f.hands;
 		this._hands = hands;
 		this._camActive = hands.length > 0;
-		const txt = hands.length ? (hands.length > 1 ? 'Вижу две руки' : 'Вижу руку: двигайте пальцами') : 'Покажите ладонь перед камерой';
+		const actLabel = (a) => (FX_ACTIONS.find((x) => x[0] === a) || [0, ''])[1];
+		const t = this.camTracker;
+		t.hold = cfg.hold;
+		t.names = { palm: actLabel(cfg.g_palm), fist: actLabel(cfg.g_fist), pinch: actLabel(cfg.g_pinch), point: actLabel(cfg.g_point) };
+		const txt = hands.length ? (hands.length > 1 ? 'Вижу две руки' : 'Вижу руку: покажите жест') : 'Покажите руку перед камерой';
 		if (this.camHint && this.camHint.textContent !== txt) this.camHint.textContent = txt;
 		const ptrs = [];
 		const aspect = f.aspect || 4 / 3;
 		const st = this._handState || (this._handState = new Map());
+		const grabs = this._grabs || (this._grabs = new Map());
 		const now = this._time;
+		const loc2 = (p) => this._ndcToLocal(p[0] * 2 - 1, -(p[1] * 2 - 1), new THREE.Vector3(), cfg.depth);
+		let wantBreak = false, wantDis = false, grav = null, brushNow = false;
 		for (const hd of hands) {
-			// «по жесту»: открытая ладонь толкает, кулак и щипок притягивают
-			let s = cfg.mode === 'push' ? 1 : cfg.mode === 'pull' ? -1 : cfg.mode === 'swirl' ? 1 : Math.max(-1, Math.min(1, (hd.open - 0.45) * 2.2));
-			if (cfg.mode === 'gesture' && hd.pinch > 0.6) s = -1;
-			let list = [...hd.tips, hd.palm];
-			if (cfg.fingers === 'tips') list = list.slice(0, 5);
-			else if (cfg.fingers === 'index') list = [hd.tips[1]];
-			else if (cfg.fingers === 'palm') list = [hd.palm];
-			for (let i = 0; i < list.length; i++) {
-				const p = list[i];
-				const nx = p[0] * 2 - 1;
-				const ny = -(p[1] * 2 - 1);
-				const loc = this._ndcToLocal(nx, ny, new THREE.Vector3(), cfg.depth);
-				if (loc) ptrs.push({ local: loc, s: list.length === 6 && i === 5 ? s * 0.8 : s, ndc: [nx, ny] });
-			}
-			const idx = hd.tips[1];
-			const ix = this._ndcToLocal(idx[0] * 2 - 1, -(idx[1] * 2 - 1), new THREE.Vector3(), cfg.depth);
-			const prev = st.get(hd.id) || { palmX: hd.palm[0], palmY: hd.palm[1], pinch: 0, t: now };
+			const g = hd.gesture;
+			const a = g === 'none' ? 'none' : cfg['g_' + g];
+			const prev = st.get(hd.id) || { palmX: hd.palm[0], palmY: hd.palm[1], a: 'none', g: 'none', t: now };
 			const dtH = Math.max(0.016, Math.min(0.2, now - prev.t));
-			if (ix) {
-				if (hands[0] === hd) {
-					this.mouse.copy(ix);
-					this.mouseOn = true;
-					this._camT = now;
+			const entered = prev.a !== a;
+			const mid = [(hd.tips[0][0] + hd.tips[1][0]) / 2, (hd.tips[0][1] + hd.tips[1][1]) / 2];
+			const focus = g === 'pinch' ? mid : g === 'point' ? hd.tips[1] : hd.palm;
+			const fl = loc2(focus);
+			if (hands[0] === hd && fl) {
+				this.mouse.copy(fl);
+				this.mouseOn = true;
+				this._camT = now;
+			}
+			if (a === 'push' || a === 'pull' || a === 'swirl') {
+				const sv = a === 'push' ? 1 : a === 'pull' ? -1 : 3;
+				const pts = g === 'palm' ? [...hd.tips, hd.palm] : [focus];
+				for (const p of pts) {
+					const l = loc2(p);
+					if (l) ptrs.push({ local: l, s: sv, ndc: [p[0] * 2 - 1, -(p[1] * 2 - 1)] });
 				}
-				if (cfg.trail === 'on' || this.state.layers.brush.on) for (const tp of hd.tips) {
-					const q = this._ndcToLocal(tp[0] * 2 - 1, -(tp[1] * 2 - 1), new THREE.Vector3(), cfg.depth);
-					if (q) this.addBrushHit(q);
+			} else if (a === 'rotate') {
+				if (!entered) {
+					const sp = this._spin || (this._spin = { x: 0, y: 0 });
+					sp.y += (((hd.palm[0] - prev.palmX) * cfg.spin) / dtH - sp.y) * 0.5;
+					if (cfg.axis === 'xy') sp.x += (((hd.palm[1] - prev.palmY) * cfg.spin) / dtH - sp.x) * 0.5;
+					this._grabbing = now;
 				}
-				if (cfg.pinch === 'wave' && hd.pinch > 0.8 && prev.pinch <= 0.8 && now - (this._camShockT || 0) > 0.5) {
+			} else if (a === 'sculpt' && this.geometry) {
+				const gr = grabs.get(hd.id);
+				if (fl) {
+					if (!gr || entered) grabs.set(hd.id, this._startGrab(fl, cfg.clay));
+					else this._sculptMove(gr, fl);
+				}
+			} else if (a === 'wave') {
+				if (entered && fl && now - (this._camShockT || 0) > 0.5) {
 					this._camShockT = now;
-					this.addShock(ix);
+					this.addShock(fl);
 					this._waveT = now;
 				}
+			} else if (a === 'gravity') {
+				if (fl) grav = fl;
+			} else if (a === 'break') wantBreak = true;
+			else if (a === 'dissolve') wantDis = true;
+			else if (a === 'brush') {
+				brushNow = true;
+				const pts = g === 'palm' ? hd.tips : [focus];
+				for (const p of pts) {
+					const q = loc2(p);
+					if (q) this.addBrushHit(q);
+				}
 			}
-			if (cfg.pinch === 'rotate' && hd.pinch > 0.7 && prev.pinch > 0.5) {
-				const sp = this._spin || (this._spin = { x: 0, y: 0 });
-				sp.y += ((((hd.palm[0] - prev.palmX) * cfg.spin) / dtH) * 1.0 - sp.y) * 0.5;
-				if (cfg.axis === 'xy') sp.x += ((((hd.palm[1] - prev.palmY) * cfg.spin) / dtH) - sp.x) * 0.5;
-				this._grabbing = now;
-			}
-			if (cfg.pinch === 'sculpt' && this.geometry) {
-				const grabs = this._grabs || (this._grabs = new Map());
-				const gr = grabs.get(hd.id);
-				const mid = [(hd.tips[0][0] + hd.tips[1][0]) / 2, (hd.tips[0][1] + hd.tips[1][1]) / 2];
-				const loc = this._ndcToLocal(mid[0] * 2 - 1, -(mid[1] * 2 - 1), new THREE.Vector3(), cfg.depth);
-				if (loc && hd.pinch > 0.7) {
-					if (!gr) grabs.set(hd.id, this._startGrab(loc, cfg.clay));
-					else this._sculptMove(gr, loc);
-				} else if (gr) grabs.delete(hd.id);
-			}
-			st.set(hd.id, { palmX: hd.palm[0], palmY: hd.palm[1], pinch: hd.pinch, t: now });
+			if (a !== 'sculpt') grabs.delete(hd.id);
+			st.set(hd.id, { palmX: hd.palm[0], palmY: hd.palm[1], a, g, t: now });
 		}
 		for (const key of [...st.keys()]) if (!hands.some((h) => h.id === key)) {
 			st.delete(key);
-			this._grabs?.delete(key);
+			grabs.delete(key);
+		}
+		if (brushNow) this._brushHand = now;
+		this._handGrav = grav;
+		this._handDis = wantDis;
+		if (wantBreak !== !!this._handBreak) {
+			this._handBreak = wantBreak;
+			this.setCollapse(wantBreak);
 		}
 		if (cfg.stretch === 'on' && hands.length === 2) {
 			const d = Math.hypot((hands[0].palm[0] - hands[1].palm[0]) * aspect, hands[0].palm[1] - hands[1].palm[1]);
@@ -134432,7 +134590,7 @@ class EffectsEngine {
 			uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 			uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
 			uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
-			uAlive: U(new THREE.Vector4()), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
+			uAlive: U(new THREE.Vector4()), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 		};
 		const mk = (extra) =>
 			new THREE.ShaderMaterial({
@@ -134907,21 +135065,27 @@ class EffectsEngine {
 			u.uGlitch.value.set(this._eff(L.glitch), L.glitch.slices, 0, 0);
 			u.uCursor.value.set(this._eff(L.cursor), L.cursor.radius, L.cursor.mode === 'attract' ? -1 : 1, 0);
 
-			// Распад / Физика
-			const physOn = L.physics ? L.physics.on : false;
-			if (this.isCollapsed && physOn) {
-				this.collapseProgress = Math.min(1, this.collapseProgress + dt * 0.75);
-				this.collapseTime += dt;
-			} else {
-				this.collapseProgress = Math.max(0, this.collapseProgress - dt * 1.25);
-				if (this.collapseProgress <= 0.001) this.collapseTime = 0;
+			// Распад: взрыв, пока форма разрушена, и сборка дугами после
+			{
+				const P = L.physics;
+				if (this.isCollapsed && P.on) {
+					this.asm = 0;
+					this.collapseTime += dt;
+				} else if (this.collapseTime > 0) {
+					this.asm = Math.min(1, this.asm + dt / Math.max(0.5, P.asm));
+					if (this.asm >= 1) {
+						this.asm = 0;
+						this.collapseTime = 0;
+					}
+				}
+				u.uPhysics.value.set(this.collapseTime > 0 ? Math.max(0.01, this._eff(P)) : 0, P.gravity, P.bounce, P.wind);
+				u.uPhysP.value.set(P.burst, P.peel, P.swirl, 0);
+				u.uAsm.value = this.asm;
+				u.uCollapseTime.value = this.collapseTime;
 			}
-			const physEff = L.physics ? this._eff(L.physics) * this.collapseProgress : 0;
-			u.uPhysics.value.set(physEff, L.physics ? L.physics.gravity : 1.2, L.physics ? L.physics.bounce : 0.65, L.physics ? L.physics.wind : 0.4);
-			u.uCollapseTime.value = this.collapseTime;
 
 			// Кисть
-			const brE = Math.max(L.brush ? this._eff(L.brush) : 0, this.camTracker?.running && L.camTrack.trail === 'on' ? 1 : 0);
+			const brE = Math.max(L.brush ? this._eff(L.brush) : 0, this.camTracker?.running && this._time - (this._brushHand ?? -9) < 0.4 ? 1 : 0);
 			const brArr = u.uBrushHits.value;
 			for (let i = 0; i < 20; i++) {
 				const hit = this.brushHits[i];
@@ -134972,6 +135136,9 @@ class EffectsEngine {
 					} else p = D.progress;
 					p = p * p * (3 - 2 * p) * Math.min(1, D.amount);
 				}
+				const hand = this.camTracker?.running && this._handDis && this._time - (this._handsT ?? -9) < 0.4;
+				this._disH = (this._disH || 0) + ((hand ? 1 : 0) - (this._disH || 0)) * (1 - Math.exp(-dt * Math.max(0.5, D.speed) * 1.2));
+				if (this._disH > 0.002) p = Math.max(p, this._disH * this._disH * (3 - 2 * this._disH));
 				u.uDis.value.set(p, { top: 0, noise: 1, bottom: 2 }[D.order] ?? 0, D.fall, D.wind);
 				u.uDisT.value = D.turb;
 			}
@@ -134991,18 +135158,22 @@ class EffectsEngine {
 					if (mx < 5e-4) this.clearSculpt();
 				}
 			}
-			// гравитация: центр поля
+			// гравитация: центр поля (курсор, рука или центр формы)
 			{
 				const g = L.gravity;
-				const ge = this._eff(g);
+				const handG = this.camTracker?.running && this._handGrav && this._time - (this._handsT ?? -9) < 0.4;
+				this._gravF = (this._gravF || 0) + ((handG ? 1 : 0) - (this._gravF || 0)) * (1 - Math.exp(-dt * 5));
+				const ge = Math.max(this._eff(g), this._gravF * L.camTrack.amount);
 				if (!this._gc) this._gc = new THREE.Vector3();
-				const useCur = g.target === 'cursor' && this.mouseOn;
-				const tgt = useCur ? this.mouse : new THREE.Vector3();
+				const tgt = handG ? this._handGrav : g.target === 'cursor' && this.mouseOn ? this.mouse : new THREE.Vector3();
 				this._gc.lerp(tgt, 1 - Math.exp(-dt * 8));
+				this._gPrec = (this._gPrec || 0) + dt * g.precess * 1.2;
+				const mode = { orbit: 0, hole: 1, float: 2 }[g.mode] ?? 0;
 				// диск и воронка сжимают точки в тесную область: приглушаем, чтобы не выгорало
-				u.uDens.value *= 1 - Math.min(0.7, ge * (g.mode === 'orbit' ? g.flatten * 0.8 : g.mode === 'hole' ? 0.5 : 0));
-				u.uGrav.value.set(ge, { orbit: 0, hole: 1, float: 2 }[g.mode] ?? 0, g.speed, g.flatten);
-				u.uGravP.value.set(this._gc.x, this._gc.y, this._gc.z, g.target === 'center' ? 4 : g.radius);
+				u.uDens.value /= 1 + Math.min(1, ge) * (mode === 0 ? g.flatten * 5 : mode === 1 ? 2 : 0);
+				u.uGrav.value.set(ge, mode, g.speed, g.flatten);
+				u.uGravT.value.set(g.tilt + Math.sin(this._gPrec) * 0.18 * g.precess, this._gPrec * 0.6, 0, g.jet);
+				u.uGravP.value.set(this._gc.x, this._gc.y, this._gc.z, g.target === 'center' && !handG ? 4 : g.radius);
 			}
 			// живая форма
 			const al = this._eff(L.alive);
@@ -135081,7 +135252,7 @@ class EffectsEngine {
 					else arr[i].set(0, 0, 0, 0);
 				}
 				const he = running && cfg.on ? cfg.amount * cfg.power : 0;
-				u.uHandP.value.set(fade > 0 ? he : 0, cfg.radius, cfg.mode === 'swirl' ? 1 : 0, n);
+				u.uHandP.value.set(fade > 0 ? he : 0, cfg.radius, 0, n);
 				// вращение руками: скорость затухает с инерцией, когда щипок отпущен
 				const sp = this._spin;
 				if (sp && running) {
@@ -135212,7 +135383,7 @@ const THREE = __req('vendor/three/build/three.module.js');
 const { sampleSurface } = __req('src/pointcloud.js');
 const { getDevice } = __req('src/device-card.js');
 const { formatCount } = __req('src/capabilities.js');
-const { FX_SHAPES, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } = __req('src/effects-engine.js');
+const { FX_SHAPES, FX_ACTIONS, FX_GESTURE_PRESETS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } = __req('src/effects-engine.js');
 
 /**
  * Источник «Модель» для эффектов: если в сцене редактора есть облако точек (оно создаётся на вкладке «Точки»),
@@ -135475,7 +135646,23 @@ function createEffectsPanel(app, root, engine) {
 					save();
 					if (ex.relink) engine.relink();
 				};
-				if (ex.type === 'title') {
+				if (ex.type === 'preset') {
+					const row = h('div', { class: 'chip-row' });
+					for (const pr of FX_GESTURE_PRESETS) {
+						const b = h('button', { type: 'button', class: 'chip-btn', 'data-tip': pr.tip }, pr.name);
+						b.addEventListener('click', () => {
+							Object.assign(L, pr.v);
+							for (const [k, v] of Object.entries(pr.v)) extraCtl[k]?.set(v);
+							save();
+						});
+						row.append(b);
+					}
+					body.append(field('Готовые схемы', row, { wide: true }));
+				} else if (ex.type === 'select') {
+					const sl = select({ options: ex.options.map(([value, label]) => ({ value, label })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
+					extraCtl[ex.key] = sl;
+					body.append(field(ex.label, sl.el, { wide: true }));
+				} else if (ex.type === 'title') {
 					body.append(h('div', { class: 'fx-sub' }, ex.label));
 				} else if (ex.type === 'color') {
 					const ctl = colorChoice(L, ex.key, after);
@@ -135752,6 +135939,8 @@ function createEffectsPanel(app, root, engine) {
 		playBtn.textContent = '';
 		playBtn.append(h('span', { class: 'ic-wrap', html: icon(engine.playing ? 'pause' : 'play', 18) }));
 		collapseBtn.classList.toggle('is-active', engine.isCollapsed);
+		const pl = document.querySelector('.fx-insp[data-layer="physics"] .btn-label');
+		if (pl) pl.textContent = engine.isCollapsed ? 'Собрать форму' : 'Разрушить форму';
 		brushBtn.classList.toggle('is-active', !!st.layers.brush?.on);
 		camBtn.classList.toggle('is-active', !!engine.camTracker?.running);
 		orthoBtn.classList.toggle('is-active', !!app.nav.ortho);

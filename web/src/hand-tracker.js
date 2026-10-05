@@ -51,6 +51,9 @@ this._timer = null;
 this._last = -1;
 this._conf = 0;
 this._state = new Map();
+this._gest = new Map();
+this.hold = 0.12;
+this.names = {};
 }
 _confFor() {
 return Math.round((0.75 - this.sens * 0.45) * 100) / 100;
@@ -114,11 +117,30 @@ let prev = this._state.get(label);
 const raw = lm.map((p) => [1 - p.x, p.y]);
 const pts = prev ? raw.map((p, j) => [prev[j][0] + (p[0] - prev[j][0]) * k, prev[j][1] + (p[1] - prev[j][1]) * k]) : raw;
 this._state.set(label, pts);
-out.push(measure(pts, aspect, label));
+const hd = measure(pts, aspect, label);
+hd.gesture = this._stable(label, hd.rawGesture);
+out.push(hd);
 });
 }
-for (const key of [...this._state.keys()]) if (!seen.has(key)) this._state.delete(key);
+for (const key of [...this._state.keys()]) if (!seen.has(key)) {
+this._state.delete(key);
+this._gest.delete(key);
+}
 return out;
+}
+_stable(key, raw) {
+const now = performance.now() / 1000;
+let g = this._gest.get(key);
+if (!g) g = { cur: raw, cand: raw, t: now };
+if (raw === g.cur) g.cand = raw;
+else if (raw === g.cand) {
+if (now - g.t >= this.hold) g.cur = raw;
+} else {
+g.cand = raw;
+g.t = now;
+}
+this._gest.set(key, g);
+return g.cur;
 }
 _draw(hands) {
 const c = this.pctx;
@@ -151,7 +173,7 @@ c.arc(p[0], p[1], TIPS.includes(i) ? 4 : 2.2, 0, Math.PI * 2);
 c.fillStyle = TIPS.includes(i) ? '#e58a45' : '#ffffff';
 c.fill();
 }
-if (hd.pinch > 0.6) {
+if (hd.gesture === 'pinch') {
 const a = P(4);
 const b = P(8);
 c.strokeStyle = '#fff0dc';
@@ -162,7 +184,9 @@ c.stroke();
 }
 const wr = P(0);
 c.font = '600 11px Geist, system-ui, sans-serif';
-const text = hd.pinch > 0.6 ? 'Щипок' : hd.open > 0.65 ? 'Ладонь' : hd.open < 0.25 ? 'Кулак' : 'Рука';
+const GN = { palm: 'Ладонь', fist: 'Кулак', pinch: 'Щипок', point: 'Палец', none: 'Рука' };
+const act = this.names[hd.gesture];
+const text = GN[hd.gesture] + (act ? ' \u2192 ' + act : '');
 const tw = c.measureText(text).width;
 c.fillStyle = 'rgba(20,23,27,0.75)';
 c.fillRect(wr[0] - tw / 2 - 5, wr[1] + 8, tw + 10, 17);
@@ -195,5 +219,12 @@ for (const t of [8, 12, 16, 20]) ext += dist(pts[t], pts[0], aspect) / size;
 ext /= 4;
 const open = Math.min(1, Math.max(0, (ext - 1.0) / 0.9));
 const palm = [0, 5, 9, 13, 17].reduce((s, i) => [s[0] + pts[i][0] / 5, s[1] + pts[i][1] / 5], [0, 0]);
-return { id, pts, tips: TIPS.map((i) => pts[i]), palm, size, pinch, open };
+const ex = [[8, 6], [12, 10], [16, 14], [20, 18]].map(([t, j]) => dist(pts[t], pts[0], aspect) > dist(pts[j], pts[0], aspect) * 1.12);
+const count = ex.filter(Boolean).length;
+let rawGesture = 'none';
+if (pinch > 0.65) rawGesture = 'pinch';
+else if (count >= 3) rawGesture = 'palm';
+else if (ex[0] && count === 1) rawGesture = 'point';
+else if (count === 0 || open < 0.25) rawGesture = 'fist';
+return { id, pts, tips: TIPS.map((i) => pts[i]), palm, size, pinch, open, ext: ex, rawGesture };
 }
