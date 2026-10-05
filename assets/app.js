@@ -83927,7 +83927,8 @@ class Viewport {
 			this.headlight.target.position.copy(nav.target);
 			this.headlight.target.updateMatrixWorld();
 		}
-		this.renderer.render(this.scene, this.camera);
+		if (this.renderHook) this.renderHook(this.renderer, this.scene, this.camera);
+		else this.renderer.render(this.scene, this.camera);
 		const now = performance.now();
 		const dt = now - (this._lastT || 0);
 		if (dt < 150) this.fps = (this.fps || 60) * 0.85 + (1000 / Math.max(dt, 1)) * 0.15;
@@ -89277,6 +89278,7 @@ __def(__exports, 'loadIcons', () => loadIcons);
 // Сгенерировано build.py из vendor/phosphor (MIT). Не редактировать.
 const ICON_PATHS = {
 	'align-bottom-simple': '<path d="M208,232a8,8,0,0,1-8,8H56a8,8,0,0,1,0-16H200A8,8,0,0,1,208,232ZM80,192V40A16,16,0,0,1,96,24h64a16,16,0,0,1,16,16V192a16,16,0,0,1-16,16H96A16,16,0,0,1,80,192Zm16,0h64V40H96Z"/>',
+	'aperture': '<path d="M201.54,54.46A104,104,0,0,0,54.46,201.54,104,104,0,0,0,201.54,54.46ZM190.23,65.78a88.18,88.18,0,0,1,11,13.48L167.55,119,139.63,40.78A87.34,87.34,0,0,1,190.23,65.78ZM155.59,133l-18.16,21.37-27.59-5L100.41,123l18.16-21.37,27.59,5ZM65.77,65.78a87.34,87.34,0,0,1,56.66-25.59l17.51,49L58.3,74.32A88,88,0,0,1,65.77,65.78ZM46.65,161.54a88.41,88.41,0,0,1,2.53-72.62l51.21,9.35Zm19.12,28.68a88.18,88.18,0,0,1-11-13.48L88.45,137l27.92,78.18A87.34,87.34,0,0,1,65.77,190.22Zm124.46,0a87.34,87.34,0,0,1-56.66,25.59l-17.51-49,81.64,14.91A88,88,0,0,1,190.23,190.22Zm-34.62-32.49,53.74-63.27a88.41,88.41,0,0,1-2.53,72.62Z"/>',
 	'arrow-clockwise': '<path d="M240,56v48a8,8,0,0,1-8,8H184a8,8,0,0,1,0-16H211.4L184.81,71.64l-.25-.24a80,80,0,1,0-1.67,114.78,8,8,0,0,1,11,11.63A95.44,95.44,0,0,1,128,224h-1.32A96,96,0,1,1,195.75,60L224,85.8V56a8,8,0,1,1,16,0Z"/>',
 	'arrow-counter-clockwise': '<path d="M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,197.8a8,8,0,0,1,11-11.63A80,80,0,1,0,71.43,71.39a3.07,3.07,0,0,1-.26.25L44.59,96H72a8,8,0,0,1,0,16H24a8,8,0,0,1-8-8V56a8,8,0,0,1,16,0V85.8L60.25,60A96,96,0,0,1,224,128Z"/>',
 	'arrows-clockwise': '<path d="M224,48V96a8,8,0,0,1-8,8H168a8,8,0,0,1,0-16h28.69L182.06,73.37a79.56,79.56,0,0,0-56.13-23.43h-.45A79.52,79.52,0,0,0,69.59,72.71,8,8,0,0,1,58.41,61.27a96,96,0,0,1,135,.79L208,76.69V48a8,8,0,0,1,16,0ZM186.41,183.29a80,80,0,0,1-112.47-.66L59.31,168H88a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V179.31l14.63,14.63A95.43,95.43,0,0,0,130,222.06h.53a95.36,95.36,0,0,0,67.07-27.33,8,8,0,0,0-11.18-11.44Z"/>',
@@ -89286,6 +89288,7 @@ const ICON_PATHS = {
 	'arrows-out-cardinal': '<path d="M90.34,61.66a8,8,0,0,1,0-11.32l32-32a8,8,0,0,1,11.32,0l32,32a8,8,0,0,1-11.32,11.32L136,43.31V96a8,8,0,0,1-16,0V43.31L101.66,61.66A8,8,0,0,1,90.34,61.66Zm64,132.68L136,212.69V160a8,8,0,0,0-16,0v52.69l-18.34-18.35a8,8,0,0,0-11.32,11.32l32,32a8,8,0,0,0,11.32,0l32-32a8,8,0,0,0-11.32-11.32Zm83.32-72-32-32a8,8,0,0,0-11.32,11.32L212.69,120H160a8,8,0,0,0,0,16h52.69l-18.35,18.34a8,8,0,0,0,11.32,11.32l32-32A8,8,0,0,0,237.66,122.34ZM43.31,136H96a8,8,0,0,0,0-16H43.31l18.35-18.34A8,8,0,0,0,50.34,90.34l-32,32a8,8,0,0,0,0,11.32l32,32a8,8,0,0,0,11.32-11.32Z"/>',
 	'arrows-out-simple': '<path d="M216,48V96a8,8,0,0,1-16,0V67.31l-50.34,50.35a8,8,0,0,1-11.32-11.32L188.69,56H160a8,8,0,0,1,0-16h48A8,8,0,0,1,216,48ZM106.34,138.34,56,188.69V160a8,8,0,0,0-16,0v48a8,8,0,0,0,8,8H96a8,8,0,0,0,0-16H67.31l50.35-50.34a8,8,0,0,0-11.32-11.32Z"/>',
 	'arrows-vertical': '<path d="M165.66,194.34a8,8,0,0,1,0,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L120,212.69V43.31L101.66,61.66A8,8,0,0,1,90.34,50.34l32-32a8,8,0,0,1,11.32,0l32,32a8,8,0,0,1-11.32,11.32L136,43.31V212.69l18.34-18.35A8,8,0,0,1,165.66,194.34Z"/>',
+	'atom': '<path d="M196.12,128c24.65-34.61,37.22-70.38,19.74-87.86S162.61,35.23,128,59.88C93.39,35.23,57.62,22.66,40.14,40.14S35.23,93.39,59.88,128c-24.65,34.61-37.22,70.38-19.74,87.86h0c5.63,5.63,13.15,8.14,21.91,8.14,18.48,0,42.48-11.17,66-27.88C151.47,212.83,175.47,224,194,224c8.76,0,16.29-2.52,21.91-8.14h0C233.34,198.38,220.77,162.61,196.12,128Zm8.43-76.55c7.64,7.64,2.48,32.4-18.52,63.28a300.33,300.33,0,0,0-21.19-23.57A300.33,300.33,0,0,0,141.27,70C172.15,49,196.91,43.8,204.55,51.45ZM176.29,128a289.14,289.14,0,0,1-22.76,25.53A289.14,289.14,0,0,1,128,176.29a289.14,289.14,0,0,1-25.53-22.76A289.14,289.14,0,0,1,79.71,128,298.62,298.62,0,0,1,128,79.71a289.14,289.14,0,0,1,25.53,22.76A289.14,289.14,0,0,1,176.29,128ZM51.45,51.45c2.2-2.21,5.83-3.35,10.62-3.35C73.89,48.1,92.76,55,114.72,70A304,304,0,0,0,91.16,91.16,300.33,300.33,0,0,0,70,114.73C49,83.85,43.81,59.09,51.45,51.45Zm0,153.1C43.81,196.91,49,172.15,70,141.27a300.33,300.33,0,0,0,21.19,23.57A304.18,304.18,0,0,0,114.73,186C83.85,207,59.09,212.2,51.45,204.55Zm153.1,0c-7.64,7.65-32.4,2.48-63.28-18.52a304.18,304.18,0,0,0,23.57-21.19A300.33,300.33,0,0,0,186,141.27C207,172.15,212.19,196.91,204.55,204.55ZM140,128a12,12,0,1,1-12-12A12,12,0,0,1,140,128Z"/>',
 	'bounding-box': '<path d="M208,96a16,16,0,0,0,16-16V48a16,16,0,0,0-16-16H176a16,16,0,0,0-16,16v8H96V48A16,16,0,0,0,80,32H48A16,16,0,0,0,32,48V80A16,16,0,0,0,48,96h8v64H48a16,16,0,0,0-16,16v32a16,16,0,0,0,16,16H80a16,16,0,0,0,16-16v-8h64v8a16,16,0,0,0,16,16h32a16,16,0,0,0,16-16V176a16,16,0,0,0-16-16h-8V96ZM176,48h32V80H176ZM48,48H80V63.9a.51.51,0,0,0,0,.2V80H48ZM80,208H48V176H80v15.9a.51.51,0,0,0,0,.2V208Zm128,0H176V176h32Zm-24-48h-8a16,16,0,0,0-16,16v8H96v-8a16,16,0,0,0-16-16H72V96h8A16,16,0,0,0,96,80V72h64v8a16,16,0,0,0,16,16h8Z"/>',
 	'broom': '<path d="M235.5,216.81c-22.56-11-35.5-34.58-35.5-64.8V134.73a15.94,15.94,0,0,0-10.09-14.87L165,110a8,8,0,0,1-4.48-10.34l21.32-53a28,28,0,0,0-16.1-37,28.14,28.14,0,0,0-35.82,16,.61.61,0,0,0,0,.12L108.9,79a8,8,0,0,1-10.37,4.49L73.11,73.14A15.89,15.89,0,0,0,55.74,76.8C34.68,98.45,24,123.75,24,152a111.45,111.45,0,0,0,31.18,77.53A8,8,0,0,0,61,232H232a8,8,0,0,0,3.5-15.19ZM67.14,88l25.41,10.3a24,24,0,0,0,31.23-13.45l21-53c2.56-6.11,9.47-9.27,15.43-7a12,12,0,0,1,6.88,15.92L145.69,93.76a24,24,0,0,0,13.43,31.14L184,134.73V152c0,.33,0,.66,0,1L55.77,101.71A108.84,108.84,0,0,1,67.14,88Zm48,128a87.53,87.53,0,0,1-24.34-42,8,8,0,0,0-15.49,4,105.16,105.16,0,0,0,18.36,38H64.44A95.54,95.54,0,0,1,40,152a85.9,85.9,0,0,1,7.73-36.29l137.8,55.12c3,18,10.56,33.48,21.89,45.16Z"/>',
 	'camera': '<path d="M208,56H180.28L166.65,35.56A8,8,0,0,0,160,32H96a8,8,0,0,0-6.65,3.56L75.71,56H48A24,24,0,0,0,24,80V192a24,24,0,0,0,24,24H208a24,24,0,0,0,24-24V80A24,24,0,0,0,208,56Zm8,136a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V80a8,8,0,0,1,8-8H80a8,8,0,0,0,6.66-3.56L100.28,48h55.43l13.63,20.44A8,8,0,0,0,176,72h32a8,8,0,0,1,8,8ZM128,88a44,44,0,1,0,44,44A44.05,44.05,0,0,0,128,88Zm0,72a28,28,0,1,1,28-28A28,28,0,0,1,128,160Z"/>',
@@ -89333,6 +89336,7 @@ const ICON_PATHS = {
 	'minus': '<path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128Z"/>',
 	'monitor': '<path d="M208,40H48A24,24,0,0,0,24,64V176a24,24,0,0,0,24,24H208a24,24,0,0,0,24-24V64A24,24,0,0,0,208,40Zm8,136a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V64a8,8,0,0,1,8-8H208a8,8,0,0,1,8,8Zm-48,48a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,224Z"/>',
 	'moon': '<path d="M233.54,142.23a8,8,0,0,0-8-2,88.08,88.08,0,0,1-109.8-109.8,8,8,0,0,0-10-10,104.84,104.84,0,0,0-52.91,37A104,104,0,0,0,136,224a103.09,103.09,0,0,0,62.52-20.88,104.84,104.84,0,0,0,37-52.91A8,8,0,0,0,233.54,142.23ZM188.9,190.34A88,88,0,0,1,65.66,67.11a89,89,0,0,1,31.4-26A106,106,0,0,0,96,56,104.11,104.11,0,0,0,200,160a106,106,0,0,0,14.92-1.06A89,89,0,0,1,188.9,190.34Z"/>',
+	'paint-brush': '<path d="M232,32a8,8,0,0,0-8-8c-44.08,0-89.31,49.71-114.43,82.63A60,60,0,0,0,32,164c0,30.88-19.54,44.73-20.47,45.37A8,8,0,0,0,16,224H92a60,60,0,0,0,57.37-77.57C182.3,121.31,232,76.08,232,32ZM92,208H34.63C41.38,198.41,48,183.92,48,164a44,44,0,1,1,44,44Zm32.42-94.45q5.14-6.66,10.09-12.55A76.23,76.23,0,0,1,155,121.49q-5.9,4.94-12.55,10.09A60.54,60.54,0,0,0,124.42,113.55Zm42.7-2.68a92.57,92.57,0,0,0-22-22c31.78-34.53,55.75-45,69.9-47.91C212.17,55.12,201.65,79.09,167.12,110.87Z"/>',
 	'palette': '<path d="M200.77,53.89A103.27,103.27,0,0,0,128,24h-1.07A104,104,0,0,0,24,128c0,43,26.58,79.06,69.36,94.17A32,32,0,0,0,136,192a16,16,0,0,1,16-16h46.21a31.81,31.81,0,0,0,31.2-24.88,104.43,104.43,0,0,0,2.59-24A103.28,103.28,0,0,0,200.77,53.89Zm13,93.71A15.89,15.89,0,0,1,198.21,160H152a32,32,0,0,0-32,32,16,16,0,0,1-21.31,15.07C62.49,194.3,40,164,40,128a88,88,0,0,1,87.09-88h.9a88.35,88.35,0,0,1,88,87.25A88.86,88.86,0,0,1,213.81,147.6ZM140,76a12,12,0,1,1-12-12A12,12,0,0,1,140,76ZM96,100A12,12,0,1,1,84,88,12,12,0,0,1,96,100Zm0,56a12,12,0,1,1-12-12A12,12,0,0,1,96,156Zm88-56a12,12,0,1,1-12-12A12,12,0,0,1,184,100Z"/>',
 	'pause': '<path d="M216,48V208a16,16,0,0,1-16,16H160a16,16,0,0,1-16-16V48a16,16,0,0,1,16-16h40A16,16,0,0,1,216,48ZM112,48V208a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V48A16,16,0,0,1,56,32H96A16,16,0,0,1,112,48Zm-16,0H56V208H96Zm104,0H160V208h40Z"/>',
 	'perspective': '<path d="M240,120H224V48a16,16,0,0,0-18.86-15.74l-160,29.09A16,16,0,0,0,32,77.09V120H16a8,8,0,0,0,0,16H32v42.91a16,16,0,0,0,13.14,15.74l160,29.09A16.47,16.47,0,0,0,208,224a16,16,0,0,0,16-16V136h16a8,8,0,0,0,0-16ZM48,77.09,208,48v72H48ZM208,208,48,178.91V136H208Z"/>',
@@ -89350,6 +89354,7 @@ const ICON_PATHS = {
 	'sidebar-simple': '<path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H80V200H40ZM216,200H96V56H216V200Z"/>',
 	'sliders-horizontal': '<path d="M40,88H73a32,32,0,0,0,62,0h81a8,8,0,0,0,0-16H135a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16Zm64-24A16,16,0,1,1,88,80,16,16,0,0,1,104,64ZM216,168H199a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16h97a32,32,0,0,0,62,0h17a8,8,0,0,0,0-16Zm-48,24a16,16,0,1,1,16-16A16,16,0,0,1,168,192Z"/>',
 	'sparkle': '<path d="M197.58,129.06,146,110l-19-51.62a15.92,15.92,0,0,0-29.88,0L78,110l-51.62,19a15.92,15.92,0,0,0,0,29.88L78,178l19,51.62a15.92,15.92,0,0,0,29.88,0L146,178l51.62-19a15.92,15.92,0,0,0,0-29.88ZM137,164.22a8,8,0,0,0-4.74,4.74L112,223.85,91.78,169A8,8,0,0,0,87,164.22L32.15,144,87,123.78A8,8,0,0,0,91.78,119L112,64.15,132.22,119a8,8,0,0,0,4.74,4.74L191.85,144ZM144,40a8,8,0,0,1,8-8h16V16a8,8,0,0,1,16,0V32h16a8,8,0,0,1,0,16H184V64a8,8,0,0,1-16,0V48H152A8,8,0,0,1,144,40ZM248,88a8,8,0,0,1-8,8h-8v8a8,8,0,0,1-16,0V96h-8a8,8,0,0,1,0-16h8V72a8,8,0,0,1,16,0v8h8A8,8,0,0,1,248,88Z"/>',
+	'speedometer': '<path d="M114.34,154.34l96-96a8,8,0,0,1,11.32,11.32l-96,96a8,8,0,0,1-11.32-11.32ZM128,88a63.9,63.9,0,0,1,20.44,3.33,8,8,0,1,0,5.11-15.16A80,80,0,0,0,48.49,160.88,8,8,0,0,0,56.43,168c.29,0,.59,0,.89-.05a8,8,0,0,0,7.07-8.83A64.92,64.92,0,0,1,64,152,64.07,64.07,0,0,1,128,88Zm99.74,13a8,8,0,0,0-14.24,7.3,96.27,96.27,0,0,1,5,75.71l-181.1-.07A96.24,96.24,0,0,1,128,56h.88a95,95,0,0,1,42.82,10.5A8,8,0,1,0,179,52.27a112,112,0,0,0-156.66,137A16.07,16.07,0,0,0,37.46,200H218.53a16,16,0,0,0,15.11-10.71,112.35,112.35,0,0,0-5.9-88.3Z"/>',
 	'sphere': '<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm88,104c0,6-17,16.23-48.77,21.17.51-7,.77-14.08.77-21.17,0-32.24-5.35-64.72-15.74-84.6A88.17,88.17,0,0,1,216,128ZM128,40c8.15,0,24,31.06,24,88,0,8.24-.34,15.92-.93,23.07-7.15.59-14.83.93-23.07.93-56.94,0-88-15.85-88-24A88.1,88.1,0,0,1,128,40ZM43.4,152.26C63.28,162.65,95.76,168,128,168c7.09,0,14.19-.26,21.17-.77C144.23,199,134,216,128,216A88.17,88.17,0,0,1,43.4,152.26ZM152.26,212.6c6.29-12,10.73-28.67,13.26-47.08,18.41-2.53,35-7,47.08-13.26A88.4,88.4,0,0,1,152.26,212.6Z"/>',
 	'spiral': '<path d="M248,144a8,8,0,0,1-16,0,96.11,96.11,0,0,0-96-96,88.1,88.1,0,0,0-88,88,80.09,80.09,0,0,0,80,80,72.08,72.08,0,0,0,72-72,64.07,64.07,0,0,0-64-64,56.06,56.06,0,0,0-56,56,48.05,48.05,0,0,0,48,48,40,40,0,0,0,40-40,32,32,0,0,0-32-32,24,24,0,0,0-24,24,16,16,0,0,0,16,16,8,8,0,0,0,8-8,8,8,0,0,1,0-16,16,16,0,0,1,16,16,24,24,0,0,1-24,24,32,32,0,0,1-32-32,40,40,0,0,1,40-40,48.05,48.05,0,0,1,48,48,56.06,56.06,0,0,1-56,56,64.07,64.07,0,0,1-64-64,72.08,72.08,0,0,1,72-72,80.09,80.09,0,0,1,80,80,88.1,88.1,0,0,1-88,88,96.11,96.11,0,0,1-96-96A104.11,104.11,0,0,1,136,32,112.12,112.12,0,0,1,248,144Z"/>',
 	'square-half': '<path d="M200,40H56A16,16,0,0,0,40,56V200a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm-64,80h64v16H136Zm0-16V88h64v16Zm0,48h64v16H136Zm64-80H136V56h64ZM56,56h64V200H56ZM200,200H136V184h64v16Z"/>',
@@ -89357,10 +89362,12 @@ const ICON_PATHS = {
 	'stack': '<path d="M230.91,172A8,8,0,0,1,228,182.91l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,36,169.09l92,53.65,92-53.65A8,8,0,0,1,230.91,172ZM220,121.09l-92,53.65L36,121.09A8,8,0,0,0,28,134.91l96,56a8,8,0,0,0,8.06,0l96-56A8,8,0,1,0,220,121.09ZM24,80a8,8,0,0,1,4-6.91l96-56a8,8,0,0,1,8.06,0l96,56a8,8,0,0,1,0,13.82l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,24,80Zm23.88,0L128,126.74,208.12,80,128,33.26Z"/>',
 	'sun': '<path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/>',
 	'swatches': '<path d="M88,180a12,12,0,1,1-12-12A12,12,0,0,1,88,180Zm152-23.81V208a16,16,0,0,1-16,16H76a46.36,46.36,0,0,1-7.94-.68,44,44,0,0,1-35.43-50.95l25-143.13a15.94,15.94,0,0,1,18.47-13L130.84,26a16,16,0,0,1,12.92,18.52l-12.08,69L199.49,89a16,16,0,0,1,20.45,9.52L239,150.69A18.35,18.35,0,0,1,240,156.19ZM103,184.87,128,41.74,73.46,32l-25,143.1A28,28,0,0,0,70.9,207.57,27.29,27.29,0,0,0,91.46,203,27.84,27.84,0,0,0,103,184.87ZM116.78,195,224,156.11,204.92,104,128.5,131.7l-9.78,55.92A44.63,44.63,0,0,1,116.78,195ZM224,173.12,127.74,208H224Z"/>',
+	'target': '<path d="M221.87,83.16A104.1,104.1,0,1,1,195.67,49l22.67-22.68a8,8,0,0,1,11.32,11.32l-96,96a8,8,0,0,1-11.32-11.32l27.72-27.72a40,40,0,1,0,17.87,31.09,8,8,0,1,1,16-.9,56,56,0,1,1-22.38-41.65L184.3,60.39a87.88,87.88,0,1,0,23.13,29.67,8,8,0,0,1,14.44-6.9Z"/>',
 	'tornado': '<path d="M232,40a8,8,0,0,1-8,8H56a8,8,0,0,1,0-16H224A8,8,0,0,1,232,40ZM184,72a8,8,0,0,0-8-8H32a8,8,0,0,0,0,16H176A8,8,0,0,0,184,72Zm-16,32a8,8,0,0,0-8-8H56a8,8,0,0,0,0,16H160A8,8,0,0,0,168,104Zm16,32a8,8,0,0,0-8-8H88a8,8,0,0,0,0,16h88A8,8,0,0,0,184,136Zm0,24H120a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16Zm-24,32H128a8,8,0,0,0,0,16h32a8,8,0,0,0,0-16Zm-32,32H112a8,8,0,0,0,0,16h16a8,8,0,0,0,0-16Z"/>',
 	'trash': '<path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/>',
 	'tree-structure': '<path d="M160,112h48a16,16,0,0,0,16-16V48a16,16,0,0,0-16-16H160a16,16,0,0,0-16,16V64H128a24,24,0,0,0-24,24v32H72v-8A16,16,0,0,0,56,96H24A16,16,0,0,0,8,112v32a16,16,0,0,0,16,16H56a16,16,0,0,0,16-16v-8h32v32a24,24,0,0,0,24,24h16v16a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V160a16,16,0,0,0-16-16H160a16,16,0,0,0-16,16v16H128a8,8,0,0,1-8-8V88a8,8,0,0,1,8-8h16V96A16,16,0,0,0,160,112ZM56,144H24V112H56v32Zm104,16h48v48H160Zm0-112h48V96H160Z"/>',
 	'upload-simple': '<path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM93.66,77.66,120,51.31V144a8,8,0,0,0,16,0V51.31l26.34,26.35a8,8,0,0,0,11.32-11.32l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,93.66,77.66Z"/>',
+	'video-camera': '<path d="M251.77,73a8,8,0,0,0-8.21.39L208,97.05V72a16,16,0,0,0-16-16H32A16,16,0,0,0,16,72V184a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V159l35.56,23.71A8,8,0,0,0,248,184a8,8,0,0,0,8-8V80A8,8,0,0,0,251.77,73ZM192,184H32V72H192V184Zm48-22.95-32-21.33V116.28L240,95Z"/>',
 	'warning-circle': '<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"/>',
 	'warning': '<path d="M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM222.93,203.8a8.5,8.5,0,0,1-7.48,4.2H40.55a8.5,8.5,0,0,1-7.48-4.2,7.59,7.59,0,0,1,0-7.72L120.52,44.21a8.75,8.75,0,0,1,15,0l87.45,151.87A7.59,7.59,0,0,1,222.93,203.8ZM120,144V104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,180Z"/>',
 	'waveform': '<path d="M80,56V200a8,8,0,0,1-16,0V56a8,8,0,0,1,16,0Zm32-32a8,8,0,0,0-8,8V224a8,8,0,0,0,16,0V32A8,8,0,0,0,112,24Zm32,48a8,8,0,0,0-8,8v96a8,8,0,0,0,16,0V80A8,8,0,0,0,144,72ZM48,88a8,8,0,0,0-8,8v64a8,8,0,0,0,16,0V96A8,8,0,0,0,48,88Zm128-40a8,8,0,0,0-8,8V200a8,8,0,0,0,16,0V56A8,8,0,0,0,176,48Zm32,40a8,8,0,0,0-8,8v64a8,8,0,0,0,16,0V96A8,8,0,0,0,208,88Z"/>',
@@ -131963,7 +131970,7 @@ function createPointsPanel(app, root) {
 __defs['src/fx-hud.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'TrackerHud', () => TrackerHud);
-// Трекинг-рамки поверх сцены: «захваченные» области облака с угловыми скобками, подписями и связями между собой.
+// Трекинг-рамки поверх сцены: «захваченные» подвижные области облака и кибер-телеметрия (HUD).
 const THREE = __req('vendor/three/build/three.module.js');
 
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -131975,6 +131982,8 @@ class TrackerHud {
 		host.append(this.canvas);
 		this.ctx = this.canvas.getContext('2d');
 		this.items = [];
+		this.imprints = [];
+		this.time = 0;
 		this.t = 0;
 		this.beatSeen = 0;
 		this._v = new THREE.Vector3();
@@ -132012,34 +132021,72 @@ class TrackerHud {
 		return new THREE.Vector3(o[i] + (t[i] - o[i]) * m, o[i + 1] + (t[i + 1] - o[i + 1]) * m, o[i + 2] + (t[i + 2] - o[i + 2]) * m);
 	}
 
-	/** cfg: настройки слоя, alpha: итоговая сила 0..1.5, ctxInfo: { points, geometry, camera, morph, levels, colors, dt } */
-	draw(cfg, alpha, info) {
-		const { points, geometry, camera, morph, levels, colors, dt } = info;
-		const { w, h } = this._fit();
-		const ctx = this.ctx;
-		ctx.clearRect(0, 0, w, h);
-		if (!points || alpha < 0.02) return;
+	/** Находит точку в зоне наибольшего движения (Hotspot blob tracking) */
+	_pickHotspot(geometry, morph, levels) {
+		const o = geometry.attributes.aOrigin.array;
+		const t = geometry.attributes.aTarget.array;
+		const n = geometry.attributes.position.count;
+		const m = morph * morph * (3 - 2 * morph);
+		let bestIdx = Math.floor(Math.random() * n);
+		let maxScore = -1;
+
+		const candidates = Math.min(12, n);
+		for (let s = 0; s < candidates; s++) {
+			const idx = Math.floor(Math.random() * n);
+			const i = idx * 3;
+			const pX = o[i] + (t[i] - o[i]) * m;
+			const pY = o[i + 1] + (t[i + 1] - o[i + 1]) * m;
+			const pZ = o[i + 2] + (t[i + 2] - o[i + 2]) * m;
+			const dist = Math.hypot(pX, pY, pZ);
+			const score = dist + (levels?.bass || 0) * Math.sin(pY * 4) + Math.random() * 0.4;
+			if (score > maxScore) {
+				maxScore = score;
+				bestIdx = idx;
+			}
+		}
+
+		const i = bestIdx * 3;
+		return new THREE.Vector3(o[i] + (t[i] - o[i]) * m, o[i + 1] + (t[i + 1] - o[i + 1]) * m, o[i + 2] + (t[i + 2] - o[i + 2]) * m);
+	}
+
+	/** Симуляция «захваченных» точек: рамки динамически следуют за зонами активности */
+	update(want, geometry, morph, levels, dt) {
 		this.t += dt;
-		const want = Math.round(cfg.count);
 		while (this.items.length < want) {
-			const p = this._pick(geometry, morph);
-			this.items.push({ id: Math.floor(rnd(1, 99)), pos: p.clone(), target: p, next: this.t + rnd(0.6, 2.6), speed: 0, conf: rnd(0.82, 0.99) });
+			const p = this._pickHotspot(geometry, morph, levels);
+			this.items.push({ id: Math.floor(rnd(1, 99)), pos: p.clone(), target: p, next: this.t + rnd(0.8, 2.8), speed: 0, conf: rnd(0.85, 0.99), touch: 0 });
 		}
 		this.items.length = want;
-		const beat = levels.beat;
-		const beatNew = beat > 0.9 && this.beatSeen <= 0.9;
-		this.beatSeen = beat;
-		const dpx = [];
+		while (this.imprints.length > 32 || (this.imprints[0] && this.time - this.imprints[0].t0 > 8)) this.imprints.shift();
+		const beatNew = levels.beat > 0.9 && this.beatSeen <= 0.9;
+		this.beatSeen = levels.beat;
 		for (const it of this.items) {
 			if (this.t > it.next || (beatNew && Math.random() < 0.35)) {
-				it.target = this._pick(geometry, morph);
-				it.next = this.t + rnd(0.8, 3);
+				if (it.touch > 0.3) this.imprints.push({ pos: it.target.clone(), t0: this.time, s: it.touch });
+				it.target = this._pickHotspot(geometry, morph, levels);
+				it.next = this.t + rnd(1.0, 3.2);
 				it.id = Math.floor(rnd(1, 99));
-				it.conf = rnd(0.8, 0.99);
+				it.conf = rnd(0.82, 0.99);
 			}
 			const before = it.pos.clone();
-			it.pos.lerp(it.target, 1 - Math.exp(-dt * 7));
+			it.pos.lerp(it.target, 1 - Math.exp(-dt * 6.5));
 			it.speed += (it.pos.distanceTo(before) / Math.max(dt, 1e-3) - it.speed) * 0.2;
+			it.touch += (1 - Math.min(1, it.pos.distanceTo(it.target) * 2.5) - it.touch) * 0.15;
+		}
+	}
+
+	/** Отрисовка трекинг-рамок */
+	draw(cfg, alpha, info) {
+		this.drawTracking(cfg, alpha, info);
+	}
+
+	drawTracking(cfg, alpha, info) {
+		const { points, camera, levels, colors } = info;
+		const { w, h } = this._fit();
+		const ctx = this.ctx;
+		if (!points || alpha < 0.02) return;
+		const dpx = [];
+		for (const it of this.items.slice(0, Math.round(cfg.count))) {
 			const v = this._v.copy(it.pos);
 			points.localToWorld(v);
 			v.project(camera);
@@ -132055,7 +132102,7 @@ class TrackerHud {
 		// связи между рамками
 		if (cfg.lines === 'on') {
 			ctx.setLineDash([3, 4]);
-			ctx.strokeStyle = rgba(c0, 0.5 * alpha);
+			ctx.strokeStyle = rgba(c0, 0.45 * alpha);
 			for (let i = 0; i < dpx.length; i++) {
 				let best = -1;
 				let bd = 1e9;
@@ -132100,12 +132147,92 @@ class TrackerHud {
 				ctx.lineTo(tx - 3, y0);
 				ctx.stroke();
 				ctx.fillStyle = rgba(c2, Math.min(1, alpha));
-				ctx.fillText(`ID ${String(it.id).padStart(2, '0')}  ${Math.round(it.conf * 100)}%`, tx, y0 - 5);
-				ctx.fillStyle = rgba(c2, 0.7 * Math.min(1, alpha));
+				ctx.fillText(`HOTSPOT ${String(it.id).padStart(2, '0')}  ${Math.round(it.conf * 100)}%`, tx, y0 - 5);
+				ctx.fillStyle = rgba(c2, 0.75 * Math.min(1, alpha));
 				ctx.fillText(`X ${it.pos.x.toFixed(2)}  Y ${it.pos.y.toFixed(2)}`, tx, y0 + 8);
 				ctx.fillText(`V ${it.speed.toFixed(2)}  Z ${it.pos.z.toFixed(2)}`, tx, y0 + 21);
 			}
 		}
+	}
+
+	/** Отрисовка приборного HUD (кибер-телеметрия, таймкод, спектральная волна) */
+	drawTelemetry(cfg, alpha, info) {
+		const { w, h } = this._fit();
+		const ctx = this.ctx;
+		if (alpha < 0.05) return;
+		const [c0, c2] = info.colors;
+		const timeSec = this.time || 0;
+		const min = Math.floor(timeSec / 60);
+		const sec = Math.floor(timeSec % 60);
+		const frame = Math.floor((timeSec % 1) * 30);
+		const tc = `TC ${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}:${String(frame).padStart(2, '0')}`;
+
+		ctx.save();
+		ctx.font = '10px Geist, "Geist Variable", ui-monospace, monospace';
+		ctx.textBaseline = 'top';
+
+		// Угловые рамки прибора
+		const pad = 18;
+		const bSize = 14;
+		ctx.strokeStyle = rgba(c0, 0.45 * alpha);
+		ctx.lineWidth = 1;
+		// Верхний левый
+		ctx.beginPath();
+		ctx.moveTo(pad, pad + bSize); ctx.lineTo(pad, pad); ctx.lineTo(pad + bSize, pad);
+		// Верхний правый
+		ctx.moveTo(w - pad - bSize, pad); ctx.lineTo(w - pad, pad); ctx.lineTo(w - pad, pad + bSize);
+		// Нижний левый
+		ctx.moveTo(pad, h - pad - bSize); ctx.lineTo(pad, h - pad); ctx.lineTo(pad + bSize, h - pad);
+		// Нижний правый
+		ctx.moveTo(w - pad - bSize, h - pad); ctx.lineTo(w - pad, h - pad); ctx.lineTo(w - pad, h - pad - bSize);
+		ctx.stroke();
+
+		// Верхняя инфо-строка
+		ctx.fillStyle = rgba(c2, 0.85 * alpha);
+		const blink = Math.sin(timeSec * 4) > 0;
+		ctx.fillText(`${blink ? '●' : '○'} LIVE HUD   ${tc}`, pad + 6, pad + 6);
+		ctx.fillStyle = rgba(c0, 0.7 * alpha);
+		ctx.fillText(`SYS: TOUCH-POP  FREQ: 60Hz`, pad + 6, pad + 20);
+
+		// Шкалы уровней звука (справа сверху)
+		const rw = 90;
+		const rx = w - pad - rw - 6;
+		const ry = pad + 6;
+		const lvls = [
+			{ name: 'BASS', val: info.levels?.bass || 0 },
+			{ name: 'MID ', val: info.levels?.mid || 0 },
+			{ name: 'HIGH', val: info.levels?.high || 0 },
+		];
+		lvls.forEach((l, i) => {
+			const y = ry + i * 12;
+			ctx.fillStyle = rgba(c2, 0.7 * alpha);
+			ctx.fillText(l.name, rx, y);
+			ctx.strokeStyle = rgba(c0, 0.3 * alpha);
+			ctx.strokeRect(rx + 32, y + 2, 54, 7);
+			ctx.fillStyle = rgba(c0, 0.85 * alpha);
+			ctx.fillRect(rx + 33, y + 3, Math.max(0, Math.min(52, l.val * 52)), 5);
+		});
+
+		// Осциллограф / спектр внизу
+		if (cfg.audioWave !== 'off' && info.spec && info.spec.length) {
+			const ow = Math.min(360, w - pad * 4);
+			const ox = (w - ow) / 2;
+			const oy = h - pad - 12;
+			ctx.strokeStyle = rgba(c0, 0.6 * alpha);
+			ctx.lineWidth = 1.2;
+			ctx.beginPath();
+			for (let i = 0; i < info.spec.length; i++) {
+				const sx = ox + (i / (info.spec.length - 1)) * ow;
+				const sy = oy - (info.spec[i] || 0) * 28;
+				if (i === 0) ctx.moveTo(sx, sy);
+				else ctx.lineTo(sx, sy);
+			}
+			ctx.stroke();
+			ctx.fillStyle = rgba(c2, 0.5 * alpha);
+			ctx.fillText('SPECTRUM ANALYSIS // 64 BANDS', ox, oy + 4);
+		}
+
+		ctx.restore();
 	}
 }
 
@@ -132159,6 +132286,7 @@ const BANDS = [
 /** Слои-операторы. group: раздел в левой панели; extras: дополнительные параметры; relink: пересобрать связи */
 const FX_LAYERS = [
 	{ id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Частицы отрываются и плывут по вихрям', max: 2, def: { on: true, amount: 0.8, band: 'bass', react: 0.6, scale: 1.8 }, extras: [{ key: 'scale', label: 'Размер вихрей', min: 0.5, max: 4, step: 0.1 }] },
+	{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма рассыпается на частицы с физикой пола, отскоками и ветром', max: 2, def: { on: false, amount: 1.0, band: 'bass', react: 0.5, gravity: 1.2, bounce: 0.65, wind: 0.4 }, extras: [{ key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.95, step: 0.05 }, { key: 'wind', label: 'Ветер', min: 0.0, max: 2.0, step: 0.1 }] },
 	{ id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма вытягивается по частотам трека', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, axis: 'angle' }, extras: [{ key: 'axis', label: 'Ось', type: 'seg', options: [['angle', 'По кругу'], ['height', 'По высоте']] }] },
 	{ id: 'wave', group: 'Движение', name: 'Волны', icon: 'waves', hint: 'Круги расходятся от центра', max: 2, def: { on: false, amount: 0.7, band: 'mid', react: 0.8, freq: 5 }, extras: [{ key: 'freq', label: 'Частота', min: 1, max: 14, step: 0.5 }] },
 	{ id: 'twist', group: 'Движение', name: 'Скручивание', icon: 'wind', hint: 'Форма закручивается вокруг вертикали', max: 3, def: { on: false, amount: 1, band: 'none', react: 0 }, extras: [] },
@@ -132166,11 +132294,17 @@ const FX_LAYERS = [
 	{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1 }, extras: [] },
 	{ id: 'jitter', group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в сторону', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }] },
-	{ id: 'cursor', group: 'Движение', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.3, max: 2, step: 0.05 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
-	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Линии между соседними точками, как созвездия', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, range: 0.18, count: 3000 }, extras: [{ key: 'range', label: 'Длина связей', min: 0.05, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }] },
-	{ id: 'tracking', group: 'Графика', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки с цифрами на «пойманных» областях', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, labels: 'on', lines: 'on' }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 24, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 30, max: 160, step: 5, int: true }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
+	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Линии между соседними точками с бегущими световыми импульсами', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, range: 0.18, count: 3000, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'range', label: 'Длина связей', min: 0.05, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
+	{ id: 'slice', group: 'Графика', name: 'Срез / Изолинии', icon: 'scan', hint: 'Топографические лазерные срезы бегут по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 0.5, width: 0.08, count: 4, axis: 'y' }, extras: [{ key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.1, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.02, max: 0.3, step: 0.01 }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
+	{ id: 'feedback', group: 'Графика', name: 'Feedback-след', icon: 'spiral', hint: 'Настоящий видео-след (Feedback TOP) с затуханием, зумом и вращением', max: 1.5, def: { on: false, amount: 0.92, band: 'none', react: 0, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002 }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001 }] },
 	{ id: 'echo', group: 'Графика', name: 'Шлейф', icon: 'ghost', hint: 'Призрачные копии формы с задержкой', max: 1.5, def: { on: false, amount: 0.7, band: 'none', react: 0, delay: 0.18 }, extras: [{ key: 'delay', label: 'Задержка, с', min: 0.05, max: 0.6, step: 0.01 }] },
-	{ id: 'slice', group: 'Графика', name: 'Срез', icon: 'scan', hint: 'Яркая плоскость пробегает по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 0.5, width: 0.12, axis: 'y' }, extras: [{ key: 'speed', label: 'Скорость', min: 0.1, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.03, max: 0.4, step: 0.01 }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z']] }] },
+	{ id: 'tracking', group: 'Графика', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки захватывают самые подвижные участки формы', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, labels: 'on', lines: 'on' }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 24, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 30, max: 160, step: 5, int: true }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
+	{ id: 'telemetry', group: 'Графика', name: 'Телеметрия', icon: 'speedometer', hint: 'Приборный кибер-HUD: таймкод, осциллограмма, шкалы и координаты', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, audioWave: 'on' }, extras: [{ key: 'audioWave', label: 'Осциллограмма', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
+	{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.3, max: 2, step: 0.05 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
+	{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Рисование курсором по форме: частицы в мазках светятся и оживают, затем след высыхает', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, radius: 0.4, dry: 3.5 }, extras: [{ key: 'radius', label: 'Радиус кисти', min: 0.1, max: 0.9, step: 0.02 }, { key: 'dry', label: 'Высыхание, с', min: 1.0, max: 8.0, step: 0.5 }] },
+	{ id: 'contact', group: 'Взаимодействие', name: 'Контакт', icon: 'target', hint: 'Там, где рамки трекинга касаются формы, она поднимается, закручивается или втягивается', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'bump', radius: 0.35, count: 6, memory: 1.5 }, extras: [{ key: 'mode', label: 'Действие', type: 'seg', options: [['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втяг.']] }, { key: 'radius', label: 'Радиус касания', min: 0.1, max: 0.9, step: 0.01 }, { key: 'count', label: 'Точек касания', min: 1, max: 16, step: 1, int: true }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
+	{ id: 'shock', group: 'Взаимодействие', name: 'Ударная волна', icon: 'aperture', hint: 'Клик по сцене пускает круговую волну по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 1.2, auto: 'off' }, extras: [{ key: 'speed', label: 'Скорость волны', min: 0.4, max: 3, step: 0.05 }, { key: 'auto', label: 'Запуск', type: 'seg', options: [['off', 'Клик'], ['on', 'Клик и авто']] }] },
+	{ id: 'camTrack', group: 'Взаимодействие', name: 'Веб-камера', icon: 'video-camera', hint: 'Управление формой жестами перед веб-камерой', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0 }, extras: [] },
 ];
 
 const FX_PALETTES = [
@@ -132212,7 +132346,25 @@ function defaultState() {
 		count: 150000,
 		layers,
 		mask: { mode: 'none', size: 0.5, soft: 0.4, speed: 0.5, invert: false, show: false },
-		look: { palette: 'brand', colorBy: 'disp', size: 3.5, glow: 0.8, bright: 1, blend: 'add', autoRotate: true, rotSpeed: 0.25 },
+		look: {
+			bg: '',
+			vignette: true,
+			palette: 'brand',
+			colorBy: 'disp',
+			size: 3.5,
+			glow: 0.8,
+			bright: 1,
+			blend: 'add',
+			autoRotate: true,
+			rotSpeed: 0.25,
+			sizeNoise: 0.0,
+			sizeAudio: 0.0,
+			bloom: 0.0,
+			aberration: 0.0,
+			dofOn: false,
+			dofDist: 5.2,
+			dofRange: 1.4,
+		},
 		audio: { style: 'synthwave', gain: 1.3, idle: true, volume: 0.8 },
 	};
 }
@@ -132371,7 +132523,16 @@ uniform vec2 uYR;
 uniform vec3 uMouse;
 uniform float uMouseOn;
 uniform sampler2D uSpecTex;
-uniform vec4 uCurl, uSpec, uWave, uTwist, uPulse, uVoxel, uJitter, uCursor, uMask, uMaskA, uGlitch;
+uniform vec4 uCurl, uSpec, uWave, uTwist, uPulse, uVoxel, uJitter, uCursor, uMask, uMaskA, uGlitch, uContact, uShockP;
+uniform vec4 uTrk[16];
+uniform vec4 uImp[32];
+uniform vec4 uShock[4];
+uniform vec4 uPhysics;
+uniform float uCollapseTime;
+uniform vec4 uBrushHits[20];
+uniform vec4 uBrushParam;
+uniform vec4 uLookP2;
+uniform vec4 uDof;
 #define PI 3.1415926535
 
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -132430,6 +132591,27 @@ vec3 curlNoise(vec3 p) {
 	return normalize(vec3((n4 - n3) - (n6 - n5), (n6 - n5) - (n2 - n1), (n2 - n1) - (n4 - n3)) + 1e-5);
 }
 float hash11(float p) { return fract(sin(p * 127.1) * 43758.5453); }
+
+// одно касание: подъём, вихрь или втягивание вокруг точки c с силой st
+void contactAt(vec3 c, float st, vec3 base, vec3 rad, inout vec3 pos) {
+	vec3 dd = base - c;
+	float r = uContact.y;
+	float d2 = dot(dd, dd);
+	if (d2 >= r * r || st < 0.001) return;
+	float f = 1.0 - sqrt(d2) / r;
+	f = f * f * (3.0 - 2.0 * f);
+	float k = f * st * uContact.x;
+	if (uContact.z < 0.5) {
+		pos += rad * k * 0.4;
+	} else if (uContact.z < 1.5) {
+		vec3 ax = normalize(c + vec3(1e-4));
+		float a = k * 2.4;
+		vec3 q = pos - c;
+		pos = c + q * cos(a) + cross(ax, q) * sin(a) + ax * dot(ax, q) * (1.0 - cos(a));
+	} else {
+		pos -= normalize(dd + vec3(1e-4)) * k * 0.3;
+	}
+}
 
 // Положение одной точки после всех эффектов. base: форма без эффектов, maskV: доля эффектов в этой точке (зона)
 vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float maskV) {
@@ -132491,6 +132673,64 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		if (uMask.w > 0.5) maskV = 1.0 - maskV;
 	}
 	pos = mix(base, pos, maskV);
+	if (uContact.x > 0.001) {
+		for (int i = 0; i < 16; i++) {
+			if (float(i) >= uContact.w) break;
+			contactAt(uTrk[i].xyz, uTrk[i].w, base, rad, pos);
+		}
+		for (int i = 0; i < 32; i++) {
+			if (float(i) >= uShockP.z) break;
+			contactAt(uImp[i].xyz, uImp[i].w, base, rad, pos);
+		}
+	}
+	if (uShockP.x > 0.001) {
+		for (int i = 0; i < 4; i++) {
+			float age = uShock[i].w;
+			if (age < 0.0) continue;
+			float dist = distance(base, uShock[i].xyz);
+			float x = (dist - age * uShockP.y) / 0.22;
+			pos += rad * exp(-x * x) * exp(-age * 0.9) * uShockP.x * 0.45;
+		}
+	}
+	// Кисть: рисование курсором
+	if (uBrushParam.x > 0.001) {
+		for (int i = 0; i < 20; i++) {
+			float age = uBrushHits[i].w;
+			if (age < 0.0) continue;
+			float dist = distance(base, uBrushHits[i].xyz);
+			float r = uBrushParam.y;
+			if (dist < r) {
+				float life = 1.0 - age / uBrushParam.z;
+				float infl = (1.0 - dist / r) * life * uBrushParam.x;
+				pos += rad * infl * 0.35;
+			}
+		}
+	}
+	// Распад / Физика (гравитация, отскок от пола, ветер)
+	if (uPhysics.x > 0.001) {
+		float seed = hash11(aIdx * 1234.56 + 17.1);
+		float seed2 = hash11(aIdx * 2345.67 + 39.3);
+		float seed3 = hash11(aIdx * 3456.78 + 81.7);
+		vec3 v0 = normalize(base + vec3(seed - 0.5, seed2 - 0.5, seed3 - 0.5) * 1.2) * (0.8 + seed * 1.5);
+		float pt = max(0.0, uCollapseTime - seed * 0.35);
+		float floorY = -1.25;
+		vec3 pPhys = base;
+		pPhys.x += (v0.x * 0.7 + uPhysics.w * 0.9) * pt + sin(pt * 2.5 + seed * 6.28) * 0.12;
+		pPhys.z += v0.z * 0.7 * pt + cos(pt * 2.2 + seed2 * 6.28) * 0.12;
+
+		float g = uPhysics.y * 3.8;
+		float vy0 = max(0.3, v0.y * 1.9);
+		float tBounce = max(0.15, 2.0 * vy0 / g * (1.0 - uPhysics.z * 0.25));
+		float bCount = floor(pt / tBounce);
+		float damp = pow(clamp(uPhysics.z, 0.1, 0.95), bCount);
+		float remT = mod(pt, tBounce);
+		float curVy = vy0 * damp;
+		float curY = floorY + max(0.0, curVy * remT - 0.5 * g * remT * remT);
+		pPhys.y = mix(base.y - 0.5 * g * pt * pt, curY, clamp(pt * 2.0, 0.0, 1.0));
+		if (pPhys.y < floorY) pPhys.y = floorY + abs(sin(pt * 4.0 + seed * 3.0)) * 0.015;
+
+		pos = mix(pos, pPhys, smoothstep(0.0, 1.0, uPhysics.x));
+	}
 	if (uMouseOn > 0.5 && uCursor.x > 0.001) {
 		vec3 tm = pos - uMouse;
 		float r2 = uCursor.y * uCursor.y;
@@ -132520,6 +132760,7 @@ uniform vec3 uP2;
 uniform vec4 uSlice;
 varying vec3 vColor;
 varying float vD;
+varying float vCoc;
 ` + common + `
 void main() {
 	vec3 base;
@@ -132536,22 +132777,63 @@ void main() {
 	vColor = col * uBright * (1.0 + uBeat * 0.3);
 	if (uMask.x > 0.5 && uMaskShow > 0.5) vColor = mix(vColor, uP2 * 1.4, maskV * 0.55);
 
-	// срез: яркая плоскость пробегает по форме
+	// Кисть: свечение в следе мазка
+	if (uBrushParam.x > 0.001) {
+		float bGlow = 0.0;
+		for (int i = 0; i < 20; i++) {
+			float age = uBrushHits[i].w;
+			if (age < 0.0) continue;
+			float dist = distance(base, uBrushHits[i].xyz);
+			if (dist < uBrushParam.y) {
+				float life = 1.0 - age / uBrushParam.z;
+				bGlow = max(bGlow, (1.0 - dist / uBrushParam.y) * life);
+			}
+		}
+		if (bGlow > 0.001) vColor += uP2 * bGlow * 2.2 * uBrushParam.x;
+	}
+
+	// Срез / Изолинии: яркие лазерные срезы пробегают по форме
 	float sl = 0.0;
 	if (uSlice.x > 0.001) {
-		float c = uSlice.w < 0.5 ? base.y : (uSlice.w < 1.5 ? base.x : base.z);
-		float lo = uSlice.w < 0.5 ? uYR.x : -1.2;
-		float hi = uSlice.w < 0.5 ? uYR.y : 1.2;
+		float axCode = mod(uSlice.w, 10.0);
+		float nLines = floor(uSlice.w / 10.0);
+		if (nLines < 1.0) nLines = 1.0;
+		float c = axCode < 0.5 ? base.y : (axCode < 1.5 ? base.x : (axCode < 2.5 ? base.z : (base.x + base.y) * 0.707));
+		float lo = -1.2;
+		float hi = 1.2;
 		float v = clamp((c - lo) / max(hi - lo, 1e-4), 0.0, 1.0);
-		sl = (1.0 - smoothstep(uSlice.z * 0.4, uSlice.z, abs(v - uSlice.y))) * uSlice.x;
-		vColor += uP2 * sl * 1.6;
+		float coord = mod(v * nLines - uSlice.y * nLines, 1.0);
+		sl = (1.0 - smoothstep(uSlice.z * 0.4, uSlice.z, abs(coord - 0.5))) * uSlice.x;
+		vColor += uP2 * sl * 2.2;
 	}
 	vD = disp;
 	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
 	gl_Position = projectionMatrix * mv;
+
+	// Масштаб по шуму и спектру (Scale POP)
+	float szNoise = 1.0;
+	if (uLookP2.x > 0.001) {
+		szNoise = 1.0 + uLookP2.x * (snoise(base * 2.2 + uTime * 0.4) * 0.75);
+	}
+	float szAudio = 1.0;
+	if (uLookP2.y > 0.001) {
+		float bandAudio = mix(uBeat, uSpec.x, step(0.0, base.y));
+		szAudio = 1.0 + uLookP2.y * (bandAudio * 1.2 * (0.6 + 0.4 * sin(aIdx * 62.8)));
+	}
+
+	// Глубина резкости (Depth of Field: CoC)
+	float coc = 0.0;
+	if (uDof.x > 0.5) {
+		float viewDist = -mv.z;
+		coc = clamp(abs(viewDist - uDof.y) / max(0.05, uDof.z), 0.0, 1.0);
+	}
+	vCoc = coc;
+
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2);
+	s *= max(0.15, szNoise * szAudio);
+	s *= (1.0 + coc * 2.4);
 	s *= 3.8 / max(-mv.z, 0.4);
-	gl_PointSize = clamp(s, 1.0, 80.0);
+	gl_PointSize = clamp(s, 1.0, 95.0);
 }
 `;
 
@@ -132563,24 +132845,30 @@ uniform float uDens;
 uniform float uGhost;
 varying vec3 vColor;
 varying float vD;
+varying float vCoc;
 void main() {
 	vec2 c = gl_PointCoord - 0.5;
 	float r2 = dot(c, c);
 	if (r2 > 0.25) discard;
 	float core = 1.0 - smoothstep(0.0, 0.25, r2);
+	if (vCoc > 0.01) {
+		float bokeh = 1.0 - smoothstep(0.16, 0.25, r2);
+		core = mix(core, bokeh, vCoc * 0.8);
+	}
+	float dofAlpha = 1.0 / (1.0 + vCoc * 1.8);
 	if (uAdd > 0.5) {
 		float aura = pow(core, mix(1.8, 0.7, uGlow));
-		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost;
-		gl_FragColor = vec4(col, core * uGhost);
+		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha;
+		gl_FragColor = vec4(col, core * uGhost * dofAlpha);
 	} else {
-		gl_FragColor = vec4(vColor * (0.55 + 0.45 * core), 1.0);
+		gl_FragColor = vec4(vColor * (0.55 + 0.45 * core), dofAlpha);
 	}
 	#include <tonemapping_fragment>
 	#include <colorspace_fragment>
 }
 `;
 
-// Связи: каждая линия соединяет две точки облака, обе двигаются теми же эффектами, что и точки
+// Связи: каждая линия соединяет две точки облака, обе двигаются теми же эффектами, плюс импульсы
 const lineVert = /* glsl */ `
 attribute vec3 aOrigin;
 attribute vec3 aTarget;
@@ -132595,6 +132883,8 @@ uniform float uBright;
 uniform vec4 uLink;
 varying vec3 vC;
 varying float vA;
+varying float vEnd;
+varying float vIdx;
 ` + common + `
 void main() {
 	vec3 bA, bB;
@@ -132604,6 +132894,8 @@ void main() {
 	float len = distance(pA, pB);
 	vA = uLink.x * (1.0 - smoothstep(uLink.y * 0.8, uLink.y * 1.9, len));
 	vC = mix(uP0, uP2, 0.35 + uBeat * 0.4) * uBright;
+	vEnd = aEnd;
+	vIdx = aIdx;
 	vec3 pos = mix(pA, pB, aEnd);
 	gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
 }
@@ -132611,10 +132903,22 @@ void main() {
 
 const lineFrag = /* glsl */ `
 precision highp float;
+uniform vec4 uLink;
+uniform float uTime;
 varying vec3 vC;
 varying float vA;
+varying float vEnd;
+varying float vIdx;
 void main() {
-	gl_FragColor = vec4(vC * vA, vA);
+	float pulseA = 1.0;
+	vec3 col = vC;
+	if (uLink.w > 0.5) {
+		float p = sin(vEnd * 16.0 - uTime * uLink.z * 3.5 + vIdx * 24.0);
+		float spark = smoothstep(0.45, 0.98, p) * 2.8;
+		pulseA = 0.35 + spark;
+		col += col * spark * 1.5;
+	}
+	gl_FragColor = vec4(col * (vA * pulseA), vA * pulseA);
 	#include <tonemapping_fragment>
 	#include <colorspace_fragment>
 }
@@ -132748,6 +133052,305 @@ class TouchSynth {
 
 
 
+// ───────────────────────────────────────────────────────────── пост-обработка (Feedback TOP, Bloom, Chromatic Aberration)
+
+class PostPipeline {
+	constructor(renderer) {
+		this.renderer = renderer;
+		this.quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+		this.quadGeo = new THREE.PlaneGeometry(2, 2);
+		this.width = 0;
+		this.height = 0;
+
+		const opt = {
+			minFilter: THREE.LinearFilter,
+			magFilter: THREE.LinearFilter,
+			format: THREE.RGBAFormat,
+			type: THREE.HalfFloatType,
+		};
+		this.rtScene = new THREE.WebGLRenderTarget(1, 1, opt);
+		this.rtPing = new THREE.WebGLRenderTarget(1, 1, opt);
+		this.rtPong = new THREE.WebGLRenderTarget(1, 1, opt);
+
+		this.fbMat = new THREE.ShaderMaterial({
+			uniforms: {
+				uScene: { value: null },
+				uPrev: { value: null },
+				uDecay: { value: 0.92 },
+				uZoom: { value: 1.0 },
+				uTwist: { value: 0.0 },
+				uHasPrev: { value: 0.0 },
+			},
+			vertexShader: /* glsl */ `
+				varying vec2 vUv;
+				void main() {
+					vUv = uv;
+					gl_Position = vec4(position.xy, 0.0, 1.0);
+				}
+			`,
+			fragmentShader: /* glsl */ `
+				precision highp float;
+				uniform sampler2D uScene;
+				uniform sampler2D uPrev;
+				uniform float uDecay;
+				uniform float uZoom;
+				uniform float uTwist;
+				uniform float uHasPrev;
+				varying vec2 vUv;
+				void main() {
+					vec4 curr = texture2D(uScene, vUv);
+					vec4 prev = vec4(0.0);
+					if (uHasPrev > 0.5) {
+						vec2 c = vec2(0.5);
+						vec2 p = vUv - c;
+						float a = uTwist;
+						mat2 rot = mat2(cos(a), -sin(a), sin(a), cos(a));
+						vec2 pUv = (rot * p) / max(0.001, uZoom) + c;
+						if (pUv.x >= 0.0 && pUv.x <= 1.0 && pUv.y >= 0.0 && pUv.y <= 1.0) {
+							prev = texture2D(uPrev, pUv) * uDecay;
+						}
+					}
+					vec3 col = max(curr.rgb, prev.rgb);
+					float a = max(curr.a, prev.a * uDecay);
+					gl_FragColor = vec4(col, a);
+				}
+			`,
+			depthTest: false,
+			depthWrite: false,
+		});
+		this.fbMesh = new THREE.Mesh(this.quadGeo, this.fbMat);
+
+		this.outMat = new THREE.ShaderMaterial({
+			uniforms: {
+				uTex: { value: null },
+				uBloom: { value: 0.0 },
+				uAberration: { value: 0.0 },
+				uRes: { value: new THREE.Vector2(1, 1) },
+			},
+			vertexShader: /* glsl */ `
+				varying vec2 vUv;
+				void main() {
+					vUv = uv;
+					gl_Position = vec4(position.xy, 0.0, 1.0);
+				}
+			`,
+			fragmentShader: /* glsl */ `
+				precision highp float;
+				uniform sampler2D uTex;
+				uniform float uBloom;
+				uniform float uAberration;
+				uniform vec2 uRes;
+				varying vec2 vUv;
+				void main() {
+					vec2 dir = vUv - vec2(0.5);
+					float distSq = dot(dir, dir);
+					vec2 shift = dir * distSq * uAberration * 0.04;
+
+					vec4 baseCol;
+					if (uAberration > 0.001) {
+						float r = texture2D(uTex, vUv + shift).r;
+						float g = texture2D(uTex, vUv).g;
+						float b = texture2D(uTex, vUv - shift).b;
+						float a = texture2D(uTex, vUv).a;
+						baseCol = vec4(r, g, b, a);
+					} else {
+						baseCol = texture2D(uTex, vUv);
+					}
+
+					if (uBloom > 0.01) {
+						vec2 texel = 1.0 / uRes;
+						vec4 bloom = vec4(0.0);
+						float rad = 3.2;
+						bloom += texture2D(uTex, vUv + vec2(-rad, -rad) * texel);
+						bloom += texture2D(uTex, vUv + vec2( rad, -rad) * texel);
+						bloom += texture2D(uTex, vUv + vec2(-rad,  rad) * texel);
+						bloom += texture2D(uTex, vUv + vec2( rad,  rad) * texel);
+						bloom += texture2D(uTex, vUv + vec2( 0.0, -rad * 1.4) * texel);
+						bloom += texture2D(uTex, vUv + vec2( 0.0,  rad * 1.4) * texel);
+						bloom += texture2D(uTex, vUv + vec2(-rad * 1.4, 0.0) * texel);
+						bloom += texture2D(uTex, vUv + vec2( rad * 1.4, 0.0) * texel);
+						bloom *= 0.125;
+						baseCol.rgb += bloom.rgb * uBloom * 0.85;
+					}
+
+					gl_FragColor = baseCol;
+					#include <tonemapping_fragment>
+					#include <colorspace_fragment>
+				}
+			`,
+			depthTest: false,
+			depthWrite: false,
+			transparent: true,
+		});
+		this.outMesh = new THREE.Mesh(this.quadGeo, this.outMat);
+
+		this.quadScene = new THREE.Scene();
+		this.hasHistory = false;
+	}
+
+	setSize(w, h, dpr = 1) {
+		const rw = Math.max(1, Math.round(w * dpr));
+		const rh = Math.max(1, Math.round(h * dpr));
+		if (rw === this.width && rh === this.height) return;
+		this.width = rw;
+		this.height = rh;
+		this.rtScene.setSize(rw, rh);
+		this.rtPing.setSize(rw, rh);
+		this.rtPong.setSize(rw, rh);
+		this.outMat.uniforms.uRes.value.set(rw, rh);
+		this.hasHistory = false;
+	}
+
+	render(scene, camera, feedbackCfg, bloomVal, abVal) {
+		const r = this.renderer;
+		const dom = r.domElement;
+		const dpr = r.getPixelRatio();
+		this.setSize(dom.clientWidth, dom.clientHeight, dpr);
+
+		const useFb = feedbackCfg && feedbackCfg.on && feedbackCfg.amount > 0.01;
+		const useBloom = bloomVal > 0.01;
+		const useAb = abVal > 0.01;
+
+		if (!useFb && !useBloom && !useAb) {
+			r.setRenderTarget(null);
+			r.render(scene, camera);
+			this.hasHistory = false;
+			return;
+		}
+
+		r.setRenderTarget(this.rtScene);
+		r.clear();
+		r.render(scene, camera);
+
+		let sourceTex = this.rtScene.texture;
+
+		if (useFb) {
+			const zoom = feedbackCfg.zoom || 1.0;
+			const twist = feedbackCfg.twist || 0.0;
+			const decay = feedbackCfg.amount || 0.92;
+
+			this.fbMat.uniforms.uScene.value = this.rtScene.texture;
+			this.fbMat.uniforms.uPrev.value = this.rtPing.texture;
+			this.fbMat.uniforms.uDecay.value = decay;
+			this.fbMat.uniforms.uZoom.value = zoom;
+			this.fbMat.uniforms.uTwist.value = twist;
+			this.fbMat.uniforms.uHasPrev.value = this.hasHistory ? 1.0 : 0.0;
+
+			this.quadScene.clear();
+			this.quadScene.add(this.fbMesh);
+			r.setRenderTarget(this.rtPong);
+			r.clear();
+			r.render(this.quadScene, this.quadCam);
+
+			const tmp = this.rtPing;
+			this.rtPing = this.rtPong;
+			this.rtPong = tmp;
+			this.hasHistory = true;
+
+			sourceTex = this.rtPing.texture;
+		} else {
+			this.hasHistory = false;
+		}
+
+		this.outMat.uniforms.uTex.value = sourceTex;
+		this.outMat.uniforms.uBloom.value = bloomVal;
+		this.outMat.uniforms.uAberration.value = abVal;
+
+		this.quadScene.clear();
+		this.quadScene.add(this.outMesh);
+		r.setRenderTarget(null);
+		r.render(this.quadScene, this.quadCam);
+	}
+
+	dispose() {
+		this.rtScene.dispose();
+		this.rtPing.dispose();
+		this.rtPong.dispose();
+		this.fbMat.dispose();
+		this.outMat.dispose();
+		this.quadGeo.dispose();
+	}
+}
+
+// ── Трекинг оптического движения с веб-камеры ──────────────────────────────────
+
+class MotionCamTracker {
+	constructor(onMotion) {
+		this.onMotion = onMotion;
+		this.video = document.createElement('video');
+		this.video.autoplay = true;
+		this.video.playsInline = true;
+		this.video.muted = true;
+		this.canvas = document.createElement('canvas');
+		this.canvas.width = 48;
+		this.canvas.height = 36;
+		this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+		this.prevData = null;
+		this.running = false;
+		this.stream = null;
+		this._timer = null;
+	}
+
+	async start() {
+		if (this.running) return;
+		try {
+			this.stream = await navigator.mediaDevices.getUserMedia({
+				video: { width: { ideal: 320 }, height: { ideal: 240 } }
+			});
+			this.video.srcObject = this.stream;
+			await this.video.play();
+			this.running = true;
+			this._tick();
+		} catch (err) {
+			console.warn('Webcam motion tracker unavailable:', err);
+			this.stop();
+			throw err;
+		}
+	}
+
+	_tick() {
+		if (!this.running) return;
+		if (this.video.readyState >= 2) {
+			const w = this.canvas.width;
+			const h = this.canvas.height;
+			this.ctx.drawImage(this.video, 0, 0, w, h);
+			const frame = this.ctx.getImageData(0, 0, w, h).data;
+			if (this.prevData) {
+				let sumX = 0, sumY = 0, count = 0;
+				for (let i = 0; i < frame.length; i += 4) {
+					const diff = Math.abs(frame[i] - this.prevData[i]) +
+					             Math.abs(frame[i+1] - this.prevData[i+1]) +
+					             Math.abs(frame[i+2] - this.prevData[i+2]);
+					if (diff > 45) {
+						const px = (i / 4) % w;
+						const py = Math.floor((i / 4) / w);
+						sumX += px;
+						sumY += py;
+						count++;
+					}
+				}
+				if (count > 15) {
+					const cx = -((sumX / count) / w * 2 - 1);
+					const cy = -((sumY / count) / h * 2 - 1);
+					this.onMotion(cx, cy);
+				}
+			}
+			this.prevData = new Uint8ClampedArray(frame);
+		}
+		this._timer = setTimeout(() => this._tick(), 50);
+	}
+
+	stop() {
+		this.running = false;
+		clearTimeout(this._timer);
+		if (this.stream) {
+			this.stream.getTracks().forEach(t => t.stop());
+			this.stream = null;
+		}
+		this.prevData = null;
+	}
+}
+
 // ───────────────────────────────────────────────────────────── движок
 
 class EffectsEngine {
@@ -132756,6 +133359,7 @@ class EffectsEngine {
 		this.active = false;
 		this.state = mergeDeep(defaultState(), loadJSON(KEY, {}));
 		for (const l of FX_LAYERS) this.state.layers[l.id] = { ...l.def, ...this.state.layers[l.id] };
+		this.state.look = { ...defaultState().look, ...this.state.look };
 
 		// звук
 		this.ctx = null;
@@ -132795,11 +133399,74 @@ class EffectsEngine {
 		this.modelProvider = null; // { available(), kind(), total(), get(n) }
 		this.ghosts = [];
 		this.linkObj = null;
+		this.shocks = [];
 		this.onFrame = null;
 		this._ray = new THREE.Raycaster();
 		this._plane = new THREE.Plane();
 		this._move = (e) => this._onMove(e);
 		this._leave = () => (this.mouseOn = false);
+		this._dn = (e) => this._onDown(e);
+		this._up = (e) => this._onUp(e);
+		this.isCollapsed = false;
+		this.collapseProgress = 0;
+		this.collapseTime = 0;
+		this.brushHits = [];
+		this.post = null;
+		this.camTracker = null;
+		this._pointerDown = false;
+	}
+
+	toggleCollapse() {
+		this.isCollapsed = !this.isCollapsed;
+		this.state.layers.physics.on = true;
+		this.emit();
+	}
+
+	clearBrush() {
+		this.brushHits = [];
+		this.emit();
+	}
+
+	addBrushHit(pos) {
+		if (!pos) return;
+		if (this.brushHits.length > 0 && this.brushHits[0].pos.distanceTo(pos) < 0.05) return;
+		this.brushHits.unshift({ pos: pos.clone(), t0: this._time });
+		this.brushHits.length = Math.min(this.brushHits.length, 20);
+	}
+
+	async toggleMotionCam() {
+		if (this.camTracker && this.camTracker.running) {
+			this.camTracker.stop();
+			this.state.layers.camTrack.on = false;
+			this.app.toast('Веб-камера выключена');
+			this.emit();
+		} else {
+			try {
+				if (!this.camTracker) {
+					this.camTracker = new MotionCamTracker((cx, cy) => {
+						if (!this.active || !this.points) return;
+						const vp = this.app.viewport;
+						const ndc = new THREE.Vector2(cx, cy);
+						this._ray.setFromCamera(ndc, vp.camera);
+						this._plane.setFromNormalAndCoplanarPoint(vp.camera.getWorldDirection(new THREE.Vector3()).negate(), new THREE.Vector3());
+						const hit = new THREE.Vector3();
+						if (this._ray.ray.intersectPlane(this._plane, hit)) {
+							this.mouse.copy(this.points.worldToLocal(hit));
+							this.mouseOn = true;
+							if (this.state.layers.brush.on) this.addBrushHit(this.mouse);
+						}
+					});
+				}
+				await this.camTracker.start();
+				this.state.layers.camTrack.on = true;
+				this.app.toast('Веб-камера активна: управляйте жестами!', 'ok');
+				this.emit();
+			} catch (err) {
+				this.state.layers.camTrack.on = false;
+				this.app.toast('Нет доступа к веб-камере', 'error');
+				this.emit();
+			}
+		}
 	}
 
 	// ------------------------------------------------------------ состояние
@@ -133043,8 +133710,12 @@ class EffectsEngine {
 			uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
 			uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
 			uPulse: U(new THREE.Vector4()), uVoxel: U(new THREE.Vector4()), uJitter: U(new THREE.Vector4()), uCursor: U(new THREE.Vector4()),
-			uGlitch: U(new THREE.Vector4()), uSlice: U(new THREE.Vector4()), uLink: U(new THREE.Vector4()),
+			uGlitch: U(new THREE.Vector4()), uSlice: U(new THREE.Vector4()), uLink: U(new THREE.Vector4()), uContact: U(new THREE.Vector4()), uShockP: U(new THREE.Vector4()),
+			uTrk: U(Array.from({ length: 16 }, () => new THREE.Vector4())), uImp: U(Array.from({ length: 32 }, () => new THREE.Vector4())), uShock: U(Array.from({ length: 4 }, () => new THREE.Vector4(0, 0, 0, -1))),
 			uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
+			uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
+			uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
+			uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
 		};
 		const mk = (extra) =>
 			new THREE.ShaderMaterial({
@@ -133217,6 +133888,19 @@ class EffectsEngine {
 		this._relT = setTimeout(() => this._computeLinks(), 180);
 	}
 
+	/** Цвет фона сцены в режиме эффектов (пусто: как в редакторе) */
+	applyBg() {
+		const stage = document.querySelector('.stage');
+		const { bg, vignette } = this.state.look;
+		if (!this.active || !bg) {
+			this.app.viewport.applyRenderSettings();
+			return;
+		}
+		const c = new THREE.Color(bg);
+		const hi = c.clone().lerp(new THREE.Color(1, 1, 1), 0.025);
+		stage.style.background = vignette ? `radial-gradient(ellipse at 50% 42%, #${hi.getHexString(THREE.SRGBColorSpace)} 0%, ${bg} 78%)` : bg;
+	}
+
 	/** Меняет облако без разрыва: старая форма плавно перетекает в новую */
 	async setSource(key) {
 		const st = this.state;
@@ -133313,8 +133997,22 @@ class EffectsEngine {
 		const stage = document.querySelector('.stage');
 		stage.addEventListener('pointermove', this._move);
 		stage.addEventListener('pointerleave', this._leave);
+		stage.addEventListener('pointerdown', this._dn);
+		stage.addEventListener('pointerup', this._up);
 		this._offScene = app.bus.on('scene', () => this._onScene());
 		this.hud = new TrackerHud(document.getElementById('viewport'));
+		this.applyBg();
+		this.post = new PostPipeline(vp.renderer);
+		vp.renderHook = (renderer, scene, camera) => {
+			if (!this.active) {
+				renderer.render(scene, camera);
+				return;
+			}
+			const fb = this.state.layers.feedback;
+			const bloom = this.state.look.bloom || 0;
+			const ab = this.state.look.aberration || 0;
+			this.post.render(scene, camera, fb, bloom, ab);
+		};
 		app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 400);
 		this._lastT = performance.now();
 		this._loop();
@@ -133332,6 +134030,14 @@ class EffectsEngine {
 		this._offScene && this._offScene();
 		this.hud?.dispose();
 		this.hud = null;
+		this.app.viewport.renderHook = null;
+		this.post?.dispose();
+		this.post = null;
+		if (this.camTracker) {
+			this.camTracker.stop();
+			this.camTracker = null;
+		}
+		this.app.viewport.applyRenderSettings();
 		const vp = this.app.viewport;
 		this._disposePoints();
 		vp.root.visible = this._saved?.rootVisible !== false;
@@ -133339,11 +134045,38 @@ class EffectsEngine {
 		const stage = document.querySelector('.stage');
 		stage.removeEventListener('pointermove', this._move);
 		stage.removeEventListener('pointerleave', this._leave);
+		stage.removeEventListener('pointerdown', this._dn);
+		stage.removeEventListener('pointerup', this._up);
 		document.getElementById('app').classList.remove('fx-mode');
 		this.app.display.apply();
 		this.app.nav.frameAll(true);
 		vp.invalidate();
 		this.emit();
+	}
+
+	/** Запускает волну из точки pos (в локальных координатах облака) */
+	addShock(pos) {
+		if (!pos) return;
+		this.shocks.unshift({ pos: pos.clone(), t0: this._time });
+		this.shocks.length = Math.min(this.shocks.length, 4);
+	}
+
+	_onDown(e) {
+		this._pointerDown = true;
+		this._down = { x: e.clientX, y: e.clientY, t: performance.now(), b: e.button };
+		if (this.mouseOn && this.state.layers.brush.on) {
+			this.addBrushHit(this.mouse);
+		}
+	}
+
+	_onUp(e) {
+		this._pointerDown = false;
+		const d = this._down;
+		this._down = null;
+		if (!d || d.b !== 0 || !this.state.layers.shock.on) return;
+		if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 5 || performance.now() - d.t > 450) return;
+		this._onMove(e);
+		if (this.mouseOn) this.addShock(this.mouse);
 	}
 
 	_onMove(e) {
@@ -133357,6 +134090,9 @@ class EffectsEngine {
 		if (this._ray.ray.intersectPlane(this._plane, hit)) {
 			this.mouse.copy(this.points.worldToLocal(hit));
 			this.mouseOn = true;
+			if (this.state.layers.brush.on && (e.buttons === 1 || this._pointerDown)) {
+				this.addBrushHit(this.mouse);
+			}
 		}
 	}
 
@@ -133422,13 +134158,51 @@ class EffectsEngine {
 			u.uJitter.value.set(this._eff(L.jitter), 0, 0, 0);
 			u.uGlitch.value.set(this._eff(L.glitch), L.glitch.slices, 0, 0);
 			u.uCursor.value.set(this._eff(L.cursor), L.cursor.radius, L.cursor.mode === 'attract' ? -1 : 1, 0);
+
+			// Распад / Физика
+			const physOn = L.physics ? L.physics.on : false;
+			if (this.isCollapsed && physOn) {
+				this.collapseProgress = Math.min(1, this.collapseProgress + dt * 0.75);
+				this.collapseTime += dt;
+			} else {
+				this.collapseProgress = Math.max(0, this.collapseProgress - dt * 1.25);
+				if (this.collapseProgress <= 0.001) this.collapseTime = 0;
+			}
+			const physEff = L.physics ? this._eff(L.physics) * this.collapseProgress : 0;
+			u.uPhysics.value.set(physEff, L.physics ? L.physics.gravity : 1.2, L.physics ? L.physics.bounce : 0.65, L.physics ? L.physics.wind : 0.4);
+			u.uCollapseTime.value = this.collapseTime;
+
+			// Кисть
+			const brE = L.brush ? this._eff(L.brush) : 0;
+			const brArr = u.uBrushHits.value;
+			for (let i = 0; i < 20; i++) {
+				const hit = this.brushHits[i];
+				const age = hit ? this._time - hit.t0 : -1;
+				if (hit && age < (L.brush ? L.brush.dry : 3.5)) {
+					brArr[i].set(hit.pos.x, hit.pos.y, hit.pos.z, age);
+				} else {
+					brArr[i].set(0, 0, 0, -1);
+				}
+			}
+			u.uBrushParam.value.set(brE, L.brush ? L.brush.radius : 0.4, L.brush ? L.brush.dry : 3.5, 1);
+
+			// Срез / Изолинии
 			const sl = L.slice;
-			u.uSlice.value.set(this._eff(sl), (this._time * sl.speed * 0.25) % 1, sl.width, { y: 0, x: 1, z: 2 }[sl.axis] ?? 0);
+			const nLines = Math.max(1, Math.round(sl.count || 1));
+			const axVal = { y: 0, x: 1, z: 2, diag: 3 }[sl.axis] ?? 0;
+			u.uSlice.value.set(this._eff(sl), (this._time * sl.speed * 0.25) % 1, sl.width, axVal + nLines * 10);
+
+			// Look P2 & DoF
+			u.uLookP2.value.set(look.sizeNoise || 0, look.sizeAudio || 0, 0, 0);
+			u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
+
 			// связи
 			const lk = this._eff(L.links);
 			if (this.linkObj) {
 				this.linkObj.visible = lk > 0.01;
-				u.uLink.value.set(lk * 0.8, L.links.range * (1 + this.levels.beat * 0.4), 0, 0);
+				const pulseOn = L.links.pulses === 'on' ? 1 : 0;
+				const pSpeed = L.links.pulseSpeed || 1.6;
+				u.uLink.value.set(lk * 0.8, L.links.range * (1 + this.levels.beat * 0.4), pSpeed, pulseOn);
 			}
 			// шлейф
 			const ec = this._eff(L.echo);
@@ -133460,11 +134234,55 @@ class EffectsEngine {
 			u.uMaskShow.value = mk.show ? 1 : 0;
 			u.uMouse.value.copy(this.mouse);
 			u.uMouseOn.value = this.mouseOn ? 1 : 0;
-			// трекинг-рамки
+			// трекер-точки: общие для рамок и эффекта «Контакт»
 			if (this.hud) {
+				this.hud.clear();
 				const tr = this._eff(L.tracking);
-				this.hud.draw(L.tracking, tr, { points: this.points, geometry: this.geometry, camera: this.app.viewport.camera, morph: this.morph, levels: this.levels, colors: ['#' + new THREE.Color(pal.c[0]).getHexString(THREE.SRGBColorSpace), '#' + new THREE.Color(pal.c[2]).getHexString(THREE.SRGBColorSpace)], dt });
+				const ct = this._eff(L.contact);
+				const simN = Math.max(L.tracking.on ? Math.round(L.tracking.count) : 0, L.contact.on ? Math.round(L.contact.count) : 0);
+				this.hud.update(simN, this.geometry, this.morph, this.levels, dt);
+				if (L.tracking.on) {
+					this.hud.drawTracking(L.tracking, tr, { points: this.points, camera: this.app.viewport.camera, levels: this.levels, colors: ['#' + new THREE.Color(pal.c[0]).getHexString(THREE.SRGBColorSpace), '#' + new THREE.Color(pal.c[2]).getHexString(THREE.SRGBColorSpace)] });
+				}
+				if (L.telemetry && L.telemetry.on) {
+					const telAlpha = this._eff(L.telemetry);
+					this.hud.drawTelemetry(L.telemetry, telAlpha, { levels: this.levels, spec: this.spec, colors: ['#' + new THREE.Color(pal.c[0]).getHexString(THREE.SRGBColorSpace), '#' + new THREE.Color(pal.c[2]).getHexString(THREE.SRGBColorSpace)] });
+				}
+				const arr = u.uTrk.value;
+				const n = Math.min(16, this.hud.items.length, Math.round(L.contact.count));
+				for (let i = 0; i < 16; i++) {
+					const it = this.hud.items[i];
+					if (it && i < n) arr[i].set(it.pos.x, it.pos.y, it.pos.z, it.touch);
+					else arr[i].set(0, 0, 0, 0);
+				}
+				const imp = u.uImp.value;
+				const mem = L.contact.memory;
+				let ni = 0;
+				if (mem > 0.05 && ct > 0.001) {
+					for (const m of this.hud.imprints) {
+						const s0 = Math.exp(-(this._time - m.t0) / mem) * m.s;
+						if (s0 > 0.02 && ni < 32) imp[ni++].set(m.pos.x, m.pos.y, m.pos.z, s0);
+					}
+				}
+				for (let i = ni; i < 32; i++) imp[i].set(0, 0, 0, 0);
+				this.hud.time = this._time;
+				u.uContact.value.set(ct, L.contact.radius, { bump: 0, swirl: 1, pull: 2 }[L.contact.mode] ?? 0, n);
+				u.uShockP.value.z = ni;
 			}
+			// ударные волны
+			const shE = this._eff(L.shock);
+			if (L.shock.on && L.shock.auto === 'on' && this._time > (this._nextShock || 0) && this.geometry) {
+				this._nextShock = this._time + 2.2 + Math.random() * 1.6;
+				this.addShock(this.hud ? this.hud._pick(this.geometry, this.morph) : null);
+			}
+			const sh = u.uShock.value;
+			for (let i = 0; i < 4; i++) {
+				const s0 = this.shocks[i];
+				const age = s0 ? this._time - s0.t0 : -1;
+				if (s0 && age < 5) sh[i].set(s0.pos.x, s0.pos.y, s0.pos.z, age);
+				else sh[i].set(0, 0, 0, -1);
+			}
+			u.uShockP.value.set(shE, L.shock.speed, u.uShockP.value.z, 0);
 			this.onFrame && this.onFrame(this.levels);
 			this.app.viewport.invalidate();
 		};
@@ -133516,7 +134334,7 @@ __def(__exports, 'createEffectsPanel', () => createEffectsPanel);
 // Режим «Эффекты»: боковая панель (источник, эффекты, звук, вид) и нижняя панель управления в сцене.
 const { h, formatInt } = __req('src/util.js');
 const { icon } = __req('src/icons.js');
-const { section, field, slider, segmented, switchRow, toggle, button, iconButton, select } = __req('src/ui-kit.js');
+const { section, field, slider, segmented, switchRow, toggle, button, iconButton, select, colorField } = __req('src/ui-kit.js');
 const THREE = __req('vendor/three/build/three.module.js');
 const { sampleSurface } = __req('src/pointcloud.js');
 const { getDevice } = __req('src/device-card.js');
@@ -133624,10 +134442,27 @@ function createEffectsPanel(app, root, engine) {
 	const cards = [];
 	const left = document.getElementById('fxList');
 	const leftCount = document.getElementById('fxActive');
-	let openCard = null;
-	for (const grp of ['Движение', 'Графика']) {
-		left.append(h('div', { class: 'fx-group' }, grp));
+	const inspBox = h('div', { class: 'fx-insp-box' });
+	let selected = null;
+	const select_ = (id) => {
+		selected = id;
+		for (const c of cards) {
+			c.card.classList.toggle('is-selected', c.def.id === id);
+			c.insp.classList.toggle('is-selected', c.def.id === id);
+		}
+	};
+	for (const grp of ['Движение', 'Графика', 'Взаимодействие']) {
+		const folder = h('div', { class: 'fx-folder' });
+		const fhead = h('button', { type: 'button', class: 'fx-folder-head', 'aria-expanded': 'true' }, h('span', { class: 'fx-folder-caret', html: icon('caret-down', 13) }), h('span', { class: 'fx-folder-name' }, grp), h('span', { class: 'fx-folder-n' }));
+		const fbody = h('div', { class: 'fx-folder-body' });
+		fhead.addEventListener('click', () => {
+			const closed = folder.classList.toggle('is-closed');
+			fhead.setAttribute('aria-expanded', String(!closed));
+		});
+		folder.append(fhead, fbody);
+		left.append(folder);
 		for (const def of FX_LAYERS.filter((d) => d.group === grp)) {
+			st.layers[def.id] = { ...def.def, ...(st.layers[def.id] || {}) };
 			const L = st.layers[def.id];
 			const sw = toggle({
 				value: L.on,
@@ -133635,13 +134470,48 @@ function createEffectsPanel(app, root, engine) {
 				onChange: (v) => {
 					L.on = v;
 					card.classList.toggle('is-on', v);
-					if (v) openIt();
+					if (v) select_(def.id);
 					countActive();
 					save();
 				},
 			});
 			const amount = slider({ min: 0, max: def.max, step: 0.05, value: L.amount, digits: 2, onInput: (v) => { L.amount = v; }, onChange: save });
-			const body = h('div', { class: 'fx-layer-body' }, field('Сила', amount.el));
+			const body = h('div', { class: 'fx-layer-body' });
+			if (def.id === 'physics') {
+				const collapseBtn = button({
+					label: engine.isCollapsed ? 'Собрать форму' : 'Разрушить форму',
+					icon: 'atom',
+					variant: 'primary',
+					cls: 'btn-block',
+					onClick: () => {
+						engine.toggleCollapse();
+						collapseBtn.querySelector('.btn-label').textContent = engine.isCollapsed ? 'Собрать форму' : 'Разрушить форму';
+					},
+				});
+				body.append(collapseBtn);
+			} else if (def.id === 'brush') {
+				const clearBtn = button({
+					label: 'Стереть краску',
+					icon: 'broom',
+					variant: 'secondary',
+					cls: 'btn-block',
+					onClick: () => engine.clearBrush(),
+				});
+				body.append(clearBtn);
+			} else if (def.id === 'camTrack') {
+				const camBtn = button({
+					label: engine.camTracker?.running ? 'Остановить камеру' : 'Включить веб-камеру',
+					icon: 'video-camera',
+					variant: 'secondary',
+					cls: 'btn-block',
+					onClick: async () => {
+						await engine.toggleMotionCam();
+						camBtn.querySelector('.btn-label').textContent = engine.camTracker?.running ? 'Остановить камеру' : 'Включить веб-камеру';
+					},
+				});
+				body.append(camBtn);
+			}
+			body.append(field('Сила', amount.el));
 			const extraCtl = {};
 			for (const ex of def.extras) {
 				const after = () => {
@@ -133675,32 +134545,34 @@ function createEffectsPanel(app, root, engine) {
 				},
 			});
 			reactRow.hidden = L.band === 'none';
-			body.append(field('Реагирует на', band.el, { wide: true }), reactRow);
-			const head = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, h('span', { class: 'fx-ic', html: icon(def.icon, 17) }), h('div', { class: 'fx-layer-name' }, h('b', {}, def.name), h('span', {}, def.hint)), sw.el);
-			const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id }, head, body);
-			const openIt = () => {
-				if (openCard && openCard !== card) openCard.classList.remove('is-open');
-				card.classList.add('is-open');
-				openCard = card;
-			};
-			head.addEventListener('click', (e) => {
-				if (e.target.closest('.switch')) return;
-				if (card.classList.contains('is-open')) {
-					card.classList.remove('is-open');
-					openCard = null;
-				} else openIt();
+			body.append(field('Реагирует на звук', band.el, { wide: true }), reactRow);
+			const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, h('span', { class: 'fx-ic', html: icon(def.icon, 16) }), h('span', { class: 'fx-layer-title' }, def.name), sw.el);
+			const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right' }, row);
+			const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, h('div', { class: 'fx-insp-head' }, h('span', { class: 'fx-ic', html: icon(def.icon, 18) }), h('div', {}, h('b', {}, def.name), h('span', {}, def.hint))), body);
+			row.addEventListener('click', (e) => {
+				if (!e.target.closest('.switch')) select_(def.id);
 			});
-			head.addEventListener('keydown', (e) => {
-				if (e.key === 'Enter') head.click();
+			row.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter') select_(def.id);
 			});
-			left.append(card);
-			cards.push({ def, L, sw, amount, react, band, reactRow, extraCtl, card });
+			fbody.append(card);
+			inspBox.append(insp);
+			cards.push({ def, L, sw, amount, react, band, reactRow, extraCtl, card, insp, fhead });
 		}
 	}
+	const inspEmpty = h('div', { class: 'empty-note' }, h('strong', {}, 'Выберите эффект'), h('span', {}, 'Нажмите на строку в списке слева, чтобы настроить его здесь'));
+	const secInsp = section('Настройки эффекта', { key: 'fx-insp' }, inspBox);
 	function countActive() {
 		const n = cards.filter((c) => c.L.on).length;
 		if (leftCount) leftCount.textContent = n ? `включено: ${n}` : 'ничего не включено';
+		for (const grp of new Set(cards.map((c) => c.def.group))) {
+			const cs = cards.filter((c) => c.def.group === grp);
+			const k = cs.filter((c) => c.L.on).length;
+			const el = cs[0].fhead.querySelector('.fx-folder-n');
+			el.textContent = k ? String(k) : '';
+		}
 	}
+	select_((cards.find((c) => c.L.on) || cards[0]).def.id);
 	const mk = st.mask;
 	const maskHint = h('div', { class: 'field-hint' });
 	const maskMode = segmented({
@@ -133790,25 +134662,78 @@ function createEffectsPanel(app, root, engine) {
 	}
 	const colorBy = segmented({ options: COLOR_BY.map((c) => ({ value: c.id, label: c.label, title: c.title })), value: st.look.colorBy, onChange: (v) => { st.look.colorBy = v; save(); } });
 	const size = slider({ min: 1, max: 12, step: 0.25, value: st.look.size, digits: 1, unit: ' px', onInput: (v) => { st.look.size = v; }, onChange: save });
+	const sizeNoise = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeNoise || 0, digits: 2, onInput: (v) => { st.look.sizeNoise = v; }, onChange: save });
+	const sizeAudio = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeAudio || 0, digits: 2, onInput: (v) => { st.look.sizeAudio = v; }, onChange: save });
 	const glow = slider({ min: 0, max: 1, step: 0.05, value: st.look.glow, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.glow = v; }, onChange: save });
 	const bright = slider({ min: 0.3, max: 2, step: 0.05, value: st.look.bright, digits: 2, onInput: (v) => { st.look.bright = v; }, onChange: save });
+	const bloom = slider({ min: 0, max: 1, step: 0.05, value: st.look.bloom || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.bloom = v; }, onChange: save });
+	const aberration = slider({ min: 0, max: 1, step: 0.05, value: st.look.aberration || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.aberration = v; }, onChange: save });
+	const dofOn = switchRow('Глубина резкости (DoF)', { value: st.look.dofOn || false, onChange: (v) => { st.look.dofOn = v; syncDof(); save(); } });
+	const dofDist = slider({ min: 1.5, max: 10, step: 0.1, value: st.look.dofDist || 5.2, digits: 1, unit: ' м', onInput: (v) => { st.look.dofDist = v; }, onChange: save });
+	const dofRange = slider({ min: 0.2, max: 3, step: 0.1, value: st.look.dofRange || 1.4, digits: 1, unit: ' м', onInput: (v) => { st.look.dofRange = v; }, onChange: save });
+	const dofBody = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Дистанция фокуса', dofDist.el), field('Глубина фокуса', dofRange.el));
+	const syncDof = () => { dofBody.hidden = !st.look.dofOn; };
+	syncDof();
 	const blend = segmented({ options: [{ value: 'add', label: 'Свечение', title: 'Точки складывают свет: ярче в плотных местах' }, { value: 'normal', label: 'Плотные', title: 'Непрозрачные точки' }], value: st.look.blend, onChange: (v) => { st.look.blend = v; save(); } });
 	const rotate = switchRow('Вращать форму', { value: st.look.autoRotate, onChange: (v) => { st.look.autoRotate = v; save(); } });
 	const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
-	const secLook = section('Вид', { key: 'fx-look' }, palettes, field('Цвет по', colorBy.el, { wide: true }), field('Размер', size.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el));
+	const secLook = section('Вид', { key: 'fx-look' }, palettes, field('Цвет по', colorBy.el, { wide: true }), field('Размер', size.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el));
 
-	root.append(secSource.el, secMask.el, secAudio.el, secLook.el);
+	root.append(secInsp.el, secSource.el, secMask.el, secAudio.el, secLook.el);
 
 	// ------------------------------------------------------------ нижняя панель в сцене
 	const bar = $bar();
 	const playBtn = iconButton({ icon: 'play', title: 'Играть / пауза (Пробел)', onClick: () => engine.toggle().catch(() => {}) });
+	const collapseBtn = iconButton({ icon: 'atom', title: 'Разрушить / собрать форму («Распад»)', onClick: () => { engine.toggleCollapse(); sync(); } });
+	const brushBtn = iconButton({ icon: 'paint-brush', title: 'Кисть: рисовать по форме', onClick: () => { st.layers.brush.on = !st.layers.brush.on; save(); sync(); } });
+	const camBtn = iconButton({ icon: 'video-camera', title: 'Веб-камера: управление жестами', onClick: () => engine.toggleMotionCam().then(sync) });
 	const trackName = h('div', { class: 'fx-track' });
 	const barMeters = makeMeters(true);
 	const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (WebM)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });
 	const recTime = h('span', { class: 'fx-rec-time' });
 	const exitBtn = h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => app.ui.setWorkspace('edit') }, h('span', { class: 'ic-wrap', html: icon('x', 14) }), 'Выйти');
+	// фон сцены: кнопка в нижней панели открывает палитру
+	const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#e8ebef', 'Светлый'], ['#ffffff', 'Белый']];
+	const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));
+	const bgPop = h('div', { class: 'fx-bg-pop popover', hidden: true });
+	const bgSw = h('div', { class: 'fx-bg-sw' });
+	const bgSwBtns = BGS.map(([c, name]) => {
+		const b = h('button', { type: 'button', class: 'fx-bg-chip', 'aria-label': name, 'data-tip': name, style: c ? { background: c } : {} });
+		if (!c) b.classList.add('is-default');
+		b.addEventListener('click', () => setBg(c));
+		bgSw.append(b);
+		return [c, b];
+	});
+	const bgColor = colorField({ value: st.look.bg || '#14161b', onInput: (v) => setBg(v, true), onChange: save });
+	const bgVig = switchRow('Затемнение к краям', { value: st.look.vignette, onChange: (v) => { st.look.vignette = v; engine.applyBg(); save(); } });
+	bgPop.append(h('div', { class: 'fx-bg-title' }, 'Цвет фона'), bgSw, field('Свой цвет', bgColor.el), bgVig.el);
+	document.getElementById('viewport').append(bgPop);
+	function setBg(c, live) {
+		st.look.bg = c;
+		engine.applyBg();
+		if (!live) bgColor.set(c || '#14161b');
+		syncBg();
+		save();
+	}
+	function syncBg() {
+		bgBtn.querySelector('.fx-bg-dot').style.background = st.look.bg || 'var(--bg-sunken)';
+		bgSwBtns.forEach(([c, b]) => b.classList.toggle('is-active', c === st.look.bg));
+		bgVig.set(st.look.vignette);
+	}
+	bgBtn.addEventListener('click', (e) => {
+		e.stopPropagation();
+		bgPop.hidden = !bgPop.hidden;
+		bgBtn.setAttribute('aria-expanded', String(!bgPop.hidden));
+	});
+	document.addEventListener('pointerdown', (e) => {
+		if (!bgPop.hidden && !bgPop.contains(e.target) && !bgBtn.contains(e.target)) {
+			bgPop.hidden = true;
+			bgBtn.setAttribute('aria-expanded', 'false');
+		}
+	});
+	syncBg();
 	const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
-	bar.append(leftBtn, playBtn, trackName, barMeters.el, h('span', { class: 'fx-bar-sep' }), recBtn, recTime, exitBtn);
+	bar.append(leftBtn, playBtn, collapseBtn, brushBtn, camBtn, trackName, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgBtn, recBtn, recTime, exitBtn);
 
 	// ------------------------------------------------------------ синхронизация
 	function sync() {
@@ -133833,8 +134758,16 @@ function createEffectsPanel(app, root, engine) {
 		palBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === st.look.palette)));
 		colorBy.set(st.look.colorBy);
 		size.set(st.look.size);
+		sizeNoise.set(st.look.sizeNoise || 0);
+		sizeAudio.set(st.look.sizeAudio || 0);
 		glow.set(st.look.glow);
 		bright.set(st.look.bright);
+		bloom.set(st.look.bloom || 0);
+		aberration.set(st.look.aberration || 0);
+		dofOn.set(st.look.dofOn || false);
+		dofDist.set(st.look.dofDist || 5.2);
+		dofRange.set(st.look.dofRange || 1.4);
+		syncDof();
 		blend.set(st.look.blend);
 		rotate.set(st.look.autoRotate);
 		rotSpeed.set(st.look.rotSpeed);
@@ -133854,6 +134787,9 @@ function createEffectsPanel(app, root, engine) {
 		trackName.append(h('b', {}, label), h('span', {}, engine.playing ? 'играет' : 'пауза'));
 		playBtn.textContent = '';
 		playBtn.append(h('span', { class: 'ic-wrap', html: icon(engine.playing ? 'pause' : 'play', 18) }));
+		collapseBtn.classList.toggle('is-active', engine.isCollapsed);
+		brushBtn.classList.toggle('is-active', !!st.layers.brush?.on);
+		camBtn.classList.toggle('is-active', !!engine.camTracker?.running);
 		recBtn.classList.toggle('is-rec', engine.recording);
 		recBtn.dataset.tip = engine.recording ? 'Остановить запись и сохранить' : 'Записать видео со звуком (WebM)';
 		recTime.textContent = '';

@@ -20,6 +20,7 @@ export const BANDS = [
 ];
 export const FX_LAYERS = [
 { id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Частицы отрываются и плывут по вихрям', max: 2, def: { on: true, amount: 0.8, band: 'bass', react: 0.6, scale: 1.8 }, extras: [{ key: 'scale', label: 'Размер вихрей', min: 0.5, max: 4, step: 0.1 }] },
+{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма рассыпается на частицы с физикой пола, отскоками и ветром', max: 2, def: { on: false, amount: 1.0, band: 'bass', react: 0.5, gravity: 1.2, bounce: 0.65, wind: 0.4 }, extras: [{ key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.95, step: 0.05 }, { key: 'wind', label: 'Ветер', min: 0.0, max: 2.0, step: 0.1 }] },
 { id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма вытягивается по частотам трека', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, axis: 'angle' }, extras: [{ key: 'axis', label: 'Ось', type: 'seg', options: [['angle', 'По кругу'], ['height', 'По высоте']] }] },
 { id: 'wave', group: 'Движение', name: 'Волны', icon: 'waves', hint: 'Круги расходятся от центра', max: 2, def: { on: false, amount: 0.7, band: 'mid', react: 0.8, freq: 5 }, extras: [{ key: 'freq', label: 'Частота', min: 1, max: 14, step: 0.5 }] },
 { id: 'twist', group: 'Движение', name: 'Скручивание', icon: 'wind', hint: 'Форма закручивается вокруг вертикали', max: 3, def: { on: false, amount: 1, band: 'none', react: 0 }, extras: [] },
@@ -27,11 +28,17 @@ export const FX_LAYERS = [
 { id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1 }, extras: [] },
 { id: 'jitter', group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 { id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в сторону', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }] },
-{ id: 'cursor', group: 'Движение', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.3, max: 2, step: 0.05 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
-{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Линии между соседними точками, как созвездия', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, range: 0.18, count: 3000 }, extras: [{ key: 'range', label: 'Длина связей', min: 0.05, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }] },
-{ id: 'tracking', group: 'Графика', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки с цифрами на «пойманных» областях', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, labels: 'on', lines: 'on' }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 24, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 30, max: 160, step: 5, int: true }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
+{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Линии между соседними точками с бегущими световыми импульсами', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, range: 0.18, count: 3000, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'range', label: 'Длина связей', min: 0.05, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
+{ id: 'slice', group: 'Графика', name: 'Срез / Изолинии', icon: 'scan', hint: 'Топографические лазерные срезы бегут по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 0.5, width: 0.08, count: 4, axis: 'y' }, extras: [{ key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.1, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.02, max: 0.3, step: 0.01 }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
+{ id: 'feedback', group: 'Графика', name: 'Feedback-след', icon: 'spiral', hint: 'Настоящий видео-след (Feedback TOP) с затуханием, зумом и вращением', max: 1.5, def: { on: false, amount: 0.92, band: 'none', react: 0, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002 }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001 }] },
 { id: 'echo', group: 'Графика', name: 'Шлейф', icon: 'ghost', hint: 'Призрачные копии формы с задержкой', max: 1.5, def: { on: false, amount: 0.7, band: 'none', react: 0, delay: 0.18 }, extras: [{ key: 'delay', label: 'Задержка, с', min: 0.05, max: 0.6, step: 0.01 }] },
-{ id: 'slice', group: 'Графика', name: 'Срез', icon: 'scan', hint: 'Яркая плоскость пробегает по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 0.5, width: 0.12, axis: 'y' }, extras: [{ key: 'speed', label: 'Скорость', min: 0.1, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.03, max: 0.4, step: 0.01 }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z']] }] },
+{ id: 'tracking', group: 'Графика', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки захватывают самые подвижные участки формы', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, labels: 'on', lines: 'on' }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 24, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 30, max: 160, step: 5, int: true }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
+{ id: 'telemetry', group: 'Графика', name: 'Телеметрия', icon: 'speedometer', hint: 'Приборный кибер-HUD: таймкод, осциллограмма, шкалы и координаты', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, audioWave: 'on' }, extras: [{ key: 'audioWave', label: 'Осциллограмма', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
+{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.3, max: 2, step: 0.05 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
+{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Рисование курсором по форме: частицы в мазках светятся и оживают, затем след высыхает', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, radius: 0.4, dry: 3.5 }, extras: [{ key: 'radius', label: 'Радиус кисти', min: 0.1, max: 0.9, step: 0.02 }, { key: 'dry', label: 'Высыхание, с', min: 1.0, max: 8.0, step: 0.5 }] },
+{ id: 'contact', group: 'Взаимодействие', name: 'Контакт', icon: 'target', hint: 'Там, где рамки трекинга касаются формы, она поднимается, закручивается или втягивается', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'bump', radius: 0.35, count: 6, memory: 1.5 }, extras: [{ key: 'mode', label: 'Действие', type: 'seg', options: [['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втяг.']] }, { key: 'radius', label: 'Радиус касания', min: 0.1, max: 0.9, step: 0.01 }, { key: 'count', label: 'Точек касания', min: 1, max: 16, step: 1, int: true }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
+{ id: 'shock', group: 'Взаимодействие', name: 'Ударная волна', icon: 'aperture', hint: 'Клик по сцене пускает круговую волну по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 1.2, auto: 'off' }, extras: [{ key: 'speed', label: 'Скорость волны', min: 0.4, max: 3, step: 0.05 }, { key: 'auto', label: 'Запуск', type: 'seg', options: [['off', 'Клик'], ['on', 'Клик и авто']] }] },
+{ id: 'camTrack', group: 'Взаимодействие', name: 'Веб-камера', icon: 'video-camera', hint: 'Управление формой жестами перед веб-камерой', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0 }, extras: [] },
 ];
 export const FX_PALETTES = [
 { id: 'brand', name: 'Янтарь', c: ['#e58a45', '#f4b27a', '#fff0dc'] },
@@ -68,7 +75,25 @@ source: 'sphere',
 count: 150000,
 layers,
 mask: { mode: 'none', size: 0.5, soft: 0.4, speed: 0.5, invert: false, show: false },
-look: { palette: 'brand', colorBy: 'disp', size: 3.5, glow: 0.8, bright: 1, blend: 'add', autoRotate: true, rotSpeed: 0.25 },
+look: {
+bg: '',
+vignette: true,
+palette: 'brand',
+colorBy: 'disp',
+size: 3.5,
+glow: 0.8,
+bright: 1,
+blend: 'add',
+autoRotate: true,
+rotSpeed: 0.25,
+sizeNoise: 0.0,
+sizeAudio: 0.0,
+bloom: 0.0,
+aberration: 0.0,
+dofOn: false,
+dofDist: 5.2,
+dofRange: 1.4,
+},
 audio: { style: 'synthwave', gain: 1.3, idle: true, volume: 0.8 },
 };
 }
@@ -213,7 +238,16 @@ uniform vec2 uYR;
 uniform vec3 uMouse;
 uniform float uMouseOn;
 uniform sampler2D uSpecTex;
-uniform vec4 uCurl, uSpec, uWave, uTwist, uPulse, uVoxel, uJitter, uCursor, uMask, uMaskA, uGlitch;
+uniform vec4 uCurl, uSpec, uWave, uTwist, uPulse, uVoxel, uJitter, uCursor, uMask, uMaskA, uGlitch, uContact, uShockP;
+uniform vec4 uTrk[16];
+uniform vec4 uImp[32];
+uniform vec4 uShock[4];
+uniform vec4 uPhysics;
+uniform float uCollapseTime;
+uniform vec4 uBrushHits[20];
+uniform vec4 uBrushParam;
+uniform vec4 uLookP2;
+uniform vec4 uDof;
 #define PI 3.1415926535
 
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -272,6 +306,27 @@ vec3 curlNoise(vec3 p) {
 	return normalize(vec3((n4 - n3) - (n6 - n5), (n6 - n5) - (n2 - n1), (n2 - n1) - (n4 - n3)) + 1e-5);
 }
 float hash11(float p) { return fract(sin(p * 127.1) * 43758.5453); }
+
+// одно касание: подъём, вихрь или втягивание вокруг точки c с силой st
+void contactAt(vec3 c, float st, vec3 base, vec3 rad, inout vec3 pos) {
+	vec3 dd = base - c;
+	float r = uContact.y;
+	float d2 = dot(dd, dd);
+	if (d2 >= r * r || st < 0.001) return;
+	float f = 1.0 - sqrt(d2) / r;
+	f = f * f * (3.0 - 2.0 * f);
+	float k = f * st * uContact.x;
+	if (uContact.z < 0.5) {
+		pos += rad * k * 0.4;
+	} else if (uContact.z < 1.5) {
+		vec3 ax = normalize(c + vec3(1e-4));
+		float a = k * 2.4;
+		vec3 q = pos - c;
+		pos = c + q * cos(a) + cross(ax, q) * sin(a) + ax * dot(ax, q) * (1.0 - cos(a));
+	} else {
+		pos -= normalize(dd + vec3(1e-4)) * k * 0.3;
+	}
+}
 
 // Положение одной точки после всех эффектов. base: форма без эффектов, maskV: доля эффектов в этой точке (зона)
 vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float maskV) {
@@ -333,6 +388,64 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		if (uMask.w > 0.5) maskV = 1.0 - maskV;
 	}
 	pos = mix(base, pos, maskV);
+	if (uContact.x > 0.001) {
+		for (int i = 0; i < 16; i++) {
+			if (float(i) >= uContact.w) break;
+			contactAt(uTrk[i].xyz, uTrk[i].w, base, rad, pos);
+		}
+		for (int i = 0; i < 32; i++) {
+			if (float(i) >= uShockP.z) break;
+			contactAt(uImp[i].xyz, uImp[i].w, base, rad, pos);
+		}
+	}
+	if (uShockP.x > 0.001) {
+		for (int i = 0; i < 4; i++) {
+			float age = uShock[i].w;
+			if (age < 0.0) continue;
+			float dist = distance(base, uShock[i].xyz);
+			float x = (dist - age * uShockP.y) / 0.22;
+			pos += rad * exp(-x * x) * exp(-age * 0.9) * uShockP.x * 0.45;
+		}
+	}
+	// Кисть: рисование курсором
+	if (uBrushParam.x > 0.001) {
+		for (int i = 0; i < 20; i++) {
+			float age = uBrushHits[i].w;
+			if (age < 0.0) continue;
+			float dist = distance(base, uBrushHits[i].xyz);
+			float r = uBrushParam.y;
+			if (dist < r) {
+				float life = 1.0 - age / uBrushParam.z;
+				float infl = (1.0 - dist / r) * life * uBrushParam.x;
+				pos += rad * infl * 0.35;
+			}
+		}
+	}
+	// Распад / Физика (гравитация, отскок от пола, ветер)
+	if (uPhysics.x > 0.001) {
+		float seed = hash11(aIdx * 1234.56 + 17.1);
+		float seed2 = hash11(aIdx * 2345.67 + 39.3);
+		float seed3 = hash11(aIdx * 3456.78 + 81.7);
+		vec3 v0 = normalize(base + vec3(seed - 0.5, seed2 - 0.5, seed3 - 0.5) * 1.2) * (0.8 + seed * 1.5);
+		float pt = max(0.0, uCollapseTime - seed * 0.35);
+		float floorY = -1.25;
+		vec3 pPhys = base;
+		pPhys.x += (v0.x * 0.7 + uPhysics.w * 0.9) * pt + sin(pt * 2.5 + seed * 6.28) * 0.12;
+		pPhys.z += v0.z * 0.7 * pt + cos(pt * 2.2 + seed2 * 6.28) * 0.12;
+
+		float g = uPhysics.y * 3.8;
+		float vy0 = max(0.3, v0.y * 1.9);
+		float tBounce = max(0.15, 2.0 * vy0 / g * (1.0 - uPhysics.z * 0.25));
+		float bCount = floor(pt / tBounce);
+		float damp = pow(clamp(uPhysics.z, 0.1, 0.95), bCount);
+		float remT = mod(pt, tBounce);
+		float curVy = vy0 * damp;
+		float curY = floorY + max(0.0, curVy * remT - 0.5 * g * remT * remT);
+		pPhys.y = mix(base.y - 0.5 * g * pt * pt, curY, clamp(pt * 2.0, 0.0, 1.0));
+		if (pPhys.y < floorY) pPhys.y = floorY + abs(sin(pt * 4.0 + seed * 3.0)) * 0.015;
+
+		pos = mix(pos, pPhys, smoothstep(0.0, 1.0, uPhysics.x));
+	}
 	if (uMouseOn > 0.5 && uCursor.x > 0.001) {
 		vec3 tm = pos - uMouse;
 		float r2 = uCursor.y * uCursor.y;
@@ -361,6 +474,7 @@ uniform vec3 uP2;
 uniform vec4 uSlice;
 varying vec3 vColor;
 varying float vD;
+varying float vCoc;
 ` + common + `
 void main() {
 	vec3 base;
@@ -377,22 +491,63 @@ void main() {
 	vColor = col * uBright * (1.0 + uBeat * 0.3);
 	if (uMask.x > 0.5 && uMaskShow > 0.5) vColor = mix(vColor, uP2 * 1.4, maskV * 0.55);
 
-	// срез: яркая плоскость пробегает по форме
+	// Кисть: свечение в следе мазка
+	if (uBrushParam.x > 0.001) {
+		float bGlow = 0.0;
+		for (int i = 0; i < 20; i++) {
+			float age = uBrushHits[i].w;
+			if (age < 0.0) continue;
+			float dist = distance(base, uBrushHits[i].xyz);
+			if (dist < uBrushParam.y) {
+				float life = 1.0 - age / uBrushParam.z;
+				bGlow = max(bGlow, (1.0 - dist / uBrushParam.y) * life);
+			}
+		}
+		if (bGlow > 0.001) vColor += uP2 * bGlow * 2.2 * uBrushParam.x;
+	}
+
+	// Срез / Изолинии: яркие лазерные срезы пробегают по форме
 	float sl = 0.0;
 	if (uSlice.x > 0.001) {
-		float c = uSlice.w < 0.5 ? base.y : (uSlice.w < 1.5 ? base.x : base.z);
-		float lo = uSlice.w < 0.5 ? uYR.x : -1.2;
-		float hi = uSlice.w < 0.5 ? uYR.y : 1.2;
+		float axCode = mod(uSlice.w, 10.0);
+		float nLines = floor(uSlice.w / 10.0);
+		if (nLines < 1.0) nLines = 1.0;
+		float c = axCode < 0.5 ? base.y : (axCode < 1.5 ? base.x : (axCode < 2.5 ? base.z : (base.x + base.y) * 0.707));
+		float lo = -1.2;
+		float hi = 1.2;
 		float v = clamp((c - lo) / max(hi - lo, 1e-4), 0.0, 1.0);
-		sl = (1.0 - smoothstep(uSlice.z * 0.4, uSlice.z, abs(v - uSlice.y))) * uSlice.x;
-		vColor += uP2 * sl * 1.6;
+		float coord = mod(v * nLines - uSlice.y * nLines, 1.0);
+		sl = (1.0 - smoothstep(uSlice.z * 0.4, uSlice.z, abs(coord - 0.5))) * uSlice.x;
+		vColor += uP2 * sl * 2.2;
 	}
 	vD = disp;
 	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
 	gl_Position = projectionMatrix * mv;
+
+	// Масштаб по шуму и спектру (Scale POP)
+	float szNoise = 1.0;
+	if (uLookP2.x > 0.001) {
+		szNoise = 1.0 + uLookP2.x * (snoise(base * 2.2 + uTime * 0.4) * 0.75);
+	}
+	float szAudio = 1.0;
+	if (uLookP2.y > 0.001) {
+		float bandAudio = mix(uBeat, uSpec.x, step(0.0, base.y));
+		szAudio = 1.0 + uLookP2.y * (bandAudio * 1.2 * (0.6 + 0.4 * sin(aIdx * 62.8)));
+	}
+
+	// Глубина резкости (Depth of Field: CoC)
+	float coc = 0.0;
+	if (uDof.x > 0.5) {
+		float viewDist = -mv.z;
+		coc = clamp(abs(viewDist - uDof.y) / max(0.05, uDof.z), 0.0, 1.0);
+	}
+	vCoc = coc;
+
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2);
+	s *= max(0.15, szNoise * szAudio);
+	s *= (1.0 + coc * 2.4);
 	s *= 3.8 / max(-mv.z, 0.4);
-	gl_PointSize = clamp(s, 1.0, 80.0);
+	gl_PointSize = clamp(s, 1.0, 95.0);
 }
 `;
 const frag = `
@@ -403,17 +558,23 @@ uniform float uDens;
 uniform float uGhost;
 varying vec3 vColor;
 varying float vD;
+varying float vCoc;
 void main() {
 	vec2 c = gl_PointCoord - 0.5;
 	float r2 = dot(c, c);
 	if (r2 > 0.25) discard;
 	float core = 1.0 - smoothstep(0.0, 0.25, r2);
+	if (vCoc > 0.01) {
+		float bokeh = 1.0 - smoothstep(0.16, 0.25, r2);
+		core = mix(core, bokeh, vCoc * 0.8);
+	}
+	float dofAlpha = 1.0 / (1.0 + vCoc * 1.8);
 	if (uAdd > 0.5) {
 		float aura = pow(core, mix(1.8, 0.7, uGlow));
-		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost;
-		gl_FragColor = vec4(col, core * uGhost);
+		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha;
+		gl_FragColor = vec4(col, core * uGhost * dofAlpha);
 	} else {
-		gl_FragColor = vec4(vColor * (0.55 + 0.45 * core), 1.0);
+		gl_FragColor = vec4(vColor * (0.55 + 0.45 * core), dofAlpha);
 	}
 	#include <tonemapping_fragment>
 	#include <colorspace_fragment>
@@ -433,6 +594,8 @@ uniform float uBright;
 uniform vec4 uLink;
 varying vec3 vC;
 varying float vA;
+varying float vEnd;
+varying float vIdx;
 ` + common + `
 void main() {
 	vec3 bA, bB;
@@ -442,16 +605,30 @@ void main() {
 	float len = distance(pA, pB);
 	vA = uLink.x * (1.0 - smoothstep(uLink.y * 0.8, uLink.y * 1.9, len));
 	vC = mix(uP0, uP2, 0.35 + uBeat * 0.4) * uBright;
+	vEnd = aEnd;
+	vIdx = aIdx;
 	vec3 pos = mix(pA, pB, aEnd);
 	gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
 }
 `;
 const lineFrag = `
 precision highp float;
+uniform vec4 uLink;
+uniform float uTime;
 varying vec3 vC;
 varying float vA;
+varying float vEnd;
+varying float vIdx;
 void main() {
-	gl_FragColor = vec4(vC * vA, vA);
+	float pulseA = 1.0;
+	vec3 col = vC;
+	if (uLink.w > 0.5) {
+		float p = sin(vEnd * 16.0 - uTime * uLink.z * 3.5 + vIdx * 24.0);
+		float spark = smoothstep(0.45, 0.98, p) * 2.8;
+		pulseA = 0.35 + spark;
+		col += col * spark * 1.5;
+	}
+	gl_FragColor = vec4(col * (vA * pulseA), vA * pulseA);
 	#include <tonemapping_fragment>
 	#include <colorspace_fragment>
 }
@@ -561,12 +738,285 @@ aOsc.start(now); aOsc.stop(now + dur + 0.02);
 this.step++;
 }
 }
+class PostPipeline {
+constructor(renderer) {
+this.renderer = renderer;
+this.quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+this.quadGeo = new THREE.PlaneGeometry(2, 2);
+this.width = 0;
+this.height = 0;
+const opt = {
+minFilter: THREE.LinearFilter,
+magFilter: THREE.LinearFilter,
+format: THREE.RGBAFormat,
+type: THREE.HalfFloatType,
+};
+this.rtScene = new THREE.WebGLRenderTarget(1, 1, opt);
+this.rtPing = new THREE.WebGLRenderTarget(1, 1, opt);
+this.rtPong = new THREE.WebGLRenderTarget(1, 1, opt);
+this.fbMat = new THREE.ShaderMaterial({
+uniforms: {
+uScene: { value: null },
+uPrev: { value: null },
+uDecay: { value: 0.92 },
+uZoom: { value: 1.0 },
+uTwist: { value: 0.0 },
+uHasPrev: { value: 0.0 },
+},
+vertexShader: `
+				varying vec2 vUv;
+				void main() {
+					vUv = uv;
+					gl_Position = vec4(position.xy, 0.0, 1.0);
+				}
+			`,
+fragmentShader: `
+				precision highp float;
+				uniform sampler2D uScene;
+				uniform sampler2D uPrev;
+				uniform float uDecay;
+				uniform float uZoom;
+				uniform float uTwist;
+				uniform float uHasPrev;
+				varying vec2 vUv;
+				void main() {
+					vec4 curr = texture2D(uScene, vUv);
+					vec4 prev = vec4(0.0);
+					if (uHasPrev > 0.5) {
+						vec2 c = vec2(0.5);
+						vec2 p = vUv - c;
+						float a = uTwist;
+						mat2 rot = mat2(cos(a), -sin(a), sin(a), cos(a));
+						vec2 pUv = (rot * p) / max(0.001, uZoom) + c;
+						if (pUv.x >= 0.0 && pUv.x <= 1.0 && pUv.y >= 0.0 && pUv.y <= 1.0) {
+							prev = texture2D(uPrev, pUv) * uDecay;
+						}
+					}
+					vec3 col = max(curr.rgb, prev.rgb);
+					float a = max(curr.a, prev.a * uDecay);
+					gl_FragColor = vec4(col, a);
+				}
+			`,
+depthTest: false,
+depthWrite: false,
+});
+this.fbMesh = new THREE.Mesh(this.quadGeo, this.fbMat);
+this.outMat = new THREE.ShaderMaterial({
+uniforms: {
+uTex: { value: null },
+uBloom: { value: 0.0 },
+uAberration: { value: 0.0 },
+uRes: { value: new THREE.Vector2(1, 1) },
+},
+vertexShader: `
+				varying vec2 vUv;
+				void main() {
+					vUv = uv;
+					gl_Position = vec4(position.xy, 0.0, 1.0);
+				}
+			`,
+fragmentShader: `
+				precision highp float;
+				uniform sampler2D uTex;
+				uniform float uBloom;
+				uniform float uAberration;
+				uniform vec2 uRes;
+				varying vec2 vUv;
+				void main() {
+					vec2 dir = vUv - vec2(0.5);
+					float distSq = dot(dir, dir);
+					vec2 shift = dir * distSq * uAberration * 0.04;
+
+					vec4 baseCol;
+					if (uAberration > 0.001) {
+						float r = texture2D(uTex, vUv + shift).r;
+						float g = texture2D(uTex, vUv).g;
+						float b = texture2D(uTex, vUv - shift).b;
+						float a = texture2D(uTex, vUv).a;
+						baseCol = vec4(r, g, b, a);
+					} else {
+						baseCol = texture2D(uTex, vUv);
+					}
+
+					if (uBloom > 0.01) {
+						vec2 texel = 1.0 / uRes;
+						vec4 bloom = vec4(0.0);
+						float rad = 3.2;
+						bloom += texture2D(uTex, vUv + vec2(-rad, -rad) * texel);
+						bloom += texture2D(uTex, vUv + vec2( rad, -rad) * texel);
+						bloom += texture2D(uTex, vUv + vec2(-rad,  rad) * texel);
+						bloom += texture2D(uTex, vUv + vec2( rad,  rad) * texel);
+						bloom += texture2D(uTex, vUv + vec2( 0.0, -rad * 1.4) * texel);
+						bloom += texture2D(uTex, vUv + vec2( 0.0,  rad * 1.4) * texel);
+						bloom += texture2D(uTex, vUv + vec2(-rad * 1.4, 0.0) * texel);
+						bloom += texture2D(uTex, vUv + vec2( rad * 1.4, 0.0) * texel);
+						bloom *= 0.125;
+						baseCol.rgb += bloom.rgb * uBloom * 0.85;
+					}
+
+					gl_FragColor = baseCol;
+					#include <tonemapping_fragment>
+					#include <colorspace_fragment>
+				}
+			`,
+depthTest: false,
+depthWrite: false,
+transparent: true,
+});
+this.outMesh = new THREE.Mesh(this.quadGeo, this.outMat);
+this.quadScene = new THREE.Scene();
+this.hasHistory = false;
+}
+setSize(w, h, dpr = 1) {
+const rw = Math.max(1, Math.round(w * dpr));
+const rh = Math.max(1, Math.round(h * dpr));
+if (rw === this.width && rh === this.height) return;
+this.width = rw;
+this.height = rh;
+this.rtScene.setSize(rw, rh);
+this.rtPing.setSize(rw, rh);
+this.rtPong.setSize(rw, rh);
+this.outMat.uniforms.uRes.value.set(rw, rh);
+this.hasHistory = false;
+}
+render(scene, camera, feedbackCfg, bloomVal, abVal) {
+const r = this.renderer;
+const dom = r.domElement;
+const dpr = r.getPixelRatio();
+this.setSize(dom.clientWidth, dom.clientHeight, dpr);
+const useFb = feedbackCfg && feedbackCfg.on && feedbackCfg.amount > 0.01;
+const useBloom = bloomVal > 0.01;
+const useAb = abVal > 0.01;
+if (!useFb && !useBloom && !useAb) {
+r.setRenderTarget(null);
+r.render(scene, camera);
+this.hasHistory = false;
+return;
+}
+r.setRenderTarget(this.rtScene);
+r.clear();
+r.render(scene, camera);
+let sourceTex = this.rtScene.texture;
+if (useFb) {
+const zoom = feedbackCfg.zoom || 1.0;
+const twist = feedbackCfg.twist || 0.0;
+const decay = feedbackCfg.amount || 0.92;
+this.fbMat.uniforms.uScene.value = this.rtScene.texture;
+this.fbMat.uniforms.uPrev.value = this.rtPing.texture;
+this.fbMat.uniforms.uDecay.value = decay;
+this.fbMat.uniforms.uZoom.value = zoom;
+this.fbMat.uniforms.uTwist.value = twist;
+this.fbMat.uniforms.uHasPrev.value = this.hasHistory ? 1.0 : 0.0;
+this.quadScene.clear();
+this.quadScene.add(this.fbMesh);
+r.setRenderTarget(this.rtPong);
+r.clear();
+r.render(this.quadScene, this.quadCam);
+const tmp = this.rtPing;
+this.rtPing = this.rtPong;
+this.rtPong = tmp;
+this.hasHistory = true;
+sourceTex = this.rtPing.texture;
+} else {
+this.hasHistory = false;
+}
+this.outMat.uniforms.uTex.value = sourceTex;
+this.outMat.uniforms.uBloom.value = bloomVal;
+this.outMat.uniforms.uAberration.value = abVal;
+this.quadScene.clear();
+this.quadScene.add(this.outMesh);
+r.setRenderTarget(null);
+r.render(this.quadScene, this.quadCam);
+}
+dispose() {
+this.rtScene.dispose();
+this.rtPing.dispose();
+this.rtPong.dispose();
+this.fbMat.dispose();
+this.outMat.dispose();
+this.quadGeo.dispose();
+}
+}
+class MotionCamTracker {
+constructor(onMotion) {
+this.onMotion = onMotion;
+this.video = document.createElement('video');
+this.video.autoplay = true;
+this.video.playsInline = true;
+this.video.muted = true;
+this.canvas = document.createElement('canvas');
+this.canvas.width = 48;
+this.canvas.height = 36;
+this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+this.prevData = null;
+this.running = false;
+this.stream = null;
+this._timer = null;
+}
+async start() {
+if (this.running) return;
+try {
+this.stream = await navigator.mediaDevices.getUserMedia({
+video: { width: { ideal: 320 }, height: { ideal: 240 } }
+});
+this.video.srcObject = this.stream;
+await this.video.play();
+this.running = true;
+this._tick();
+} catch (err) {
+console.warn('Webcam motion tracker unavailable:', err);
+this.stop();
+throw err;
+}
+}
+_tick() {
+if (!this.running) return;
+if (this.video.readyState >= 2) {
+const w = this.canvas.width;
+const h = this.canvas.height;
+this.ctx.drawImage(this.video, 0, 0, w, h);
+const frame = this.ctx.getImageData(0, 0, w, h).data;
+if (this.prevData) {
+let sumX = 0, sumY = 0, count = 0;
+for (let i = 0; i < frame.length; i += 4) {
+const diff = Math.abs(frame[i] - this.prevData[i]) +
+Math.abs(frame[i+1] - this.prevData[i+1]) +
+Math.abs(frame[i+2] - this.prevData[i+2]);
+if (diff > 45) {
+const px = (i / 4) % w;
+const py = Math.floor((i / 4) / w);
+sumX += px;
+sumY += py;
+count++;
+}
+}
+if (count > 15) {
+const cx = -((sumX / count) / w * 2 - 1);
+const cy = -((sumY / count) / h * 2 - 1);
+this.onMotion(cx, cy);
+}
+}
+this.prevData = new Uint8ClampedArray(frame);
+}
+this._timer = setTimeout(() => this._tick(), 50);
+}
+stop() {
+this.running = false;
+clearTimeout(this._timer);
+if (this.stream) {
+this.stream.getTracks().forEach(t => t.stop());
+this.stream = null;
+}
+this.prevData = null;
+}
+}
 export class EffectsEngine {
 constructor(app) {
 this.app = app;
 this.active = false;
 this.state = mergeDeep(defaultState(), loadJSON(KEY, {}));
 for (const l of FX_LAYERS) this.state.layers[l.id] = { ...l.def, ...this.state.layers[l.id] };
+this.state.look = { ...defaultState().look, ...this.state.look };
 this.ctx = null;
 this.analyser = null;
 this.bus = null;
@@ -602,11 +1052,70 @@ this.recording = false;
 this.modelProvider = null;
 this.ghosts = [];
 this.linkObj = null;
+this.shocks = [];
 this.onFrame = null;
 this._ray = new THREE.Raycaster();
 this._plane = new THREE.Plane();
 this._move = (e) => this._onMove(e);
 this._leave = () => (this.mouseOn = false);
+this._dn = (e) => this._onDown(e);
+this._up = (e) => this._onUp(e);
+this.isCollapsed = false;
+this.collapseProgress = 0;
+this.collapseTime = 0;
+this.brushHits = [];
+this.post = null;
+this.camTracker = null;
+this._pointerDown = false;
+}
+toggleCollapse() {
+this.isCollapsed = !this.isCollapsed;
+this.state.layers.physics.on = true;
+this.emit();
+}
+clearBrush() {
+this.brushHits = [];
+this.emit();
+}
+addBrushHit(pos) {
+if (!pos) return;
+if (this.brushHits.length > 0 && this.brushHits[0].pos.distanceTo(pos) < 0.05) return;
+this.brushHits.unshift({ pos: pos.clone(), t0: this._time });
+this.brushHits.length = Math.min(this.brushHits.length, 20);
+}
+async toggleMotionCam() {
+if (this.camTracker && this.camTracker.running) {
+this.camTracker.stop();
+this.state.layers.camTrack.on = false;
+this.app.toast('Веб-камера выключена');
+this.emit();
+} else {
+try {
+if (!this.camTracker) {
+this.camTracker = new MotionCamTracker((cx, cy) => {
+if (!this.active || !this.points) return;
+const vp = this.app.viewport;
+const ndc = new THREE.Vector2(cx, cy);
+this._ray.setFromCamera(ndc, vp.camera);
+this._plane.setFromNormalAndCoplanarPoint(vp.camera.getWorldDirection(new THREE.Vector3()).negate(), new THREE.Vector3());
+const hit = new THREE.Vector3();
+if (this._ray.ray.intersectPlane(this._plane, hit)) {
+this.mouse.copy(this.points.worldToLocal(hit));
+this.mouseOn = true;
+if (this.state.layers.brush.on) this.addBrushHit(this.mouse);
+}
+});
+}
+await this.camTracker.start();
+this.state.layers.camTrack.on = true;
+this.app.toast('Веб-камера активна: управляйте жестами!', 'ok');
+this.emit();
+} catch (err) {
+this.state.layers.camTrack.on = false;
+this.app.toast('Нет доступа к веб-камере', 'error');
+this.emit();
+}
+}
 }
 touch() {
 clearTimeout(this._saveT);
@@ -828,8 +1337,12 @@ uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()),
 uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
 uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
 uPulse: U(new THREE.Vector4()), uVoxel: U(new THREE.Vector4()), uJitter: U(new THREE.Vector4()), uCursor: U(new THREE.Vector4()),
-uGlitch: U(new THREE.Vector4()), uSlice: U(new THREE.Vector4()), uLink: U(new THREE.Vector4()),
+uGlitch: U(new THREE.Vector4()), uSlice: U(new THREE.Vector4()), uLink: U(new THREE.Vector4()), uContact: U(new THREE.Vector4()), uShockP: U(new THREE.Vector4()),
+uTrk: U(Array.from({ length: 16 }, () => new THREE.Vector4())), uImp: U(Array.from({ length: 32 }, () => new THREE.Vector4())), uShock: U(Array.from({ length: 4 }, () => new THREE.Vector4(0, 0, 0, -1))),
 uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
+uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
+uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
+uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
 };
 const mk = (extra) =>
 new THREE.ShaderMaterial({
@@ -993,6 +1506,17 @@ relink() {
 clearTimeout(this._relT);
 this._relT = setTimeout(() => this._computeLinks(), 180);
 }
+applyBg() {
+const stage = document.querySelector('.stage');
+const { bg, vignette } = this.state.look;
+if (!this.active || !bg) {
+this.app.viewport.applyRenderSettings();
+return;
+}
+const c = new THREE.Color(bg);
+const hi = c.clone().lerp(new THREE.Color(1, 1, 1), 0.025);
+stage.style.background = vignette ? `radial-gradient(ellipse at 50% 42%, #${hi.getHexString(THREE.SRGBColorSpace)} 0%, ${bg} 78%)` : bg;
+}
 async setSource(key) {
 const st = this.state;
 if (key === 'model' && !this.hasModel) {
@@ -1082,8 +1606,22 @@ app.ui.idle();
 const stage = document.querySelector('.stage');
 stage.addEventListener('pointermove', this._move);
 stage.addEventListener('pointerleave', this._leave);
+stage.addEventListener('pointerdown', this._dn);
+stage.addEventListener('pointerup', this._up);
 this._offScene = app.bus.on('scene', () => this._onScene());
 this.hud = new TrackerHud(document.getElementById('viewport'));
+this.applyBg();
+this.post = new PostPipeline(vp.renderer);
+vp.renderHook = (renderer, scene, camera) => {
+if (!this.active) {
+renderer.render(scene, camera);
+return;
+}
+const fb = this.state.layers.feedback;
+const bloom = this.state.look.bloom || 0;
+const ab = this.state.look.aberration || 0;
+this.post.render(scene, camera, fb, bloom, ab);
+};
 app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 400);
 this._lastT = performance.now();
 this._loop();
@@ -1100,6 +1638,14 @@ clearTimeout(this._sceneT);
 this._offScene && this._offScene();
 this.hud?.dispose();
 this.hud = null;
+this.app.viewport.renderHook = null;
+this.post?.dispose();
+this.post = null;
+if (this.camTracker) {
+this.camTracker.stop();
+this.camTracker = null;
+}
+this.app.viewport.applyRenderSettings();
 const vp = this.app.viewport;
 this._disposePoints();
 vp.root.visible = this._saved?.rootVisible !== false;
@@ -1107,11 +1653,34 @@ vp.fxHide = false;
 const stage = document.querySelector('.stage');
 stage.removeEventListener('pointermove', this._move);
 stage.removeEventListener('pointerleave', this._leave);
+stage.removeEventListener('pointerdown', this._dn);
+stage.removeEventListener('pointerup', this._up);
 document.getElementById('app').classList.remove('fx-mode');
 this.app.display.apply();
 this.app.nav.frameAll(true);
 vp.invalidate();
 this.emit();
+}
+addShock(pos) {
+if (!pos) return;
+this.shocks.unshift({ pos: pos.clone(), t0: this._time });
+this.shocks.length = Math.min(this.shocks.length, 4);
+}
+_onDown(e) {
+this._pointerDown = true;
+this._down = { x: e.clientX, y: e.clientY, t: performance.now(), b: e.button };
+if (this.mouseOn && this.state.layers.brush.on) {
+this.addBrushHit(this.mouse);
+}
+}
+_onUp(e) {
+this._pointerDown = false;
+const d = this._down;
+this._down = null;
+if (!d || d.b !== 0 || !this.state.layers.shock.on) return;
+if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 5 || performance.now() - d.t > 450) return;
+this._onMove(e);
+if (this.mouseOn) this.addShock(this.mouse);
 }
 _onMove(e) {
 if (!this.points) return;
@@ -1124,6 +1693,9 @@ const hit = new THREE.Vector3();
 if (this._ray.ray.intersectPlane(this._plane, hit)) {
 this.mouse.copy(this.points.worldToLocal(hit));
 this.mouseOn = true;
+if (this.state.layers.brush.on && (e.buttons === 1 || this._pointerDown)) {
+this.addBrushHit(this.mouse);
+}
 }
 }
 _eff(l) {
@@ -1186,12 +1758,41 @@ u.uVoxel.value.set(clamp(this._eff(L.voxel), 0, 1), 0, 0, 0);
 u.uJitter.value.set(this._eff(L.jitter), 0, 0, 0);
 u.uGlitch.value.set(this._eff(L.glitch), L.glitch.slices, 0, 0);
 u.uCursor.value.set(this._eff(L.cursor), L.cursor.radius, L.cursor.mode === 'attract' ? -1 : 1, 0);
+const physOn = L.physics ? L.physics.on : false;
+if (this.isCollapsed && physOn) {
+this.collapseProgress = Math.min(1, this.collapseProgress + dt * 0.75);
+this.collapseTime += dt;
+} else {
+this.collapseProgress = Math.max(0, this.collapseProgress - dt * 1.25);
+if (this.collapseProgress <= 0.001) this.collapseTime = 0;
+}
+const physEff = L.physics ? this._eff(L.physics) * this.collapseProgress : 0;
+u.uPhysics.value.set(physEff, L.physics ? L.physics.gravity : 1.2, L.physics ? L.physics.bounce : 0.65, L.physics ? L.physics.wind : 0.4);
+u.uCollapseTime.value = this.collapseTime;
+const brE = L.brush ? this._eff(L.brush) : 0;
+const brArr = u.uBrushHits.value;
+for (let i = 0; i < 20; i++) {
+const hit = this.brushHits[i];
+const age = hit ? this._time - hit.t0 : -1;
+if (hit && age < (L.brush ? L.brush.dry : 3.5)) {
+brArr[i].set(hit.pos.x, hit.pos.y, hit.pos.z, age);
+} else {
+brArr[i].set(0, 0, 0, -1);
+}
+}
+u.uBrushParam.value.set(brE, L.brush ? L.brush.radius : 0.4, L.brush ? L.brush.dry : 3.5, 1);
 const sl = L.slice;
-u.uSlice.value.set(this._eff(sl), (this._time * sl.speed * 0.25) % 1, sl.width, { y: 0, x: 1, z: 2 }[sl.axis] ?? 0);
+const nLines = Math.max(1, Math.round(sl.count || 1));
+const axVal = { y: 0, x: 1, z: 2, diag: 3 }[sl.axis] ?? 0;
+u.uSlice.value.set(this._eff(sl), (this._time * sl.speed * 0.25) % 1, sl.width, axVal + nLines * 10);
+u.uLookP2.value.set(look.sizeNoise || 0, look.sizeAudio || 0, 0, 0);
+u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
 const lk = this._eff(L.links);
 if (this.linkObj) {
 this.linkObj.visible = lk > 0.01;
-u.uLink.value.set(lk * 0.8, L.links.range * (1 + this.levels.beat * 0.4), 0, 0);
+const pulseOn = L.links.pulses === 'on' ? 1 : 0;
+const pSpeed = L.links.pulseSpeed || 1.6;
+u.uLink.value.set(lk * 0.8, L.links.range * (1 + this.levels.beat * 0.4), pSpeed, pulseOn);
 }
 const ec = this._eff(L.echo);
 this.ghosts.forEach((g, i) => {
@@ -1222,9 +1823,52 @@ u.uMaskShow.value = mk.show ? 1 : 0;
 u.uMouse.value.copy(this.mouse);
 u.uMouseOn.value = this.mouseOn ? 1 : 0;
 if (this.hud) {
+this.hud.clear();
 const tr = this._eff(L.tracking);
-this.hud.draw(L.tracking, tr, { points: this.points, geometry: this.geometry, camera: this.app.viewport.camera, morph: this.morph, levels: this.levels, colors: ['#' + new THREE.Color(pal.c[0]).getHexString(THREE.SRGBColorSpace), '#' + new THREE.Color(pal.c[2]).getHexString(THREE.SRGBColorSpace)], dt });
+const ct = this._eff(L.contact);
+const simN = Math.max(L.tracking.on ? Math.round(L.tracking.count) : 0, L.contact.on ? Math.round(L.contact.count) : 0);
+this.hud.update(simN, this.geometry, this.morph, this.levels, dt);
+if (L.tracking.on) {
+this.hud.drawTracking(L.tracking, tr, { points: this.points, camera: this.app.viewport.camera, levels: this.levels, colors: ['#' + new THREE.Color(pal.c[0]).getHexString(THREE.SRGBColorSpace), '#' + new THREE.Color(pal.c[2]).getHexString(THREE.SRGBColorSpace)] });
 }
+if (L.telemetry && L.telemetry.on) {
+const telAlpha = this._eff(L.telemetry);
+this.hud.drawTelemetry(L.telemetry, telAlpha, { levels: this.levels, spec: this.spec, colors: ['#' + new THREE.Color(pal.c[0]).getHexString(THREE.SRGBColorSpace), '#' + new THREE.Color(pal.c[2]).getHexString(THREE.SRGBColorSpace)] });
+}
+const arr = u.uTrk.value;
+const n = Math.min(16, this.hud.items.length, Math.round(L.contact.count));
+for (let i = 0; i < 16; i++) {
+const it = this.hud.items[i];
+if (it && i < n) arr[i].set(it.pos.x, it.pos.y, it.pos.z, it.touch);
+else arr[i].set(0, 0, 0, 0);
+}
+const imp = u.uImp.value;
+const mem = L.contact.memory;
+let ni = 0;
+if (mem > 0.05 && ct > 0.001) {
+for (const m of this.hud.imprints) {
+const s0 = Math.exp(-(this._time - m.t0) / mem) * m.s;
+if (s0 > 0.02 && ni < 32) imp[ni++].set(m.pos.x, m.pos.y, m.pos.z, s0);
+}
+}
+for (let i = ni; i < 32; i++) imp[i].set(0, 0, 0, 0);
+this.hud.time = this._time;
+u.uContact.value.set(ct, L.contact.radius, { bump: 0, swirl: 1, pull: 2 }[L.contact.mode] ?? 0, n);
+u.uShockP.value.z = ni;
+}
+const shE = this._eff(L.shock);
+if (L.shock.on && L.shock.auto === 'on' && this._time > (this._nextShock || 0) && this.geometry) {
+this._nextShock = this._time + 2.2 + Math.random() * 1.6;
+this.addShock(this.hud ? this.hud._pick(this.geometry, this.morph) : null);
+}
+const sh = u.uShock.value;
+for (let i = 0; i < 4; i++) {
+const s0 = this.shocks[i];
+const age = s0 ? this._time - s0.t0 : -1;
+if (s0 && age < 5) sh[i].set(s0.pos.x, s0.pos.y, s0.pos.z, age);
+else sh[i].set(0, 0, 0, -1);
+}
+u.uShockP.value.set(shE, L.shock.speed, u.uShockP.value.z, 0);
 this.onFrame && this.onFrame(this.levels);
 this.app.viewport.invalidate();
 };

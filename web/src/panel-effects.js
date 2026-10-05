@@ -1,6 +1,6 @@
 import { h, formatInt } from './util.js';
 import { icon } from './icons.js';
-import { section, field, slider, segmented, switchRow, toggle, button, iconButton, select } from './ui-kit.js';
+import { section, field, slider, segmented, switchRow, toggle, button, iconButton, select, colorField } from './ui-kit.js';
 import * as THREE from 'three';
 import { sampleSurface } from './pointcloud.js';
 import { getDevice } from './device-card.js';
@@ -98,10 +98,27 @@ const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNot
 const cards = [];
 const left = document.getElementById('fxList');
 const leftCount = document.getElementById('fxActive');
-let openCard = null;
-for (const grp of ['Движение', 'Графика']) {
-left.append(h('div', { class: 'fx-group' }, grp));
+const inspBox = h('div', { class: 'fx-insp-box' });
+let selected = null;
+const select_ = (id) => {
+selected = id;
+for (const c of cards) {
+c.card.classList.toggle('is-selected', c.def.id === id);
+c.insp.classList.toggle('is-selected', c.def.id === id);
+}
+};
+for (const grp of ['Движение', 'Графика', 'Взаимодействие']) {
+const folder = h('div', { class: 'fx-folder' });
+const fhead = h('button', { type: 'button', class: 'fx-folder-head', 'aria-expanded': 'true' }, h('span', { class: 'fx-folder-caret', html: icon('caret-down', 13) }), h('span', { class: 'fx-folder-name' }, grp), h('span', { class: 'fx-folder-n' }));
+const fbody = h('div', { class: 'fx-folder-body' });
+fhead.addEventListener('click', () => {
+const closed = folder.classList.toggle('is-closed');
+fhead.setAttribute('aria-expanded', String(!closed));
+});
+folder.append(fhead, fbody);
+left.append(folder);
 for (const def of FX_LAYERS.filter((d) => d.group === grp)) {
+st.layers[def.id] = { ...def.def, ...(st.layers[def.id] || {}) };
 const L = st.layers[def.id];
 const sw = toggle({
 value: L.on,
@@ -109,13 +126,48 @@ label: def.name,
 onChange: (v) => {
 L.on = v;
 card.classList.toggle('is-on', v);
-if (v) openIt();
+if (v) select_(def.id);
 countActive();
 save();
 },
 });
 const amount = slider({ min: 0, max: def.max, step: 0.05, value: L.amount, digits: 2, onInput: (v) => { L.amount = v; }, onChange: save });
-const body = h('div', { class: 'fx-layer-body' }, field('Сила', amount.el));
+const body = h('div', { class: 'fx-layer-body' });
+if (def.id === 'physics') {
+const collapseBtn = button({
+label: engine.isCollapsed ? 'Собрать форму' : 'Разрушить форму',
+icon: 'atom',
+variant: 'primary',
+cls: 'btn-block',
+onClick: () => {
+engine.toggleCollapse();
+collapseBtn.querySelector('.btn-label').textContent = engine.isCollapsed ? 'Собрать форму' : 'Разрушить форму';
+},
+});
+body.append(collapseBtn);
+} else if (def.id === 'brush') {
+const clearBtn = button({
+label: 'Стереть краску',
+icon: 'broom',
+variant: 'secondary',
+cls: 'btn-block',
+onClick: () => engine.clearBrush(),
+});
+body.append(clearBtn);
+} else if (def.id === 'camTrack') {
+const camBtn = button({
+label: engine.camTracker?.running ? 'Остановить камеру' : 'Включить веб-камеру',
+icon: 'video-camera',
+variant: 'secondary',
+cls: 'btn-block',
+onClick: async () => {
+await engine.toggleMotionCam();
+camBtn.querySelector('.btn-label').textContent = engine.camTracker?.running ? 'Остановить камеру' : 'Включить веб-камеру';
+},
+});
+body.append(camBtn);
+}
+body.append(field('Сила', amount.el));
 const extraCtl = {};
 for (const ex of def.extras) {
 const after = () => {
@@ -149,32 +201,34 @@ save();
 },
 });
 reactRow.hidden = L.band === 'none';
-body.append(field('Реагирует на', band.el, { wide: true }), reactRow);
-const head = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, h('span', { class: 'fx-ic', html: icon(def.icon, 17) }), h('div', { class: 'fx-layer-name' }, h('b', {}, def.name), h('span', {}, def.hint)), sw.el);
-const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id }, head, body);
-const openIt = () => {
-if (openCard && openCard !== card) openCard.classList.remove('is-open');
-card.classList.add('is-open');
-openCard = card;
-};
-head.addEventListener('click', (e) => {
-if (e.target.closest('.switch')) return;
-if (card.classList.contains('is-open')) {
-card.classList.remove('is-open');
-openCard = null;
-} else openIt();
+body.append(field('Реагирует на звук', band.el, { wide: true }), reactRow);
+const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, h('span', { class: 'fx-ic', html: icon(def.icon, 16) }), h('span', { class: 'fx-layer-title' }, def.name), sw.el);
+const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right' }, row);
+const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, h('div', { class: 'fx-insp-head' }, h('span', { class: 'fx-ic', html: icon(def.icon, 18) }), h('div', {}, h('b', {}, def.name), h('span', {}, def.hint))), body);
+row.addEventListener('click', (e) => {
+if (!e.target.closest('.switch')) select_(def.id);
 });
-head.addEventListener('keydown', (e) => {
-if (e.key === 'Enter') head.click();
+row.addEventListener('keydown', (e) => {
+if (e.key === 'Enter') select_(def.id);
 });
-left.append(card);
-cards.push({ def, L, sw, amount, react, band, reactRow, extraCtl, card });
+fbody.append(card);
+inspBox.append(insp);
+cards.push({ def, L, sw, amount, react, band, reactRow, extraCtl, card, insp, fhead });
 }
 }
+const inspEmpty = h('div', { class: 'empty-note' }, h('strong', {}, 'Выберите эффект'), h('span', {}, 'Нажмите на строку в списке слева, чтобы настроить его здесь'));
+const secInsp = section('Настройки эффекта', { key: 'fx-insp' }, inspBox);
 function countActive() {
 const n = cards.filter((c) => c.L.on).length;
 if (leftCount) leftCount.textContent = n ? `включено: ${n}` : 'ничего не включено';
+for (const grp of new Set(cards.map((c) => c.def.group))) {
+const cs = cards.filter((c) => c.def.group === grp);
+const k = cs.filter((c) => c.L.on).length;
+const el = cs[0].fhead.querySelector('.fx-folder-n');
+el.textContent = k ? String(k) : '';
 }
+}
+select_((cards.find((c) => c.L.on) || cards[0]).def.id);
 const mk = st.mask;
 const maskHint = h('div', { class: 'field-hint' });
 const maskMode = segmented({
@@ -260,22 +314,74 @@ palettes.append(b);
 }
 const colorBy = segmented({ options: COLOR_BY.map((c) => ({ value: c.id, label: c.label, title: c.title })), value: st.look.colorBy, onChange: (v) => { st.look.colorBy = v; save(); } });
 const size = slider({ min: 1, max: 12, step: 0.25, value: st.look.size, digits: 1, unit: ' px', onInput: (v) => { st.look.size = v; }, onChange: save });
+const sizeNoise = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeNoise || 0, digits: 2, onInput: (v) => { st.look.sizeNoise = v; }, onChange: save });
+const sizeAudio = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeAudio || 0, digits: 2, onInput: (v) => { st.look.sizeAudio = v; }, onChange: save });
 const glow = slider({ min: 0, max: 1, step: 0.05, value: st.look.glow, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.glow = v; }, onChange: save });
 const bright = slider({ min: 0.3, max: 2, step: 0.05, value: st.look.bright, digits: 2, onInput: (v) => { st.look.bright = v; }, onChange: save });
+const bloom = slider({ min: 0, max: 1, step: 0.05, value: st.look.bloom || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.bloom = v; }, onChange: save });
+const aberration = slider({ min: 0, max: 1, step: 0.05, value: st.look.aberration || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.aberration = v; }, onChange: save });
+const dofOn = switchRow('Глубина резкости (DoF)', { value: st.look.dofOn || false, onChange: (v) => { st.look.dofOn = v; syncDof(); save(); } });
+const dofDist = slider({ min: 1.5, max: 10, step: 0.1, value: st.look.dofDist || 5.2, digits: 1, unit: ' м', onInput: (v) => { st.look.dofDist = v; }, onChange: save });
+const dofRange = slider({ min: 0.2, max: 3, step: 0.1, value: st.look.dofRange || 1.4, digits: 1, unit: ' м', onInput: (v) => { st.look.dofRange = v; }, onChange: save });
+const dofBody = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Дистанция фокуса', dofDist.el), field('Глубина фокуса', dofRange.el));
+const syncDof = () => { dofBody.hidden = !st.look.dofOn; };
+syncDof();
 const blend = segmented({ options: [{ value: 'add', label: 'Свечение', title: 'Точки складывают свет: ярче в плотных местах' }, { value: 'normal', label: 'Плотные', title: 'Непрозрачные точки' }], value: st.look.blend, onChange: (v) => { st.look.blend = v; save(); } });
 const rotate = switchRow('Вращать форму', { value: st.look.autoRotate, onChange: (v) => { st.look.autoRotate = v; save(); } });
 const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
-const secLook = section('Вид', { key: 'fx-look' }, palettes, field('Цвет по', colorBy.el, { wide: true }), field('Размер', size.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el));
-root.append(secSource.el, secMask.el, secAudio.el, secLook.el);
+const secLook = section('Вид', { key: 'fx-look' }, palettes, field('Цвет по', colorBy.el, { wide: true }), field('Размер', size.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el));
+root.append(secInsp.el, secSource.el, secMask.el, secAudio.el, secLook.el);
 const bar = $bar();
 const playBtn = iconButton({ icon: 'play', title: 'Играть / пауза (Пробел)', onClick: () => engine.toggle().catch(() => {}) });
+const collapseBtn = iconButton({ icon: 'atom', title: 'Разрушить / собрать форму («Распад»)', onClick: () => { engine.toggleCollapse(); sync(); } });
+const brushBtn = iconButton({ icon: 'paint-brush', title: 'Кисть: рисовать по форме', onClick: () => { st.layers.brush.on = !st.layers.brush.on; save(); sync(); } });
+const camBtn = iconButton({ icon: 'video-camera', title: 'Веб-камера: управление жестами', onClick: () => engine.toggleMotionCam().then(sync) });
 const trackName = h('div', { class: 'fx-track' });
 const barMeters = makeMeters(true);
 const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (WebM)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });
 const recTime = h('span', { class: 'fx-rec-time' });
 const exitBtn = h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => app.ui.setWorkspace('edit') }, h('span', { class: 'ic-wrap', html: icon('x', 14) }), 'Выйти');
+const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#e8ebef', 'Светлый'], ['#ffffff', 'Белый']];
+const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));
+const bgPop = h('div', { class: 'fx-bg-pop popover', hidden: true });
+const bgSw = h('div', { class: 'fx-bg-sw' });
+const bgSwBtns = BGS.map(([c, name]) => {
+const b = h('button', { type: 'button', class: 'fx-bg-chip', 'aria-label': name, 'data-tip': name, style: c ? { background: c } : {} });
+if (!c) b.classList.add('is-default');
+b.addEventListener('click', () => setBg(c));
+bgSw.append(b);
+return [c, b];
+});
+const bgColor = colorField({ value: st.look.bg || '#14161b', onInput: (v) => setBg(v, true), onChange: save });
+const bgVig = switchRow('Затемнение к краям', { value: st.look.vignette, onChange: (v) => { st.look.vignette = v; engine.applyBg(); save(); } });
+bgPop.append(h('div', { class: 'fx-bg-title' }, 'Цвет фона'), bgSw, field('Свой цвет', bgColor.el), bgVig.el);
+document.getElementById('viewport').append(bgPop);
+function setBg(c, live) {
+st.look.bg = c;
+engine.applyBg();
+if (!live) bgColor.set(c || '#14161b');
+syncBg();
+save();
+}
+function syncBg() {
+bgBtn.querySelector('.fx-bg-dot').style.background = st.look.bg || 'var(--bg-sunken)';
+bgSwBtns.forEach(([c, b]) => b.classList.toggle('is-active', c === st.look.bg));
+bgVig.set(st.look.vignette);
+}
+bgBtn.addEventListener('click', (e) => {
+e.stopPropagation();
+bgPop.hidden = !bgPop.hidden;
+bgBtn.setAttribute('aria-expanded', String(!bgPop.hidden));
+});
+document.addEventListener('pointerdown', (e) => {
+if (!bgPop.hidden && !bgPop.contains(e.target) && !bgBtn.contains(e.target)) {
+bgPop.hidden = true;
+bgBtn.setAttribute('aria-expanded', 'false');
+}
+});
+syncBg();
 const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
-bar.append(leftBtn, playBtn, trackName, barMeters.el, h('span', { class: 'fx-bar-sep' }), recBtn, recTime, exitBtn);
+bar.append(leftBtn, playBtn, collapseBtn, brushBtn, camBtn, trackName, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgBtn, recBtn, recTime, exitBtn);
 function sync() {
 tileMap.forEach((b, k) => {
 b.setAttribute('aria-checked', String(k === st.source));
@@ -298,8 +404,16 @@ for (const [k, ctl] of Object.entries(c.extraCtl)) ctl.set(c.L[k]);
 palBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === st.look.palette)));
 colorBy.set(st.look.colorBy);
 size.set(st.look.size);
+sizeNoise.set(st.look.sizeNoise || 0);
+sizeAudio.set(st.look.sizeAudio || 0);
 glow.set(st.look.glow);
 bright.set(st.look.bright);
+bloom.set(st.look.bloom || 0);
+aberration.set(st.look.aberration || 0);
+dofOn.set(st.look.dofOn || false);
+dofDist.set(st.look.dofDist || 5.2);
+dofRange.set(st.look.dofRange || 1.4);
+syncDof();
 blend.set(st.look.blend);
 rotate.set(st.look.autoRotate);
 rotSpeed.set(st.look.rotSpeed);
@@ -319,6 +433,9 @@ trackName.innerHTML = '';
 trackName.append(h('b', {}, label), h('span', {}, engine.playing ? 'играет' : 'пауза'));
 playBtn.textContent = '';
 playBtn.append(h('span', { class: 'ic-wrap', html: icon(engine.playing ? 'pause' : 'play', 18) }));
+collapseBtn.classList.toggle('is-active', engine.isCollapsed);
+brushBtn.classList.toggle('is-active', !!st.layers.brush?.on);
+camBtn.classList.toggle('is-active', !!engine.camTracker?.running);
 recBtn.classList.toggle('is-rec', engine.recording);
 recBtn.dataset.tip = engine.recording ? 'Остановить запись и сохранить' : 'Записать видео со звуком (WebM)';
 recTime.textContent = '';

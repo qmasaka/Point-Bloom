@@ -167,7 +167,8 @@ this.headlight.position.copy(nav.target).add(off);
 this.headlight.target.position.copy(nav.target);
 this.headlight.target.updateMatrixWorld();
 }
-this.renderer.render(this.scene, this.camera);
+if (this.renderHook) this.renderHook(this.renderer, this.scene, this.camera);
+else this.renderer.render(this.scene, this.camera);
 const now = performance.now();
 const dt = now - (this._lastT || 0);
 if (dt < 150) this.fps = (this.fps || 60) * 0.85 + (1000 / Math.max(dt, 1)) * 0.15;

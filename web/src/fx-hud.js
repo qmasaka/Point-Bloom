@@ -7,6 +7,8 @@ this.canvas.className = 'fx-hud';
 host.append(this.canvas);
 this.ctx = this.canvas.getContext('2d');
 this.items = [];
+this.imprints = [];
+this.time = 0;
 this.t = 0;
 this.beatSeen = 0;
 this._v = new THREE.Vector3();
@@ -39,33 +41,64 @@ const i = Math.floor(Math.random() * n) * 3;
 const m = morph * morph * (3 - 2 * morph);
 return new THREE.Vector3(o[i] + (t[i] - o[i]) * m, o[i + 1] + (t[i + 1] - o[i + 1]) * m, o[i + 2] + (t[i + 2] - o[i + 2]) * m);
 }
-draw(cfg, alpha, info) {
-const { points, geometry, camera, morph, levels, colors, dt } = info;
-const { w, h } = this._fit();
-const ctx = this.ctx;
-ctx.clearRect(0, 0, w, h);
-if (!points || alpha < 0.02) return;
+_pickHotspot(geometry, morph, levels) {
+const o = geometry.attributes.aOrigin.array;
+const t = geometry.attributes.aTarget.array;
+const n = geometry.attributes.position.count;
+const m = morph * morph * (3 - 2 * morph);
+let bestIdx = Math.floor(Math.random() * n);
+let maxScore = -1;
+const candidates = Math.min(12, n);
+for (let s = 0; s < candidates; s++) {
+const idx = Math.floor(Math.random() * n);
+const i = idx * 3;
+const pX = o[i] + (t[i] - o[i]) * m;
+const pY = o[i + 1] + (t[i + 1] - o[i + 1]) * m;
+const pZ = o[i + 2] + (t[i + 2] - o[i + 2]) * m;
+const dist = Math.hypot(pX, pY, pZ);
+const score = dist + (levels?.bass || 0) * Math.sin(pY * 4) + Math.random() * 0.4;
+if (score > maxScore) {
+maxScore = score;
+bestIdx = idx;
+}
+}
+const i = bestIdx * 3;
+return new THREE.Vector3(o[i] + (t[i] - o[i]) * m, o[i + 1] + (t[i + 1] - o[i + 1]) * m, o[i + 2] + (t[i + 2] - o[i + 2]) * m);
+}
+update(want, geometry, morph, levels, dt) {
 this.t += dt;
-const want = Math.round(cfg.count);
 while (this.items.length < want) {
-const p = this._pick(geometry, morph);
-this.items.push({ id: Math.floor(rnd(1, 99)), pos: p.clone(), target: p, next: this.t + rnd(0.6, 2.6), speed: 0, conf: rnd(0.82, 0.99) });
+const p = this._pickHotspot(geometry, morph, levels);
+this.items.push({ id: Math.floor(rnd(1, 99)), pos: p.clone(), target: p, next: this.t + rnd(0.8, 2.8), speed: 0, conf: rnd(0.85, 0.99), touch: 0 });
 }
 this.items.length = want;
-const beat = levels.beat;
-const beatNew = beat > 0.9 && this.beatSeen <= 0.9;
-this.beatSeen = beat;
-const dpx = [];
+while (this.imprints.length > 32 || (this.imprints[0] && this.time - this.imprints[0].t0 > 8)) this.imprints.shift();
+const beatNew = levels.beat > 0.9 && this.beatSeen <= 0.9;
+this.beatSeen = levels.beat;
 for (const it of this.items) {
 if (this.t > it.next || (beatNew && Math.random() < 0.35)) {
-it.target = this._pick(geometry, morph);
-it.next = this.t + rnd(0.8, 3);
+if (it.touch > 0.3) this.imprints.push({ pos: it.target.clone(), t0: this.time, s: it.touch });
+it.target = this._pickHotspot(geometry, morph, levels);
+it.next = this.t + rnd(1.0, 3.2);
 it.id = Math.floor(rnd(1, 99));
-it.conf = rnd(0.8, 0.99);
+it.conf = rnd(0.82, 0.99);
 }
 const before = it.pos.clone();
-it.pos.lerp(it.target, 1 - Math.exp(-dt * 7));
+it.pos.lerp(it.target, 1 - Math.exp(-dt * 6.5));
 it.speed += (it.pos.distanceTo(before) / Math.max(dt, 1e-3) - it.speed) * 0.2;
+it.touch += (1 - Math.min(1, it.pos.distanceTo(it.target) * 2.5) - it.touch) * 0.15;
+}
+}
+draw(cfg, alpha, info) {
+this.drawTracking(cfg, alpha, info);
+}
+drawTracking(cfg, alpha, info) {
+const { points, camera, levels, colors } = info;
+const { w, h } = this._fit();
+const ctx = this.ctx;
+if (!points || alpha < 0.02) return;
+const dpx = [];
+for (const it of this.items.slice(0, Math.round(cfg.count))) {
 const v = this._v.copy(it.pos);
 points.localToWorld(v);
 v.project(camera);
@@ -79,7 +112,7 @@ ctx.font = '11px Geist, "Geist Variable", system-ui, sans-serif';
 ctx.textBaseline = 'top';
 if (cfg.lines === 'on') {
 ctx.setLineDash([3, 4]);
-ctx.strokeStyle = rgba(c0, 0.5 * alpha);
+ctx.strokeStyle = rgba(c0, 0.45 * alpha);
 for (let i = 0; i < dpx.length; i++) {
 let best = -1;
 let bd = 1e9;
@@ -123,12 +156,76 @@ ctx.moveTo(x1, y0);
 ctx.lineTo(tx - 3, y0);
 ctx.stroke();
 ctx.fillStyle = rgba(c2, Math.min(1, alpha));
-ctx.fillText(`ID ${String(it.id).padStart(2, '0')}  ${Math.round(it.conf * 100)}%`, tx, y0 - 5);
-ctx.fillStyle = rgba(c2, 0.7 * Math.min(1, alpha));
+ctx.fillText(`HOTSPOT ${String(it.id).padStart(2, '0')}  ${Math.round(it.conf * 100)}%`, tx, y0 - 5);
+ctx.fillStyle = rgba(c2, 0.75 * Math.min(1, alpha));
 ctx.fillText(`X ${it.pos.x.toFixed(2)}  Y ${it.pos.y.toFixed(2)}`, tx, y0 + 8);
 ctx.fillText(`V ${it.speed.toFixed(2)}  Z ${it.pos.z.toFixed(2)}`, tx, y0 + 21);
 }
 }
+}
+drawTelemetry(cfg, alpha, info) {
+const { w, h } = this._fit();
+const ctx = this.ctx;
+if (alpha < 0.05) return;
+const [c0, c2] = info.colors;
+const timeSec = this.time || 0;
+const min = Math.floor(timeSec / 60);
+const sec = Math.floor(timeSec % 60);
+const frame = Math.floor((timeSec % 1) * 30);
+const tc = `TC ${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}:${String(frame).padStart(2, '0')}`;
+ctx.save();
+ctx.font = '10px Geist, "Geist Variable", ui-monospace, monospace';
+ctx.textBaseline = 'top';
+const pad = 18;
+const bSize = 14;
+ctx.strokeStyle = rgba(c0, 0.45 * alpha);
+ctx.lineWidth = 1;
+ctx.beginPath();
+ctx.moveTo(pad, pad + bSize); ctx.lineTo(pad, pad); ctx.lineTo(pad + bSize, pad);
+ctx.moveTo(w - pad - bSize, pad); ctx.lineTo(w - pad, pad); ctx.lineTo(w - pad, pad + bSize);
+ctx.moveTo(pad, h - pad - bSize); ctx.lineTo(pad, h - pad); ctx.lineTo(pad + bSize, h - pad);
+ctx.moveTo(w - pad - bSize, h - pad); ctx.lineTo(w - pad, h - pad); ctx.lineTo(w - pad, h - pad - bSize);
+ctx.stroke();
+ctx.fillStyle = rgba(c2, 0.85 * alpha);
+const blink = Math.sin(timeSec * 4) > 0;
+ctx.fillText(`${blink ? '●' : '○'} LIVE HUD   ${tc}`, pad + 6, pad + 6);
+ctx.fillStyle = rgba(c0, 0.7 * alpha);
+ctx.fillText(`SYS: TOUCH-POP  FREQ: 60Hz`, pad + 6, pad + 20);
+const rw = 90;
+const rx = w - pad - rw - 6;
+const ry = pad + 6;
+const lvls = [
+{ name: 'BASS', val: info.levels?.bass || 0 },
+{ name: 'MID ', val: info.levels?.mid || 0 },
+{ name: 'HIGH', val: info.levels?.high || 0 },
+];
+lvls.forEach((l, i) => {
+const y = ry + i * 12;
+ctx.fillStyle = rgba(c2, 0.7 * alpha);
+ctx.fillText(l.name, rx, y);
+ctx.strokeStyle = rgba(c0, 0.3 * alpha);
+ctx.strokeRect(rx + 32, y + 2, 54, 7);
+ctx.fillStyle = rgba(c0, 0.85 * alpha);
+ctx.fillRect(rx + 33, y + 3, Math.max(0, Math.min(52, l.val * 52)), 5);
+});
+if (cfg.audioWave !== 'off' && info.spec && info.spec.length) {
+const ow = Math.min(360, w - pad * 4);
+const ox = (w - ow) / 2;
+const oy = h - pad - 12;
+ctx.strokeStyle = rgba(c0, 0.6 * alpha);
+ctx.lineWidth = 1.2;
+ctx.beginPath();
+for (let i = 0; i < info.spec.length; i++) {
+const sx = ox + (i / (info.spec.length - 1)) * ow;
+const sy = oy - (info.spec[i] || 0) * 28;
+if (i === 0) ctx.moveTo(sx, sy);
+else ctx.lineTo(sx, sy);
+}
+ctx.stroke();
+ctx.fillStyle = rgba(c2, 0.5 * alpha);
+ctx.fillText('SPECTRUM ANALYSIS // 64 BANDS', ox, oy + 4);
+}
+ctx.restore();
 }
 }
 function rgba(hex, a) {
