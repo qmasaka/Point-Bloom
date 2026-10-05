@@ -17,6 +17,9 @@ import { BACKGROUNDS } from './viewport.js';
 
 const TOAST_ICON = { ok: 'check-circle', warn: 'warning', error: 'warning-circle', info: 'info' };
 
+/** Масштаб интерфейса (CSS zoom на html): экранные пиксели делим на него, чтобы получить CSS-пиксели */
+const uiZoom = () => parseFloat(document.documentElement.style.zoom) || 1;
+
 export class UI {
 	constructor(app) {
 		this.app = app;
@@ -549,10 +552,11 @@ export class UI {
 
 		const onPointerMove = (e) => {
 			if (!isResizing) return;
-			const delta = startX - e.clientX;
-			let newW = Math.round(startW + delta);
+			const z = uiZoom();
+			const delta = (startX - e.clientX) / z;
+			let newW = Math.round(startW / z + delta);
 			const minW = 200;
-			const maxW = Math.max(minW, Math.min(650, window.innerWidth - 200));
+			const maxW = Math.max(minW, Math.min(650, window.innerWidth / z - 200));
 			newW = Math.max(minW, Math.min(maxW, newW));
 			document.documentElement.style.setProperty('--sidebar-w', `${newW}px`);
 			this.app.viewport.resize();
@@ -646,7 +650,9 @@ export class UI {
 			if (!text) return;
 			tip.textContent = text;
 			tip.hidden = false;
-			const r = el.getBoundingClientRect();
+			const z = uiZoom();
+			const br = el.getBoundingClientRect();
+			const r = { left: br.left / z, right: br.right / z, top: br.top / z, bottom: br.bottom / z, width: br.width / z, height: br.height / z };
 			const pos = el.dataset.tipPos || 'bottom';
 			const tw = tip.offsetWidth;
 			const th = tip.offsetHeight;
@@ -660,9 +666,9 @@ export class UI {
 			} else {
 				x = r.left + (r.width - tw) / 2;
 				y = r.bottom + 8;
-				if (y + th > window.innerHeight - 8) y = r.top - th - 8;
+				if (y + th > window.innerHeight / z - 8) y = r.top - th - 8;
 			}
-			x = Math.max(8, Math.min(window.innerWidth - tw - 8, x));
+			x = Math.max(8, Math.min(window.innerWidth / z - tw - 8, x));
 			tip.style.left = x + 'px';
 			tip.style.top = y + 'px';
 			requestAnimationFrame(() => tip.classList.add('is-on'));

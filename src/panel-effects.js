@@ -72,6 +72,42 @@ export function makeModelProvider(app) {
 	};
 }
 
+const TRACK_COLORS = ['#ffffff', '#00f0ff', '#ff1fcb', '#ffd90f', '#7cff6b', '#ff4d4d'];
+
+/** Выбор цвета: «по палитре» или один из готовых цветов, плюс свой */
+function colorChoice(L, key, done) {
+	const chips = [];
+	const wrap = h('div', { class: 'fx-color' });
+	const row = h('div', { class: 'fx-bg-sw' });
+	const mkChip = (val, name, style) => {
+		const b = h('button', { type: 'button', class: 'fx-bg-chip' + (val === 'auto' ? ' is-default' : ''), 'aria-label': name, 'data-tip': name, style: style || {} });
+		b.addEventListener('click', () => pick(val));
+		chips.push([val, b]);
+		row.append(b);
+	};
+	mkChip('auto', 'Цвета палитры');
+	for (const c of TRACK_COLORS) mkChip(c, c, { background: c });
+	const custom = colorField({ value: L[key] === 'auto' ? '#ffffff' : L[key], onInput: (v) => pick(v, true), onChange: done });
+	wrap.append(row, custom.el);
+	function mark() {
+		for (const [v, b] of chips) b.classList.toggle('is-active', v === L[key]);
+	}
+	function pick(v, live) {
+		L[key] = v;
+		if (!live && v !== 'auto') custom.set(v);
+		mark();
+		done();
+	}
+	mark();
+	return {
+		el: wrap,
+		set(v) {
+			if (v !== 'auto') custom.set(v);
+			mark();
+		},
+	};
+}
+
 export function createEffectsPanel(app, root, engine) {
 	const st = engine.state;
 	const save = () => engine.touch();
@@ -185,12 +221,18 @@ export function createEffectsPanel(app, root, engine) {
 					save();
 					if (ex.relink) engine.relink();
 				};
-				if (ex.type === 'seg') {
-					const sg = segmented({ options: ex.options.map(([value, label]) => ({ value, label })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
+				if (ex.type === 'title') {
+					body.append(h('div', { class: 'fx-sub' }, ex.label));
+				} else if (ex.type === 'color') {
+					const ctl = colorChoice(L, ex.key, after);
+					extraCtl[ex.key] = ctl;
+					body.append(field(ex.label, ctl.el, { wide: true }));
+				} else if (ex.type === 'seg') {
+					const sg = segmented({ cls: ex.options.length > 3 ? 'seg-tight' : undefined, options: ex.options.map(([value, label]) => ({ value, label })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
 					extraCtl[ex.key] = sg;
 					body.append(field(ex.label, sg.el, { wide: true }));
 				} else {
-					const sl = slider({ min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : 2, onInput: (v) => { L[ex.key] = v; }, onChange: after });
+					const sl = slider({ min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : 2, unit: ex.unit, onInput: (v) => { L[ex.key] = v; }, onChange: after });
 					extraCtl[ex.key] = sl;
 					body.append(field(ex.label, sl.el));
 				}
@@ -353,6 +395,7 @@ export function createEffectsPanel(app, root, engine) {
 	const playBtn = iconButton({ icon: 'play', title: 'Играть / пауза (Пробел)', onClick: () => engine.toggle().catch(() => {}) });
 	const collapseBtn = iconButton({ icon: 'atom', title: 'Разрушить / собрать форму («Распад»)', onClick: () => { engine.toggleCollapse(); sync(); } });
 	const brushBtn = iconButton({ icon: 'paint-brush', title: 'Кисть: рисовать по форме', onClick: () => { st.layers.brush.on = !st.layers.brush.on; save(); sync(); } });
+	const orthoBtn = iconButton({ icon: 'perspective', title: 'Проекция: перспектива или ортогональная', onClick: () => { app.nav.toggleOrtho(); sync(); } });
 	const camBtn = iconButton({ icon: 'video-camera', title: 'Веб-камера: управление жестами', onClick: () => engine.toggleMotionCam().then(sync) });
 	const trackName = h('div', { class: 'fx-track' });
 	const barMeters = makeMeters(true);
@@ -400,7 +443,7 @@ export function createEffectsPanel(app, root, engine) {
 	});
 	syncBg();
 	const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
-	bar.append(leftBtn, playBtn, collapseBtn, brushBtn, camBtn, trackName, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgBtn, recBtn, recTime, exitBtn);
+	bar.append(leftBtn, playBtn, collapseBtn, brushBtn, camBtn, trackName, barMeters.el, h('span', { class: 'fx-bar-sep' }), orthoBtn, bgBtn, recBtn, recTime, exitBtn);
 
 	// ------------------------------------------------------------ синхронизация
 	function sync() {
@@ -457,6 +500,8 @@ export function createEffectsPanel(app, root, engine) {
 		collapseBtn.classList.toggle('is-active', engine.isCollapsed);
 		brushBtn.classList.toggle('is-active', !!st.layers.brush?.on);
 		camBtn.classList.toggle('is-active', !!engine.camTracker?.running);
+		orthoBtn.classList.toggle('is-active', !!app.nav.ortho);
+		orthoBtn.dataset.tip = app.nav.ortho ? 'Сейчас: ортогональная проекция. Включить перспективу' : 'Сейчас: перспектива. Включить ортогональную проекцию';
 		recBtn.classList.toggle('is-rec', engine.recording);
 		recBtn.dataset.tip = engine.recording ? 'Остановить запись и сохранить' : 'Записать видео со звуком (WebM)';
 		recTime.textContent = '';

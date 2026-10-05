@@ -85,10 +85,6 @@
 
 			<div class="vp-top-right">
 				<canvas id="axisCanvas" aria-label="Оси: нажмите на ось, чтобы повернуть вид"></canvas>
-				<div class="vp-pill vp-tools">
-					<button class="btn btn-icon" id="btnOrtho" type="button" data-tip="Перспектива / ортогональная проекция (5)" data-tip-pos="left" aria-label="Проекция" data-icon="perspective" data-icon-size="18"></button>
-					<button class="btn btn-icon" id="btnShot" type="button" data-tip="Сохранить скриншот сцены" data-tip-pos="left" aria-label="Скриншот" data-icon="camera" data-icon-size="18"></button>
-				</div>
 			</div>
 
 			<div class="vp-bottom-left">
@@ -102,6 +98,9 @@
 					<button class="dock-btn" id="btnOverlays" type="button" aria-haspopup="true" aria-expanded="false" data-tip="Сетка, оси, каркас и другие подсказки на сцене" data-icon="stack" data-icon-size="17"></button>
 					<div class="popover" id="overlayPop" hidden></div>
 				</div>
+				<span class="dock-sep"></span>
+				<button class="dock-btn" id="btnOrtho" type="button" data-tip="Проекция: перспектива или ортогональная (5)" aria-label="Проекция" data-icon="perspective" data-icon-size="17"></button>
+				<button class="dock-btn" id="btnShot" type="button" data-tip="Сохранить скриншот сцены" aria-label="Скриншот" data-icon="camera" data-icon-size="17"></button>
 			</div>
 
 			<div class="fx-bar vp-pill" id="fxBar" role="toolbar" aria-label="Управление эффектами"></div>

@@ -36,20 +36,20 @@ export const FX_LAYERS = [
 	{ id: 'wave', group: 'Движение', name: 'Волны', icon: 'waves', hint: 'Круги расходятся от центра', max: 2, def: { on: false, amount: 0.7, band: 'mid', react: 0.8, freq: 5 }, extras: [{ key: 'freq', label: 'Частота', min: 1, max: 14, step: 0.5 }] },
 	{ id: 'twist', group: 'Движение', name: 'Скручивание', icon: 'wind', hint: 'Форма закручивается вокруг вертикали', max: 3, def: { on: false, amount: 1, band: 'none', react: 0 }, extras: [] },
 	{ id: 'pulse', group: 'Движение', name: 'Пульс', icon: 'pulse', hint: 'Форма раздувается на каждый удар', max: 2, def: { on: true, amount: 0.8, band: 'beat', react: 1 }, extras: [] },
+	{ id: 'alive', group: 'Движение', name: 'Живая форма', icon: 'heartbeat', hint: 'Форма дышит, у неё бьётся сердце, и она с любопытством тянется к курсору', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, breath: 0.6, heart: 0.7, bpm: 62, lean: 0.8 }, extras: [{ key: 'breath', label: 'Дыхание', min: 0.2, max: 2, step: 0.05 }, { key: 'heart', label: 'Сердцебиение', min: 0, max: 1.5, step: 0.05 }, { key: 'bpm', label: 'Пульс, уд/мин', min: 40, max: 140, step: 1, int: true }, { key: 'lean', label: 'Тянется к курсору', min: 0, max: 1.5, step: 0.05 }] },
 	{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1 }, extras: [] },
 	{ id: 'jitter', group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в сторону', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }] },
-	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Линии между соседними точками с бегущими световыми импульсами', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, range: 0.18, count: 3000, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'range', label: 'Длина связей', min: 0.05, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
+	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими импульсами', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.05, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
 	{ id: 'slice', group: 'Графика', name: 'Срез / Изолинии', icon: 'scan', hint: 'Топографические лазерные срезы бегут по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 0.5, width: 0.08, count: 4, axis: 'y' }, extras: [{ key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.1, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.02, max: 0.3, step: 0.01 }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
 	{ id: 'feedback', group: 'Графика', name: 'Feedback-след', icon: 'spiral', hint: 'Настоящий видео-след (Feedback TOP) с затуханием, зумом и вращением', max: 1.5, def: { on: false, amount: 0.92, band: 'none', react: 0, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002 }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001 }] },
-	{ id: 'echo', group: 'Графика', name: 'Шлейф', icon: 'ghost', hint: 'Призрачные копии формы с задержкой', max: 1.5, def: { on: false, amount: 0.7, band: 'none', react: 0, delay: 0.18 }, extras: [{ key: 'delay', label: 'Задержка, с', min: 0.05, max: 0.6, step: 0.01 }] },
-	{ id: 'tracking', group: 'Графика', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки захватывают самые подвижные участки формы', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, labels: 'on', lines: 'on' }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 24, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 30, max: 160, step: 5, int: true }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
-	{ id: 'telemetry', group: 'Графика', name: 'Телеметрия', icon: 'speedometer', hint: 'Приборный кибер-HUD: таймкод, осциллограмма, шкалы и координаты', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, audioWave: 'on' }, extras: [{ key: 'audioWave', label: 'Осциллограмма', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
+	{ id: 'echo', group: 'Графика', name: 'Шлейф', icon: 'ghost', hint: 'Призрачные копии формы: тянутся следом, закручиваются спиралью или раскладываются зеркальным веером', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, mode: 'spiral', copies: 4, delay: 0.14, spread: 0.45, fade: 0.7 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['spiral', 'Спираль'], ['kaleido', 'Зеркала'], ['time', 'След']] }, { key: 'copies', label: 'Копий', min: 1, max: 5, step: 1, int: true }, { key: 'spread', label: 'Угол между копиями', min: 0.05, max: 1.5, step: 0.05 }, { key: 'delay', label: 'Задержка, с', min: 0.02, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Затухание копий', min: 0.3, max: 0.95, step: 0.05 }] },
+	{ id: 'tracking', group: 'Взаимодействие', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки захватывают подвижные участки формы и по желанию прикасаются к ней: подъём, вихрь или втягивание', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, shape: 'corners', color: 'auto', thick: 1.5, labels: 'on', lines: 'on', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 30, max: 160, step: 5, int: true }, { key: 'shape', label: 'Форма', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'seg', options: [['none', 'Нет'], ['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втяг.']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус касания', min: 0.1, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
+	{ id: 'telemetry', group: 'Графика', name: 'Телеметрия', icon: 'speedometer', hint: 'Шкалы бас, середина, верх и столбики спектра поверх сцены', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, audioWave: 'on' }, extras: [{ key: 'audioWave', label: 'Спектр внизу', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
 	{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.3, max: 2, step: 0.05 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
 	{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Рисование курсором по форме: частицы в мазках светятся и оживают, затем след высыхает', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, radius: 0.4, dry: 3.5 }, extras: [{ key: 'radius', label: 'Радиус кисти', min: 0.1, max: 0.9, step: 0.02 }, { key: 'dry', label: 'Высыхание, с', min: 1.0, max: 8.0, step: 0.5 }] },
-	{ id: 'contact', group: 'Взаимодействие', name: 'Контакт', icon: 'target', hint: 'Там, где рамки трекинга касаются формы, она поднимается, закручивается или втягивается', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'bump', radius: 0.35, count: 6, memory: 1.5 }, extras: [{ key: 'mode', label: 'Действие', type: 'seg', options: [['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втяг.']] }, { key: 'radius', label: 'Радиус касания', min: 0.1, max: 0.9, step: 0.01 }, { key: 'count', label: 'Точек касания', min: 1, max: 16, step: 1, int: true }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
 	{ id: 'shock', group: 'Взаимодействие', name: 'Ударная волна', icon: 'aperture', hint: 'Клик по сцене пускает круговую волну по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 1.2, auto: 'off' }, extras: [{ key: 'speed', label: 'Скорость волны', min: 0.4, max: 3, step: 0.05 }, { key: 'auto', label: 'Запуск', type: 'seg', options: [['off', 'Клик'], ['on', 'Клик и авто']] }] },
-	{ id: 'camTrack', group: 'Взаимодействие', name: 'Веб-камера', icon: 'video-camera', hint: 'Управление формой жестами перед веб-камерой', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0 }, extras: [] },
+	{ id: 'camTrack', group: 'Взаимодействие', name: 'Веб-камера', icon: 'video-camera', hint: 'Рука или тело перед камерой двигают курсор: форма следует за движением, резкий взмах пускает волну', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, sens: 0.6, smooth: 0.5, preview: 'on', wave: 'on' }, extras: [{ key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'wave', label: 'Взмах пускает волну', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }] },
 ];
 
 export const FX_PALETTES = [
@@ -268,7 +268,7 @@ uniform vec2 uYR;
 uniform vec3 uMouse;
 uniform float uMouseOn;
 uniform sampler2D uSpecTex;
-uniform vec4 uCurl, uSpec, uWave, uTwist, uPulse, uVoxel, uJitter, uCursor, uMask, uMaskA, uGlitch, uContact, uShockP;
+uniform vec4 uCurl, uSpec, uWave, uTwist, uPulse, uVoxel, uJitter, uCursor, uMask, uMaskA, uGlitch, uContact, uShockP, uAlive;
 uniform vec4 uTrk[16];
 uniform vec4 uImp[32];
 uniform vec4 uShock[4];
@@ -381,6 +381,18 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	}
 	pos += rad * uPulse.x * 0.28;
 	pos *= 1.0 + uPulse.x * 0.1;
+	if (uAlive.x > 0.001) {
+		float y01a = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
+		float br = sin(t * uAlive.y * 1.6);
+		pos *= 1.0 + br * 0.03 * uAlive.x;
+		pos.y += br * 0.05 * uAlive.x * (y01a - 0.5);
+		pos *= 1.0 + uAlive.w * 0.07;
+		if (uMouseOn > 0.5 && uAlive.z > 0.001) {
+			vec3 dm = uMouse - pos;
+			float fm = exp(-dot(dm, dm) * 0.7);
+			pos += dm * fm * 0.28 * uAlive.z * uAlive.x;
+		}
+	}
 	if (uCurl.x > 0.001) {
 		float thr = snoise(base * 1.8 + t * 0.3) * 0.5 + 0.5;
 		float det = smoothstep(0.35, 0.85, thr + uCurl.x * 0.12);
@@ -622,14 +634,18 @@ attribute vec3 aOriginB;
 attribute vec3 aTargetB;
 attribute float aIdxB;
 attribute float aEnd;
+attribute float aSide;
 uniform vec3 uP0;
 uniform vec3 uP2;
 uniform float uBright;
 uniform vec4 uLink;
+uniform vec2 uRes;
+uniform float uLinkW;
 varying vec3 vC;
 varying float vA;
 varying float vEnd;
 varying float vIdx;
+varying float vSide;
 ` + common + `
 void main() {
 	vec3 bA, bB;
@@ -641,8 +657,19 @@ void main() {
 	vC = mix(uP0, uP2, 0.35 + uBeat * 0.4) * uBright;
 	vEnd = aEnd;
 	vIdx = aIdx;
-	vec3 pos = mix(pA, pB, aEnd);
-	gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+	vSide = aSide;
+	mat4 mvp = projectionMatrix * modelViewMatrix;
+	vec4 cA = mvp * vec4(pA, 1.0);
+	vec4 cB = mvp * vec4(pB, 1.0);
+	vec2 sA = cA.xy / cA.w;
+	vec2 sB = cB.xy / cB.w;
+	vec2 dir = (sB - sA) * vec2(uRes.x / uRes.y, 1.0);
+	float dl = length(dir);
+	dir = dl > 1e-5 ? dir / dl : vec2(1.0, 0.0);
+	vec2 nrm = vec2(-dir.y, dir.x) * vec2(uRes.y / uRes.x, 1.0);
+	vec4 c = mix(cA, cB, aEnd);
+	c.xy += nrm * aSide * (uLinkW + 1.0) / uRes.y * c.w;
+	gl_Position = c;
 }
 `;
 
@@ -654,16 +681,18 @@ varying vec3 vC;
 varying float vA;
 varying float vEnd;
 varying float vIdx;
+varying float vSide;
 void main() {
 	float pulseA = 1.0;
+	float edge = 1.0 - smoothstep(0.35, 1.0, abs(vSide));
 	vec3 col = vC;
 	if (uLink.w > 0.5) {
 		float p = sin(vEnd * 16.0 - uTime * uLink.z * 3.5 + vIdx * 24.0);
 		float spark = smoothstep(0.45, 0.98, p) * 2.8;
-		pulseA = 0.35 + spark;
+		pulseA = 0.5 + spark;
 		col += col * spark * 1.5;
 	}
-	gl_FragColor = vec4(col * (vA * pulseA), vA * pulseA);
+	gl_FragColor = vec4(col * (vA * pulseA * edge), vA * pulseA * edge);
 	#include <tonemapping_fragment>
 	#include <colorspace_fragment>
 }
@@ -1020,17 +1049,24 @@ class PostPipeline {
 // ── Трекинг оптического движения с веб-камеры ──────────────────────────────────
 
 class MotionCamTracker {
-	constructor(onMotion) {
-		this.onMotion = onMotion;
+	constructor(onFrame) {
+		this.onFrame = onFrame;
 		this.video = document.createElement('video');
 		this.video.autoplay = true;
 		this.video.playsInline = true;
 		this.video.muted = true;
+		this.W = 64;
+		this.H = 48;
 		this.canvas = document.createElement('canvas');
-		this.canvas.width = 48;
-		this.canvas.height = 36;
+		this.canvas.width = this.W;
+		this.canvas.height = this.H;
 		this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
-		this.prevData = null;
+		this.preview = document.createElement('canvas');
+		this.preview.width = 176;
+		this.preview.height = 132;
+		this.pctx = this.preview.getContext('2d');
+		this.bg = null;
+		this.sens = 0.6;
 		this.running = false;
 		this.stream = null;
 		this._timer = null;
@@ -1039,15 +1075,13 @@ class MotionCamTracker {
 	async start() {
 		if (this.running) return;
 		try {
-			this.stream = await navigator.mediaDevices.getUserMedia({
-				video: { width: { ideal: 320 }, height: { ideal: 240 } }
-			});
+			this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 320 }, height: { ideal: 240 }, facingMode: 'user' } });
 			this.video.srcObject = this.stream;
 			await this.video.play();
 			this.running = true;
+			this.bg = null;
 			this._tick();
 		} catch (err) {
-			console.warn('Webcam motion tracker unavailable:', err);
 			this.stop();
 			throw err;
 		}
@@ -1056,43 +1090,85 @@ class MotionCamTracker {
 	_tick() {
 		if (!this.running) return;
 		if (this.video.readyState >= 2) {
-			const w = this.canvas.width;
-			const h = this.canvas.height;
-			this.ctx.drawImage(this.video, 0, 0, w, h);
-			const frame = this.ctx.getImageData(0, 0, w, h).data;
-			if (this.prevData) {
-				let sumX = 0, sumY = 0, count = 0;
-				for (let i = 0; i < frame.length; i += 4) {
-					const diff = Math.abs(frame[i] - this.prevData[i]) +
-					             Math.abs(frame[i+1] - this.prevData[i+1]) +
-					             Math.abs(frame[i+2] - this.prevData[i+2]);
-					if (diff > 45) {
-						const px = (i / 4) % w;
-						const py = Math.floor((i / 4) / w);
-						sumX += px;
-						sumY += py;
-						count++;
-					}
-				}
-				if (count > 15) {
-					const cx = -((sumX / count) / w * 2 - 1);
-					const cy = -((sumY / count) / h * 2 - 1);
-					this.onMotion(cx, cy);
+			const { W, H } = this;
+			const ctx = this.ctx;
+			// зеркало: движение вправо у зрителя остаётся движением вправо на экране
+			ctx.save();
+			ctx.scale(-1, 1);
+			ctx.drawImage(this.video, -W, 0, W, H);
+			ctx.restore();
+			const frame = ctx.getImageData(0, 0, W, H).data;
+			const n = W * H;
+			if (!this.bg) {
+				this.bg = new Float32Array(n);
+				for (let i = 0; i < n; i++) this.bg[i] = frame[i * 4] * 0.3 + frame[i * 4 + 1] * 0.59 + frame[i * 4 + 2] * 0.11;
+			}
+			const thr = 46 - this.sens * 36;
+			const hits = new Uint8Array(n);
+			let sx = 0, sy = 0, sw = 0, cnt = 0;
+			for (let i = 0; i < n; i++) {
+				const l = frame[i * 4] * 0.3 + frame[i * 4 + 1] * 0.59 + frame[i * 4 + 2] * 0.11;
+				const d = Math.abs(l - this.bg[i]);
+				this.bg[i] += (l - this.bg[i]) * 0.2;
+				if (d > thr) {
+					hits[i] = 1;
+					const x = i % W;
+					const y = (i / W) | 0;
+					sx += x * d;
+					sy += y * d;
+					sw += d;
+					cnt++;
 				}
 			}
-			this.prevData = new Uint8ClampedArray(frame);
+			const energy = cnt / n;
+			const active = cnt >= Math.max(8, n * 0.004);
+			const cx = active ? (sx / sw / W) * 2 - 1 : 0;
+			const cy = active ? -((sy / sw / H) * 2 - 1) : 0;
+			this._draw(frame, hits, active, active ? sx / sw : 0, active ? sy / sw : 0);
+			this.onFrame({ x: cx, y: cy, energy, active });
 		}
-		this._timer = setTimeout(() => this._tick(), 50);
+		this._timer = setTimeout(() => this._tick(), 40);
+	}
+
+	_draw(frame, hits, active, px, py) {
+		const { W, H } = this;
+		const c = this.pctx;
+		const pw = this.preview.width;
+		const ph = this.preview.height;
+		c.save();
+		c.scale(-1, 1);
+		c.drawImage(this.video, -pw, 0, pw, ph);
+		c.restore();
+		c.fillStyle = 'rgba(11,13,17,0.45)';
+		c.fillRect(0, 0, pw, ph);
+		const cw = pw / W;
+		const ch = ph / H;
+		c.fillStyle = 'rgba(229,138,69,0.78)';
+		for (let i = 0; i < hits.length; i++) if (hits[i]) c.fillRect((i % W) * cw, ((i / W) | 0) * ch, cw + 0.5, ch + 0.5);
+		if (active) {
+			const x = (px + 0.5) * cw;
+			const y = (py + 0.5) * ch;
+			c.strokeStyle = '#fff0dc';
+			c.lineWidth = 1.5;
+			c.beginPath();
+			c.arc(x, y, 9, 0, Math.PI * 2);
+			c.moveTo(x - 14, y);
+			c.lineTo(x + 14, y);
+			c.moveTo(x, y - 14);
+			c.lineTo(x, y + 14);
+			c.stroke();
+		}
 	}
 
 	stop() {
 		this.running = false;
 		clearTimeout(this._timer);
 		if (this.stream) {
-			this.stream.getTracks().forEach(t => t.stop());
+			this.stream.getTracks().forEach((t) => t.stop());
 			this.stream = null;
 		}
-		this.prevData = null;
+		this.video.srcObject = null;
+		this.bg = null;
 	}
 }
 
@@ -1181,36 +1257,75 @@ export class EffectsEngine {
 
 	async toggleMotionCam() {
 		if (this.camTracker && this.camTracker.running) {
-			this.camTracker.stop();
-			this.state.layers.camTrack.on = false;
+			this._stopCam();
 			this.app.toast('Веб-камера выключена');
 			this.emit();
-		} else {
-			try {
-				if (!this.camTracker) {
-					this.camTracker = new MotionCamTracker((cx, cy) => {
-						if (!this.active || !this.points) return;
-						const vp = this.app.viewport;
-						const ndc = new THREE.Vector2(cx, cy);
-						this._ray.setFromCamera(ndc, vp.camera);
-						this._plane.setFromNormalAndCoplanarPoint(vp.camera.getWorldDirection(new THREE.Vector3()).negate(), new THREE.Vector3());
-						const hit = new THREE.Vector3();
-						if (this._ray.ray.intersectPlane(this._plane, hit)) {
-							this.mouse.copy(this.points.worldToLocal(hit));
-							this.mouseOn = true;
-							if (this.state.layers.brush.on) this.addBrushHit(this.mouse);
-						}
-					});
-				}
-				await this.camTracker.start();
-				this.state.layers.camTrack.on = true;
-				this.app.toast('Веб-камера активна: управляйте жестами!', 'ok');
-				this.emit();
-			} catch (err) {
-				this.state.layers.camTrack.on = false;
-				this.app.toast('Нет доступа к веб-камере', 'error');
-				this.emit();
+			return;
+		}
+		try {
+			if (!this.camTracker) {
+				this.camTracker = new MotionCamTracker((f) => this._onCamFrame(f));
 			}
+			await this.camTracker.start();
+			this.state.layers.camTrack.on = true;
+			this._camPos = null;
+			this._mountCam();
+			this.app.toast('Камера включена: двигайте рукой перед ней', 'ok');
+		} catch (err) {
+			this._stopCam();
+			this.app.toast('Нет доступа к веб-камере: разрешите её в браузере', 'error');
+		}
+		this.emit();
+	}
+
+	_stopCam() {
+		if (this.camTracker) this.camTracker.stop();
+		this.state.layers.camTrack.on = false;
+		this.camBox?.remove();
+		this.camBox = null;
+		this._camActive = false;
+	}
+
+	/** Окно с картинкой камеры: показывает, что именно «видит» трекер */
+	_mountCam() {
+		this.camBox?.remove();
+		const t = this.camTracker;
+		this.camHint = document.createElement('div');
+		this.camHint.className = 'fx-cam-text';
+		this.camHint.textContent = 'Помашите рукой перед камерой';
+		this.camBox = document.createElement('div');
+		this.camBox.className = 'fx-cam';
+		this.camBox.append(t.preview, this.camHint);
+		this.camBox.hidden = this.state.layers.camTrack.preview !== 'on';
+		document.getElementById('viewport').append(this.camBox);
+	}
+
+	_onCamFrame(f) {
+		if (!this.active || !this.points) return;
+		const cfg = this.state.layers.camTrack;
+		this.camTracker.sens = cfg.sens;
+		if (this.camBox) {
+			this.camBox.hidden = cfg.preview !== 'on';
+			const txt = f.active ? 'Движение найдено' : 'Помашите рукой перед камерой';
+			if (this.camHint.textContent !== txt) this.camHint.textContent = txt;
+		}
+		this._camActive = f.active;
+		if (!f.active) return;
+		const k = 1 - Math.min(0.92, cfg.smooth) * 0.9;
+		this._camPos = this._camPos ? { x: this._camPos.x + (f.x - this._camPos.x) * k, y: this._camPos.y + (f.y - this._camPos.y) * k } : { x: f.x, y: f.y };
+		const vp = this.app.viewport;
+		this._ray.setFromCamera(new THREE.Vector2(this._camPos.x, this._camPos.y), vp.camera);
+		this._plane.setFromNormalAndCoplanarPoint(vp.camera.getWorldDirection(new THREE.Vector3()).negate(), new THREE.Vector3());
+		const hit = new THREE.Vector3();
+		if (this._ray.ray.intersectPlane(this._plane, hit)) {
+			this.mouse.copy(this.points.worldToLocal(hit));
+			this.mouseOn = true;
+			this._camT = this._time;
+			if (this.state.layers.brush.on) this.addBrushHit(this.mouse);
+		}
+		if (cfg.wave === 'on' && this.state.layers.shock.on && f.energy > 0.16 && this._time - (this._camShockT || 0) > 0.8) {
+			this._camShockT = this._time;
+			this.addShock(this.mouse);
 		}
 	}
 
@@ -1461,6 +1576,7 @@ export class EffectsEngine {
 			uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 			uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
 			uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
+			uAlive: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 		};
 		const mk = (extra) =>
 			new THREE.ShaderMaterial({
@@ -1482,8 +1598,8 @@ export class EffectsEngine {
 		const old = this.points;
 		const rot = old ? old.rotation.clone() : null;
 		if (old) this._disposePoints();
-		// шлейф: две призрачные копии с задержкой по времени, делят геометрию с основной
-		this.ghosts = [1, 2].map((k) => {
+		// шлейф: до пяти призрачных копий (след, спираль, калейдоскоп), делят геометрию с основной
+		this.ghosts = [1, 2, 3, 4, 5].map((k) => {
 			const gm = mk({ uTOff: U(0), uGhost: U(0) });
 			const gp = new THREE.Points(g, gm);
 			gp.frustumCulled = false;
@@ -1494,8 +1610,8 @@ export class EffectsEngine {
 		});
 		// связи: линии между узлами
 		const lg = new THREE.BufferGeometry();
-		const lm = new THREE.ShaderMaterial({ vertexShader: lineVert, fragmentShader: lineFrag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { ...shared, uTOff: U(0) } });
-		this.linkObj = new THREE.LineSegments(lg, lm);
+		const lm = new THREE.ShaderMaterial({ vertexShader: lineVert, fragmentShader: lineFrag, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, uniforms: { ...shared, uTOff: U(0) } });
+		this.linkObj = new THREE.Mesh(lg, lm);
 		this.linkObj.frustumCulled = false;
 		this.linkObj.userData.helper = true;
 		this.linkObj.visible = false;
@@ -1572,21 +1688,26 @@ export class EffectsEngine {
 			}
 		}
 		const L = pairs.length / 2;
-		const A = new Float32Array(L * 2 * 3), TA = new Float32Array(L * 2 * 3), B = new Float32Array(L * 2 * 3), TB = new Float32Array(L * 2 * 3);
-		const ia = new Float32Array(L * 2), ib = new Float32Array(L * 2), end = new Float32Array(L * 2);
+		const V = L * 4;
+		const A = new Float32Array(V * 3), TA = new Float32Array(V * 3), B = new Float32Array(V * 3), TB = new Float32Array(V * 3);
+		const ia = new Float32Array(V), ib = new Float32Array(V), end = new Float32Array(V), side = new Float32Array(V);
+		const index = new Uint32Array(L * 6);
 		for (let l = 0; l < L; l++) {
 			const a = ids[pairs[l * 2]], b = ids[pairs[l * 2 + 1]];
-			for (let v = 0; v < 2; v++) {
-				const o = (l * 2 + v) * 3;
+			const q = l * 4;
+			index.set([q, q + 1, q + 2, q + 2, q + 1, q + 3], l * 6);
+			for (let v = 0; v < 4; v++) {
+				const o = (l * 4 + v) * 3;
 				for (let c = 0; c < 3; c++) {
 					A[o + c] = O[a * 3 + c];
 					TA[o + c] = T[a * 3 + c];
 					B[o + c] = O[b * 3 + c];
 					TB[o + c] = T[b * 3 + c];
 				}
-				ia[l * 2 + v] = a / N;
-				ib[l * 2 + v] = b / N;
-				end[l * 2 + v] = v;
+				ia[l * 4 + v] = a / N;
+				ib[l * 4 + v] = b / N;
+				end[l * 4 + v] = v >> 1;
+				side[l * 4 + v] = v & 1 ? 1 : -1;
 			}
 		}
 		const lg = this.linkObj.geometry;
@@ -1598,6 +1719,8 @@ export class EffectsEngine {
 		lg.setAttribute('aIdx', new THREE.BufferAttribute(ia, 1));
 		lg.setAttribute('aIdxB', new THREE.BufferAttribute(ib, 1));
 		lg.setAttribute('aEnd', new THREE.BufferAttribute(end, 1));
+		lg.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
+		lg.setIndex(new THREE.BufferAttribute(index, 1));
 		lg.computeBoundingSphere();
 		this._pairs = { ids, list: pairs, N };
 	}
@@ -1613,8 +1736,8 @@ export class EffectsEngine {
 			const arr = lg.attributes[name].array;
 			for (let l = 0; l < list.length / 2; l++) {
 				const p = ids[list[l * 2 + which]] * 3;
-				for (let v = 0; v < 2; v++) {
-					const o = (l * 2 + v) * 3;
+				for (let v = 0; v < 4; v++) {
+					const o = (l * 4 + v) * 3;
 					arr[o] = src[p];
 					arr[o + 1] = src[p + 1];
 					arr[o + 2] = src[p + 2];
@@ -1779,7 +1902,7 @@ export class EffectsEngine {
 		this.post?.dispose();
 		this.post = null;
 		if (this.camTracker) {
-			this.camTracker.stop();
+			this._stopCam();
 			this.camTracker = null;
 		}
 		this.app.viewport.applyRenderSettings();
@@ -1835,6 +1958,7 @@ export class EffectsEngine {
 		if (this._ray.ray.intersectPlane(this._plane, hit)) {
 			this.mouse.copy(this.points.worldToLocal(hit));
 			this.mouseOn = true;
+			this._moveT = this._time;
 			if (this.state.layers.brush.on && (e.buttons === 1 || this._pointerDown)) {
 				this.addBrushHit(this.mouse);
 			}
@@ -1877,6 +2001,21 @@ export class EffectsEngine {
 			u.uSize.value = look.size;
 			u.uPR.value = this.app.viewport.renderer.getPixelRatio();
 			u.uBeat.value = this.levels.beat;
+			// чем плотнее точки ложатся на пиксели (мелкий экран, близкая камера), тем больше они выгорают: приглушаем
+			{
+				const cam = this.app.viewport.camera;
+				const n = this.geometry.attributes.position.count;
+				let fit = 1;
+				if (cam.isPerspectiveCamera) {
+					const pr = u.uPR.value;
+					const d = Math.max(0.5, cam.position.length());
+					const ppu = (this.app.viewport.canvas.clientHeight * pr) / (2 * d * Math.tan((cam.fov * Math.PI) / 360));
+					const sPx = Math.min(95, (look.size * pr * 3.8) / d);
+					const overlap = (n * sPx * sPx) / (Math.PI * (1.1 * ppu) ** 2);
+					fit = clamp(Math.sqrt(3.5 / Math.max(overlap, 1e-3)), 0.25, 1);
+				}
+				u.uDens.value = Math.min(1.6, Math.sqrt(150000 / Math.max(1, n))) * fit;
+			}
 			u.uBright.value = look.bright;
 			u.uGlow.value = look.glow;
 			u.uColorBy.value = Math.max(0, COLOR_BY.findIndex((c) => c.id === look.colorBy));
@@ -1941,20 +2080,46 @@ export class EffectsEngine {
 			u.uLookP2.value.set(look.sizeNoise || 0, look.sizeAudio || 0, 0, 0);
 			u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
 
+			// живая форма
+			const al = this._eff(L.alive);
+			const hp = ((this._time * L.alive.bpm) / 60) % 1;
+			const hEnv = Math.exp(-(((hp - 0.04) / 0.06) ** 2)) + 0.65 * Math.exp(-(((hp - 0.26) / 0.07) ** 2));
+			u.uAlive.value.set(al, L.alive.breath, L.alive.lean, hEnv * L.alive.heart * 0.5);
+			const cvs = this.app.viewport.canvas;
+			u.uRes.value.set(Math.max(1, cvs.clientWidth), Math.max(1, cvs.clientHeight));
+			u.uLinkW.value = L.links.width;
 			// связи
 			const lk = this._eff(L.links);
 			if (this.linkObj) {
 				this.linkObj.visible = lk > 0.01;
 				const pulseOn = L.links.pulses === 'on' ? 1 : 0;
 				const pSpeed = L.links.pulseSpeed || 1.6;
-				u.uLink.value.set(lk * 0.8, L.links.range * (1 + this.levels.beat * 0.4), pSpeed, pulseOn);
+				u.uLink.value.set(lk * 1.1, L.links.range * (1 + this.levels.beat * 0.4), pSpeed, pulseOn);
 			}
 			// шлейф
 			const ec = this._eff(L.echo);
+			const eo = L.echo;
+			const nG = Math.round(eo.copies);
+			const beatK = this.levels.beat;
 			this.ghosts.forEach((g, i) => {
-				g.visible = ec > 0.01;
-				g.material.uniforms.uTOff.value = L.echo.delay * (i + 1);
-				g.material.uniforms.uGhost.value = (ec * 0.7) / (i + 1);
+				const k = i + 1;
+				g.visible = ec > 0.01 && k <= nG;
+				if (!g.visible) return;
+				g.material.uniforms.uTOff.value = eo.delay * k;
+				g.material.uniforms.uGhost.value = ec * 0.55 * Math.pow(eo.fade, k);
+				if (eo.mode === 'kaleido') {
+					g.rotation.set(0, (Math.PI * 2 * k) / (nG + 1) + this._time * 0.15, 0);
+					g.scale.set(k % 2 ? -1 : 1, 1, 1);
+					g.position.set(0, 0, 0);
+				} else if (eo.mode === 'spiral') {
+					g.rotation.set(0, k * eo.spread * (1 + beatK * 0.25), 0);
+					g.scale.setScalar(1 - 0.05 * k);
+					g.position.set(0, k * 0.04 * Math.sin(this._time * 0.8), 0);
+				} else {
+					g.rotation.set(0, 0, 0);
+					g.scale.setScalar(1);
+					g.position.set(0, 0, 0);
+				}
 			});
 			// зона действия
 			const mk = st.mask;
@@ -1979,39 +2144,45 @@ export class EffectsEngine {
 			u.uMaskShow.value = mk.show ? 1 : 0;
 			u.uMouse.value.copy(this.mouse);
 			u.uMouseOn.value = this.mouseOn ? 1 : 0;
-			// трекер-точки: общие для рамок и эффекта «Контакт»
+			// камера: если рука пропала, курсор отпускает форму
+			if (this.camTracker?.running && this.mouseOn && this._time - (this._moveT ?? -9) > 1 && this._time - (this._camT ?? -9) > 0.7) this.mouseOn = false;
+			// трекер-точки: рамки и касание формы работают от одних и тех же узлов
 			if (this.hud) {
 				this.hud.clear();
-				const tr = this._eff(L.tracking);
-				const ct = this._eff(L.contact);
-				const simN = Math.max(L.tracking.on ? Math.round(L.tracking.count) : 0, L.contact.on ? Math.round(L.contact.count) : 0);
-				this.hud.update(simN, this.geometry, this.morph, this.levels, dt);
-				if (L.tracking.on) {
-					this.hud.drawTracking(L.tracking, tr, { points: this.points, camera: this.app.viewport.camera, levels: this.levels, colors: ['#' + new THREE.Color(pal.c[0]).getHexString(THREE.SRGBColorSpace), '#' + new THREE.Color(pal.c[2]).getHexString(THREE.SRGBColorSpace)] });
-				}
-				if (L.telemetry && L.telemetry.on) {
-					const telAlpha = this._eff(L.telemetry);
-					this.hud.drawTelemetry(L.telemetry, telAlpha, { levels: this.levels, spec: this.spec, colors: ['#' + new THREE.Color(pal.c[0]).getHexString(THREE.SRGBColorSpace), '#' + new THREE.Color(pal.c[2]).getHexString(THREE.SRGBColorSpace)] });
+				const T = L.tracking;
+				const tr = this._eff(T);
+				const touchMode = { bump: 0, swirl: 1, pull: 2 }[T.touch];
+				const ct = touchMode === undefined ? 0 : tr * T.force;
+				const n = tr > 0.001 ? Math.min(16, Math.round(T.count)) : 0;
+				this.hud.update(n, this.geometry, this.morph, this.levels, dt);
+				const hex = (c) => '#' + new THREE.Color(c).getHexString(THREE.SRGBColorSpace);
+				const cols = [hex(pal.c[0]), hex(pal.c[2])];
+				if (T.on) this.hud.drawTracking(T, tr, { points: this.points, camera: this.app.viewport.camera, levels: this.levels, colors: T.color && T.color !== 'auto' ? [T.color, T.color] : cols });
+				if (L.telemetry && L.telemetry.on) this.hud.drawTelemetry(L.telemetry, this._eff(L.telemetry), { levels: this.levels, spec: this.spec, colors: cols });
+				if (this.camTracker?.running && this.mouseOn && this._time - (this._camT ?? -9) < 0.7) {
+					const v = this.mouse.clone();
+					this.points.localToWorld(v);
+					v.project(this.app.viewport.camera);
+					const cv = this.app.viewport.canvas;
+					this.hud.drawCursor((v.x * 0.5 + 0.5) * cv.clientWidth, (1 - (v.y * 0.5 + 0.5)) * cv.clientHeight, this._camActive ? 1 : 0.4, cols[1]);
 				}
 				const arr = u.uTrk.value;
-				const n = Math.min(16, this.hud.items.length, Math.round(L.contact.count));
 				for (let i = 0; i < 16; i++) {
 					const it = this.hud.items[i];
-					if (it && i < n) arr[i].set(it.pos.x, it.pos.y, it.pos.z, it.touch);
+					if (it && i < n && ct > 0) arr[i].set(it.pos.x, it.pos.y, it.pos.z, it.touch);
 					else arr[i].set(0, 0, 0, 0);
 				}
 				const imp = u.uImp.value;
-				const mem = L.contact.memory;
 				let ni = 0;
-				if (mem > 0.05 && ct > 0.001) {
+				if (T.memory > 0.05 && ct > 0.001) {
 					for (const m of this.hud.imprints) {
-						const s0 = Math.exp(-(this._time - m.t0) / mem) * m.s;
+						const s0 = Math.exp(-(this._time - m.t0) / T.memory) * m.s;
 						if (s0 > 0.02 && ni < 32) imp[ni++].set(m.pos.x, m.pos.y, m.pos.z, s0);
 					}
 				}
 				for (let i = ni; i < 32; i++) imp[i].set(0, 0, 0, 0);
 				this.hud.time = this._time;
-				u.uContact.value.set(ct, L.contact.radius, { bump: 0, swirl: 1, pull: 2 }[L.contact.mode] ?? 0, n);
+				u.uContact.value.set(ct, T.radius, touchMode ?? 0, ct > 0 ? n : 0);
 				u.uShockP.value.z = ni;
 			}
 			// ударные волны

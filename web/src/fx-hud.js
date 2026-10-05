@@ -107,7 +107,10 @@ dpx.push({ it, x: (v.x * 0.5 + 0.5) * w, y: (1 - (v.y * 0.5 + 0.5)) * h });
 }
 const [c0, c2] = colors;
 const size = cfg.size * (1 + levels.bass * 0.25);
-ctx.lineWidth = 1.25;
+const lw = cfg.thick || 1.5;
+ctx.lineWidth = lw;
+ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
 ctx.font = '11px Geist, "Geist Variable", system-ui, sans-serif';
 ctx.textBaseline = 'top';
 if (cfg.lines === 'on') {
@@ -141,13 +144,30 @@ const x1 = x + s / 2;
 const y1 = y + s / 2;
 ctx.strokeStyle = rgba(c0, 0.95 * Math.min(1, alpha));
 ctx.beginPath();
+const shape = cfg.shape || 'corners';
+if (shape === 'box') {
+ctx.rect(x0, y0, s, s);
+} else if (shape === 'circle') {
+ctx.arc(x, y, s / 2, 0, Math.PI * 2);
+} else if (shape === 'cross') {
+ctx.arc(x, y, s * 0.22, 0, Math.PI * 2);
+ctx.moveTo(x - s / 2, y);
+ctx.lineTo(x - s * 0.22 - 3, y);
+ctx.moveTo(x + s * 0.22 + 3, y);
+ctx.lineTo(x + s / 2, y);
+ctx.moveTo(x, y - s / 2);
+ctx.lineTo(x, y - s * 0.22 - 3);
+ctx.moveTo(x, y + s * 0.22 + 3);
+ctx.lineTo(x, y + s / 2);
+} else {
 ctx.moveTo(x0, y0 + k); ctx.lineTo(x0, y0); ctx.lineTo(x0 + k, y0);
 ctx.moveTo(x1 - k, y0); ctx.lineTo(x1, y0); ctx.lineTo(x1, y0 + k);
 ctx.moveTo(x1, y1 - k); ctx.lineTo(x1, y1); ctx.lineTo(x1 - k, y1);
 ctx.moveTo(x0 + k, y1); ctx.lineTo(x0, y1); ctx.lineTo(x0, y1 - k);
+}
 ctx.stroke();
 ctx.fillStyle = rgba(c2, 0.9 * Math.min(1, alpha));
-ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+ctx.fillRect(x - lw, y - lw, lw * 2, lw * 2);
 if (cfg.labels === 'on') {
 const tx = x1 + 8;
 ctx.strokeStyle = rgba(c0, 0.5 * alpha);
@@ -156,74 +176,78 @@ ctx.moveTo(x1, y0);
 ctx.lineTo(tx - 3, y0);
 ctx.stroke();
 ctx.fillStyle = rgba(c2, Math.min(1, alpha));
-ctx.fillText(`HOTSPOT ${String(it.id).padStart(2, '0')}  ${Math.round(it.conf * 100)}%`, tx, y0 - 5);
+ctx.fillText(`ТОЧКА ${String(it.id).padStart(2, '0')}  ${Math.round(it.conf * 100)}%`, tx, y0 - 5);
 ctx.fillStyle = rgba(c2, 0.75 * Math.min(1, alpha));
 ctx.fillText(`X ${it.pos.x.toFixed(2)}  Y ${it.pos.y.toFixed(2)}`, tx, y0 + 8);
 ctx.fillText(`V ${it.speed.toFixed(2)}  Z ${it.pos.z.toFixed(2)}`, tx, y0 + 21);
 }
 }
 }
+drawCursor(x, y, alpha, color) {
+this._fit();
+const ctx = this.ctx;
+const pulse = 1 + Math.sin(this.time * 6) * 0.08;
+ctx.save();
+ctx.lineWidth = 2;
+ctx.strokeStyle = rgba(color, 0.9 * alpha);
+ctx.beginPath();
+ctx.arc(x, y, 22 * pulse, 0, Math.PI * 2);
+ctx.stroke();
+ctx.lineWidth = 1;
+ctx.strokeStyle = rgba(color, 0.5 * alpha);
+ctx.beginPath();
+ctx.arc(x, y, 34 * pulse, 0, Math.PI * 2);
+ctx.moveTo(x - 46, y);
+ctx.lineTo(x - 28, y);
+ctx.moveTo(x + 28, y);
+ctx.lineTo(x + 46, y);
+ctx.moveTo(x, y - 46);
+ctx.lineTo(x, y - 28);
+ctx.moveTo(x, y + 28);
+ctx.lineTo(x, y + 46);
+ctx.stroke();
+ctx.fillStyle = rgba(color, alpha);
+ctx.beginPath();
+ctx.arc(x, y, 3, 0, Math.PI * 2);
+ctx.fill();
+ctx.restore();
+}
 drawTelemetry(cfg, alpha, info) {
 const { w, h } = this._fit();
 const ctx = this.ctx;
 if (alpha < 0.05) return;
 const [c0, c2] = info.colors;
-const timeSec = this.time || 0;
-const min = Math.floor(timeSec / 60);
-const sec = Math.floor(timeSec % 60);
-const frame = Math.floor((timeSec % 1) * 30);
-const tc = `TC ${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}:${String(frame).padStart(2, '0')}`;
 ctx.save();
-ctx.font = '10px Geist, "Geist Variable", ui-monospace, monospace';
-ctx.textBaseline = 'top';
-const pad = 18;
-const bSize = 14;
-ctx.strokeStyle = rgba(c0, 0.45 * alpha);
-ctx.lineWidth = 1;
-ctx.beginPath();
-ctx.moveTo(pad, pad + bSize); ctx.lineTo(pad, pad); ctx.lineTo(pad + bSize, pad);
-ctx.moveTo(w - pad - bSize, pad); ctx.lineTo(w - pad, pad); ctx.lineTo(w - pad, pad + bSize);
-ctx.moveTo(pad, h - pad - bSize); ctx.lineTo(pad, h - pad); ctx.lineTo(pad + bSize, h - pad);
-ctx.moveTo(w - pad - bSize, h - pad); ctx.lineTo(w - pad, h - pad); ctx.lineTo(w - pad, h - pad - bSize);
-ctx.stroke();
-ctx.fillStyle = rgba(c2, 0.85 * alpha);
-const blink = Math.sin(timeSec * 4) > 0;
-ctx.fillText(`${blink ? '●' : '○'} LIVE HUD   ${tc}`, pad + 6, pad + 6);
-ctx.fillStyle = rgba(c0, 0.7 * alpha);
-ctx.fillText(`SYS: TOUCH-POP  FREQ: 60Hz`, pad + 6, pad + 20);
-const rw = 90;
-const rx = w - pad - rw - 6;
-const ry = pad + 6;
+ctx.font = '500 10.5px Geist, "Geist Variable", ui-monospace, monospace';
+ctx.textBaseline = 'middle';
+const rx = 16;
+const ry = 18;
+const rw = 84;
 const lvls = [
-{ name: 'BASS', val: info.levels?.bass || 0 },
-{ name: 'MID ', val: info.levels?.mid || 0 },
-{ name: 'HIGH', val: info.levels?.high || 0 },
+['БАС', info.levels?.bass || 0],
+['СРЕД', info.levels?.mid || 0],
+['ВЕРХ', info.levels?.high || 0],
 ];
-lvls.forEach((l, i) => {
-const y = ry + i * 12;
-ctx.fillStyle = rgba(c2, 0.7 * alpha);
-ctx.fillText(l.name, rx, y);
-ctx.strokeStyle = rgba(c0, 0.3 * alpha);
-ctx.strokeRect(rx + 32, y + 2, 54, 7);
-ctx.fillStyle = rgba(c0, 0.85 * alpha);
-ctx.fillRect(rx + 33, y + 3, Math.max(0, Math.min(52, l.val * 52)), 5);
+lvls.forEach(([name, val], i) => {
+const y = ry + i * 16;
+ctx.fillStyle = rgba(c2, 0.75 * alpha);
+ctx.fillText(name, rx, y);
+ctx.fillStyle = rgba(c0, 0.18 * alpha);
+ctx.fillRect(rx + 38, y - 3, rw, 6);
+ctx.fillStyle = rgba(c0, 0.9 * alpha);
+ctx.fillRect(rx + 38, y - 3, Math.max(1, Math.min(rw, val * rw)), 6);
 });
 if (cfg.audioWave !== 'off' && info.spec && info.spec.length) {
-const ow = Math.min(360, w - pad * 4);
+const ow = Math.min(420, w - 48);
 const ox = (w - ow) / 2;
-const oy = h - pad - 12;
-ctx.strokeStyle = rgba(c0, 0.6 * alpha);
-ctx.lineWidth = 1.2;
-ctx.beginPath();
-for (let i = 0; i < info.spec.length; i++) {
-const sx = ox + (i / (info.spec.length - 1)) * ow;
-const sy = oy - (info.spec[i] || 0) * 28;
-if (i === 0) ctx.moveTo(sx, sy);
-else ctx.lineTo(sx, sy);
+const oy = h - 78;
+const n = info.spec.length;
+const bw = ow / n;
+ctx.fillStyle = rgba(c0, 0.55 * alpha);
+for (let i = 0; i < n; i++) {
+const bh = Math.max(1.5, (info.spec[i] || 0) * 34);
+ctx.fillRect(ox + i * bw + 0.5, oy - bh, Math.max(1, bw - 1.5), bh);
 }
-ctx.stroke();
-ctx.fillStyle = rgba(c2, 0.5 * alpha);
-ctx.fillText('SPECTRUM ANALYSIS // 64 BANDS', ox, oy + 4);
 }
 ctx.restore();
 }
