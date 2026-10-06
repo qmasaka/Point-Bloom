@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 function objText(parts, mtlName) {
-const out = [`# Voxel Studio demo\nmtllib ${mtlName}\n`];
+const out = [`# Point Bloom demo\nmtllib ${mtlName}\n`];
 let v = 1, t = 1, n = 1;
 for (const p of parts) {
 const g = p.geo.index ? p.geo : p.geo;

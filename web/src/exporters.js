@@ -285,7 +285,7 @@ const totalV = parts.reduce((s, x) => s + x.count, 0);
 const totalF = parts.reduce((s, x) => s + (x.indices ? x.indices.length / 3 : 0), 0);
 const withNormals = parts.every((x) => x.hasNormals);
 const header =
-'ply\nformat binary_little_endian 1.0\ncomment Voxel Studio\n' +
+'ply\nformat binary_little_endian 1.0\ncomment Point Bloom\n' +
 `element vertex ${totalV}\nproperty float x\nproperty float y\nproperty float z\n` +
 (withNormals ? 'property float nx\nproperty float ny\nproperty float nz\n' : '') +
 'property uchar red\nproperty uchar green\nproperty uchar blue\n' +
@@ -432,7 +432,7 @@ return { name, bytes: new Uint8Array(await blob.arrayBuffer()) };
 }
 async function exportOBJ(scene, o, baseName) {
 scene.updateMatrixWorld(true);
-const out = [`# Voxel Studio\nmtllib ${baseName}.mtl\n`];
+const out = [`# Point Bloom\nmtllib ${baseName}.mtl\n`];
 const mats = new Map();
 const usedMtlNames = new Set();
 const matName = (m) => {
@@ -522,7 +522,7 @@ files.push({ name: f.name, bytes: f.bytes });
 }
 return texNames.get(t);
 };
-const mtl = ['# Voxel Studio\n'];
+const mtl = ['# Point Bloom\n'];
 for (const [m, name] of mats) {
 const c = m.color || new THREE.Color(1, 1, 1);
 const s = c.getRGB({ r: 0, g: 0, b: 0 }, THREE.SRGBColorSpace);
