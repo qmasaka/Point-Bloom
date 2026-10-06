@@ -1058,6 +1058,11 @@ export class UI {
 					return;
 				}
 				case 'Escape':
+					if (this.workspace === 'fx' && this.exitFxFocus && document.getElementById('app').classList.contains('fx-focus')) {
+						// режим «только сцена»: Esc возвращает интерфейс, а не выходит из эффектов
+						this.exitFxFocus();
+						return;
+					}
 					if (this.workspace === 'fx') {
 						this.setWorkspace('edit');
 						return;

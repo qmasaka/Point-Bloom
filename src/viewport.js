@@ -88,6 +88,17 @@ export class Viewport {
 		// цвета осей как в маркерах X, Y, Z: ось three.js x показана как Y (зелёная), y как Z (синяя), z как X (красная)
 		this.tc.setColors('#86c85a', '#4f8ff0', '#e5565f', '#ffd24a');
 		this.scene.add(this.tc.getHelper());
+		// Shift при масштабировании: любая ручка тянет форму равномерно по всем осям, как в других 3D-редакторах
+		this.canvas.addEventListener(
+			'pointerdown',
+			(e) => {
+				if (e.shiftKey && this.tc.mode === 'scale' && this.tc.axis && this.tc.axis !== 'XYZ') {
+					this.tc.axis = 'XYZ';
+					this.tc.getHelper().updateMatrixWorld(true); // плоскость перетаскивания пересчитывается под новую ось
+				}
+			},
+			true
+		);
 		this.tc.addEventListener('change', () => this.invalidate());
 
 		this.ro = new ResizeObserver(() => this.resize());

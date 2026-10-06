@@ -551,9 +551,7 @@ appEl.classList.toggle('fx-focus', on);
 focusBtn.classList.toggle('is-active', on);
 if (on) app.toast('Интерфейс скрыт. Esc или эта же кнопка вернут его', 'info');
 }
-document.addEventListener('keydown', (e) => {
-if (e.key === 'Escape' && appEl.classList.contains('fx-focus')) setFocus(false);
-});
+app.ui.exitFxFocus = () => setFocus(false);
 const orthoBtn = iconButton({ icon: 'perspective', title: 'Проекция: перспектива или ортогональная', onClick: () => { app.nav.toggleOrtho(); sync(); } });
 const camBtn = iconButton({ icon: 'video-camera', title: 'Камера: управление руками и пальцами', onClick: () => engine.toggleMotionCam().then(sync) });
 const barMeters = makeMeters(true);

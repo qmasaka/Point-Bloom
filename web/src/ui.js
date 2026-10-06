@@ -971,6 +971,10 @@ app.setDisplay(modeKeys[(i + 1) % modeKeys.length]);
 return;
 }
 case 'Escape':
+if (this.workspace === 'fx' && this.exitFxFocus && document.getElementById('app').classList.contains('fx-focus')) {
+this.exitFxFocus();
+return;
+}
 if (this.workspace === 'fx') {
 this.setWorkspace('edit');
 return;

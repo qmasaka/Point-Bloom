@@ -24,8 +24,8 @@ async function createLandmarker(conf) {
 			runningMode: 'VIDEO',
 			numHands: 2,
 			minHandDetectionConfidence: conf,
-			minHandPresenceConfidence: conf,
-			minTrackingConfidence: conf,
+			minHandPresenceConfidence: Math.max(0.3, conf - 0.12),
+			minTrackingConfidence: Math.max(0.3, conf - 0.12),
 		});
 	try {
 		return await make('GPU');
@@ -55,8 +55,8 @@ export class HandTracker {
 		this._timer = null;
 		this._last = -1;
 		this._conf = 0;
-		this._state = new Map();
-		this._gest = new Map();
+		this._tracks = [];
+		this._nextId = 1;
 		this.hold = 0.12;
 		this.names = {};
 	}
@@ -69,7 +69,7 @@ export class HandTracker {
 		if (this.running) return;
 		try {
 			this.onStatus('Включаю камеру…');
-			this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } });
+			this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 960 }, height: { ideal: 720 }, frameRate: { ideal: 30 }, facingMode: 'user' } });
 			this.video.srcObject = this.stream;
 			await this.video.play();
 			this.running = true;
@@ -97,7 +97,7 @@ export class HandTracker {
 			if (c !== this._conf) {
 				this._conf = c;
 				try {
-					this.landmarker.setOptions({ minHandDetectionConfidence: c, minHandPresenceConfidence: c, minTrackingConfidence: c });
+					this.landmarker.setOptions({ minHandDetectionConfidence: c, minHandPresenceConfidence: Math.max(0.3, c - 0.12), minTrackingConfidence: Math.max(0.3, c - 0.12) });
 				} catch (e) {
 					/* не критично */
 				}
@@ -112,47 +112,79 @@ export class HandTracker {
 			this._draw(hands);
 			this.onFrame({ kind: 'hands', hands, aspect: (v.videoWidth || 4) / (v.videoHeight || 3) });
 		}
-		this._timer = setTimeout(() => this._tick(), 24);
+		// следующий кадр сразу по готовности камеры: без пропусков и повторов кадров
+		if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(() => this._tick());
+		else this._timer = setTimeout(() => this._tick(), 16);
 	}
 
+	/** Руки сопоставляются с прошлым кадром по близости запястья (а не по порядку и подписи «левая/правая», которые у модели прыгают) */
 	_hands(res, aspect) {
-		const out = [];
-		const seen = new Set();
-		const k = 1 - Math.min(0.95, this.smooth) * 0.88;
+		const now = performance.now();
+		const dets = [];
 		if (res && res.landmarks) {
 			res.landmarks.forEach((lm, i) => {
-				const label = (res.handedness?.[i]?.[0]?.categoryName || 'H') + i;
-				seen.add(label);
-				let prev = this._state.get(label);
 				const raw = lm.map((p) => [1 - p.x, p.y]);
-				const pts = prev ? raw.map((p, j) => [prev[j][0] + (p[0] - prev[j][0]) * k, prev[j][1] + (p[1] - prev[j][1]) * k]) : raw;
-				this._state.set(label, pts);
-				const hd = measure(pts, aspect, label);
-				hd.gesture = this._stable(label, hd.rawGesture);
-				out.push(hd);
+				const wl = res.worldLandmarks?.[i];
+				dets.push({ raw, world: wl ? wl.map((p) => [p.x, p.y, p.z]) : raw.map((p) => [p[0] * aspect, p[1], 0]) });
 			});
 		}
-		for (const key of [...this._state.keys()]) if (!seen.has(key)) {
-			this._state.delete(key);
-			this._gest.delete(key);
+		const free = this._tracks.slice();
+		const matched = [];
+		for (const d of dets) {
+			let best = null;
+			let bd = 0.3;
+			for (const t of free) {
+				const dd = Math.hypot(t.wrist[0] - d.raw[0][0], t.wrist[1] - d.raw[0][1]);
+				if (dd < bd) {
+					bd = dd;
+					best = t;
+				}
+			}
+			if (best) free.splice(free.indexOf(best), 1);
+			else best = this._newTrack();
+			matched.push([best, d]);
 		}
-		return out;
+		const minCut = 5.5 - Math.min(1, this.smooth) * 4.5;
+		for (const [t, d] of matched) {
+			const dt = Math.min(0.2, Math.max(0.008, (now - (t.t || now - 33)) / 1000));
+			t.t = now;
+			const pts = d.raw.map((p, j) => [t.f[j * 2].filter(p[0], dt, minCut, 14), t.f[j * 2 + 1].filter(p[1], dt, minCut, 14)]);
+			// мировые координаты (в метрах, не зависят от разворота руки к камере) слегка сглаживаем только для распознавания
+			t.world = t.world ? d.world.map((p, j) => p.map((v, k) => t.world[j][k] + (v - t.world[j][k]) * 0.55)) : d.world;
+			t.wrist = pts[0];
+			t.lastSeen = now;
+			const hd = measure(t, pts, aspect);
+			hd.gesture = this._stable(t, hd.rawGesture, now);
+			t.hd = hd;
+		}
+		// потеряли руку на несколько кадров: держим её ещё чуть-чуть, чтобы жест не обрывался
+		this._tracks = this._tracks.filter((t) => matched.some(([m]) => m === t) || now - t.lastSeen < 380).concat(matched.map(([t]) => t).filter((t) => !this._tracks.includes(t)));
+		return this._tracks.filter((t) => t.hd).map((t) => t.hd);
 	}
 
-	/** Жест меняется, только если держится дольше «задержки»: нет мерцания между жестами */
-	_stable(key, raw) {
-		const now = performance.now() / 1000;
-		let g = this._gest.get(key);
-		if (!g) g = { cur: raw, cand: raw, t: now };
-		if (raw === g.cur) g.cand = raw;
-		else if (raw === g.cand) {
-			if (now - g.t >= this.hold) g.cur = raw;
-		} else {
-			g.cand = raw;
-			g.t = now;
+	_newTrack() {
+		return { id: 'H' + this._nextId++, f: Array.from({ length: 42 }, () => new OneEuro()), world: null, wrist: [0, 0], lastSeen: 0, t: 0, fing: [false, false, false, false], thumb: false, pinch: false, hist: [], cur: 'none', hd: null };
+	}
+
+	/** Жест меняется, только если за последние ~0,25 с он стал явным большинством и продержался дольше «задержки» */
+	_stable(t, raw, now) {
+		const win = Math.max(220, this.hold * 1000 * 2);
+		t.hist.push([now, raw]);
+		while (t.hist.length && now - t.hist[0][0] > win) t.hist.shift();
+		const counts = {};
+		for (const [, g] of t.hist) counts[g] = (counts[g] || 0) + 1;
+		let cand = t.cur;
+		let top = 0;
+		for (const g in counts) if (counts[g] > top) {
+			top = counts[g];
+			cand = g;
 		}
-		this._gest.set(key, g);
-		return g.cur;
+		const share = top / t.hist.length;
+		if (cand !== t.cur && share >= 0.6 && now - (t.since || 0) >= this.hold * 1000) {
+			t.cur = cand;
+			t.since = now;
+		}
+		return t.cur;
 	}
 
 	_draw(hands) {
@@ -222,33 +254,86 @@ export class HandTracker {
 			/* уже закрыт */
 		}
 		this.landmarker = null;
-		this._state.clear();
+		this._tracks = [];
 	}
 }
 
 const dist = (a, b, aspect) => Math.hypot((a[0] - b[0]) * aspect, a[1] - b[1]);
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-/** Размер кисти, щипок (0..1) и «раскрытость» ладони (0 кулак .. 1 открытая) */
-function measure(pts, aspect, id) {
-	const size = Math.max(1e-3, dist(pts[0], pts[9], aspect));
-	const pinch = 1 - Math.min(1, Math.max(0, (dist(pts[4], pts[8], aspect) / size - 0.18) / 0.55));
-	let ext = 0;
-	for (const t of [8, 12, 16, 20]) ext += dist(pts[t], pts[0], aspect) / size;
-	ext /= 4;
-	const open = Math.min(1, Math.max(0, (ext - 1.0) / 0.9));
-	const palm = [0, 5, 9, 13, 17].reduce((s, i) => [s[0] + pts[i][0] / 5, s[1] + pts[i][1] / 5], [0, 0]);
-	// длина каждого пальца от запястья в размерах кисти: вытянутый около 1.9–2.2, согнутый около 0.9–1.3
-	const reach = [8, 12, 16, 20].map((t) => dist(pts[t], pts[0], aspect) / size);
-	const ex = reach.map((r) => r > 1.5);
+/** Фильтр «One Euro»: когда рука почти стоит, сглаживает сильно (нет дрожи), когда движется быстро, почти не запаздывает */
+class OneEuro {
+	constructor() {
+		this.x = null;
+		this.dx = 0;
+	}
+	static alpha(cut, dt) {
+		const tau = 1 / (2 * Math.PI * cut);
+		return 1 / (1 + tau / dt);
+	}
+	filter(v, dt, minCut, beta) {
+		if (this.x === null) {
+			this.x = v;
+			return v;
+		}
+		this.dx += OneEuro.alpha(1, dt) * ((v - this.x) / dt - this.dx);
+		this.x += OneEuro.alpha(minCut + beta * Math.abs(this.dx), dt) * (v - this.x);
+		return this.x;
+	}
+}
+
+const sub3 = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const len3 = (a) => Math.hypot(a[0], a[1], a[2]);
+/** Угол в точке b между отрезками b-a и b-c, градусы (180 = палец прямой) */
+function angleAt(a, b, c) {
+	const u = sub3(a, b);
+	const v = sub3(c, b);
+	const d = len3(u) * len3(v);
+	if (d < 1e-12) return 180;
+	return (Math.acos(clamp((u[0] * v[0] + u[1] * v[1] + u[2] * v[2]) / d, -1, 1)) * 180) / Math.PI;
+}
+
+const FINGERS = [[5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16], [17, 18, 19, 20]];
+
+/**
+ * Распознавание жеста по углам сгибов пальцев в метрических 3D-координатах: не зависит от того, как рука повёрнута
+ * к камере и насколько далеко. У каждого пальца есть гистерезис (разгиб и сгиб по разным порогам), поэтому нет дрожания.
+ */
+function measure(t, pts, aspect) {
+	const W = t.world;
+	const size3 = Math.max(1e-5, len3(sub3(W[9], W[0])));
+	const palmC = [0, 5, 9, 13, 17].reduce((s, i) => [s[0] + W[i][0] / 5, s[1] + W[i][1] / 5, s[2] + W[i][2] / 5], [0, 0, 0]);
+	const curl = FINGERS.map(([m, p, d, tip]) => {
+		const flex = clamp((180 - angleAt(W[m], W[p], W[d])) / 80, 0, 1.3) * 0.65 + clamp((180 - angleAt(W[p], W[d], W[tip])) / 65, 0, 1.3) * 0.35;
+		const near = clamp((1.55 - len3(sub3(W[tip], palmC)) / size3) / 0.85, 0, 1);
+		return clamp(flex * 0.6 + near * 0.4, 0, 1);
+	});
+	curl.forEach((c, i) => {
+		if (c < 0.34) t.fing[i] = true;
+		else if (c > 0.55) t.fing[i] = false;
+	});
+	const ex = t.fing.slice();
 	const count = ex.filter(Boolean).length;
-	const pinchD = dist(pts[4], pts[8], aspect) / size;
-	const thumbOut = dist(pts[4], pts[0], aspect) / size > 1.45;
+	// большой палец: разогнут и отведён от основания указательного
+	const thOut = len3(sub3(W[4], W[5])) / size3;
+	t.thumb = angleAt(W[2], W[3], W[4]) > 145 && thOut > (t.thumb ? 0.45 : 0.6);
+	// щипок: кончики большого и указательного рядом, а указательный не прижат к ладони (иначе это кулак)
+	const pd = len3(sub3(W[4], W[8])) / size3;
+	const idxPalm = len3(sub3(W[8], palmC)) / size3;
+	t.pinch = pd < (t.pinch ? 0.42 : 0.3) && idxPalm > (t.pinch ? 0.6 : 0.72) && curl[0] < 0.85;
 	let rawGesture = 'none';
-	if (pinchD < 0.35 && reach[0] > 1.25) rawGesture = 'pinch';
-	else if (count === 0) rawGesture = thumbOut && pts[4][1] < pts[5][1] - 0.3 * size ? 'thumb' : 'fist';
-	else if (ex[0] && ex[1] && !ex[2] && !ex[3]) rawGesture = 'peace';
+	if (t.pinch) rawGesture = 'pinch';
+	else if (count === 0) {
+		const dx = (pts[4][0] - pts[2][0]) * aspect;
+		const dy = pts[4][1] - pts[2][1];
+		const up = -dy / Math.max(1e-6, Math.hypot(dx, dy));
+		rawGesture = t.thumb && up > 0.6 ? 'thumb' : 'fist';
+	} else if (ex[0] && ex[1] && !ex[2] && !ex[3]) rawGesture = 'peace';
 	else if (ex[0] && !ex[1] && !ex[2] && ex[3]) rawGesture = 'rock';
 	else if (ex[0] && !ex[1] && !ex[2] && !ex[3]) rawGesture = 'point';
 	else if (count >= 3) rawGesture = 'palm';
-	return { id, pts, tips: TIPS.map((i) => pts[i]), palm, size, pinch: rawGesture === 'pinch' ? 1 : 0, open, ext: ex, rawGesture };
+	const size = Math.max(1e-3, dist(pts[0], pts[9], aspect));
+	const palm = [0, 5, 9, 13, 17].reduce((s, i) => [s[0] + pts[i][0] / 5, s[1] + pts[i][1] / 5], [0, 0]);
+	const open = 1 - curl.reduce((a, b) => a + b, 0) / 4;
+	return { id: t.id, pts, tips: TIPS.map((i) => pts[i]), palm, size, pinch: rawGesture === 'pinch' ? 1 : 0, open, ext: ex, rawGesture, curl };
 }
