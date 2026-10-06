@@ -221,31 +221,208 @@ if (document.activeElement !== input) show();
 },
 };
 }
+const hexToRgb = (hx) => {
+const n = parseInt(hx.slice(1), 16);
+return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+const rgbToHex = (r, g, b) => '#' + [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+function rgbToHsv(r, g, b) {
+r /= 255;
+g /= 255;
+b /= 255;
+const mx = Math.max(r, g, b);
+const mn = Math.min(r, g, b);
+const d = mx - mn;
+let hh = 0;
+if (d) {
+if (mx === r) hh = ((g - b) / d) % 6;
+else if (mx === g) hh = (b - r) / d + 2;
+else hh = (r - g) / d + 4;
+hh *= 60;
+if (hh < 0) hh += 360;
+}
+return [hh, mx ? d / mx : 0, mx];
+}
+function hsvToRgb(hh, sat, v) {
+const c = v * sat;
+const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
+const m = v - c;
+const [r, g, b] = hh < 60 ? [c, x, 0] : hh < 120 ? [x, c, 0] : hh < 180 ? [0, c, x] : hh < 240 ? [0, x, c] : hh < 300 ? [x, 0, c] : [c, 0, x];
+return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+}
+const PICK_SWATCHES = ['#ffffff', '#e58a45', '#ff3d6e', '#ffd90f', '#7cff6b', '#00f0ff', '#4f8ff0', '#b06bff', '#ff1fcb', '#111418'];
+let openPicker = null;
 export function colorField({ value = '#ffffff', onInput, onChange }) {
-const pick = h('input', { type: 'color', class: 'color-in', value, 'aria-label': 'Цвет' });
+let hsv = rgbToHsv(...hexToRgb(value));
+let cur = value;
+const dot = h('button', { type: 'button', class: 'cp-dot', 'aria-label': 'Выбрать цвет' });
 const hex = h('input', { type: 'text', class: 'num-in hex-in', value, spellcheck: 'false', maxlength: 7, 'aria-label': 'HEX' });
-pick.addEventListener('input', () => {
-hex.value = pick.value;
-onInput && onInput(pick.value);
-});
-pick.addEventListener('change', () => onChange && onChange(pick.value));
+const paintDot = () => {
+dot.style.background = cur;
+hex.value = cur;
+};
+const apply = (fire, final) => {
+cur = rgbToHex(...hsvToRgb(hsv[0], hsv[1], hsv[2]));
+paintDot();
+fire && onInput && onInput(cur);
+final && onChange && onChange(cur);
+};
+const setHex = (v, fire = true) => {
+let t = v.trim();
+if (!t.startsWith('#')) t = '#' + t;
+if (!/^#[0-9a-fA-F]{6}$/.test(t)) return false;
+cur = t.toLowerCase();
+hsv = rgbToHsv(...hexToRgb(cur));
+paintDot();
+if (fire) {
+onInput && onInput(cur);
+onChange && onChange(cur);
+}
+return true;
+};
 hex.addEventListener('change', () => {
-let s = hex.value.trim();
-if (!s.startsWith('#')) s = '#' + s;
-if (/^#[0-9a-fA-F]{6}$/.test(s)) {
-pick.value = s;
-onInput && onInput(s);
-onChange && onChange(s);
-} else hex.value = pick.value;
+if (!setHex(hex.value)) hex.value = cur;
 });
 hex.addEventListener('keydown', (e) => {
 if (e.key === 'Enter') hex.blur();
 });
+let pop = null;
+const close = () => {
+if (!pop) return;
+pop.remove();
+pop = null;
+dot.setAttribute('aria-expanded', 'false');
+document.removeEventListener('pointerdown', outside, true);
+document.removeEventListener('keydown', esc, true);
+if (openPicker === close) openPicker = null;
+};
+const outside = (e) => {
+if (pop && !pop.contains(e.target) && !dot.contains(e.target)) close();
+};
+const esc = (e) => {
+if (e.key === 'Escape') close();
+};
+const open = () => {
+if (openPicker) openPicker();
+const sv = h('canvas', { class: 'cp-sv', width: 220, height: 150 });
+const hue = h('canvas', { class: 'cp-hue', width: 220, height: 14 });
+const hexIn = h('input', { type: 'text', class: 'num-in hex-in', value: cur, spellcheck: 'false', maxlength: 7, 'aria-label': 'HEX' });
+const sw = h('div', { class: 'cp-sw' });
+pop = h('div', { class: 'cp-pop', role: 'dialog', 'aria-label': 'Выбор цвета' }, sv, hue, h('div', { class: 'cp-row' }, h('span', { class: 'cp-cur', style: { background: cur } }), hexIn), sw);
+const drawSV = () => {
+const c = sv.getContext('2d');
+const w = sv.width;
+const hh = sv.height;
+c.fillStyle = `hsl(${hsv[0]}, 100%, 50%)`;
+c.fillRect(0, 0, w, hh);
+let g = c.createLinearGradient(0, 0, w, 0);
+g.addColorStop(0, '#fff');
+g.addColorStop(1, 'rgba(255,255,255,0)');
+c.fillStyle = g;
+c.fillRect(0, 0, w, hh);
+g = c.createLinearGradient(0, 0, 0, hh);
+g.addColorStop(0, 'rgba(0,0,0,0)');
+g.addColorStop(1, '#000');
+c.fillStyle = g;
+c.fillRect(0, 0, w, hh);
+const x = hsv[1] * w;
+const y = (1 - hsv[2]) * hh;
+c.lineWidth = 2;
+c.strokeStyle = '#fff';
+c.beginPath();
+c.arc(x, y, 6, 0, Math.PI * 2);
+c.stroke();
+c.strokeStyle = 'rgba(0,0,0,0.5)';
+c.lineWidth = 1;
+c.beginPath();
+c.arc(x, y, 7.5, 0, Math.PI * 2);
+c.stroke();
+};
+const drawHue = () => {
+const c = hue.getContext('2d');
+const g = c.createLinearGradient(0, 0, hue.width, 0);
+for (let k = 0; k <= 6; k++) g.addColorStop(k / 6, `hsl(${k * 60}, 100%, 50%)`);
+c.fillStyle = g;
+c.fillRect(0, 0, hue.width, hue.height);
+const x = (hsv[0] / 360) * hue.width;
+c.fillStyle = '#fff';
+c.strokeStyle = 'rgba(0,0,0,0.55)';
+c.lineWidth = 1.5;
+c.beginPath();
+c.rect(x - 3, 1, 6, hue.height - 2);
+c.fill();
+c.stroke();
+};
+const refresh = () => {
+drawSV();
+drawHue();
+hexIn.value = cur;
+pop.querySelector('.cp-cur').style.background = cur;
+};
+const drag = (el, fn) => {
+el.addEventListener('pointerdown', (e) => {
+el.setPointerCapture(e.pointerId);
+const move = (ev) => {
+const r = el.getBoundingClientRect();
+fn(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height)));
+apply(true, false);
+refresh();
+};
+const up = () => {
+el.removeEventListener('pointermove', move);
+el.removeEventListener('pointerup', up);
+onChange && onChange(cur);
+};
+el.addEventListener('pointermove', move);
+el.addEventListener('pointerup', up);
+move(e);
+});
+};
+drag(sv, (x, y) => {
+hsv[1] = x;
+hsv[2] = 1 - y;
+});
+drag(hue, (x) => {
+hsv[0] = x * 359.99;
+});
+hexIn.addEventListener('change', () => {
+if (setHex(hexIn.value)) refresh();
+else hexIn.value = cur;
+});
+hexIn.addEventListener('keydown', (e) => {
+if (e.key === 'Enter') hexIn.blur();
+});
+for (const c of PICK_SWATCHES) {
+const b = h('button', { type: 'button', class: 'cp-chip', 'aria-label': c, style: { background: c } });
+b.addEventListener('click', () => {
+setHex(c);
+refresh();
+});
+sw.append(b);
+}
+document.body.append(pop);
+const z = parseFloat(document.documentElement.style.zoom) || 1;
+const r = dot.getBoundingClientRect();
+const pw = pop.offsetWidth;
+const ph = pop.offsetHeight;
+let left = r.left / z;
+let top = r.bottom / z + 6;
+left = Math.max(8, Math.min(window.innerWidth / z - pw - 8, left));
+if (top + ph > window.innerHeight / z - 8) top = Math.max(8, r.top / z - ph - 6);
+pop.style.left = left + 'px';
+pop.style.top = top + 'px';
+refresh();
+dot.setAttribute('aria-expanded', 'true');
+openPicker = close;
+document.addEventListener('pointerdown', outside, true);
+document.addEventListener('keydown', esc, true);
+};
+dot.addEventListener('click', () => (pop ? close() : open()));
+paintDot();
 return {
-el: h('div', { class: 'color-field' }, h('span', { class: 'swatch' }, pick), hex),
+el: h('div', { class: 'color-field' }, dot, hex),
 set(v) {
-pick.value = v;
-hex.value = v;
+setHex(v, false);
 },
 };
 }

@@ -2871,3 +2871,78 @@ body {
 	font-size: 11px;
 	padding: 0;
 }
+
+/* ------------------------------------------------ свой выбор цвета */
+.color-field {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.cp-dot {
+	width: 30px;
+	height: 30px;
+	flex: none;
+	padding: 0;
+	border-radius: var(--r-ctl);
+	border: 1px solid var(--line-strong);
+	box-shadow: inset 0 0 0 2px var(--bg-panel);
+}
+.cp-dot:hover,
+.cp-dot[aria-expanded='true'] {
+	border-color: var(--accent-line);
+}
+.cp-pop {
+	position: fixed;
+	z-index: var(--z-tip);
+	width: 244px;
+	padding: 12px;
+	display: grid;
+	gap: 10px;
+	background: var(--bg-raised);
+	border: 1px solid var(--line-strong);
+	border-radius: var(--r-box);
+	box-shadow: var(--shadow-pop);
+}
+.cp-sv {
+	width: 100%;
+	height: 150px;
+	border-radius: var(--r-ctl);
+	cursor: crosshair;
+	touch-action: none;
+	display: block;
+}
+.cp-hue {
+	width: 100%;
+	height: 14px;
+	border-radius: 7px;
+	cursor: ew-resize;
+	touch-action: none;
+	display: block;
+}
+.cp-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.cp-cur {
+	width: 30px;
+	height: 30px;
+	flex: none;
+	border-radius: var(--r-ctl);
+	border: 1px solid var(--line-strong);
+}
+.cp-sw {
+	display: grid;
+	grid-template-columns: repeat(10, 1fr);
+	gap: 5px;
+}
+.cp-chip {
+	aspect-ratio: 1;
+	padding: 0;
+	border-radius: 6px;
+	border: 1px solid var(--line-strong);
+}
+.cp-chip:hover {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
+}

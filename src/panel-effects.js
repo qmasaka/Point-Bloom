@@ -61,6 +61,16 @@ export function makeModelProvider(app) {
 	const topObjects = () => root.children.filter((o) => !o.userData.helper && o.name !== '__fx' && (() => { let ok = false; o.traverse((c) => { if (!c.userData.helper && (c.isMesh || c.isPoints)) ok = true; }); return ok; })());
 	return {
 		/** Объекты верхнего уровня сцены: каждый можно взять отдельной формой для морфинга */
+		sizeOf: (obj) => {
+			let n = 0;
+			obj.traverse((c) => {
+				if (c.userData.helper || !c.geometry) return;
+				const g = c.geometry;
+				if (c.isPoints) n += g.attributes.position.count;
+				else if (c.isMesh) n += g.index ? g.index.count / 3 : g.attributes.position.count / 3;
+			});
+			return n;
+		},
 		objects: () => topObjects().map((o) => ({ id: o.uuid, name: o.name || 'Объект', obj: o })),
 		async getOf(obj, count) {
 			const cl = [];
@@ -198,8 +208,9 @@ export function createEffectsPanel(app, root, engine) {
 	const morphOrder = segmented({ options: [{ value: 'seq', label: 'По кругу' }, { value: 'random', label: 'Случайно' }], value: mc.order, onChange: (v) => { mc.order = v; save(); } });
 	const morphInt = slider({ min: 1, max: 20, step: 0.5, value: mc.interval, digits: 1, unit: ' с', onInput: (v) => { mc.interval = v; }, onChange: save });
 	const morphTime = slider({ min: 0.4, max: 6, step: 0.1, value: mc.time, digits: 1, unit: ' с', onInput: (v) => { mc.time = v; }, onChange: save });
+	const morphWeight = segmented({ options: [{ value: 'auto', label: 'Как в модели', title: 'У модели с меньшим числом точек лишние гаснут, при переходе к большей недостающие проявляются' }, { value: 'equal', label: 'Поровну' }], value: mc.weight, onChange: (v) => { mc.weight = v; save(); } });
 	const morphGo = button({ label: 'Следующая форма', icon: 'arrow-right', variant: 'secondary', cls: 'btn-block', onClick: () => engine.morphNext() });
-	const morphBody = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, shapesToggle, shapesBox, field('Переход', morphMode.el, { wide: true }), field('Порядок', morphOrder.el, { wide: true }), field('Не чаще, чем раз в', morphInt.el), field('Длительность', morphTime.el), morphGo);
+	const morphBody = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, shapesToggle, shapesBox, field('Переход', morphMode.el, { wide: true }), field('Порядок', morphOrder.el, { wide: true }), field('Число точек у моделей', morphWeight.el, { wide: true }), field('Не чаще, чем раз в', morphInt.el), field('Длительность', morphTime.el), morphGo);
 	renderForms();
 	const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, tiles, field('Частиц', count.el), countChips, countHint, h('div', { class: 'fx-sub' }, 'Морфинг между формами'), morphBody);
 
@@ -227,7 +238,7 @@ export function createEffectsPanel(app, root, engine) {
 		});
 		folder.append(fhead, fbody);
 		left.append(folder);
-		for (const def of FX_LAYERS.filter((d) => d.group === grp)) {
+		for (const def of FX_LAYERS.filter((d) => d.group === grp && !d.hidden)) {
 			st.layers[def.id] = { ...def.def, ...(st.layers[def.id] || {}) };
 			const L = st.layers[def.id];
 			const sw = toggle({
@@ -287,8 +298,15 @@ export function createEffectsPanel(app, root, engine) {
 			}
 			body.append(field('Сила', amount.el));
 			const extraCtl = {};
+			const whenList = [];
+			const put = (el, ex) => {
+				body.append(el);
+				if (ex.when) whenList.push([el, ex.when]);
+			};
+			const applyWhen = () => whenList.forEach(([el, w]) => (el.hidden = !w[1].includes(L[w[0]])));
 			for (const ex of def.extras) {
 				const after = () => {
+					applyWhen();
 					save();
 					if (ex.relink) engine.relink();
 				};
@@ -303,27 +321,30 @@ export function createEffectsPanel(app, root, engine) {
 						});
 						row.append(b);
 					}
-					body.append(field('Готовые схемы', row, { wide: true }));
+					put(field('Готовые схемы', row, { wide: true }), ex);
 				} else if (ex.type === 'select') {
 					const sl = select({ options: ex.options.map(([value, label]) => ({ value, label })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
 					extraCtl[ex.key] = sl;
-					body.append(field(ex.label, sl.el, { wide: true }));
+					put(field(ex.label, sl.el, { wide: true }), ex);
+				} else if (ex.type === 'note') {
+					put(h('div', { class: 'field-hint' }, ex.text), ex);
 				} else if (ex.type === 'title') {
-					body.append(h('div', { class: 'fx-sub' }, ex.label));
+					put(h('div', { class: 'fx-sub' }, ex.label), ex);
 				} else if (ex.type === 'color') {
 					const ctl = colorChoice(L, ex.key, after);
 					extraCtl[ex.key] = ctl;
-					body.append(field(ex.label, ctl.el, { wide: true }));
+					put(field(ex.label, ctl.el, { wide: true }), ex);
 				} else if (ex.type === 'seg') {
 					const sg = segmented({ cls: ex.options.length > 3 ? 'seg-tight' : undefined, options: ex.options.map(([value, label]) => ({ value, label })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
 					extraCtl[ex.key] = sg;
-					body.append(field(ex.label, sg.el, { wide: true }));
+					put(field(ex.label, sg.el, { wide: true }), ex);
 				} else {
 					const sl = slider({ min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : 2, unit: ex.unit, onInput: (v) => { L[ex.key] = v; }, onChange: after });
 					extraCtl[ex.key] = sl;
-					body.append(field(ex.label, sl.el));
+					put(field(ex.label, sl.el), ex);
 				}
 			}
+			applyWhen();
 			const react = slider({ min: 0, max: 1, step: 0.05, value: L.react, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { L.react = v; }, onChange: save });
 			const reactRow = field('Сила реакции', react.el);
 			const band = segmented({
@@ -359,7 +380,7 @@ export function createEffectsPanel(app, root, engine) {
 			});
 			fbody.append(card);
 			inspBox.append(insp);
-			cards.push({ def, L, sw, amount, react, band, reactRow, extraCtl, card, insp, fhead });
+			cards.push({ def, L, sw, amount, react, band, reactRow, extraCtl, applyWhen, card, insp, fhead });
 		}
 	}
 	const inspEmpty = h('div', { class: 'empty-note' }, h('strong', {}, 'Выберите эффект'), h('span', {}, 'Нажмите на строку в списке слева, чтобы настроить его здесь'));
@@ -577,7 +598,7 @@ export function createEffectsPanel(app, root, engine) {
 		bgBtn.setAttribute('aria-expanded', String(!bgPop.hidden));
 	});
 	document.addEventListener('pointerdown', (e) => {
-		if (!bgPop.hidden && !bgPop.contains(e.target) && !bgBtn.contains(e.target)) {
+		if (!bgPop.hidden && !bgPop.contains(e.target) && !bgBtn.contains(e.target) && !e.target.closest('.cp-pop')) {
 			bgPop.hidden = true;
 			bgBtn.setAttribute('aria-expanded', 'false');
 		}
@@ -609,6 +630,7 @@ export function createEffectsPanel(app, root, engine) {
 			c.band.set(c.L.band);
 			c.reactRow.hidden = c.L.band === 'none';
 			for (const [k, ctl] of Object.entries(c.extraCtl)) ctl.set(c.L[k]);
+			c.applyWhen();
 		});
 		palBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === st.look.palette)));
 		colorBy.set(st.look.colorBy);
