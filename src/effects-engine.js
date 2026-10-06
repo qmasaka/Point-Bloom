@@ -55,7 +55,7 @@ export const FX_LAYERS = [
 	{ id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в сторону', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }] },
 	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими импульсами', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
-	{ id: 'slice', group: 'Графика', name: 'Срез / Изолинии', icon: 'scan', hint: 'Лазерные линии, рельеф из точек на линиях или развёртка: форма постепенно проявляется за бегущей плоскостью', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'auto' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color' }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
+	{ id: 'slice', group: 'Графика', name: 'Срез / Изолинии', icon: 'scan', hint: 'Лазерные линии, рельеф из точек на линиях или развёртка: форма постепенно проявляется за бегущей плоскостью', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'auto' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
 	{ id: 'feedback', group: 'Графика', name: 'Feedback-след', icon: 'spiral', hint: 'Настоящий видео-след (Feedback TOP) с затуханием, зумом и вращением', max: 1, def: { on: false, amount: 0.92, band: 'none', react: 0, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002 }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001 }] },
 	{ id: 'echo', group: 'Графика', name: 'Шлейф', icon: 'ghost', hint: 'Призрачные копии формы: тянутся следом, закручиваются спиралью или раскладываются зеркальным веером', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, mode: 'spiral', copies: 4, delay: 0.14, spread: 0.45, fade: 0.7 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['spiral', 'Спираль'], ['kaleido', 'Зеркала'], ['time', 'След']] }, { key: 'copies', label: 'Копий', min: 1, max: 5, step: 1, int: true }, { key: 'spread', label: 'Угол между копиями', min: 0.05, max: 1.5, step: 0.05 }, { key: 'delay', label: 'Задержка, с', min: 0.02, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Затухание копий', min: 0.3, max: 0.95, step: 0.05 }] },
 	{ id: 'tracking', group: 'Взаимодействие', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки захватывают подвижные участки формы и по желанию прикасаются к ней: подъём, вихрь или втягивание', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, shape: 'corners', color: 'auto', thick: 1.5, labels: 'on', lines: 'on', fill: 'none', follow: 'wander', mark: 'none', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 8, max: 160, step: 1, int: true }, { key: 'shape', label: 'Форма', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'fill', label: 'Заливка рамки', type: 'seg', options: [['none', 'Нет'], ['tint', 'Тон'], ['hatch', 'Штрих']] }, { key: 'follow', label: 'Куда смотрят рамки', type: 'seg', options: [['wander', 'Бродят'], ['pointer', 'Курсор, руки']] }, { type: 'title', label: 'Эффект в области рамок' }, { key: 'mark', label: 'Что происходит', type: 'select', options: [['none', 'Ничего'], ['invert', 'Негатив'], ['rainbow', 'Радуга'], ['hole', 'Дыра с пульсирующим краем'], ['lens', 'Лупа'], ['pixel', 'Пиксели'], ['glow', 'Свет']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'select', options: [['none', 'Нет'], ['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втягивание'], ['push', 'Отталкивание'], ['ripple', 'Рябь'], ['melt', 'Таяние вниз'], ['scatter', 'Разлёт искрами'], ['vanish', 'Исчезновение']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус области', min: 0.02, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
@@ -874,11 +874,11 @@ void main() {
 			float d = uSlice.y - v;
 			sl = (1.0 - smoothstep(0.0, uSlice.z * 0.3 + 0.012, abs(d))) * uSlice.x;
 			vColor *= mix(1.0, smoothstep(-0.012, 0.012, d), min(uSlice.x, 1.0));
-			vColor += uSliceC * sl * 2.4;
+			vColor += (uSliceM.z > 0.5 ? vColor * 1.6 : uSliceC) * sl * 2.4;
 		} else {
 			float coord = mod(v * nLines - uSlice.y * nLines, 1.0);
 			sl = (1.0 - smoothstep(uSlice.z * 0.4, uSlice.z, abs(coord - 0.5))) * uSlice.x;
-			vColor += uSliceC * sl * 2.2;
+			vColor += (uSliceM.z > 0.5 ? vColor * 1.6 : uSliceC) * sl * 2.2;
 		}
 	}
 	vD = disp;
@@ -1550,6 +1550,7 @@ export class EffectsEngine {
 		this.recording = false;
 		this.modelProvider = null; // { available(), kind(), total(), get(n) }
 		this.pm = app.media.pm;
+		app.bus.on('settings', () => this._histSoon());
 		app.bus.on('pointtex', () => {
 			if (this.active) {
 				this.cache.clear();
@@ -1970,7 +1971,109 @@ export class EffectsEngine {
 	}
 
 	// ------------------------------------------------------------ состояние
+	// ------------------------------------------------------------ отмена и повтор в режиме эффектов
+	_snap() {
+		const st = this.state;
+		const layers = {};
+		for (const id of Object.keys(st.layers)) {
+			const l = { ...st.layers[id] };
+			if (this._handFx?.has(id)) l.on = this._handFx.get(id); // временное включение жестом не считается правкой
+			layers[id] = l;
+		}
+		const p = this.app.settings.point;
+		return JSON.stringify({ source: st.source, count: st.count, layers, look: st.look, mask: st.mask, morphCfg: st.morphCfg, pt: { shape: p.shape, size: p.size, color: p.color, solidColor: p.solidColor, attenuate: p.attenuate } });
+	}
+
+	_histSoon() {
+		if (!this.active || this._histBusy) return;
+		clearTimeout(this._histT);
+		this._histT = setTimeout(() => this._histCommit(), 350);
+	}
+
+	_histCommit() {
+		const h = this._hist || (this._hist = { undo: [], redo: [], last: null });
+		const snap = this._snap();
+		if (h.last === null) h.last = snap;
+		else if (snap !== h.last) {
+			h.undo.push({ snap: h.last, label: this._diffLabel(h.last, snap) });
+			if (h.undo.length > 100) h.undo.shift();
+			h.redo.length = 0;
+			h.last = snap;
+		}
+		this.emit();
+	}
+
+	_diffLabel(a, b) {
+		try {
+			const A = JSON.parse(a), B = JSON.parse(b);
+			for (const id of Object.keys(B.layers)) {
+				if (JSON.stringify(A.layers[id]) !== JSON.stringify(B.layers[id])) return 'эффект «' + (FX_LAYERS.find((l) => l.id === id)?.name || id) + '»';
+			}
+			if (A.source !== B.source) return 'форма';
+			if (A.count !== B.count) return 'число частиц';
+			if (JSON.stringify(A.mask) !== JSON.stringify(B.mask)) return 'зона действия';
+			if (JSON.stringify(A.morphCfg) !== JSON.stringify(B.morphCfg)) return 'морфинг';
+			if (JSON.stringify(A.look) !== JSON.stringify(B.look) || JSON.stringify(A.pt) !== JSON.stringify(B.pt)) return 'вид';
+		} catch (e) {
+			/* не критично */
+		}
+		return 'настройки';
+	}
+
+	get canUndo() {
+		return !!this._hist?.undo.length;
+	}
+	get canRedo() {
+		return !!this._hist?.redo.length;
+	}
+	get undoLabel() {
+		return this._hist?.undo.at(-1)?.label || '';
+	}
+	get redoLabel() {
+		return this._hist?.redo.at(-1)?.label || '';
+	}
+
+	async _histApply(snap) {
+		const d = JSON.parse(snap);
+		const st = this.state;
+		this._histBusy = true;
+		try {
+			for (const id of Object.keys(d.layers)) if (st.layers[id]) Object.assign(st.layers[id], d.layers[id]);
+			Object.assign(st.look, d.look);
+			Object.assign(st.mask, d.mask);
+			Object.assign(st.morphCfg, d.morphCfg);
+			Object.assign(this.app.settings.point, d.pt);
+			this.app.saveSettings();
+			this.touch();
+			if (d.count !== st.count) await this.setCount(d.count);
+			if (d.source !== st.source) await this.setSource(d.source);
+		} finally {
+			this._hist.last = snap;
+			this._histBusy = false;
+		}
+		this.emit();
+	}
+
+	async undo() {
+		const h = this._hist;
+		if (!h || !h.undo.length) return null;
+		const e = h.undo.pop();
+		h.redo.push({ snap: h.last, label: e.label });
+		await this._histApply(e.snap);
+		return e.label;
+	}
+
+	async redo() {
+		const h = this._hist;
+		if (!h || !h.redo.length) return null;
+		const e = h.redo.pop();
+		h.undo.push({ snap: h.last, label: e.label });
+		await this._histApply(e.snap);
+		return e.label;
+	}
+
 	touch() {
+		this._histSoon();
 		clearTimeout(this._saveT);
 		this._saveT = setTimeout(() => saveJSON(KEY, this.state), 250);
 	}
@@ -2575,6 +2678,8 @@ export class EffectsEngine {
 		};
 		app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 400);
 		this.syncLookFromPoints();
+		this._hist = { undo: [], redo: [], last: null };
+		this._histT = setTimeout(() => this._histCommit(), 600);
 		if (this.pm.playing && this.state.source === 'media') this.pm.play();
 		this._lastT = performance.now();
 		this._loop();
@@ -2788,7 +2893,7 @@ export class EffectsEngine {
 			}
 			if (smode === 2) sph = sph * 1.1 - 0.05;
 			u.uSlice.value.set(this._eff(sl), sph, sl.width, axVal + nLines * 10);
-			u.uSliceM.value.set(smode, sl.lift, 0, 0);
+			u.uSliceM.value.set(smode, sl.lift, sl.color === 'model' ? 1 : 0, 0);
 			u.uSliceC.value.set(sl.color && sl.color !== 'auto' ? sl.color : pal.c[2]);
 
 			// Look P2 & DoF

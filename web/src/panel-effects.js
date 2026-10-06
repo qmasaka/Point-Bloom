@@ -90,7 +90,7 @@ return sampleSurface(entries, count, { onProgress: (p) => app.ui.busy('Беру 
 };
 }
 const TRACK_COLORS = ['#ffffff', '#00f0ff', '#ff1fcb', '#ffd90f', '#7cff6b', '#ff4d4d'];
-function colorChoice(L, key, done) {
+function colorChoice(L, key, done, natural = false) {
 const chips = [];
 const wrap = h('div', { class: 'fx-color' });
 const row = h('div', { class: 'fx-bg-sw' });
@@ -101,6 +101,7 @@ chips.push([val, b]);
 row.append(b);
 };
 mkChip('auto', 'Цвета палитры');
+if (natural) mkChip('model', 'Естественные цвета модели', { background: 'conic-gradient(#ff3d6e, #ffd90f, #7cff6b, #00f0ff, #b06bff, #ff3d6e)' });
 for (const c of TRACK_COLORS) mkChip(c, c, { background: c });
 const custom = colorField({ value: L[key] === 'auto' ? '#ffffff' : L[key], onInput: (v) => pick(v, true), onChange: done });
 wrap.append(row, custom.el);
@@ -109,7 +110,7 @@ for (const [v, b] of chips) b.classList.toggle('is-active', v === L[key]);
 }
 function pick(v, live) {
 L[key] = v;
-if (!live && v !== 'auto') custom.set(v);
+if (!live && v !== 'auto' && v !== 'model') custom.set(v);
 mark();
 done();
 }
@@ -117,7 +118,7 @@ mark();
 return {
 el: wrap,
 set(v) {
-if (v !== 'auto') custom.set(v);
+if (v !== 'auto' && v !== 'model') custom.set(v);
 mark();
 },
 };
@@ -314,7 +315,7 @@ put(h('div', { class: 'field-hint' }, ex.text), ex);
 } else if (ex.type === 'title') {
 put(h('div', { class: 'fx-sub' }, ex.label), ex);
 } else if (ex.type === 'color') {
-const ctl = colorChoice(L, ex.key, after);
+const ctl = colorChoice(L, ex.key, after, !!ex.natural);
 extraCtl[ex.key] = ctl;
 put(field(ex.label, ctl.el, { wide: true }), ex);
 } else if (ex.type === 'seg') {

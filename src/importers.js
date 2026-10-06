@@ -41,7 +41,7 @@ const isModelFile = (f) => extOf(f.name) in MODEL_FORMATS;
 const isImageFile = (f) => IMAGE_EXT.includes(extOf(f.name));
 
 /** Принимаемые расширения для <input type=file> */
-export const ACCEPT_ALL = ['.zip', '.mtl', '.bin', ...Object.keys(MODEL_FORMATS).map((e) => '.' + e), ...IMAGE_EXT.map((e) => '.' + e)].join(',');
+export const ACCEPT_ALL = ['.zip', '.mtl', '.bin', ...Object.keys(MODEL_FORMATS).map((e) => '.' + e), ...IMAGE_EXT.map((e) => '.' + e), '.mp4', '.webm', '.mov', '.pcv'].join(',');
 
 // ------------------------------------------------------------- ресурсы
 class ResourceMap {

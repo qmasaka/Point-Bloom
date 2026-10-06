@@ -55,6 +55,7 @@ export class UI {
 		app.bus.on('selection', () => this.refreshScene());
 		app.bus.on('geometry', () => this.updateStatus());
 		app.bus.on('history', () => this.refreshHistory());
+		app.bus.on('fx', () => this.refreshHistory());
 		app.bus.on('tool', () => this.refreshTool());
 		app.bus.on('camera', () => this.refreshViewLabel());
 		app.bus.on('viewmode', () => this.refreshViewLabel());
@@ -76,10 +77,15 @@ export class UI {
 		$('#btnOpen').addEventListener('click', () => this.openFiles('auto'));
 		$('#btnTexture').addEventListener('click', () => this.openTextures());
 		$$('#modeSwitch [data-ws]').forEach((b) => b.addEventListener('click', () => this.setWorkspace(b.dataset.ws)));
-		$('#btnEmptyEffects')?.addEventListener('click', () => this.setWorkspace('fx'));
 		$('#btnEmptyOpen').addEventListener('click', () => this.openFiles('auto'));
 		$('#btnEmptyDemo').addEventListener('click', () => app.loadDemo());
-		$('#btnEmptyUrl').addEventListener('click', () => this.openUrl());
+		$('#btnEmptyMedia').addEventListener('click', () => {
+			const inp = document.createElement('input');
+			inp.type = 'file';
+			inp.accept = 'video/*,image/*,.pcv';
+			inp.addEventListener('change', () => inp.files[0] && this.openMedia(inp.files[0]));
+			inp.click();
+		});
 		$('#btnUrl').addEventListener('click', () => this.openUrl());
 		$('#btnUndo').addEventListener('click', () => this.undo());
 		$('#btnRedo').addEventListener('click', () => this.redo());
@@ -251,10 +257,19 @@ export class UI {
 	}
 
 	undo() {
+		// в режиме эффектов отменяются именно правки эффектов
+		if (this.workspace === 'fx') {
+			this.effectsEngine.undo().then((l) => l && this.toast('Отменено: ' + l, 'info', 1800));
+			return;
+		}
 		const c = this.app.history.undo();
 		if (c) this.toast('Отменено: ' + c.label, 'info', 1800);
 	}
 	redo() {
+		if (this.workspace === 'fx') {
+			this.effectsEngine.redo().then((l) => l && this.toast('Повторено: ' + l, 'info', 1800));
+			return;
+		}
 		const c = this.app.history.redo();
 		if (c) this.toast('Повторено: ' + c.label, 'info', 1800);
 	}
@@ -289,7 +304,7 @@ export class UI {
 	}
 
 	refreshHistory() {
-		const hst = this.app.history;
+		const hst = this.workspace === 'fx' ? this.effectsEngine : this.app.history;
 		const u = $('#btnUndo');
 		const r = $('#btnRedo');
 		u.disabled = !hst.canUndo;
@@ -509,11 +524,13 @@ export class UI {
 				return;
 			}
 			this.workspace = 'fx';
+			setTimeout(() => this.refreshHistory(), 700);
 			for (const el of Object.values(this.tabs)) el.hidden = true;
 			fxPanel.hidden = false;
 			if ($('.workspace').classList.contains('sidebar-hidden') && !window.matchMedia('(max-width: 900px)').matches) this.toggleSidebar(false);
 		} else {
 			this.workspace = 'edit';
+			this.refreshHistory();
 			this.effectsEngine.exit();
 			fxPanel.hidden = true;
 			this.showTab(this.prevTab || 'scene');
@@ -812,8 +829,26 @@ export class UI {
 	}
 
 	/** Единая точка входа для файлов: модели, текстуры, архивы */
+	/** Фото, видео или точечный ролик: открываем во вкладке «Медиа» и превращаем в облако точек */
+	async openMedia(file) {
+		this.busy('Читаю файл', 0.3);
+		try {
+			await this.app.media.load(file);
+			this.showTab('media');
+		} catch (e) {
+			this.toast(e.message || 'Не удалось открыть файл', 'error');
+		} finally {
+			this.idle();
+		}
+	}
+
 	async handleFiles(files, { mode = 'auto', point = null } = {}) {
 		const app = this.app;
+		const isMedia = (f) => (f.type || '').startsWith('video') || ['mp4', 'webm', 'mov', 'm4v', 'ogv', 'pcv'].includes(extOf(f.name));
+		const vid = files.find(isMedia);
+		if (vid && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) return this.openMedia(vid);
+		// одиночная картинка без модели в сцене: текстуре некуда ложиться, поэтому делаем из неё точки
+		if (files.length === 1 && IMAGE_EXT.includes(extOf(files[0].name)) && !app.model.meshes().length) return this.openMedia(files[0]);
 		const hasModel = files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip');
 		try {
 			if (!hasModel) {

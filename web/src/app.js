@@ -113,6 +113,7 @@ this.ui.toast(msg, type, ms);
 }
 saveSettings() {
 saveSettings(this.settings);
+this.bus.emit('settings');
 }
 afterMaterialChange() {
 const mode = this.settings.display;

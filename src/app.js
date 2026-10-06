@@ -126,6 +126,7 @@ export class App {
 
 	saveSettings() {
 		saveSettings(this.settings);
+		this.bus.emit('settings');
 	}
 
 	/** После любых изменений материалов и текстур */
