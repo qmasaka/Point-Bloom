@@ -7,6 +7,7 @@ import { History } from './history.js';
 import { Nav } from './nav.js';
 import { Ops, snapOf } from './ops.js';
 import { UI } from './ui.js';
+import { MediaController } from './media-controller.js';
 import { setTextureLimits } from './materials.js';
 import { makeDemoFiles } from './demo.js';
 export class App {
@@ -21,6 +22,7 @@ this.display = new Display(this);
 this.history = new History(this);
 this.nav = new Nav(this);
 this.ops = new Ops(this);
+this.media = new MediaController(this);
 this.ui = new UI(this);
 }
 start() {

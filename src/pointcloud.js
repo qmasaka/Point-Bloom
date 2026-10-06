@@ -324,3 +324,10 @@ export function cloudToPoints(cloud, name = 'Облако точек') {
 	pts.name = name;
 	return pts;
 }
+
+/** Своя текстура для цвета точек: вместо материала модели берётся выбранная картинка (по UV модели) */
+export function overrideMats(tex, mats) {
+	if (!tex) return mats;
+	const m = new THREE.MeshBasicMaterial({ map: tex });
+	return m;
+}

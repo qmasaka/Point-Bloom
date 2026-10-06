@@ -7,8 +7,6 @@ import * as THREE from 'three';
 import { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } from './util.js';
 import { TrackerHud } from './fx-hud.js';
 import { HandTracker } from './hand-tracker.js';
-import { PointMedia } from './point-media.js';
-import { cloudToPoints } from './pointcloud.js';
 
 // ───────────────────────────────────────────────────────────── описания
 
@@ -56,17 +54,17 @@ export const FX_LAYERS = [
 	{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1 }, extras: [] },
 	{ id: 'jitter', group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в сторону', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }] },
-	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими импульсами', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.05, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
-	{ id: 'slice', group: 'Графика', name: 'Срез / Изолинии', icon: 'scan', hint: 'Топографические лазерные срезы бегут по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 0.5, width: 0.08, count: 4, axis: 'y' }, extras: [{ key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.1, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.02, max: 0.3, step: 0.01 }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
+	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими импульсами', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
+	{ id: 'slice', group: 'Графика', name: 'Срез / Изолинии', icon: 'scan', hint: 'Топографические лазерные срезы бегут по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 0.5, width: 0.08, count: 4, axis: 'y' }, extras: [{ key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.1, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
 	{ id: 'feedback', group: 'Графика', name: 'Feedback-след', icon: 'spiral', hint: 'Настоящий видео-след (Feedback TOP) с затуханием, зумом и вращением', max: 1.5, def: { on: false, amount: 0.92, band: 'none', react: 0, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002 }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001 }] },
 	{ id: 'echo', group: 'Графика', name: 'Шлейф', icon: 'ghost', hint: 'Призрачные копии формы: тянутся следом, закручиваются спиралью или раскладываются зеркальным веером', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, mode: 'spiral', copies: 4, delay: 0.14, spread: 0.45, fade: 0.7 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['spiral', 'Спираль'], ['kaleido', 'Зеркала'], ['time', 'След']] }, { key: 'copies', label: 'Копий', min: 1, max: 5, step: 1, int: true }, { key: 'spread', label: 'Угол между копиями', min: 0.05, max: 1.5, step: 0.05 }, { key: 'delay', label: 'Задержка, с', min: 0.02, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Затухание копий', min: 0.3, max: 0.95, step: 0.05 }] },
-	{ id: 'tracking', group: 'Взаимодействие', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки захватывают подвижные участки формы и по желанию прикасаются к ней: подъём, вихрь или втягивание', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, shape: 'corners', color: 'auto', thick: 1.5, labels: 'on', lines: 'on', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 30, max: 160, step: 5, int: true }, { key: 'shape', label: 'Форма', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'seg', options: [['none', 'Нет'], ['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втяг.']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус касания', min: 0.1, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
+	{ id: 'tracking', group: 'Взаимодействие', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки захватывают подвижные участки формы и по желанию прикасаются к ней: подъём, вихрь или втягивание', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, shape: 'corners', color: 'auto', thick: 1.5, labels: 'on', lines: 'on', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 30, max: 160, step: 5, int: true }, { key: 'shape', label: 'Форма', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'seg', options: [['none', 'Нет'], ['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втяг.']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус касания', min: 0.02, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
 	{ id: 'telemetry', group: 'Графика', name: 'Телеметрия', icon: 'speedometer', hint: 'Шкалы бас, середина, верх и столбики спектра поверх сцены', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, audioWave: 'on' }, extras: [{ key: 'audioWave', label: 'Спектр внизу', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
-	{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.3, max: 2, step: 0.05 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
-	{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Рисование курсором по форме: частицы в мазках светятся и оживают, затем след высыхает', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, radius: 0.4, dry: 3.5 }, extras: [{ key: 'radius', label: 'Радиус кисти', min: 0.1, max: 0.9, step: 0.02 }, { key: 'dry', label: 'Высыхание, с', min: 1.0, max: 8.0, step: 0.5 }] },
+	{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.05, max: 2, step: 0.01 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
+	{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Рисование курсором по форме: частицы в мазках светятся и оживают, затем след высыхает', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, radius: 0.4, dry: 3.5 }, extras: [{ key: 'radius', label: 'Радиус кисти', min: 0.02, max: 0.9, step: 0.01 }, { key: 'dry', label: 'Высыхание, с', min: 1.0, max: 8.0, step: 0.5 }] },
 	{ id: 'shock', group: 'Взаимодействие', name: 'Ударная волна', icon: 'aperture', hint: 'Клик по сцене пускает круговую волну по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 1.2, auto: 'off' }, extras: [{ key: 'speed', label: 'Скорость волны', min: 0.4, max: 3, step: 0.05 }, { key: 'auto', label: 'Запуск', type: 'seg', options: [['off', 'Клик'], ['on', 'Клик и авто']] }] },
-	{ id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки и пальцы. Каждому жесту назначается своё действие: ладонь, кулак, щипок, указательный палец', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush', power: 0.35, radius: 0.35, depth: 0.85, spin: 5, inertia: 0.6, axis: 'y', clay: 0.5, elastic: 0.6, stretch: 'off', keep: 'on', smooth: 0.5, sens: 0.6, hold: 0.12, skeleton: 'on', preview: 'on' }, extras: [{ type: 'preset' }, { type: 'title', label: 'Что делает жест' }, { key: 'g_palm', label: 'Ладонь (пальцы раскрыты)', type: 'select', options: FX_ACTIONS }, { key: 'g_fist', label: 'Кулак', type: 'select', options: FX_ACTIONS }, { key: 'g_pinch', label: 'Щипок (большой + указательный)', type: 'select', options: FX_ACTIONS }, { key: 'g_point', label: 'Указательный палец', type: 'select', options: FX_ACTIONS }, { type: 'title', label: 'Касание пальцами' }, { key: 'power', label: 'Мощность', min: 0.05, max: 1.5, step: 0.05 }, { key: 'radius', label: 'Радиус', min: 0.1, max: 0.9, step: 0.05 }, { key: 'depth', label: 'Глубина касания', min: 0.1, max: 1.5, step: 0.05 }, { type: 'title', label: 'Вращение' }, { key: 'spin', label: 'Скорость', min: 1, max: 14, step: 0.5 }, { key: 'inertia', label: 'Инерция', min: 0, max: 0.98, step: 0.02 }, { key: 'axis', label: 'Оси', type: 'seg', options: [['y', 'Вокруг'], ['xy', 'Свободно']] }, { type: 'title', label: 'Лепка' }, { key: 'clay', label: 'Размер куска глины', min: 0.2, max: 1.2, step: 0.05 }, { key: 'elastic', label: 'Упругость (возврат формы)', min: 0, max: 3, step: 0.1 }, { type: 'title', label: 'Две руки' }, { key: 'stretch', label: 'Меняют размер формы', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']] }, { key: 'keep', label: 'Запоминать размер', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }, { type: 'title', label: 'Распознавание и показ' }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'hold', label: 'Задержка жеста, с', min: 0, max: 0.5, step: 0.02 }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
-	{ id: 'gravity', group: 'Взаимодействие', name: 'Гравитация', icon: 'planet', hint: 'Поле тяготения: галактика с дифференциальным вращением, квазар с джетами или невесомость. Центром может быть курсор или рука', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, mode: 'orbit', target: 'cursor', speed: 1, flatten: 0.6, radius: 1.8, tilt: 0.5, precess: 0.15, jet: 1.4 }, extras: [{ key: 'mode', label: 'Вид поля', type: 'seg', options: [['orbit', 'Галактика'], ['hole', 'Квазар'], ['float', 'Невесомость']] }, { key: 'target', label: 'Центр', type: 'seg', options: [['cursor', 'Курсор / рука'], ['center', 'Центр формы']] }, { key: 'radius', label: 'Радиус поля', min: 0.4, max: 3.5, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.1 }, { key: 'flatten', label: 'Сплющивание в диск', min: 0, max: 0.95, step: 0.05 }, { key: 'tilt', label: 'Наклон диска', min: 0, max: 1.5, step: 0.05 }, { key: 'precess', label: 'Покачивание оси', min: 0, max: 1, step: 0.05 }, { key: 'jet', label: 'Длина джетов (квазар)', min: 0, max: 3, step: 0.1 }] },
+	{ id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки и пальцы. Каждому жесту назначается своё действие: ладонь, кулак, щипок, указательный палец', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush', power: 0.35, radius: 0.35, depth: 0.85, spin: 5, inertia: 0.6, axis: 'y', clay: 0.5, elastic: 0.6, stretch: 'off', keep: 'on', smooth: 0.5, sens: 0.6, hold: 0.12, skeleton: 'on', preview: 'on' }, extras: [{ type: 'preset' }, { type: 'title', label: 'Что делает жест' }, { key: 'g_palm', label: 'Ладонь (пальцы раскрыты)', type: 'select', options: FX_ACTIONS }, { key: 'g_fist', label: 'Кулак', type: 'select', options: FX_ACTIONS }, { key: 'g_pinch', label: 'Щипок (большой + указательный)', type: 'select', options: FX_ACTIONS }, { key: 'g_point', label: 'Указательный палец', type: 'select', options: FX_ACTIONS }, { type: 'title', label: 'Касание пальцами' }, { key: 'power', label: 'Мощность', min: 0.05, max: 1.5, step: 0.05 }, { key: 'radius', label: 'Радиус', min: 0.02, max: 0.9, step: 0.01 }, { key: 'depth', label: 'Глубина касания', min: 0.1, max: 1.5, step: 0.05 }, { type: 'title', label: 'Вращение' }, { key: 'spin', label: 'Скорость', min: 1, max: 14, step: 0.5 }, { key: 'inertia', label: 'Инерция', min: 0, max: 0.98, step: 0.02 }, { key: 'axis', label: 'Оси', type: 'seg', options: [['y', 'Вокруг'], ['xy', 'Свободно']] }, { type: 'title', label: 'Лепка' }, { key: 'clay', label: 'Размер куска глины', min: 0.05, max: 1.2, step: 0.01 }, { key: 'elastic', label: 'Упругость (возврат формы)', min: 0, max: 3, step: 0.1 }, { type: 'title', label: 'Две руки' }, { key: 'stretch', label: 'Меняют размер формы', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']] }, { key: 'keep', label: 'Запоминать размер', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }, { type: 'title', label: 'Распознавание и показ' }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'hold', label: 'Задержка жеста, с', min: 0, max: 0.5, step: 0.02 }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
+	{ id: 'gravity', group: 'Взаимодействие', name: 'Гравитация', icon: 'planet', hint: 'Поле тяготения: галактика с дифференциальным вращением, квазар с джетами или невесомость. Центром может быть курсор или рука', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, mode: 'orbit', target: 'cursor', speed: 1, flatten: 0.6, radius: 1.8, tilt: 0.5, precess: 0.15, jet: 1.4 }, extras: [{ key: 'mode', label: 'Вид поля', type: 'seg', options: [['orbit', 'Галактика'], ['hole', 'Квазар'], ['float', 'Невесомость']] }, { key: 'target', label: 'Центр', type: 'seg', options: [['cursor', 'Курсор / рука'], ['center', 'Центр формы']] }, { key: 'radius', label: 'Радиус поля', min: 0.1, max: 3.5, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.1 }, { key: 'flatten', label: 'Сплющивание в диск', min: 0, max: 0.95, step: 0.05 }, { key: 'tilt', label: 'Наклон диска', min: 0, max: 1.5, step: 0.05 }, { key: 'precess', label: 'Покачивание оси', min: 0, max: 1, step: 0.05 }, { key: 'jet', label: 'Длина джетов (квазар)', min: 0, max: 3, step: 0.1 }] },
 ];
 
 export const FX_PALETTES = [
@@ -553,13 +551,13 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		if (uMask.x < 1.5) {
 			maskV = smoothstep(uMaskA.x - soft * 0.5, uMaskA.x + soft * 0.5, y01);
 		} else if (uMask.x < 2.5) {
-			float r = uMask.y * 1.6 + 0.15;
+			float r = uMask.y * 1.6 + 0.01;
 			maskV = 1.0 - smoothstep(r * (1.0 - soft), r, distance(base, uMaskA.xyz));
 		} else if (uMask.x < 3.5) {
 			float n = snoise(base * 1.6 + vec3(0.0, uMaskA.w, uMaskA.w * 0.6)) * 0.5 + 0.5;
 			maskV = smoothstep(1.0 - uMask.y - soft * 0.3, 1.0 - uMask.y + soft * 0.3, n);
 		} else {
-			float w = uMask.y * 0.35 + 0.03;
+			float w = uMask.y * 0.35 + 0.004;
 			maskV = 1.0 - smoothstep(w, w + soft * 0.3 + 0.02, abs(y01 - uMaskA.x));
 		}
 		if (uMask.w > 0.5) maskV = 1.0 - maskV;
@@ -1447,7 +1445,13 @@ export class EffectsEngine {
 		this._lastT = 0;
 		this.recording = false;
 		this.modelProvider = null; // { available(), kind(), total(), get(n) }
-		this.pm = new PointMedia();
+		this.pm = app.media.pm;
+		app.bus.on('pointtex', () => {
+			if (this.active) {
+				this.cache.clear();
+				this._onScene();
+			}
+		});
 		this.mediaProgress = null;
 		this.ghosts = [];
 		this.linkObj = null;
@@ -1501,104 +1505,29 @@ export class EffectsEngine {
 	}
 
 	// ------------------------------------------------------------ фото и видео
-	async loadMedia(file) {
-		this.app.ui.busy('Читаю файл', 0.3);
-		try {
-			await this.pm.load(file);
-			this.state.look.colorBy = 'model';
-			// стартовые вихри и пульс портят картинку: выключаем, включить можно слева
-			for (const id of ['curl', 'pulse']) this.state.layers[id].on = false;
-			if (this.state.source === 'media') {
-				this.cache.clear();
-				await this._build();
-			} else await this.setSource('media');
-			// картинка должна смотреть на зрителя, а не крутиться ребром
-			this.state.look.autoRotate = false;
-			if (this.points) this.points.rotation.set(0, 0, 0);
-			this.app.toast(this.pm.kind === 'image' ? 'Фото превращено в точки' : this.pm.kind === 'video' ? 'Видео превращено в точки: можно записать его в точечный ролик' : 'Точечный ролик открыт', 'ok');
-		} catch (e) {
-			this.app.toast(e.message || 'Не удалось открыть файл', 'error');
-		} finally {
-			this.app.ui.idle();
-			this.emit();
-		}
+	/** Загруженное в «Медиа» фото или видео становится источником «Фото» */
+	async useMedia() {
+		this.state.look.colorBy = 'model';
+		// стартовые вихри и пульс портят картинку: выключаем, включить можно слева
+		for (const id of ['curl', 'pulse']) this.state.layers[id].on = false;
+		if (this.state.source === 'media') {
+			this.cache.clear();
+			await this._build();
+		} else await this.setSource('media');
+		// картинка должна смотреть на зрителя, а не крутиться ребром
+		this.state.look.autoRotate = false;
+		if (this.points) this.points.rotation.set(0, 0, 0);
+		this.emit();
 	}
 
 	async setMediaPts(n) {
-		this.state.media.pts = n;
-		this.touch();
+		this.app.settings.media.pts = n;
+		this.app.saveSettings();
 		if (this.state.source === 'media' && this.active && !this.pm.isRec) {
 			this.cache.clear();
 			await this._build();
 		}
 		this.emit();
-	}
-
-	mediaStyleChanged() {
-		this.touch();
-		this.pm.dirty = true;
-		this._mediaDirty = true;
-	}
-
-	async recordMedia({ fps, seconds }) {
-		if (this.pm.recording) {
-			this._recCancel = true;
-			return;
-		}
-		this._recCancel = false;
-		this.mediaProgress = { i: 0, total: 1 };
-		this.emit();
-		try {
-			const rec = await this.pm.record({
-				fps,
-				seconds,
-				cancel: () => this._recCancel,
-				onProgress: (i, total) => {
-					this.mediaProgress = { i, total };
-					if (i % 3 === 0) this.emit();
-				},
-			});
-			if (rec) this.app.toast(`Записано кадров: ${rec.frames.length}. Теперь можно сохранить`, 'ok');
-		} catch (e) {
-			this.app.toast(e.message || 'Не удалось записать', 'error');
-		}
-		this.mediaProgress = null;
-		this.emit();
-	}
-
-	/** Текущий кадр как облако точек в сцене редактора: оттуда оно экспортируется в GLB, PLY и другие форматы */
-	frameToScene() {
-		const pm = this.pm;
-		if (!pm.ready) return;
-		const m = this.state.media;
-		const cloud = pm.buildCloud(pm.sample(), m.relief, m.depth);
-		const pts = cloudToPoints(cloud, pm.kind === 'image' ? 'Фото в точках' : 'Кадр видео в точках');
-		this._muteScene = true;
-		this.app.model.add(pts, this.app.viewport.root);
-		setTimeout(() => (this._muteScene = false), 1500);
-		this.app.toast('Облако точек добавлено в сцену. Скачать его можно кнопкой «Скачать» вверху', 'ok');
-	}
-
-	downloadPCV() {
-		if (!this.pm.rec) return;
-		downloadBlob(this.pm.toPCV(), (this.pm.name.replace(/\.[^.]+$/, '') || 'ролик') + '.pcv');
-	}
-
-	downloadPLY() {
-		const pm = this.pm;
-		if (!pm.ready) return;
-		const m = this.state.media;
-		const bytes = pm.framePLY(pm.sample(), m.relief, m.depth);
-		downloadBlob(new Blob([bytes], { type: 'application/octet-stream' }), (pm.name.replace(/\.[^.]+$/, '') || 'кадр') + '.ply');
-	}
-
-	downloadPLYZip() {
-		const pm = this.pm;
-		if (!pm.rec) return;
-		const m = this.state.media;
-		const r = pm.toPLYZip(m.relief, m.depth);
-		downloadBlob(r.blob, (pm.name.replace(/\.[^.]+$/, '') || 'ролик') + '_ply.zip');
-		this.app.toast(r.step > 1 ? `Сохранено кадров: ${r.frames} (каждый ${r.step}-й)` : `Сохранено кадров: ${r.frames}`, 'ok');
 	}
 
 	// ------------------------------------------------------------ морфинг между формами
@@ -2102,8 +2031,8 @@ export class EffectsEngine {
 		if (key === 'media') {
 			const pm = this.pm;
 			if (!pm.ready) return null;
-			pm.setGrid(this.state.media.pts);
-			const m = this.state.media;
+			pm.setGrid(this.app.settings.media.pts);
+			const m = this.app.settings.media;
 			pm.dirty = true;
 			return pm.buildCloud(pm.sample(), m.relief, m.depth);
 		}
@@ -2406,6 +2335,9 @@ export class EffectsEngine {
 
 	async setCount(n) {
 		this.state.count = n;
+		this.app.settings.point.surfaceCount = n;
+		this.app.saveSettings();
+		this.app.bus.emit('pointsettings');
 		this.cache.clear();
 		this.touch();
 		if (this.active) {
@@ -2445,6 +2377,8 @@ export class EffectsEngine {
 		if (this.active) return;
 		const app = this.app;
 		this.active = true;
+		// число частиц общее с вкладкой «Точки»: что задали в редакторе, то и здесь
+		this.state.count = Math.max(20000, Math.min(2000000, app.settings.point.surfaceCount));
 		const vp = app.viewport;
 		this._saved = { rootVisible: vp.root.visible, ortho: app.nav.ortho };
 		app.model.select(null);
@@ -2706,7 +2640,7 @@ export class EffectsEngine {
 					const g = this.geometry;
 					const n = this.pm.count;
 					if (!this._zbuf || this._zbuf.length !== n * 3) this._zbuf = new Float32Array(n * 3);
-					const m = st.media;
+					const m = this.app.settings.media;
 					this.pm.applyTo({ positions: this._zbuf, colors: g.attributes.aColor.array }, rgb, m.relief, m.depth);
 					const a = g.attributes.position.array, o = g.attributes.aOrigin.array, t = g.attributes.aTarget.array, z = this._zbuf;
 					for (let i = 2; i < n * 3; i += 3) a[i] = o[i] = t[i] = z[i];

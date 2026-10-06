@@ -2,9 +2,10 @@ import { h, formatInt } from './util.js';
 import { icon } from './icons.js';
 import { section, field, slider, segmented, switchRow, toggle, button, iconButton, select, colorField } from './ui-kit.js';
 import * as THREE from 'three';
-import { sampleSurface } from './pointcloud.js';
+import { sampleSurface, overrideMats } from './pointcloud.js';
 import { getDevice } from './device-card.js';
 import { formatCount } from './capabilities.js';
+import { createMediaPanel } from './panel-media.js';
 import { SHAPES as POINT_SHAPE_LIST } from './panel-points.js';
 import { FX_SHAPES, FX_ACTIONS, FX_GESTURE_PRESETS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } from './effects-engine.js';
 export function makeModelProvider(app) {
@@ -63,7 +64,7 @@ if (o.isPoints && !o.userData.helper && o.geometry.attributes.position) cl.push(
 if (cl.length) return fromClouds(cl, count);
 const list = app.model.meshesOf(obj);
 if (!list.length) return null;
-const entries = list.map((m) => ({ mesh: m, mats: app.display.getOriginal(m) }));
+const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
 return sampleSurface(entries, count, {});
 },
 available: () => clouds().length > 0 || meshes().length > 0,
@@ -74,7 +75,7 @@ const c = clouds();
 if (c.length) return fromClouds(c, count);
 const list = meshes();
 if (!list.length) return null;
-const entries = list.map((m) => ({ mesh: m, mats: app.display.getOriginal(m) }));
+const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
 return sampleSurface(entries, count, { onProgress: (p) => app.ui.busy('Беру точки с модели', 0.2 + p * 0.7) });
 },
 };
@@ -144,11 +145,26 @@ countChips.append(h('button', { type: 'button', class: 'chip-btn', 'data-tip': '
 const mc = st.morphCfg;
 const formsBox = h('div', { class: 'chip-row fx-forms' });
 const picked = [];
+const shapesBox = h('div', { class: 'chip-row fx-forms' });
+shapesBox.hidden = true;
+const shapesToggle = h('button', { type: 'button', class: 'btn btn-ghost btn-sm' }, 'Встроенные фигуры');
+shapesToggle.addEventListener('click', () => {
+shapesBox.hidden = !shapesBox.hidden;
+});
+let autoPicked = false;
 const renderForms = () => {
 const list = engine.forms();
 for (let i = picked.length - 1; i >= 0; i--) if (!list.some((f) => f.key === picked[i])) picked.splice(i, 1);
+const objs = list.filter((f) => f.key.startsWith('obj:'));
+if (objs.length >= 2 && !autoPicked && !picked.length) {
+autoPicked = true;
+objs.forEach((o) => picked.push(o.key));
+engine.setPlaylist([...picked]);
+}
+if (objs.length < 2) autoPicked = false;
 formsBox.textContent = '';
-for (const f of list) {
+shapesBox.textContent = '';
+const chip = (f, box) => {
 const b = h('button', { type: 'button', class: 'chip-btn' + (picked.includes(f.key) ? ' is-active' : ''), 'data-tip': 'Добавить в морфинг. Порядок: как нажимали' }, f.name);
 b.addEventListener('click', () => {
 const k = picked.indexOf(f.key);
@@ -156,10 +172,12 @@ if (k >= 0) picked.splice(k, 1);
 else picked.push(f.key);
 engine.setPlaylist([...picked]);
 renderForms();
-morphHint.textContent = picked.length < 2 ? 'Отметьте минимум две формы. Объекты сцены редактора появятся здесь как отдельные формы.' : `В морфинге форм: ${picked.length}`;
 });
-formsBox.append(b);
-}
+box.append(b);
+};
+objs.forEach((f) => chip(f, formsBox));
+list.filter((f) => !f.key.startsWith('obj:')).forEach((f) => chip(f, shapesBox));
+morphHint.textContent = objs.length < 2 ? 'Добавьте в сцену вторую модель кнопкой «Добавить модель…»: между вашими моделями можно будет делать морфинг. Встроенные фигуры ниже.' : picked.length < 2 ? 'Отметьте минимум две формы.' : `В морфинге форм: ${picked.length}`;
 };
 const morphHint = h('div', { class: 'field-hint' }, 'Отметьте минимум две формы. Объекты сцены редактора появятся здесь как отдельные формы.');
 const morphMode = segmented({ cls: 'seg-tight', options: [{ value: 'manual', label: 'Кнопкой' }, { value: 'beat', label: 'По биту' }, { value: 'timer', label: 'По таймеру' }], value: mc.mode, onChange: (v) => { mc.mode = v; save(); } });
@@ -167,7 +185,7 @@ const morphOrder = segmented({ options: [{ value: 'seq', label: 'По кругу
 const morphInt = slider({ min: 1, max: 20, step: 0.5, value: mc.interval, digits: 1, unit: ' с', onInput: (v) => { mc.interval = v; }, onChange: save });
 const morphTime = slider({ min: 0.4, max: 6, step: 0.1, value: mc.time, digits: 1, unit: ' с', onInput: (v) => { mc.time = v; }, onChange: save });
 const morphGo = button({ label: 'Следующая форма', icon: 'arrow-right', variant: 'secondary', cls: 'btn-block', onClick: () => engine.morphNext() });
-const morphBody = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, field('Переход', morphMode.el, { wide: true }), field('Порядок', morphOrder.el, { wide: true }), field('Не чаще, чем раз в', morphInt.el), field('Длительность', morphTime.el), morphGo);
+const morphBody = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, shapesToggle, shapesBox, field('Переход', morphMode.el, { wide: true }), field('Порядок', morphOrder.el, { wide: true }), field('Не чаще, чем раз в', morphInt.el), field('Длительность', morphTime.el), morphGo);
 renderForms();
 const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, tiles, field('Частиц', count.el), countChips, countHint, h('div', { class: 'fx-sub' }, 'Морфинг между формами'), morphBody);
 const cards = [];
@@ -175,6 +193,7 @@ const left = document.getElementById('fxList');
 const leftCount = document.getElementById('fxActive');
 const inspBox = h('div', { class: 'fx-insp-box' });
 let selected = null;
+let fxTabHook = () => {};
 const select_ = (id) => {
 selected = id;
 for (const c of cards) {
@@ -201,7 +220,10 @@ label: def.name,
 onChange: (v) => {
 L.on = v;
 card.classList.toggle('is-on', v);
-if (v) select_(def.id);
+if (v) {
+select_(def.id);
+fxTabHook();
+}
 countActive();
 save();
 },
@@ -308,10 +330,16 @@ const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, 
 const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right' }, row);
 const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, h('div', { class: 'fx-insp-head' }, h('span', { class: 'fx-ic', html: icon(def.icon, 18) }), h('div', {}, h('b', {}, def.name), h('span', {}, def.hint))), body);
 row.addEventListener('click', (e) => {
-if (!e.target.closest('.switch')) select_(def.id);
+if (!e.target.closest('.switch')) {
+select_(def.id);
+fxTabHook();
+}
 });
 row.addEventListener('keydown', (e) => {
-if (e.key === 'Enter') select_(def.id);
+if (e.key === 'Enter') {
+select_(def.id);
+fxTabHook();
+}
 });
 fbody.append(card);
 inspBox.append(insp);
@@ -343,7 +371,7 @@ syncMask();
 save();
 },
 });
-const maskSize = slider({ min: 0.05, max: 1, step: 0.05, value: mk.size, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { mk.size = v; }, onChange: save });
+const maskSize = slider({ log: true, min: 0.005, max: 1, step: 0.005, value: mk.size, format: (v) => (v * 100).toFixed(v < 0.1 ? 1 : 0) + '%', onInput: (v) => { mk.size = v; }, onChange: save });
 const maskSoft = slider({ min: 0, max: 1, step: 0.05, value: mk.soft, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { mk.soft = v; }, onChange: save });
 const maskSpeed = slider({ min: 0, max: 2, step: 0.05, value: mk.speed, format: (v) => (v === 0 ? 'стоит' : v.toFixed(2)), onInput: (v) => { mk.speed = v; }, onChange: save });
 const maskInvert = switchRow('Наоборот: живёт всё, кроме зоны', { value: mk.invert, onChange: (v) => { mk.invert = v; save(); } });
@@ -449,65 +477,34 @@ const blend = segmented({ options: [{ value: 'add', label: 'Свечение', t
 const rotate = switchRow('Вращать форму', { value: st.look.autoRotate, onChange: (v) => { st.look.autoRotate = v; save(); } });
 const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
 const secLook = section('Вид', { key: 'fx-look' }, palettes, field('Форма точек', shapeTiles, { wide: true }), field('Размер', size.el), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el));
-const pm = engine.pm;
-const md = st.media;
-const fileIn = h('input', { type: 'file', accept: 'image/*,video/*,.pcv', hidden: true });
-fileIn.addEventListener('change', async () => {
-const f = fileIn.files[0];
-fileIn.value = '';
-if (f) await engine.loadMedia(f);
-});
-const mdLoad = button({ label: 'Загрузить фото или видео…', icon: 'image', variant: 'secondary', cls: 'btn-block', title: 'Фото, видео или сохранённый ролик .pcv', onClick: () => fileIn.click() });
-const mdName = h('div', { class: 'field-hint' }, 'Каждая точка берёт цвет пикселя. К точкам применяются все эффекты слева: гравитация, распад, руки и остальные.');
-const mdPts = slider({ log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: (v) => engine.setMediaPts(v) });
-const mdRelief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; engine.mediaStyleChanged(); } });
-const mdDepth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; engine.mediaStyleChanged(); }, onChange: save });
-const mdPlay = button({ label: 'Пауза', icon: 'pause', variant: 'secondary', onClick: () => { pm.playing ? pm.pause() : pm.play(); sync(); } });
-const mdLoop = switchRow('Повторять', { value: pm.loop, onChange: (v) => pm.setLoop(v) });
-const mdSeek = slider({ min: 0, max: 1, step: 0.01, value: 0, digits: 1, unit: ' с', onInput: (v) => pm.seek(v), onChange: () => {} });
-const mdView = segmented({ options: [{ value: 'live', label: 'Исходник' }, { value: 'rec', label: 'Точечный ролик' }], value: pm.view, onChange: (v) => { pm.setView(v); engine.setSource('media'); sync(); } });
-const recFps = slider({ min: 5, max: 30, step: 1, value: 15, digits: 0, unit: ' к/с' });
-const recSec = slider({ min: 1, max: 30, step: 1, value: 10, digits: 0, unit: ' с' });
-const recBtn2 = button({ label: 'Записать в точки', icon: 'record', variant: 'primary', cls: 'btn-block', title: 'Видео проигрывается кадр за кадром и записывается как точечный ролик', onClick: () => engine.recordMedia({ fps: recFps.get ? recFps.get() : 15, seconds: recSec.get ? recSec.get() : 10 }) });
-const recInfo = h('div', { class: 'field-hint' });
-const saveRow = h('div', { class: 'fx-save-row' });
-const mdPCV = button({ label: 'Сохранить ролик (.pcv)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Компактный файл: его можно снова открыть здесь', onClick: () => engine.downloadPCV() });
-const mdZip = button({ label: 'Кадры PLY (.zip)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Каждый кадр как облако точек с цветом', onClick: () => engine.downloadPLYZip() });
-const mdPly = button({ label: 'Текущий кадр (.ply)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', onClick: () => engine.downloadPLY() });
-const mdScene = button({ label: 'Кадр в сцену редактора', icon: 'cube', variant: 'secondary', cls: 'btn-block', title: 'Облако точек появится в редакторе, оттуда его можно скачать как GLB, PLY и другие форматы', onClick: () => engine.frameToScene() });
-saveRow.append(mdScene, mdPly, mdPCV, mdZip);
-const videoBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-btn-row' }, mdPlay), mdLoop.el, field('Время', mdSeek.el));
-const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recBtn2, recInfo);
-const secMedia = section('Фото и видео', { key: 'fx-media' }, fileIn, mdLoad, mdName, field('Точек', mdPts.el), field('Рельеф', mdRelief.el, { wide: true }), field('Глубина рельефа', mdDepth.el), field('Показывать', mdView.el, { wide: true }), videoBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveRow);
-const syncMedia = () => {
-const ready = pm.ready;
-const isVid = pm.kind === 'video' || pm.kind === 'rec';
-const hasRec = !!pm.rec;
-mdName.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : 'Каждая точка берёт цвет пикселя. К точкам применяются все эффекты слева: гравитация, распад, руки и остальные.';
-mdView.el.hidden = !hasRec || pm.kind === 'rec';
-mdView.set(pm.view);
-mdPts.el.closest('.field').hidden = !ready || pm.isRec;
-mdPts.set(md.pts);
-videoBox.hidden = !isVid;
-recBox.hidden = pm.kind !== 'video';
-mdPlay.querySelector('.btn-label').textContent = pm.playing ? 'Пауза' : 'Играть';
-const dur = pm.duration;
-mdSeek.setRange && mdSeek.setRange(0, Math.max(0.1, dur));
-recSec.setRange && recSec.setRange(1, Math.max(2, Math.min(30, Math.floor(dur) || 10)));
-const prog = engine.mediaProgress;
-recBtn2.querySelector('.btn-label').textContent = pm.recording ? 'Остановить запись' : 'Записать в точки';
-recInfo.textContent = prog ? `Записываю кадр ${prog.i} из ${prog.total}…` : hasRec ? `Записано кадров: ${pm.rec.frames.length}, ${pm.rec.fps} к/с` : 'Видео проигрывается кадр за кадром. Потом ролик можно сохранить и снова открыть.';
-saveRow.hidden = !ready;
-mdPCV.hidden = !hasRec;
-mdZip.hidden = !hasRec;
-mdPly.hidden = hasRec && pm.kind === 'rec' ? false : false;
-};
-setInterval(() => {
-if (pm.kind === 'video' || pm.kind === 'rec') {
-if (!pm.recording && document.activeElement?.closest?.('.slider') == null) mdSeek.set && mdSeek.set(pm.time);
+const mediaPanel = createMediaPanel(app, null, { fx: true });
+const secMedia = mediaPanel.section;
+const FX_TABS = [['insp', 'Эффект', 'sparkle', secInsp], ['source', 'Форма', 'cube', secSource], ['media', 'Медиа', 'film-strip', secMedia], ['mask', 'Зона', 'target', secMask], ['audio', 'Звук', 'waveform', secAudio], ['look', 'Вид', 'sliders-horizontal', secLook]];
+const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
+let curTab = 'insp';
+try {
+curTab = localStorage.getItem('objglb.fx.tab') || 'insp';
+} catch (_) {}
+const tabBtns = new Map();
+const showFxTab = (id) => {
+curTab = FX_TABS.some((t) => t[0] === id) ? id : 'insp';
+for (const [k, , , sec] of FX_TABS) {
+sec.el.hidden = k !== curTab;
+tabBtns.get(k).setAttribute('aria-selected', String(k === curTab));
 }
-}, 300);
-root.append(secInsp.el, secSource.el, secMedia.el, secMask.el, secAudio.el, secLook.el);
+try {
+localStorage.setItem('objglb.fx.tab', curTab);
+} catch (_) {}
+};
+for (const [k, label, ic] of FX_TABS) {
+const b = h('button', { type: 'button', class: 'tab', role: 'tab', 'aria-selected': 'false' }, h('span', { class: 'ic', html: icon(ic, 15) }), h('span', { class: 'tab-label' }, label));
+b.addEventListener('click', () => showFxTab(k));
+tabBtns.set(k, b);
+tabBar.append(b);
+}
+root.append(tabBar, ...FX_TABS.map((t) => t[3].el));
+showFxTab(curTab);
+fxTabHook = () => showFxTab('insp');
 const bar = $bar();
 const playBtn = iconButton({ icon: 'play', title: 'Играть / пауза (Пробел)', onClick: () => engine.toggle().catch(() => {}) });
 const collapseBtn = iconButton({ icon: 'atom', title: 'Разрушить / собрать форму («Распад»)', onClick: () => { engine.toggleCollapse(); sync(); } });
@@ -570,7 +567,7 @@ const n = engine.geometry ? engine.geometry.attributes.position.count : st.count
 countHint.textContent = `Сейчас ${formatInt(n)} частиц, около ${Math.round((n * 128) / 1048576)} МБ памяти. Комфортно до ${formatCount(getDevice(app).limits.comfort)}.`;
 const kind = engine.modelProvider ? engine.modelProvider.kind() : 'none';
 modelNote.textContent = kind === 'cloud' ? `Берётся облако точек из редактора (${formatInt(engine.modelProvider.total())} точек). Больше этого частиц не будет.` : kind === 'mesh' ? 'Берутся точки с поверхности вашей модели.' : 'Модели в сцене нет: показана готовая форма. Добавьте модель, и она заменит её.';
-syncMedia();
+mediaPanel.sync();
 countActive();
 cards.forEach((c) => {
 c.card.classList.toggle('is-on', c.L.on);

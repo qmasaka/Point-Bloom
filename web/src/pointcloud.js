@@ -295,3 +295,8 @@ const pts = new THREE.Points(g, m);
 pts.name = name;
 return pts;
 }
+export function overrideMats(tex, mats) {
+if (!tex) return mats;
+const m = new THREE.MeshBasicMaterial({ map: tex });
+return m;
+}

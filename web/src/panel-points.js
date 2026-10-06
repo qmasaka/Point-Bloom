@@ -1,6 +1,7 @@
 import { h, formatInt } from './util.js';
 import { section, field, slider, segmented, switchRow, colorField, button } from './ui-kit.js';
-import { sampleSurface, verticesToCloud, cloudToPoints } from './pointcloud.js';
+import * as THREE from 'three';
+import { sampleSurface, verticesToCloud, cloudToPoints, overrideMats } from './pointcloud.js';
 import { getDevice, hintForCount } from './device-card.js';
 const compact = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k' : String(n));
 export const SHAPES = [
@@ -84,7 +85,7 @@ busy = true;
 try {
 app.ui.busy('Строю облако точек', 0.1);
 await new Promise((r) => setTimeout(r, 30));
-const entries = meshes.map((m) => ({ mesh: m, mats: app.display.getOriginal(m) }));
+const entries = meshes.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
 const kind = pt.source;
 const cloud = kind === 'vertices' ? verticesToCloud(entries) : await sampleSurface(entries, pt.surfaceCount, { onProgress: (p) => app.ui.busy('Строю облако точек', 0.1 + p * 0.85) });
 if (!cloud.count) throw new Error('получилось 0 точек');
@@ -174,6 +175,39 @@ save();
 });
 colorRow.hidden = pt.color !== 'solid';
 const secLook = section('Вид точек', { key: 'p-look' }, tiles, field('Размер', size.el), field('Цвет', colorMode.el, { wide: true }), colorRow, att.el);
+const texIn = h('input', { type: 'file', accept: 'image/*', hidden: true });
+const texName = h('div', { class: 'field-hint' });
+const showTex = () => {
+texName.textContent = app.pointTexture ? `Своя текстура: ${app.pointTexture.name || 'картинка'}` : 'Цвет берётся из текстуры самой модели.';
+};
+const applyTex = async (tex) => {
+app.pointTexture = tex;
+showTex();
+app.bus.emit('pointtex');
+if (liveCurrent()) await build({ auto: true });
+};
+texIn.addEventListener('change', async () => {
+const f = texIn.files[0];
+texIn.value = '';
+if (!f) return;
+const url = URL.createObjectURL(f);
+try {
+const tex = await new THREE.TextureLoader().loadAsync(url);
+tex.colorSpace = THREE.SRGBColorSpace;
+tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+tex.name = f.name;
+await applyTex(tex);
+} catch (e) {
+app.toast('Не удалось открыть картинку', 'error');
+} finally {
+URL.revokeObjectURL(url);
+}
+});
+const texPick = button({ label: 'Указать текстуру…', icon: 'image', variant: 'secondary', title: 'Картинка ляжет на модель по её UV, и точки возьмут цвета из неё', onClick: () => texIn.click() });
+const texReset = button({ label: 'Из модели', icon: 'arrow-counter-clockwise', variant: 'ghost', title: 'Вернуть текстуру самой модели', onClick: () => applyTex(null) });
+const texRow = h('div', { class: 'fx-tex-row' }, texIn, texPick, texReset);
+showTex();
+secLook.body ? secLook.body.append(texRow, texName) : secLook.el.append(texRow, texName);
 root.append(secCreate.el, secLook.el);
 function sync() {
 const vertices = pt.source === 'vertices';
@@ -198,6 +232,10 @@ count.set(pt.surfaceCount);
 showHint();
 });
 app.bus.on('scene', sync);
+app.bus.on('pointsettings', () => {
+count.set(pt.surfaceCount);
+showHint();
+});
 app.bus.on('newdoc', () => {
 current = null;
 sync();

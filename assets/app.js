@@ -175,6 +175,7 @@ const DEFAULTS = {
 	display: 'material', // material | solid | wire | points | normals | uv
 	flat: false,
 	overlays: { grid: true, axes: true, wire: false, faces: false, bbox: true },
+	media: { pts: 80000, relief: 'bright', depth: 0.5 },
 	point: { shape: 'circle', size: 3, attenuate: true, color: 'texture', solidColor: '#ffd166', surfaceCount: 200000, source: 'surface' },
 	render: { bg: 'dark', exposure: 1, env: 1, tone: 'neutral', headlight: true, fov: 40, fps: false },
 	nav: { leftOrbit: true, trackpad: false, zoomToCursor: true, invertZoom: false, autoPersp: true, ortho: false },
@@ -85478,6 +85479,7 @@ __def(__exports, 'colorSignature', () => colorSignature);
 __def(__exports, 'sampleSurface', () => sampleSurface);
 __def(__exports, 'verticesToCloud', () => verticesToCloud);
 __def(__exports, 'cloudToPoints', () => cloudToPoints);
+__def(__exports, 'overrideMats', () => overrideMats);
 // Облака точек: цвет вершин из текстуры, равномерная выборка точек по поверхности.
 const THREE = __req('vendor/three/build/three.module.js');
 const { yieldUI } = __req('src/util.js');
@@ -85803,6 +85805,13 @@ function cloudToPoints(cloud, name = 'Облако точек') {
 	const pts = new THREE.Points(g, m);
 	pts.name = name;
 	return pts;
+}
+
+/** Своя текстура для цвета точек: вместо материала модели берётся выбранная картинка (по UV модели) */
+function overrideMats(tex, mats) {
+	if (!tex) return mats;
+	const m = new THREE.MeshBasicMaterial({ map: tex });
+	return m;
 }
 
 };
@@ -89321,6 +89330,7 @@ const ICON_PATHS = {
 	'eye-slash': '<path d="M53.92,34.62A8,8,0,1,0,42.08,45.38L61.32,66.55C25,88.84,9.38,123.2,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208a127.11,127.11,0,0,0,52.07-10.83l22,24.21a8,8,0,1,0,11.84-10.76Zm47.33,75.84,41.67,45.85a32,32,0,0,1-41.67-45.85ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.16,133.16,0,0,1,25,128c4.69-8.79,19.66-33.39,47.35-49.38l18,19.75a48,48,0,0,0,63.66,70l14.73,16.2A112,112,0,0,1,128,192Zm6-95.43a8,8,0,0,1,3-15.72,48.16,48.16,0,0,1,38.77,42.64,8,8,0,0,1-7.22,8.71,6.39,6.39,0,0,1-.75,0,8,8,0,0,1-8-7.26A32.09,32.09,0,0,0,134,96.57Zm113.28,34.69c-.42.94-10.55,23.37-33.36,43.8a8,8,0,1,1-10.67-11.92A132.77,132.77,0,0,0,231.05,128a133.15,133.15,0,0,0-23.12-30.77C185.67,75.19,158.78,64,128,64a118.37,118.37,0,0,0-19.36,1.57A8,8,0,1,1,106,49.79,134,134,0,0,1,128,48c34.88,0,66.57,13.26,91.66,38.35,18.83,18.83,27.3,37.62,27.65,38.41A8,8,0,0,1,247.31,131.26Z"/>',
 	'eye': '<path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.46,133.46,0,0,1,231.05,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"/>',
 	'file': '<path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Z"/>',
+	'film-strip': '<path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,88h80v80H40Zm96-16V56h32V72Zm-16,0H88V56h32Zm0,112v16H88V184Zm16,0h32v16H136Zm0-16V88h80v80Zm80-96H184V56h32ZM72,56V72H40V56ZM40,184H72v16H40Zm176,16H184V184h32v16Z"/>',
 	'flip-horizontal': '<path d="M107.18,24.33a15.86,15.86,0,0,0-17.92,9.45l-.06.14-64,159.93A16,16,0,0,0,40,216h64a16,16,0,0,0,16-16V40A15.85,15.85,0,0,0,107.18,24.33ZM104,200H40l.06-.15L104,40Zm126.77-6.15-64-159.93-.06-.14A16,16,0,0,0,136,40V200a16,16,0,0,0,16,16h64a16,16,0,0,0,14.78-22.15ZM152,200V40l63.93,159.84.06.15Z"/>',
 	'flip-vertical': '<path d="M56,120H216a16,16,0,0,0,6.23-30.74l-.14-.06-159.93-64A16,16,0,0,0,40,40v64A16,16,0,0,0,56,120Zm0-80,.15.06L216,104H56l0-64Zm160,96H56a16,16,0,0,0-16,16v64a16,16,0,0,0,22.15,14.78l159.93-64,.14-.06A16,16,0,0,0,216,136ZM56.15,215.93,56,216V152H216Z"/>',
 	'folder-open': '<path d="M245,110.64A16,16,0,0,0,232,104H216V88a16,16,0,0,0-16-16H130.67L102.94,51.2a16.14,16.14,0,0,0-9.6-3.2H40A16,16,0,0,0,24,64V208h0a8,8,0,0,0,8,8H211.1a8,8,0,0,0,7.59-5.47l28.49-85.47A16.05,16.05,0,0,0,245,110.64ZM93.34,64,123.2,86.4A8,8,0,0,0,128,88h72v16H69.77a16,16,0,0,0-15.18,10.94L40,158.7V64Zm112,136H43.1l26.67-80H232Z"/>',
@@ -131736,7 +131746,8 @@ __def(__exports, 'createPointsPanel', () => createPointsPanel);
 // Вкладка «Точки»: создание облака точек, выбор количества и внешний вид точек.
 const { h, formatInt } = __req('src/util.js');
 const { section, field, slider, segmented, switchRow, colorField, button } = __req('src/ui-kit.js');
-const { sampleSurface, verticesToCloud, cloudToPoints } = __req('src/pointcloud.js');
+const THREE = __req('vendor/three/build/three.module.js');
+const { sampleSurface, verticesToCloud, cloudToPoints, overrideMats } = __req('src/pointcloud.js');
 const { getDevice, hintForCount } = __req('src/device-card.js');
 
 const compact = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k' : String(n));
@@ -131829,7 +131840,7 @@ function createPointsPanel(app, root) {
 		try {
 			app.ui.busy('Строю облако точек', 0.1);
 			await new Promise((r) => setTimeout(r, 30));
-			const entries = meshes.map((m) => ({ mesh: m, mats: app.display.getOriginal(m) }));
+			const entries = meshes.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
 			const kind = pt.source;
 			const cloud = kind === 'vertices' ? verticesToCloud(entries) : await sampleSurface(entries, pt.surfaceCount, { onProgress: (p) => app.ui.busy('Строю облако точек', 0.1 + p * 0.85) });
 			if (!cloud.count) throw new Error('получилось 0 точек');
@@ -131924,6 +131935,40 @@ function createPointsPanel(app, root) {
 	colorRow.hidden = pt.color !== 'solid';
 	const secLook = section('Вид точек', { key: 'p-look' }, tiles, field('Размер', size.el), field('Цвет', colorMode.el, { wide: true }), colorRow, att.el);
 
+	// своя текстура для цвета точек (по UV модели); без неё берётся текстура самой модели
+	const texIn = h('input', { type: 'file', accept: 'image/*', hidden: true });
+	const texName = h('div', { class: 'field-hint' });
+	const showTex = () => {
+		texName.textContent = app.pointTexture ? `Своя текстура: ${app.pointTexture.name || 'картинка'}` : 'Цвет берётся из текстуры самой модели.';
+	};
+	const applyTex = async (tex) => {
+		app.pointTexture = tex;
+		showTex();
+		app.bus.emit('pointtex');
+		if (liveCurrent()) await build({ auto: true });
+	};
+	texIn.addEventListener('change', async () => {
+		const f = texIn.files[0];
+		texIn.value = '';
+		if (!f) return;
+		const url = URL.createObjectURL(f);
+		try {
+			const tex = await new THREE.TextureLoader().loadAsync(url);
+			tex.colorSpace = THREE.SRGBColorSpace;
+			tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+			tex.name = f.name;
+			await applyTex(tex);
+		} catch (e) {
+			app.toast('Не удалось открыть картинку', 'error');
+		} finally {
+			URL.revokeObjectURL(url);
+		}
+	});
+	const texPick = button({ label: 'Указать текстуру…', icon: 'image', variant: 'secondary', title: 'Картинка ляжет на модель по её UV, и точки возьмут цвета из неё', onClick: () => texIn.click() });
+	const texReset = button({ label: 'Из модели', icon: 'arrow-counter-clockwise', variant: 'ghost', title: 'Вернуть текстуру самой модели', onClick: () => applyTex(null) });
+	const texRow = h('div', { class: 'fx-tex-row' }, texIn, texPick, texReset);
+	showTex();
+	secLook.body ? secLook.body.append(texRow, texName) : secLook.el.append(texRow, texName);
 	root.append(secCreate.el, secLook.el);
 
 	// ---------------------------------------------------------------- синхронизация
@@ -131950,12 +131995,104 @@ function createPointsPanel(app, root) {
 		showHint();
 	});
 	app.bus.on('scene', sync);
+	app.bus.on('pointsettings', () => {
+		count.set(pt.surfaceCount);
+		showHint();
+	});
 	app.bus.on('newdoc', () => {
 		current = null;
 		sync();
 	});
 	sync();
 	return { refresh: sync };
+}
+
+};
+__defs['src/panel-media.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'createMediaPanel', () => createMediaPanel);
+// Панель «Медиа»: фото и видео в точки, запись точечного ролика, сохранение.
+// Одна и та же панель живёт во вкладке редактора и в режиме «Эффекты» (fx: true).
+const { h, formatInt } = __req('src/util.js');
+const { section, field, slider, segmented, switchRow, button } = __req('src/ui-kit.js');
+
+function createMediaPanel(app, root, { fx = false } = {}) {
+	const mc = app.media;
+	const pm = mc.pm;
+	const md = app.settings.media;
+	const save = () => app.saveSettings();
+	const eng = () => app.ui.effectsEngine;
+
+	const fileIn = h('input', { type: 'file', accept: 'image/*,video/*,.pcv', hidden: true });
+	fileIn.addEventListener('change', async () => {
+		const f = fileIn.files[0];
+		fileIn.value = '';
+		if (!f) return;
+		app.ui.busy('Читаю файл', 0.3);
+		try {
+			await mc.load(f);
+			if (fx) await eng().useMedia();
+		} catch (e) {
+			app.toast(e.message || 'Не удалось открыть файл', 'error');
+		} finally {
+			app.ui.idle();
+		}
+	});
+	const load = button({ label: 'Открыть фото или видео…', icon: 'film-strip', variant: 'primary', cls: 'btn-block', title: 'Фото, видео или сохранённый ролик .pcv', onClick: () => fileIn.click() });
+	const info = h('div', { class: 'field-hint' });
+	const pts = slider({ log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
+	const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
+	const depth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; mc.styleChanged(); }, onChange: save });
+	const view = segmented({ options: [{ value: 'live', label: 'Исходник' }, { value: 'rec', label: 'Точечный ролик' }], value: pm.view, onChange: async (v) => { pm.setView(v); if (fx) await eng().setSource('media'); else mc.rebuild({ frame: false }); sync(); } });
+	const play = button({ label: 'Пауза', icon: 'pause', variant: 'secondary', onClick: () => { pm.playing ? pm.pause() : pm.play(); sync(); } });
+	const loop = switchRow('Повторять', { value: pm.loop, onChange: (v) => pm.setLoop(v) });
+	const seek = slider({ min: 0, max: 1, step: 0.01, value: 0, digits: 1, unit: ' с', onInput: (v) => pm.seek(v), onChange: () => {} });
+	const recFps = slider({ min: 5, max: 30, step: 1, value: 15, digits: 0, unit: ' к/с' });
+	const recSec = slider({ min: 1, max: 30, step: 1, value: 10, digits: 0, unit: ' с' });
+	const recBtn = button({ label: 'Записать в точки', icon: 'record', variant: 'primary', cls: 'btn-block', title: 'Видео проигрывается кадр за кадром и записывается как точечный ролик', onClick: () => mc.record({ fps: recFps.get(), seconds: recSec.get() }) });
+	const recInfo = h('div', { class: 'field-hint' });
+	const bScene = button({ label: 'Кадр в сцену (копия)', icon: 'cube', variant: 'secondary', cls: 'btn-block', title: 'Замороженный кадр отдельным облаком точек', onClick: () => mc.snapshot() });
+	const bPly = button({ label: 'Текущий кадр (.ply)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', onClick: () => mc.downloadPLY() });
+	const bPcv = button({ label: 'Сохранить ролик (.pcv)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Компактный файл: его можно снова открыть здесь', onClick: () => mc.downloadPCV() });
+	const bZip = button({ label: 'Кадры PLY (.zip)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Каждый кадр как облако точек с цветом', onClick: () => mc.downloadPLYZip() });
+	const note = h('div', { class: 'field-hint' }, fx ? 'Фото и видео живут в редакторе, во вкладке «Медиа». Здесь они становятся точками для эффектов.' : 'Облако точек лежит в сцене: его можно двигать, менять вид на вкладке «Точки» и скачивать кнопкой «Скачать» вверху.');
+	const videoBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-btn-row' }, play), loop.el, field('Время', seek.el));
+	const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recBtn, recInfo);
+	const saveBox = h('div', { class: 'fx-save-row' }, fx ? bScene : '', bPly, bPcv, bZip);
+	const ptsRow = field('Точек', pts.el);
+	const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, fileIn, load, info, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), field('Показывать', view.el, { wide: true }), videoBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, note);
+	if (root) root.append(sec.el);
+
+	function sync() {
+		const ready = pm.ready;
+		const hasRec = !!pm.rec;
+		info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : 'Откройте фото или видео: каждая точка возьмёт цвет пикселя. Видео можно записать в точечный ролик и сохранить.';
+		view.el.hidden = !hasRec || pm.kind === 'rec';
+		view.set(pm.view);
+		ptsRow.hidden = !ready || pm.isRec;
+		pts.set(md.pts);
+		relief.set(md.relief);
+		depth.set(md.depth);
+		const vid = pm.kind === 'video' || pm.kind === 'rec';
+		videoBox.hidden = !vid;
+		recBox.hidden = pm.kind !== 'video';
+		play.querySelector('.btn-label').textContent = pm.playing ? 'Пауза' : 'Играть';
+		seek.setRange(0, Math.max(0.1, pm.duration));
+		recSec.setRange(1, Math.max(2, Math.min(30, Math.floor(pm.duration) || 10)));
+		const prog = mc.progress;
+		recBtn.querySelector('.btn-label').textContent = pm.recording ? 'Остановить запись' : 'Записать в точки';
+		recInfo.textContent = prog ? `Записываю кадр ${prog.i} из ${prog.total}…` : hasRec ? `Записано кадров: ${pm.rec.frames.length}, ${pm.rec.fps} к/с` : 'Видео проигрывается кадр за кадром. Потом ролик можно сохранить и снова открыть.';
+		saveBox.hidden = !ready;
+		bPcv.hidden = !hasRec;
+		bZip.hidden = !hasRec;
+	}
+	app.bus.on('media', sync);
+	if (fx) app.bus.on('fx', sync);
+	setInterval(() => {
+		if ((pm.kind === 'video' || pm.kind === 'rec') && sec.el.offsetParent && !pm.recording && document.activeElement?.closest?.('.slider') == null) seek.set(pm.time);
+	}, 300);
+	sync();
+	return { section: sec, sync };
 }
 
 };
@@ -132554,420 +132691,6 @@ function rgba(hex, a) {
 }
 
 };
-__defs['src/point-media.js'] = function (__exports, __req) {
-'use strict';
-__def(__exports, 'PointMedia', () => PointMedia);
-// Фото и видео в точки: каждая точка берёт цвет пикселя (и, по желанию, высоту по яркости).
-// Видео можно записать в точечный ролик и сохранить: .pcv (повторно открывается здесь) или PLY-кадры в ZIP.
-const { zlibSync, unzlibSync, zipSync } = __req('vendor/three/addons/libs/fflate.module.js');
-
-// sRGB-байт в линейное значение: шейдер сам вернёт цвет в sRGB
-const LUT = new Float32Array(256);
-for (let i = 0; i < 256; i++) {
-	const c = i / 255;
-	LUT[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-}
-
-const wait = (el, ev, ms = 2000) =>
-	new Promise((res) => {
-		const t = setTimeout(res, ms);
-		el.addEventListener(
-			ev,
-			() => {
-				clearTimeout(t);
-				res();
-			},
-			{ once: true }
-		);
-	});
-
-class PointMedia {
-	constructor() {
-		this.kind = null; // 'image' | 'video' | 'rec'
-		this.view = 'live'; // 'live': исходник, 'rec': записанный точечный ролик
-		this.el = null;
-		this.url = null;
-		this.name = '';
-		this.aspect = 1;
-		this.cols = 0;
-		this.rows = 0;
-		this.rec = null; // { cols, rows, aspect, fps, frames: Uint8Array[] }
-		this.playing = true;
-		this.loop = true;
-		this.t = 0;
-		this.canvas = document.createElement('canvas');
-		this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
-		this.dirty = true;
-		this._lastKey = -1;
-		this._xy = null;
-		this.recording = false;
-	}
-
-	get ready() {
-		return !!(this.kind && (this.el || this.rec));
-	}
-
-	get isRec() {
-		return this.view === 'rec' && !!this.rec;
-	}
-
-	get duration() {
-		if (this.isRec) return this.rec.frames.length / this.rec.fps;
-		return this.kind === 'video' ? this.el.duration || 0 : 0;
-	}
-
-	get time() {
-		if (this.isRec) return this.t;
-		return this.kind === 'video' ? this.el.currentTime : 0;
-	}
-
-	seek(t) {
-		if (this.isRec) {
-			this.t = Math.max(0, Math.min(this.duration, t));
-			this.dirty = true;
-		} else if (this.kind === 'video') {
-			this.el.currentTime = Math.max(0, Math.min(this.duration, t));
-			this.dirty = true;
-		}
-	}
-
-	_revoke() {
-		if (this.url) URL.revokeObjectURL(this.url);
-		this.url = null;
-	}
-
-	async load(file) {
-		const name = file.name || 'медиа';
-		if (/\.pcv$/i.test(name)) {
-			const rec = parsePCV(new Uint8Array(await file.arrayBuffer()));
-			this.pause();
-			this._revoke();
-			this.el = null;
-			this.kind = 'rec';
-			this.view = 'rec';
-			this.rec = rec;
-			this.cols = rec.cols;
-			this.rows = rec.rows;
-			this.aspect = rec.aspect;
-			this.t = 0;
-			this.name = name;
-			this._xy = null;
-			this.playing = true;
-			this.dirty = true;
-			this._lastKey = -1;
-			return;
-		}
-		const url = URL.createObjectURL(file);
-		const isVideo = (file.type || '').startsWith('video') || /\.(mp4|webm|mov|m4v|ogv)$/i.test(name);
-		let el;
-		try {
-			if (isVideo) {
-				el = document.createElement('video');
-				el.muted = true;
-				el.loop = true;
-				el.playsInline = true;
-				el.preload = 'auto';
-				el.src = url;
-				await new Promise((res, rej) => {
-					el.onloadeddata = res;
-					el.onerror = () => rej(new Error('Не удалось прочитать видео'));
-				});
-				this.aspect = el.videoWidth / el.videoHeight;
-			} else {
-				el = new Image();
-				el.src = url;
-				await el.decode();
-				this.aspect = el.naturalWidth / el.naturalHeight;
-			}
-		} catch (e) {
-			URL.revokeObjectURL(url);
-			throw e;
-		}
-		this.pause();
-		this._revoke();
-		this.url = url;
-		this.el = el;
-		this.kind = isVideo ? 'video' : 'image';
-		this.view = 'live';
-		this.rec = null;
-		this.name = name;
-		this.t = 0;
-		this._xy = null;
-		this.dirty = true;
-		if (isVideo) {
-			el.loop = this.loop;
-			this.playing = true;
-			el.play().catch(() => {});
-		}
-	}
-
-	play() {
-		this.playing = true;
-		if (this.kind === 'video' && !this.isRec) this.el.play().catch(() => {});
-	}
-
-	pause() {
-		this.playing = false;
-		if (this.kind === 'video' && this.el) this.el.pause();
-	}
-
-	setLoop(v) {
-		this.loop = v;
-		if (this.kind === 'video' && this.el) this.el.loop = v;
-	}
-
-	/** Сетка точек под нужное число и пропорции кадра */
-	setGrid(n) {
-		if (this.isRec) return;
-		const cols = Math.max(8, Math.round(Math.sqrt(n * this.aspect)));
-		const rows = Math.max(8, Math.round(n / cols));
-		if (cols !== this.cols || rows !== this.rows) {
-			this.cols = cols;
-			this.rows = rows;
-			this._xy = null;
-			this.dirty = true;
-		}
-	}
-
-	get count() {
-		return this.cols * this.rows;
-	}
-
-	_grid() {
-		if (this._xy) return this._xy;
-		const { cols, rows, aspect } = this;
-		const W = aspect >= 1 ? 2.2 : 2.2 * aspect;
-		const H = W / aspect;
-		const xy = new Float32Array(cols * rows * 2);
-		for (let r = 0; r < rows; r++) {
-			for (let c = 0; c < cols; c++) {
-				const i = (r * cols + c) * 2;
-				xy[i] = ((c + 0.5) / cols - 0.5) * W;
-				xy[i + 1] = (0.5 - (r + 0.5) / rows) * H;
-			}
-		}
-		this._xy = xy;
-		return xy;
-	}
-
-	/** Цвета текущего кадра: Uint8Array RGB */
-	sample() {
-		if (this.isRec) {
-			const f = this.rec.frames;
-			return f[Math.min(f.length - 1, Math.floor(this.t * this.rec.fps))];
-		}
-		const { cols, rows } = this;
-		if (this.canvas.width !== cols || this.canvas.height !== rows) {
-			this.canvas.width = cols;
-			this.canvas.height = rows;
-		}
-		this.ctx.drawImage(this.el, 0, 0, cols, rows);
-		const d = this.ctx.getImageData(0, 0, cols, rows).data;
-		const out = new Uint8Array(cols * rows * 3);
-		for (let i = 0, j = 0; i < d.length; i += 4, j += 3) {
-			out[j] = d[i];
-			out[j + 1] = d[i + 1];
-			out[j + 2] = d[i + 2];
-		}
-		return out;
-	}
-
-	/** Идёт время: возвращает новый кадр, если он поменялся, иначе null */
-	advance(dt) {
-		if (!this.ready || this.recording) return null;
-		if (this.isRec) {
-			if (this.playing) {
-				this.t += dt;
-				const d = this.duration;
-				if (this.t >= d) {
-					if (this.loop) this.t %= d || 1;
-					else {
-						this.t = d - 1e-3;
-						this.playing = false;
-					}
-				}
-			}
-			const key = Math.floor(this.t * this.rec.fps);
-			if (key === this._lastKey && !this.dirty) return null;
-			this._lastKey = key;
-			this.dirty = false;
-			return this.sample();
-		}
-		if (this.kind === 'image') {
-			if (!this.dirty) return null;
-			this.dirty = false;
-			return this.sample();
-		}
-		if (this.el.readyState < 2) return null;
-		const key = Math.round(this.el.currentTime * 60);
-		if (key === this._lastKey && !this.dirty) return null;
-		this._lastKey = key;
-		this.dirty = false;
-		return this.sample();
-	}
-
-	/** Облако для движка */
-	buildCloud(rgb, relief, depth) {
-		const n = this.cols * this.rows;
-		const xy = this._grid();
-		const positions = new Float32Array(n * 3);
-		const normals = new Float32Array(n * 3);
-		const colors = new Float32Array(n * 3);
-		for (let i = 0; i < n; i++) {
-			positions[i * 3] = xy[i * 2];
-			positions[i * 3 + 1] = xy[i * 2 + 1];
-			normals[i * 3 + 2] = 1;
-		}
-		const cloud = { positions, normals, colors, count: n };
-		this.applyTo(cloud, rgb, relief, depth);
-		return cloud;
-	}
-
-	/** Записывает цвета (и высоту по яркости) в облако: объект с positions/colors */
-	applyTo(cloud, rgb, relief, depth) {
-		const n = this.cols * this.rows;
-		const pos = cloud.positions;
-		const col = cloud.colors;
-		const k = relief === 'bright' ? 1 : relief === 'dark' ? -1 : 0;
-		for (let i = 0; i < n; i++) {
-			const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
-			col[i * 3] = LUT[r];
-			col[i * 3 + 1] = LUT[g];
-			col[i * 3 + 2] = LUT[b];
-			pos[i * 3 + 2] = k ? (((0.299 * r + 0.587 * g + 0.114 * b) / 255 - 0.5) * 2 * depth * k) : 0;
-		}
-	}
-
-	/** Записывает ролик кадр за кадром: перематываем видео и снимаем цвета, без привязки к скорости воспроизведения */
-	async record({ fps = 15, seconds = 10, onProgress, cancel } = {}) {
-		if (this.kind !== 'video' || !this.el) throw new Error('Запись доступна для видео');
-		this.recording = true;
-		const v = this.el;
-		const wasPlaying = this.playing;
-		v.pause();
-		const total = Math.max(1, Math.floor(Math.min(v.duration, seconds) * fps));
-		const frames = [];
-		const prevView = this.view;
-		this.view = 'live';
-		try {
-			for (let i = 0; i < total; i++) {
-				if (cancel && cancel()) break;
-				v.currentTime = Math.min(v.duration - 0.001, i / fps);
-				await wait(v, 'seeked');
-				frames.push(this.sample());
-				onProgress && onProgress(i + 1, total);
-				if (i % 4 === 0) await new Promise((r) => setTimeout(r));
-			}
-		} finally {
-			this.recording = false;
-			this.view = prevView;
-		}
-		if (frames.length < 2) {
-			if (wasPlaying) this.play();
-			return null;
-		}
-		this.rec = { cols: this.cols, rows: this.rows, aspect: this.aspect, fps, frames };
-		this.view = 'rec';
-		this.t = 0;
-		this.playing = true;
-		this.dirty = true;
-		this._lastKey = -1;
-		return this.rec;
-	}
-
-	setView(v) {
-		if (v === 'rec' && !this.rec) return;
-		if (v === this.view) return;
-		this.view = v;
-		if (v === 'rec') {
-			this.cols = this.rec.cols;
-			this.rows = this.rec.rows;
-			this.aspect = this.rec.aspect;
-			this.t = 0;
-			if (this.el) this.el.pause();
-		} else if (this.el) this.el.play().catch(() => {});
-		this._xy = null;
-		this.dirty = true;
-		this._lastKey = -1;
-	}
-
-	// ------------------------------------------------------------ сохранение
-	/** .pcv: заголовок JSON + кадры RGB, всё сжато zlib */
-	toPCV() {
-		const r = this.rec;
-		const head = new TextEncoder().encode(JSON.stringify({ v: 1, cols: r.cols, rows: r.rows, aspect: r.aspect, fps: r.fps, frames: r.frames.length }));
-		const frameSize = r.cols * r.rows * 3;
-		const out = new Uint8Array(8 + head.length + frameSize * r.frames.length);
-		out.set([0x50, 0x43, 0x56, 0x31], 0);
-		new DataView(out.buffer).setUint32(4, head.length, true);
-		out.set(head, 8);
-		r.frames.forEach((f, i) => out.set(f, 8 + head.length + i * frameSize));
-		return new Blob([zlibSync(out, { level: 6 })], { type: 'application/octet-stream' });
-	}
-
-	/** Один кадр как бинарный PLY с цветом */
-	framePLY(rgb, relief, depth) {
-		const n = this.cols * this.rows;
-		const xy = this._grid();
-		const k = relief === 'bright' ? 1 : relief === 'dark' ? -1 : 0;
-		const head = new TextEncoder().encode(`ply\nformat binary_little_endian 1.0\nelement vertex ${n}\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n`);
-		const out = new Uint8Array(head.length + n * 15);
-		out.set(head, 0);
-		const dv = new DataView(out.buffer);
-		let o = head.length;
-		for (let i = 0; i < n; i++, o += 15) {
-			const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
-			dv.setFloat32(o, xy[i * 2], true);
-			dv.setFloat32(o + 4, xy[i * 2 + 1], true);
-			dv.setFloat32(o + 8, k ? ((0.299 * r + 0.587 * g + 0.114 * b) / 255 - 0.5) * 2 * depth * k : 0, true);
-			out[o + 12] = r;
-			out[o + 13] = g;
-			out[o + 14] = b;
-		}
-		return out;
-	}
-
-	/** Все кадры записи как PLY в ZIP (не больше maxFrames, равномерно) */
-	toPLYZip(relief, depth, maxFrames = 150) {
-		const r = this.rec;
-		const total = r.frames.length;
-		const step = Math.max(1, Math.ceil(total / maxFrames));
-		const files = {};
-		let k = 0;
-		const saved = [this.cols, this.rows, this.aspect, this._xy];
-		this.cols = r.cols;
-		this.rows = r.rows;
-		this.aspect = r.aspect;
-		this._xy = null;
-		for (let i = 0; i < total; i += step, k++) files[`frame_${String(k).padStart(4, '0')}.ply`] = [this.framePLY(r.frames[i], relief, depth), { level: 3 }];
-		[this.cols, this.rows, this.aspect, this._xy] = saved;
-		this._xy = null;
-		return { blob: new Blob([zipSync(files)], { type: 'application/zip' }), frames: k, step };
-	}
-
-	dispose() {
-		this.pause();
-		this._revoke();
-	}
-}
-
-function parsePCV(bytes) {
-	let raw;
-	try {
-		raw = unzlibSync(bytes);
-	} catch (e) {
-		throw new Error('Это не файл точечного видео');
-	}
-	if (raw[0] !== 0x50 || raw[1] !== 0x43 || raw[2] !== 0x56) throw new Error('Это не файл точечного видео');
-	const hl = new DataView(raw.buffer, raw.byteOffset).getUint32(4, true);
-	const head = JSON.parse(new TextDecoder().decode(raw.subarray(8, 8 + hl)));
-	const size = head.cols * head.rows * 3;
-	const frames = [];
-	for (let i = 0; i < head.frames; i++) frames.push(raw.slice(8 + hl + i * size, 8 + hl + (i + 1) * size));
-	return { cols: head.cols, rows: head.rows, aspect: head.aspect, fps: head.fps, frames };
-}
-
-};
 __defs['src/effects-engine.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'FX_SHAPES', () => FX_SHAPES);
@@ -132990,8 +132713,6 @@ const THREE = __req('vendor/three/build/three.module.js');
 const { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } = __req('src/util.js');
 const { TrackerHud } = __req('src/fx-hud.js');
 const { HandTracker } = __req('src/hand-tracker.js');
-const { PointMedia } = __req('src/point-media.js');
-const { cloudToPoints } = __req('src/pointcloud.js');
 
 // ───────────────────────────────────────────────────────────── описания
 
@@ -133039,17 +132760,17 @@ const FX_LAYERS = [
 	{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1 }, extras: [] },
 	{ id: 'jitter', group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в сторону', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }] },
-	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими импульсами', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.05, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
-	{ id: 'slice', group: 'Графика', name: 'Срез / Изолинии', icon: 'scan', hint: 'Топографические лазерные срезы бегут по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 0.5, width: 0.08, count: 4, axis: 'y' }, extras: [{ key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.1, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.02, max: 0.3, step: 0.01 }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
+	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими импульсами', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
+	{ id: 'slice', group: 'Графика', name: 'Срез / Изолинии', icon: 'scan', hint: 'Топографические лазерные срезы бегут по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 0.5, width: 0.08, count: 4, axis: 'y' }, extras: [{ key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.1, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
 	{ id: 'feedback', group: 'Графика', name: 'Feedback-след', icon: 'spiral', hint: 'Настоящий видео-след (Feedback TOP) с затуханием, зумом и вращением', max: 1.5, def: { on: false, amount: 0.92, band: 'none', react: 0, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002 }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001 }] },
 	{ id: 'echo', group: 'Графика', name: 'Шлейф', icon: 'ghost', hint: 'Призрачные копии формы: тянутся следом, закручиваются спиралью или раскладываются зеркальным веером', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, mode: 'spiral', copies: 4, delay: 0.14, spread: 0.45, fade: 0.7 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['spiral', 'Спираль'], ['kaleido', 'Зеркала'], ['time', 'След']] }, { key: 'copies', label: 'Копий', min: 1, max: 5, step: 1, int: true }, { key: 'spread', label: 'Угол между копиями', min: 0.05, max: 1.5, step: 0.05 }, { key: 'delay', label: 'Задержка, с', min: 0.02, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Затухание копий', min: 0.3, max: 0.95, step: 0.05 }] },
-	{ id: 'tracking', group: 'Взаимодействие', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки захватывают подвижные участки формы и по желанию прикасаются к ней: подъём, вихрь или втягивание', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, shape: 'corners', color: 'auto', thick: 1.5, labels: 'on', lines: 'on', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 30, max: 160, step: 5, int: true }, { key: 'shape', label: 'Форма', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'seg', options: [['none', 'Нет'], ['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втяг.']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус касания', min: 0.1, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
+	{ id: 'tracking', group: 'Взаимодействие', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки захватывают подвижные участки формы и по желанию прикасаются к ней: подъём, вихрь или втягивание', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, shape: 'corners', color: 'auto', thick: 1.5, labels: 'on', lines: 'on', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 30, max: 160, step: 5, int: true }, { key: 'shape', label: 'Форма', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'seg', options: [['none', 'Нет'], ['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втяг.']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус касания', min: 0.02, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
 	{ id: 'telemetry', group: 'Графика', name: 'Телеметрия', icon: 'speedometer', hint: 'Шкалы бас, середина, верх и столбики спектра поверх сцены', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, audioWave: 'on' }, extras: [{ key: 'audioWave', label: 'Спектр внизу', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
-	{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.3, max: 2, step: 0.05 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
-	{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Рисование курсором по форме: частицы в мазках светятся и оживают, затем след высыхает', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, radius: 0.4, dry: 3.5 }, extras: [{ key: 'radius', label: 'Радиус кисти', min: 0.1, max: 0.9, step: 0.02 }, { key: 'dry', label: 'Высыхание, с', min: 1.0, max: 8.0, step: 0.5 }] },
+	{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.05, max: 2, step: 0.01 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
+	{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Рисование курсором по форме: частицы в мазках светятся и оживают, затем след высыхает', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, radius: 0.4, dry: 3.5 }, extras: [{ key: 'radius', label: 'Радиус кисти', min: 0.02, max: 0.9, step: 0.01 }, { key: 'dry', label: 'Высыхание, с', min: 1.0, max: 8.0, step: 0.5 }] },
 	{ id: 'shock', group: 'Взаимодействие', name: 'Ударная волна', icon: 'aperture', hint: 'Клик по сцене пускает круговую волну по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 1.2, auto: 'off' }, extras: [{ key: 'speed', label: 'Скорость волны', min: 0.4, max: 3, step: 0.05 }, { key: 'auto', label: 'Запуск', type: 'seg', options: [['off', 'Клик'], ['on', 'Клик и авто']] }] },
-	{ id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки и пальцы. Каждому жесту назначается своё действие: ладонь, кулак, щипок, указательный палец', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush', power: 0.35, radius: 0.35, depth: 0.85, spin: 5, inertia: 0.6, axis: 'y', clay: 0.5, elastic: 0.6, stretch: 'off', keep: 'on', smooth: 0.5, sens: 0.6, hold: 0.12, skeleton: 'on', preview: 'on' }, extras: [{ type: 'preset' }, { type: 'title', label: 'Что делает жест' }, { key: 'g_palm', label: 'Ладонь (пальцы раскрыты)', type: 'select', options: FX_ACTIONS }, { key: 'g_fist', label: 'Кулак', type: 'select', options: FX_ACTIONS }, { key: 'g_pinch', label: 'Щипок (большой + указательный)', type: 'select', options: FX_ACTIONS }, { key: 'g_point', label: 'Указательный палец', type: 'select', options: FX_ACTIONS }, { type: 'title', label: 'Касание пальцами' }, { key: 'power', label: 'Мощность', min: 0.05, max: 1.5, step: 0.05 }, { key: 'radius', label: 'Радиус', min: 0.1, max: 0.9, step: 0.05 }, { key: 'depth', label: 'Глубина касания', min: 0.1, max: 1.5, step: 0.05 }, { type: 'title', label: 'Вращение' }, { key: 'spin', label: 'Скорость', min: 1, max: 14, step: 0.5 }, { key: 'inertia', label: 'Инерция', min: 0, max: 0.98, step: 0.02 }, { key: 'axis', label: 'Оси', type: 'seg', options: [['y', 'Вокруг'], ['xy', 'Свободно']] }, { type: 'title', label: 'Лепка' }, { key: 'clay', label: 'Размер куска глины', min: 0.2, max: 1.2, step: 0.05 }, { key: 'elastic', label: 'Упругость (возврат формы)', min: 0, max: 3, step: 0.1 }, { type: 'title', label: 'Две руки' }, { key: 'stretch', label: 'Меняют размер формы', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']] }, { key: 'keep', label: 'Запоминать размер', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }, { type: 'title', label: 'Распознавание и показ' }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'hold', label: 'Задержка жеста, с', min: 0, max: 0.5, step: 0.02 }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
-	{ id: 'gravity', group: 'Взаимодействие', name: 'Гравитация', icon: 'planet', hint: 'Поле тяготения: галактика с дифференциальным вращением, квазар с джетами или невесомость. Центром может быть курсор или рука', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, mode: 'orbit', target: 'cursor', speed: 1, flatten: 0.6, radius: 1.8, tilt: 0.5, precess: 0.15, jet: 1.4 }, extras: [{ key: 'mode', label: 'Вид поля', type: 'seg', options: [['orbit', 'Галактика'], ['hole', 'Квазар'], ['float', 'Невесомость']] }, { key: 'target', label: 'Центр', type: 'seg', options: [['cursor', 'Курсор / рука'], ['center', 'Центр формы']] }, { key: 'radius', label: 'Радиус поля', min: 0.4, max: 3.5, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.1 }, { key: 'flatten', label: 'Сплющивание в диск', min: 0, max: 0.95, step: 0.05 }, { key: 'tilt', label: 'Наклон диска', min: 0, max: 1.5, step: 0.05 }, { key: 'precess', label: 'Покачивание оси', min: 0, max: 1, step: 0.05 }, { key: 'jet', label: 'Длина джетов (квазар)', min: 0, max: 3, step: 0.1 }] },
+	{ id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки и пальцы. Каждому жесту назначается своё действие: ладонь, кулак, щипок, указательный палец', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush', power: 0.35, radius: 0.35, depth: 0.85, spin: 5, inertia: 0.6, axis: 'y', clay: 0.5, elastic: 0.6, stretch: 'off', keep: 'on', smooth: 0.5, sens: 0.6, hold: 0.12, skeleton: 'on', preview: 'on' }, extras: [{ type: 'preset' }, { type: 'title', label: 'Что делает жест' }, { key: 'g_palm', label: 'Ладонь (пальцы раскрыты)', type: 'select', options: FX_ACTIONS }, { key: 'g_fist', label: 'Кулак', type: 'select', options: FX_ACTIONS }, { key: 'g_pinch', label: 'Щипок (большой + указательный)', type: 'select', options: FX_ACTIONS }, { key: 'g_point', label: 'Указательный палец', type: 'select', options: FX_ACTIONS }, { type: 'title', label: 'Касание пальцами' }, { key: 'power', label: 'Мощность', min: 0.05, max: 1.5, step: 0.05 }, { key: 'radius', label: 'Радиус', min: 0.02, max: 0.9, step: 0.01 }, { key: 'depth', label: 'Глубина касания', min: 0.1, max: 1.5, step: 0.05 }, { type: 'title', label: 'Вращение' }, { key: 'spin', label: 'Скорость', min: 1, max: 14, step: 0.5 }, { key: 'inertia', label: 'Инерция', min: 0, max: 0.98, step: 0.02 }, { key: 'axis', label: 'Оси', type: 'seg', options: [['y', 'Вокруг'], ['xy', 'Свободно']] }, { type: 'title', label: 'Лепка' }, { key: 'clay', label: 'Размер куска глины', min: 0.05, max: 1.2, step: 0.01 }, { key: 'elastic', label: 'Упругость (возврат формы)', min: 0, max: 3, step: 0.1 }, { type: 'title', label: 'Две руки' }, { key: 'stretch', label: 'Меняют размер формы', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']] }, { key: 'keep', label: 'Запоминать размер', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }, { type: 'title', label: 'Распознавание и показ' }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'hold', label: 'Задержка жеста, с', min: 0, max: 0.5, step: 0.02 }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
+	{ id: 'gravity', group: 'Взаимодействие', name: 'Гравитация', icon: 'planet', hint: 'Поле тяготения: галактика с дифференциальным вращением, квазар с джетами или невесомость. Центром может быть курсор или рука', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, mode: 'orbit', target: 'cursor', speed: 1, flatten: 0.6, radius: 1.8, tilt: 0.5, precess: 0.15, jet: 1.4 }, extras: [{ key: 'mode', label: 'Вид поля', type: 'seg', options: [['orbit', 'Галактика'], ['hole', 'Квазар'], ['float', 'Невесомость']] }, { key: 'target', label: 'Центр', type: 'seg', options: [['cursor', 'Курсор / рука'], ['center', 'Центр формы']] }, { key: 'radius', label: 'Радиус поля', min: 0.1, max: 3.5, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.1 }, { key: 'flatten', label: 'Сплющивание в диск', min: 0, max: 0.95, step: 0.05 }, { key: 'tilt', label: 'Наклон диска', min: 0, max: 1.5, step: 0.05 }, { key: 'precess', label: 'Покачивание оси', min: 0, max: 1, step: 0.05 }, { key: 'jet', label: 'Длина джетов (квазар)', min: 0, max: 3, step: 0.1 }] },
 ];
 
 const FX_PALETTES = [
@@ -133536,13 +133257,13 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		if (uMask.x < 1.5) {
 			maskV = smoothstep(uMaskA.x - soft * 0.5, uMaskA.x + soft * 0.5, y01);
 		} else if (uMask.x < 2.5) {
-			float r = uMask.y * 1.6 + 0.15;
+			float r = uMask.y * 1.6 + 0.01;
 			maskV = 1.0 - smoothstep(r * (1.0 - soft), r, distance(base, uMaskA.xyz));
 		} else if (uMask.x < 3.5) {
 			float n = snoise(base * 1.6 + vec3(0.0, uMaskA.w, uMaskA.w * 0.6)) * 0.5 + 0.5;
 			maskV = smoothstep(1.0 - uMask.y - soft * 0.3, 1.0 - uMask.y + soft * 0.3, n);
 		} else {
-			float w = uMask.y * 0.35 + 0.03;
+			float w = uMask.y * 0.35 + 0.004;
 			maskV = 1.0 - smoothstep(w, w + soft * 0.3 + 0.02, abs(y01 - uMaskA.x));
 		}
 		if (uMask.w > 0.5) maskV = 1.0 - maskV;
@@ -134430,7 +134151,13 @@ class EffectsEngine {
 		this._lastT = 0;
 		this.recording = false;
 		this.modelProvider = null; // { available(), kind(), total(), get(n) }
-		this.pm = new PointMedia();
+		this.pm = app.media.pm;
+		app.bus.on('pointtex', () => {
+			if (this.active) {
+				this.cache.clear();
+				this._onScene();
+			}
+		});
 		this.mediaProgress = null;
 		this.ghosts = [];
 		this.linkObj = null;
@@ -134484,104 +134211,29 @@ class EffectsEngine {
 	}
 
 	// ------------------------------------------------------------ фото и видео
-	async loadMedia(file) {
-		this.app.ui.busy('Читаю файл', 0.3);
-		try {
-			await this.pm.load(file);
-			this.state.look.colorBy = 'model';
-			// стартовые вихри и пульс портят картинку: выключаем, включить можно слева
-			for (const id of ['curl', 'pulse']) this.state.layers[id].on = false;
-			if (this.state.source === 'media') {
-				this.cache.clear();
-				await this._build();
-			} else await this.setSource('media');
-			// картинка должна смотреть на зрителя, а не крутиться ребром
-			this.state.look.autoRotate = false;
-			if (this.points) this.points.rotation.set(0, 0, 0);
-			this.app.toast(this.pm.kind === 'image' ? 'Фото превращено в точки' : this.pm.kind === 'video' ? 'Видео превращено в точки: можно записать его в точечный ролик' : 'Точечный ролик открыт', 'ok');
-		} catch (e) {
-			this.app.toast(e.message || 'Не удалось открыть файл', 'error');
-		} finally {
-			this.app.ui.idle();
-			this.emit();
-		}
+	/** Загруженное в «Медиа» фото или видео становится источником «Фото» */
+	async useMedia() {
+		this.state.look.colorBy = 'model';
+		// стартовые вихри и пульс портят картинку: выключаем, включить можно слева
+		for (const id of ['curl', 'pulse']) this.state.layers[id].on = false;
+		if (this.state.source === 'media') {
+			this.cache.clear();
+			await this._build();
+		} else await this.setSource('media');
+		// картинка должна смотреть на зрителя, а не крутиться ребром
+		this.state.look.autoRotate = false;
+		if (this.points) this.points.rotation.set(0, 0, 0);
+		this.emit();
 	}
 
 	async setMediaPts(n) {
-		this.state.media.pts = n;
-		this.touch();
+		this.app.settings.media.pts = n;
+		this.app.saveSettings();
 		if (this.state.source === 'media' && this.active && !this.pm.isRec) {
 			this.cache.clear();
 			await this._build();
 		}
 		this.emit();
-	}
-
-	mediaStyleChanged() {
-		this.touch();
-		this.pm.dirty = true;
-		this._mediaDirty = true;
-	}
-
-	async recordMedia({ fps, seconds }) {
-		if (this.pm.recording) {
-			this._recCancel = true;
-			return;
-		}
-		this._recCancel = false;
-		this.mediaProgress = { i: 0, total: 1 };
-		this.emit();
-		try {
-			const rec = await this.pm.record({
-				fps,
-				seconds,
-				cancel: () => this._recCancel,
-				onProgress: (i, total) => {
-					this.mediaProgress = { i, total };
-					if (i % 3 === 0) this.emit();
-				},
-			});
-			if (rec) this.app.toast(`Записано кадров: ${rec.frames.length}. Теперь можно сохранить`, 'ok');
-		} catch (e) {
-			this.app.toast(e.message || 'Не удалось записать', 'error');
-		}
-		this.mediaProgress = null;
-		this.emit();
-	}
-
-	/** Текущий кадр как облако точек в сцене редактора: оттуда оно экспортируется в GLB, PLY и другие форматы */
-	frameToScene() {
-		const pm = this.pm;
-		if (!pm.ready) return;
-		const m = this.state.media;
-		const cloud = pm.buildCloud(pm.sample(), m.relief, m.depth);
-		const pts = cloudToPoints(cloud, pm.kind === 'image' ? 'Фото в точках' : 'Кадр видео в точках');
-		this._muteScene = true;
-		this.app.model.add(pts, this.app.viewport.root);
-		setTimeout(() => (this._muteScene = false), 1500);
-		this.app.toast('Облако точек добавлено в сцену. Скачать его можно кнопкой «Скачать» вверху', 'ok');
-	}
-
-	downloadPCV() {
-		if (!this.pm.rec) return;
-		downloadBlob(this.pm.toPCV(), (this.pm.name.replace(/\.[^.]+$/, '') || 'ролик') + '.pcv');
-	}
-
-	downloadPLY() {
-		const pm = this.pm;
-		if (!pm.ready) return;
-		const m = this.state.media;
-		const bytes = pm.framePLY(pm.sample(), m.relief, m.depth);
-		downloadBlob(new Blob([bytes], { type: 'application/octet-stream' }), (pm.name.replace(/\.[^.]+$/, '') || 'кадр') + '.ply');
-	}
-
-	downloadPLYZip() {
-		const pm = this.pm;
-		if (!pm.rec) return;
-		const m = this.state.media;
-		const r = pm.toPLYZip(m.relief, m.depth);
-		downloadBlob(r.blob, (pm.name.replace(/\.[^.]+$/, '') || 'ролик') + '_ply.zip');
-		this.app.toast(r.step > 1 ? `Сохранено кадров: ${r.frames} (каждый ${r.step}-й)` : `Сохранено кадров: ${r.frames}`, 'ok');
 	}
 
 	// ------------------------------------------------------------ морфинг между формами
@@ -135085,8 +134737,8 @@ class EffectsEngine {
 		if (key === 'media') {
 			const pm = this.pm;
 			if (!pm.ready) return null;
-			pm.setGrid(this.state.media.pts);
-			const m = this.state.media;
+			pm.setGrid(this.app.settings.media.pts);
+			const m = this.app.settings.media;
 			pm.dirty = true;
 			return pm.buildCloud(pm.sample(), m.relief, m.depth);
 		}
@@ -135389,6 +135041,9 @@ class EffectsEngine {
 
 	async setCount(n) {
 		this.state.count = n;
+		this.app.settings.point.surfaceCount = n;
+		this.app.saveSettings();
+		this.app.bus.emit('pointsettings');
 		this.cache.clear();
 		this.touch();
 		if (this.active) {
@@ -135428,6 +135083,8 @@ class EffectsEngine {
 		if (this.active) return;
 		const app = this.app;
 		this.active = true;
+		// число частиц общее с вкладкой «Точки»: что задали в редакторе, то и здесь
+		this.state.count = Math.max(20000, Math.min(2000000, app.settings.point.surfaceCount));
 		const vp = app.viewport;
 		this._saved = { rootVisible: vp.root.visible, ortho: app.nav.ortho };
 		app.model.select(null);
@@ -135689,7 +135346,7 @@ class EffectsEngine {
 					const g = this.geometry;
 					const n = this.pm.count;
 					if (!this._zbuf || this._zbuf.length !== n * 3) this._zbuf = new Float32Array(n * 3);
-					const m = st.media;
+					const m = this.app.settings.media;
 					this.pm.applyTo({ positions: this._zbuf, colors: g.attributes.aColor.array }, rgb, m.relief, m.depth);
 					const a = g.attributes.position.array, o = g.attributes.aOrigin.array, t = g.attributes.aTarget.array, z = this._zbuf;
 					for (let i = 2; i < n * 3; i += 3) a[i] = o[i] = t[i] = z[i];
@@ -135969,9 +135626,10 @@ const { h, formatInt } = __req('src/util.js');
 const { icon } = __req('src/icons.js');
 const { section, field, slider, segmented, switchRow, toggle, button, iconButton, select, colorField } = __req('src/ui-kit.js');
 const THREE = __req('vendor/three/build/three.module.js');
-const { sampleSurface } = __req('src/pointcloud.js');
+const { sampleSurface, overrideMats } = __req('src/pointcloud.js');
 const { getDevice } = __req('src/device-card.js');
 const { formatCount } = __req('src/capabilities.js');
+const { createMediaPanel } = __req('src/panel-media.js');
 const { SHAPES: POINT_SHAPE_LIST } = __req('src/panel-points.js');
 const { FX_SHAPES, FX_ACTIONS, FX_GESTURE_PRESETS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } = __req('src/effects-engine.js');
 
@@ -136036,7 +135694,7 @@ function makeModelProvider(app) {
 			if (cl.length) return fromClouds(cl, count);
 			const list = app.model.meshesOf(obj);
 			if (!list.length) return null;
-			const entries = list.map((m) => ({ mesh: m, mats: app.display.getOriginal(m) }));
+			const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
 			return sampleSurface(entries, count, {});
 		},
 		available: () => clouds().length > 0 || meshes().length > 0,
@@ -136047,7 +135705,7 @@ function makeModelProvider(app) {
 			if (c.length) return fromClouds(c, count);
 			const list = meshes();
 			if (!list.length) return null;
-			const entries = list.map((m) => ({ mesh: m, mats: app.display.getOriginal(m) }));
+			const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
 			return sampleSurface(entries, count, { onProgress: (p) => app.ui.busy('Беру точки с модели', 0.2 + p * 0.7) });
 		},
 	};
@@ -136124,11 +135782,27 @@ function createEffectsPanel(app, root, engine) {
 	const mc = st.morphCfg;
 	const formsBox = h('div', { class: 'chip-row fx-forms' });
 	const picked = [];
+	const shapesBox = h('div', { class: 'chip-row fx-forms' });
+	shapesBox.hidden = true;
+	const shapesToggle = h('button', { type: 'button', class: 'btn btn-ghost btn-sm' }, 'Встроенные фигуры');
+	shapesToggle.addEventListener('click', () => {
+		shapesBox.hidden = !shapesBox.hidden;
+	});
+	let autoPicked = false;
 	const renderForms = () => {
 		const list = engine.forms();
 		for (let i = picked.length - 1; i >= 0; i--) if (!list.some((f) => f.key === picked[i])) picked.splice(i, 1);
+		const objs = list.filter((f) => f.key.startsWith('obj:'));
+		// две модели и больше: сразу готовы к морфингу между ними
+		if (objs.length >= 2 && !autoPicked && !picked.length) {
+			autoPicked = true;
+			objs.forEach((o) => picked.push(o.key));
+			engine.setPlaylist([...picked]);
+		}
+		if (objs.length < 2) autoPicked = false;
 		formsBox.textContent = '';
-		for (const f of list) {
+		shapesBox.textContent = '';
+		const chip = (f, box) => {
 			const b = h('button', { type: 'button', class: 'chip-btn' + (picked.includes(f.key) ? ' is-active' : ''), 'data-tip': 'Добавить в морфинг. Порядок: как нажимали' }, f.name);
 			b.addEventListener('click', () => {
 				const k = picked.indexOf(f.key);
@@ -136136,10 +135810,12 @@ function createEffectsPanel(app, root, engine) {
 				else picked.push(f.key);
 				engine.setPlaylist([...picked]);
 				renderForms();
-				morphHint.textContent = picked.length < 2 ? 'Отметьте минимум две формы. Объекты сцены редактора появятся здесь как отдельные формы.' : `В морфинге форм: ${picked.length}`;
 			});
-			formsBox.append(b);
-		}
+			box.append(b);
+		};
+		objs.forEach((f) => chip(f, formsBox));
+		list.filter((f) => !f.key.startsWith('obj:')).forEach((f) => chip(f, shapesBox));
+		morphHint.textContent = objs.length < 2 ? 'Добавьте в сцену вторую модель кнопкой «Добавить модель…»: между вашими моделями можно будет делать морфинг. Встроенные фигуры ниже.' : picked.length < 2 ? 'Отметьте минимум две формы.' : `В морфинге форм: ${picked.length}`;
 	};
 	const morphHint = h('div', { class: 'field-hint' }, 'Отметьте минимум две формы. Объекты сцены редактора появятся здесь как отдельные формы.');
 	const morphMode = segmented({ cls: 'seg-tight', options: [{ value: 'manual', label: 'Кнопкой' }, { value: 'beat', label: 'По биту' }, { value: 'timer', label: 'По таймеру' }], value: mc.mode, onChange: (v) => { mc.mode = v; save(); } });
@@ -136147,7 +135823,7 @@ function createEffectsPanel(app, root, engine) {
 	const morphInt = slider({ min: 1, max: 20, step: 0.5, value: mc.interval, digits: 1, unit: ' с', onInput: (v) => { mc.interval = v; }, onChange: save });
 	const morphTime = slider({ min: 0.4, max: 6, step: 0.1, value: mc.time, digits: 1, unit: ' с', onInput: (v) => { mc.time = v; }, onChange: save });
 	const morphGo = button({ label: 'Следующая форма', icon: 'arrow-right', variant: 'secondary', cls: 'btn-block', onClick: () => engine.morphNext() });
-	const morphBody = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, field('Переход', morphMode.el, { wide: true }), field('Порядок', morphOrder.el, { wide: true }), field('Не чаще, чем раз в', morphInt.el), field('Длительность', morphTime.el), morphGo);
+	const morphBody = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, shapesToggle, shapesBox, field('Переход', morphMode.el, { wide: true }), field('Порядок', morphOrder.el, { wide: true }), field('Не чаще, чем раз в', morphInt.el), field('Длительность', morphTime.el), morphGo);
 	renderForms();
 	const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, tiles, field('Частиц', count.el), countChips, countHint, h('div', { class: 'fx-sub' }, 'Морфинг между формами'), morphBody);
 
@@ -136157,6 +135833,7 @@ function createEffectsPanel(app, root, engine) {
 	const leftCount = document.getElementById('fxActive');
 	const inspBox = h('div', { class: 'fx-insp-box' });
 	let selected = null;
+	let fxTabHook = () => {};
 	const select_ = (id) => {
 		selected = id;
 		for (const c of cards) {
@@ -136183,7 +135860,10 @@ function createEffectsPanel(app, root, engine) {
 				onChange: (v) => {
 					L.on = v;
 					card.classList.toggle('is-on', v);
-					if (v) select_(def.id);
+					if (v) {
+						select_(def.id);
+						fxTabHook();
+					}
 					countActive();
 					save();
 				},
@@ -136290,10 +135970,16 @@ function createEffectsPanel(app, root, engine) {
 			const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right' }, row);
 			const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, h('div', { class: 'fx-insp-head' }, h('span', { class: 'fx-ic', html: icon(def.icon, 18) }), h('div', {}, h('b', {}, def.name), h('span', {}, def.hint))), body);
 			row.addEventListener('click', (e) => {
-				if (!e.target.closest('.switch')) select_(def.id);
+				if (!e.target.closest('.switch')) {
+					select_(def.id);
+					fxTabHook();
+				}
 			});
 			row.addEventListener('keydown', (e) => {
-				if (e.key === 'Enter') select_(def.id);
+				if (e.key === 'Enter') {
+					select_(def.id);
+					fxTabHook();
+				}
 			});
 			fbody.append(card);
 			inspBox.append(insp);
@@ -136325,7 +136011,7 @@ function createEffectsPanel(app, root, engine) {
 			save();
 		},
 	});
-	const maskSize = slider({ min: 0.05, max: 1, step: 0.05, value: mk.size, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { mk.size = v; }, onChange: save });
+	const maskSize = slider({ log: true, min: 0.005, max: 1, step: 0.005, value: mk.size, format: (v) => (v * 100).toFixed(v < 0.1 ? 1 : 0) + '%', onInput: (v) => { mk.size = v; }, onChange: save });
 	const maskSoft = slider({ min: 0, max: 1, step: 0.05, value: mk.soft, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { mk.soft = v; }, onChange: save });
 	const maskSpeed = slider({ min: 0, max: 2, step: 0.05, value: mk.speed, format: (v) => (v === 0 ? 'стоит' : v.toFixed(2)), onInput: (v) => { mk.speed = v; }, onChange: save });
 	const maskInvert = switchRow('Наоборот: живёт всё, кроме зоны', { value: mk.invert, onChange: (v) => { mk.invert = v; save(); } });
@@ -136437,66 +136123,36 @@ function createEffectsPanel(app, root, engine) {
 	const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
 	const secLook = section('Вид', { key: 'fx-look' }, palettes, field('Форма точек', shapeTiles, { wide: true }), field('Размер', size.el), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el));
 
-	// ------------------------------------------------------------ фото и видео в точки
-	const pm = engine.pm;
-	const md = st.media;
-	const fileIn = h('input', { type: 'file', accept: 'image/*,video/*,.pcv', hidden: true });
-	fileIn.addEventListener('change', async () => {
-		const f = fileIn.files[0];
-		fileIn.value = '';
-		if (f) await engine.loadMedia(f);
-	});
-	const mdLoad = button({ label: 'Загрузить фото или видео…', icon: 'image', variant: 'secondary', cls: 'btn-block', title: 'Фото, видео или сохранённый ролик .pcv', onClick: () => fileIn.click() });
-	const mdName = h('div', { class: 'field-hint' }, 'Каждая точка берёт цвет пикселя. К точкам применяются все эффекты слева: гравитация, распад, руки и остальные.');
-	const mdPts = slider({ log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: (v) => engine.setMediaPts(v) });
-	const mdRelief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; engine.mediaStyleChanged(); } });
-	const mdDepth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; engine.mediaStyleChanged(); }, onChange: save });
-	const mdPlay = button({ label: 'Пауза', icon: 'pause', variant: 'secondary', onClick: () => { pm.playing ? pm.pause() : pm.play(); sync(); } });
-	const mdLoop = switchRow('Повторять', { value: pm.loop, onChange: (v) => pm.setLoop(v) });
-	const mdSeek = slider({ min: 0, max: 1, step: 0.01, value: 0, digits: 1, unit: ' с', onInput: (v) => pm.seek(v), onChange: () => {} });
-	const mdView = segmented({ options: [{ value: 'live', label: 'Исходник' }, { value: 'rec', label: 'Точечный ролик' }], value: pm.view, onChange: (v) => { pm.setView(v); engine.setSource('media'); sync(); } });
-	const recFps = slider({ min: 5, max: 30, step: 1, value: 15, digits: 0, unit: ' к/с' });
-	const recSec = slider({ min: 1, max: 30, step: 1, value: 10, digits: 0, unit: ' с' });
-	const recBtn2 = button({ label: 'Записать в точки', icon: 'record', variant: 'primary', cls: 'btn-block', title: 'Видео проигрывается кадр за кадром и записывается как точечный ролик', onClick: () => engine.recordMedia({ fps: recFps.get ? recFps.get() : 15, seconds: recSec.get ? recSec.get() : 10 }) });
-	const recInfo = h('div', { class: 'field-hint' });
-	const saveRow = h('div', { class: 'fx-save-row' });
-	const mdPCV = button({ label: 'Сохранить ролик (.pcv)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Компактный файл: его можно снова открыть здесь', onClick: () => engine.downloadPCV() });
-	const mdZip = button({ label: 'Кадры PLY (.zip)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Каждый кадр как облако точек с цветом', onClick: () => engine.downloadPLYZip() });
-	const mdPly = button({ label: 'Текущий кадр (.ply)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', onClick: () => engine.downloadPLY() });
-	const mdScene = button({ label: 'Кадр в сцену редактора', icon: 'cube', variant: 'secondary', cls: 'btn-block', title: 'Облако точек появится в редакторе, оттуда его можно скачать как GLB, PLY и другие форматы', onClick: () => engine.frameToScene() });
-	saveRow.append(mdScene, mdPly, mdPCV, mdZip);
-	const videoBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-btn-row' }, mdPlay), mdLoop.el, field('Время', mdSeek.el));
-	const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recBtn2, recInfo);
-	const secMedia = section('Фото и видео', { key: 'fx-media' }, fileIn, mdLoad, mdName, field('Точек', mdPts.el), field('Рельеф', mdRelief.el, { wide: true }), field('Глубина рельефа', mdDepth.el), field('Показывать', mdView.el, { wide: true }), videoBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveRow);
-	const syncMedia = () => {
-		const ready = pm.ready;
-		const isVid = pm.kind === 'video' || pm.kind === 'rec';
-		const hasRec = !!pm.rec;
-		mdName.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : 'Каждая точка берёт цвет пикселя. К точкам применяются все эффекты слева: гравитация, распад, руки и остальные.';
-		mdView.el.hidden = !hasRec || pm.kind === 'rec';
-		mdView.set(pm.view);
-		mdPts.el.closest('.field').hidden = !ready || pm.isRec;
-		mdPts.set(md.pts);
-		videoBox.hidden = !isVid;
-		recBox.hidden = pm.kind !== 'video';
-		mdPlay.querySelector('.btn-label').textContent = pm.playing ? 'Пауза' : 'Играть';
-		const dur = pm.duration;
-		mdSeek.setRange && mdSeek.setRange(0, Math.max(0.1, dur));
-		recSec.setRange && recSec.setRange(1, Math.max(2, Math.min(30, Math.floor(dur) || 10)));
-		const prog = engine.mediaProgress;
-		recBtn2.querySelector('.btn-label').textContent = pm.recording ? 'Остановить запись' : 'Записать в точки';
-		recInfo.textContent = prog ? `Записываю кадр ${prog.i} из ${prog.total}…` : hasRec ? `Записано кадров: ${pm.rec.frames.length}, ${pm.rec.fps} к/с` : 'Видео проигрывается кадр за кадром. Потом ролик можно сохранить и снова открыть.';
-		saveRow.hidden = !ready;
-		mdPCV.hidden = !hasRec;
-		mdZip.hidden = !hasRec;
-		mdPly.hidden = hasRec && pm.kind === 'rec' ? false : false;
-	};
-	setInterval(() => {
-		if (pm.kind === 'video' || pm.kind === 'rec') {
-			if (!pm.recording && document.activeElement?.closest?.('.slider') == null) mdSeek.set && mdSeek.set(pm.time);
+	const mediaPanel = createMediaPanel(app, null, { fx: true });
+	const secMedia = mediaPanel.section;
+	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', secInsp], ['source', 'Форма', 'cube', secSource], ['media', 'Медиа', 'film-strip', secMedia], ['mask', 'Зона', 'target', secMask], ['audio', 'Звук', 'waveform', secAudio], ['look', 'Вид', 'sliders-horizontal', secLook]];
+	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
+	let curTab = 'insp';
+	try {
+		curTab = localStorage.getItem('objglb.fx.tab') || 'insp';
+	} catch (_) {}
+	const tabBtns = new Map();
+	const showFxTab = (id) => {
+		curTab = FX_TABS.some((t) => t[0] === id) ? id : 'insp';
+		for (const [k, , , sec] of FX_TABS) {
+			sec.el.hidden = k !== curTab;
+			tabBtns.get(k).setAttribute('aria-selected', String(k === curTab));
 		}
-	}, 300);
-	root.append(secInsp.el, secSource.el, secMedia.el, secMask.el, secAudio.el, secLook.el);
+		try {
+			localStorage.setItem('objglb.fx.tab', curTab);
+		} catch (_) {}
+	};
+	for (const [k, label, ic] of FX_TABS) {
+		const b = h('button', { type: 'button', class: 'tab', role: 'tab', 'aria-selected': 'false' }, h('span', { class: 'ic', html: icon(ic, 15) }), h('span', { class: 'tab-label' }, label));
+		b.addEventListener('click', () => showFxTab(k));
+		tabBtns.set(k, b);
+		tabBar.append(b);
+	}
+	root.append(tabBar, ...FX_TABS.map((t) => t[3].el));
+	showFxTab(curTab);
+	// при выборе эффекта слева сразу показываем его настройки
+	fxTabHook = () => showFxTab('insp');
 
 	// ------------------------------------------------------------ нижняя панель в сцене
 	const bar = $bar();
@@ -136564,7 +136220,7 @@ function createEffectsPanel(app, root, engine) {
 		countHint.textContent = `Сейчас ${formatInt(n)} частиц, около ${Math.round((n * 128) / 1048576)} МБ памяти. Комфортно до ${formatCount(getDevice(app).limits.comfort)}.`;
 		const kind = engine.modelProvider ? engine.modelProvider.kind() : 'none';
 		modelNote.textContent = kind === 'cloud' ? `Берётся облако точек из редактора (${formatInt(engine.modelProvider.total())} точек). Больше этого частиц не будет.` : kind === 'mesh' ? 'Берутся точки с поверхности вашей модели.' : 'Модели в сцене нет: показана готовая форма. Добавьте модель, и она заменит её.';
-		syncMedia();
+		mediaPanel.sync();
 		countActive();
 		cards.forEach((c) => {
 			c.card.classList.toggle('is-on', c.L.on);
@@ -136683,6 +136339,7 @@ const { createMaterialPanel } = __req('src/panel-material.js');
 const { createViewPanel, DISPLAY_MODES } = __req('src/panel-view.js');
 const { createExportPanel } = __req('src/panel-export.js');
 const { createPointsPanel } = __req('src/panel-points.js');
+const { createMediaPanel } = __req('src/panel-media.js');
 const { EffectsEngine } = __req('src/effects-engine.js');
 const { createEffectsPanel, makeModelProvider } = __req('src/panel-effects.js');
 const { importFiles, assignTextureFiles, ACCEPT_ALL, MODEL_FORMATS, IMAGE_EXT } = __req('src/importers.js');
@@ -137090,12 +136747,13 @@ class UI {
 	// --------------------------------------------------------- боковая панель
 	buildSidebar() {
 		const app = this.app;
-		for (const name of ['scene', 'material', 'points', 'view']) this.tabs[name] = $(`#panel-${name}`);
+		for (const name of ['scene', 'material', 'points', 'media', 'view']) this.tabs[name] = $(`#panel-${name}`);
 		$$('.tab').forEach((t) => t.addEventListener('click', () => this.showTab(t.dataset.tab)));
 		this.scenePanel = createScenePanel(app, this.tabs.scene);
 		this.materialPanel = createMaterialPanel(app, this.tabs.material);
 		this.viewPanel = createViewPanel(app, this.tabs.view);
 		this.pointsPanel = createPointsPanel(app, this.tabs.points);
+		this.mediaPanel = createMediaPanel(app, this.tabs.media);
 		this.exportPanel = createExportPanel(app, $('#panel-export'));
 		this.effectsEngine.modelProvider = makeModelProvider(app);
 		this.effectsPanel = createEffectsPanel(app, $('#panel-effects'), this.effectsEngine);
@@ -137776,6 +137434,595 @@ async function collectDropped(dt) {
 }
 
 };
+__defs['src/point-media.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'PointMedia', () => PointMedia);
+// Фото и видео в точки: каждая точка берёт цвет пикселя (и, по желанию, высоту по яркости).
+// Видео можно записать в точечный ролик и сохранить: .pcv (повторно открывается здесь) или PLY-кадры в ZIP.
+const { zlibSync, unzlibSync, zipSync } = __req('vendor/three/addons/libs/fflate.module.js');
+
+// sRGB-байт в линейное значение: шейдер сам вернёт цвет в sRGB
+const LUT = new Float32Array(256);
+for (let i = 0; i < 256; i++) {
+	const c = i / 255;
+	LUT[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+const wait = (el, ev, ms = 2000) =>
+	new Promise((res) => {
+		const t = setTimeout(res, ms);
+		el.addEventListener(
+			ev,
+			() => {
+				clearTimeout(t);
+				res();
+			},
+			{ once: true }
+		);
+	});
+
+class PointMedia {
+	constructor() {
+		this.kind = null; // 'image' | 'video' | 'rec'
+		this.view = 'live'; // 'live': исходник, 'rec': записанный точечный ролик
+		this.el = null;
+		this.url = null;
+		this.name = '';
+		this.aspect = 1;
+		this.cols = 0;
+		this.rows = 0;
+		this.rec = null; // { cols, rows, aspect, fps, frames: Uint8Array[] }
+		this.playing = true;
+		this.loop = true;
+		this.t = 0;
+		this.canvas = document.createElement('canvas');
+		this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+		this.dirty = true;
+		this._lastKey = -1;
+		this._xy = null;
+		this.recording = false;
+	}
+
+	get ready() {
+		return !!(this.kind && (this.el || this.rec));
+	}
+
+	get isRec() {
+		return this.view === 'rec' && !!this.rec;
+	}
+
+	get duration() {
+		if (this.isRec) return this.rec.frames.length / this.rec.fps;
+		return this.kind === 'video' ? this.el.duration || 0 : 0;
+	}
+
+	get time() {
+		if (this.isRec) return this.t;
+		return this.kind === 'video' ? this.el.currentTime : 0;
+	}
+
+	seek(t) {
+		if (this.isRec) {
+			this.t = Math.max(0, Math.min(this.duration, t));
+			this.dirty = true;
+		} else if (this.kind === 'video') {
+			this.el.currentTime = Math.max(0, Math.min(this.duration, t));
+			this.dirty = true;
+		}
+	}
+
+	_revoke() {
+		if (this.url) URL.revokeObjectURL(this.url);
+		this.url = null;
+	}
+
+	async load(file) {
+		const name = file.name || 'медиа';
+		if (/\.pcv$/i.test(name)) {
+			const rec = parsePCV(new Uint8Array(await file.arrayBuffer()));
+			this.pause();
+			this._revoke();
+			this.el = null;
+			this.kind = 'rec';
+			this.view = 'rec';
+			this.rec = rec;
+			this.cols = rec.cols;
+			this.rows = rec.rows;
+			this.aspect = rec.aspect;
+			this.t = 0;
+			this.name = name;
+			this._xy = null;
+			this.playing = true;
+			this.dirty = true;
+			this._lastKey = -1;
+			return;
+		}
+		const url = URL.createObjectURL(file);
+		const isVideo = (file.type || '').startsWith('video') || /\.(mp4|webm|mov|m4v|ogv)$/i.test(name);
+		let el;
+		try {
+			if (isVideo) {
+				el = document.createElement('video');
+				el.muted = true;
+				el.loop = true;
+				el.playsInline = true;
+				el.preload = 'auto';
+				el.src = url;
+				await new Promise((res, rej) => {
+					el.onloadeddata = res;
+					el.onerror = () => rej(new Error('Не удалось прочитать видео'));
+				});
+				this.aspect = el.videoWidth / el.videoHeight;
+			} else {
+				el = new Image();
+				el.src = url;
+				await el.decode();
+				this.aspect = el.naturalWidth / el.naturalHeight;
+			}
+		} catch (e) {
+			URL.revokeObjectURL(url);
+			throw e;
+		}
+		this.pause();
+		this._revoke();
+		this.url = url;
+		this.el = el;
+		this.kind = isVideo ? 'video' : 'image';
+		this.view = 'live';
+		this.rec = null;
+		this.name = name;
+		this.t = 0;
+		this._xy = null;
+		this.dirty = true;
+		if (isVideo) {
+			el.loop = this.loop;
+			this.playing = true;
+			el.play().catch(() => {});
+		}
+	}
+
+	play() {
+		this.playing = true;
+		if (this.kind === 'video' && !this.isRec) this.el.play().catch(() => {});
+	}
+
+	pause() {
+		this.playing = false;
+		if (this.kind === 'video' && this.el) this.el.pause();
+	}
+
+	setLoop(v) {
+		this.loop = v;
+		if (this.kind === 'video' && this.el) this.el.loop = v;
+	}
+
+	/** Сетка точек под нужное число и пропорции кадра */
+	setGrid(n) {
+		if (this.isRec) return;
+		const cols = Math.max(8, Math.round(Math.sqrt(n * this.aspect)));
+		const rows = Math.max(8, Math.round(n / cols));
+		if (cols !== this.cols || rows !== this.rows) {
+			this.cols = cols;
+			this.rows = rows;
+			this._xy = null;
+			this.dirty = true;
+		}
+	}
+
+	get count() {
+		return this.cols * this.rows;
+	}
+
+	_grid() {
+		if (this._xy) return this._xy;
+		const { cols, rows, aspect } = this;
+		const W = aspect >= 1 ? 2.2 : 2.2 * aspect;
+		const H = W / aspect;
+		const xy = new Float32Array(cols * rows * 2);
+		for (let r = 0; r < rows; r++) {
+			for (let c = 0; c < cols; c++) {
+				const i = (r * cols + c) * 2;
+				xy[i] = ((c + 0.5) / cols - 0.5) * W;
+				xy[i + 1] = (0.5 - (r + 0.5) / rows) * H;
+			}
+		}
+		this._xy = xy;
+		return xy;
+	}
+
+	/** Цвета текущего кадра: Uint8Array RGB */
+	sample() {
+		if (this.isRec) {
+			const f = this.rec.frames;
+			return f[Math.min(f.length - 1, Math.floor(this.t * this.rec.fps))];
+		}
+		const { cols, rows } = this;
+		if (this.canvas.width !== cols || this.canvas.height !== rows) {
+			this.canvas.width = cols;
+			this.canvas.height = rows;
+		}
+		this.ctx.drawImage(this.el, 0, 0, cols, rows);
+		const d = this.ctx.getImageData(0, 0, cols, rows).data;
+		const out = new Uint8Array(cols * rows * 3);
+		for (let i = 0, j = 0; i < d.length; i += 4, j += 3) {
+			out[j] = d[i];
+			out[j + 1] = d[i + 1];
+			out[j + 2] = d[i + 2];
+		}
+		return out;
+	}
+
+	/** Идёт время: возвращает новый кадр, если он поменялся, иначе null */
+	advance(dt) {
+		if (!this.ready || this.recording) return null;
+		if (this.isRec) {
+			if (this.playing) {
+				this.t += dt;
+				const d = this.duration;
+				if (this.t >= d) {
+					if (this.loop) this.t %= d || 1;
+					else {
+						this.t = d - 1e-3;
+						this.playing = false;
+					}
+				}
+			}
+			const key = Math.floor(this.t * this.rec.fps);
+			if (key === this._lastKey && !this.dirty) return null;
+			this._lastKey = key;
+			this.dirty = false;
+			return this.sample();
+		}
+		if (this.kind === 'image') {
+			if (!this.dirty) return null;
+			this.dirty = false;
+			return this.sample();
+		}
+		if (this.el.readyState < 2) return null;
+		const key = Math.round(this.el.currentTime * 60);
+		if (key === this._lastKey && !this.dirty) return null;
+		this._lastKey = key;
+		this.dirty = false;
+		return this.sample();
+	}
+
+	/** Облако для движка */
+	buildCloud(rgb, relief, depth) {
+		const n = this.cols * this.rows;
+		const xy = this._grid();
+		const positions = new Float32Array(n * 3);
+		const normals = new Float32Array(n * 3);
+		const colors = new Float32Array(n * 3);
+		for (let i = 0; i < n; i++) {
+			positions[i * 3] = xy[i * 2];
+			positions[i * 3 + 1] = xy[i * 2 + 1];
+			normals[i * 3 + 2] = 1;
+		}
+		const cloud = { positions, normals, colors, count: n };
+		this.applyTo(cloud, rgb, relief, depth);
+		return cloud;
+	}
+
+	/** Записывает цвета (и высоту по яркости) в облако: объект с positions/colors */
+	applyTo(cloud, rgb, relief, depth) {
+		const n = this.cols * this.rows;
+		const pos = cloud.positions;
+		const col = cloud.colors;
+		const k = relief === 'bright' ? 1 : relief === 'dark' ? -1 : 0;
+		for (let i = 0; i < n; i++) {
+			const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
+			col[i * 3] = LUT[r];
+			col[i * 3 + 1] = LUT[g];
+			col[i * 3 + 2] = LUT[b];
+			pos[i * 3 + 2] = k ? (((0.299 * r + 0.587 * g + 0.114 * b) / 255 - 0.5) * 2 * depth * k) : 0;
+		}
+	}
+
+	/** Записывает ролик кадр за кадром: перематываем видео и снимаем цвета, без привязки к скорости воспроизведения */
+	async record({ fps = 15, seconds = 10, onProgress, cancel } = {}) {
+		if (this.kind !== 'video' || !this.el) throw new Error('Запись доступна для видео');
+		this.recording = true;
+		const v = this.el;
+		const wasPlaying = this.playing;
+		v.pause();
+		const total = Math.max(1, Math.floor(Math.min(v.duration, seconds) * fps));
+		const frames = [];
+		const prevView = this.view;
+		this.view = 'live';
+		try {
+			for (let i = 0; i < total; i++) {
+				if (cancel && cancel()) break;
+				v.currentTime = Math.min(v.duration - 0.001, i / fps);
+				await wait(v, 'seeked');
+				frames.push(this.sample());
+				onProgress && onProgress(i + 1, total);
+				if (i % 4 === 0) await new Promise((r) => setTimeout(r));
+			}
+		} finally {
+			this.recording = false;
+			this.view = prevView;
+		}
+		if (frames.length < 2) {
+			if (wasPlaying) this.play();
+			return null;
+		}
+		this.rec = { cols: this.cols, rows: this.rows, aspect: this.aspect, fps, frames };
+		this.view = 'rec';
+		this.t = 0;
+		this.playing = true;
+		this.dirty = true;
+		this._lastKey = -1;
+		return this.rec;
+	}
+
+	setView(v) {
+		if (v === 'rec' && !this.rec) return;
+		if (v === this.view) return;
+		this.view = v;
+		if (v === 'rec') {
+			this.cols = this.rec.cols;
+			this.rows = this.rec.rows;
+			this.aspect = this.rec.aspect;
+			this.t = 0;
+			if (this.el) this.el.pause();
+		} else if (this.el) this.el.play().catch(() => {});
+		this._xy = null;
+		this.dirty = true;
+		this._lastKey = -1;
+	}
+
+	// ------------------------------------------------------------ сохранение
+	/** .pcv: заголовок JSON + кадры RGB, всё сжато zlib */
+	toPCV() {
+		const r = this.rec;
+		const head = new TextEncoder().encode(JSON.stringify({ v: 1, cols: r.cols, rows: r.rows, aspect: r.aspect, fps: r.fps, frames: r.frames.length }));
+		const frameSize = r.cols * r.rows * 3;
+		const out = new Uint8Array(8 + head.length + frameSize * r.frames.length);
+		out.set([0x50, 0x43, 0x56, 0x31], 0);
+		new DataView(out.buffer).setUint32(4, head.length, true);
+		out.set(head, 8);
+		r.frames.forEach((f, i) => out.set(f, 8 + head.length + i * frameSize));
+		return new Blob([zlibSync(out, { level: 6 })], { type: 'application/octet-stream' });
+	}
+
+	/** Один кадр как бинарный PLY с цветом */
+	framePLY(rgb, relief, depth) {
+		const n = this.cols * this.rows;
+		const xy = this._grid();
+		const k = relief === 'bright' ? 1 : relief === 'dark' ? -1 : 0;
+		const head = new TextEncoder().encode(`ply\nformat binary_little_endian 1.0\nelement vertex ${n}\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n`);
+		const out = new Uint8Array(head.length + n * 15);
+		out.set(head, 0);
+		const dv = new DataView(out.buffer);
+		let o = head.length;
+		for (let i = 0; i < n; i++, o += 15) {
+			const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
+			dv.setFloat32(o, xy[i * 2], true);
+			dv.setFloat32(o + 4, xy[i * 2 + 1], true);
+			dv.setFloat32(o + 8, k ? ((0.299 * r + 0.587 * g + 0.114 * b) / 255 - 0.5) * 2 * depth * k : 0, true);
+			out[o + 12] = r;
+			out[o + 13] = g;
+			out[o + 14] = b;
+		}
+		return out;
+	}
+
+	/** Все кадры записи как PLY в ZIP (не больше maxFrames, равномерно) */
+	toPLYZip(relief, depth, maxFrames = 150) {
+		const r = this.rec;
+		const total = r.frames.length;
+		const step = Math.max(1, Math.ceil(total / maxFrames));
+		const files = {};
+		let k = 0;
+		const saved = [this.cols, this.rows, this.aspect, this._xy];
+		this.cols = r.cols;
+		this.rows = r.rows;
+		this.aspect = r.aspect;
+		this._xy = null;
+		for (let i = 0; i < total; i += step, k++) files[`frame_${String(k).padStart(4, '0')}.ply`] = [this.framePLY(r.frames[i], relief, depth), { level: 3 }];
+		[this.cols, this.rows, this.aspect, this._xy] = saved;
+		this._xy = null;
+		return { blob: new Blob([zipSync(files)], { type: 'application/zip' }), frames: k, step };
+	}
+
+	dispose() {
+		this.pause();
+		this._revoke();
+	}
+}
+
+function parsePCV(bytes) {
+	let raw;
+	try {
+		raw = unzlibSync(bytes);
+	} catch (e) {
+		throw new Error('Это не файл точечного видео');
+	}
+	if (raw[0] !== 0x50 || raw[1] !== 0x43 || raw[2] !== 0x56) throw new Error('Это не файл точечного видео');
+	const hl = new DataView(raw.buffer, raw.byteOffset).getUint32(4, true);
+	const head = JSON.parse(new TextDecoder().decode(raw.subarray(8, 8 + hl)));
+	const size = head.cols * head.rows * 3;
+	const frames = [];
+	for (let i = 0; i < head.frames; i++) frames.push(raw.slice(8 + hl + i * size, 8 + hl + (i + 1) * size));
+	return { cols: head.cols, rows: head.rows, aspect: head.aspect, fps: head.fps, frames };
+}
+
+};
+__defs['src/media-controller.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'MediaController', () => MediaController);
+// Фото и видео в точки как часть редактора: облако точек живёт в сцене, видео обновляет его каждый кадр.
+// Тот же PointMedia используют и «Эффекты» (источник «Фото»).
+const { PointMedia } = __req('src/point-media.js');
+const { cloudToPoints } = __req('src/pointcloud.js');
+const { downloadBlob } = __req('src/util.js');
+
+const baseName = (n, d) => (n || '').replace(/\.[^.]+$/, '') || d;
+
+class MediaController {
+	constructor(app) {
+		this.app = app;
+		this.pm = new PointMedia();
+		this.obj = null;
+		this.progress = null;
+		this._cancel = false;
+		this._last = performance.now();
+		this._tick = (now) => {
+			requestAnimationFrame(this._tick);
+			const dt = Math.min(0.1, (now - this._last) / 1000);
+			this._last = now;
+			this.update(dt);
+		};
+		requestAnimationFrame(this._tick);
+	}
+
+	get cfg() {
+		return this.app.settings.media;
+	}
+
+	get ready() {
+		return this.pm.ready;
+	}
+
+	emit() {
+		this.app.bus.emit('media');
+	}
+
+	_muteFx() {
+		const eng = this.app.ui?.effectsEngine;
+		if (!eng) return;
+		eng._muteScene = true;
+		setTimeout(() => (eng._muteScene = false), 1500);
+	}
+
+	/** Открывает фото, видео или сохранённый ролик .pcv и собирает облако точек в сцене */
+	async load(file) {
+		await this.pm.load(file);
+		this.rebuild();
+		this.app.toast(this.pm.kind === 'image' ? 'Фото превращено в точки' : this.pm.kind === 'video' ? 'Видео превращено в точки. Его можно записать в точечный ролик' : 'Точечный ролик открыт', 'ok');
+		this.emit();
+	}
+
+	/** Пересобирает облако в сцене под текущие настройки (плотность, рельеф) */
+	rebuild({ frame = true } = {}) {
+		const { app, pm } = this;
+		if (!pm.ready) return;
+		const c = this.cfg;
+		pm.setGrid(c.pts);
+		pm.dirty = true;
+		const cloud = pm.buildCloud(pm.sample(), c.relief, c.depth);
+		const pts = cloudToPoints(cloud, pm.kind === 'image' ? 'Фото в точках' : pm.kind === 'rec' ? 'Точечный ролик' : 'Видео в точках');
+		pts.userData.media = true;
+		this._muteFx();
+		const old = this.obj;
+		if (old && old.parent) app.model.remove(old);
+		app.model.add(pts, app.viewport.root);
+		this.obj = pts;
+		app.model.select(pts);
+		if (frame) app.nav.frameAll(true);
+		app.viewport.invalidate();
+	}
+
+	/** Цвета и высота точек по новому кадру */
+	_apply(rgb) {
+		const o = this.obj;
+		const g = o.geometry;
+		const n = this.pm.count;
+		if (g.attributes.position.count !== n) return;
+		const c = this.cfg;
+		if (!this._z || this._z.length !== n * 3) this._z = new Float32Array(n * 3);
+		this.pm.applyTo({ positions: this._z, colors: g.attributes.color.array }, rgb, c.relief, c.depth);
+		const pos = g.attributes.position.array;
+		for (let i = 2; i < n * 3; i += 3) pos[i] = this._z[i];
+		g.attributes.color.needsUpdate = true;
+		g.attributes.position.needsUpdate = true;
+	}
+
+	update(dt) {
+		const { pm, app } = this;
+		if (!pm.ready || !this.obj || !this.obj.parent || app.ui?.workspace !== 'edit' || pm.recording) return;
+		const rgb = pm.advance(dt);
+		if (rgb) {
+			this._apply(rgb);
+			app.viewport.invalidate();
+		}
+	}
+
+	setPts(n) {
+		this.cfg.pts = n;
+		this.app.saveSettings();
+		if (!this.pm.isRec) this.rebuild({ frame: false });
+		this.emit();
+	}
+
+	styleChanged() {
+		this.pm.dirty = true;
+		this.app.saveSettings();
+		this.emit();
+	}
+
+	async record({ fps, seconds }) {
+		const pm = this.pm;
+		if (pm.recording) {
+			this._cancel = true;
+			return;
+		}
+		this._cancel = false;
+		this.progress = { i: 0, total: 1 };
+		this.emit();
+		try {
+			const rec = await pm.record({
+				fps,
+				seconds,
+				cancel: () => this._cancel,
+				onProgress: (i, total) => {
+					this.progress = { i, total };
+					if (i % 3 === 0) this.emit();
+				},
+			});
+			if (rec) this.app.toast(`Записано кадров: ${rec.frames.length}. Теперь можно сохранить`, 'ok');
+		} catch (e) {
+			this.app.toast(e.message || 'Не удалось записать', 'error');
+		}
+		this.progress = null;
+		pm.dirty = true;
+		this.emit();
+	}
+
+	/** Копия текущего кадра в сцену (для экспорта): облако остаётся живым, а кадр замораживается */
+	snapshot() {
+		const { pm, app } = this;
+		if (!pm.ready) return;
+		const c = this.cfg;
+		const cloud = pm.buildCloud(pm.sample(), c.relief, c.depth);
+		const pts = cloudToPoints(cloud, 'Кадр в точках');
+		this._muteFx();
+		app.model.add(pts, app.viewport.root);
+		app.toast('Кадр добавлен в сцену отдельным облаком точек', 'ok');
+	}
+
+	downloadPCV() {
+		if (this.pm.rec) downloadBlob(this.pm.toPCV(), baseName(this.pm.name, 'ролик') + '.pcv');
+	}
+
+	downloadPLY() {
+		const { pm } = this;
+		if (!pm.ready) return;
+		const c = this.cfg;
+		downloadBlob(new Blob([pm.framePLY(pm.sample(), c.relief, c.depth)], { type: 'application/octet-stream' }), baseName(pm.name, 'кадр') + '.ply');
+	}
+
+	downloadPLYZip() {
+		const { pm } = this;
+		if (!pm.rec) return;
+		const c = this.cfg;
+		const r = pm.toPLYZip(c.relief, c.depth);
+		downloadBlob(r.blob, baseName(pm.name, 'ролик') + '_ply.zip');
+		this.app.toast(r.step > 1 ? `Сохранено кадров: ${r.frames} (каждый ${r.step}-й)` : `Сохранено кадров: ${r.frames}`, 'ok');
+	}
+}
+
+};
 __defs['src/demo.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'makeDemoFiles', () => makeDemoFiles);
@@ -137882,6 +138129,7 @@ const { History } = __req('src/history.js');
 const { Nav } = __req('src/nav.js');
 const { Ops, snapOf } = __req('src/ops.js');
 const { UI } = __req('src/ui.js');
+const { MediaController } = __req('src/media-controller.js');
 const { setTextureLimits } = __req('src/materials.js');
 const { makeDemoFiles } = __req('src/demo.js');
 
@@ -137897,6 +138145,7 @@ class App {
 		this.history = new History(this);
 		this.nav = new Nav(this);
 		this.ops = new Ops(this);
+		this.media = new MediaController(this);
 		this.ui = new UI(this);
 	}
 

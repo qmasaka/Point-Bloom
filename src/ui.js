@@ -10,6 +10,7 @@ import { createMaterialPanel } from './panel-material.js';
 import { createViewPanel, DISPLAY_MODES } from './panel-view.js';
 import { createExportPanel } from './panel-export.js';
 import { createPointsPanel } from './panel-points.js';
+import { createMediaPanel } from './panel-media.js';
 import { EffectsEngine } from './effects-engine.js';
 import { createEffectsPanel, makeModelProvider } from './panel-effects.js';
 import { importFiles, assignTextureFiles, ACCEPT_ALL, MODEL_FORMATS, IMAGE_EXT } from './importers.js';
@@ -417,12 +418,13 @@ export class UI {
 	// --------------------------------------------------------- боковая панель
 	buildSidebar() {
 		const app = this.app;
-		for (const name of ['scene', 'material', 'points', 'view']) this.tabs[name] = $(`#panel-${name}`);
+		for (const name of ['scene', 'material', 'points', 'media', 'view']) this.tabs[name] = $(`#panel-${name}`);
 		$$('.tab').forEach((t) => t.addEventListener('click', () => this.showTab(t.dataset.tab)));
 		this.scenePanel = createScenePanel(app, this.tabs.scene);
 		this.materialPanel = createMaterialPanel(app, this.tabs.material);
 		this.viewPanel = createViewPanel(app, this.tabs.view);
 		this.pointsPanel = createPointsPanel(app, this.tabs.points);
+		this.mediaPanel = createMediaPanel(app, this.tabs.media);
 		this.exportPanel = createExportPanel(app, $('#panel-export'));
 		this.effectsEngine.modelProvider = makeModelProvider(app);
 		this.effectsPanel = createEffectsPanel(app, $('#panel-effects'), this.effectsEngine);
