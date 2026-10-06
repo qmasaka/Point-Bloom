@@ -818,12 +818,11 @@ void main() {
 		} else if (uMark.x < 4.5) vColor *= 1.0 + mkv * 0.8;
 		else if (uMark.x > 5.5) vColor += uMarkC * mkv * 1.8;
 	}
-	// Исчезновение точек в местах касания, с пульсирующим краем
+	// Исчезновение точек в местах касания: плавно гаснут без подсветки края
 	float cvan = 0.0;
 	if (uContact.z > 6.5 && uContact.x > 0.001) {
 		cvan = contactK(base);
-		float rim = smoothstep(0.05, 0.35, cvan) * (1.0 - smoothstep(0.35, 0.8, cvan));
-		vColor = vColor * (1.0 - smoothstep(0.3, 0.8, cvan)) + uP2 * rim * 1.6;
+		vColor *= 1.0 - smoothstep(0.1, 0.8, cvan);
 	}
 
 	// Срез / Изолинии: лазеры, рельеф на линиях или развёртка за бегущей плоскостью
