@@ -268,7 +268,6 @@ function hsvToRgb(hh, sat, v) {
 	const [r, g, b] = hh < 60 ? [c, x, 0] : hh < 120 ? [x, c, 0] : hh < 180 ? [0, c, x] : hh < 240 ? [0, x, c] : hh < 300 ? [x, 0, c] : [c, 0, x];
 	return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
 }
-const PICK_SWATCHES = ['#ffffff', '#e58a45', '#ff3d6e', '#ffd90f', '#7cff6b', '#00f0ff', '#4f8ff0', '#b06bff', '#ff1fcb', '#111418'];
 let openPicker = null;
 
 export function colorField({ value = '#ffffff', onInput, onChange }) {
@@ -327,8 +326,7 @@ export function colorField({ value = '#ffffff', onInput, onChange }) {
 		const sv = h('canvas', { class: 'cp-sv', width: 220, height: 150 });
 		const hue = h('canvas', { class: 'cp-hue', width: 220, height: 14 });
 		const hexIn = h('input', { type: 'text', class: 'num-in hex-in', value: cur, spellcheck: 'false', maxlength: 7, 'aria-label': 'HEX' });
-		const sw = h('div', { class: 'cp-sw' });
-		pop = h('div', { class: 'cp-pop', role: 'dialog', 'aria-label': 'Выбор цвета' }, sv, hue, h('div', { class: 'cp-row' }, h('span', { class: 'cp-cur', style: { background: cur } }), hexIn), sw);
+		pop = h('div', { class: 'cp-pop', role: 'dialog', 'aria-label': 'Выбор цвета' }, sv, hue, h('div', { class: 'cp-row' }, h('span', { class: 'cp-cur', style: { background: cur } }), hexIn));
 		const drawSV = () => {
 			const c = sv.getContext('2d');
 			const w = sv.width;
@@ -412,14 +410,6 @@ export function colorField({ value = '#ffffff', onInput, onChange }) {
 		hexIn.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter') hexIn.blur();
 		});
-		for (const c of PICK_SWATCHES) {
-			const b = h('button', { type: 'button', class: 'cp-chip', 'aria-label': c, style: { background: c } });
-			b.addEventListener('click', () => {
-				setHex(c);
-				refresh();
-			});
-			sw.append(b);
-		}
 		document.body.append(pop);
 		const z = parseFloat(document.documentElement.style.zoom) || 1;
 		const r = dot.getBoundingClientRect();

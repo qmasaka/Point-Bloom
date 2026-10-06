@@ -1,6 +1,7 @@
 import { h } from './util.js';
 import { section, field, slider, segmented, switchRow, button, colorField } from './ui-kit.js';
 import { cloudToPoints } from './pointcloud.js';
+import { icon } from './icons.js';
 const LUT = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
 const hexToLin = (hx) => {
 const n = parseInt(hx.slice(1), 16);
@@ -82,36 +83,113 @@ let current = null;
 let timer = null;
 const input = h('textarea', { class: 'text-in', rows: 2, spellcheck: 'false', placeholder: 'Введите текст', 'aria-label': 'Текст' });
 input.value = cfg.text;
-const listId = 'fontList';
-const fontIn = h('input', { type: 'text', class: 'num-in font-in', list: listId, value: cfg.family, spellcheck: 'false', 'aria-label': 'Шрифт', placeholder: 'Название шрифта' });
-const dl = h('datalist', { id: listId });
-const fill = (names) => {
-dl.textContent = '';
-for (const n of names) dl.append(h('option', { value: n }));
-};
-fill(BASE_FONTS);
-const fontHint = h('div', { class: 'field-hint' }, 'Впишите название любого шрифта, установленного на компьютере, или загрузите их список.');
-const loadFonts = button({
-label: 'Шрифты с компьютера',
-icon: 'text-aa',
-variant: 'secondary',
-cls: 'btn-block',
-title: 'Браузер спросит разрешение и покажет все установленные шрифты',
-onClick: async () => {
+let fontNames = [...BASE_FONTS];
+let localTried = false;
+const fontHint = h('div', { class: 'field-hint' });
+const fontIn = h('input', { type: 'text', class: 'num-in font-in', value: cfg.family, spellcheck: 'false', autocomplete: 'off', 'aria-label': 'Шрифт', placeholder: 'Начните вводить название' });
+const caret = h('span', { class: 'font-caret', html: icon('caret-down', 14) });
+const fontBox = h('div', { class: 'font-pick' }, fontIn, caret);
+let menu = null;
+const loadLocal = async () => {
+if (localTried) return;
+localTried = true;
 if (!window.queryLocalFonts) {
-fontHint.textContent = 'Этот браузер не показывает список шрифтов (нужен Chrome или Edge). Название шрифта можно вписать вручную.';
+fontHint.textContent = 'Этот браузер не показывает список шрифтов компьютера (нужен Chrome или Edge). Название шрифта можно вписать вручную.';
 return;
 }
 try {
 const fonts = await window.queryLocalFonts();
 const names = [...new Set(fonts.map((f) => f.family))].sort((a, b) => a.localeCompare(b));
-fill([...BASE_FONTS, ...names]);
-fontHint.textContent = `Загружено шрифтов: ${names.length}. Начните вводить название или откройте список стрелкой.`;
+fontNames = [...new Set([...BASE_FONTS, ...names])];
+fontHint.textContent = `Шрифтов с компьютера: ${names.length}`;
+if (menu) fillMenu();
 } catch (e) {
-fontHint.textContent = 'Доступ к шрифтам не разрешён. Название шрифта можно вписать вручную.';
+localTried = false;
+fontHint.textContent = 'Нет доступа к шрифтам компьютера. Разрешите его в браузере или впишите название вручную.';
 }
-},
+};
+const pick = (name) => {
+fontIn.value = name;
+cfg.family = name;
+closeMenu();
+changed();
+};
+function fillMenu() {
+if (!menu) return;
+const q = fontIn.dataset.q ? fontIn.value.trim().toLowerCase() : '';
+menu.textContent = '';
+const list = fontNames.filter((n) => !q || n.toLowerCase().includes(q));
+if (!list.length) menu.append(h('div', { class: 'font-empty' }, 'Такого шрифта нет в списке. Enter применит введённое название.'));
+for (const n of list) {
+const it = h('button', { type: 'button', class: 'font-item', style: { fontFamily: `"${n}", system-ui, sans-serif` } }, n);
+if (n === cfg.family) it.classList.add('is-active');
+it.addEventListener('mousedown', (e) => e.preventDefault());
+it.addEventListener('click', () => pick(n));
+menu.append(it);
+}
+const cur = menu.querySelector('.is-active');
+if (cur && !q) cur.scrollIntoView({ block: 'center' });
+}
+function placeMenu() {
+const z = parseFloat(document.documentElement.style.zoom) || 1;
+const r = fontBox.getBoundingClientRect();
+menu.style.width = r.width / z + 'px';
+menu.style.left = r.left / z + 'px';
+const below = window.innerHeight / z - r.bottom / z - 12;
+const above = r.top / z - 12;
+if (below < 180 && above > below) {
+menu.style.top = 'auto';
+menu.style.bottom = window.innerHeight / z - r.top / z + 4 + 'px';
+menu.style.maxHeight = Math.min(320, above) + 'px';
+} else {
+menu.style.bottom = 'auto';
+menu.style.top = r.bottom / z + 4 + 'px';
+menu.style.maxHeight = Math.min(320, below) + 'px';
+}
+}
+function openMenu() {
+if (menu) return;
+menu = h('div', { class: 'font-menu', role: 'listbox', 'aria-label': 'Шрифты' });
+document.body.append(menu);
+fontIn.dataset.q = '';
+fillMenu();
+placeMenu();
+fontBox.classList.add('is-open');
+loadLocal();
+document.addEventListener('pointerdown', outside, true);
+}
+function closeMenu() {
+if (!menu) return;
+menu.remove();
+menu = null;
+fontBox.classList.remove('is-open');
+fontIn.dataset.q = '';
+document.removeEventListener('pointerdown', outside, true);
+}
+const outside = (e) => {
+if (menu && !menu.contains(e.target) && !fontBox.contains(e.target)) closeMenu();
+};
+fontIn.addEventListener('focus', openMenu);
+fontIn.addEventListener('click', openMenu);
+caret.addEventListener('click', () => (menu ? closeMenu() : (fontIn.focus(), openMenu())));
+fontIn.addEventListener('input', () => {
+openMenu();
+fontIn.dataset.q = '1';
+fillMenu();
 });
+fontIn.addEventListener('keydown', (e) => {
+if (e.key === 'Enter') {
+const v = fontIn.value.trim();
+const first = menu && fontIn.dataset.q ? menu.querySelector('.font-item') : null;
+pick(first && !fontNames.includes(v) ? first.textContent : v || 'Geist');
+fontIn.blur();
+} else if (e.key === 'Escape') {
+fontIn.value = cfg.family;
+closeMenu();
+fontIn.blur();
+}
+});
+fontIn.addEventListener('blur', () => setTimeout(() => !menu || document.activeElement === fontIn || closeMenu(), 120));
 const weight = segmented({ options: [{ value: 400, label: 'Обычный' }, { value: 700, label: 'Жирный' }, { value: 900, label: 'Чёрный' }], value: cfg.weight, onChange: (v) => { cfg.weight = Number(v); changed(); } });
 const italic = switchRow('Курсив', { value: cfg.italic, onChange: (v) => { cfg.italic = v; changed(); } });
 const fillSeg = segmented({ options: [{ value: 'fill', label: 'Заливка' }, { value: 'outline', label: 'Контур' }], value: cfg.fill, onChange: (v) => { cfg.fill = v; changed(); } });
@@ -161,15 +239,11 @@ input.addEventListener('input', () => {
 cfg.text = input.value;
 changed();
 });
-fontIn.addEventListener('change', () => {
-cfg.family = fontIn.value.trim() || 'Geist';
-changed();
-});
 const add = button({ label: 'Создать текст из точек', icon: 'text-aa', variant: 'primary', cls: 'btn-block', onClick: () => generate(true) });
 app.bus.on('selection', () => {
 const s = app.model.selected;
 if (s && s.userData.text) current = s;
 });
-const sec = section('Текст в точки', { key: 'p-text', open: false }, input, field('Шрифт', fontIn, { wide: true }), dl, loadFonts, fontHint, field('Начертание', weight.el, { wide: true }), italic.el, field('Вид', fillSeg.el, { wide: true }), field('Точек', count.el), field('Толщина', depth.el), field('Цвет', colorMode.el, { wide: true }), colorRow, add, status);
+const sec = section('Текст в точки', { key: 'p-text', open: false }, input, field('Шрифт', fontBox, { wide: true }), fontHint, field('Начертание', weight.el, { wide: true }), italic.el, field('Вид', fillSeg.el, { wide: true }), field('Точек', count.el), field('Толщина', depth.el), field('Цвет', colorMode.el, { wide: true }), colorRow, add, status);
 return sec;
 }

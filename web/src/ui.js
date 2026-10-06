@@ -368,9 +368,6 @@ const blob = await app.viewport.screenshot({ transparent: app.settings.render.bg
 downloadBlob(blob, 'screenshot.png');
 this.toast('Скриншот сохранён', 'ok', 1800);
 });
-const sidebarBtn = $('#btnSidebar');
-sidebarBtn.addEventListener('click', () => this.toggleSidebar());
-if (window.matchMedia('(max-width: 900px)').matches) this.toggleSidebar(true);
 }
 toggleSidebar(force) {
 const ws = $('.workspace');
@@ -705,10 +702,15 @@ const group = (title, ...rows) => h('div', { class: 'help-group' }, h('h3', {}, 
 const dlg = this.dialog;
 dlg.textContent = '';
 const close = button({ label: 'Закрыть', variant: 'secondary', onClick: () => dlg.close() });
+const xBtn = h('button', { type: 'button', class: 'dlg-x btn btn-icon', 'aria-label': 'Закрыть', 'data-tip': 'Закрыть (Esc)', onclick: () => dlg.close(), html: icon('x', 18) });
+dlg.onclick = (e) => {
+if (e.target === dlg) dlg.close();
+};
 dlg.append(
 h(
 'div',
 { class: 'dlg-inner' },
+xBtn,
 h('h2', {}, 'Как пользоваться'),
 h('p', {}, 'Перетащите модель в окно (вместе с .mtl и текстурами или всей папкой), при необходимости добавьте текстуру, затем нажмите «Скачать GLB».'),
 h(
@@ -717,12 +719,14 @@ h(
 group('Навигация', row('Вращение', 'СКМ'), row('Вращение (трекпад)', 'Alt', 'ЛКМ'), row('Сдвиг', 'Shift', 'СКМ'), row('Масштаб', 'Колесо'), row('Центр на точке', 'Двойной клик'), row('Показать всё', 'Home'), row('Показать выбранное', 'F')),
 group('Виды', row('Спереди / сзади', 'Num 1'), row('Справа / слева', 'Num 3'), row('Сверху / снизу', 'Num 7'), row('Без Numpad', 'Alt', '1 3 7'), row('Ортогональная', 'Num 5', 'P'), row('Шаг вращения', 'Num 4 6 8 2')),
 group('Правка', row('Выбор', 'Q'), row('Переместить', 'G'), row('Вращать', 'R'), row('Масштаб', 'S'), row('Привязка к шагу', 'N'), row('Оси: мир / локальные', 'L'), row('Дублировать', 'Shift', 'D'), row('Удалить', 'X'), row('Скрыть / показать', 'H', 'Alt+H')),
-group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть / текстура', 'O', 'T'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Музыка: пуск / пауза', 'Пробел'), row('Панель справа', 'Tab'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
+group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть / текстура', 'O', 'T'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Музыка: пуск / пауза', 'Пробел'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
 ),
 h('div', { class: 'dlg-actions' }, close)
 )
 );
-dlg.onclose = null;
+dlg.onclose = () => {
+dlg.onclick = null;
+};
 dlg.showModal();
 }
 buildDragDrop() {
@@ -989,10 +993,6 @@ const i = modeKeys.indexOf(app.settings.display);
 app.setDisplay(modeKeys[(i + 1) % modeKeys.length]);
 return;
 }
-case 'Tab':
-if (document.activeElement && document.activeElement !== document.body) return;
-e.preventDefault();
-return this.toggleSidebar();
 case 'Escape':
 if (this.workspace === 'fx') {
 this.setWorkspace('edit');

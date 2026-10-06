@@ -3196,3 +3196,73 @@ body {
 .fx-focus .fx-left-btn {
 	display: none !important;
 }
+
+/* выбор шрифта для текста из точек */
+.font-pick {
+	position: relative;
+}
+.font-pick .font-in {
+	padding-right: 30px;
+}
+.font-caret {
+	position: absolute;
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	display: inline-flex;
+	color: var(--text-faint);
+	cursor: pointer;
+	transition: transform 0.16s var(--ease);
+}
+.font-pick.is-open .font-caret {
+	transform: translateY(-50%) rotate(180deg);
+}
+.font-menu {
+	position: fixed;
+	z-index: var(--z-tip);
+	overflow: auto;
+	padding: 4px;
+	background: var(--bg-raised);
+	border: 1px solid var(--line-strong);
+	border-radius: var(--r-box);
+	box-shadow: var(--shadow-pop);
+}
+.font-item {
+	display: block;
+	width: 100%;
+	padding: 7px 10px;
+	text-align: left;
+	font-size: 15px;
+	line-height: 1.25;
+	color: var(--text);
+	background: transparent;
+	border: 0;
+	border-radius: var(--r-ctl);
+	cursor: pointer;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	content-visibility: auto;
+	contain-intrinsic-size: auto 32px;
+}
+.font-item:hover {
+	background: var(--bg-hover);
+}
+.font-item.is-active {
+	background: var(--accent-soft);
+	color: var(--accent-text);
+}
+.font-empty {
+	padding: 10px;
+	font-size: 12px;
+	color: var(--text-dim);
+}
+
+/* крестик закрытия в диалогах */
+.dlg-x {
+	position: sticky;
+	top: 0;
+	justify-self: end;
+	z-index: 2;
+	margin: -10px -10px -34px 0;
+}

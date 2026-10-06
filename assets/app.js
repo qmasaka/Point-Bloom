@@ -89421,7 +89421,6 @@ const ICON_PATHS = {
 	'scan': '<path d="M224,40V80a8,8,0,0,1-16,0V48H176a8,8,0,0,1,0-16h40A8,8,0,0,1,224,40ZM80,208H48V176a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H80a8,8,0,0,0,0-16Zm136-40a8,8,0,0,0-8,8v32H176a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V176A8,8,0,0,0,216,168ZM40,88a8,8,0,0,0,8-8V48H80a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8V80A8,8,0,0,0,40,88ZM80,72h96a8,8,0,0,1,8,8v96a8,8,0,0,1-8,8H80a8,8,0,0,1-8-8V80A8,8,0,0,1,80,72Zm8,96h80V88H88Z"/>',
 	'selection': '<path d="M152,40a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h32A8,8,0,0,1,152,40Zm-8,168H112a8,8,0,0,0,0,16h32a8,8,0,0,0,0-16ZM208,32H184a8,8,0,0,0,0,16h24V72a8,8,0,0,0,16,0V48A16,16,0,0,0,208,32Zm8,72a8,8,0,0,0-8,8v32a8,8,0,0,0,16,0V112A8,8,0,0,0,216,104Zm0,72a8,8,0,0,0-8,8v24H184a8,8,0,0,0,0,16h24a16,16,0,0,0,16-16V184A8,8,0,0,0,216,176ZM40,152a8,8,0,0,0,8-8V112a8,8,0,0,0-16,0v32A8,8,0,0,0,40,152Zm32,56H48V184a8,8,0,0,0-16,0v24a16,16,0,0,0,16,16H72a8,8,0,0,0,0-16ZM72,32H48A16,16,0,0,0,32,48V72a8,8,0,0,0,16,0V48H72a8,8,0,0,0,0-16Z"/>',
 	'share-network': '<path d="M176,160a39.89,39.89,0,0,0-28.62,12.09l-46.1-29.63a39.8,39.8,0,0,0,0-28.92l46.1-29.63a40,40,0,1,0-8.66-13.45l-46.1,29.63a40,40,0,1,0,0,55.82l46.1,29.63A40,40,0,1,0,176,160Zm0-128a24,24,0,1,1-24,24A24,24,0,0,1,176,32ZM64,152a24,24,0,1,1,24-24A24,24,0,0,1,64,152Zm112,72a24,24,0,1,1,24-24A24,24,0,0,1,176,224Z"/>',
-	'sidebar-simple': '<path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H80V200H40ZM216,200H96V56H216V200Z"/>',
 	'sliders-horizontal': '<path d="M40,88H73a32,32,0,0,0,62,0h81a8,8,0,0,0,0-16H135a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16Zm64-24A16,16,0,1,1,88,80,16,16,0,0,1,104,64ZM216,168H199a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16h97a32,32,0,0,0,62,0h17a8,8,0,0,0,0-16Zm-48,24a16,16,0,1,1,16-16A16,16,0,0,1,168,192Z"/>',
 	'snowflake': '<path d="M223.77,150.09a8,8,0,0,1-5.86,9.68l-24.64,6,6.46,24.11a8,8,0,0,1-5.66,9.8A8.25,8.25,0,0,1,192,200a8,8,0,0,1-7.72-5.93l-7.72-28.8L136,141.86v46.83l21.66,21.65a8,8,0,0,1-11.32,11.32L128,203.31l-18.34,18.35a8,8,0,0,1-11.32-11.32L120,188.69V141.86L79.45,165.27l-7.72,28.8A8,8,0,0,1,64,200a8.25,8.25,0,0,1-2.08-.27,8,8,0,0,1-5.66-9.8l6.46-24.11-24.64-6a8,8,0,0,1,3.82-15.54l29.45,7.23L112,128,71.36,104.54l-29.45,7.23A7.85,7.85,0,0,1,40,112a8,8,0,0,1-1.91-15.77l24.64-6L56.27,66.07a8,8,0,0,1,15.46-4.14l7.72,28.8L120,114.14V67.31L98.34,45.66a8,8,0,0,1,11.32-11.32L128,52.69l18.34-18.35a8,8,0,0,1,11.32,11.32L136,67.31v46.83l40.55-23.41,7.72-28.8a8,8,0,0,1,15.46,4.14l-6.46,24.11,24.64,6A8,8,0,0,1,216,112a7.85,7.85,0,0,1-1.91-.23l-29.45-7.23L144,128l40.64,23.46,29.45-7.23A8,8,0,0,1,223.77,150.09Z"/>',
 	'sparkle': '<path d="M197.58,129.06,146,110l-19-51.62a15.92,15.92,0,0,0-29.88,0L78,110l-51.62,19a15.92,15.92,0,0,0,0,29.88L78,178l19,51.62a15.92,15.92,0,0,0,29.88,0L146,178l51.62-19a15.92,15.92,0,0,0,0-29.88ZM137,164.22a8,8,0,0,0-4.74,4.74L112,223.85,91.78,169A8,8,0,0,0,87,164.22L32.15,144,87,123.78A8,8,0,0,0,91.78,119L112,64.15,132.22,119a8,8,0,0,0,4.74,4.74L191.85,144ZM144,40a8,8,0,0,1,8-8h16V16a8,8,0,0,1,16,0V32h16a8,8,0,0,1,0,16H184V64a8,8,0,0,1-16,0V48H152A8,8,0,0,1,144,40ZM248,88a8,8,0,0,1-8,8h-8v8a8,8,0,0,1-16,0V96h-8a8,8,0,0,1,0-16h8V72a8,8,0,0,1,16,0v8h8A8,8,0,0,1,248,88Z"/>',
@@ -89767,7 +89766,6 @@ function hsvToRgb(hh, sat, v) {
 	const [r, g, b] = hh < 60 ? [c, x, 0] : hh < 120 ? [x, c, 0] : hh < 180 ? [0, c, x] : hh < 240 ? [0, x, c] : hh < 300 ? [x, 0, c] : [c, 0, x];
 	return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
 }
-const PICK_SWATCHES = ['#ffffff', '#e58a45', '#ff3d6e', '#ffd90f', '#7cff6b', '#00f0ff', '#4f8ff0', '#b06bff', '#ff1fcb', '#111418'];
 let openPicker = null;
 
 function colorField({ value = '#ffffff', onInput, onChange }) {
@@ -89826,8 +89824,7 @@ function colorField({ value = '#ffffff', onInput, onChange }) {
 		const sv = h('canvas', { class: 'cp-sv', width: 220, height: 150 });
 		const hue = h('canvas', { class: 'cp-hue', width: 220, height: 14 });
 		const hexIn = h('input', { type: 'text', class: 'num-in hex-in', value: cur, spellcheck: 'false', maxlength: 7, 'aria-label': 'HEX' });
-		const sw = h('div', { class: 'cp-sw' });
-		pop = h('div', { class: 'cp-pop', role: 'dialog', 'aria-label': 'Выбор цвета' }, sv, hue, h('div', { class: 'cp-row' }, h('span', { class: 'cp-cur', style: { background: cur } }), hexIn), sw);
+		pop = h('div', { class: 'cp-pop', role: 'dialog', 'aria-label': 'Выбор цвета' }, sv, hue, h('div', { class: 'cp-row' }, h('span', { class: 'cp-cur', style: { background: cur } }), hexIn));
 		const drawSV = () => {
 			const c = sv.getContext('2d');
 			const w = sv.width;
@@ -89911,14 +89908,6 @@ function colorField({ value = '#ffffff', onInput, onChange }) {
 		hexIn.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter') hexIn.blur();
 		});
-		for (const c of PICK_SWATCHES) {
-			const b = h('button', { type: 'button', class: 'cp-chip', 'aria-label': c, style: { background: c } });
-			b.addEventListener('click', () => {
-				setHex(c);
-				refresh();
-			});
-			sw.append(b);
-		}
 		document.body.append(pop);
 		const z = parseFloat(document.documentElement.style.zoom) || 1;
 		const r = dot.getBoundingClientRect();
@@ -132003,6 +131992,7 @@ __def(__exports, 'createTextSection', () => createTextSection);
 const { h } = __req('src/util.js');
 const { section, field, slider, segmented, switchRow, button, colorField } = __req('src/ui-kit.js');
 const { cloudToPoints } = __req('src/pointcloud.js');
+const { icon } = __req('src/icons.js');
 
 const LUT = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
 const hexToLin = (hx) => {
@@ -132092,36 +132082,114 @@ function createTextSection(app) {
 
 	const input = h('textarea', { class: 'text-in', rows: 2, spellcheck: 'false', placeholder: 'Введите текст', 'aria-label': 'Текст' });
 	input.value = cfg.text;
-	const listId = 'fontList';
-	const fontIn = h('input', { type: 'text', class: 'num-in font-in', list: listId, value: cfg.family, spellcheck: 'false', 'aria-label': 'Шрифт', placeholder: 'Название шрифта' });
-	const dl = h('datalist', { id: listId });
-	const fill = (names) => {
-		dl.textContent = '';
-		for (const n of names) dl.append(h('option', { value: n }));
+	// выбор шрифта: поле с поиском и список шрифтов, каждый показан своим начертанием
+	let fontNames = [...BASE_FONTS];
+	let localTried = false;
+	const fontHint = h('div', { class: 'field-hint' });
+	const fontIn = h('input', { type: 'text', class: 'num-in font-in', value: cfg.family, spellcheck: 'false', autocomplete: 'off', 'aria-label': 'Шрифт', placeholder: 'Начните вводить название' });
+	const caret = h('span', { class: 'font-caret', html: icon('caret-down', 14) });
+	const fontBox = h('div', { class: 'font-pick' }, fontIn, caret);
+	let menu = null;
+	const loadLocal = async () => {
+		if (localTried) return;
+		localTried = true;
+		if (!window.queryLocalFonts) {
+			fontHint.textContent = 'Этот браузер не показывает список шрифтов компьютера (нужен Chrome или Edge). Название шрифта можно вписать вручную.';
+			return;
+		}
+		try {
+			const fonts = await window.queryLocalFonts();
+			const names = [...new Set(fonts.map((f) => f.family))].sort((a, b) => a.localeCompare(b));
+			fontNames = [...new Set([...BASE_FONTS, ...names])];
+			fontHint.textContent = `Шрифтов с компьютера: ${names.length}`;
+			if (menu) fillMenu();
+		} catch (e) {
+			localTried = false;
+			fontHint.textContent = 'Нет доступа к шрифтам компьютера. Разрешите его в браузере или впишите название вручную.';
+		}
 	};
-	fill(BASE_FONTS);
-	const fontHint = h('div', { class: 'field-hint' }, 'Впишите название любого шрифта, установленного на компьютере, или загрузите их список.');
-	const loadFonts = button({
-		label: 'Шрифты с компьютера',
-		icon: 'text-aa',
-		variant: 'secondary',
-		cls: 'btn-block',
-		title: 'Браузер спросит разрешение и покажет все установленные шрифты',
-		onClick: async () => {
-			if (!window.queryLocalFonts) {
-				fontHint.textContent = 'Этот браузер не показывает список шрифтов (нужен Chrome или Edge). Название шрифта можно вписать вручную.';
-				return;
-			}
-			try {
-				const fonts = await window.queryLocalFonts();
-				const names = [...new Set(fonts.map((f) => f.family))].sort((a, b) => a.localeCompare(b));
-				fill([...BASE_FONTS, ...names]);
-				fontHint.textContent = `Загружено шрифтов: ${names.length}. Начните вводить название или откройте список стрелкой.`;
-			} catch (e) {
-				fontHint.textContent = 'Доступ к шрифтам не разрешён. Название шрифта можно вписать вручную.';
-			}
-		},
+	const pick = (name) => {
+		fontIn.value = name;
+		cfg.family = name;
+		closeMenu();
+		changed();
+	};
+	function fillMenu() {
+		if (!menu) return;
+		const q = fontIn.dataset.q ? fontIn.value.trim().toLowerCase() : '';
+		menu.textContent = '';
+		const list = fontNames.filter((n) => !q || n.toLowerCase().includes(q));
+		if (!list.length) menu.append(h('div', { class: 'font-empty' }, 'Такого шрифта нет в списке. Enter применит введённое название.'));
+		for (const n of list) {
+			const it = h('button', { type: 'button', class: 'font-item', style: { fontFamily: `"${n}", system-ui, sans-serif` } }, n);
+			if (n === cfg.family) it.classList.add('is-active');
+			it.addEventListener('mousedown', (e) => e.preventDefault());
+			it.addEventListener('click', () => pick(n));
+			menu.append(it);
+		}
+		const cur = menu.querySelector('.is-active');
+		if (cur && !q) cur.scrollIntoView({ block: 'center' });
+	}
+	function placeMenu() {
+		const z = parseFloat(document.documentElement.style.zoom) || 1;
+		const r = fontBox.getBoundingClientRect();
+		menu.style.width = r.width / z + 'px';
+		menu.style.left = r.left / z + 'px';
+		const below = window.innerHeight / z - r.bottom / z - 12;
+		const above = r.top / z - 12;
+		if (below < 180 && above > below) {
+			menu.style.top = 'auto';
+			menu.style.bottom = window.innerHeight / z - r.top / z + 4 + 'px';
+			menu.style.maxHeight = Math.min(320, above) + 'px';
+		} else {
+			menu.style.bottom = 'auto';
+			menu.style.top = r.bottom / z + 4 + 'px';
+			menu.style.maxHeight = Math.min(320, below) + 'px';
+		}
+	}
+	function openMenu() {
+		if (menu) return;
+		menu = h('div', { class: 'font-menu', role: 'listbox', 'aria-label': 'Шрифты' });
+		document.body.append(menu);
+		fontIn.dataset.q = '';
+		fillMenu();
+		placeMenu();
+		fontBox.classList.add('is-open');
+		loadLocal();
+		document.addEventListener('pointerdown', outside, true);
+	}
+	function closeMenu() {
+		if (!menu) return;
+		menu.remove();
+		menu = null;
+		fontBox.classList.remove('is-open');
+		fontIn.dataset.q = '';
+		document.removeEventListener('pointerdown', outside, true);
+	}
+	const outside = (e) => {
+		if (menu && !menu.contains(e.target) && !fontBox.contains(e.target)) closeMenu();
+	};
+	fontIn.addEventListener('focus', openMenu);
+	fontIn.addEventListener('click', openMenu);
+	caret.addEventListener('click', () => (menu ? closeMenu() : (fontIn.focus(), openMenu())));
+	fontIn.addEventListener('input', () => {
+		openMenu();
+		fontIn.dataset.q = '1';
+		fillMenu();
 	});
+	fontIn.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter') {
+			const v = fontIn.value.trim();
+			const first = menu && fontIn.dataset.q ? menu.querySelector('.font-item') : null;
+			pick(first && !fontNames.includes(v) ? first.textContent : v || 'Geist');
+			fontIn.blur();
+		} else if (e.key === 'Escape') {
+			fontIn.value = cfg.family;
+			closeMenu();
+			fontIn.blur();
+		}
+	});
+	fontIn.addEventListener('blur', () => setTimeout(() => !menu || document.activeElement === fontIn || closeMenu(), 120));
 	const weight = segmented({ options: [{ value: 400, label: 'Обычный' }, { value: 700, label: 'Жирный' }, { value: 900, label: 'Чёрный' }], value: cfg.weight, onChange: (v) => { cfg.weight = Number(v); changed(); } });
 	const italic = switchRow('Курсив', { value: cfg.italic, onChange: (v) => { cfg.italic = v; changed(); } });
 	const fillSeg = segmented({ options: [{ value: 'fill', label: 'Заливка' }, { value: 'outline', label: 'Контур' }], value: cfg.fill, onChange: (v) => { cfg.fill = v; changed(); } });
@@ -132173,17 +132241,13 @@ function createTextSection(app) {
 		cfg.text = input.value;
 		changed();
 	});
-	fontIn.addEventListener('change', () => {
-		cfg.family = fontIn.value.trim() || 'Geist';
-		changed();
-	});
 	const add = button({ label: 'Создать текст из точек', icon: 'text-aa', variant: 'primary', cls: 'btn-block', onClick: () => generate(true) });
 	// выбор другого текстового объекта в сцене делает его текущим
 	app.bus.on('selection', () => {
 		const s = app.model.selected;
 		if (s && s.userData.text) current = s;
 	});
-	const sec = section('Текст в точки', { key: 'p-text', open: false }, input, field('Шрифт', fontIn, { wide: true }), dl, loadFonts, fontHint, field('Начертание', weight.el, { wide: true }), italic.el, field('Вид', fillSeg.el, { wide: true }), field('Точек', count.el), field('Толщина', depth.el), field('Цвет', colorMode.el, { wide: true }), colorRow, add, status);
+	const sec = section('Текст в точки', { key: 'p-text', open: false }, input, field('Шрифт', fontBox, { wide: true }), fontHint, field('Начертание', weight.el, { wide: true }), italic.el, field('Вид', fillSeg.el, { wide: true }), field('Точек', count.el), field('Толщина', depth.el), field('Цвет', colorMode.el, { wide: true }), colorRow, add, status);
 	return sec;
 }
 
@@ -138724,9 +138788,6 @@ class UI {
 			downloadBlob(blob, 'screenshot.png');
 			this.toast('Скриншот сохранён', 'ok', 1800);
 		});
-		const sidebarBtn = $('#btnSidebar');
-		sidebarBtn.addEventListener('click', () => this.toggleSidebar());
-		if (window.matchMedia('(max-width: 900px)').matches) this.toggleSidebar(true);
 	}
 
 	toggleSidebar(force) {
@@ -139099,10 +139160,15 @@ class UI {
 		const dlg = this.dialog;
 		dlg.textContent = '';
 		const close = button({ label: 'Закрыть', variant: 'secondary', onClick: () => dlg.close() });
+		const xBtn = h('button', { type: 'button', class: 'dlg-x btn btn-icon', 'aria-label': 'Закрыть', 'data-tip': 'Закрыть (Esc)', onclick: () => dlg.close(), html: icon('x', 18) });
+		dlg.onclick = (e) => {
+			if (e.target === dlg) dlg.close();
+		};
 		dlg.append(
 			h(
 				'div',
 				{ class: 'dlg-inner' },
+				xBtn,
 				h('h2', {}, 'Как пользоваться'),
 				h('p', {}, 'Перетащите модель в окно (вместе с .mtl и текстурами или всей папкой), при необходимости добавьте текстуру, затем нажмите «Скачать GLB».'),
 				h(
@@ -139111,12 +139177,14 @@ class UI {
 					group('Навигация', row('Вращение', 'СКМ'), row('Вращение (трекпад)', 'Alt', 'ЛКМ'), row('Сдвиг', 'Shift', 'СКМ'), row('Масштаб', 'Колесо'), row('Центр на точке', 'Двойной клик'), row('Показать всё', 'Home'), row('Показать выбранное', 'F')),
 					group('Виды', row('Спереди / сзади', 'Num 1'), row('Справа / слева', 'Num 3'), row('Сверху / снизу', 'Num 7'), row('Без Numpad', 'Alt', '1 3 7'), row('Ортогональная', 'Num 5', 'P'), row('Шаг вращения', 'Num 4 6 8 2')),
 					group('Правка', row('Выбор', 'Q'), row('Переместить', 'G'), row('Вращать', 'R'), row('Масштаб', 'S'), row('Привязка к шагу', 'N'), row('Оси: мир / локальные', 'L'), row('Дублировать', 'Shift', 'D'), row('Удалить', 'X'), row('Скрыть / показать', 'H', 'Alt+H')),
-					group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть / текстура', 'O', 'T'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Музыка: пуск / пауза', 'Пробел'), row('Панель справа', 'Tab'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
+					group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть / текстура', 'O', 'T'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Музыка: пуск / пауза', 'Пробел'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
 				),
 				h('div', { class: 'dlg-actions' }, close)
 			)
 		);
-		dlg.onclose = null;
+		dlg.onclose = () => {
+			dlg.onclick = null;
+		};
 		dlg.showModal();
 	}
 
@@ -139397,11 +139465,6 @@ class UI {
 					app.setDisplay(modeKeys[(i + 1) % modeKeys.length]);
 					return;
 				}
-				case 'Tab':
-					// Tab сворачивает панель только когда фокус не на элементе управления (иначе ломаем навигацию с клавиатуры)
-					if (document.activeElement && document.activeElement !== document.body) return;
-					e.preventDefault();
-					return this.toggleSidebar();
 				case 'Escape':
 					if (this.workspace === 'fx') {
 						this.setWorkspace('edit');
