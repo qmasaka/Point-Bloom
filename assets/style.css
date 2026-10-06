@@ -1548,7 +1548,7 @@ button {
 .toasts {
 	position: fixed;
 	left: 50%;
-	bottom: 84px;
+	top: 56px;
 	transform: translateX(-50%);
 	z-index: var(--z-toast);
 	display: grid;
@@ -3050,4 +3050,35 @@ body {
 }
 .tree-del:hover {
 	color: var(--danger);
+}
+
+/* ------------------------------------------------ сетки цветов и форм подстраиваются под ширину панели */
+.shape-grid {
+	grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+}
+.swatches,
+.fx-bg-sw,
+.fx-color .fx-bg-sw,
+.cp-sw {
+	grid-template-columns: repeat(auto-fill, minmax(24px, 1fr));
+}
+.fx-palettes {
+	grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+}
+.fx-bg-chip,
+.sw,
+.cp-chip {
+	max-width: 36px;
+}
+
+/* узкая боковая панель: подпись над элементом, а не слева от него, чтобы слайдеры и кнопки не сжимались */
+@container (max-width: 275px) {
+	.field,
+	.field.field-wide {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 3px;
+	}
+	.field .field-label {
+		margin: 0;
+	}
 }

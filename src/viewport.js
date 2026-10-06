@@ -150,7 +150,7 @@ export class Viewport {
 
 	updateSelectionBox() {
 		const list = this.app.model?.selection || [];
-		if (!list.length || !this.app.settings.overlays.bbox) {
+		if (!list.length || !this.app.settings.overlays.bbox || this.fxHide) {
 			this.selBox.visible = false;
 		} else {
 			const box = this.selBox.box;
