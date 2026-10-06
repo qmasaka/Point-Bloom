@@ -544,7 +544,6 @@ fxTabHook = () => showFxTab('insp');
 const bar = $bar();
 const playBtn = iconButton({ icon: 'speaker-high', title: 'Звук: включить или выключить (Пробел)', onClick: () => engine.toggle().catch(() => {}) });
 const collapseBtn = iconButton({ icon: 'atom', title: 'Разрушить / собрать форму («Распад»)', onClick: () => { engine.toggleCollapse(); sync(); } });
-const brushBtn = iconButton({ icon: 'paint-brush', title: 'Кисть: рисовать по форме', onClick: () => { st.layers.brush.on = !st.layers.brush.on; save(); sync(); } });
 const orthoBtn = iconButton({ icon: 'perspective', title: 'Проекция: перспектива или ортогональная', onClick: () => { app.nav.toggleOrtho(); sync(); } });
 const camBtn = iconButton({ icon: 'video-camera', title: 'Камера: управление руками и пальцами', onClick: () => engine.toggleMotionCam().then(sync) });
 const trackName = h('div', { class: 'fx-track' });
@@ -592,7 +591,7 @@ bgBtn.setAttribute('aria-expanded', 'false');
 });
 syncBg();
 const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
-bar.append(leftBtn, playBtn, collapseBtn, brushBtn, camBtn, trackName, barMeters.el, h('span', { class: 'fx-bar-sep' }), orthoBtn, bgBtn, recBtn, recTime, exitBtn);
+bar.append(leftBtn, playBtn, collapseBtn, camBtn, trackName, barMeters.el, h('span', { class: 'fx-bar-sep' }), orthoBtn, bgBtn, recBtn, recTime, exitBtn);
 function sync() {
 tileMap.forEach((b, k) => {
 b.setAttribute('aria-checked', String(k === st.source));
@@ -662,7 +661,6 @@ playBtn.append(h('span', { class: 'ic-wrap', html: icon(engine.playing ? 'speake
 collapseBtn.classList.toggle('is-active', engine.isCollapsed);
 const pl = document.querySelector('.fx-insp[data-layer="physics"] .btn-label');
 if (pl) pl.textContent = engine.isCollapsed ? 'Собрать форму' : 'Разрушить форму';
-brushBtn.classList.toggle('is-active', !!st.layers.brush?.on);
 camBtn.classList.toggle('is-active', !!engine.camTracker?.running);
 orthoBtn.classList.toggle('is-active', !!app.nav.ortho);
 orthoBtn.dataset.tip = app.nav.ortho ? 'Сейчас: ортогональная проекция. Включить перспективу' : 'Сейчас: перспектива. Включить ортогональную проекцию';
