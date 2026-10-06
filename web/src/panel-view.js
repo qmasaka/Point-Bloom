@@ -16,10 +16,9 @@ const redisplay = () => {
 app.display.apply();
 save();
 };
-const mode = segmented({ options: DISPLAY_MODES, value: s.display, cls: 'seg-wrap', label: 'Режим отображения', onChange: (v) => app.setDisplay(v) });
 const flat = switchRow('Плоское затенение', { value: s.flat, onChange: (v) => { s.flat = v; redisplay(); } });
 const fps = switchRow('Показывать FPS', { value: s.render.fps, onChange: (v) => { s.render.fps = v; app.ui.refreshFps(); save(); } });
-const secDisplay = section('Отображение', { key: 'v-display' }, mode.el, flat.el, fps.el);
+const secDisplay = section('Отображение', { key: 'v-display' }, flat.el, fps.el);
 const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Фон сцены' });
 const swButtons = new Map();
 for (const [id, bg] of Object.entries(BACKGROUNDS)) {
@@ -84,7 +83,6 @@ const secSnap = section('Привязка', { key: 'v-snap', open: false }, snap
 root.append(secDisplay.el, secLight.el, secCamera.el, secNav.el, secSnap.el);
 const sync = () => {
 swButtons.forEach((x, k) => x.setAttribute('aria-checked', String(k === s.render.bg)));
-mode.set(s.display);
 flat.set(s.flat);
 ortho.set(app.nav.ortho);
 snapOn.set(s.snap.on);

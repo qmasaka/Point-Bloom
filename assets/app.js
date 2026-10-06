@@ -124582,10 +124582,9 @@ function createViewPanel(app, root) {
 	};
 
 	// ------------------------------------------------------------ отображение
-	const mode = segmented({ options: DISPLAY_MODES, value: s.display, cls: 'seg-wrap', label: 'Режим отображения', onChange: (v) => app.setDisplay(v) });
 	const flat = switchRow('Плоское затенение', { value: s.flat, onChange: (v) => { s.flat = v; redisplay(); } });
 	const fps = switchRow('Показывать FPS', { value: s.render.fps, onChange: (v) => { s.render.fps = v; app.ui.refreshFps(); save(); } });
-	const secDisplay = section('Отображение', { key: 'v-display' }, mode.el, flat.el, fps.el);
+	const secDisplay = section('Отображение', { key: 'v-display' }, flat.el, fps.el);
 
 	// ------------------------------------------------------------------ точки
 	const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Фон сцены' });
@@ -124660,7 +124659,6 @@ function createViewPanel(app, root) {
 
 	const sync = () => {
 		swButtons.forEach((x, k) => x.setAttribute('aria-checked', String(k === s.render.bg)));
-		mode.set(s.display);
 		flat.set(s.flat);
 		ortho.set(app.nav.ortho);
 		snapOn.set(s.snap.on);
@@ -137109,6 +137107,9 @@ class UI {
 		const SCALES = [0.75, 0.85, 0.92, 1.0, 1.1, 1.2, 1.35];
 		let currentScale = 1.0;
 
+		// без сохранённого выбора: на обычных экранах 100%, на больших интерфейс сам увеличивается
+		const autoScale = () => Math.round(Math.min(1.5, Math.max(1, window.innerWidth / 1600)) * 20) / 20;
+		currentScale = autoScale();
 		try {
 			const saved = localStorage.getItem('objglb.ui-scale');
 			if (saved) {

@@ -21,10 +21,9 @@ export function createViewPanel(app, root) {
 	};
 
 	// ------------------------------------------------------------ отображение
-	const mode = segmented({ options: DISPLAY_MODES, value: s.display, cls: 'seg-wrap', label: 'Режим отображения', onChange: (v) => app.setDisplay(v) });
 	const flat = switchRow('Плоское затенение', { value: s.flat, onChange: (v) => { s.flat = v; redisplay(); } });
 	const fps = switchRow('Показывать FPS', { value: s.render.fps, onChange: (v) => { s.render.fps = v; app.ui.refreshFps(); save(); } });
-	const secDisplay = section('Отображение', { key: 'v-display' }, mode.el, flat.el, fps.el);
+	const secDisplay = section('Отображение', { key: 'v-display' }, flat.el, fps.el);
 
 	// ------------------------------------------------------------------ точки
 	const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Фон сцены' });
@@ -99,7 +98,6 @@ export function createViewPanel(app, root) {
 
 	const sync = () => {
 		swButtons.forEach((x, k) => x.setAttribute('aria-checked', String(k === s.render.bg)));
-		mode.set(s.display);
 		flat.set(s.flat);
 		ortho.set(app.nav.ortho);
 		snapOn.set(s.snap.on);

@@ -2271,8 +2271,8 @@ body {
 }
 #modeBar .seg-btn {
 	flex: none;
-	width: 30px;
-	height: 28px;
+	width: 36px;
+	height: 34px;
 	padding: 0;
 	border-radius: var(--r-sm);
 }
@@ -2288,8 +2288,8 @@ body {
 .dock-btn {
 	display: inline-grid;
 	place-items: center;
-	width: 30px;
-	height: 28px;
+	width: 36px;
+	height: 34px;
 	padding: 0;
 	border: 0;
 	border-radius: var(--r-sm);
@@ -2826,4 +2826,10 @@ body {
 }
 .fx-forms {
 	margin-bottom: 4px;
+}
+
+.vp-dock .dock-btn svg,
+#modeBar .seg-btn svg {
+	width: 20px;
+	height: 20px;
 }

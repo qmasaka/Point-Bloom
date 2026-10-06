@@ -434,6 +434,9 @@ export class UI {
 		const SCALES = [0.75, 0.85, 0.92, 1.0, 1.1, 1.2, 1.35];
 		let currentScale = 1.0;
 
+		// без сохранённого выбора: на обычных экранах 100%, на больших интерфейс сам увеличивается
+		const autoScale = () => Math.round(Math.min(1.5, Math.max(1, window.innerWidth / 1600)) * 20) / 20;
+		currentScale = autoScale();
 		try {
 			const saved = localStorage.getItem('objglb.ui-scale');
 			if (saved) {
