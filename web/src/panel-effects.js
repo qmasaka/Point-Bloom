@@ -5,7 +5,6 @@ import * as THREE from 'three';
 import { sampleSurface, overrideMats } from './pointcloud.js';
 import { getDevice } from './device-card.js';
 import { formatCount } from './capabilities.js';
-import { createMediaPanel } from './panel-media.js';
 import { SHAPES as POINT_SHAPE_LIST } from './panel-points.js';
 import { FX_SHAPES, FX_ACTIONS, FX_GESTURE_PRESETS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } from './effects-engine.js';
 export function makeModelProvider(app) {
@@ -477,9 +476,7 @@ const blend = segmented({ options: [{ value: 'add', label: 'Свечение', t
 const rotate = switchRow('Вращать форму', { value: st.look.autoRotate, onChange: (v) => { st.look.autoRotate = v; save(); } });
 const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
 const secLook = section('Вид', { key: 'fx-look' }, palettes, field('Форма точек', shapeTiles, { wide: true }), field('Размер', size.el), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el));
-const mediaPanel = createMediaPanel(app, null, { fx: true });
-const secMedia = mediaPanel.section;
-const FX_TABS = [['insp', 'Эффект', 'sparkle', secInsp], ['source', 'Форма', 'cube', secSource], ['media', 'Медиа', 'film-strip', secMedia], ['mask', 'Зона', 'target', secMask], ['audio', 'Звук', 'waveform', secAudio], ['look', 'Вид', 'sliders-horizontal', secLook]];
+const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource]], ['zone', 'Зона и звук', 'target', [secMask, secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
 const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 let curTab = 'insp';
 try {
@@ -488,8 +485,8 @@ curTab = localStorage.getItem('objglb.fx.tab') || 'insp';
 const tabBtns = new Map();
 const showFxTab = (id) => {
 curTab = FX_TABS.some((t) => t[0] === id) ? id : 'insp';
-for (const [k, , , sec] of FX_TABS) {
-sec.el.hidden = k !== curTab;
+for (const [k, , , secs] of FX_TABS) {
+secs.forEach((sec) => (sec.el.hidden = k !== curTab));
 tabBtns.get(k).setAttribute('aria-selected', String(k === curTab));
 }
 try {
@@ -502,7 +499,7 @@ b.addEventListener('click', () => showFxTab(k));
 tabBtns.set(k, b);
 tabBar.append(b);
 }
-root.append(tabBar, ...FX_TABS.map((t) => t[3].el));
+root.append(tabBar, ...FX_TABS.flatMap((t) => t[3].map((x) => x.el)));
 showFxTab(curTab);
 fxTabHook = () => showFxTab('insp');
 const bar = $bar();
@@ -561,13 +558,15 @@ function sync() {
 tileMap.forEach((b, k) => {
 b.setAttribute('aria-checked', String(k === st.source));
 if (k === 'model') b.disabled = !engine.hasModel;
-if (k === 'media') b.disabled = !engine.pm.ready;
+if (k === 'media') {
+b.disabled = !engine.pm.ready;
+b.dataset.tip = engine.pm.ready ? 'Фото или видео из вкладки «Медиа» редактора' : 'Откройте фото или видео на вкладке «Медиа» в редакторе';
+}
 });
 const n = engine.geometry ? engine.geometry.attributes.position.count : st.count;
 countHint.textContent = `Сейчас ${formatInt(n)} частиц, около ${Math.round((n * 128) / 1048576)} МБ памяти. Комфортно до ${formatCount(getDevice(app).limits.comfort)}.`;
 const kind = engine.modelProvider ? engine.modelProvider.kind() : 'none';
 modelNote.textContent = kind === 'cloud' ? `Берётся облако точек из редактора (${formatInt(engine.modelProvider.total())} точек). Больше этого частиц не будет.` : kind === 'mesh' ? 'Берутся точки с поверхности вашей модели.' : 'Модели в сцене нет: показана готовая форма. Добавьте модель, и она заменит её.';
-mediaPanel.sync();
 countActive();
 cards.forEach((c) => {
 c.card.classList.toggle('is-on', c.L.on);
