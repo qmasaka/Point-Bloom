@@ -42,6 +42,8 @@ export class PointMedia {
 		this._lastKey = -1;
 		this._xy = null;
 		this.recording = false;
+		this.muted = false;
+		this.onMute = null;
 	}
 
 	get ready() {
@@ -120,7 +122,7 @@ export class PointMedia {
 		try {
 			if (isVideo) {
 				el = document.createElement('video');
-				el.muted = true;
+				el.muted = this.muted;
 				el.loop = true;
 				el.playsInline = true;
 				el.preload = 'auto';
@@ -154,13 +156,29 @@ export class PointMedia {
 		if (isVideo) {
 			el.loop = this.loop;
 			this.playing = true;
-			el.play().catch(() => {});
+			this._tryPlay();
 		}
 	}
 
 	play() {
 		this.playing = true;
-		if (this.kind === 'video' && !this.isRec) this.el.play().catch(() => {});
+		if (this.kind === 'video' && !this.isRec) this._tryPlay();
+	}
+
+	/** Запуск со звуком; если браузер не разрешил, играем без звука */
+	_tryPlay() {
+		const el = this.el;
+		if (!el) return;
+		el.play().catch(() => {
+			if (!el._fxNode) el.muted = true;
+			el.play().catch(() => {});
+		});
+	}
+
+	setMuted(v) {
+		this.muted = v;
+		if (this.onMute) this.onMute(v);
+		else if (this.el && !this.el._fxNode) this.el.muted = v;
 	}
 
 	pause() {

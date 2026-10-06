@@ -94,9 +94,9 @@ export const MASK_MODES = [
 ];
 
 export const SYNTH_STYLES = [
+	{ id: 'mystic', name: 'Тайна: тёмный дрон' },
 	{ id: 'ambient', name: 'Эмбиент: дрейф' },
-	{ id: 'jungle', name: 'Джангл, 168 BPM' },
-	{ id: 'breakcore', name: 'Брейккор, 188 BPM' },
+	{ id: 'jungle', name: 'Мягкий джангл, 150 BPM' },
 ];
 
 function defaultState() {
@@ -130,11 +130,11 @@ function defaultState() {
 			dofDist: 5.2,
 			dofRange: 1.4,
 		},
-		audio: { style: 'ambient', gain: 1.3, idle: true, volume: 0.8 },
+		audio: { style: 'mystic', gain: 1.3, idle: true, volume: 0.8 },
 	};
 }
 
-const KEY = 'objglb.fx.v6';
+const KEY = 'objglb.fx.v7';
 
 // ───────────────────────────────────────────────────────────── формы
 
@@ -1291,6 +1291,29 @@ class TouchSynth {
 		o.stop(t + len + 0.01);
 	}
 
+	_breath(t, len) {
+		const c = this.ctx;
+		const n = c.createBufferSource();
+		n.buffer = this._noiseBuf();
+		n.loop = true;
+		const bp = c.createBiquadFilter();
+		bp.type = 'bandpass';
+		bp.Q.value = 3;
+		bp.frequency.setValueAtTime(500, t);
+		bp.frequency.linearRampToValueAtTime(1400, t + len * 0.5);
+		bp.frequency.linearRampToValueAtTime(450, t + len);
+		const g = c.createGain();
+		g.gain.setValueAtTime(0.0001, t);
+		g.gain.exponentialRampToValueAtTime(0.04, t + len * 0.5);
+		g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+		n.connect(bp);
+		bp.connect(g);
+		g.connect(this.gain);
+		g.connect(this.send);
+		n.start(t);
+		n.stop(t + len + 0.1);
+	}
+
 	_sched(step, t, spb) {
 		const s = step % 32;
 		const bar = Math.floor(step / 32);
@@ -1310,38 +1333,41 @@ class TouchSynth {
 			if (Math.random() < 0.05) this._hat(t, 0.025, 0.03);
 			return;
 		}
-		if (this.mode === 'jungle') {
-			const roots = [41.2, 43.65, 36.71, 49];
+		if (this.mode === 'mystic') {
+			// дрон на тёмном ладу, вздохи шума, далёкие колокола и медленный «пульс»
+			const roots = [73.42, 55, 58.27, 49];
 			const root = roots[bar % 4];
-			if ([0, 10, 16, 22, 26].includes(s) && (s !== 22 || Math.random() < 0.5)) this._kick(t, 0.95, 140, 45, 0.2);
-			if ([4, 12, 20, 28].includes(s)) this._snare(t, 0.85, 200, 0.16);
-			if ([7, 14, 23, 31].includes(s) && Math.random() < 0.7) this._snare(t, 0.22, 240, 0.08);
-			if (s >= 30 && Math.random() < 0.3) this._snare(t, 0.4, 260 + (s - 30) * 40, 0.07);
-			if (s % 2 === 0) this._hat(t, s % 8 === 6 ? 0.28 : 0.16, s % 8 === 6 ? 0.1 : 0.04);
-			if ([0, 3, 10, 16, 19, 26].includes(s)) this._reese(t, s === 10 || s === 26 ? root * 2 : root, spb * (s === 0 || s === 16 ? 6 : 3), 0.38);
-			if (s === 0) this._pad(t, [root * 4, root * 4.8, root * 6, root * 7.2], 32 * spb, 0.03);
-			if (s % 8 === 5 && Math.random() < 0.3) this._bell(t, root * 12, 0.05);
+			if (s === 0) {
+				this._pad(t, [root, root * 1.5, root * 2, root * 2.378], 32 * spb + 2, 0.05);
+				this._sub(t, root / 2, 32 * spb * 0.9, 0.26);
+			}
+			if (s % 8 === 0) this._kick(t, 0.28, 62, 38, 0.5);
+			if (s === 16) this._breath(t, 16 * spb);
+			const phr = [293.66, 311.13, 349.23, 392, 440, 466.16];
+			if (s % 4 === 2 && Math.random() < 0.16) this._bell(t, phr[Math.floor(Math.random() * phr.length)] * (Math.random() < 0.3 ? 2 : 1), 0.06);
+			if (s === 8 && bar % 2 === 1) {
+				this._bell(t, 146.83, 0.07);
+				this._bell(t + 0.04, 207.65, 0.05);
+			}
 			return;
 		}
-		// брейккор
-		const scale = [659.25, 783.99, 880, 987.77, 1318.5];
-		if (s % 4 === 0) this._kick(t, 1, 170, 40, 0.16);
-		else if (Math.random() < 0.18) this._kick(t, 0.8, 150, 45, 0.1);
-		if (s % 8 === 4) this._snare(t, 0.9, 210, 0.13);
-		if (Math.random() < 0.2) {
-			const n = 2 + Math.floor(Math.random() * 3);
-			for (let k = 0; k < n; k++) this._snare(t + (spb * k) / n, 0.4 + k * 0.08, 180 + k * 30, 0.05);
-		}
-		if (Math.random() < 0.6) this._hat(t, 0.1 + Math.random() * 0.12, 0.03);
-		if (Math.random() < 0.14) this._blip(t, scale[Math.floor(Math.random() * scale.length)], 0.1, 0.1);
-		if (s % 16 === 0) this._sub(t, [43.65, 49, 41.2, 55][Math.floor(Math.random() * 4)], spb * 8, 0.45);
+		// мягкий джангл
+		const roots = [41.2, 43.65, 36.71, 49];
+		const root = roots[bar % 4];
+		if ([0, 10, 16, 26].includes(s)) this._kick(t, 0.7, 120, 48, 0.22);
+		if ([4, 12, 20, 28].includes(s)) this._snare(t, 0.4, 190, 0.14);
+		if ([7, 23].includes(s) && Math.random() < 0.5) this._snare(t, 0.12, 230, 0.07);
+		if (s % 4 === 2) this._hat(t, 0.07, 0.035);
+		if ([0, 10, 16, 26].includes(s)) this._reese(t, s === 10 || s === 26 ? root * 2 : root, spb * 4, 0.2);
+		if (s === 0) this._pad(t, [root * 4, root * 4.8, root * 6, root * 7.2, root * 9], 32 * spb + 1, 0.04);
+		if (s % 8 === 5 && Math.random() < 0.4) this._bell(t, root * 12, 0.05);
 	}
 }
 
 const SYNTH_PARAMS = {
+	mystic: { bpm: 54, master: 0.9, fb: 0.55, wet: 0.55 },
 	ambient: { bpm: 66, master: 0.85, fb: 0.5, wet: 0.5 },
-	jungle: { bpm: 168, master: 0.7, fb: 0.36, wet: 0.3 },
-	breakcore: { bpm: 188, master: 0.38, fb: 0.3, wet: 0.2, drive: 4 },
+	jungle: { bpm: 150, master: 0.55, fb: 0.4, wet: 0.35 },
 };
 
 
@@ -2334,30 +2360,60 @@ export class EffectsEngine {
 		this.emit();
 	}
 
-	/** Звук открытого видео становится источником для анализа и вывода */
-	_connectVideo() {
+	/** Звук открытого видео: один раз заводим в аудиограф, дальше он идёт либо в анализатор (режим эффектов), либо прямо в колонки */
+	_videoGate() {
 		const el = this.pm.el;
-		if (!el || this.pm.kind !== 'video') return false;
+		if (!el || this.pm.kind !== 'video') return null;
 		this._ensureCtx();
-		if (!el._fxNode) el._fxNode = this.ctx.createMediaElementSource(el);
-		if (this._vidNode && this._vidNode !== el._fxNode) this._disconnectVideo();
-		el._fxNode.connect(this.bus);
-		this._vidNode = el._fxNode;
-		el.muted = false;
-		el.volume = 1;
+		if (!el._fxNode) {
+			el._fxNode = this.ctx.createMediaElementSource(el);
+			el._fxGate = this.ctx.createGain();
+			el._fxNode.connect(el._fxGate);
+			el.muted = false;
+		}
+		return el._fxGate;
+	}
+
+	_connectVideo() {
+		const gate = this._videoGate();
+		if (!gate) return false;
+		gate.disconnect();
+		gate.gain.value = 1;
+		gate.connect(this.bus);
+		this._vidGate = gate;
+		// выключение звука видео в эффектах гасит только вывод: анализ продолжает работать
+		this.pm.onMute = (m) => {
+			if (this.out) this.out.gain.value = m ? 0 : this.state.audio.volume;
+		};
+		this.pm.onMute(this.pm.muted);
 		this.pm.play();
 		return true;
 	}
 
 	_disconnectVideo() {
-		if (this._vidNode) {
+		if (this._vidGate) {
 			try {
-				this._vidNode.disconnect();
+				this._vidGate.disconnect();
 			} catch (e) {
 				/* уже отключён */
 			}
-			this._vidNode = null;
+			this._vidGate = null;
+			this.pm.onMute = null;
+			if (this.out) this.out.gain.value = this.state.audio.volume;
 		}
+	}
+
+	/** В редакторе видео играет напрямую в колонки, минуя анализатор */
+	_videoToEditor() {
+		this._disconnectVideo();
+		const gate = this.pm.el?._fxGate;
+		if (!gate || !this.ctx) return;
+		gate.disconnect();
+		gate.gain.value = this.pm.muted ? 0 : 1;
+		gate.connect(this.ctx.destination);
+		this.pm.onMute = (m) => {
+			gate.gain.value = m ? 0 : 1;
+		};
 	}
 
 	async useVideoAudio() {
@@ -2398,7 +2454,7 @@ export class EffectsEngine {
 
 	async useSynth(style) {
 		if (style) this.state.audio.style = style;
-		if (!SYNTH_STYLES.some((x) => x.id === this.state.audio.style)) this.state.audio.style = 'ambient';
+		if (!SYNTH_STYLES.some((x) => x.id === this.state.audio.style)) this.state.audio.style = 'mystic';
 		this._disconnectVideo();
 		this._stopMic();
 		this._stopFile();
@@ -2916,6 +2972,8 @@ export class EffectsEngine {
 		if (this.pm.ready) {
 			this.state.look.colorBy = 'model';
 			this.pm.play();
+			// звук видео сразу идёт в анализатор, и эффекты реагируют на него
+			if (this.pm.kind === 'video') this.useVideoAudio().catch(() => {});
 		}
 		this._hist = { undo: [], redo: [], last: null };
 		this._histT = setTimeout(() => this._histCommit(), 600);
@@ -2930,6 +2988,7 @@ export class EffectsEngine {
 		this.active = false;
 		this.stopRecording();
 		this.pause();
+		this._videoToEditor();
 		cancelAnimationFrame(this._raf);
 		clearTimeout(this._sceneT);
 		this._offScene && this._offScene();

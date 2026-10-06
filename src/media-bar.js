@@ -51,8 +51,9 @@ export function createMediaBar(app, host) {
 	bLive.addEventListener('click', () => switchView('live'));
 	bRec.addEventListener('click', () => switchView('rec'));
 	mode.append(bLive, bRec);
+	const mute = iconButton({ icon: 'speaker-high', title: 'Звук видео', onClick: () => { pm.setMuted(!pm.muted); sync(); } });
 	const rec = iconButton({ icon: 'record', title: 'Записать видео в точки', cls: 'mb-rec', onClick: () => mc.record({ fps: app.settings.media.recFps, seconds: Math.min(app.settings.media.recSec, Math.floor(pm.duration) || 10) }) });
-	const el = h('div', { class: 'media-bar vp-pill', hidden: true }, play, time, seek, total, loop, mode, rec);
+	const el = h('div', { class: 'media-bar vp-pill', hidden: true }, play, time, seek, total, mute, loop, mode, rec);
 	host.append(el);
 
 	function switchView(v) {
@@ -76,6 +77,9 @@ export function createMediaBar(app, host) {
 		play.dataset.tip = pm.playing ? 'Пауза' : 'Играть';
 		play.classList.toggle('is-paused', !pm.playing);
 		loop.setAttribute('aria-pressed', String(pm.loop));
+		mute.hidden = pm.kind !== 'video';
+		mute.innerHTML = '<span class="ic-wrap">' + icon(pm.muted ? 'speaker-slash' : 'speaker-high', 18) + '</span>';
+		mute.dataset.tip = pm.muted ? 'Включить звук видео' : 'Выключить звук видео';
 		bLive.setAttribute('aria-checked', String(pm.view === 'live'));
 		bRec.setAttribute('aria-checked', String(pm.view === 'rec'));
 		mode.hidden = !pm.rec || pm.kind === 'rec';
