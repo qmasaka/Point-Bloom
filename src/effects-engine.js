@@ -83,7 +83,9 @@ export const COLOR_BY = [
 	{ id: 'disp', label: 'Смещение', title: 'Чем дальше точка улетела, тем ярче' },
 	{ id: 'height', label: 'Высота', title: 'Градиент снизу вверх' },
 	{ id: 'index', label: 'Разброс', title: 'Цвета перемешаны по точкам' },
-	{ id: 'model', label: 'Модель', title: 'Цвета из текстуры модели' },
+	{ id: 'model', label: 'Текстура', title: 'Цвета из текстуры модели, как на вкладке «Точки»' },
+	{ id: 'solid', label: 'Один цвет', title: 'Один цвет для всех точек' },
+	{ id: 'normal', label: 'Нормали', title: 'Цвет по направлению поверхности' },
 ];
 
 export const MASK_MODES = [
@@ -698,6 +700,9 @@ attribute vec3 aTarget;
 attribute vec3 aColor;
 attribute float aIdx;
 attribute vec3 aSculpt;
+attribute vec3 aNormal;
+uniform vec3 uSolid;
+uniform float uAtt;
 uniform float uSize;
 uniform float uPR;
 uniform float uColorBy;
@@ -724,7 +729,13 @@ void main() {
 	else if (uColorBy < 1.5) k = clamp((pos.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
 	else k = fract(aIdx * 3.0 + t * 0.03);
 	vec3 col = k < 0.5 ? mix(uP0, uP1, k * 2.0) : mix(uP1, uP2, (k - 0.5) * 2.0);
-	if (uColorBy > 2.5) col = aColor;
+	if (uColorBy > 2.5 && uColorBy < 3.5) col = aColor;
+	else if (uColorBy > 3.5 && uColorBy < 4.5) col = uSolid;
+	else if (uColorBy > 4.5) {
+		vec3 wn = mat3(modelMatrix) * aNormal;
+		wn = length(wn) > 0.0 ? normalize(wn) : vec3(0.0, 1.0, 0.0);
+		col = pow(wn * 0.5 + 0.5, vec3(2.2));
+	}
 	vColor = col * uBright * (1.0 + uBeat * 0.3) * (1.0 - dkv);
 	if (uMask.x > 0.5 && uMaskShow > 0.5) vColor = mix(vColor, uP2 * 1.4, maskV * 0.55);
 
@@ -794,7 +805,7 @@ void main() {
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2);
 	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.7 * dkv);
 	s *= (1.0 + coc * 2.4);
-	s *= 3.8 / max(-mv.z, 0.4);
+	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
 	gl_PointSize = clamp(s, 1.0, 95.0);
 }
 `;
@@ -805,14 +816,27 @@ uniform float uGlow;
 uniform float uAdd;
 uniform float uDens;
 uniform float uGhost;
+uniform float uShape;
 varying vec3 vColor;
 varying float vD;
 varying float vCoc;
 void main() {
 	vec2 c = gl_PointCoord - 0.5;
-	float r2 = dot(c, c);
-	if (r2 > 0.25) discard;
+	// форма точки как на вкладке «Точки»: 0 квадрат, 1 круг, 2 шар, 3 кольцо, 4 ромб, 5 плюс
+	float dm = length(c);
+	if (uShape < 0.5) dm = max(abs(c.x), abs(c.y));
+	else if (uShape > 3.5 && uShape < 4.5) dm = abs(c.x) + abs(c.y);
+	if (dm > 0.5) discard;
+	if (uShape > 2.5 && uShape < 3.5 && dm < 0.29) discard;
+	if (uShape > 4.5 && min(abs(c.x), abs(c.y)) > 0.16) discard;
+	float r2 = dm * dm;
 	float core = 1.0 - smoothstep(0.0, 0.25, r2);
+	if (uShape > 2.5 && uShape < 3.5) core = 1.0 - smoothstep(0.0, 0.1, abs(dm - 0.4));
+	float sph = 1.0;
+	if (uShape > 1.5 && uShape < 2.5) {
+		vec3 n = vec3(c.x * 2.0, -c.y * 2.0, sqrt(max(0.0, 1.0 - 4.0 * r2)));
+		sph = 0.4 + 0.75 * max(dot(n, normalize(vec3(-0.4, 0.6, 0.7))), 0.0);
+	}
 	if (vCoc > 0.01) {
 		float bokeh = 1.0 - smoothstep(0.16, 0.25, r2);
 		core = mix(core, bokeh, vCoc * 0.8);
@@ -820,10 +844,10 @@ void main() {
 	float dofAlpha = 1.0 / (1.0 + vCoc * 1.8);
 	if (uAdd > 0.5) {
 		float aura = pow(core, mix(1.8, 0.7, uGlow));
-		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha;
+		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha * sph;
 		gl_FragColor = vec4(col, core * uGhost * dofAlpha);
 	} else {
-		gl_FragColor = vec4(vColor * (0.55 + 0.45 * core), dofAlpha);
+		gl_FragColor = vec4(vColor * (0.55 + 0.45 * core) * sph, dofAlpha);
 	}
 	#include <tonemapping_fragment>
 	#include <colorspace_fragment>
@@ -1454,6 +1478,26 @@ export class EffectsEngine {
 		this.isCollapsed = v;
 		if (v) this.state.layers.physics.on = true;
 		this.emit();
+	}
+
+	// ------------------------------------------------------------ вид точек, общий с редактором
+	/** Режим цвета «Модель, Один цвет, Нормали, Высота» хранится в настройках вкладки «Точки»: один источник правды */
+	setColorBy(v) {
+		const pt = this.app.settings.point;
+		this._userColor = true;
+		this.state.look.colorBy = v;
+		const m = { model: 'texture', solid: 'solid', normal: 'normal', height: 'height' }[v];
+		if (m) pt.color = m;
+		this.app.saveSettings();
+		this.touch();
+		this.emit();
+	}
+
+	/** Подтягивает режим цвета из вкладки «Точки»: для модели по умолчанию видна её текстура */
+	syncLookFromPoints() {
+		const m = { texture: 'model', solid: 'solid', normal: 'normal', height: 'height' }[this.app.settings.point.color];
+		const cur = this.state.look.colorBy;
+		if (m && ((this.state.source === 'model' && !this._userColor) || (cur !== 'disp' && cur !== 'index'))) this.state.look.colorBy = m;
 	}
 
 	// ------------------------------------------------------------ фото и видео
@@ -2123,7 +2167,7 @@ export class EffectsEngine {
 			uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 			uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
 			uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
-			uAlive: U(new THREE.Vector4()), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
+			uAlive: U(new THREE.Vector4()), uShape: U(1), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 		};
 		const mk = (extra) =>
 			new THREE.ShaderMaterial({
@@ -2382,7 +2426,10 @@ export class EffectsEngine {
 		this._sceneT = setTimeout(async () => {
 			if (!this.active) return;
 			this.cache.clear();
-			if (this.hasModel) this.state.source = 'model';
+			if (this.hasModel) {
+				this.state.source = 'model';
+				this.syncLookFromPoints();
+			}
 			try {
 				await this._build();
 			} catch (e) {
@@ -2440,6 +2487,7 @@ export class EffectsEngine {
 			this.post.render(scene, camera, fb, bloom, ab);
 		};
 		app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 400);
+		this.syncLookFromPoints();
 		if (this.pm.playing && this.state.source === 'media') this.pm.play();
 		this._lastT = performance.now();
 		this._loop();
@@ -2559,7 +2607,12 @@ export class EffectsEngine {
 			const pal = FX_PALETTES.find((p) => p.id === look.palette) || FX_PALETTES[0];
 			u.uTime.value = this._time;
 			u.uMorph.value = this.morph;
-			u.uSize.value = look.size;
+			// вид точек общий с вкладкой «Точки» редактора: форма, размер, цвет, затухание вдали
+			const pset = this.app.settings.point;
+			u.uSize.value = pset.size;
+			u.uShape.value = Math.max(0, ['square', 'circle', 'sphere', 'ring', 'diamond', 'plus'].indexOf(pset.shape));
+			u.uSolid.value.set(pset.solidColor);
+			u.uAtt.value = pset.attenuate ? 1 : 0;
 			u.uPR.value = this.app.viewport.renderer.getPixelRatio();
 			u.uBeat.value = this.levels.beat;
 			// чем плотнее точки ложатся на пиксели (мелкий экран, близкая камера), тем больше они выгорают: приглушаем
@@ -2571,7 +2624,7 @@ export class EffectsEngine {
 					const pr = u.uPR.value;
 					const d = Math.max(0.5, cam.position.length());
 					const ppu = (this.app.viewport.canvas.clientHeight * pr) / (2 * d * Math.tan((cam.fov * Math.PI) / 360));
-					const sPx = Math.min(95, (look.size * pr * 3.8) / d);
+					const sPx = Math.min(95, (this.app.settings.point.size * pr * 3.8) / d);
 					const overlap = (n * sPx * sPx) / (Math.PI * (1.1 * ppu) ** 2);
 					fit = clamp(Math.sqrt(3.5 / Math.max(overlap, 1e-3)), 0.25, 1);
 				}

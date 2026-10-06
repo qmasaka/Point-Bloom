@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { sampleSurface } from './pointcloud.js';
 import { getDevice } from './device-card.js';
 import { formatCount } from './capabilities.js';
+import { SHAPES as POINT_SHAPE_LIST } from './panel-points.js';
 import { FX_SHAPES, FX_ACTIONS, FX_GESTURE_PRESETS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } from './effects-engine.js';
 export function makeModelProvider(app) {
 const root = app.viewport.root;
@@ -407,14 +408,31 @@ const b = h('button', { type: 'button', class: 'fx-pal', role: 'radio', 'aria-la
 b.addEventListener('click', () => {
 st.look.palette = p.id;
 if (st.look.colorBy === 'model') st.look.colorBy = 'disp';
+engine._userColor = true;
 sync();
 save();
 });
 palBtns.set(p.id, b);
 palettes.append(b);
 }
-const colorBy = segmented({ options: COLOR_BY.map((c) => ({ value: c.id, label: c.label, title: c.title })), value: st.look.colorBy, onChange: (v) => { st.look.colorBy = v; save(); } });
-const size = slider({ min: 1, max: 12, step: 0.25, value: st.look.size, digits: 1, unit: ' px', onInput: (v) => { st.look.size = v; }, onChange: save });
+const pset = app.settings.point;
+const colorBy = select({ options: COLOR_BY.map((c) => ({ value: c.id, label: c.label })), value: st.look.colorBy, onChange: (v) => { engine.setColorBy(v); } });
+const shapeTiles = h('div', { class: 'shape-grid', role: 'radiogroup', 'aria-label': 'Форма точек' });
+const shapeBtns = new Map();
+for (const sh of POINT_SHAPE_LIST) {
+const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'data-shape': sh.value }, h('span', { class: 'shape-glyph' }), h('span', { class: 'shape-name' }, sh.label));
+b.addEventListener('click', () => {
+pset.shape = sh.value;
+app.saveSettings();
+sync();
+});
+shapeBtns.set(sh.value, b);
+shapeTiles.append(b);
+}
+const solidPick = colorField({ value: pset.solidColor, onInput: (v) => { pset.solidColor = v; }, onChange: () => app.saveSettings() });
+const solidRow = field('Свой цвет', solidPick.el);
+const attSw = switchRow('Мельче вдали', { value: pset.attenuate, onChange: (v) => { pset.attenuate = v; app.saveSettings(); } });
+const size = slider({ min: 1, max: 24, step: 0.5, value: pset.size, digits: 1, unit: ' px', onInput: (v) => { pset.size = v; }, onChange: () => app.saveSettings() });
 const sizeNoise = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeNoise || 0, digits: 2, onInput: (v) => { st.look.sizeNoise = v; }, onChange: save });
 const sizeAudio = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeAudio || 0, digits: 2, onInput: (v) => { st.look.sizeAudio = v; }, onChange: save });
 const glow = slider({ min: 0, max: 1, step: 0.05, value: st.look.glow, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.glow = v; }, onChange: save });
@@ -430,7 +448,7 @@ syncDof();
 const blend = segmented({ options: [{ value: 'add', label: 'Свечение', title: 'Точки складывают свет: ярче в плотных местах' }, { value: 'normal', label: 'Плотные', title: 'Непрозрачные точки' }], value: st.look.blend, onChange: (v) => { st.look.blend = v; save(); } });
 const rotate = switchRow('Вращать форму', { value: st.look.autoRotate, onChange: (v) => { st.look.autoRotate = v; save(); } });
 const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
-const secLook = section('Вид', { key: 'fx-look' }, palettes, field('Цвет по', colorBy.el, { wide: true }), field('Размер', size.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el));
+const secLook = section('Вид', { key: 'fx-look' }, palettes, field('Форма точек', shapeTiles, { wide: true }), field('Размер', size.el), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el));
 const pm = engine.pm;
 const md = st.media;
 const fileIn = h('input', { type: 'file', accept: 'image/*,video/*,.pcv', hidden: true });
@@ -565,7 +583,11 @@ for (const [k, ctl] of Object.entries(c.extraCtl)) ctl.set(c.L[k]);
 });
 palBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === st.look.palette)));
 colorBy.set(st.look.colorBy);
-size.set(st.look.size);
+size.set(pset.size);
+attSw.set(pset.attenuate);
+solidPick.set(pset.solidColor);
+solidRow.hidden = st.look.colorBy !== 'solid';
+shapeBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === pset.shape)));
 sizeNoise.set(st.look.sizeNoise || 0);
 sizeAudio.set(st.look.sizeAudio || 0);
 glow.set(st.look.glow);
