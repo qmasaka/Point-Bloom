@@ -178,7 +178,7 @@ export async function exportForWeb(app, o, progress) {
 		const enc = new TextEncoder();
 		const index = pageHtml({ ...common, glb: 'model.glb', poster: posterName, usdz: usdz ? 'model.usdz' : null });
 		const readme = [
-			'Страница с интерактивной 3D-моделью (создано в «Pointa»)',
+			'Страница с интерактивной 3D-моделью (создано в «Voxel Studio»)',
 			'',
 			'Как опубликовать',
 			'1. Загрузите все файлы из архива в одну папку на вашем хостинге (Vercel, Netlify, GitHub Pages, обычный хостинг).',
