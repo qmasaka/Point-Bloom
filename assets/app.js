@@ -135591,7 +135591,8 @@ class EffectsEngine {
 	// ------------------------------------------------------------ анимация по ключам
 	/** Слои, которыми можно анимировать: эффекты формы, звука и графики. Управление руками и кистью в ключи не входит. */
 	_animLayers() {
-		return FX_LAYERS.filter((l) => l.group !== 'Взаимодействие').map((l) => l.id);
+		// только эффекты, у которых вся работа в «Силе»: без связей, распада, растворения и управления руками
+		return ['curl', 'spectrum', 'wave', 'twist', 'pulse', 'blast', 'cloth', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'echo'];
 	}
 
 	/** Снимок того, что можно анимировать: камера, размер, яркость, свечение и сила каждого эффекта (выключенный = 0) */
@@ -137071,7 +137072,16 @@ class EffectsEngine {
 			this._lastT = now;
 			const st0 = this.state;
 			this._time += dt;
-			if (this.animPlaying) this._animStep(dt);
+			if (this.animPlaying) {
+				try {
+					this._animStep(dt);
+				} catch (e) {
+					// ошибка в анимации не должна останавливать отрисовку сцены
+					this.animPlaying = false;
+					this.animRec = false;
+					this.app.toast('Анимация остановлена: ' + (e.message || e), 'error');
+				}
+			}
 			this._analyse(dt);
 			if (!this.material) return;
 			if (this.morphing) {
@@ -138488,40 +138498,50 @@ function createEffectsPanel(app, root, engine) {
 	const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (MP4)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });
 	const recTime = h('span', { class: 'fx-rec-time' });
 	// ------------------------------------------------------------ анимация по ключам (дорожка времени)
-	const animPanel = h('div', { class: 'fx-anim vp-pill', hidden: true, role: 'group', 'aria-label': 'Анимация' });
-	const keyAnimBtn = iconButton({ icon: 'film-strip', title: 'Анимация: ключи камеры и эффектов на дорожке времени', onClick: () => { animPanel.hidden = !animPanel.hidden; keyAnimBtn.classList.toggle('is-active', !animPanel.hidden); animSync(); } });
-	const aPlay = iconButton({ icon: 'play', title: 'Играть и остановить', onClick: () => { if (engine.animPlaying) engine.animPause(); else if (!engine.animPlay()) app.toast('Поставьте минимум два ключа', 'info'); } });
-	const aTime = h('span', { class: 'fx-anim-time' }, '0.0 / 8.0 с');
-	const aTrack = h('div', { class: 'fx-anim-track' });
-	const aHead = h('div', { class: 'fx-anim-head' });
+	const animPanel = h('div', { class: 'fx-anim vp-pill', hidden: true, role: 'group', 'aria-label': 'Анимация по ключам' });
+	const keyAnimBtn = iconButton({ icon: 'film-strip', title: 'Анимация: ключи камеры и эффектов на дорожке времени', onClick: () => toggleAnim() });
+	const aPlay = iconButton({ icon: 'play', title: 'Играть и остановить', cls: 'fx-anim-play', onClick: () => { if (engine.animPlaying) engine.animPause(); else if (!engine.animPlay()) app.toast('Поставьте минимум два ключа в разное время', 'info'); } });
+	const aTime = h('span', { class: 'fx-anim-time' });
 	const aKeys = h('div', { class: 'fx-anim-keys' });
-	aTrack.append(aKeys, aHead);
-	const aDur = h('input', { type: 'number', class: 'num-in fx-anim-dur', min: 1, max: 120, step: 1, value: 8, 'aria-label': 'Длина, секунд' });
+	const aHead = h('div', { class: 'fx-anim-head' });
+	const aTrack = h('div', { class: 'fx-anim-track' }, aKeys, aHead);
+	const aLoop = iconButton({ icon: 'repeat', title: 'Повторять по кругу', onClick: () => { st.anim.loop = !st.anim.loop; save(); animSync(); } });
+	const aDur = h('input', { type: 'number', class: 'num-in fx-anim-dur', min: 1, max: 120, step: 1, value: 8, 'aria-label': 'Длина анимации, секунд', 'data-tip': 'Длина анимации, секунд' });
 	aDur.addEventListener('change', () => { engine.animSetDuration(Number(aDur.value) || 8); animSync(); });
-	const aLoop = switchRow('По кругу', { value: true, onChange: (v) => { st.anim.loop = v; save(); } });
+	const aClose = iconButton({ icon: 'x', title: 'Закрыть анимацию', onClick: () => toggleAnim(false) });
 	let selKey = null;
-	const aAdd = button({ label: 'Ключ здесь', icon: 'plus', variant: 'primary', title: 'Запомнить камеру и эффекты на этом моменте времени', onClick: () => { selKey = engine.animAddKey(); animSync(); } });
-	const aUpd = button({ label: 'Обновить', variant: 'secondary', title: 'Записать в выбранный ключ то, что сейчас на сцене', onClick: () => { if (selKey) engine.animUpdateKey(selKey); } });
-	const aDel = button({ label: 'Удалить', icon: 'trash', variant: 'secondary', title: 'Удалить выбранный ключ', onClick: () => { if (selKey) { engine.animRemoveKey(selKey); selKey = null; animSync(); } } });
-	const aRec = button({ label: 'Записать ролик', icon: 'record', variant: 'secondary', title: 'Проиграет анимацию один раз и сохранит видео со звуком', onClick: () => { if (!engine.animRecord()) app.toast('Поставьте минимум два ключа', 'info'); } });
-	const aHint = h('div', { class: 'field-hint fx-anim-hint' }, 'Поставьте камеру и эффекты как нужно, нажмите «Ключ здесь», передвиньте время и поставьте следующий ключ. Между ключами всё меняется плавно.');
+	const aAdd = button({ label: 'Ключ', icon: 'plus', variant: 'primary', cls: 'btn-sm', title: 'Запомнить камеру и эффекты в этот момент времени', size: 14, onClick: () => { selKey = engine.animAddKey(); animSync(); } });
+	const aUpd = iconButton({ icon: 'arrow-clockwise', title: 'Обновить выбранный ключ тем, что сейчас на сцене', onClick: () => { if (selKey) engine.animUpdateKey(selKey); } });
+	const aDel = iconButton({ icon: 'trash', title: 'Удалить выбранный ключ', onClick: () => { if (selKey) { engine.animRemoveKey(selKey); selKey = null; animSync(); } } });
+	const aRec = button({ label: 'Записать', icon: 'record', variant: 'secondary', cls: 'btn-sm', title: 'Проиграет анимацию один раз и сохранит видео со звуком', size: 14, onClick: () => { if (!engine.animRecord()) app.toast('Поставьте минимум два ключа в разное время', 'info'); } });
+	const aHint = h('div', { class: 'fx-anim-hint' });
 	animPanel.append(
-		h('div', { class: 'fx-anim-row' }, aPlay, aTime, h('span', { class: 'fx-anim-sp' }), h('label', { class: 'fx-anim-lab' }, 'Длина, с', aDur), aLoop.el),
-		aTrack,
-		h('div', { class: 'fx-anim-row' }, aAdd, aUpd, aDel, h('span', { class: 'fx-anim-sp' }), aRec),
-		aHint
+		h('div', { class: 'fx-anim-row' }, aPlay, aTime, aTrack, aLoop, h('span', { class: 'fx-anim-dur-wrap' }, aDur, h('span', {}, 'с')), aClose),
+		h('div', { class: 'fx-anim-row fx-anim-actions' }, aAdd, aUpd, aDel, aHint, aRec)
 	);
 	document.getElementById('viewport').append(animPanel);
-	const seekFromEvent = (e) => {
+	function toggleAnim(on = animPanel.hidden) {
+		animPanel.hidden = !on;
+		keyAnimBtn.classList.toggle('is-active', on);
+		if (!on) engine.animPause();
+		// первый ключ ставим сразу: он запоминает то, что вы видите сейчас
+		else if (!st.anim.keys.length) selKey = engine.animAddKey(0);
+		animSync();
+	}
+	// зажали камеру мышью: анимация встаёт на паузу, чтобы не отнимать управление
+	document.getElementById('viewport').addEventListener('pointerdown', (e) => {
+		if (engine.animPlaying && !engine.animRec && !e.target.closest('.fx-anim, .fx-bar')) engine.animPause();
+	}, true);
+	const timeAt = (e) => {
 		const r = aTrack.getBoundingClientRect();
-		engine.animSeek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * st.anim.dur);
+		return Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(1, r.width))) * st.anim.dur;
 	};
 	aTrack.addEventListener('pointerdown', (e) => {
 		if (e.target.closest('.fx-anim-key')) return;
 		engine.animPause();
 		aTrack.setPointerCapture(e.pointerId);
-		seekFromEvent(e);
-		const mv = (ev) => seekFromEvent(ev);
+		engine.animSeek(timeAt(e));
+		const mv = (ev) => engine.animSeek(timeAt(ev));
 		const up = () => {
 			aTrack.removeEventListener('pointermove', mv);
 			aTrack.removeEventListener('pointerup', up);
@@ -138529,49 +138549,60 @@ function createEffectsPanel(app, root, engine) {
 		aTrack.addEventListener('pointermove', mv);
 		aTrack.addEventListener('pointerup', up);
 	});
+	function renderKeys() {
+		const A = st.anim;
+		aKeys.textContent = '';
+		for (const k of A.keys) {
+			const b = h('button', { type: 'button', class: 'fx-anim-key' + (k === selKey ? ' is-sel' : ''), style: { left: (k.t / A.dur) * 100 + '%' }, 'data-tip': `Ключ, ${k.t.toFixed(1)} с. Клик выбирает, перетаскивание двигает`, 'aria-label': 'Ключ' });
+			b.addEventListener('pointerdown', (e) => {
+				e.stopPropagation();
+				engine.animPause();
+				selKey = k;
+				engine.animSeek(k.t);
+				b.setPointerCapture(e.pointerId);
+				const mv = (ev) => {
+					engine.animMoveKey(k, timeAt(ev));
+					b.style.left = (k.t / A.dur) * 100 + '%';
+					aTime.textContent = `${k.t.toFixed(1)} с`;
+				};
+				const up = () => {
+					b.removeEventListener('pointermove', mv);
+					b.removeEventListener('pointerup', up);
+					renderKeys();
+					animSync();
+				};
+				b.addEventListener('pointermove', mv);
+				b.addEventListener('pointerup', up);
+				renderKeys();
+				animSync();
+			});
+			aKeys.append(b);
+		}
+	}
+	let keysSig = '';
 	function animSync() {
 		const A = st.anim;
-		const frac = (t) => (A.dur ? Math.min(1, t / A.dur) : 0);
-		aTime.textContent = `${engine.animT.toFixed(1)} / ${A.dur.toFixed(1)} с`;
-		aHead.style.left = frac(engine.animT) * 100 + '%';
+		aTime.textContent = `${engine.animT.toFixed(1)} с`;
+		aHead.style.left = (A.dur ? Math.min(1, engine.animT / A.dur) : 0) * 100 + '%';
+		aTrack.style.setProperty('--ticks', Math.max(1, Math.round(A.dur)));
 		aPlay.textContent = '';
 		aPlay.append(h('span', { class: 'ic-wrap', html: icon(engine.animPlaying ? 'pause' : 'play', 18) }));
+		aPlay.classList.toggle('is-active', engine.animPlaying);
+		aLoop.classList.toggle('is-active', !!A.loop);
 		aRec.disabled = engine.animRec;
-		aDur.value = A.dur;
-		aLoop.set(A.loop);
-		aHint.hidden = A.keys.length >= 2;
-		aUpd.disabled = aDel.disabled = !selKey || !A.keys.includes(selKey);
-		if (aKeys.dataset.n !== String(A.keys.length) + A.keys.map((k) => k.t).join() + (selKey ? A.keys.indexOf(selKey) : -1)) {
-			aKeys.dataset.n = String(A.keys.length) + A.keys.map((k) => k.t).join() + (selKey ? A.keys.indexOf(selKey) : -1);
-			aKeys.textContent = '';
-			for (const k of A.keys) {
-				const b = h('button', { type: 'button', class: 'fx-anim-key' + (k === selKey ? ' is-sel' : ''), style: { left: frac(k.t) * 100 + '%' }, 'data-tip': `Ключ на ${k.t.toFixed(2)} с: клик выбирает, перетаскивание двигает`, 'aria-label': 'Ключ' });
-				b.addEventListener('pointerdown', (e) => {
-					e.stopPropagation();
-					engine.animPause();
-					selKey = k;
-					engine.animSeek(k.t);
-					b.setPointerCapture(e.pointerId);
-					const r = aTrack.getBoundingClientRect();
-					const mv = (ev) => {
-						engine.animMoveKey(k, Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * A.dur);
-						b.style.left = frac(k.t) * 100 + '%';
-						aTime.textContent = `${k.t.toFixed(1)} / ${A.dur.toFixed(1)} с`;
-					};
-					const up = () => {
-						b.removeEventListener('pointermove', mv);
-						b.removeEventListener('pointerup', up);
-						animSync();
-					};
-					b.addEventListener('pointermove', mv);
-					b.addEventListener('pointerup', up);
-					animSync();
-				});
-				aKeys.append(b);
-			}
+		if (document.activeElement !== aDur) aDur.value = A.dur;
+		if (selKey && !A.keys.includes(selKey)) selKey = null;
+		aUpd.disabled = aDel.disabled = !selKey;
+		const distinct = new Set(A.keys.map((k) => k.t)).size;
+		aHint.textContent = distinct < 2 ? (A.keys.length ? 'Передвиньте время, измените сцену и добавьте ещё ключ' : 'Нажмите «Ключ», чтобы запомнить сцену') : '';
+		const sig = A.dur + '|' + A.keys.map((k) => k.t).join(',') + '|' + A.keys.indexOf(selKey);
+		if (sig !== keysSig) {
+			keysSig = sig;
+			renderKeys();
 		}
 	}
 	app.bus.on('fxanim', animSync);
+	app.bus.on('fx', animSync);
 	// фон сцены: кнопка в нижней панели открывает палитру
 	const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#ffffff', 'Белый']];
 	const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));

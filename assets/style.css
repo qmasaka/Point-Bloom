@@ -3277,49 +3277,69 @@ body {
 	display: none;
 	flex-direction: column;
 	gap: 8px;
-	width: min(720px, calc(100% - 24px));
-	padding: 10px 12px;
+	width: min(560px, calc(100% - 24px));
+	padding: 8px 10px;
 	border-radius: var(--r-box);
 }
 .fx-mode .fx-anim:not([hidden]) {
 	display: flex;
+	animation: fx-anim-in 0.2s var(--ease);
 }
-.fx-focus .fx-anim {
-	bottom: 64px;
+@keyframes fx-anim-in {
+	from {
+		opacity: 0;
+		transform: translate(-50%, 6px);
+	}
 }
 .fx-anim-row {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
+	gap: 6px;
 }
-.fx-anim-sp {
-	flex: 1;
+.fx-anim .btn-icon {
+	width: 28px;
+	height: 28px;
+	flex: none;
 }
 .fx-anim-time {
+	flex: none;
+	min-width: 38px;
 	font: 600 12px var(--font-mono, ui-monospace, monospace);
 	color: var(--text-dim);
-	min-width: 84px;
-}
-.fx-anim-lab {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	font-size: 12px;
-	color: var(--text-dim);
-}
-.fx-anim-dur {
-	width: 56px;
+	text-align: right;
 }
 .fx-anim-track {
 	position: relative;
-	height: 30px;
-	margin: 0 6px;
-	background: var(--bg-sunken);
-	border: 1px solid var(--line);
-	border-radius: var(--r-ctl);
+	flex: 1;
+	height: 28px;
+	min-width: 80px;
+	margin: 0 8px;
 	cursor: pointer;
 	touch-action: none;
+}
+.fx-anim-track::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 50%;
+	height: 8px;
+	margin-top: -4px;
+	background: var(--bg-sunken);
+	border: 1px solid var(--line);
+	border-radius: 4px;
+}
+.fx-anim-track::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 50%;
+	height: 4px;
+	margin-top: -8px;
+	background: repeating-linear-gradient(90deg, var(--line-strong) 0 1px, transparent 1px calc(100% / var(--ticks, 8)));
+	opacity: 0.7;
+	pointer-events: none;
 }
 .fx-anim-keys {
 	position: absolute;
@@ -3328,15 +3348,19 @@ body {
 .fx-anim-key {
 	position: absolute;
 	top: 50%;
-	width: 14px;
-	height: 14px;
-	margin: -7px 0 0 -7px;
+	width: 12px;
+	height: 12px;
+	margin: -6px 0 0 -6px;
 	padding: 0;
 	background: var(--accent);
 	border: 2px solid var(--bg-panel);
 	border-radius: 3px;
 	transform: rotate(45deg);
 	cursor: grab;
+	transition: transform 0.12s var(--ease);
+}
+.fx-anim-key:hover {
+	transform: rotate(45deg) scale(1.15);
 }
 .fx-anim-key.is-sel {
 	background: #fff;
@@ -3344,14 +3368,55 @@ body {
 }
 .fx-anim-head {
 	position: absolute;
-	top: -3px;
-	bottom: -3px;
+	top: 2px;
+	bottom: 2px;
 	width: 2px;
 	margin-left: -1px;
 	background: var(--text);
 	border-radius: 1px;
 	pointer-events: none;
 }
+.fx-anim-head::before {
+	content: '';
+	position: absolute;
+	top: -2px;
+	left: -4px;
+	border: 5px solid transparent;
+	border-top: 6px solid var(--text);
+	border-bottom: 0;
+}
+.fx-anim-dur-wrap {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	font-size: 12px;
+	color: var(--text-dim);
+}
+.fx-anim .fx-anim-dur {
+	width: 44px;
+	height: 26px;
+	padding: 0 4px;
+	text-align: center;
+}
+.fx-anim-actions {
+	padding-top: 6px;
+	border-top: 1px solid var(--line);
+}
 .fx-anim-hint {
-	margin: 0;
+	flex: 1;
+	min-width: 0;
+	padding: 0 4px;
+	font-size: 12px;
+	color: var(--text-faint);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+@media (max-width: 560px) {
+	.fx-anim-hint {
+		display: none;
+	}
+	.fx-anim-actions .btn-label {
+		display: none;
+	}
 }

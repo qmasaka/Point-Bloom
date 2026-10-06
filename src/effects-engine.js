@@ -2011,7 +2011,8 @@ export class EffectsEngine {
 	// ------------------------------------------------------------ анимация по ключам
 	/** Слои, которыми можно анимировать: эффекты формы, звука и графики. Управление руками и кистью в ключи не входит. */
 	_animLayers() {
-		return FX_LAYERS.filter((l) => l.group !== 'Взаимодействие').map((l) => l.id);
+		// только эффекты, у которых вся работа в «Силе»: без связей, распада, растворения и управления руками
+		return ['curl', 'spectrum', 'wave', 'twist', 'pulse', 'blast', 'cloth', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'echo'];
 	}
 
 	/** Снимок того, что можно анимировать: камера, размер, яркость, свечение и сила каждого эффекта (выключенный = 0) */
@@ -3491,7 +3492,16 @@ export class EffectsEngine {
 			this._lastT = now;
 			const st0 = this.state;
 			this._time += dt;
-			if (this.animPlaying) this._animStep(dt);
+			if (this.animPlaying) {
+				try {
+					this._animStep(dt);
+				} catch (e) {
+					// ошибка в анимации не должна останавливать отрисовку сцены
+					this.animPlaying = false;
+					this.animRec = false;
+					this.app.toast('Анимация остановлена: ' + (e.message || e), 'error');
+				}
+			}
 			this._analyse(dt);
 			if (!this.material) return;
 			if (this.morphing) {

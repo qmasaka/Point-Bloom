@@ -1903,7 +1903,7 @@ this.camTracker = null;
 this._pointerDown = false;
 }
 _animLayers() {
-return FX_LAYERS.filter((l) => l.group !== 'Взаимодействие').map((l) => l.id);
+return ['curl', 'spectrum', 'wave', 'twist', 'pulse', 'blast', 'cloth', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'echo'];
 }
 animCapture() {
 const nav = this.app.nav;
@@ -3248,7 +3248,15 @@ const dt = Math.min(0.1, (now - this._lastT) / 1000);
 this._lastT = now;
 const st0 = this.state;
 this._time += dt;
-if (this.animPlaying) this._animStep(dt);
+if (this.animPlaying) {
+try {
+this._animStep(dt);
+} catch (e) {
+this.animPlaying = false;
+this.animRec = false;
+this.app.toast('Анимация остановлена: ' + (e.message || e), 'error');
+}
+}
 this._analyse(dt);
 if (!this.material) return;
 if (this.morphing) {
