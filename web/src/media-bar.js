@@ -30,6 +30,7 @@ seek.addEventListener('pointerup', endScrub);
 seek.addEventListener('pointercancel', endScrub);
 seek.addEventListener('change', endScrub);
 seek.addEventListener('input', () => {
+seek.style.setProperty('--p', (parseFloat(seek.value) / Math.max(0.1, pm.duration)) * 100 + '%');
 if (!scrubbing) {
 wasPlaying = pm.playing;
 pm.pause();
@@ -60,6 +61,7 @@ function paint() {
 time.textContent = fmt(pm.time);
 total.textContent = fmt(pm.duration);
 seek.max = Math.max(0.1, pm.duration);
+seek.style.setProperty('--p', Math.min(100, (pm.time / Math.max(0.1, pm.duration)) * 100) + '%');
 }
 function sync() {
 const vid = (pm.kind === 'video' || pm.kind === 'rec') && mc.present;

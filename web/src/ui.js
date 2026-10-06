@@ -383,11 +383,6 @@ this.modeBar.set(this.app.settings.display);
 }
 refreshViewLabel() {
 const app = this.app;
-const el = $('#viewLabel');
-const grid = app.viewport.grid;
-const step = grid.spacing;
-const stepTxt = step >= 1000 ? step / 1000 + 'k' : step >= 0.01 ? parseFloat(step.toPrecision(3)) : step.toExponential(0);
-el.innerHTML = `<b>${app.nav.viewLabel()}</b><span>Сетка ${stepTxt}</span>`;
 $('#btnOrtho').setAttribute('aria-pressed', String(app.nav.ortho));
 $('#btnOrtho').dataset.tip = app.nav.ortho ? 'Сейчас: ортогональная. Включить перспективу (5)' : 'Сейчас: перспектива. Включить ортогональную (5)';
 }

@@ -413,8 +413,9 @@ maskHint.textContent = HINTS[mk.mode];
 }
 const sourceSeg = segmented({
 options: [
-{ value: 'synth', label: 'Синтезатор', title: 'Встроенная музыка' },
-{ value: 'file', label: 'Трек', title: 'Загрузить свой аудиофайл' },
+{ value: 'synth', label: 'Музыка', title: 'Встроенная музыка: эмбиент, джангл, брейккор' },
+{ value: 'file', label: 'Файл', title: 'Загрузить свой аудиофайл' },
+{ value: 'video', label: 'Видео', title: 'Звук из открытого видео' },
 { value: 'mic', label: 'Микрофон', title: 'Живой звук с микрофона' },
 ],
 value: engine.sourceType,
@@ -423,10 +424,11 @@ sourceSeg.set(engine.sourceType);
 try {
 if (v === 'synth') await engine.useSynth();
 else if (v === 'file') fileInput.click();
+else if (v === 'video') await engine.useVideoAudio();
 else await engine.useMic();
 } catch (e) {
 console.error(e);
-app.toast(v === 'mic' ? 'Нет доступа к микрофону' : 'Не удалось включить звук: ' + (e.message || e), 'error');
+app.toast(v === 'mic' ? 'Нет доступа к микрофону' : v === 'video' ? e.message : 'Не удалось включить звук: ' + (e.message || e), v === 'video' ? 'warn' : 'error');
 }
 sync();
 },
