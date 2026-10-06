@@ -4,6 +4,7 @@ import { section, field, slider, segmented, switchRow, colorField, button } from
 import * as THREE from 'three';
 import { sampleSurface, verticesToCloud, cloudToPoints, overrideMats } from './pointcloud.js';
 import { getDevice, hintForCount } from './device-card.js';
+import { createTextSection } from './text-points.js';
 
 const compact = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k' : String(n));
 
@@ -224,7 +225,7 @@ export function createPointsPanel(app, root) {
 	const texRow = h('div', { class: 'fx-tex-row' }, texIn, texPick, texReset);
 	showTex();
 	secLook.body ? secLook.body.append(texRow, texName) : secLook.el.append(texRow, texName);
-	root.append(secCreate.el, secLook.el);
+	root.append(createTextSection(app).el, secCreate.el, secLook.el);
 
 	// ---------------------------------------------------------------- синхронизация
 	function sync() {

@@ -89433,6 +89433,7 @@ const ICON_PATHS = {
 	'sun': '<path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/>',
 	'swatches': '<path d="M88,180a12,12,0,1,1-12-12A12,12,0,0,1,88,180Zm152-23.81V208a16,16,0,0,1-16,16H76a46.36,46.36,0,0,1-7.94-.68,44,44,0,0,1-35.43-50.95l25-143.13a15.94,15.94,0,0,1,18.47-13L130.84,26a16,16,0,0,1,12.92,18.52l-12.08,69L199.49,89a16,16,0,0,1,20.45,9.52L239,150.69A18.35,18.35,0,0,1,240,156.19ZM103,184.87,128,41.74,73.46,32l-25,143.1A28,28,0,0,0,70.9,207.57,27.29,27.29,0,0,0,91.46,203,27.84,27.84,0,0,0,103,184.87ZM116.78,195,224,156.11,204.92,104,128.5,131.7l-9.78,55.92A44.63,44.63,0,0,1,116.78,195ZM224,173.12,127.74,208H224Z"/>',
 	'target': '<path d="M221.87,83.16A104.1,104.1,0,1,1,195.67,49l22.67-22.68a8,8,0,0,1,11.32,11.32l-96,96a8,8,0,0,1-11.32-11.32l27.72-27.72a40,40,0,1,0,17.87,31.09,8,8,0,1,1,16-.9,56,56,0,1,1-22.38-41.65L184.3,60.39a87.88,87.88,0,1,0,23.13,29.67,8,8,0,0,1,14.44-6.9Z"/>',
+	'text-aa': '<path d="M87.24,52.59a8,8,0,0,0-14.48,0l-64,136a8,8,0,1,0,14.48,6.81L39.9,160h80.2l16.66,35.4a8,8,0,1,0,14.48-6.81ZM47.43,144,80,74.79,112.57,144ZM200,96c-12.76,0-22.73,3.47-29.63,10.32a8,8,0,0,0,11.26,11.36c3.8-3.77,10-5.68,18.37-5.68,13.23,0,24,9,24,20v3.22A42.76,42.76,0,0,0,200,128c-22.06,0-40,16.15-40,36s17.94,36,40,36a42.73,42.73,0,0,0,24-7.25,8,8,0,0,0,16-.75V132C240,112.15,222.06,96,200,96Zm0,88c-13.23,0-24-9-24-20s10.77-20,24-20,24,9,24,20S213.23,184,200,184Z"/>',
 	'tornado': '<path d="M232,40a8,8,0,0,1-8,8H56a8,8,0,0,1,0-16H224A8,8,0,0,1,232,40ZM184,72a8,8,0,0,0-8-8H32a8,8,0,0,0,0,16H176A8,8,0,0,0,184,72Zm-16,32a8,8,0,0,0-8-8H56a8,8,0,0,0,0,16H160A8,8,0,0,0,168,104Zm16,32a8,8,0,0,0-8-8H88a8,8,0,0,0,0,16h88A8,8,0,0,0,184,136Zm0,24H120a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16Zm-24,32H128a8,8,0,0,0,0,16h32a8,8,0,0,0,0-16Zm-32,32H112a8,8,0,0,0,0,16h16a8,8,0,0,0,0-16Z"/>',
 	'trash': '<path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/>',
 	'tree-structure': '<path d="M160,112h48a16,16,0,0,0,16-16V48a16,16,0,0,0-16-16H160a16,16,0,0,0-16,16V64H128a24,24,0,0,0-24,24v32H72v-8A16,16,0,0,0,56,96H24A16,16,0,0,0,8,112v32a16,16,0,0,0,16,16H56a16,16,0,0,0,16-16v-8h32v32a24,24,0,0,0,24,24h16v16a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V160a16,16,0,0,0-16-16H160a16,16,0,0,0-16,16v16H128a8,8,0,0,1-8-8V88a8,8,0,0,1,8-8h16V96A16,16,0,0,0,160,112ZM56,144H24V112H56v32Zm104,16h48v48H160Zm0-112h48V96H160Z"/>',
@@ -131984,6 +131985,199 @@ function createExportPanel(app, root) {
 }
 
 };
+__defs['src/text-points.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'buildTextCloud', () => buildTextCloud);
+__def(__exports, 'createTextSection', () => createTextSection);
+// Текст в точки: любой шрифт, в том числе установленный на компьютере, превращается в облако точек в сцене.
+const { h } = __req('src/util.js');
+const { section, field, slider, segmented, switchRow, button, colorField } = __req('src/ui-kit.js');
+const { cloudToPoints } = __req('src/pointcloud.js');
+
+const LUT = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+const hexToLin = (hx) => {
+	const n = parseInt(hx.slice(1), 16);
+	return [LUT(((n >> 16) & 255) / 255), LUT(((n >> 8) & 255) / 255), LUT((n & 255) / 255)];
+};
+function hsl(hh, s, l) {
+	const a = s * Math.min(l, 1 - l);
+	const f = (n) => {
+		const k = (n + hh / 30) % 12;
+		return l - a * Math.max(-1, Math.min(k - 3, Math.min(9 - k, 1)));
+	};
+	return [LUT(f(0)), LUT(f(8)), LUT(f(4))];
+}
+
+const BASE_FONTS = ['Geist', 'Arial', 'Helvetica', 'Georgia', 'Times New Roman', 'Courier New', 'Verdana', 'Trebuchet MS', 'Impact', 'system-ui', 'serif', 'sans-serif', 'monospace', 'cursive'];
+
+/** Облако точек из текста. opts: text, family, weight, italic, count, depth, fill ('fill'|'outline'), color ('#hex'|'rainbow'|'height') */
+async function buildTextCloud(opts) {
+	const { text, family, weight = 700, italic = false, count = 40000, depth = 0.15, fill = 'fill', color = '#ffffff' } = opts;
+	const lines = (text || ' ').split('\n');
+	const SIZE = 220;
+	const font = `${italic ? 'italic ' : ''}${weight} ${SIZE}px "${family}", system-ui, sans-serif`;
+	try {
+		await document.fonts.load(font, text);
+	} catch (e) {
+		/* шрифт может быть системным: тогда он и так доступен */
+	}
+	const meas = document.createElement('canvas').getContext('2d');
+	meas.font = font;
+	const lh = SIZE * 1.15;
+	const widths = lines.map((l) => meas.measureText(l || ' ').width);
+	const pad = 16;
+	const W = Math.min(4096, Math.ceil(Math.max(...widths)) + pad * 2);
+	const H = Math.min(4096, Math.ceil(lines.length * lh) + pad * 2);
+	const cv = document.createElement('canvas');
+	cv.width = W;
+	cv.height = H;
+	const c = cv.getContext('2d', { willReadFrequently: true });
+	c.font = font;
+	c.textBaseline = 'middle';
+	c.textAlign = 'center';
+	c.fillStyle = '#fff';
+	lines.forEach((l, i) => c.fillText(l, W / 2, pad + lh * (i + 0.5)));
+	const data = c.getImageData(0, 0, W, H).data;
+	const on = (x, y) => x >= 0 && y >= 0 && x < W && y < H && data[(y * W + x) * 4 + 3] > 127;
+	const cand = [];
+	for (let y = 0; y < H; y++) {
+		for (let x = 0; x < W; x++) {
+			if (!on(x, y)) continue;
+			if (fill === 'outline' && on(x - 2, y) && on(x + 2, y) && on(x, y - 2) && on(x, y + 2)) continue;
+			cand.push(y * W + x);
+		}
+	}
+	if (!cand.length) return null;
+	const scale = 2.2 / Math.max(W, H);
+	const n = count;
+	const positions = new Float32Array(n * 3);
+	const normals = new Float32Array(n * 3);
+	const colors = new Float32Array(n * 3);
+	const base = color.startsWith('#') ? hexToLin(color) : null;
+	for (let i = 0; i < n; i++) {
+		const p = cand[(Math.random() * cand.length) | 0];
+		const px = (p % W) + Math.random();
+		const py = ((p / W) | 0) + Math.random();
+		const x = (px - W / 2) * scale;
+		const y = -(py - H / 2) * scale;
+		positions[i * 3] = x;
+		positions[i * 3 + 1] = y;
+		positions[i * 3 + 2] = (Math.random() - 0.5) * depth;
+		normals[i * 3 + 2] = 1;
+		let rgb = base;
+		if (!rgb) rgb = color === 'rainbow' ? hsl(((x / (W * scale)) + 0.5) * 300, 0.85, 0.6) : hsl(30 + (y / (H * scale) + 0.5) * 200, 0.8, 0.62);
+		colors[i * 3] = rgb[0];
+		colors[i * 3 + 1] = rgb[1];
+		colors[i * 3 + 2] = rgb[2];
+	}
+	return { positions, normals, colors, count: n };
+}
+
+/** Раздел «Текст в точки» для вкладки «Точки» */
+function createTextSection(app) {
+	const cfg = (app.settings.text ||= { text: 'Привет', family: 'Geist', weight: 700, italic: false, count: 40000, depth: 0.15, fill: 'fill', color: '#ffffff', colorMode: 'solid' });
+	const save = () => app.saveSettings();
+	let current = null; // текстовый объект в сцене, который редактируем
+	let timer = null;
+
+	const input = h('textarea', { class: 'text-in', rows: 2, spellcheck: 'false', placeholder: 'Введите текст', 'aria-label': 'Текст' });
+	input.value = cfg.text;
+	const listId = 'fontList';
+	const fontIn = h('input', { type: 'text', class: 'num-in font-in', list: listId, value: cfg.family, spellcheck: 'false', 'aria-label': 'Шрифт', placeholder: 'Название шрифта' });
+	const dl = h('datalist', { id: listId });
+	const fill = (names) => {
+		dl.textContent = '';
+		for (const n of names) dl.append(h('option', { value: n }));
+	};
+	fill(BASE_FONTS);
+	const fontHint = h('div', { class: 'field-hint' }, 'Впишите название любого шрифта, установленного на компьютере, или загрузите их список.');
+	const loadFonts = button({
+		label: 'Шрифты с компьютера',
+		icon: 'text-aa',
+		variant: 'secondary',
+		cls: 'btn-block',
+		title: 'Браузер спросит разрешение и покажет все установленные шрифты',
+		onClick: async () => {
+			if (!window.queryLocalFonts) {
+				fontHint.textContent = 'Этот браузер не показывает список шрифтов (нужен Chrome или Edge). Название шрифта можно вписать вручную.';
+				return;
+			}
+			try {
+				const fonts = await window.queryLocalFonts();
+				const names = [...new Set(fonts.map((f) => f.family))].sort((a, b) => a.localeCompare(b));
+				fill([...BASE_FONTS, ...names]);
+				fontHint.textContent = `Загружено шрифтов: ${names.length}. Начните вводить название или откройте список стрелкой.`;
+			} catch (e) {
+				fontHint.textContent = 'Доступ к шрифтам не разрешён. Название шрифта можно вписать вручную.';
+			}
+		},
+	});
+	const weight = segmented({ options: [{ value: 400, label: 'Обычный' }, { value: 700, label: 'Жирный' }, { value: 900, label: 'Чёрный' }], value: cfg.weight, onChange: (v) => { cfg.weight = Number(v); changed(); } });
+	const italic = switchRow('Курсив', { value: cfg.italic, onChange: (v) => { cfg.italic = v; changed(); } });
+	const fillSeg = segmented({ options: [{ value: 'fill', label: 'Заливка' }, { value: 'outline', label: 'Контур' }], value: cfg.fill, onChange: (v) => { cfg.fill = v; changed(); } });
+	const count = slider({ log: true, min: 5000, max: 200000, step: 1000, value: cfg.count, format: (v) => v.toLocaleString('ru-RU').replace(/ /g, ' '), onInput: (v) => { cfg.count = v; }, onChange: () => changed() });
+	const depth = slider({ min: 0, max: 1, step: 0.01, value: cfg.depth, digits: 2, onInput: (v) => { cfg.depth = v; }, onChange: () => changed() });
+	const colorMode = segmented({ cls: 'seg-tight', options: [{ value: 'solid', label: 'Цвет' }, { value: 'rainbow', label: 'Радуга' }, { value: 'height', label: 'Градиент' }], value: cfg.colorMode, onChange: (v) => { cfg.colorMode = v; colorRow.hidden = v !== 'solid'; changed(); } });
+	const colorPick = colorField({ value: cfg.color, onInput: (v) => { cfg.color = v; }, onChange: () => changed() });
+	const colorRow = field('Свой цвет', colorPick.el);
+	colorRow.hidden = cfg.colorMode !== 'solid';
+	const status = h('div', { class: 'field-hint' });
+
+	async function generate(asNew) {
+		cfg.text = input.value;
+		cfg.family = fontIn.value.trim() || 'Geist';
+		if (!cfg.text.trim()) return;
+		const cloud = await buildTextCloud({ ...cfg, color: cfg.colorMode === 'solid' ? cfg.color : cfg.colorMode });
+		if (!cloud) {
+			status.textContent = 'У этого шрифта нет таких символов.';
+			return;
+		}
+		const name = 'Текст: ' + cfg.text.replace(/\s+/g, ' ').slice(0, 24);
+		const pts = cloudToPoints(cloud, name);
+		pts.userData.text = true;
+		app.media?._muteFx?.();
+		if (current && current.parent && !asNew) {
+			// редактируем уже созданный текст: заменяем геометрию и сохраняем положение
+			const old = current.geometry;
+			current.geometry = pts.geometry;
+			old.dispose();
+			current.name = name;
+			app.model.changed();
+			app.bus.emit('selection');
+		} else {
+			app.model.add(pts, app.viewport.root);
+			current = pts;
+		}
+		app.model.select(current);
+		if (app.settings.display !== 'points') app.setDisplay('points');
+		status.textContent = `Точек: ${cloud.count.toLocaleString('ru-RU')}. Любое изменение настроек обновляет текст.`;
+		save();
+	}
+	function changed() {
+		save();
+		if (!current || !current.parent) return;
+		clearTimeout(timer);
+		timer = setTimeout(() => generate(false), 250);
+	}
+	input.addEventListener('input', () => {
+		cfg.text = input.value;
+		changed();
+	});
+	fontIn.addEventListener('change', () => {
+		cfg.family = fontIn.value.trim() || 'Geist';
+		changed();
+	});
+	const add = button({ label: 'Создать текст из точек', icon: 'text-aa', variant: 'primary', cls: 'btn-block', onClick: () => generate(true) });
+	// выбор другого текстового объекта в сцене делает его текущим
+	app.bus.on('selection', () => {
+		const s = app.model.selected;
+		if (s && s.userData.text) current = s;
+	});
+	const sec = section('Текст в точки', { key: 'p-text', open: false }, input, field('Шрифт', fontIn, { wide: true }), dl, loadFonts, fontHint, field('Начертание', weight.el, { wide: true }), italic.el, field('Вид', fillSeg.el, { wide: true }), field('Точек', count.el), field('Толщина', depth.el), field('Цвет', colorMode.el, { wide: true }), colorRow, add, status);
+	return sec;
+}
+
+};
 __defs['src/panel-points.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'SHAPES', () => SHAPES);
@@ -131994,6 +132188,7 @@ const { section, field, slider, segmented, switchRow, colorField, button } = __r
 const THREE = __req('vendor/three/build/three.module.js');
 const { sampleSurface, verticesToCloud, cloudToPoints, overrideMats } = __req('src/pointcloud.js');
 const { getDevice, hintForCount } = __req('src/device-card.js');
+const { createTextSection } = __req('src/text-points.js');
 
 const compact = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k' : String(n));
 
@@ -132214,7 +132409,7 @@ function createPointsPanel(app, root) {
 	const texRow = h('div', { class: 'fx-tex-row' }, texIn, texPick, texReset);
 	showTex();
 	secLook.body ? secLook.body.append(texRow, texName) : secLook.el.append(texRow, texName);
-	root.append(secCreate.el, secLook.el);
+	root.append(createTextSection(app).el, secCreate.el, secLook.el);
 
 	// ---------------------------------------------------------------- синхронизация
 	function sync() {
@@ -133033,6 +133228,171 @@ function rgba(hex, a) {
 }
 
 };
+__defs['src/gif-encoder.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'encodeGIF', () => encodeGIF);
+// Кодировщик анимированного GIF: палитра методом медианного сечения и сжатие LZW. Без зависимостей.
+
+/** Палитра до 256 цветов из выборки пикселей (Uint8Array RGBA) */
+function buildPalette(samples) {
+	const px = [];
+	for (let i = 0; i < samples.length; i += 4) px.push((samples[i] << 16) | (samples[i + 1] << 8) | samples[i + 2]);
+	let boxes = [px];
+	const chan = (v, c) => (v >> (16 - c * 8)) & 255;
+	while (boxes.length < 256) {
+		let bi = -1;
+		let bestRange = 0;
+		let bestC = 0;
+		boxes.forEach((b, i) => {
+			if (b.length < 2) return;
+			for (let c = 0; c < 3; c++) {
+				let mn = 255;
+				let mx = 0;
+				for (const v of b) {
+					const x = chan(v, c);
+					if (x < mn) mn = x;
+					if (x > mx) mx = x;
+				}
+				if (mx - mn > bestRange) {
+					bestRange = mx - mn;
+					bi = i;
+					bestC = c;
+				}
+			}
+		});
+		if (bi < 0 || bestRange < 1) break;
+		const b = boxes[bi].sort((p, q) => chan(p, bestC) - chan(q, bestC));
+		const mid = b.length >> 1;
+		boxes.splice(bi, 1, b.slice(0, mid), b.slice(mid));
+	}
+	const pal = new Uint8Array(256 * 3);
+	boxes.forEach((b, i) => {
+		let r = 0, g = 0, bl = 0;
+		for (const v of b) {
+			r += (v >> 16) & 255;
+			g += (v >> 8) & 255;
+			bl += v & 255;
+		}
+		const n = b.length || 1;
+		pal[i * 3] = r / n;
+		pal[i * 3 + 1] = g / n;
+		pal[i * 3 + 2] = bl / n;
+	});
+	return { pal, size: boxes.length };
+}
+
+function lzw(indices) {
+	const minCode = 8;
+	const clear = 1 << minCode;
+	const eoi = clear + 1;
+	let size = minCode + 1;
+	let next = eoi + 1;
+	const dict = new Map();
+	const out = [];
+	let cur = 0;
+	let bits = 0;
+	const emit = (code) => {
+		cur |= code << bits;
+		bits += size;
+		while (bits >= 8) {
+			out.push(cur & 255);
+			cur >>>= 8;
+			bits -= 8;
+		}
+	};
+	emit(clear);
+	let prefix = indices[0];
+	for (let i = 1; i < indices.length; i++) {
+		const k = indices[i];
+		const key = (prefix << 8) | k;
+		const found = dict.get(key);
+		if (found !== undefined) {
+			prefix = found;
+			continue;
+		}
+		emit(prefix);
+		if (next > (1 << size) - 1 && size < 12) size++;
+		if (next < 4096) dict.set(key, next++);
+		else {
+			emit(clear);
+			dict.clear();
+			next = eoi + 1;
+			size = minCode + 1;
+		}
+		prefix = k;
+	}
+	emit(prefix);
+	emit(eoi);
+	if (bits > 0) out.push(cur & 255);
+	return out;
+}
+
+/** frames: [ImageData], delay в сотых долях секунды. onProgress(0..1). Возвращает Blob image/gif */
+async function encodeGIF(frames, w, h, delay, onProgress) {
+	// палитра по выборке из нескольких кадров
+	const step = Math.max(1, Math.floor(frames.length / 8));
+	const sample = [];
+	for (let f = 0; f < frames.length; f += step) {
+		const d = frames[f].data;
+		for (let i = 0; i < d.length; i += 4 * 37) sample.push(d[i], d[i + 1], d[i + 2], 255);
+	}
+	const { pal, size } = buildPalette(Uint8Array.from(sample));
+	const cache = new Map();
+	const nearest = (r, g, b) => {
+		const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+		let v = cache.get(key);
+		if (v !== undefined) return v;
+		let best = 0;
+		let bd = 1e9;
+		for (let i = 0; i < size; i++) {
+			const dr = pal[i * 3] - r, dg = pal[i * 3 + 1] - g, db = pal[i * 3 + 2] - b;
+			const d = dr * dr * 3 + dg * dg * 4 + db * db * 2;
+			if (d < bd) {
+				bd = d;
+				best = i;
+			}
+		}
+		cache.set(key, best);
+		return best;
+	};
+	const bytes = [];
+	const w16 = (v) => bytes.push(v & 255, (v >> 8) & 255);
+	for (const c of 'GIF89a') bytes.push(c.charCodeAt(0));
+	w16(w);
+	w16(h);
+	bytes.push(0xf7, 0, 0);
+	for (let i = 0; i < 768; i++) bytes.push(pal[i]);
+	bytes.push(0x21, 0xff, 0x0b);
+	for (const c of 'NETSCAPE2.0') bytes.push(c.charCodeAt(0));
+	bytes.push(3, 1, 0, 0, 0);
+	for (let f = 0; f < frames.length; f++) {
+		const d = frames[f].data;
+		const idx = new Uint8Array(w * h);
+		for (let i = 0, p = 0; p < idx.length; i += 4, p++) idx[p] = nearest(d[i], d[i + 1], d[i + 2]);
+		bytes.push(0x21, 0xf9, 4, 0x04);
+		w16(delay);
+		bytes.push(0, 0);
+		bytes.push(0x2c);
+		w16(0);
+		w16(0);
+		w16(w);
+		w16(h);
+		bytes.push(0, 8);
+		const data = lzw(idx);
+		for (let i = 0; i < data.length; i += 255) {
+			const n = Math.min(255, data.length - i);
+			bytes.push(n);
+			for (let k = 0; k < n; k++) bytes.push(data[i + k]);
+		}
+		bytes.push(0);
+		onProgress && onProgress((f + 1) / frames.length);
+		await new Promise((r) => setTimeout(r));
+	}
+	bytes.push(0x3b);
+	return new Blob([Uint8Array.from(bytes)], { type: 'image/gif' });
+}
+
+};
 __defs['src/effects-engine.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'FX_SHAPES', () => FX_SHAPES);
@@ -133055,6 +133415,7 @@ const THREE = __req('vendor/three/build/three.module.js');
 const { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } = __req('src/util.js');
 const { TrackerHud } = __req('src/fx-hud.js');
 const { HandTracker } = __req('src/hand-tracker.js');
+const { encodeGIF } = __req('src/gif-encoder.js');
 
 // ───────────────────────────────────────────────────────────── описания
 
@@ -133079,7 +133440,7 @@ const BANDS = [
 ];
 
 /** Действия, которые можно назначить жесту руки */
-const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкивать'], ['pull', 'Притягивать'], ['swirl', 'Вихрь'], ['rotate', 'Крутить форму'], ['sculpt', 'Лепить'], ['gravity', 'Гравитация у руки'], ['wave', 'Ударная волна'], ['break', 'Распад, пока держишь'], ['dissolve', 'Растворение, пока держишь'], ['brush', 'Светящийся след'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
+const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкивать'], ['pull', 'Притягивать'], ['swirl', 'Вихрь'], ['rotate', 'Крутить форму'], ['sculpt', 'Лепить'], ['gravity', 'Гравитация у руки'], ['wave', 'Ударная волна'], ['break', 'Распад, пока держишь'], ['dissolve', 'Растворение, пока держишь'], ['brush', 'Светящийся след'], ['slicecut', 'Срез рукой: плоскость за ладонью'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
 
 /** Готовые схемы жестов */
 const FX_GESTURE_PRESETS = [
@@ -133104,7 +133465,7 @@ const FX_LAYERS = [
 	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в сторону', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }] },
 	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими импульсами', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
 	{ id: 'slice', group: 'Графика', name: 'Срез / Изолинии', icon: 'scan', hint: 'Лазерные линии, рельеф из точек на линиях или развёртка: форма постепенно проявляется за бегущей плоскостью', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'auto' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
-	{ id: 'feedback', group: 'Графика', name: 'Feedback-след', icon: 'spiral', hint: 'Настоящий видео-след (Feedback TOP) с затуханием, зумом и вращением', max: 1, def: { on: false, amount: 0.92, band: 'none', react: 0, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002 }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001 }] },
+	{ id: 'feedback', group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой длинный световой хвост из прошлых кадров, как длинная выдержка. Хвост можно окрасить, а можно закрутить туннелем', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
 	{ id: 'echo', group: 'Графика', name: 'Шлейф', icon: 'ghost', hint: 'Призрачные копии формы: тянутся следом, закручиваются спиралью или раскладываются зеркальным веером', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, mode: 'spiral', copies: 4, delay: 0.14, spread: 0.45, fade: 0.7 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['spiral', 'Спираль'], ['kaleido', 'Зеркала'], ['time', 'След']] }, { key: 'copies', label: 'Копий', min: 1, max: 5, step: 1, int: true }, { key: 'spread', label: 'Угол между копиями', min: 0.05, max: 1.5, step: 0.05 }, { key: 'delay', label: 'Задержка, с', min: 0.02, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Затухание копий', min: 0.3, max: 0.95, step: 0.05 }] },
 	{ id: 'tracking', group: 'Взаимодействие', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки захватывают подвижные участки формы и по желанию прикасаются к ней: подъём, вихрь или втягивание', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, shape: 'corners', color: 'auto', thick: 1.5, labels: 'on', lines: 'on', fill: 'none', follow: 'wander', mark: 'none', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 8, max: 160, step: 1, int: true }, { key: 'shape', label: 'Форма', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'fill', label: 'Заливка рамки', type: 'seg', options: [['none', 'Нет'], ['tint', 'Тон'], ['hatch', 'Штрих']] }, { key: 'follow', label: 'Куда смотрят рамки', type: 'seg', options: [['wander', 'Бродят'], ['pointer', 'За руками']] }, { type: 'title', label: 'Эффект в области рамок' }, { key: 'mark', label: 'Что происходит', type: 'select', options: [['none', 'Ничего'], ['invert', 'Негатив'], ['rainbow', 'Радуга'], ['hole', 'Дыра с пульсирующим краем'], ['lens', 'Лупа'], ['pixel', 'Пиксели'], ['glow', 'Свет']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'select', options: [['none', 'Нет'], ['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втягивание'], ['push', 'Отталкивание'], ['ripple', 'Рябь'], ['melt', 'Таяние вниз'], ['scatter', 'Разлёт искрами'], ['vanish', 'Исчезновение']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус области', min: 0.02, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
 	{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.05, max: 2, step: 0.01 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
@@ -134446,6 +134807,8 @@ class PostPipeline {
 				uZoom: { value: 1.0 },
 				uTwist: { value: 0.0 },
 				uHasPrev: { value: 0.0 },
+				uTint: { value: new THREE.Color(1, 1, 1) },
+				uTintK: { value: 0.0 },
 			},
 			vertexShader: /* glsl */ `
 				varying vec2 vUv;
@@ -134462,6 +134825,8 @@ class PostPipeline {
 				uniform float uZoom;
 				uniform float uTwist;
 				uniform float uHasPrev;
+				uniform vec3 uTint;
+				uniform float uTintK;
 				varying vec2 vUv;
 				void main() {
 					vec4 curr = texture2D(uScene, vUv);
@@ -134474,6 +134839,8 @@ class PostPipeline {
 						vec2 pUv = (rot * p) / max(0.001, uZoom) + c;
 						if (pUv.x >= 0.0 && pUv.x <= 1.0 && pUv.y >= 0.0 && pUv.y <= 1.0) {
 							prev = texture2D(uPrev, pUv) * uDecay;
+							// хвост постепенно уходит в цвет палитры
+							prev.rgb = mix(prev.rgb, prev.rgb * uTint * 1.7, uTintK * 0.07);
 						}
 					}
 					vec3 col = max(curr.rgb, prev.rgb);
@@ -134591,9 +134958,12 @@ class PostPipeline {
 		let sourceTex = this.rtScene.texture;
 
 		if (useFb) {
-			const zoom = feedbackCfg.zoom || 1.0;
-			const twist = feedbackCfg.twist || 0.0;
-			const decay = Math.min(0.97, feedbackCfg.amount || 0.92);
+			const tun = feedbackCfg.mode === 'tunnel';
+			const zoom = tun ? feedbackCfg.zoom || 1.0 : 1.0;
+			const twist = tun ? feedbackCfg.twist || 0.0 : 0.0;
+			const decay = Math.min(0.99, feedbackCfg.amount || 0.92);
+			this.fbMat.uniforms.uTint.value.copy(this.tint || new THREE.Color(1, 1, 1));
+			this.fbMat.uniforms.uTintK.value = feedbackCfg.tint ?? 0.5;
 
 			this.fbMat.uniforms.uScene.value = this.rtScene.texture;
 			this.fbMat.uniforms.uPrev.value = this.rtPing.texture;
@@ -135134,7 +135504,7 @@ class EffectsEngine {
 		const grabs = this._grabs || (this._grabs = new Map());
 		const now = this._time;
 		const loc2 = (p) => this._ndcToLocal(p[0] * 2 - 1, -(p[1] * 2 - 1), new THREE.Vector3(), cfg.depth);
-		let wantBreak = false, wantDis = false, grav = null, brushNow = false;
+		let wantBreak = false, wantDis = false, grav = null, brushNow = false, sliceHand = null;
 		const wantFx = new Set();
 		for (const hd of hands) {
 			const g = hd.gesture;
@@ -135176,6 +135546,8 @@ class EffectsEngine {
 					this.addShock(fl);
 					this._waveT = now;
 				}
+			} else if (a === 'slicecut') {
+				sliceHand = this._ndcToLocal(focus[0] * 2 - 1, -(focus[1] * 2 - 1), new THREE.Vector3(), 0);
 			} else if (a === 'gravity') {
 				if (fl) grav = fl;
 			} else if (a.startsWith('fx:')) wantFx.add(a.slice(3));
@@ -135198,6 +135570,7 @@ class EffectsEngine {
 		}
 		if (brushNow) this._brushHand = now;
 		this._handGrav = grav;
+		this._handSlice = sliceHand;
 		this._handDis = wantDis;
 		// знак руки включает эффект, пока его держат; отпустил, и слой возвращается как был
 		const hf = this._handFx || (this._handFx = new Map());
@@ -136140,6 +136513,7 @@ class EffectsEngine {
 			const L = st.layers;
 			const look = st.look;
 			const pal = FX_PALETTES.find((p) => p.id === look.palette) || FX_PALETTES[0];
+			if (this.post) this.post.tint = new THREE.Color(pal.c[0]);
 			u.uTime.value = this._time;
 			u.uMorph.value = this.morph;
 			// вид точек общий с вкладкой «Точки» редактора: форма, размер, цвет, затухание вдали
@@ -136238,6 +136612,13 @@ class EffectsEngine {
 			if (smode === 2) sph = sph * 1.1 - 0.05;
 			u.uSlice.value.set(this._eff(sl), sph, sl.width, axVal + nLines * 10);
 			u.uSliceM.value.set(smode, sl.lift, sl.color === 'model' ? 1 : 0, 0);
+			// срез рукой: плоскость среза следует за ладонью, форма проявляется по ту сторону
+			const hs = this._handSlice;
+			if (hs && this.camTracker?.running && this._time - (this._handsT ?? -9) < 0.4) {
+				const c = { y: hs.y, x: hs.x, z: hs.z, diag: (hs.x + hs.y) * 0.707 }[sl.axis] ?? hs.y;
+				u.uSlice.value.set(1, clamp((c + 1.2) / 2.4, 0, 1), Math.max(0.03, sl.width), axVal + nLines * 10);
+				u.uSliceM.value.set(2, sl.lift, sl.color === 'model' ? 1 : 0, 0);
+			}
 			u.uSliceC.value.set(sl.color && sl.color !== 'auto' ? sl.color : pal.c[2]);
 
 			// Look P2 & DoF
@@ -136490,6 +136871,69 @@ class EffectsEngine {
 			this.app.viewport.invalidate();
 		};
 		this._raf = requestAnimationFrame(tick);
+	}
+
+	// ------------------------------------------------------------ сохранение анимации
+	/** Зацикленная анимация: GIF (кадры снимаются сразу после отрисовки) или WebM со звуком */
+	async saveAnimation({ format = 'gif', seconds = 4, fps = 15, maxW = 480 }) {
+		if (this.animBusy) return;
+		this.animBusy = true;
+		this.animProgress = { stage: 'Запись', v: 0 };
+		this.emit();
+		try {
+			if (format === 'webm') {
+				this.startRecording();
+				const t0 = performance.now();
+				while (performance.now() - t0 < seconds * 1000) {
+					this.animProgress = { stage: 'Запись', v: (performance.now() - t0) / (seconds * 1000) };
+					this.emit();
+					await new Promise((r) => setTimeout(r, 200));
+				}
+				this.stopRecording();
+				return;
+			}
+			const cv = this.app.viewport.canvas;
+			const W = Math.min(maxW, cv.width);
+			const H = Math.round((W / cv.width) * cv.height);
+			const tmp = document.createElement('canvas');
+			tmp.width = W;
+			tmp.height = H;
+			const ctx = tmp.getContext('2d', { willReadFrequently: true });
+			const bg = this.state.look.bg || '#14161b';
+			const frames = [];
+			const total = Math.max(2, Math.round(seconds * fps));
+			let last = -1e9;
+			await new Promise((resolve) => {
+				const off = this.app.bus.on('rendered', () => {
+					const now = performance.now();
+					if (now - last < 1000 / fps - 4) return;
+					last = now;
+					ctx.fillStyle = bg;
+					ctx.fillRect(0, 0, W, H);
+					ctx.drawImage(cv, 0, 0, W, H);
+					frames.push(ctx.getImageData(0, 0, W, H));
+					this.animProgress = { stage: 'Запись', v: frames.length / total };
+					if (frames.length >= total) {
+						off && off();
+						resolve();
+					}
+				});
+			});
+			this.animProgress = { stage: 'Кодирую GIF', v: 0 };
+			this.emit();
+			const blob = await encodeGIF(frames, W, H, Math.round(100 / fps), (v) => {
+				this.animProgress = { stage: 'Кодирую GIF', v };
+				this.emit();
+			});
+			downloadBlob(blob, 'effects.gif');
+			this.app.toast(`GIF сохранён: effects.gif (${(blob.size / 1048576).toFixed(1)} МБ)`, 'ok');
+		} catch (e) {
+			this.app.toast('Не удалось сохранить анимацию: ' + (e.message || e), 'error');
+		} finally {
+			this.animBusy = false;
+			this.animProgress = null;
+			this.emit();
+		}
 	}
 
 	// ------------------------------------------------------------ запись видео
@@ -137042,6 +137486,12 @@ function createEffectsPanel(app, root, engine) {
 	const solidPick = colorField({ value: pset.solidColor, onInput: (v) => { pset.solidColor = v; }, onChange: () => app.saveSettings() });
 	const solidRow = field('Свой цвет', solidPick.el);
 	const origBtn = button({ label: 'Исходный цвет модели', icon: 'arrow-counter-clockwise', variant: 'secondary', cls: 'btn-block', title: 'Вернуть настоящие цвета и текстуру модели вместо палитры', onClick: () => engine.setColorBy('model') });
+	// сохранение зацикленной анимации
+	const anim = { format: 'gif', seconds: 4 };
+	const animFmt = segmented({ options: [{ value: 'gif', label: 'GIF', title: 'Зацикленная анимация, открывается везде' }, { value: 'webm', label: 'WebM со звуком', title: 'Видео в хорошем качестве' }], value: anim.format, onChange: (v) => { anim.format = v; } });
+	const animSec = slider({ min: 1, max: 15, step: 1, value: anim.seconds, digits: 0, unit: ' с', onInput: (v) => { anim.seconds = v; } });
+	const animBtn = button({ label: 'Записать и сохранить', icon: 'record', variant: 'primary', cls: 'btn-block', onClick: () => engine.saveAnimation({ format: anim.format, seconds: anim.seconds }) });
+	const animInfo = h('div', { class: 'field-hint' }, 'Запишется то, что сейчас видно на сцене, вместе со всеми эффектами.');
 	const hudSw = switchRow('Индикаторы уровней звука', { value: st.look.hud, onChange: (v) => { st.look.hud = v; save(); } });
 	const hudSpec = switchRow('Спектр внизу', { value: st.look.hudSpectrum, onChange: (v) => { st.look.hudSpectrum = v; save(); } });
 	const attSw = switchRow('Мельче вдали', { value: pset.attenuate, onChange: (v) => { pset.attenuate = v; app.saveSettings(); } });
@@ -137061,7 +137511,7 @@ function createEffectsPanel(app, root, engine) {
 	const blend = segmented({ options: [{ value: 'normal', label: 'Плотные', title: 'Непрозрачные точки' }, { value: 'add', label: 'Свечение', title: 'Точки складывают свет: ярче в плотных местах' }], value: st.look.blend, onChange: (v) => { st.look.blend = v; save(); } });
 	const rotate = switchRow('Вращать форму', { value: st.look.autoRotate, onChange: (v) => { st.look.autoRotate = v; save(); } });
 	const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
-	const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек', shapeTiles, { wide: true }), field('Размер', size.el), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el), hudSw.el, hudSpec.el);
+	const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек', shapeTiles, { wide: true }), field('Размер', size.el), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el), hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Сохранить анимацию'), field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
 	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
@@ -137191,6 +137641,9 @@ function createEffectsPanel(app, root, engine) {
 		dofRange.set(st.look.dofRange || 1.4);
 		syncDof();
 		blend.set(st.look.blend);
+		const ap = engine.animProgress;
+		animBtn.disabled = !!engine.animBusy;
+		animBtn.querySelector('.btn-label').textContent = ap ? `${ap.stage}: ${Math.round(ap.v * 100)}%` : 'Записать и сохранить';
 		hudSw.set(!!st.look.hud);
 		hudSpec.set(st.look.hudSpectrum !== false);
 		rotate.set(st.look.autoRotate);

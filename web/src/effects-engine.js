@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } from './util.js';
 import { TrackerHud } from './fx-hud.js';
 import { HandTracker } from './hand-tracker.js';
+import { encodeGIF } from './gif-encoder.js';
 export const FX_SHAPES = [
 { id: 'model', name: 'Модель', icon: 'cube' },
 { id: 'media', name: 'Фото', icon: 'image' },
@@ -20,7 +21,7 @@ export const BANDS = [
 { id: 'high', label: 'Верх', title: 'Высокие частоты: тарелки, шипение' },
 { id: 'beat', label: 'Бит', title: 'Удар: вспышка на каждый такт' },
 ];
-export const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкивать'], ['pull', 'Притягивать'], ['swirl', 'Вихрь'], ['rotate', 'Крутить форму'], ['sculpt', 'Лепить'], ['gravity', 'Гравитация у руки'], ['wave', 'Ударная волна'], ['break', 'Распад, пока держишь'], ['dissolve', 'Растворение, пока держишь'], ['brush', 'Светящийся след'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
+export const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкивать'], ['pull', 'Притягивать'], ['swirl', 'Вихрь'], ['rotate', 'Крутить форму'], ['sculpt', 'Лепить'], ['gravity', 'Гравитация у руки'], ['wave', 'Ударная волна'], ['break', 'Распад, пока держишь'], ['dissolve', 'Растворение, пока держишь'], ['brush', 'Светящийся след'], ['slicecut', 'Срез рукой: плоскость за ладонью'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
 export const FX_GESTURE_PRESETS = [
 { name: 'Игра', tip: 'Ладонь толкает, кулак рассыпает форму, щипок крутит, палец рисует, знак мира пускает волну', v: { g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush', g_peace: 'wave', g_rock: 'fx:glitch', g_thumb: 'gravity' } },
 { name: 'Скульптор', tip: 'Щипок лепит глину, ладонь крутит, кулак притягивает', v: { g_palm: 'rotate', g_fist: 'pull', g_pinch: 'sculpt', g_point: 'push', g_peace: 'swirl', g_rock: 'fx:glitch', g_thumb: 'none' } },
@@ -41,7 +42,7 @@ export const FX_LAYERS = [
 { id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в сторону', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }] },
 { id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими импульсами', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
 { id: 'slice', group: 'Графика', name: 'Срез / Изолинии', icon: 'scan', hint: 'Лазерные линии, рельеф из точек на линиях или развёртка: форма постепенно проявляется за бегущей плоскостью', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'auto' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
-{ id: 'feedback', group: 'Графика', name: 'Feedback-след', icon: 'spiral', hint: 'Настоящий видео-след (Feedback TOP) с затуханием, зумом и вращением', max: 1, def: { on: false, amount: 0.92, band: 'none', react: 0, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002 }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001 }] },
+{ id: 'feedback', group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой длинный световой хвост из прошлых кадров, как длинная выдержка. Хвост можно окрасить, а можно закрутить туннелем', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
 { id: 'echo', group: 'Графика', name: 'Шлейф', icon: 'ghost', hint: 'Призрачные копии формы: тянутся следом, закручиваются спиралью или раскладываются зеркальным веером', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, mode: 'spiral', copies: 4, delay: 0.14, spread: 0.45, fade: 0.7 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['spiral', 'Спираль'], ['kaleido', 'Зеркала'], ['time', 'След']] }, { key: 'copies', label: 'Копий', min: 1, max: 5, step: 1, int: true }, { key: 'spread', label: 'Угол между копиями', min: 0.05, max: 1.5, step: 0.05 }, { key: 'delay', label: 'Задержка, с', min: 0.02, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Затухание копий', min: 0.3, max: 0.95, step: 0.05 }] },
 { id: 'tracking', group: 'Взаимодействие', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки захватывают подвижные участки формы и по желанию прикасаются к ней: подъём, вихрь или втягивание', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, shape: 'corners', color: 'auto', thick: 1.5, labels: 'on', lines: 'on', fill: 'none', follow: 'wander', mark: 'none', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 8, max: 160, step: 1, int: true }, { key: 'shape', label: 'Форма', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'fill', label: 'Заливка рамки', type: 'seg', options: [['none', 'Нет'], ['tint', 'Тон'], ['hatch', 'Штрих']] }, { key: 'follow', label: 'Куда смотрят рамки', type: 'seg', options: [['wander', 'Бродят'], ['pointer', 'За руками']] }, { type: 'title', label: 'Эффект в области рамок' }, { key: 'mark', label: 'Что происходит', type: 'select', options: [['none', 'Ничего'], ['invert', 'Негатив'], ['rainbow', 'Радуга'], ['hole', 'Дыра с пульсирующим краем'], ['lens', 'Лупа'], ['pixel', 'Пиксели'], ['glow', 'Свет']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'select', options: [['none', 'Нет'], ['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втягивание'], ['push', 'Отталкивание'], ['ripple', 'Рябь'], ['melt', 'Таяние вниз'], ['scatter', 'Разлёт искрами'], ['vanish', 'Исчезновение']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус области', min: 0.02, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
 { id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.05, max: 2, step: 0.01 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
@@ -1333,6 +1334,8 @@ uDecay: { value: 0.92 },
 uZoom: { value: 1.0 },
 uTwist: { value: 0.0 },
 uHasPrev: { value: 0.0 },
+uTint: { value: new THREE.Color(1, 1, 1) },
+uTintK: { value: 0.0 },
 },
 vertexShader: `
 				varying vec2 vUv;
@@ -1349,6 +1352,8 @@ fragmentShader: `
 				uniform float uZoom;
 				uniform float uTwist;
 				uniform float uHasPrev;
+				uniform vec3 uTint;
+				uniform float uTintK;
 				varying vec2 vUv;
 				void main() {
 					vec4 curr = texture2D(uScene, vUv);
@@ -1361,6 +1366,8 @@ fragmentShader: `
 						vec2 pUv = (rot * p) / max(0.001, uZoom) + c;
 						if (pUv.x >= 0.0 && pUv.x <= 1.0 && pUv.y >= 0.0 && pUv.y <= 1.0) {
 							prev = texture2D(uPrev, pUv) * uDecay;
+							// хвост постепенно уходит в цвет палитры
+							prev.rgb = mix(prev.rgb, prev.rgb * uTint * 1.7, uTintK * 0.07);
 						}
 					}
 					vec3 col = max(curr.rgb, prev.rgb);
@@ -1469,9 +1476,12 @@ r.clear();
 r.render(scene, camera);
 let sourceTex = this.rtScene.texture;
 if (useFb) {
-const zoom = feedbackCfg.zoom || 1.0;
-const twist = feedbackCfg.twist || 0.0;
-const decay = Math.min(0.97, feedbackCfg.amount || 0.92);
+const tun = feedbackCfg.mode === 'tunnel';
+const zoom = tun ? feedbackCfg.zoom || 1.0 : 1.0;
+const twist = tun ? feedbackCfg.twist || 0.0 : 0.0;
+const decay = Math.min(0.99, feedbackCfg.amount || 0.92);
+this.fbMat.uniforms.uTint.value.copy(this.tint || new THREE.Color(1, 1, 1));
+this.fbMat.uniforms.uTintK.value = feedbackCfg.tint ?? 0.5;
 this.fbMat.uniforms.uScene.value = this.rtScene.texture;
 this.fbMat.uniforms.uPrev.value = this.rtPing.texture;
 this.fbMat.uniforms.uDecay.value = decay;
@@ -1951,7 +1961,7 @@ const st = this._handState || (this._handState = new Map());
 const grabs = this._grabs || (this._grabs = new Map());
 const now = this._time;
 const loc2 = (p) => this._ndcToLocal(p[0] * 2 - 1, -(p[1] * 2 - 1), new THREE.Vector3(), cfg.depth);
-let wantBreak = false, wantDis = false, grav = null, brushNow = false;
+let wantBreak = false, wantDis = false, grav = null, brushNow = false, sliceHand = null;
 const wantFx = new Set();
 for (const hd of hands) {
 const g = hd.gesture;
@@ -1993,6 +2003,8 @@ this._camShockT = now;
 this.addShock(fl);
 this._waveT = now;
 }
+} else if (a === 'slicecut') {
+sliceHand = this._ndcToLocal(focus[0] * 2 - 1, -(focus[1] * 2 - 1), new THREE.Vector3(), 0);
 } else if (a === 'gravity') {
 if (fl) grav = fl;
 } else if (a.startsWith('fx:')) wantFx.add(a.slice(3));
@@ -2015,6 +2027,7 @@ grabs.delete(key);
 }
 if (brushNow) this._brushHand = now;
 this._handGrav = grav;
+this._handSlice = sliceHand;
 this._handDis = wantDis;
 const hf = this._handFx || (this._handFx = new Map());
 for (const id of wantFx) {
@@ -2884,6 +2897,7 @@ const u = this.shared;
 const L = st.layers;
 const look = st.look;
 const pal = FX_PALETTES.find((p) => p.id === look.palette) || FX_PALETTES[0];
+if (this.post) this.post.tint = new THREE.Color(pal.c[0]);
 u.uTime.value = this._time;
 u.uMorph.value = this.morph;
 const pset = this.app.settings.point;
@@ -2974,6 +2988,12 @@ sph = x < 1 ? x : 2 - x;
 if (smode === 2) sph = sph * 1.1 - 0.05;
 u.uSlice.value.set(this._eff(sl), sph, sl.width, axVal + nLines * 10);
 u.uSliceM.value.set(smode, sl.lift, sl.color === 'model' ? 1 : 0, 0);
+const hs = this._handSlice;
+if (hs && this.camTracker?.running && this._time - (this._handsT ?? -9) < 0.4) {
+const c = { y: hs.y, x: hs.x, z: hs.z, diag: (hs.x + hs.y) * 0.707 }[sl.axis] ?? hs.y;
+u.uSlice.value.set(1, clamp((c + 1.2) / 2.4, 0, 1), Math.max(0.03, sl.width), axVal + nLines * 10);
+u.uSliceM.value.set(2, sl.lift, sl.color === 'model' ? 1 : 0, 0);
+}
 u.uSliceC.value.set(sl.color && sl.color !== 'auto' ? sl.color : pal.c[2]);
 u.uLookP2.value.set(look.sizeNoise || 0, look.sizeAudio || 0, 0, 0);
 u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
@@ -3208,6 +3228,66 @@ this.onFrame && this.onFrame(this.levels);
 this.app.viewport.invalidate();
 };
 this._raf = requestAnimationFrame(tick);
+}
+async saveAnimation({ format = 'gif', seconds = 4, fps = 15, maxW = 480 }) {
+if (this.animBusy) return;
+this.animBusy = true;
+this.animProgress = { stage: 'Запись', v: 0 };
+this.emit();
+try {
+if (format === 'webm') {
+this.startRecording();
+const t0 = performance.now();
+while (performance.now() - t0 < seconds * 1000) {
+this.animProgress = { stage: 'Запись', v: (performance.now() - t0) / (seconds * 1000) };
+this.emit();
+await new Promise((r) => setTimeout(r, 200));
+}
+this.stopRecording();
+return;
+}
+const cv = this.app.viewport.canvas;
+const W = Math.min(maxW, cv.width);
+const H = Math.round((W / cv.width) * cv.height);
+const tmp = document.createElement('canvas');
+tmp.width = W;
+tmp.height = H;
+const ctx = tmp.getContext('2d', { willReadFrequently: true });
+const bg = this.state.look.bg || '#14161b';
+const frames = [];
+const total = Math.max(2, Math.round(seconds * fps));
+let last = -1e9;
+await new Promise((resolve) => {
+const off = this.app.bus.on('rendered', () => {
+const now = performance.now();
+if (now - last < 1000 / fps - 4) return;
+last = now;
+ctx.fillStyle = bg;
+ctx.fillRect(0, 0, W, H);
+ctx.drawImage(cv, 0, 0, W, H);
+frames.push(ctx.getImageData(0, 0, W, H));
+this.animProgress = { stage: 'Запись', v: frames.length / total };
+if (frames.length >= total) {
+off && off();
+resolve();
+}
+});
+});
+this.animProgress = { stage: 'Кодирую GIF', v: 0 };
+this.emit();
+const blob = await encodeGIF(frames, W, H, Math.round(100 / fps), (v) => {
+this.animProgress = { stage: 'Кодирую GIF', v };
+this.emit();
+});
+downloadBlob(blob, 'effects.gif');
+this.app.toast(`GIF сохранён: effects.gif (${(blob.size / 1048576).toFixed(1)} МБ)`, 'ok');
+} catch (e) {
+this.app.toast('Не удалось сохранить анимацию: ' + (e.message || e), 'error');
+} finally {
+this.animBusy = false;
+this.animProgress = null;
+this.emit();
+}
 }
 startRecording() {
 if (this.recording || !window.MediaRecorder) {

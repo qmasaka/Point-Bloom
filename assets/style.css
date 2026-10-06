@@ -3082,3 +3082,26 @@ body {
 		margin: 0;
 	}
 }
+
+.text-in {
+	width: 100%;
+	resize: vertical;
+	min-height: 48px;
+	padding: 8px 10px;
+	background: var(--bg-sunken);
+	border: 1px solid var(--line-strong);
+	border-radius: var(--r-ctl);
+	color: var(--text);
+	font: inherit;
+	font-size: 14px;
+}
+.text-in:focus {
+	outline: none;
+	border-color: var(--accent-line);
+}
+.font-in {
+	width: 100%;
+}
+.font-in {
+	text-align: left;
+}
