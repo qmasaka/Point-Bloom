@@ -138,6 +138,10 @@ const KEY = 'objglb.fx.v9';
 const GLYPH_SETS = {
 ascii: ['.', ':', '-', '+', '*', 'o', '#', '@'],
 digits: ['1', '7', '4', '2', '5', '6', '8', '0'],
+letters: ['i', 'c', 'r', 'e', 'a', 'o', 'B', 'W'],
+cyr: ['·', 'г', 'ч', 'а', 'ж', 'ф', 'Ж', 'Ш'],
+symbols: ['·', '-', '+', '=', '×', '#', '%', '&'],
+blocks: ['·', '░', '▒', '▒', '▓', '▓', '█', '█'],
 };
 function glyphAtlas(mode) {
 const set = GLYPH_SETS[mode] || GLYPH_SETS.ascii;

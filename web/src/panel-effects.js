@@ -475,7 +475,7 @@ sync();
 shapeBtns.set(sh.value, b);
 shapeTiles.append(b);
 }
-for (const g of [{ id: 'ascii', label: 'Символы ASCII', ch: '#@' }, { id: 'digits', label: 'Цифры', ch: '01' }]) {
+for (const g of [{ id: 'ascii', label: 'Символы ASCII', ch: '#@' }, { id: 'digits', label: 'Цифры', ch: '01' }, { id: 'letters', label: 'Латинские буквы', ch: 'Aa' }, { id: 'cyr', label: 'Русские буквы', ch: 'Жш' }, { id: 'symbols', label: 'Знаки', ch: '+=' }, { id: 'blocks', label: 'Блоки', ch: '▒█' }]) {
 const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'data-shape': g.id, 'data-tip': g.label }, h('span', { class: 'shape-glyph shape-char' }, g.ch), h('span', { class: 'shape-name' }, g.label));
 b.addEventListener('click', () => {
 st.look.glyph = g.id;

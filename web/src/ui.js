@@ -77,7 +77,6 @@ inp.accept = 'video/*,image/*,.pcv';
 inp.addEventListener('change', () => inp.files[0] && this.openMedia(inp.files[0]));
 inp.click();
 });
-$('#btnUrl').addEventListener('click', () => this.openUrl());
 $('#btnUndo').addEventListener('click', () => this.undo());
 $('#btnRedo').addEventListener('click', () => this.redo());
 $('#btnHelp').addEventListener('click', () => this.showHelp());
@@ -96,41 +95,6 @@ const placed = await assignTextureFiles(app, files, null);
 if (placed.length) this.showTab('material');
 }
 });
-}
-async openUrl() {
-const dlg = this.dialog;
-dlg.textContent = '';
-const input = h('input', { type: 'url', class: 'num-in', style: { textAlign: 'left', fontFamily: 'var(--font)', fontSize: '13px', height: '38px' }, placeholder: 'https://example.com/model.glb', spellcheck: 'false', 'aria-label': 'Ссылка на файл' });
-const err = h('div', { class: 'dlg-error', hidden: true });
-const go = async () => {
-const url = input.value.trim();
-if (!/^https?:\/\//i.test(url)) {
-err.hidden = false;
-err.textContent = 'Нужна ссылка, которая начинается с http:// или https://';
-return;
-}
-dlg.close();
-await this.loadFromUrl(url);
-};
-input.addEventListener('keydown', (e) => {
-e.stopPropagation();
-if (e.key === 'Enter') go();
-});
-dlg.append(
-h(
-'div',
-{ class: 'dlg-inner' },
-h('h2', {}, 'Открыть по ссылке'),
-h('p', {}, 'Вставьте прямую ссылку на файл: модель (GLB, OBJ, STL, ZIP…) или картинку-текстуру. Сайт с файлом должен разрешать загрузку из браузера (CORS), иначе скачайте файл и перетащите его сюда.'),
-input,
-err,
-h('p', { class: 'dlg-hint' }, 'Подсказка: ссылку можно просто вставить на странице клавишами Ctrl+V, а адрес вида ?model=ссылка откроет модель сразу.'),
-h('div', { class: 'dlg-actions' }, button({ label: 'Отмена', variant: 'secondary', onClick: () => dlg.close() }), button({ label: 'Открыть', variant: 'primary', icon: 'download-simple', onClick: go }))
-)
-);
-dlg.onclose = null;
-dlg.showModal();
-input.focus();
 }
 async loadFromUrl(url, { textures = [] } = {}) {
 const fetchFile = async (u) => {
@@ -176,11 +140,6 @@ if (files.length) {
 e.preventDefault();
 await this.handleFiles(files, {});
 return;
-}
-const text = (dt.getData('text') || '').trim();
-if (/^https?:\/\/\S+$/i.test(text)) {
-e.preventDefault();
-this.loadFromUrl(text);
 }
 });
 }
@@ -698,7 +657,7 @@ h(
 group('Навигация', row('Вращение', 'СКМ'), row('Вращение (трекпад)', 'Alt', 'ЛКМ'), row('Сдвиг', 'Shift', 'СКМ'), row('Масштаб', 'Колесо'), row('Центр на точке', 'Двойной клик'), row('Показать всё', 'Home'), row('Показать выбранное', 'F')),
 group('Виды', row('Спереди / сзади', 'Num 1'), row('Справа / слева', 'Num 3'), row('Сверху / снизу', 'Num 7'), row('Без Numpad', 'Alt', '1 3 7'), row('Ортогональная', 'Num 5', 'P'), row('Шаг вращения', 'Num 4 6 8 2')),
 group('Правка', row('Выбор', 'Q'), row('Переместить', 'G'), row('Вращать', 'R'), row('Масштаб', 'S'), row('Привязка к шагу', 'N'), row('Оси: мир / локальные', 'L'), row('Дублировать', 'Shift', 'D'), row('Удалить', 'X'), row('Скрыть / показать', 'H', 'Alt+H')),
-group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть', 'O'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Музыка: пуск / пауза', 'Пробел'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
+group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть', 'O'), row('Вставить файл', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Музыка: пуск / пауза', 'Пробел'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
 ),
 h('div', { class: 'dlg-actions' }, close)
 )
@@ -943,8 +902,6 @@ this.effectsEngine.toggle().catch(() => {});
 return;
 }
 break;
-case 'KeyU':
-return this.openUrl();
 case 'KeyH':
 if (app.model.selected) app.ops.setVisible(app.model.selected, !app.model.selected.visible);
 return;

@@ -89412,7 +89412,6 @@ const ICON_PATHS = {
 	'images': '<path d="M216,40H72A16,16,0,0,0,56,56V72H40A16,16,0,0,0,24,88V200a16,16,0,0,0,16,16H184a16,16,0,0,0,16-16V184h16a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM72,56H216v62.75l-10.07-10.06a16,16,0,0,0-22.63,0l-20,20-44-44a16,16,0,0,0-22.62,0L72,109.37ZM184,200H40V88H56v80a16,16,0,0,0,16,16H184Zm32-32H72V132l36-36,49.66,49.66a8,8,0,0,0,11.31,0L194.63,120,216,141.38V168ZM160,84a12,12,0,1,1,12,12A12,12,0,0,1,160,84Z"/>',
 	'info': '<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z"/>',
 	'lightning': '<path d="M215.79,118.17a8,8,0,0,0-5-5.66L153.18,90.9l14.66-73.33a8,8,0,0,0-13.69-7l-112,120a8,8,0,0,0,3,13l57.63,21.61L88.16,238.43a8,8,0,0,0,13.69,7l112-120A8,8,0,0,0,215.79,118.17ZM109.37,214l10.47-52.38a8,8,0,0,0-5-9.06L62,132.71l84.62-90.66L136.16,94.43a8,8,0,0,0,5,9.06l52.8,19.8Z"/>',
-	'link': '<path d="M240,88.23a54.43,54.43,0,0,1-16,37L189.25,160a54.27,54.27,0,0,1-38.63,16h-.05A54.63,54.63,0,0,1,96,119.84a8,8,0,0,1,16,.45A38.62,38.62,0,0,0,150.58,160h0a38.39,38.39,0,0,0,27.31-11.31l34.75-34.75a38.63,38.63,0,0,0-54.63-54.63l-11,11A8,8,0,0,1,135.7,59l11-11A54.65,54.65,0,0,1,224,48,54.86,54.86,0,0,1,240,88.23ZM109,185.66l-11,11A38.41,38.41,0,0,1,70.6,208h0a38.63,38.63,0,0,1-27.29-65.94L78,107.31A38.63,38.63,0,0,1,144,135.71a8,8,0,0,0,16,.45A54.86,54.86,0,0,0,144,96a54.65,54.65,0,0,0-77.27,0L32,130.75A54.62,54.62,0,0,0,70.56,224h0a54.28,54.28,0,0,0,38.64-16l11-11A8,8,0,0,0,109,185.66Z"/>',
 	'magnet': '<path d="M207,50.25A87.46,87.46,0,0,0,144.6,24h-.33A87.48,87.48,0,0,0,82,49.81L20.61,112a16,16,0,0,0,.06,22.56l28.66,28.66a15.92,15.92,0,0,0,11.32,4.69h.09a16,16,0,0,0,11.36-4.82L133,100.69a16.08,16.08,0,0,1,22.41-.21,15.6,15.6,0,0,1,4.73,11.19,16.89,16.89,0,0,1-4.85,12L93,183.88a16,16,0,0,0-.17,22.79l28.66,28.66a16.06,16.06,0,0,0,22.52.12L205.81,175C240.26,140.5,240.79,84.56,207,50.25ZM60.65,151.89,32,123.24,55.8,99.12l28.52,28.52ZM132.79,224l-28.68-28.65,24.38-23.57L157,200.32Zm61.76-60.44-26.11,25.54L140,160.68l26.44-25.57.1-.09a33,33,0,0,0,9.57-23.5A31.44,31.44,0,0,0,166.47,89a32.2,32.2,0,0,0-44.9.5L95.49,116.18,67,87.74,93.35,61.09A71.51,71.51,0,0,1,144.27,40h.27a71.55,71.55,0,0,1,51.05,21.48C223.25,89.55,222.75,135.38,194.55,163.58Z"/>',
 	'minus': '<path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128Z"/>',
 	'monitor': '<path d="M208,40H48A24,24,0,0,0,24,64V176a24,24,0,0,0,24,24H208a24,24,0,0,0,24-24V64A24,24,0,0,0,208,40Zm8,136a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V64a8,8,0,0,1,8-8H208a8,8,0,0,1,8,8Zm-48,48a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,224Z"/>',
@@ -133744,6 +133743,10 @@ const KEY = 'objglb.fx.v9';
 const GLYPH_SETS = {
 	ascii: ['.', ':', '-', '+', '*', 'o', '#', '@'],
 	digits: ['1', '7', '4', '2', '5', '6', '8', '0'],
+	letters: ['i', 'c', 'r', 'e', 'a', 'o', 'B', 'W'],
+	cyr: ['·', 'г', 'ч', 'а', 'ж', 'ф', 'Ж', 'Ш'],
+	symbols: ['·', '-', '+', '=', '×', '#', '%', '&'],
+	blocks: ['·', '░', '▒', '▒', '▓', '▓', '█', '█'],
 };
 function glyphAtlas(mode) {
 	const set = GLYPH_SETS[mode] || GLYPH_SETS.ascii;
@@ -138219,7 +138222,7 @@ function createEffectsPanel(app, root, engine) {
 		shapeTiles.append(b);
 	}
 	// символы вместо точек: те же плитки, что и формы
-	for (const g of [{ id: 'ascii', label: 'Символы ASCII', ch: '#@' }, { id: 'digits', label: 'Цифры', ch: '01' }]) {
+	for (const g of [{ id: 'ascii', label: 'Символы ASCII', ch: '#@' }, { id: 'digits', label: 'Цифры', ch: '01' }, { id: 'letters', label: 'Латинские буквы', ch: 'Aa' }, { id: 'cyr', label: 'Русские буквы', ch: 'Жш' }, { id: 'symbols', label: 'Знаки', ch: '+=' }, { id: 'blocks', label: 'Блоки', ch: '▒█' }]) {
 		const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'data-shape': g.id, 'data-tip': g.label }, h('span', { class: 'shape-glyph shape-char' }, g.ch), h('span', { class: 'shape-name' }, g.label));
 		b.addEventListener('click', () => {
 			st.look.glyph = g.id;
@@ -138563,7 +138566,6 @@ class UI {
 			inp.addEventListener('change', () => inp.files[0] && this.openMedia(inp.files[0]));
 			inp.click();
 		});
-		$('#btnUrl').addEventListener('click', () => this.openUrl());
 		$('#btnUndo').addEventListener('click', () => this.undo());
 		$('#btnRedo').addEventListener('click', () => this.redo());
 		$('#btnHelp').addEventListener('click', () => this.showHelp());
@@ -138586,42 +138588,6 @@ class UI {
 	}
 
 	// ------------------------------------------------- загрузка по ссылке и из буфера
-	async openUrl() {
-		const dlg = this.dialog;
-		dlg.textContent = '';
-		const input = h('input', { type: 'url', class: 'num-in', style: { textAlign: 'left', fontFamily: 'var(--font)', fontSize: '13px', height: '38px' }, placeholder: 'https://example.com/model.glb', spellcheck: 'false', 'aria-label': 'Ссылка на файл' });
-		const err = h('div', { class: 'dlg-error', hidden: true });
-		const go = async () => {
-			const url = input.value.trim();
-			if (!/^https?:\/\//i.test(url)) {
-				err.hidden = false;
-				err.textContent = 'Нужна ссылка, которая начинается с http:// или https://';
-				return;
-			}
-			dlg.close();
-			await this.loadFromUrl(url);
-		};
-		input.addEventListener('keydown', (e) => {
-			e.stopPropagation();
-			if (e.key === 'Enter') go();
-		});
-		dlg.append(
-			h(
-				'div',
-				{ class: 'dlg-inner' },
-				h('h2', {}, 'Открыть по ссылке'),
-				h('p', {}, 'Вставьте прямую ссылку на файл: модель (GLB, OBJ, STL, ZIP…) или картинку-текстуру. Сайт с файлом должен разрешать загрузку из браузера (CORS), иначе скачайте файл и перетащите его сюда.'),
-				input,
-				err,
-				h('p', { class: 'dlg-hint' }, 'Подсказка: ссылку можно просто вставить на странице клавишами Ctrl+V, а адрес вида ?model=ссылка откроет модель сразу.'),
-				h('div', { class: 'dlg-actions' }, button({ label: 'Отмена', variant: 'secondary', onClick: () => dlg.close() }), button({ label: 'Открыть', variant: 'primary', icon: 'download-simple', onClick: go }))
-			)
-		);
-		dlg.onclose = null;
-		dlg.showModal();
-		input.focus();
-	}
-
 	/** Скачивает файл по ссылке и отдаёт его обычному импорту */
 	async loadFromUrl(url, { textures = [] } = {}) {
 		const fetchFile = async (u) => {
@@ -138668,11 +138634,6 @@ class UI {
 				e.preventDefault();
 				await this.handleFiles(files, {});
 				return;
-			}
-			const text = (dt.getData('text') || '').trim();
-			if (/^https?:\/\/\S+$/i.test(text)) {
-				e.preventDefault();
-				this.loadFromUrl(text);
 			}
 		});
 	}
@@ -139247,7 +139208,7 @@ class UI {
 					group('Навигация', row('Вращение', 'СКМ'), row('Вращение (трекпад)', 'Alt', 'ЛКМ'), row('Сдвиг', 'Shift', 'СКМ'), row('Масштаб', 'Колесо'), row('Центр на точке', 'Двойной клик'), row('Показать всё', 'Home'), row('Показать выбранное', 'F')),
 					group('Виды', row('Спереди / сзади', 'Num 1'), row('Справа / слева', 'Num 3'), row('Сверху / снизу', 'Num 7'), row('Без Numpad', 'Alt', '1 3 7'), row('Ортогональная', 'Num 5', 'P'), row('Шаг вращения', 'Num 4 6 8 2')),
 					group('Правка', row('Выбор', 'Q'), row('Переместить', 'G'), row('Вращать', 'R'), row('Масштаб', 'S'), row('Привязка к шагу', 'N'), row('Оси: мир / локальные', 'L'), row('Дублировать', 'Shift', 'D'), row('Удалить', 'X'), row('Скрыть / показать', 'H', 'Alt+H')),
-					group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть', 'O'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Музыка: пуск / пауза', 'Пробел'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
+					group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть', 'O'), row('Вставить файл', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Музыка: пуск / пауза', 'Пробел'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
 				),
 				h('div', { class: 'dlg-actions' }, close)
 			)
@@ -139506,8 +139467,6 @@ class UI {
 						return;
 					}
 					break;
-				case 'KeyU':
-					return this.openUrl();
 				case 'KeyH':
 					if (app.model.selected) app.ops.setVisible(app.model.selected, !app.model.selected.visible);
 					return;
