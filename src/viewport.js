@@ -149,12 +149,15 @@ export class Viewport {
 	}
 
 	updateSelectionBox() {
-		const sel = this.app.model?.selected;
-		if (!sel || !this.app.settings.overlays.bbox) {
+		const list = this.app.model?.selection || [];
+		if (!list.length || !this.app.settings.overlays.bbox) {
 			this.selBox.visible = false;
 		} else {
-			this.getBounds(sel, this.selBox.box);
-			this.selBox.visible = !this.selBox.box.isEmpty();
+			const box = this.selBox.box;
+			box.makeEmpty();
+			const tmp = new THREE.Box3();
+			for (const o of list) box.union(this.getBounds(o, tmp));
+			this.selBox.visible = !box.isEmpty();
 		}
 		this.invalidate();
 	}

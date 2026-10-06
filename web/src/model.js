@@ -5,6 +5,8 @@ export class Model {
 constructor(app) {
 this.app = app;
 this.selected = null;
+this.selection = [];
+this.pivot = null;
 this.activeMaterial = null;
 this.tool = 'select';
 }
@@ -52,7 +54,8 @@ this.changed();
 if (select) this.select(obj);
 }
 remove(obj) {
-if (this.selected && (this.selected === obj || this.isDescendant(this.selected, obj))) this.select(null);
+this.selection = this.selection.filter((o) => o !== obj && !this.isDescendant(o, obj));
+if (this.selected && (this.selected === obj || this.isDescendant(this.selected, obj))) this.select(this.selection[this.selection.length - 1] || null);
 obj.removeFromParent();
 this.changed();
 }
@@ -85,8 +88,14 @@ this.app.history.clear();
 this.changed();
 this.app.bus.emit('newdoc');
 }
-select(obj) {
+select(obj, { add = false } = {}) {
 if (obj === this.root) obj = null;
+if (add && obj) {
+const i = this.selection.indexOf(obj);
+if (i >= 0) this.selection.splice(i, 1);
+else this.selection.push(obj);
+obj = this.selection[this.selection.length - 1] || null;
+} else this.selection = obj ? [obj] : [];
 this.selected = obj || null;
 if (obj) {
 const meshes = obj.isMesh ? [obj] : this.meshesOf(obj);
@@ -112,9 +121,24 @@ this.app.bus.emit('tool');
 attachGizmo() {
 const tc = this.app.viewport.tc;
 const sel = this.selected;
+if (this.pivot) {
+this.pivot.removeFromParent();
+this.pivot = null;
+}
 if (sel && this.tool !== 'select') {
 tc.setMode(this.tool);
-tc.attach(sel);
+if (this.selection.length > 1) {
+const vp = this.app.viewport;
+const box = new THREE.Box3();
+const tmp = new THREE.Box3();
+for (const o of this.selection) box.union(vp.getBounds(o, tmp));
+this.pivot = new THREE.Object3D();
+this.pivot.userData.helper = true;
+box.getCenter(this.pivot.position);
+vp.scene.add(this.pivot);
+this.pivot.updateMatrixWorld(true);
+tc.attach(this.pivot);
+} else tc.attach(sel);
 } else {
 tc.detach();
 }

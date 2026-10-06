@@ -83877,12 +83877,15 @@ class Viewport {
 	}
 
 	updateSelectionBox() {
-		const sel = this.app.model?.selected;
-		if (!sel || !this.app.settings.overlays.bbox) {
+		const list = this.app.model?.selection || [];
+		if (!list.length || !this.app.settings.overlays.bbox) {
 			this.selBox.visible = false;
 		} else {
-			this.getBounds(sel, this.selBox.box);
-			this.selBox.visible = !this.selBox.box.isEmpty();
+			const box = this.selBox.box;
+			box.makeEmpty();
+			const tmp = new THREE.Box3();
+			for (const o of list) box.union(this.getBounds(o, tmp));
+			this.selBox.visible = !box.isEmpty();
 		}
 		this.invalidate();
 	}
@@ -85307,6 +85310,8 @@ class Model {
 	constructor(app) {
 		this.app = app;
 		this.selected = null;
+		this.selection = []; // все выделенные объекты; selected: последний из них
+		this.pivot = null;
 		this.activeMaterial = null;
 		this.tool = 'select'; // select | translate | rotate | scale
 	}
@@ -85363,7 +85368,8 @@ class Model {
 	}
 
 	remove(obj) {
-		if (this.selected && (this.selected === obj || this.isDescendant(this.selected, obj))) this.select(null);
+		this.selection = this.selection.filter((o) => o !== obj && !this.isDescendant(o, obj));
+		if (this.selected && (this.selected === obj || this.isDescendant(this.selected, obj))) this.select(this.selection[this.selection.length - 1] || null);
 		obj.removeFromParent();
 		this.changed();
 	}
@@ -85400,8 +85406,15 @@ class Model {
 	}
 
 	// ------------------------------------------------------------ выделение
-	select(obj) {
+	/** Выделение; add: Shift-клик добавляет объект к выделению или снимает его */
+	select(obj, { add = false } = {}) {
 		if (obj === this.root) obj = null;
+		if (add && obj) {
+			const i = this.selection.indexOf(obj);
+			if (i >= 0) this.selection.splice(i, 1);
+			else this.selection.push(obj);
+			obj = this.selection[this.selection.length - 1] || null;
+		} else this.selection = obj ? [obj] : [];
 		this.selected = obj || null;
 		if (obj) {
 			const meshes = obj.isMesh ? [obj] : this.meshesOf(obj);
@@ -85430,9 +85443,25 @@ class Model {
 	attachGizmo() {
 		const tc = this.app.viewport.tc;
 		const sel = this.selected;
+		if (this.pivot) {
+			this.pivot.removeFromParent();
+			this.pivot = null;
+		}
 		if (sel && this.tool !== 'select') {
 			tc.setMode(this.tool);
-			tc.attach(sel);
+			if (this.selection.length > 1) {
+				// несколько объектов двигаются вместе через общую опору в центре выделения
+				const vp = this.app.viewport;
+				const box = new THREE.Box3();
+				const tmp = new THREE.Box3();
+				for (const o of this.selection) box.union(vp.getBounds(o, tmp));
+				this.pivot = new THREE.Object3D();
+				this.pivot.userData.helper = true;
+				box.getCenter(this.pivot.position);
+				vp.scene.add(this.pivot);
+				this.pivot.updateMatrixWorld(true);
+				tc.attach(this.pivot);
+			} else tc.attach(sel);
 		} else {
 			tc.detach();
 		}
@@ -89024,6 +89053,27 @@ class Ops {
 	}
 
 	// ------------------------------------------------------ трансформации
+	/** Одна запись отмены на всю группу объектов: list = [{ obj, before, after }] */
+	commitMulti(list, label = 'Трансформация группы') {
+		const changed = list.filter((i) => !sameSnap(i.before, i.after));
+		if (!changed.length) return;
+		this.app.history.push(
+			{
+				label,
+				undo: () => {
+					changed.forEach((i) => restoreSnap(i.obj, i.before));
+					this.afterChange({ display: false });
+				},
+				redo: () => {
+					changed.forEach((i) => restoreSnap(i.obj, i.after));
+					this.afterChange({ display: false });
+				},
+			},
+			false
+		);
+		this.afterChange({ display: false });
+	}
+
 	commitTransform(obj, before, after, label = 'Трансформация', key = null) {
 		if (sameSnap(before, after)) return;
 		const h = this.app.history;
@@ -89182,19 +89232,21 @@ class Ops {
 	}
 
 	deleteSelected() {
-		const o = this.sel;
-		if (!o) return;
-		const parent = o.parent;
-		const index = parent.children.indexOf(o);
+		const list = this.model.selection.length ? [...this.model.selection] : this.sel ? [this.sel] : [];
+		if (!list.length) return;
+		const infos = list.map((o) => ({ o, parent: o.parent, index: o.parent.children.indexOf(o) }));
 		const cmd = {
-			label: 'Удалить «' + (o.name || 'объект') + '»',
-			redo: () => this.model.remove(o),
+			label: list.length > 1 ? `Удалить объекты (${list.length})` : 'Удалить «' + (list[0].name || 'объект') + '»',
+			redo: () => infos.forEach((i) => this.model.remove(i.o)),
 			undo: () => {
-				parent.children.splice(index, 0, o);
-				o.parent = parent;
-				o.dispatchEvent({ type: 'added' });
+				[...infos].reverse().forEach((i) => {
+					i.parent.children.splice(i.index, 0, i.o);
+					i.o.parent = i.parent;
+					i.o.dispatchEvent({ type: 'added' });
+				});
 				this.model.changed();
-				this.model.select(o);
+				this.model.select(infos[0].o);
+				infos.slice(1).forEach((i) => this.model.select(i.o, { add: true }));
 			},
 		};
 		this.app.history.push(cmd, true);
@@ -89964,7 +90016,7 @@ function createScenePanel(app, root) {
 			const hasKids = kids.length > 0 && !(isMesh && !kids.some((k) => k.isMesh || k.isPoints));
 			let open = expanded.get(obj);
 			if (open === undefined) open = depth < 1 && kids.length <= 40;
-			const selected = model.selected === obj;
+			const selected = model.selection.includes(obj);
 			const toggle = h('button', { type: 'button', class: 'tree-toggle', 'aria-expanded': String(open), tabindex: '-1', 'aria-label': open ? 'Свернуть' : 'Развернуть', style: { visibility: hasKids ? 'visible' : 'hidden', marginLeft: depth * 14 + 'px' }, html: icon('caret-right', 13) });
 			toggle.addEventListener('click', (e) => {
 				e.stopPropagation();
@@ -89992,7 +90044,7 @@ function createScenePanel(app, root) {
 				h('div', { class: 'tree-actions' }, eye)
 			);
 			row.dataset.tip = 'Двойной клик: переименовать';
-row.addEventListener('click', () => model.select(obj));
+row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 			row.addEventListener('dblclick', (e) => {
 				e.preventDefault();
 				const input = h('input', { class: 'tree-name-input', value: obj.name || '', 'aria-label': 'Имя объекта' });
@@ -138229,6 +138281,7 @@ const { UI } = __req('src/ui.js');
 const { MediaController } = __req('src/media-controller.js');
 const { setTextureLimits } = __req('src/materials.js');
 const { makeDemoFiles } = __req('src/demo.js');
+const THREE = __req('vendor/three/build/three.module.js');
 
 class App {
 	constructor() {
@@ -138267,8 +138320,22 @@ class App {
 	wireGizmo() {
 		const tc = this.viewport.tc;
 		let before = null;
+		let multi = null;
 		tc.addEventListener('dragging-changed', (e) => {
 			this.nav.enabled = !e.value;
+			const pivot = this.model.pivot;
+			if (pivot && tc.object === pivot) {
+				if (e.value) {
+					pivot.updateMatrixWorld(true);
+					const inv = pivot.matrixWorld.clone().invert();
+					multi = this.model.selection.map((o) => ({ obj: o, rel: inv.clone().multiply(o.matrixWorld), before: snapOf(o) }));
+				} else if (multi) {
+					this.ops.commitMulti(multi.map((m) => ({ obj: m.obj, before: m.before, after: snapOf(m.obj) })), 'Трансформация группы');
+					multi = null;
+					this.model.attachGizmo();
+				}
+				return;
+			}
 			if (e.value && tc.object) before = snapOf(tc.object);
 			else if (!e.value && before && tc.object) {
 				const names = { translate: 'Перемещение', rotate: 'Вращение', scale: 'Масштаб' };
@@ -138283,6 +138350,21 @@ class App {
 			pending = true;
 			requestAnimationFrame(() => {
 				pending = false;
+				if (multi && this.model.pivot) {
+					// опора двигается, остальные объекты следуют за ней с сохранением взаимного положения
+					const pv = this.model.pivot;
+					pv.updateMatrixWorld(true);
+					const m4 = new THREE.Matrix4();
+					const par = new THREE.Matrix4();
+					for (const it of multi) {
+						m4.copy(pv.matrixWorld).multiply(it.rel);
+						it.obj.parent.updateWorldMatrix(true, false);
+						par.copy(it.obj.parent.matrixWorld).invert();
+						m4.premultiply(par).decompose(it.obj.position, it.obj.quaternion, it.obj.scale);
+						it.obj.updateMatrix();
+						it.obj.updateMatrixWorld(true);
+					}
+				}
 				this.viewport.updateSelectionBox();
 				this.bus.emit('transform');
 			});
@@ -138293,7 +138375,7 @@ class App {
 	wirePointer() {
 		this.bus.on('click', (e) => {
 			const hit = this.viewport.pick(e.clientX, e.clientY);
-			this.model.select(hit ? hit.object : null);
+			this.model.select(hit ? hit.object : null, { add: e.shiftKey });
 		});
 		this.bus.on('dblclick', (e) => {
 			const hit = this.viewport.pick(e.clientX, e.clientY);

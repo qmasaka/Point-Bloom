@@ -60,7 +60,7 @@ const isMesh = obj.isMesh || obj.isPoints;
 const hasKids = kids.length > 0 && !(isMesh && !kids.some((k) => k.isMesh || k.isPoints));
 let open = expanded.get(obj);
 if (open === undefined) open = depth < 1 && kids.length <= 40;
-const selected = model.selected === obj;
+const selected = model.selection.includes(obj);
 const toggle = h('button', { type: 'button', class: 'tree-toggle', 'aria-expanded': String(open), tabindex: '-1', 'aria-label': open ? 'Свернуть' : 'Развернуть', style: { visibility: hasKids ? 'visible' : 'hidden', marginLeft: depth * 14 + 'px' }, html: icon('caret-right', 13) });
 toggle.addEventListener('click', (e) => {
 e.stopPropagation();
@@ -88,7 +88,7 @@ h('span', { style: { display: 'flex', alignItems: 'baseline', minWidth: 0 } }, n
 h('div', { class: 'tree-actions' }, eye)
 );
 row.dataset.tip = 'Двойной клик: переименовать';
-row.addEventListener('click', () => model.select(obj));
+row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 row.addEventListener('dblclick', (e) => {
 e.preventDefault();
 const input = h('input', { class: 'tree-name-input', value: obj.name || '', 'aria-label': 'Имя объекта' });

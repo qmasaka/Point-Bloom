@@ -11,6 +11,7 @@ import { UI } from './ui.js';
 import { MediaController } from './media-controller.js';
 import { setTextureLimits } from './materials.js';
 import { makeDemoFiles } from './demo.js';
+import * as THREE from 'three';
 
 export class App {
 	constructor() {
@@ -49,8 +50,22 @@ export class App {
 	wireGizmo() {
 		const tc = this.viewport.tc;
 		let before = null;
+		let multi = null;
 		tc.addEventListener('dragging-changed', (e) => {
 			this.nav.enabled = !e.value;
+			const pivot = this.model.pivot;
+			if (pivot && tc.object === pivot) {
+				if (e.value) {
+					pivot.updateMatrixWorld(true);
+					const inv = pivot.matrixWorld.clone().invert();
+					multi = this.model.selection.map((o) => ({ obj: o, rel: inv.clone().multiply(o.matrixWorld), before: snapOf(o) }));
+				} else if (multi) {
+					this.ops.commitMulti(multi.map((m) => ({ obj: m.obj, before: m.before, after: snapOf(m.obj) })), 'Трансформация группы');
+					multi = null;
+					this.model.attachGizmo();
+				}
+				return;
+			}
 			if (e.value && tc.object) before = snapOf(tc.object);
 			else if (!e.value && before && tc.object) {
 				const names = { translate: 'Перемещение', rotate: 'Вращение', scale: 'Масштаб' };
@@ -65,6 +80,21 @@ export class App {
 			pending = true;
 			requestAnimationFrame(() => {
 				pending = false;
+				if (multi && this.model.pivot) {
+					// опора двигается, остальные объекты следуют за ней с сохранением взаимного положения
+					const pv = this.model.pivot;
+					pv.updateMatrixWorld(true);
+					const m4 = new THREE.Matrix4();
+					const par = new THREE.Matrix4();
+					for (const it of multi) {
+						m4.copy(pv.matrixWorld).multiply(it.rel);
+						it.obj.parent.updateWorldMatrix(true, false);
+						par.copy(it.obj.parent.matrixWorld).invert();
+						m4.premultiply(par).decompose(it.obj.position, it.obj.quaternion, it.obj.scale);
+						it.obj.updateMatrix();
+						it.obj.updateMatrixWorld(true);
+					}
+				}
 				this.viewport.updateSelectionBox();
 				this.bus.emit('transform');
 			});
@@ -75,7 +105,7 @@ export class App {
 	wirePointer() {
 		this.bus.on('click', (e) => {
 			const hit = this.viewport.pick(e.clientX, e.clientY);
-			this.model.select(hit ? hit.object : null);
+			this.model.select(hit ? hit.object : null, { add: e.shiftKey });
 		});
 		this.bus.on('dblclick', (e) => {
 			const hit = this.viewport.pick(e.clientX, e.clientY);

@@ -136,6 +136,27 @@ export class Ops {
 	}
 
 	// ------------------------------------------------------ трансформации
+	/** Одна запись отмены на всю группу объектов: list = [{ obj, before, after }] */
+	commitMulti(list, label = 'Трансформация группы') {
+		const changed = list.filter((i) => !sameSnap(i.before, i.after));
+		if (!changed.length) return;
+		this.app.history.push(
+			{
+				label,
+				undo: () => {
+					changed.forEach((i) => restoreSnap(i.obj, i.before));
+					this.afterChange({ display: false });
+				},
+				redo: () => {
+					changed.forEach((i) => restoreSnap(i.obj, i.after));
+					this.afterChange({ display: false });
+				},
+			},
+			false
+		);
+		this.afterChange({ display: false });
+	}
+
 	commitTransform(obj, before, after, label = 'Трансформация', key = null) {
 		if (sameSnap(before, after)) return;
 		const h = this.app.history;
@@ -294,19 +315,21 @@ export class Ops {
 	}
 
 	deleteSelected() {
-		const o = this.sel;
-		if (!o) return;
-		const parent = o.parent;
-		const index = parent.children.indexOf(o);
+		const list = this.model.selection.length ? [...this.model.selection] : this.sel ? [this.sel] : [];
+		if (!list.length) return;
+		const infos = list.map((o) => ({ o, parent: o.parent, index: o.parent.children.indexOf(o) }));
 		const cmd = {
-			label: 'Удалить «' + (o.name || 'объект') + '»',
-			redo: () => this.model.remove(o),
+			label: list.length > 1 ? `Удалить объекты (${list.length})` : 'Удалить «' + (list[0].name || 'объект') + '»',
+			redo: () => infos.forEach((i) => this.model.remove(i.o)),
 			undo: () => {
-				parent.children.splice(index, 0, o);
-				o.parent = parent;
-				o.dispatchEvent({ type: 'added' });
+				[...infos].reverse().forEach((i) => {
+					i.parent.children.splice(i.index, 0, i.o);
+					i.o.parent = i.parent;
+					i.o.dispatchEvent({ type: 'added' });
+				});
 				this.model.changed();
-				this.model.select(o);
+				this.model.select(infos[0].o);
+				infos.slice(1).forEach((i) => this.model.select(i.o, { add: true }));
 			},
 		};
 		this.app.history.push(cmd, true);

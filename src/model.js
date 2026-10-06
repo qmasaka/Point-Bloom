@@ -7,6 +7,8 @@ export class Model {
 	constructor(app) {
 		this.app = app;
 		this.selected = null;
+		this.selection = []; // все выделенные объекты; selected: последний из них
+		this.pivot = null;
 		this.activeMaterial = null;
 		this.tool = 'select'; // select | translate | rotate | scale
 	}
@@ -63,7 +65,8 @@ export class Model {
 	}
 
 	remove(obj) {
-		if (this.selected && (this.selected === obj || this.isDescendant(this.selected, obj))) this.select(null);
+		this.selection = this.selection.filter((o) => o !== obj && !this.isDescendant(o, obj));
+		if (this.selected && (this.selected === obj || this.isDescendant(this.selected, obj))) this.select(this.selection[this.selection.length - 1] || null);
 		obj.removeFromParent();
 		this.changed();
 	}
@@ -100,8 +103,15 @@ export class Model {
 	}
 
 	// ------------------------------------------------------------ выделение
-	select(obj) {
+	/** Выделение; add: Shift-клик добавляет объект к выделению или снимает его */
+	select(obj, { add = false } = {}) {
 		if (obj === this.root) obj = null;
+		if (add && obj) {
+			const i = this.selection.indexOf(obj);
+			if (i >= 0) this.selection.splice(i, 1);
+			else this.selection.push(obj);
+			obj = this.selection[this.selection.length - 1] || null;
+		} else this.selection = obj ? [obj] : [];
 		this.selected = obj || null;
 		if (obj) {
 			const meshes = obj.isMesh ? [obj] : this.meshesOf(obj);
@@ -130,9 +140,25 @@ export class Model {
 	attachGizmo() {
 		const tc = this.app.viewport.tc;
 		const sel = this.selected;
+		if (this.pivot) {
+			this.pivot.removeFromParent();
+			this.pivot = null;
+		}
 		if (sel && this.tool !== 'select') {
 			tc.setMode(this.tool);
-			tc.attach(sel);
+			if (this.selection.length > 1) {
+				// несколько объектов двигаются вместе через общую опору в центре выделения
+				const vp = this.app.viewport;
+				const box = new THREE.Box3();
+				const tmp = new THREE.Box3();
+				for (const o of this.selection) box.union(vp.getBounds(o, tmp));
+				this.pivot = new THREE.Object3D();
+				this.pivot.userData.helper = true;
+				box.getCenter(this.pivot.position);
+				vp.scene.add(this.pivot);
+				this.pivot.updateMatrixWorld(true);
+				tc.attach(this.pivot);
+			} else tc.attach(sel);
 		} else {
 			tc.detach();
 		}
