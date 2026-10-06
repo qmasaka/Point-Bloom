@@ -3266,3 +3266,92 @@ body {
 	z-index: 2;
 	margin: -10px -10px -34px 0;
 }
+
+/* дорожка анимации по ключам над нижней панелью эффектов */
+.fx-anim {
+	position: absolute;
+	left: 50%;
+	bottom: 64px;
+	transform: translateX(-50%);
+	z-index: var(--z-overlay);
+	display: none;
+	flex-direction: column;
+	gap: 8px;
+	width: min(720px, calc(100% - 24px));
+	padding: 10px 12px;
+	border-radius: var(--r-box);
+}
+.fx-mode .fx-anim:not([hidden]) {
+	display: flex;
+}
+.fx-focus .fx-anim {
+	bottom: 64px;
+}
+.fx-anim-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+.fx-anim-sp {
+	flex: 1;
+}
+.fx-anim-time {
+	font: 600 12px var(--font-mono, ui-monospace, monospace);
+	color: var(--text-dim);
+	min-width: 84px;
+}
+.fx-anim-lab {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	color: var(--text-dim);
+}
+.fx-anim-dur {
+	width: 56px;
+}
+.fx-anim-track {
+	position: relative;
+	height: 30px;
+	margin: 0 6px;
+	background: var(--bg-sunken);
+	border: 1px solid var(--line);
+	border-radius: var(--r-ctl);
+	cursor: pointer;
+	touch-action: none;
+}
+.fx-anim-keys {
+	position: absolute;
+	inset: 0;
+}
+.fx-anim-key {
+	position: absolute;
+	top: 50%;
+	width: 14px;
+	height: 14px;
+	margin: -7px 0 0 -7px;
+	padding: 0;
+	background: var(--accent);
+	border: 2px solid var(--bg-panel);
+	border-radius: 3px;
+	transform: rotate(45deg);
+	cursor: grab;
+}
+.fx-anim-key.is-sel {
+	background: #fff;
+	box-shadow: 0 0 0 2px var(--accent);
+}
+.fx-anim-head {
+	position: absolute;
+	top: -3px;
+	bottom: -3px;
+	width: 2px;
+	margin-left: -1px;
+	background: var(--text);
+	border-radius: 1px;
+	pointer-events: none;
+}
+.fx-anim-hint {
+	margin: 0;
+}

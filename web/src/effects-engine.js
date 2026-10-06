@@ -132,31 +132,32 @@ dofDist: 5.2,
 dofRange: 1.4,
 },
 audio: { style: 'deep', gain: 1.3, idle: true, volume: 0.8 },
+anim: { dur: 8, loop: true, keys: [] },
 };
 }
 const KEY = 'objglb.fx.v9';
 const GLYPH_SETS = {
-ascii: ['.', ':', '-', '+', '*', 'o', '#', '@'],
-digits: ['1', '7', '4', '2', '5', '6', '8', '0'],
-letters: ['i', 'c', 'r', 'e', 'a', 'o', 'B', 'W'],
-cyr: ['·', 'г', 'ч', 'а', 'ж', 'ф', 'Ж', 'Ш'],
-symbols: ['·', '-', '+', '=', '×', '#', '%', '&'],
-blocks: ['·', '░', '▒', '▒', '▓', '▓', '█', '█'],
+ascii: ['.', '`', "'", ',', ':', ';', '-', '~', '"', '^', '_', '+', '=', '<', '>', 'i', '!', 'l', 'I', '?', '/', '\\', '|', '(', ')', '{', '}', '[', ']', '1', 't', 'f', 'j', 'r', 'x', 'n', 'u', 'v', 'c', 'z', 'X', 'Y', 'U', 'J', 'C', 'L', 'Q', '0', 'O', 'Z', 'm', 'w', 'q', 'p', 'd', 'b', 'k', 'h', 'a', 'o', '*', '#', 'M', 'W', '&', '8', '%', 'B', '@', '$'],
+digits: ['1', '7', '4', '2', '5', '3', '6', '9', '8', '0'],
+letters: ['i', 'l', 'j', 't', 'f', 'r', 'c', 's', 'v', 'x', 'z', 'n', 'u', 'e', 'a', 'o', 'y', 'k', 'h', 'd', 'b', 'p', 'q', 'g', 'm', 'w', 'I', 'L', 'T', 'J', 'V', 'A', 'X', 'Y', 'K', 'H', 'N', 'R', 'E', 'F', 'P', 'S', 'U', 'Z', 'B', 'D', 'G', 'O', 'Q', 'C', 'M', 'W'],
+blocks: ['·', '▫', '▪', '▘', '▝', '▖', '▗', '▁', '░', '▏', '▎', '▂', '▍', '▀', '▄', '▌', '▐', '▃', '▞', '▚', '▒', '▅', '▋', '▆', '▓', '▊', '▇', '▉', '■', '█'],
 };
 function glyphAtlas(mode) {
 const set = GLYPH_SETS[mode] || GLYPH_SETS.ascii;
+const n = set.length;
 const cv = document.createElement('canvas');
-cv.width = 512;
+cv.width = n * 64;
 cv.height = 64;
 const c = cv.getContext('2d');
 c.fillStyle = '#fff';
 c.textAlign = 'center';
 c.textBaseline = 'middle';
-c.font = '700 54px "Geist Mono", ui-monospace, Menlo, "Hiragino Sans", monospace';
+c.font = '700 54px "Geist Mono", ui-monospace, Menlo, "Apple Symbols", monospace';
 set.forEach((g, i) => c.fillText(g, i * 64 + 32, 34));
 const tex = new THREE.CanvasTexture(cv);
 tex.minFilter = tex.magFilter = THREE.LinearFilter;
 tex.generateMipmaps = false;
+tex.userData = { n };
 return tex;
 }
 function baseShape(type, count = 100000) {
@@ -884,7 +885,7 @@ uniform vec3 uSolid;
 uniform float uAtt;
 uniform float uSize;
 uniform float uPR;
-uniform vec2 uGlyph;
+uniform vec3 uGlyph;
 uniform float uColorBy;
 uniform float uBright;
 uniform float uMaskShow;
@@ -1043,7 +1044,7 @@ uniform float uAdd;
 uniform float uDens;
 uniform float uGhost;
 uniform float uShape;
-uniform vec2 uGlyph;
+uniform vec3 uGlyph;
 uniform sampler2D uAtlas;
 varying vec3 vColor;
 varying float vD;
@@ -1055,7 +1056,7 @@ void main() {
 	float dm = length(c);
 	float gA = 1.0;
 	if (uGlyph.x > 0.5) {
-		vec2 guv = vec2((floor(vGl * 7.999) + gl_PointCoord.x) / 8.0, 1.0 - gl_PointCoord.y);
+		vec2 guv = vec2((floor(vGl * (uGlyph.z - 0.001)) + gl_PointCoord.x) / uGlyph.z, 1.0 - gl_PointCoord.y);
 		gA = texture2D(uAtlas, guv).a;
 		if (gA < 0.3) discard;
 		dm = 0.0;
@@ -1893,10 +1894,159 @@ this.isCollapsed = false;
 this.collapseProgress = 0;
 this.asm = 0;
 this.collapseTime = 0;
+this.animT = 0;
+this.animPlaying = false;
+this.animRec = false;
 this.brushHits = [];
 this.post = null;
 this.camTracker = null;
 this._pointerDown = false;
+}
+_animLayers() {
+return FX_LAYERS.filter((l) => l.group !== 'Взаимодействие').map((l) => l.id);
+}
+animCapture() {
+const nav = this.app.nav;
+const L = this.state.layers;
+const layers = {};
+for (const id of this._animLayers()) layers[id] = L[id].on ? L[id].amount : 0;
+return { cam: { yaw: nav.yaw, pitch: nav.pitch, dist: nav.distance, tx: nav.target.x, ty: nav.target.y, tz: nav.target.z }, size: this.app.settings.point.size, bright: this.state.look.bright, glow: this.state.look.glow, layers };
+}
+get animKeys() {
+return this.state.anim.keys;
+}
+_animSort() {
+this.state.anim.keys.sort((a, b) => a.t - b.t);
+}
+animAddKey(t = this.animT) {
+const A = this.state.anim;
+const snap = { t: Math.round(Math.min(A.dur, Math.max(0, t)) * 100) / 100, ...this.animCapture() };
+const near = A.keys.find((k) => Math.abs(k.t - snap.t) < 0.06);
+if (near) Object.assign(near, snap, { t: near.t });
+else A.keys.push(snap);
+this._animSort();
+this.touch();
+this.emit();
+return near || snap;
+}
+animUpdateKey(key) {
+Object.assign(key, this.animCapture(), { t: key.t });
+this.touch();
+this.emit();
+}
+animRemoveKey(key) {
+const A = this.state.anim;
+A.keys = A.keys.filter((k) => k !== key);
+this.touch();
+this.emit();
+}
+animMoveKey(key, t) {
+key.t = Math.round(Math.min(this.state.anim.dur, Math.max(0, t)) * 100) / 100;
+this._animSort();
+this.touch();
+}
+animSetDuration(d) {
+const A = this.state.anim;
+A.dur = Math.max(1, Math.min(120, d));
+for (const k of A.keys) k.t = Math.min(k.t, A.dur);
+this.animT = Math.min(this.animT, A.dur);
+this.touch();
+this.emit();
+}
+animApply(t) {
+const keys = this.state.anim.keys;
+if (!keys.length) return;
+let a = keys[0];
+let b = keys[keys.length - 1];
+let u = 0;
+if (t <= keys[0].t) b = a;
+else if (t >= b.t) a = b;
+else {
+for (let i = 0; i < keys.length - 1; i++) {
+if (t >= keys[i].t && t <= keys[i + 1].t) {
+a = keys[i];
+b = keys[i + 1];
+break;
+}
+}
+const span = Math.max(1e-6, b.t - a.t);
+u = (t - a.t) / span;
+u = u * u * (3 - 2 * u);
+}
+const mix = (x, y) => x + (y - x) * u;
+const nav = this.app.nav;
+nav.cancelTween?.();
+nav.yaw = mix(a.cam.yaw, b.cam.yaw);
+nav.pitch = mix(a.cam.pitch, b.cam.pitch);
+nav.distance = Math.exp(mix(Math.log(a.cam.dist), Math.log(b.cam.dist)));
+nav.target.set(mix(a.cam.tx, b.cam.tx), mix(a.cam.ty, b.cam.ty), mix(a.cam.tz, b.cam.tz));
+nav.applyCamera();
+this.app.settings.point.size = mix(a.size, b.size);
+this.state.look.bright = mix(a.bright, b.bright);
+this.state.look.glow = mix(a.glow, b.glow);
+const L = this.state.layers;
+for (const id of this._animLayers()) {
+const v = mix(a.layers[id] ?? 0, b.layers[id] ?? 0);
+if (v > 0.003) {
+L[id].on = true;
+L[id].amount = v;
+} else L[id].on = false;
+}
+clearTimeout(this._saveT);
+this._saveT = setTimeout(() => saveJSON(KEY, this.state), 500);
+}
+animSeek(t) {
+this.animT = Math.max(0, Math.min(this.state.anim.dur, t));
+this.animApply(this.animT);
+this.app.bus.emit('fxanim');
+}
+animPlay() {
+if (this.state.anim.keys.length < 2) return false;
+if (this.animT >= this.state.anim.dur - 0.01) this.animT = 0;
+this.animPlaying = true;
+this.app.bus.emit('fxanim');
+return true;
+}
+animPause() {
+if (!this.animPlaying) return;
+this.animPlaying = false;
+this.emit();
+this.app.bus.emit('fxanim');
+}
+animRecord() {
+if (this.state.anim.keys.length < 2 || this.recording) return false;
+this.animT = 0;
+this.animApply(0);
+this.animRec = true;
+this.startRecording();
+this.animPlaying = true;
+this.app.bus.emit('fxanim');
+return true;
+}
+_animStep(dt) {
+const A = this.state.anim;
+this.animT += dt;
+if (this.animT >= A.dur) {
+if (this.animRec) {
+this.animT = A.dur;
+this.animApply(A.dur);
+this.animRec = false;
+this.animPlaying = false;
+this.stopRecording();
+this.emit();
+} else if (A.loop) this.animT %= A.dur;
+else {
+this.animT = A.dur;
+this.animPlaying = false;
+this.emit();
+}
+}
+this.animApply(this.animT);
+this._animEmitT = (this._animEmitT || 0) + dt;
+if (this._animEmitT > 0.05) {
+this._animEmitT = 0;
+this.app.bus.emit('fxanim');
+}
 }
 toggleCollapse() {
 this.setCollapse(!this.isCollapsed);
@@ -2669,7 +2819,7 @@ const U = (v) => ({ value: v });
 const shared = {
 uTime: U(0), uMorph: U(1), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
 uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()), uYR: U(new THREE.Vector2(-1, 1)),
-uShade: U(0), uGlyph: U(new THREE.Vector2(0, 1)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
+uShade: U(0), uGlyph: U(new THREE.Vector3(0, 1, 8)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
 uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
 uPulse: U(new THREE.Vector4()), uVoxel: U(new THREE.Vector4()), uJitter: U(new THREE.Vector4()), uCursor: U(new THREE.Vector4()),
 uGlitch: U(new THREE.Vector4()), uSlice: U(new THREE.Vector4()), uSliceM: U(new THREE.Vector4()), uSliceC: U(new THREE.Color()), uMark: U(new THREE.Vector4()), uMarkC: U(new THREE.Color()), uLink: U(new THREE.Vector4()), uContact: U(new THREE.Vector4()), uShockP: U(new THREE.Vector4()),
@@ -3013,6 +3163,8 @@ this.emit();
 exit() {
 if (!this.active) return;
 this.active = false;
+this.animPlaying = false;
+this.animRec = false;
 this.stopRecording();
 this.pause();
 this._videoToEditor();
@@ -3096,6 +3248,7 @@ const dt = Math.min(0.1, (now - this._lastT) / 1000);
 this._lastT = now;
 const st0 = this.state;
 this._time += dt;
+if (this.animPlaying) this._animStep(dt);
 this._analyse(dt);
 if (!this.material) return;
 if (this.morphing) {
@@ -3244,7 +3397,7 @@ u.uAtlas.value.dispose();
 u.uAtlas.value = glyphAtlas(gm);
 }
 }
-u.uGlyph.value.set(gm === 'off' ? 0 : 1, gm === 'off' ? 1 : 2.3);
+u.uGlyph.value.set(gm === 'off' ? 0 : 1, gm === 'off' ? 1 : 2.3, u.uAtlas.value.userData?.n || 8);
 u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
 if (st.source === 'media' && this.pm.ready && this.geometry && !this.morphing && this.geometry.attributes.position.count === this.pm.count) {
 const rgb = this.pm.advance(dt);

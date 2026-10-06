@@ -475,7 +475,7 @@ sync();
 shapeBtns.set(sh.value, b);
 shapeTiles.append(b);
 }
-for (const g of [{ id: 'ascii', label: 'Символы ASCII', ch: '#@' }, { id: 'digits', label: 'Цифры', ch: '01' }, { id: 'letters', label: 'Латинские буквы', ch: 'Aa' }, { id: 'cyr', label: 'Русские буквы', ch: 'Жш' }, { id: 'symbols', label: 'Знаки', ch: '+=' }, { id: 'blocks', label: 'Блоки', ch: '▒█' }]) {
+for (const g of [{ id: 'ascii', label: 'Символы ASCII: знаки и буквы', ch: '#@' }, { id: 'letters', label: 'Латинские буквы', ch: 'Aa' }, { id: 'digits', label: 'Цифры', ch: '01' }, { id: 'blocks', label: 'Блоки', ch: '▒█' }]) {
 const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'data-shape': g.id, 'data-tip': g.label }, h('span', { class: 'shape-glyph shape-char' }, g.ch), h('span', { class: 'shape-name' }, g.label));
 b.addEventListener('click', () => {
 st.look.glyph = g.id;
@@ -557,6 +557,90 @@ const camBtn = iconButton({ icon: 'video-camera', title: 'Камера: упра
 const barMeters = makeMeters(true);
 const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (MP4)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });
 const recTime = h('span', { class: 'fx-rec-time' });
+const animPanel = h('div', { class: 'fx-anim vp-pill', hidden: true, role: 'group', 'aria-label': 'Анимация' });
+const keyAnimBtn = iconButton({ icon: 'film-strip', title: 'Анимация: ключи камеры и эффектов на дорожке времени', onClick: () => { animPanel.hidden = !animPanel.hidden; keyAnimBtn.classList.toggle('is-active', !animPanel.hidden); animSync(); } });
+const aPlay = iconButton({ icon: 'play', title: 'Играть и остановить', onClick: () => { if (engine.animPlaying) engine.animPause(); else if (!engine.animPlay()) app.toast('Поставьте минимум два ключа', 'info'); } });
+const aTime = h('span', { class: 'fx-anim-time' }, '0.0 / 8.0 с');
+const aTrack = h('div', { class: 'fx-anim-track' });
+const aHead = h('div', { class: 'fx-anim-head' });
+const aKeys = h('div', { class: 'fx-anim-keys' });
+aTrack.append(aKeys, aHead);
+const aDur = h('input', { type: 'number', class: 'num-in fx-anim-dur', min: 1, max: 120, step: 1, value: 8, 'aria-label': 'Длина, секунд' });
+aDur.addEventListener('change', () => { engine.animSetDuration(Number(aDur.value) || 8); animSync(); });
+const aLoop = switchRow('По кругу', { value: true, onChange: (v) => { st.anim.loop = v; save(); } });
+let selKey = null;
+const aAdd = button({ label: 'Ключ здесь', icon: 'plus', variant: 'primary', title: 'Запомнить камеру и эффекты на этом моменте времени', onClick: () => { selKey = engine.animAddKey(); animSync(); } });
+const aUpd = button({ label: 'Обновить', variant: 'secondary', title: 'Записать в выбранный ключ то, что сейчас на сцене', onClick: () => { if (selKey) engine.animUpdateKey(selKey); } });
+const aDel = button({ label: 'Удалить', icon: 'trash', variant: 'secondary', title: 'Удалить выбранный ключ', onClick: () => { if (selKey) { engine.animRemoveKey(selKey); selKey = null; animSync(); } } });
+const aRec = button({ label: 'Записать ролик', icon: 'record', variant: 'secondary', title: 'Проиграет анимацию один раз и сохранит видео со звуком', onClick: () => { if (!engine.animRecord()) app.toast('Поставьте минимум два ключа', 'info'); } });
+const aHint = h('div', { class: 'field-hint fx-anim-hint' }, 'Поставьте камеру и эффекты как нужно, нажмите «Ключ здесь», передвиньте время и поставьте следующий ключ. Между ключами всё меняется плавно.');
+animPanel.append(
+h('div', { class: 'fx-anim-row' }, aPlay, aTime, h('span', { class: 'fx-anim-sp' }), h('label', { class: 'fx-anim-lab' }, 'Длина, с', aDur), aLoop.el),
+aTrack,
+h('div', { class: 'fx-anim-row' }, aAdd, aUpd, aDel, h('span', { class: 'fx-anim-sp' }), aRec),
+aHint
+);
+document.getElementById('viewport').append(animPanel);
+const seekFromEvent = (e) => {
+const r = aTrack.getBoundingClientRect();
+engine.animSeek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * st.anim.dur);
+};
+aTrack.addEventListener('pointerdown', (e) => {
+if (e.target.closest('.fx-anim-key')) return;
+engine.animPause();
+aTrack.setPointerCapture(e.pointerId);
+seekFromEvent(e);
+const mv = (ev) => seekFromEvent(ev);
+const up = () => {
+aTrack.removeEventListener('pointermove', mv);
+aTrack.removeEventListener('pointerup', up);
+};
+aTrack.addEventListener('pointermove', mv);
+aTrack.addEventListener('pointerup', up);
+});
+function animSync() {
+const A = st.anim;
+const frac = (t) => (A.dur ? Math.min(1, t / A.dur) : 0);
+aTime.textContent = `${engine.animT.toFixed(1)} / ${A.dur.toFixed(1)} с`;
+aHead.style.left = frac(engine.animT) * 100 + '%';
+aPlay.textContent = '';
+aPlay.append(h('span', { class: 'ic-wrap', html: icon(engine.animPlaying ? 'pause' : 'play', 18) }));
+aRec.disabled = engine.animRec;
+aDur.value = A.dur;
+aLoop.set(A.loop);
+aHint.hidden = A.keys.length >= 2;
+aUpd.disabled = aDel.disabled = !selKey || !A.keys.includes(selKey);
+if (aKeys.dataset.n !== String(A.keys.length) + A.keys.map((k) => k.t).join() + (selKey ? A.keys.indexOf(selKey) : -1)) {
+aKeys.dataset.n = String(A.keys.length) + A.keys.map((k) => k.t).join() + (selKey ? A.keys.indexOf(selKey) : -1);
+aKeys.textContent = '';
+for (const k of A.keys) {
+const b = h('button', { type: 'button', class: 'fx-anim-key' + (k === selKey ? ' is-sel' : ''), style: { left: frac(k.t) * 100 + '%' }, 'data-tip': `Ключ на ${k.t.toFixed(2)} с: клик выбирает, перетаскивание двигает`, 'aria-label': 'Ключ' });
+b.addEventListener('pointerdown', (e) => {
+e.stopPropagation();
+engine.animPause();
+selKey = k;
+engine.animSeek(k.t);
+b.setPointerCapture(e.pointerId);
+const r = aTrack.getBoundingClientRect();
+const mv = (ev) => {
+engine.animMoveKey(k, Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * A.dur);
+b.style.left = frac(k.t) * 100 + '%';
+aTime.textContent = `${k.t.toFixed(1)} / ${A.dur.toFixed(1)} с`;
+};
+const up = () => {
+b.removeEventListener('pointermove', mv);
+b.removeEventListener('pointerup', up);
+animSync();
+};
+b.addEventListener('pointermove', mv);
+b.addEventListener('pointerup', up);
+animSync();
+});
+aKeys.append(b);
+}
+}
+}
+app.bus.on('fxanim', animSync);
 const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#ffffff', 'Белый']];
 const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));
 const bgPop = h('div', { class: 'fx-bg-pop popover', hidden: true });
@@ -597,7 +681,7 @@ bgBtn.setAttribute('aria-expanded', 'false');
 });
 syncBg();
 const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
-bar.append(leftBtn, playBtn, collapseBtn, camBtn, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgBtn, orthoBtn, focusBtn, h('span', { class: 'fx-bar-sep' }), recBtn, recTime);
+bar.append(leftBtn, playBtn, collapseBtn, camBtn, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgBtn, orthoBtn, focusBtn, h('span', { class: 'fx-bar-sep' }), recBtn, keyAnimBtn, recTime);
 function sync() {
 tileMap.forEach((b, k) => {
 b.setAttribute('aria-checked', String(k === st.source));
