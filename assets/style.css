@@ -3129,3 +3129,31 @@ body {
 .fx-layer.is-on .fx-prev {
 	opacity: 1;
 }
+
+/* форма точек и символы: компактный ряд плиток без подписей, название в подсказке */
+.shape-grid.shape-row {
+	grid-template-columns: repeat(8, minmax(0, 1fr));
+	gap: 4px;
+}
+.shape-row .shape-tile {
+	padding: 7px 0;
+	gap: 0;
+}
+.shape-row .shape-name {
+	display: none;
+}
+.shape-row .shape-glyph {
+	width: 15px;
+	height: 15px;
+}
+.shape-row .shape-tile[data-shape='ring'] .shape-glyph::before {
+	border-width: 3px;
+}
+.shape-row .shape-tile[data-shape='plus'] .shape-glyph::before {
+	background: linear-gradient(currentColor, currentColor) center / 100% 5px no-repeat, linear-gradient(currentColor, currentColor) center / 5px 100% no-repeat;
+}
+.shape-char {
+	font: 700 12px/15px var(--font-mono, ui-monospace, Menlo, monospace);
+	text-align: center;
+	letter-spacing: -0.04em;
+}

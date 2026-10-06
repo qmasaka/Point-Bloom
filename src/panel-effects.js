@@ -482,16 +482,30 @@ export function createEffectsPanel(app, root, engine) {
 	// вид точек общий с вкладкой «Точки»: одни и те же настройки, без дублей
 	const pset = app.settings.point;
 	const colorBy = select({ options: COLOR_BY_UI.map((c) => ({ value: c.id, label: c.label })), value: st.look.colorBy, onChange: (v) => { engine.setColorBy(v); } });
-	const shapeTiles = h('div', { class: 'shape-grid', role: 'radiogroup', 'aria-label': 'Форма точек' });
+	const shapeTiles = h('div', { class: 'shape-grid shape-row', role: 'radiogroup', 'aria-label': 'Форма точек' });
 	const shapeBtns = new Map();
 	for (const sh of POINT_SHAPE_LIST) {
 		const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'data-shape': sh.value }, h('span', { class: 'shape-glyph' }), h('span', { class: 'shape-name' }, sh.label));
+		b.dataset.tip = sh.label;
 		b.addEventListener('click', () => {
 			pset.shape = sh.value;
+			st.look.glyph = 'off';
 			app.saveSettings();
+			save();
 			sync();
 		});
 		shapeBtns.set(sh.value, b);
+		shapeTiles.append(b);
+	}
+	// символы вместо точек: те же плитки, что и формы
+	for (const g of [{ id: 'ascii', label: 'Символы ASCII', ch: '#@' }, { id: 'digits', label: 'Цифры', ch: '01' }]) {
+		const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'data-shape': g.id, 'data-tip': g.label }, h('span', { class: 'shape-glyph shape-char' }, g.ch), h('span', { class: 'shape-name' }, g.label));
+		b.addEventListener('click', () => {
+			st.look.glyph = g.id;
+			save();
+			sync();
+		});
+		shapeBtns.set(g.id, b);
 		shapeTiles.append(b);
 	}
 	const solidPick = colorField({ value: pset.solidColor, onInput: (v) => { pset.solidColor = v; }, onChange: () => app.saveSettings() });
@@ -509,7 +523,6 @@ export function createEffectsPanel(app, root, engine) {
 	const size = slider({ min: 1, max: 24, step: 0.5, value: pset.size, digits: 1, unit: ' px', onInput: (v) => { pset.size = v; }, onChange: () => app.saveSettings() });
 	const sizeNoise = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeNoise || 0, digits: 2, onInput: (v) => { st.look.sizeNoise = v; }, onChange: save });
 	const sizeAudio = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeAudio || 0, digits: 2, onInput: (v) => { st.look.sizeAudio = v; }, onChange: save });
-	const glyph = segmented({ cls: 'seg-tight', options: [{ value: 'off', label: 'Точки' }, { value: 'ascii', label: 'ASCII', title: 'Знаки от точки до @ по яркости' }, { value: 'digits', label: 'Цифры' }], value: st.look.glyph || 'off', onChange: (v) => { st.look.glyph = v; save(); } });
 	const shade = slider({ min: 0, max: 1, step: 0.05, value: st.look.shade || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.shade = v; }, onChange: save });
 	const glow = slider({ min: 0, max: 1, step: 0.05, value: st.look.glow, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.glow = v; }, onChange: save });
 	const bright = slider({ min: 0.3, max: 2, step: 0.05, value: st.look.bright, digits: 2, onInput: (v) => { st.look.bright = v; }, onChange: save });
@@ -524,7 +537,7 @@ export function createEffectsPanel(app, root, engine) {
 	const blend = segmented({ options: [{ value: 'normal', label: 'Плотные', title: 'Непрозрачные точки' }, { value: 'add', label: 'Свечение', title: 'Точки складывают свет: ярче в плотных местах' }], value: st.look.blend, onChange: (v) => { st.look.blend = v; save(); } });
 	const rotate = switchRow('Вращать форму', { value: st.look.autoRotate, onChange: (v) => { st.look.autoRotate = v; save(); } });
 	const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
-	const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек', shapeTiles, { wide: true }), field('Размер', size.el), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Символы вместо точек', glyph.el, { wide: true }), field('Объём (тень)', shade.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el), hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Сохранить анимацию'), field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
+	const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), field('Размер', size.el), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Объём (тень)', shade.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el), hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Сохранить анимацию'), field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
 	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
@@ -642,8 +655,7 @@ export function createEffectsPanel(app, root, engine) {
 		attSw.set(pset.attenuate);
 		solidPick.set(pset.solidColor);
 		solidRow.hidden = st.look.colorBy !== 'solid';
-		shapeBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === pset.shape)));
-		glyph.set(st.look.glyph || 'off');
+		shapeBtns.forEach((b, k) => b.setAttribute('aria-checked', String((st.look.glyph && st.look.glyph !== 'off') ? k === st.look.glyph : k === pset.shape)));
 		shade.set(st.look.shade || 0);
 		sizeNoise.set(st.look.sizeNoise || 0);
 		sizeAudio.set(st.look.sizeAudio || 0);

@@ -120,7 +120,7 @@ bright: 1,
 blend: 'normal',
 hud: false,
 hudSpectrum: true,
-autoRotate: true,
+autoRotate: false,
 rotSpeed: 0.25,
 sizeNoise: 0.0,
 sizeAudio: 0.0,
@@ -2970,6 +2970,7 @@ async enter() {
 if (this.active) return;
 const app = this.app;
 this.active = true;
+this.state.look.autoRotate = false;
 this.state.count = Math.max(20000, Math.min(2000000, app.settings.point.surfaceCount));
 const vp = app.viewport;
 this._saved = { rootVisible: vp.root.visible, ortho: app.nav.ortho };

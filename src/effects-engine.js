@@ -142,7 +142,7 @@ function defaultState() {
 			blend: 'normal',
 			hud: false,
 			hudSpectrum: true,
-			autoRotate: true,
+			autoRotate: false,
 			rotSpeed: 0.25,
 			sizeNoise: 0.0,
 			sizeAudio: 0.0,
@@ -3177,6 +3177,7 @@ export class EffectsEngine {
 		if (this.active) return;
 		const app = this.app;
 		this.active = true;
+		this.state.look.autoRotate = false; // при входе форма не крутится сама, включается в «Вид»
 		// число частиц общее с вкладкой «Точки»: что задали в редакторе, то и здесь
 		this.state.count = Math.max(20000, Math.min(2000000, app.settings.point.surfaceCount));
 		const vp = app.viewport;
