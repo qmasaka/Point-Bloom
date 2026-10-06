@@ -68,8 +68,8 @@ export class Grid extends THREE.Mesh {
 				uAxisU: { value: new THREE.Vector3(1, 0, 0) },
 				uAxisV: { value: new THREE.Vector3(0, 0, 1) },
 				uNormal: { value: new THREE.Vector3(0, 1, 0) },
-				uColU: { value: new THREE.Color(0.93, 0.27, 0.34) },
-				uColV: { value: new THREE.Color(0.25, 0.55, 0.95) },
+				uColU: { value: new THREE.Color(0.53, 0.78, 0.35) },
+				uColV: { value: new THREE.Color(0.9, 0.34, 0.37) },
 			},
 		});
 		super(geo, mat);
@@ -95,29 +95,30 @@ export class Grid extends THREE.Mesh {
 		// В ортогональных видах спереди/сбоку сетка лежит в плоскости, перпендикулярной взгляду (как в Blender)
 		const view = nav.ortho ? nav.axisView() : null;
 		this.rotation.set(0, 0, 0);
-		const X = [0.93, 0.27, 0.34], Y = [0.53, 0.78, 0.35], Z = [0.25, 0.55, 0.95];
+		// цвета осей как в маркере и гизмо: ось three.js x подписана Y (зелёная), y подписана Z (синяя), z подписана X (красная)
+		const R = [0.9, 0.34, 0.37], G = [0.53, 0.78, 0.35], B = [0.31, 0.56, 0.94];
 		if (view === 'front' || view === 'back') {
 			u.uAxisU.value.set(1, 0, 0);
 			u.uAxisV.value.set(0, 1, 0);
 			u.uNormal.value.set(0, 0, 1);
-			u.uColU.value.set(...X);
-			u.uColV.value.set(...Y);
+			u.uColU.value.set(...G);
+			u.uColV.value.set(...B);
 			this.rotation.x = Math.PI / 2;
 			this.position.set(nav.target.x, nav.target.y, 0);
 		} else if (view === 'left' || view === 'right') {
 			u.uAxisU.value.set(0, 0, 1);
 			u.uAxisV.value.set(0, 1, 0);
 			u.uNormal.value.set(1, 0, 0);
-			u.uColU.value.set(...Z);
-			u.uColV.value.set(...Y);
+			u.uColU.value.set(...R);
+			u.uColV.value.set(...B);
 			this.rotation.z = -Math.PI / 2;
 			this.position.set(0, nav.target.y, nav.target.z);
 		} else {
 			u.uAxisU.value.set(1, 0, 0);
 			u.uAxisV.value.set(0, 0, 1);
 			u.uNormal.value.set(0, 1, 0);
-			u.uColU.value.set(...X);
-			u.uColV.value.set(...Z);
+			u.uColU.value.set(...G);
+			u.uColV.value.set(...R);
 			this.position.set(nav.target.x, 0, nav.target.z);
 		}
 		u.uCenter.value.copy(nav.target);

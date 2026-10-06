@@ -67,7 +67,6 @@ buildHeader() {
 const app = this.app;
 $('#btnOpen').dataset.tip = 'Открыть модель, текстуры, фото или видео (O)';
 $('#btnOpen').addEventListener('click', () => this.openFiles('auto'));
-$('#btnTexture').addEventListener('click', () => this.openTextures());
 $$('#modeSwitch [data-ws]').forEach((b) => b.addEventListener('click', () => this.setWorkspace(b.dataset.ws)));
 $('#btnEmptyOpen').addEventListener('click', () => this.openFiles('auto'));
 $('#btnEmptyDemo').addEventListener('click', () => app.loadDemo());
@@ -83,27 +82,7 @@ $('#btnUndo').addEventListener('click', () => this.undo());
 $('#btnRedo').addEventListener('click', () => this.redo());
 $('#btnHelp').addEventListener('click', () => this.showHelp());
 $('#btnExport').addEventListener('click', () => this.exportNow());
-const themeBtn = $('#btnTheme');
-const setTheme = (t, persist = true) => {
-document.documentElement.setAttribute('data-theme', t);
-if (persist) {
-try {
-localStorage.setItem('objglb.theme', t);
-} catch (e) {
-}
-}
-const r = this.app.settings.render;
-if (t === 'light' && r.bg === 'dark') r.bg = 'light';
-else if (t === 'dark' && r.bg === 'light') r.bg = 'dark';
-this.app.viewport.applyRenderSettings();
-this.app.display.apply();
-this.app.bus.emit('view');
-themeBtn.textContent = '';
-themeBtn.insertAdjacentHTML('afterbegin', icon(t === 'dark' ? 'sun' : 'moon', 18));
-themeBtn.dataset.tip = t === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему';
-};
-themeBtn.addEventListener('click', () => setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
-setTheme(document.documentElement.getAttribute('data-theme') || 'dark', false);
+document.documentElement.setAttribute('data-theme', 'dark');
 this.fileInput.addEventListener('change', async () => {
 const files = [...this.fileInput.files];
 this.fileInput.value = '';
@@ -719,7 +698,7 @@ h(
 group('Навигация', row('Вращение', 'СКМ'), row('Вращение (трекпад)', 'Alt', 'ЛКМ'), row('Сдвиг', 'Shift', 'СКМ'), row('Масштаб', 'Колесо'), row('Центр на точке', 'Двойной клик'), row('Показать всё', 'Home'), row('Показать выбранное', 'F')),
 group('Виды', row('Спереди / сзади', 'Num 1'), row('Справа / слева', 'Num 3'), row('Сверху / снизу', 'Num 7'), row('Без Numpad', 'Alt', '1 3 7'), row('Ортогональная', 'Num 5', 'P'), row('Шаг вращения', 'Num 4 6 8 2')),
 group('Правка', row('Выбор', 'Q'), row('Переместить', 'G'), row('Вращать', 'R'), row('Масштаб', 'S'), row('Привязка к шагу', 'N'), row('Оси: мир / локальные', 'L'), row('Дублировать', 'Shift', 'D'), row('Удалить', 'X'), row('Скрыть / показать', 'H', 'Alt+H')),
-group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть / текстура', 'O', 'T'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Музыка: пуск / пауза', 'Пробел'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
+group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть', 'O'), row('Открыть по ссылке', 'U'), row('Вставить файл или ссылку', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Музыка: пуск / пауза', 'Пробел'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
 ),
 h('div', { class: 'dlg-actions' }, close)
 )
@@ -951,8 +930,6 @@ case 'KeyL':
 return this.toggleSpace();
 case 'KeyO':
 return this.openFiles('auto');
-case 'KeyT':
-return this.openTextures();
 case 'KeyE':
 if (!mod) {
 this.setWorkspace(this.workspace === 'fx' ? 'edit' : 'fx');
