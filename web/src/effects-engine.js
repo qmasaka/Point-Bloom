@@ -2416,10 +2416,20 @@ this.pm.onMute(this.pm.muted);
 this.pm.play();
 return true;
 }
+_vidSink() {
+if (!this._sink) {
+this._sink = this.ctx.createGain();
+this._sink.gain.value = 0;
+this._sink.connect(this.ctx.destination);
+}
+return this._sink;
+}
 _disconnectVideo() {
 if (this._vidGate) {
+const gate = this._vidGate;
 try {
-this._vidGate.disconnect();
+gate.disconnect();
+gate.connect(this._vidSink());
 } catch (e) {
 }
 this._vidGate = null;
@@ -3206,6 +3216,7 @@ const a = g.attributes.position.array, o = g.attributes.aOrigin.array, t = g.att
 for (let i = 2; i < n * 3; i += 3) a[i] = o[i] = t[i] = z[i];
 g.attributes.aColor.needsUpdate = true;
 g.attributes.position.needsUpdate = g.attributes.aOrigin.needsUpdate = g.attributes.aTarget.needsUpdate = true;
+if (L.links.on) this._syncLinks();
 }
 }
 {

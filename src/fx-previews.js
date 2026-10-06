@@ -17,16 +17,19 @@ const grid = (cols, rows, sx, sy) => {
 /** t в секундах; рисуем в системе координат с центром в середине иконки, единица = 1 px */
 const DRAW = {
 	curl: (c, t) => {
-		for (let k = 0; k < 3; k++) for (let i = 0; i < 12; i++) {
-			const a = i * 0.55 + t * (1.6 - k * 0.3) + k * 2;
-			const r = 2 + i * 0.75;
-			dot(c, Math.cos(a) * r * 1.1, Math.sin(a) * r * 0.8, 1.5, 1 - i / 14);
+		// три рукава спирали: точки закручиваются к центру
+		for (let k = 0; k < 3; k++) for (let i = 0; i < 9; i++) {
+			const a = k * 2.09 + i * 0.5 - t * 1.4;
+			const r = 1.5 + i * 1.25;
+			dot(c, Math.cos(a) * r, Math.sin(a) * r * 0.78, 1.5 + (i < 3 ? 0.4 : 0), 0.35 + (i / 9) * 0.65);
 		}
 	},
 	flow: (c, t) => {
-		for (let j = 0; j < 4; j++) for (let i = 0; i < 9; i++) {
-			const x = ((i * 3.4 + t * 9 + j * 5) % 30) - 15;
-			dot(c, x, (j - 1.5) * 5 + Math.sin(x * 0.35 + j) * 2.2, 1.6, 0.35 + 0.65 * Math.abs(Math.sin(x * 0.2 + t)));
+		// контур формы и яркие штрихи, скользящие по поверхности вдоль линий потока
+		for (const [x, y] of ring(26, 10)) dot(c, x * 1.2, y * 0.85, 1.2, 0.3);
+		for (let j = 0; j < 3; j++) for (let k = 0; k < 6; k++) {
+			const a = ((t * 0.9 + j * 0.34 - k * 0.045) % 1) * Math.PI - Math.PI / 2;
+			dot(c, Math.sin(a) * 11 * 1.1, (j - 1) * 4.6 + Math.cos(a) * 1.5, 1.7, 1 - k * 0.15);
 		}
 	},
 	cloth: (c, t) => {
@@ -34,34 +37,60 @@ const DRAW = {
 		c.fillRect(-12, -9, 1.2, 18);
 	},
 	alive: (c, t) => {
-		const b = 1 + Math.max(0, Math.sin(t * 5)) * 0.18 + Math.sin(t * 2) * 0.05;
-		for (const [x, y] of ring(22, 7.5 * b)) dot(c, x, y, 1.5);
-		for (const [x, y] of ring(11, 3.5 * b, 0.4)) dot(c, x, y, 1.4, 0.7);
-		dot(c, 0, 0, 2.4, 1);
+		// сердце, которое бьётся
+		const b = 1 + Math.max(0, Math.sin(t * 5)) * 0.2 + Math.sin(t * 2) * 0.04;
+		for (let i = 0; i < 26; i++) {
+			const a = (i / 26) * TAU;
+			const x = 16 * Math.pow(Math.sin(a), 3);
+			const y = -(13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a));
+			dot(c, x * 0.52 * b, y * 0.52 * b + 0.5, 1.7, 1);
+		}
+		dot(c, 0, -1, 2, 0.7);
 	},
 	gravity: (c, t) => {
-		dot(c, 0, 0, 3.2);
-		for (const [r, n, sp] of [[4.5, 5, 1.6], [7.5, 8, 1.1], [10.5, 11, 0.7]]) for (let i = 0; i < n; i++) {
-			const a = (i / n) * TAU + t * sp;
-			dot(c, Math.cos(a) * r * 1.35, Math.sin(a) * r * 0.5, 1.4, 0.9);
+		// центр тяжести и орбиты, по которым кружат точки
+		dot(c, 0, 0, 3.6);
+		for (const [rx, ry, n, sp] of [[5, 2, 4, 1.8], [8.5, 3.6, 6, 1.2], [12, 5.2, 8, 0.8]]) {
+			for (let i = 0; i < 28; i++) {
+				const a = (i / 28) * TAU;
+				dot(c, Math.cos(a) * rx, Math.sin(a) * ry, 0.8, 0.22);
+			}
+			for (let i = 0; i < n; i++) {
+				const a = (i / n) * TAU + t * sp;
+				dot(c, Math.cos(a) * rx, Math.sin(a) * ry, 2, 1);
+			}
 		}
 	},
 	spectrum: (c, t) => {
-		for (let i = 0; i < 9; i++) {
-			const h = 2 + (0.5 + 0.5 * Math.sin(t * 4 + i * 1.3)) * 11;
-			for (let k = 0; k < h / 2.2; k++) dot(c, (i - 4) * 3.1, 9 - k * 2.2, 1.6, 0.5 + 0.5 * (k / (h / 2.2)));
+		for (let i = 0; i < 8; i++) {
+			const h = 2 + (0.5 + 0.5 * Math.sin(t * 4 + i * 1.3)) * 10;
+			for (let k = 0; k < h / 2.2; k++) dot(c, (i - 3.5) * 3.2, 9 - k * 2.2, 2, 0.5 + 0.5 * (k / (h / 2.2)));
 		}
 	},
 	wave: (c, t) => {
-		dot(c, 0, 0, 2.2);
-		for (let k = 0; k < 3; k++) {
-			const r = ((t * 6 + k * 4.6) % 13.8) + 1;
-			for (const [x, y] of ring(Math.round(8 + r * 1.4), r)) dot(c, x * 1.1, y * 0.85, 1.3, 1 - r / 15);
+		// бегущие волны воды
+		for (let j = 0; j < 3; j++) for (let i = 0; i < 12; i++) {
+			const x = (i - 5.5) * 2.4;
+			dot(c, x, (j - 1) * 6 + Math.sin(i * 0.8 - t * 4 + j) * 2.6, 1.6, 0.5 + j * 0.25);
 		}
 	},
 	pulse: (c, t) => {
-		const e = Math.max(0, Math.sin(t * 4));
-		for (let k = 0; k < 3; k++) for (const [x, y] of ring(18, 3.5 + k * 3 + e * e * e * (2 + k * 1.6))) dot(c, x * 1.1, y * 0.85, 1.4, 1 - k * 0.25);
+		// кардиограмма: линия бежит, и на каждом ударе острый всплеск
+		c.strokeStyle = c.fillStyle;
+		c.lineWidth = 1.5;
+		c.lineJoin = 'round';
+		c.globalAlpha = 1;
+		c.beginPath();
+		for (let i = 0; i <= 40; i++) {
+			const x = -13 + i * 0.65;
+			const u = (((i / 40) * 1.3 - t * 0.8) % 1 + 1) % 1;
+			let y = 0;
+			if (u < 0.1) y = -2 * Math.sin((u / 0.1) * Math.PI);
+			else if (u < 0.2) y = 11 * Math.sin(((u - 0.1) / 0.1) * Math.PI) * (u < 0.15 ? -1 : 0.55);
+			if (i === 0) c.moveTo(x, y);
+			else c.lineTo(x, y);
+		}
+		c.stroke();
 	},
 	blast: (c, t) => {
 		const a = (t * 1.2) % 2;
@@ -73,10 +102,11 @@ const DRAW = {
 		}
 	},
 	twist: (c, t) => {
-		for (let j = 0; j < 8; j++) for (let k = 0; k < 2; k++) {
-			const y = (j - 3.5) * 2.6;
-			const a = y * 0.28 * Math.sin(t * 1.8) + k * Math.PI;
-			dot(c, Math.cos(a) * 7, y, 1.6, 0.6 + 0.4 * Math.cos(a));
+		// лента, закрученная вдоль вертикали
+		for (let j = 0; j < 9; j++) {
+			const w = Math.cos(j * 0.55 + t * 1.6) * 8;
+			const y = (j - 4) * 2.5;
+			for (let i = -2; i <= 2; i++) dot(c, (i / 2) * w, y, 1.6, 0.5 + 0.5 * Math.abs(Math.cos(j * 0.55 + t * 1.6)));
 		}
 	},
 	voxel: (c, t) => {
@@ -110,20 +140,31 @@ const DRAW = {
 		}
 	},
 	links: (c, t) => {
-		const pts = ring(7, 8).map(([x, y], i) => [x * 1.2 + Math.sin(t + i) * 0.8, y + Math.cos(t * 1.2 + i) * 0.8]);
-		pts.push([0, 0]);
-		c.globalAlpha = 0.55;
-		c.strokeStyle = c.fillStyle;
-		c.lineWidth = 0.7;
-		c.beginPath();
+		// облако из точек, соединённых нитями, и свет, бегущий по нитям
+		const pts = [];
+		for (let i = 0; i < 12; i++) {
+			const a = (i / 12) * TAU + Math.sin(t + i) * 0.1;
+			pts.push([Math.cos(a) * 10, Math.sin(a) * 7.5]);
+		}
+		for (let i = 0; i < 5; i++) pts.push([Math.cos(i * 1.26 + 0.6) * 4.5, Math.sin(i * 1.26 + 0.6) * 3.4]);
+		const edges = [];
 		pts.forEach((p, i) => pts.forEach((q, j) => {
-			if (j > i && Math.hypot(p[0] - q[0], p[1] - q[1]) < 11) {
-				c.moveTo(p[0], p[1]);
-				c.lineTo(q[0], q[1]);
-			}
+			if (j > i && Math.hypot(p[0] - q[0], p[1] - q[1]) < 7.2) edges.push([i, j]);
 		}));
+		c.globalAlpha = 0.7;
+		c.strokeStyle = c.fillStyle;
+		c.lineWidth = 0.9;
+		c.beginPath();
+		for (const [i, j] of edges) {
+			c.moveTo(pts[i][0], pts[i][1]);
+			c.lineTo(pts[j][0], pts[j][1]);
+		}
 		c.stroke();
-		pts.forEach((p) => dot(c, p[0], p[1], 2, 1));
+		edges.forEach(([i, j], k) => {
+			const u = (t * 1.3 + k * 0.37) % 1;
+			if (u < 0.5) dot(c, pts[i][0] + (pts[j][0] - pts[i][0]) * u * 2, pts[i][1] + (pts[j][1] - pts[i][1]) * u * 2, 2.1, 1);
+		});
+		pts.forEach((p) => dot(c, p[0], p[1], 1.6, 1));
 	},
 	slice: (c, t) => {
 		const y = Math.sin(t * 2.2) * 8;
@@ -131,11 +172,10 @@ const DRAW = {
 		for (let i = -6; i <= 6; i++) dot(c, i * 1.8, y, 1.6, 0.9);
 	},
 	feedback: (c, t) => {
-		for (let k = 7; k >= 0; k--) {
-			const tt = t - k * 0.1;
-			const x = Math.cos(tt * 2.2) * 8;
-			const y = Math.sin(tt * 1.5) * 5;
-			dot(c, x, y, 3.4 - k * 0.3, 0.9 - k * 0.11);
+		// яркая точка и длинный гаснущий хвост за ней
+		for (let k = 16; k >= 0; k--) {
+			const tt = t * 1.8 - k * 0.09;
+			dot(c, Math.cos(tt) * 10, Math.sin(tt * 1.3) * 6, k === 0 ? 3.4 : 2.6 - k * 0.12, k === 0 ? 1 : 0.7 - k * 0.04);
 		}
 	},
 	echo: (c, t) => {
@@ -187,12 +227,11 @@ const DRAW = {
 		c.stroke();
 	},
 	shock: (c, t) => {
-		const r = ((t * 5) % 14) + 1;
-		for (const [x, y] of ring(30, 10)) {
-			const e = Math.exp(-Math.pow((10 - r) * 0.5, 2));
-			dot(c, x * 1.25 * (1 + e * 0.25), y * (1 + e * 0.25), 1.5, 0.7 + e * 0.3);
-		}
-		for (const [x, y] of ring(24, r)) dot(c, x * 1.2, y * 0.9, 1.2, 1 - r / 16);
+		// клик и круговая волна по форме
+		const r = ((t * 5) % 15) + 1;
+		for (const [x, y] of ring(30, 10)) dot(c, x * 1.25, y * 0.9, 1.2, 0.3);
+		for (const [x, y] of ring(26, r)) dot(c, x * 1.25, y * 0.9, 1.7, 1 - r / 17);
+		dot(c, 0, 0, 2.4, 1);
 	},
 	camTrack: (c, t) => {
 		const wob = Math.sin(t * 2.5) * 0.15;

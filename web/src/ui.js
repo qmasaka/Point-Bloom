@@ -637,7 +637,7 @@ const el = e.target.closest && e.target.closest('[data-tip]');
 if (!el || el === current) return;
 hide();
 current = el;
-timer = setTimeout(() => show(el), 380);
+timer = setTimeout(() => show(el), Number(el.dataset.tipDelay) || 450);
 });
 document.addEventListener('pointerout', (e) => {
 if (current && !current.contains(e.relatedTarget)) hide();

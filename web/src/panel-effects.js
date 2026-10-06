@@ -351,7 +351,7 @@ reactRow.hidden = L.band === 'none';
 body.append(field('Реагирует на звук', band.el, { wide: true }), reactRow);
 const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
 const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
-const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right' }, row);
+const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right', 'data-tip-delay': '1300' }, row);
 const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, h('div', { class: 'fx-insp-head' }, h('span', { class: 'fx-ic', html: icon(def.icon, 18) }), h('div', {}, h('b', {}, def.name), h('span', {}, def.hint))), body);
 row.addEventListener('click', (e) => {
 if (!e.target.closest('.switch')) {
@@ -550,7 +550,7 @@ const barMeters = makeMeters(true);
 const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (WebM)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });
 const recTime = h('span', { class: 'fx-rec-time' });
 const exitBtn = h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => app.ui.setWorkspace('edit') }, h('span', { class: 'ic-wrap', html: icon('x', 14) }), 'Выйти');
-const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#e8ebef', 'Светлый'], ['#ffffff', 'Белый']];
+const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#ffffff', 'Белый']];
 const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));
 const bgPop = h('div', { class: 'fx-bg-pop popover', hidden: true });
 const bgSw = h('div', { class: 'fx-bg-sw' });

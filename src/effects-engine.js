@@ -2582,10 +2582,22 @@ export class EffectsEngine {
 		return true;
 	}
 
+	/** Беззвучный приёмник: если узел видео ни к чему не подключён, браузер перестаёт его читать и видео зависает */
+	_vidSink() {
+		if (!this._sink) {
+			this._sink = this.ctx.createGain();
+			this._sink.gain.value = 0;
+			this._sink.connect(this.ctx.destination);
+		}
+		return this._sink;
+	}
+
 	_disconnectVideo() {
 		if (this._vidGate) {
+			const gate = this._vidGate;
 			try {
-				this._vidGate.disconnect();
+				gate.disconnect();
+				gate.connect(this._vidSink());
 			} catch (e) {
 				/* уже отключён */
 			}
@@ -3436,6 +3448,8 @@ export class EffectsEngine {
 					for (let i = 2; i < n * 3; i += 3) a[i] = o[i] = t[i] = z[i];
 					g.attributes.aColor.needsUpdate = true;
 					g.attributes.position.needsUpdate = g.attributes.aOrigin.needsUpdate = g.attributes.aTarget.needsUpdate = true;
+					// нити связей держатся за точки, поэтому на каждом новом кадре видео переносим их концы
+					if (L.links.on) this._syncLinks();
 				}
 			}
 			// морфинг по списку форм
