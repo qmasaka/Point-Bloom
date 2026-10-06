@@ -68,6 +68,7 @@ this.selBox.userData.helper = true;
 this.scene.add(this.selBox);
 this.tc = new TransformControls(this.camera, this.canvas);
 this.tc.size = 0.85;
+this.tc.setColors('#86c85a', '#4f8ff0', '#e5565f', '#ffd24a');
 this.scene.add(this.tc.getHelper());
 this.tc.addEventListener('change', () => this.invalidate());
 this.ro = new ResizeObserver(() => this.resize());

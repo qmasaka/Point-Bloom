@@ -83813,6 +83813,8 @@ class Viewport {
 		// Гизмо перемещения/вращения/масштаба (создаём ДО навигации, чтобы он первым ловил события)
 		this.tc = new TransformControls(this.camera, this.canvas);
 		this.tc.size = 0.85;
+		// цвета осей как в маркерах X, Y, Z: ось three.js x показана как Y (зелёная), y как Z (синяя), z как X (красная)
+		this.tc.setColors('#86c85a', '#4f8ff0', '#e5565f', '#ffd24a');
 		this.scene.add(this.tc.getHelper());
 		this.tc.addEventListener('change', () => this.invalidate());
 
