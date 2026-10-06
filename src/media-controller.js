@@ -14,6 +14,7 @@ export class MediaController {
 		this.progress = null;
 		this._cancel = false;
 		this._last = performance.now();
+		app.bus.on('scene', () => this.emit());
 		this._tick = (now) => {
 			requestAnimationFrame(this._tick);
 			const dt = Math.min(0.1, (now - this._last) / 1000);
@@ -29,6 +30,11 @@ export class MediaController {
 
 	get ready() {
 		return this.pm.ready;
+	}
+
+	/** Медиа открыто и его облако лежит в сцене (если объект удалили, вкладка и таймлайн прячутся) */
+	get present() {
+		return this.pm.ready && !!this.obj && !!this.obj.parent;
 	}
 
 	emit() {

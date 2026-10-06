@@ -10,6 +10,7 @@ this.obj = null;
 this.progress = null;
 this._cancel = false;
 this._last = performance.now();
+app.bus.on('scene', () => this.emit());
 this._tick = (now) => {
 requestAnimationFrame(this._tick);
 const dt = Math.min(0.1, (now - this._last) / 1000);
@@ -23,6 +24,9 @@ return this.app.settings.media;
 }
 get ready() {
 return this.pm.ready;
+}
+get present() {
+return this.pm.ready && !!this.obj && !!this.obj.parent;
 }
 emit() {
 this.app.bus.emit('media');

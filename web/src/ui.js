@@ -403,8 +403,9 @@ this.mediaPanel = createMediaPanel(app, this.tabs.media);
 this.mediaBar = createMediaBar(app, $('#viewport'));
 const mediaTab = $('.tab[data-tab="media"]');
 app.bus.on('media', () => {
-const has = app.media.ready;
+const has = app.media.present;
 mediaTab.hidden = !has;
+if (has && mediaTab.parentElement.firstElementChild !== mediaTab) mediaTab.parentElement.prepend(mediaTab);
 if (!has && !this.tabs.media.hidden) this.showTab('scene');
 });
 this.exportPanel = createExportPanel(app, $('#panel-export'));

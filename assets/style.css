@@ -3020,3 +3020,34 @@ body {
 		display: none;
 	}
 }
+
+.btn-outline-danger {
+	background: transparent;
+	color: var(--danger);
+	border: 1px solid var(--danger);
+}
+.btn-outline-danger:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+.empty-actions {
+	display: grid;
+	justify-items: start;
+	gap: 8px;
+}
+.empty-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+.tree-del {
+	opacity: 0;
+	color: var(--text-faint);
+}
+.tree-row:hover .tree-del,
+.tree-row.is-selected .tree-del,
+.tree-del:focus-visible {
+	opacity: 1;
+}
+.tree-del:hover {
+	color: var(--danger);
+}

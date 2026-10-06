@@ -85,13 +85,24 @@ export function createScenePanel(app, root) {
 					ops.setVisible(obj, !obj.visible);
 				},
 			});
+			const del = iconButton({
+				icon: 'trash',
+				title: 'Удалить из сцены',
+				size: 15,
+				cls: 'tree-del',
+				onClick: (e) => {
+					e.stopPropagation();
+					model.select(obj);
+					ops.deleteSelected();
+				},
+			});
 			const row = h(
 				'div',
 				{ class: 'tree-row' + (selected ? ' is-selected' : '') + (!obj.visible ? ' is-hidden' : ''), role: 'treeitem', 'aria-selected': String(selected), 'aria-expanded': hasKids ? String(open) : undefined },
 				toggle,
 				h('span', { class: 'tree-icon', html: icon(iconName, 16) }),
 				h('span', { style: { display: 'flex', alignItems: 'baseline', minWidth: 0 } }, nameEl, meta),
-				h('div', { class: 'tree-actions' }, eye)
+				h('div', { class: 'tree-actions' }, del, eye)
 			);
 			row.dataset.tip = 'Двойной клик: переименовать';
 row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
@@ -218,8 +229,7 @@ row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 			tbtn('Плоское затенение', 'square-half', () => ops.flat(), 'Пересчитать нормали по граням'),
 			tbtn('Перевернуть UV', 'repeat', () => ops.flipUV(), 'Отразить UV по вертикали (V → 1 − V)'),
 			tbtn('Дублировать', 'copy', () => ops.duplicateSelected(), 'Создать копию (Shift+D)')
-		),
-		tbtn('Удалить объект', 'trash', () => ops.deleteSelected(), 'Удалить выбранное (X, Delete)', 'danger')
+		)
 	);
 	const meshBody = h('div', { class: 'sec-body', style: { padding: 0 } },
 field('Сглаживание', angleSlider.el, {}),

@@ -67,8 +67,24 @@ export class PointMedia {
 			this.t = Math.max(0, Math.min(this.duration, t));
 			this.dirty = true;
 		} else if (this.kind === 'video') {
-			this.el.currentTime = Math.max(0, Math.min(this.duration, t));
+			const v = this.el;
+			const target = Math.max(0, Math.min(this.duration, t));
 			this.dirty = true;
+			// пока предыдущая перемотка не закончилась, запоминаем только последнее значение
+			if (v.seeking) {
+				this._pendingSeek = target;
+				if (!this._seekHook) {
+					this._seekHook = true;
+					v.addEventListener('seeked', () => {
+						this._seekHook = false;
+						if (this._pendingSeek != null) {
+							const p = this._pendingSeek;
+							this._pendingSeek = null;
+							this.seek(p);
+						}
+					}, { once: true });
+				}
+			} else v.currentTime = target;
 		}
 	}
 

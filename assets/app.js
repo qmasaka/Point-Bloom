@@ -175,7 +175,7 @@ const DEFAULTS = {
 	display: 'material', // material | solid | wire | points | normals | uv
 	flat: false,
 	overlays: { grid: true, axes: true, wire: false, faces: false, bbox: true },
-	media: { pts: 80000, relief: 'bright', depth: 0.5 },
+	media: { pts: 80000, relief: 'bright', depth: 0.5, recFps: 15, recSec: 10 },
 	point: { shape: 'circle', size: 3, attenuate: true, color: 'texture', solidColor: '#ffd166', surfaceCount: 200000, source: 'surface' },
 	render: { bg: 'dark', exposure: 1, env: 1, tone: 'neutral', headlight: true, fov: 40, fps: false },
 	nav: { leftOrbit: true, trackpad: false, zoomToCursor: true, invertZoom: false, autoPersp: true, ortho: false },
@@ -89245,6 +89245,8 @@ class Ops {
 					i.o.dispatchEvent({ type: 'added' });
 				});
 				this.model.changed();
+				this.app.nav.applyCamera();
+				this.app.viewport.invalidate();
 				this.model.select(infos[0].o);
 				infos.slice(1).forEach((i) => this.model.select(i.o, { add: true }));
 			},
@@ -90215,13 +90217,24 @@ function createScenePanel(app, root) {
 					ops.setVisible(obj, !obj.visible);
 				},
 			});
+			const del = iconButton({
+				icon: 'trash',
+				title: 'Удалить из сцены',
+				size: 15,
+				cls: 'tree-del',
+				onClick: (e) => {
+					e.stopPropagation();
+					model.select(obj);
+					ops.deleteSelected();
+				},
+			});
 			const row = h(
 				'div',
 				{ class: 'tree-row' + (selected ? ' is-selected' : '') + (!obj.visible ? ' is-hidden' : ''), role: 'treeitem', 'aria-selected': String(selected), 'aria-expanded': hasKids ? String(open) : undefined },
 				toggle,
 				h('span', { class: 'tree-icon', html: icon(iconName, 16) }),
 				h('span', { style: { display: 'flex', alignItems: 'baseline', minWidth: 0 } }, nameEl, meta),
-				h('div', { class: 'tree-actions' }, eye)
+				h('div', { class: 'tree-actions' }, del, eye)
 			);
 			row.dataset.tip = 'Двойной клик: переименовать';
 row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
@@ -90348,8 +90361,7 @@ row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 			tbtn('Плоское затенение', 'square-half', () => ops.flat(), 'Пересчитать нормали по граням'),
 			tbtn('Перевернуть UV', 'repeat', () => ops.flipUV(), 'Отразить UV по вертикали (V → 1 − V)'),
 			tbtn('Дублировать', 'copy', () => ops.duplicateSelected(), 'Создать копию (Shift+D)')
-		),
-		tbtn('Удалить объект', 'trash', () => ops.deleteSelected(), 'Удалить выбранное (X, Delete)', 'danger')
+		)
 	);
 	const meshBody = h('div', { class: 'sec-body', style: { padding: 0 } },
 field('Сглаживание', angleSlider.el, {}),
@@ -132242,10 +132254,10 @@ function createPointsPanel(app, root) {
 __defs['src/panel-media.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'createMediaPanel', () => createMediaPanel);
-// Панель «Медиа»: фото и видео в точки, запись точечного ролика, сохранение.
-// Одна и та же панель живёт во вкладке редактора и в режиме «Эффекты» (fx: true).
+// Панель «Медиа»: настройки точек для фото и видео, параметры записи, сохранение.
+// Воспроизведение, перемотка и запись живут на таймлайне во вьюпорте.
 const { h, formatInt } = __req('src/util.js');
-const { section, field, slider, segmented, switchRow, button } = __req('src/ui-kit.js');
+const { section, field, slider, segmented, button } = __req('src/ui-kit.js');
 
 function createMediaPanel(app, root, { fx = false } = {}) {
 	const mc = app.media;
@@ -132254,76 +132266,46 @@ function createMediaPanel(app, root, { fx = false } = {}) {
 	const save = () => app.saveSettings();
 	const eng = () => app.ui.effectsEngine;
 
-	const fileIn = h('input', { type: 'file', accept: 'image/*,video/*,.pcv', hidden: true });
-	fileIn.addEventListener('change', async () => {
-		const f = fileIn.files[0];
-		fileIn.value = '';
-		if (!f) return;
-		app.ui.busy('Читаю файл', 0.3);
-		try {
-			await mc.load(f);
-			if (fx) await eng().useMedia();
-		} catch (e) {
-			app.toast(e.message || 'Не удалось открыть файл', 'error');
-		} finally {
-			app.ui.idle();
-		}
-	});
-	const load = button({ label: 'Открыть фото или видео…', icon: 'film-strip', variant: 'primary', cls: 'btn-block', title: 'Фото, видео или сохранённый ролик .pcv', onClick: () => fileIn.click() });
 	const info = h('div', { class: 'field-hint' });
 	const pts = slider({ log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
 	const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
 	const depth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; mc.styleChanged(); }, onChange: save });
-	const view = segmented({ options: [{ value: 'live', label: 'Исходник' }, { value: 'rec', label: 'Точечный ролик' }], value: pm.view, onChange: async (v) => { pm.setView(v); if (fx) await eng().setSource('media'); else mc.rebuild({ frame: false }); sync(); } });
-	const play = button({ label: 'Пауза', icon: 'pause', variant: 'secondary', onClick: () => { pm.playing ? pm.pause() : pm.play(); sync(); } });
-	const loop = switchRow('Повторять', { value: pm.loop, onChange: (v) => pm.setLoop(v) });
-	const seek = slider({ min: 0, max: 1, step: 0.01, value: 0, digits: 1, unit: ' с', onInput: (v) => pm.seek(v), onChange: () => {} });
-	const recFps = slider({ min: 5, max: 30, step: 1, value: 15, digits: 0, unit: ' к/с' });
-	const recSec = slider({ min: 1, max: 30, step: 1, value: 10, digits: 0, unit: ' с' });
-	const recBtn = button({ label: 'Записать в точки', icon: 'record', variant: 'primary', cls: 'btn-block', title: 'Видео проигрывается кадр за кадром и записывается как точечный ролик', onClick: () => mc.record({ fps: recFps.get(), seconds: recSec.get() }) });
+	const recFps = slider({ min: 5, max: 30, step: 1, value: md.recFps, digits: 0, unit: ' к/с', onInput: (v) => { md.recFps = v; }, onChange: save });
+	const recSec = slider({ min: 1, max: 30, step: 1, value: md.recSec, digits: 0, unit: ' с', onInput: (v) => { md.recSec = v; }, onChange: save });
 	const recInfo = h('div', { class: 'field-hint' });
 	const bScene = button({ label: 'Кадр в сцену (копия)', icon: 'cube', variant: 'secondary', cls: 'btn-block', title: 'Замороженный кадр отдельным облаком точек', onClick: () => mc.snapshot() });
 	const bPly = button({ label: 'Текущий кадр (.ply)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', onClick: () => mc.downloadPLY() });
 	const bPcv = button({ label: 'Сохранить ролик (.pcv)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Компактный файл: его можно снова открыть здесь', onClick: () => mc.downloadPCV() });
 	const bZip = button({ label: 'Кадры PLY (.zip)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Каждый кадр как облако точек с цветом', onClick: () => mc.downloadPLYZip() });
-	const closeBtn = button({ label: 'Убрать медиа', icon: 'x', variant: 'ghost', cls: 'btn-block', onClick: () => mc.close() });
+	const closeBtn = button({ label: 'Убрать медиа', icon: 'x', variant: 'outline-danger', cls: 'btn-block', onClick: () => mc.close() });
 	const note = h('div', { class: 'field-hint' }, fx ? 'Видео продолжает играть и в эффектах: все эффекты применяются к его точкам.' : 'Облако точек лежит в сцене: его можно двигать, менять вид на вкладке «Точки» и скачивать кнопкой «Скачать» вверху.');
-	const videoBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-btn-row' }, play), loop.el, field('Время', seek.el));
-	const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recBtn, recInfo);
-	const saveBox = h('div', { class: 'fx-save-row' }, fx ? bScene : '', bPly, bPcv, bZip);
 	const ptsRow = field('Точек', pts.el);
-	const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, fileIn, load, info, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), field('Показывать', view.el, { wide: true }), videoBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
+	const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recInfo);
+	const saveBox = h('div', { class: 'fx-save-row' }, fx ? bScene : '', bPly, bPcv, bZip);
+	const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
 	if (root) root.append(sec.el);
 
 	function sync() {
 		const ready = pm.ready;
 		if (fx) sec.el.hidden = !ready;
 		const hasRec = !!pm.rec;
-		info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : 'Откройте фото или видео: каждая точка возьмёт цвет пикселя. Видео можно записать в точечный ролик и сохранить.';
-		view.el.hidden = !hasRec || pm.kind === 'rec';
-		view.set(pm.view);
+		info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : '';
 		ptsRow.hidden = !ready || pm.isRec;
 		pts.set(md.pts);
 		relief.set(md.relief);
 		depth.set(md.depth);
-		const vid = pm.kind === 'video' || pm.kind === 'rec';
-		videoBox.hidden = !vid;
-		recBox.hidden = pm.kind !== 'video';
-		play.querySelector('.btn-label').textContent = pm.playing ? 'Пауза' : 'Играть';
-		seek.setRange(0, Math.max(0.1, pm.duration));
+		recBox.hidden = pm.kind !== 'video' && !hasRec;
+		recFps.set(md.recFps);
 		recSec.setRange(1, Math.max(2, Math.min(30, Math.floor(pm.duration) || 10)));
+		recSec.set(Math.min(md.recSec, 30));
 		const prog = mc.progress;
-		recBtn.querySelector('.btn-label').textContent = pm.recording ? 'Остановить запись' : 'Записать в точки';
-		recInfo.textContent = prog ? `Записываю кадр ${prog.i} из ${prog.total}…` : hasRec ? `Записано кадров: ${pm.rec.frames.length}, ${pm.rec.fps} к/с` : 'Видео проигрывается кадр за кадром. Потом ролик можно сохранить и снова открыть.';
+		recInfo.textContent = prog ? `Записываю кадр ${prog.i} из ${prog.total}…` : hasRec ? `Записано кадров: ${pm.rec.frames.length}, ${pm.rec.fps} к/с` : 'Красная кнопка записи на таймлайне снимает видео кадр за кадром.';
 		saveBox.hidden = !ready;
 		bPcv.hidden = !hasRec;
 		bZip.hidden = !hasRec;
 	}
 	app.bus.on('media', sync);
 	if (fx) app.bus.on('fx', sync);
-	setInterval(() => {
-		if ((pm.kind === 'video' || pm.kind === 'rec') && sec.el.offsetParent && !pm.recording && document.activeElement?.closest?.('.slider') == null) seek.set(pm.time);
-	}, 300);
 	sync();
 	return { section: sec, sync };
 }
@@ -132350,8 +132332,30 @@ function createMediaBar(app, host) {
 	const play = iconButton({ icon: 'pause', title: 'Играть или пауза', onClick: () => { pm.playing ? pm.pause() : pm.play(); sync(); } });
 	const time = h('span', { class: 'mb-time' }, '0:00.0');
 	const seek = h('input', { type: 'range', class: 'range mb-seek', min: 0, max: 1, step: 0.01, value: 0, 'aria-label': 'Перемотка' });
+	// перемотка: на время перетаскивания видео ставится на паузу, а запросы сливаются в один, чтобы кадры не копились в очереди
+	let scrubbing = false;
+	let wasPlaying = false;
+	seek.addEventListener('pointerdown', () => {
+		scrubbing = true;
+		wasPlaying = pm.playing;
+		pm.pause();
+	});
+	const endScrub = () => {
+		if (!scrubbing) return;
+		scrubbing = false;
+		if (wasPlaying) pm.play();
+		sync();
+	};
+	seek.addEventListener('pointerup', endScrub);
+	seek.addEventListener('pointercancel', endScrub);
+	seek.addEventListener('change', endScrub);
 	seek.addEventListener('input', () => {
-		pm.seek(parseFloat(seek.value));
+		if (!scrubbing) {
+			wasPlaying = pm.playing;
+			pm.pause();
+			pm.seek(parseFloat(seek.value));
+			if (wasPlaying) pm.play();
+		} else pm.seek(parseFloat(seek.value));
 		paint();
 	});
 	const total = h('span', { class: 'mb-time mb-total' }, '0:00.0');
@@ -132362,7 +132366,7 @@ function createMediaBar(app, host) {
 	bLive.addEventListener('click', () => switchView('live'));
 	bRec.addEventListener('click', () => switchView('rec'));
 	mode.append(bLive, bRec);
-	const rec = iconButton({ icon: 'record', title: 'Записать видео в точки', cls: 'mb-rec', onClick: () => mc.record({ fps: 15, seconds: Math.min(30, Math.floor(pm.duration) || 10) }) });
+	const rec = iconButton({ icon: 'record', title: 'Записать видео в точки', cls: 'mb-rec', onClick: () => mc.record({ fps: app.settings.media.recFps, seconds: Math.min(app.settings.media.recSec, Math.floor(pm.duration) || 10) }) });
 	const el = h('div', { class: 'media-bar vp-pill', hidden: true }, play, time, seek, total, loop, mode, rec);
 	host.append(el);
 
@@ -132379,7 +132383,7 @@ function createMediaBar(app, host) {
 		seek.max = Math.max(0.1, pm.duration);
 	}
 	function sync() {
-		const vid = pm.kind === 'video' || pm.kind === 'rec';
+		const vid = (pm.kind === 'video' || pm.kind === 'rec') && mc.present;
 		el.hidden = !vid;
 		if (!vid) return;
 		play.innerHTML = '<span class="ic-wrap">' + icon(pm.playing ? 'pause' : 'play', 18) + '</span>';
@@ -132396,7 +132400,7 @@ function createMediaBar(app, host) {
 	app.bus.on('media', sync);
 	setInterval(() => {
 		if (el.hidden || pm.recording) return;
-		if (document.activeElement !== seek) seek.value = pm.time;
+		if (!scrubbing) seek.value = pm.time;
 		paint();
 	}, 150);
 	return { sync, el };
@@ -137414,8 +137418,9 @@ class UI {
 		// вкладка «Медиа» появляется только когда открыто фото или видео
 		const mediaTab = $('.tab[data-tab="media"]');
 		app.bus.on('media', () => {
-			const has = app.media.ready;
+			const has = app.media.present;
 			mediaTab.hidden = !has;
+			if (has && mediaTab.parentElement.firstElementChild !== mediaTab) mediaTab.parentElement.prepend(mediaTab);
 			if (!has && !this.tabs.media.hidden) this.showTab('scene');
 		});
 		this.exportPanel = createExportPanel(app, $('#panel-export'));
@@ -138190,8 +138195,24 @@ class PointMedia {
 			this.t = Math.max(0, Math.min(this.duration, t));
 			this.dirty = true;
 		} else if (this.kind === 'video') {
-			this.el.currentTime = Math.max(0, Math.min(this.duration, t));
+			const v = this.el;
+			const target = Math.max(0, Math.min(this.duration, t));
 			this.dirty = true;
+			// пока предыдущая перемотка не закончилась, запоминаем только последнее значение
+			if (v.seeking) {
+				this._pendingSeek = target;
+				if (!this._seekHook) {
+					this._seekHook = true;
+					v.addEventListener('seeked', () => {
+						this._seekHook = false;
+						if (this._pendingSeek != null) {
+							const p = this._pendingSeek;
+							this._pendingSeek = null;
+							this.seek(p);
+						}
+					}, { once: true });
+				}
+			} else v.currentTime = target;
 		}
 	}
 
@@ -138564,6 +138585,7 @@ class MediaController {
 		this.progress = null;
 		this._cancel = false;
 		this._last = performance.now();
+		app.bus.on('scene', () => this.emit());
 		this._tick = (now) => {
 			requestAnimationFrame(this._tick);
 			const dt = Math.min(0.1, (now - this._last) / 1000);
@@ -138579,6 +138601,11 @@ class MediaController {
 
 	get ready() {
 		return this.pm.ready;
+	}
+
+	/** Медиа открыто и его облако лежит в сцене (если объект удалили, вкладка и таймлайн прячутся) */
+	get present() {
+		return this.pm.ready && !!this.obj && !!this.obj.parent;
 	}
 
 	emit() {

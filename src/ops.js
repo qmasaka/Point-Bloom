@@ -328,6 +328,8 @@ export class Ops {
 					i.o.dispatchEvent({ type: 'added' });
 				});
 				this.model.changed();
+				this.app.nav.applyCamera();
+				this.app.viewport.invalidate();
 				this.model.select(infos[0].o);
 				infos.slice(1).forEach((i) => this.model.select(i.o, { add: true }));
 			},

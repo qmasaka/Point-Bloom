@@ -13,8 +13,29 @@ const pm = mc.pm;
 const play = iconButton({ icon: 'pause', title: 'Играть или пауза', onClick: () => { pm.playing ? pm.pause() : pm.play(); sync(); } });
 const time = h('span', { class: 'mb-time' }, '0:00.0');
 const seek = h('input', { type: 'range', class: 'range mb-seek', min: 0, max: 1, step: 0.01, value: 0, 'aria-label': 'Перемотка' });
+let scrubbing = false;
+let wasPlaying = false;
+seek.addEventListener('pointerdown', () => {
+scrubbing = true;
+wasPlaying = pm.playing;
+pm.pause();
+});
+const endScrub = () => {
+if (!scrubbing) return;
+scrubbing = false;
+if (wasPlaying) pm.play();
+sync();
+};
+seek.addEventListener('pointerup', endScrub);
+seek.addEventListener('pointercancel', endScrub);
+seek.addEventListener('change', endScrub);
 seek.addEventListener('input', () => {
+if (!scrubbing) {
+wasPlaying = pm.playing;
+pm.pause();
 pm.seek(parseFloat(seek.value));
+if (wasPlaying) pm.play();
+} else pm.seek(parseFloat(seek.value));
 paint();
 });
 const total = h('span', { class: 'mb-time mb-total' }, '0:00.0');
@@ -25,7 +46,7 @@ const bRec = h('button', { type: 'button', class: 'mb-seg', role: 'radio' }, 'Р
 bLive.addEventListener('click', () => switchView('live'));
 bRec.addEventListener('click', () => switchView('rec'));
 mode.append(bLive, bRec);
-const rec = iconButton({ icon: 'record', title: 'Записать видео в точки', cls: 'mb-rec', onClick: () => mc.record({ fps: 15, seconds: Math.min(30, Math.floor(pm.duration) || 10) }) });
+const rec = iconButton({ icon: 'record', title: 'Записать видео в точки', cls: 'mb-rec', onClick: () => mc.record({ fps: app.settings.media.recFps, seconds: Math.min(app.settings.media.recSec, Math.floor(pm.duration) || 10) }) });
 const el = h('div', { class: 'media-bar vp-pill', hidden: true }, play, time, seek, total, loop, mode, rec);
 host.append(el);
 function switchView(v) {
@@ -41,7 +62,7 @@ total.textContent = fmt(pm.duration);
 seek.max = Math.max(0.1, pm.duration);
 }
 function sync() {
-const vid = pm.kind === 'video' || pm.kind === 'rec';
+const vid = (pm.kind === 'video' || pm.kind === 'rec') && mc.present;
 el.hidden = !vid;
 if (!vid) return;
 play.innerHTML = '<span class="ic-wrap">' + icon(pm.playing ? 'pause' : 'play', 18) + '</span>';
@@ -58,7 +79,7 @@ paint();
 app.bus.on('media', sync);
 setInterval(() => {
 if (el.hidden || pm.recording) return;
-if (document.activeElement !== seek) seek.value = pm.time;
+if (!scrubbing) seek.value = pm.time;
 paint();
 }, 150);
 return { sync, el };

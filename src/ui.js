@@ -446,8 +446,9 @@ export class UI {
 		// вкладка «Медиа» появляется только когда открыто фото или видео
 		const mediaTab = $('.tab[data-tab="media"]');
 		app.bus.on('media', () => {
-			const has = app.media.ready;
+			const has = app.media.present;
 			mediaTab.hidden = !has;
+			if (has && mediaTab.parentElement.firstElementChild !== mediaTab) mediaTab.parentElement.prepend(mediaTab);
 			if (!has && !this.tabs.media.hidden) this.showTab('scene');
 		});
 		this.exportPanel = createExportPanel(app, $('#panel-export'));
