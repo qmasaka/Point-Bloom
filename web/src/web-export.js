@@ -160,7 +160,7 @@ progress && progress('Упаковываю архив', 0.88);
 const enc = new TextEncoder();
 const index = pageHtml({ ...common, glb: 'model.glb', poster: posterName, usdz: usdz ? 'model.usdz' : null });
 const readme = [
-'Страница с интерактивной 3D-моделью (создано в «OBJ в GLB»)',
+'Страница с интерактивной 3D-моделью (создано в «Pointa»)',
 '',
 'Как опубликовать',
 '1. Загрузите все файлы из архива в одну папку на вашем хостинге (Vercel, Netlify, GitHub Pages, обычный хостинг).',

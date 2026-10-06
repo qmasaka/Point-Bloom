@@ -313,7 +313,7 @@ function exportPLY(scene, o) {
 	const totalF = parts.reduce((s, x) => s + (x.indices ? x.indices.length / 3 : 0), 0);
 	const withNormals = parts.every((x) => x.hasNormals);
 	const header =
-		'ply\nformat binary_little_endian 1.0\ncomment OBJ to GLB Studio\n' +
+		'ply\nformat binary_little_endian 1.0\ncomment Pointa\n' +
 		`element vertex ${totalV}\nproperty float x\nproperty float y\nproperty float z\n` +
 		(withNormals ? 'property float nx\nproperty float ny\nproperty float nz\n' : '') +
 		'property uchar red\nproperty uchar green\nproperty uchar blue\n' +
@@ -471,7 +471,7 @@ async function textureBytes(tex, usedNames) {
 
 async function exportOBJ(scene, o, baseName) {
 	scene.updateMatrixWorld(true);
-	const out = [`# OBJ to GLB Studio\nmtllib ${baseName}.mtl\n`];
+	const out = [`# Pointa\nmtllib ${baseName}.mtl\n`];
 	const mats = new Map(); // Material → имя
 	const usedMtlNames = new Set();
 	const matName = (m) => {
@@ -563,7 +563,7 @@ async function exportOBJ(scene, o, baseName) {
 		}
 		return texNames.get(t);
 	};
-	const mtl = ['# OBJ to GLB Studio\n'];
+	const mtl = ['# Pointa\n'];
 	for (const [m, name] of mats) {
 		const c = m.color || new THREE.Color(1, 1, 1);
 		const s = c.getRGB({ r: 0, g: 0, b: 0 }, THREE.SRGBColorSpace);
