@@ -3132,8 +3132,8 @@ body {
 
 /* форма точек и символы: компактный ряд плиток без подписей, название в подсказке */
 .shape-grid.shape-row {
-	grid-template-columns: repeat(8, minmax(0, 1fr));
-	gap: 4px;
+	grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+	gap: 5px;
 }
 .shape-row .shape-tile {
 	padding: 7px 0;
@@ -3152,8 +3152,12 @@ body {
 .shape-row .shape-tile[data-shape='plus'] .shape-glyph::before {
 	background: linear-gradient(currentColor, currentColor) center / 100% 5px no-repeat, linear-gradient(currentColor, currentColor) center / 5px 100% no-repeat;
 }
-.shape-char {
-	font: 700 12px/15px var(--font-mono, ui-monospace, Menlo, monospace);
+.shape-char::before {
+	display: none;
+}
+.shape-row .shape-char {
+	width: auto;
+	font: 700 13px/15px var(--font-mono, ui-monospace, Menlo, monospace);
 	text-align: center;
 	letter-spacing: -0.04em;
 }
