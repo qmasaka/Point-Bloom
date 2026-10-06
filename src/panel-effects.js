@@ -587,7 +587,6 @@ export function createEffectsPanel(app, root, engine) {
 	});
 	const orthoBtn = iconButton({ icon: 'perspective', title: 'Проекция: перспектива или ортогональная', onClick: () => { app.nav.toggleOrtho(); sync(); } });
 	const camBtn = iconButton({ icon: 'video-camera', title: 'Камера: управление руками и пальцами', onClick: () => engine.toggleMotionCam().then(sync) });
-	const trackName = h('div', { class: 'fx-track' });
 	const barMeters = makeMeters(true);
 	const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (MP4)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });
 	const recTime = h('span', { class: 'fx-rec-time' });
@@ -633,7 +632,7 @@ export function createEffectsPanel(app, root, engine) {
 	});
 	syncBg();
 	const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
-	bar.append(leftBtn, playBtn, collapseBtn, camBtn, trackName, barMeters.el, h('span', { class: 'fx-bar-sep' }), focusBtn, orthoBtn, bgBtn, recBtn, recTime, exitBtn);
+	bar.append(leftBtn, playBtn, collapseBtn, camBtn, barMeters.el, h('span', { class: 'fx-bar-sep' }), focusBtn, orthoBtn, bgBtn, recBtn, recTime, exitBtn);
 
 	// ------------------------------------------------------------ синхронизация
 	function sync() {
@@ -697,9 +696,6 @@ export function createEffectsPanel(app, root, engine) {
 		styleRow.hidden = engine.sourceType !== 'synth';
 		style.set(st.audio.style);
 		count.set(Math.min(st.count, cap()));
-		const label = engine.trackLabel;
-		trackName.innerHTML = '';
-		trackName.append(h('b', {}, label), h('span', {}, engine.playing ? 'играет' : 'пауза'));
 		playBtn.textContent = '';
 		playBtn.append(h('span', { class: 'ic-wrap', html: icon(engine.playing ? 'speaker-high' : 'speaker-slash', 18) }));
 		collapseBtn.classList.toggle('is-active', engine.isCollapsed);
