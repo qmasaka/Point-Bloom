@@ -94,7 +94,7 @@ export const MASK_MODES = [
 { id: 'scan', label: 'Скан', title: 'Живёт полоса, которая пробегает по форме' },
 ];
 export const SYNTH_STYLES = [
-{ id: 'deep', name: 'Погружение: тихая глубина' },
+{ id: 'deep', name: 'Спокойный: пады и арпеджио' },
 { id: 'ambient', name: 'Эмбиент: дрейф' },
 { id: 'jungle', name: 'Мягкий джангл, 150 BPM' },
 ];
@@ -1415,6 +1415,31 @@ o.start(t);
 o.stop(t + 2.7);
 }
 }
+_pluck(t, f, vol) {
+const c = this.ctx;
+const g = c.createGain();
+const lp = c.createBiquadFilter();
+lp.type = 'lowpass';
+lp.frequency.setValueAtTime(3200, t);
+lp.frequency.exponentialRampToValueAtTime(700, t + 1.4);
+g.gain.setValueAtTime(0.0001, t);
+g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+lp.connect(g);
+g.connect(this.gain);
+g.connect(this.send);
+for (const [type, mul, a] of [['triangle', 1, 1], ['sine', 2, 0.35], ['sine', 3.01, 0.12]]) {
+const o = this._osc();
+const og = c.createGain();
+o.type = type;
+o.frequency.value = f * mul;
+og.gain.value = a;
+o.connect(og);
+og.connect(lp);
+o.start(t);
+o.stop(t + 2.3);
+}
+}
 _blip(t, f, len, vol) {
 const c = this.ctx;
 const o = this._osc();
@@ -1429,28 +1454,6 @@ g.connect(this.drums);
 g.connect(this.send);
 o.start(t);
 o.stop(t + len + 0.01);
-}
-_breath(t, len) {
-const c = this.ctx;
-const n = this._src();
-n.buffer = this._noiseBuf();
-n.loop = true;
-const bp = c.createBiquadFilter();
-bp.type = 'bandpass';
-bp.Q.value = 3;
-bp.frequency.setValueAtTime(500, t);
-bp.frequency.linearRampToValueAtTime(1400, t + len * 0.5);
-bp.frequency.linearRampToValueAtTime(450, t + len);
-const g = c.createGain();
-g.gain.setValueAtTime(0.0001, t);
-g.gain.exponentialRampToValueAtTime(0.04, t + len * 0.5);
-g.gain.exponentialRampToValueAtTime(0.0001, t + len);
-n.connect(bp);
-bp.connect(g);
-g.connect(this.gain);
-g.connect(this.send);
-n.start(t);
-n.stop(t + len + 0.1);
 }
 _sched(step, t, spb) {
 const s = step % 32;
@@ -1484,7 +1487,13 @@ this._pad(t, ch, 32 * spb + 3, 0.03);
 this._sub(t, ch[0] / 2, 32 * spb, 0.16);
 this._pad(t + 1.5, [ch[4] * 2, ch[5] * 2], 32 * spb, 0.012);
 }
-if (s === 12 || s === 28) this._breath(t, 14 * spb);
+const arp = [0, 3, 6, 10, 13, 16, 19, 22, 26, 29];
+const ai = arp.indexOf(s);
+if (ai >= 0 && !(bar % 2 === 1 && ai % 3 === 2)) {
+const order = [2, 3, 4, 3, 5, 4, 3, 2, 4, 5];
+const shift = bar % 4 === 2 ? 1 : 0;
+this._pluck(t, ch[Math.min(5, order[ai] + shift)] * (ai % 4 === 3 ? 2 : 1), 0.05);
+}
 if (s % 4 === 0 && Math.random() < 0.1) this._bell(t, ch[3 + Math.floor(Math.random() * 3)] * (Math.random() < 0.5 ? 2 : 1), 0.045);
 return;
 }

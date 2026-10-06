@@ -594,7 +594,8 @@ export function createEffectsPanel(app, root, engine) {
 	const aTime = h('span', { class: 'fx-anim-time' });
 	const aKeys = h('div', { class: 'fx-anim-keys' });
 	const aHead = h('div', { class: 'fx-anim-head' });
-	const aTrack = h('div', { class: 'fx-anim-track' }, aKeys, aHead);
+	const aFill = h('div', { class: 'fx-anim-fill' });
+	const aTrack = h('div', { class: 'fx-anim-track' }, aFill, aKeys, aHead);
 	const aLoop = iconButton({ icon: 'repeat', title: 'Повторять по кругу', onClick: () => { st.anim.loop = !st.anim.loop; save(); animSync(); } });
 	const aDur = h('input', { type: 'number', class: 'num-in fx-anim-dur', min: 1, max: 120, step: 1, value: 8, 'aria-label': 'Длина анимации, секунд', 'data-tip': 'Длина анимации, секунд' });
 	aDur.addEventListener('change', () => { engine.animSetDuration(Number(aDur.value) || 8); animSync(); });
@@ -639,32 +640,44 @@ export function createEffectsPanel(app, root, engine) {
 		aTrack.addEventListener('pointermove', mv);
 		aTrack.addEventListener('pointerup', up);
 	});
+	let dragging = false;
+	const markSel = () => [...aKeys.children].forEach((el, i) => el.classList.toggle('is-sel', st.anim.keys[i] === selKey));
 	function renderKeys() {
 		const A = st.anim;
 		aKeys.textContent = '';
 		for (const k of A.keys) {
-			const b = h('button', { type: 'button', class: 'fx-anim-key' + (k === selKey ? ' is-sel' : ''), style: { left: (k.t / A.dur) * 100 + '%' }, 'data-tip': `Ключ, ${k.t.toFixed(1)} с. Клик выбирает, перетаскивание двигает`, 'aria-label': 'Ключ' });
+			const b = h('button', { type: 'button', class: 'fx-anim-key' + (k === selKey ? ' is-sel' : ''), style: { left: (k.t / A.dur) * 100 + '%' }, 'data-tip': `Ключ, ${k.t.toFixed(1)} с. Тяните, чтобы сдвинуть по времени`, 'aria-label': 'Ключ' });
 			b.addEventListener('pointerdown', (e) => {
 				e.stopPropagation();
+				e.preventDefault();
 				engine.animPause();
 				selKey = k;
-				engine.animSeek(k.t);
+				dragging = true;
+				// выбор и перетаскивание ключа не трогают камеру и эффекты: двигается только время
+				engine.animT = k.t;
+				markSel();
+				aUpd.disabled = aDel.disabled = false;
+				aTime.textContent = `${k.t.toFixed(1)} с`;
+				aHead.style.left = (k.t / A.dur) * 100 + '%';
 				b.setPointerCapture(e.pointerId);
 				const mv = (ev) => {
 					engine.animMoveKey(k, timeAt(ev));
+					engine.animT = k.t;
 					b.style.left = (k.t / A.dur) * 100 + '%';
+					aHead.style.left = (k.t / A.dur) * 100 + '%';
 					aTime.textContent = `${k.t.toFixed(1)} с`;
 				};
 				const up = () => {
 					b.removeEventListener('pointermove', mv);
 					b.removeEventListener('pointerup', up);
-					renderKeys();
+					b.removeEventListener('pointercancel', up);
+					dragging = false;
+					keysSig = '';
 					animSync();
 				};
 				b.addEventListener('pointermove', mv);
 				b.addEventListener('pointerup', up);
-				renderKeys();
-				animSync();
+				b.addEventListener('pointercancel', up);
 			});
 			aKeys.append(b);
 		}
@@ -672,9 +685,12 @@ export function createEffectsPanel(app, root, engine) {
 	let keysSig = '';
 	function animSync() {
 		const A = st.anim;
+		const frac = A.dur ? Math.min(1, engine.animT / A.dur) : 0;
 		aTime.textContent = `${engine.animT.toFixed(1)} с`;
-		aHead.style.left = (A.dur ? Math.min(1, engine.animT / A.dur) : 0) * 100 + '%';
+		aHead.style.left = frac * 100 + '%';
+		aFill.style.width = frac * 100 + '%';
 		aTrack.style.setProperty('--ticks', Math.max(1, Math.round(A.dur)));
+		aTrack.style.setProperty('--majors', Math.max(1, Math.round(A.dur)) / 5);
 		aPlay.textContent = '';
 		aPlay.append(h('span', { class: 'ic-wrap', html: icon(engine.animPlaying ? 'pause' : 'play', 18) }));
 		aPlay.classList.toggle('is-active', engine.animPlaying);
@@ -685,11 +701,13 @@ export function createEffectsPanel(app, root, engine) {
 		aUpd.disabled = aDel.disabled = !selKey;
 		const distinct = new Set(A.keys.map((k) => k.t)).size;
 		aHint.textContent = distinct < 2 ? (A.keys.length ? 'Передвиньте время, измените сцену и добавьте ещё ключ' : 'Нажмите «Ключ», чтобы запомнить сцену') : '';
-		const sig = A.dur + '|' + A.keys.map((k) => k.t).join(',') + '|' + A.keys.indexOf(selKey);
+		if (dragging) return;
+		const sig = A.dur + '|' + A.keys.map((k) => k.t).join(',');
 		if (sig !== keysSig) {
 			keysSig = sig;
 			renderKeys();
 		}
+		markSel();
 	}
 	app.bus.on('fxanim', animSync);
 	app.bus.on('fx', animSync);

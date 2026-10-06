@@ -133695,7 +133695,7 @@ const MASK_MODES = [
 ];
 
 const SYNTH_STYLES = [
-	{ id: 'deep', name: 'Погружение: тихая глубина' },
+	{ id: 'deep', name: 'Спокойный: пады и арпеджио' },
 	{ id: 'ambient', name: 'Эмбиент: дрейф' },
 	{ id: 'jungle', name: 'Мягкий джангл, 150 BPM' },
 ];
@@ -135057,6 +135057,32 @@ class TouchSynth {
 			o.stop(t + 2.7);
 		}
 	}
+	/** Мягкая щипковая нота (как арфа в зале): короткая атака, длинный затухающий хвост с эхом */
+	_pluck(t, f, vol) {
+		const c = this.ctx;
+		const g = c.createGain();
+		const lp = c.createBiquadFilter();
+		lp.type = 'lowpass';
+		lp.frequency.setValueAtTime(3200, t);
+		lp.frequency.exponentialRampToValueAtTime(700, t + 1.4);
+		g.gain.setValueAtTime(0.0001, t);
+		g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+		g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+		lp.connect(g);
+		g.connect(this.gain);
+		g.connect(this.send);
+		for (const [type, mul, a] of [['triangle', 1, 1], ['sine', 2, 0.35], ['sine', 3.01, 0.12]]) {
+			const o = this._osc();
+			const og = c.createGain();
+			o.type = type;
+			o.frequency.value = f * mul;
+			og.gain.value = a;
+			o.connect(og);
+			og.connect(lp);
+			o.start(t);
+			o.stop(t + 2.3);
+		}
+	}
 	_blip(t, f, len, vol) {
 		const c = this.ctx;
 		const o = this._osc();
@@ -135073,28 +135099,6 @@ class TouchSynth {
 		o.stop(t + len + 0.01);
 	}
 
-	_breath(t, len) {
-		const c = this.ctx;
-		const n = this._src();
-		n.buffer = this._noiseBuf();
-		n.loop = true;
-		const bp = c.createBiquadFilter();
-		bp.type = 'bandpass';
-		bp.Q.value = 3;
-		bp.frequency.setValueAtTime(500, t);
-		bp.frequency.linearRampToValueAtTime(1400, t + len * 0.5);
-		bp.frequency.linearRampToValueAtTime(450, t + len);
-		const g = c.createGain();
-		g.gain.setValueAtTime(0.0001, t);
-		g.gain.exponentialRampToValueAtTime(0.04, t + len * 0.5);
-		g.gain.exponentialRampToValueAtTime(0.0001, t + len);
-		n.connect(bp);
-		bp.connect(g);
-		g.connect(this.gain);
-		g.connect(this.send);
-		n.start(t);
-		n.stop(t + len + 0.1);
-	}
 
 	_sched(step, t, spb) {
 		const s = step % 32;
@@ -135130,7 +135134,14 @@ class TouchSynth {
 				// высокое «сияние»: две тихие октавы, плывущие над аккордом
 				this._pad(t + 1.5, [ch[4] * 2, ch[5] * 2], 32 * spb, 0.012);
 			}
-			if (s === 12 || s === 28) this._breath(t, 14 * spb);
+			// неспешное арпеджио по тонам аккорда: каждый такт чуть иначе, поэтому не надоедает
+			const arp = [0, 3, 6, 10, 13, 16, 19, 22, 26, 29];
+			const ai = arp.indexOf(s);
+			if (ai >= 0 && !(bar % 2 === 1 && ai % 3 === 2)) {
+				const order = [2, 3, 4, 3, 5, 4, 3, 2, 4, 5];
+				const shift = bar % 4 === 2 ? 1 : 0;
+				this._pluck(t, ch[Math.min(5, order[ai] + shift)] * (ai % 4 === 3 ? 2 : 1), 0.05);
+			}
 			if (s % 4 === 0 && Math.random() < 0.1) this._bell(t, ch[3 + Math.floor(Math.random() * 3)] * (Math.random() < 0.5 ? 2 : 1), 0.045);
 			return;
 		}
@@ -138504,7 +138515,8 @@ function createEffectsPanel(app, root, engine) {
 	const aTime = h('span', { class: 'fx-anim-time' });
 	const aKeys = h('div', { class: 'fx-anim-keys' });
 	const aHead = h('div', { class: 'fx-anim-head' });
-	const aTrack = h('div', { class: 'fx-anim-track' }, aKeys, aHead);
+	const aFill = h('div', { class: 'fx-anim-fill' });
+	const aTrack = h('div', { class: 'fx-anim-track' }, aFill, aKeys, aHead);
 	const aLoop = iconButton({ icon: 'repeat', title: 'Повторять по кругу', onClick: () => { st.anim.loop = !st.anim.loop; save(); animSync(); } });
 	const aDur = h('input', { type: 'number', class: 'num-in fx-anim-dur', min: 1, max: 120, step: 1, value: 8, 'aria-label': 'Длина анимации, секунд', 'data-tip': 'Длина анимации, секунд' });
 	aDur.addEventListener('change', () => { engine.animSetDuration(Number(aDur.value) || 8); animSync(); });
@@ -138549,32 +138561,44 @@ function createEffectsPanel(app, root, engine) {
 		aTrack.addEventListener('pointermove', mv);
 		aTrack.addEventListener('pointerup', up);
 	});
+	let dragging = false;
+	const markSel = () => [...aKeys.children].forEach((el, i) => el.classList.toggle('is-sel', st.anim.keys[i] === selKey));
 	function renderKeys() {
 		const A = st.anim;
 		aKeys.textContent = '';
 		for (const k of A.keys) {
-			const b = h('button', { type: 'button', class: 'fx-anim-key' + (k === selKey ? ' is-sel' : ''), style: { left: (k.t / A.dur) * 100 + '%' }, 'data-tip': `Ключ, ${k.t.toFixed(1)} с. Клик выбирает, перетаскивание двигает`, 'aria-label': 'Ключ' });
+			const b = h('button', { type: 'button', class: 'fx-anim-key' + (k === selKey ? ' is-sel' : ''), style: { left: (k.t / A.dur) * 100 + '%' }, 'data-tip': `Ключ, ${k.t.toFixed(1)} с. Тяните, чтобы сдвинуть по времени`, 'aria-label': 'Ключ' });
 			b.addEventListener('pointerdown', (e) => {
 				e.stopPropagation();
+				e.preventDefault();
 				engine.animPause();
 				selKey = k;
-				engine.animSeek(k.t);
+				dragging = true;
+				// выбор и перетаскивание ключа не трогают камеру и эффекты: двигается только время
+				engine.animT = k.t;
+				markSel();
+				aUpd.disabled = aDel.disabled = false;
+				aTime.textContent = `${k.t.toFixed(1)} с`;
+				aHead.style.left = (k.t / A.dur) * 100 + '%';
 				b.setPointerCapture(e.pointerId);
 				const mv = (ev) => {
 					engine.animMoveKey(k, timeAt(ev));
+					engine.animT = k.t;
 					b.style.left = (k.t / A.dur) * 100 + '%';
+					aHead.style.left = (k.t / A.dur) * 100 + '%';
 					aTime.textContent = `${k.t.toFixed(1)} с`;
 				};
 				const up = () => {
 					b.removeEventListener('pointermove', mv);
 					b.removeEventListener('pointerup', up);
-					renderKeys();
+					b.removeEventListener('pointercancel', up);
+					dragging = false;
+					keysSig = '';
 					animSync();
 				};
 				b.addEventListener('pointermove', mv);
 				b.addEventListener('pointerup', up);
-				renderKeys();
-				animSync();
+				b.addEventListener('pointercancel', up);
 			});
 			aKeys.append(b);
 		}
@@ -138582,9 +138606,12 @@ function createEffectsPanel(app, root, engine) {
 	let keysSig = '';
 	function animSync() {
 		const A = st.anim;
+		const frac = A.dur ? Math.min(1, engine.animT / A.dur) : 0;
 		aTime.textContent = `${engine.animT.toFixed(1)} с`;
-		aHead.style.left = (A.dur ? Math.min(1, engine.animT / A.dur) : 0) * 100 + '%';
+		aHead.style.left = frac * 100 + '%';
+		aFill.style.width = frac * 100 + '%';
 		aTrack.style.setProperty('--ticks', Math.max(1, Math.round(A.dur)));
+		aTrack.style.setProperty('--majors', Math.max(1, Math.round(A.dur)) / 5);
 		aPlay.textContent = '';
 		aPlay.append(h('span', { class: 'ic-wrap', html: icon(engine.animPlaying ? 'pause' : 'play', 18) }));
 		aPlay.classList.toggle('is-active', engine.animPlaying);
@@ -138595,11 +138622,13 @@ function createEffectsPanel(app, root, engine) {
 		aUpd.disabled = aDel.disabled = !selKey;
 		const distinct = new Set(A.keys.map((k) => k.t)).size;
 		aHint.textContent = distinct < 2 ? (A.keys.length ? 'Передвиньте время, измените сцену и добавьте ещё ключ' : 'Нажмите «Ключ», чтобы запомнить сцену') : '';
-		const sig = A.dur + '|' + A.keys.map((k) => k.t).join(',') + '|' + A.keys.indexOf(selKey);
+		if (dragging) return;
+		const sig = A.dur + '|' + A.keys.map((k) => k.t).join(',');
 		if (sig !== keysSig) {
 			keysSig = sig;
 			renderKeys();
 		}
+		markSel();
 	}
 	app.bus.on('fxanim', animSync);
 	app.bus.on('fx', animSync);
