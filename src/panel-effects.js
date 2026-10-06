@@ -7,6 +7,7 @@ import { sampleSurface, overrideMats } from './pointcloud.js';
 import { getDevice } from './device-card.js';
 import { formatCount } from './capabilities.js';
 import { createMediaPanel } from './panel-media.js';
+import { attachPreview } from './fx-previews.js';
 import { SHAPES as POINT_SHAPE_LIST } from './panel-points.js';
 import { FX_SHAPES, FX_ACTIONS, FX_GESTURE_PRESETS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } from './effects-engine.js';
 
@@ -365,7 +366,8 @@ export function createEffectsPanel(app, root, engine) {
 			});
 			reactRow.hidden = L.band === 'none';
 			body.append(field('Реагирует на звук', band.el, { wide: true }), reactRow);
-			const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, h('span', { class: 'fx-ic', html: icon(def.icon, 16) }), h('span', { class: 'fx-layer-title' }, def.name), sw.el);
+			const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
+			const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, h('span', { class: 'fx-ic', html: icon(def.icon, 16) }), h('span', { class: 'fx-layer-title' }, def.name), prevCanvas, sw.el);
 			const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right' }, row);
 			const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, h('div', { class: 'fx-insp-head' }, h('span', { class: 'fx-ic', html: icon(def.icon, 18) }), h('div', {}, h('b', {}, def.name), h('span', {}, def.hint))), body);
 			row.addEventListener('click', (e) => {
@@ -381,6 +383,7 @@ export function createEffectsPanel(app, root, engine) {
 				}
 			});
 			fbody.append(card);
+			attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
 			inspBox.append(insp);
 			cards.push({ def, L, sw, amount, react, band, reactRow, extraCtl, applyWhen, card, insp, fhead });
 		}

@@ -89352,6 +89352,7 @@ const ICON_PATHS = {
 	'arrows-out-cardinal': '<path d="M90.34,61.66a8,8,0,0,1,0-11.32l32-32a8,8,0,0,1,11.32,0l32,32a8,8,0,0,1-11.32,11.32L136,43.31V96a8,8,0,0,1-16,0V43.31L101.66,61.66A8,8,0,0,1,90.34,61.66Zm64,132.68L136,212.69V160a8,8,0,0,0-16,0v52.69l-18.34-18.35a8,8,0,0,0-11.32,11.32l32,32a8,8,0,0,0,11.32,0l32-32a8,8,0,0,0-11.32-11.32Zm83.32-72-32-32a8,8,0,0,0-11.32,11.32L212.69,120H160a8,8,0,0,0,0,16h52.69l-18.35,18.34a8,8,0,0,0,11.32,11.32l32-32A8,8,0,0,0,237.66,122.34ZM43.31,136H96a8,8,0,0,0,0-16H43.31l18.35-18.34A8,8,0,0,0,50.34,90.34l-32,32a8,8,0,0,0,0,11.32l32,32a8,8,0,0,0,11.32-11.32Z"/>',
 	'arrows-out-simple': '<path d="M216,48V96a8,8,0,0,1-16,0V67.31l-50.34,50.35a8,8,0,0,1-11.32-11.32L188.69,56H160a8,8,0,0,1,0-16h48A8,8,0,0,1,216,48ZM106.34,138.34,56,188.69V160a8,8,0,0,0-16,0v48a8,8,0,0,0,8,8H96a8,8,0,0,0,0-16H67.31l50.35-50.34a8,8,0,0,0-11.32-11.32Z"/>',
 	'arrows-vertical': '<path d="M165.66,194.34a8,8,0,0,1,0,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L120,212.69V43.31L101.66,61.66A8,8,0,0,1,90.34,50.34l32-32a8,8,0,0,1,11.32,0l32,32a8,8,0,0,1-11.32,11.32L136,43.31V212.69l18.34-18.35A8,8,0,0,1,165.66,194.34Z"/>',
+	'asterisk': '<path d="M214.86,180.12a8,8,0,0,1-11,2.74L136,142.13V216a8,8,0,0,1-16,0V142.13L52.12,182.86a8,8,0,1,1-8.23-13.72L112.45,128,43.89,86.86a8,8,0,1,1,8.23-13.72L120,113.87V40a8,8,0,0,1,16,0v73.87l67.88-40.73a8,8,0,1,1,8.23,13.72L143.55,128l68.56,41.14A8,8,0,0,1,214.86,180.12Z"/>',
 	'atom': '<path d="M196.12,128c24.65-34.61,37.22-70.38,19.74-87.86S162.61,35.23,128,59.88C93.39,35.23,57.62,22.66,40.14,40.14S35.23,93.39,59.88,128c-24.65,34.61-37.22,70.38-19.74,87.86h0c5.63,5.63,13.15,8.14,21.91,8.14,18.48,0,42.48-11.17,66-27.88C151.47,212.83,175.47,224,194,224c8.76,0,16.29-2.52,21.91-8.14h0C233.34,198.38,220.77,162.61,196.12,128Zm8.43-76.55c7.64,7.64,2.48,32.4-18.52,63.28a300.33,300.33,0,0,0-21.19-23.57A300.33,300.33,0,0,0,141.27,70C172.15,49,196.91,43.8,204.55,51.45ZM176.29,128a289.14,289.14,0,0,1-22.76,25.53A289.14,289.14,0,0,1,128,176.29a289.14,289.14,0,0,1-25.53-22.76A289.14,289.14,0,0,1,79.71,128,298.62,298.62,0,0,1,128,79.71a289.14,289.14,0,0,1,25.53,22.76A289.14,289.14,0,0,1,176.29,128ZM51.45,51.45c2.2-2.21,5.83-3.35,10.62-3.35C73.89,48.1,92.76,55,114.72,70A304,304,0,0,0,91.16,91.16,300.33,300.33,0,0,0,70,114.73C49,83.85,43.81,59.09,51.45,51.45Zm0,153.1C43.81,196.91,49,172.15,70,141.27a300.33,300.33,0,0,0,21.19,23.57A304.18,304.18,0,0,0,114.73,186C83.85,207,59.09,212.2,51.45,204.55Zm153.1,0c-7.64,7.65-32.4,2.48-63.28-18.52a304.18,304.18,0,0,0,23.57-21.19A300.33,300.33,0,0,0,186,141.27C207,172.15,212.19,196.91,204.55,204.55ZM140,128a12,12,0,1,1-12-12A12,12,0,0,1,140,128Z"/>',
 	'bounding-box': '<path d="M208,96a16,16,0,0,0,16-16V48a16,16,0,0,0-16-16H176a16,16,0,0,0-16,16v8H96V48A16,16,0,0,0,80,32H48A16,16,0,0,0,32,48V80A16,16,0,0,0,48,96h8v64H48a16,16,0,0,0-16,16v32a16,16,0,0,0,16,16H80a16,16,0,0,0,16-16v-8h64v8a16,16,0,0,0,16,16h32a16,16,0,0,0,16-16V176a16,16,0,0,0-16-16h-8V96ZM176,48h32V80H176ZM48,48H80V63.9a.51.51,0,0,0,0,.2V80H48ZM80,208H48V176H80v15.9a.51.51,0,0,0,0,.2V208Zm128,0H176V176h32Zm-24-48h-8a16,16,0,0,0-16,16v8H96v-8a16,16,0,0,0-16-16H72V96h8A16,16,0,0,0,96,80V72h64v8a16,16,0,0,0,16,16h8Z"/>',
 	'broom': '<path d="M235.5,216.81c-22.56-11-35.5-34.58-35.5-64.8V134.73a15.94,15.94,0,0,0-10.09-14.87L165,110a8,8,0,0,1-4.48-10.34l21.32-53a28,28,0,0,0-16.1-37,28.14,28.14,0,0,0-35.82,16,.61.61,0,0,0,0,.12L108.9,79a8,8,0,0,1-10.37,4.49L73.11,73.14A15.89,15.89,0,0,0,55.74,76.8C34.68,98.45,24,123.75,24,152a111.45,111.45,0,0,0,31.18,77.53A8,8,0,0,0,61,232H232a8,8,0,0,0,3.5-15.19ZM67.14,88l25.41,10.3a24,24,0,0,0,31.23-13.45l21-53c2.56-6.11,9.47-9.27,15.43-7a12,12,0,0,1,6.88,15.92L145.69,93.76a24,24,0,0,0,13.43,31.14L184,134.73V152c0,.33,0,.66,0,1L55.77,101.71A108.84,108.84,0,0,1,67.14,88Zm48,128a87.53,87.53,0,0,1-24.34-42,8,8,0,0,0-15.49,4,105.16,105.16,0,0,0,18.36,38H64.44A95.54,95.54,0,0,1,40,152a85.9,85.9,0,0,1,7.73-36.29l137.8,55.12c3,18,10.56,33.48,21.89,45.16Z"/>',
@@ -89385,6 +89386,7 @@ const ICON_PATHS = {
 	'eye': '<path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.46,133.46,0,0,1,231.05,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"/>',
 	'file': '<path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Z"/>',
 	'film-strip': '<path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,88h80v80H40Zm96-16V56h32V72Zm-16,0H88V56h32Zm0,112v16H88V184Zm16,0h32v16H136Zm0-16V88h80v80Zm80-96H184V56h32ZM72,56V72H40V56ZM40,184H72v16H40Zm176,16H184V184h32v16Z"/>',
+	'flag': '<path d="M42.76,50A8,8,0,0,0,40,56V224a8,8,0,0,0,16,0V179.77c26.79-21.16,49.87-9.75,76.45,3.41,16.4,8.11,34.06,16.85,53,16.85,13.93,0,28.54-4.75,43.82-18a8,8,0,0,0,2.76-6V56A8,8,0,0,0,218.76,50c-28,24.23-51.72,12.49-79.21-1.12C111.07,34.76,78.78,18.79,42.76,50ZM216,172.25c-26.79,21.16-49.87,9.74-76.45-3.41-25-12.35-52.81-26.13-83.55-8.4V59.79c26.79-21.16,49.87-9.75,76.45,3.4,25,12.35,52.82,26.13,83.55,8.4Z"/>',
 	'flip-horizontal': '<path d="M107.18,24.33a15.86,15.86,0,0,0-17.92,9.45l-.06.14-64,159.93A16,16,0,0,0,40,216h64a16,16,0,0,0,16-16V40A15.85,15.85,0,0,0,107.18,24.33ZM104,200H40l.06-.15L104,40Zm126.77-6.15-64-159.93-.06-.14A16,16,0,0,0,136,40V200a16,16,0,0,0,16,16h64a16,16,0,0,0,14.78-22.15ZM152,200V40l63.93,159.84.06.15Z"/>',
 	'flip-vertical': '<path d="M56,120H216a16,16,0,0,0,6.23-30.74l-.14-.06-159.93-64A16,16,0,0,0,40,40v64A16,16,0,0,0,56,120Zm0-80,.15.06L216,104H56l0-64Zm160,96H56a16,16,0,0,0-16,16v64a16,16,0,0,0,22.15,14.78l159.93-64,.14-.06A16,16,0,0,0,216,136ZM56.15,215.93,56,216V152H216Z"/>',
 	'folder-open': '<path d="M245,110.64A16,16,0,0,0,232,104H216V88a16,16,0,0,0-16-16H130.67L102.94,51.2a16.14,16.14,0,0,0-9.6-3.2H40A16,16,0,0,0,24,64V208h0a8,8,0,0,0,8,8H211.1a8,8,0,0,0,7.59-5.47l28.49-85.47A16.05,16.05,0,0,0,245,110.64ZM93.34,64,123.2,86.4A8,8,0,0,0,128,88h72v16H69.77a16,16,0,0,0-15.18,10.94L40,158.7V64Zm112,136H43.1l26.67-80H232Z"/>',
@@ -89406,6 +89408,7 @@ const ICON_PATHS = {
 	'moon': '<path d="M233.54,142.23a8,8,0,0,0-8-2,88.08,88.08,0,0,1-109.8-109.8,8,8,0,0,0-10-10,104.84,104.84,0,0,0-52.91,37A104,104,0,0,0,136,224a103.09,103.09,0,0,0,62.52-20.88,104.84,104.84,0,0,0,37-52.91A8,8,0,0,0,233.54,142.23ZM188.9,190.34A88,88,0,0,1,65.66,67.11a89,89,0,0,1,31.4-26A106,106,0,0,0,96,56,104.11,104.11,0,0,0,200,160a106,106,0,0,0,14.92-1.06A89,89,0,0,1,188.9,190.34Z"/>',
 	'paint-brush': '<path d="M232,32a8,8,0,0,0-8-8c-44.08,0-89.31,49.71-114.43,82.63A60,60,0,0,0,32,164c0,30.88-19.54,44.73-20.47,45.37A8,8,0,0,0,16,224H92a60,60,0,0,0,57.37-77.57C182.3,121.31,232,76.08,232,32ZM92,208H34.63C41.38,198.41,48,183.92,48,164a44,44,0,1,1,44,44Zm32.42-94.45q5.14-6.66,10.09-12.55A76.23,76.23,0,0,1,155,121.49q-5.9,4.94-12.55,10.09A60.54,60.54,0,0,0,124.42,113.55Zm42.7-2.68a92.57,92.57,0,0,0-22-22c31.78-34.53,55.75-45,69.9-47.91C212.17,55.12,201.65,79.09,167.12,110.87Z"/>',
 	'palette': '<path d="M200.77,53.89A103.27,103.27,0,0,0,128,24h-1.07A104,104,0,0,0,24,128c0,43,26.58,79.06,69.36,94.17A32,32,0,0,0,136,192a16,16,0,0,1,16-16h46.21a31.81,31.81,0,0,0,31.2-24.88,104.43,104.43,0,0,0,2.59-24A103.28,103.28,0,0,0,200.77,53.89Zm13,93.71A15.89,15.89,0,0,1,198.21,160H152a32,32,0,0,0-32,32,16,16,0,0,1-21.31,15.07C62.49,194.3,40,164,40,128a88,88,0,0,1,87.09-88h.9a88.35,88.35,0,0,1,88,87.25A88.86,88.86,0,0,1,213.81,147.6ZM140,76a12,12,0,1,1-12-12A12,12,0,0,1,140,76ZM96,100A12,12,0,1,1,84,88,12,12,0,0,1,96,100Zm0,56a12,12,0,1,1-12-12A12,12,0,0,1,96,156Zm88-56a12,12,0,1,1-12-12A12,12,0,0,1,184,100Z"/>',
+	'path': '<path d="M200,168a32.06,32.06,0,0,0-31,24H72a32,32,0,0,1,0-64h96a40,40,0,0,0,0-80H72a8,8,0,0,0,0,16h96a24,24,0,0,1,0,48H72a48,48,0,0,0,0,96h97a32,32,0,1,0,31-40Zm0,48a16,16,0,1,1,16-16A16,16,0,0,1,200,216Z"/>',
 	'pause': '<path d="M216,48V208a16,16,0,0,1-16,16H160a16,16,0,0,1-16-16V48a16,16,0,0,1,16-16h40A16,16,0,0,1,216,48ZM112,48V208a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V48A16,16,0,0,1,56,32H96A16,16,0,0,1,112,48Zm-16,0H56V208H96Zm104,0H160V208h40Z"/>',
 	'perspective': '<path d="M240,120H224V48a16,16,0,0,0-18.86-15.74l-160,29.09A16,16,0,0,0,32,77.09V120H16a8,8,0,0,0,0,16H32v42.91a16,16,0,0,0,13.14,15.74l160,29.09A16.47,16.47,0,0,0,208,224a16,16,0,0,0,16-16V136h16a8,8,0,0,0,0-16ZM48,77.09,208,48v72H48ZM208,208,48,178.91V136H208Z"/>',
 	'planet': '<path d="M245.11,60.68c-7.65-13.19-27.84-16.16-58.5-8.66A95.93,95.93,0,0,0,32,128a98,98,0,0,0,.78,12.31C5.09,169,5.49,186,10.9,195.32,16,204.16,26.64,208,40.64,208a124.11,124.11,0,0,0,28.79-4A95.93,95.93,0,0,0,224,128a97.08,97.08,0,0,0-.77-12.25c12.5-13,20.82-25.35,23.65-35.92C248.83,72.51,248.24,66.07,245.11,60.68ZM128,48a80.11,80.11,0,0,1,78,62.2c-17.06,16.06-40.15,32.53-62.07,45.13C116.38,171.14,92.48,181,73.42,186.4A79.94,79.94,0,0,1,128,48ZM24.74,187.29c-1.46-2.51-.65-7.24,2.22-13a79.05,79.05,0,0,1,10.29-15.05,96,96,0,0,0,18,31.32C38,193.46,27.24,191.61,24.74,187.29ZM128,208a79.45,79.45,0,0,1-38.56-9.94,370,370,0,0,0,62.43-28.86c21.58-12.39,40.68-25.82,56.07-39.08A80.07,80.07,0,0,1,128,208ZM231.42,75.69c-1.7,6.31-6.19,13.53-12.63,21.13a95.69,95.69,0,0,0-18-31.35c14.21-2.35,27.37-2.17,30.5,3.24C232.19,70.28,232.24,72.63,231.42,75.69Z"/>',
@@ -133440,7 +133443,7 @@ const BANDS = [
 ];
 
 /** Действия, которые можно назначить жесту руки */
-const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкивать'], ['pull', 'Притягивать'], ['swirl', 'Вихрь'], ['rotate', 'Крутить форму'], ['sculpt', 'Лепить'], ['gravity', 'Гравитация у руки'], ['wave', 'Ударная волна'], ['break', 'Распад, пока держишь'], ['dissolve', 'Растворение, пока держишь'], ['brush', 'Светящийся след'], ['slicecut', 'Срез рукой: плоскость за ладонью'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
+const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкивать'], ['pull', 'Притягивать'], ['swirl', 'Вихрь'], ['rotate', 'Крутить форму'], ['sculpt', 'Лепить'], ['gravity', 'Гравитация у руки'], ['wave', 'Ударная волна'], ['break', 'Распад, пока держишь'], ['dissolve', 'Растворение, пока держишь'], ['brush', 'Светящийся след'], ['slicecut', 'Срез рукой: плоскость за ладонью'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:twist', 'Эффект: Деформация'], ['fx:blast', 'Эффект: Взрыв по биту'], ['fx:cloth', 'Эффект: Ткань и ветер'], ['fx:flow', 'Эффект: Течение'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
 
 /** Готовые схемы жестов */
 const FX_GESTURE_PRESETS = [
@@ -133452,17 +133455,20 @@ const FX_GESTURE_PRESETS = [
 
 /** Слои-операторы. group: раздел в левой панели; extras: дополнительные параметры; relink: пересобрать связи */
 const FX_LAYERS = [
-	{ id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Частицы отрываются и плывут по вихрям', max: 2, def: { on: false, amount: 0.8, band: 'bass', react: 0.6, scale: 1.8 }, extras: [{ key: 'scale', label: 'Размер вихрей', min: 0.5, max: 4, step: 0.1 }] },
+	{ id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Частицы отрываются от формы и плывут по вихрям или потоку, а потом возвращаются', max: 2, def: { on: false, amount: 0.8, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['noise', 'Вихри'], ['stream', 'Поток и возврат']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }] },
 	{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается сверху вниз, осколки взлетают, закручиваются и падают на пол с отскоками. При сборке они возвращаются дугами и складываются обратно', max: 2, def: { on: false, amount: 1.0, band: 'bass', react: 0.5, gravity: 1.2, bounce: 0.55, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
-	{ id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма вытягивается по частотам трека', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, axis: 'angle' }, extras: [{ key: 'axis', label: 'Ось', type: 'seg', options: [['angle', 'По кругу'], ['height', 'По высоте']] }] },
-	{ id: 'wave', group: 'Движение', name: 'Волны', icon: 'waves', hint: 'Круги расходятся от центра', max: 2, def: { on: false, amount: 0.7, band: 'mid', react: 0.8, freq: 5 }, extras: [{ key: 'freq', label: 'Частота', min: 1, max: 14, step: 0.5 }] },
-	{ id: 'twist', hidden: true, group: 'Движение', name: 'Скручивание', icon: 'wind', hint: 'Форма закручивается вокруг вертикали', max: 3, def: { on: false, amount: 1, band: 'none', react: 0 }, extras: [] },
-	{ id: 'pulse', group: 'Движение', name: 'Пульс', icon: 'pulse', hint: 'Форма раздувается на каждый удар', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1 }, extras: [] },
+	{ id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма отзывается на частоты трека: шерсть, колонки эквалайзера или горный рельеф', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, mode: 'bars', bars: 24 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['bars', 'Колонки эквалайзера'], ['terrain', 'Горный рельеф'], ['wool', 'Шерсть по кругу'], ['height', 'Шерсть по высоте']] }, { key: 'bars', label: 'Число колонок', min: 8, max: 64, step: 1, int: true, when: ['mode', ['bars']] }] },
+	{ id: 'wave', group: 'Движение', name: 'Волны', icon: 'waves', hint: 'Круги расходятся от точки: от центра, от курсора или каплями на каждый удар. Есть плоская волна', max: 2, def: { on: false, amount: 0.7, band: 'mid', react: 0.8, freq: 5, speed: 1, mode: 'drops', origin: 'center', decay: 1.2, dir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['drops', 'Капли по биту'], ['rings', 'Кольца непрерывно'], ['plane', 'Плоская волна']] }, { key: 'freq', label: 'Масштаб (частота)', min: 1, max: 14, step: 0.5 }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }, { key: 'origin', label: 'Откуда', type: 'seg', options: [['center', 'Центр'], ['cursor', 'Курсор, рука']], when: ['mode', ['rings']] }, { key: 'decay', label: 'Затухание', min: 0.2, max: 4, step: 0.1, when: ['mode', ['drops']] }, { key: 'dir', label: 'Направление', min: 0, max: 6.28, step: 0.1, when: ['mode', ['plane']] }] },
+	{ id: 'twist', group: 'Движение', name: 'Деформация', icon: 'wind', hint: 'Форма скручивается, гнётся дугой или сужается конусом', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'twist', speed: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['twist', 'Скрутка'], ['bend', 'Изгиб'], ['taper', 'Конус']] }, { key: 'speed', label: 'Покачивание', min: 0, max: 3, step: 0.05 }] },
+	{ id: 'pulse', group: 'Движение', name: 'Пульс', icon: 'pulse', hint: 'Форма бьётся, как сердце: волна расширения бежит от центра к краю', max: 2, def: { on: false, amount: 0.8, band: 'none', react: 0, mode: 'shell', delay: 0.35, speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['shell', 'Бегущая оболочка'], ['squash', 'Сжатие и растяжение'], ['flat', 'Вся форма сразу']] }, { key: 'delay', label: 'Задержка к краю', min: 0, max: 1, step: 0.02, when: ['mode', ['shell', 'squash']] }, { key: 'speed', label: 'Скорость затухания', min: 0.3, max: 3, step: 0.05 }] },
+	{ id: 'blast', group: 'Движение', name: 'Взрыв по биту', icon: 'asterisk', hint: 'На каждый удар точки отлетают от формы и пружинят обратно с перелётом', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, decay: 2.2, random: 0.6, period: 1.6 }, extras: [{ key: 'decay', label: 'Возврат (пружина)', min: 0.8, max: 6, step: 0.1 }, { key: 'random', label: 'Разброс направлений', min: 0, max: 1, step: 0.05 }, { key: 'period', label: 'Без музыки бьёт раз в, с', min: 0.4, max: 5, step: 0.1 }] },
+	{ id: 'cloth', group: 'Движение', name: 'Ткань и ветер', icon: 'flag', hint: 'Форма колышется, как ткань на ветру: бегут складки, порывы сменяют друг друга', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, wind: 0.8, fold: 1.2, gust: 0.6, speed: 1, anchor: 'top' }, extras: [{ key: 'wind', label: 'Направление ветра', min: 0, max: 6.28, step: 0.1 }, { key: 'fold', label: 'Размер складок', min: 0.3, max: 3, step: 0.05 }, { key: 'gust', label: 'Порывистость', min: 0, max: 1, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'anchor', label: 'Закреплена', type: 'seg', options: [['top', 'Сверху'], ['bottom', 'Снизу'], ['none', 'Нигде']] }] },
+	{ id: 'flow', group: 'Движение', name: 'Течение по поверхности', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, поверхность выглядит живой, а силуэт не меняется', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
 	{ id: 'alive', group: 'Движение', name: 'Живая форма', icon: 'heartbeat', hint: 'Форма дышит, у неё бьётся сердце, и она с любопытством тянется к курсору', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, breath: 0.6, heart: 0.7, bpm: 62, lean: 0.8 }, extras: [{ key: 'breath', label: 'Дыхание', min: 0.2, max: 2, step: 0.05 }, { key: 'heart', label: 'Сердцебиение', min: 0, max: 1.5, step: 0.05 }, { key: 'bpm', label: 'Пульс, уд/мин', min: 40, max: 140, step: 1, int: true }, { key: 'lean', label: 'Тянется к курсору', min: 0, max: 1.5, step: 0.05 }] },
-	{ id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Частицы отрываются от формы, уносятся ветром и гаснут, пока модель не исчезнет. Потом она собирается обратно', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', order: 'top', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.8 }, extras: [{ key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'order', label: 'С какой стороны', type: 'seg', options: [['top', 'Сверху'], ['noise', 'Пятнами'], ['bottom', 'Снизу']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер в сторону', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Завихрения', min: 0, max: 2, step: 0.05 }] },
-	{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1 }, extras: [] },
+	{ id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Частицы отрываются от формы, уносятся ветром и гаснут, пока модель не исчезнет. Потом она собирается обратно', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', order: 'top', style: 'wind', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.8 }, extras: [{ key: 'style', label: 'Как исчезает', type: 'select', options: [['wind', 'Уносит ветром'], ['burn', 'Горение: пепел и угли'], ['bubbles', 'Пузыри всплывают']] }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'order', label: 'С какой стороны', type: 'seg', options: [['top', 'Сверху'], ['noise', 'Пятнами'], ['bottom', 'Снизу']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер в сторону', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Завихрения', min: 0, max: 2, step: 0.05 }] },
+	{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке и становятся квадратами: сетка, «Лего» или дыхание', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1, mode: 'grid', speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['grid', 'Сетка'], ['lego', 'Лего'], ['breathe', 'Дыхание']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe']] }] },
 	{ id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
-	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в сторону', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }] },
+	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в трёх измерениях, цветовые каналы расходятся, картинка мерцает', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16, rgb: 'on', speed: 1 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
 	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими импульсами', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
 	{ id: 'slice', group: 'Графика', name: 'Срез / Изолинии', icon: 'scan', hint: 'Лазерные линии, рельеф из точек на линиях или развёртка: форма постепенно проявляется за бегущей плоскостью', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'auto' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
 	{ id: 'feedback', group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой длинный световой хвост из прошлых кадров, как длинная выдержка. Хвост можно окрасить, а можно закрутить туннелем', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
@@ -133543,7 +133549,7 @@ function defaultState() {
 	};
 }
 
-const KEY = 'objglb.fx.v7';
+const KEY = 'objglb.fx.v8';
 
 // ───────────────────────────────────────────────────────────── формы
 
@@ -133712,6 +133718,9 @@ uniform vec2 uYR;
 uniform vec3 uMouse;
 uniform float uMouseOn;
 uniform sampler2D uSpecTex;
+uniform vec4 uCurlP, uSpecP, uWaveP, uWaveSrc, uPulseP, uVoxelP, uGlitchP, uBlast, uCloth, uClothT, uFlow, uDisP;
+float gGl = 0.0;
+float gCh = -1.0;
 uniform vec4 uCurl, uSpec, uWave, uTwist, uPulse, uVoxel, uJitter, uCursor, uMask, uMaskA, uGlitch, uContact, uShockP, uAlive;
 uniform vec4 uTrk[16];
 uniform vec4 uHand[12];
@@ -133892,18 +133901,91 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	vec3 pos = base;
 
 	if (uTwist.x > 0.001) {
-		float a = pos.y * uTwist.x * 1.6;
-		float c = cos(a);
-		float s = sin(a);
-		pos.xz = mat2(c, -s, s, c) * pos.xz;
+		float y01t = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
+		float tw = uTwist.x * (1.0 + (uTwist.z > 0.01 ? 0.35 * sin(t * uTwist.z * 2.0) : 0.0));
+		if (uTwist.y < 0.5) {
+			float a = pos.y * tw * 1.6;
+			float c = cos(a);
+			float s = sin(a);
+			pos.xz = mat2(c, -s, s, c) * pos.xz;
+		} else if (uTwist.y < 1.5) {
+			pos.x += y01t * y01t * tw * 0.9;
+			pos.y -= y01t * y01t * y01t * tw * 0.16;
+		} else {
+			pos.xz *= 1.0 + tw * 0.6 * (0.5 - y01t) * 2.0;
+		}
 	}
-	if (uWave.x > 0.001) pos += rad * sin(length(base) * uWave.y * 2.0 - t * 3.0) * uWave.x * 0.14;
+	if (uWave.x > 0.001) {
+		float wv = 0.0;
+		if (uWaveP.y < 0.5) {
+			wv = sin(distance(base, uWaveSrc.xyz) * uWave.y * 2.0 - t * 3.0 * uWaveP.x);
+		} else if (uWaveP.y < 1.5) {
+			float age = uTime - uWaveP.w;
+			if (age > 0.0) {
+				float d = distance(base, uWaveSrc.xyz);
+				float ring = age * uWaveP.x * 1.3;
+				wv = sin((d - ring) * uWave.y * 2.6) * exp(-abs(d - ring) * 2.5) * exp(-age * uWaveP.z);
+			}
+		} else {
+			vec3 wd = vec3(cos(uWaveSrc.w), 0.0, sin(uWaveSrc.w));
+			wv = sin(dot(base, wd) * uWave.y * 2.0 - t * 3.0 * uWaveP.x);
+		}
+		pos += rad * wv * uWave.x * 0.14;
+	}
 	if (uSpec.x > 0.001) {
-		float u = uSpec.y < 0.5 ? abs(atan(base.z, base.x)) / PI : clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
-		pos += rad * texture2D(uSpecTex, vec2(u, 0.5)).r * uSpec.x * 0.7;
+		float y01s = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
+		if (uSpec.y < 0.5) {
+			pos += rad * texture2D(uSpecTex, vec2(abs(atan(base.z, base.x)) / PI, 0.5)).r * uSpec.x * 0.7;
+		} else if (uSpec.y < 1.5) {
+			pos += rad * texture2D(uSpecTex, vec2(y01s, 0.5)).r * uSpec.x * 0.7;
+		} else if (uSpec.y < 2.5) {
+			float ub = floor(abs(atan(base.z, base.x)) / PI * uSpecP.y) / uSpecP.y;
+			pos += rad * texture2D(uSpecTex, vec2(ub, 0.5)).r * uSpec.x * 0.8;
+		} else {
+			float xs = clamp(abs(base.x) / 1.2, 0.0, 1.0);
+			pos.y += texture2D(uSpecTex, vec2(xs, 0.5)).r * uSpec.x * 0.8 * (0.35 + 0.65 * y01s);
+		}
 	}
-	pos += rad * uPulse.x * 0.28;
-	pos *= 1.0 + uPulse.x * 0.1;
+	float pe = uPulse.x;
+	if (uPulseP.x > 0.5) {
+		float age = uTime - uPulseP.z - length(base) * uPulseP.y;
+		float env = age > 0.0 ? exp(-age * 3.2 * uPulseP.w) * smoothstep(0.0, 0.04, age) : 0.0;
+		float age2 = age - 0.2;
+		env += age2 > 0.0 ? 0.55 * exp(-age2 * 3.2 * uPulseP.w) * smoothstep(0.0, 0.04, age2) : 0.0;
+		pe = uPulse.x * env * 1.6;
+		if (uPulseP.x > 1.5) {
+			pos.y *= 1.0 + pe * 0.2;
+			pos.xz *= 1.0 - pe * 0.11;
+			pe = 0.0;
+		}
+	}
+	pos += rad * pe * 0.28;
+	pos *= 1.0 + pe * 0.1;
+	if (uBlast.x > 0.001) {
+		float age = uTime - uBlast.w;
+		if (age > 0.0) {
+			float env = exp(-age * uBlast.y) * cos(age * uBlast.y * 3.0);
+			float rnd = 0.45 + 0.55 * mix(1.0, hash11(aIdx * 7.1), uBlast.z);
+			vec3 dir = normalize(rad + (vec3(hash11(aIdx), hash11(aIdx + 1.0), hash11(aIdx + 2.0)) - 0.5) * 0.7 * uBlast.z);
+			pos += dir * env * rnd * uBlast.x * 0.75;
+		}
+	}
+	if (uCloth.x > 0.001) {
+		float y01c = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
+		float wgt = uClothT.y < 0.5 ? pow(1.0 - y01c, 1.2) : uClothT.y < 1.5 ? pow(y01c, 1.2) : 1.0;
+		vec3 wd = vec3(cos(uCloth.y), 0.0, sin(uCloth.y));
+		vec3 pd = vec3(-wd.z, 0.0, wd.x);
+		float gust = 1.0 - uCloth.w + uCloth.w * (0.5 + 0.5 * sin(t * uClothT.x * 0.6 + dot(base, wd) * 0.9));
+		float fold = sin(dot(base, pd) * uCloth.z * 3.0 + dot(base, wd) * uCloth.z * 2.0 - t * uClothT.x * 2.6 + snoise(base * 1.3 + t * 0.2) * 1.6);
+		pos += wd * 0.28 * gust * uCloth.x * wgt + rad * fold * 0.13 * uCloth.x * wgt * (0.4 + gust);
+	}
+	if (uFlow.x > 0.001) {
+		vec3 fc = curlNoise(base * uFlow.y + vec3(0.0, t * uFlow.z * 0.1, 0.0));
+		vec3 tg = normalize(fc - rad * dot(fc, rad) + vec3(1e-4));
+		tg = tg * cos(uFlow.w) + cross(rad, tg) * sin(uFlow.w);
+		float ph = t * uFlow.z + hash11(aIdx * 5.3) * 6.2831;
+		pos += tg * sin(ph) * uFlow.x * 0.24;
+	}
 	if (uAlive.x > 0.001) {
 		float y01a = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
 		float br = sin(t * uAlive.y * 1.6);
@@ -133925,8 +134007,16 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	float dk = disK(base, aIdx);
 	if (dk > 0.0) {
 		pos += curlNoise(base * 1.8 + vec3(0.0, -t * 0.6, t * 0.3)) * dk * uDisT * 0.9;
-		pos.y -= dk * dk * uDis.z * 1.5;
-		pos.x += dk * uDis.w * 1.1;
+		if (uDisP.x < 0.5) {
+			pos.y -= dk * dk * uDis.z * 1.5;
+			pos.x += dk * uDis.w * 1.1;
+		} else if (uDisP.x < 1.5) {
+			pos.y += dk * dk * 0.9;
+			pos.x += dk * uDis.w * 0.6;
+		} else {
+			pos.y += dk * 0.75;
+			pos.xz += vec2(sin(t * 2.0 + aIdx * 40.0), cos(t * 1.7 + aIdx * 30.0)) * dk * 0.12;
+		}
 	}
 	if (uGrav.x > 0.001) {
 		vec3 gq = pos - uGravP.xyz;
@@ -134014,17 +134104,40 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	if (uCurl.x > 0.001) {
 		float thr = snoise(base * 1.8 + t * 0.3) * 0.5 + 0.5;
 		float det = smoothstep(0.35, 0.85, thr + uCurl.x * 0.12);
-		pos += curlNoise(base * uCurl.y + vec3(t * 0.4, t * 0.3, t * 0.5)) * det * uCurl.x * 0.8;
+		vec3 cn = curlNoise(base * uCurl.y + vec3(t * 0.4, t * 0.3, t * 0.5) * uCurlP.x) * det * uCurl.x * 0.8;
+		if (uCurlP.z > 0.5) {
+			vec3 fd = vec3(cos(uCurlP.y), 0.35, sin(uCurlP.y));
+			float ph = 0.5 + 0.5 * sin(t * uCurlP.x * 0.7 + hash11(aIdx * 3.7) * 6.2831);
+			cn += fd * ph * det * uCurl.x * 0.7;
+		}
+		pos += cn;
 	}
 	if (uGlitch.x > 0.001) {
 		float yg = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
 		float band = floor(yg * uGlitch.y);
-		float r = hash11(band * 13.7 + floor(t * 10.0));
-		if (r > 0.7) pos.x += (r - 0.7) * 3.3 * (hash11(band + 7.0) - 0.5) * uGlitch.x * 0.9;
+		float r = hash11(band * 13.7 + floor(t * 10.0 * uGlitchP.y));
+		if (r > 0.7) {
+			float shf = (r - 0.7) * 3.3 * (hash11(band + 7.0) - 0.5) * uGlitch.x * 0.9;
+			pos.x += shf;
+			pos.z += shf * 2.2 * (hash11(band + 3.0) - 0.5);
+			gGl = uGlitch.x;
+			if (uGlitchP.x > 0.5) {
+				float chn = floor(hash11(aIdx * 17.3) * 3.0);
+				pos.x += (chn - 1.0) * 0.045 * uGlitch.x;
+				gCh = chn;
+			}
+		}
 	}
 	if (uVoxel.x > 0.01) {
 		float g = mix(0.3, 0.035, clamp(uVoxel.x, 0.0, 1.0));
-		pos = mix(pos, (floor(pos / g) + 0.5) * g, smoothstep(0.0, 0.25, uVoxel.x));
+		if (uVoxelP.x > 1.5) g *= 1.0 + 0.35 * sin(t * uVoxelP.y * 2.0);
+		vec3 cell = floor(pos / g);
+		vec3 q = (cell + 0.5) * g;
+		if (uVoxelP.x > 0.5 && uVoxelP.x < 1.5) {
+			float h2 = hash11(dot(cell, vec3(12.9, 78.2, 37.7)));
+			q.y += (h2 - 0.5) * g * 2.0 * sin(t * uVoxelP.y * 1.5 + h2 * 6.2831);
+		}
+		pos = mix(pos, q, smoothstep(0.0, 0.25, uVoxel.x));
 	}
 	if (uJitter.x > 0.001) {
 		pos += vec3(sin(t * 17.0 + aIdx * 91.0), sin(t * 13.0 + aIdx * 57.0), sin(t * 11.0 + aIdx * 33.0)) * uJitter.x * 0.03;
@@ -134288,6 +134401,17 @@ void main() {
 			sl = (1.0 - smoothstep(uSlice.z * 0.4, uSlice.z, abs(coord - 0.5))) * uSlice.x;
 			vColor += (uSliceM.z > 0.5 ? vColor * 0.25 : uSliceC) * sl * 2.2;
 		}
+	}
+	// глитч: мерцание, строки-помехи и раздельные цветовые каналы
+	if (gGl > 0.0) {
+		vColor *= 0.72 + 0.28 * hash11(floor(uTime * 24.0) + floor(pos.y * 14.0));
+		vColor *= 1.0 - 0.28 * gGl * step(0.5, fract(pos.y * 38.0));
+		if (gCh > -0.5) vColor = mix(vColor, vColor * vec3(gCh < 0.5 ? 1.8 : 0.1, abs(gCh - 1.0) < 0.5 ? 1.8 : 0.1, gCh > 1.5 ? 1.8 : 0.1), min(1.0, gGl));
+	}
+	// горение: тлеющая кромка перед исчезновением
+	if (uDisP.x > 0.5 && uDisP.x < 1.5 && dkv > 0.0) {
+		float edge = smoothstep(0.02, 0.25, dkv) * (1.0 - smoothstep(0.25, 0.75, dkv));
+		vColor += vec3(1.0, 0.42, 0.08) * edge * 2.4;
 	}
 	vD = disp;
 	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
@@ -135637,6 +135761,17 @@ class EffectsEngine {
 		this.emit();
 	}
 
+	/** Отметка удара: от неё считают время пульс, взрыв и капли-волны */
+	_markBeat() {
+		this._tb = this._time;
+		const g = this.geometry;
+		if (g) {
+			const t = g.attributes.aTarget.array;
+			const i = Math.floor(Math.random() * (t.length / 3)) * 3;
+			(this._waveSrc ||= new THREE.Vector3()).set(t[i], t[i + 1], t[i + 2]);
+		}
+	}
+
 	_diffLabel(a, b) {
 		try {
 			const A = JSON.parse(a), B = JSON.parse(b);
@@ -135934,6 +136069,7 @@ class EffectsEngine {
 			if (bRaw > avg * 1.3 && bRaw > 0.3 && now - this._lastBeat > 190) {
 				this._lastBeat = now;
 				this.levels.beat = 1;
+				this._markBeat();
 			}
 			const kA = 1 - Math.pow(0.001, dt * 6); // быстрая атака
 			const kR = 1 - Math.pow(0.001, dt * 2.2); // плавный спад
@@ -136049,7 +136185,7 @@ class EffectsEngine {
 			uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 			uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
 			uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
-			uAlive: U(new THREE.Vector4()), uShape: U(1), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
+			uAlive: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uCloth: U(new THREE.Vector4()), uClothT: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 		};
 		const mk = (extra) =>
 			new THREE.ShaderMaterial({
@@ -136519,7 +136655,7 @@ class EffectsEngine {
 			// вид точек общий с вкладкой «Точки» редактора: форма, размер, цвет, затухание вдали
 			const pset = this.app.settings.point;
 			u.uSize.value = pset.size;
-			u.uShape.value = Math.max(0, ['square', 'circle', 'sphere', 'ring', 'diamond', 'plus'].indexOf(pset.shape));
+			u.uShape.value = this._eff(L.voxel) > 0.25 ? 0 : Math.max(0, ['square', 'circle', 'sphere', 'ring', 'diamond', 'plus'].indexOf(pset.shape));
 			u.uSolid.value.set(pset.solidColor);
 			u.uAtt.value = pset.attenuate ? 1 : 0;
 			u.uPR.value = this.app.viewport.renderer.getPixelRatio();
@@ -136556,14 +136692,39 @@ class EffectsEngine {
 					m.needsUpdate = true;
 				}
 			}
+			// ритм: отметка последнего удара. Без музыки эффекты бьют сами с заданным периодом
+			if (this._tb === undefined) this._tb = -9;
+			if (!this.playing && this._time - this._tb > (L.blast.period || 1.6)) this._markBeat();
 			u.uCurl.value.set(this._eff(L.curl), L.curl.scale, 0, 0);
-			u.uSpec.value.set(this._eff(L.spectrum), L.spectrum.axis === 'height' ? 1 : 0, 0, 0);
+			u.uCurlP.value.set(L.curl.speed, L.curl.flow, L.curl.mode === 'stream' ? 1 : 0, 0);
+			u.uSpec.value.set(this._eff(L.spectrum), { wool: 0, height: 1, bars: 2, terrain: 3 }[L.spectrum.mode] ?? 0, 0, 0);
+			u.uSpecP.value.set(0, L.spectrum.bars, 0, 0);
 			u.uWave.value.set(this._eff(L.wave), L.wave.freq, 0, 0);
-			u.uTwist.value.set(this._eff(L.twist), 0, 0, 0);
-			u.uPulse.value.set(this._eff(L.pulse), 0, 0, 0);
+			{
+				const W = L.wave;
+				const wm = { rings: 0, drops: 1, plane: 2 }[W.mode] ?? 0;
+				const sw = !this._waveSrc ? (this._waveSrc = new THREE.Vector3()) : this._waveSrc;
+				const src = wm === 0 && W.origin === 'cursor' && this.mouseOn ? this.mouse : wm === 1 ? sw : new THREE.Vector3();
+				u.uWaveSrc.value.set(src.x, src.y, src.z, W.dir);
+				u.uWaveP.value.set(W.speed, wm, W.decay, this._tb);
+			}
+			u.uTwist.value.set(this._eff(L.twist), { twist: 0, bend: 1, taper: 2 }[L.twist.mode] ?? 0, L.twist.speed, 0);
+			{
+				const P = L.pulse;
+				const pm = { flat: 0, shell: 1, squash: 2 }[P.mode] ?? 1;
+				u.uPulse.value.set(pm === 0 ? this._eff(P) : P.on ? P.amount : 0, 0, 0, 0);
+				u.uPulseP.value.set(pm, P.delay, this._tb, P.speed);
+			}
+			u.uBlast.value.set(L.blast.on ? this._eff(L.blast) : 0, L.blast.decay, L.blast.random, this._tb);
+			u.uCloth.value.set(this._eff(L.cloth), L.cloth.wind, L.cloth.fold, L.cloth.gust);
+			u.uClothT.value.set(L.cloth.speed, { top: 0, bottom: 1, none: 2 }[L.cloth.anchor] ?? 0, 0, 0);
+			u.uFlow.value.set(this._eff(L.flow), L.flow.scale, L.flow.speed, L.flow.dir);
 			u.uVoxel.value.set(clamp(this._eff(L.voxel), 0, 1), 0, 0, 0);
+			u.uVoxelP.value.set({ grid: 0, lego: 1, breathe: 2 }[L.voxel.mode] ?? 0, L.voxel.speed, 0, 0);
 			u.uJitter.value.set(this._eff(L.jitter), 0, 0, 0);
 			u.uGlitch.value.set(this._eff(L.glitch), L.glitch.slices, 0, 0);
+			u.uGlitchP.value.set(L.glitch.rgb === 'on' ? 1 : 0, L.glitch.speed, 0, 0);
+			u.uDisP.value.set({ wind: 0, burn: 1, bubbles: 2 }[L.dissolve.style] ?? 0, 0, 0, 0);
 			u.uCursor.value.set(this._eff(L.cursor), L.cursor.radius, L.cursor.mode === 'attract' ? -1 : 1, 0);
 
 			// Распад: взрыв, пока форма разрушена, и сборка дугами после
@@ -136974,6 +137135,208 @@ class EffectsEngine {
 }
 
 };
+__defs['src/fx-previews.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'drawPreview', () => drawPreview);
+__def(__exports, 'attachPreview', () => attachPreview);
+// Маленькие живые превью эффектов в списке слева: условное облако из точек, на которое действует упрощённая копия эффекта.
+const TAU = Math.PI * 2;
+
+// условная форма: кольцо из точек и внутренний круг
+const PTS = [];
+for (let i = 0; i < 44; i++) {
+	const a = (i / 44) * TAU;
+	PTS.push({ x: Math.cos(a) * 0.82, y: Math.sin(a) * 0.82, a, h: (i * 0.618) % 1, r: 0.82 });
+}
+for (let i = 0; i < 20; i++) {
+	const a = (i / 20) * TAU + 0.3;
+	PTS.push({ x: Math.cos(a) * 0.42, y: Math.sin(a) * 0.42, a, h: (i * 0.371 + 0.2) % 1, r: 0.42 });
+}
+
+/** Каждая функция получает точку и время и возвращает [dx, dy, альфа, масштаб размера] */
+const FN = {
+	curl: (p, t) => [Math.sin(t * 2 + p.a * 3) * 0.22, Math.cos(t * 1.7 + p.a * 2) * 0.22, 1, 1],
+	physics: (p, t) => {
+		const k = (t * 0.5) % 1.6;
+		return [p.x * k * 0.3, p.y * k * 0.2 + Math.min(1, k * k) * 0.9 * (0.5 + p.h), 1, 1];
+	},
+	spectrum: (p, t) => {
+		const e = 0.5 + 0.5 * Math.sin(t * 4 + Math.floor(p.a * 3) * 1.7);
+		return [Math.cos(p.a) * e * 0.4, Math.sin(p.a) * e * 0.4, 1, 1];
+	},
+	wave: (p, t) => {
+		const d = Math.sin(p.r * 7 - t * 5) * 0.16;
+		return [Math.cos(p.a) * d, Math.sin(p.a) * d, 1, 1];
+	},
+	twist: (p, t) => {
+		const a = p.y * Math.sin(t * 1.5) * 1.1;
+		return [p.x * Math.cos(a) - p.y * Math.sin(a) * 0.4 - p.x, p.y * Math.cos(a * 0.4) - p.y + p.x * Math.sin(a) * 0.2, 1, 1];
+	},
+	pulse: (p, t) => {
+		const k = Math.max(0, Math.sin(t * 4 - p.r * 2.5));
+		const e = k * k * k * 0.3;
+		return [p.x * e, p.y * e, 1, 1 + e];
+	},
+	blast: (p, t) => {
+		const a = (t * 1.3) % 2;
+		const e = Math.exp(-a * 2.2) * Math.cos(a * 6) * (0.5 + p.h);
+		return [p.x * e * 0.7, p.y * e * 0.7, 1, 1];
+	},
+	cloth: (p, t) => [Math.sin(t * 3 + p.x * 4 + p.y * 3) * 0.1 + 0.12, Math.sin(t * 3.3 + p.x * 5) * 0.12 * (p.y + 1) * 0.5, 1, 1],
+	flow: (p, t) => {
+		const s = Math.sin(t * 2 + p.h * 6.28) * 0.3;
+		return [-Math.sin(p.a) * s, Math.cos(p.a) * s, 1, 1];
+	},
+	alive: (p, t) => {
+		const b = 1 + Math.sin(t * 2.2) * 0.07 + Math.max(0, Math.sin(t * 5.5)) * 0.05;
+		return [p.x * (b - 1), p.y * (b - 1), 1, 1];
+	},
+	dissolve: (p, t) => {
+		const k = Math.max(0, Math.min(1, ((t * 0.5) % 1.4) * 1.4 - (1 - (p.y + 1) / 2) * 0.9));
+		return [Math.sin(t * 3 + p.h * 9) * k * 0.3 + k * 0.4, -k * k * 0.5, 1 - k, 1 - k * 0.6];
+	},
+	voxel: (p, t) => {
+		const g = 0.32 + 0.1 * Math.sin(t * 2);
+		return [(Math.floor(p.x / g) + 0.5) * g - p.x, (Math.floor(p.y / g) + 0.5) * g - p.y, 1, 1.3];
+	},
+	glitch: (p, t) => {
+		const band = Math.floor((p.y + 1) * 4);
+		const r = Math.abs(Math.sin(band * 12.9 + Math.floor(t * 6) * 4.1));
+		return [r > 0.75 ? (r - 0.75) * 2.4 : 0, 0, 1, 1];
+	},
+	links: (p, t) => [Math.sin(t + p.a) * 0.04, 0, 1, 1],
+	slice: (p, t) => {
+		const y = ((t * 0.6) % 1) * 2 - 1;
+		return [0, 0, Math.abs(p.y - y) < 0.25 ? 1 : 0.28, 1 + (Math.abs(p.y - y) < 0.25 ? 0.5 : 0)];
+	},
+	feedback: (p, t) => [Math.cos(t + p.a) * 0.06, Math.sin(t + p.a) * 0.06, 1, 1],
+	echo: (p, t) => [Math.cos(t) * 0.1, 0, 1, 1],
+	tracking: (p, t) => [0, 0, 1, 1],
+	cursor: (p, t) => {
+		const mx = Math.cos(t * 1.4) * 0.6;
+		const my = Math.sin(t * 1.9) * 0.4;
+		const dx = p.x - mx;
+		const dy = p.y - my;
+		const d = Math.hypot(dx, dy) + 0.01;
+		const f = Math.max(0, 1 - d / 0.8);
+		return [(dx / d) * f * 0.35, (dy / d) * f * 0.35, 1, 1];
+	},
+	brush: (p, t) => {
+		const mx = Math.cos(t * 1.4) * 0.6;
+		const d = Math.hypot(p.x - mx, p.y);
+		return [0, 0, 1, 1 + Math.max(0, 1 - d / 0.7) * 0.9];
+	},
+	shock: (p, t) => {
+		const r = ((t * 0.7) % 1.4) * 1.2;
+		const e = Math.exp(-Math.pow((p.r - r) * 4, 2)) * 0.3;
+		return [p.x * e, p.y * e, 1, 1];
+	},
+	camTrack: (p, t) => [Math.sin(t * 2) * 0.1, Math.cos(t * 2) * 0.1, 1, 1],
+	gravity: (p, t) => {
+		const a = t * (0.6 + 0.8 / (p.r + 0.3));
+		return [p.x * Math.cos(a) - p.y * Math.sin(a) - p.x, (p.x * Math.sin(a) + p.y * Math.cos(a)) * 0.45 - p.y, 1, 1];
+	},
+};
+
+function drawPreview(ctx, id, t, color, w, h) {
+	ctx.clearRect(0, 0, w, h);
+	const fn = FN[id] || FN.curl;
+	const cx = w / 2;
+	const cy = h / 2;
+	const sc = Math.min(w, h) * 0.46;
+	ctx.fillStyle = color;
+	if (id === 'feedback') {
+		for (let k = 5; k >= 0; k--) {
+			ctx.globalAlpha = 0.5 / (k + 1);
+			for (const p of PTS) {
+				const [dx, dy] = fn(p, t - k * 0.12);
+				ctx.fillRect(cx + (p.x + dx) * sc, cy + (p.y + dy) * sc, 1.4, 1.4);
+			}
+		}
+	}
+	if (id === 'echo') {
+		for (let k = 2; k >= 1; k--) {
+			ctx.globalAlpha = 0.25;
+			for (const p of PTS) ctx.fillRect(cx + (p.x * Math.cos(k * 0.5) - p.y * Math.sin(k * 0.5) * 0.3) * sc, cy + (p.y + 0.08 * k) * sc, 1.3, 1.3);
+		}
+	}
+	const pos = PTS.map((p) => {
+		const [dx, dy, a, s] = fn(p, t);
+		return [cx + (p.x + dx) * sc, cy + (p.y + dy) * sc, a, s];
+	});
+	if (id === 'links') {
+		ctx.globalAlpha = 0.5;
+		ctx.strokeStyle = color;
+		ctx.lineWidth = 0.7;
+		ctx.beginPath();
+		for (let i = 0; i < pos.length; i++) for (let j = i + 1; j < pos.length; j++) if (Math.hypot(pos[i][0] - pos[j][0], pos[i][1] - pos[j][1]) < sc * 0.62) {
+			ctx.moveTo(pos[i][0], pos[i][1]);
+			ctx.lineTo(pos[j][0], pos[j][1]);
+		}
+		ctx.stroke();
+	}
+	if (id === 'tracking') {
+		ctx.globalAlpha = 1;
+		ctx.strokeStyle = color;
+		ctx.lineWidth = 1;
+		const bx = cx + Math.cos(t * 1.2) * sc * 0.45;
+		const by = cy + Math.sin(t * 1.6) * sc * 0.3;
+		const k = 3.5;
+		ctx.beginPath();
+		for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+			const x = bx + sx * 6;
+			const y = by + sy * 5;
+			ctx.moveTo(x - sx * k, y);
+			ctx.lineTo(x, y);
+			ctx.lineTo(x, y - sy * k);
+		}
+		ctx.stroke();
+	}
+	for (const [x, y, a, s] of pos) {
+		ctx.globalAlpha = Math.max(0, Math.min(1, a)) * 0.9;
+		const r = 1.5 * s;
+		ctx.fillRect(x - r / 2, y - r / 2, r, r);
+	}
+	ctx.globalAlpha = 1;
+}
+
+/** Подключает живое превью к canvas: движется, пока над строкой мышь или эффект выбран, иначе показывает один кадр */
+function attachPreview(canvas, id, card, getColor) {
+	const dpr = Math.min(2, window.devicePixelRatio || 1);
+	const W = 34;
+	const H = 24;
+	canvas.width = W * dpr;
+	canvas.height = H * dpr;
+	canvas.style.width = W + 'px';
+	canvas.style.height = H + 'px';
+	const ctx = canvas.getContext('2d');
+	let raf = 0;
+	let t0 = 0;
+	const frame = (now) => {
+		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		drawPreview(ctx, id, (now - t0) / 1000 + 0.6, getColor(), W, H);
+		raf = requestAnimationFrame(frame);
+	};
+	const start = () => {
+		if (raf) return;
+		t0 = performance.now();
+		raf = requestAnimationFrame(frame);
+	};
+	const stop = () => {
+		if (!raf) return;
+		cancelAnimationFrame(raf);
+		raf = 0;
+		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		drawPreview(ctx, id, 0.9, getColor(), W, H);
+	};
+	card.addEventListener('pointerenter', start);
+	card.addEventListener('pointerleave', stop);
+	ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+	drawPreview(ctx, id, 0.9, getColor(), W, H);
+	return { refresh: () => !raf && drawPreview(ctx, id, 0.9, getColor(), W, H) };
+}
+
+};
 __defs['src/panel-effects.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'makeModelProvider', () => makeModelProvider);
@@ -136987,6 +137350,7 @@ const { sampleSurface, overrideMats } = __req('src/pointcloud.js');
 const { getDevice } = __req('src/device-card.js');
 const { formatCount } = __req('src/capabilities.js');
 const { createMediaPanel } = __req('src/panel-media.js');
+const { attachPreview } = __req('src/fx-previews.js');
 const { SHAPES: POINT_SHAPE_LIST } = __req('src/panel-points.js');
 const { FX_SHAPES, FX_ACTIONS, FX_GESTURE_PRESETS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } = __req('src/effects-engine.js');
 
@@ -137345,7 +137709,8 @@ function createEffectsPanel(app, root, engine) {
 			});
 			reactRow.hidden = L.band === 'none';
 			body.append(field('Реагирует на звук', band.el, { wide: true }), reactRow);
-			const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, h('span', { class: 'fx-ic', html: icon(def.icon, 16) }), h('span', { class: 'fx-layer-title' }, def.name), sw.el);
+			const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
+			const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, h('span', { class: 'fx-ic', html: icon(def.icon, 16) }), h('span', { class: 'fx-layer-title' }, def.name), prevCanvas, sw.el);
 			const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right' }, row);
 			const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, h('div', { class: 'fx-insp-head' }, h('span', { class: 'fx-ic', html: icon(def.icon, 18) }), h('div', {}, h('b', {}, def.name), h('span', {}, def.hint))), body);
 			row.addEventListener('click', (e) => {
@@ -137361,6 +137726,7 @@ function createEffectsPanel(app, root, engine) {
 				}
 			});
 			fbody.append(card);
+			attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
 			inspBox.append(insp);
 			cards.push({ def, L, sw, amount, react, band, reactRow, extraCtl, applyWhen, card, insp, fhead });
 		}
