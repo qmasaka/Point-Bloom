@@ -137240,11 +137240,18 @@ const DRAW = {
 		}
 	},
 	flow: (c, t) => {
-		// контур формы и яркие штрихи, скользящие по поверхности вдоль линий потока
-		for (const [x, y] of ring(26, 10)) dot(c, x * 1.2, y * 0.85, 1.2, 0.3);
-		for (let j = 0; j < 3; j++) for (let k = 0; k < 6; k++) {
-			const a = ((t * 0.9 + j * 0.34 - k * 0.045) % 1) * Math.PI - Math.PI / 2;
-			dot(c, Math.sin(a) * 11 * 1.1, (j - 1) * 4.6 + Math.cos(a) * 1.5, 1.7, 1 - k * 0.15);
+		// линии потока: яркие штрихи бегут по волнистым линиям в одну сторону
+		for (let j = 0; j < 4; j++) {
+			const y0 = (j - 1.5) * 5.2;
+			for (let i = 0; i < 14; i++) {
+				const x = (i - 6.5) * 2.2;
+				dot(c, x, y0 + Math.sin(x * 0.4 + j) * 1.8, 1.1, 0.25);
+			}
+			const u = ((t * 0.5 + j * 0.27) % 1) * 28 - 14;
+			for (let k = 0; k < 6; k++) {
+				const x = u - k * 1.3;
+				if (x > -14 && x < 14) dot(c, x, y0 + Math.sin(x * 0.4 + j) * 1.8, 2.2 - k * 0.25, 1 - k * 0.15);
+			}
 		}
 	},
 	cloth: (c, t) => {
@@ -137355,31 +137362,19 @@ const DRAW = {
 		}
 	},
 	links: (c, t) => {
-		// облако из точек, соединённых нитями, и свет, бегущий по нитям
-		const pts = [];
-		for (let i = 0; i < 12; i++) {
-			const a = (i / 12) * TAU + Math.sin(t + i) * 0.1;
-			pts.push([Math.cos(a) * 10, Math.sin(a) * 7.5]);
-		}
-		for (let i = 0; i < 5; i++) pts.push([Math.cos(i * 1.26 + 0.6) * 4.5, Math.sin(i * 1.26 + 0.6) * 3.4]);
-		const edges = [];
-		pts.forEach((p, i) => pts.forEach((q, j) => {
-			if (j > i && Math.hypot(p[0] - q[0], p[1] - q[1]) < 7.2) edges.push([i, j]);
-		}));
-		c.globalAlpha = 0.7;
+		// спокойная картинка: несколько точек и тонкие нити между ближайшими
+		const pts = [[-10, -3], [-5, -7], [1, -4], [8, -7], [11, 0], [6, 5], [-1, 7], [-8, 5], [-1, 0]];
+		const e = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 0], [8, 0], [8, 2], [8, 4], [8, 6], [1, 8], [5, 8]];
+		c.globalAlpha = 0.65;
 		c.strokeStyle = c.fillStyle;
 		c.lineWidth = 0.9;
 		c.beginPath();
-		for (const [i, j] of edges) {
+		for (const [i, j] of e) {
 			c.moveTo(pts[i][0], pts[i][1]);
 			c.lineTo(pts[j][0], pts[j][1]);
 		}
 		c.stroke();
-		edges.forEach(([i, j], k) => {
-			const u = (t * 1.3 + k * 0.37) % 1;
-			if (u < 0.5) dot(c, pts[i][0] + (pts[j][0] - pts[i][0]) * u * 2, pts[i][1] + (pts[j][1] - pts[i][1]) * u * 2, 2.1, 1);
-		});
-		pts.forEach((p) => dot(c, p[0], p[1], 1.6, 1));
+		pts.forEach((p, i) => dot(c, p[0] + Math.sin(t * 0.8 + i) * 0.4, p[1] + Math.cos(t * 0.7 + i) * 0.4, 2.4, 1));
 	},
 	slice: (c, t) => {
 		const y = Math.sin(t * 2.2) * 8;
@@ -137397,21 +137392,28 @@ const DRAW = {
 		for (let k = 3; k >= 0; k--) for (const [x, y] of ring(14, 5.5)) dot(c, x * 1.15 + (k - 1.5) * 4 * Math.cos(t * 1.4), y * 0.9 + Math.sin(t * 1.4 + k) * 0.8, 1.5, 0.95 - k * 0.22);
 	},
 	cursor: (c, t) => {
-		const mx = Math.cos(t * 1.6) * 6;
-		const my = Math.sin(t * 2.1) * 3;
-		for (const [x, y] of ring(26, 9.5)) {
-			const dx = x * 1.3 - mx;
+		// поле точек и курсор: вокруг него образуется пустое место, точки отодвигаются
+		const mx = Math.cos(t * 1.1) * 4;
+		const my = Math.sin(t * 1.4) * 2.5;
+		for (let j = 0; j < 7; j++) for (let i = 0; i < 11; i++) {
+			const x = (i - 5) * 2.6;
+			const y = (j - 3) * 2.8;
+			const dx = x - mx;
 			const dy = y - my;
 			const d = Math.hypot(dx, dy) + 0.01;
-			const f = Math.max(0, 1 - d / 9) * 5;
-			dot(c, x * 1.3 + (dx / d) * f, y + (dy / d) * f, 1.5);
+			const f = Math.max(0, 1 - d / 9) * 5.5;
+			dot(c, x + (dx / d) * f, y + (dy / d) * f, 1.4, 0.8);
 		}
-		c.beginPath();
-		c.moveTo(mx, my);
-		c.lineTo(mx + 1.5, my + 5);
-		c.lineTo(mx + 3, my + 3);
-		c.closePath();
 		c.globalAlpha = 1;
+		c.beginPath();
+		c.moveTo(mx - 1, my - 3);
+		c.lineTo(mx - 1, my + 4.5);
+		c.lineTo(mx + 1, my + 2.8);
+		c.lineTo(mx + 3, my + 6);
+		c.lineTo(mx + 4.2, my + 5.3);
+		c.lineTo(mx + 2.4, my + 2.2);
+		c.lineTo(mx + 5, my + 1.8);
+		c.closePath();
 		c.fill();
 	},
 	brush: (c, t) => {
@@ -137449,12 +137451,21 @@ const DRAW = {
 		dot(c, 0, 0, 2.4, 1);
 	},
 	camTrack: (c, t) => {
-		const wob = Math.sin(t * 2.5) * 0.15;
-		for (let f = 0; f < 5; f++) {
-			const a = -1.9 + f * 0.38 + wob;
-			for (let k = 1; k <= 3; k++) dot(c, Math.cos(a) * k * 3.4, 6 + Math.sin(a) * k * 3.4, k === 3 ? 2.1 : 1.4, 0.55 + 0.15 * k);
+		// раскрытая ладонь с пятью пальцами; пальцы чуть шевелятся
+		const w = Math.sin(t * 3) * 0.05;
+		const fingers = [[-6.5, 0, -0.38, 7], [-3, -2, -0.12, 9.5], [0.2, -2.5, 0, 10.5], [3.5, -2, 0.12, 9.5], [6.5, 0, 0.38, 7]];
+		for (const [fx, fy, ang, len] of fingers) {
+			const n = Math.round(len / 2.4);
+			for (let k = 0; k <= n; k++) {
+				const a = ang + w * (k / n);
+				dot(c, fx + Math.sin(a) * k * 2.4, fy - Math.cos(a) * k * 2.4 + 1, k === n ? 2.2 : 1.6, 0.85);
+			}
 		}
-		for (const [x, y] of ring(9, 4)) dot(c, x, y + 6, 1.7, 0.7);
+		for (let i = 0; i < 12; i++) {
+			const a = (i / 12) * TAU;
+			dot(c, Math.cos(a) * 7, 4 + Math.sin(a) * 5, 1.5, 0.7);
+		}
+		dot(c, 0, 4, 2, 0.5);
 	},
 };
 
