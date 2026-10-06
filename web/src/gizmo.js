@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 const AXES = [
-{ id: '+x', v: [1, 0, 0], color: '#e5565f', label: 'X', view: 'right' },
-{ id: '-x', v: [-1, 0, 0], color: '#e5565f', label: '', view: 'left' },
+{ id: '+x', v: [1, 0, 0], color: '#86c85a', label: 'Y', view: 'right' },
+{ id: '-x', v: [-1, 0, 0], color: '#86c85a', label: '', view: 'left' },
 { id: '+y', v: [0, 1, 0], color: '#4f8ff0', label: 'Z', view: 'top' },
 { id: '-y', v: [0, -1, 0], color: '#4f8ff0', label: '', view: 'bottom' },
-{ id: '+z', v: [0, 0, 1], color: '#86c85a', label: 'Y', view: 'front' },
-{ id: '-z', v: [0, 0, -1], color: '#86c85a', label: '', view: 'back' },
+{ id: '+z', v: [0, 0, 1], color: '#e5565f', label: 'X', view: 'front' },
+{ id: '-z', v: [0, 0, -1], color: '#e5565f', label: '', view: 'back' },
 ];
 export class AxisGizmo {
 constructor(app, canvas) {
