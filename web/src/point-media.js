@@ -36,7 +36,7 @@ this.dirty = true;
 this._lastKey = -1;
 this._xy = null;
 this.recording = false;
-this.muted = false;
+this.muted = true;
 this.onMute = null;
 }
 get ready() {
@@ -104,6 +104,8 @@ return;
 }
 const url = URL.createObjectURL(file);
 const isVideo = (file.type || '').startsWith('video') || /\.(mp4|webm|mov|m4v|ogv)$/i.test(name);
+this.muted = true;
+this.onMute = null;
 let el;
 try {
 if (isVideo) {

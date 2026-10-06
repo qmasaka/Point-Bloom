@@ -1,5 +1,5 @@
 import { h, formatInt } from './util.js';
-import { section, field, slider, segmented, button } from './ui-kit.js';
+import { section, field, slider, segmented, switchRow, button } from './ui-kit.js';
 export function createMediaPanel(app, root, { fx = false } = {}) {
 const mc = app.media;
 const pm = mc.pm;
@@ -7,6 +7,7 @@ const md = app.settings.media;
 const save = () => app.saveSettings();
 const eng = () => app.ui.effectsEngine;
 const info = h('div', { class: 'field-hint' });
+const sound = switchRow('Звук видео', { value: !pm.muted, onChange: (v) => { pm.setMuted(!v); mc.emit(); } });
 const pts = slider({ log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
 const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
 const depth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; mc.styleChanged(); }, onChange: save });
@@ -22,13 +23,15 @@ const note = h('div', { class: 'field-hint' }, fx ? 'Видео продолжа
 const ptsRow = field('Точек', pts.el);
 const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recInfo);
 const saveBox = h('div', { class: 'fx-save-row' }, fx ? bScene : '', bPly, bPcv, bZip);
-const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
+const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
 if (root) root.append(sec.el);
 function sync() {
 const ready = pm.ready;
 if (fx) sec.el.hidden = !ready;
 const hasRec = !!pm.rec;
 info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : '';
+sound.el.hidden = pm.kind !== 'video';
+sound.set(!pm.muted);
 ptsRow.hidden = !ready || pm.isRec;
 pts.set(md.pts);
 relief.set(md.relief);

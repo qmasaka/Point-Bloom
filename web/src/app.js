@@ -95,7 +95,9 @@ this.bus.emit('transform');
 wirePointer() {
 this.bus.on('click', (e) => {
 const hit = this.viewport.pick(e.clientX, e.clientY);
-this.model.select(hit ? hit.object : null, { add: e.shiftKey });
+let obj = hit ? hit.object : null;
+if (obj && !e.altKey) while (obj.parent && obj.parent !== this.viewport.root) obj = obj.parent;
+this.model.select(obj, { add: e.shiftKey });
 });
 this.bus.on('dblclick', (e) => {
 const hit = this.viewport.pick(e.clientX, e.clientY);

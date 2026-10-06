@@ -148,15 +148,18 @@ row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 		if (e.key === 'Enter') nameInput.blur();
 	});
 
+	// поля X, Y, Z совпадают с осями гизмо (Z вверх): X = внутренняя ось z, Y = x, Z = y
+	const PERM = [2, 0, 1];
 	const tf = { p: [], r: [], s: [] };
+	const fromFields = (arr) => {
+		const out = [0, 0, 0];
+		arr.forEach((f, i) => (out[PERM[i]] = parseFloat(f.input.value) || 0));
+		return out;
+	};
 	const apply = () => {
 		const o = model.selected;
 		if (!o) return;
-		ops.setTransform(o, {
-			position: tf.p.map((f) => parseFloat(f.input.value) || 0),
-			rotation: tf.r.map((f) => parseFloat(f.input.value) || 0),
-			scale: tf.s.map((f) => parseFloat(f.input.value) || 0),
-		});
+		ops.setTransform(o, { position: fromFields(tf.p), rotation: fromFields(tf.r), scale: fromFields(tf.s) });
 	};
 	const mk = (arr, axis, step, cls, digits, min) => {
 		const f = numberField({ value: 0, step, axis, digits, cls, min, onChange: () => apply() });
@@ -181,13 +184,18 @@ row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 		objBody.hidden = !o;
 		if (!o) return;
 		nameInput.value = o.name || '';
-		o.position.toArray().forEach((v, i) => tf.p[i].set(v));
+		const pos = o.position.toArray();
 		const e = o.rotation;
-		[e.x, e.y, e.z].forEach((v, i) => tf.r[i].set(deg(v)));
-		o.scale.toArray().forEach((v, i) => tf.s[i].set(v));
+		const rot = [e.x, e.y, e.z];
+		const sc = o.scale.toArray();
+		for (let i = 0; i < 3; i++) {
+			tf.p[i].set(pos[PERM[i]]);
+			tf.r[i].set(deg(rot[PERM[i]]));
+			tf.s[i].set(sc[PERM[i]]);
+		}
 		const b = app.viewport.getBounds(o);
 		const s = b.getSize(new THREE.Vector3());
-		root.querySelector('#dimsVal').textContent = b.isEmpty() ? 'нет геометрии' : `${fmt(s.x, 3)} × ${fmt(s.y, 3)} × ${fmt(s.z, 3)}`;
+		root.querySelector('#dimsVal').textContent = b.isEmpty() ? 'нет геометрии' : `${fmt(s.z, 3)} × ${fmt(s.x, 3)} × ${fmt(s.y, 3)}`;
 	}
 
 	// --------------------------------------------------------- инструменты

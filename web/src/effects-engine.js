@@ -37,7 +37,7 @@ export const FX_LAYERS = [
 { id: 'pulse', group: 'Движение', name: 'Пульс', icon: 'pulse', hint: 'Форма бьётся, как сердце: волна расширения бежит от центра к краю', max: 2, def: { on: false, amount: 0.8, band: 'none', react: 0, mode: 'shell', delay: 0.35, speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['shell', 'Бегущая оболочка'], ['squash', 'Сжатие и растяжение'], ['flat', 'Вся форма сразу']] }, { key: 'delay', label: 'Задержка к краю', min: 0, max: 1, step: 0.02, when: ['mode', ['shell', 'squash']] }, { key: 'speed', label: 'Скорость затухания', min: 0.3, max: 3, step: 0.05 }] },
 { id: 'blast', group: 'Движение', name: 'Взрыв по биту', icon: 'asterisk', hint: 'На каждый удар точки отлетают от формы и пружинят обратно с перелётом', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, decay: 2.2, random: 0.6, period: 1.6 }, extras: [{ key: 'decay', label: 'Возврат (пружина)', min: 0.8, max: 6, step: 0.1 }, { key: 'random', label: 'Разброс направлений', min: 0, max: 1, step: 0.05 }, { key: 'period', label: 'Без музыки бьёт раз в, с', min: 0.4, max: 5, step: 0.1 }] },
 { id: 'cloth', group: 'Движение', name: 'Ткань и ветер', icon: 'flag', hint: 'Форма колышется, как ткань на ветру: бегут складки, порывы сменяют друг друга', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, wind: 0.8, fold: 1.2, gust: 0.6, speed: 1, anchor: 'top' }, extras: [{ key: 'wind', label: 'Направление ветра', min: 0, max: 6.28, step: 0.1 }, { key: 'fold', label: 'Размер складок', min: 0.3, max: 3, step: 0.05 }, { key: 'gust', label: 'Порывистость', min: 0, max: 1, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'anchor', label: 'Закреплена', type: 'seg', options: [['top', 'Сверху'], ['bottom', 'Снизу'], ['none', 'Нигде']] }] },
-{ id: 'flow', group: 'Движение', name: 'Течение по поверхности', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, поверхность выглядит живой, а силуэт не меняется', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
+{ id: 'flow', group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, поверхность выглядит живой, а силуэт не меняется', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
 { id: 'alive', group: 'Движение', name: 'Живая форма', icon: 'heartbeat', hint: 'Форма дышит, у неё бьётся сердце, и она с любопытством тянется к курсору', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, breath: 0.6, heart: 0.7, bpm: 62, lean: 0.8 }, extras: [{ key: 'breath', label: 'Дыхание', min: 0.2, max: 2, step: 0.05 }, { key: 'heart', label: 'Сердцебиение', min: 0, max: 1.5, step: 0.05 }, { key: 'bpm', label: 'Пульс, уд/мин', min: 40, max: 140, step: 1, int: true }, { key: 'lean', label: 'Тянется к курсору', min: 0, max: 1.5, step: 0.05 }] },
 { id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Частицы отрываются от формы, уносятся ветром и гаснут, пока модель не исчезнет. Потом она собирается обратно', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', order: 'top', style: 'wind', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.8 }, extras: [{ key: 'style', label: 'Как исчезает', type: 'select', options: [['wind', 'Уносит ветром'], ['burn', 'Горение: пепел и угли'], ['bubbles', 'Пузыри всплывают']] }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'order', label: 'С какой стороны', type: 'seg', options: [['top', 'Сверху'], ['noise', 'Пятнами'], ['bottom', 'Снизу']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер в сторону', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Завихрения', min: 0, max: 2, step: 0.05 }] },
 { id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке и становятся квадратами: сетка, «Лего» или дыхание', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1, mode: 'grid', speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['grid', 'Сетка'], ['lego', 'Лего'], ['breathe', 'Дыхание']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe']] }] },
@@ -54,6 +54,27 @@ export const FX_LAYERS = [
 { id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки и пальцы. Каждому жесту назначается своё действие: ладонь, кулак, щипок, указательный палец', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush', g_peace: 'wave', g_rock: 'fx:glitch', g_thumb: 'gravity', power: 0.35, radius: 0.35, depth: 0.85, spin: 5, inertia: 0.6, axis: 'y', clay: 0.5, elastic: 0.6, stretch: 'off', keep: 'on', smooth: 0.5, sens: 0.6, hold: 0.12, skeleton: 'on', preview: 'on' }, extras: [{ type: 'preset' }, { type: 'title', label: 'Что делает жест' }, { key: 'g_palm', label: 'Ладонь (пальцы раскрыты)', type: 'select', options: FX_ACTIONS }, { key: 'g_fist', label: 'Кулак', type: 'select', options: FX_ACTIONS }, { key: 'g_pinch', label: 'Щипок (большой + указательный)', type: 'select', options: FX_ACTIONS }, { key: 'g_point', label: 'Указательный палец', type: 'select', options: FX_ACTIONS }, { key: 'g_peace', label: 'Два пальца (знак мира)', type: 'select', options: FX_ACTIONS }, { key: 'g_rock', label: 'Рога (указательный и мизинец)', type: 'select', options: FX_ACTIONS }, { key: 'g_thumb', label: 'Большой палец вверх', type: 'select', options: FX_ACTIONS }, { type: 'title', label: 'Касание пальцами' }, { key: 'power', label: 'Мощность', min: 0.05, max: 1.5, step: 0.05 }, { key: 'radius', label: 'Радиус', min: 0.02, max: 0.9, step: 0.01 }, { key: 'depth', label: 'Глубина касания', min: 0.1, max: 1.5, step: 0.05 }, { type: 'title', label: 'Вращение' }, { key: 'spin', label: 'Скорость', min: 1, max: 14, step: 0.5 }, { key: 'inertia', label: 'Инерция', min: 0, max: 0.98, step: 0.02 }, { key: 'axis', label: 'Оси', type: 'seg', options: [['y', 'Вокруг'], ['xy', 'Свободно']] }, { type: 'title', label: 'Лепка' }, { key: 'clay', label: 'Размер куска глины', min: 0.05, max: 1.2, step: 0.01 }, { key: 'elastic', label: 'Упругость (возврат формы)', min: 0, max: 3, step: 0.1 }, { type: 'title', label: 'Две руки' }, { key: 'stretch', label: 'Меняют размер формы', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']] }, { key: 'keep', label: 'Запоминать размер', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }, { type: 'title', label: 'Распознавание и показ' }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'hold', label: 'Задержка жеста, с', min: 0, max: 0.5, step: 0.02 }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
 { id: 'gravity', group: 'Взаимодействие', name: 'Гравитация', icon: 'planet', hint: 'Поле тяготения вокруг выбранной точки: точки кружат, падают в центр или парят. Центр можно водить курсором или рукой', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, mode: 'orbit', target: 'cursor', radius: 1.8, speed: 1, tilt: 0.5, precess: 0.15, flatten: 0.6, jet: 1.4, spread: 0.5 }, extras: [{ key: 'mode', label: 'Вид поля', type: 'select', options: [['orbit', 'Галактика: диск со спиральными рукавами'], ['hole', 'Квазар: падение в центр и джеты'], ['swarm', 'Рой: у каждой точки своя орбита'], ['float', 'Невесомость: медленный дрейф']] }, { type: 'note', when: ['mode', ['orbit']], text: 'Форма раскручивается диском: у центра быстрее, на краю медленнее.' }, { type: 'note', when: ['mode', ['hole']], text: 'Точки по спирали падают в центр, а затем вылетают двумя струями вдоль оси.' }, { type: 'note', when: ['mode', ['swarm']], text: 'Каждая точка летает по своей наклонной орбите, получается шар из орбит, как у атома.' }, { type: 'note', when: ['mode', ['float']], text: 'Точки плавно покачиваются и расходятся, как в невесомости.' }, { type: 'title', label: 'Где центр' }, { key: 'target', label: 'Центр поля', type: 'seg', options: [['cursor', 'Курсор, рука'], ['center', 'Центр формы']] }, { key: 'radius', label: 'Радиус действия', min: 0.1, max: 3.5, step: 0.05 }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.1 }, { key: 'spread', label: 'Размах', min: 0, max: 1, step: 0.05, when: ['mode', ['swarm', 'float']] }, { key: 'flatten', label: 'Сплющивание в диск', min: 0, max: 0.95, step: 0.05, when: ['mode', ['orbit', 'hole']] }, { key: 'tilt', label: 'Наклон диска', min: 0, max: 1.5, step: 0.05, when: ['mode', ['orbit', 'hole']] }, { key: 'precess', label: 'Покачивание оси', min: 0, max: 1, step: 0.05, when: ['mode', ['orbit', 'hole']] }, { key: 'jet', label: 'Длина струй', min: 0, max: 3, step: 0.1, when: ['mode', ['hole']] }] },
 ];
+const FX_GROUPS = {
+'Движение': ['curl', 'flow', 'cloth', 'alive', 'gravity'],
+'Звук и ритм': ['spectrum', 'wave', 'pulse', 'blast'],
+'Превращения': ['twist', 'voxel', 'glitch', 'physics', 'dissolve'],
+'Графика': ['links', 'slice', 'feedback', 'echo'],
+'Управление': ['cursor', 'brush', 'tracking', 'shock', 'camTrack'],
+};
+export const FX_GROUP_NAMES = Object.keys(FX_GROUPS);
+{
+const rank = (l) => {
+for (const [gi, g] of FX_GROUP_NAMES.entries()) {
+const k = FX_GROUPS[g].indexOf(l.id);
+if (k >= 0) {
+l.group = g;
+return gi * 100 + k;
+}
+}
+return 999;
+};
+FX_LAYERS.sort((a, b) => rank(a) - rank(b));
+}
 export const FX_PALETTES = [
 { id: 'brand', name: 'Янтарь', c: ['#e58a45', '#f4b27a', '#fff0dc'] },
 { id: 'cyber', name: 'Неон', c: ['#00f0ff', '#ff1fcb', '#ffd90f'] },
@@ -79,7 +100,7 @@ export const MASK_MODES = [
 { id: 'scan', label: 'Скан', title: 'Живёт полоса, которая пробегает по форме' },
 ];
 export const SYNTH_STYLES = [
-{ id: 'mystic', name: 'Тайна: тёмный дрон' },
+{ id: 'deep', name: 'Погружение: тихая глубина' },
 { id: 'ambient', name: 'Эмбиент: дрейф' },
 { id: 'jungle', name: 'Мягкий джангл, 150 BPM' },
 ];
@@ -114,10 +135,10 @@ dofOn: false,
 dofDist: 5.2,
 dofRange: 1.4,
 },
-audio: { style: 'mystic', gain: 1.3, idle: true, volume: 0.8 },
+audio: { style: 'deep', gain: 1.3, idle: true, volume: 0.8 },
 };
 }
-const KEY = 'objglb.fx.v8';
+const KEY = 'objglb.fx.v9';
 function baseShape(type, count = 100000) {
 const pos = new Float32Array(count * 3);
 const nor = new Float32Array(count * 3);
@@ -1121,6 +1142,17 @@ this.step = 0;
 this.next = 0;
 this._noise = null;
 }
+_reg(node) {
+(this._nodes ||= new Set()).add(node);
+node.addEventListener('ended', () => this._nodes.delete(node));
+return node;
+}
+_osc() {
+return this._reg(this.ctx.createOscillator());
+}
+_src() {
+return this._reg(this.ctx.createBufferSource());
+}
 _noiseBuf() {
 if (!this._noise) {
 const n = this.ctx.sampleRate;
@@ -1178,18 +1210,28 @@ if (this.timer) {
 clearInterval(this.timer);
 this.timer = null;
 }
+const c = this.ctx;
 const g = this.gain;
+const now = c.currentTime;
 if (g) {
 try {
-g.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05);
+g.gain.cancelScheduledValues(now);
+g.gain.setValueAtTime(g.gain.value, now);
+g.gain.linearRampToValueAtTime(0, now + 0.1);
+} catch (_) {}
 setTimeout(() => {
 try {
 g.disconnect();
 } catch (_) {}
-}, 400);
-} catch (_) {}
+}, 300);
 this.gain = null;
 }
+for (const n of this._nodes || []) {
+try {
+n.stop(now + 0.12);
+} catch (_) {}
+}
+this._nodes = new Set();
 this.playing = false;
 }
 _pump() {
@@ -1205,7 +1247,7 @@ if (this.next < this.ctx.currentTime - 0.5) this.next = this.ctx.currentTime + 0
 }
 _kick(t, vol = 1, f0 = 150, f1 = 42, len = 0.2) {
 const c = this.ctx;
-const o = c.createOscillator();
+const o = this._osc();
 const g = c.createGain();
 o.type = 'sine';
 o.frequency.setValueAtTime(f0, t);
@@ -1219,7 +1261,7 @@ o.stop(t + len + 0.02);
 }
 _snare(t, vol = 0.8, tone = 190, len = 0.15) {
 const c = this.ctx;
-const n = c.createBufferSource();
+const n = this._src();
 n.buffer = this._noiseBuf();
 const hp = c.createBiquadFilter();
 hp.type = 'highpass';
@@ -1232,7 +1274,7 @@ hp.connect(g);
 g.connect(this.drums);
 n.start(t, Math.random() * 0.5);
 n.stop(t + len + 0.02);
-const o = c.createOscillator();
+const o = this._osc();
 const og = c.createGain();
 o.type = 'triangle';
 o.frequency.setValueAtTime(tone, t);
@@ -1246,7 +1288,7 @@ o.stop(t + 0.12);
 }
 _hat(t, vol = 0.2, len = 0.04) {
 const c = this.ctx;
-const n = c.createBufferSource();
+const n = this._src();
 n.buffer = this._noiseBuf();
 const hp = c.createBiquadFilter();
 hp.type = 'highpass';
@@ -1262,7 +1304,7 @@ n.stop(t + len + 0.01);
 }
 _sub(t, f, len, vol) {
 const c = this.ctx;
-const o = c.createOscillator();
+const o = this._osc();
 const g = c.createGain();
 o.type = 'sine';
 o.frequency.value = f;
@@ -1288,7 +1330,7 @@ g.gain.exponentialRampToValueAtTime(0.0001, t + len);
 lp.connect(g);
 g.connect(this.gain);
 for (const det of [-7, 7]) {
-const o = c.createOscillator();
+const o = this._osc();
 o.type = 'sawtooth';
 o.frequency.value = f;
 o.detune.value = det;
@@ -1313,7 +1355,7 @@ lp.connect(g);
 g.connect(this.gain);
 g.connect(this.send);
 for (const [type, det] of [['sine', 0], ['triangle', 5], ['sine', -5]]) {
-const o = c.createOscillator();
+const o = this._osc();
 o.type = type;
 o.frequency.value = f;
 o.detune.value = det;
@@ -1331,7 +1373,7 @@ g.gain.exponentialRampToValueAtTime(0.0001, t + 2.6);
 g.connect(this.gain);
 g.connect(this.send);
 for (const [mul, a] of [[1, 1], [2.01, 0.3], [3.98, 0.12]]) {
-const o = c.createOscillator();
+const o = this._osc();
 const og = c.createGain();
 o.type = 'sine';
 o.frequency.value = f * mul;
@@ -1344,7 +1386,7 @@ o.stop(t + 2.7);
 }
 _blip(t, f, len, vol) {
 const c = this.ctx;
-const o = c.createOscillator();
+const o = this._osc();
 const g = c.createGain();
 o.type = 'square';
 o.frequency.setValueAtTime(f, t);
@@ -1359,7 +1401,7 @@ o.stop(t + len + 0.01);
 }
 _breath(t, len) {
 const c = this.ctx;
-const n = c.createBufferSource();
+const n = this._src();
 n.buffer = this._noiseBuf();
 n.loop = true;
 const bp = c.createBiquadFilter();
@@ -1398,21 +1440,21 @@ if (s % 2 === 0 && Math.random() < 0.14) this._bell(t, ch[2 + Math.floor(Math.ra
 if (Math.random() < 0.05) this._hat(t, 0.025, 0.03);
 return;
 }
-if (this.mode === 'mystic') {
-const roots = [73.42, 55, 58.27, 49];
-const root = roots[bar % 4];
+if (this.mode === 'deep') {
+const chords = [
+[73.42, 110, 146.83, 174.61, 220, 329.63],
+[58.27, 87.31, 146.83, 220, 261.63, 392],
+[49, 73.42, 116.54, 174.61, 220, 293.66],
+[55, 82.41, 196, 261.63, 329.63, 493.88],
+];
+const ch = chords[bar % 4];
 if (s === 0) {
-this._pad(t, [root, root * 1.5, root * 2, root * 2.378], 32 * spb + 2, 0.05);
-this._sub(t, root / 2, 32 * spb * 0.9, 0.26);
+this._pad(t, ch, 32 * spb + 3, 0.03);
+this._sub(t, ch[0] / 2, 32 * spb, 0.16);
+this._pad(t + 1.5, [ch[4] * 2, ch[5] * 2], 32 * spb, 0.012);
 }
-if (s % 8 === 0) this._kick(t, 0.28, 62, 38, 0.5);
-if (s === 16) this._breath(t, 16 * spb);
-const phr = [293.66, 311.13, 349.23, 392, 440, 466.16];
-if (s % 4 === 2 && Math.random() < 0.16) this._bell(t, phr[Math.floor(Math.random() * phr.length)] * (Math.random() < 0.3 ? 2 : 1), 0.06);
-if (s === 8 && bar % 2 === 1) {
-this._bell(t, 146.83, 0.07);
-this._bell(t + 0.04, 207.65, 0.05);
-}
+if (s === 12 || s === 28) this._breath(t, 14 * spb);
+if (s % 4 === 0 && Math.random() < 0.1) this._bell(t, ch[3 + Math.floor(Math.random() * 3)] * (Math.random() < 0.5 ? 2 : 1), 0.045);
 return;
 }
 const roots = [41.2, 43.65, 36.71, 49];
@@ -1427,7 +1469,7 @@ if (s % 8 === 5 && Math.random() < 0.4) this._bell(t, root * 12, 0.05);
 }
 }
 const SYNTH_PARAMS = {
-mystic: { bpm: 54, master: 0.9, fb: 0.55, wet: 0.55 },
+deep: { bpm: 48, master: 0.95, fb: 0.6, wet: 0.6 },
 ambient: { bpm: 66, master: 0.85, fb: 0.5, wet: 0.5 },
 jungle: { bpm: 150, master: 0.55, fb: 0.4, wet: 0.35 },
 };
@@ -2429,7 +2471,7 @@ if (this.out) this.out.gain.value = this.state.audio.volume;
 }
 async useSynth(style) {
 if (style) this.state.audio.style = style;
-if (!SYNTH_STYLES.some((x) => x.id === this.state.audio.style)) this.state.audio.style = 'mystic';
+if (!SYNTH_STYLES.some((x) => x.id === this.state.audio.style)) this.state.audio.style = 'deep';
 this._disconnectVideo();
 this._stopMic();
 this._stopFile();

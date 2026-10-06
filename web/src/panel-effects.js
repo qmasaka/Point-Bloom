@@ -8,7 +8,7 @@ import { formatCount } from './capabilities.js';
 import { createMediaPanel } from './panel-media.js';
 import { attachPreview } from './fx-previews.js';
 import { SHAPES as POINT_SHAPE_LIST } from './panel-points.js';
-import { FX_SHAPES, FX_ACTIONS, FX_GESTURE_PRESETS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } from './effects-engine.js';
+import { FX_GROUP_NAMES, FX_SHAPES, FX_ACTIONS, FX_GESTURE_PRESETS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } from './effects-engine.js';
 export function makeModelProvider(app) {
 const root = app.viewport.root;
 const shown = (o) => {
@@ -214,7 +214,7 @@ c.card.classList.toggle('is-selected', c.def.id === id);
 c.insp.classList.toggle('is-selected', c.def.id === id);
 }
 };
-for (const grp of ['Движение', 'Графика', 'Взаимодействие']) {
+for (const grp of FX_GROUP_NAMES) {
 const folder = h('div', { class: 'fx-folder' });
 const fhead = h('button', { type: 'button', class: 'fx-folder-head', 'aria-expanded': 'true' }, h('span', { class: 'fx-folder-caret', html: icon('caret-down', 13) }), h('span', { class: 'fx-folder-name' }, grp), h('span', { class: 'fx-folder-n' }));
 const fbody = h('div', { class: 'fx-folder-body' });
@@ -350,7 +350,7 @@ save();
 reactRow.hidden = L.band === 'none';
 body.append(field('Реагирует на звук', band.el, { wide: true }), reactRow);
 const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
-const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, h('span', { class: 'fx-ic', html: icon(def.icon, 16) }), h('span', { class: 'fx-layer-title' }, def.name), prevCanvas, sw.el);
+const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
 const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right' }, row);
 const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, h('div', { class: 'fx-insp-head' }, h('span', { class: 'fx-ic', html: icon(def.icon, 18) }), h('div', {}, h('b', {}, def.name), h('span', {}, def.hint))), body);
 row.addEventListener('click', (e) => {

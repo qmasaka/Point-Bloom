@@ -105,7 +105,10 @@ export class App {
 	wirePointer() {
 		this.bus.on('click', (e) => {
 			const hit = this.viewport.pick(e.clientX, e.clientY);
-			this.model.select(hit ? hit.object : null, { add: e.shiftKey });
+			let obj = hit ? hit.object : null;
+			// как в 3D-редакторе: клик выбирает весь объект целиком, чтобы поля X, Y, Z и гизмо работали в мировых осях; Alt выбирает конкретную часть
+			if (obj && !e.altKey) while (obj.parent && obj.parent !== this.viewport.root) obj = obj.parent;
+			this.model.select(obj, { add: e.shiftKey });
 		});
 		this.bus.on('dblclick', (e) => {
 			const hit = this.viewport.pick(e.clientX, e.clientY);
