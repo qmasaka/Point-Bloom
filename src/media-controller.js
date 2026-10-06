@@ -50,6 +50,17 @@ export class MediaController {
 		this.emit();
 	}
 
+	/** Убирает фото или видео и облако из сцены */
+	close() {
+		const o = this.obj;
+		this.obj = null;
+		this.pm.close();
+		if (o && o.parent) this.app.model.remove(o);
+		const eng = this.app.ui?.effectsEngine;
+		if (eng?.state.source === 'media') eng.setSource(eng.hasModel ? 'model' : 'sphere');
+		this.emit();
+	}
+
 	/** Пересобирает облако в сцене под текущие настройки (плотность, рельеф) */
 	rebuild({ frame = true } = {}) {
 		const { app, pm } = this;

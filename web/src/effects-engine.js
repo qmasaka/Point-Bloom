@@ -2426,7 +2426,7 @@ clearTimeout(this._sceneT);
 this._sceneT = setTimeout(async () => {
 if (!this.active) return;
 this.cache.clear();
-if (this.hasModel) {
+if (this.hasModel && !(this.pm.ready && this.state.source === 'media')) {
 this.state.source = 'model';
 this.syncLookFromPoints();
 }
@@ -2451,7 +2451,7 @@ vp.root.visible = false;
 vp.fxHide = true;
 if (app.nav.ortho) app.nav.setOrtho(false);
 document.getElementById('app').classList.add('fx-mode');
-this.state.source = this.hasModel ? 'model' : this.state.source === 'model' ? 'sphere' : this.state.source;
+this.state.source = this.pm.ready ? 'media' : this.hasModel ? 'model' : this.state.source === 'model' ? 'sphere' : this.state.source;
 app.ui.busy('Готовлю частицы', 0.3);
 try {
 await this._build();
@@ -2486,6 +2486,10 @@ this.post.render(scene, camera, fb, bloom, ab);
 };
 app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 400);
 this.syncLookFromPoints();
+if (this.pm.ready) {
+this.state.look.colorBy = 'model';
+this.pm.play();
+}
 this._hist = { undo: [], redo: [], last: null };
 this._histT = setTimeout(() => this._histCommit(), 600);
 if (this.pm.playing && this.state.source === 'media') this.pm.play();

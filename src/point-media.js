@@ -386,6 +386,19 @@ export class PointMedia {
 		return { blob: new Blob([zipSync(files)], { type: 'application/zip' }), frames: k, step };
 	}
 
+	/** Закрывает медиа: освобождает файл и возвращает объект в исходное состояние */
+	close() {
+		this.pause();
+		this._revoke();
+		this.kind = null;
+		this.el = null;
+		this.rec = null;
+		this.view = 'live';
+		this.cols = this.rows = 0;
+		this._xy = null;
+		this.name = '';
+	}
+
 	dispose() {
 		this.pause();
 		this._revoke();

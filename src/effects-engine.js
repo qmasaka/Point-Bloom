@@ -2614,7 +2614,7 @@ export class EffectsEngine {
 		this._sceneT = setTimeout(async () => {
 			if (!this.active) return;
 			this.cache.clear();
-			if (this.hasModel) {
+			if (this.hasModel && !(this.pm.ready && this.state.source === 'media')) {
 				this.state.source = 'model';
 				this.syncLookFromPoints();
 			}
@@ -2643,7 +2643,7 @@ export class EffectsEngine {
 		if (app.nav.ortho) app.nav.setOrtho(false);
 		document.getElementById('app').classList.add('fx-mode');
 		// модель из редактора (меш или облако точек) важнее любого примитива
-		this.state.source = this.hasModel ? 'model' : this.state.source === 'model' ? 'sphere' : this.state.source;
+		this.state.source = this.pm.ready ? 'media' : this.hasModel ? 'model' : this.state.source === 'model' ? 'sphere' : this.state.source;
 		app.ui.busy('Готовлю частицы', 0.3);
 		try {
 			await this._build();
@@ -2678,6 +2678,11 @@ export class EffectsEngine {
 		};
 		app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 400);
 		this.syncLookFromPoints();
+		// открытое видео сразу становится источником и продолжает играть
+		if (this.pm.ready) {
+			this.state.look.colorBy = 'model';
+			this.pm.play();
+		}
 		this._hist = { undo: [], redo: [], last: null };
 		this._histT = setTimeout(() => this._histCommit(), 600);
 		if (this.pm.playing && this.state.source === 'media') this.pm.play();

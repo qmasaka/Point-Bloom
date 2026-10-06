@@ -132286,16 +132286,18 @@ function createMediaPanel(app, root, { fx = false } = {}) {
 	const bPly = button({ label: 'Текущий кадр (.ply)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', onClick: () => mc.downloadPLY() });
 	const bPcv = button({ label: 'Сохранить ролик (.pcv)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Компактный файл: его можно снова открыть здесь', onClick: () => mc.downloadPCV() });
 	const bZip = button({ label: 'Кадры PLY (.zip)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Каждый кадр как облако точек с цветом', onClick: () => mc.downloadPLYZip() });
-	const note = h('div', { class: 'field-hint' }, fx ? 'Фото и видео живут в редакторе, во вкладке «Медиа». Здесь они становятся точками для эффектов.' : 'Облако точек лежит в сцене: его можно двигать, менять вид на вкладке «Точки» и скачивать кнопкой «Скачать» вверху.');
+	const closeBtn = button({ label: 'Убрать медиа', icon: 'x', variant: 'ghost', cls: 'btn-block', onClick: () => mc.close() });
+	const note = h('div', { class: 'field-hint' }, fx ? 'Видео продолжает играть и в эффектах: все эффекты применяются к его точкам.' : 'Облако точек лежит в сцене: его можно двигать, менять вид на вкладке «Точки» и скачивать кнопкой «Скачать» вверху.');
 	const videoBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-btn-row' }, play), loop.el, field('Время', seek.el));
 	const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recBtn, recInfo);
 	const saveBox = h('div', { class: 'fx-save-row' }, fx ? bScene : '', bPly, bPcv, bZip);
 	const ptsRow = field('Точек', pts.el);
-	const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, fileIn, load, info, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), field('Показывать', view.el, { wide: true }), videoBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, note);
+	const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, fileIn, load, info, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), field('Показывать', view.el, { wide: true }), videoBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
 	if (root) root.append(sec.el);
 
 	function sync() {
 		const ready = pm.ready;
+		if (fx) sec.el.hidden = !ready;
 		const hasRec = !!pm.rec;
 		info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : 'Откройте фото или видео: каждая точка возьмёт цвет пикселя. Видео можно записать в точечный ролик и сохранить.';
 		view.el.hidden = !hasRec || pm.kind === 'rec';
@@ -132324,6 +132326,80 @@ function createMediaPanel(app, root, { fx = false } = {}) {
 	}, 300);
 	sync();
 	return { section: sec, sync };
+}
+
+};
+__defs['src/media-bar.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'createMediaBar', () => createMediaBar);
+// Таймлайн над нижней панелью: управление видео и точечным роликом в редакторе и в режиме «Эффекты».
+const { h } = __req('src/util.js');
+const { iconButton } = __req('src/ui-kit.js');
+const { icon } = __req('src/icons.js');
+
+const fmt = (t) => {
+	t = Math.max(0, t || 0);
+	const m = Math.floor(t / 60);
+	const s = t - m * 60;
+	return `${m}:${s.toFixed(1).padStart(4, '0')}`;
+};
+
+function createMediaBar(app, host) {
+	const mc = app.media;
+	const pm = mc.pm;
+	const play = iconButton({ icon: 'pause', title: 'Играть или пауза', onClick: () => { pm.playing ? pm.pause() : pm.play(); sync(); } });
+	const time = h('span', { class: 'mb-time' }, '0:00.0');
+	const seek = h('input', { type: 'range', class: 'range mb-seek', min: 0, max: 1, step: 0.01, value: 0, 'aria-label': 'Перемотка' });
+	seek.addEventListener('input', () => {
+		pm.seek(parseFloat(seek.value));
+		paint();
+	});
+	const total = h('span', { class: 'mb-time mb-total' }, '0:00.0');
+	const loop = iconButton({ icon: 'repeat', title: 'Повторять', pressed: pm.loop, onClick: () => { pm.setLoop(!pm.loop); sync(); } });
+	const mode = h('div', { class: 'mb-mode', role: 'radiogroup', 'aria-label': 'Что показывать' });
+	const bLive = h('button', { type: 'button', class: 'mb-seg', role: 'radio' }, 'Видео');
+	const bRec = h('button', { type: 'button', class: 'mb-seg', role: 'radio' }, 'Ролик');
+	bLive.addEventListener('click', () => switchView('live'));
+	bRec.addEventListener('click', () => switchView('rec'));
+	mode.append(bLive, bRec);
+	const rec = iconButton({ icon: 'record', title: 'Записать видео в точки', cls: 'mb-rec', onClick: () => mc.record({ fps: 15, seconds: Math.min(30, Math.floor(pm.duration) || 10) }) });
+	const el = h('div', { class: 'media-bar vp-pill', hidden: true }, play, time, seek, total, loop, mode, rec);
+	host.append(el);
+
+	function switchView(v) {
+		pm.setView(v);
+		const eng = app.ui.effectsEngine;
+		if (app.ui.workspace === 'fx') eng.setSource('media');
+		else mc.rebuild({ frame: false });
+		sync();
+	}
+	function paint() {
+		time.textContent = fmt(pm.time);
+		total.textContent = fmt(pm.duration);
+		seek.max = Math.max(0.1, pm.duration);
+	}
+	function sync() {
+		const vid = pm.kind === 'video' || pm.kind === 'rec';
+		el.hidden = !vid;
+		if (!vid) return;
+		play.innerHTML = '<span class="ic-wrap">' + icon(pm.playing ? 'pause' : 'play', 18) + '</span>';
+		play.dataset.tip = pm.playing ? 'Пауза' : 'Играть';
+		play.classList.toggle('is-paused', !pm.playing);
+		loop.setAttribute('aria-pressed', String(pm.loop));
+		bLive.setAttribute('aria-checked', String(pm.view === 'live'));
+		bRec.setAttribute('aria-checked', String(pm.view === 'rec'));
+		mode.hidden = !pm.rec || pm.kind === 'rec';
+		rec.hidden = pm.kind !== 'video';
+		rec.classList.toggle('is-rec', pm.recording);
+		paint();
+	}
+	app.bus.on('media', sync);
+	setInterval(() => {
+		if (el.hidden || pm.recording) return;
+		if (document.activeElement !== seek) seek.value = pm.time;
+		paint();
+	}, 150);
+	return { sync, el };
 }
 
 };
@@ -135574,7 +135650,7 @@ class EffectsEngine {
 		this._sceneT = setTimeout(async () => {
 			if (!this.active) return;
 			this.cache.clear();
-			if (this.hasModel) {
+			if (this.hasModel && !(this.pm.ready && this.state.source === 'media')) {
 				this.state.source = 'model';
 				this.syncLookFromPoints();
 			}
@@ -135603,7 +135679,7 @@ class EffectsEngine {
 		if (app.nav.ortho) app.nav.setOrtho(false);
 		document.getElementById('app').classList.add('fx-mode');
 		// модель из редактора (меш или облако точек) важнее любого примитива
-		this.state.source = this.hasModel ? 'model' : this.state.source === 'model' ? 'sphere' : this.state.source;
+		this.state.source = this.pm.ready ? 'media' : this.hasModel ? 'model' : this.state.source === 'model' ? 'sphere' : this.state.source;
 		app.ui.busy('Готовлю частицы', 0.3);
 		try {
 			await this._build();
@@ -135638,6 +135714,11 @@ class EffectsEngine {
 		};
 		app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 400);
 		this.syncLookFromPoints();
+		// открытое видео сразу становится источником и продолжает играть
+		if (this.pm.ready) {
+			this.state.look.colorBy = 'model';
+			this.pm.play();
+		}
 		this._hist = { undo: [], redo: [], last: null };
 		this._histT = setTimeout(() => this._histCommit(), 600);
 		if (this.pm.playing && this.state.source === 'media') this.pm.play();
@@ -136158,6 +136239,7 @@ const THREE = __req('vendor/three/build/three.module.js');
 const { sampleSurface, overrideMats } = __req('src/pointcloud.js');
 const { getDevice } = __req('src/device-card.js');
 const { formatCount } = __req('src/capabilities.js');
+const { createMediaPanel } = __req('src/panel-media.js');
 const { SHAPES: POINT_SHAPE_LIST } = __req('src/panel-points.js');
 const { FX_SHAPES, FX_ACTIONS, FX_GESTURE_PRESETS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } = __req('src/effects-engine.js');
 
@@ -136174,7 +136256,7 @@ function makeModelProvider(app) {
 	const clouds = () => {
 		const a = [];
 		root.traverse((o) => {
-			if (o.isPoints && !o.userData.helper && o.geometry.attributes.position && shown(o)) a.push(o);
+			if (o.isPoints && !o.userData.helper && !o.userData.media && o.geometry.attributes.position && shown(o)) a.push(o);
 		});
 		return a;
 	};
@@ -136210,7 +136292,7 @@ function makeModelProvider(app) {
 		}
 		return { positions: positions.slice(0, k * 3), normals: normals.slice(0, k * 3), colors: colors.slice(0, k * 3), count: k };
 	};
-	const topObjects = () => root.children.filter((o) => !o.userData.helper && o.name !== '__fx' && (() => { let ok = false; o.traverse((c) => { if (!c.userData.helper && (c.isMesh || c.isPoints)) ok = true; }); return ok; })());
+	const topObjects = () => root.children.filter((o) => !o.userData.helper && !o.userData.media && o.name !== '__fx' && (() => { let ok = false; o.traverse((c) => { if (!c.userData.helper && (c.isMesh || c.isPoints)) ok = true; }); return ok; })());
 	return {
 		/** Объекты верхнего уровня сцены: каждый можно взять отдельной формой для морфинга */
 		sizeOf: (obj) => {
@@ -136676,8 +136758,9 @@ function createEffectsPanel(app, root, engine) {
 	const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
 	const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек', shapeTiles, { wide: true }), field('Размер', size.el), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el), hudSw.el, hudSpec.el);
 
+	const secMedia = createMediaPanel(app, null, { fx: true }).section;
 	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
-	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource]], ['zone', 'Зона и звук', 'target', [secMask, secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMedia]], ['zone', 'Зона и звук', 'target', [secMask, secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
 	try {
@@ -136896,6 +136979,7 @@ const { createViewPanel, DISPLAY_MODES } = __req('src/panel-view.js');
 const { createExportPanel } = __req('src/panel-export.js');
 const { createPointsPanel } = __req('src/panel-points.js');
 const { createMediaPanel } = __req('src/panel-media.js');
+const { createMediaBar } = __req('src/media-bar.js');
 const { EffectsEngine } = __req('src/effects-engine.js');
 const { createEffectsPanel, makeModelProvider } = __req('src/panel-effects.js');
 const { importFiles, assignTextureFiles, ACCEPT_ALL, MODEL_FORMATS, IMAGE_EXT } = __req('src/importers.js');
@@ -136959,6 +137043,7 @@ class UI {
 
 	buildHeader() {
 		const app = this.app;
+		$('#btnOpen').dataset.tip = 'Открыть модель, текстуры, фото или видео (O)';
 		$('#btnOpen').addEventListener('click', () => this.openFiles('auto'));
 		$('#btnTexture').addEventListener('click', () => this.openTextures());
 		$$('#modeSwitch [data-ws]').forEach((b) => b.addEventListener('click', () => this.setWorkspace(b.dataset.ws)));
@@ -137325,6 +137410,14 @@ class UI {
 		this.viewPanel = createViewPanel(app, this.tabs.view);
 		this.pointsPanel = createPointsPanel(app, this.tabs.points);
 		this.mediaPanel = createMediaPanel(app, this.tabs.media);
+		this.mediaBar = createMediaBar(app, $('#viewport'));
+		// вкладка «Медиа» появляется только когда открыто фото или видео
+		const mediaTab = $('.tab[data-tab="media"]');
+		app.bus.on('media', () => {
+			const has = app.media.ready;
+			mediaTab.hidden = !has;
+			if (!has && !this.tabs.media.hidden) this.showTab('scene');
+		});
 		this.exportPanel = createExportPanel(app, $('#panel-export'));
 		this.effectsEngine.modelProvider = makeModelProvider(app);
 		this.effectsPanel = createEffectsPanel(app, $('#panel-effects'), this.effectsEngine);
@@ -138416,6 +138509,19 @@ class PointMedia {
 		return { blob: new Blob([zipSync(files)], { type: 'application/zip' }), frames: k, step };
 	}
 
+	/** Закрывает медиа: освобождает файл и возвращает объект в исходное состояние */
+	close() {
+		this.pause();
+		this._revoke();
+		this.kind = null;
+		this.el = null;
+		this.rec = null;
+		this.view = 'live';
+		this.cols = this.rows = 0;
+		this._xy = null;
+		this.name = '';
+	}
+
 	dispose() {
 		this.pause();
 		this._revoke();
@@ -138491,6 +138597,17 @@ class MediaController {
 		await this.pm.load(file);
 		this.rebuild();
 		this.app.toast(this.pm.kind === 'image' ? 'Фото превращено в точки' : this.pm.kind === 'video' ? 'Видео превращено в точки. Его можно записать в точечный ролик' : 'Точечный ролик открыт', 'ok');
+		this.emit();
+	}
+
+	/** Убирает фото или видео и облако из сцены */
+	close() {
+		const o = this.obj;
+		this.obj = null;
+		this.pm.close();
+		if (o && o.parent) this.app.model.remove(o);
+		const eng = this.app.ui?.effectsEngine;
+		if (eng?.state.source === 'media') eng.setSource(eng.hasModel ? 'model' : 'sphere');
 		this.emit();
 	}
 

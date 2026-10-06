@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { sampleSurface, overrideMats } from './pointcloud.js';
 import { getDevice } from './device-card.js';
 import { formatCount } from './capabilities.js';
+import { createMediaPanel } from './panel-media.js';
 import { SHAPES as POINT_SHAPE_LIST } from './panel-points.js';
 import { FX_SHAPES, FX_ACTIONS, FX_GESTURE_PRESETS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } from './effects-engine.js';
 
@@ -22,7 +23,7 @@ export function makeModelProvider(app) {
 	const clouds = () => {
 		const a = [];
 		root.traverse((o) => {
-			if (o.isPoints && !o.userData.helper && o.geometry.attributes.position && shown(o)) a.push(o);
+			if (o.isPoints && !o.userData.helper && !o.userData.media && o.geometry.attributes.position && shown(o)) a.push(o);
 		});
 		return a;
 	};
@@ -58,7 +59,7 @@ export function makeModelProvider(app) {
 		}
 		return { positions: positions.slice(0, k * 3), normals: normals.slice(0, k * 3), colors: colors.slice(0, k * 3), count: k };
 	};
-	const topObjects = () => root.children.filter((o) => !o.userData.helper && o.name !== '__fx' && (() => { let ok = false; o.traverse((c) => { if (!c.userData.helper && (c.isMesh || c.isPoints)) ok = true; }); return ok; })());
+	const topObjects = () => root.children.filter((o) => !o.userData.helper && !o.userData.media && o.name !== '__fx' && (() => { let ok = false; o.traverse((c) => { if (!c.userData.helper && (c.isMesh || c.isPoints)) ok = true; }); return ok; })());
 	return {
 		/** Объекты верхнего уровня сцены: каждый можно взять отдельной формой для морфинга */
 		sizeOf: (obj) => {
@@ -524,8 +525,9 @@ export function createEffectsPanel(app, root, engine) {
 	const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
 	const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек', shapeTiles, { wide: true }), field('Размер', size.el), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el), hudSw.el, hudSpec.el);
 
+	const secMedia = createMediaPanel(app, null, { fx: true }).section;
 	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
-	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource]], ['zone', 'Зона и звук', 'target', [secMask, secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMedia]], ['zone', 'Зона и звук', 'target', [secMask, secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
 	try {

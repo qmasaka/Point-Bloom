@@ -9,6 +9,7 @@ import { createViewPanel, DISPLAY_MODES } from './panel-view.js';
 import { createExportPanel } from './panel-export.js';
 import { createPointsPanel } from './panel-points.js';
 import { createMediaPanel } from './panel-media.js';
+import { createMediaBar } from './media-bar.js';
 import { EffectsEngine } from './effects-engine.js';
 import { createEffectsPanel, makeModelProvider } from './panel-effects.js';
 import { importFiles, assignTextureFiles, ACCEPT_ALL, MODEL_FORMATS, IMAGE_EXT } from './importers.js';
@@ -64,6 +65,7 @@ for (const ext of [...Object.keys(MODEL_FORMATS), 'zip']) box.append(h('span', {
 }
 buildHeader() {
 const app = this.app;
+$('#btnOpen').dataset.tip = 'Открыть модель, текстуры, фото или видео (O)';
 $('#btnOpen').addEventListener('click', () => this.openFiles('auto'));
 $('#btnTexture').addEventListener('click', () => this.openTextures());
 $$('#modeSwitch [data-ws]').forEach((b) => b.addEventListener('click', () => this.setWorkspace(b.dataset.ws)));
@@ -398,6 +400,13 @@ this.materialPanel = createMaterialPanel(app, this.tabs.material);
 this.viewPanel = createViewPanel(app, this.tabs.view);
 this.pointsPanel = createPointsPanel(app, this.tabs.points);
 this.mediaPanel = createMediaPanel(app, this.tabs.media);
+this.mediaBar = createMediaBar(app, $('#viewport'));
+const mediaTab = $('.tab[data-tab="media"]');
+app.bus.on('media', () => {
+const has = app.media.ready;
+mediaTab.hidden = !has;
+if (!has && !this.tabs.media.hidden) this.showTab('scene');
+});
 this.exportPanel = createExportPanel(app, $('#panel-export'));
 this.effectsEngine.modelProvider = makeModelProvider(app);
 this.effectsPanel = createEffectsPanel(app, $('#panel-effects'), this.effectsEngine);

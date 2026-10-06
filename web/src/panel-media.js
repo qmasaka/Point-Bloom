@@ -38,15 +38,17 @@ const bScene = button({ label: 'Кадр в сцену (копия)', icon: 'cub
 const bPly = button({ label: 'Текущий кадр (.ply)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', onClick: () => mc.downloadPLY() });
 const bPcv = button({ label: 'Сохранить ролик (.pcv)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Компактный файл: его можно снова открыть здесь', onClick: () => mc.downloadPCV() });
 const bZip = button({ label: 'Кадры PLY (.zip)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', title: 'Каждый кадр как облако точек с цветом', onClick: () => mc.downloadPLYZip() });
-const note = h('div', { class: 'field-hint' }, fx ? 'Фото и видео живут в редакторе, во вкладке «Медиа». Здесь они становятся точками для эффектов.' : 'Облако точек лежит в сцене: его можно двигать, менять вид на вкладке «Точки» и скачивать кнопкой «Скачать» вверху.');
+const closeBtn = button({ label: 'Убрать медиа', icon: 'x', variant: 'ghost', cls: 'btn-block', onClick: () => mc.close() });
+const note = h('div', { class: 'field-hint' }, fx ? 'Видео продолжает играть и в эффектах: все эффекты применяются к его точкам.' : 'Облако точек лежит в сцене: его можно двигать, менять вид на вкладке «Точки» и скачивать кнопкой «Скачать» вверху.');
 const videoBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-btn-row' }, play), loop.el, field('Время', seek.el));
 const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recBtn, recInfo);
 const saveBox = h('div', { class: 'fx-save-row' }, fx ? bScene : '', bPly, bPcv, bZip);
 const ptsRow = field('Точек', pts.el);
-const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, fileIn, load, info, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), field('Показывать', view.el, { wide: true }), videoBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, note);
+const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, fileIn, load, info, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), field('Показывать', view.el, { wide: true }), videoBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
 if (root) root.append(sec.el);
 function sync() {
 const ready = pm.ready;
+if (fx) sec.el.hidden = !ready;
 const hasRec = !!pm.rec;
 info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : 'Откройте фото или видео: каждая точка возьмёт цвет пикселя. Видео можно записать в точечный ролик и сохранить.';
 view.el.hidden = !hasRec || pm.kind === 'rec';

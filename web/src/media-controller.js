@@ -39,6 +39,15 @@ this.rebuild();
 this.app.toast(this.pm.kind === 'image' ? 'Фото превращено в точки' : this.pm.kind === 'video' ? 'Видео превращено в точки. Его можно записать в точечный ролик' : 'Точечный ролик открыт', 'ok');
 this.emit();
 }
+close() {
+const o = this.obj;
+this.obj = null;
+this.pm.close();
+if (o && o.parent) this.app.model.remove(o);
+const eng = this.app.ui?.effectsEngine;
+if (eng?.state.source === 'media') eng.setSource(eng.hasModel ? 'model' : 'sphere');
+this.emit();
+}
 rebuild({ frame = true } = {}) {
 const { app, pm } = this;
 if (!pm.ready) return;
