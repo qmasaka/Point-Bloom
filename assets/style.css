@@ -3162,25 +3162,36 @@ body {
 	letter-spacing: -0.04em;
 }
 
-/* режим эффектов «только сцена»: остаётся вьюпорт и нижняя панель */
+/* режим эффектов «только сцена»: интерфейс плавно уходит, остаётся вьюпорт и нижняя панель */
+#app {
+	transition: grid-template-rows 0.38s var(--ease);
+}
+.fx-mode .workspace {
+	transition: grid-template-columns 0.38s var(--ease);
+}
+.fx-mode .topbar,
+.fx-mode .statusbar,
+.fx-mode .fx-left,
+.fx-mode .sidebar {
+	transition: opacity 0.3s var(--ease), visibility 0s linear 0s;
+}
 #app.fx-focus {
 	grid-template-rows: 0 minmax(0, 1fr) 0;
-}
-.fx-focus .topbar,
-.fx-focus .statusbar {
-	height: 0;
-	min-height: 0;
-	padding: 0;
-	border: 0;
-	overflow: hidden;
-	visibility: hidden;
 }
 .fx-mode.fx-focus .workspace,
 .fx-mode.fx-focus .workspace.sidebar-hidden {
 	grid-template-columns: 0 minmax(0, 1fr) 0;
 }
+.fx-focus .topbar,
+.fx-focus .statusbar,
 .fx-focus .fx-left,
-.fx-focus .sidebar,
+.fx-focus .sidebar {
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	overflow: hidden;
+	transition: opacity 0.3s var(--ease), visibility 0s linear 0.3s;
+}
 .fx-focus .sidebar-resizer,
 .fx-focus .fx-left-btn {
 	display: none !important;

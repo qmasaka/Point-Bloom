@@ -580,7 +580,6 @@ export function createEffectsPanel(app, root, engine) {
 		appEl.classList.toggle('fx-focus', on);
 		focusBtn.classList.toggle('is-active', on);
 		if (on) app.toast('Интерфейс скрыт. Esc или эта же кнопка вернут его', 'info');
-		requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
 	}
 	document.addEventListener('keydown', (e) => {
 		if (e.key === 'Escape' && appEl.classList.contains('fx-focus')) setFocus(false);
@@ -590,7 +589,6 @@ export function createEffectsPanel(app, root, engine) {
 	const barMeters = makeMeters(true);
 	const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (MP4)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });
 	const recTime = h('span', { class: 'fx-rec-time' });
-	const exitBtn = h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => app.ui.setWorkspace('edit') }, h('span', { class: 'ic-wrap', html: icon('x', 14) }), 'Выйти');
 	// фон сцены: кнопка в нижней панели открывает палитру
 	const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#ffffff', 'Белый']];
 	const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));
@@ -632,7 +630,7 @@ export function createEffectsPanel(app, root, engine) {
 	});
 	syncBg();
 	const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
-	bar.append(leftBtn, playBtn, collapseBtn, camBtn, barMeters.el, h('span', { class: 'fx-bar-sep' }), focusBtn, orthoBtn, bgBtn, recBtn, recTime, exitBtn);
+	bar.append(leftBtn, playBtn, collapseBtn, camBtn, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgBtn, orthoBtn, focusBtn, h('span', { class: 'fx-bar-sep' }), recBtn, recTime);
 
 	// ------------------------------------------------------------ синхронизация
 	function sync() {
