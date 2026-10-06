@@ -197,7 +197,7 @@ export class HandTracker {
 			}
 			const wr = P(0);
 			c.font = '600 11px Geist, system-ui, sans-serif';
-			const GN = { palm: 'Ладонь', fist: 'Кулак', pinch: 'Щипок', point: 'Палец', none: 'Рука' };
+			const GN = { palm: 'Ладонь', fist: 'Кулак', pinch: 'Щипок', point: 'Палец', peace: 'Два пальца', rock: 'Рога', thumb: 'Класс', none: 'Рука' };
 			const act = this.names[hd.gesture];
 			const text = GN[hd.gesture] + (act ? ' \u2192 ' + act : '');
 			const tw = c.measureText(text).width;
@@ -237,13 +237,18 @@ function measure(pts, aspect, id) {
 	ext /= 4;
 	const open = Math.min(1, Math.max(0, (ext - 1.0) / 0.9));
 	const palm = [0, 5, 9, 13, 17].reduce((s, i) => [s[0] + pts[i][0] / 5, s[1] + pts[i][1] / 5], [0, 0]);
-	// пальцы выпрямлены, если кончик дальше от запястья, чем средний сустав
-	const ex = [[8, 6], [12, 10], [16, 14], [20, 18]].map(([t, j]) => dist(pts[t], pts[0], aspect) > dist(pts[j], pts[0], aspect) * 1.12);
+	// длина каждого пальца от запястья в размерах кисти: вытянутый около 1.9–2.2, согнутый около 0.9–1.3
+	const reach = [8, 12, 16, 20].map((t) => dist(pts[t], pts[0], aspect) / size);
+	const ex = reach.map((r) => r > 1.5);
 	const count = ex.filter(Boolean).length;
+	const pinchD = dist(pts[4], pts[8], aspect) / size;
+	const thumbOut = dist(pts[4], pts[0], aspect) / size > 1.45;
 	let rawGesture = 'none';
-	if (pinch > 0.65) rawGesture = 'pinch';
+	if (pinchD < 0.35 && reach[0] > 1.25) rawGesture = 'pinch';
+	else if (count === 0) rawGesture = thumbOut && pts[4][1] < pts[5][1] - 0.3 * size ? 'thumb' : 'fist';
+	else if (ex[0] && ex[1] && !ex[2] && !ex[3]) rawGesture = 'peace';
+	else if (ex[0] && !ex[1] && !ex[2] && ex[3]) rawGesture = 'rock';
+	else if (ex[0] && !ex[1] && !ex[2] && !ex[3]) rawGesture = 'point';
 	else if (count >= 3) rawGesture = 'palm';
-	else if (ex[0] && count === 1) rawGesture = 'point';
-	else if (count === 0 || open < 0.25) rawGesture = 'fist';
-	return { id, pts, tips: TIPS.map((i) => pts[i]), palm, size, pinch, open, ext: ex, rawGesture };
+	return { id, pts, tips: TIPS.map((i) => pts[i]), palm, size, pinch: rawGesture === 'pinch' ? 1 : 0, open, ext: ex, rawGesture };
 }

@@ -52,9 +52,15 @@ this.ops.commitTransform(tc.object, before, snapOf(tc.object), names[tc.mode] ||
 before = null;
 }
 });
+let pending = false;
 tc.addEventListener('objectChange', () => {
+if (pending) return;
+pending = true;
+requestAnimationFrame(() => {
+pending = false;
 this.viewport.updateSelectionBox();
 this.bus.emit('transform');
+});
 });
 }
 wirePointer() {

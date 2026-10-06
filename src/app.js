@@ -58,9 +58,16 @@ export class App {
 				before = null;
 			}
 		});
+		// событие приходит на каждый pointermove: обновляем рамку и поля не чаще кадра, чтобы перетаскивание не тормозило
+		let pending = false;
 		tc.addEventListener('objectChange', () => {
-			this.viewport.updateSelectionBox();
-			this.bus.emit('transform');
+			if (pending) return;
+			pending = true;
+			requestAnimationFrame(() => {
+				pending = false;
+				this.viewport.updateSelectionBox();
+				this.bus.emit('transform');
+			});
 		});
 	}
 

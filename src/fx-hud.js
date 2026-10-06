@@ -50,36 +50,30 @@ export class TrackerHud {
 		return new THREE.Vector3(o[i] + (t[i] - o[i]) * m, o[i + 1] + (t[i + 1] - o[i + 1]) * m, o[i + 2] + (t[i + 2] - o[i + 2]) * m);
 	}
 
-	/** Находит точку в зоне наибольшего движения (Hotspot blob tracking) */
+	/** Выбирает точку по всей форме: из нескольких случайных берём самую далёкую от уже занятых, чтобы рамки не скапливались */
 	_pickHotspot(geometry, morph, levels) {
 		const o = geometry.attributes.aOrigin.array;
 		const t = geometry.attributes.aTarget.array;
 		const n = geometry.attributes.position.count;
 		const m = morph * morph * (3 - 2 * morph);
-		let bestIdx = Math.floor(Math.random() * n);
-		let maxScore = -1;
-
-		const candidates = Math.min(12, n);
-		for (let s = 0; s < candidates; s++) {
-			const idx = Math.floor(Math.random() * n);
-			const i = idx * 3;
-			const pX = o[i] + (t[i] - o[i]) * m;
-			const pY = o[i + 1] + (t[i + 1] - o[i + 1]) * m;
-			const pZ = o[i + 2] + (t[i + 2] - o[i + 2]) * m;
-			const dist = Math.hypot(pX, pY, pZ);
-			const score = dist + (levels?.bass || 0) * Math.sin(pY * 4) + Math.random() * 0.4;
-			if (score > maxScore) {
-				maxScore = score;
-				bestIdx = idx;
+		let best = null;
+		let bestScore = -1;
+		for (let s = 0; s < 10; s++) {
+			const i = Math.floor(Math.random() * n) * 3;
+			const p = new THREE.Vector3(o[i] + (t[i] - o[i]) * m, o[i + 1] + (t[i + 1] - o[i + 1]) * m, o[i + 2] + (t[i + 2] - o[i + 2]) * m);
+			let near = 9;
+			for (const it of this.items) near = Math.min(near, p.distanceTo(it.target));
+			const score = near + Math.random() * 0.25;
+			if (score > bestScore) {
+				bestScore = score;
+				best = p;
 			}
 		}
-
-		const i = bestIdx * 3;
-		return new THREE.Vector3(o[i] + (t[i] - o[i]) * m, o[i + 1] + (t[i + 1] - o[i + 1]) * m, o[i + 2] + (t[i + 2] - o[i + 2]) * m);
+		return best;
 	}
 
 	/** Симуляция «захваченных» точек: рамки динамически следуют за зонами активности */
-	update(want, geometry, morph, levels, dt) {
+	update(want, geometry, morph, levels, dt, targets) {
 		this.t += dt;
 		while (this.items.length < want) {
 			const p = this._pickHotspot(geometry, morph, levels);
@@ -89,8 +83,10 @@ export class TrackerHud {
 		while (this.imprints.length > 32 || (this.imprints[0] && this.time - this.imprints[0].t0 > 8)) this.imprints.shift();
 		const beatNew = levels.beat > 0.9 && this.beatSeen <= 0.9;
 		this.beatSeen = levels.beat;
-		for (const it of this.items) {
-			if (this.t > it.next || (beatNew && Math.random() < 0.35)) {
+		this.items.forEach((it, idx) => {
+			if (targets && targets.length) {
+				it.target = targets[idx % targets.length];
+			} else if (this.t > it.next || (beatNew && Math.random() < 0.35)) {
 				if (it.touch > 0.3) this.imprints.push({ pos: it.target.clone(), t0: this.time, s: it.touch });
 				it.target = this._pickHotspot(geometry, morph, levels);
 				it.next = this.t + rnd(1.0, 3.2);
@@ -101,7 +97,7 @@ export class TrackerHud {
 			it.pos.lerp(it.target, 1 - Math.exp(-dt * 6.5));
 			it.speed += (it.pos.distanceTo(before) / Math.max(dt, 1e-3) - it.speed) * 0.2;
 			it.touch += (1 - Math.min(1, it.pos.distanceTo(it.target) * 2.5) - it.touch) * 0.15;
-		}
+		});
 	}
 
 	/** Отрисовка трекинг-рамок */
@@ -162,6 +158,28 @@ export class TrackerHud {
 			const y0 = y - s / 2;
 			const x1 = x + s / 2;
 			const y1 = y + s / 2;
+			// заливка области рамки: тон или штриховка
+			if (cfg.fill && cfg.fill !== 'none') {
+				ctx.save();
+				ctx.beginPath();
+				if (cfg.shape === 'circle' || cfg.shape === 'cross') ctx.arc(x, y, s / 2, 0, Math.PI * 2);
+				else ctx.rect(x0, y0, s, s);
+				ctx.clip();
+				ctx.fillStyle = rgba(c0, 0.14 * alpha);
+				ctx.fillRect(x0, y0, s, s);
+				if (cfg.fill === 'hatch') {
+					ctx.strokeStyle = rgba(c0, 0.35 * alpha);
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					for (let k = -s; k < s; k += 7) {
+						ctx.moveTo(x0 + k, y1);
+						ctx.lineTo(x0 + k + s, y0);
+					}
+					ctx.stroke();
+				}
+				ctx.restore();
+				ctx.lineWidth = lw;
+			}
 			ctx.strokeStyle = rgba(c0, 0.95 * Math.min(1, alpha));
 			ctx.beginPath();
 			const shape = cfg.shape || 'corners';
