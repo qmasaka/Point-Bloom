@@ -3161,3 +3161,27 @@ body {
 	text-align: center;
 	letter-spacing: -0.04em;
 }
+
+/* режим эффектов «только сцена»: остаётся вьюпорт и нижняя панель */
+#app.fx-focus {
+	grid-template-rows: 0 minmax(0, 1fr) 0;
+}
+.fx-focus .topbar,
+.fx-focus .statusbar {
+	height: 0;
+	min-height: 0;
+	padding: 0;
+	border: 0;
+	overflow: hidden;
+	visibility: hidden;
+}
+.fx-mode.fx-focus .workspace,
+.fx-mode.fx-focus .workspace.sidebar-hidden {
+	grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+.fx-focus .fx-left,
+.fx-focus .sidebar,
+.fx-focus .sidebar-resizer,
+.fx-focus .fx-left-btn {
+	display: none !important;
+}

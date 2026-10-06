@@ -89365,7 +89365,6 @@ const ICON_PATHS = {
 	'check': '<path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/>',
 	'checkerboard': '<path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Zm-12.69,88L136,60.69V48h12.69L208,107.32V120ZM136,83.31,172.69,120H136Zm72,1.38L171.31,48H208ZM120,48v72H48V48ZM107.31,208,48,148.69V136H60.69L120,195.31V208ZM120,172.69,83.31,136H120Zm-72-1.38L84.69,208H48ZM208,208H136V136h72v72Z"/>',
 	'circle-half': '<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm8,16.37a86.4,86.4,0,0,1,16,3V212.67a86.4,86.4,0,0,1-16,3Zm32,9.26a87.81,87.81,0,0,1,16,10.54V195.83a87.81,87.81,0,0,1-16,10.54ZM40,128a88.11,88.11,0,0,1,80-87.63V215.63A88.11,88.11,0,0,1,40,128Zm160,50.54V77.46a87.82,87.82,0,0,1,0,101.08Z"/>',
-	'circle-notch': '<path d="M232,128a104,104,0,0,1-208,0c0-41,23.81-78.36,60.66-95.27a8,8,0,0,1,6.68,14.54C60.15,61.59,40,93.27,40,128a88,88,0,0,0,176,0c0-34.73-20.15-66.41-51.34-80.73a8,8,0,0,1,6.68-14.54C208.19,49.64,232,87,232,128Z"/>',
 	'circle': '<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Z"/>',
 	'code': '<path d="M69.12,94.15,28.5,128l40.62,33.85a8,8,0,1,1-10.24,12.29l-48-40a8,8,0,0,1,0-12.29l48-40a8,8,0,0,1,10.24,12.3Zm176,27.7-48-40a8,8,0,1,0-10.24,12.3L227.5,128l-40.62,33.85a8,8,0,1,0,10.24,12.29l48-40a8,8,0,0,0,0-12.29ZM162.73,32.48a8,8,0,0,0-10.25,4.79l-64,176a8,8,0,0,0,4.79,10.26A8.14,8.14,0,0,0,96,224a8,8,0,0,0,7.52-5.27l64-176A8,8,0,0,0,162.73,32.48Z"/>',
 	'compass': '<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM172.42,72.84l-64,32a8.05,8.05,0,0,0-3.58,3.58l-32,64A8,8,0,0,0,80,184a8.1,8.1,0,0,0,3.58-.84l64-32a8.05,8.05,0,0,0,3.58-3.58l32-64a8,8,0,0,0-10.74-10.74ZM138,138,97.89,158.11,118,118l40.15-20.07Z"/>',
@@ -133465,7 +133464,6 @@ const FX_LAYERS = [
 	{ id: 'wave', group: 'Движение', name: 'Волны', icon: 'waves', hint: 'Круги расходятся от точки: от центра, от курсора или каплями на каждый удар. Есть плоская волна', max: 2, def: { on: false, amount: 0.7, band: 'mid', react: 0.8, freq: 5, speed: 1, mode: 'drops', origin: 'center', decay: 1.2, dir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['drops', 'Капли по биту'], ['rings', 'Кольца непрерывно'], ['plane', 'Плоская волна']] }, { key: 'freq', label: 'Масштаб (частота)', min: 1, max: 14, step: 0.5 }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }, { key: 'origin', label: 'Откуда', type: 'seg', options: [['center', 'Центр'], ['cursor', 'Курсор, рука']], when: ['mode', ['rings']] }, { key: 'decay', label: 'Затухание', min: 0.2, max: 4, step: 0.1, when: ['mode', ['drops']] }, { key: 'dir', label: 'Направление', min: 0, max: 6.28, step: 0.1, when: ['mode', ['plane']] }] },
 	{ id: 'twist', group: 'Движение', name: 'Деформация', icon: 'wind', hint: 'Форма скручивается, гнётся дугой или сужается конусом', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'twist', speed: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['twist', 'Скрутка'], ['bend', 'Изгиб'], ['taper', 'Конус']] }, { key: 'speed', label: 'Покачивание', min: 0, max: 3, step: 0.05 }] },
 	{ id: 'pulse', group: 'Движение', name: 'Пульс', icon: 'pulse', hint: 'Форма бьётся, как сердце: волна расширения бежит от центра к краю', max: 2, def: { on: false, amount: 0.8, band: 'none', react: 0, mode: 'shell', delay: 0.35, speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['shell', 'Бегущая оболочка'], ['squash', 'Сжатие и растяжение'], ['flat', 'Вся форма сразу']] }, { key: 'delay', label: 'Задержка к краю', min: 0, max: 1, step: 0.02, when: ['mode', ['shell', 'squash']] }, { key: 'speed', label: 'Скорость затухания', min: 0.3, max: 3, step: 0.05 }] },
-	{ id: 'ring', group: 'Движение', name: 'Бегущее кольцо', icon: 'circle-notch', hint: 'На каждый удар по поверхности формы пробегает светящееся кольцо', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'up', speed: 0.8, width: 0.12 }, extras: [{ key: 'mode', label: 'Куда бежит', type: 'select', options: [['up', 'Снизу вверх'], ['down', 'Сверху вниз'], ['out', 'От центра к краю']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 2.5, step: 0.05 }, { key: 'width', label: 'Толщина кольца', min: 0.03, max: 0.4, step: 0.01 }] },
 	{ id: 'blast', group: 'Движение', name: 'Взрыв по биту', icon: 'asterisk', hint: 'На каждый удар точки отлетают от формы и пружинят обратно с перелётом', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, decay: 2.2, random: 0.6, period: 1.6 }, extras: [{ key: 'decay', label: 'Возврат (пружина)', min: 0.8, max: 6, step: 0.1 }, { key: 'random', label: 'Разброс направлений', min: 0, max: 1, step: 0.05 }, { key: 'period', label: 'Без музыки бьёт раз в, с', min: 0.4, max: 5, step: 0.1 }] },
 	{ id: 'cloth', group: 'Движение', name: 'Ткань и ветер', icon: 'flag', hint: 'Форма колышется, как ткань на ветру: бегут складки, порывы сменяют друг друга', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, wind: 0.8, fold: 1.2, gust: 0.6, speed: 1, anchor: 'top' }, extras: [{ key: 'wind', label: 'Направление ветра', min: 0, max: 6.28, step: 0.1 }, { key: 'fold', label: 'Размер складок', min: 0.3, max: 3, step: 0.05 }, { key: 'gust', label: 'Порывистость', min: 0, max: 1, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'anchor', label: 'Закреплена', type: 'seg', options: [['top', 'Сверху'], ['bottom', 'Снизу'], ['none', 'Нигде']] }] },
 	{ id: 'flow', group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, поверхность выглядит живой, а силуэт не меняется', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
@@ -133488,7 +133486,7 @@ const FX_LAYERS = [
 // разделы списка эффектов: логика по тому, что эффект делает
 const FX_GROUPS = {
 	'Движение': ['curl', 'flow', 'cloth', 'gravity'],
-	'Звук и ритм': ['spectrum', 'wave', 'pulse', 'blast', 'ring'],
+	'Звук и ритм': ['spectrum', 'wave', 'pulse', 'blast'],
 	'Превращения': ['twist', 'voxel', 'glitch', 'physics', 'dissolve'],
 	'Графика': ['links', 'slice', 'feedback', 'echo'],
 	'Управление': ['cursor', 'brush', 'tracking', 'shock', 'camTrack'],
@@ -133772,7 +133770,6 @@ uniform vec2 uYR;
 uniform vec3 uMouse;
 uniform float uMouseOn;
 uniform sampler2D uSpecTex;
-uniform vec4 uRing, uRingW;
 uniform float uShade;
 uniform vec4 uCurlP, uSpecP, uWaveP, uWaveSrc, uPulseP, uVoxelP, uGlitchP, uBlast, uCloth, uClothT, uFlow, uDisP;
 float gGl = 0.0;
@@ -134468,24 +134465,6 @@ void main() {
 		float edge = smoothstep(0.02, 0.25, dkv) * (1.0 - smoothstep(0.25, 0.75, dkv));
 		vColor += vec3(1.0, 0.42, 0.08) * edge * 2.4;
 	}
-	// бегущее кольцо по биту
-	float rgk = 0.0;
-	if (uRing.x > 0.001) {
-		float rAge = uTime - uRing.w;
-		float rW = uRingW.x;
-		float rf = rAge * uRing.y * (1.0 + 2.0 * rW) - rW;
-		if (rAge >= 0.0 && rf < 1.0 + rW) {
-			float rv;
-			if (uRingW.y < 0.5) rv = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
-			else if (uRingW.y < 1.5) rv = 1.0 - clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
-			else rv = clamp(length(base) / 1.5, 0.0, 1.0);
-			float rd = (rv - rf) / rW;
-			rgk = exp(-rd * rd) * uRing.x * (1.0 - clamp(rf, 0.0, 1.0) * 0.5);
-			vec3 rr = vec3(pos.x, uRingW.y > 1.5 ? pos.y : 0.0, pos.z);
-			pos += rr * rgk * 0.09;
-			vColor += (uP2 * 1.6 + vec3(0.25)) * rgk * 2.2;
-		}
-	}
 	vD = disp;
 	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
 	gl_Position = projectionMatrix * mv;
@@ -134509,7 +134488,7 @@ void main() {
 	}
 	vCoc = coc;
 
-	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + rgk * 0.9) * uGlyph.y;
+	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2) * uGlyph.y;
 	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.7 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
@@ -136297,7 +136276,7 @@ class EffectsEngine {
 		const shared = {
 			uTime: U(0), uMorph: U(1), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
 			uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()), uYR: U(new THREE.Vector2(-1, 1)),
-			uRing: U(new THREE.Vector4()), uRingW: U(new THREE.Vector4(0.12, 0, 0, 0)), uShade: U(0), uGlyph: U(new THREE.Vector2(0, 1)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
+			uShade: U(0), uGlyph: U(new THREE.Vector2(0, 1)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
 			uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
 			uPulse: U(new THREE.Vector4()), uVoxel: U(new THREE.Vector4()), uJitter: U(new THREE.Vector4()), uCursor: U(new THREE.Vector4()),
 			uGlitch: U(new THREE.Vector4()), uSlice: U(new THREE.Vector4()), uSliceM: U(new THREE.Vector4()), uSliceC: U(new THREE.Color()), uMark: U(new THREE.Vector4()), uMarkC: U(new THREE.Color()), uLink: U(new THREE.Vector4()), uContact: U(new THREE.Vector4()), uShockP: U(new THREE.Vector4()),
@@ -136621,7 +136600,7 @@ class EffectsEngine {
 			this.active = false;
 			vp.root.visible = this._saved.rootVisible;
 			vp.fxHide = false;
-			document.getElementById('app').classList.remove('fx-mode');
+			document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 			throw e;
 		}
 		app.ui.idle();
@@ -136689,7 +136668,7 @@ class EffectsEngine {
 		stage.removeEventListener('pointerleave', this._leave);
 		stage.removeEventListener('pointerdown', this._dn);
 		stage.removeEventListener('pointerup', this._up);
-		document.getElementById('app').classList.remove('fx-mode');
+		document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 		this.app.display.apply();
 		this.app.nav.frameAll(true);
 		vp.invalidate();
@@ -136838,8 +136817,6 @@ class EffectsEngine {
 				u.uPulseP.value.set(pm, P.delay, this._tb, P.speed);
 			}
 			u.uBlast.value.set(L.blast.on ? this._eff(L.blast) : 0, L.blast.decay, L.blast.random, this._tb);
-			u.uRing.value.set(L.ring.on ? this._eff(L.ring) : 0, L.ring.speed, 0, this._tb);
-			u.uRingW.value.set(L.ring.width, { up: 0, down: 1, out: 2 }[L.ring.mode] ?? 0, 0, 0);
 			u.uCloth.value.set(this._eff(L.cloth), L.cloth.wind, L.cloth.fold, L.cloth.gust);
 			u.uClothT.value.set(L.cloth.speed, { top: 0, bottom: 1, none: 2 }[L.cloth.anchor] ?? 0, 0, 0);
 			u.uFlow.value.set(this._eff(L.flow), L.flow.scale, L.flow.speed, L.flow.dir);
@@ -137361,20 +137338,6 @@ const DRAW = {
 			else c.lineTo(x, y);
 		}
 		c.stroke();
-	},
-	ring: (c, t) => {
-		// кольцо бежит по поверхности шара снизу вверх
-		const f = (t * 0.6) % 1;
-		for (let j = 0; j < 9; j++) {
-			const y = -9 + j * 2.25;
-			const w = Math.sqrt(Math.max(0, 1 - (y / 10) ** 2)) * 9;
-			const near = Math.exp(-((((y + 9) / 18 - f) / 0.12) ** 2));
-			const n = 9;
-			for (let i = 0; i < n; i++) {
-				const x = -w + (i / (n - 1)) * 2 * w;
-				dot(c, x, -y, 1 + near * 0.9, 0.3 + near * 0.7);
-			}
-		}
 	},
 	blast: (c, t) => {
 		const a = (t * 1.2) % 2;
@@ -138172,6 +138135,18 @@ function createEffectsPanel(app, root, engine) {
 	const bar = $bar();
 	const playBtn = iconButton({ icon: 'speaker-high', title: 'Звук: включить или выключить (Пробел)', onClick: () => engine.toggle().catch(() => {}) });
 	const collapseBtn = iconButton({ icon: 'atom', title: 'Разрушить / собрать форму («Распад»)', onClick: () => { engine.toggleCollapse(); sync(); } });
+	// режим «только сцена»: прячет всё, кроме самой анимации и этой панели; Esc возвращает интерфейс
+	const appEl = document.getElementById('app');
+	const focusBtn = iconButton({ icon: 'corners-out', title: 'Только сцена: скрыть интерфейс (Esc вернёт)', onClick: () => setFocus(!appEl.classList.contains('fx-focus')) });
+	function setFocus(on) {
+		appEl.classList.toggle('fx-focus', on);
+		focusBtn.classList.toggle('is-active', on);
+		if (on) app.toast('Интерфейс скрыт. Esc или эта же кнопка вернут его', 'info');
+		requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+	}
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape' && appEl.classList.contains('fx-focus')) setFocus(false);
+	});
 	const orthoBtn = iconButton({ icon: 'perspective', title: 'Проекция: перспектива или ортогональная', onClick: () => { app.nav.toggleOrtho(); sync(); } });
 	const camBtn = iconButton({ icon: 'video-camera', title: 'Камера: управление руками и пальцами', onClick: () => engine.toggleMotionCam().then(sync) });
 	const trackName = h('div', { class: 'fx-track' });
@@ -138220,7 +138195,7 @@ function createEffectsPanel(app, root, engine) {
 	});
 	syncBg();
 	const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
-	bar.append(leftBtn, playBtn, collapseBtn, camBtn, trackName, barMeters.el, h('span', { class: 'fx-bar-sep' }), orthoBtn, bgBtn, recBtn, recTime, exitBtn);
+	bar.append(leftBtn, playBtn, collapseBtn, camBtn, trackName, barMeters.el, h('span', { class: 'fx-bar-sep' }), focusBtn, orthoBtn, bgBtn, recBtn, recTime, exitBtn);
 
 	// ------------------------------------------------------------ синхронизация
 	function sync() {

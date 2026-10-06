@@ -29,7 +29,6 @@ export const FX_LAYERS = [
 { id: 'wave', group: 'Движение', name: 'Волны', icon: 'waves', hint: 'Круги расходятся от точки: от центра, от курсора или каплями на каждый удар. Есть плоская волна', max: 2, def: { on: false, amount: 0.7, band: 'mid', react: 0.8, freq: 5, speed: 1, mode: 'drops', origin: 'center', decay: 1.2, dir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['drops', 'Капли по биту'], ['rings', 'Кольца непрерывно'], ['plane', 'Плоская волна']] }, { key: 'freq', label: 'Масштаб (частота)', min: 1, max: 14, step: 0.5 }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }, { key: 'origin', label: 'Откуда', type: 'seg', options: [['center', 'Центр'], ['cursor', 'Курсор, рука']], when: ['mode', ['rings']] }, { key: 'decay', label: 'Затухание', min: 0.2, max: 4, step: 0.1, when: ['mode', ['drops']] }, { key: 'dir', label: 'Направление', min: 0, max: 6.28, step: 0.1, when: ['mode', ['plane']] }] },
 { id: 'twist', group: 'Движение', name: 'Деформация', icon: 'wind', hint: 'Форма скручивается, гнётся дугой или сужается конусом', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'twist', speed: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['twist', 'Скрутка'], ['bend', 'Изгиб'], ['taper', 'Конус']] }, { key: 'speed', label: 'Покачивание', min: 0, max: 3, step: 0.05 }] },
 { id: 'pulse', group: 'Движение', name: 'Пульс', icon: 'pulse', hint: 'Форма бьётся, как сердце: волна расширения бежит от центра к краю', max: 2, def: { on: false, amount: 0.8, band: 'none', react: 0, mode: 'shell', delay: 0.35, speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['shell', 'Бегущая оболочка'], ['squash', 'Сжатие и растяжение'], ['flat', 'Вся форма сразу']] }, { key: 'delay', label: 'Задержка к краю', min: 0, max: 1, step: 0.02, when: ['mode', ['shell', 'squash']] }, { key: 'speed', label: 'Скорость затухания', min: 0.3, max: 3, step: 0.05 }] },
-{ id: 'ring', group: 'Движение', name: 'Бегущее кольцо', icon: 'circle-notch', hint: 'На каждый удар по поверхности формы пробегает светящееся кольцо', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'up', speed: 0.8, width: 0.12 }, extras: [{ key: 'mode', label: 'Куда бежит', type: 'select', options: [['up', 'Снизу вверх'], ['down', 'Сверху вниз'], ['out', 'От центра к краю']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 2.5, step: 0.05 }, { key: 'width', label: 'Толщина кольца', min: 0.03, max: 0.4, step: 0.01 }] },
 { id: 'blast', group: 'Движение', name: 'Взрыв по биту', icon: 'asterisk', hint: 'На каждый удар точки отлетают от формы и пружинят обратно с перелётом', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, decay: 2.2, random: 0.6, period: 1.6 }, extras: [{ key: 'decay', label: 'Возврат (пружина)', min: 0.8, max: 6, step: 0.1 }, { key: 'random', label: 'Разброс направлений', min: 0, max: 1, step: 0.05 }, { key: 'period', label: 'Без музыки бьёт раз в, с', min: 0.4, max: 5, step: 0.1 }] },
 { id: 'cloth', group: 'Движение', name: 'Ткань и ветер', icon: 'flag', hint: 'Форма колышется, как ткань на ветру: бегут складки, порывы сменяют друг друга', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, wind: 0.8, fold: 1.2, gust: 0.6, speed: 1, anchor: 'top' }, extras: [{ key: 'wind', label: 'Направление ветра', min: 0, max: 6.28, step: 0.1 }, { key: 'fold', label: 'Размер складок', min: 0.3, max: 3, step: 0.05 }, { key: 'gust', label: 'Порывистость', min: 0, max: 1, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'anchor', label: 'Закреплена', type: 'seg', options: [['top', 'Сверху'], ['bottom', 'Снизу'], ['none', 'Нигде']] }] },
 { id: 'flow', group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, поверхность выглядит живой, а силуэт не меняется', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
@@ -50,7 +49,7 @@ export const FX_LAYERS = [
 ];
 const FX_GROUPS = {
 'Движение': ['curl', 'flow', 'cloth', 'gravity'],
-'Звук и ритм': ['spectrum', 'wave', 'pulse', 'blast', 'ring'],
+'Звук и ритм': ['spectrum', 'wave', 'pulse', 'blast'],
 'Превращения': ['twist', 'voxel', 'glitch', 'physics', 'dissolve'],
 'Графика': ['links', 'slice', 'feedback', 'echo'],
 'Управление': ['cursor', 'brush', 'tracking', 'shock', 'camTrack'],
@@ -309,7 +308,6 @@ uniform vec2 uYR;
 uniform vec3 uMouse;
 uniform float uMouseOn;
 uniform sampler2D uSpecTex;
-uniform vec4 uRing, uRingW;
 uniform float uShade;
 uniform vec4 uCurlP, uSpecP, uWaveP, uWaveSrc, uPulseP, uVoxelP, uGlitchP, uBlast, uCloth, uClothT, uFlow, uDisP;
 float gGl = 0.0;
@@ -1004,24 +1002,6 @@ void main() {
 		float edge = smoothstep(0.02, 0.25, dkv) * (1.0 - smoothstep(0.25, 0.75, dkv));
 		vColor += vec3(1.0, 0.42, 0.08) * edge * 2.4;
 	}
-	// бегущее кольцо по биту
-	float rgk = 0.0;
-	if (uRing.x > 0.001) {
-		float rAge = uTime - uRing.w;
-		float rW = uRingW.x;
-		float rf = rAge * uRing.y * (1.0 + 2.0 * rW) - rW;
-		if (rAge >= 0.0 && rf < 1.0 + rW) {
-			float rv;
-			if (uRingW.y < 0.5) rv = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
-			else if (uRingW.y < 1.5) rv = 1.0 - clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
-			else rv = clamp(length(base) / 1.5, 0.0, 1.0);
-			float rd = (rv - rf) / rW;
-			rgk = exp(-rd * rd) * uRing.x * (1.0 - clamp(rf, 0.0, 1.0) * 0.5);
-			vec3 rr = vec3(pos.x, uRingW.y > 1.5 ? pos.y : 0.0, pos.z);
-			pos += rr * rgk * 0.09;
-			vColor += (uP2 * 1.6 + vec3(0.25)) * rgk * 2.2;
-		}
-	}
 	vD = disp;
 	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
 	gl_Position = projectionMatrix * mv;
@@ -1045,7 +1025,7 @@ void main() {
 	}
 	vCoc = coc;
 
-	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + rgk * 0.9) * uGlyph.y;
+	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2) * uGlyph.y;
 	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.7 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
@@ -2685,7 +2665,7 @@ const U = (v) => ({ value: v });
 const shared = {
 uTime: U(0), uMorph: U(1), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
 uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()), uYR: U(new THREE.Vector2(-1, 1)),
-uRing: U(new THREE.Vector4()), uRingW: U(new THREE.Vector4(0.12, 0, 0, 0)), uShade: U(0), uGlyph: U(new THREE.Vector2(0, 1)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
+uShade: U(0), uGlyph: U(new THREE.Vector2(0, 1)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
 uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
 uPulse: U(new THREE.Vector4()), uVoxel: U(new THREE.Vector4()), uJitter: U(new THREE.Vector4()), uCursor: U(new THREE.Vector4()),
 uGlitch: U(new THREE.Vector4()), uSlice: U(new THREE.Vector4()), uSliceM: U(new THREE.Vector4()), uSliceC: U(new THREE.Color()), uMark: U(new THREE.Vector4()), uMarkC: U(new THREE.Color()), uLink: U(new THREE.Vector4()), uContact: U(new THREE.Vector4()), uShockP: U(new THREE.Vector4()),
@@ -2989,7 +2969,7 @@ app.ui.idle();
 this.active = false;
 vp.root.visible = this._saved.rootVisible;
 vp.fxHide = false;
-document.getElementById('app').classList.remove('fx-mode');
+document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 throw e;
 }
 app.ui.idle();
@@ -3054,7 +3034,7 @@ stage.removeEventListener('pointermove', this._move);
 stage.removeEventListener('pointerleave', this._leave);
 stage.removeEventListener('pointerdown', this._dn);
 stage.removeEventListener('pointerup', this._up);
-document.getElementById('app').classList.remove('fx-mode');
+document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 this.app.display.apply();
 this.app.nav.frameAll(true);
 vp.invalidate();
@@ -3192,8 +3172,6 @@ u.uPulse.value.set(pm === 0 ? this._eff(P) : P.on ? P.amount : 0, 0, 0, 0);
 u.uPulseP.value.set(pm, P.delay, this._tb, P.speed);
 }
 u.uBlast.value.set(L.blast.on ? this._eff(L.blast) : 0, L.blast.decay, L.blast.random, this._tb);
-u.uRing.value.set(L.ring.on ? this._eff(L.ring) : 0, L.ring.speed, 0, this._tb);
-u.uRingW.value.set(L.ring.width, { up: 0, down: 1, out: 2 }[L.ring.mode] ?? 0, 0, 0);
 u.uCloth.value.set(this._eff(L.cloth), L.cloth.wind, L.cloth.fold, L.cloth.gust);
 u.uClothT.value.set(L.cloth.speed, { top: 0, bottom: 1, none: 2 }[L.cloth.anchor] ?? 0, 0, 0);
 u.uFlow.value.set(this._eff(L.flow), L.flow.scale, L.flow.speed, L.flow.dir);

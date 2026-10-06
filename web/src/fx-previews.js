@@ -79,19 +79,6 @@ else c.lineTo(x, y);
 }
 c.stroke();
 },
-ring: (c, t) => {
-const f = (t * 0.6) % 1;
-for (let j = 0; j < 9; j++) {
-const y = -9 + j * 2.25;
-const w = Math.sqrt(Math.max(0, 1 - (y / 10) ** 2)) * 9;
-const near = Math.exp(-((((y + 9) / 18 - f) / 0.12) ** 2));
-const n = 9;
-for (let i = 0; i < n; i++) {
-const x = -w + (i / (n - 1)) * 2 * w;
-dot(c, x, -y, 1 + near * 0.9, 0.3 + near * 0.7);
-}
-}
-},
 blast: (c, t) => {
 const a = (t * 1.2) % 2;
 const e = Math.exp(-a * 2.4) * Math.cos(a * 6);
