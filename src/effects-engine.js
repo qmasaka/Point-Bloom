@@ -45,12 +45,12 @@ export const FX_GESTURE_PRESETS = [
 
 /** Слои-операторы. group: раздел в левой панели; extras: дополнительные параметры; relink: пересобрать связи */
 export const FX_LAYERS = [
-	{ id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Частицы отрываются и плывут по вихрям', max: 2, def: { on: true, amount: 0.8, band: 'bass', react: 0.6, scale: 1.8 }, extras: [{ key: 'scale', label: 'Размер вихрей', min: 0.5, max: 4, step: 0.1 }] },
-	{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается сверху вниз, осколки взлетают, закручиваются и падают на пол с отскоками. При сборке они возвращаются дугами и складываются обратно', max: 2, def: { on: false, amount: 1.0, band: 'bass', react: 0.5, gravity: 1.2, bounce: 0.55, wind: 0.2, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
+	{ id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Частицы отрываются и плывут по вихрям', max: 2, def: { on: false, amount: 0.8, band: 'bass', react: 0.6, scale: 1.8 }, extras: [{ key: 'scale', label: 'Размер вихрей', min: 0.5, max: 4, step: 0.1 }] },
+	{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается сверху вниз, осколки взлетают, закручиваются и падают на пол с отскоками. При сборке они возвращаются дугами и складываются обратно', max: 2, def: { on: false, amount: 1.0, band: 'bass', react: 0.5, gravity: 1.2, bounce: 0.55, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
 	{ id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма вытягивается по частотам трека', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, axis: 'angle' }, extras: [{ key: 'axis', label: 'Ось', type: 'seg', options: [['angle', 'По кругу'], ['height', 'По высоте']] }] },
 	{ id: 'wave', group: 'Движение', name: 'Волны', icon: 'waves', hint: 'Круги расходятся от центра', max: 2, def: { on: false, amount: 0.7, band: 'mid', react: 0.8, freq: 5 }, extras: [{ key: 'freq', label: 'Частота', min: 1, max: 14, step: 0.5 }] },
 	{ id: 'twist', group: 'Движение', name: 'Скручивание', icon: 'wind', hint: 'Форма закручивается вокруг вертикали', max: 3, def: { on: false, amount: 1, band: 'none', react: 0 }, extras: [] },
-	{ id: 'pulse', group: 'Движение', name: 'Пульс', icon: 'pulse', hint: 'Форма раздувается на каждый удар', max: 2, def: { on: true, amount: 0.8, band: 'beat', react: 1 }, extras: [] },
+	{ id: 'pulse', group: 'Движение', name: 'Пульс', icon: 'pulse', hint: 'Форма раздувается на каждый удар', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1 }, extras: [] },
 	{ id: 'alive', group: 'Движение', name: 'Живая форма', icon: 'heartbeat', hint: 'Форма дышит, у неё бьётся сердце, и она с любопытством тянется к курсору', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, breath: 0.6, heart: 0.7, bpm: 62, lean: 0.8 }, extras: [{ key: 'breath', label: 'Дыхание', min: 0.2, max: 2, step: 0.05 }, { key: 'heart', label: 'Сердцебиение', min: 0, max: 1.5, step: 0.05 }, { key: 'bpm', label: 'Пульс, уд/мин', min: 40, max: 140, step: 1, int: true }, { key: 'lean', label: 'Тянется к курсору', min: 0, max: 1.5, step: 0.05 }] },
 	{ id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Частицы отрываются от формы, уносятся ветром и гаснут, пока модель не исчезнет. Потом она собирается обратно', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', order: 'top', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.8 }, extras: [{ key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'order', label: 'С какой стороны', type: 'seg', options: [['top', 'Сверху'], ['noise', 'Пятнами'], ['bottom', 'Снизу']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер в сторону', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Завихрения', min: 0, max: 2, step: 0.05 }] },
 	{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1 }, extras: [] },
@@ -135,7 +135,7 @@ function defaultState() {
 	};
 }
 
-const KEY = 'objglb.fx.v2';
+const KEY = 'objglb.fx.v3';
 
 // ───────────────────────────────────────────────────────────── формы
 
@@ -614,7 +614,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		float floorY = uYR.x - 0.04;
 		float drag = 1.0 - exp(-pt * 1.5);
 		vec3 pPhys = base;
-		pPhys.x += v0.x * drag / 1.5 + uPhysics.w * 0.35 * pt;
+		pPhys.x += v0.x * drag / 1.5 + uPhysics.w * 0.5 * drag;
 		pPhys.z += v0.z * drag / 1.5;
 		float h0 = max(base.y - floorY, 0.0);
 		float vimp = sqrt(vy0 * vy0 + 2.0 * g * h0);
@@ -2492,7 +2492,6 @@ export class EffectsEngine {
 		this._lastT = performance.now();
 		this._loop();
 		this.emit();
-		this.play().catch(() => this.emit());
 	}
 
 	exit() {

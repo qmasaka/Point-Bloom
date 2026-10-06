@@ -1,7 +1,7 @@
 import { h, formatInt } from './util.js';
 import { section, field, slider, segmented, switchRow, colorField, button } from './ui-kit.js';
 import { sampleSurface, verticesToCloud, cloudToPoints } from './pointcloud.js';
-import { createDeviceCard, getDevice, hintForCount } from './device-card.js';
+import { getDevice, hintForCount } from './device-card.js';
 const compact = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k' : String(n));
 export const SHAPES = [
 { value: 'circle', label: 'Круг' },
@@ -60,16 +60,6 @@ build({ auto: true });
 },
 });
 const rowCount = field('Точек', count.el);
-const device = createDeviceCard(app, {
-compact: true,
-onPick: (n) => {
-pt.surfaceCount = n;
-count.set(n);
-showHint();
-save();
-build({ auto: true });
-},
-});
 const hideSource = switchRow('Скрыть исходную модель', { value: true, onChange: () => {} });
 const goBtn = button({ label: 'Создать облако точек', icon: 'dots-nine', variant: 'primary', cls: 'btn-block', onClick: () => build({}) });
 const status = h('div', { class: 'field-hint' });
@@ -142,7 +132,6 @@ sync();
 }
 }
 const secCreate = section('Облако точек', { key: 'p-create' }, source.el, rowCount, hint, hideSource.el, goBtn, status);
-const secDevice = section('Ваш компьютер', { key: 'p-device', open: false }, device);
 const showPoints = () => {
 if (app.settings.display !== 'points') app.setDisplay('points');
 };
@@ -185,12 +174,11 @@ save();
 });
 colorRow.hidden = pt.color !== 'solid';
 const secLook = section('Вид точек', { key: 'p-look' }, tiles, field('Размер', size.el), field('Цвет', colorMode.el, { wide: true }), colorRow, att.el);
-root.append(secCreate.el, secLook.el, secDevice.el);
+root.append(secCreate.el, secLook.el);
 function sync() {
 const vertices = pt.source === 'vertices';
 source.set(pt.source);
 rowCount.hidden = vertices;
-secDevice.el.hidden = vertices;
 showHint();
 const cur = liveCurrent();
 goBtn.querySelector('.btn-label').textContent = cur ? 'Пересоздать облако' : 'Создать облако точек';
