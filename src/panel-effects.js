@@ -9,7 +9,7 @@ import { formatCount } from './capabilities.js';
 import { createMediaPanel } from './panel-media.js';
 import { attachPreview } from './fx-previews.js';
 import { SHAPES as POINT_SHAPE_LIST } from './panel-points.js';
-import { FX_GROUP_NAMES, FX_SHAPES, FX_ACTIONS, FX_GESTURE_PRESETS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY, SYNTH_STYLES } from './effects-engine.js';
+import { FX_GROUP_NAMES, FX_SHAPES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY_UI, SYNTH_STYLES } from './effects-engine.js';
 
 /**
  * Источник «Модель» для эффектов: если в сцене редактора есть облако точек (оно создаётся на вкладке «Точки»),
@@ -313,19 +313,7 @@ export function createEffectsPanel(app, root, engine) {
 					save();
 					if (ex.relink) engine.relink();
 				};
-				if (ex.type === 'preset') {
-					const row = h('div', { class: 'chip-row' });
-					for (const pr of FX_GESTURE_PRESETS) {
-						const b = h('button', { type: 'button', class: 'chip-btn', 'data-tip': pr.tip }, pr.name);
-						b.addEventListener('click', () => {
-							Object.assign(L, pr.v);
-							for (const [k, v] of Object.entries(pr.v)) extraCtl[k]?.set(v);
-							save();
-						});
-						row.append(b);
-					}
-					put(field('Готовые схемы', row, { wide: true }), ex);
-				} else if (ex.type === 'select') {
+				if (ex.type === 'select') {
 					const sl = select({ options: ex.options.map(([value, label]) => ({ value, label })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
 					extraCtl[ex.key] = sl;
 					put(field(ex.label, sl.el, { wide: true }), ex);
@@ -493,7 +481,7 @@ export function createEffectsPanel(app, root, engine) {
 	}
 	// вид точек общий с вкладкой «Точки»: одни и те же настройки, без дублей
 	const pset = app.settings.point;
-	const colorBy = select({ options: COLOR_BY.map((c) => ({ value: c.id, label: c.label })), value: st.look.colorBy, onChange: (v) => { engine.setColorBy(v); } });
+	const colorBy = select({ options: COLOR_BY_UI.map((c) => ({ value: c.id, label: c.label })), value: st.look.colorBy, onChange: (v) => { engine.setColorBy(v); } });
 	const shapeTiles = h('div', { class: 'shape-grid', role: 'radiogroup', 'aria-label': 'Форма точек' });
 	const shapeBtns = new Map();
 	for (const sh of POINT_SHAPE_LIST) {
@@ -511,7 +499,7 @@ export function createEffectsPanel(app, root, engine) {
 	const origBtn = button({ label: 'Исходный цвет модели', icon: 'arrow-counter-clockwise', variant: 'secondary', cls: 'btn-block', title: 'Вернуть настоящие цвета и текстуру модели вместо палитры', onClick: () => engine.setColorBy('model') });
 	// сохранение зацикленной анимации
 	const anim = { format: 'gif', seconds: 4 };
-	const animFmt = segmented({ options: [{ value: 'gif', label: 'GIF', title: 'Зацикленная анимация, открывается везде' }, { value: 'webm', label: 'WebM со звуком', title: 'Видео в хорошем качестве' }], value: anim.format, onChange: (v) => { anim.format = v; } });
+	const animFmt = segmented({ options: [{ value: 'gif', label: 'GIF', title: 'Зацикленная анимация, открывается везде' }, { value: 'mp4', label: 'MP4 со звуком', title: 'Видео в хорошем качестве, открывается везде' }], value: anim.format, onChange: (v) => { anim.format = v; } });
 	const animSec = slider({ min: 1, max: 15, step: 1, value: anim.seconds, digits: 0, unit: ' с', onInput: (v) => { anim.seconds = v; } });
 	const animBtn = button({ label: 'Записать и сохранить', icon: 'record', variant: 'primary', cls: 'btn-block', onClick: () => engine.saveAnimation({ format: anim.format, seconds: anim.seconds }) });
 	const animInfo = h('div', { class: 'field-hint' }, 'Запишется то, что сейчас видно на сцене, вместе со всеми эффектами.');
@@ -521,7 +509,7 @@ export function createEffectsPanel(app, root, engine) {
 	const size = slider({ min: 1, max: 24, step: 0.5, value: pset.size, digits: 1, unit: ' px', onInput: (v) => { pset.size = v; }, onChange: () => app.saveSettings() });
 	const sizeNoise = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeNoise || 0, digits: 2, onInput: (v) => { st.look.sizeNoise = v; }, onChange: save });
 	const sizeAudio = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeAudio || 0, digits: 2, onInput: (v) => { st.look.sizeAudio = v; }, onChange: save });
-	const glyph = segmented({ cls: 'seg-tight', options: [{ value: 'off', label: 'Точки' }, { value: 'ascii', label: 'ASCII', title: 'Знаки от точки до @ по яркости' }, { value: 'kata', label: 'Катакана' }, { value: 'digits', label: 'Цифры' }], value: st.look.glyph || 'off', onChange: (v) => { st.look.glyph = v; save(); } });
+	const glyph = segmented({ cls: 'seg-tight', options: [{ value: 'off', label: 'Точки' }, { value: 'ascii', label: 'ASCII', title: 'Знаки от точки до @ по яркости' }, { value: 'digits', label: 'Цифры' }], value: st.look.glyph || 'off', onChange: (v) => { st.look.glyph = v; save(); } });
 	const shade = slider({ min: 0, max: 1, step: 0.05, value: st.look.shade || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.shade = v; }, onChange: save });
 	const glow = slider({ min: 0, max: 1, step: 0.05, value: st.look.glow, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.glow = v; }, onChange: save });
 	const bright = slider({ min: 0.3, max: 2, step: 0.05, value: st.look.bright, digits: 2, onInput: (v) => { st.look.bright = v; }, onChange: save });
@@ -577,7 +565,7 @@ export function createEffectsPanel(app, root, engine) {
 	const camBtn = iconButton({ icon: 'video-camera', title: 'Камера: управление руками и пальцами', onClick: () => engine.toggleMotionCam().then(sync) });
 	const trackName = h('div', { class: 'fx-track' });
 	const barMeters = makeMeters(true);
-	const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (WebM)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });
+	const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (MP4)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });
 	const recTime = h('span', { class: 'fx-rec-time' });
 	const exitBtn = h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => app.ui.setWorkspace('edit') }, h('span', { class: 'ic-wrap', html: icon('x', 14) }), 'Выйти');
 	// фон сцены: кнопка в нижней панели открывает палитру
@@ -699,7 +687,7 @@ export function createEffectsPanel(app, root, engine) {
 		orthoBtn.classList.toggle('is-active', !!app.nav.ortho);
 		orthoBtn.dataset.tip = app.nav.ortho ? 'Сейчас: ортогональная проекция. Включить перспективу' : 'Сейчас: перспектива. Включить ортогональную проекцию';
 		recBtn.classList.toggle('is-rec', engine.recording);
-		recBtn.dataset.tip = engine.recording ? 'Остановить запись и сохранить' : 'Записать видео со звуком (WebM)';
+		recBtn.dataset.tip = engine.recording ? 'Остановить запись и сохранить' : 'Записать видео со звуком (MP4)';
 		recTime.textContent = '';
 	}
 	app.bus.on('fx', sync);

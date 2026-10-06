@@ -150,19 +150,22 @@ const DRAW = {
 		}
 	},
 	links: (c, t) => {
-		// спокойная картинка: несколько точек и тонкие нити между ближайшими
-		const pts = [[-10, -3], [-5, -7], [1, -4], [8, -7], [11, 0], [6, 5], [-1, 7], [-8, 5], [-1, 0]];
-		const e = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 0], [8, 0], [8, 2], [8, 4], [8, 6], [1, 8], [5, 8]];
-		c.globalAlpha = 0.65;
+		// шесть точек, нити между соседними: точки плавно качаются, а нить тускнеет, когда растягивается
+		const home = [[-10, -2], [-4, -7], [4, -6], [10, 0], [3, 7], [-5, 6]];
+		const pts = home.map(([x, y], i) => [x + Math.sin(t * 1.9 + i * 1.7) * 2.6, y + Math.cos(t * 1.6 + i * 2.3) * 2.6]);
+		const e = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [1, 5], [2, 4]];
 		c.strokeStyle = c.fillStyle;
-		c.lineWidth = 0.9;
-		c.beginPath();
+		c.lineWidth = 1;
+		c.lineCap = 'round';
 		for (const [i, j] of e) {
+			const d = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
+			c.globalAlpha = Math.max(0.12, Math.min(0.9, 1.5 - d / 11));
+			c.beginPath();
 			c.moveTo(pts[i][0], pts[i][1]);
 			c.lineTo(pts[j][0], pts[j][1]);
+			c.stroke();
 		}
-		c.stroke();
-		pts.forEach((p, i) => dot(c, p[0] + Math.sin(t * 0.8 + i) * 0.4, p[1] + Math.cos(t * 0.7 + i) * 0.4, 2.4, 1));
+		pts.forEach((p) => dot(c, p[0], p[1], 3, 1));
 	},
 	slice: (c, t) => {
 		const y = Math.sin(t * 2.2) * 8;
@@ -239,21 +242,34 @@ const DRAW = {
 		dot(c, 0, 0, 2.4, 1);
 	},
 	camTrack: (c, t) => {
-		// раскрытая ладонь с пятью пальцами; пальцы чуть шевелятся
-		const w = Math.sin(t * 3) * 0.05;
-		const fingers = [[-6.5, 0, -0.38, 7], [-3, -2, -0.12, 9.5], [0.2, -2.5, 0, 10.5], [3.5, -2, 0.12, 9.5], [6.5, 0, 0.38, 7]];
-		for (const [fx, fy, ang, len] of fingers) {
-			const n = Math.round(len / 2.4);
-			for (let k = 0; k <= n; k++) {
-				const a = ang + w * (k / n);
-				dot(c, fx + Math.sin(a) * k * 2.4, fy - Math.cos(a) * k * 2.4 + 1, k === n ? 2.2 : 1.6, 0.85);
-			}
-		}
-		for (let i = 0; i < 12; i++) {
-			const a = (i / 12) * TAU;
-			dot(c, Math.cos(a) * 7, 4 + Math.sin(a) * 5, 1.5, 0.7);
-		}
-		dot(c, 0, 4, 2, 0.5);
+		// ладонь и пять пальцев: пальцы по очереди сгибаются и разгибаются
+		c.strokeStyle = c.fillStyle;
+		c.lineCap = 'round';
+		c.lineJoin = 'round';
+		c.globalAlpha = 0.28;
+		c.beginPath();
+		c.ellipse(0, 5.5, 6.6, 5.4, 0, 0, TAU);
+		c.fill();
+		// основание, угол от вертикали, длина двух фаланг
+		const fingers = [[-5.5, 7, -1.0, 3.8, 3], [-4, 2.2, -0.22, 4.6, 3.6], [-1.4, 1, -0.07, 5, 4], [1.4, 1, 0.07, 4.6, 3.8], [4, 2.4, 0.24, 3.8, 3]];
+		fingers.forEach(([bx, by, a, l1, l2], i) => {
+			const k = 0.5 + 0.5 * Math.sin(t * 2.4 - i * 0.6);
+			const a1 = a + k * 0.12;
+			const a2 = a1 + k * 0.8;
+			const x1 = bx + Math.sin(a1) * l1;
+			const y1 = by - Math.cos(a1) * l1;
+			const x2 = x1 + Math.sin(a2) * l2;
+			const y2 = y1 - Math.cos(a2) * l2;
+			c.globalAlpha = 0.9;
+			c.lineWidth = 1.7;
+			c.beginPath();
+			c.moveTo(bx, by);
+			c.lineTo(x1, y1);
+			c.lineTo(x2, y2);
+			c.stroke();
+			dot(c, x2, y2, 2.6, 1);
+		});
+
 	},
 };
 
