@@ -37,16 +37,6 @@ cloth: (c, t) => {
 for (const [x, y, i, j] of grid(7, 5, 3.4, 3.6)) dot(c, x + Math.sin(t * 3 + i * 0.9 + j * 0.5) * 1.4 + 1, y + Math.sin(t * 3.2 + i * 0.9) * (1 + i * 0.35), 1.6, 1);
 c.fillRect(-12, -9, 1.2, 18);
 },
-alive: (c, t) => {
-const b = 1 + Math.max(0, Math.sin(t * 5)) * 0.2 + Math.sin(t * 2) * 0.04;
-for (let i = 0; i < 26; i++) {
-const a = (i / 26) * TAU;
-const x = 16 * Math.pow(Math.sin(a), 3);
-const y = -(13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a));
-dot(c, x * 0.52 * b, y * 0.52 * b + 0.5, 1.7, 1);
-}
-dot(c, 0, -1, 2, 0.7);
-},
 gravity: (c, t) => {
 dot(c, 0, 0, 3.6);
 for (const [rx, ry, n, sp] of [[5, 2, 4, 1.8], [8.5, 3.6, 6, 1.2], [12, 5.2, 8, 0.8]]) {
@@ -88,6 +78,19 @@ if (i === 0) c.moveTo(x, y);
 else c.lineTo(x, y);
 }
 c.stroke();
+},
+ring: (c, t) => {
+const f = (t * 0.6) % 1;
+for (let j = 0; j < 9; j++) {
+const y = -9 + j * 2.25;
+const w = Math.sqrt(Math.max(0, 1 - (y / 10) ** 2)) * 9;
+const near = Math.exp(-((((y + 9) / 18 - f) / 0.12) ** 2));
+const n = 9;
+for (let i = 0; i < n; i++) {
+const x = -w + (i / (n - 1)) * 2 * w;
+dot(c, x, -y, 1 + near * 0.9, 0.3 + near * 0.7);
+}
+}
 },
 blast: (c, t) => {
 const a = (t * 1.2) % 2;
