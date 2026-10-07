@@ -132858,7 +132858,7 @@ class HandTracker {
 		if (this.running) return;
 		try {
 			this.onStatus('Включаю камеру…');
-			this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 960 }, height: { ideal: 720 }, frameRate: { ideal: 30 }, facingMode: 'user' } });
+			this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 }, facingMode: 'user' } });
 			this.video.srcObject = this.stream;
 			await this.video.play();
 			this.running = true;
@@ -132880,8 +132880,14 @@ class HandTracker {
 	_tick() {
 		if (!this.running) return;
 		const v = this.video;
-		if (v.readyState >= 2 && v.currentTime !== this._last) {
+		const tNow = performance.now();
+		// распознавание идёт в основном потоке и конкурирует с отрисовкой, поэтому не чаще, чем позволяет бюджет:
+		// не больше 30 раз в секунду, реже при медленной отрисовке и не больше 40% времени на само распознавание
+		const slow = (this.fpsHint ? this.fpsHint() : 60) < 38;
+		const minGap = Math.max(slow ? 50 : 33, (this._detMs || 0) * 1.6);
+		if (v.readyState >= 2 && v.currentTime !== this._last && tNow - (this._detT || 0) >= minGap) {
 			this._last = v.currentTime;
+			this._detT = tNow;
 			const c = this._confFor();
 			if (c !== this._conf) {
 				this._conf = c;
@@ -132897,8 +132903,13 @@ class HandTracker {
 			} catch (e) {
 				res = null;
 			}
+			this._detMs = (this._detMs || 0) * 0.8 + (performance.now() - tNow) * 0.2;
 			const hands = this._hands(res, (v.videoWidth || 4) / (v.videoHeight || 3));
-			this._draw(hands);
+			// окошко камеры обновляем не чаще 15 раз в секунду: оно только для глаз
+			if (tNow - (this._pvT || 0) > 66) {
+				this._pvT = tNow;
+				this._draw(hands);
+			}
 			this.onFrame({ kind: 'hands', hands, aspect: (v.videoWidth || 4) / (v.videoHeight || 3) });
 		}
 		// следующий кадр сразу по готовности камеры: без пропусков и повторов кадров
@@ -133165,8 +133176,16 @@ class TrackerHud {
 		this._dirty = true;
 		const c = this.canvas;
 		const dpr = Math.min(window.devicePixelRatio || 1, 2);
-		const w = c.clientWidth;
-		const h = c.clientHeight;
+		// размер холста читаем из кэша, который обновляет ResizeObserver: чтение clientWidth каждый кадр заставляло браузер пересчитывать раскладку
+		if (!this._ro) {
+			this._size = { w: c.clientWidth, h: c.clientHeight };
+			this._ro = new ResizeObserver(() => {
+				this._size = { w: c.clientWidth, h: c.clientHeight };
+			});
+			this._ro.observe(c);
+		}
+		const w = this._size.w;
+		const h = this._size.h;
 		if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) {
 			c.width = Math.round(w * dpr);
 			c.height = Math.round(h * dpr);
@@ -133185,6 +133204,7 @@ class TrackerHud {
 	}
 
 	dispose() {
+		this._ro && this._ro.disconnect();
 		this.canvas.remove();
 	}
 
@@ -133320,30 +133340,28 @@ class TrackerHud {
 			ctx.strokeStyle = rgba(c0, (cfg.lineAlpha ?? 0.5) * alpha);
 			ctx.lineWidth = style === 'dots' ? lwn * 1.8 : lwn;
 			ctx.setLineDash(style === 'dashed' ? [3 * lwn + 1, 4 * lwn + 1] : style === 'dots' ? [0.1, 6 + lwn * 2] : []);
-			const tnow = performance.now() / 1000;
+			// все линии одним путём и одним вызовом stroke: так быстрее, чем по линии на вызов
+			ctx.beginPath();
 			for (const [A, B] of pairs) {
-				ctx.beginPath();
 				ctx.moveTo(A.x, A.y);
 				if (style === 'curve') {
 					const mx = (A.x + B.x) / 2;
 					const my = (A.y + B.y) / 2;
-					const nx = -(B.y - A.y) * 0.22;
-					const ny = (B.x - A.x) * 0.22;
-					ctx.quadraticCurveTo(mx + nx, my + ny, B.x, B.y);
+					ctx.quadraticCurveTo(mx - (B.y - A.y) * 0.22, my + (B.x - A.x) * 0.22, B.x, B.y);
 				} else if (style === 'elbow') {
-					const horizFirst = Math.abs(B.x - A.x) > Math.abs(B.y - A.y);
-					if (horizFirst) ctx.lineTo(B.x, A.y);
+					if (Math.abs(B.x - A.x) > Math.abs(B.y - A.y)) ctx.lineTo(B.x, A.y);
 					else ctx.lineTo(A.x, B.y);
 					ctx.lineTo(B.x, B.y);
 				} else ctx.lineTo(B.x, B.y);
-				ctx.stroke();
-				if (style === 'pulse') {
-					// огонёк бежит по линии от одной рамки к другой, у каждой пары свой ритм
+			}
+			ctx.stroke();
+			if (style === 'pulse') {
+				// огонёк бежит по линии от одной рамки к другой, у каждой пары свой ритм
+				const tnow = performance.now() / 1000;
+				ctx.fillStyle = rgba(c2, 0.95 * Math.min(1, alpha));
+				for (const [A, B] of pairs) {
 					const ph = (tnow * 0.6 + (A.it.id * 0.37 + B.it.id * 0.21)) % 1;
-					const px = A.x + (B.x - A.x) * ph;
-					const py = A.y + (B.y - A.y) * ph;
-					ctx.fillStyle = rgba(c2, 0.95 * Math.min(1, alpha));
-					ctx.fillRect(px - 2 * lwn, py - 2 * lwn, 4 * lwn, 4 * lwn);
+					ctx.fillRect(A.x + (B.x - A.x) * ph - 2 * lwn, A.y + (B.y - A.y) * ph - 2 * lwn, 4 * lwn, 4 * lwn);
 				}
 			}
 			ctx.setLineDash([]);
@@ -136289,6 +136307,7 @@ class EffectsEngine {
 		try {
 			let t = new HandTracker((f) => this._onCamFrame(f), (txt) => this._camStatus(txt));
 			this.camTracker = t;
+			t.fpsHint = () => this.app.viewport.fps || 60;
 			this.state.layers.camTrack.on = true;
 			this._mountCam(t);
 			try {
@@ -137771,9 +137790,12 @@ class EffectsEngine {
 			// лепка: глина медленно возвращает форму
 			if (this._sculptLive && this.geometry && !(this._grabs && this._grabs.size)) {
 				const el = L.camTrack.elastic;
-				if (el > 0) {
+				// возврат глины проходит по всему массиву: делаем это раз в три кадра с поправкой на время, а не каждый кадр
+				this._sculptAcc = (this._sculptAcc || 0) + dt;
+				if (el > 0 && this._sculptAcc >= 0.05) {
 					const arr = this.geometry.attributes.aSculpt.array;
-					const k = Math.exp(-dt * el * 0.8);
+					const k = Math.exp(-this._sculptAcc * el * 0.8);
+					this._sculptAcc = 0;
 					let mx = 0;
 					for (let i = 0; i < arr.length; i++) {
 						arr[i] *= k;

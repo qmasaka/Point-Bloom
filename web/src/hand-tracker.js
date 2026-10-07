@@ -62,7 +62,7 @@ async start() {
 if (this.running) return;
 try {
 this.onStatus('Включаю камеру…');
-this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 960 }, height: { ideal: 720 }, frameRate: { ideal: 30 }, facingMode: 'user' } });
+this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 }, facingMode: 'user' } });
 this.video.srcObject = this.stream;
 await this.video.play();
 this.running = true;
@@ -83,8 +83,12 @@ throw err;
 _tick() {
 if (!this.running) return;
 const v = this.video;
-if (v.readyState >= 2 && v.currentTime !== this._last) {
+const tNow = performance.now();
+const slow = (this.fpsHint ? this.fpsHint() : 60) < 38;
+const minGap = Math.max(slow ? 50 : 33, (this._detMs || 0) * 1.6);
+if (v.readyState >= 2 && v.currentTime !== this._last && tNow - (this._detT || 0) >= minGap) {
 this._last = v.currentTime;
+this._detT = tNow;
 const c = this._confFor();
 if (c !== this._conf) {
 this._conf = c;
@@ -99,8 +103,12 @@ res = this.landmarker.detectForVideo(v, performance.now());
 } catch (e) {
 res = null;
 }
+this._detMs = (this._detMs || 0) * 0.8 + (performance.now() - tNow) * 0.2;
 const hands = this._hands(res, (v.videoWidth || 4) / (v.videoHeight || 3));
+if (tNow - (this._pvT || 0) > 66) {
+this._pvT = tNow;
 this._draw(hands);
+}
 this.onFrame({ kind: 'hands', hands, aspect: (v.videoWidth || 4) / (v.videoHeight || 3) });
 }
 if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(() => this._tick());

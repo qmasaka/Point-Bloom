@@ -22,8 +22,16 @@ export class TrackerHud {
 		this._dirty = true;
 		const c = this.canvas;
 		const dpr = Math.min(window.devicePixelRatio || 1, 2);
-		const w = c.clientWidth;
-		const h = c.clientHeight;
+		// размер холста читаем из кэша, который обновляет ResizeObserver: чтение clientWidth каждый кадр заставляло браузер пересчитывать раскладку
+		if (!this._ro) {
+			this._size = { w: c.clientWidth, h: c.clientHeight };
+			this._ro = new ResizeObserver(() => {
+				this._size = { w: c.clientWidth, h: c.clientHeight };
+			});
+			this._ro.observe(c);
+		}
+		const w = this._size.w;
+		const h = this._size.h;
 		if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) {
 			c.width = Math.round(w * dpr);
 			c.height = Math.round(h * dpr);
@@ -42,6 +50,7 @@ export class TrackerHud {
 	}
 
 	dispose() {
+		this._ro && this._ro.disconnect();
 		this.canvas.remove();
 	}
 
@@ -177,30 +186,28 @@ export class TrackerHud {
 			ctx.strokeStyle = rgba(c0, (cfg.lineAlpha ?? 0.5) * alpha);
 			ctx.lineWidth = style === 'dots' ? lwn * 1.8 : lwn;
 			ctx.setLineDash(style === 'dashed' ? [3 * lwn + 1, 4 * lwn + 1] : style === 'dots' ? [0.1, 6 + lwn * 2] : []);
-			const tnow = performance.now() / 1000;
+			// все линии одним путём и одним вызовом stroke: так быстрее, чем по линии на вызов
+			ctx.beginPath();
 			for (const [A, B] of pairs) {
-				ctx.beginPath();
 				ctx.moveTo(A.x, A.y);
 				if (style === 'curve') {
 					const mx = (A.x + B.x) / 2;
 					const my = (A.y + B.y) / 2;
-					const nx = -(B.y - A.y) * 0.22;
-					const ny = (B.x - A.x) * 0.22;
-					ctx.quadraticCurveTo(mx + nx, my + ny, B.x, B.y);
+					ctx.quadraticCurveTo(mx - (B.y - A.y) * 0.22, my + (B.x - A.x) * 0.22, B.x, B.y);
 				} else if (style === 'elbow') {
-					const horizFirst = Math.abs(B.x - A.x) > Math.abs(B.y - A.y);
-					if (horizFirst) ctx.lineTo(B.x, A.y);
+					if (Math.abs(B.x - A.x) > Math.abs(B.y - A.y)) ctx.lineTo(B.x, A.y);
 					else ctx.lineTo(A.x, B.y);
 					ctx.lineTo(B.x, B.y);
 				} else ctx.lineTo(B.x, B.y);
-				ctx.stroke();
-				if (style === 'pulse') {
-					// огонёк бежит по линии от одной рамки к другой, у каждой пары свой ритм
+			}
+			ctx.stroke();
+			if (style === 'pulse') {
+				// огонёк бежит по линии от одной рамки к другой, у каждой пары свой ритм
+				const tnow = performance.now() / 1000;
+				ctx.fillStyle = rgba(c2, 0.95 * Math.min(1, alpha));
+				for (const [A, B] of pairs) {
 					const ph = (tnow * 0.6 + (A.it.id * 0.37 + B.it.id * 0.21)) % 1;
-					const px = A.x + (B.x - A.x) * ph;
-					const py = A.y + (B.y - A.y) * ph;
-					ctx.fillStyle = rgba(c2, 0.95 * Math.min(1, alpha));
-					ctx.fillRect(px - 2 * lwn, py - 2 * lwn, 4 * lwn, 4 * lwn);
+					ctx.fillRect(A.x + (B.x - A.x) * ph - 2 * lwn, A.y + (B.y - A.y) * ph - 2 * lwn, 4 * lwn, 4 * lwn);
 				}
 			}
 			ctx.setLineDash([]);

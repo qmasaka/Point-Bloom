@@ -2523,6 +2523,7 @@ export class EffectsEngine {
 		try {
 			let t = new HandTracker((f) => this._onCamFrame(f), (txt) => this._camStatus(txt));
 			this.camTracker = t;
+			t.fpsHint = () => this.app.viewport.fps || 60;
 			this.state.layers.camTrack.on = true;
 			this._mountCam(t);
 			try {
@@ -4005,9 +4006,12 @@ export class EffectsEngine {
 			// лепка: глина медленно возвращает форму
 			if (this._sculptLive && this.geometry && !(this._grabs && this._grabs.size)) {
 				const el = L.camTrack.elastic;
-				if (el > 0) {
+				// возврат глины проходит по всему массиву: делаем это раз в три кадра с поправкой на время, а не каждый кадр
+				this._sculptAcc = (this._sculptAcc || 0) + dt;
+				if (el > 0 && this._sculptAcc >= 0.05) {
 					const arr = this.geometry.attributes.aSculpt.array;
-					const k = Math.exp(-dt * el * 0.8);
+					const k = Math.exp(-this._sculptAcc * el * 0.8);
+					this._sculptAcc = 0;
 					let mx = 0;
 					for (let i = 0; i < arr.length; i++) {
 						arr[i] *= k;

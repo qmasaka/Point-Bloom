@@ -69,7 +69,7 @@ export class HandTracker {
 		if (this.running) return;
 		try {
 			this.onStatus('Включаю камеру…');
-			this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 960 }, height: { ideal: 720 }, frameRate: { ideal: 30 }, facingMode: 'user' } });
+			this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 }, facingMode: 'user' } });
 			this.video.srcObject = this.stream;
 			await this.video.play();
 			this.running = true;
@@ -91,8 +91,14 @@ export class HandTracker {
 	_tick() {
 		if (!this.running) return;
 		const v = this.video;
-		if (v.readyState >= 2 && v.currentTime !== this._last) {
+		const tNow = performance.now();
+		// распознавание идёт в основном потоке и конкурирует с отрисовкой, поэтому не чаще, чем позволяет бюджет:
+		// не больше 30 раз в секунду, реже при медленной отрисовке и не больше 40% времени на само распознавание
+		const slow = (this.fpsHint ? this.fpsHint() : 60) < 38;
+		const minGap = Math.max(slow ? 50 : 33, (this._detMs || 0) * 1.6);
+		if (v.readyState >= 2 && v.currentTime !== this._last && tNow - (this._detT || 0) >= minGap) {
 			this._last = v.currentTime;
+			this._detT = tNow;
 			const c = this._confFor();
 			if (c !== this._conf) {
 				this._conf = c;
@@ -108,8 +114,13 @@ export class HandTracker {
 			} catch (e) {
 				res = null;
 			}
+			this._detMs = (this._detMs || 0) * 0.8 + (performance.now() - tNow) * 0.2;
 			const hands = this._hands(res, (v.videoWidth || 4) / (v.videoHeight || 3));
-			this._draw(hands);
+			// окошко камеры обновляем не чаще 15 раз в секунду: оно только для глаз
+			if (tNow - (this._pvT || 0) > 66) {
+				this._pvT = tNow;
+				this._draw(hands);
+			}
 			this.onFrame({ kind: 'hands', hands, aspect: (v.videoWidth || 4) / (v.videoHeight || 3) });
 		}
 		// следующий кадр сразу по готовности камеры: без пропусков и повторов кадров
