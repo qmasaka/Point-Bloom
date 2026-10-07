@@ -28,7 +28,7 @@ export const BAND_RANGE = { bass: [0, 0.3], mid: [0.3, 0.67], high: [0.67, 1] };
 export const FREQ_QUICK = [['Бочка', 40, 130], ['Бас', 60, 300], ['Голос', 300, 3400], ['Тарелки', 5000, 14000]];
 export const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкивать'], ['pull', 'Притягивать'], ['swirl', 'Вихрь'], ['rotate', 'Крутить форму'], ['sculpt', 'Лепить'], ['gravity', 'Гравитация у руки'], ['wave', 'Ударная волна'], ['break', 'Распад, пока держишь'], ['dissolve', 'Растворение, пока держишь'], ['brush', 'Светящийся след'], ['slicecut', 'Срез рукой: плоскость за ладонью'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:twist', 'Эффект: Деформация'], ['fx:blast', 'Эффект: Взрыв по биту'], ['fx:flow', 'Эффект: Течение'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
 export const FX_LAYERS = [
-{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Экспериментально: видео раскладывается на кадры, а кадры собираются в блок из точек. Только для видео', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, hl: 0.7, follow: 'off', showOn: false, showMode: 'peel', showSpeed: 12, showLen: 0.12 }, extras: [{ key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: время уходит вглубь'], ['wall', 'Стена кадров'], ['carousel', 'Карусель'], ['spiral', 'Спираль'], ['fan', 'Веер']], relayout: true }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'budget', label: 'Всего точек в блоке', min: 60000, max: 1500000, step: 10000, int: true, reframe: true, log: true }, { key: 'depth', label: 'Глубина блока', min: 0.2, max: 4, step: 0.1, relayout: true }, { type: 'title', label: 'Пока видео играет' }, { key: 'hl', label: 'Подсветка текущего кадра', min: 0, max: 1, step: 0.05, when: ['source', ['whole']] }, { key: 'follow', label: 'Следить за кадром', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']], when: ['source', ['whole']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }, { type: 'title', label: 'Показ кадров', when: ['showOn', [true]] }, { key: 'showMode', label: 'Как кадры исчезают', type: 'select', options: [['peel', 'Листание: пройденные улетают и гаснут'], ['build', 'Проявление: кадры появляются по ходу'], ['window', 'Окно: виден только отрезок вокруг текущего'], ['projector', 'Проектор: луч света идёт по блоку'], ['trail', 'След времени: за кадром тянется шлейф']], when: ['showOn', [true]] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showOn', [true]] }, { key: 'showSpeed', label: 'Скорость, кадров в секунду', min: 1, max: 60, step: 1, int: true, when: ['showOn', [true]] }] },
+{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Экспериментально: видео раскладывается на кадры, а кадры собираются в блок из точек. Крутите видео на таймлайне: показ следует за ним', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, hl: 0.7, follow: 'off', showMode: 'peel', showLen: 0.12, hero: 150000, lod: 0.7 }, extras: [{ key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: время уходит вглубь'], ['wall', 'Стена кадров'], ['carousel', 'Карусель'], ['spiral', 'Спираль'], ['fan', 'Веер']], relayout: true }, { key: 'showMode', label: 'Как показываются кадры', type: 'select', options: [['off', 'Все сразу, текущий подсвечен'], ['peel', 'Листание: пройденные улетают и гаснут'], ['build', 'Проявление: кадры появляются по ходу'], ['window', 'Окно: виден только отрезок вокруг текущего'], ['projector', 'Проектор: луч света идёт по блоку'], ['trail', 'След времени: за кадром тянется шлейф']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'hl', label: 'Подсветка текущего кадра', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 400000, step: 10000, int: true, log: false, hero: true }, { key: 'lod', label: 'Редеют ли прошлые кадры', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { key: 'depth', label: 'Глубина блока', min: 0.2, max: 4, step: 0.1, relayout: true }, { key: 'follow', label: 'Следить за кадром', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']], when: ['source', ['whole']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
 { id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Частицы отрываются от формы и плывут по вихрям или потоку, а потом возвращаются', max: 2, def: { on: false, amount: 0.8, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['noise', 'Вихри'], ['stream', 'Поток и возврат']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }] },
 { id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается сверху вниз, осколки взлетают, закручиваются и падают на пол с отскоками. При сборке они возвращаются дугами и складываются обратно', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
 { id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма отзывается на частоты трека: шерсть, колонки эквалайзера или горный рельеф', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, mode: 'bars', bars: 24 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['bars', 'Колонки эквалайзера'], ['terrain', 'Горный рельеф'], ['wool', 'Шерсть по кругу'], ['height', 'Шерсть по высоте']] }, { key: 'bars', label: 'Число колонок', min: 8, max: 64, step: 1, int: true, when: ['mode', ['bars']] }] },
@@ -152,6 +152,11 @@ anim: { dur: 8, loop: true, keys: [] },
 };
 }
 const KEY = 'objglb.fx.v9';
+function frDummy2D() {
+const t = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+t.needsUpdate = true;
+return t;
+}
 function frDummyTex() {
 const t = new THREE.DataArrayTexture(new Uint8Array(4), 1, 1, 1);
 t.format = THREE.RGBAFormat;
@@ -175,7 +180,7 @@ const c = cv.getContext('2d');
 c.fillStyle = '#fff';
 c.textAlign = 'center';
 c.textBaseline = 'middle';
-c.font = '700 54px "Geist Mono", ui-monospace, Menlo, "Apple Symbols", monospace';
+c.font = mode === 'digits' ? '700 54px Geist, system-ui, sans-serif' : '700 54px "Geist Mono", ui-monospace, Menlo, "Apple Symbols", monospace';
 set.forEach((g, i) => c.fillText(g, i * 64 + 32, 34));
 const tex = new THREE.CanvasTexture(cv);
 tex.minFilter = tex.magFilter = THREE.LinearFilter;
@@ -579,7 +584,8 @@ uniform vec4 uFr;   // x: включено, y: кадров, z: точек в к
 uniform vec4 uFr2;  // колонки, строки, ширина листа, высота листа
 uniform vec4 uFr3;  // глубина, раскладка A, раскладка B, переход A к B
 uniform vec4 uFr4;  // текущий кадр (дробный), режим показа, длина луча/шлейфа, подсветка
-uniform vec2 uFr5;  // x: голова кольцевого буфера (бегущая лента)
+uniform vec2 uFr5;  // x: голова кольцевого буфера (бегущая лента), y: сила редения прошлых кадров
+uniform vec4 uHero; // колонки, строки, точек, включено
 vec3 frPlace(float lay, float k, float n, float u, float v, out vec3 nrm) {
 	float t = n > 1.0 ? k / (n - 1.0) : 0.5;
 	float W = uFr2.z;
@@ -612,19 +618,10 @@ vec3 frPlace(float lay, float k, float n, float u, float v, out vec3 nrm) {
 	return vec3(u * W, v * H, (t - 0.5) * depth);
 }
 // Положение точки блока по её номеру; раскладки A и B плавно перетекают друг в друга
-vec3 frBlockPos(float aIdx, out vec3 nrm, out float kk, out vec2 cell) {
-	float ip = floor(aIdx * uFr.w + 0.5);
-	float k = floor(ip / uFr.z);
-	float loc = ip - k * uFr.z;
-	float ci = mod(loc, uFr2.x);
-	float cj = floor(loc / uFr2.x);
-	float u = (ci + 0.5) / uFr2.x - 0.5;
-	float v = 0.5 - (cj + 0.5) / uFr2.y;
+vec3 frMix(float k, float u, float v, out vec3 nrm) {
 	vec3 nA;
 	vec3 nB;
 	vec3 pA = frPlace(uFr3.y, k, uFr.y, u, v, nA);
-	kk = k;
-	cell = vec2(ci, cj);
 	if (uFr3.w > 0.0001) {
 		vec3 pB = frPlace(uFr3.z, k, uFr.y, u, v, nB);
 		float m = uFr3.w * uFr3.w * (3.0 - 2.0 * uFr3.w);
@@ -633,6 +630,26 @@ vec3 frBlockPos(float aIdx, out vec3 nrm, out float kk, out vec2 cell) {
 	}
 	nrm = nA;
 	return pA;
+}
+vec3 frBlockPos(float aIdx, out vec3 nrm, out float kk, out vec2 cell) {
+#ifdef HERO
+	// «главный» кадр: свой густой набор точек на месте текущего кадра
+	float ip = floor(aIdx * uHero.z + 0.5);
+	float ci = mod(ip, uHero.x);
+	float cj = floor(ip / uHero.x);
+	kk = clamp(floor(uFr4.x + 0.5), 0.0, uFr.y - 1.0);
+	cell = vec2(ci, cj);
+	return frMix(kk, (ci + 0.5) / uHero.x - 0.5, 0.5 - (cj + 0.5) / uHero.y, nrm);
+#else
+	float ip = floor(aIdx * uFr.w + 0.5);
+	float k = floor(ip / uFr.z);
+	float loc = ip - k * uFr.z;
+	float ci = mod(loc, uFr2.x);
+	float cj = floor(loc / uFr2.x);
+	kk = k;
+	cell = vec2(ci, cj);
+	return frMix(k, (ci + 0.5) / uFr2.x - 0.5, 0.5 - (cj + 0.5) / uFr2.y, nrm);
+#endif
 }
 // Показ кадров: x яркость, y смещение вдоль нормали, z доля подкраски; tcol цвет подкраски
 vec4 frShow(float k, out vec3 tcol) {
@@ -1129,6 +1146,7 @@ attribute vec3 aNormalB;
 attribute vec3 aColorB;
 attribute float aHide;
 uniform highp sampler2DArray uFrTex;
+uniform sampler2D uHeroTex;
 attribute vec2 aVis;
 uniform vec3 uSolid;
 uniform float uAtt;
@@ -1148,6 +1166,11 @@ varying float vD;
 varying float vCoc;
 varying float vGl;
 ` + common + `
+#ifdef HERO
+#define HEROSIZE clamp(sqrt(uFr.z / max(uHero.z, 1.0)), 0.4, 1.0)
+#else
+#define HEROSIZE 1.0
+#endif
 void main() {
 	if (aHide > 0.5) {
 		// точка скрыта фильтром «Медиа»
@@ -1169,7 +1192,16 @@ void main() {
 		vec3 fp = frBlockPos(aIdx, frNrm, fk, fcell);
 		vec3 tcol;
 		vec4 sh = frShow(fk, tcol);
-		if (sh.x < 0.02) {
+		bool cull = sh.x < 0.02;
+#ifndef HERO
+		// текущий кадр рисуется густым набором точек, поэтому в блоке его место пустое
+		if (uHero.w > 0.5 && abs(fk - floor(uFr4.x + 0.5)) < 0.1) cull = true;
+		// прошлые и будущие кадры редеют с расстоянием от текущего: рядом все точки, далеко только часть
+		float dl = abs(fk - uFr4.x);
+		float keep = mix(1.0, clamp(1.0 / (1.0 + dl * 0.45), 0.08, 1.0), uFr5.y);
+		if (dl > 0.5 && fract(sin(dot(fcell, vec2(12.9898, 78.233)) + fk * 0.731) * 43758.5453) > keep) cull = true;
+#endif
+		if (cull) {
 			gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 			gl_PointSize = 0.0;
 			vColor = vec3(0.0);
@@ -1179,7 +1211,11 @@ void main() {
 			return;
 		}
 		int layer = int(mod(fk + uFr5.x, uFr.y));
+#ifdef HERO
+		vec3 fc = texture2D(uHeroTex, vec2((fcell.x + 0.5) / uHero.x, 1.0 - (fcell.y + 0.5) / uHero.y)).rgb;
+#else
 		vec3 fc = texelFetch(uFrTex, ivec3(int(fcell.x), int(fcell.y), layer), 0).rgb;
+#endif
 		float l = dot(fc, vec3(0.3, 0.59, 0.11));
 		frCol = (fc * (1.0 - sh.z) + tcol * (0.35 + l * 1.6) * sh.z) * sh.x;
 		frLift = sh.y;
@@ -1336,7 +1372,7 @@ void main() {
 	}
 	vCoc = coc;
 
-	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y;
+	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
 	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.7 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
@@ -2357,7 +2393,7 @@ if (!F.on || !this.active) return;
 this._frameTex?.dispose();
 this._frameTex = this._makeFrameTexture(frames, cols, rows);
 this.shared.uFrTex.value = this._frameTex;
-this._frames = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, showT: 0 };
+this._frames = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0 };
 this._frameCloud = buildFrameBlock(frames.map(() => this._blankFrame(cols, rows)), cols, rows, aspect, F.layout, F.depth, true);
 this._framesOn = true;
 this._layoutCur = this._layoutId(F.layout);
@@ -2392,6 +2428,8 @@ g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
 }
 this._framesOn = false;
 this.shared.uFr.value.x = 0;
+this.shared.uHero.value.w = 0;
+if (this.hero) this.hero.visible = false;
 this._frames = null;
 this._frameCloud = null;
 this._frameTex?.dispose();
@@ -2462,16 +2500,78 @@ u.uFr3.value.set(F.depth, an.target, an.target, 0);
 this._layoutAnim = null;
 }
 }
-let idx;
-if (F.showOn && !this.pm.playing) {
-fr.showT = (fr.showT + this._lastDt * F.showSpeed) % fr.n;
-idx = fr.showT;
-} else idx = Math.max(0, Math.min(1, (this.pm.el.currentTime || 0) / Math.max(0.1, fr.dur))) * (fr.n - 1);
+const idx = F.source === 'live' ? fr.n - 1 : Math.max(0, Math.min(1, (this.pm.el.currentTime || 0) / Math.max(0.1, fr.dur))) * (fr.n - 1);
 fr.cur = Math.round(idx);
-const modeId = F.showOn ? { peel: 1, build: 2, window: 3, projector: 4, trail: 5 }[F.showMode] ?? 1 : 0;
+const modeId = { off: 0, peel: 1, build: 2, window: 3, projector: 4, trail: 5 }[F.showMode] ?? 0;
 u.uFr4.value.set(idx, modeId, F.showLen, F.hl);
+u.uFr5.value.y = F.lod;
+this._ensureHero(F, fr);
 this._framesFollow(F, fr);
 if (F.source === 'live') this._framesLive(F, fr);
+}
+_ensureHero(F, fr) {
+const u = this.shared;
+const want = this.state.source === 'frames' && F.hero >= 5000 && this.points && !this.morphing;
+const has = this.hero && this.hero.parent === this.points;
+if (!want) {
+if (this.hero) this.hero.visible = false;
+u.uHero.value.w = 0;
+return;
+}
+const cols = Math.max(8, Math.round(Math.sqrt(F.hero * fr.aspect)));
+const rows = Math.max(8, Math.round(cols / fr.aspect));
+const count = cols * rows;
+if (!has || this._heroCount !== count) {
+if (this.hero) {
+this.hero.parent?.remove(this.hero);
+this.hero.geometry.dispose();
+this.hero.material.dispose();
+this.hero = null;
+}
+const g = new THREE.BufferGeometry();
+const z3 = () => new THREE.BufferAttribute(new Float32Array(count * 3), 3);
+const idxA = new Float32Array(count);
+for (let i = 0; i < count; i++) idxA[i] = i / count;
+g.setAttribute('position', z3());
+g.setAttribute('aOrigin', z3());
+g.setAttribute('aTarget', z3());
+g.setAttribute('aColor', z3());
+g.setAttribute('aColorB', z3());
+g.setAttribute('aSculpt', z3());
+const nrm = new Float32Array(count * 3);
+for (let i = 2; i < nrm.length; i += 3) nrm[i] = 1;
+g.setAttribute('aNormal', new THREE.BufferAttribute(nrm, 3));
+g.setAttribute('aNormalB', new THREE.BufferAttribute(nrm.slice(), 3));
+g.setAttribute('aIdx', new THREE.BufferAttribute(idxA, 1));
+g.setAttribute('aHide', new THREE.BufferAttribute(new Float32Array(count), 1));
+g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
+const m = new THREE.ShaderMaterial({
+vertexShader: this.material.vertexShader,
+fragmentShader: this.material.fragmentShader,
+transparent: true,
+depthWrite: false,
+blending: this.material.blending,
+defines: { HERO: 1 },
+uniforms: { ...this.shared, uTOff: { value: 0 }, uGhost: { value: 1 } },
+});
+const h = new THREE.Points(g, m);
+h.frustumCulled = false;
+h.userData.helper = true;
+this.points.add(h);
+this.hero = h;
+this._heroCount = count;
+}
+if (!this._heroTex || this._heroTex.image !== this.pm.el) {
+this._heroTex?.dispose();
+this._heroTex = new THREE.VideoTexture(this.pm.el);
+this._heroTex.colorSpace = THREE.SRGBColorSpace;
+this._heroTex.minFilter = this._heroTex.magFilter = THREE.LinearFilter;
+this._heroTex.generateMipmaps = false;
+}
+u.uHeroTex.value = this._heroTex;
+u.uHero.value.set(cols, rows, count, 1);
+this.hero.visible = true;
+this.hero.material.blending = this.material.blending;
 }
 _framesFollow(F, fr) {
 const pts = this.points;
@@ -3454,7 +3554,7 @@ this.specTex.needsUpdate = true;
 }
 const U = (v) => ({ value: v });
 const shared = {
-uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSettle: U(-1), uFr: U(new THREE.Vector4()), uFr2: U(new THREE.Vector4(1, 1, 2.2, 1.2)), uFr3: U(new THREE.Vector4(1.6, 0, 0, 0)), uFr4: U(new THREE.Vector4(0, 0, 0.12, 0.7)), uFr5: U(new THREE.Vector2()), uFrTex: U(frDummyTex()), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
+uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSettle: U(-1), uFr: U(new THREE.Vector4()), uFr2: U(new THREE.Vector4(1, 1, 2.2, 1.2)), uFr3: U(new THREE.Vector4(1.6, 0, 0, 0)), uFr4: U(new THREE.Vector4(0, 0, 0.12, 0.7)), uFr5: U(new THREE.Vector2(0, 0.7)), uHero: U(new THREE.Vector4()), uHeroTex: U(frDummy2D()), uFrTex: U(frDummyTex()), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
 uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()), uYR: U(new THREE.Vector2(-1, 1)),
 uShade: U(0), uGlyph: U(new THREE.Vector3(0, 1, 8)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
 uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),

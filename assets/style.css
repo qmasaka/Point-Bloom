@@ -3497,7 +3497,9 @@ body {
 	--r-sm: 3px;
 	--r-ctl: 4px;
 	--r-box: 6px;
-	--mono: 'Geist Mono', 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+	/* цифры: обычный Geist с равной шириной знаков (у Geist Mono нуль перечёркнут), настоящий моноширинный только для кода */
+	--mono: var(--font);
+	--code: 'Geist Mono', 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
 	--h-sm: 24px;
 	--h-md: 28px;
 	--h-lg: 32px;
@@ -3971,7 +3973,7 @@ body {
 }
 .embed-field .code-box {
 	width: 100%;
-	font: 11px/1.45 var(--mono);
+	font: 11px/1.45 var(--code);
 	color: var(--text-dim);
 	background: var(--bg-sunken);
 	border: 1px solid var(--line);
@@ -4158,4 +4160,13 @@ body {
 }
 .fx-layer {
 	border-radius: var(--r-box);
+}
+
+.num-out,
+.num-in,
+.fx-anim-time,
+.fx-freq-lab,
+.chip-btn b {
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: 'tnum' 1, 'zero' 0;
 }

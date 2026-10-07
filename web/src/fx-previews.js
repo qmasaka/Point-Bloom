@@ -140,14 +140,22 @@ c.stroke();
 pts.forEach((p) => dot(c, p[0], p[1], 3, 1));
 },
 frames: (c, t) => {
-const n = 4;
-const front = Math.floor(t * 1.4) % n;
+const n = 5;
+const cur = (t * 1.1) % n;
+const fw = 5.2;
 for (let k = 0; k < n; k++) {
-const lift = k === front ? -1.6 : 0;
-const ox = (k - 1.5) * 3.4;
-const oy = (k - 1.5) * -1.6 + lift;
-const a = 0.28 + (k / n) * 0.6 + (k === front ? 0.2 : 0);
-for (let j = 0; j < 3; j++) for (let i = 0; i < 5; i++) dot(c, ox + (i - 2) * 2.2 - 3, oy + (j - 1) * 2.3, 1.5, a);
+const d = k - cur;
+const wrap = d > n / 2 ? d - n : d < -n / 2 ? d + n : d;
+const lit = Math.max(0, 1 - Math.abs(wrap) * 0.9);
+const tail = wrap < 0 ? Math.max(0, 1 + wrap * 0.28) * 0.5 : 0.22;
+const a = Math.max(0.18, lit, tail);
+const x0 = (k - 2) * 6.1 - fw / 2 + 1;
+for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) dot(c, x0 + i * 1.9, (j - 1) * 2.4, 1.5, a);
+}
+const off = (t * 5) % 3;
+for (let i = -6; i <= 6; i++) {
+dot(c, i * 2.6 - off + 0.6, -7.4, 1, 0.38);
+dot(c, i * 2.6 - off + 0.6, 7.4, 1, 0.38);
 }
 },
 slice: (c, t) => {
