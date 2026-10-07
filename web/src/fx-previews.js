@@ -33,10 +33,6 @@ if (x > -14 && x < 14) dot(c, x, y0 + Math.sin(x * 0.4 + j) * 1.8, 2.2 - k * 0.2
 }
 }
 },
-cloth: (c, t) => {
-for (const [x, y, i, j] of grid(7, 5, 3.4, 3.6)) dot(c, x + Math.sin(t * 3 + i * 0.9 + j * 0.5) * 1.4 + 1, y + Math.sin(t * 3.2 + i * 0.9) * (1 + i * 0.35), 1.6, 1);
-c.fillRect(-12, -9, 1.2, 18);
-},
 gravity: (c, t) => {
 dot(c, 0, 0, 3.6);
 for (const [rx, ry, n, sp] of [[5, 2, 4, 1.8], [8.5, 3.6, 6, 1.2], [12, 5.2, 8, 0.8]]) {

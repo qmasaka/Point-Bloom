@@ -110,7 +110,9 @@ const lw = cfg.thick || 1.5;
 ctx.lineWidth = lw;
 ctx.lineCap = 'round';
 ctx.lineJoin = 'round';
-ctx.font = '11px Geist, "Geist Variable", system-ui, sans-serif';
+const ls = Math.max(0.5, Math.min(3, cfg.labelSize || 1));
+const fs = 11 * ls;
+ctx.font = `${fs}px Geist, "Geist Variable", system-ui, sans-serif`;
 ctx.textBaseline = 'top';
 if (cfg.lines === 'on') {
 ctx.setLineDash([3, 4]);
@@ -190,16 +192,43 @@ ctx.fillStyle = rgba(c2, 0.9 * Math.min(1, alpha));
 ctx.fillRect(x - lw, y - lw, lw * 2, lw * 2);
 if (cfg.labels === 'on') {
 const tx = x1 + 8;
+const id = String(it.id).padStart(2, '0');
+const pc = Math.round(it.conf * 100);
+const kind = cfg.labelInfo || 'full';
+const lines = {
+full: [`ТОЧКА ${id}  ${pc}%`, `X ${it.pos.x.toFixed(2)}  Y ${it.pos.y.toFixed(2)}`, `V ${it.speed.toFixed(2)}  Z ${it.pos.z.toFixed(2)}`],
+id: [`№ ${id}`],
+conf: [`${id}  ${pc}%`],
+coords: [`X ${it.pos.x.toFixed(2)}`, `Y ${it.pos.y.toFixed(2)}`, `Z ${it.pos.z.toFixed(2)}`],
+speed: [`${id}`, `СКОРОСТЬ ${it.speed.toFixed(2)}`],
+bars: [`${id}`, 'bar:' + it.conf, 'bar:' + Math.min(1, it.speed * 0.5)],
+dist: [`${id}`, `ДО ЦЕНТРА ${it.pos.length().toFixed(2)}`],
+}[kind] || [];
+const lh = fs + 2;
+const boxH = lines.length * lh + 4;
+const w0 = Math.max(60 * ls, ...lines.map((t) => (t.startsWith('bar:') ? 70 * ls : ctx.measureText(t).width))) + 8;
 ctx.strokeStyle = rgba(c0, 0.5 * alpha);
 ctx.beginPath();
 ctx.moveTo(x1, y0);
 ctx.lineTo(tx - 3, y0);
 ctx.stroke();
-ctx.fillStyle = rgba(c2, Math.min(1, alpha));
-ctx.fillText(`ТОЧКА ${String(it.id).padStart(2, '0')}  ${Math.round(it.conf * 100)}%`, tx, y0 - 5);
-ctx.fillStyle = rgba(c2, 0.75 * Math.min(1, alpha));
-ctx.fillText(`X ${it.pos.x.toFixed(2)}  Y ${it.pos.y.toFixed(2)}`, tx, y0 + 8);
-ctx.fillText(`V ${it.speed.toFixed(2)}  Z ${it.pos.z.toFixed(2)}`, tx, y0 + 21);
+if (cfg.labelBg === 'on') {
+ctx.fillStyle = `rgba(11,13,17,${0.55 * Math.min(1, alpha)})`;
+ctx.fillRect(tx - 4, y0 - fs, w0, boxH);
+}
+lines.forEach((t, i) => {
+const yy = y0 - 5 + i * lh + (i ? 3 : 0);
+if (t.startsWith('bar:')) {
+const v = Math.max(0, Math.min(1, parseFloat(t.slice(4))));
+ctx.fillStyle = rgba(c0, 0.25 * alpha);
+ctx.fillRect(tx, yy - fs * 0.6, 64 * ls, fs * 0.45);
+ctx.fillStyle = rgba(c2, 0.9 * Math.min(1, alpha));
+ctx.fillRect(tx, yy - fs * 0.6, 64 * ls * v, fs * 0.45);
+return;
+}
+ctx.fillStyle = rgba(c2, (i ? 0.78 : 1) * Math.min(1, alpha));
+ctx.fillText(t, tx, yy);
+});
 }
 }
 }

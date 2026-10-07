@@ -39,10 +39,6 @@ const DRAW = {
 			}
 		}
 	},
-	cloth: (c, t) => {
-		for (const [x, y, i, j] of grid(7, 5, 3.4, 3.6)) dot(c, x + Math.sin(t * 3 + i * 0.9 + j * 0.5) * 1.4 + 1, y + Math.sin(t * 3.2 + i * 0.9) * (1 + i * 0.35), 1.6, 1);
-		c.fillRect(-12, -9, 1.2, 18);
-	},
 	gravity: (c, t) => {
 		// центр тяжести и орбиты, по которым кружат точки
 		dot(c, 0, 0, 3.6);

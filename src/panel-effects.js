@@ -9,7 +9,7 @@ import { formatCount } from './capabilities.js';
 import { createMediaPanel } from './panel-media.js';
 import { attachPreview } from './fx-previews.js';
 import { SHAPES as POINT_SHAPE_LIST } from './panel-points.js';
-import { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } from './effects-engine.js';
+import { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, BANDS, BAND_RANGE, FREQ_QUICK, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } from './effects-engine.js';
 
 /**
  * Источник «Модель» для эффектов: если в сцене редактора есть облако точек (оно создаётся на вкладке «Точки»),
@@ -262,6 +262,138 @@ export function createEffectsPanel(app, root, engine) {
 	const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), countChips, countHint);
 	const secMorph = section('Морфинг', { key: 'fx-morph' }, morphNote, morphBox);
 
+	// ------------------------------------------------------------ полоска спектра: живой звук и выбор частот
+	/** Холст со спектром. Показывает диапазон эффекта и текущую громкость в нём; диапазон можно тянуть мышью. */
+	const pickers = new Set();
+	function freqPicker(L, onSave) {
+		const cv = h('canvas', { class: 'fx-freq-cv' });
+		const lab = h('div', { class: 'fx-freq-lab' });
+		const chips = h('div', { class: 'chip-row fx-freq-chips' });
+		const el = h('div', { class: 'fx-freq' }, cv, lab, chips);
+		const ctx = cv.getContext('2d');
+		const range = () => (L.band === 'custom' ? [L.lo, L.hi] : BAND_RANGE[L.band] || (L.band === 'beat' ? [0, 0.3] : [0, 0]));
+		for (const [name, f0, f1] of FREQ_QUICK) {
+			const b = h('button', { type: 'button', class: 'chip-btn', 'data-tip': `${f0}–${f1} Гц` }, name);
+			b.addEventListener('click', () => {
+				const sr = engine.ctx?.sampleRate || 44100;
+				const toX = (hz) => Math.sqrt(hz / (0.275 * sr));
+				L.band = 'custom';
+				L.lo = toX(f0);
+				L.hi = toX(f1);
+				if (!L.react) L.react = 0.7;
+				onSave();
+				engine.emit();
+			});
+			chips.append(b);
+		}
+		function draw() {
+			if (el.hidden || !cv.offsetParent) return;
+			const dpr = Math.min(2, window.devicePixelRatio || 1);
+			const W = cv.clientWidth;
+			const H = 56;
+			if (cv.width !== Math.round(W * dpr) || cv.height !== H * dpr) {
+				cv.width = Math.round(W * dpr);
+				cv.height = H * dpr;
+			}
+			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+			ctx.clearRect(0, 0, W, H);
+			const [r0, r1] = range();
+			const bw = W / 64;
+			const sp = engine.spec;
+			const cs = getComputedStyle(cv);
+			const acc = cs.getPropertyValue('--accent').trim() || '#e58a45';
+			const dim = cs.getPropertyValue('--text-faint').trim() || '#747c89';
+			// выбранный диапазон подсвечен подложкой
+			ctx.globalAlpha = 0.16;
+			ctx.fillStyle = acc;
+			ctx.fillRect(r0 * W, 0, Math.max(2, (r1 - r0) * W), H);
+			ctx.globalAlpha = 1;
+			for (let i = 0; i < 64; i++) {
+				const v = Math.min(1, sp[i] || 0);
+				const inR = (i + 0.5) / 64 >= r0 && (i + 0.5) / 64 <= r1;
+				ctx.fillStyle = inR ? acc : dim;
+				ctx.globalAlpha = inR ? 0.95 : 0.45;
+				const h2 = Math.max(1.5, v * (H - 8));
+				ctx.fillRect(i * bw + 0.5, H - h2, Math.max(1, bw - 1.5), h2);
+			}
+			ctx.globalAlpha = 1;
+			// порог: горизонтальная линия над выбранным диапазоном
+			if (L.amode === 'gate') {
+				const y = H - L.thr * (H - 8);
+				ctx.strokeStyle = '#fff';
+				ctx.globalAlpha = 0.8;
+				ctx.setLineDash([4, 3]);
+				ctx.beginPath();
+				ctx.moveTo(r0 * W, y);
+				ctx.lineTo(Math.max(r0 * W + 2, r1 * W), y);
+				ctx.stroke();
+				ctx.setLineDash([]);
+				ctx.globalAlpha = 1;
+			}
+			// края диапазона
+			if (L.band === 'custom') {
+				ctx.fillStyle = acc;
+				ctx.fillRect(r0 * W - 1.5, 0, 3, H);
+				ctx.fillRect(r1 * W - 1.5, 0, 3, H);
+			}
+			const lvl = engine._bandLevel(L);
+			const open = L.amode === 'gate' && lvl > L.thr;
+			lab.textContent = (L.band === 'custom' || BAND_RANGE[L.band] ? `${engine.hzAt(r0)}–${engine.hzAt(r1)} Гц` : 'Удары в басах') + `  ·  сейчас ${Math.round(lvl * 100)}%` + (L.amode === 'gate' ? (open ? '  ·  включён' : '  ·  ждёт') : '');
+		}
+		// мышь: потянуть край, подвинуть диапазон или нарисовать новый
+		cv.addEventListener('pointerdown', (e) => {
+			if (L.band === 'none') return;
+			const r = cv.getBoundingClientRect();
+			const xAt = (ev) => Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
+			const x = xAt(e);
+			const [a, b] = range();
+			const near = 9 / r.width;
+			let mode = 'new';
+			if (L.band === 'custom') {
+				if (Math.abs(x - a) < near) mode = 'lo';
+				else if (Math.abs(x - b) < near) mode = 'hi';
+				else if (x > a && x < b) mode = 'move';
+			}
+			L.band = 'custom';
+			if (!L.react) L.react = 0.7;
+			if (mode === 'new') {
+				L.lo = x;
+				L.hi = Math.min(1, x + 0.03);
+				mode = 'hi';
+			}
+			const off = x - L.lo;
+			const wd = L.hi - L.lo;
+			cv.setPointerCapture(e.pointerId);
+			const mv = (ev) => {
+				const xx = xAt(ev);
+				if (mode === 'lo') L.lo = Math.min(xx, L.hi - 0.02);
+				else if (mode === 'hi') L.hi = Math.max(xx, L.lo + 0.02);
+				else {
+					L.lo = Math.max(0, Math.min(1 - wd, xx - off));
+					L.hi = L.lo + wd;
+				}
+				draw();
+			};
+			const up = () => {
+				cv.removeEventListener('pointermove', mv);
+				cv.removeEventListener('pointerup', up);
+				onSave();
+				engine.emit();
+			};
+			cv.addEventListener('pointermove', mv);
+			cv.addEventListener('pointerup', up);
+			mv(e);
+		});
+		const api = { el, draw };
+		pickers.add(api);
+		return api;
+	}
+	// живое обновление всех видимых полосок один раз за кадр, пока открыты эффекты
+	(function pickerLoop() {
+		if (engine.active) for (const p of pickers) p.draw();
+		requestAnimationFrame(pickerLoop);
+	})();
+
 	// ------------------------------------------------------------ слои
 	const cards = [];
 	const left = document.getElementById('fxList');
@@ -383,6 +515,21 @@ export function createEffectsPanel(app, root, engine) {
 			applyWhen();
 			const react = slider({ min: 0, max: 1, step: 0.05, value: L.react, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { L.react = v; }, onChange: save });
 			const reactRow = field('Сила реакции', react.el);
+			const modeSeg = segmented({
+				cls: 'seg-tight',
+				options: [{ value: 'amp', label: 'Усиливать', title: 'Сила эффекта растёт и падает вместе с громкостью выбранных частот' }, { value: 'gate', label: 'По порогу', title: 'Эффект включается, когда выбранные частоты громче порога, и плавно гаснет' }],
+				value: L.amode,
+				onChange: (v) => {
+					L.amode = v;
+					audioUiFull();
+					save();
+				},
+			});
+			const thr = slider({ min: 0.05, max: 0.95, step: 0.01, value: L.thr, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { L.thr = v; }, onChange: save });
+			const atk = slider({ log: true, min: 0.005, max: 1, step: 0.005, value: L.atk, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), onInput: (v) => { L.atk = v; }, onChange: save });
+			const rel = slider({ log: true, min: 0.03, max: 4, step: 0.01, value: L.rel, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), onInput: (v) => { L.rel = v; }, onChange: save });
+			const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Порог', thr.el), field('Включается за', atk.el), field('Гаснет за', rel.el));
+			const picker = freqPicker(L, save);
 			const band = segmented({
 				cls: 'seg-tight',
 				options: BANDS.map((b) => ({ value: b.id, label: b.label, title: b.title })),
@@ -393,12 +540,21 @@ export function createEffectsPanel(app, root, engine) {
 						L.react = 0.7;
 						react.set(0.7);
 					}
-					reactRow.hidden = v === 'none';
+					audioUiFull();
 					save();
 				},
 			});
-			reactRow.hidden = L.band === 'none';
-			body.append(field('Реагирует на звук', band.el, { wide: true }), reactRow);
+			const modeRow = field('Как реагирует', modeSeg.el, { wide: true });
+			const audioUiFull = () => {
+				const on = L.band !== 'none';
+				modeRow.hidden = !on;
+				picker.el.hidden = !on;
+				reactRow.hidden = !on || L.amode === 'gate';
+				gateBox.hidden = !on || L.amode !== 'gate';
+				picker.draw();
+			};
+			body.append(field('Реагирует на звук', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
+			audioUiFull();
 			const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
 			const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
 			const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right', 'data-tip-delay': '1300' }, row);
@@ -418,7 +574,7 @@ export function createEffectsPanel(app, root, engine) {
 			fbody.append(card);
 			attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
 			inspBox.append(insp);
-			cards.push({ def, L, sw, amount, react, band, reactRow, extraCtl, applyWhen, card, insp, fhead });
+			cards.push({ def, L, sw, amount, react, band, reactRow, modeSeg, thr, atk, rel, audioUi: audioUiFull, picker, extraCtl, applyWhen, card, insp, fhead });
 		}
 	}
 	const inspEmpty = h('div', { class: 'empty-note' }, h('strong', {}, 'Выберите эффект'), h('span', {}, 'Нажмите на строку в списке слева, чтобы настроить его здесь'));
@@ -434,37 +590,6 @@ export function createEffectsPanel(app, root, engine) {
 		}
 	}
 	select_((cards.find((c) => c.L.on) || cards[0]).def.id);
-	const mk = st.mask;
-	const maskHint = h('div', { class: 'field-hint' });
-	const maskMode = segmented({
-		cls: 'seg-tight',
-		options: MASK_MODES.map((m) => ({ value: m.id, label: m.label, title: m.title })),
-		value: mk.mode,
-		onChange: (v) => {
-			mk.mode = v;
-			syncMask();
-			save();
-		},
-	});
-	const maskSize = slider({ log: true, min: 0.005, max: 1, step: 0.005, value: mk.size, format: (v) => (v * 100).toFixed(v < 0.1 ? 1 : 0) + '%', onInput: (v) => { mk.size = v; }, onChange: save });
-	const maskSoft = slider({ min: 0, max: 1, step: 0.05, value: mk.soft, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { mk.soft = v; }, onChange: save });
-	const maskSpeed = slider({ min: 0, max: 2, step: 0.05, value: mk.speed, format: (v) => (v === 0 ? 'стоит' : v.toFixed(2)), onInput: (v) => { mk.speed = v; }, onChange: save });
-	const maskInvert = switchRow('Наоборот: живёт всё, кроме зоны', { value: mk.invert, onChange: (v) => { mk.invert = v; save(); } });
-	const maskShow = switchRow('Подсветить зону', { value: mk.show, onChange: (v) => { mk.show = v; save(); } });
-	const maskBody = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Охват', maskSize.el), field('Мягкость границы', maskSoft.el), field('Скорость движения', maskSpeed.el), maskInvert.el, maskShow.el);
-	const HINTS = {
-		none: 'Эффекты работают на всей форме. Выберите зону, чтобы часть точек оставалась неподвижной.',
-		height: 'Верхняя часть живёт, нижняя стоит на месте. Скорость качает границу вверх и вниз.',
-		sphere: 'Шар-зона: внутри него точки двигаются, снаружи стоят. Скорость гоняет шар по форме.',
-		noise: 'Плавающие пятна: двигаются только они, остальное неподвижно. Охват задаёт долю формы.',
-		scan: 'Полоса пробегает по форме снизу вверх и оживляет точки на своём пути.',
-	};
-	const secMask = section('Зона действия', { key: 'fx-mask' }, maskMode.el, maskHint, maskBody);
-	function syncMask() {
-		maskBody.hidden = mk.mode === 'none';
-		maskHint.textContent = HINTS[mk.mode];
-	}
-
 	// ------------------------------------------------------------ звук
 	const sourceSeg = segmented({
 		options: [
@@ -507,7 +632,30 @@ export function createEffectsPanel(app, root, engine) {
 	const volume = slider({ min: 0, max: 1, step: 0.05, value: st.audio.volume, format: (v) => Math.round(v * 100) + '%', onInput: (v) => engine.setVolume(v) });
 	const idle = switchRow('Живая сцена без звука', { value: st.audio.idle, onChange: (v) => { st.audio.idle = v; save(); } });
 	const meters = makeMeters();
-	const secAudio = section('Звук', { key: 'fx-audio' }, sourceSeg.el, styleRow, meters.el, field('Чувствительность', gain.el), field('Громкость', volume.el), idle.el);
+	// какие эффекты сейчас слушают звук: клик по строке открывает настройки эффекта
+	const reactList = h('div', { class: 'fx-react-list' });
+	const reactTitle = h('div', { class: 'fx-sub' }, 'Что реагирует на звук');
+	const secAudio = section('Звук', { key: 'fx-audio' }, sourceSeg.el, styleRow, meters.el, field('Чувствительность', gain.el), field('Громкость', volume.el), idle.el, reactTitle, reactList);
+	function renderReactList() {
+		const BL = Object.fromEntries(BANDS.map((b) => [b.id, b.title.split(':')[0]]));
+		const act = cards.filter((c) => c.L.on && c.L.band !== 'none');
+		reactList.textContent = '';
+		reactTitle.hidden = false;
+		if (!act.length) {
+			reactList.append(h('div', { class: 'field-hint' }, 'Пока ни один эффект не слушает звук. Откройте эффект слева и выберите «Реагирует на звук»: бас, свой диапазон частот или удар.'));
+			return;
+		}
+		for (const c of act) {
+			const how = c.L.amode === 'gate' ? 'по порогу' : 'усиливается';
+			const where = c.L.band === 'custom' ? `${engine.hzAt(c.L.lo)}–${engine.hzAt(c.L.hi)} Гц` : BL[c.L.band];
+			const b = h('button', { type: 'button', class: 'fx-react-row' }, h('b', {}, c.def.name), h('span', {}, `${where}, ${how}`));
+			b.addEventListener('click', () => {
+				select_(c.def.id);
+				showFxTab('insp');
+			});
+			reactList.append(b);
+		}
+	}
 
 	// ------------------------------------------------------------ вид
 	const palettes = h('div', { class: 'fx-palettes', role: 'radiogroup', 'aria-label': 'Палитра' });
@@ -586,7 +734,7 @@ export function createEffectsPanel(app, root, engine) {
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
 	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
-	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Зона и звук', 'target', [secMask, secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
 	try {
@@ -806,13 +954,18 @@ export function createEffectsPanel(app, root, engine) {
 		const kind = engine.modelProvider ? engine.modelProvider.kind() : 'none';
 		modelNote.textContent = kind === 'cloud' ? `Берётся облако точек из редактора (${formatInt(engine.modelProvider.total())} точек). Больше этого частиц не будет.` : kind === 'mesh' ? 'Берутся точки с поверхности вашей модели.' : 'Модели в сцене нет: показана готовая форма. Добавьте модель, и она заменит её.';
 		countActive();
+		renderReactList();
 		cards.forEach((c) => {
 			c.card.classList.toggle('is-on', c.L.on);
 			c.sw.set(c.L.on);
 			c.amount.set(c.L.amount);
 			c.react.set(c.L.react);
 			c.band.set(c.L.band);
-			c.reactRow.hidden = c.L.band === 'none';
+			c.modeSeg.set(c.L.amode);
+			c.thr.set(c.L.thr);
+			c.atk.set(c.L.atk);
+			c.rel.set(c.L.rel);
+			c.audioUi();
 			for (const [k, ctl] of Object.entries(c.extraCtl)) ctl.set(c.L[k]);
 			c.applyWhen();
 		});
@@ -842,13 +995,6 @@ export function createEffectsPanel(app, root, engine) {
 		hudSpec.set(st.look.hudSpectrum !== false);
 		rotate.set(st.look.autoRotate);
 		rotSpeed.set(st.look.rotSpeed);
-		maskMode.set(mk.mode);
-		maskSize.set(mk.size);
-		maskSoft.set(mk.soft);
-		maskSpeed.set(mk.speed);
-		maskInvert.set(mk.invert);
-		maskShow.set(mk.show);
-		syncMask();
 		sourceSeg.set(engine.sourceType);
 		styleRow.hidden = engine.sourceType !== 'synth';
 		style.set(st.audio.style);

@@ -3442,3 +3442,62 @@ body {
 	color: var(--text);
 	font-size: 13px;
 }
+
+/* полоска спектра для выбора частот эффекта */
+.fx-freq {
+	display: grid;
+	gap: 6px;
+	margin: 2px 0 6px;
+}
+.fx-freq[hidden] {
+	display: none;
+}
+.fx-freq-cv {
+	width: 100%;
+	height: 56px;
+	background: var(--bg-sunken);
+	border: 1px solid var(--line);
+	border-radius: var(--r-ctl);
+	cursor: ew-resize;
+	touch-action: none;
+}
+.fx-freq-lab {
+	font: 500 11px var(--font-mono, ui-monospace, monospace);
+	color: var(--text-dim);
+}
+.fx-freq-chips .chip-btn {
+	font-size: 11px;
+	padding: 3px 8px;
+}
+
+.fx-react-list {
+	display: grid;
+	gap: 4px;
+}
+.fx-react-row {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 7px 10px;
+	text-align: left;
+	background: var(--bg-raised);
+	border: 1px solid var(--line);
+	border-radius: var(--r-ctl);
+	cursor: pointer;
+	transition: border-color 0.14s, background-color 0.14s;
+}
+.fx-react-row:hover {
+	background: var(--bg-hover);
+	border-color: var(--line-strong);
+}
+.fx-react-row b {
+	font-size: 12.5px;
+	font-weight: 600;
+	color: var(--text);
+}
+.fx-react-row span {
+	font-size: 11px;
+	color: var(--text-dim);
+	white-space: nowrap;
+}
