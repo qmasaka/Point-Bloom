@@ -2718,6 +2718,16 @@ pts.updateMatrixWorld();
 }
 _framesLive(F, fr) {
 const tv = this.pm.el.currentTime || 0;
+const lastTv = this._liveTv ?? tv;
+this._liveTv = tv;
+if (fr.ts && this.pm.playing) {
+let oldest = Infinity;
+for (const t of fr.ts) if (t >= 0 && t < oldest) oldest = t;
+if (tv < lastTv - 1 && tv < 1.5 || tv < oldest - 0.3) {
+fr.ts.fill(-1);
+fr.tNew = tv - 0.05;
+}
+}
 if (this._time - fr.last < F.step || !this.pm.playing || this.morphing || tv <= fr.tNew + 0.02 || !fr.ts) return;
 fr.last = this._time;
 const take = (this._liveTake ||= this._frameTaker(fr.cols, fr.rows));

@@ -2898,6 +2898,17 @@ export class EffectsEngine {
 	/** Бегущая лента: новый кадр пишется в один слой текстуры, старые не трогаются; голова буфера сдвигается */
 	_framesLive(F, fr) {
 		const tv = this.pm.el.currentTime || 0;
+		const lastTv = this._liveTv ?? tv;
+		this._liveTv = tv;
+		if (fr.ts && this.pm.playing) {
+			let oldest = Infinity;
+			for (const t of fr.ts) if (t >= 0 && t < oldest) oldest = t;
+			// видео зациклилось или его перемотали за начало ленты: это новый проход, прежние кадры остаются как прошлое, но запись продолжается
+			if (tv < lastTv - 1 && tv < 1.5 || tv < oldest - 0.3) {
+				fr.ts.fill(-1);
+				fr.tNew = tv - 0.05;
+			}
+		}
 		// пока видео перемотано назад, в прошлые кадры ленты ничего не пишем: лента пополняется только когда видео идёт дальше её конца
 		if (this._time - fr.last < F.step || !this.pm.playing || this.morphing || tv <= fr.tNew + 0.02 || !fr.ts) return;
 		fr.last = this._time;
