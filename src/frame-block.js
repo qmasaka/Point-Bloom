@@ -97,6 +97,16 @@ export function buildFrameBlock(frames, cols, rows, aspect, layout = 'stack', de
 	return { positions, normals, colors, count };
 }
 
+/** Один кадр целиком в массив цветов блока: offset это номер первой точки кадра, w это яркость */
+export function writeOneFrame(frame, perFrame, target, firstPoint, w) {
+	let o = firstPoint * 3;
+	for (let p = 0; p < perFrame * 3; p += 3) {
+		target[o++] = LUT[frame[p]] * w;
+		target[o++] = LUT[frame[p + 1]] * w;
+		target[o++] = LUT[frame[p + 2]] * w;
+	}
+}
+
 /** Записывает цвета кадров в уже построенный блок (когда меняются только кадры, а не раскладка) */
 export function writeFrameColors(frames, cols, rows, target, weights = null) {
 	const per = cols * rows;

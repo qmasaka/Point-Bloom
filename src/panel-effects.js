@@ -461,7 +461,20 @@ export function createEffectsPanel(app, root, engine) {
 				});
 				body.append(collapseBtn);
 			} else if (def.id === 'frames') {
-				body.append(h('div', { class: 'field-hint' }, 'Включите режим, когда открыто видео: оно разложится на кадры, и кадры соберутся в блок. К блоку применимы остальные эффекты.'), button({ label: 'Разложить заново', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Снять кадры с текущего места видео заново', onClick: () => engine.rebuildFramesSoon() }));
+				const showBtn = button({ label: L.showOn ? 'Остановить показ' : 'Запустить показ кадров', icon: L.showOn ? 'pause' : 'play', variant: L.showOn ? 'secondary' : 'primary', cls: 'btn-block', title: 'Кадры блока исчезают один за другим по ходу видео. Если видео стоит, показ идёт сам', onClick: () => {
+					L.showOn = !L.showOn;
+					if (L.showOn && !L.on) {
+						L.on = true;
+						engine.emit();
+					}
+					showBtn.querySelector('.btn-label').textContent = L.showOn ? 'Остановить показ' : 'Запустить показ кадров';
+					showBtn.className = 'btn btn-' + (L.showOn ? 'secondary' : 'primary') + ' btn-block';
+					const fr = engine._frames;
+					if (fr) fr.key = null;
+					save();
+					engine.emit();
+				} });
+				body.append(showBtn, h('div', { class: 'field-hint' }, 'Включите режим, когда открыто видео: оно разложится на кадры, и кадры соберутся в блок. К блоку применимы остальные эффекты.'), button({ label: 'Разложить заново', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Снять кадры с текущего места видео заново', onClick: () => engine.rebuildFramesSoon() }));
 			} else if (def.id === 'brush') {
 				const clearBtn = button({
 					label: 'Стереть краску',
