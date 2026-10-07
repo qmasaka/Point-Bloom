@@ -4314,17 +4314,17 @@ body {
 	.ui-float .range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; border: 0; background: #fff; box-shadow: 0 0 0 3px rgba(229, 138, 69, 0.35); }
 
 	/* сегменты, поля, выпадающие списки, мелкие кнопки: капсулы */
-	.ui-float .seg { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border-color: transparent; }
-	.ui-float .seg-btn { border-radius: 999px; border-color: transparent; }
-	.ui-float .seg-btn[aria-checked='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 500; }
-	.ui-float .select, .ui-float .num-out, .ui-float .num-in { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border-color: transparent; padding-inline: 12px; }
-	.ui-float .sidebar .btn { border-radius: 999px; }
-	.ui-float .btn-icon, .ui-float .fx-bar .btn-icon, .ui-float .media-bar .btn-icon { border-radius: 50%; }
+	.fx-mode .seg { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border-color: transparent; }
+	.fx-mode .seg-btn { border-radius: 999px; border-color: transparent; }
+	.fx-mode .seg-btn[aria-checked='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 500; }
+	.fx-mode .select, .fx-mode .num-out, .fx-mode .num-in { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border-color: transparent; padding-inline: 12px; }
+	.fx-mode .sidebar .btn { border-radius: 999px; }
+	.ui-float .topbar .btn-icon, .ui-float .fx-bar .btn-icon, .ui-float .media-bar .btn-icon { border-radius: 50%; }
 	.ui-float .topbar .btn:not(.btn-icon):not(.split-chev) { border-radius: 999px; }
 	.ui-float .mode-switch, .ui-float .mode-btn, .ui-float .scale-widget, .ui-float .scale-pct { border-radius: 999px; }
 	.ui-float .split-btn { border-radius: 999px; overflow: hidden; }
 	.ui-float .split-btn .btn { border-radius: 0; }
-	.ui-float .fx-prev { border-radius: 9px; }
+	.fx-mode .fx-prev { border-radius: 9px; }
 
 	/* вкладки Эффект / Форма / Звук / Вид: те же, рамка ровная у всех */
 	.ui-float .fx-tabs, .ui-float .fx-tabs.tabs { gap: 6px; padding-inline: 14px; }
@@ -4343,9 +4343,9 @@ body {
 	.ui-float .tabs .tab[aria-selected='true'] { background: rgba(229, 138, 69, 0.14); border-color: rgba(229, 138, 69, 0.55); color: var(--accent-text); }
 	/* левая панель инструментов и нижняя панель режимов сцены: то же стекло */
 	.ui-float .toolrail { position: absolute; left: 12px; top: 68px; z-index: 20; width: auto; padding: 8px 6px; gap: 6px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 14px; box-shadow: var(--fxg-shadow); }
-	.ui-float .toolrail .btn-tool { border-radius: 50%; }
+	.ui-float .toolrail .btn-tool { border-radius: 8px; }
 	.ui-float .vp-dock { bottom: 52px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 14px; box-shadow: var(--fxg-shadow); }
-	.ui-float .dock-btn { border-radius: 50%; }
+	.ui-float .dock-btn { border-radius: 8px; }
 	.ui-float .export-card { background: rgba(18, 20, 24, 0.86); backdrop-filter: blur(24px) saturate(1.25); -webkit-backdrop-filter: blur(24px) saturate(1.25); border: 1px solid var(--fxg-line); border-radius: 14px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5); }
 	/* строка состояния мельче */
 	.ui-float .statusbar { font-size: 11px; color: var(--text-faint); }
@@ -4358,3 +4358,23 @@ body {
 	.ui-float .empty-state { padding-left: 84px; padding-right: calc(var(--sidebar-w, 300px) + 28px); }
 }
 .ui-float .status-stats { display: flex; gap: 14px; }
+
+/* подсказки внизу убраны, нижняя панель опущена */
+.fx-hint { display: none !important; }
+@container app (min-width: 901px) {
+	.ui-float .status-hint { display: none; }
+	.fx-mode .fx-bar { bottom: 36px; }
+	.fx-mode .media-bar { bottom: 90px; }
+	.ui-float .vp-dock { bottom: 36px; }
+	.fx-mode .fx-left, .fx-mode .sidebar, .ui-float .sidebar { bottom: 44px; }
+	/* индикатор выбранного режима в шапке: тоже капсула, а не квадрат */
+	.ui-float .mode-switch::before { border-radius: 999px; }
+	/* разделители: у всех линия одной длины и идёт от края до края своей панели */
+	.ui-float .rail-sep { width: auto; align-self: stretch; margin: 6px -6px; }
+	.ui-float .dock-sep, .ui-float .fx-bar-sep { height: auto; align-self: stretch; margin: -4px 3px; width: 1px; background: var(--line-strong); }
+	.ui-float .topbar-group { align-self: stretch; height: auto; }
+}
+@container app (min-width: 901px) and (max-width: 1250px) {
+	.fx-mode .fx-left, .fx-mode .sidebar { bottom: 150px; }
+	.fx-mode .media-bar { bottom: 90px; }
+}
