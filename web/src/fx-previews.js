@@ -138,6 +138,17 @@ c.stroke();
 }
 pts.forEach((p) => dot(c, p[0], p[1], 3, 1));
 },
+frames: (c, t) => {
+const n = 4;
+const front = Math.floor(t * 1.4) % n;
+for (let k = 0; k < n; k++) {
+const lift = k === front ? -1.6 : 0;
+const ox = (k - 1.5) * 3.4;
+const oy = (k - 1.5) * -1.6 + lift;
+const a = 0.28 + (k / n) * 0.6 + (k === front ? 0.2 : 0);
+for (let j = 0; j < 3; j++) for (let i = 0; i < 5; i++) dot(c, ox + (i - 2) * 2.2 - 3, oy + (j - 1) * 2.3, 1.5, a);
+}
+},
 slice: (c, t) => {
 const y = Math.sin(t * 2.2) * 8;
 for (const [x, yy] of ring(30, 9)) dot(c, x * 1.2, yy, Math.abs(yy - y) < 2 ? 2.6 : 1.4, Math.abs(yy - y) < 2 ? 1 : 0.35);

@@ -766,18 +766,8 @@ button {
 	height: 100%;
 	overflow-y: auto;
 	overflow-x: hidden;
-	scrollbar-width: thin;
-	scrollbar-color: var(--line-strong) transparent;
 	padding-bottom: 24px;
 	background: var(--bg-panel);
-}
-.panel::-webkit-scrollbar {
-	width: 10px;
-}
-.panel::-webkit-scrollbar-thumb {
-	background: var(--line-strong);
-	border-radius: 10px;
-	border: 3px solid var(--bg-panel);
 }
 
 /* секции */
@@ -1159,7 +1149,6 @@ button {
 	overflow-y: auto;
 	margin: 0 -6px;
 	padding: 0 6px;
-	scrollbar-width: thin;
 }
 .tree-row {
 	display: grid;
@@ -1846,8 +1835,6 @@ body {
 	min-height: 0;
 	overflow-y: auto;
 	overflow-x: hidden;
-	scrollbar-width: thin;
-	scrollbar-color: var(--line-strong) transparent;
 }
 
 /* ------------------------------------------------ точки: плитки форм */
@@ -2365,8 +2352,6 @@ body {
 	display: grid;
 	align-content: start;
 	gap: 4px;
-	scrollbar-width: thin;
-	scrollbar-color: var(--line-strong) transparent;
 }
 .fx-group {
 	margin: 10px 4px 2px;
@@ -4008,21 +3993,28 @@ body {
 	scrollbar-width: auto;
 }
 *::-webkit-scrollbar {
-	width: 6px;
-	height: 6px;
+	width: 8px;
+	height: 8px;
 }
 *::-webkit-scrollbar-track {
 	background: transparent;
 }
 *::-webkit-scrollbar-thumb {
 	background: var(--line-strong);
-	border-radius: 3px;
+	border: 2px solid transparent;
+	border-radius: 4px;
+	background-clip: padding-box;
+	min-height: 28px;
 }
 *::-webkit-scrollbar-thumb:hover {
 	background: var(--text-faint);
+	background-clip: padding-box;
+	border-width: 1px;
 }
 *::-webkit-scrollbar-thumb:active {
 	background: var(--accent);
+	background-clip: padding-box;
+	border-width: 1px;
 }
 *::-webkit-scrollbar-corner {
 	background: transparent;
@@ -4110,14 +4102,14 @@ body {
 	animation: ws-in-bar 0.45s var(--ease) 0.08s backwards;
 }
 
-/* левая панель инструментов редактора: значки чуть крупнее прежних (24 px вместо 20), ширина панели прежняя */
+/* левая панель инструментов редактора: значки чуть крупнее прежних (22 px вместо 20), ширина панели прежняя */
 .toolrail {
 	gap: 5px;
 	padding: 11px 0;
 }
 .btn-tool {
-	width: 40px;
-	height: 40px;
+	width: 38px;
+	height: 38px;
 }
 .rail-sep {
 	width: 24px;
@@ -4125,8 +4117,8 @@ body {
 }
 .toolrail .btn-tool svg,
 .toolrail .btn-tool > svg {
-	width: 24px !important;
-	height: 24px !important;
+	width: 22px !important;
+	height: 22px !important;
 }
 .tabs .tab {
 	font-size: 10px;

@@ -132799,6 +132799,126 @@ function createMediaBar(app, host) {
 }
 
 };
+__defs['src/frame-block.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'FRAME_LAYOUTS', () => FRAME_LAYOUTS);
+__def(__exports, 'frameGrid', () => frameGrid);
+__def(__exports, 'buildFrameBlock', () => buildFrameBlock);
+__def(__exports, 'writeFrameColors', () => writeFrameColors);
+// Экспериментальный режим «Раскадровка»: видео раскладывается на кадры, а кадры собираются в блок из точек.
+// Каждый кадр это плоский лист из точек, его цвета берутся из соответствующего момента видео. Листы расставляются по-разному:
+// стопкой (ось времени уходит вглубь), стеной, каруселью, спиралью или веером.
+
+const LUT = new Float32Array(256);
+for (let i = 0; i < 256; i++) {
+	const c = i / 255;
+	LUT[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+const FRAME_LAYOUTS = [
+	['stack', 'Стопка: время уходит вглубь'],
+	['wall', 'Стена кадров'],
+	['carousel', 'Карусель'],
+	['spiral', 'Спираль'],
+	['fan', 'Веер'],
+];
+
+/** Размер сетки одного кадра по числу точек в кадре и пропорциям видео */
+function frameGrid(density, aspect) {
+	const cols = Math.max(8, Math.round(Math.sqrt(density * aspect)));
+	const rows = Math.max(8, Math.round(cols / aspect));
+	return { cols, rows };
+}
+
+/** Положение точки листа в кадре k из n. u, v в -0.5..0.5: местные координаты листа (ширина и высота в единицах сцены) */
+function place(layout, k, n, u, v, W, H, depth, out) {
+	const t = n > 1 ? k / (n - 1) : 0.5;
+	let x = 0, y = 0, z = 0;
+	let nx = 0, ny = 0, nz = 1;
+	if (layout === 'wall') {
+		const gx = Math.ceil(Math.sqrt(n * (W / H)));
+		const gy = Math.ceil(n / gx);
+		const s = Math.min(2.4 / (gx * W), 2.4 / (gy * H));
+		const cx = k % gx, cy = Math.floor(k / gx);
+		x = (cx - (gx - 1) / 2) * W * s * 1.04 + u * W * s;
+		y = ((gy - 1) / 2 - cy) * H * s * 1.04 + v * H * s;
+	} else if (layout === 'carousel' || layout === 'spiral') {
+		const a = (k / n) * Math.PI * 2;
+		const R = 0.9 + depth * 0.45;
+		const s = layout === 'spiral' ? 0.5 : 0.6;
+		const lx = u * W * s, ly = v * H * s;
+		x = Math.sin(a) * R + Math.cos(a) * lx;
+		z = Math.cos(a) * R - Math.sin(a) * lx;
+		y = ly + (layout === 'spiral' ? (t - 0.5) * depth * 1.4 : 0);
+		nx = Math.sin(a);
+		nz = Math.cos(a);
+	} else if (layout === 'fan') {
+		const a = (t - 0.5) * Math.min(Math.PI * 1.2, 0.35 * depth + 0.5);
+		const lx = (u + 0.5) * W * 0.9;
+		x = -W * 0.45 + Math.cos(a) * lx;
+		z = Math.sin(a) * lx;
+		y = v * H * 0.9;
+		nx = -Math.sin(a);
+		nz = Math.cos(a);
+	} else {
+		x = u * W;
+		y = v * H;
+		z = (t - 0.5) * depth;
+	}
+	out[0] = x; out[1] = y; out[2] = z; out[3] = nx; out[4] = ny; out[5] = nz;
+}
+
+/** Облако точек из кадров: frames это массив Uint8Array RGB размера cols*rows */
+function buildFrameBlock(frames, cols, rows, aspect, layout = 'stack', depth = 1.6) {
+	const n = frames.length;
+	const per = cols * rows;
+	const count = per * n;
+	const positions = new Float32Array(count * 3);
+	const normals = new Float32Array(count * 3);
+	const colors = new Float32Array(count * 3);
+	const W = aspect >= 1 ? 2.2 : 2.2 * aspect;
+	const H = W / aspect;
+	const tmp = new Float32Array(6);
+	let o = 0;
+	for (let k = 0; k < n; k++) {
+		const f = frames[k];
+		for (let j = 0; j < rows; j++) {
+			for (let i = 0; i < cols; i++) {
+				const u = (i + 0.5) / cols - 0.5;
+				const v = 0.5 - (j + 0.5) / rows;
+				place(layout, k, n, u, v, W, H, depth, tmp);
+				positions[o * 3] = tmp[0];
+				positions[o * 3 + 1] = tmp[1];
+				positions[o * 3 + 2] = tmp[2];
+				normals[o * 3] = tmp[3];
+				normals[o * 3 + 1] = tmp[4];
+				normals[o * 3 + 2] = tmp[5];
+				const p = (j * cols + i) * 3;
+				colors[o * 3] = LUT[f[p]];
+				colors[o * 3 + 1] = LUT[f[p + 1]];
+				colors[o * 3 + 2] = LUT[f[p + 2]];
+				o++;
+			}
+		}
+	}
+	return { positions, normals, colors, count };
+}
+
+/** Записывает цвета кадров в уже построенный блок (когда меняются только кадры, а не раскладка) */
+function writeFrameColors(frames, cols, rows, target) {
+	const per = cols * rows;
+	let o = 0;
+	for (let k = 0; k < frames.length; k++) {
+		const f = frames[k];
+		for (let p = 0; p < per * 3; p += 3) {
+			target[o++] = LUT[f[p]];
+			target[o++] = LUT[f[p + 1]];
+			target[o++] = LUT[f[p + 2]];
+		}
+	}
+}
+
+};
 __defs['src/hand-tracker.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'HAND_LINKS', () => HAND_LINKS);
@@ -133793,6 +133913,7 @@ __def(__exports, 'EffectsEngine', () => EffectsEngine);
  */
 const THREE = __req('vendor/three/build/three.module.js');
 const { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } = __req('src/util.js');
+const { buildFrameBlock, writeFrameColors, frameGrid } = __req('src/frame-block.js');
 const { TrackerHud } = __req('src/fx-hud.js');
 const { HandTracker } = __req('src/hand-tracker.js');
 const { encodeGIF } = __req('src/gif-encoder.js');
@@ -133832,6 +133953,7 @@ const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкивать']
 
 /** Слои-операторы. group: раздел в левой панели; extras: дополнительные параметры; relink: пересобрать связи */
 const FX_LAYERS = [
+	{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Экспериментально: видео раскладывается на кадры, а кадры собираются в блок из точек. Только для видео', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', frames: 24, depth: 1.6, density: 3000, source: 'whole', step: 0.3 }, extras: [{ key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: время уходит вглубь'], ['wall', 'Стена кадров'], ['carousel', 'Карусель'], ['spiral', 'Спираль'], ['fan', 'Веер']], reframe: true }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 60, step: 1, int: true, reframe: true }, { key: 'density', label: 'Точек в кадре', min: 800, max: 12000, step: 200, int: true, reframe: true }, { key: 'depth', label: 'Глубина блока', min: 0.2, max: 4, step: 0.1, reframe: true }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
 	{ id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Частицы отрываются от формы и плывут по вихрям или потоку, а потом возвращаются', max: 2, def: { on: false, amount: 0.8, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['noise', 'Вихри'], ['stream', 'Поток и возврат']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }] },
 	{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается сверху вниз, осколки взлетают, закручиваются и падают на пол с отскоками. При сборке они возвращаются дугами и складываются обратно', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
 	{ id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма отзывается на частоты трека: шерсть, колонки эквалайзера или горный рельеф', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, mode: 'bars', bars: 24 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['bars', 'Колонки эквалайзера'], ['terrain', 'Горный рельеф'], ['wool', 'Шерсть по кругу'], ['height', 'Шерсть по высоте']] }, { key: 'bars', label: 'Число колонок', min: 8, max: 64, step: 1, int: true, when: ['mode', ['bars']] }] },
@@ -133858,6 +133980,7 @@ const FX_LAYERS = [
 
 // разделы списка эффектов: логика по тому, что эффект делает
 const FX_GROUPS = {
+	'Видео': ['frames'],
 	'Движение': ['curl', 'flow', 'gravity'],
 	'Звук и ритм': ['spectrum', 'wave', 'pulse', 'blast'],
 	'Превращения': ['twist', 'voxel', 'glitch', 'physics', 'dissolve'],
@@ -133960,7 +134083,7 @@ function defaultState() {
 			dofDist: 5.2,
 			dofRange: 1.4,
 		},
-		audio: { style: 'deep', gain: 1.3, idle: true, volume: 0.8 },
+		audio: { style: 'deep', gain: 1.3, idle: false, idleSet: false, volume: 0.8 },
 		anim: { dur: 8, loop: true, keys: [] },
 	};
 }
@@ -135895,6 +136018,8 @@ class EffectsEngine {
 		this.app = app;
 		this.active = false;
 		this.state = mergeDeep(defaultState(), loadJSON(KEY, {}));
+		// «Живая сцена без звука» по умолчанию выключена; у тех, кто её не трогал сам, прежнее сохранённое «включено» сбрасываем
+		if (!this.state.audio.idleSet) this.state.audio.idle = false;
 		this.state.mask = { ...defaultState().mask }; // зона действия убрана из интерфейса: эффекты всегда работают на всей форме
 		for (const l of FX_LAYERS) this.state.layers[l.id] = { ...AUDIO_DEF, ...l.def, ...this.state.layers[l.id] };
 		this.state.look = { ...defaultState().look, ...this.state.look };
@@ -135966,6 +136091,149 @@ class EffectsEngine {
 		this.post = null;
 		this.camTracker = null;
 		this._pointerDown = false;
+	}
+
+	// ------------------------------------------------------------ раскадровка видео
+	get videoReady() {
+		const pm = this.pm;
+		return !!(pm && pm.ready && pm.kind === 'video' && pm.el && pm.el.readyState >= 2);
+	}
+
+	/** Снимает n кадров: из всего видео равномерно или n раз текущий кадр (для бегущей ленты) */
+	async _grabFrames(n, cols, rows, whole) {
+		const pm = this.pm;
+		const el = pm.el;
+		const cv = document.createElement('canvas');
+		cv.width = cols;
+		cv.height = rows;
+		const ctx = cv.getContext('2d', { willReadFrequently: true });
+		const take = () => {
+			ctx.drawImage(el, 0, 0, cols, rows);
+			const d = ctx.getImageData(0, 0, cols, rows).data;
+			const out = new Uint8Array(cols * rows * 3);
+			for (let i = 0, j = 0; i < d.length; i += 4, j += 3) {
+				out[j] = d[i];
+				out[j + 1] = d[i + 1];
+				out[j + 2] = d[i + 2];
+			}
+			return out;
+		};
+		const frames = [];
+		if (!whole) {
+			const f = take();
+			for (let i = 0; i < n; i++) frames.push(f);
+			return frames;
+		}
+		const was = { t: el.currentTime, playing: pm.playing };
+		el.pause();
+		pm.playing = false;
+		const dur = Math.max(0.1, el.duration || pm.duration || 1);
+		try {
+			for (let i = 0; i < n; i++) {
+				const t = Math.min(dur - 0.05, (i / Math.max(1, n - 1)) * dur);
+				await new Promise((res) => {
+					const done = () => {
+						el.removeEventListener('seeked', done);
+						res();
+					};
+					el.addEventListener('seeked', done);
+					setTimeout(done, 900);
+					el.currentTime = t;
+				});
+				frames.push(take());
+				this.app.ui.busy('Раскладываю видео на кадры', 0.1 + (0.85 * (i + 1)) / n);
+			}
+		} finally {
+			el.currentTime = was.t;
+			if (was.playing) pm.play();
+		}
+		return frames;
+	}
+
+	/** Собирает блок кадров и показывает его вместо обычного облака (если облако такого же размера, точки перетекают плавно) */
+	async enableFrames() {
+		if (this._framesBusy || !this.videoReady || !this.active) return;
+		this._framesBusy = true;
+		const F = this.state.layers.frames;
+		try {
+			this.app.ui.busy('Раскладываю видео на кадры', 0.05);
+			const pm = this.pm;
+			const aspect = (pm.el.videoWidth || 16) / (pm.el.videoHeight || 9);
+			const { cols, rows } = frameGrid(F.density, aspect);
+			const n = Math.round(F.frames);
+			const frames = await this._grabFrames(n, cols, rows, F.source === 'whole');
+			if (!F.on || !this.active) return;
+			this._frames = { frames, cols, rows, aspect, last: this._time };
+			this._frameCloud = buildFrameBlock(frames, cols, rows, aspect, F.layout, F.depth);
+			this._framesOn = true;
+			this.cache.clear();
+			await this.setSource('frames');
+			this.state.look.colorBy = 'model';
+		} catch (e) {
+			console.error(e);
+			this.app.toast('Не удалось разложить видео на кадры: ' + (e.message || e), 'error');
+			F.on = false;
+		} finally {
+			this.app.ui.idle();
+			this._framesBusy = false;
+			this.emit();
+		}
+	}
+
+	async disableFrames() {
+		if (!this._framesOn || this._framesBusy) return;
+		this._framesOn = false;
+		this._frames = null;
+		this._frameCloud = null;
+		await this.setSource(this.pm.ready ? 'media' : this.hasModel ? 'model' : 'sphere');
+		this.emit();
+	}
+
+	/** Параметры блока поменялись: собираем кадры заново (с небольшой задержкой, пока двигается ползунок) */
+	rebuildFramesSoon() {
+		clearTimeout(this._framesT);
+		this._framesT = setTimeout(async () => {
+			if (!this._framesOn || this._framesBusy) return;
+			this._framesOn = false;
+			await this.enableFrames();
+		}, 450);
+	}
+
+	/** Бегущая лента: в блок по очереди добавляется новый кадр, старые уезжают, цвета обновляются без пересборки */
+	_framesTick() {
+		const F = this.state.layers.frames;
+		const wantOn = F.on && this.videoReady && this.state.source !== 'sphere';
+		if (wantOn && !this._framesOn && !this._framesBusy) {
+			this.enableFrames();
+			return;
+		}
+		if (this._framesOn && !this._framesBusy && (!F.on || !this.videoReady)) {
+			F.on = false;
+			this.disableFrames();
+			return;
+		}
+		if (!this._framesOn || !this._frames || F.source !== 'live' || this.state.source !== 'frames' || this.morphing) return;
+		const fr = this._frames;
+		if (this._time - fr.last < F.step || !this.pm.playing) return;
+		fr.last = this._time;
+		const cv = (this._fcv ||= document.createElement('canvas'));
+		cv.width = fr.cols;
+		cv.height = fr.rows;
+		const ctx = (this._fctx ||= cv.getContext('2d', { willReadFrequently: true }));
+		ctx.drawImage(this.pm.el, 0, 0, fr.cols, fr.rows);
+		const d = ctx.getImageData(0, 0, fr.cols, fr.rows).data;
+		const out = fr.frames.shift() && new Uint8Array(fr.cols * fr.rows * 3);
+		for (let i = 0, j = 0; i < d.length; i += 4, j += 3) {
+			out[j] = d[i];
+			out[j + 1] = d[i + 1];
+			out[j + 2] = d[i + 2];
+		}
+		fr.frames.push(out);
+		const g = this.geometry;
+		if (!g || !g.attributes.aColor || g.attributes.aColor.count !== fr.cols * fr.rows * fr.frames.length) return;
+		writeFrameColors(fr.frames, fr.cols, fr.rows, g.attributes.aColor.array);
+		g.attributes.aColorB.array.set(g.attributes.aColor.array);
+		g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
 	}
 
 	// ------------------------------------------------------------ анимация по ключам
@@ -136934,6 +137202,7 @@ class EffectsEngine {
 	}
 
 	async _cloudFor(key) {
+		if (key === 'frames') return this._frameCloud || null;
 		if (key === 'media') {
 			const pm = this.pm;
 			if (!pm.ready) return null;
@@ -137002,7 +137271,7 @@ class EffectsEngine {
 		const g = new THREE.BufferGeometry();
 		const idx = new Float32Array(count);
 		for (let i = 0; i < count; i++) idx[i] = i / count;
-		const model = st.source === 'model' || st.source === 'media' ? c : this.hasModel ? (await this._cloudFor('model').catch(() => null)) || c : c;
+		const model = st.source === 'model' || st.source === 'media' || st.source === 'frames' ? c : this.hasModel ? (await this._cloudFor('model').catch(() => null)) || c : c;
 		g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
 		g.setAttribute('aOrigin', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
 		g.setAttribute('aTarget', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
@@ -137346,6 +137615,8 @@ class EffectsEngine {
 		const app = this.app;
 		this.active = true;
 		this.state.look.autoRotate = false; // при входе форма не крутится сама, включается в «Вид»
+		this.state.layers.frames.on = false; // раскадровка включается вручную и только пока открыто видео
+		this._framesOn = false;
 		// число частиц общее с вкладкой «Точки»: что задали в редакторе, то и здесь
 		this.state.count = Math.max(20000, Math.min(2000000, app.settings.point.surfaceCount));
 		const vp = app.viewport;
@@ -137543,6 +137814,7 @@ class EffectsEngine {
 			this._lastT = now;
 			const st0 = this.state;
 			this._time += dt;
+			this._framesTick();
 			if (this.animPlaying) {
 				try {
 					this._animStep(dt);
@@ -138245,6 +138517,18 @@ const DRAW = {
 		}
 		pts.forEach((p) => dot(c, p[0], p[1], 3, 1));
 	},
+	frames: (c, t) => {
+		// стопка листов из точек: кадры по очереди выдвигаются вперёд
+		const n = 4;
+		const front = Math.floor(t * 1.4) % n;
+		for (let k = 0; k < n; k++) {
+			const lift = k === front ? -1.6 : 0;
+			const ox = (k - 1.5) * 3.4;
+			const oy = (k - 1.5) * -1.6 + lift;
+			const a = 0.28 + (k / n) * 0.6 + (k === front ? 0.2 : 0);
+			for (let j = 0; j < 3; j++) for (let i = 0; i < 5; i++) dot(c, ox + (i - 2) * 2.2 - 3, oy + (j - 1) * 2.3, 1.5, a);
+		}
+	},
 	slice: (c, t) => {
 		const y = Math.sin(t * 2.2) * 8;
 		for (const [x, yy] of ring(30, 9)) dot(c, x * 1.2, yy, Math.abs(yy - y) < 2 ? 2.6 : 1.4, Math.abs(yy - y) < 2 ? 1 : 0.35);
@@ -138863,6 +139147,8 @@ function createEffectsPanel(app, root, engine) {
 					},
 				});
 				body.append(collapseBtn);
+			} else if (def.id === 'frames') {
+				body.append(h('div', { class: 'field-hint' }, 'Включите режим, когда открыто видео: оно разложится на кадры, и кадры соберутся в блок. К блоку применимы остальные эффекты.'), button({ label: 'Разложить заново', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Снять кадры с текущего места видео заново', onClick: () => engine.rebuildFramesSoon() }));
 			} else if (def.id === 'brush') {
 				const clearBtn = button({
 					label: 'Стереть краску',
@@ -138904,6 +139190,7 @@ function createEffectsPanel(app, root, engine) {
 					applyWhen();
 					save();
 					if (ex.relink) engine.relink();
+					if (ex.reframe) engine.rebuildFramesSoon();
 				};
 				if (ex.type === 'select') {
 					const sl = select({ options: ex.options.map(([value, label]) => ({ value, label })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
@@ -139007,7 +139294,7 @@ function createEffectsPanel(app, root, engine) {
 			fbody.append(card);
 			attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
 			inspBox.append(insp);
-			cards.push({ def, L, sw, amount, react, band, reactRow, modeSeg, thr, atk, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
+			cards.push({ folder, def, L, sw, amount, react, band, reactRow, modeSeg, thr, atk, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
 		}
 	}
 	const inspEmpty = h('div', { class: 'empty-note' }, h('strong', {}, 'Выберите эффект'), h('span', {}, 'Нажмите на строку в списке слева, чтобы настроить его здесь'));
@@ -139022,7 +139309,7 @@ function createEffectsPanel(app, root, engine) {
 			el.textContent = k ? String(k) : '';
 		}
 	}
-	select_((cards.find((c) => c.L.on) || cards[0]).def.id);
+	select_((cards.find((c) => c.L.on) || cards.find((c) => c.def.group !== 'Видео') || cards[0]).def.id);
 	// ------------------------------------------------------------ звук
 	const sourceSeg = segmented({
 		options: [
@@ -139063,12 +139350,12 @@ function createEffectsPanel(app, root, engine) {
 	const styleRow = field('Стиль', style.el);
 	const gain = slider({ min: 0.3, max: 3, step: 0.05, value: st.audio.gain, digits: 2, onInput: (v) => { st.audio.gain = v; }, onChange: save });
 	const volume = slider({ min: 0, max: 1, step: 0.05, value: st.audio.volume, format: (v) => Math.round(v * 100) + '%', onInput: (v) => engine.setVolume(v) });
-	const idle = switchRow('Живая сцена без звука', { value: st.audio.idle, onChange: (v) => { st.audio.idle = v; save(); } });
+	const idle = switchRow('Живая сцена без звука', { value: st.audio.idle, onChange: (v) => { st.audio.idle = v; st.audio.idleSet = true; save(); } });
 	const meters = makeMeters();
 	// какие эффекты сейчас слушают звук: клик по строке открывает настройки эффекта
 	const reactList = h('div', { class: 'fx-react-list' });
 	const reactTitle = h('div', { class: 'fx-sub' }, 'Что реагирует на звук');
-	const secAudio = section('Звук', { key: 'fx-audio' }, sourceSeg.el, styleRow, meters.el, field('Чувствительность', gain.el), field('Громкость', volume.el), idle.el, reactTitle, reactList);
+	const secAudio = section('Звук', { key: 'fx-audio' }, idle.el, sourceSeg.el, styleRow, meters.el, field('Чувствительность', gain.el), field('Громкость', volume.el), reactTitle, reactList);
 	function renderReactList() {
 		const BL = Object.fromEntries(BANDS.map((b) => [b.id, b.title.split(':')[0]]));
 		const act = cards.filter((c) => c.L.on && c.L.band !== 'none');
@@ -139392,6 +139679,8 @@ function createEffectsPanel(app, root, engine) {
 		const kind = engine.modelProvider ? engine.modelProvider.kind() : 'none';
 		modelNote.textContent = kind === 'cloud' ? `Берётся облако точек из редактора (${formatInt(engine.modelProvider.total())} точек). Больше этого частиц не будет.` : kind === 'mesh' ? 'Берутся точки с поверхности вашей модели.' : 'Модели в сцене нет: показана готовая форма. Добавьте модель, и она заменит её.';
 		countActive();
+		// режим раскадровки существует только для видео: без видео его папка в списке скрыта
+		for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoReady;
 		renderReactList();
 		cards.forEach((c) => {
 			c.card.classList.toggle('is-on', c.L.on);
@@ -139452,6 +139741,10 @@ function createEffectsPanel(app, root, engine) {
 		recTime.textContent = '';
 	}
 	app.bus.on('fx', sync);
+	app.bus.on('media', () => {
+		sync();
+		setTimeout(sync, 700);
+	});
 	app.bus.on('device', () => {
 		count.setRange(20000, cap());
 		sync();

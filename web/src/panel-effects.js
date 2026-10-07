@@ -432,6 +432,8 @@ collapseBtn.querySelector('.btn-label').textContent = engine.isCollapsed ? 'Со
 },
 });
 body.append(collapseBtn);
+} else if (def.id === 'frames') {
+body.append(h('div', { class: 'field-hint' }, 'Включите режим, когда открыто видео: оно разложится на кадры, и кадры соберутся в блок. К блоку применимы остальные эффекты.'), button({ label: 'Разложить заново', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Снять кадры с текущего места видео заново', onClick: () => engine.rebuildFramesSoon() }));
 } else if (def.id === 'brush') {
 const clearBtn = button({
 label: 'Стереть краску',
@@ -473,6 +475,7 @@ const after = () => {
 applyWhen();
 save();
 if (ex.relink) engine.relink();
+if (ex.reframe) engine.rebuildFramesSoon();
 };
 if (ex.type === 'select') {
 const sl = select({ options: ex.options.map(([value, label]) => ({ value, label })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
@@ -575,7 +578,7 @@ fxTabHook();
 fbody.append(card);
 attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
 inspBox.append(insp);
-cards.push({ def, L, sw, amount, react, band, reactRow, modeSeg, thr, atk, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
+cards.push({ folder, def, L, sw, amount, react, band, reactRow, modeSeg, thr, atk, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
 }
 }
 const inspEmpty = h('div', { class: 'empty-note' }, h('strong', {}, 'Выберите эффект'), h('span', {}, 'Нажмите на строку в списке слева, чтобы настроить его здесь'));
@@ -590,7 +593,7 @@ const el = cs[0].fhead.querySelector('.fx-folder-n');
 el.textContent = k ? String(k) : '';
 }
 }
-select_((cards.find((c) => c.L.on) || cards[0]).def.id);
+select_((cards.find((c) => c.L.on) || cards.find((c) => c.def.group !== 'Видео') || cards[0]).def.id);
 const sourceSeg = segmented({
 options: [
 { value: 'synth', label: 'Музыка', title: 'Встроенная музыка: эмбиент, джангл, брейккор' },
@@ -630,11 +633,11 @@ const style = select({ options: SYNTH_STYLES.map((s) => ({ value: s.id, label: s
 const styleRow = field('Стиль', style.el);
 const gain = slider({ min: 0.3, max: 3, step: 0.05, value: st.audio.gain, digits: 2, onInput: (v) => { st.audio.gain = v; }, onChange: save });
 const volume = slider({ min: 0, max: 1, step: 0.05, value: st.audio.volume, format: (v) => Math.round(v * 100) + '%', onInput: (v) => engine.setVolume(v) });
-const idle = switchRow('Живая сцена без звука', { value: st.audio.idle, onChange: (v) => { st.audio.idle = v; save(); } });
+const idle = switchRow('Живая сцена без звука', { value: st.audio.idle, onChange: (v) => { st.audio.idle = v; st.audio.idleSet = true; save(); } });
 const meters = makeMeters();
 const reactList = h('div', { class: 'fx-react-list' });
 const reactTitle = h('div', { class: 'fx-sub' }, 'Что реагирует на звук');
-const secAudio = section('Звук', { key: 'fx-audio' }, sourceSeg.el, styleRow, meters.el, field('Чувствительность', gain.el), field('Громкость', volume.el), idle.el, reactTitle, reactList);
+const secAudio = section('Звук', { key: 'fx-audio' }, idle.el, sourceSeg.el, styleRow, meters.el, field('Чувствительность', gain.el), field('Громкость', volume.el), reactTitle, reactList);
 function renderReactList() {
 const BL = Object.fromEntries(BANDS.map((b) => [b.id, b.title.split(':')[0]]));
 const act = cards.filter((c) => c.L.on && c.L.band !== 'none');
@@ -940,6 +943,7 @@ countHint.textContent = `Сейчас ${formatInt(n)} частиц, около $
 const kind = engine.modelProvider ? engine.modelProvider.kind() : 'none';
 modelNote.textContent = kind === 'cloud' ? `Берётся облако точек из редактора (${formatInt(engine.modelProvider.total())} точек). Больше этого частиц не будет.` : kind === 'mesh' ? 'Берутся точки с поверхности вашей модели.' : 'Модели в сцене нет: показана готовая форма. Добавьте модель, и она заменит её.';
 countActive();
+for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoReady;
 renderReactList();
 cards.forEach((c) => {
 c.card.classList.toggle('is-on', c.L.on);
@@ -1000,6 +1004,10 @@ recBtn.dataset.tip = engine.recording ? 'Остановить запись и с
 recTime.textContent = '';
 }
 app.bus.on('fx', sync);
+app.bus.on('media', () => {
+sync();
+setTimeout(sync, 700);
+});
 app.bus.on('device', () => {
 count.setRange(20000, cap());
 sync();
