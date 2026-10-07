@@ -39,7 +39,9 @@ this.canvas = document.createElement('canvas');
 this.canvas.className = 'gl';
 stage.appendChild(this.canvas);
 this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+this._basePR = Math.min(window.devicePixelRatio || 1, 2);
+this._qs = 1;
+this.renderer.setPixelRatio(this._basePR);
 this.renderer.setClearColor(0x000000, 0);
 this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 this.maxAnisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
@@ -187,7 +189,30 @@ const now = performance.now();
 const dt = now - (this._lastT || 0);
 if (dt < 150) this.fps = (this.fps || 60) * 0.85 + (1000 / Math.max(dt, 1)) * 0.15;
 this._lastT = now;
+this._autoQuality(dt, now);
 app.bus.emit('rendered');
+}
+_autoQuality(dt, now) {
+const s = this.app.settings.render;
+const fx = this.app.ui?.effectsEngine;
+if (!s.autoQuality) {
+if (this._qs !== 1) this.setScale(1);
+return;
+}
+if (dt > 150 || fx?.recording || fx?.animBusy) return;
+this._qEma = (this._qEma || 16.7) * 0.9 + dt * 0.1;
+if (now - (this._qT || 0) < 1200) return;
+this._qT = now;
+const fps = 1000 / this._qEma;
+if (fps < 38 && this._qs > 0.5) {
+this._qDown = now;
+this.setScale(Math.max(0.5, this._qs * 0.85));
+} else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 6000) this.setScale(Math.min(1, this._qs * 1.1));
+}
+setScale(v) {
+this._qs = v;
+this.renderer.setPixelRatio(this._basePR * v);
+this.resize();
 }
 frame(now) {
 const animating = this.app.nav.tick(now);
@@ -197,8 +222,12 @@ this.render();
 }
 }
 start() {
+let lastF = 0;
 const loop = (now) => {
 requestAnimationFrame(loop);
+const cap = this.app.settings.render.fpsCap;
+if (cap && now - lastF < 1000 / cap - 3) return;
+lastF = now;
 this.frame(now);
 };
 requestAnimationFrame(loop);

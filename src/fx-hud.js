@@ -19,6 +19,7 @@ export class TrackerHud {
 	}
 
 	_fit() {
+		this._dirty = true;
 		const c = this.canvas;
 		const dpr = Math.min(window.devicePixelRatio || 1, 2);
 		const w = c.clientWidth;
@@ -32,6 +33,9 @@ export class TrackerHud {
 	}
 
 	clear() {
+		// холст чистим только если на нём что-то рисовали: пустой слой не нужно пересобирать каждый кадр
+		if (!this._dirty) return;
+		this._dirty = false;
 		const c = this.canvas;
 		this.ctx.setTransform(1, 0, 0, 1, 0, 0);
 		this.ctx.clearRect(0, 0, c.width, c.height);

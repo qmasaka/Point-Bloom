@@ -18,7 +18,9 @@ save();
 };
 const flat = switchRow('Плоское затенение', { value: s.flat, onChange: (v) => { s.flat = v; redisplay(); } });
 const fps = switchRow('Показывать FPS', { value: s.render.fps, onChange: (v) => { s.render.fps = v; app.ui.refreshFps(); save(); } });
-const secDisplay = section('Отображение', { key: 'v-display' }, flat.el, fps.el);
+const autoQ = switchRow('Авто-качество', { value: s.render.autoQuality, onChange: (v) => { s.render.autoQuality = v; save(); } });
+const capSeg = segmented({ cls: 'seg-tight', options: [{ value: 0, label: 'Без лимита' }, { value: 30, label: '30 к/с', title: 'Вдвое меньше нагрузка на видеокарту и нагрев' }], value: s.render.fpsCap, onChange: (v) => { s.render.fpsCap = Number(v); save(); } });
+const secDisplay = section('Отображение', { key: 'v-display' }, flat.el, fps.el, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }));
 const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Фон сцены' });
 const swButtons = new Map();
 for (const [id, bg] of Object.entries(BACKGROUNDS)) {

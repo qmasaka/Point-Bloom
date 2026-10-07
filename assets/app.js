@@ -177,7 +177,7 @@ const DEFAULTS = {
 	overlays: { grid: true, axes: true, wire: false, faces: false, bbox: true },
 	media: { pts: 80000, relief: 'bright', depth: 0.5, recFps: 15, recSec: 10, cutDark: 0, cutLight: 1, key: '#00ff00', keyTol: 0, edges: 0, contrast: 1, sat: 1, post: 0, invert: false },
 	point: { shape: 'circle', size: 3, attenuate: true, color: 'texture', solidColor: '#ffd166', surfaceCount: 200000, source: 'surface' },
-	render: { bg: 'dark', exposure: 1, env: 1, tone: 'neutral', headlight: true, fov: 40, fps: false },
+	render: { bg: 'dark', exposure: 1, env: 1, tone: 'neutral', headlight: true, fov: 40, fps: false, autoQuality: true, fpsCap: 0 },
 	nav: { leftOrbit: true, trackpad: false, zoomToCursor: true, invertZoom: false, autoPersp: true, ortho: false },
 	snap: { on: false, move: 0.1, rotate: 15, scale: 0.1 },
 	space: 'world',
@@ -83775,7 +83775,9 @@ class Viewport {
 		this.canvas.className = 'gl';
 		stage.appendChild(this.canvas);
 		this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-		this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+		this._basePR = Math.min(window.devicePixelRatio || 1, 2);
+		this._qs = 1; // текущий масштаб разрешения (авто-качество)
+		this.renderer.setPixelRatio(this._basePR);
 		this.renderer.setClearColor(0x000000, 0);
 		this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 		this.maxAnisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
@@ -83951,7 +83953,36 @@ class Viewport {
 		const dt = now - (this._lastT || 0);
 		if (dt < 150) this.fps = (this.fps || 60) * 0.85 + (1000 / Math.max(dt, 1)) * 0.15;
 		this._lastT = now;
+		this._autoQuality(dt, now);
 		app.bus.emit('rendered');
+	}
+
+	/**
+	 * Авто-качество: если кадров не хватает, разрешение отрисовки мягко снижается (до половины), а когда запас есть, возвращается.
+	 * Геометрия, эффекты и цвета не меняются: теряется только чёткость краёв, и только пока компьютер не справляется.
+	 */
+	_autoQuality(dt, now) {
+		const s = this.app.settings.render;
+		const fx = this.app.ui?.effectsEngine;
+		if (!s.autoQuality) {
+			if (this._qs !== 1) this.setScale(1);
+			return;
+		}
+		if (dt > 150 || fx?.recording || fx?.animBusy) return; // паузы между редкими кадрами и запись не считаем
+		this._qEma = (this._qEma || 16.7) * 0.9 + dt * 0.1;
+		if (now - (this._qT || 0) < 1200) return;
+		this._qT = now;
+		const fps = 1000 / this._qEma;
+		if (fps < 38 && this._qs > 0.5) {
+			this._qDown = now;
+			this.setScale(Math.max(0.5, this._qs * 0.85));
+		} else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 6000) this.setScale(Math.min(1, this._qs * 1.1));
+	}
+
+	setScale(v) {
+		this._qs = v;
+		this.renderer.setPixelRatio(this._basePR * v);
+		this.resize();
 	}
 
 	frame(now) {
@@ -83963,8 +83994,13 @@ class Viewport {
 	}
 
 	start() {
+		let lastF = 0;
 		const loop = (now) => {
 			requestAnimationFrame(loop);
+			// лимит кадров (например, 30 в секунду) экономит заряд и нагрев
+			const cap = this.app.settings.render.fpsCap;
+			if (cap && now - lastF < 1000 / cap - 3) return;
+			lastF = now;
 			this.frame(now);
 		};
 		requestAnimationFrame(loop);
@@ -124856,7 +124892,9 @@ function createViewPanel(app, root) {
 	// ------------------------------------------------------------ отображение
 	const flat = switchRow('Плоское затенение', { value: s.flat, onChange: (v) => { s.flat = v; redisplay(); } });
 	const fps = switchRow('Показывать FPS', { value: s.render.fps, onChange: (v) => { s.render.fps = v; app.ui.refreshFps(); save(); } });
-	const secDisplay = section('Отображение', { key: 'v-display' }, flat.el, fps.el);
+	const autoQ = switchRow('Авто-качество', { value: s.render.autoQuality, onChange: (v) => { s.render.autoQuality = v; save(); } });
+	const capSeg = segmented({ cls: 'seg-tight', options: [{ value: 0, label: 'Без лимита' }, { value: 30, label: '30 к/с', title: 'Вдвое меньше нагрузка на видеокарту и нагрев' }], value: s.render.fpsCap, onChange: (v) => { s.render.fpsCap = Number(v); save(); } });
+	const secDisplay = section('Отображение', { key: 'v-display' }, flat.el, fps.el, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }));
 
 	// ------------------------------------------------------------------ точки
 	const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Фон сцены' });
@@ -133108,6 +133146,7 @@ class TrackerHud {
 	}
 
 	_fit() {
+		this._dirty = true;
 		const c = this.canvas;
 		const dpr = Math.min(window.devicePixelRatio || 1, 2);
 		const w = c.clientWidth;
@@ -133121,6 +133160,9 @@ class TrackerHud {
 	}
 
 	clear() {
+		// холст чистим только если на нём что-то рисовали: пустой слой не нужно пересобирать каждый кадр
+		if (!this._dirty) return;
+		this._dirty = false;
 		const c = this.canvas;
 		this.ctx.setTransform(1, 0, 0, 1, 0, 0);
 		this.ctx.clearRect(0, 0, c.width, c.height);
@@ -137456,6 +137498,8 @@ class EffectsEngine {
 		const tick = (now) => {
 			if (!this.active) return;
 			this._raf = requestAnimationFrame(tick);
+			const capFps = this.app.settings.render.fpsCap;
+			if (capFps && now - this._lastT < 1000 / capFps - 3) return;
 			const dt = Math.min(0.1, (now - this._lastT) / 1000);
 			this._lastT = now;
 			const st0 = this.state;
@@ -139037,6 +139081,10 @@ function createEffectsPanel(app, root, engine) {
 	const animSec = slider({ min: 1, max: 15, step: 1, value: anim.seconds, digits: 0, unit: ' с', onInput: (v) => { anim.seconds = v; } });
 	const animBtn = button({ label: 'Записать и сохранить', icon: 'record', variant: 'primary', cls: 'btn-block', onClick: () => engine.saveAnimation({ format: anim.format, seconds: anim.seconds }) });
 	const animInfo = h('div', { class: 'field-hint' }, 'Запишется то, что сейчас видно на сцене, вместе со всеми эффектами.');
+	const rset = app.settings.render;
+	const autoQ = switchRow('Авто-качество', { value: rset.autoQuality, onChange: (v) => { rset.autoQuality = v; app.saveSettings(); } });
+	const capSeg = segmented({ cls: 'seg-tight', options: [{ value: 0, label: 'Без лимита' }, { value: 30, label: '30 к/с', title: 'Вдвое меньше нагрузка на видеокарту и нагрев' }], value: rset.fpsCap, onChange: (v) => { rset.fpsCap = Number(v); app.saveSettings(); } });
+	const perfHint = h('div', { class: 'field-hint' }, 'Авто-качество снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется. Эффекты и цвета не меняются.');
 	const hudSw = switchRow('Индикаторы уровней звука', { value: st.look.hud, onChange: (v) => { st.look.hud = v; save(); } });
 	const hudSpec = switchRow('Спектр внизу', { value: st.look.hudSpectrum, onChange: (v) => { st.look.hudSpectrum = v; save(); } });
 	const attSw = switchRow('Мельче вдали', { value: pset.attenuate, onChange: (v) => { pset.attenuate = v; app.saveSettings(); } });
@@ -139056,7 +139104,7 @@ function createEffectsPanel(app, root, engine) {
 	const blend = segmented({ options: [{ value: 'normal', label: 'Плотные', title: 'Непрозрачные точки' }, { value: 'add', label: 'Свечение', title: 'Точки складывают свет: ярче в плотных местах' }], value: st.look.blend, onChange: (v) => { st.look.blend = v; save(); } });
 	const rotate = switchRow('Вращать форму', { value: st.look.autoRotate, onChange: (v) => { st.look.autoRotate = v; save(); } });
 	const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
-	const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Объём (тень)', shade.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el), hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Сохранить анимацию'), field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
+	const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Объём (тень)', shade.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el), hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Производительность'), autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), perfHint, h('div', { class: 'fx-sub' }, 'Сохранить анимацию'), field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
 	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид

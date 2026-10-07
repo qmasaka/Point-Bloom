@@ -3748,6 +3748,8 @@ export class EffectsEngine {
 		const tick = (now) => {
 			if (!this.active) return;
 			this._raf = requestAnimationFrame(tick);
+			const capFps = this.app.settings.render.fpsCap;
+			if (capFps && now - this._lastT < 1000 / capFps - 3) return;
 			const dt = Math.min(0.1, (now - this._lastT) / 1000);
 			this._lastT = now;
 			const st0 = this.state;
