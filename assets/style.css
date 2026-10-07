@@ -4260,3 +4260,34 @@ body {
 	.fx-mode .fx-tabs .tab { border-radius: 4px; }
 	.fx-mode .seg, .fx-mode .select { border-radius: 5px; }
 }
+
+/* вариант «Матовое»: спокойное стекло с тонкой рамкой и мягкими скруглениями */
+@media (min-width: 901px) {
+	#app.fx-mode {
+		--fxg-line: rgba(255, 255, 255, 0.09);
+		--fxg-blur: blur(22px) saturate(1.25);
+		--fxg-bg: rgba(18, 20, 24, 0.62);
+		--fxg-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+	}
+}
+@container app (min-width: 901px) {
+	.fx-mode .topbar, .fx-mode .fx-left, .fx-mode .sidebar { border-radius: 14px; }
+	.fx-mode .fx-bar, .fx-mode .media-bar, .fx-mode .fx-anim { border-radius: 14px; }
+	.fx-mode .fxf-bar { border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+	.fx-mode .fx-tabs, .fx-mode .fx-tabs.tabs { border-bottom: 0; }
+	.fx-mode .fx-tabs .tab { border-radius: 8px; }
+	.fx-mode .seg, .fx-mode .select { border-radius: 10px; }
+	.fx-mode .fx-tabs .tab { background: rgba(255, 255, 255, 0.05); border-color: transparent; }
+	.fx-mode .fx-tabs .tab[aria-selected='true'] { background: rgba(229, 138, 69, 0.14); border-color: rgba(229, 138, 69, 0.4); }
+
+	/* строка состояния отдельной полосой под панелями: панели ей больше не мешают */
+	.fx-mode .fx-left, .fx-mode .sidebar { bottom: 50px; }
+	.fx-mode .fx-bar { bottom: 52px; }
+	.fx-mode .media-bar { bottom: 104px; }
+	.fx-mode .fx-hint { bottom: 16px; }
+	.fx-mode .statusbar { left: 20px; right: 20px; bottom: 14px; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+	.fx-mode .statusbar b { color: var(--text); font-weight: 500; }
+}
+@container app (min-width: 901px) and (max-width: 1250px) {
+	.fx-mode .fx-left, .fx-mode .sidebar { bottom: 156px; }
+}
