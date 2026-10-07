@@ -136,7 +136,7 @@ button {
 .workspace {
 	display: grid;
 	grid-template-rows: minmax(0, 1fr);
-	grid-template-columns: 64px minmax(0, 1fr) var(--sidebar-w, 280px);
+	grid-template-columns: 52px minmax(0, 1fr) var(--sidebar-w, 280px);
 	min-height: 0;
 	transition: grid-template-columns 0.24s var(--ease);
 }
@@ -150,7 +150,7 @@ button {
 	user-select: none !important;
 }
 .workspace.sidebar-hidden {
-	grid-template-columns: 64px minmax(0, 1fr) 0px;
+	grid-template-columns: 52px minmax(0, 1fr) 0px;
 }
 .workspace.sidebar-hidden .sidebar {
 	visibility: hidden;
@@ -3859,23 +3859,6 @@ body {
 	text-overflow: ellipsis;
 }
 
-/* значки: один размер и одна толщина линий (Phosphor regular), без своих искажений */
-[data-icon] svg,
-.ic svg,
-.ic-wrap svg,
-.btn svg {
-	flex: none;
-	stroke: none;
-}
-.btn-icon svg {
-	width: 18px;
-	height: 18px;
-}
-.btn:not(.btn-icon) > .ic-wrap svg,
-.btn:not(.btn-icon) > svg {
-	width: 16px;
-	height: 16px;
-}
 .shape-tile {
 	border-radius: var(--r-box);
 	padding: 9px 4px 7px;
@@ -4127,27 +4110,23 @@ body {
 	animation: ws-in-bar 0.45s var(--ease) 0.08s backwards;
 }
 
-/* левая панель инструментов редактора: крупные значки, чтобы они читались и по ним было легко попасть */
+/* левая панель инструментов редактора: значки чуть крупнее прежних (24 px вместо 20), ширина панели прежняя */
 .toolrail {
-	gap: 6px;
-	padding: 12px 0;
+	gap: 5px;
+	padding: 11px 0;
 }
 .btn-tool {
-	width: 48px;
-	height: 48px;
-}
-.btn-tool svg {
-	width: 28px;
-	height: 28px;
+	width: 40px;
+	height: 40px;
 }
 .rail-sep {
-	width: 30px;
-	margin: 8px 0;
+	width: 24px;
+	margin: 7px 0;
 }
 .toolrail .btn-tool svg,
 .toolrail .btn-tool > svg {
-	width: 28px !important;
-	height: 28px !important;
+	width: 24px !important;
+	height: 24px !important;
 }
 .tabs .tab {
 	font-size: 10px;
