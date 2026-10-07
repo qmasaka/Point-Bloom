@@ -433,7 +433,7 @@ collapseBtn.querySelector('.btn-label').textContent = engine.isCollapsed ? 'Со
 });
 body.append(collapseBtn);
 } else if (def.id === 'frames') {
-body.append(h('div', { class: 'field-hint' }, 'Включите режим, когда открыто видео: оно разложится на кадры, и кадры соберутся в блок. Крутите видео на таймлайне внизу: блок следует за ним (играйте, останавливайте, перематывайте). К блоку применимы остальные эффекты.'), button({ label: 'Разложить заново', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Снять кадры с текущего места видео заново', onClick: () => engine.rebuildFramesSoon() }));
+body.append(h('div', { class: 'field-hint' }, 'Видео раскладывается на кадры, кадры собираются в блок из точек. Текущий кадр рисуется густо, остальные реже. Что сейчас показано, задаёт таймлайн внизу: играйте и перематывайте видео, блок следует за ним. Остальные эффекты работают поверх блока.'), button({ label: 'Снять кадры заново', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Снять кадры с видео заново с текущими настройками', onClick: () => engine.rebuildFramesSoon() }));
 } else if (def.id === 'brush') {
 const clearBtn = button({
 label: 'Стереть краску',
