@@ -133981,7 +133981,7 @@ const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкивать']
 
 /** Слои-операторы. group: раздел в левой панели; extras: дополнительные параметры; relink: пересобрать связи */
 const FX_LAYERS = [
-	{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Экспериментально: видео раскладывается на кадры, а кадры собираются в блок из точек. Крутите видео на таймлайне: показ следует за ним', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, hl: 0.7, follow: 'off', showMode: 'off', showLen: 0.12, hero: 150000, lod: 0.5, future: 'hide', gain: 1, bsize: 1.5 }, extras: [{ key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка вглубь'], ['wall', 'Стена кадров'], ['carousel', 'Карусель'], ['spiral', 'Спираль'], ['fan', 'Веер']], relayout: true }, { key: 'showMode', label: 'Как показываются кадры', type: 'select', options: [['off', 'Стопка: текущий впереди, прошлые позади'], ['peel', 'Листание: пройденные улетают и гаснут'], ['build', 'Проявление: кадры появляются по ходу'], ['window', 'Окно: виден только отрезок вокруг текущего'], ['projector', 'Проектор: луч света идёт по блоку'], ['trail', 'След времени: за кадром тянется шлейф']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'hl', label: 'Приглушить остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Тусклые'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'lod', label: 'Разрежать дальние кадры', min: 0, max: 1, step: 0.05 }, { key: 'bsize', label: 'Размер точек в остальных кадрах', min: 0.5, max: 4, step: 0.1 }, { key: 'gain', label: 'Яркость остальных кадров', min: 0.4, max: 3, step: 0.05 }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { key: 'depth', label: 'Глубина блока', min: 0.2, max: 4, step: 0.1, relayout: true }, { key: 'follow', label: 'Следить за кадром', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']], when: ['source', ['whole']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
+	{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Экспериментально: видео раскладывается на кадры, а кадры собираются в блок из точек. Крутите видео на таймлайне: показ следует за ним', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, hl: 0.7, follow: 'off', showMode: 'off', showLen: 0.12, hero: 150000, lod: 0.5, future: 'hide', gain: 1, bsize: 1.5, track: 'grow', tone: 'all', toneCut: 0.5, reach: 1 }, extras: [{ key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка вглубь'], ['wall', 'Стена кадров'], ['carousel', 'Карусель'], ['spiral', 'Спираль'], ['fan', 'Веер']], relayout: true }, { key: 'showMode', label: 'Как показываются кадры', type: 'select', options: [['off', 'Стопка: текущий впереди, прошлые позади'], ['peel', 'Листание: пройденные улетают и гаснут'], ['build', 'Проявление: кадры появляются по ходу'], ['window', 'Окно: виден только отрезок вокруг текущего'], ['projector', 'Проектор: луч света идёт по блоку'], ['trail', 'След времени: за кадром тянется шлейф']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'hl', label: 'Приглушить остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { key: 'track', label: 'Что в стопке', type: 'seg', options: [['grow', 'Пройденное'], ['full', 'Весь ряд']], when: ['source', ['whole']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Тусклые'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { type: 'title', label: 'Остальные кадры' }, { key: 'tone', label: 'Какие тона оставить', type: 'seg', options: [['all', 'Все'], ['light', 'Светлые'], ['dark', 'Тёмные']] }, { key: 'toneCut', label: 'Граница светлого и тёмного', min: 0.05, max: 0.95, step: 0.01, when: ['tone', ['light', 'dark']] }, { key: 'reach', label: 'Как далеко видны кадры', min: 0.02, max: 1, step: 0.01 }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'lod', label: 'Разрежать дальние кадры', min: 0, max: 1, step: 0.05 }, { key: 'bsize', label: 'Размер точек в остальных кадрах', min: 0.5, max: 4, step: 0.1 }, { key: 'gain', label: 'Яркость остальных кадров', min: 0.4, max: 3, step: 0.05 }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { key: 'depth', label: 'Глубина блока', min: 0.2, max: 4, step: 0.1, relayout: true }, { key: 'follow', label: 'Следить за кадром', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']], when: ['source', ['whole']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
 	{ id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Частицы отрываются от формы и плывут по вихрям или потоку, а потом возвращаются', max: 2, def: { on: false, amount: 0.8, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['noise', 'Вихри'], ['stream', 'Поток и возврат']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }] },
 	{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается сверху вниз, осколки взлетают, закручиваются и падают на пол с отскоками. При сборке они возвращаются дугами и складываются обратно', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
 	{ id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма отзывается на частоты трека: шерсть, колонки эквалайзера или горный рельеф', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, mode: 'bars', bars: 24 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['bars', 'Колонки эквалайзера'], ['terrain', 'Горный рельеф'], ['wool', 'Шерсть по кругу'], ['height', 'Шерсть по высоте']] }, { key: 'bars', label: 'Число колонок', min: 8, max: 64, step: 1, int: true, when: ['mode', ['bars']] }] },
@@ -134580,7 +134580,8 @@ uniform vec4 uFr3;  // глубина, раскладка A, раскладка 
 uniform vec4 uFr4;  // текущий кадр (дробный), режим показа, длина луча/шлейфа, подсветка
 uniform vec4 uFr5;  // x: голова кольцевого буфера (бегущая лента), y: сила редения прошлых кадров, z: будущие кадры (0 видны, 1 приглушены, 2 скрыты), w: усиление яркости
 uniform vec4 uHero; // колонки, строки, точек, включено
-uniform vec4 uFr6;  // x: размер точек остальных кадров
+uniform vec4 uFr6;  // x: размер точек остальных кадров, y: весь ряд кадров (1) или только пройденное (0), z: тона (0 все, 1 светлые, 2 тёмные), w: порог тонов
+uniform vec4 uFr7;  // x: как далеко от текущего видны кадры (доля всех кадров)
 vec3 frPlace(float lay, float k, float n, float u, float v, out vec3 nrm) {
 	float t = n > 1.0 ? k / (n - 1.0) : 0.5;
 	float W = uFr2.z;
@@ -134617,7 +134618,9 @@ vec3 frPlace(float lay, float k, float n, float u, float v, out vec3 nrm) {
 #ifdef HERO
 	kz = uFr4.x;
 #endif
-	return vec3(u * W, v * H, (kz - uFr4.x) * depth / max(n - 1.0, 1.0) * dz);
+	// весь ряд: кадры стоят на своих местах по времени, а текущий кадр идёт сквозь них; иначе стопка отсчитывается от текущего
+	float cen = uFr6.y > 0.5 ? (n - 1.0) * 0.5 : uFr4.x;
+	return vec3(u * W, v * H, (kz - cen) * depth / max(n - 1.0, 1.0) * dz);
 }
 // Положение точки блока по её номеру; раскладки A и B плавно перетекают друг в друга
 vec3 frMix(float k, float u, float v, out vec3 nrm) {
@@ -134672,7 +134675,7 @@ vec4 frShow(float k, out vec3 tcol) {
 			// кадры впереди текущего (из «будущего») закрывали бы его спереди: по умолчанию приглушаем
 			// прошлые кадры тускнеют с глубиной, чтобы стопка не сливалась в серую кашу
 			if (d < -0.5) w *= 0.45 + 0.55 / (1.0 + 0.2 * (-d));
-			if (d > 0.5) w *= uFr5.z > 1.5 ? 0.0 : uFr5.z > 0.5 ? 0.4 : 1.0;
+			if (d > 0.5 && uFr6.y < 0.5) w *= uFr5.z > 1.5 ? 0.0 : uFr5.z > 0.5 ? 0.4 : 1.0;
 	} else if (mode == 1) {
 		if (d < 0.0) w = max(0.0, 1.0 + d / fw);
 		lift = 1.0 - w;
@@ -135218,7 +135221,11 @@ void main() {
 		// прошлые и будущие кадры редеют с расстоянием от текущего: рядом все точки, далеко только часть
 		float dl = abs(fk - uFr4.x);
 		float keep = mix(1.0, clamp(1.0 / (1.0 + dl * 0.45), 0.08, 1.0), uFr5.y);
-		if (dl > 0.5 && fract(sin(dot(fcell, vec2(12.9898, 78.233)) + fk * 0.731) * 43758.5453) > keep) cull = true;
+		float hs = fract(sin(dot(fcell, vec2(12.9898, 78.233)) + fk * 0.731) * 43758.5453);
+		if (dl > 0.5 && hs > keep) cull = true;
+		// дальше заданного расстояния от текущего кадра точки исчезают: у границы редеют, за ней пропадают совсем
+		float reachF = uFr7.x * uFr.y;
+		if (uFr7.x < 0.999 && dl > reachF * 0.55 && hs > 1.0 - smoothstep(reachF * 0.55, max(reachF, 1.0), dl)) cull = true;
 #endif
 		if (cull) {
 			gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
@@ -135237,6 +135244,19 @@ void main() {
 #endif
 #ifndef HERO
 		fc = min(fc * uFr5.w, vec3(1.6));
+		// отбор по тону: остаются только светлые или только тёмные точки остальных кадров
+		if (uFr6.z > 0.5) {
+			float lt = pow(dot(fc, vec3(0.3, 0.59, 0.11)), 0.4545);
+			if (uFr6.z < 1.5 ? lt < uFr6.w : lt > uFr6.w) {
+				gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+				gl_PointSize = 0.0;
+				vColor = vec3(0.0);
+				vD = 0.0;
+				vCoc = 0.0;
+				vGl = 0.0;
+				return;
+			}
+		}
 #endif
 		float l = dot(fc, vec3(0.3, 0.59, 0.11));
 		frCol = (fc * (1.0 - sh.z) + tcol * (0.35 + l * 1.6) * sh.z) * sh.x;
@@ -136688,7 +136708,8 @@ class EffectsEngine {
 		const modeId = { off: 0, peel: 1, build: 2, window: 3, projector: 4, trail: 5 }[F.showMode] ?? 0;
 		u.uFr4.value.set(idx, modeId, F.showLen, F.hl);
 		// листы рядом друг с другом не перекрываются, их разреживать незачем
-		u.uFr6.value.x = F.bsize ?? 1.5;
+		u.uFr6.value.set(F.bsize ?? 1.5, F.track === 'full' && F.source === 'whole' ? 1 : 0, { all: 0, light: 1, dark: 2 }[F.tone] ?? 0, F.toneCut ?? 0.5);
+		u.uFr7.value.x = F.reach ?? 1;
 		u.uFr5.value.y = F.layout === 'stack' ? F.lod : F.lod * 0.2;
 		u.uFr5.value.z = { show: 0, dim: 1, hide: 2 }[F.future] ?? 1;
 		u.uFr5.value.w = (fr.gain || 1) * (F.gain ?? 1);
@@ -137886,7 +137907,7 @@ class EffectsEngine {
 		const U = (v) => ({ value: v });
 		// общие униформы: точки, призраки и линии читают одни и те же значения
 		const shared = {
-			uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSettle: U(-1), uFr: U(new THREE.Vector4()), uFr2: U(new THREE.Vector4(1, 1, 2.2, 1.2)), uFr3: U(new THREE.Vector4(1.6, 0, 0, 0)), uFr4: U(new THREE.Vector4(0, 0, 0.12, 0.7)), uFr5: U(new THREE.Vector4(0, 0.7, 1, 1)), uHero: U(new THREE.Vector4()), uFr6: U(new THREE.Vector4(1.5, 0, 0, 0)), uHeroTex: U(frDummy2D()), uFrTex: U(frDummyTex()), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
+			uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSettle: U(-1), uFr: U(new THREE.Vector4()), uFr2: U(new THREE.Vector4(1, 1, 2.2, 1.2)), uFr3: U(new THREE.Vector4(1.6, 0, 0, 0)), uFr4: U(new THREE.Vector4(0, 0, 0.12, 0.7)), uFr5: U(new THREE.Vector4(0, 0.7, 1, 1)), uHero: U(new THREE.Vector4()), uFr6: U(new THREE.Vector4(1.5, 0, 0, 0.5)), uFr7: U(new THREE.Vector4(1, 0, 0, 0)), uHeroTex: U(frDummy2D()), uFrTex: U(frDummyTex()), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
 			uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()), uYR: U(new THREE.Vector2(-1, 1)),
 			uShade: U(0), uGlyph: U(new THREE.Vector3(0, 1, 8)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
 			uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
@@ -140335,6 +140356,8 @@ function createEffectsPanel(app, root, engine) {
 		styleRow.hidden = engine.sourceType !== 'synth';
 		style.set(st.audio.style);
 		count.set(Math.min(st.count, cap()));
+		// у открытого видео своя кнопка звука на таймлайне: вторую здесь не показываем
+		playBtn.hidden = !!engine.videoLoaded;
 		playBtn.textContent = '';
 		playBtn.append(h('span', { class: 'ic-wrap', html: icon(engine.playing ? 'speaker-high' : 'speaker-slash', 18) }));
 		collapseBtn.classList.toggle('is-active', engine.isCollapsed);

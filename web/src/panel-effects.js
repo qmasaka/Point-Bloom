@@ -992,6 +992,7 @@ sourceSeg.set(engine.sourceType);
 styleRow.hidden = engine.sourceType !== 'synth';
 style.set(st.audio.style);
 count.set(Math.min(st.count, cap()));
+playBtn.hidden = !!engine.videoLoaded;
 playBtn.textContent = '';
 playBtn.append(h('span', { class: 'ic-wrap', html: icon(engine.playing ? 'speaker-high' : 'speaker-slash', 18) }));
 collapseBtn.classList.toggle('is-active', engine.isCollapsed);
