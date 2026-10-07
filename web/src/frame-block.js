@@ -51,7 +51,7 @@ z = (t - 0.5) * depth;
 }
 out[0] = x; out[1] = y; out[2] = z; out[3] = nx; out[4] = ny; out[5] = nz;
 }
-export function buildFrameBlock(frames, cols, rows, aspect, layout = 'stack', depth = 1.6) {
+export function buildFrameBlock(frames, cols, rows, aspect, layout = 'stack', depth = 1.6, positionsOnly = false) {
 const n = frames.length;
 const per = cols * rows;
 const count = per * n;
@@ -75,10 +75,14 @@ positions[o * 3 + 2] = tmp[2];
 normals[o * 3] = tmp[3];
 normals[o * 3 + 1] = tmp[4];
 normals[o * 3 + 2] = tmp[5];
+if (!positionsOnly) {
 const p = (j * cols + i) * 3;
 colors[o * 3] = LUT[f[p]];
 colors[o * 3 + 1] = LUT[f[p + 1]];
 colors[o * 3 + 2] = LUT[f[p + 2]];
+} else {
+colors[o * 3] = colors[o * 3 + 1] = colors[o * 3 + 2] = 1;
+}
 o++;
 }
 }
@@ -104,13 +108,13 @@ target[o++] = (g * k + rgb[1] * (0.35 + l * 1.6) * tint) * w;
 target[o++] = (b * k + rgb[2] * (0.35 + l * 1.6) * tint) * w;
 }
 }
-export function writeFrameColors(frames, cols, rows, target, weights = null) {
+export function writeFrameColors(frames, cols, rows, target, weights = null, stride = 3) {
 const per = cols * rows;
 let o = 0;
 for (let k = 0; k < frames.length; k++) {
 const f = frames[k];
 const w = weights ? weights[k] : 1;
-for (let p = 0; p < per * 3; p += 3) {
+for (let p = 0; p < per * stride; p += stride) {
 target[o++] = LUT[f[p]] * w;
 target[o++] = LUT[f[p + 1]] * w;
 target[o++] = LUT[f[p + 2]] * w;

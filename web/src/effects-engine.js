@@ -28,7 +28,7 @@ export const BAND_RANGE = { bass: [0, 0.3], mid: [0.3, 0.67], high: [0.67, 1] };
 export const FREQ_QUICK = [['Бочка', 40, 130], ['Бас', 60, 300], ['Голос', 300, 3400], ['Тарелки', 5000, 14000]];
 export const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкивать'], ['pull', 'Притягивать'], ['swirl', 'Вихрь'], ['rotate', 'Крутить форму'], ['sculpt', 'Лепить'], ['gravity', 'Гравитация у руки'], ['wave', 'Ударная волна'], ['break', 'Распад, пока держишь'], ['dissolve', 'Растворение, пока держишь'], ['brush', 'Светящийся след'], ['slicecut', 'Срез рукой: плоскость за ладонью'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:twist', 'Эффект: Деформация'], ['fx:blast', 'Эффект: Взрыв по биту'], ['fx:flow', 'Эффект: Течение'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
 export const FX_LAYERS = [
-{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Экспериментально: видео раскладывается на кадры, а кадры собираются в блок из точек. Только для видео', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, hl: 0.7, follow: 'off', showOn: false, showMode: 'peel', showSpeed: 12, showLen: 0.12 }, extras: [{ key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: время уходит вглубь'], ['wall', 'Стена кадров'], ['carousel', 'Карусель'], ['spiral', 'Спираль'], ['fan', 'Веер']], reframe: true }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'budget', label: 'Всего точек в блоке', min: 60000, max: 1500000, step: 10000, int: true, reframe: true, log: true }, { key: 'depth', label: 'Глубина блока', min: 0.2, max: 4, step: 0.1, reframe: true }, { type: 'title', label: 'Пока видео играет' }, { key: 'hl', label: 'Подсветка текущего кадра', min: 0, max: 1, step: 0.05, when: ['source', ['whole']] }, { key: 'follow', label: 'Следить за кадром', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']], when: ['source', ['whole']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }, { type: 'title', label: 'Показ кадров', when: ['showOn', [true]] }, { key: 'showMode', label: 'Как кадры исчезают', type: 'select', options: [['peel', 'Листание: пройденные улетают и гаснут'], ['build', 'Проявление: кадры появляются по ходу'], ['window', 'Окно: виден только отрезок вокруг текущего'], ['projector', 'Проектор: луч света идёт по блоку'], ['trail', 'След времени: за кадром тянется шлейф']], when: ['showOn', [true]] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showOn', [true]] }, { key: 'showSpeed', label: 'Скорость, кадров в секунду', min: 1, max: 60, step: 1, int: true, when: ['showOn', [true]] }] },
+{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Экспериментально: видео раскладывается на кадры, а кадры собираются в блок из точек. Только для видео', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, hl: 0.7, follow: 'off', showOn: false, showMode: 'peel', showSpeed: 12, showLen: 0.12 }, extras: [{ key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: время уходит вглубь'], ['wall', 'Стена кадров'], ['carousel', 'Карусель'], ['spiral', 'Спираль'], ['fan', 'Веер']], relayout: true }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'budget', label: 'Всего точек в блоке', min: 60000, max: 1500000, step: 10000, int: true, reframe: true, log: true }, { key: 'depth', label: 'Глубина блока', min: 0.2, max: 4, step: 0.1, relayout: true }, { type: 'title', label: 'Пока видео играет' }, { key: 'hl', label: 'Подсветка текущего кадра', min: 0, max: 1, step: 0.05, when: ['source', ['whole']] }, { key: 'follow', label: 'Следить за кадром', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']], when: ['source', ['whole']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }, { type: 'title', label: 'Показ кадров', when: ['showOn', [true]] }, { key: 'showMode', label: 'Как кадры исчезают', type: 'select', options: [['peel', 'Листание: пройденные улетают и гаснут'], ['build', 'Проявление: кадры появляются по ходу'], ['window', 'Окно: виден только отрезок вокруг текущего'], ['projector', 'Проектор: луч света идёт по блоку'], ['trail', 'След времени: за кадром тянется шлейф']], when: ['showOn', [true]] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showOn', [true]] }, { key: 'showSpeed', label: 'Скорость, кадров в секунду', min: 1, max: 60, step: 1, int: true, when: ['showOn', [true]] }] },
 { id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Частицы отрываются от формы и плывут по вихрям или потоку, а потом возвращаются', max: 2, def: { on: false, amount: 0.8, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['noise', 'Вихри'], ['stream', 'Поток и возврат']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }] },
 { id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается сверху вниз, осколки взлетают, закручиваются и падают на пол с отскоками. При сборке они возвращаются дугами и складываются обратно', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
 { id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма отзывается на частоты трека: шерсть, колонки эквалайзера или горный рельеф', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, mode: 'bars', bars: 24 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['bars', 'Колонки эквалайзера'], ['terrain', 'Горный рельеф'], ['wool', 'Шерсть по кругу'], ['height', 'Шерсть по высоте']] }, { key: 'bars', label: 'Число колонок', min: 8, max: 64, step: 1, int: true, when: ['mode', ['bars']] }] },
@@ -152,6 +152,13 @@ anim: { dur: 8, loop: true, keys: [] },
 };
 }
 const KEY = 'objglb.fx.v9';
+function frDummyTex() {
+const t = new THREE.DataArrayTexture(new Uint8Array(4), 1, 1, 1);
+t.format = THREE.RGBAFormat;
+t.type = THREE.UnsignedByteType;
+t.needsUpdate = true;
+return t;
+}
 const GLYPH_SETS = {
 ascii: ['.', '`', "'", ',', ':', ';', '-', '~', '"', '^', '_', '+', '=', '<', '>', 'i', '!', 'l', 'I', '?', '/', '\\', '|', '(', ')', '{', '}', '[', ']', '1', 't', 'f', 'j', 'r', 'x', 'n', 'u', 'v', 'c', 'z', 'X', 'Y', 'U', 'J', 'C', 'L', 'Q', '0', 'O', 'Z', 'm', 'w', 'q', 'p', 'd', 'b', 'k', 'h', 'a', 'o', '*', '#', 'M', 'W', '&', '8', '%', 'B', '@', '$'],
 digits: ['1', '7', '4', '2', '5', '3', '6', '9', '8', '0'],
@@ -566,11 +573,131 @@ float morphEase(float x) {
 	return x * x * (3.0 - 2.0 * x);
 }
 
+
+// ───── раскадровка видео: положения листов и показ считаются здесь, без перезаписи данных на каждом кадре
+uniform vec4 uFr;   // x: включено, y: кадров, z: точек в кадре, w: всего точек
+uniform vec4 uFr2;  // колонки, строки, ширина листа, высота листа
+uniform vec4 uFr3;  // глубина, раскладка A, раскладка B, переход A к B
+uniform vec4 uFr4;  // текущий кадр (дробный), режим показа, длина луча/шлейфа, подсветка
+uniform vec2 uFr5;  // x: голова кольцевого буфера (бегущая лента)
+vec3 frPlace(float lay, float k, float n, float u, float v, out vec3 nrm) {
+	float t = n > 1.0 ? k / (n - 1.0) : 0.5;
+	float W = uFr2.z;
+	float H = uFr2.w;
+	float depth = uFr3.x;
+	nrm = vec3(0.0, 0.0, 1.0);
+	if (lay > 0.5 && lay < 1.5) {
+		float gx = ceil(sqrt(n * (W / H)));
+		float gy = ceil(n / gx);
+		float s = min(2.4 / (gx * W), 2.4 / (gy * H));
+		float cx = mod(k, gx);
+		float cy = floor(k / gx);
+		return vec3((cx - (gx - 1.0) * 0.5) * W * s * 1.04 + u * W * s, ((gy - 1.0) * 0.5 - cy) * H * s * 1.04 + v * H * s, 0.0);
+	}
+	if (lay > 1.5 && lay < 3.5) {
+		float a = (k / n) * 6.2831853;
+		float R = 0.9 + depth * 0.45;
+		float sc = lay > 2.5 ? 0.5 : 0.6;
+		float lx = u * W * sc;
+		float ly = v * H * sc;
+		nrm = vec3(sin(a), 0.0, cos(a));
+		return vec3(sin(a) * R + cos(a) * lx, ly + (lay > 2.5 ? (t - 0.5) * depth * 1.4 : 0.0), cos(a) * R - sin(a) * lx);
+	}
+	if (lay > 3.5) {
+		float a = (t - 0.5) * min(3.7699, 0.35 * depth + 0.5);
+		float lx = (u + 0.5) * W * 0.9;
+		nrm = vec3(-sin(a), 0.0, cos(a));
+		return vec3(-W * 0.45 + cos(a) * lx, v * H * 0.9, sin(a) * lx);
+	}
+	return vec3(u * W, v * H, (t - 0.5) * depth);
+}
+// Положение точки блока по её номеру; раскладки A и B плавно перетекают друг в друга
+vec3 frBlockPos(float aIdx, out vec3 nrm, out float kk, out vec2 cell) {
+	float ip = floor(aIdx * uFr.w + 0.5);
+	float k = floor(ip / uFr.z);
+	float loc = ip - k * uFr.z;
+	float ci = mod(loc, uFr2.x);
+	float cj = floor(loc / uFr2.x);
+	float u = (ci + 0.5) / uFr2.x - 0.5;
+	float v = 0.5 - (cj + 0.5) / uFr2.y;
+	vec3 nA;
+	vec3 nB;
+	vec3 pA = frPlace(uFr3.y, k, uFr.y, u, v, nA);
+	kk = k;
+	cell = vec2(ci, cj);
+	if (uFr3.w > 0.0001) {
+		vec3 pB = frPlace(uFr3.z, k, uFr.y, u, v, nB);
+		float m = uFr3.w * uFr3.w * (3.0 - 2.0 * uFr3.w);
+		nrm = normalize(mix(nA, nB, m));
+		return mix(pA, pB, m);
+	}
+	nrm = nA;
+	return pA;
+}
+// Показ кадров: x яркость, y смещение вдоль нормали, z доля подкраски; tcol цвет подкраски
+vec4 frShow(float k, out vec3 tcol) {
+	float n = uFr.y;
+	float idx = uFr4.x;
+	int mode = int(uFr4.y + 0.5);
+	float d = k - idx;
+	float fw = max(2.0, n * 0.04);
+	float w = 1.0;
+	float lift = 0.0;
+	float tint = 0.0;
+	tcol = uP2;
+	if (mode == 0) {
+		float hl = uFr4.w;
+		if (hl > 0.001) w = 1.0 - 0.5 * hl + (0.5 + 1.4 * hl) * max(0.0, 1.0 - abs(d) / 2.5) * hl;
+	} else if (mode == 1) {
+		if (d < 0.0) w = max(0.0, 1.0 + d / fw);
+		lift = 1.0 - w;
+		w *= 1.0 + 0.25 * max(0.0, 1.0 - abs(d));
+	} else if (mode == 2) {
+		if (d > 0.0) {
+			w = max(0.0, 1.0 - d / fw) * (d <= fw ? 0.5 : 0.0);
+			lift = -(1.0 - w) * 0.6;
+		}
+		w *= 1.0 + 0.25 * max(0.0, 1.0 - abs(d));
+	} else if (mode == 3) {
+		float half_ = max(3.0, n * 0.08);
+		float ad = abs(d);
+		w = ad <= half_ ? 1.0 : max(0.0, 1.0 - (ad - half_) / fw);
+		lift = (1.0 - w) * sign(d + 0.0001) * 0.8;
+		w *= 1.0 + 0.25 * max(0.0, 1.0 - ad);
+	} else {
+		float span = max(1.5, n * max(0.02, uFr4.z));
+		if (mode == 4) {
+			float beam = exp(-(d / span) * (d / span) * 2.0);
+			float after = d < 0.0 ? exp(d / (span * 2.4)) * 0.4 : 0.0;
+			w = 0.18 + beam * 1.5 + after;
+			tint = min(0.85, beam * 0.8);
+			lift = d < 0.0 ? -min(0.35, -d / n * 1.2) : 0.0;
+		} else {
+			float age = -d / span;
+			if (d > 0.0) w = 0.0;
+			else {
+				w = max(0.0, exp(-age * 1.1) * 0.9) + 1.35 * max(0.0, 1.0 - abs(d));
+				float t = min(1.0, age);
+				tcol = t < 0.5 ? mix(uP0, uP1, t * 2.0) : mix(uP1, uP2, (t - 0.5) * 2.0);
+				tint = min(0.9, 0.3 + age * 0.7) * (1.0 - max(0.0, 1.0 - abs(d)));
+				lift = -min(0.6, age * 0.25);
+			}
+		}
+	}
+	return vec4(w, lift, tint, 0.0);
+}
+
 // Положение одной точки после всех эффектов. base: форма без эффектов, maskV: доля эффектов в этой точке (зона)
 vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float maskV) {
 	float t = uTime - uTOff;
 	float m = uMorph * uMorph * (3.0 - 2.0 * uMorph);
 	base = aTarget;
+	if (uFr.x > 0.5 && uMorph > 0.9999) {
+		vec3 fnrm;
+		float fk;
+		vec2 fcell;
+		base = frBlockPos(aIdx, fnrm, fk, fcell);
+	}
 	if (uMorph < 0.9999) {
 		// морфинг: у каждой точки своё время старта (порядок и расслоение), а путь идёт по дуге через опорную точку, форма которой зависит от вида перехода
 		float lt = morphLocal(aOrigin, aTarget, aIdx);
@@ -1001,6 +1128,7 @@ attribute vec3 aNormal;
 attribute vec3 aNormalB;
 attribute vec3 aColorB;
 attribute float aHide;
+uniform highp sampler2DArray uFrTex;
 attribute vec2 aVis;
 uniform vec3 uSolid;
 uniform float uAtt;
@@ -1031,10 +1159,36 @@ void main() {
 		vGl = 0.0;
 		return;
 	}
+	// раскадровка: цвет берётся из текстуры кадров, невидимые кадры отсекаются сразу
+	vec3 frCol = vec3(1.0);
+	vec3 frNrm = vec3(0.0, 0.0, 1.0);
+	float frLift = 0.0;
+	if (uFr.x > 0.5) {
+		float fk;
+		vec2 fcell;
+		vec3 fp = frBlockPos(aIdx, frNrm, fk, fcell);
+		vec3 tcol;
+		vec4 sh = frShow(fk, tcol);
+		if (sh.x < 0.02) {
+			gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+			gl_PointSize = 0.0;
+			vColor = vec3(0.0);
+			vD = 0.0;
+			vCoc = 0.0;
+			vGl = 0.0;
+			return;
+		}
+		int layer = int(mod(fk + uFr5.x, uFr.y));
+		vec3 fc = texelFetch(uFrTex, ivec3(int(fcell.x), int(fcell.y), layer), 0).rgb;
+		float l = dot(fc, vec3(0.3, 0.59, 0.11));
+		frCol = (fc * (1.0 - sh.z) + tcol * (0.35 + l * 1.6) * sh.z) * sh.x;
+		frLift = sh.y;
+	}
 	vec3 base;
 	float maskV;
 	vec3 pos = fxDisplace(aOrigin, aTarget, aIdx, base, maskV);
 	pos += aSculpt;
+	if (uFr.x > 0.5) pos += frNrm * frLift * 0.7;
 	float dkv = disK(base, aIdx);
 	float t = uTime - uTOff;
 	float disp = clamp(length(pos - base) * 1.5, 0.0, 1.0);
@@ -1047,6 +1201,7 @@ void main() {
 	float ltC = uMorph < 0.9999 ? morphLocal(aOrigin, aTarget, aIdx) : 1.0;
 	float eC = uMorph < 0.9999 ? (int(uMorphS.x + 0.5) == 2 ? smoothstep(0.5, 0.9, ltC) : morphEase(ltC)) : 1.0;
 	vec3 colM = mix(aColor, aColorB, eC);
+	if (uFr.x > 0.5) colM = frCol;
 	vec3 nrmM = mix(aNormal, aNormalB, eC);
 	if (uColorBy > 2.5 && uColorBy < 3.5) col = colM;
 	else if (uColorBy > 3.5 && uColorBy < 4.5) col = uSolid;
@@ -2071,39 +2226,36 @@ return !!(pm && pm.ready && pm.kind === 'video' && pm.el);
 get videoReady() {
 return this.videoLoaded && this.pm.el.readyState >= 2;
 }
-async _grabFrames(n, cols, rows, whole) {
-const pm = this.pm;
-const el = pm.el;
+_layoutId(name) {
+return Math.max(0, ['stack', 'wall', 'carousel', 'spiral', 'fan'].indexOf(name));
+}
+_frameTaker(cols, rows) {
 const cv = document.createElement('canvas');
 cv.width = cols;
 cv.height = rows;
 const ctx = cv.getContext('2d', { willReadFrequently: true });
-const take = () => {
-ctx.drawImage(el, 0, 0, cols, rows);
-const d = ctx.getImageData(0, 0, cols, rows).data;
-const out = new Uint8Array(cols * rows * 3);
-for (let i = 0, j = 0; i < d.length; i += 4, j += 3) {
-out[j] = d[i];
-out[j + 1] = d[i + 1];
-out[j + 2] = d[i + 2];
-}
-return out;
+return () => {
+ctx.drawImage(this.pm.el, 0, 0, cols, rows);
+return new Uint8Array(ctx.getImageData(0, 0, cols, rows).data.buffer.slice(0));
 };
-const frames = [];
+}
+async _grabFrames(n, cols, rows, whole) {
+const pm = this.pm;
+const el = pm.el;
+const take = this._frameTaker(cols, rows);
 if (!whole) {
 const f = take();
-for (let i = 0; i < n; i++) frames.push(f);
-return frames;
+return Array.from({ length: n }, () => f);
 }
-const was = { t: el.currentTime, playing: pm.playing };
-el.pause();
-pm.playing = false;
 const dur = Math.max(0.1, el.duration || pm.duration || 1);
-try {
-for (let i = 0; i < n; i++) {
-const t = Math.min(dur - 0.05, (i / Math.max(1, n - 1)) * dur);
-if (Math.abs(el.currentTime - t) > 0.02 || el.readyState < 2) {
-await new Promise((res) => {
+const times = Array.from({ length: n }, (_, i) => Math.min(dur - 0.04, (i / Math.max(1, n - 1)) * dur));
+const was = { t: el.currentTime, playing: pm.playing, rate: el.playbackRate, muted: pm.muted };
+pm.setMuted(true);
+el.pause();
+const frames = new Array(n).fill(null);
+const seekTo = (t) =>
+new Promise((res) => {
+if (Math.abs(el.currentTime - t) < 0.02 && el.readyState >= 2) return res();
 const done = () => {
 el.removeEventListener('seeked', done);
 clearTimeout(to);
@@ -2113,15 +2265,81 @@ const to = setTimeout(done, 700);
 el.addEventListener('seeked', done);
 el.currentTime = t;
 });
+try {
+const tProbe = performance.now();
+const probe = Math.min(3, n);
+for (let i = 0; i < probe; i++) {
+await seekTo(times[i]);
+frames[i] = take();
 }
-frames.push(take());
+const perSeek = (performance.now() - tProbe) / probe;
+const seekTotal = perSeek * n;
+const rate = 8;
+const playTotal = (dur / rate) * 1000 + 600;
+if (el.requestVideoFrameCallback && playTotal < seekTotal * 0.8) {
+await seekTo(0);
+el.playbackRate = rate;
+let next = 0;
+await new Promise((resolve) => {
+const finish = () => {
+clearTimeout(guard);
+resolve();
+};
+const guard = setTimeout(finish, (dur / rate) * 1500 + 4000);
+const cb = (now, meta) => {
+const t = meta.mediaTime;
+while (next < n && times[next] <= t + 0.002) {
+if (!frames[next]) frames[next] = take();
+next++;
+}
+this.app.ui.busy('Раскладываю видео на кадры', 0.1 + 0.85 * (next / n));
+if (next >= n || el.ended) return finish();
+el.requestVideoFrameCallback(cb);
+};
+el.requestVideoFrameCallback(cb);
+el.play().catch(finish);
+});
+el.pause();
+}
+for (let i = 0; i < n; i++) {
+if (frames[i]) continue;
+await seekTo(times[i]);
+frames[i] = take();
 this.app.ui.busy('Раскладываю видео на кадры', 0.1 + (0.85 * (i + 1)) / n);
 }
 } finally {
-el.currentTime = was.t;
+el.pause();
+el.playbackRate = was.rate || 1;
+await seekTo(was.t);
+pm.setMuted(was.muted);
 if (was.playing) pm.play();
 }
 return frames;
+}
+_makeFrameTexture(frames, cols, rows) {
+const n = frames.length;
+const per = cols * rows * 4;
+const data = new Uint8Array(per * n);
+for (let i = 0; i < n; i++) data.set(frames[i], i * per);
+const tex = new THREE.DataArrayTexture(data, cols, rows, n);
+tex.format = THREE.RGBAFormat;
+tex.type = THREE.UnsignedByteType;
+tex.colorSpace = THREE.SRGBColorSpace;
+tex.minFilter = tex.magFilter = THREE.NearestFilter;
+tex.generateMipmaps = false;
+tex.unpackAlignment = 1;
+tex.needsUpdate = true;
+return tex;
+}
+_frameUniforms() {
+const fr = this._frames;
+const F = this.state.layers.frames;
+const u = this.shared;
+if (!fr) return;
+const W = fr.aspect >= 1 ? 2.2 : 2.2 * fr.aspect;
+u.uFr.value.set(1, fr.n, fr.cols * fr.rows, fr.cols * fr.rows * fr.n);
+u.uFr2.value.set(fr.cols, fr.rows, W, W / fr.aspect);
+u.uFr3.value.x = F.depth;
 }
 async enableFrames() {
 if (this._framesBusy || !this.videoReady || !this.active) return;
@@ -2136,27 +2354,48 @@ const n = F.source === 'whole' && F.all === 'on' ? Math.max(4, Math.min(240, Mat
 const { cols, rows } = frameGrid(Math.max(300, F.budget / n), aspect);
 const frames = await this._grabFrames(n, cols, rows, F.source === 'whole');
 if (!F.on || !this.active) return;
-this._frames = { frames, cols, rows, aspect, last: this._time, cur: -1, n, dur };
-this._frameCloud = buildFrameBlock(frames, cols, rows, aspect, F.layout, F.depth);
+this._frameTex?.dispose();
+this._frameTex = this._makeFrameTexture(frames, cols, rows);
+this.shared.uFrTex.value = this._frameTex;
+this._frames = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, showT: 0 };
+this._frameCloud = buildFrameBlock(frames.map(() => this._blankFrame(cols, rows)), cols, rows, aspect, F.layout, F.depth, true);
 this._framesOn = true;
+this._layoutCur = this._layoutId(F.layout);
+this.shared.uFr3.value.set(F.depth, this._layoutCur, this._layoutCur, 0);
 this.cache.clear();
-await this.setSource('frames');
 this.state.look.colorBy = 'model';
+await this.setSource('frames');
+this._frameUniforms();
+this.shared.uFr5.value.x = 0;
 } catch (e) {
 console.error(e);
 this.app.toast('Не удалось разложить видео на кадры: ' + (e.message || e), 'error');
 F.on = false;
+this.shared.uFr.value.x = 0;
 } finally {
 this.app.ui.idle();
 this._framesBusy = false;
 this.emit();
 }
 }
+_blankFrame(cols, rows) {
+return (this._blank ||= new Uint8Array(cols * rows * 4));
+}
 async disableFrames() {
 if (!this._framesOn || this._framesBusy) return;
+const fr = this._frames;
+const g = this.geometry;
+if (fr && g && g.attributes.aColor && g.attributes.aColor.count === fr.cols * fr.rows * fr.n) {
+writeFrameColors(fr.frames, fr.cols, fr.rows, g.attributes.aColor.array, null, 4);
+g.attributes.aColorB.array.set(g.attributes.aColor.array);
+g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
+}
 this._framesOn = false;
+this.shared.uFr.value.x = 0;
 this._frames = null;
 this._frameCloud = null;
+this._frameTex?.dispose();
+this._frameTex = null;
 await this.setSource(this.pm.ready ? 'media' : this.hasModel ? 'model' : 'sphere');
 this.emit();
 }
@@ -2165,160 +2404,33 @@ clearTimeout(this._framesT);
 this._framesT = setTimeout(async () => {
 if (!this._framesOn || this._framesBusy) return;
 this._framesOn = false;
+this.shared.uFr.value.x = 0;
 await this.enableFrames();
 }, 450);
 }
-_framesPlayback(F) {
+relayoutFrames() {
+const F = this.state.layers.frames;
 const fr = this._frames;
-const pts = this.points;
-if (!this._framesOn || !fr || !pts || F.source !== 'whole' || this.state.source !== 'frames' || this.morphing) {
-if (pts && this._followed) {
-pts.position.set(0, 0, 0);
-this._followed = false;
+if (!this._framesOn || !fr) return;
+const target = this._layoutId(F.layout);
+this.shared.uFr3.value.x = F.depth;
+if (target !== this._layoutCur && !this._layoutAnim) {
+this.shared.uFr3.value.z = target;
+this._layoutAnim = { t0: this._time, target };
 }
-return;
-}
-const el = this.pm.el;
-let idx;
-if (F.showOn && !this.pm.playing) {
-fr.showT = ((fr.showT || 0) + this._lastDt * F.showSpeed) % fr.n;
-idx = Math.min(fr.n - 1, Math.floor(fr.showT));
-} else {
-const tn = Math.max(0, Math.min(1, (el.currentTime || 0) / Math.max(0.1, fr.dur)));
-idx = Math.round(tn * (fr.n - 1));
-}
+clearTimeout(this._relayT);
+this._relayT = setTimeout(() => {
+if (!this._framesOn || !this._frames) return;
+this._frameCloud = buildFrameBlock(fr.frames.map(() => this._blankFrame(fr.cols, fr.rows)), fr.cols, fr.rows, fr.aspect, F.layout, F.depth, true);
 const g = this.geometry;
-const okGeo = g && g.attributes.aColor && g.attributes.aHide && g.attributes.aColor.count === fr.cols * fr.rows * fr.n;
-const key = idx + '|' + (F.showOn ? F.showMode : 'hl' + F.hl);
-if (okGeo && key !== fr.key) {
-fr.key = key;
-fr.cur = idx;
-const n = fr.n;
-const w = new Float32Array(n);
-const lift = new Float32Array(n);
-const tint = new Float32Array(n);
-const tintRGB = new Float32Array(n * 3);
-const fw = Math.max(2, n * 0.04);
-const palC = (() => {
-const pal = FX_PALETTES.find((x) => x.id === this.state.look.palette) || FX_PALETTES[0];
-return pal.c.map((c) => new THREE.Color(c));
-})();
-if (F.showOn && (F.showMode === 'projector' || F.showMode === 'trail')) {
-const span = Math.max(1.5, n * Math.max(0.02, F.showLen));
-for (let i = 0; i < n; i++) {
-const d = i - idx;
-if (F.showMode === 'projector') {
-const beam = Math.exp(-(d / span) * (d / span) * 2);
-const after = d < 0 ? Math.exp(d / (span * 2.4)) * 0.4 : 0;
-w[i] = 0.1 + beam * 1.5 + after;
-tint[i] = Math.min(0.85, beam * 0.8);
-const c = palC[2];
-tintRGB[i * 3] = c.r; tintRGB[i * 3 + 1] = c.g; tintRGB[i * 3 + 2] = c.b;
-lift[i] = d < 0 ? -Math.min(0.35, -d / n * 1.2) : 0;
-} else {
-const age = -d / span;
-if (d > 0) w[i] = 0;
-else {
-w[i] = i === idx ? 1.35 : Math.max(0, Math.exp(-age * 1.1) * 0.9);
-const t = Math.min(1, age);
-const c0 = t < 0.5 ? palC[0].clone().lerp(palC[1], t * 2) : palC[1].clone().lerp(palC[2], (t - 0.5) * 2);
-tint[i] = i === idx ? 0 : Math.min(0.9, 0.3 + age * 0.7);
-tintRGB[i * 3] = c0.r; tintRGB[i * 3 + 1] = c0.g; tintRGB[i * 3 + 2] = c0.b;
-lift[i] = -Math.min(0.6, age * 0.25);
+if (g && g.attributes.aOrigin && g.attributes.aOrigin.count === this._frameCloud.count && !this.morphing) {
+g.attributes.aOrigin.array.set(this._frameCloud.positions);
+g.attributes.aTarget.array.set(this._frameCloud.positions);
+g.attributes.aNormal.array.set(this._frameCloud.normals);
+g.attributes.aNormalB.array.set(this._frameCloud.normals);
+g.attributes.aOrigin.needsUpdate = g.attributes.aTarget.needsUpdate = g.attributes.aNormal.needsUpdate = g.attributes.aNormalB.needsUpdate = true;
 }
-}
-}
-} else if (F.showOn) {
-const half = Math.max(3, n * 0.08);
-for (let i = 0; i < n; i++) {
-const d = i - idx;
-let v = 1;
-if (F.showMode === 'peel') {
-if (d < 0) v = Math.max(0, 1 + d / fw);
-lift[i] = (1 - v) * 1;
-} else if (F.showMode === 'build') {
-if (d > 0) v = Math.max(0, 1 - d / fw) * (d <= fw ? 0.5 : 0);
-if (d > 0) lift[i] = -(1 - v) * 0.6;
-} else {
-const ad = Math.abs(d);
-v = ad <= half ? 1 : Math.max(0, 1 - (ad - half) / fw);
-lift[i] = (1 - v) * Math.sign(d || 1) * 0.8;
-}
-w[i] = v;
-}
-w[idx] = 1.25;
-} else {
-const k = Math.max(0, F.hl);
-for (let i = 0; i < n; i++) w[i] = k === 0 ? 1 : 1 - 0.5 * k + (0.5 + 1.4 * k) * Math.max(0, 1 - Math.abs(i - idx) / 2.5) * k;
-}
-this._applyFrameWeights(fr, w, lift, tint, tintRGB);
-}
-if (F.follow === 'on') {
-const depth = F.depth;
-const t = fr.n > 1 ? idx / (fr.n - 1) : 0.5;
-const ease = 0.16;
-if (F.layout === 'stack') pts.position.z += ((0.5 - t) * depth - pts.position.z) * ease;
-else if (F.layout === 'spiral') pts.position.y += ((0.5 - t) * depth * 1.4 - pts.position.y) * ease;
-if ((F.layout === 'carousel' || F.layout === 'spiral') && !this.state.look.autoRotate) {
-const target = -((idx / fr.n) * Math.PI * 2);
-let d = target - pts.rotation.y;
-d = Math.atan2(Math.sin(d), Math.cos(d));
-pts.rotation.y += d * ease;
-}
-this._followed = true;
-} else if (this._followed) {
-pts.position.set(0, 0, 0);
-this._followed = false;
-}
-pts.updateMatrixWorld();
-}
-_applyFrameWeights(fr, w, lift, tint = null, tintRGB = null) {
-const g = this.geometry;
-const per = fr.cols * fr.rows;
-const A = g.attributes;
-const nor = this._frameCloud && this._frameCloud.normals;
-if (!fr.w) {
-fr.w = new Float32Array(fr.n).fill(1);
-fr.lift = new Float32Array(fr.n);
-fr.tint = new Float32Array(fr.n);
-}
-let lo = 1e9, hi = -1;
-for (let i = 0; i < fr.n; i++) {
-const ti = tint ? tint[i] : 0;
-if (Math.abs(w[i] - fr.w[i]) < 0.004 && Math.abs(lift[i] - fr.lift[i]) < 0.004 && Math.abs(ti - fr.tint[i]) < 0.01) continue;
-fr.w[i] = w[i];
-fr.lift[i] = lift[i];
-fr.tint[i] = ti;
-const p0 = i * per;
-writeOneFrame(fr.frames[i], per, A.aColor.array, p0, w[i], ti, tintRGB ? tintRGB.subarray(i * 3, i * 3 + 3) : null);
-A.aColorB.array.set(A.aColor.array.subarray(p0 * 3, (p0 + per) * 3), p0 * 3);
-const hide = w[i] < 0.02 ? 1 : 0;
-A.aHide.array.fill(hide, p0, p0 + per);
-if (A.aSculpt && nor) {
-const L = lift[i] * 0.7;
-const sc = A.aSculpt.array;
-for (let k = p0, e = p0 + per; k < e; k++) {
-sc[k * 3] = nor[k * 3] * L;
-sc[k * 3 + 1] = nor[k * 3 + 1] * L;
-sc[k * 3 + 2] = nor[k * 3 + 2] * L;
-}
-}
-if (i < lo) lo = i;
-if (i > hi) hi = i;
-}
-if (hi < 0) return;
-const range = (a, size) => {
-a.clearUpdateRanges && a.clearUpdateRanges();
-a.addUpdateRange && a.addUpdateRange(lo * per * size, (hi - lo + 1) * per * size);
-a.needsUpdate = true;
-};
-range(A.aColor, 3);
-range(A.aColorB, 3);
-range(A.aHide, 1);
-if (A.aSculpt && nor) {
-range(A.aSculpt, 3);
-this._sculptLive = false;
-}
+}, 350);
 }
 _framesTick() {
 const F = this.state.layers.frames;
@@ -2332,29 +2444,70 @@ F.on = false;
 this.disableFrames();
 return;
 }
-this._framesPlayback(F);
-if (!this._framesOn || !this._frames || F.source !== 'live' || this.state.source !== 'frames' || this.morphing) return;
 const fr = this._frames;
-if (this._time - fr.last < F.step || !this.pm.playing) return;
-fr.last = this._time;
-const cv = (this._fcv ||= document.createElement('canvas'));
-cv.width = fr.cols;
-cv.height = fr.rows;
-const ctx = (this._fctx ||= cv.getContext('2d', { willReadFrequently: true }));
-ctx.drawImage(this.pm.el, 0, 0, fr.cols, fr.rows);
-const d = ctx.getImageData(0, 0, fr.cols, fr.rows).data;
-const out = fr.frames.shift() && new Uint8Array(fr.cols * fr.rows * 3);
-for (let i = 0, j = 0; i < d.length; i += 4, j += 3) {
-out[j] = d[i];
-out[j + 1] = d[i + 1];
-out[j + 2] = d[i + 2];
+const u = this.shared;
+if (!this._framesOn || !fr) {
+u.uFr.value.x = 0;
+return;
 }
-fr.frames.push(out);
-const g = this.geometry;
-if (!g || !g.attributes.aColor || g.attributes.aColor.count !== fr.cols * fr.rows * fr.frames.length) return;
-writeFrameColors(fr.frames, fr.cols, fr.rows, g.attributes.aColor.array);
-g.attributes.aColorB.array.set(g.attributes.aColor.array);
-g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
+u.uFr.value.x = this.state.source === 'frames' ? 1 : 0;
+this._frameUniforms();
+const an = this._layoutAnim;
+if (an) {
+const k = Math.min(1, (this._time - an.t0) / 0.7);
+u.uFr3.value.w = k;
+if (k >= 1) {
+this._layoutCur = an.target;
+u.uFr3.value.set(F.depth, an.target, an.target, 0);
+this._layoutAnim = null;
+}
+}
+let idx;
+if (F.showOn && !this.pm.playing) {
+fr.showT = (fr.showT + this._lastDt * F.showSpeed) % fr.n;
+idx = fr.showT;
+} else idx = Math.max(0, Math.min(1, (this.pm.el.currentTime || 0) / Math.max(0.1, fr.dur))) * (fr.n - 1);
+fr.cur = Math.round(idx);
+const modeId = F.showOn ? { peel: 1, build: 2, window: 3, projector: 4, trail: 5 }[F.showMode] ?? 1 : 0;
+u.uFr4.value.set(idx, modeId, F.showLen, F.hl);
+this._framesFollow(F, fr);
+if (F.source === 'live') this._framesLive(F, fr);
+}
+_framesFollow(F, fr) {
+const pts = this.points;
+if (!pts || this.morphing || this.state.source !== 'frames') return;
+if (F.follow === 'on' && F.source === 'whole') {
+const idx = fr.cur;
+const t = fr.n > 1 ? idx / (fr.n - 1) : 0.5;
+const ease = 0.16;
+if (F.layout === 'stack') pts.position.z += ((0.5 - t) * F.depth - pts.position.z) * ease;
+else if (F.layout === 'spiral') pts.position.y += ((0.5 - t) * F.depth * 1.4 - pts.position.y) * ease;
+if ((F.layout === 'carousel' || F.layout === 'spiral') && !this.state.look.autoRotate) {
+let d = -((idx / fr.n) * Math.PI * 2) - pts.rotation.y;
+d = Math.atan2(Math.sin(d), Math.cos(d));
+pts.rotation.y += d * ease;
+}
+this._followed = true;
+pts.updateMatrixWorld();
+} else if (this._followed) {
+pts.position.set(0, 0, 0);
+this._followed = false;
+pts.updateMatrixWorld();
+}
+}
+_framesLive(F, fr) {
+if (this._time - fr.last < F.step || !this.pm.playing || this.morphing) return;
+fr.last = this._time;
+const take = (this._liveTake ||= this._frameTaker(fr.cols, fr.rows));
+const data = take();
+const layer = fr.head % fr.n;
+const tex = this._frameTex;
+tex.image.data.set(data, layer * fr.cols * fr.rows * 4);
+tex.addLayerUpdate && tex.addLayerUpdate(layer);
+tex.needsUpdate = true;
+fr.frames[layer] = data;
+fr.head++;
+this.shared.uFr5.value.x = fr.head % fr.n;
 }
 _animLayers() {
 return ['curl', 'spectrum', 'wave', 'twist', 'pulse', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'echo'];
@@ -3301,7 +3454,7 @@ this.specTex.needsUpdate = true;
 }
 const U = (v) => ({ value: v });
 const shared = {
-uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSettle: U(-1), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
+uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSettle: U(-1), uFr: U(new THREE.Vector4()), uFr2: U(new THREE.Vector4(1, 1, 2.2, 1.2)), uFr3: U(new THREE.Vector4(1.6, 0, 0, 0)), uFr4: U(new THREE.Vector4(0, 0, 0.12, 0.7)), uFr5: U(new THREE.Vector2()), uFrTex: U(frDummyTex()), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
 uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()), uYR: U(new THREE.Vector2(-1, 1)),
 uShade: U(0), uGlyph: U(new THREE.Vector3(0, 1, 8)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
 uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),

@@ -62,7 +62,7 @@ function place(layout, k, n, u, v, W, H, depth, out) {
 }
 
 /** Облако точек из кадров: frames это массив Uint8Array RGB размера cols*rows */
-export function buildFrameBlock(frames, cols, rows, aspect, layout = 'stack', depth = 1.6) {
+export function buildFrameBlock(frames, cols, rows, aspect, layout = 'stack', depth = 1.6, positionsOnly = false) {
 	const n = frames.length;
 	const per = cols * rows;
 	const count = per * n;
@@ -86,10 +86,14 @@ export function buildFrameBlock(frames, cols, rows, aspect, layout = 'stack', de
 				normals[o * 3] = tmp[3];
 				normals[o * 3 + 1] = tmp[4];
 				normals[o * 3 + 2] = tmp[5];
-				const p = (j * cols + i) * 3;
-				colors[o * 3] = LUT[f[p]];
-				colors[o * 3 + 1] = LUT[f[p + 1]];
-				colors[o * 3 + 2] = LUT[f[p + 2]];
+				if (!positionsOnly) {
+					const p = (j * cols + i) * 3;
+					colors[o * 3] = LUT[f[p]];
+					colors[o * 3 + 1] = LUT[f[p + 1]];
+					colors[o * 3 + 2] = LUT[f[p + 2]];
+				} else {
+					colors[o * 3] = colors[o * 3 + 1] = colors[o * 3 + 2] = 1;
+				}
 				o++;
 			}
 		}
@@ -120,13 +124,13 @@ export function writeOneFrame(frame, perFrame, target, firstPoint, w, tint = 0, 
 }
 
 /** Записывает цвета кадров в уже построенный блок (когда меняются только кадры, а не раскладка) */
-export function writeFrameColors(frames, cols, rows, target, weights = null) {
+export function writeFrameColors(frames, cols, rows, target, weights = null, stride = 3) {
 	const per = cols * rows;
 	let o = 0;
 	for (let k = 0; k < frames.length; k++) {
 		const f = frames[k];
 		const w = weights ? weights[k] : 1;
-		for (let p = 0; p < per * 3; p += 3) {
+		for (let p = 0; p < per * stride; p += stride) {
 			target[o++] = LUT[f[p]] * w;
 			target[o++] = LUT[f[p + 1]] * w;
 			target[o++] = LUT[f[p + 2]] * w;

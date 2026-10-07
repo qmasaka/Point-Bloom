@@ -489,6 +489,7 @@ applyWhen();
 save();
 if (ex.relink) engine.relink();
 if (ex.reframe) engine.rebuildFramesSoon();
+if (ex.relayout) engine.relayoutFrames();
 };
 if (ex.type === 'select') {
 const sl = select({ options: ex.options.map(([value, label]) => ({ value, label })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
@@ -507,7 +508,7 @@ const sg = segmented({ cls: ex.options.length > 3 ? 'seg-tight' : undefined, opt
 extraCtl[ex.key] = sg;
 put(field(ex.label, sg.el, { wide: true }), ex);
 } else {
-const sl = slider({ min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : 2, unit: ex.unit, log: ex.log, format: ex.log ? (v) => formatInt(v) : undefined, onInput: (v) => { L[ex.key] = v; }, onChange: after });
+const sl = slider({ min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : 2, unit: ex.unit, log: ex.log, format: ex.log ? (v) => formatInt(v) : undefined, onInput: (v) => { L[ex.key] = v; if (ex.relayout) engine.relayoutFrames(); }, onChange: after });
 extraCtl[ex.key] = sl;
 put(field(ex.label, sl.el), ex);
 }
