@@ -2316,102 +2316,108 @@ return this.videoLoaded && this.pm.el.readyState >= 2;
 _layoutId(name) {
 return Math.max(0, ['stack', 'wall', 'carousel', 'spiral', 'fan'].indexOf(name));
 }
-_frameTaker(cols, rows) {
+_frameTaker(cols, rows, el) {
 const cv = document.createElement('canvas');
 cv.width = cols;
 cv.height = rows;
 const ctx = cv.getContext('2d', { willReadFrequently: true });
-return () => {
-ctx.drawImage(this.pm.el, 0, 0, cols, rows);
-return new Uint8Array(ctx.getImageData(0, 0, cols, rows).data.buffer.slice(0));
+return (out) => {
+ctx.drawImage(el || this.pm.el, 0, 0, cols, rows);
+out.set(ctx.getImageData(0, 0, cols, rows).data);
+return out;
 };
 }
-async _grabFrames(n, cols, rows, whole) {
-const pm = this.pm;
-const el = pm.el;
-const take = this._frameTaker(cols, rows);
-if (!whole) {
-const blank = new Uint8Array(cols * rows * 4);
-const first = take();
-return Array.from({ length: n }, (_, i) => (i === n - 1 ? first : blank));
+async _capVideo() {
+const src = this.pm.el.currentSrc || this.pm.el.src;
+const v = document.createElement('video');
+v.muted = true;
+v.playsInline = true;
+v.preload = 'auto';
+v.src = src;
+await new Promise((res, rej) => {
+v.onloadeddata = res;
+v.onerror = () => rej(new Error('не удалось открыть видео для съёмки кадров'));
+setTimeout(res, 8000);
+});
+return v;
 }
-const dur = Math.max(0.1, el.duration || pm.duration || 1);
-const times = Array.from({ length: n }, (_, i) => Math.min(dur - 0.04, (i / Math.max(1, n - 1)) * dur));
-const was = { t: el.currentTime, playing: pm.playing, rate: el.playbackRate, muted: pm.muted };
-pm.setMuted(true);
-el.pause();
-const frames = new Array(n).fill(null);
-const seekTo = (t) =>
-new Promise((res) => {
+_seekTo(el, t) {
+return new Promise((res) => {
 if (Math.abs(el.currentTime - t) < 0.02 && el.readyState >= 2) return res();
 const done = () => {
 el.removeEventListener('seeked', done);
 clearTimeout(to);
 res();
 };
-const to = setTimeout(done, 700);
+const to = setTimeout(done, 900);
 el.addEventListener('seeked', done);
 el.currentTime = t;
 });
-try {
-const tProbe = performance.now();
-const probe = Math.min(3, n);
-for (let i = 0; i < probe; i++) {
-await seekTo(times[i]);
-frames[i] = take();
 }
-const perSeek = (performance.now() - tProbe) / probe;
-const seekTotal = perSeek * n;
-const rate = 8;
-const playTotal = (dur / rate) * 1000 + 600;
-if (el.requestVideoFrameCallback && playTotal < seekTotal * 0.8) {
-await seekTo(0);
-el.playbackRate = rate;
-let next = 0;
-await new Promise((resolve) => {
-let done = false;
-const finish = () => {
-done = true;
-clearTimeout(guard);
-resolve();
-};
-const guard = setTimeout(finish, (dur / rate) * 1500 + 4000);
-const cb = (now, meta) => {
-if (done) return;
-const t = meta.mediaTime;
-while (next < n && times[next] <= t + 0.002) {
-if (!frames[next]) frames[next] = take();
-next++;
+_capStatus(text) {
+if (!text) {
+this._capEl?.remove();
+this._capEl = null;
+return;
 }
-this.app.ui.busy('Раскладываю видео на кадры', 0.1 + 0.85 * (next / n));
-if (next >= n || el.ended) return finish();
-el.requestVideoFrameCallback(cb);
+if (!this._capEl) {
+this._capEl = document.createElement('div');
+this._capEl.className = 'fx-cap';
+document.getElementById('viewport')?.append(this._capEl);
+}
+this._capEl.textContent = text;
+}
+async _captureList(fr, list, onEach) {
+const take = (fr.take ||= this._frameTaker(fr.cols, fr.rows, fr.cap));
+for (const k of list) {
+if (fr.dead) return false;
+await this._seekTo(fr.cap, fr.times[k]);
+if (fr.dead) return false;
+take(fr.frames[k]);
+fr.done[k] = 1;
+onEach && onEach(k);
+}
+return true;
+}
+_fillGaps(fr) {
+const have = [];
+for (let k = 0; k < fr.n; k++) if (fr.done[k]) have.push(k);
+if (!have.length) return;
+for (let k = 0; k < fr.n; k++) {
+if (fr.done[k]) continue;
+let best = have[0];
+for (const j of have) if (Math.abs(j - k) < Math.abs(best - k)) best = j;
+fr.frames[k].set(fr.frames[best]);
+}
+}
+async _refineFrames(fr, order) {
+const tex = this._frameTex;
+let count = fr.done.reduce((a, b) => a + b, 0);
+let batch = 0;
+const flush = () => {
+if (!batch || fr.dead || this._frameTex !== tex) return;
+tex.needsUpdate = true;
+batch = 0;
 };
-el.requestVideoFrameCallback(cb);
-el.play().catch(finish);
+const ok = await this._captureList(fr, order, (k) => {
+count++;
+tex.addLayerUpdate && tex.addLayerUpdate(k);
+if (++batch >= 6) flush();
+if (count % 4 === 0) this._capStatus(`Снимаю кадры: ${Math.round((count / fr.n) * 100)}%`);
 });
-el.pause();
+flush();
+if (!fr.dead) this._capStatus('');
+this._closeCap(fr);
+if (ok && !fr.dead) fr.gain = this._autoGain(fr.frames);
 }
-for (let i = 0; i < n; i++) {
-if (frames[i]) continue;
-await seekTo(times[i]);
-frames[i] = take();
-this.app.ui.busy('Раскладываю видео на кадры', 0.1 + (0.85 * (i + 1)) / n);
+_closeCap(fr) {
+if (!fr?.cap) return;
+fr.cap.removeAttribute('src');
+fr.cap.load();
+fr.cap = null;
+fr.take = null;
 }
-} finally {
-el.pause();
-el.playbackRate = was.rate || 1;
-await seekTo(was.t);
-pm.setMuted(was.muted);
-if (was.playing) pm.play();
-}
-return frames;
-}
-_makeFrameTexture(frames, cols, rows) {
-const n = frames.length;
-const per = cols * rows * 4;
-const data = new Uint8Array(per * n);
-for (let i = 0; i < n; i++) data.set(frames[i], i * per);
+_makeFrameTexture(data, cols, rows, n) {
 const tex = new THREE.DataArrayTexture(data, cols, rows, n);
 tex.format = THREE.RGBAFormat;
 tex.type = THREE.UnsignedByteType;
@@ -2445,16 +2451,59 @@ const aspect = (pm.el.videoWidth || 16) / (pm.el.videoHeight || 9);
 const dur = pm.el.duration || pm.duration || 1;
 const n = F.source === 'whole' && F.all === 'on' ? Math.max(4, Math.min(240, Math.round(dur * 24))) : Math.round(F.frames);
 const { cols, rows } = frameGrid(Math.max(300, F.budget / n), aspect);
-const frames = await this._grabFrames(n, cols, rows, F.source === 'whole');
-if (!F.on || !this.active) return;
+if (this._frames) {
+this._frames.dead = true;
+this._closeCap(this._frames);
+}
+const per = cols * rows * 4;
+const data = new Uint8Array(per * n);
+const frames = Array.from({ length: n }, (_, k) => data.subarray(k * per, (k + 1) * per));
+const fr = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, gain: 1, ts: null, done: new Uint8Array(n), times: null, cap: null, take: null, dead: false };
+let refine = null;
+if (F.source === 'whole') {
+fr.times = Array.from({ length: n }, (_, k) => Math.min(Math.max(0.05, dur - 0.04), (k / Math.max(1, n - 1)) * dur));
+fr.cap = await this._capVideo();
+let step = 1;
+while (step * 2 <= Math.max(1, n / 12)) step *= 2;
+const first = [];
+const rest = [];
+const seen = new Set();
+const add = (k, arr) => {
+if (!seen.has(k)) {
+seen.add(k);
+arr.push(k);
+}
+};
+for (let k = 0; k < n; k += step) add(k, first);
+add(n - 1, first);
+for (let st = Math.floor(step / 2); st >= 1; st = Math.floor(st / 2)) for (let k = 0; k < n; k += st) add(k, rest);
+let got = 0;
+const ok = await this._captureList(fr, first, () => this.app.ui.busy('Раскладываю видео на кадры', 0.1 + 0.8 * (++got / first.length)));
+if (!ok || !F.on || !this.active) {
+fr.dead = true;
+this._closeCap(fr);
+return;
+}
+this._fillGaps(fr);
+refine = rest;
+} else {
+this._frameTaker(cols, rows)(frames[n - 1]);
+fr.done[n - 1] = 1;
+}
+if (!F.on || !this.active) {
+fr.dead = true;
+this._closeCap(fr);
+return;
+}
+fr.gain = this._autoGain(frames);
 this._frameTex?.dispose();
-this._frameTex = this._makeFrameTexture(frames, cols, rows);
+this._frameTex = this._makeFrameTexture(data, cols, rows, n);
 this.shared.uFrTex.value = this._frameTex;
-this._frames = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, gain: this._autoGain(frames), ts: null };
+this._frames = fr;
 if (F.source === 'live') {
-this._frames.ts = new Float32Array(n).fill(-1);
-this._frames.ts[n - 1] = pm.el.currentTime || 0;
-this._frames.tNew = pm.el.currentTime || 0;
+fr.ts = new Float32Array(n).fill(-1);
+fr.ts[n - 1] = pm.el.currentTime || 0;
+fr.tNew = pm.el.currentTime || 0;
 }
 this._frameCloud = buildFrameBlock(frames.map(() => this._blankFrame(cols, rows)), cols, rows, aspect, F.layout, F.depth, true);
 this._framesOn = true;
@@ -2466,6 +2515,7 @@ await this.setSource('frames');
 this._frameUniforms();
 this.shared.uFr5.value.x = 0;
 this._framesFit();
+if (refine) this._refineFrames(fr, refine);
 } catch (e) {
 console.error(e);
 this.app.toast('Не удалось разложить видео на кадры: ' + (e.message || e), 'error');
@@ -2506,6 +2556,11 @@ return (this._blank ||= new Uint8Array(cols * rows * 4));
 async disableFrames() {
 if (!this._framesOn || this._framesBusy) return;
 const fr = this._frames;
+if (fr) {
+fr.dead = true;
+this._closeCap(fr);
+}
+this._capStatus('');
 const g = this.geometry;
 if (fr && g && g.attributes.aColor && g.attributes.aColor.count === fr.cols * fr.rows * fr.n) {
 writeFrameColors(fr.frames, fr.cols, fr.rows, g.attributes.aColor.array, null, 4);
@@ -2730,14 +2785,12 @@ fr.tNew = tv - 0.05;
 }
 if (this._time - fr.last < F.step || !this.pm.playing || this.morphing || tv <= fr.tNew + 0.02 || !fr.ts) return;
 fr.last = this._time;
-const take = (this._liveTake ||= this._frameTaker(fr.cols, fr.rows));
-const data = take();
+const take = (fr.take ||= this._frameTaker(fr.cols, fr.rows));
 const layer = fr.head % fr.n;
 const tex = this._frameTex;
-tex.image.data.set(data, layer * fr.cols * fr.rows * 4);
+take(fr.frames[layer]);
 tex.addLayerUpdate && tex.addLayerUpdate(layer);
 tex.needsUpdate = true;
-fr.frames[layer] = data;
 fr.ts[layer] = tv;
 fr.tNew = tv;
 fr.head++;

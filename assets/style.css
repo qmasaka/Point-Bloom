@@ -4170,3 +4170,6 @@ body {
 	font-variant-numeric: tabular-nums;
 	font-feature-settings: 'tnum' 1, 'zero' 0;
 }
+
+/* строка состояния съёмки кадров в сцене */
+.fx-cap { position: absolute; left: 14px; bottom: 74px; z-index: 5; padding: 5px 10px; border-radius: 999px; background: rgba(20, 21, 24, 0.72); border: 1px solid var(--line, rgba(255, 255, 255, 0.1)); color: var(--text-dim, #a0a4ab); font-size: 12px; pointer-events: none; backdrop-filter: blur(6px); }
