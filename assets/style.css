@@ -3422,3 +3422,23 @@ body {
 		display: none;
 	}
 }
+
+/* морфинг: виды перехода и подсказка, пока нет второй модели */
+.morph-styles {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.fx-morph-note {
+	display: grid;
+	gap: 4px;
+	padding: 12px;
+	font-size: 12px;
+	line-height: 1.45;
+	color: var(--text-dim);
+	background: var(--bg-raised);
+	border: 1px dashed var(--line-strong);
+	border-radius: var(--r-box);
+}
+.fx-morph-note b {
+	color: var(--text);
+	font-size: 13px;
+}

@@ -133575,6 +133575,9 @@ __def(__exports, 'FX_PALETTES', () => FX_PALETTES);
 __def(__exports, 'COLOR_BY', () => COLOR_BY);
 __def(__exports, 'COLOR_BY_UI', () => COLOR_BY_UI);
 __def(__exports, 'MASK_MODES', () => MASK_MODES);
+__def(__exports, 'MORPH_STYLES', () => MORPH_STYLES);
+__def(__exports, 'MORPH_SORTS', () => MORPH_SORTS);
+__def(__exports, 'MORPH_EASES', () => MORPH_EASES);
 __def(__exports, 'SYNTH_STYLES', () => SYNTH_STYLES);
 __def(__exports, 'generateShapePoints', () => generateShapePoints);
 __def(__exports, 'EffectsEngine', () => EffectsEngine);
@@ -133694,6 +133697,18 @@ const MASK_MODES = [
 	{ id: 'scan', label: 'Скан', title: 'Живёт полоса, которая пробегает по форме' },
 ];
 
+/** Виды перехода между моделями: у каждого свои разумные настройки, их можно менять вручную */
+const MORPH_STYLES = [
+	{ id: 'flow', name: 'Течение', icon: 'waves', hint: 'Точки перетекают из одной модели в другую плавными дугами', v: { scatter: 0.8, stagger: 0.35, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 } },
+	{ id: 'swirl', name: 'Вихрь', icon: 'tornado', hint: 'Модель закручивается вихрем и раскручивается уже в новую форму', v: { scatter: 0.7, stagger: 0.3, turns: 1.2, sort: 'out', ease: 'soft', glow: 0.5 } },
+	{ id: 'burst', name: 'Взрыв', icon: 'asterisk', hint: 'Модель разлетается во все стороны и собирается в новую', v: { scatter: 1.2, stagger: 0.2, turns: 1, sort: 'out', ease: 'smooth', glow: 0.9 } },
+	{ id: 'sweep', name: 'Волна', icon: 'scan', hint: 'Граница превращения проходит по модели снизу вверх: за ней уже новая форма', v: { scatter: 0.25, stagger: 0.8, turns: 1, sort: 'up', ease: 'soft', glow: 1.0 } },
+	{ id: 'dust', name: 'Пыль', icon: 'wind', hint: 'Старая форма поднимается облаком пыли, новая оседает из него', v: { scatter: 0.9, stagger: 0.55, turns: 1, sort: 'random', ease: 'soft', glow: 0.3 } },
+	{ id: 'sand', name: 'Осыпание', icon: 'drop', hint: 'Точки осыпаются вниз, как песок, и снизу вырастает новая форма', v: { scatter: 0.9, stagger: 0.5, turns: 1, sort: 'down', ease: 'smooth', glow: 0.2 } },
+];
+const MORPH_SORTS = [['random', 'Вразнобой'], ['up', 'Снизу вверх'], ['down', 'Сверху вниз'], ['out', 'От центра'], ['side', 'Слева направо']];
+const MORPH_EASES = [['smooth', 'Плавно'], ['soft', 'Очень мягко'], ['spring', 'С перелётом']];
+
 const SYNTH_STYLES = [
 	{ id: 'deep', name: 'Спокойный: пады и арпеджио' },
 	{ id: 'ambient', name: 'Эмбиент: дрейф' },
@@ -133708,7 +133723,7 @@ function defaultState() {
 		count: 150000,
 		layers,
 		media: { pts: 80000, relief: 'bright', depth: 0.5 },
-		morphCfg: { mode: 'beat', interval: 4, time: 1.8, order: 'seq', weight: 'auto' },
+		morphCfg: { mode: 'manual', interval: 4, time: 2.6, order: 'seq', weight: 'auto', style: 'flow', scatter: 0.8, stagger: 0.35, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 },
 		mask: { mode: 'none', size: 0.5, soft: 0.4, speed: 0.5, invert: false, show: false },
 		look: {
 			bg: '',
@@ -133929,6 +133944,8 @@ precision highp float;
 uniform float uTime;
 uniform float uTOff;
 uniform float uMorph;
+uniform vec4 uMorphS;
+uniform vec4 uMorphO;
 uniform float uBeat;
 uniform vec2 uYR;
 uniform vec3 uMouse;
@@ -134107,13 +134124,59 @@ float disK(vec3 b, float idx) {
 	return clamp((uDis.x * 1.4 - ord) / 0.32, 0.0, 1.0);
 }
 
+// Местное время морфинга точки 0..1: расслоение задаёт, насколько позже стартуют точки, порядок задаёт, какие первыми
+float morphLocal(vec3 A, vec3 B, float idx) {
+	float h = hash11(idx * 3.17);
+	float ord = h;
+	int so = int(uMorphO.x + 0.5);
+	float yN = clamp((A.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
+	if (so == 1) ord = yN * 0.85 + h * 0.15;
+	else if (so == 2) ord = (1.0 - yN) * 0.85 + h * 0.15;
+	else if (so == 3) ord = clamp(length(A) / 1.4, 0.0, 1.0) * 0.85 + h * 0.15;
+	else if (so == 4) ord = clamp((A.x + 1.2) / 2.4, 0.0, 1.0) * 0.85 + h * 0.15;
+	float sg = uMorphS.z;
+	return clamp(uMorph * (1.0 + sg) - ord * sg, 0.0, 1.0);
+}
+float morphEase(float x) {
+	int e = int(uMorphO.y + 0.5);
+	if (e == 1) return x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
+	if (e == 2) {
+		float c1 = 1.70158;
+		float y = x - 1.0;
+		return 1.0 + (c1 + 1.0) * y * y * y + c1 * y * y;
+	}
+	return x * x * (3.0 - 2.0 * x);
+}
+
 // Положение одной точки после всех эффектов. base: форма без эффектов, maskV: доля эффектов в этой точке (зона)
 vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float maskV) {
 	float t = uTime - uTOff;
 	float m = uMorph * uMorph * (3.0 - 2.0 * uMorph);
-	base = mix(aOrigin, aTarget, m);
-	float turb = sin(m * PI) * 0.5;
-	if (turb > 0.001) base += curlNoise(base * 2.5 + t * 0.8) * turb;
+	base = aTarget;
+	if (uMorph < 0.9999) {
+		// морфинг: у каждой точки своё время старта (порядок и расслоение), а путь идёт по дуге через опорную точку, форма которой зависит от вида перехода
+		float lt = morphLocal(aOrigin, aTarget, aIdx);
+		float e = morphEase(lt);
+		float sc = uMorphS.y;
+		int sty = int(uMorphS.x + 0.5);
+		vec3 mid = (aOrigin + aTarget) * 0.5;
+		vec3 cn = curlNoise(mid * 1.8 + vec3(0.0, t * 0.3, 0.0));
+		vec3 ctrl = mid + cn * sc * 0.9;
+		vec3 rdir = normalize(mid + vec3(1e-3));
+		if (sty == 1) ctrl = mid + normalize(vec3(-mid.z, 0.0, mid.x) + vec3(1e-3)) * sc * 0.9;
+		else if (sty == 2) ctrl = mid + rdir * sc * 1.6 + cn * sc * 0.4;
+		else if (sty == 3) ctrl = mid + cn * sc * 0.3;
+		else if (sty == 4) ctrl = aOrigin + vec3(0.0, 0.9 * sc, 0.0) + cn * sc * 0.8;
+		else if (sty == 5) ctrl = vec3(mid.x, min(aOrigin.y, aTarget.y) - 1.1 * sc, mid.z) + cn * sc * 0.25;
+		float om = 1.0 - e;
+		base = om * om * aOrigin + 2.0 * om * e * ctrl + e * e * aTarget;
+		if (sty == 1) {
+			float ang = sin(e * PI) * uMorphS.w * 6.2831853 * (0.6 + 0.4 * hash11(aIdx * 1.3));
+			float cs = cos(ang);
+			float sn = sin(ang);
+			base.xz = vec2(base.x * cs - base.z * sn, base.x * sn + base.z * cs);
+		}
+	}
 	vec3 rad = normalize(base + vec3(1e-4));
 	vec3 pos = base;
 
@@ -134629,6 +134692,12 @@ void main() {
 		float edge = smoothstep(0.02, 0.25, dkv) * (1.0 - smoothstep(0.25, 0.75, dkv));
 		vColor += vec3(1.0, 0.42, 0.08) * edge * 2.4;
 	}
+	// вспышка в момент перехода: точки в пути ярче и крупнее
+	float mkm = 0.0;
+	if (uMorph < 0.9999 && uMorphO.z > 0.001) {
+		mkm = sin(morphLocal(aOrigin, aTarget, aIdx) * PI) * uMorphO.z;
+		vColor += vColor * mkm * 1.1 + uP2 * mkm * 0.25;
+	}
 	vD = disp;
 	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
 	gl_Position = projectionMatrix * mv;
@@ -134652,7 +134721,7 @@ void main() {
 	}
 	vCoc = coc;
 
-	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2) * uGlyph.y;
+	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y;
 	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.7 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
@@ -135828,7 +135897,7 @@ class EffectsEngine {
 	// ------------------------------------------------------------ морфинг между формами
 	/** Список доступных форм: встроенные фигуры и объекты сцены редактора */
 	forms() {
-		const out = FX_SHAPES.filter((x) => x.id !== 'model' && x.id !== 'media').map((x) => ({ key: x.id, name: x.name, icon: x.icon }));
+		const out = [];
 		for (const o of this.modelProvider?.objects() || []) out.push({ key: 'obj:' + o.id, name: o.name, icon: 'cube' });
 		return out;
 	}
@@ -135856,7 +135925,7 @@ class EffectsEngine {
 
 	morphNext() {
 		const list = this.playlist || [];
-		if (list.length < 2 || !this.active) return;
+		if (list.length < 2 || !this.active || this.morphing) return;
 		let i;
 		if (this.state.morphCfg.order === 'random') {
 			do i = Math.floor(Math.random() * list.length);
@@ -136621,7 +136690,7 @@ class EffectsEngine {
 		const U = (v) => ({ value: v });
 		// общие униформы: точки, призраки и линии читают одни и те же значения
 		const shared = {
-			uTime: U(0), uMorph: U(1), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
+			uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
 			uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()), uYR: U(new THREE.Vector2(-1, 1)),
 			uShade: U(0), uGlyph: U(new THREE.Vector3(0, 1, 8)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
 			uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
@@ -136850,7 +136919,8 @@ class EffectsEngine {
 		const g = this.geometry;
 		const o = g.attributes.aOrigin;
 		const t = g.attributes.aTarget;
-		const k = this.morph * this.morph * (3 - 2 * this.morph);
+		// если новый переход начался до конца прежнего, считаем прежний завершённым: пути у видов сложные, середину по прямой не посчитать
+		const k = this.morphing ? 1 : this.morph * this.morph * (3 - 2 * this.morph);
 		for (let i = 0; i < o.array.length; i++) {
 			o.array[i] = o.array[i] * (1 - k) + t.array[i] * k;
 			t.array[i] = target.positions[i];
@@ -137112,6 +137182,11 @@ class EffectsEngine {
 			if (this.post) this.post.tint = new THREE.Color(pal.c[0]);
 			u.uTime.value = this._time;
 			u.uMorph.value = this.morph;
+			{
+				const mcf = st.morphCfg;
+				u.uMorphS.value.set(Math.max(0, MORPH_STYLES.findIndex((x) => x.id === mcf.style)), mcf.scatter, mcf.stagger, mcf.turns);
+				u.uMorphO.value.set(Math.max(0, MORPH_SORTS.findIndex((x) => x[0] === mcf.sort)), Math.max(0, MORPH_EASES.findIndex((x) => x[0] === mcf.ease)), mcf.glow, 0);
+			}
 			// вид точек общий с вкладкой «Точки» редактора: форма, размер, цвет, затухание вдали
 			const pset = this.app.settings.point;
 			u.uSize.value = pset.size;
@@ -137930,7 +138005,7 @@ const { formatCount } = __req('src/capabilities.js');
 const { createMediaPanel } = __req('src/panel-media.js');
 const { attachPreview } = __req('src/fx-previews.js');
 const { SHAPES: POINT_SHAPE_LIST } = __req('src/panel-points.js');
-const { FX_GROUP_NAMES, FX_SHAPES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY_UI, SYNTH_STYLES } = __req('src/effects-engine.js');
+const { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } = __req('src/effects-engine.js');
 
 /**
  * Источник «Модель» для эффектов: если в сцене редактора есть облако точек (оно создаётся на вкладке «Точки»),
@@ -138062,14 +138137,6 @@ function createEffectsPanel(app, root, engine) {
 	const save = () => engine.touch();
 
 	// ------------------------------------------------------------ пресеты
-	const tiles = h('div', { class: 'shape-grid fx-shapes', role: 'radiogroup', 'aria-label': 'Форма' });
-	const tileMap = new Map();
-	for (const s of FX_SHAPES) {
-		const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'data-shape': s.id }, h('span', { class: 'fx-ic', html: icon(s.icon, 22) }), h('span', { class: 'shape-name' }, s.name));
-		b.addEventListener('click', () => engine.setSource(s.id));
-		tileMap.set(s.id, b);
-		tiles.append(b);
-	}
 	const dev = getDevice(app);
 	const cap = () => Math.max(100000, Math.min(2000000, getDevice(app).limits.cap));
 	const count = slider({
@@ -138088,32 +138155,24 @@ function createEffectsPanel(app, root, engine) {
 	const countChips = h('div', { class: 'chip-row' });
 	for (const n of [100000, 300000, 1000000]) countChips.append(h('button', { type: 'button', class: 'chip-btn', onclick: () => engine.setCount(Math.min(n, cap())) }, formatCount(n)));
 	countChips.append(h('button', { type: 'button', class: 'chip-btn', 'data-tip': 'Столько частиц комфортно для вашего компьютера', onclick: () => engine.setCount(Math.min(cap(), Math.max(20000, getDevice(app).limits.comfort))) }, 'Комфортно'));
-	// морфинг: выбираем несколько форм, и частицы перетекают из одной в другую
+	// ------------------------------------------------------------ морфинг между моделями
 	const mc = st.morphCfg;
 	const formsBox = h('div', { class: 'chip-row fx-forms' });
 	const picked = [];
-	const shapesBox = h('div', { class: 'chip-row fx-forms' });
-	shapesBox.hidden = true;
-	const shapesToggle = h('button', { type: 'button', class: 'btn btn-ghost btn-sm' }, 'Встроенные фигуры');
-	shapesToggle.addEventListener('click', () => {
-		shapesBox.hidden = !shapesBox.hidden;
-	});
 	let autoPicked = false;
 	const renderForms = () => {
 		const list = engine.forms();
 		for (let i = picked.length - 1; i >= 0; i--) if (!list.some((f) => f.key === picked[i])) picked.splice(i, 1);
-		const objs = list.filter((f) => f.key.startsWith('obj:'));
 		// две модели и больше: сразу готовы к морфингу между ними
-		if (objs.length >= 2 && !autoPicked && !picked.length) {
+		if (list.length >= 2 && !autoPicked && !picked.length) {
 			autoPicked = true;
-			objs.forEach((o) => picked.push(o.key));
+			list.forEach((o) => picked.push(o.key));
 			engine.setPlaylist([...picked]);
 		}
-		if (objs.length < 2) autoPicked = false;
+		if (list.length < 2) autoPicked = false;
 		formsBox.textContent = '';
-		shapesBox.textContent = '';
-		const chip = (f, box) => {
-			const b = h('button', { type: 'button', class: 'chip-btn' + (picked.includes(f.key) ? ' is-active' : ''), 'data-tip': 'Добавить в морфинг. Порядок: как нажимали' }, f.name);
+		for (const f of list) {
+			const b = h('button', { type: 'button', class: 'chip-btn' + (picked.includes(f.key) ? ' is-active' : ''), 'data-tip': 'Участвует в морфинге. Порядок: как нажимали' }, f.name);
 			b.addEventListener('click', () => {
 				const k = picked.indexOf(f.key);
 				if (k >= 0) picked.splice(k, 1);
@@ -138121,22 +138180,83 @@ function createEffectsPanel(app, root, engine) {
 				engine.setPlaylist([...picked]);
 				renderForms();
 			});
-			box.append(b);
-		};
-		objs.forEach((f) => chip(f, formsBox));
-		list.filter((f) => !f.key.startsWith('obj:')).forEach((f) => chip(f, shapesBox));
-		morphHint.textContent = objs.length < 2 ? 'Добавьте в сцену вторую модель кнопкой «Добавить модель…»: между вашими моделями можно будет делать морфинг. Встроенные фигуры ниже.' : picked.length < 2 ? 'Отметьте минимум две формы.' : `В морфинге форм: ${picked.length}`;
+			formsBox.append(b);
+		}
+		const has = list.length >= 2;
+		morphBox.hidden = !has;
+		morphNote.hidden = has;
+		morphHint.textContent = picked.length < 2 ? 'Отметьте минимум две модели, между которыми должен идти морфинг.' : '';
 	};
-	const morphHint = h('div', { class: 'field-hint' }, 'Отметьте минимум две формы. Объекты сцены редактора появятся здесь как отдельные формы.');
-	const morphMode = segmented({ cls: 'seg-tight', options: [{ value: 'manual', label: 'Кнопкой' }, { value: 'beat', label: 'По биту' }, { value: 'timer', label: 'По таймеру' }], value: mc.mode, onChange: (v) => { mc.mode = v; save(); } });
+	const morphHint = h('div', { class: 'field-hint' });
+	// вид перехода: плитки с иконкой, у каждого свои настройки по умолчанию
+	const styleTiles = h('div', { class: 'shape-grid fx-shapes morph-styles', role: 'radiogroup', 'aria-label': 'Вид перехода' });
+	const styleBtns = new Map();
+	const styleHint = h('div', { class: 'field-hint' });
+	for (const ms of MORPH_STYLES) {
+		const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'data-tip': ms.hint }, h('span', { class: 'fx-ic', html: icon(ms.icon, 22) }), h('span', { class: 'shape-name' }, ms.name));
+		b.addEventListener('click', () => {
+			mc.style = ms.id;
+			Object.assign(mc, ms.v);
+			save();
+			syncMorph();
+		});
+		styleBtns.set(ms.id, b);
+		styleTiles.append(b);
+	}
+	const morphMode = segmented({ cls: 'seg-tight', options: [{ value: 'manual', label: 'Кнопкой' }, { value: 'beat', label: 'По биту' }, { value: 'timer', label: 'По таймеру' }], value: mc.mode, onChange: (v) => { mc.mode = v; save(); syncMorph(); } });
 	const morphOrder = segmented({ options: [{ value: 'seq', label: 'По кругу' }, { value: 'random', label: 'Случайно' }], value: mc.order, onChange: (v) => { mc.order = v; save(); } });
 	const morphInt = slider({ min: 1, max: 20, step: 0.5, value: mc.interval, digits: 1, unit: ' с', onInput: (v) => { mc.interval = v; }, onChange: save });
-	const morphTime = slider({ min: 0.4, max: 6, step: 0.1, value: mc.time, digits: 1, unit: ' с', onInput: (v) => { mc.time = v; }, onChange: save });
-	const morphWeight = segmented({ options: [{ value: 'auto', label: 'Как в модели', title: 'У модели с меньшим числом точек лишние гаснут, при переходе к большей недостающие проявляются' }, { value: 'equal', label: 'Поровну' }], value: mc.weight, onChange: (v) => { mc.weight = v; save(); } });
-	const morphGo = button({ label: 'Следующая форма', icon: 'arrow-right', variant: 'secondary', cls: 'btn-block', onClick: () => engine.morphNext() });
-	const morphBody = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, shapesToggle, shapesBox, field('Переход', morphMode.el, { wide: true }), field('Порядок', morphOrder.el, { wide: true }), field('Число точек у моделей', morphWeight.el, { wide: true }), field('Не чаще, чем раз в', morphInt.el), field('Длительность', morphTime.el), morphGo);
+	const morphTime = slider({ min: 0.4, max: 8, step: 0.1, value: mc.time, digits: 1, unit: ' с', onInput: (v) => { mc.time = v; }, onChange: save });
+	const morphScatter = slider({ min: 0, max: 2, step: 0.05, value: mc.scatter, digits: 2, onInput: (v) => { mc.scatter = v; }, onChange: save });
+	const morphStagger = slider({ min: 0, max: 0.9, step: 0.05, value: mc.stagger, digits: 2, onInput: (v) => { mc.stagger = v; }, onChange: save });
+	const morphTurns = slider({ min: 0, max: 3, step: 0.1, value: mc.turns, digits: 1, onInput: (v) => { mc.turns = v; }, onChange: save });
+	const morphGlow = slider({ min: 0, max: 1.5, step: 0.05, value: mc.glow, digits: 2, onInput: (v) => { mc.glow = v; }, onChange: save });
+	const morphSort = select({ options: MORPH_SORTS.map(([value, label]) => ({ value, label })), value: mc.sort, onChange: (v) => { mc.sort = v; save(); } });
+	const morphEase = segmented({ cls: 'seg-tight', options: MORPH_EASES.map(([value, label]) => ({ value, label })), value: mc.ease, onChange: (v) => { mc.ease = v; save(); } });
+	const morphWeight = segmented({ options: [{ value: 'auto', label: 'Как в модели', title: 'У модели с меньшим числом точек лишние гаснут, при переходе к большей недостающие проявляются' }, { value: 'equal', label: 'Поровну', title: 'У всех моделей одинаковое число точек' }], value: mc.weight, onChange: (v) => { mc.weight = v; save(); } });
+	const morphGo = button({ label: 'Следующая модель', icon: 'arrow-right', variant: 'primary', cls: 'btn-block', title: 'Запустить переход к следующей модели из списка', onClick: () => engine.morphNext() });
+	const turnsRow = field('Закрутка', morphTurns.el);
+	const intRow = field('Не чаще, чем раз в', morphInt.el);
+	const morphBox = h('div', { class: 'sec-body', style: { padding: 0 } },
+		formsBox,
+		morphHint,
+		h('div', { class: 'fx-sub' }, 'Вид перехода'),
+		styleTiles,
+		styleHint,
+		field('Длительность', morphTime.el),
+		field('Разлёт', morphScatter.el),
+		field('Разнобой по времени', morphStagger.el),
+		turnsRow,
+		field('Какие точки первыми', morphSort.el, { wide: true }),
+		field('Характер движения', morphEase.el, { wide: true }),
+		field('Вспышка в пути', morphGlow.el),
+		h('div', { class: 'fx-sub' }, 'Запуск'),
+		field('Переход', morphMode.el, { wide: true }),
+		field('Порядок моделей', morphOrder.el, { wide: true }),
+		intRow,
+		field('Число точек у моделей', morphWeight.el, { wide: true }),
+		morphGo
+	);
+	const morphNote = h('div', { class: 'fx-morph-note' }, h('b', {}, 'Морфинг между моделями'), h('span', {}, 'Если хотите, можно сделать плавный переход между двумя объектами: добавьте в сцену вторую модель, и здесь появятся виды перехода и их настройки.'));
+	function syncMorph() {
+		const cur = MORPH_STYLES.find((x) => x.id === mc.style) || MORPH_STYLES[0];
+		styleBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === cur.id)));
+		styleHint.textContent = cur.hint;
+		turnsRow.hidden = cur.id !== 'swirl';
+		intRow.hidden = mc.mode === 'manual';
+		morphMode.set(mc.mode);
+		morphTime.set(mc.time);
+		morphScatter.set(mc.scatter);
+		morphStagger.set(mc.stagger);
+		morphTurns.set(mc.turns);
+		morphGlow.set(mc.glow);
+		morphSort.set(mc.sort);
+		morphEase.set(mc.ease);
+	}
 	renderForms();
-	const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, tiles, field('Частиц', count.el), countChips, countHint, h('div', { class: 'fx-sub' }, 'Морфинг между формами'), morphBody);
+	syncMorph();
+	const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), countChips, countHint);
+	const secMorph = section('Морфинг', { key: 'fx-morph' }, morphNote, morphBox);
 
 	// ------------------------------------------------------------ слои
 	const cards = [];
@@ -138462,7 +138582,7 @@ function createEffectsPanel(app, root, engine) {
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
 	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
-	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMedia]], ['zone', 'Зона и звук', 'target', [secMask, secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Зона и звук', 'target', [secMask, secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
 	try {
@@ -138677,14 +138797,6 @@ function createEffectsPanel(app, root, engine) {
 
 	// ------------------------------------------------------------ синхронизация
 	function sync() {
-		tileMap.forEach((b, k) => {
-			b.setAttribute('aria-checked', String(k === st.source));
-			if (k === 'model') b.disabled = !engine.hasModel;
-			if (k === 'media') {
-				b.disabled = !engine.pm.ready;
-				b.dataset.tip = engine.pm.ready ? 'Фото или видео из вкладки «Медиа» редактора' : 'Откройте фото или видео на вкладке «Медиа» в редакторе';
-			}
-		});
 		const n = engine.geometry ? engine.geometry.attributes.position.count : st.count;
 		countHint.textContent = `Сейчас ${formatInt(n)} частиц, около ${Math.round((n * 128) / 1048576)} МБ памяти. Комфортно до ${formatCount(getDevice(app).limits.comfort)}.`;
 		const kind = engine.modelProvider ? engine.modelProvider.kind() : 'none';
@@ -138756,6 +138868,7 @@ function createEffectsPanel(app, root, engine) {
 	});
 	app.bus.on('scene', () => {
 		renderForms();
+		syncMorph();
 		sync();
 	});
 

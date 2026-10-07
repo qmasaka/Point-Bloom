@@ -93,6 +93,16 @@ export const MASK_MODES = [
 { id: 'noise', label: 'Пятна', title: 'Живут плавающие пятна' },
 { id: 'scan', label: 'Скан', title: 'Живёт полоса, которая пробегает по форме' },
 ];
+export const MORPH_STYLES = [
+{ id: 'flow', name: 'Течение', icon: 'waves', hint: 'Точки перетекают из одной модели в другую плавными дугами', v: { scatter: 0.8, stagger: 0.35, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 } },
+{ id: 'swirl', name: 'Вихрь', icon: 'tornado', hint: 'Модель закручивается вихрем и раскручивается уже в новую форму', v: { scatter: 0.7, stagger: 0.3, turns: 1.2, sort: 'out', ease: 'soft', glow: 0.5 } },
+{ id: 'burst', name: 'Взрыв', icon: 'asterisk', hint: 'Модель разлетается во все стороны и собирается в новую', v: { scatter: 1.2, stagger: 0.2, turns: 1, sort: 'out', ease: 'smooth', glow: 0.9 } },
+{ id: 'sweep', name: 'Волна', icon: 'scan', hint: 'Граница превращения проходит по модели снизу вверх: за ней уже новая форма', v: { scatter: 0.25, stagger: 0.8, turns: 1, sort: 'up', ease: 'soft', glow: 1.0 } },
+{ id: 'dust', name: 'Пыль', icon: 'wind', hint: 'Старая форма поднимается облаком пыли, новая оседает из него', v: { scatter: 0.9, stagger: 0.55, turns: 1, sort: 'random', ease: 'soft', glow: 0.3 } },
+{ id: 'sand', name: 'Осыпание', icon: 'drop', hint: 'Точки осыпаются вниз, как песок, и снизу вырастает новая форма', v: { scatter: 0.9, stagger: 0.5, turns: 1, sort: 'down', ease: 'smooth', glow: 0.2 } },
+];
+export const MORPH_SORTS = [['random', 'Вразнобой'], ['up', 'Снизу вверх'], ['down', 'Сверху вниз'], ['out', 'От центра'], ['side', 'Слева направо']];
+export const MORPH_EASES = [['smooth', 'Плавно'], ['soft', 'Очень мягко'], ['spring', 'С перелётом']];
 export const SYNTH_STYLES = [
 { id: 'deep', name: 'Спокойный: пады и арпеджио' },
 { id: 'ambient', name: 'Эмбиент: дрейф' },
@@ -106,7 +116,7 @@ source: 'sphere',
 count: 150000,
 layers,
 media: { pts: 80000, relief: 'bright', depth: 0.5 },
-morphCfg: { mode: 'beat', interval: 4, time: 1.8, order: 'seq', weight: 'auto' },
+morphCfg: { mode: 'manual', interval: 4, time: 2.6, order: 'seq', weight: 'auto', style: 'flow', scatter: 0.8, stagger: 0.35, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 },
 mask: { mode: 'none', size: 0.5, soft: 0.4, speed: 0.5, invert: false, show: false },
 look: {
 bg: '',
@@ -308,6 +318,8 @@ precision highp float;
 uniform float uTime;
 uniform float uTOff;
 uniform float uMorph;
+uniform vec4 uMorphS;
+uniform vec4 uMorphO;
 uniform float uBeat;
 uniform vec2 uYR;
 uniform vec3 uMouse;
@@ -486,13 +498,59 @@ float disK(vec3 b, float idx) {
 	return clamp((uDis.x * 1.4 - ord) / 0.32, 0.0, 1.0);
 }
 
+// Местное время морфинга точки 0..1: расслоение задаёт, насколько позже стартуют точки, порядок задаёт, какие первыми
+float morphLocal(vec3 A, vec3 B, float idx) {
+	float h = hash11(idx * 3.17);
+	float ord = h;
+	int so = int(uMorphO.x + 0.5);
+	float yN = clamp((A.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
+	if (so == 1) ord = yN * 0.85 + h * 0.15;
+	else if (so == 2) ord = (1.0 - yN) * 0.85 + h * 0.15;
+	else if (so == 3) ord = clamp(length(A) / 1.4, 0.0, 1.0) * 0.85 + h * 0.15;
+	else if (so == 4) ord = clamp((A.x + 1.2) / 2.4, 0.0, 1.0) * 0.85 + h * 0.15;
+	float sg = uMorphS.z;
+	return clamp(uMorph * (1.0 + sg) - ord * sg, 0.0, 1.0);
+}
+float morphEase(float x) {
+	int e = int(uMorphO.y + 0.5);
+	if (e == 1) return x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
+	if (e == 2) {
+		float c1 = 1.70158;
+		float y = x - 1.0;
+		return 1.0 + (c1 + 1.0) * y * y * y + c1 * y * y;
+	}
+	return x * x * (3.0 - 2.0 * x);
+}
+
 // Положение одной точки после всех эффектов. base: форма без эффектов, maskV: доля эффектов в этой точке (зона)
 vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float maskV) {
 	float t = uTime - uTOff;
 	float m = uMorph * uMorph * (3.0 - 2.0 * uMorph);
-	base = mix(aOrigin, aTarget, m);
-	float turb = sin(m * PI) * 0.5;
-	if (turb > 0.001) base += curlNoise(base * 2.5 + t * 0.8) * turb;
+	base = aTarget;
+	if (uMorph < 0.9999) {
+		// морфинг: у каждой точки своё время старта (порядок и расслоение), а путь идёт по дуге через опорную точку, форма которой зависит от вида перехода
+		float lt = morphLocal(aOrigin, aTarget, aIdx);
+		float e = morphEase(lt);
+		float sc = uMorphS.y;
+		int sty = int(uMorphS.x + 0.5);
+		vec3 mid = (aOrigin + aTarget) * 0.5;
+		vec3 cn = curlNoise(mid * 1.8 + vec3(0.0, t * 0.3, 0.0));
+		vec3 ctrl = mid + cn * sc * 0.9;
+		vec3 rdir = normalize(mid + vec3(1e-3));
+		if (sty == 1) ctrl = mid + normalize(vec3(-mid.z, 0.0, mid.x) + vec3(1e-3)) * sc * 0.9;
+		else if (sty == 2) ctrl = mid + rdir * sc * 1.6 + cn * sc * 0.4;
+		else if (sty == 3) ctrl = mid + cn * sc * 0.3;
+		else if (sty == 4) ctrl = aOrigin + vec3(0.0, 0.9 * sc, 0.0) + cn * sc * 0.8;
+		else if (sty == 5) ctrl = vec3(mid.x, min(aOrigin.y, aTarget.y) - 1.1 * sc, mid.z) + cn * sc * 0.25;
+		float om = 1.0 - e;
+		base = om * om * aOrigin + 2.0 * om * e * ctrl + e * e * aTarget;
+		if (sty == 1) {
+			float ang = sin(e * PI) * uMorphS.w * 6.2831853 * (0.6 + 0.4 * hash11(aIdx * 1.3));
+			float cs = cos(ang);
+			float sn = sin(ang);
+			base.xz = vec2(base.x * cs - base.z * sn, base.x * sn + base.z * cs);
+		}
+	}
 	vec3 rad = normalize(base + vec3(1e-4));
 	vec3 pos = base;
 
@@ -1007,6 +1065,12 @@ void main() {
 		float edge = smoothstep(0.02, 0.25, dkv) * (1.0 - smoothstep(0.25, 0.75, dkv));
 		vColor += vec3(1.0, 0.42, 0.08) * edge * 2.4;
 	}
+	// вспышка в момент перехода: точки в пути ярче и крупнее
+	float mkm = 0.0;
+	if (uMorph < 0.9999 && uMorphO.z > 0.001) {
+		mkm = sin(morphLocal(aOrigin, aTarget, aIdx) * PI) * uMorphO.z;
+		vColor += vColor * mkm * 1.1 + uP2 * mkm * 0.25;
+	}
 	vD = disp;
 	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
 	gl_Position = projectionMatrix * mv;
@@ -1030,7 +1094,7 @@ void main() {
 	}
 	vCoc = coc;
 
-	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2) * uGlyph.y;
+	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y;
 	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.7 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
@@ -2102,7 +2166,7 @@ await this._build();
 this.emit();
 }
 forms() {
-const out = FX_SHAPES.filter((x) => x.id !== 'model' && x.id !== 'media').map((x) => ({ key: x.id, name: x.name, icon: x.icon }));
+const out = [];
 for (const o of this.modelProvider?.objects() || []) out.push({ key: 'obj:' + o.id, name: o.name, icon: 'cube' });
 return out;
 }
@@ -2126,7 +2190,7 @@ this.emit();
 }
 morphNext() {
 const list = this.playlist || [];
-if (list.length < 2 || !this.active) return;
+if (list.length < 2 || !this.active || this.morphing) return;
 let i;
 if (this.state.morphCfg.order === 'random') {
 do i = Math.floor(Math.random() * list.length);
@@ -2826,7 +2890,7 @@ this.specTex.needsUpdate = true;
 }
 const U = (v) => ({ value: v });
 const shared = {
-uTime: U(0), uMorph: U(1), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
+uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
 uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()), uYR: U(new THREE.Vector2(-1, 1)),
 uShade: U(0), uGlyph: U(new THREE.Vector3(0, 1, 8)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
 uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
@@ -3043,7 +3107,7 @@ return this.emit();
 const g = this.geometry;
 const o = g.attributes.aOrigin;
 const t = g.attributes.aTarget;
-const k = this.morph * this.morph * (3 - 2 * this.morph);
+const k = this.morphing ? 1 : this.morph * this.morph * (3 - 2 * this.morph);
 for (let i = 0; i < o.array.length; i++) {
 o.array[i] = o.array[i] * (1 - k) + t.array[i] * k;
 t.array[i] = target.positions[i];
@@ -3285,6 +3349,11 @@ const pal = FX_PALETTES.find((p) => p.id === look.palette) || FX_PALETTES[0];
 if (this.post) this.post.tint = new THREE.Color(pal.c[0]);
 u.uTime.value = this._time;
 u.uMorph.value = this.morph;
+{
+const mcf = st.morphCfg;
+u.uMorphS.value.set(Math.max(0, MORPH_STYLES.findIndex((x) => x.id === mcf.style)), mcf.scatter, mcf.stagger, mcf.turns);
+u.uMorphO.value.set(Math.max(0, MORPH_SORTS.findIndex((x) => x[0] === mcf.sort)), Math.max(0, MORPH_EASES.findIndex((x) => x[0] === mcf.ease)), mcf.glow, 0);
+}
 const pset = this.app.settings.point;
 u.uSize.value = pset.size;
 u.uShape.value = this._eff(L.voxel) > 0.25 ? 0 : Math.max(0, ['square', 'circle', 'sphere', 'ring', 'diamond', 'plus'].indexOf(pset.shape));

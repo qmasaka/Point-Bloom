@@ -9,7 +9,7 @@ import { formatCount } from './capabilities.js';
 import { createMediaPanel } from './panel-media.js';
 import { attachPreview } from './fx-previews.js';
 import { SHAPES as POINT_SHAPE_LIST } from './panel-points.js';
-import { FX_GROUP_NAMES, FX_SHAPES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY_UI, SYNTH_STYLES } from './effects-engine.js';
+import { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, MASK_MODES, BANDS, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } from './effects-engine.js';
 
 /**
  * Источник «Модель» для эффектов: если в сцене редактора есть облако точек (оно создаётся на вкладке «Точки»),
@@ -141,14 +141,6 @@ export function createEffectsPanel(app, root, engine) {
 	const save = () => engine.touch();
 
 	// ------------------------------------------------------------ пресеты
-	const tiles = h('div', { class: 'shape-grid fx-shapes', role: 'radiogroup', 'aria-label': 'Форма' });
-	const tileMap = new Map();
-	for (const s of FX_SHAPES) {
-		const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'data-shape': s.id }, h('span', { class: 'fx-ic', html: icon(s.icon, 22) }), h('span', { class: 'shape-name' }, s.name));
-		b.addEventListener('click', () => engine.setSource(s.id));
-		tileMap.set(s.id, b);
-		tiles.append(b);
-	}
 	const dev = getDevice(app);
 	const cap = () => Math.max(100000, Math.min(2000000, getDevice(app).limits.cap));
 	const count = slider({
@@ -167,32 +159,24 @@ export function createEffectsPanel(app, root, engine) {
 	const countChips = h('div', { class: 'chip-row' });
 	for (const n of [100000, 300000, 1000000]) countChips.append(h('button', { type: 'button', class: 'chip-btn', onclick: () => engine.setCount(Math.min(n, cap())) }, formatCount(n)));
 	countChips.append(h('button', { type: 'button', class: 'chip-btn', 'data-tip': 'Столько частиц комфортно для вашего компьютера', onclick: () => engine.setCount(Math.min(cap(), Math.max(20000, getDevice(app).limits.comfort))) }, 'Комфортно'));
-	// морфинг: выбираем несколько форм, и частицы перетекают из одной в другую
+	// ------------------------------------------------------------ морфинг между моделями
 	const mc = st.morphCfg;
 	const formsBox = h('div', { class: 'chip-row fx-forms' });
 	const picked = [];
-	const shapesBox = h('div', { class: 'chip-row fx-forms' });
-	shapesBox.hidden = true;
-	const shapesToggle = h('button', { type: 'button', class: 'btn btn-ghost btn-sm' }, 'Встроенные фигуры');
-	shapesToggle.addEventListener('click', () => {
-		shapesBox.hidden = !shapesBox.hidden;
-	});
 	let autoPicked = false;
 	const renderForms = () => {
 		const list = engine.forms();
 		for (let i = picked.length - 1; i >= 0; i--) if (!list.some((f) => f.key === picked[i])) picked.splice(i, 1);
-		const objs = list.filter((f) => f.key.startsWith('obj:'));
 		// две модели и больше: сразу готовы к морфингу между ними
-		if (objs.length >= 2 && !autoPicked && !picked.length) {
+		if (list.length >= 2 && !autoPicked && !picked.length) {
 			autoPicked = true;
-			objs.forEach((o) => picked.push(o.key));
+			list.forEach((o) => picked.push(o.key));
 			engine.setPlaylist([...picked]);
 		}
-		if (objs.length < 2) autoPicked = false;
+		if (list.length < 2) autoPicked = false;
 		formsBox.textContent = '';
-		shapesBox.textContent = '';
-		const chip = (f, box) => {
-			const b = h('button', { type: 'button', class: 'chip-btn' + (picked.includes(f.key) ? ' is-active' : ''), 'data-tip': 'Добавить в морфинг. Порядок: как нажимали' }, f.name);
+		for (const f of list) {
+			const b = h('button', { type: 'button', class: 'chip-btn' + (picked.includes(f.key) ? ' is-active' : ''), 'data-tip': 'Участвует в морфинге. Порядок: как нажимали' }, f.name);
 			b.addEventListener('click', () => {
 				const k = picked.indexOf(f.key);
 				if (k >= 0) picked.splice(k, 1);
@@ -200,22 +184,83 @@ export function createEffectsPanel(app, root, engine) {
 				engine.setPlaylist([...picked]);
 				renderForms();
 			});
-			box.append(b);
-		};
-		objs.forEach((f) => chip(f, formsBox));
-		list.filter((f) => !f.key.startsWith('obj:')).forEach((f) => chip(f, shapesBox));
-		morphHint.textContent = objs.length < 2 ? 'Добавьте в сцену вторую модель кнопкой «Добавить модель…»: между вашими моделями можно будет делать морфинг. Встроенные фигуры ниже.' : picked.length < 2 ? 'Отметьте минимум две формы.' : `В морфинге форм: ${picked.length}`;
+			formsBox.append(b);
+		}
+		const has = list.length >= 2;
+		morphBox.hidden = !has;
+		morphNote.hidden = has;
+		morphHint.textContent = picked.length < 2 ? 'Отметьте минимум две модели, между которыми должен идти морфинг.' : '';
 	};
-	const morphHint = h('div', { class: 'field-hint' }, 'Отметьте минимум две формы. Объекты сцены редактора появятся здесь как отдельные формы.');
-	const morphMode = segmented({ cls: 'seg-tight', options: [{ value: 'manual', label: 'Кнопкой' }, { value: 'beat', label: 'По биту' }, { value: 'timer', label: 'По таймеру' }], value: mc.mode, onChange: (v) => { mc.mode = v; save(); } });
+	const morphHint = h('div', { class: 'field-hint' });
+	// вид перехода: плитки с иконкой, у каждого свои настройки по умолчанию
+	const styleTiles = h('div', { class: 'shape-grid fx-shapes morph-styles', role: 'radiogroup', 'aria-label': 'Вид перехода' });
+	const styleBtns = new Map();
+	const styleHint = h('div', { class: 'field-hint' });
+	for (const ms of MORPH_STYLES) {
+		const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'data-tip': ms.hint }, h('span', { class: 'fx-ic', html: icon(ms.icon, 22) }), h('span', { class: 'shape-name' }, ms.name));
+		b.addEventListener('click', () => {
+			mc.style = ms.id;
+			Object.assign(mc, ms.v);
+			save();
+			syncMorph();
+		});
+		styleBtns.set(ms.id, b);
+		styleTiles.append(b);
+	}
+	const morphMode = segmented({ cls: 'seg-tight', options: [{ value: 'manual', label: 'Кнопкой' }, { value: 'beat', label: 'По биту' }, { value: 'timer', label: 'По таймеру' }], value: mc.mode, onChange: (v) => { mc.mode = v; save(); syncMorph(); } });
 	const morphOrder = segmented({ options: [{ value: 'seq', label: 'По кругу' }, { value: 'random', label: 'Случайно' }], value: mc.order, onChange: (v) => { mc.order = v; save(); } });
 	const morphInt = slider({ min: 1, max: 20, step: 0.5, value: mc.interval, digits: 1, unit: ' с', onInput: (v) => { mc.interval = v; }, onChange: save });
-	const morphTime = slider({ min: 0.4, max: 6, step: 0.1, value: mc.time, digits: 1, unit: ' с', onInput: (v) => { mc.time = v; }, onChange: save });
-	const morphWeight = segmented({ options: [{ value: 'auto', label: 'Как в модели', title: 'У модели с меньшим числом точек лишние гаснут, при переходе к большей недостающие проявляются' }, { value: 'equal', label: 'Поровну' }], value: mc.weight, onChange: (v) => { mc.weight = v; save(); } });
-	const morphGo = button({ label: 'Следующая форма', icon: 'arrow-right', variant: 'secondary', cls: 'btn-block', onClick: () => engine.morphNext() });
-	const morphBody = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, shapesToggle, shapesBox, field('Переход', morphMode.el, { wide: true }), field('Порядок', morphOrder.el, { wide: true }), field('Число точек у моделей', morphWeight.el, { wide: true }), field('Не чаще, чем раз в', morphInt.el), field('Длительность', morphTime.el), morphGo);
+	const morphTime = slider({ min: 0.4, max: 8, step: 0.1, value: mc.time, digits: 1, unit: ' с', onInput: (v) => { mc.time = v; }, onChange: save });
+	const morphScatter = slider({ min: 0, max: 2, step: 0.05, value: mc.scatter, digits: 2, onInput: (v) => { mc.scatter = v; }, onChange: save });
+	const morphStagger = slider({ min: 0, max: 0.9, step: 0.05, value: mc.stagger, digits: 2, onInput: (v) => { mc.stagger = v; }, onChange: save });
+	const morphTurns = slider({ min: 0, max: 3, step: 0.1, value: mc.turns, digits: 1, onInput: (v) => { mc.turns = v; }, onChange: save });
+	const morphGlow = slider({ min: 0, max: 1.5, step: 0.05, value: mc.glow, digits: 2, onInput: (v) => { mc.glow = v; }, onChange: save });
+	const morphSort = select({ options: MORPH_SORTS.map(([value, label]) => ({ value, label })), value: mc.sort, onChange: (v) => { mc.sort = v; save(); } });
+	const morphEase = segmented({ cls: 'seg-tight', options: MORPH_EASES.map(([value, label]) => ({ value, label })), value: mc.ease, onChange: (v) => { mc.ease = v; save(); } });
+	const morphWeight = segmented({ options: [{ value: 'auto', label: 'Как в модели', title: 'У модели с меньшим числом точек лишние гаснут, при переходе к большей недостающие проявляются' }, { value: 'equal', label: 'Поровну', title: 'У всех моделей одинаковое число точек' }], value: mc.weight, onChange: (v) => { mc.weight = v; save(); } });
+	const morphGo = button({ label: 'Следующая модель', icon: 'arrow-right', variant: 'primary', cls: 'btn-block', title: 'Запустить переход к следующей модели из списка', onClick: () => engine.morphNext() });
+	const turnsRow = field('Закрутка', morphTurns.el);
+	const intRow = field('Не чаще, чем раз в', morphInt.el);
+	const morphBox = h('div', { class: 'sec-body', style: { padding: 0 } },
+		formsBox,
+		morphHint,
+		h('div', { class: 'fx-sub' }, 'Вид перехода'),
+		styleTiles,
+		styleHint,
+		field('Длительность', morphTime.el),
+		field('Разлёт', morphScatter.el),
+		field('Разнобой по времени', morphStagger.el),
+		turnsRow,
+		field('Какие точки первыми', morphSort.el, { wide: true }),
+		field('Характер движения', morphEase.el, { wide: true }),
+		field('Вспышка в пути', morphGlow.el),
+		h('div', { class: 'fx-sub' }, 'Запуск'),
+		field('Переход', morphMode.el, { wide: true }),
+		field('Порядок моделей', morphOrder.el, { wide: true }),
+		intRow,
+		field('Число точек у моделей', morphWeight.el, { wide: true }),
+		morphGo
+	);
+	const morphNote = h('div', { class: 'fx-morph-note' }, h('b', {}, 'Морфинг между моделями'), h('span', {}, 'Если хотите, можно сделать плавный переход между двумя объектами: добавьте в сцену вторую модель, и здесь появятся виды перехода и их настройки.'));
+	function syncMorph() {
+		const cur = MORPH_STYLES.find((x) => x.id === mc.style) || MORPH_STYLES[0];
+		styleBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === cur.id)));
+		styleHint.textContent = cur.hint;
+		turnsRow.hidden = cur.id !== 'swirl';
+		intRow.hidden = mc.mode === 'manual';
+		morphMode.set(mc.mode);
+		morphTime.set(mc.time);
+		morphScatter.set(mc.scatter);
+		morphStagger.set(mc.stagger);
+		morphTurns.set(mc.turns);
+		morphGlow.set(mc.glow);
+		morphSort.set(mc.sort);
+		morphEase.set(mc.ease);
+	}
 	renderForms();
-	const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, tiles, field('Частиц', count.el), countChips, countHint, h('div', { class: 'fx-sub' }, 'Морфинг между формами'), morphBody);
+	syncMorph();
+	const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), countChips, countHint);
+	const secMorph = section('Морфинг', { key: 'fx-morph' }, morphNote, morphBox);
 
 	// ------------------------------------------------------------ слои
 	const cards = [];
@@ -541,7 +586,7 @@ export function createEffectsPanel(app, root, engine) {
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
 	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
-	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMedia]], ['zone', 'Зона и звук', 'target', [secMask, secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Зона и звук', 'target', [secMask, secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
 	try {
@@ -756,14 +801,6 @@ export function createEffectsPanel(app, root, engine) {
 
 	// ------------------------------------------------------------ синхронизация
 	function sync() {
-		tileMap.forEach((b, k) => {
-			b.setAttribute('aria-checked', String(k === st.source));
-			if (k === 'model') b.disabled = !engine.hasModel;
-			if (k === 'media') {
-				b.disabled = !engine.pm.ready;
-				b.dataset.tip = engine.pm.ready ? 'Фото или видео из вкладки «Медиа» редактора' : 'Откройте фото или видео на вкладке «Медиа» в редакторе';
-			}
-		});
 		const n = engine.geometry ? engine.geometry.attributes.position.count : st.count;
 		countHint.textContent = `Сейчас ${formatInt(n)} частиц, около ${Math.round((n * 128) / 1048576)} МБ памяти. Комфортно до ${formatCount(getDevice(app).limits.comfort)}.`;
 		const kind = engine.modelProvider ? engine.modelProvider.kind() : 'none';
@@ -835,6 +872,7 @@ export function createEffectsPanel(app, root, engine) {
 	});
 	app.bus.on('scene', () => {
 		renderForms();
+		syncMorph();
 		sync();
 	});
 
