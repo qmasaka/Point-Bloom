@@ -6,6 +6,7 @@ import { makeTextureSampler } from './pointcloud.js';
 import { makeDemoFiles } from './demo.js';
 import { exportForWeb } from './web-export.js';
 import { runBenchmark } from './capabilities.js';
+import { guardDevice } from './device-guard.js';
 function showFatal(e) {
 console.error(e);
 const box = document.getElementById('fatal');
@@ -23,6 +24,7 @@ box.querySelector('code').textContent = String(e && e.message ? e.message : e);
 import { iconsReady } from './icons.js';
 iconsReady
 .then(() => {
+guardDevice();
 const app = new App();
 app.start();
 window.__app = app;

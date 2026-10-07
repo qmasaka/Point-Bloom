@@ -6,6 +6,7 @@ import { makeTextureSampler } from './pointcloud.js';
 import { makeDemoFiles } from './demo.js';
 import { exportForWeb } from './web-export.js';
 import { runBenchmark } from './capabilities.js';
+import { guardDevice } from './device-guard.js';
 
 function showFatal(e) {
 	console.error(e);
@@ -26,6 +27,7 @@ import { iconsReady } from './icons.js';
 
 iconsReady
 	.then(() => {
+		guardDevice(); // на другом устройстве сайт начинает с исходных настроек
 		const app = new App();
 		app.start();
 		window.__app = app; // удобно для отладки из консоли

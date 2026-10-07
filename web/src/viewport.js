@@ -201,18 +201,28 @@ return;
 }
 if (dt > 150 || fx?.recording || fx?.animBusy) return;
 this._qEma = (this._qEma || 16.7) * 0.9 + dt * 0.1;
-if (now - (this._qT || 0) < 1200) return;
+if (now - (this._qT || 0) < 1500) return;
 this._qT = now;
 const fps = 1000 / this._qEma;
-if (fps < 38 && this._qs > 0.5) {
+this._qLow = fps < 30 ? (this._qLow || 0) + 1 : 0;
+if (this._qLow >= 3 && this._qs > 0.6) {
+this._qLow = 0;
 this._qDown = now;
-this.setScale(Math.max(0.5, this._qs * 0.85));
-} else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 6000) this.setScale(Math.min(1, this._qs * 1.1));
+this.setScale(Math.max(0.6, this._qs * 0.85));
+} else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 20000) this.setScale(Math.min(1, this._qs * 1.15));
 }
 setScale(v) {
 this._qs = v;
 this.renderer.setPixelRatio(this._basePR * v);
 this.resize();
+if (!this._rescaling) {
+this._rescaling = true;
+try {
+this.render();
+} finally {
+this._rescaling = false;
+}
+}
 }
 frame(now) {
 const animating = this.app.nav.tick(now);

@@ -83970,19 +83970,31 @@ class Viewport {
 		}
 		if (dt > 150 || fx?.recording || fx?.animBusy) return; // паузы между редкими кадрами и запись не считаем
 		this._qEma = (this._qEma || 16.7) * 0.9 + dt * 0.1;
-		if (now - (this._qT || 0) < 1200) return;
+		if (now - (this._qT || 0) < 1500) return;
 		this._qT = now;
 		const fps = 1000 / this._qEma;
-		if (fps < 38 && this._qs > 0.5) {
+		// снижаем только если кадров мало несколько проверок подряд: одиночный провал (например, при загрузке) не повод менять разрешение
+		this._qLow = fps < 30 ? (this._qLow || 0) + 1 : 0;
+		if (this._qLow >= 3 && this._qs > 0.6) {
+			this._qLow = 0;
 			this._qDown = now;
-			this.setScale(Math.max(0.5, this._qs * 0.85));
-		} else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 6000) this.setScale(Math.min(1, this._qs * 1.1));
+			this.setScale(Math.max(0.6, this._qs * 0.85));
+		} else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 20000) this.setScale(Math.min(1, this._qs * 1.15));
 	}
 
+	/** Меняет разрешение отрисовки и тут же перерисовывает кадр: иначе после смены размера холст на миг оставался пустым и сцена мигала */
 	setScale(v) {
 		this._qs = v;
 		this.renderer.setPixelRatio(this._basePR * v);
 		this.resize();
+		if (!this._rescaling) {
+			this._rescaling = true;
+			try {
+				this.render();
+			} finally {
+				this._rescaling = false;
+			}
+		}
 	}
 
 	frame(now) {
@@ -141489,6 +141501,53 @@ class App {
 }
 
 };
+__defs['src/device-guard.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'guardDevice', () => guardDevice);
+// Настройки хранятся в браузере (localStorage), то есть уже на конкретном устройстве. Этот модуль нужен для случая, когда
+// профиль браузера оказался на другом компьютере (перенос, синхронизация, копия профиля): тогда прежние настройки не подходят
+// новой видеокарте, и сайт начинает с исходных. Отпечаток устройства: видеокарта, число ядер процессора и система.
+const FP_KEY = 'objglb.device';
+
+function gpuName() {
+	try {
+		const c = document.createElement('canvas');
+		const gl = c.getContext('webgl2') || c.getContext('webgl');
+		if (!gl) return 'nogl';
+		const ext = gl.getExtension('WEBGL_debug_renderer_info');
+		const name = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+		const lose = gl.getExtension('WEBGL_lose_context');
+		if (lose) lose.loseContext();
+		return String(name || 'gl');
+	} catch (e) {
+		return 'gl';
+	}
+}
+
+function hash(str) {
+	let h = 2166136261;
+	for (let i = 0; i < str.length; i++) {
+		h ^= str.charCodeAt(i);
+		h = Math.imul(h, 16777619);
+	}
+	return (h >>> 0).toString(36);
+}
+
+/** Сбрасывает сохранённые настройки, если сайт открыт на другом устройстве, чем в прошлый раз */
+function guardDevice() {
+	try {
+		const fp = hash([gpuName(), navigator.hardwareConcurrency || 0, navigator.platform || '', navigator.deviceMemory || 0].join('|'));
+		const prev = localStorage.getItem(FP_KEY);
+		if (prev && prev !== fp) {
+			for (const k of Object.keys(localStorage)) if (k.startsWith('objglb.')) localStorage.removeItem(k);
+		}
+		localStorage.setItem(FP_KEY, fp);
+	} catch (e) {
+		/* хранилище недоступно: работаем с исходными настройками */
+	}
+}
+
+};
 __defs['src/main.js'] = function (__exports, __req) {
 'use strict';
 const { App } = __req('src/app.js');
@@ -141499,6 +141558,7 @@ const { makeTextureSampler } = __req('src/pointcloud.js');
 const { makeDemoFiles } = __req('src/demo.js');
 const { exportForWeb } = __req('src/web-export.js');
 const { runBenchmark } = __req('src/capabilities.js');
+const { guardDevice } = __req('src/device-guard.js');
 
 function showFatal(e) {
 	console.error(e);
@@ -141519,6 +141579,7 @@ const { iconsReady } = __req('src/icons.js');
 
 iconsReady
 	.then(() => {
+		guardDevice(); // на другом устройстве сайт начинает с исходных настроек
 		const app = new App();
 		app.start();
 		window.__app = app; // удобно для отладки из консоли
