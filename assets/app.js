@@ -89451,6 +89451,7 @@ const ICON_PATHS = {
 	'download-simple': '<path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"/>',
 	'drop': '<path d="M174,47.75a254.19,254.19,0,0,0-41.45-38.3,8,8,0,0,0-9.18,0A254.19,254.19,0,0,0,82,47.75C54.51,79.32,40,112.6,40,144a88,88,0,0,0,176,0C216,112.6,201.49,79.32,174,47.75ZM128,216a72.08,72.08,0,0,1-72-72c0-57.23,55.47-105,72-118,16.53,13,72,60.75,72,118A72.08,72.08,0,0,1,128,216Zm55.89-62.66a57.6,57.6,0,0,1-46.56,46.55A8.75,8.75,0,0,1,136,200a8,8,0,0,1-1.32-15.89c16.57-2.79,30.63-16.85,33.44-33.45a8,8,0,0,1,15.78,2.68Z"/>',
 	'equalizer': '<path d="M80,96a8,8,0,0,1-8,8H24a8,8,0,0,1,0-16H72A8,8,0,0,1,80,96Zm-8,24H24a8,8,0,0,0,0,16H72a8,8,0,0,0,0-16Zm0,32H24a8,8,0,0,0,0,16H72a8,8,0,0,0,0-16Zm0,32H24a8,8,0,0,0,0,16H72a8,8,0,0,0,0-16Zm80-64H104a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16Zm0,32H104a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16Zm0,32H104a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16Zm80-96H184a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16ZM184,72h48a8,8,0,0,0,0-16H184a8,8,0,0,0,0,16Zm48,48H184a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16Zm0,32H184a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16Zm0,32H184a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16Z"/>',
+	'export': '<path d="M216,112v96a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V112A16,16,0,0,1,56,96H80a8,8,0,0,1,0,16H56v96H200V112H176a8,8,0,0,1,0-16h24A16,16,0,0,1,216,112ZM93.66,69.66,120,43.31V136a8,8,0,0,0,16,0V43.31l26.34,26.35a8,8,0,0,0,11.32-11.32l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,93.66,69.66Z"/>',
 	'eye-slash': '<path d="M53.92,34.62A8,8,0,1,0,42.08,45.38L61.32,66.55C25,88.84,9.38,123.2,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208a127.11,127.11,0,0,0,52.07-10.83l22,24.21a8,8,0,1,0,11.84-10.76Zm47.33,75.84,41.67,45.85a32,32,0,0,1-41.67-45.85ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.16,133.16,0,0,1,25,128c4.69-8.79,19.66-33.39,47.35-49.38l18,19.75a48,48,0,0,0,63.66,70l14.73,16.2A112,112,0,0,1,128,192Zm6-95.43a8,8,0,0,1,3-15.72,48.16,48.16,0,0,1,38.77,42.64,8,8,0,0,1-7.22,8.71,6.39,6.39,0,0,1-.75,0,8,8,0,0,1-8-7.26A32.09,32.09,0,0,0,134,96.57Zm113.28,34.69c-.42.94-10.55,23.37-33.36,43.8a8,8,0,1,1-10.67-11.92A132.77,132.77,0,0,0,231.05,128a133.15,133.15,0,0,0-23.12-30.77C185.67,75.19,158.78,64,128,64a118.37,118.37,0,0,0-19.36,1.57A8,8,0,1,1,106,49.79,134,134,0,0,1,128,48c34.88,0,66.57,13.26,91.66,38.35,18.83,18.83,27.3,37.62,27.65,38.41A8,8,0,0,1,247.31,131.26Z"/>',
 	'eye': '<path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.46,133.46,0,0,1,231.05,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"/>',
 	'file': '<path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Z"/>',
@@ -140583,7 +140584,10 @@ class UI {
 		app.bus.on('selection', () => this.refreshScene());
 		app.bus.on('geometry', () => this.updateStatus());
 		app.bus.on('history', () => this.refreshHistory());
-		app.bus.on('fx', () => this.refreshHistory());
+		app.bus.on('fx', () => {
+			this.refreshHistory();
+			if (this.workspace === 'fx') this.updateStatus();
+		});
 		app.bus.on('tool', () => this.refreshTool());
 		app.bus.on('camera', () => this.refreshViewLabel());
 		app.bus.on('viewmode', () => this.refreshViewLabel());
@@ -140628,7 +140632,10 @@ class UI {
 		$('#btnUndo').addEventListener('click', () => this.undo());
 		$('#btnRedo').addEventListener('click', () => this.redo());
 		$('#btnHelp').addEventListener('click', () => this.showHelp());
-		$('#btnExport').addEventListener('click', () => this.exportNow());
+		$('#btnExport').addEventListener('click', (e) => {
+			e.stopPropagation();
+			this.toggleExportPop();
+		});
 		document.documentElement.setAttribute('data-theme', 'dark');
 
 		this.fileInput.addEventListener('change', async () => {
@@ -140714,10 +140721,8 @@ class UI {
 		}
 	}
 
-	setExportLabel(text) {
-		const el = $('#btnExportLabel');
-		if (el) el.textContent = text;
-	}
+	/** Подпись кнопки в шапке теперь всегда «Экспорт»: что именно скачивать, выбирается в окне настроек */
+	setExportLabel() {}
 
 	openFiles(mode = 'auto') {
 		this.openMode = mode;
@@ -140751,12 +140756,7 @@ class UI {
 
 	buildExportPop() {
 		const pop = $('#exportPop');
-		const btn = $('#btnExportOpts');
 		this.exportPop = pop;
-		btn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			this.toggleExportPop();
-		});
 		$('#btnExportClose').addEventListener('click', () => this.toggleExportPop(false));
 		document.addEventListener('pointerdown', (e) => {
 			if (!pop.hidden && e.target === pop) this.toggleExportPop(false);
@@ -140767,7 +140767,7 @@ class UI {
 		const pop = this.exportPop;
 		const open = force !== undefined ? force : pop.hidden;
 		pop.hidden = !open;
-		$('#btnExportOpts').setAttribute('aria-expanded', String(open));
+		$('#btnExport').setAttribute('aria-expanded', String(open));
 	}
 
 	exportNow() {
@@ -141003,13 +141003,17 @@ class UI {
 				return;
 			}
 			this.workspace = 'fx';
-			setTimeout(() => this.refreshHistory(), 700);
+			setTimeout(() => {
+				this.refreshHistory();
+				this.updateStatus();
+			}, 700);
 			for (const el of Object.values(this.tabs)) el.hidden = true;
 			fxPanel.hidden = false;
 			if ($('.workspace').classList.contains('sidebar-hidden') && !window.matchMedia('(max-width: 900px)').matches) this.toggleSidebar(false);
 		} else {
 			this.workspace = 'edit';
 			this.refreshHistory();
+			this.updateStatus();
 			this.effectsEngine.exit();
 			fxPanel.hidden = true;
 			this.showTab(this.prevTab || 'scene');
@@ -141119,6 +141123,16 @@ class UI {
 		const st = this.app.model.stats();
 		const el = $('#statusStats');
 		const parts = [];
+		if (this.workspace === 'fx') {
+			// в эффектах важно другое: сколько точек рисуется и сколько эффектов включено (список слева это уже не повторяет)
+			const eng = this.effectsEngine;
+			const pts = eng.geometry?.attributes?.aIdx?.count || 0;
+			const on = Object.values(eng.state.layers).filter((l) => l && l.on).length;
+			if (pts) parts.push(`Точек <b>${formatInt(pts)}</b>`);
+			parts.push(`Эффектов включено <b>${on}</b>`);
+			el.innerHTML = parts.map((p) => `<span>${p}</span>`).join('');
+			return;
+		}
 		if (st.verts) parts.push(`Вершин <b>${formatInt(st.verts)}</b>`, `Треугольников <b>${formatInt(st.tris)}</b>`);
 		if (st.points) parts.push(`Точек <b>${formatInt(st.points)}</b>`);
 		parts.push(`Материалов <b>${st.materials}</b>`, `Текстур <b>${st.textures}</b>`);
@@ -141439,7 +141453,7 @@ class UI {
 			}
 			if (mod && code === 'KeyE') {
 				e.preventDefault();
-				this.exportNow();
+				this.toggleExportPop();
 				return;
 			}
 			if (mod && code === 'KeyD') {

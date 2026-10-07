@@ -58,7 +58,10 @@ export class UI {
 		app.bus.on('selection', () => this.refreshScene());
 		app.bus.on('geometry', () => this.updateStatus());
 		app.bus.on('history', () => this.refreshHistory());
-		app.bus.on('fx', () => this.refreshHistory());
+		app.bus.on('fx', () => {
+			this.refreshHistory();
+			if (this.workspace === 'fx') this.updateStatus();
+		});
 		app.bus.on('tool', () => this.refreshTool());
 		app.bus.on('camera', () => this.refreshViewLabel());
 		app.bus.on('viewmode', () => this.refreshViewLabel());
@@ -103,7 +106,10 @@ export class UI {
 		$('#btnUndo').addEventListener('click', () => this.undo());
 		$('#btnRedo').addEventListener('click', () => this.redo());
 		$('#btnHelp').addEventListener('click', () => this.showHelp());
-		$('#btnExport').addEventListener('click', () => this.exportNow());
+		$('#btnExport').addEventListener('click', (e) => {
+			e.stopPropagation();
+			this.toggleExportPop();
+		});
 		document.documentElement.setAttribute('data-theme', 'dark');
 
 		this.fileInput.addEventListener('change', async () => {
@@ -189,10 +195,8 @@ export class UI {
 		}
 	}
 
-	setExportLabel(text) {
-		const el = $('#btnExportLabel');
-		if (el) el.textContent = text;
-	}
+	/** Подпись кнопки в шапке теперь всегда «Экспорт»: что именно скачивать, выбирается в окне настроек */
+	setExportLabel() {}
 
 	openFiles(mode = 'auto') {
 		this.openMode = mode;
@@ -226,12 +230,7 @@ export class UI {
 
 	buildExportPop() {
 		const pop = $('#exportPop');
-		const btn = $('#btnExportOpts');
 		this.exportPop = pop;
-		btn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			this.toggleExportPop();
-		});
 		$('#btnExportClose').addEventListener('click', () => this.toggleExportPop(false));
 		document.addEventListener('pointerdown', (e) => {
 			if (!pop.hidden && e.target === pop) this.toggleExportPop(false);
@@ -242,7 +241,7 @@ export class UI {
 		const pop = this.exportPop;
 		const open = force !== undefined ? force : pop.hidden;
 		pop.hidden = !open;
-		$('#btnExportOpts').setAttribute('aria-expanded', String(open));
+		$('#btnExport').setAttribute('aria-expanded', String(open));
 	}
 
 	exportNow() {
@@ -478,13 +477,17 @@ export class UI {
 				return;
 			}
 			this.workspace = 'fx';
-			setTimeout(() => this.refreshHistory(), 700);
+			setTimeout(() => {
+				this.refreshHistory();
+				this.updateStatus();
+			}, 700);
 			for (const el of Object.values(this.tabs)) el.hidden = true;
 			fxPanel.hidden = false;
 			if ($('.workspace').classList.contains('sidebar-hidden') && !window.matchMedia('(max-width: 900px)').matches) this.toggleSidebar(false);
 		} else {
 			this.workspace = 'edit';
 			this.refreshHistory();
+			this.updateStatus();
 			this.effectsEngine.exit();
 			fxPanel.hidden = true;
 			this.showTab(this.prevTab || 'scene');
@@ -594,6 +597,16 @@ export class UI {
 		const st = this.app.model.stats();
 		const el = $('#statusStats');
 		const parts = [];
+		if (this.workspace === 'fx') {
+			// в эффектах важно другое: сколько точек рисуется и сколько эффектов включено (список слева это уже не повторяет)
+			const eng = this.effectsEngine;
+			const pts = eng.geometry?.attributes?.aIdx?.count || 0;
+			const on = Object.values(eng.state.layers).filter((l) => l && l.on).length;
+			if (pts) parts.push(`Точек <b>${formatInt(pts)}</b>`);
+			parts.push(`Эффектов включено <b>${on}</b>`);
+			el.innerHTML = parts.map((p) => `<span>${p}</span>`).join('');
+			return;
+		}
 		if (st.verts) parts.push(`Вершин <b>${formatInt(st.verts)}</b>`, `Треугольников <b>${formatInt(st.tris)}</b>`);
 		if (st.points) parts.push(`Точек <b>${formatInt(st.points)}</b>`);
 		parts.push(`Материалов <b>${st.materials}</b>`, `Текстур <b>${st.textures}</b>`);
@@ -914,7 +927,7 @@ export class UI {
 			}
 			if (mod && code === 'KeyE') {
 				e.preventDefault();
-				this.exportNow();
+				this.toggleExportPop();
 				return;
 			}
 			if (mod && code === 'KeyD') {
