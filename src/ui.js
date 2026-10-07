@@ -347,11 +347,6 @@ export class UI {
 			app.nav.toggleOrtho();
 			app.saveSettings();
 		});
-		$('#btnShot').addEventListener('click', async () => {
-			const blob = await app.viewport.screenshot({ transparent: app.settings.render.bg === 'checker' });
-			downloadBlob(blob, 'screenshot.png');
-			this.toast('Скриншот сохранён', 'ok', 1800);
-		});
 	}
 
 	toggleSidebar(force) {

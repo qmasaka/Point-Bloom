@@ -4378,3 +4378,29 @@ body {
 	.fx-mode .fx-left, .fx-mode .sidebar { bottom: 150px; }
 	.fx-mode .media-bar { bottom: 90px; }
 }
+
+/* ================================================================ экспорт: одна рамка, без лишних линий, форматы плитками */
+.export-card { border: 1px solid var(--line-strong); }
+.export-pop-head { border-bottom: 0; padding: 16px 16px 4px 24px; }
+.export-pop-head strong { font-size: 16px; letter-spacing: 0; }
+.export-cols { column-gap: 36px; padding: 4px 24px 12px; }
+.export-cols > .sec, .export-cols > .sec:nth-child(odd) { border: 0; border-radius: 0; }
+.export-cols .sec-head { padding-inline: 0; }
+.export-cols .sec-body { padding-inline: 0; }
+.export-cta { border-top: 0; background: transparent; padding: 8px 24px 20px; }
+.export-cta .estimate { text-align: center; }
+.fmt, .fmt.seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 0; background: transparent; border: 0; border-radius: 0; }
+.fmt .seg-btn { height: 36px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255, 255, 255, 0.04); color: var(--text-dim); }
+.fmt .seg-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+.fmt .seg-btn[aria-checked='true'] { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
+.fmt-desc { border: 0; background: rgba(255, 255, 255, 0.04); border-radius: 8px; }
+
+/* режимы отображения внизу редактора: мягче и крупнее */
+@container app (min-width: 901px) {
+	.ui-float .vp-dock { padding: 6px 8px; gap: 4px; border-radius: 16px; }
+	.ui-float .vp-dock .dock-btn, .ui-float #modeBar .seg-btn { width: 40px; height: 38px; border-radius: 12px; }
+	.ui-float #modeBar .seg-btn[aria-checked='true'] { background: var(--accent-soft); border-color: transparent; box-shadow: inset 0 0 0 1px var(--accent-line); color: var(--accent-text); }
+	.ui-float .vp-dock .dock-btn svg, .ui-float #modeBar .seg-btn svg { width: 21px; height: 21px; }
+	.ui-float .toolrail .btn-tool { border-radius: 10px; }
+}
+.ui-float .export-card { background: #14171b; backdrop-filter: none; -webkit-backdrop-filter: none; }
