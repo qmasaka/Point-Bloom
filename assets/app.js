@@ -89585,6 +89585,17 @@ function initFloatingPanels() {
 		toggle.innerHTML = icon('caret-down', 14);
 		bar.append(label, toggle);
 		el.prepend(bar);
+		if (id === 'sidebar') {
+			// вкладки и панели лежат в одной прокручиваемой области: при прокрутке вкладки уезжают вместе с содержимым, а не стоят на месте
+			const wrap = document.createElement('div');
+			wrap.className = 'fxf-scroll';
+			const tabs = el.querySelector(':scope > .tabs');
+			const panels = el.querySelector(':scope > .panels');
+			if (tabs && panels) {
+				el.insertBefore(wrap, tabs);
+				wrap.append(tabs, panels);
+			}
+		}
 
 		const pos = (st[name] ||= { c: false });
 		const apply = () => {
