@@ -209,7 +209,22 @@ const texReset = button({ label: 'Из модели', icon: 'arrow-counter-clock
 const texRow = h('div', { class: 'fx-tex-row' }, texIn, texPick, texReset);
 showTex();
 secLook.body ? secLook.body.append(texRow, texName) : secLook.el.append(texRow, texName);
-root.append(createTextSection(app).el, secCreate.el, secLook.el);
+const textSec = createTextSection(app);
+const mediaNote = h('div', { class: 'fx-morph-note' }, h('b', {}, 'Фото или видео в точках'), h('span', {}, 'Количество точек, рельеф и запись настраиваются на вкладке «Медиа». Форма, размер и цвет точек общие и лежат ниже.'), button({ label: 'Открыть «Медиа»', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', onClick: () => app.ui.showTab('media') }));
+mediaNote.hidden = true;
+root.append(mediaNote, textSec.el, secCreate.el, secLook.el);
+function syncMedia() {
+const sel = model.selected;
+const isMedia = !!(sel && sel.userData && sel.userData.media);
+mediaNote.hidden = !isMedia;
+textSec.el.hidden = isMedia;
+secCreate.el.hidden = isMedia;
+texRow.hidden = isMedia;
+texName.hidden = isMedia;
+}
+app.bus.on('selection', syncMedia);
+app.bus.on('scene', syncMedia);
+app.bus.on('media', syncMedia);
 function sync() {
 const vertices = pt.source === 'vertices';
 source.set(pt.source);
@@ -242,5 +257,6 @@ current = null;
 sync();
 });
 sync();
+syncMedia();
 return { refresh: sync };
 }

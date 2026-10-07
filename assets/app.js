@@ -90442,9 +90442,18 @@ const secMesh = section('Сетка и нормали', { key: 'mesh', open: fal
 	// --------------------------------------------------------- облако точек
 	root.append(secObjects.el, secObject.el, secTools.el, secMesh.el);
 
+	const MESH_ONLY = ['Склеить вершины', 'Вывернуть нормали', 'Плоское затенение', 'Перевернуть UV'];
 	const syncEnabled = () => {
-		const has = !!model.selected;
+		const sel = model.selected;
+		const has = !!sel;
 		for (const b of need) b.disabled = !has;
+		// у облака точек, фото и видео нет граней: операции с сеткой и нормалями им не нужны, поэтому не показываем
+		const hasMesh = !!sel && (sel.isMesh || model.meshesOf(sel).length > 0);
+		for (const b of need) {
+			const label = b.querySelector('.btn-label')?.textContent;
+			if (MESH_ONLY.includes(label)) b.hidden = has && !hasMesh;
+		}
+		secMesh.el.hidden = has && !hasMesh;
 	};
 	const refreshAll = () => {
 		renderTree();
@@ -132537,7 +132546,23 @@ function createPointsPanel(app, root) {
 	const texRow = h('div', { class: 'fx-tex-row' }, texIn, texPick, texReset);
 	showTex();
 	secLook.body ? secLook.body.append(texRow, texName) : secLook.el.append(texRow, texName);
-	root.append(createTextSection(app).el, secCreate.el, secLook.el);
+	const textSec = createTextSection(app);
+	// фото и видео в точках настраиваются на вкладке «Медиа»: создание облака и текст для них не нужны
+	const mediaNote = h('div', { class: 'fx-morph-note' }, h('b', {}, 'Фото или видео в точках'), h('span', {}, 'Количество точек, рельеф и запись настраиваются на вкладке «Медиа». Форма, размер и цвет точек общие и лежат ниже.'), button({ label: 'Открыть «Медиа»', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', onClick: () => app.ui.showTab('media') }));
+	mediaNote.hidden = true;
+	root.append(mediaNote, textSec.el, secCreate.el, secLook.el);
+	function syncMedia() {
+		const sel = model.selected;
+		const isMedia = !!(sel && sel.userData && sel.userData.media);
+		mediaNote.hidden = !isMedia;
+		textSec.el.hidden = isMedia;
+		secCreate.el.hidden = isMedia;
+		texRow.hidden = isMedia;
+		texName.hidden = isMedia;
+	}
+	app.bus.on('selection', syncMedia);
+	app.bus.on('scene', syncMedia);
+	app.bus.on('media', syncMedia);
 
 	// ---------------------------------------------------------------- синхронизация
 	function sync() {
@@ -132572,6 +132597,7 @@ function createPointsPanel(app, root) {
 		sync();
 	});
 	sync();
+	syncMedia();
 	return { refresh: sync };
 }
 
@@ -132620,9 +132646,14 @@ function createMediaPanel(app, root, { fx = false } = {}) {
 	const closeBtn = button({ label: 'Убрать медиа', icon: 'x', variant: 'outline-danger', cls: 'btn-block', onClick: () => mc.close() });
 	const note = h('div', { class: 'field-hint' }, fx ? 'Видео продолжает играть и в эффектах: все эффекты применяются к его точкам.' : 'Облако точек лежит в сцене: его можно двигать, менять вид на вкладке «Точки» и скачивать кнопкой «Скачать» вверху.');
 	const ptsRow = field('Точек', pts.el);
+	// размер точек общий с вкладкой «Точки»: здесь он под рукой рядом с их количеством
+	const pset = app.settings.point;
+	const sizeSl = slider({ min: 1, max: 24, step: 0.5, value: pset.size, digits: 1, unit: ' px', onInput: (v) => { pset.size = v; if (app.settings.display !== 'points') app.setDisplay('points'); app.viewport.invalidate(); }, onChange: save });
+	const sizeRow = field('Размер точек', sizeSl.el);
+	sizeRow.hidden = fx;
 	const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recInfo);
 	const saveBox = h('div', { class: 'fx-save-row' }, fx ? bScene : '', bPly, bPcv, bZip);
-	const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), filtersBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
+	const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, ptsRow, sizeRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), filtersBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
 	if (root) root.append(sec.el);
 
 	function sync() {
@@ -132635,6 +132666,8 @@ function createMediaPanel(app, root, { fx = false } = {}) {
 		sound.set(!pm.muted);
 		ptsRow.hidden = !ready || pm.isRec;
 		pts.set(md.pts);
+		sizeSl.set(pset.size);
+		sizeRow.hidden = fx || !ready;
 		relief.set(md.relief);
 		depth.set(md.depth);
 		cutDark.set(md.cutDark);

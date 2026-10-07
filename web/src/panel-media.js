@@ -34,9 +34,13 @@ const bZip = button({ label: 'Кадры PLY (.zip)', icon: 'download-simple', v
 const closeBtn = button({ label: 'Убрать медиа', icon: 'x', variant: 'outline-danger', cls: 'btn-block', onClick: () => mc.close() });
 const note = h('div', { class: 'field-hint' }, fx ? 'Видео продолжает играть и в эффектах: все эффекты применяются к его точкам.' : 'Облако точек лежит в сцене: его можно двигать, менять вид на вкладке «Точки» и скачивать кнопкой «Скачать» вверху.');
 const ptsRow = field('Точек', pts.el);
+const pset = app.settings.point;
+const sizeSl = slider({ min: 1, max: 24, step: 0.5, value: pset.size, digits: 1, unit: ' px', onInput: (v) => { pset.size = v; if (app.settings.display !== 'points') app.setDisplay('points'); app.viewport.invalidate(); }, onChange: save });
+const sizeRow = field('Размер точек', sizeSl.el);
+sizeRow.hidden = fx;
 const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recInfo);
 const saveBox = h('div', { class: 'fx-save-row' }, fx ? bScene : '', bPly, bPcv, bZip);
-const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), filtersBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
+const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, ptsRow, sizeRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), filtersBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
 if (root) root.append(sec.el);
 function sync() {
 const ready = pm.ready;
@@ -47,6 +51,8 @@ sound.el.hidden = pm.kind !== 'video';
 sound.set(!pm.muted);
 ptsRow.hidden = !ready || pm.isRec;
 pts.set(md.pts);
+sizeSl.set(pset.size);
+sizeRow.hidden = fx || !ready;
 relief.set(md.relief);
 depth.set(md.depth);
 cutDark.set(md.cutDark);

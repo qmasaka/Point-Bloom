@@ -136,7 +136,7 @@ button {
 .workspace {
 	display: grid;
 	grid-template-rows: minmax(0, 1fr);
-	grid-template-columns: 52px minmax(0, 1fr) var(--sidebar-w, 280px);
+	grid-template-columns: 64px minmax(0, 1fr) var(--sidebar-w, 280px);
 	min-height: 0;
 	transition: grid-template-columns 0.24s var(--ease);
 }
@@ -150,7 +150,7 @@ button {
 	user-select: none !important;
 }
 .workspace.sidebar-hidden {
-	grid-template-columns: 52px minmax(0, 1fr) 0px;
+	grid-template-columns: 64px minmax(0, 1fr) 0px;
 }
 .workspace.sidebar-hidden .sidebar {
 	visibility: hidden;
@@ -4125,4 +4125,31 @@ body {
 }
 .fx-mode .fx-bar {
 	animation: ws-in-bar 0.45s var(--ease) 0.08s backwards;
+}
+
+/* левая панель инструментов редактора: крупные значки, чтобы они читались и по ним было легко попасть */
+.toolrail {
+	gap: 6px;
+	padding: 12px 0;
+}
+.btn-tool {
+	width: 48px;
+	height: 48px;
+}
+.btn-tool svg {
+	width: 28px;
+	height: 28px;
+}
+.rail-sep {
+	width: 30px;
+	margin: 8px 0;
+}
+.toolrail .btn-tool svg,
+.toolrail .btn-tool > svg {
+	width: 28px !important;
+	height: 28px !important;
+}
+.tabs .tab {
+	font-size: 10px;
+	letter-spacing: 0;
 }

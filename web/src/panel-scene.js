@@ -238,9 +238,17 @@ for (const b of need.slice(-3)) b.classList.add('btn-block');
 const secTools = section('Правка', { key: 'tools' }, toolsBody);
 const secMesh = section('Сетка и нормали', { key: 'mesh', open: false }, meshBody);
 root.append(secObjects.el, secObject.el, secTools.el, secMesh.el);
+const MESH_ONLY = ['Склеить вершины', 'Вывернуть нормали', 'Плоское затенение', 'Перевернуть UV'];
 const syncEnabled = () => {
-const has = !!model.selected;
+const sel = model.selected;
+const has = !!sel;
 for (const b of need) b.disabled = !has;
+const hasMesh = !!sel && (sel.isMesh || model.meshesOf(sel).length > 0);
+for (const b of need) {
+const label = b.querySelector('.btn-label')?.textContent;
+if (MESH_ONLY.includes(label)) b.hidden = has && !hasMesh;
+}
+secMesh.el.hidden = has && !hasMesh;
 };
 const refreshAll = () => {
 renderTree();
