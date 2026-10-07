@@ -6,9 +6,8 @@ LUT[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
 export const FRAME_LAYOUTS = [
 ['stack', 'Стопка: время уходит вглубь'],
 ['wall', 'Стена кадров'],
-['carousel', 'Карусель'],
-['spiral', 'Спираль'],
-['fan', 'Веер'],
+['film', 'Плёнка'],
+['tunnel', 'Туннель'],
 ];
 export function frameGrid(density, aspect) {
 const cols = Math.max(8, Math.round(Math.sqrt(density * aspect)));
@@ -26,24 +25,9 @@ const s = Math.min(2.4 / (gx * W), 2.4 / (gy * H));
 const cx = k % gx, cy = Math.floor(k / gx);
 x = (cx - (gx - 1) / 2) * W * s * 1.04 + u * W * s;
 y = ((gy - 1) / 2 - cy) * H * s * 1.04 + v * H * s;
-} else if (layout === 'carousel' || layout === 'spiral') {
-const a = (k / n) * Math.PI * 2;
-const R = 0.9 + depth * 0.45;
-const s = layout === 'spiral' ? 0.5 : 0.6;
-const lx = u * W * s, ly = v * H * s;
-x = Math.sin(a) * R + Math.cos(a) * lx;
-z = Math.cos(a) * R - Math.sin(a) * lx;
-y = ly + (layout === 'spiral' ? (t - 0.5) * depth * 1.4 : 0);
-nx = Math.sin(a);
-nz = Math.cos(a);
-} else if (layout === 'fan') {
-const a = (t - 0.5) * Math.min(Math.PI * 1.2, 0.35 * depth + 0.5);
-const lx = (u + 0.5) * W * 0.9;
-x = -W * 0.45 + Math.cos(a) * lx;
-z = Math.sin(a) * lx;
-y = v * H * 0.9;
-nx = -Math.sin(a);
-nz = Math.cos(a);
+} else if (layout === 'film') {
+x = (k - (n - 1) / 2) * W * 0.55 + u * W * 0.5;
+y = v * H * 0.5;
 } else {
 x = u * W;
 y = v * H;

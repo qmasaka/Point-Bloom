@@ -498,7 +498,7 @@ export function createEffectsPanel(app, root, engine) {
 				if (ex.when) whenList.push([el, ex.when]);
 			};
 			const applyWhen = () => whenList.forEach(([el, w]) => (el.hidden = !w[1].includes(L[w[0]])));
-			if (def.extras.some((x) => x.key)) body.append(h('div', { class: 'fx-sub' }, 'Параметры'));
+			if (def.extras.some((x) => x.key) && def.extras[0].type !== 'title') body.append(h('div', { class: 'fx-sub' }, 'Параметры'));
 			for (const ex of def.extras) {
 				const after = () => {
 					applyWhen();
