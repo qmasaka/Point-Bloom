@@ -3501,3 +3501,249 @@ body {
 	color: var(--text-dim);
 	white-space: nowrap;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Система «Прибор»: строгая техническая стилистика.
+   Один язык выбора (мягкий акцент + контур), насечки вместо круглых бегунков,
+   малые скругления, моноширинные цифры, заголовки капсом.
+   Этот блок идёт последним и перекрывает прежние значения.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+	--r-sm: 3px;
+	--r-ctl: 4px;
+	--r-box: 6px;
+	--mono: 'Geist Mono', 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+	--h-sm: 24px;
+	--h-md: 28px;
+	--h-lg: 32px;
+	--tick: var(--text-faint);
+}
+
+/* вкладки панелей: плашки с иконкой и подписью, выбранная подсвечена мягким акцентом */
+.tabs,
+.fx-tabs {
+	padding: 10px 10px 10px;
+	gap: 0;
+	border-bottom: 1px solid var(--line);
+}
+.fx-tabs {
+	margin-bottom: 4px;
+}
+.tabs .tab,
+.fx-tabs .tab {
+	flex-direction: column;
+	gap: 4px;
+	height: 46px;
+	padding: 0 2px;
+	margin-left: -1px;
+	border: 1px solid var(--line);
+	border-radius: 0;
+	background: var(--bg-sunken);
+	color: var(--text-dim);
+	font-size: 10.5px;
+	font-weight: 500;
+	letter-spacing: 0.03em;
+}
+.tabs .tab:first-child,
+.fx-tabs .tab:first-child {
+	margin-left: 0;
+	border-radius: var(--r-box) 0 0 var(--r-box);
+}
+.tabs .tab:last-child,
+.fx-tabs .tab:last-child {
+	border-radius: 0 var(--r-box) var(--r-box) 0;
+}
+.tabs .tab [data-icon],
+.tabs .tab .ic,
+.fx-tabs .tab [data-icon],
+.fx-tabs .tab .ic {
+	display: inline-flex;
+}
+.tabs .tab:hover,
+.fx-tabs .tab:hover {
+	background: var(--bg-hover);
+	color: var(--text);
+}
+.tabs .tab[aria-selected='true'],
+.fx-tabs .tab[aria-selected='true'] {
+	position: relative;
+	z-index: 1;
+	background: var(--accent-soft);
+	border-color: var(--accent-line);
+	color: var(--accent-text);
+	font-weight: 600;
+}
+.tabs .tab[aria-selected='true']::after,
+.fx-tabs .tab[aria-selected='true']::after {
+	display: none;
+}
+
+/* переключатели вариантов: выбранный не заливается оранжевым, а выделяется контуром, как вкладки */
+.seg {
+	padding: 2px;
+	gap: 0;
+	border-radius: var(--r-box);
+}
+.seg-btn {
+	height: 26px;
+	border: 1px solid transparent;
+	border-radius: var(--r-ctl);
+	font-size: 11.5px;
+}
+.seg-btn[aria-checked='true'] {
+	background: var(--accent-soft);
+	border-color: var(--accent-line);
+	color: var(--accent-text);
+	font-weight: 600;
+}
+
+/* ползунки: линия с насечками и узкая ручка-рейка, как на приборе */
+.slider {
+	grid-template-columns: minmax(0, 1fr) 62px;
+	gap: 10px;
+}
+.range {
+	height: 22px;
+}
+.range::-webkit-slider-runnable-track {
+	height: 16px;
+	border-radius: 0;
+	background:
+		linear-gradient(to right, var(--accent) var(--p), transparent var(--p)) 0 6px / 100% 2px no-repeat,
+		linear-gradient(var(--bg-active), var(--bg-active)) 0 6px / 100% 2px no-repeat,
+		linear-gradient(90deg, transparent calc(100% - 1px), var(--tick) 0) 0 100% / 100% 4px no-repeat,
+		repeating-linear-gradient(90deg, var(--tick) 0 1px, transparent 1px 10%) 0 100% / 100% 4px no-repeat;
+}
+.range::-webkit-slider-thumb {
+	width: 6px;
+	height: 14px;
+	margin-top: -4px;
+	border-radius: 1px;
+	background: var(--text);
+	border: 1px solid var(--bg-panel);
+	box-shadow: 0 0 0 1px var(--line-strong);
+	transition: background-color 0.12s;
+}
+.range:hover::-webkit-slider-thumb,
+.range:active::-webkit-slider-thumb {
+	transform: none;
+	background: var(--accent-hover);
+}
+.range::-moz-range-track {
+	height: 2px;
+	background: var(--bg-active);
+}
+.range::-moz-range-progress {
+	height: 2px;
+	background: var(--accent);
+}
+.range::-moz-range-thumb {
+	width: 6px;
+	height: 14px;
+	border-radius: 1px;
+	border: 1px solid var(--bg-panel);
+	background: var(--text);
+}
+.num-out,
+.num-in {
+	height: var(--h-sm);
+	padding: 0 7px;
+	font-size: 11.5px;
+	border-radius: var(--r-sm);
+	background: var(--bg-sunken);
+}
+.num-out {
+	color: var(--text);
+}
+
+/* выключатели: прямоугольные */
+.switch {
+	width: 30px;
+	height: 16px;
+	border-radius: var(--r-sm);
+}
+.switch-knob {
+	top: 2px;
+	left: 2px;
+	width: 10px;
+	height: 10px;
+	border-radius: 2px;
+}
+.switch[aria-checked='true'] .switch-knob {
+	transform: translateX(14px);
+}
+
+/* заголовки секций и подзаголовки: мелкие, капсом, с линией */
+.sec-head {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--text-dim);
+}
+.fx-sub {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 6px;
+	padding-top: 0;
+	border-top: 0;
+	font: 600 10.5px var(--font);
+	letter-spacing: 0.1em;
+	color: var(--text-faint);
+}
+.fx-sub::after {
+	content: '';
+	flex: 1;
+	height: 1px;
+	background: var(--line);
+}
+.field-label {
+	font-size: 12px;
+}
+.field-hint {
+	font-size: 11px;
+}
+
+/* поля, списки, кнопки: единые высоты и скругления */
+.select {
+	height: var(--h-md);
+	border-radius: var(--r-ctl);
+}
+.btn {
+	height: var(--h-lg);
+}
+.btn-sm {
+	height: var(--h-sm);
+}
+.chip-btn {
+	height: var(--h-md);
+	font-size: 11.5px;
+}
+.fx-insp-head {
+	padding: 9px 10px;
+	border-radius: var(--r-box);
+}
+
+/* поле с ползунком: подпись сверху, шкала на всю ширину панели, значение справа: так точнее попадать в нужное число */
+.field:has(> .field-control > .slider) {
+	grid-template-columns: minmax(0, 1fr);
+	gap: 2px;
+}
+.field:has(> .field-control > .slider) > .field-label {
+	font-size: 11.5px;
+	color: var(--text-dim);
+}
+.field:has(> .field-control > .slider) .slider {
+	grid-template-columns: minmax(0, 1fr) 58px;
+}
+.field:has(> .field-control > .slider) .slider {
+	grid-template-columns: minmax(0, 1fr) 68px;
+}
+.seg-btn {
+	padding: 0 4px;
+	font-size: 11px;
+}
+.sec.is-empty {
+	display: none !important;
+}

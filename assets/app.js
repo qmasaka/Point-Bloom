@@ -132640,7 +132640,8 @@ function createMediaPanel(app, root, { fx = false } = {}) {
 
 	function sync() {
 		const ready = pm.ready;
-		if (fx) sec.el.hidden = !ready;
+		// без загруженного медиа секцию прячем классом: атрибут hidden занят переключением вкладок и сбрасывал бы скрытие
+		if (fx) sec.el.classList.toggle('is-empty', !ready);
 		const hasRec = !!pm.rec;
 		info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : '';
 		sound.el.hidden = pm.kind !== 'video';
@@ -138937,7 +138938,7 @@ function createEffectsPanel(app, root, engine) {
 				gateBox.hidden = !on || L.amode !== 'gate';
 				picker.draw();
 			};
-			body.append(field('Реагирует на звук', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
+			body.append(h('div', { class: 'fx-sub' }, 'Реакция на звук'), field('Слушает частоты', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
 			audioUiFull();
 			const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
 			const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
@@ -138980,7 +138981,7 @@ function createEffectsPanel(app, root, engine) {
 			{ value: 'synth', label: 'Музыка', title: 'Встроенная музыка: эмбиент, джангл, брейккор' },
 			{ value: 'file', label: 'Файл', title: 'Загрузить свой аудиофайл' },
 			{ value: 'video', label: 'Видео', title: 'Звук из открытого видео' },
-			{ value: 'mic', label: 'Микрофон', title: 'Живой звук с микрофона' },
+			{ value: 'mic', label: 'Микроф.', title: 'Живой звук с микрофона' },
 		],
 		value: engine.sourceType,
 		onChange: async (v) => {

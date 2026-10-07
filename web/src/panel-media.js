@@ -40,7 +40,7 @@ const sec = section(fx ? 'Фото и видео' : 'Фото и видео в �
 if (root) root.append(sec.el);
 function sync() {
 const ready = pm.ready;
-if (fx) sec.el.hidden = !ready;
+if (fx) sec.el.classList.toggle('is-empty', !ready);
 const hasRec = !!pm.rec;
 info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : '';
 sound.el.hidden = pm.kind !== 'video';

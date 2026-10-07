@@ -536,7 +536,7 @@ reactRow.hidden = !on || L.amode === 'gate';
 gateBox.hidden = !on || L.amode !== 'gate';
 picker.draw();
 };
-body.append(field('Реагирует на звук', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
+body.append(h('div', { class: 'fx-sub' }, 'Реакция на звук'), field('Слушает частоты', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
 audioUiFull();
 const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
 const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
@@ -578,7 +578,7 @@ options: [
 { value: 'synth', label: 'Музыка', title: 'Встроенная музыка: эмбиент, джангл, брейккор' },
 { value: 'file', label: 'Файл', title: 'Загрузить свой аудиофайл' },
 { value: 'video', label: 'Видео', title: 'Звук из открытого видео' },
-{ value: 'mic', label: 'Микрофон', title: 'Живой звук с микрофона' },
+{ value: 'mic', label: 'Микроф.', title: 'Живой звук с микрофона' },
 ],
 value: engine.sourceType,
 onChange: async (v) => {

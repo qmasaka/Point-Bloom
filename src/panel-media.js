@@ -46,7 +46,8 @@ export function createMediaPanel(app, root, { fx = false } = {}) {
 
 	function sync() {
 		const ready = pm.ready;
-		if (fx) sec.el.hidden = !ready;
+		// без загруженного медиа секцию прячем классом: атрибут hidden занят переключением вкладок и сбрасывал бы скрытие
+		if (fx) sec.el.classList.toggle('is-empty', !ready);
 		const hasRec = !!pm.rec;
 		info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : '';
 		sound.el.hidden = pm.kind !== 'video';
