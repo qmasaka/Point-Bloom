@@ -265,7 +265,7 @@ positions[i * 3] = xy[i * 2];
 positions[i * 3 + 1] = xy[i * 2 + 1];
 normals[i * 3 + 2] = 1;
 }
-const cloud = { positions, normals, colors, count: n };
+const cloud = { positions, normals, colors, count: n, hide: new Float32Array(n) };
 this.applyTo(cloud, rgb, relief, depth);
 return cloud;
 }
@@ -274,12 +274,78 @@ const n = this.cols * this.rows;
 const pos = cloud.positions;
 const col = cloud.colors;
 const k = relief === 'bright' ? 1 : relief === 'dark' ? -1 : 0;
+const A = this.adjust;
+const hide = cloud.hide;
+const act = !!A && (A.cutDark > 0 || A.cutLight < 1 || A.keyTol > 0 || A.edges > 0 || A.contrast !== 1 || A.sat !== 1 || A.post > 0 || A.invert);
+if (!act) {
+if (hide) hide.fill(0);
 for (let i = 0; i < n; i++) {
 const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
 col[i * 3] = LUT[r];
 col[i * 3 + 1] = LUT[g];
 col[i * 3 + 2] = LUT[b];
 pos[i * 3 + 2] = k ? (((0.299 * r + 0.587 * g + 0.114 * b) / 255 - 0.5) * 2 * depth * k) : 0;
+}
+return;
+}
+const kc = A.key && A.keyTol > 0 ? [parseInt(A.key.slice(1, 3), 16), parseInt(A.key.slice(3, 5), 16), parseInt(A.key.slice(5, 7), 16)] : null;
+const lum = new Float32Array(n);
+const cl = (v) => (v < 0 ? 0 : v > 255 ? 255 : v);
+const lv = A.post >= 2 ? A.post - 1 : 0;
+const out = this._adjBuf && this._adjBuf.length === n * 3 ? this._adjBuf : (this._adjBuf = new Uint8Array(n * 3));
+for (let i = 0; i < n; i++) {
+let r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
+if (A.invert) {
+r = 255 - r;
+g = 255 - g;
+b = 255 - b;
+}
+if (A.contrast !== 1) {
+r = cl((r - 128) * A.contrast + 128);
+g = cl((g - 128) * A.contrast + 128);
+b = cl((b - 128) * A.contrast + 128);
+}
+if (A.sat !== 1) {
+const l = 0.299 * r + 0.587 * g + 0.114 * b;
+r = cl(l + (r - l) * A.sat);
+g = cl(l + (g - l) * A.sat);
+b = cl(l + (b - l) * A.sat);
+}
+if (lv) {
+r = Math.round((r / 255) * lv) * (255 / lv);
+g = Math.round((g / 255) * lv) * (255 / lv);
+b = Math.round((b / 255) * lv) * (255 / lv);
+}
+r = Math.round(r);
+g = Math.round(g);
+b = Math.round(b);
+out[i * 3] = r;
+out[i * 3 + 1] = g;
+out[i * 3 + 2] = b;
+lum[i] = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+const cols = this.cols;
+const rows = this.rows;
+const dark = A.cutDark;
+const light = A.cutLight;
+const tol = A.keyTol * 441.67;
+const edgeT = A.edges * 0.5;
+for (let i = 0; i < n; i++) {
+const r = out[i * 3], g = out[i * 3 + 1], b = out[i * 3 + 2];
+col[i * 3] = LUT[r];
+col[i * 3 + 1] = LUT[g];
+col[i * 3 + 2] = LUT[b];
+pos[i * 3 + 2] = k ? (lum[i] - 0.5) * 2 * depth * k : 0;
+if (!hide) continue;
+let h = lum[i] < dark || lum[i] > light;
+if (!h && kc) h = Math.hypot(r - kc[0], g - kc[1], b - kc[2]) < tol;
+if (!h && edgeT > 0) {
+const x = i % cols, y = (i / cols) | 0;
+const xl = x > 0 ? i - 1 : i, xr = x < cols - 1 ? i + 1 : i, yu = y > 0 ? i - cols : i, yd = y < rows - 1 ? i + cols : i;
+const gx = lum[xr] - lum[xl], gy = lum[yd] - lum[yu];
+h = Math.hypot(gx, gy) < edgeT * 0.5;
+}
+hide[i] = h ? 1 : 0;
 }
 }
 async record({ fps = 15, seconds = 10, onProgress, cancel } = {}) {

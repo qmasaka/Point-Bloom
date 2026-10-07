@@ -10,6 +10,7 @@ export class MediaController {
 	constructor(app) {
 		this.app = app;
 		this.pm = new PointMedia();
+		Object.defineProperty(this.pm, 'adjust', { get: () => app.settings.media });
 		this.obj = null;
 		this.progress = null;
 		this._cancel = false;
@@ -95,7 +96,8 @@ export class MediaController {
 		if (g.attributes.position.count !== n) return;
 		const c = this.cfg;
 		if (!this._z || this._z.length !== n * 3) this._z = new Float32Array(n * 3);
-		this.pm.applyTo({ positions: this._z, colors: g.attributes.color.array }, rgb, c.relief, c.depth);
+		this.pm.applyTo({ positions: this._z, colors: g.attributes.color.array, hide: g.attributes.aHide?.array }, rgb, c.relief, c.depth);
+		if (g.attributes.aHide) g.attributes.aHide.needsUpdate = true;
 		const pos = g.attributes.position.array;
 		for (let i = 2; i < n * 3; i += 3) pos[i] = this._z[i];
 		g.attributes.color.needsUpdate = true;

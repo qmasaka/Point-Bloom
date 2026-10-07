@@ -175,7 +175,7 @@ const DEFAULTS = {
 	display: 'material', // material | solid | wire | points | normals | uv
 	flat: false,
 	overlays: { grid: true, axes: true, wire: false, faces: false, bbox: true },
-	media: { pts: 80000, relief: 'bright', depth: 0.5, recFps: 15, recSec: 10 },
+	media: { pts: 80000, relief: 'bright', depth: 0.5, recFps: 15, recSec: 10, cutDark: 0, cutLight: 1, key: '#00ff00', keyTol: 0, edges: 0, contrast: 1, sat: 1, post: 0, invert: false },
 	point: { shape: 'circle', size: 3, attenuate: true, color: 'texture', solidColor: '#ffd166', surfaceCount: 200000, source: 'surface' },
 	render: { bg: 'dark', exposure: 1, env: 1, tone: 'neutral', headlight: true, fov: 40, fps: false },
 	nav: { leftOrbit: true, trackpad: false, zoomToCursor: true, invertZoom: false, autoPersp: true, ortho: false },
@@ -85843,6 +85843,7 @@ function cloudToPoints(cloud, name = 'Облако точек') {
 	g.setAttribute('position', new THREE.BufferAttribute(cloud.positions, 3));
 	g.setAttribute('color', new THREE.BufferAttribute(cloud.colors, 3));
 	g.setAttribute('normal', new THREE.BufferAttribute(cloud.normals, 3));
+	if (cloud.hide) g.setAttribute('aHide', new THREE.BufferAttribute(cloud.hide, 1));
 	const m = new THREE.PointsMaterial({ size: 0.01, vertexColors: true, sizeAttenuation: true });
 	m.name = 'PointCloud';
 	const pts = new THREE.Points(g, m);
@@ -85878,6 +85879,7 @@ uniform float uPR;
 uniform float uMode;
 uniform vec3 uColor;
 uniform vec2 uYRange;
+attribute float aHide;
 varying vec3 vColor;
 
 vec3 ramp(float t) {
@@ -85891,6 +85893,13 @@ vec3 ramp(float t) {
 }
 
 void main() {
+	if (aHide > 0.5) {
+		// точка скрыта фильтром «Медиа»: уводим за пределы экрана
+		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+		gl_PointSize = 0.0;
+		vColor = vec3(0.0);
+		return;
+	}
 	vec4 mv = modelViewMatrix * vec4(position, 1.0);
 	gl_Position = projectionMatrix * mv;
 	float s = uSize * uPR;
@@ -132537,7 +132546,7 @@ __def(__exports, 'createMediaPanel', () => createMediaPanel);
 // Панель «Медиа»: настройки точек для фото и видео, параметры записи, сохранение.
 // Воспроизведение, перемотка и запись живут на таймлайне во вьюпорте.
 const { h, formatInt } = __req('src/util.js');
-const { section, field, slider, segmented, switchRow, button } = __req('src/ui-kit.js');
+const { section, field, slider, segmented, switchRow, button, colorField } = __req('src/ui-kit.js');
 
 function createMediaPanel(app, root, { fx = false } = {}) {
 	const mc = app.media;
@@ -132551,6 +132560,20 @@ function createMediaPanel(app, root, { fx = false } = {}) {
 	const pts = slider({ log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
 	const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
 	const depth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; mc.styleChanged(); }, onChange: save });
+	// фильтры: прячут точки по яркости, цвету или краям и правят цвет
+	const touchF = () => mc.styleChanged();
+	const pct = (v) => Math.round(v * 100) + '%';
+	const cutDark = slider({ min: 0, max: 0.95, step: 0.01, value: md.cutDark, format: pct, onInput: (v) => { md.cutDark = v; touchF(); }, onChange: save });
+	const cutLight = slider({ min: 0, max: 0.95, step: 0.01, value: 1 - md.cutLight, format: pct, onInput: (v) => { md.cutLight = 1 - v; touchF(); }, onChange: save });
+	const keyPick = colorField({ value: md.key, onInput: (v) => { md.key = v; touchF(); }, onChange: save });
+	const keyTol = slider({ min: 0, max: 0.7, step: 0.01, value: md.keyTol, format: (v) => (v ? pct(v) : 'Выкл'), onInput: (v) => { md.keyTol = v; touchF(); }, onChange: save });
+	const edges = slider({ min: 0, max: 1, step: 0.02, value: md.edges, format: (v) => (v ? pct(v) : 'Выкл'), onInput: (v) => { md.edges = v; touchF(); }, onChange: save });
+	const contrast = slider({ min: 0.3, max: 2.5, step: 0.05, value: md.contrast, digits: 2, onInput: (v) => { md.contrast = v; touchF(); }, onChange: save });
+	const sat = slider({ min: 0, max: 2.5, step: 0.05, value: md.sat, digits: 2, onInput: (v) => { md.sat = v; touchF(); }, onChange: save });
+	const post = slider({ min: 0, max: 8, step: 1, value: md.post, digits: 0, format: (v) => (v ? v + ' ур.' : 'Выкл'), onInput: (v) => { md.post = v; touchF(); }, onChange: save });
+	const invert = switchRow('Инвертировать цвета', { value: md.invert, onChange: (v) => { md.invert = v; touchF(); } });
+	const resetF = button({ label: 'Сбросить фильтры', icon: 'arrow-counter-clockwise', variant: 'secondary', cls: 'btn-block', onClick: () => { Object.assign(md, { cutDark: 0, cutLight: 1, keyTol: 0, edges: 0, contrast: 1, sat: 1, post: 0, invert: false }); touchF(); sync(); } });
+	const filtersBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Фильтры'), field('Убрать тёмное', cutDark.el), field('Убрать светлое', cutLight.el), field('Убрать цвет', keyPick.el), field('Допуск цвета', keyTol.el), field('Только контуры', edges.el), field('Контраст', contrast.el), field('Насыщенность', sat.el), field('Постеризация', post.el), invert.el, resetF);
 	const recFps = slider({ min: 5, max: 30, step: 1, value: md.recFps, digits: 0, unit: ' к/с', onInput: (v) => { md.recFps = v; }, onChange: save });
 	const recSec = slider({ min: 1, max: 30, step: 1, value: md.recSec, digits: 0, unit: ' с', onInput: (v) => { md.recSec = v; }, onChange: save });
 	const recInfo = h('div', { class: 'field-hint' });
@@ -132563,7 +132586,7 @@ function createMediaPanel(app, root, { fx = false } = {}) {
 	const ptsRow = field('Точек', pts.el);
 	const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recInfo);
 	const saveBox = h('div', { class: 'fx-save-row' }, fx ? bScene : '', bPly, bPcv, bZip);
-	const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
+	const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), filtersBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
 	if (root) root.append(sec.el);
 
 	function sync() {
@@ -132577,6 +132600,16 @@ function createMediaPanel(app, root, { fx = false } = {}) {
 		pts.set(md.pts);
 		relief.set(md.relief);
 		depth.set(md.depth);
+		cutDark.set(md.cutDark);
+		cutLight.set(1 - md.cutLight);
+		keyPick.set(md.key);
+		keyTol.set(md.keyTol);
+		edges.set(md.edges);
+		contrast.set(md.contrast);
+		sat.set(md.sat);
+		post.set(md.post);
+		invert.set(md.invert);
+		filtersBox.hidden = !ready || pm.isRec;
 		recBox.hidden = pm.kind !== 'video' && !hasRec;
 		recFps.set(md.recFps);
 		recSec.setRange(1, Math.max(2, Math.min(30, Math.floor(pm.duration) || 10)));
@@ -134610,6 +134643,7 @@ attribute vec3 aSculpt;
 attribute vec3 aNormal;
 attribute vec3 aNormalB;
 attribute vec3 aColorB;
+attribute float aHide;
 attribute vec2 aVis;
 uniform vec3 uSolid;
 uniform float uAtt;
@@ -134630,6 +134664,16 @@ varying float vCoc;
 varying float vGl;
 ` + common + `
 void main() {
+	if (aHide > 0.5) {
+		// точка скрыта фильтром «Медиа»
+		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+		gl_PointSize = 0.0;
+		vColor = vec3(0.0);
+		vD = 0.0;
+		vCoc = 0.0;
+		vGl = 0.0;
+		return;
+	}
 	vec3 base;
 	float maskV;
 	vec3 pos = fxDisplace(aOrigin, aTarget, aIdx, base, maskV);
@@ -136755,6 +136799,7 @@ class EffectsEngine {
 		g.setAttribute('aNormalB', new THREE.BufferAttribute(new Float32Array(c.normals), 3));
 		g.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(model.colors.length === c.colors.length ? model.colors : c.colors), 3));
 		g.setAttribute('aColorB', new THREE.BufferAttribute(new Float32Array(g.attributes.aColor.array), 3));
+		g.setAttribute('aHide', new THREE.BufferAttribute(c.hide && c.hide.length === count ? new Float32Array(c.hide) : new Float32Array(count), 1));
 		g.setAttribute('aIdx', new THREE.BufferAttribute(idx, 1));
 		g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
 		g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
@@ -137423,7 +137468,8 @@ class EffectsEngine {
 					const n = this.pm.count;
 					if (!this._zbuf || this._zbuf.length !== n * 3) this._zbuf = new Float32Array(n * 3);
 					const m = this.app.settings.media;
-					this.pm.applyTo({ positions: this._zbuf, colors: g.attributes.aColor.array }, rgb, m.relief, m.depth);
+					this.pm.applyTo({ positions: this._zbuf, colors: g.attributes.aColor.array, hide: g.attributes.aHide.array }, rgb, m.relief, m.depth);
+					g.attributes.aHide.needsUpdate = true;
 					const a = g.attributes.position.array, o = g.attributes.aOrigin.array, t = g.attributes.aTarget.array, z = this._zbuf;
 					for (let i = 2; i < n * 3; i += 3) a[i] = o[i] = t[i] = z[i];
 					g.attributes.aColorB.array.set(g.attributes.aColor.array);
@@ -140378,7 +140424,7 @@ class PointMedia {
 			positions[i * 3 + 1] = xy[i * 2 + 1];
 			normals[i * 3 + 2] = 1;
 		}
-		const cloud = { positions, normals, colors, count: n };
+		const cloud = { positions, normals, colors, count: n, hide: new Float32Array(n) };
 		this.applyTo(cloud, rgb, relief, depth);
 		return cloud;
 	}
@@ -140389,12 +140435,79 @@ class PointMedia {
 		const pos = cloud.positions;
 		const col = cloud.colors;
 		const k = relief === 'bright' ? 1 : relief === 'dark' ? -1 : 0;
+		const A = this.adjust;
+		const hide = cloud.hide;
+		// фильтры: коррекция цвета и скрытие точек по яркости, цвету или краям
+		const act = !!A && (A.cutDark > 0 || A.cutLight < 1 || A.keyTol > 0 || A.edges > 0 || A.contrast !== 1 || A.sat !== 1 || A.post > 0 || A.invert);
+		if (!act) {
+			if (hide) hide.fill(0);
+			for (let i = 0; i < n; i++) {
+				const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
+				col[i * 3] = LUT[r];
+				col[i * 3 + 1] = LUT[g];
+				col[i * 3 + 2] = LUT[b];
+				pos[i * 3 + 2] = k ? (((0.299 * r + 0.587 * g + 0.114 * b) / 255 - 0.5) * 2 * depth * k) : 0;
+			}
+			return;
+		}
+		const kc = A.key && A.keyTol > 0 ? [parseInt(A.key.slice(1, 3), 16), parseInt(A.key.slice(3, 5), 16), parseInt(A.key.slice(5, 7), 16)] : null;
+		const lum = new Float32Array(n);
+		const cl = (v) => (v < 0 ? 0 : v > 255 ? 255 : v);
+		const lv = A.post >= 2 ? A.post - 1 : 0;
+		const out = this._adjBuf && this._adjBuf.length === n * 3 ? this._adjBuf : (this._adjBuf = new Uint8Array(n * 3));
 		for (let i = 0; i < n; i++) {
-			const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
+			let r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
+			if (A.invert) {
+				r = 255 - r;
+				g = 255 - g;
+				b = 255 - b;
+			}
+			if (A.contrast !== 1) {
+				r = cl((r - 128) * A.contrast + 128);
+				g = cl((g - 128) * A.contrast + 128);
+				b = cl((b - 128) * A.contrast + 128);
+			}
+			if (A.sat !== 1) {
+				const l = 0.299 * r + 0.587 * g + 0.114 * b;
+				r = cl(l + (r - l) * A.sat);
+				g = cl(l + (g - l) * A.sat);
+				b = cl(l + (b - l) * A.sat);
+			}
+			if (lv) {
+				r = Math.round((r / 255) * lv) * (255 / lv);
+				g = Math.round((g / 255) * lv) * (255 / lv);
+				b = Math.round((b / 255) * lv) * (255 / lv);
+			}
+			r = Math.round(r);
+			g = Math.round(g);
+			b = Math.round(b);
+			out[i * 3] = r;
+			out[i * 3 + 1] = g;
+			out[i * 3 + 2] = b;
+			lum[i] = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+		}
+		const cols = this.cols;
+		const rows = this.rows;
+		const dark = A.cutDark;
+		const light = A.cutLight;
+		const tol = A.keyTol * 441.67;
+		const edgeT = A.edges * 0.5;
+		for (let i = 0; i < n; i++) {
+			const r = out[i * 3], g = out[i * 3 + 1], b = out[i * 3 + 2];
 			col[i * 3] = LUT[r];
 			col[i * 3 + 1] = LUT[g];
 			col[i * 3 + 2] = LUT[b];
-			pos[i * 3 + 2] = k ? (((0.299 * r + 0.587 * g + 0.114 * b) / 255 - 0.5) * 2 * depth * k) : 0;
+			pos[i * 3 + 2] = k ? (lum[i] - 0.5) * 2 * depth * k : 0;
+			if (!hide) continue;
+			let h = lum[i] < dark || lum[i] > light;
+			if (!h && kc) h = Math.hypot(r - kc[0], g - kc[1], b - kc[2]) < tol;
+			if (!h && edgeT > 0) {
+				const x = i % cols, y = (i / cols) | 0;
+				const xl = x > 0 ? i - 1 : i, xr = x < cols - 1 ? i + 1 : i, yu = y > 0 ? i - cols : i, yd = y < rows - 1 ? i + cols : i;
+				const gx = lum[xr] - lum[xl], gy = lum[yd] - lum[yu];
+				h = Math.hypot(gx, gy) < edgeT * 0.5;
+			}
+			hide[i] = h ? 1 : 0;
 		}
 	}
 
@@ -140556,6 +140669,7 @@ class MediaController {
 	constructor(app) {
 		this.app = app;
 		this.pm = new PointMedia();
+		Object.defineProperty(this.pm, 'adjust', { get: () => app.settings.media });
 		this.obj = null;
 		this.progress = null;
 		this._cancel = false;
@@ -140641,7 +140755,8 @@ class MediaController {
 		if (g.attributes.position.count !== n) return;
 		const c = this.cfg;
 		if (!this._z || this._z.length !== n * 3) this._z = new Float32Array(n * 3);
-		this.pm.applyTo({ positions: this._z, colors: g.attributes.color.array }, rgb, c.relief, c.depth);
+		this.pm.applyTo({ positions: this._z, colors: g.attributes.color.array, hide: g.attributes.aHide?.array }, rgb, c.relief, c.depth);
+		if (g.attributes.aHide) g.attributes.aHide.needsUpdate = true;
 		const pos = g.attributes.position.array;
 		for (let i = 2; i < n * 3; i += 3) pos[i] = this._z[i];
 		g.attributes.color.needsUpdate = true;

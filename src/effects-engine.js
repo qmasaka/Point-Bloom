@@ -1027,6 +1027,7 @@ attribute vec3 aSculpt;
 attribute vec3 aNormal;
 attribute vec3 aNormalB;
 attribute vec3 aColorB;
+attribute float aHide;
 attribute vec2 aVis;
 uniform vec3 uSolid;
 uniform float uAtt;
@@ -1047,6 +1048,16 @@ varying float vCoc;
 varying float vGl;
 ` + common + `
 void main() {
+	if (aHide > 0.5) {
+		// точка скрыта фильтром «Медиа»
+		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+		gl_PointSize = 0.0;
+		vColor = vec3(0.0);
+		vD = 0.0;
+		vCoc = 0.0;
+		vGl = 0.0;
+		return;
+	}
 	vec3 base;
 	float maskV;
 	vec3 pos = fxDisplace(aOrigin, aTarget, aIdx, base, maskV);
@@ -3172,6 +3183,7 @@ export class EffectsEngine {
 		g.setAttribute('aNormalB', new THREE.BufferAttribute(new Float32Array(c.normals), 3));
 		g.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(model.colors.length === c.colors.length ? model.colors : c.colors), 3));
 		g.setAttribute('aColorB', new THREE.BufferAttribute(new Float32Array(g.attributes.aColor.array), 3));
+		g.setAttribute('aHide', new THREE.BufferAttribute(c.hide && c.hide.length === count ? new Float32Array(c.hide) : new Float32Array(count), 1));
 		g.setAttribute('aIdx', new THREE.BufferAttribute(idx, 1));
 		g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
 		g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
@@ -3840,7 +3852,8 @@ export class EffectsEngine {
 					const n = this.pm.count;
 					if (!this._zbuf || this._zbuf.length !== n * 3) this._zbuf = new Float32Array(n * 3);
 					const m = this.app.settings.media;
-					this.pm.applyTo({ positions: this._zbuf, colors: g.attributes.aColor.array }, rgb, m.relief, m.depth);
+					this.pm.applyTo({ positions: this._zbuf, colors: g.attributes.aColor.array, hide: g.attributes.aHide.array }, rgb, m.relief, m.depth);
+					g.attributes.aHide.needsUpdate = true;
 					const a = g.attributes.position.array, o = g.attributes.aOrigin.array, t = g.attributes.aTarget.array, z = this._zbuf;
 					for (let i = 2; i < n * 3; i += 3) a[i] = o[i] = t[i] = z[i];
 					g.attributes.aColorB.array.set(g.attributes.aColor.array);

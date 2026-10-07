@@ -6,7 +6,7 @@ export const DEFAULTS = {
 	display: 'material', // material | solid | wire | points | normals | uv
 	flat: false,
 	overlays: { grid: true, axes: true, wire: false, faces: false, bbox: true },
-	media: { pts: 80000, relief: 'bright', depth: 0.5, recFps: 15, recSec: 10 },
+	media: { pts: 80000, relief: 'bright', depth: 0.5, recFps: 15, recSec: 10, cutDark: 0, cutLight: 1, key: '#00ff00', keyTol: 0, edges: 0, contrast: 1, sat: 1, post: 0, invert: false },
 	point: { shape: 'circle', size: 3, attenuate: true, color: 'texture', solidColor: '#ffd166', surfaceCount: 200000, source: 'surface' },
 	render: { bg: 'dark', exposure: 1, env: 1, tone: 'neutral', headlight: true, fov: 40, fps: false },
 	nav: { leftOrbit: true, trackpad: false, zoomToCursor: true, invertZoom: false, autoPersp: true, ortho: false },

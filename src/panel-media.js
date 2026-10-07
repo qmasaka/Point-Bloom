@@ -1,7 +1,7 @@
 // Панель «Медиа»: настройки точек для фото и видео, параметры записи, сохранение.
 // Воспроизведение, перемотка и запись живут на таймлайне во вьюпорте.
 import { h, formatInt } from './util.js';
-import { section, field, slider, segmented, switchRow, button } from './ui-kit.js';
+import { section, field, slider, segmented, switchRow, button, colorField } from './ui-kit.js';
 
 export function createMediaPanel(app, root, { fx = false } = {}) {
 	const mc = app.media;
@@ -15,6 +15,20 @@ export function createMediaPanel(app, root, { fx = false } = {}) {
 	const pts = slider({ log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
 	const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
 	const depth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; mc.styleChanged(); }, onChange: save });
+	// фильтры: прячут точки по яркости, цвету или краям и правят цвет
+	const touchF = () => mc.styleChanged();
+	const pct = (v) => Math.round(v * 100) + '%';
+	const cutDark = slider({ min: 0, max: 0.95, step: 0.01, value: md.cutDark, format: pct, onInput: (v) => { md.cutDark = v; touchF(); }, onChange: save });
+	const cutLight = slider({ min: 0, max: 0.95, step: 0.01, value: 1 - md.cutLight, format: pct, onInput: (v) => { md.cutLight = 1 - v; touchF(); }, onChange: save });
+	const keyPick = colorField({ value: md.key, onInput: (v) => { md.key = v; touchF(); }, onChange: save });
+	const keyTol = slider({ min: 0, max: 0.7, step: 0.01, value: md.keyTol, format: (v) => (v ? pct(v) : 'Выкл'), onInput: (v) => { md.keyTol = v; touchF(); }, onChange: save });
+	const edges = slider({ min: 0, max: 1, step: 0.02, value: md.edges, format: (v) => (v ? pct(v) : 'Выкл'), onInput: (v) => { md.edges = v; touchF(); }, onChange: save });
+	const contrast = slider({ min: 0.3, max: 2.5, step: 0.05, value: md.contrast, digits: 2, onInput: (v) => { md.contrast = v; touchF(); }, onChange: save });
+	const sat = slider({ min: 0, max: 2.5, step: 0.05, value: md.sat, digits: 2, onInput: (v) => { md.sat = v; touchF(); }, onChange: save });
+	const post = slider({ min: 0, max: 8, step: 1, value: md.post, digits: 0, format: (v) => (v ? v + ' ур.' : 'Выкл'), onInput: (v) => { md.post = v; touchF(); }, onChange: save });
+	const invert = switchRow('Инвертировать цвета', { value: md.invert, onChange: (v) => { md.invert = v; touchF(); } });
+	const resetF = button({ label: 'Сбросить фильтры', icon: 'arrow-counter-clockwise', variant: 'secondary', cls: 'btn-block', onClick: () => { Object.assign(md, { cutDark: 0, cutLight: 1, keyTol: 0, edges: 0, contrast: 1, sat: 1, post: 0, invert: false }); touchF(); sync(); } });
+	const filtersBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Фильтры'), field('Убрать тёмное', cutDark.el), field('Убрать светлое', cutLight.el), field('Убрать цвет', keyPick.el), field('Допуск цвета', keyTol.el), field('Только контуры', edges.el), field('Контраст', contrast.el), field('Насыщенность', sat.el), field('Постеризация', post.el), invert.el, resetF);
 	const recFps = slider({ min: 5, max: 30, step: 1, value: md.recFps, digits: 0, unit: ' к/с', onInput: (v) => { md.recFps = v; }, onChange: save });
 	const recSec = slider({ min: 1, max: 30, step: 1, value: md.recSec, digits: 0, unit: ' с', onInput: (v) => { md.recSec = v; }, onChange: save });
 	const recInfo = h('div', { class: 'field-hint' });
@@ -27,7 +41,7 @@ export function createMediaPanel(app, root, { fx = false } = {}) {
 	const ptsRow = field('Точек', pts.el);
 	const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recInfo);
 	const saveBox = h('div', { class: 'fx-save-row' }, fx ? bScene : '', bPly, bPcv, bZip);
-	const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
+	const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, ptsRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), filtersBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
 	if (root) root.append(sec.el);
 
 	function sync() {
@@ -41,6 +55,16 @@ export function createMediaPanel(app, root, { fx = false } = {}) {
 		pts.set(md.pts);
 		relief.set(md.relief);
 		depth.set(md.depth);
+		cutDark.set(md.cutDark);
+		cutLight.set(1 - md.cutLight);
+		keyPick.set(md.key);
+		keyTol.set(md.keyTol);
+		edges.set(md.edges);
+		contrast.set(md.contrast);
+		sat.set(md.sat);
+		post.set(md.post);
+		invert.set(md.invert);
+		filtersBox.hidden = !ready || pm.isRec;
 		recBox.hidden = pm.kind !== 'video' && !hasRec;
 		recFps.set(md.recFps);
 		recSec.setRange(1, Math.max(2, Math.min(30, Math.floor(pm.duration) || 10)));

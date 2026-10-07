@@ -289,6 +289,7 @@ const g = new THREE.BufferGeometry();
 g.setAttribute('position', new THREE.BufferAttribute(cloud.positions, 3));
 g.setAttribute('color', new THREE.BufferAttribute(cloud.colors, 3));
 g.setAttribute('normal', new THREE.BufferAttribute(cloud.normals, 3));
+if (cloud.hide) g.setAttribute('aHide', new THREE.BufferAttribute(cloud.hide, 1));
 const m = new THREE.PointsMaterial({ size: 0.01, vertexColors: true, sizeAttenuation: true });
 m.name = 'PointCloud';
 const pts = new THREE.Points(g, m);

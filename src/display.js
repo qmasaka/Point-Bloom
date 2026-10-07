@@ -14,6 +14,7 @@ uniform float uPR;
 uniform float uMode;
 uniform vec3 uColor;
 uniform vec2 uYRange;
+attribute float aHide;
 varying vec3 vColor;
 
 vec3 ramp(float t) {
@@ -27,6 +28,13 @@ vec3 ramp(float t) {
 }
 
 void main() {
+	if (aHide > 0.5) {
+		// точка скрыта фильтром «Медиа»: уводим за пределы экрана
+		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+		gl_PointSize = 0.0;
+		vColor = vec3(0.0);
+		return;
+	}
 	vec4 mv = modelViewMatrix * vec4(position, 1.0);
 	gl_Position = projectionMatrix * mv;
 	float s = uSize * uPR;
