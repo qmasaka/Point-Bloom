@@ -195,7 +195,7 @@ const DEFAULTS = {
 		cloud: 'mesh',
 		cloudCount: 500000,
 		plyBinary: true,
-		web: { title: '', bg: 'dark', autoRotate: true, ar: true, usdz: false, single: false, optimize: true },
+		web: { title: '', bg: 'dark', autoRotate: false, ar: false, usdz: false, single: false, optimize: true },
 	},
 };
 
@@ -89446,7 +89446,6 @@ const ICON_PATHS = {
 	'cube': '<path d="M223.68,66.15,135.68,18h0a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,32h0l80.34,44L128,120,47.66,76ZM40,90l80,43.78v85.79L40,175.82Zm96,129.57V133.82L216,90v85.78Z"/>',
 	'cursor-click': '<path d="M88,24V16a8,8,0,0,1,16,0v8a8,8,0,0,1-16,0ZM16,104h8a8,8,0,0,0,0-16H16a8,8,0,0,0,0,16ZM124.42,39.16a8,8,0,0,0,10.74-3.58l8-16a8,8,0,0,0-14.31-7.16l-8,16A8,8,0,0,0,124.42,39.16Zm-96,81.69-16,8a8,8,0,0,0,7.16,14.31l16-8a8,8,0,1,0-7.16-14.31ZM219.31,184a16,16,0,0,1,0,22.63l-12.68,12.68a16,16,0,0,1-22.63,0L132.7,168,115,214.09c0,.1-.08.21-.13.32a15.83,15.83,0,0,1-14.6,9.59l-.79,0a15.83,15.83,0,0,1-14.41-11L32.8,52.92A16,16,0,0,1,52.92,32.8L213,85.07a16,16,0,0,1,1.41,29.8l-.32.13L168,132.69ZM208,195.31,156.69,144h0a16,16,0,0,1,4.93-26l.32-.14,45.95-17.64L48,48l52.2,159.86,17.65-46c0-.11.08-.22.13-.33a16,16,0,0,1,11.69-9.34,16.72,16.72,0,0,1,3-.28,16,16,0,0,1,11.3,4.69L195.31,208Z"/>',
 	'cursor': '<path d="M168,132.69,214.08,115l.33-.13A16,16,0,0,0,213,85.07L52.92,32.8A15.95,15.95,0,0,0,32.8,52.92L85.07,213a15.82,15.82,0,0,0,14.41,11l.78,0a15.84,15.84,0,0,0,14.61-9.59l.13-.33L132.69,168,184,219.31a16,16,0,0,0,22.63,0l12.68-12.68a16,16,0,0,0,0-22.63ZM195.31,208,144,156.69a16,16,0,0,0-26,4.93c0,.11-.09.22-.13.32l-17.65,46L48,48l159.85,52.2-45.95,17.64-.32.13a16,16,0,0,0-4.93,26h0L208,195.31Z"/>',
-	'device-mobile': '<path d="M176,16H80A24,24,0,0,0,56,40V216a24,24,0,0,0,24,24h96a24,24,0,0,0,24-24V40A24,24,0,0,0,176,16ZM72,64H184V192H72Zm8-32h96a8,8,0,0,1,8,8v8H72V40A8,8,0,0,1,80,32Zm96,192H80a8,8,0,0,1-8-8v-8H184v8A8,8,0,0,1,176,224Z"/>',
 	'dna': '<path d="M200,204.5V232a8,8,0,0,1-16,0V204.5a63.67,63.67,0,0,0-35.38-57.25l-48.4-24.19A79.58,79.58,0,0,1,56,51.5V24a8,8,0,0,1,16,0V51.5a63.67,63.67,0,0,0,35.38,57.25l48.4,24.19A79.58,79.58,0,0,1,200,204.5ZM160,200H72.17a63.59,63.59,0,0,1,3.23-16h72.71a8,8,0,0,0,0-16H83.46a63.71,63.71,0,0,1,14.65-15.08A8,8,0,1,0,88.64,140,80.27,80.27,0,0,0,56,204.5V232a8,8,0,0,0,16,0V216h88a8,8,0,0,0,0-16ZM192,16a8,8,0,0,0-8,8V40H96a8,8,0,0,0,0,16h87.83a63.59,63.59,0,0,1-3.23,16H107.89a8,8,0,1,0,0,16h64.65a63.71,63.71,0,0,1-14.65,15.08,8,8,0,0,0,9.47,12.9A80.27,80.27,0,0,0,200,51.5V24A8,8,0,0,0,192,16Z"/>',
 	'dots-nine': '<path d="M72,60A12,12,0,1,1,60,48,12,12,0,0,1,72,60Zm56-12a12,12,0,1,0,12,12A12,12,0,0,0,128,48Zm68,24a12,12,0,1,0-12-12A12,12,0,0,0,196,72ZM60,116a12,12,0,1,0,12,12A12,12,0,0,0,60,116Zm68,0a12,12,0,1,0,12,12A12,12,0,0,0,128,116Zm68,0a12,12,0,1,0,12,12A12,12,0,0,0,196,116ZM60,184a12,12,0,1,0,12,12A12,12,0,0,0,60,184Zm68,0a12,12,0,1,0,12,12A12,12,0,0,0,128,184Zm68,0a12,12,0,1,0,12,12A12,12,0,0,0,196,184Z"/>',
 	'download-simple': '<path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"/>',
@@ -89461,7 +89460,6 @@ const ICON_PATHS = {
 	'folder-open': '<path d="M245,110.64A16,16,0,0,0,232,104H216V88a16,16,0,0,0-16-16H130.67L102.94,51.2a16.14,16.14,0,0,0-9.6-3.2H40A16,16,0,0,0,24,64V208h0a8,8,0,0,0,8,8H211.1a8,8,0,0,0,7.59-5.47l28.49-85.47A16.05,16.05,0,0,0,245,110.64ZM93.34,64,123.2,86.4A8,8,0,0,0,128,88h72v16H69.77a16,16,0,0,0-15.18,10.94L40,158.7V64Zm112,136H43.1l26.67-80H232Z"/>',
 	'gauge': '<path d="M207.06,72.67A111.24,111.24,0,0,0,128,40h-.4C66.07,40.21,16,91,16,153.13V176a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V152A111.25,111.25,0,0,0,207.06,72.67ZM224,176H119.71l54.76-75.3a8,8,0,0,0-12.94-9.42L99.92,176H32V153.13c0-3.08.15-6.12.43-9.13H56a8,8,0,0,0,0-16H35.27c10.32-38.86,44-68.24,84.73-71.66V80a8,8,0,0,0,16,0V56.33A96.14,96.14,0,0,1,221,128H200a8,8,0,0,0,0,16h23.67c.21,2.65.33,5.31.33,8Z"/>',
 	'ghost': '<path d="M112,116a12,12,0,1,1-12-12A12,12,0,0,1,112,116Zm44-12a12,12,0,1,0,12,12A12,12,0,0,0,156,104Zm68,16v96a8,8,0,0,1-13.07,6.19l-24.26-19.85L162.4,222.19a8,8,0,0,1-10.13,0L128,202.34l-24.27,19.85a8,8,0,0,1-10.13,0L69.33,202.34,45.07,222.19A8,8,0,0,1,32,216V120a96,96,0,0,1,192,0Zm-16,0a80,80,0,0,0-160,0v79.12l16.27-13.31a8,8,0,0,1,10.13,0l24.27,19.85,24.26-19.85a8,8,0,0,1,10.14,0l24.26,19.85,24.27-19.85a8,8,0,0,1,10.13,0L208,199.12Z"/>',
-	'globe': '<path d="M128,24h0A104,104,0,1,0,232,128,104.12,104.12,0,0,0,128,24Zm88,104a87.61,87.61,0,0,1-3.33,24H174.16a157.44,157.44,0,0,0,0-48h38.51A87.61,87.61,0,0,1,216,128ZM102,168H154a115.11,115.11,0,0,1-26,45A115.27,115.27,0,0,1,102,168Zm-3.9-16a140.84,140.84,0,0,1,0-48h59.88a140.84,140.84,0,0,1,0,48ZM40,128a87.61,87.61,0,0,1,3.33-24H81.84a157.44,157.44,0,0,0,0,48H43.33A87.61,87.61,0,0,1,40,128ZM154,88H102a115.11,115.11,0,0,1,26-45A115.27,115.27,0,0,1,154,88Zm52.33,0H170.71a135.28,135.28,0,0,0-22.3-45.6A88.29,88.29,0,0,1,206.37,88ZM107.59,42.4A135.28,135.28,0,0,0,85.29,88H49.63A88.29,88.29,0,0,1,107.59,42.4ZM49.63,168H85.29a135.28,135.28,0,0,0,22.3,45.6A88.29,88.29,0,0,1,49.63,168Zm98.78,45.6a135.28,135.28,0,0,0,22.3-45.6h35.66A88.29,88.29,0,0,1,148.41,213.6Z"/>',
 	'grid-four': '<path d="M200,40H56A16,16,0,0,0,40,56V200a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,80H136V56h64ZM120,56v64H56V56ZM56,136h64v64H56Zm144,64H136V136h64v64Z"/>',
 	'hand': '<path d="M188,48a27.75,27.75,0,0,0-12,2.71V44a28,28,0,0,0-54.65-8.6A28,28,0,0,0,80,60v64l-3.82-6.13a28,28,0,0,0-48.6,27.82c16,33.77,28.93,57.72,43.72,72.69C86.24,233.54,103.2,240,128,240a88.1,88.1,0,0,0,88-88V76A28,28,0,0,0,188,48Zm12,104a72.08,72.08,0,0,1-72,72c-20.38,0-33.51-4.88-45.33-16.85C69.44,193.74,57.26,171,41.9,138.58a6.36,6.36,0,0,0-.3-.58,12,12,0,0,1,20.79-12,1.76,1.76,0,0,0,.14.23l18.67,30A8,8,0,0,0,96,152V60a12,12,0,0,1,24,0v60a8,8,0,0,0,16,0V44a12,12,0,0,1,24,0v76a8,8,0,0,0,16,0V76a12,12,0,0,1,24,0Z"/>',
 	'image': '<path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,16V158.75l-26.07-26.06a16,16,0,0,0-22.63,0l-20,20-44-44a16,16,0,0,0-22.62,0L40,149.37V56ZM40,172l52-52,80,80H40Zm176,28H194.63l-36-36,20-20L216,181.38V200ZM144,100a12,12,0,1,1,12,12A12,12,0,0,1,144,100Z"/>',
@@ -89483,7 +89481,6 @@ const ICON_PATHS = {
 	'question': '<path d="M140,180a12,12,0,1,1-12-12A12,12,0,0,1,140,180ZM128,72c-22.06,0-40,16.15-40,36v4a8,8,0,0,0,16,0v-4c0-11,10.77-20,24-20s24,9,24,20-10.77,20-24,20a8,8,0,0,0-8,8v8a8,8,0,0,0,16,0v-.72c18.24-3.35,32-17.9,32-35.28C168,88.15,150.06,72,128,72Zm104,56A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/>',
 	'record': '<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm0-160a72,72,0,1,0,72,72A72.08,72.08,0,0,0,128,56Zm0,128a56,56,0,1,1,56-56A56.06,56.06,0,0,1,128,184Z"/>',
 	'repeat': '<path d="M24,128A72.08,72.08,0,0,1,96,56H204.69L194.34,45.66a8,8,0,0,1,11.32-11.32l24,24a8,8,0,0,1,0,11.32l-24,24a8,8,0,0,1-11.32-11.32L204.69,72H96a56.06,56.06,0,0,0-56,56,8,8,0,0,1-16,0Zm200-8a8,8,0,0,0-8,8,56.06,56.06,0,0,1-56,56H51.31l10.35-10.34a8,8,0,0,0-11.32-11.32l-24,24a8,8,0,0,0,0,11.32l24,24a8,8,0,0,0,11.32-11.32L51.31,200H160a72.08,72.08,0,0,0,72-72A8,8,0,0,0,224,120Z"/>',
-	'ruler': '<path d="M235.32,73.37,182.63,20.69a16,16,0,0,0-22.63,0L20.68,160a16,16,0,0,0,0,22.63l52.69,52.68a16,16,0,0,0,22.63,0L235.32,96A16,16,0,0,0,235.32,73.37ZM84.68,224,32,171.31l32-32,26.34,26.35a8,8,0,0,0,11.32-11.32L75.31,128,96,107.31l26.34,26.35a8,8,0,0,0,11.32-11.32L107.31,96,128,75.31l26.34,26.35a8,8,0,0,0,11.32-11.32L139.31,64l32-32L224,84.69Z"/>',
 	'scan': '<path d="M224,40V80a8,8,0,0,1-16,0V48H176a8,8,0,0,1,0-16h40A8,8,0,0,1,224,40ZM80,208H48V176a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H80a8,8,0,0,0,0-16Zm136-40a8,8,0,0,0-8,8v32H176a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V176A8,8,0,0,0,216,168ZM40,88a8,8,0,0,0,8-8V48H80a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8V80A8,8,0,0,0,40,88ZM80,72h96a8,8,0,0,1,8,8v96a8,8,0,0,1-8,8H80a8,8,0,0,1-8-8V80A8,8,0,0,1,80,72Zm8,96h80V88H88Z"/>',
 	'selection': '<path d="M152,40a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h32A8,8,0,0,1,152,40Zm-8,168H112a8,8,0,0,0,0,16h32a8,8,0,0,0,0-16ZM208,32H184a8,8,0,0,0,0,16h24V72a8,8,0,0,0,16,0V48A16,16,0,0,0,208,32Zm8,72a8,8,0,0,0-8,8v32a8,8,0,0,0,16,0V112A8,8,0,0,0,216,104Zm0,72a8,8,0,0,0-8,8v24H184a8,8,0,0,0,0,16h24a16,16,0,0,0,16-16V184A8,8,0,0,0,216,176ZM40,152a8,8,0,0,0,8-8V112a8,8,0,0,0-16,0v32A8,8,0,0,0,40,152Zm32,56H48V184a8,8,0,0,0-16,0v24a16,16,0,0,0,16,16H72a8,8,0,0,0,0-16ZM72,32H48A16,16,0,0,0,32,48V72a8,8,0,0,0,16,0V48H72a8,8,0,0,0,0-16Z"/>',
 	'share-network': '<path d="M176,160a39.89,39.89,0,0,0-28.62,12.09l-46.1-29.63a39.8,39.8,0,0,0,0-28.92l46.1-29.63a40,40,0,1,0-8.66-13.45l-46.1,29.63a40,40,0,1,0,0,55.82l46.1,29.63A40,40,0,1,0,176,160Zm0-128a24,24,0,1,1-24,24A24,24,0,0,1,176,32ZM64,152a24,24,0,1,1,24-24A24,24,0,0,1,64,152Zm112,72a24,24,0,1,1,24-24A24,24,0,0,1,176,224Z"/>',
@@ -131398,7 +131395,7 @@ async function exportForWeb(app, o, progress) {
 	progress && progress('Делаю постер', 0.65);
 	const poster = await makePoster(app, w.bg);
 	let usdz = null;
-	if (w.usdz && !w.single) {
+	if (false) {
 		progress && progress('Готовлю USDZ для iPhone', 0.75);
 		try {
 			usdz = await exportModel(app, { ...glbOpts, format: 'usdz' }, () => {});
@@ -131407,7 +131404,7 @@ async function exportForWeb(app, o, progress) {
 		}
 	}
 	const posterName = 'poster.' + poster.ext;
-	const common = { title, bg: w.bg, autoRotate: w.autoRotate, ar: w.ar };
+	const common = { title, bg: w.bg, autoRotate: false, ar: false };
 	const info = { ...glb.info, format: 'web', glbBytes: glb.info.bytes, usdzBytes: usdz ? usdz.info.bytes : 0, ms: 0 };
 	let blob, filename, files;
 	const snippet = embedSnippet({ ...common, glb: 'model.glb', poster: posterName, usdz: usdz ? 'model.usdz' : null });
@@ -131732,7 +131729,7 @@ const { h, formatBytes, formatInt, downloadBlob } = __req('src/util.js');
 const { icon } = __req('src/icons.js');
 const { section, field, segmented, select, slider, switchRow, numberField, button } = __req('src/ui-kit.js');
 const { EXPORT_FORMATS, exportModel, defaultExportName, estimateExportSize } = __req('src/exporters.js');
-const { exportForWeb } = __req('src/web-export.js');
+const { exportForWeb, embedSnippet } = __req('src/web-export.js');
 const { getDevice, hintForCount } = __req('src/device-card.js');
 
 const SCALE_PRESETS = [
@@ -131778,19 +131775,7 @@ function createExportPanel(app, root) {
 			syncFormat();
 		},
 	});
-	// Быстрые сценарии: одним кликом выставляют формат и настройки под задачу
-	const PRESETS = [
-		{ label: 'Для сайта', icon: 'globe', tip: 'Страница с моделью и код для вставки, облегчённые текстуры', set: { format: 'web', cloud: 'mesh' }, web: { optimize: true } },
-		{ label: 'AR на iPhone', icon: 'device-mobile', tip: 'USDZ для просмотра в комнате через камеру', set: { format: 'usdz', cloud: 'mesh', maxTex: 2048 } },
-		{ label: 'Для игры', icon: 'cube', tip: 'GLB для Unity, Unreal, Godot, Three.js: склейка вершин, модель на полу', set: { format: 'glb', cloud: 'mesh', weld: true, texFormat: 'auto', maxTex: 0, place: 'floor' } },
-		{ label: 'Для печати', icon: 'ruler', tip: 'STL: только геометрия. Проверьте масштаб в миллиметрах', set: { format: 'stl', cloud: 'mesh', place: 'floor' } },
-	];
-	const presetRow = h('div', { class: 'chip-row' });
-	for (const pr of PRESETS) {
-		const b = h('button', { type: 'button', class: 'chip-btn', 'data-tip': pr.tip, onclick: () => applyPreset(pr) }, h('span', { class: 'ic-wrap', html: icon(pr.icon, 14) }), pr.label);
-		presetRow.append(b);
-	}
-	const secFormat = section('Формат', { key: 'e-format' }, field('Быстрый выбор', presetRow, { wide: true }), fmt.el, fmtDesc, field('Имя файла', h('div', { class: 'name-field' }, nameInput, ext), { wide: true }));
+	const secFormat = section('Формат', { key: 'e-format' }, fmt.el, fmtDesc, field('Имя файла', h('div', { class: 'name-field' }, nameInput, ext), { wide: true }));
 
 	// -------------------------------------------------------- страница для сайта
 	const webTitle = h('input', { type: 'text', class: 'num-in', style: { textAlign: 'left', fontFamily: 'var(--font)', fontSize: '13px', height: '32px' }, spellcheck: 'false', placeholder: 'Название страницы', 'aria-label': 'Название страницы' });
@@ -131798,32 +131783,46 @@ function createExportPanel(app, root) {
 	webTitle.addEventListener('input', () => {
 		w.title = webTitle.value;
 		save();
+		refreshEmbed();
 	});
 	webTitle.addEventListener('keydown', (e) => e.stopPropagation());
-	const webBg = segmented({ options: [{ value: 'dark', label: 'Тёмный' }, { value: 'light', label: 'Светлый' }, { value: 'transparent', label: 'Прозрачный' }], value: w.bg, onChange: (v) => { w.bg = v; save(); } });
-	const webRotate = switchRow('Автовращение', { value: w.autoRotate, onChange: (v) => { w.autoRotate = v; save(); } });
-	const webAR = switchRow('Кнопка AR на телефоне', { value: w.ar, onChange: (v) => { w.ar = v; save(); } }, 'Модель в комнате через камеру');
-	const webUSDZ = switchRow('Добавить USDZ для iPhone', { value: w.usdz, onChange: (v) => { w.usdz = v; save(); } }, 'Нужен для AR на iPhone');
+	const webBg = segmented({ options: [{ value: 'dark', label: 'Тёмный' }, { value: 'light', label: 'Светлый' }, { value: 'transparent', label: 'Прозрачный' }], value: w.bg, onChange: (v) => { w.bg = v; save(); refreshEmbed(); } });
 	const webOpt = switchRow('Облегчить для сайта', { value: w.optimize, onChange: (v) => { w.optimize = v; touch(); } }, 'Текстуры до 2048 px, быстрая загрузка');
 	const webMode = segmented({ options: [{ value: 'zip', label: 'ZIP с файлами' }, { value: 'single', label: 'Один HTML' }], value: w.single ? 'single' : 'zip', onChange: (v) => { w.single = v === 'single'; save(); syncFormat(); } });
 	const webModeHint = h('div', { class: 'field-hint' });
+	// готовый код для вставки показываем сразу, до скачивания: он зависит только от названия и имён файлов
+	const embedBox = h('textarea', { class: 'code-box', readonly: true, rows: 5, spellcheck: 'false', 'aria-label': 'Код для вставки на сайт' });
+	embedBox.addEventListener('focus', () => embedBox.select());
+	const embedCopy = button({ label: 'Скопировать код', icon: 'copy', variant: 'secondary', cls: 'btn-block', onClick: async () => {
+		try {
+			await navigator.clipboard.writeText(embedBox.value);
+			app.toast('Код скопирован: вставьте его на страницу', 'ok', 2200);
+		} catch (e) {
+			embedBox.select();
+			app.toast('Выделил код: нажмите Ctrl+C', 'info');
+		}
+	} });
+	const refreshEmbed = () => {
+		embedBox.value = embedSnippet({ title: (w.title || '').trim() || defaultExportName(app), glb: 'model.glb', poster: w.bg === 'transparent' ? 'poster.png' : 'poster.jpg', autoRotate: false, ar: false });
+	};
+	const embedField = h('div', { class: 'embed-field' }, embedBox, embedCopy, h('div', { class: 'field-hint' }, 'Положите model.glb и постер рядом со страницей и вставьте этот код туда, где должна быть модель. Файлы лежат в скачанном архиве.'));
 	const secWeb = section(
 		'Страница для сайта',
 		{ key: 'e-web' },
 		field('Название', webTitle, { wide: true }),
 		field('Фон', webBg.el, { wide: true }),
-		webRotate.el,
-		webAR.el,
-		webUSDZ.el,
 		webOpt.el,
 		field('Результат', webMode.el, { wide: true }),
-		webModeHint
+		webModeHint,
+		h('div', { class: 'fx-sub' }, 'Код для вставки'),
+		embedField
 	);
 	function syncWebMode() {
+		refreshEmbed();
+		embedField.hidden = !!w.single;
 		webModeHint.textContent = w.single
 			? 'Один файл, открывается двойным кликом. Тяжелее ZIP.'
 			: 'Архив для хостинга: страница, модель, постер и код для вставки.';
-		webUSDZ.el.hidden = !!w.single;
 	}
 
 	// ------------------------------------------------------------- что и как
@@ -131899,7 +131898,7 @@ function createExportPanel(app, root) {
 	const goBtn = button({ label: 'Скачать GLB', icon: 'download-simple', variant: 'primary', cls: 'btn-lg btn-block', onClick: () => run() });
 	cta.append(estimate, goBtn);
 
-	root.append(h('div', { class: 'result-slot' }, resultBox), secFormat.el, secWeb.el, secWhat.el, secData.el, secCloud.el, cta);
+	root.append(h('div', { class: 'result-slot' }, resultBox), h('div', { class: 'export-cols' }, secFormat.el, secWeb.el, secWhat.el, secData.el, secCloud.el), cta);
 
 	function updateEstimate() {
 		const f = fmtInfo();
@@ -131911,21 +131910,6 @@ function createExportPanel(app, root) {
 		let bytes = estimateExportSize(app, { ...s, cloud: web ? 'mesh' : s.cloud, texFormat: web && w.optimize ? 'jpeg' : s.texFormat, maxTex: web && w.optimize ? Math.min(s.maxTex || 2048, 2048) : s.maxTex });
 		if (f.id === 'gltf') bytes *= 1.34; // base64 внутри JSON
 		estimate.textContent = `Примерный размер файла: около ${formatBytes(bytes)}`;
-	}
-
-	function applyPreset(pr) {
-		Object.assign(s, pr.set);
-		if (pr.web) Object.assign(w, pr.web);
-		fmt.set(s.format);
-		weld.set(s.weld);
-		texFmt.set(s.texFormat);
-		maxTex.set(s.maxTex);
-		place.set(s.place);
-		cloud.set(s.cloud);
-		webOpt.set(w.optimize);
-		touch();
-		syncFormat();
-		app.toast('Выбрано: ' + pr.label, 'info', 1600);
 	}
 
 	// ---------------------------------------------------------------- синхронизация
@@ -138974,7 +138958,7 @@ function createEffectsPanel(app, root, engine) {
 			const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
 			const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
 			const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right', 'data-tip-delay': '1300' }, row);
-			const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, h('div', { class: 'fx-insp-head' }, h('span', { class: 'fx-ic', html: icon(def.icon, 18) }), h('div', {}, h('b', {}, def.name), h('span', {}, def.hint))), body);
+			const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, body);
 			row.addEventListener('click', (e) => {
 				if (!e.target.closest('.switch')) {
 					select_(def.id);
@@ -139146,9 +139130,12 @@ function createEffectsPanel(app, root, engine) {
 	const syncDof = () => { dofBody.hidden = !st.look.dofOn; };
 	syncDof();
 	const blend = segmented({ options: [{ value: 'normal', label: 'Плотные', title: 'Непрозрачные точки' }, { value: 'add', label: 'Свечение', title: 'Точки складывают свет: ярче в плотных местах' }], value: st.look.blend, onChange: (v) => { st.look.blend = v; save(); } });
-	const rotate = switchRow('Вращать форму', { value: st.look.autoRotate, onChange: (v) => { st.look.autoRotate = v; save(); } });
+	const rotate = switchRow('Вращать форму', { value: st.look.autoRotate, onChange: (v) => { st.look.autoRotate = v; save(); syncRotate(); } });
 	const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
-	const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Объём (тень)', shade.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el), hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Производительность'), autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), perfHint, h('div', { class: 'fx-sub' }, 'Сохранить анимацию'), field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
+	const rotSpeedRow = field('Скорость вращения', rotSpeed.el);
+	const syncRotate = () => { rotSpeedRow.hidden = !st.look.autoRotate; };
+	syncRotate();
+	const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Объём (тень)', shade.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, rotSpeedRow, hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Производительность'), autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), perfHint, h('div', { class: 'fx-sub' }, 'Сохранить анимацию'), field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
 	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
@@ -139413,6 +139400,7 @@ function createEffectsPanel(app, root, engine) {
 		hudSw.set(!!st.look.hud);
 		hudSpec.set(st.look.hudSpectrum !== false);
 		rotate.set(st.look.autoRotate);
+		syncRotate();
 		rotSpeed.set(st.look.rotSpeed);
 		sourceSeg.set(engine.sourceType);
 		styleRow.hidden = engine.sourceType !== 'synth';
@@ -139703,7 +139691,7 @@ class UI {
 		});
 		$('#btnExportClose').addEventListener('click', () => this.toggleExportPop(false));
 		document.addEventListener('pointerdown', (e) => {
-			if (!pop.hidden && !pop.contains(e.target) && !e.target.closest('.split-btn') && !e.target.closest('.dlg')) this.toggleExportPop(false);
+			if (!pop.hidden && e.target === pop) this.toggleExportPop(false);
 		});
 	}
 

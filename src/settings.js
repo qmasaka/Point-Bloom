@@ -26,7 +26,7 @@ export const DEFAULTS = {
 		cloud: 'mesh',
 		cloudCount: 500000,
 		plyBinary: true,
-		web: { title: '', bg: 'dark', autoRotate: true, ar: true, usdz: false, single: false, optimize: true },
+		web: { title: '', bg: 'dark', autoRotate: false, ar: false, usdz: false, single: false, optimize: true },
 	},
 };
 

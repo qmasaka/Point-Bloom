@@ -2,7 +2,7 @@ import { h, formatBytes, formatInt, downloadBlob } from './util.js';
 import { icon } from './icons.js';
 import { section, field, segmented, select, slider, switchRow, numberField, button } from './ui-kit.js';
 import { EXPORT_FORMATS, exportModel, defaultExportName, estimateExportSize } from './exporters.js';
-import { exportForWeb } from './web-export.js';
+import { exportForWeb, embedSnippet } from './web-export.js';
 import { getDevice, hintForCount } from './device-card.js';
 const SCALE_PRESETS = [
 { label: 'Как есть', v: 1, tip: 'Масштаб 1' },
@@ -43,49 +43,51 @@ touch();
 syncFormat();
 },
 });
-const PRESETS = [
-{ label: 'Для сайта', icon: 'globe', tip: 'Страница с моделью и код для вставки, облегчённые текстуры', set: { format: 'web', cloud: 'mesh' }, web: { optimize: true } },
-{ label: 'AR на iPhone', icon: 'device-mobile', tip: 'USDZ для просмотра в комнате через камеру', set: { format: 'usdz', cloud: 'mesh', maxTex: 2048 } },
-{ label: 'Для игры', icon: 'cube', tip: 'GLB для Unity, Unreal, Godot, Three.js: склейка вершин, модель на полу', set: { format: 'glb', cloud: 'mesh', weld: true, texFormat: 'auto', maxTex: 0, place: 'floor' } },
-{ label: 'Для печати', icon: 'ruler', tip: 'STL: только геометрия. Проверьте масштаб в миллиметрах', set: { format: 'stl', cloud: 'mesh', place: 'floor' } },
-];
-const presetRow = h('div', { class: 'chip-row' });
-for (const pr of PRESETS) {
-const b = h('button', { type: 'button', class: 'chip-btn', 'data-tip': pr.tip, onclick: () => applyPreset(pr) }, h('span', { class: 'ic-wrap', html: icon(pr.icon, 14) }), pr.label);
-presetRow.append(b);
-}
-const secFormat = section('Формат', { key: 'e-format' }, field('Быстрый выбор', presetRow, { wide: true }), fmt.el, fmtDesc, field('Имя файла', h('div', { class: 'name-field' }, nameInput, ext), { wide: true }));
+const secFormat = section('Формат', { key: 'e-format' }, fmt.el, fmtDesc, field('Имя файла', h('div', { class: 'name-field' }, nameInput, ext), { wide: true }));
 const webTitle = h('input', { type: 'text', class: 'num-in', style: { textAlign: 'left', fontFamily: 'var(--font)', fontSize: '13px', height: '32px' }, spellcheck: 'false', placeholder: 'Название страницы', 'aria-label': 'Название страницы' });
 webTitle.value = w.title || '';
 webTitle.addEventListener('input', () => {
 w.title = webTitle.value;
 save();
+refreshEmbed();
 });
 webTitle.addEventListener('keydown', (e) => e.stopPropagation());
-const webBg = segmented({ options: [{ value: 'dark', label: 'Тёмный' }, { value: 'light', label: 'Светлый' }, { value: 'transparent', label: 'Прозрачный' }], value: w.bg, onChange: (v) => { w.bg = v; save(); } });
-const webRotate = switchRow('Автовращение', { value: w.autoRotate, onChange: (v) => { w.autoRotate = v; save(); } });
-const webAR = switchRow('Кнопка AR на телефоне', { value: w.ar, onChange: (v) => { w.ar = v; save(); } }, 'Модель в комнате через камеру');
-const webUSDZ = switchRow('Добавить USDZ для iPhone', { value: w.usdz, onChange: (v) => { w.usdz = v; save(); } }, 'Нужен для AR на iPhone');
+const webBg = segmented({ options: [{ value: 'dark', label: 'Тёмный' }, { value: 'light', label: 'Светлый' }, { value: 'transparent', label: 'Прозрачный' }], value: w.bg, onChange: (v) => { w.bg = v; save(); refreshEmbed(); } });
 const webOpt = switchRow('Облегчить для сайта', { value: w.optimize, onChange: (v) => { w.optimize = v; touch(); } }, 'Текстуры до 2048 px, быстрая загрузка');
 const webMode = segmented({ options: [{ value: 'zip', label: 'ZIP с файлами' }, { value: 'single', label: 'Один HTML' }], value: w.single ? 'single' : 'zip', onChange: (v) => { w.single = v === 'single'; save(); syncFormat(); } });
 const webModeHint = h('div', { class: 'field-hint' });
+const embedBox = h('textarea', { class: 'code-box', readonly: true, rows: 5, spellcheck: 'false', 'aria-label': 'Код для вставки на сайт' });
+embedBox.addEventListener('focus', () => embedBox.select());
+const embedCopy = button({ label: 'Скопировать код', icon: 'copy', variant: 'secondary', cls: 'btn-block', onClick: async () => {
+try {
+await navigator.clipboard.writeText(embedBox.value);
+app.toast('Код скопирован: вставьте его на страницу', 'ok', 2200);
+} catch (e) {
+embedBox.select();
+app.toast('Выделил код: нажмите Ctrl+C', 'info');
+}
+} });
+const refreshEmbed = () => {
+embedBox.value = embedSnippet({ title: (w.title || '').trim() || defaultExportName(app), glb: 'model.glb', poster: w.bg === 'transparent' ? 'poster.png' : 'poster.jpg', autoRotate: false, ar: false });
+};
+const embedField = h('div', { class: 'embed-field' }, embedBox, embedCopy, h('div', { class: 'field-hint' }, 'Положите model.glb и постер рядом со страницей и вставьте этот код туда, где должна быть модель. Файлы лежат в скачанном архиве.'));
 const secWeb = section(
 'Страница для сайта',
 { key: 'e-web' },
 field('Название', webTitle, { wide: true }),
 field('Фон', webBg.el, { wide: true }),
-webRotate.el,
-webAR.el,
-webUSDZ.el,
 webOpt.el,
 field('Результат', webMode.el, { wide: true }),
-webModeHint
+webModeHint,
+h('div', { class: 'fx-sub' }, 'Код для вставки'),
+embedField
 );
 function syncWebMode() {
+refreshEmbed();
+embedField.hidden = !!w.single;
 webModeHint.textContent = w.single
 ? 'Один файл, открывается двойным кликом. Тяжелее ZIP.'
 : 'Архив для хостинга: страница, модель, постер и код для вставки.';
-webUSDZ.el.hidden = !!w.single;
 }
 const only = segmented({ options: [{ value: 'all', label: 'Вся сцена' }, { value: 'selected', label: 'Выбранное' }], value: s.only, onChange: (v) => { s.only = v; touch(); } });
 const scale = numberField({ value: s.scale, step: 0.1, digits: 6, min: 1e-9, onChange: (v) => { s.scale = v; save(); markPresets(); } });
@@ -152,7 +154,7 @@ const estimate = h('div', { class: 'estimate' });
 const cta = h('div', { class: 'export-cta' });
 const goBtn = button({ label: 'Скачать GLB', icon: 'download-simple', variant: 'primary', cls: 'btn-lg btn-block', onClick: () => run() });
 cta.append(estimate, goBtn);
-root.append(h('div', { class: 'result-slot' }, resultBox), secFormat.el, secWeb.el, secWhat.el, secData.el, secCloud.el, cta);
+root.append(h('div', { class: 'result-slot' }, resultBox), h('div', { class: 'export-cols' }, secFormat.el, secWeb.el, secWhat.el, secData.el, secCloud.el), cta);
 function updateEstimate() {
 const f = fmtInfo();
 if (!['glb', 'gltf', 'usdz', 'web'].includes(f.id) || !app.viewport.root.children.some((c) => !c.userData.helper)) {
@@ -163,20 +165,6 @@ const web = f.id === 'web';
 let bytes = estimateExportSize(app, { ...s, cloud: web ? 'mesh' : s.cloud, texFormat: web && w.optimize ? 'jpeg' : s.texFormat, maxTex: web && w.optimize ? Math.min(s.maxTex || 2048, 2048) : s.maxTex });
 if (f.id === 'gltf') bytes *= 1.34;
 estimate.textContent = `Примерный размер файла: около ${formatBytes(bytes)}`;
-}
-function applyPreset(pr) {
-Object.assign(s, pr.set);
-if (pr.web) Object.assign(w, pr.web);
-fmt.set(s.format);
-weld.set(s.weld);
-texFmt.set(s.texFormat);
-maxTex.set(s.maxTex);
-place.set(s.place);
-cloud.set(s.cloud);
-webOpt.set(w.optimize);
-touch();
-syncFormat();
-app.toast('Выбрано: ' + pr.label, 'info', 1600);
 }
 function syncFormat() {
 const f = fmtInfo();

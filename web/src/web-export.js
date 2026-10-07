@@ -132,7 +132,7 @@ const glb = await exportModel(app, glbOpts, (t, p) => progress && progress(t, 0.
 progress && progress('Делаю постер', 0.65);
 const poster = await makePoster(app, w.bg);
 let usdz = null;
-if (w.usdz && !w.single) {
+if (false) {
 progress && progress('Готовлю USDZ для iPhone', 0.75);
 try {
 usdz = await exportModel(app, { ...glbOpts, format: 'usdz' }, () => {});
@@ -141,7 +141,7 @@ warnings.push('USDZ для iPhone не создан: ' + (e.message || e));
 }
 }
 const posterName = 'poster.' + poster.ext;
-const common = { title, bg: w.bg, autoRotate: w.autoRotate, ar: w.ar };
+const common = { title, bg: w.bg, autoRotate: false, ar: false };
 const info = { ...glb.info, format: 'web', glbBytes: glb.info.bytes, usdzBytes: usdz ? usdz.info.bytes : 0, ms: 0 };
 let blob, filename, files;
 const snippet = embedSnippet({ ...common, glb: 'model.glb', poster: posterName, usdz: usdz ? 'model.usdz' : null });

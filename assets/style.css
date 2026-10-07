@@ -3904,3 +3904,118 @@ body {
 	text-transform: uppercase;
 	color: var(--text-faint);
 }
+
+/* ползунок: простая точка без свечения и колец */
+.range::-webkit-slider-thumb {
+	width: 12px;
+	height: 12px;
+	margin-top: -4px;
+	border-radius: 50%;
+	background: var(--text);
+	border: 0;
+	box-shadow: none;
+	transition: transform 0.12s var(--ease), background-color 0.12s;
+}
+.range:hover::-webkit-slider-thumb {
+	background: var(--accent-text);
+	transform: scale(1.15);
+	box-shadow: none;
+}
+.range:active::-webkit-slider-thumb {
+	background: var(--accent);
+	transform: scale(1.2);
+	box-shadow: none;
+}
+.range::-moz-range-thumb {
+	width: 12px;
+	height: 12px;
+	border: 0;
+	border-radius: 50%;
+	background: var(--text);
+	box-shadow: none;
+}
+/* окошко с числом: без рамки, пока на него не наведёшь */
+.num-out {
+	background: transparent;
+	border-color: transparent;
+}
+.num-out:hover {
+	background: var(--bg-sunken);
+	border-color: var(--line-strong);
+}
+.num-out:focus {
+	background: var(--bg-sunken);
+	border-color: var(--accent);
+}
+
+/* экспорт: окно по центру экрана с настройками в две колонки */
+.export-pop {
+	position: fixed;
+	inset: 0;
+	top: 0;
+	right: 0;
+	width: auto;
+	max-height: none;
+	display: grid;
+	place-items: center;
+	padding: 24px;
+	background: rgba(6, 8, 11, 0.66);
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	z-index: var(--z-modal);
+	overflow: auto;
+}
+.export-pop[hidden] {
+	display: none;
+}
+.export-card {
+	display: flex;
+	flex-direction: column;
+	width: min(960px, 100%);
+	max-height: calc(var(--vh) - 48px);
+	background: var(--bg-panel);
+	border: 1px solid var(--line-strong);
+	border-radius: var(--r-box);
+	box-shadow: var(--shadow-pop);
+	overflow: hidden;
+}
+.export-pop-head {
+	padding: 12px 12px 12px 20px;
+}
+.export-pop-head strong {
+	font-size: 14px;
+	letter-spacing: 0.02em;
+}
+.export-cols {
+	columns: 2 340px;
+	column-gap: 0;
+}
+.export-cols > .sec {
+	break-inside: avoid;
+}
+.export-cols > .sec:nth-child(odd) {
+	border-right: 1px solid var(--line);
+}
+.embed-field {
+	display: grid;
+	gap: 8px;
+}
+.embed-field .code-box {
+	width: 100%;
+	font: 11px/1.45 var(--mono);
+	color: var(--text-dim);
+	background: var(--bg-sunken);
+	border: 1px solid var(--line);
+	border-radius: var(--r-ctl);
+	padding: 8px 10px;
+	resize: vertical;
+}
+@media (max-width: 720px) {
+	.export-cols {
+		columns: 1;
+	}
+	.export-cols > .sec:nth-child(odd) {
+		border-right: 0;
+	}
+}

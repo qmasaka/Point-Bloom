@@ -221,7 +221,7 @@ export class UI {
 		});
 		$('#btnExportClose').addEventListener('click', () => this.toggleExportPop(false));
 		document.addEventListener('pointerdown', (e) => {
-			if (!pop.hidden && !pop.contains(e.target) && !e.target.closest('.split-btn') && !e.target.closest('.dlg')) this.toggleExportPop(false);
+			if (!pop.hidden && e.target === pop) this.toggleExportPop(false);
 		});
 	}
 
