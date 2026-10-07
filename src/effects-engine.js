@@ -60,7 +60,7 @@ export const FX_LAYERS = [
 	{ id: 'slice', group: 'Графика', name: 'Срез / Изолинии', icon: 'scan', hint: 'Лазерные линии, рельеф из точек на линиях или развёртка: форма постепенно проявляется за бегущей плоскостью', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'auto' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
 	{ id: 'feedback', group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой длинный световой хвост из прошлых кадров, как длинная выдержка. Хвост можно окрасить, а можно закрутить туннелем', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
 	{ id: 'echo', group: 'Графика', name: 'Шлейф', icon: 'ghost', hint: 'Призрачные копии формы: тянутся следом, закручиваются спиралью или раскладываются зеркальным веером', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, mode: 'spiral', copies: 4, delay: 0.14, spread: 0.45, fade: 0.7 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['spiral', 'Спираль'], ['kaleido', 'Зеркала'], ['time', 'След']] }, { key: 'copies', label: 'Копий', min: 1, max: 5, step: 1, int: true }, { key: 'spread', label: 'Угол между копиями', min: 0.05, max: 1.5, step: 0.05 }, { key: 'delay', label: 'Задержка, с', min: 0.02, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Затухание копий', min: 0.3, max: 0.95, step: 0.05 }] },
-	{ id: 'tracking', group: 'Взаимодействие', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки захватывают подвижные участки формы и по желанию прикасаются к ней: подъём, вихрь или втягивание', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, shape: 'corners', color: 'auto', thick: 1.5, labels: 'on', labelSize: 1, labelInfo: 'full', labelBg: 'off', lines: 'on', fill: 'none', follow: 'wander', mark: 'none', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ key: 'count', label: 'Рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 8, max: 160, step: 1, int: true }, { key: 'shape', label: 'Форма', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'labelInfo', label: 'Что написано', type: 'select', options: [['full', 'Всё: номер, координаты, скорость'], ['id', 'Только номер'], ['conf', 'Номер и уверенность'], ['coords', 'Координаты X Y Z'], ['speed', 'Номер и скорость'], ['bars', 'Номер и шкалы'], ['dist', 'Расстояние до центра']], when: ['labels', ['on']] }, { key: 'labelSize', label: 'Масштаб текста', min: 0.5, max: 3, step: 0.1, when: ['labels', ['on']] }, { key: 'labelBg', label: 'Подложка под текст', type: 'seg', options: [['off', 'Нет'], ['on', 'Есть']], when: ['labels', ['on']] }, { key: 'lines', label: 'Связи рамок', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'fill', label: 'Заливка рамки', type: 'seg', options: [['none', 'Нет'], ['tint', 'Тон'], ['hatch', 'Штрих']] }, { key: 'follow', label: 'Куда смотрят рамки', type: 'seg', options: [['wander', 'Бродят'], ['pointer', 'За руками']] }, { type: 'title', label: 'Эффект в области рамок' }, { key: 'mark', label: 'Что происходит', type: 'select', options: [['none', 'Ничего'], ['invert', 'Негатив'], ['rainbow', 'Радуга'], ['hole', 'Дыра с пульсирующим краем'], ['lens', 'Лупа'], ['pixel', 'Пиксели'], ['glow', 'Свет']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'select', options: [['none', 'Нет'], ['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втягивание'], ['push', 'Отталкивание'], ['ripple', 'Рябь'], ['melt', 'Таяние вниз'], ['scatter', 'Разлёт искрами'], ['vanish', 'Исчезновение']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус области', min: 0.02, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
+	{ id: 'tracking', group: 'Взаимодействие', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки захватывают подвижные участки формы и по желанию прикасаются к ней: подъём, вихрь или втягивание', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, shape: 'corners', fill: 'none', color: 'auto', thick: 1.5, labels: 'on', labelSize: 1, labelInfo: 'full', labelBg: 'off', lines: 'on', lineStyle: 'dashed', lineMode: 'nearest', lineWidth: 1, lineAlpha: 0.5, follow: 'wander', mark: 'none', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ type: 'title', label: 'Рамки' }, { key: 'count', label: 'Сколько рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 8, max: 160, step: 1, int: true }, { key: 'shape', label: 'Вид рамки', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'fill', label: 'Заливка', type: 'seg', options: [['none', 'Нет'], ['tint', 'Тон'], ['hatch', 'Штрих']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'follow', label: 'Куда смотрят рамки', type: 'seg', options: [['wander', 'Бродят'], ['pointer', 'За руками']] }, { type: 'title', label: 'Подписи' }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'labelInfo', label: 'Что написано', type: 'select', options: [['full', 'Всё: номер, координаты, скорость'], ['id', 'Только номер'], ['conf', 'Номер и уверенность'], ['coords', 'Координаты X Y Z'], ['speed', 'Номер и скорость'], ['bars', 'Номер и шкалы'], ['dist', 'Расстояние до центра']], when: ['labels', ['on']] }, { key: 'labelSize', label: 'Масштаб текста', min: 0.5, max: 3, step: 0.1, when: ['labels', ['on']] }, { key: 'labelBg', label: 'Подложка под текст', type: 'seg', options: [['off', 'Нет'], ['on', 'Есть']], when: ['labels', ['on']] }, { type: 'title', label: 'Связи между рамками' }, { key: 'lines', label: 'Линии связи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lineMode', label: 'Кто с кем связан', type: 'select', options: [['nearest', 'Каждая с ближайшей'], ['chain', 'Цепочкой по порядку'], ['all', 'Все близкие друг с другом'], ['hub', 'Все к центру']], when: ['lines', ['on']] }, { key: 'lineStyle', label: 'Вид линии', type: 'select', options: [['dashed', 'Пунктир'], ['solid', 'Сплошная'], ['curve', 'Дуга'], ['elbow', 'Ломаная под прямым углом'], ['dots', 'Точки'], ['pulse', 'С бегущим огоньком']], when: ['lines', ['on']] }, { key: 'lineWidth', label: 'Толщина связей', min: 0.5, max: 4, step: 0.25, when: ['lines', ['on']] }, { key: 'lineAlpha', label: 'Яркость связей', min: 0.1, max: 1, step: 0.05, when: ['lines', ['on']] }, { type: 'title', label: 'Эффект в области рамок' }, { key: 'mark', label: 'Что происходит', type: 'select', options: [['none', 'Ничего'], ['invert', 'Негатив'], ['rainbow', 'Радуга'], ['hole', 'Дыра с пульсирующим краем'], ['lens', 'Лупа'], ['pixel', 'Пиксели'], ['glow', 'Свет']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'select', options: [['none', 'Нет'], ['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втягивание'], ['push', 'Отталкивание'], ['ripple', 'Рябь'], ['melt', 'Таяние вниз'], ['scatter', 'Разлёт искрами'], ['vanish', 'Исчезновение']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус области', min: 0.02, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
 	{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.05, max: 2, step: 0.01 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
 	{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Рисование курсором по форме: частицы в мазках светятся и оживают, затем след высыхает', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, radius: 0.4, dry: 3.5 }, extras: [{ key: 'radius', label: 'Радиус кисти', min: 0.02, max: 0.9, step: 0.01 }, { key: 'dry', label: 'Высыхание, с', min: 1.0, max: 8.0, step: 0.5 }] },
 	{ id: 'shock', group: 'Взаимодействие', name: 'Ударная волна', icon: 'aperture', hint: 'Клик по сцене пускает круговую волну по форме', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, speed: 1.2, auto: 'off' }, extras: [{ key: 'speed', label: 'Скорость волны', min: 0.4, max: 3, step: 0.05 }, { key: 'auto', label: 'Запуск', type: 'seg', options: [['off', 'Клик'], ['on', 'Клик и авто']] }] },
@@ -125,8 +125,8 @@ export const MASK_MODES = [
 export const MORPH_STYLES = [
 	{ id: 'flow', name: 'Течение', icon: 'waves', hint: 'Точки перетекают из одной модели в другую плавными дугами', v: { scatter: 0.8, stagger: 0.35, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 } },
 	{ id: 'swirl', name: 'Вихрь', icon: 'tornado', hint: 'Модель закручивается вихрем и раскручивается уже в новую форму', v: { scatter: 0.7, stagger: 0.3, turns: 1.2, sort: 'out', ease: 'soft', glow: 0.5 } },
-	{ id: 'burst', name: 'Взрыв', icon: 'asterisk', hint: 'Модель разлетается во все стороны и собирается в новую', v: { scatter: 1.2, stagger: 0.2, turns: 1, sort: 'out', ease: 'smooth', glow: 0.9 } },
-	{ id: 'sweep', name: 'Волна', icon: 'scan', hint: 'Граница превращения проходит по модели снизу вверх: за ней уже новая форма', v: { scatter: 0.25, stagger: 0.8, turns: 1, sort: 'up', ease: 'soft', glow: 1.0 } },
+	{ id: 'burst', name: 'Взрыв', icon: 'asterisk', hint: 'Модель взрывается на частицы, они падают на пол и лежат, потом собираются в новую модель', v: { scatter: 1.2, stagger: 0.25, turns: 1, sort: 'out', ease: 'smooth', glow: 0.7 } },
+	{ id: 'scan', name: 'Сканер', icon: 'scan', hint: 'Линия сканера идёт по модели сверху вниз и на ходу собирает за собой новую форму', v: { scatter: 0.12, stagger: 2.2, turns: 1, sort: 'down', ease: 'smooth', glow: 1.0 } },
 	{ id: 'dust', name: 'Пыль', icon: 'wind', hint: 'Старая форма поднимается облаком пыли, новая оседает из него', v: { scatter: 0.9, stagger: 0.55, turns: 1, sort: 'random', ease: 'soft', glow: 0.3 } },
 	{ id: 'sand', name: 'Осыпание', icon: 'drop', hint: 'Точки осыпаются вниз, как песок, и снизу вырастает новая форма', v: { scatter: 0.9, stagger: 0.5, turns: 1, sort: 'down', ease: 'smooth', glow: 0.2 } },
 ];
@@ -413,6 +413,7 @@ uniform float uTOff;
 uniform float uMorph;
 uniform vec4 uMorphS;
 uniform vec4 uMorphO;
+uniform float uSettle;
 uniform float uBeat;
 uniform vec2 uYR;
 uniform vec3 uMouse;
@@ -637,6 +638,31 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		else if (sty == 5) ctrl = vec3(mid.x, min(aOrigin.y, aTarget.y) - 1.1 * sc, mid.z) + cn * sc * 0.25;
 		float om = 1.0 - e;
 		base = om * om * aOrigin + 2.0 * om * e * ctrl + e * e * aTarget;
+		if (sty == 2) {
+			// взрыв: частицы разлетаются, падают на пол и лежат без отскока, затем поднимаются дугой в новую форму
+			float fl = uYR.x - 0.04;
+			float h1 = hash11(aIdx * 5.31);
+			float h2 = hash11(aIdx * 7.77);
+			float h3 = hash11(aIdx * 2.13);
+			vec3 dx = normalize(vec3(aOrigin.x, 0.0, aOrigin.z) + vec3(h1 - 0.5, 0.0, h2 - 0.5) * 0.9 + vec3(1e-3, 0.0, 0.0));
+			float spd = (0.35 + h3 * 1.1) * sc;
+			float vy0 = (0.5 + h2 * 1.3) * sc;
+			float te = clamp(lt / 0.45, 0.0, 1.0);
+			float tau = te * 1.6;
+			vec3 pl = aOrigin;
+			pl.xz += dx.xz * spd * (1.0 - exp(-3.52)) * 1.4;
+			pl.y = fl + h1 * 0.03;
+			vec3 pf = aOrigin;
+			pf.xz += dx.xz * spd * (1.0 - exp(-2.2 * tau)) * 1.4;
+			float yf = max(fl + h1 * 0.03, aOrigin.y + vy0 * tau - 2.1 * tau * tau);
+			pf.y = mix(yf, pl.y, smoothstep(0.85, 1.0, te));
+			float tg = clamp((lt - 0.58) / 0.42, 0.0, 1.0);
+			float eg = tg * tg * (3.0 - 2.0 * tg);
+			vec3 c2 = (pl + aTarget) * 0.5 + vec3(0.0, 0.5 + 0.6 * h2, 0.0) + cn * 0.2 * sc;
+			float og = 1.0 - eg;
+			vec3 pg = og * og * pl + 2.0 * og * eg * c2 + eg * eg * aTarget;
+			base = lt < 0.45 ? pf : (lt < 0.58 ? pl : pg);
+		}
 		if (sty == 1) {
 			float ang = sin(e * PI) * uMorphS.w * 6.2831853 * (0.6 + 0.4 * hash11(aIdx * 1.3));
 			float cs = cos(ang);
@@ -1069,7 +1095,8 @@ void main() {
 	else k = fract(aIdx * 3.0 + t * 0.03);
 	vec3 col = k < 0.5 ? mix(uP0, uP1, k * 2.0) : mix(uP1, uP2, (k - 0.5) * 2.0);
 	// цвет и нормаль плавно перетекают вместе с формой
-	float eC = uMorph < 0.9999 ? morphEase(morphLocal(aOrigin, aTarget, aIdx)) : 1.0;
+	float ltC = uMorph < 0.9999 ? morphLocal(aOrigin, aTarget, aIdx) : 1.0;
+	float eC = uMorph < 0.9999 ? (int(uMorphS.x + 0.5) == 2 ? smoothstep(0.5, 0.9, ltC) : morphEase(ltC)) : 1.0;
 	vec3 colM = mix(aColor, aColorB, eC);
 	vec3 nrmM = mix(aNormal, aNormalB, eC);
 	if (uColorBy > 2.5 && uColorBy < 3.5) col = colM;
@@ -1172,6 +1199,15 @@ void main() {
 	if (uMorph < 0.9999 && uMorphO.z > 0.001) {
 		mkm = sin(morphLocal(aOrigin, aTarget, aIdx) * PI) * uMorphO.z;
 		vColor += vColor * mkm * 1.1 + uP2 * mkm * 0.25;
+	}
+	// после сборки по форме снизу вверх пробегает мягкая волна света и лёгкий «вздох», как будто модель села на место
+	if (uSettle >= 0.0 && uSettle < 1.0) {
+		float yS = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
+		float dd = (yS - (uSettle * 1.35 - 0.15)) / 0.14;
+		float band = exp(-dd * dd) * (1.0 - uSettle);
+		mkm += band * 1.0;
+		vColor += vColor * band * 0.9 + uP2 * band * 0.2;
+		pos += normalize(vec3(pos.x, 0.0, pos.z) + vec3(1e-4)) * band * 0.03;
 	}
 	vD = disp;
 	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
@@ -3198,7 +3234,7 @@ export class EffectsEngine {
 		const U = (v) => ({ value: v });
 		// общие униформы: точки, призраки и линии читают одни и те же значения
 		const shared = {
-			uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
+			uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSettle: U(-1), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
 			uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()), uYR: U(new THREE.Vector2(-1, 1)),
 			uShade: U(0), uGlyph: U(new THREE.Vector3(0, 1, 8)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
 			uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
@@ -3464,6 +3500,9 @@ export class EffectsEngine {
 		this.cloudKey = key;
 		this.morph = 0;
 		this.morphing = true;
+		this._settleOn = false;
+		this.shared.uSettle.value = -1;
+		this.shared.uMorph.value = 0; // сразу, не дожидаясь кадра: иначе на один кадр мелькает новая модель
 		this._computeLinks();
 		this.emit();
 	}
@@ -3681,7 +3720,8 @@ export class EffectsEngine {
 
 	_eff(l) {
 		if (!l.on) return 0;
-		if (l.band === 'none') return l.amount;
+		const g = this._fxGate ?? 1;
+		if (l.band === 'none') return l.amount * g;
 		const b = this._bandLevel(l);
 		if (l.amode === 'gate') {
 			// включение по порогу: эффект появляется, когда в выбранных частотах громче порога, и плавно гаснет после
@@ -3698,10 +3738,10 @@ export class EffectsEngine {
 				const tc = Math.max(0.005, e.open ? l.atk : l.rel);
 				e.v += ((e.open ? 1 : 0) - e.v) * (1 - Math.exp(-dt / tc));
 			}
-			return l.amount * e.v;
+			return l.amount * e.v * g;
 		}
-		if (!l.react) return l.amount;
-		return l.amount * (1 - l.react + l.react * b * 2);
+		if (!l.react) return l.amount * g;
+		return l.amount * (1 - l.react + l.react * b * 2) * g;
 	}
 
 	_loop() {
@@ -3727,7 +3767,11 @@ export class EffectsEngine {
 			if (this.morphing) {
 				this.morph = Math.min(1, this.morph + dt / Math.max(0.3, st0.morphCfg.time));
 				this._syncLinks();
-				if (this.morph >= 1) this.morphing = false;
+				if (this.morph >= 1) {
+					this.morphing = false;
+					this._settleOn = true;
+					this._settleT = this._time;
+				}
 			}
 			const st = this.state;
 			if (this.points && st.look.autoRotate) {
@@ -3740,6 +3784,20 @@ export class EffectsEngine {
 			const pal = FX_PALETTES.find((p) => p.id === look.palette) || FX_PALETTES[0];
 			if (this.post) this.post.tint = new THREE.Color(pal.c[0]);
 			u.uTime.value = this._time;
+			// во время перехода эффекты плавно гаснут и после сборки так же плавно возвращаются: форма собирается чисто, но эффекты остаются на обеих моделях
+			{
+				const m = this.morphing ? this.morph : 1;
+				const sm = (a, b, x) => {
+					const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+					return t * t * (3 - 2 * t);
+				};
+				this._fxGate = m >= 1 ? 1 : m < 0.5 ? 1 - sm(0, 0.2, m) : sm(0.6, 1, m);
+				if (this._settleOn) {
+					const p = (this._time - this._settleT) / 1.2;
+					u.uSettle.value = p >= 1 ? -1 : p;
+					if (p >= 1) this._settleOn = false;
+				}
+			}
 			u.uMorph.value = this.morph;
 			{
 				const mcf = st.morphCfg;

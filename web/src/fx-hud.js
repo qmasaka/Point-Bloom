@@ -114,9 +114,31 @@ const ls = Math.max(0.5, Math.min(3, cfg.labelSize || 1));
 const fs = 11 * ls;
 ctx.font = `${fs}px Geist, "Geist Variable", system-ui, sans-serif`;
 ctx.textBaseline = 'top';
-if (cfg.lines === 'on') {
-ctx.setLineDash([3, 4]);
-ctx.strokeStyle = rgba(c0, 0.45 * alpha);
+if (cfg.lines === 'on' && dpx.length > 1) {
+const mode = cfg.lineMode || 'nearest';
+const style = cfg.lineStyle || 'dashed';
+const pairs = [];
+const seen = new Set();
+const add = (i, j) => {
+const k = i < j ? i * 100 + j : j * 100 + i;
+if (i === j || seen.has(k)) return;
+seen.add(k);
+pairs.push([dpx[i], dpx[j]]);
+};
+if (mode === 'chain') {
+const order = dpx.map((_, i) => i).sort((a, b) => dpx[a].it.id - dpx[b].it.id);
+for (let k = 0; k < order.length - 1; k++) add(order[k], order[k + 1]);
+} else if (mode === 'all') {
+const lim = Math.min(w, h) * 0.34;
+for (let i = 0; i < dpx.length; i++) for (let j = i + 1; j < dpx.length; j++) if (Math.hypot(dpx[i].x - dpx[j].x, dpx[i].y - dpx[j].y) < lim) add(i, j);
+} else if (mode === 'hub') {
+const cx = dpx.reduce((a, d) => a + d.x, 0) / dpx.length;
+const cy = dpx.reduce((a, d) => a + d.y, 0) / dpx.length;
+const hub = { x: cx, y: cy, it: { id: -1 } };
+dpx.forEach((d) => pairs.push([hub, d]));
+ctx.fillStyle = rgba(c2, 0.8 * alpha);
+ctx.fillRect(cx - 2.5, cy - 2.5, 5, 5);
+} else {
 for (let i = 0; i < dpx.length; i++) {
 let best = -1;
 let bd = 1e9;
@@ -128,13 +150,40 @@ bd = d;
 best = j;
 }
 }
-if (best < 0) continue;
+if (best >= 0) add(i, best);
+}
+}
+const lwn = lw * (cfg.lineWidth || 1);
+ctx.strokeStyle = rgba(c0, (cfg.lineAlpha ?? 0.5) * alpha);
+ctx.lineWidth = style === 'dots' ? lwn * 1.8 : lwn;
+ctx.setLineDash(style === 'dashed' ? [3 * lwn + 1, 4 * lwn + 1] : style === 'dots' ? [0.1, 6 + lwn * 2] : []);
+const tnow = performance.now() / 1000;
+for (const [A, B] of pairs) {
 ctx.beginPath();
-ctx.moveTo(dpx[i].x, dpx[i].y);
-ctx.lineTo(dpx[best].x, dpx[best].y);
+ctx.moveTo(A.x, A.y);
+if (style === 'curve') {
+const mx = (A.x + B.x) / 2;
+const my = (A.y + B.y) / 2;
+const nx = -(B.y - A.y) * 0.22;
+const ny = (B.x - A.x) * 0.22;
+ctx.quadraticCurveTo(mx + nx, my + ny, B.x, B.y);
+} else if (style === 'elbow') {
+const horizFirst = Math.abs(B.x - A.x) > Math.abs(B.y - A.y);
+if (horizFirst) ctx.lineTo(B.x, A.y);
+else ctx.lineTo(A.x, B.y);
+ctx.lineTo(B.x, B.y);
+} else ctx.lineTo(B.x, B.y);
 ctx.stroke();
+if (style === 'pulse') {
+const ph = (tnow * 0.6 + (A.it.id * 0.37 + B.it.id * 0.21)) % 1;
+const px = A.x + (B.x - A.x) * ph;
+const py = A.y + (B.y - A.y) * ph;
+ctx.fillStyle = rgba(c2, 0.95 * Math.min(1, alpha));
+ctx.fillRect(px - 2 * lwn, py - 2 * lwn, 4 * lwn, 4 * lwn);
+}
 }
 ctx.setLineDash([]);
+ctx.lineWidth = lw;
 }
 for (const { it, x, y } of dpx) {
 const s = size * (0.8 + it.conf * 0.25);

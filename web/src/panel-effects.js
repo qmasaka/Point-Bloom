@@ -130,6 +130,8 @@ mark();
 export function createEffectsPanel(app, root, engine) {
 const st = engine.state;
 const save = () => engine.touch();
+const pset = app.settings.point;
+const size = slider({ min: 1, max: 24, step: 0.5, value: pset.size, digits: 1, unit: ' px', onInput: (v) => { pset.size = v; }, onChange: () => app.saveSettings() });
 const dev = getDevice(app);
 const cap = () => Math.max(100000, Math.min(2000000, getDevice(app).limits.cap));
 const count = slider({
@@ -145,9 +147,6 @@ onChange: (v) => engine.setCount(v),
 const countHint = h('div', { class: 'field-hint' });
 const addModel = button({ label: 'Добавить модель…', icon: 'folder-open', variant: 'secondary', cls: 'btn-block', title: 'Открыть модель, облако точек (PLY, PCD, XYZ) или архив и сразу использовать их здесь', onClick: () => app.ui.openFiles('add') });
 const modelNote = h('div', { class: 'field-hint' });
-const countChips = h('div', { class: 'chip-row' });
-for (const n of [100000, 300000, 1000000]) countChips.append(h('button', { type: 'button', class: 'chip-btn', onclick: () => engine.setCount(Math.min(n, cap())) }, formatCount(n)));
-countChips.append(h('button', { type: 'button', class: 'chip-btn', 'data-tip': 'Столько частиц комфортно для вашего компьютера', onclick: () => engine.setCount(Math.min(cap(), Math.max(20000, getDevice(app).limits.comfort))) }, 'Комфортно'));
 const mc = st.morphCfg;
 const formsBox = h('div', { class: 'chip-row fx-forms' });
 const picked = [];
@@ -198,7 +197,7 @@ const morphOrder = segmented({ options: [{ value: 'seq', label: 'По кругу
 const morphInt = slider({ min: 1, max: 20, step: 0.5, value: mc.interval, digits: 1, unit: ' с', onInput: (v) => { mc.interval = v; }, onChange: save });
 const morphTime = slider({ min: 0.4, max: 8, step: 0.1, value: mc.time, digits: 1, unit: ' с', onInput: (v) => { mc.time = v; }, onChange: save });
 const morphScatter = slider({ min: 0, max: 2, step: 0.05, value: mc.scatter, digits: 2, onInput: (v) => { mc.scatter = v; }, onChange: save });
-const morphStagger = slider({ min: 0, max: 0.9, step: 0.05, value: mc.stagger, digits: 2, onInput: (v) => { mc.stagger = v; }, onChange: save });
+const morphStagger = slider({ min: 0, max: 3, step: 0.05, value: mc.stagger, digits: 2, onInput: (v) => { mc.stagger = v; }, onChange: save });
 const morphTurns = slider({ min: 0, max: 3, step: 0.1, value: mc.turns, digits: 1, onInput: (v) => { mc.turns = v; }, onChange: save });
 const morphGlow = slider({ min: 0, max: 1.5, step: 0.05, value: mc.glow, digits: 2, onInput: (v) => { mc.glow = v; }, onChange: save });
 const morphSort = select({ options: MORPH_SORTS.map(([value, label]) => ({ value, label })), value: mc.sort, onChange: (v) => { mc.sort = v; save(); } });
@@ -245,7 +244,7 @@ morphEase.set(mc.ease);
 }
 renderForms();
 syncMorph();
-const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), countChips, countHint);
+const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
 const secMorph = section('Морфинг', { key: 'fx-morph' }, morphNote, morphBox);
 const pickers = new Set();
 function freqPicker(L, onSave) {
@@ -644,7 +643,6 @@ save();
 palBtns.set(p.id, b);
 palettes.append(b);
 }
-const pset = app.settings.point;
 const colorBy = select({ options: COLOR_BY_UI.map((c) => ({ value: c.id, label: c.label })), value: st.look.colorBy, onChange: (v) => { engine.setColorBy(v); } });
 const shapeTiles = h('div', { class: 'shape-grid shape-row', role: 'radiogroup', 'aria-label': 'Форма точек' });
 const shapeBtns = new Map();
@@ -682,7 +680,6 @@ const animInfo = h('div', { class: 'field-hint' }, 'Запишется то, ч�
 const hudSw = switchRow('Индикаторы уровней звука', { value: st.look.hud, onChange: (v) => { st.look.hud = v; save(); } });
 const hudSpec = switchRow('Спектр внизу', { value: st.look.hudSpectrum, onChange: (v) => { st.look.hudSpectrum = v; save(); } });
 const attSw = switchRow('Мельче вдали', { value: pset.attenuate, onChange: (v) => { pset.attenuate = v; app.saveSettings(); } });
-const size = slider({ min: 1, max: 24, step: 0.5, value: pset.size, digits: 1, unit: ' px', onInput: (v) => { pset.size = v; }, onChange: () => app.saveSettings() });
 const sizeNoise = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeNoise || 0, digits: 2, onInput: (v) => { st.look.sizeNoise = v; }, onChange: save });
 const sizeAudio = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeAudio || 0, digits: 2, onInput: (v) => { st.look.sizeAudio = v; }, onChange: save });
 const shade = slider({ min: 0, max: 1, step: 0.05, value: st.look.shade || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.shade = v; }, onChange: save });
@@ -699,7 +696,7 @@ syncDof();
 const blend = segmented({ options: [{ value: 'normal', label: 'Плотные', title: 'Непрозрачные точки' }, { value: 'add', label: 'Свечение', title: 'Точки складывают свет: ярче в плотных местах' }], value: st.look.blend, onChange: (v) => { st.look.blend = v; save(); } });
 const rotate = switchRow('Вращать форму', { value: st.look.autoRotate, onChange: (v) => { st.look.autoRotate = v; save(); } });
 const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
-const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), field('Размер', size.el), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Объём (тень)', shade.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el), hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Сохранить анимацию'), field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
+const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Объём (тень)', shade.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, field('Скорость', rotSpeed.el), hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Сохранить анимацию'), field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 const secMedia = createMediaPanel(app, null, { fx: true }).section;
 const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
 const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
