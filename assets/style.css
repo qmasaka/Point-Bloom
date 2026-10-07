@@ -3747,3 +3747,51 @@ body {
 .sec.is-empty {
 	display: none !important;
 }
+
+/* ползунок: тонкая линия и светящаяся точка («цветок» из названия), без насечек */
+.range {
+	height: 20px;
+}
+.range::-webkit-slider-runnable-track {
+	height: 4px;
+	border-radius: 2px;
+	background: linear-gradient(to right, var(--accent) var(--p), var(--bg-active) var(--p));
+}
+.range::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	width: 14px;
+	height: 14px;
+	margin-top: -5px;
+	border-radius: 50%;
+	background: var(--accent-text);
+	border: 3px solid var(--bg-panel);
+	box-shadow: 0 0 0 1px var(--accent-line), 0 0 10px rgba(229, 138, 69, 0.45);
+	transition: transform 0.14s var(--ease), box-shadow 0.14s;
+}
+.range:hover::-webkit-slider-thumb {
+	background: var(--accent-hover);
+	transform: scale(1.12);
+	box-shadow: 0 0 0 1px var(--accent), 0 0 14px rgba(229, 138, 69, 0.6);
+}
+.range:active::-webkit-slider-thumb {
+	transform: scale(1.2);
+	box-shadow: 0 0 0 1px var(--accent), 0 0 0 6px rgba(229, 138, 69, 0.18), 0 0 16px rgba(229, 138, 69, 0.65);
+}
+.range::-moz-range-track {
+	height: 4px;
+	border-radius: 2px;
+	background: var(--bg-active);
+}
+.range::-moz-range-progress {
+	height: 4px;
+	border-radius: 2px;
+	background: var(--accent);
+}
+.range::-moz-range-thumb {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--accent-text);
+	border: 3px solid var(--bg-panel);
+	box-shadow: 0 0 0 1px var(--accent-line), 0 0 10px rgba(229, 138, 69, 0.45);
+}
