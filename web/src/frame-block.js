@@ -85,12 +85,23 @@ o++;
 }
 return { positions, normals, colors, count };
 }
-export function writeOneFrame(frame, perFrame, target, firstPoint, w) {
+export function writeOneFrame(frame, perFrame, target, firstPoint, w, tint = 0, rgb = null) {
 let o = firstPoint * 3;
+if (!tint || !rgb) {
 for (let p = 0; p < perFrame * 3; p += 3) {
 target[o++] = LUT[frame[p]] * w;
 target[o++] = LUT[frame[p + 1]] * w;
 target[o++] = LUT[frame[p + 2]] * w;
+}
+return;
+}
+const k = 1 - tint;
+for (let p = 0; p < perFrame * 3; p += 3) {
+const r = LUT[frame[p]], g = LUT[frame[p + 1]], b = LUT[frame[p + 2]];
+const l = 0.3 * r + 0.59 * g + 0.11 * b;
+target[o++] = (r * k + rgb[0] * (0.35 + l * 1.6) * tint) * w;
+target[o++] = (g * k + rgb[1] * (0.35 + l * 1.6) * tint) * w;
+target[o++] = (b * k + rgb[2] * (0.35 + l * 1.6) * tint) * w;
 }
 }
 export function writeFrameColors(frames, cols, rows, target, weights = null) {

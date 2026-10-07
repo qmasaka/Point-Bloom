@@ -132906,12 +132906,24 @@ function buildFrameBlock(frames, cols, rows, aspect, layout = 'stack', depth = 1
 }
 
 /** Один кадр целиком в массив цветов блока: offset это номер первой точки кадра, w это яркость */
-function writeOneFrame(frame, perFrame, target, firstPoint, w) {
+function writeOneFrame(frame, perFrame, target, firstPoint, w, tint = 0, rgb = null) {
 	let o = firstPoint * 3;
+	if (!tint || !rgb) {
+		for (let p = 0; p < perFrame * 3; p += 3) {
+			target[o++] = LUT[frame[p]] * w;
+			target[o++] = LUT[frame[p + 1]] * w;
+			target[o++] = LUT[frame[p + 2]] * w;
+		}
+		return;
+	}
+	// подкраска кадра цветом луча или шлейфа: цвет кадра смешивается с заданным, яркость сохраняется
+	const k = 1 - tint;
 	for (let p = 0; p < perFrame * 3; p += 3) {
-		target[o++] = LUT[frame[p]] * w;
-		target[o++] = LUT[frame[p + 1]] * w;
-		target[o++] = LUT[frame[p + 2]] * w;
+		const r = LUT[frame[p]], g = LUT[frame[p + 1]], b = LUT[frame[p + 2]];
+		const l = 0.3 * r + 0.59 * g + 0.11 * b;
+		target[o++] = (r * k + rgb[0] * (0.35 + l * 1.6) * tint) * w;
+		target[o++] = (g * k + rgb[1] * (0.35 + l * 1.6) * tint) * w;
+		target[o++] = (b * k + rgb[2] * (0.35 + l * 1.6) * tint) * w;
 	}
 }
 
@@ -133965,7 +133977,7 @@ const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкивать']
 
 /** Слои-операторы. group: раздел в левой панели; extras: дополнительные параметры; relink: пересобрать связи */
 const FX_LAYERS = [
-	{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Экспериментально: видео раскладывается на кадры, а кадры собираются в блок из точек. Только для видео', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, hl: 0.7, follow: 'off', showOn: false, showMode: 'peel', showSpeed: 12 }, extras: [{ key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: время уходит вглубь'], ['wall', 'Стена кадров'], ['carousel', 'Карусель'], ['spiral', 'Спираль'], ['fan', 'Веер']], reframe: true }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'budget', label: 'Всего точек в блоке', min: 60000, max: 1500000, step: 10000, int: true, reframe: true, log: true }, { key: 'depth', label: 'Глубина блока', min: 0.2, max: 4, step: 0.1, reframe: true }, { type: 'title', label: 'Пока видео играет' }, { key: 'hl', label: 'Подсветка текущего кадра', min: 0, max: 1, step: 0.05, when: ['source', ['whole']] }, { key: 'follow', label: 'Следить за кадром', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']], when: ['source', ['whole']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }, { type: 'title', label: 'Показ кадров', when: ['showOn', [true]] }, { key: 'showMode', label: 'Как кадры исчезают', type: 'select', options: [['peel', 'Листание: пройденные улетают и гаснут'], ['build', 'Проявление: кадры появляются по ходу'], ['window', 'Окно: виден только отрезок вокруг текущего']], when: ['showOn', [true]] }, { key: 'showSpeed', label: 'Скорость, кадров в секунду', min: 1, max: 60, step: 1, int: true, when: ['showOn', [true]] }] },
+	{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Экспериментально: видео раскладывается на кадры, а кадры собираются в блок из точек. Только для видео', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, hl: 0.7, follow: 'off', showOn: false, showMode: 'peel', showSpeed: 12, showLen: 0.12 }, extras: [{ key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: время уходит вглубь'], ['wall', 'Стена кадров'], ['carousel', 'Карусель'], ['spiral', 'Спираль'], ['fan', 'Веер']], reframe: true }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'budget', label: 'Всего точек в блоке', min: 60000, max: 1500000, step: 10000, int: true, reframe: true, log: true }, { key: 'depth', label: 'Глубина блока', min: 0.2, max: 4, step: 0.1, reframe: true }, { type: 'title', label: 'Пока видео играет' }, { key: 'hl', label: 'Подсветка текущего кадра', min: 0, max: 1, step: 0.05, when: ['source', ['whole']] }, { key: 'follow', label: 'Следить за кадром', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']], when: ['source', ['whole']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }, { type: 'title', label: 'Показ кадров', when: ['showOn', [true]] }, { key: 'showMode', label: 'Как кадры исчезают', type: 'select', options: [['peel', 'Листание: пройденные улетают и гаснут'], ['build', 'Проявление: кадры появляются по ходу'], ['window', 'Окно: виден только отрезок вокруг текущего'], ['projector', 'Проектор: луч света идёт по блоку'], ['trail', 'След времени: за кадром тянется шлейф']], when: ['showOn', [true]] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showOn', [true]] }, { key: 'showSpeed', label: 'Скорость, кадров в секунду', min: 1, max: 60, step: 1, int: true, when: ['showOn', [true]] }] },
 	{ id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Частицы отрываются от формы и плывут по вихрям или потоку, а потом возвращаются', max: 2, def: { on: false, amount: 0.8, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['noise', 'Вихри'], ['stream', 'Поток и возврат']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }] },
 	{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается сверху вниз, осколки взлетают, закручиваются и падают на пол с отскоками. При сборке они возвращаются дугами и складываются обратно', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
 	{ id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма отзывается на частоты трека: шерсть, колонки эквалайзера или горный рельеф', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, mode: 'bars', bars: 24 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['bars', 'Колонки эквалайзера'], ['terrain', 'Горный рельеф'], ['wool', 'Шерсть по кругу'], ['height', 'Шерсть по высоте']] }, { key: 'bars', label: 'Число колонок', min: 8, max: 64, step: 1, int: true, when: ['mode', ['bars']] }] },
@@ -136252,8 +136264,41 @@ class EffectsEngine {
 			const n = fr.n;
 			const w = new Float32Array(n);
 			const lift = new Float32Array(n);
+			const tint = new Float32Array(n);
+			const tintRGB = new Float32Array(n * 3);
 			const fw = Math.max(2, n * 0.04);
-			if (F.showOn) {
+			const palC = (() => {
+				const pal = FX_PALETTES.find((x) => x.id === this.state.look.palette) || FX_PALETTES[0];
+				return pal.c.map((c) => new THREE.Color(c));
+			})();
+			if (F.showOn && (F.showMode === 'projector' || F.showMode === 'trail')) {
+				const span = Math.max(1.5, n * Math.max(0.02, F.showLen));
+				for (let i = 0; i < n; i++) {
+					const d = i - idx;
+					if (F.showMode === 'projector') {
+						// луч: яркое пятно света на текущем кадре, за ним остаётся тёплое послесвечение, впереди темнота
+						const beam = Math.exp(-(d / span) * (d / span) * 2);
+						const after = d < 0 ? Math.exp(d / (span * 2.4)) * 0.4 : 0;
+						w[i] = 0.1 + beam * 1.5 + after;
+						tint[i] = Math.min(0.85, beam * 0.8);
+						const c = palC[2];
+						tintRGB[i * 3] = c.r; tintRGB[i * 3 + 1] = c.g; tintRGB[i * 3 + 2] = c.b;
+						lift[i] = d < 0 ? -Math.min(0.35, -d / n * 1.2) : 0;
+					} else {
+						// шлейф: кадры позади текущего окрашиваются по палитре и тают, уходя вглубь; впереди пусто
+						const age = -d / span;
+						if (d > 0) w[i] = 0;
+						else {
+							w[i] = i === idx ? 1.35 : Math.max(0, Math.exp(-age * 1.1) * 0.9);
+							const t = Math.min(1, age);
+							const c0 = t < 0.5 ? palC[0].clone().lerp(palC[1], t * 2) : palC[1].clone().lerp(palC[2], (t - 0.5) * 2);
+							tint[i] = i === idx ? 0 : Math.min(0.9, 0.3 + age * 0.7);
+							tintRGB[i * 3] = c0.r; tintRGB[i * 3 + 1] = c0.g; tintRGB[i * 3 + 2] = c0.b;
+							lift[i] = -Math.min(0.6, age * 0.25);
+						}
+					}
+				}
+			} else if (F.showOn) {
 				const half = Math.max(3, n * 0.08);
 				for (let i = 0; i < n; i++) {
 					const d = i - idx;
@@ -136276,7 +136321,7 @@ class EffectsEngine {
 				const k = Math.max(0, F.hl);
 				for (let i = 0; i < n; i++) w[i] = k === 0 ? 1 : 1 - 0.5 * k + (0.5 + 1.4 * k) * Math.max(0, 1 - Math.abs(i - idx) / 2.5) * k;
 			}
-			this._applyFrameWeights(fr, w, lift);
+			this._applyFrameWeights(fr, w, lift, tint, tintRGB);
 		}
 		if (F.follow === 'on') {
 			const depth = F.depth;
@@ -136299,7 +136344,7 @@ class EffectsEngine {
 	}
 
 	/** Применяет яркость и смещение к кадрам блока: пишет только те кадры, у которых что-то изменилось, и отправляет на видеокарту только этот участок */
-	_applyFrameWeights(fr, w, lift) {
+	_applyFrameWeights(fr, w, lift, tint = null, tintRGB = null) {
 		const g = this.geometry;
 		const per = fr.cols * fr.rows;
 		const A = g.attributes;
@@ -136307,14 +136352,17 @@ class EffectsEngine {
 		if (!fr.w) {
 			fr.w = new Float32Array(fr.n).fill(1);
 			fr.lift = new Float32Array(fr.n);
+			fr.tint = new Float32Array(fr.n);
 		}
 		let lo = 1e9, hi = -1;
 		for (let i = 0; i < fr.n; i++) {
-			if (Math.abs(w[i] - fr.w[i]) < 0.004 && Math.abs(lift[i] - fr.lift[i]) < 0.004) continue;
+			const ti = tint ? tint[i] : 0;
+			if (Math.abs(w[i] - fr.w[i]) < 0.004 && Math.abs(lift[i] - fr.lift[i]) < 0.004 && Math.abs(ti - fr.tint[i]) < 0.01) continue;
 			fr.w[i] = w[i];
 			fr.lift[i] = lift[i];
+			fr.tint[i] = ti;
 			const p0 = i * per;
-			writeOneFrame(fr.frames[i], per, A.aColor.array, p0, w[i]);
+			writeOneFrame(fr.frames[i], per, A.aColor.array, p0, w[i], ti, tintRGB ? tintRGB.subarray(i * 3, i * 3 + 3) : null);
 			A.aColorB.array.set(A.aColor.array.subarray(p0 * 3, (p0 + per) * 3), p0 * 3);
 			const hide = w[i] < 0.02 ? 1 : 0;
 			A.aHide.array.fill(hide, p0, p0 + per);

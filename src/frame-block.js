@@ -98,12 +98,24 @@ export function buildFrameBlock(frames, cols, rows, aspect, layout = 'stack', de
 }
 
 /** Один кадр целиком в массив цветов блока: offset это номер первой точки кадра, w это яркость */
-export function writeOneFrame(frame, perFrame, target, firstPoint, w) {
+export function writeOneFrame(frame, perFrame, target, firstPoint, w, tint = 0, rgb = null) {
 	let o = firstPoint * 3;
+	if (!tint || !rgb) {
+		for (let p = 0; p < perFrame * 3; p += 3) {
+			target[o++] = LUT[frame[p]] * w;
+			target[o++] = LUT[frame[p + 1]] * w;
+			target[o++] = LUT[frame[p + 2]] * w;
+		}
+		return;
+	}
+	// подкраска кадра цветом луча или шлейфа: цвет кадра смешивается с заданным, яркость сохраняется
+	const k = 1 - tint;
 	for (let p = 0; p < perFrame * 3; p += 3) {
-		target[o++] = LUT[frame[p]] * w;
-		target[o++] = LUT[frame[p + 1]] * w;
-		target[o++] = LUT[frame[p + 2]] * w;
+		const r = LUT[frame[p]], g = LUT[frame[p + 1]], b = LUT[frame[p + 2]];
+		const l = 0.3 * r + 0.59 * g + 0.11 * b;
+		target[o++] = (r * k + rgb[0] * (0.35 + l * 1.6) * tint) * w;
+		target[o++] = (g * k + rgb[1] * (0.35 + l * 1.6) * tint) * w;
+		target[o++] = (b * k + rgb[2] * (0.35 + l * 1.6) * tint) * w;
 	}
 }
 
