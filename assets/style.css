@@ -4314,10 +4314,10 @@ body {
 	.ui-float .range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; border: 0; background: #fff; box-shadow: 0 0 0 3px rgba(229, 138, 69, 0.35); }
 
 	/* сегменты, поля, выпадающие списки, мелкие кнопки: капсулы */
-	.fx-mode .seg { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border-color: transparent; }
-	.fx-mode .seg-btn { border-radius: 999px; border-color: transparent; }
-	.fx-mode .seg-btn[aria-checked='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 500; }
-	.fx-mode .select, .fx-mode .num-out, .fx-mode .num-in { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border-color: transparent; padding-inline: 12px; }
+	.fx-mode .sidebar .seg { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border-color: transparent; }
+	.fx-mode .sidebar .seg-btn { border-radius: 999px; border-color: transparent; }
+	.fx-mode .sidebar .seg-btn[aria-checked='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 500; }
+	.fx-mode .sidebar .select, .fx-mode .sidebar .num-out, .fx-mode .sidebar .num-in { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border-color: transparent; padding-inline: 12px; }
 	.fx-mode .sidebar .btn { border-radius: 999px; }
 	.ui-float .topbar .btn-icon, .ui-float .fx-bar .btn-icon, .ui-float .media-bar .btn-icon { border-radius: 50%; }
 	.ui-float .topbar .btn:not(.btn-icon):not(.split-chev) { border-radius: 999px; }
@@ -4412,4 +4412,44 @@ body {
 	.ui-float .fxf-scroll { display: block; min-height: 0; overflow-y: auto; overflow-x: hidden; }
 	.ui-float .fxf-scroll::after { content: ''; display: block; height: 20px; }
 	.ui-float .fxf-scroll .panels, .ui-float .fxf-scroll .panel { overflow: visible; height: auto; min-height: 0; }
+}
+
+/* ================================================================ камера рук, «скрыть интерфейс», ритм отступов, крупнее текст экспорта */
+@keyframes fxf-in { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+@container app (min-width: 901px) {
+	/* окно с камерой и строка состояния съёмки не лежат под панелями */
+	.fx-mode .fx-cam { left: calc(var(--fxl-w, 252px) + 30px); bottom: 36px; width: 232px; padding: 8px; gap: 8px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 14px; box-shadow: var(--fxg-shadow); animation: fxf-in 0.34s var(--ease); }
+	.fx-mode .fx-cam canvas { border-radius: 10px; }
+	.fx-mode .fx-cam-text { padding: 0 4px 2px; font-size: 12px; }
+	.fx-mode .fx-cap { left: 50%; bottom: 140px; transform: translateX(-50%); background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); box-shadow: var(--fxg-shadow); animation: fxf-in 0.3s var(--ease); }
+
+	/* «только сцена»: панели уезжают к краям и гаснут, при возврате так же плавно появляются */
+	.ui-float .topbar, .ui-float .fx-left, .ui-float .sidebar, .ui-float .statusbar, .ui-float .toolrail { transition: opacity 0.38s var(--ease), transform 0.5s var(--ease), height 0.3s var(--ease), visibility 0s linear 0s; }
+	.fx-focus .topbar, .fx-focus .fx-left, .fx-focus .sidebar, .fx-focus .statusbar { transition: opacity 0.3s var(--ease), transform 0.45s var(--ease), visibility 0s linear 0.3s; }
+	.fx-focus .topbar { transform: translateY(-24px); }
+	.fx-focus .fx-left { transform: translateX(-36px); }
+	.fx-focus .sidebar { transform: translateX(36px); }
+	.fx-focus .statusbar { transform: translateY(14px); }
+	.fx-mode .fx-bar { transition: bottom 0.4s var(--ease); }
+
+	/* вкладки: одинаковый отступ сверху и снизу, у всех режимов */
+	.ui-float .fx-tabs, .ui-float .fx-tabs.tabs, .ui-float .tabs { padding: 14px 14px 2px; }
+}
+
+/* окно экспорта: заголовки и подписи крупнее */
+.export-pop-head strong { font-size: 19px; font-weight: 600; }
+.export-card .sec-head { font-size: 12.5px; letter-spacing: 0.08em; }
+.export-card .field-label, .export-card .switch-label { font-size: 14px; }
+.export-card .field-hint, .export-card .switch-text small, .export-card .hint { font-size: 12.5px; }
+.export-card .fmt .seg-btn, .export-card .seg-btn { font-size: 13.5px; }
+.export-card .fmt-desc { font-size: 13.5px; }
+.export-card .select, .export-card .num-in, .export-card .name-field input, .export-card .name-field span { font-size: 13.5px; }
+.export-card .estimate { font-size: 13px; }
+.export-card .btn-lg { font-size: 15px; height: 46px; }
+@container app (min-width: 901px) {
+	.ui-float.fx-focus .workspace, .ui-float.fx-focus .workspace.sidebar-hidden { grid-template-columns: minmax(0, 1fr); }
+}
+@container app (min-width: 901px) {
+	.ui-float .vp-top-right { transition: right 0.45s var(--ease), top 0.45s var(--ease); }
+	.ui-float.fx-focus .vp-top-right { right: 18px; top: 16px; }
 }
