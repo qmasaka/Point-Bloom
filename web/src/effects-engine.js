@@ -2925,9 +2925,12 @@ async _prefetch(keys) {
 const token = (this._pfT = (this._pfT || 0) + 1);
 for (const k of keys || []) {
 if (token !== this._pfT || !this.active) return;
+this._quiet = true;
 try {
 await this._cloudFor(k);
 } catch (e) {
+} finally {
+this._quiet = false;
 }
 await new Promise((r) => setTimeout(r, 30));
 }
@@ -3171,7 +3174,12 @@ const real = !key.startsWith('obj:');
 if (real) st.source = key;
 this.touch();
 if (!this.active || !this.geometry) return this.emit();
-const target = await this._cloudFor(key);
+let target;
+try {
+target = await this._cloudFor(key);
+} finally {
+this.app.ui.idle();
+}
 if (!target) return this.emit();
 this.curKey = key;
 if (!target || target.count !== this.geometry.attributes.position.count) {
@@ -3241,10 +3249,13 @@ if (this.hasModel && !(this.pm.ready && this.state.source === 'media')) {
 this.state.source = 'model';
 this.syncLookFromPoints();
 }
+this.app.ui.busy('Готовлю частицы', 0.2);
 try {
 await this._build();
 } catch (e) {
 console.error(e);
+} finally {
+this.app.ui.idle();
 }
 this.app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 300);
 this.emit();

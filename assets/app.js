@@ -136801,10 +136801,13 @@ class EffectsEngine {
 		const token = (this._pfT = (this._pfT || 0) + 1);
 		for (const k of keys || []) {
 			if (token !== this._pfT || !this.active) return;
+			this._quiet = true;
 			try {
 				await this._cloudFor(k);
 			} catch (e) {
 				/* не критично: посчитаем при запуске */
+			} finally {
+				this._quiet = false;
 			}
 			await new Promise((r) => setTimeout(r, 30));
 		}
@@ -137062,7 +137065,12 @@ class EffectsEngine {
 		if (real) st.source = key;
 		this.touch();
 		if (!this.active || !this.geometry) return this.emit();
-		const target = await this._cloudFor(key);
+		let target;
+		try {
+			target = await this._cloudFor(key);
+		} finally {
+			this.app.ui.idle(); // выбор формы мог показать окно загрузки: закрываем его в любом случае
+		}
 		if (!target) return this.emit();
 		this.curKey = key;
 		if (!target || target.count !== this.geometry.attributes.position.count) {
@@ -137138,10 +137146,14 @@ class EffectsEngine {
 				this.state.source = 'model';
 				this.syncLookFromPoints();
 			}
+			this.app.ui.busy('Готовлю частицы', 0.2);
 			try {
 				await this._build();
 			} catch (e) {
 				console.error(e);
+			} finally {
+				// окно загрузки всегда закрываем: раньше оно оставалось поверх сцены после добавления модели
+				this.app.ui.idle();
 			}
 			this.app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 300);
 			this.emit();
@@ -138281,7 +138293,10 @@ function makeModelProvider(app) {
 			const list = meshes();
 			if (!list.length) return null;
 			const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
-			return sampleSurface(entries, count, { onProgress: (p) => app.ui.busy('Беру точки с модели', 0.2 + p * 0.7) });
+			return sampleSurface(entries, count, { onProgress: (p) => {
+				// фоновая подготовка к морфингу не показывает окно загрузки: иначе оно зависает поверх сцены
+				if (!app.ui.effectsEngine?._quiet) app.ui.busy('Беру точки с модели', 0.2 + p * 0.7);
+			} });
 		},
 	};
 }

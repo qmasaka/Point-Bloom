@@ -87,7 +87,9 @@ if (c.length) return fromClouds(c, count);
 const list = meshes();
 if (!list.length) return null;
 const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
-return sampleSurface(entries, count, { onProgress: (p) => app.ui.busy('Беру точки с модели', 0.2 + p * 0.7) });
+return sampleSurface(entries, count, { onProgress: (p) => {
+if (!app.ui.effectsEngine?._quiet) app.ui.busy('Беру точки с модели', 0.2 + p * 0.7);
+} });
 },
 };
 }
