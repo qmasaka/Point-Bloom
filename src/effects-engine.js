@@ -354,6 +354,49 @@ function normalizeCloud(c) {
 	return { positions: out, normals: c.normals, colors: c.colors, count: c.count };
 }
 
+/**
+ * Упорядочивает точки облака вдоль кривой Мортона по его собственным габаритам. У двух моделей i-я точка оказывается
+ * примерно в «том же месте» формы, поэтому при морфинге точки идут к ближайшим родственным местам, а не разлетаются
+ * через всю сцену, и переход выглядит как перетекание, а не как перемешивание.
+ */
+function mortonSort(c) {
+	const n = c.count;
+	const P = c.positions;
+	let mnx = Infinity, mny = Infinity, mnz = Infinity, mxx = -Infinity, mxy = -Infinity, mxz = -Infinity;
+	for (let i = 0; i < n; i++) {
+		const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2];
+		if (x < mnx) mnx = x; if (x > mxx) mxx = x;
+		if (y < mny) mny = y; if (y > mxy) mxy = y;
+		if (z < mnz) mnz = z; if (z > mxz) mxz = z;
+	}
+	const sx = 1023 / Math.max(1e-9, mxx - mnx), sy = 1023 / Math.max(1e-9, mxy - mny), sz = 1023 / Math.max(1e-9, mxz - mnz);
+	const spread = (v) => {
+		v &= 0x3ff;
+		v = (v | (v << 16)) & 0x030000ff;
+		v = (v | (v << 8)) & 0x0300f00f;
+		v = (v | (v << 4)) & 0x030c30c3;
+		v = (v | (v << 2)) & 0x09249249;
+		return v;
+	};
+	const M = 4194304; // 2^22: хватает на 4 млн точек
+	const keys = new Float64Array(n);
+	for (let i = 0; i < n; i++) {
+		const code = ((spread(((P[i * 3] - mnx) * sx) | 0) << 2) | (spread(((P[i * 3 + 1] - mny) * sy) | 0) << 1) | spread(((P[i * 3 + 2] - mnz) * sz) | 0)) >>> 0;
+		keys[i] = code * M + i;
+	}
+	keys.sort();
+	const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+	for (let i = 0; i < n; i++) {
+		const j = keys[i] % M;
+		for (let k = 0; k < 3; k++) {
+			pos[i * 3 + k] = P[j * 3 + k];
+			nor[i * 3 + k] = c.normals[j * 3 + k];
+			col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
+		}
+	}
+	return { positions: pos, normals: nor, colors: col, count: n };
+}
+
 // ───────────────────────────────────────────────────────────── шейдеры
 
 const common = /* glsl */ `
@@ -982,6 +1025,8 @@ attribute vec3 aColor;
 attribute float aIdx;
 attribute vec3 aSculpt;
 attribute vec3 aNormal;
+attribute vec3 aNormalB;
+attribute vec3 aColorB;
 attribute vec2 aVis;
 uniform vec3 uSolid;
 uniform float uAtt;
@@ -1014,10 +1059,14 @@ void main() {
 	else if (uColorBy < 1.5) k = clamp((pos.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
 	else k = fract(aIdx * 3.0 + t * 0.03);
 	vec3 col = k < 0.5 ? mix(uP0, uP1, k * 2.0) : mix(uP1, uP2, (k - 0.5) * 2.0);
-	if (uColorBy > 2.5 && uColorBy < 3.5) col = aColor;
+	// цвет и нормаль плавно перетекают вместе с формой
+	float eC = uMorph < 0.9999 ? morphEase(morphLocal(aOrigin, aTarget, aIdx)) : 1.0;
+	vec3 colM = mix(aColor, aColorB, eC);
+	vec3 nrmM = mix(aNormal, aNormalB, eC);
+	if (uColorBy > 2.5 && uColorBy < 3.5) col = colM;
 	else if (uColorBy > 3.5 && uColorBy < 4.5) col = uSolid;
 	else if (uColorBy > 4.5) {
-		vec3 wn = mat3(modelMatrix) * aNormal;
+		vec3 wn = mat3(modelMatrix) * nrmM;
 		wn = length(wn) > 0.0 ? normalize(wn) : vec3(0.0, 1.0, 0.0);
 		col = pow(wn * 0.5 + 0.5, vec3(2.2));
 	}
@@ -1027,8 +1076,8 @@ void main() {
 	vColor = col * uBright * (1.0 + uBeat * 0.3) * (1.0 - dkv) * vis;
 	if (uMask.x > 0.5 && uMaskShow > 0.5) vColor = mix(vColor, uP2 * 1.4, maskV * 0.55);
 	// объём: свет сверху слева по нормалям, обратная сторона формы темнее
-	if (uShade > 0.001 && dot(aNormal, aNormal) > 0.01) {
-		vec3 nv = normalize(normalMatrix * aNormal);
+	if (uShade > 0.001 && dot(nrmM, nrmM) > 0.01) {
+		vec3 nv = normalize(normalMatrix * nrmM);
 		float lit = dot(nv, normalize(vec3(-0.45, 0.65, 0.6)));
 		float f = 0.18 + 1.05 * pow(clamp(lit * 0.5 + 0.5, 0.0, 1.0), 1.6);
 		f *= nv.z < 0.0 ? mix(1.0, 0.55, clamp(-nv.z * 1.6, 0.0, 1.0)) : 1.0;
@@ -2338,6 +2387,7 @@ export class EffectsEngine {
 		this.playlist = keys;
 		this._pi = Math.max(-1, keys.indexOf(this.curKey || this.state.source));
 		this.emit();
+		this._prefetch(keys);
 	}
 
 	morphNext() {
@@ -3060,21 +3110,46 @@ export class EffectsEngine {
 		const n = this._n();
 		const ck = key + ':' + n;
 		if (this.cache.has(ck)) return this.cache.get(ck);
-		let c;
-		if (key === 'model') {
-			c = this.modelProvider ? await this.modelProvider.get(n) : null;
-			if (!c) return null;
-			c = normalizeCloud(c);
-		} else if (key.startsWith('obj:')) {
-			const o = this.modelProvider?.objects().find((x) => x.id === key.slice(4));
-			c = o ? await this.modelProvider.getOf(o.obj, n) : null;
-			if (!c || !c.count) return null;
-			c = fitCount(normalizeCloud(c), n);
-		} else {
-			c = generateShapePoints(key, n);
+		// один и тот же расчёт не запускаем дважды (предзагрузка и нажатие кнопки)
+		const pend = (this._pend ||= new Map());
+		if (pend.has(ck)) return pend.get(ck);
+		const job = (async () => {
+			let c;
+			if (key === 'model') {
+				c = this.modelProvider ? await this.modelProvider.get(n) : null;
+				if (!c) return null;
+				c = mortonSort(fitCount(normalizeCloud(c), n));
+			} else if (key.startsWith('obj:')) {
+				const o = this.modelProvider?.objects().find((x) => x.id === key.slice(4));
+				c = o ? await this.modelProvider.getOf(o.obj, n) : null;
+				if (!c || !c.count) return null;
+				c = mortonSort(fitCount(normalizeCloud(c), n));
+			} else {
+				c = generateShapePoints(key, n);
+			}
+			this.cache.set(ck, c);
+			return c;
+		})();
+		pend.set(ck, job);
+		try {
+			return await job;
+		} finally {
+			pend.delete(ck);
 		}
-		this.cache.set(ck, c);
-		return c;
+	}
+
+	/** Заранее готовит облака точек выбранных моделей, чтобы переход стартовал сразу, а не после паузы на расчёт */
+	async _prefetch(keys) {
+		const token = (this._pfT = (this._pfT || 0) + 1);
+		for (const k of keys || []) {
+			if (token !== this._pfT || !this.active) return;
+			try {
+				await this._cloudFor(k);
+			} catch (e) {
+				/* не критично: посчитаем при запуске */
+			}
+			await new Promise((r) => setTimeout(r, 30));
+		}
 	}
 
 	async _build() {
@@ -3094,7 +3169,9 @@ export class EffectsEngine {
 		g.setAttribute('aOrigin', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
 		g.setAttribute('aTarget', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
 		g.setAttribute('aNormal', new THREE.BufferAttribute(new Float32Array(c.normals), 3));
+		g.setAttribute('aNormalB', new THREE.BufferAttribute(new Float32Array(c.normals), 3));
 		g.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(model.colors.length === c.colors.length ? model.colors : c.colors), 3));
+		g.setAttribute('aColorB', new THREE.BufferAttribute(new Float32Array(g.attributes.aColor.array), 3));
 		g.setAttribute('aIdx', new THREE.BufferAttribute(idx, 1));
 		g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
 		g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
@@ -3342,11 +3419,14 @@ export class EffectsEngine {
 			o.array[i] = o.array[i] * (1 - k) + t.array[i] * k;
 			t.array[i] = target.positions[i];
 		}
-		g.attributes.aNormal.array.set(target.normals);
-		g.attributes.aNormal.needsUpdate = true;
+		// цвета и нормали тоже перетекают: прежние берём из «второго набора», новые кладём в него, а шейдер смешивает их по ходу перехода
+		g.attributes.aNormal.array.set(g.attributes.aNormalB.array);
+		g.attributes.aNormalB.array.set(target.normals);
+		g.attributes.aNormal.needsUpdate = g.attributes.aNormalB.needsUpdate = true;
 		if (target.colors && target.colors.length === g.attributes.aColor.array.length) {
-			g.attributes.aColor.array.set(target.colors);
-			g.attributes.aColor.needsUpdate = true;
+			g.attributes.aColor.array.set(g.attributes.aColorB.array);
+			g.attributes.aColorB.array.set(target.colors);
+			g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
 		}
 		// число точек у моделей разное: лишние точки гаснут, а при переходе к большей модели недостающие проявляются
 		const vis = g.attributes.aVis;
@@ -3384,6 +3464,7 @@ export class EffectsEngine {
 				this.app.ui.idle();
 			}
 		}
+		this._prefetch(this.playlist);
 		this.emit();
 	}
 
@@ -3438,6 +3519,8 @@ export class EffectsEngine {
 			throw e;
 		}
 		app.ui.idle();
+		// облака выбранных для морфинга моделей считаем заранее, пока вы смотрите на сцену
+		setTimeout(() => this._prefetch(this.playlist), 400);
 		const stage = document.querySelector('.stage');
 		stage.addEventListener('pointermove', this._move);
 		stage.addEventListener('pointerleave', this._leave);
@@ -3760,7 +3843,8 @@ export class EffectsEngine {
 					this.pm.applyTo({ positions: this._zbuf, colors: g.attributes.aColor.array }, rgb, m.relief, m.depth);
 					const a = g.attributes.position.array, o = g.attributes.aOrigin.array, t = g.attributes.aTarget.array, z = this._zbuf;
 					for (let i = 2; i < n * 3; i += 3) a[i] = o[i] = t[i] = z[i];
-					g.attributes.aColor.needsUpdate = true;
+					g.attributes.aColorB.array.set(g.attributes.aColor.array);
+					g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
 					g.attributes.position.needsUpdate = g.attributes.aOrigin.needsUpdate = g.attributes.aTarget.needsUpdate = true;
 					// нити связей держатся за точки, поэтому на каждом новом кадре видео переносим их концы
 					if (L.links.on) this._syncLinks();
