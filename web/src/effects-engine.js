@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { makeCamMovable } from './fx-cam-float.js';
 import { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } from './util.js';
 import { buildFrameBlock, writeFrameColors, writeOneFrame, frameGrid } from './frame-block.js';
 import { TrackerHud } from './fx-hud.js';
@@ -3133,6 +3134,7 @@ if (tracker) this.camBox.append(tracker.preview);
 this.camBox.append(this.camHint);
 this.camBox.hidden = this.state.layers.camTrack.preview !== 'on';
 document.getElementById('viewport').append(this.camBox);
+makeCamMovable(this.camBox, document.getElementById('app'), document.getElementById('viewport'));
 }
 _ndcToLocal(x, y, out, depth = 0) {
 const vp = this.app.viewport;

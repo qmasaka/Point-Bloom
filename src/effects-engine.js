@@ -4,6 +4,7 @@
  * настроить и привязать к полосе звука (бас, середина, верх, бит). Вся геометрия считается на видеокарте.
  */
 import * as THREE from 'three';
+import { makeCamMovable } from './fx-cam-float.js';
 import { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } from './util.js';
 import { buildFrameBlock, writeFrameColors, writeOneFrame, frameGrid } from './frame-block.js';
 import { TrackerHud } from './fx-hud.js';
@@ -3378,6 +3379,7 @@ export class EffectsEngine {
 		this.camBox.append(this.camHint);
 		this.camBox.hidden = this.state.layers.camTrack.preview !== 'on';
 		document.getElementById('viewport').append(this.camBox);
+		makeCamMovable(this.camBox, document.getElementById('app'), document.getElementById('viewport'));
 	}
 
 	/** Точка на плоскости перед камерой в локальных координатах облака */
