@@ -139548,6 +139548,17 @@ class UI {
 		$('#btnOpen').dataset.tip = 'Открыть модель, текстуры, фото или видео (O)';
 		$('#btnOpen').addEventListener('click', () => this.openFiles('auto'));
 		$$('#modeSwitch [data-ws]').forEach((b) => b.addEventListener('click', () => this.setWorkspace(b.dataset.ws)));
+		// подсветка выбранного режима переезжает от одной кнопки к другой, а не включается на месте
+		this.moveModeIndicator = () => {
+			const sw = $('#modeSwitch');
+			const sel = sw.querySelector('[aria-selected="true"]');
+			if (!sel) return;
+			sw.style.setProperty('--ix', sel.offsetLeft + 'px');
+			sw.style.setProperty('--iw', sel.offsetWidth + 'px');
+		};
+		this.moveModeIndicator();
+		window.addEventListener('resize', () => this.moveModeIndicator());
+		document.fonts && document.fonts.ready.then(() => this.moveModeIndicator());
 		$('#btnEmptyOpen').addEventListener('click', () => this.openFiles('auto'));
 		$('#btnEmptyDemo').addEventListener('click', () => app.loadDemo());
 		$('#btnEmptyMedia').addEventListener('click', () => {
@@ -139921,6 +139932,8 @@ class UI {
 	async setWorkspace(ws) {
 		if (ws === this.workspace) return;
 		const fxPanel = $('#panel-effects');
+		const vpEl = $('#viewport');
+		vpEl.classList.add('ws-out'); // сцена плавно гаснет на время переключения
 		if (ws === 'fx') {
 			this.prevTab = $$('.tab').find((t) => t.getAttribute('aria-selected') === 'true')?.dataset.tab || 'scene';
 			this.closeOverlayPop && this.closeOverlayPop();
@@ -139929,6 +139942,7 @@ class UI {
 				await this.effectsEngine.enter();
 			} catch (e) {
 				this.toast('Не удалось запустить эффекты: ' + (e.message || e), 'error');
+				vpEl.classList.remove('ws-out');
 				return;
 			}
 			this.workspace = 'fx';
@@ -139944,7 +139958,9 @@ class UI {
 			this.showTab(this.prevTab || 'scene');
 		}
 		$$('#modeSwitch [data-ws]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.ws === this.workspace)));
+		this.moveModeIndicator && this.moveModeIndicator();
 		setTimeout(() => this.app.viewport.resize(), 60);
+		setTimeout(() => vpEl.classList.remove('ws-out'), 160);
 	}
 
 	makeSidebarResizable() {

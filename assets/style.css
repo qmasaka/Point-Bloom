@@ -4019,3 +4019,110 @@ body {
 		border-right: 0;
 	}
 }
+
+/* ───────── полосы прокрутки: тонкие, под стиль сайта ───────── */
+* {
+	scrollbar-width: auto;
+}
+*::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+*::-webkit-scrollbar-track {
+	background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+	background: var(--line-strong);
+	border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover {
+	background: var(--text-faint);
+}
+*::-webkit-scrollbar-thumb:active {
+	background: var(--accent);
+}
+*::-webkit-scrollbar-corner {
+	background: transparent;
+}
+@supports (-moz-appearance: none) {
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: var(--line-strong) transparent;
+	}
+}
+
+/* выбранный эффект в списке: рамка и фон мягкого оранжевого */
+.fx-layer.is-selected {
+	background: var(--accent-soft);
+	border-color: var(--accent-line);
+}
+.fx-layer.is-selected.is-on {
+	border-color: var(--accent);
+}
+
+/* переключатель режимов: подсветка скользит от кнопки к кнопке */
+.mode-switch {
+	position: relative;
+}
+.mode-switch::before {
+	content: '';
+	position: absolute;
+	top: 2px;
+	bottom: 2px;
+	left: 0;
+	width: var(--iw, 0px);
+	transform: translateX(var(--ix, 0px));
+	border-radius: var(--r-sm);
+	background: var(--accent);
+	transition: transform 0.34s var(--ease), width 0.34s var(--ease);
+}
+.mode-btn {
+	position: relative;
+	z-index: 1;
+}
+.mode-btn[aria-selected='true'] {
+	background: transparent;
+	color: var(--accent-ink);
+	transition: color 0.2s;
+}
+
+/* переход между режимами: сцена гаснет и проявляется, панели выезжают */
+.stage canvas.gl {
+	transition: opacity 0.3s var(--ease);
+}
+#viewport.ws-out canvas.gl {
+	opacity: 0;
+	transition-duration: 0.14s;
+}
+.workspace {
+	transition: grid-template-columns 0.36s var(--ease);
+}
+@keyframes ws-in-left {
+	from {
+		opacity: 0;
+		transform: translateX(-18px);
+	}
+}
+@keyframes ws-in-fade {
+	from {
+		opacity: 0;
+	}
+}
+@keyframes ws-in-bar {
+	from {
+		opacity: 0;
+		transform: translate(-50%, 12px);
+	}
+}
+.fx-mode .fx-left {
+	animation: ws-in-left 0.4s var(--ease);
+}
+#panel-effects:not([hidden]) {
+	animation: ws-in-fade 0.4s var(--ease);
+}
+.panel:not([hidden]) {
+	animation: ws-in-fade 0.28s var(--ease);
+}
+.fx-mode .fx-bar {
+	animation: ws-in-bar 0.45s var(--ease) 0.08s backwards;
+}
