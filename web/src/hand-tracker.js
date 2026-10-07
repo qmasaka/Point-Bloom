@@ -272,33 +272,37 @@ function measure(t, pts, aspect) {
 const W = t.world;
 const size3 = Math.max(1e-5, len3(sub3(W[9], W[0])));
 const palmC = [0, 5, 9, 13, 17].reduce((s, i) => [s[0] + W[i][0] / 5, s[1] + W[i][1] / 5, s[2] + W[i][2] / 5], [0, 0, 0]);
-const curl = FINGERS.map(([m, p, d, tip]) => {
-const flex = clamp((180 - angleAt(W[m], W[p], W[d])) / 80, 0, 1.3) * 0.65 + clamp((180 - angleAt(W[p], W[d], W[tip])) / 65, 0, 1.3) * 0.35;
-const near = clamp((1.55 - len3(sub3(W[tip], palmC)) / size3) / 0.85, 0, 1);
-return clamp(flex * 0.6 + near * 0.4, 0, 1);
-});
-curl.forEach((c, i) => {
-if (c < 0.34) t.fing[i] = true;
-else if (c > 0.55) t.fing[i] = false;
+const wr = W[0];
+const curl = FINGERS.map(([m, p, d, tip], i) => {
+const aP = angleAt(W[m], W[p], W[d]);
+const aD = angleAt(W[p], W[d], W[tip]);
+const reach = len3(sub3(W[tip], wr)) / Math.max(1e-5, len3(sub3(W[p], wr)));
+const tipPalm = len3(sub3(W[tip], palmC)) / size3;
+let straight = (aP - 100) / 70 * 0.5 + (aD - 100) / 70 * 0.2 + (reach - 0.9) / 0.5 * 0.3;
+if (tipPalm < 0.75) straight -= 0.35;
+const c = clamp(1 - straight, 0, 1);
+if (c < 0.36) t.fing[i] = true;
+else if (c > 0.58) t.fing[i] = false;
+return c;
 });
 const ex = t.fing.slice();
 const count = ex.filter(Boolean).length;
 const thOut = len3(sub3(W[4], W[5])) / size3;
-t.thumb = angleAt(W[2], W[3], W[4]) > 145 && thOut > (t.thumb ? 0.45 : 0.6);
+t.thumb = angleAt(W[2], W[3], W[4]) > 140 && thOut > (t.thumb ? 0.45 : 0.6);
 const pd = len3(sub3(W[4], W[8])) / size3;
 const idxPalm = len3(sub3(W[8], palmC)) / size3;
-t.pinch = pd < (t.pinch ? 0.42 : 0.3) && idxPalm > (t.pinch ? 0.6 : 0.72) && curl[0] < 0.85;
+t.pinch = pd < (t.pinch ? 0.5 : 0.34) && idxPalm > 0.4 && curl[0] < (t.pinch ? 0.9 : 0.78);
 let rawGesture = 'none';
 if (t.pinch) rawGesture = 'pinch';
+else if (ex[0] && !ex[1] && !ex[2] && !ex[3]) rawGesture = 'point';
+else if (ex[0] && ex[1] && !ex[2] && !ex[3]) rawGesture = 'peace';
+else if (ex[0] && !ex[1] && !ex[2] && ex[3]) rawGesture = 'rock';
 else if (count === 0) {
 const dx = (pts[4][0] - pts[2][0]) * aspect;
 const dy = pts[4][1] - pts[2][1];
 const up = -dy / Math.max(1e-6, Math.hypot(dx, dy));
 rawGesture = t.thumb && up > 0.6 ? 'thumb' : 'fist';
-} else if (ex[0] && ex[1] && !ex[2] && !ex[3]) rawGesture = 'peace';
-else if (ex[0] && !ex[1] && !ex[2] && ex[3]) rawGesture = 'rock';
-else if (ex[0] && !ex[1] && !ex[2] && !ex[3]) rawGesture = 'point';
-else if (count >= 3) rawGesture = 'palm';
+} else if (count >= 3) rawGesture = 'palm';
 const size = Math.max(1e-3, dist(pts[0], pts[9], aspect));
 const palm = [0, 5, 9, 13, 17].reduce((s, i) => [s[0] + pts[i][0] / 5, s[1] + pts[i][1] / 5], [0, 0]);
 const open = 1 - curl.reduce((a, b) => a + b, 0) / 4;

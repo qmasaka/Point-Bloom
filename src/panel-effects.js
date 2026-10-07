@@ -288,8 +288,11 @@ export function createEffectsPanel(app, root, engine) {
 			});
 			chips.append(b);
 		}
+		// рисуем только то, что реально видно на экране: без IntersectionObserver все 20 полосок читали бы размеры каждый кадр
+		let vis = false;
+		new IntersectionObserver((es) => { vis = es[es.length - 1].isIntersecting; }).observe(cv);
 		function draw() {
-			if (el.hidden || !cv.offsetParent) return;
+			if (!vis || el.hidden) return;
 			const dpr = Math.min(2, window.devicePixelRatio || 1);
 			const W = cv.clientWidth;
 			const H = 56;
@@ -392,8 +395,14 @@ export function createEffectsPanel(app, root, engine) {
 	}
 	// живое обновление всех видимых полосок один раз за кадр, пока открыты эффекты
 	(function pickerLoop() {
-		if (engine.active) for (const p of pickers) p.draw();
-		requestAnimationFrame(pickerLoop);
+		let last = 0;
+		const tick = (now) => {
+			requestAnimationFrame(tick);
+			if (!engine.active || now - last < 40) return; // около 25 кадров в секунду достаточно для полоски спектра
+			last = now;
+			for (const p of pickers) p.draw();
+		};
+		requestAnimationFrame(tick);
 	})();
 
 	// ------------------------------------------------------------ слои

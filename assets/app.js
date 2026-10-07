@@ -133031,42 +133031,52 @@ function angleAt(a, b, c) {
 const FINGERS = [[5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16], [17, 18, 19, 20]];
 
 /**
- * Распознавание жеста по углам сгибов пальцев в метрических 3D-координатах: не зависит от того, как рука повёрнута
- * к камере и насколько далеко. У каждого пальца есть гистерезис (разгиб и сгиб по разным порогам), поэтому нет дрожания.
+ * Жест определяется простыми правилами по геометрии пальцев (в метрических 3D-координатах, поэтому не зависит от поворота руки):
+ *  1. Щипок: кончики большого и указательного пальцев рядом друг с другом. Это решает всё остальное: если они соединены, это щипок.
+ *  2. Палец «разогнут», если он прямой в суставах и кончик далеко от запястья. «Согнут», если сложен и кончик прижат к ладони.
+ *  3. Один указательный разогнут, остальные согнуты: «палец». Указательный и средний: «мир». Указательный и мизинец: «рога».
+ *  4. Все четыре согнуты: «кулак» (большой палец вверх: «класс»). Три и больше разогнуты: «ладонь».
+ * У каждого признака два порога (включение и выключение), поэтому жест не дрожит на границе.
  */
 function measure(t, pts, aspect) {
 	const W = t.world;
 	const size3 = Math.max(1e-5, len3(sub3(W[9], W[0])));
 	const palmC = [0, 5, 9, 13, 17].reduce((s, i) => [s[0] + W[i][0] / 5, s[1] + W[i][1] / 5, s[2] + W[i][2] / 5], [0, 0, 0]);
-	const curl = FINGERS.map(([m, p, d, tip]) => {
-		const flex = clamp((180 - angleAt(W[m], W[p], W[d])) / 80, 0, 1.3) * 0.65 + clamp((180 - angleAt(W[p], W[d], W[tip])) / 65, 0, 1.3) * 0.35;
-		const near = clamp((1.55 - len3(sub3(W[tip], palmC)) / size3) / 0.85, 0, 1);
-		return clamp(flex * 0.6 + near * 0.4, 0, 1);
-	});
-	curl.forEach((c, i) => {
-		if (c < 0.34) t.fing[i] = true;
-		else if (c > 0.55) t.fing[i] = false;
+	const wr = W[0];
+	// разгиб пальца: прямые суставы и кончик далеко от запястья (по сравнению с серединой пальца)
+	const curl = FINGERS.map(([m, p, d, tip], i) => {
+		const aP = angleAt(W[m], W[p], W[d]);
+		const aD = angleAt(W[p], W[d], W[tip]);
+		const reach = len3(sub3(W[tip], wr)) / Math.max(1e-5, len3(sub3(W[p], wr)));
+		const tipPalm = len3(sub3(W[tip], palmC)) / size3;
+		let straight = (aP - 100) / 70 * 0.5 + (aD - 100) / 70 * 0.2 + (reach - 0.9) / 0.5 * 0.3;
+		if (tipPalm < 0.75) straight -= 0.35;
+		const c = clamp(1 - straight, 0, 1);
+		if (c < 0.36) t.fing[i] = true;
+		else if (c > 0.58) t.fing[i] = false;
+		return c;
 	});
 	const ex = t.fing.slice();
 	const count = ex.filter(Boolean).length;
-	// большой палец: разогнут и отведён от основания указательного
+	// большой палец: прямой и отведён от основания указательного
 	const thOut = len3(sub3(W[4], W[5])) / size3;
-	t.thumb = angleAt(W[2], W[3], W[4]) > 145 && thOut > (t.thumb ? 0.45 : 0.6);
-	// щипок: кончики большого и указательного рядом, а указательный не прижат к ладони (иначе это кулак)
+	t.thumb = angleAt(W[2], W[3], W[4]) > 140 && thOut > (t.thumb ? 0.45 : 0.6);
+	// щипок: расстояние между кончиками большого и указательного относительно размера кисти
 	const pd = len3(sub3(W[4], W[8])) / size3;
 	const idxPalm = len3(sub3(W[8], palmC)) / size3;
-	t.pinch = pd < (t.pinch ? 0.42 : 0.3) && idxPalm > (t.pinch ? 0.6 : 0.72) && curl[0] < 0.85;
+	// указательный не должен быть сжат в кулак: в настоящем щипке он согнут не до конца и образует кольцо с большим
+	t.pinch = pd < (t.pinch ? 0.5 : 0.34) && idxPalm > 0.4 && curl[0] < (t.pinch ? 0.9 : 0.78);
 	let rawGesture = 'none';
 	if (t.pinch) rawGesture = 'pinch';
+	else if (ex[0] && !ex[1] && !ex[2] && !ex[3]) rawGesture = 'point';
+	else if (ex[0] && ex[1] && !ex[2] && !ex[3]) rawGesture = 'peace';
+	else if (ex[0] && !ex[1] && !ex[2] && ex[3]) rawGesture = 'rock';
 	else if (count === 0) {
 		const dx = (pts[4][0] - pts[2][0]) * aspect;
 		const dy = pts[4][1] - pts[2][1];
 		const up = -dy / Math.max(1e-6, Math.hypot(dx, dy));
 		rawGesture = t.thumb && up > 0.6 ? 'thumb' : 'fist';
-	} else if (ex[0] && ex[1] && !ex[2] && !ex[3]) rawGesture = 'peace';
-	else if (ex[0] && !ex[1] && !ex[2] && ex[3]) rawGesture = 'rock';
-	else if (ex[0] && !ex[1] && !ex[2] && !ex[3]) rawGesture = 'point';
-	else if (count >= 3) rawGesture = 'palm';
+	} else if (count >= 3) rawGesture = 'palm';
 	const size = Math.max(1e-3, dist(pts[0], pts[9], aspect));
 	const palm = [0, 5, 9, 13, 17].reduce((s, i) => [s[0] + pts[i][0] / 5, s[1] + pts[i][1] / 5], [0, 0]);
 	const open = 1 - curl.reduce((a, b) => a + b, 0) / 4;
@@ -138595,8 +138605,11 @@ function createEffectsPanel(app, root, engine) {
 			});
 			chips.append(b);
 		}
+		// рисуем только то, что реально видно на экране: без IntersectionObserver все 20 полосок читали бы размеры каждый кадр
+		let vis = false;
+		new IntersectionObserver((es) => { vis = es[es.length - 1].isIntersecting; }).observe(cv);
 		function draw() {
-			if (el.hidden || !cv.offsetParent) return;
+			if (!vis || el.hidden) return;
 			const dpr = Math.min(2, window.devicePixelRatio || 1);
 			const W = cv.clientWidth;
 			const H = 56;
@@ -138699,8 +138712,14 @@ function createEffectsPanel(app, root, engine) {
 	}
 	// живое обновление всех видимых полосок один раз за кадр, пока открыты эффекты
 	(function pickerLoop() {
-		if (engine.active) for (const p of pickers) p.draw();
-		requestAnimationFrame(pickerLoop);
+		let last = 0;
+		const tick = (now) => {
+			requestAnimationFrame(tick);
+			if (!engine.active || now - last < 40) return; // около 25 кадров в секунду достаточно для полоски спектра
+			last = now;
+			for (const p of pickers) p.draw();
+		};
+		requestAnimationFrame(tick);
 	})();
 
 	// ------------------------------------------------------------ слои

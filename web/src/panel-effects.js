@@ -268,8 +268,10 @@ engine.emit();
 });
 chips.append(b);
 }
+let vis = false;
+new IntersectionObserver((es) => { vis = es[es.length - 1].isIntersecting; }).observe(cv);
 function draw() {
-if (el.hidden || !cv.offsetParent) return;
+if (!vis || el.hidden) return;
 const dpr = Math.min(2, window.devicePixelRatio || 1);
 const W = cv.clientWidth;
 const H = 56;
@@ -367,8 +369,14 @@ pickers.add(api);
 return api;
 }
 (function pickerLoop() {
-if (engine.active) for (const p of pickers) p.draw();
-requestAnimationFrame(pickerLoop);
+let last = 0;
+const tick = (now) => {
+requestAnimationFrame(tick);
+if (!engine.active || now - last < 40) return;
+last = now;
+for (const p of pickers) p.draw();
+};
+requestAnimationFrame(tick);
 })();
 const cards = [];
 const left = document.getElementById('fxList');
