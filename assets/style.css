@@ -4291,3 +4291,43 @@ body {
 @container app (min-width: 901px) and (max-width: 1250px) {
 	.fx-mode .fx-left, .fx-mode .sidebar { bottom: 156px; }
 }
+
+/* ================================================================ режим «Эффекты»: мелкие элементы как в макете А */
+@container app (min-width: 901px) {
+	/* место под полосу прокрутки занимает только настоящая полоса: нет прокрутки, значит содержимое идёт до самого края */
+	.fx-mode .fx-left-list, .fx-mode .panel { scrollbar-gutter: auto; }
+	.fx-mode .fx-left-list { padding: 0 8px 16px 8px; }
+
+	/* выключатели: капсула и белый кружок */
+	.fx-mode .switch { width: 30px; height: 17px; border-radius: 999px; border: 0; background: rgba(255, 255, 255, 0.16); }
+	.fx-mode .switch-knob { top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; }
+	.fx-mode .switch[aria-checked='true'] { background: var(--accent); }
+	.fx-mode .switch[aria-checked='true'] .switch-knob { transform: translateX(13px); background: #fff; }
+
+	/* ползунки: тонкая линия, белая точка с оранжевым ореолом */
+	.fx-mode .range { height: 18px; }
+	.fx-mode .range::-webkit-slider-runnable-track { height: 18px; border-radius: 0; background: linear-gradient(90deg, var(--accent) var(--p), rgba(255, 255, 255, 0.16) var(--p)) 0 50% / 100% 3px no-repeat; }
+	.fx-mode .range::-webkit-slider-thumb { width: 12px; height: 12px; margin-top: 3px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0 0 3px rgba(229, 138, 69, 0.35); }
+	.fx-mode .range:hover::-webkit-slider-thumb, .fx-mode .range:active::-webkit-slider-thumb { background: #fff; box-shadow: 0 0 0 4px rgba(229, 138, 69, 0.5); }
+	.fx-mode .range::-moz-range-track { height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.16); }
+	.fx-mode .range::-moz-range-progress { height: 3px; border-radius: 2px; background: var(--accent); }
+	.fx-mode .range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; border: 0; background: #fff; box-shadow: 0 0 0 3px rgba(229, 138, 69, 0.35); }
+
+	/* сегменты, поля, выпадающие списки, мелкие кнопки: капсулы */
+	.fx-mode .seg { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border-color: transparent; }
+	.fx-mode .seg-btn { border-radius: 999px; border-color: transparent; }
+	.fx-mode .seg-btn[aria-checked='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 500; }
+	.fx-mode .select, .fx-mode .num-out, .fx-mode .num-in { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border-color: transparent; padding-inline: 12px; }
+	.fx-mode .sidebar .btn { border-radius: 999px; }
+	.fx-mode .btn-icon, .fx-mode .fx-bar .btn-icon, .fx-mode .media-bar .btn-icon { border-radius: 50%; }
+	.fx-mode .topbar .btn:not(.btn-icon):not(.split-chev) { border-radius: 999px; }
+	.fx-mode .mode-switch, .fx-mode .mode-btn, .fx-mode .scale-widget, .fx-mode .scale-pct { border-radius: 999px; }
+	.fx-mode .split-btn { border-radius: 999px; overflow: hidden; }
+	.fx-mode .split-btn .btn { border-radius: 0; }
+	.fx-mode .fx-prev { border-radius: 9px; }
+
+	/* вкладки Эффект / Форма / Звук / Вид: те же, рамка ровная у всех */
+	.fx-mode .fx-tabs, .fx-mode .fx-tabs.tabs { gap: 6px; padding-inline: 14px; }
+	.fx-mode .fx-tabs .tab { border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; }
+	.fx-mode .fx-tabs .tab[aria-selected='true'] { border-color: rgba(229, 138, 69, 0.55); }
+}

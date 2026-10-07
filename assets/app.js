@@ -90079,7 +90079,7 @@ class AxisGizmo {
 	constructor(app, canvas) {
 		this.app = app;
 		this.canvas = canvas;
-		this.size = 108;
+		this.size = 84;
 		this.hover = null;
 		this.dragging = null;
 		this.items = [];
