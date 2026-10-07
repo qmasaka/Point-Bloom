@@ -48,7 +48,10 @@ export function createMaterialPanel(app, root) {
 			e.stopPropagation();
 			pickFor(s.key);
 		} });
-		const nameEl = h('div', { class: 'slot-name' }, s.label);
+		// имя по-русски, а техническое название (Normal, Roughness…) идёт второй строкой, пока файл не задан
+		const mainLabel = s.label.replace(/\s*\(.*\)$/, '');
+		const techLabel = (s.label.match(/\((.*)\)/) || [])[1] || '';
+		const nameEl = h('div', { class: 'slot-name' }, mainLabel);
 		const fileEl = h('div', { class: 'slot-file' });
 		const clear = iconButton({
 			icon: 'x',
@@ -231,7 +234,7 @@ export function createMaterialPanel(app, root) {
 				r.fileEl.classList.add('is-set');
 			} else {
 				r.thumb.innerHTML = icon('plus', 18);
-				r.fileEl.textContent = 'Не задана';
+				r.fileEl.textContent = ((s.label.match(/\((.*)\)/) || [])[1] || '');
 				r.fileEl.classList.remove('is-set');
 			}
 			r.clear.style.visibility = t ? 'visible' : 'hidden';

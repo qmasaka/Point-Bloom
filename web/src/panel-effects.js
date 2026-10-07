@@ -467,6 +467,7 @@ body.append(el);
 if (ex.when) whenList.push([el, ex.when]);
 };
 const applyWhen = () => whenList.forEach(([el, w]) => (el.hidden = !w[1].includes(L[w[0]])));
+if (def.extras.some((x) => x.key)) body.append(h('div', { class: 'fx-sub' }, 'Параметры'));
 for (const ex of def.extras) {
 const after = () => {
 applyWhen();
@@ -536,7 +537,24 @@ reactRow.hidden = !on || L.amode === 'gate';
 gateBox.hidden = !on || L.amode !== 'gate';
 picker.draw();
 };
-body.append(h('div', { class: 'fx-sub' }, 'Реакция на звук'), field('Слушает частоты', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
+const audioWrap = h('div', { class: 'fx-grp-body' }, field('Слушает частоты', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
+let audioOpen = L.band !== 'none';
+const audioHead = h('button', { type: 'button', class: 'fx-sub fx-sub-toggle', 'aria-expanded': String(audioOpen) }, h('span', { class: 'ic-wrap', html: icon('caret-down', 12) }), 'Реакция на звук');
+const audioState = h('span', { class: 'fx-sub-state' });
+audioHead.append(audioState);
+const syncAudioHead = () => {
+audioWrap.hidden = !audioOpen;
+audioHead.setAttribute('aria-expanded', String(audioOpen));
+audioState.textContent = L.band === 'none' ? 'выкл.' : L.band === 'custom' ? 'свои частоты' : (BANDS.find((x) => x.id === L.band) || { label: '' }).label;
+};
+audioHead.addEventListener('click', () => {
+audioOpen = !audioOpen;
+syncAudioHead();
+picker.draw();
+});
+band.el.addEventListener('click', () => requestAnimationFrame(syncAudioHead));
+body.append(audioHead, audioWrap);
+syncAudioHead();
 audioUiFull();
 const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
 const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
@@ -557,7 +575,7 @@ fxTabHook();
 fbody.append(card);
 attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
 inspBox.append(insp);
-cards.push({ def, L, sw, amount, react, band, reactRow, modeSeg, thr, atk, rel, audioUi: audioUiFull, picker, extraCtl, applyWhen, card, insp, fhead });
+cards.push({ def, L, sw, amount, react, band, reactRow, modeSeg, thr, atk, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
 }
 }
 const inspEmpty = h('div', { class: 'empty-note' }, h('strong', {}, 'Выберите эффект'), h('span', {}, 'Нажмите на строку в списке слева, чтобы настроить его здесь'));
@@ -931,6 +949,7 @@ c.thr.set(c.L.thr);
 c.atk.set(c.L.atk);
 c.rel.set(c.L.rel);
 c.audioUi();
+c.syncHead();
 for (const [k, ctl] of Object.entries(c.extraCtl)) ctl.set(c.L[k]);
 c.applyWhen();
 });

@@ -39,7 +39,9 @@ const thumb = h('button', { type: 'button', class: 'slot-thumb', 'aria-label': '
 e.stopPropagation();
 pickFor(s.key);
 } });
-const nameEl = h('div', { class: 'slot-name' }, s.label);
+const mainLabel = s.label.replace(/\s*\(.*\)$/, '');
+const techLabel = (s.label.match(/\((.*)\)/) || [])[1] || '';
+const nameEl = h('div', { class: 'slot-name' }, mainLabel);
 const fileEl = h('div', { class: 'slot-file' });
 const clear = iconButton({
 icon: 'x',
@@ -210,7 +212,7 @@ r.fileEl.textContent = `${(t.userData && t.userData.fileName) || t.name || 'те
 r.fileEl.classList.add('is-set');
 } else {
 r.thumb.innerHTML = icon('plus', 18);
-r.fileEl.textContent = 'Не задана';
+r.fileEl.textContent = ((s.label.match(/\((.*)\)/) || [])[1] || '');
 r.fileEl.classList.remove('is-set');
 }
 r.clear.style.visibility = t ? 'visible' : 'hidden';
