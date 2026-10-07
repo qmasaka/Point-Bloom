@@ -2,7 +2,8 @@
 // перетаскивание файлов, горячие клавиши, справка.
 import * as THREE from 'three';
 import { h, $, $$, extOf, formatInt, downloadBlob } from './util.js';
-import { icon, hydrateIcons } from './icons.js';
+import { icon, hydrateIcons, iconsReady } from './icons.js';
+import { initFloatingPanels } from './fx-float.js';
 import { segmented, switchRow, button } from './ui-kit.js';
 import { AxisGizmo } from './gizmo.js';
 import { createScenePanel } from './panel-scene.js';
@@ -36,6 +37,7 @@ export class UI {
 	init() {
 		const app = this.app;
 		hydrateIcons();
+		iconsReady.then(() => initFloatingPanels());
 		this.fileInput = $('#fileInput');
 		this.textureInput = $('#textureInput');
 		this.fileInput.accept = ACCEPT_ALL;

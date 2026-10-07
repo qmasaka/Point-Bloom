@@ -4173,3 +4173,63 @@ body {
 
 /* строка состояния съёмки кадров в сцене */
 .fx-cap { position: absolute; left: 14px; bottom: 74px; z-index: 5; padding: 5px 10px; border-radius: 999px; background: rgba(20, 21, 24, 0.72); border: 1px solid var(--line, rgba(255, 255, 255, 0.1)); color: var(--text-dim, #a0a4ab); font-size: 12px; pointer-events: none; backdrop-filter: blur(6px); }
+
+/* ================================================================ плавающий стеклянный интерфейс режима «Эффекты» */
+.fxf-bar { display: none; }
+@container app (min-width: 901px) {
+	#app.fx-mode { position: relative; grid-template-rows: 0 minmax(0, 1fr) 0; --fxg-bg: rgba(22, 24, 28, 0.6); --fxg-line: rgba(255, 255, 255, 0.08); --fxg-blur: blur(22px) saturate(1.35); }
+	.fx-mode .workspace, .fx-mode .workspace.sidebar-hidden { grid-row: 2; grid-template-columns: minmax(0, 1fr); position: relative; }
+	.fx-mode .viewport { grid-column: 1; grid-row: 1; }
+
+	/* верхняя панель плавает над сценой */
+	.fx-mode .topbar { position: absolute; top: 10px; left: 12px; right: 12px; height: 46px; z-index: 40; border: 1px solid var(--fxg-line); border-radius: 18px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+	.fx-mode .statusbar { position: absolute; left: 20px; bottom: 10px; z-index: 6; height: auto; padding: 0; background: none; border: 0; pointer-events: none; font-size: 11.5px; color: var(--text-faint); }
+	.fx-mode .status-hint { display: none; }
+
+	/* две стеклянные карточки по краям */
+	.fx-mode .fx-left, .fx-mode .sidebar { position: absolute; top: 68px; bottom: 20px; z-index: 20; margin: 0; overflow: hidden; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 20px; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05); transition: opacity 0.3s var(--ease), translate 0.28s var(--ease), height 0.3s var(--ease); }
+	.fx-mode .fx-left { left: 12px; width: var(--fxl-w, 252px); }
+	.fx-mode .sidebar { right: 12px; width: var(--sidebar-w, 300px); grid-template-rows: auto minmax(0, 1fr); }
+	.fx-mode .sidebar-resizer { left: 0; width: 8px; }
+	.fx-mode .panels, .fx-mode .panel, .fx-mode .fx-left-list { background: transparent; }
+	.fx-mode .fx-left-head { padding: 4px 16px 8px; }
+	.fx-mode .workspace.sidebar-hidden .sidebar { opacity: 0; transform: translateX(14px); }
+
+	/* шапка карточки: ручка, название, сворачивание */
+	.fx-mode .fxf-bar { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 8px 0 12px; flex: none; }
+	.fxf-grip { width: 22px; height: 22px; flex: none; cursor: grab; border-radius: 6px; background: radial-gradient(circle, var(--text-faint) 1.3px, transparent 1.6px) 0 0 / 7px 7px; opacity: 0.7; -webkit-mask: linear-gradient(#000, #000); }
+	.fxf-grip:hover { opacity: 1; }
+	.fxf-dragging .fxf-grip { cursor: grabbing; }
+	.fxf-dragging { transition: none !important; }
+	.fxf-title { flex: 1; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
+	.fxf-toggle { display: grid; place-items: center; width: 26px; height: 26px; border: 0; border-radius: 8px; background: transparent; color: var(--text-dim); cursor: pointer; transition: background 0.15s, transform 0.25s var(--ease); }
+	.fxf-toggle:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+	.fxf-collapsed .fxf-toggle { transform: rotate(-90deg); }
+	.fx-mode .fxf-collapsed > :not(.fxf-bar):not(.sidebar-resizer) { display: none; }
+
+	.fx-mode .fx-tabs, .fx-mode .fx-tabs.tabs { background: transparent; border-bottom: 1px solid var(--fxg-line); padding: 4px 12px 10px; gap: 4px; }
+	.fx-mode .fx-tabs .tab { border-radius: 10px; }
+	.fx-mode .seg, .fx-mode .fx-card, .fx-mode .field input[type='text'], .fx-mode .select { background: rgba(255, 255, 255, 0.045); border-color: var(--fxg-line); }
+	.fx-mode .fx-left-head strong { display: none; }
+	.fx-mode .vp-top-right { right: calc(var(--sidebar-w, 300px) + 32px); top: 66px; }
+
+	/* нижние плашки тоже стеклянные */
+	.fx-mode .fx-bar, .fx-mode .media-bar, .fx-mode .fx-anim { background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 18px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+	.fx-mode .fx-bar { bottom: 30px; max-width: calc(100% - 2 * (var(--sidebar-w, 300px) + 40px)); }
+	.fx-mode .media-bar { bottom: 82px; width: min(520px, calc(100% - 2 * (var(--sidebar-w, 300px) + 40px))); }
+
+	/* строка подсказок внизу по центру */
+	.fx-mode .fx-hint { display: block; }
+}
+.fx-hint { display: none; position: absolute; left: 50%; bottom: 7px; transform: translateX(-50%); z-index: 5; font-size: 11.5px; color: var(--text-faint); white-space: nowrap; pointer-events: none; letter-spacing: 0.01em; }
+.fx-focus .fx-hint { display: none !important; }
+@container app (min-width: 901px) and (max-width: 1250px) {
+	.fx-mode .fx-left, .fx-mode .sidebar { bottom: 134px; }
+	.fx-mode .fx-bar { max-width: calc(100% - 40px); }
+	.fx-mode .media-bar { width: min(520px, calc(100% - 40px)); }
+}
+@container app (min-width: 901px) {
+	.fx-mode .sidebar.fxf-collapsed, .fx-mode .fx-left.fxf-collapsed { bottom: auto; height: auto; }
+	.fx-mode .fx-tabs .tab { background: rgba(255, 255, 255, 0.045); border: 1px solid var(--fxg-line); }
+	.fx-mode .fx-tabs .tab[aria-selected='true'] { background: var(--accent-soft); border-color: var(--accent-line); }
+}
