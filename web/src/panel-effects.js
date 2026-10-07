@@ -943,7 +943,7 @@ countHint.textContent = `Сейчас ${formatInt(n)} частиц, около $
 const kind = engine.modelProvider ? engine.modelProvider.kind() : 'none';
 modelNote.textContent = kind === 'cloud' ? `Берётся облако точек из редактора (${formatInt(engine.modelProvider.total())} точек). Больше этого частиц не будет.` : kind === 'mesh' ? 'Берутся точки с поверхности вашей модели.' : 'Модели в сцене нет: показана готовая форма. Добавьте модель, и она заменит её.';
 countActive();
-for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoReady;
+for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoLoaded;
 renderReactList();
 cards.forEach((c) => {
 c.card.classList.toggle('is-on', c.L.on);

@@ -993,7 +993,7 @@ export function createEffectsPanel(app, root, engine) {
 		modelNote.textContent = kind === 'cloud' ? `Берётся облако точек из редактора (${formatInt(engine.modelProvider.total())} точек). Больше этого частиц не будет.` : kind === 'mesh' ? 'Берутся точки с поверхности вашей модели.' : 'Модели в сцене нет: показана готовая форма. Добавьте модель, и она заменит её.';
 		countActive();
 		// режим раскадровки существует только для видео: без видео его папка в списке скрыта
-		for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoReady;
+		for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoLoaded;
 		renderReactList();
 		cards.forEach((c) => {
 			c.card.classList.toggle('is-on', c.L.on);

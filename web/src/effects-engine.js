@@ -2064,9 +2064,12 @@ this.post = null;
 this.camTracker = null;
 this._pointerDown = false;
 }
-get videoReady() {
+get videoLoaded() {
 const pm = this.pm;
-return !!(pm && pm.ready && pm.kind === 'video' && pm.el && pm.el.readyState >= 2);
+return !!(pm && pm.ready && pm.kind === 'video' && pm.el);
+}
+get videoReady() {
+return this.videoLoaded && this.pm.el.readyState >= 2;
 }
 async _grabFrames(n, cols, rows, whole) {
 const pm = this.pm;
@@ -2099,15 +2102,18 @@ const dur = Math.max(0.1, el.duration || pm.duration || 1);
 try {
 for (let i = 0; i < n; i++) {
 const t = Math.min(dur - 0.05, (i / Math.max(1, n - 1)) * dur);
+if (Math.abs(el.currentTime - t) > 0.02 || el.readyState < 2) {
 await new Promise((res) => {
 const done = () => {
 el.removeEventListener('seeked', done);
+clearTimeout(to);
 res();
 };
+const to = setTimeout(done, 700);
 el.addEventListener('seeked', done);
-setTimeout(done, 900);
 el.currentTime = t;
 });
+}
 frames.push(take());
 this.app.ui.busy('Раскладываю видео на кадры', 0.1 + (0.85 * (i + 1)) / n);
 }
@@ -2168,7 +2174,7 @@ if (wantOn && !this._framesOn && !this._framesBusy) {
 this.enableFrames();
 return;
 }
-if (this._framesOn && !this._framesBusy && (!F.on || !this.videoReady)) {
+if (this._framesOn && !this._framesBusy && (!F.on || !this.videoLoaded)) {
 F.on = false;
 this.disableFrames();
 return;

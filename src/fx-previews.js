@@ -2,6 +2,7 @@
 const TAU = Math.PI * 2;
 const W = 30;
 const H = 24;
+const K = 1.2; // значки в списке чуть крупнее: рисуем в прежней системе координат, а холст растягиваем
 
 const dot = (c, x, y, r, a = 1) => {
 	c.globalAlpha = Math.max(0, Math.min(1, a));
@@ -280,15 +281,15 @@ export function drawPreview(ctx, id, t, color, w = W, h = H) {
 /** Подключает иконку к canvas: движется при наведении на строку, иначе показывает один кадр */
 export function attachPreview(canvas, id, card, getColor) {
 	const dpr = Math.min(2, window.devicePixelRatio || 1);
-	canvas.width = W * dpr;
-	canvas.height = H * dpr;
-	canvas.style.width = W + 'px';
-	canvas.style.height = H + 'px';
+	canvas.width = W * K * dpr;
+	canvas.height = H * K * dpr;
+	canvas.style.width = W * K + 'px';
+	canvas.style.height = H * K + 'px';
 	const ctx = canvas.getContext('2d');
 	let raf = 0;
 	let t0 = 0;
 	const paint = (t) => {
-		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		ctx.setTransform(dpr * K, 0, 0, dpr * K, 0, 0);
 		drawPreview(ctx, id, t, getColor(), W, H);
 	};
 	const frame = (now) => {

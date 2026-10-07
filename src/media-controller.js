@@ -35,7 +35,8 @@ export class MediaController {
 
 	/** Медиа открыто и его облако лежит в сцене (если объект удалили, вкладка и таймлайн прячутся) */
 	get present() {
-		return this.pm.ready && !!this.obj && !!this.obj.parent;
+		// пока облако пересобирается (старое снято, новое ещё не добавлено), считаем, что медиа на месте: иначе вкладка «Медиа» закрывалась и кидала на «Сцену»
+		return this.pm.ready && (this._rebuilding || (!!this.obj && !!this.obj.parent));
 	}
 
 	emit() {
@@ -80,9 +81,14 @@ export class MediaController {
 		pts.userData.media = true;
 		this._muteFx();
 		const old = this.obj;
-		if (old && old.parent) app.model.remove(old);
-		app.model.add(pts, app.viewport.root);
-		this.obj = pts;
+		this._rebuilding = true;
+		try {
+			if (old && old.parent) app.model.remove(old);
+			app.model.add(pts, app.viewport.root);
+			this.obj = pts;
+		} finally {
+			this._rebuilding = false;
+		}
 		app.model.select(pts);
 		if (frame) app.nav.frameAll(true);
 		app.viewport.invalidate();

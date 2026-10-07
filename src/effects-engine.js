@@ -2186,9 +2186,14 @@ export class EffectsEngine {
 	}
 
 	// ------------------------------------------------------------ раскадровка видео
-	get videoReady() {
+	/** Открыто видео (кадры можно брать, когда оно загружено) */
+	get videoLoaded() {
 		const pm = this.pm;
-		return !!(pm && pm.ready && pm.kind === 'video' && pm.el && pm.el.readyState >= 2);
+		return !!(pm && pm.ready && pm.kind === 'video' && pm.el);
+	}
+
+	get videoReady() {
+		return this.videoLoaded && this.pm.el.readyState >= 2;
 	}
 
 	/** Снимает n кадров: из всего видео равномерно или n раз текущий кадр (для бегущей ленты) */
@@ -2223,15 +2228,18 @@ export class EffectsEngine {
 		try {
 			for (let i = 0; i < n; i++) {
 				const t = Math.min(dur - 0.05, (i / Math.max(1, n - 1)) * dur);
-				await new Promise((res) => {
-					const done = () => {
-						el.removeEventListener('seeked', done);
-						res();
-					};
-					el.addEventListener('seeked', done);
-					setTimeout(done, 900);
-					el.currentTime = t;
-				});
+				if (Math.abs(el.currentTime - t) > 0.02 || el.readyState < 2) {
+					await new Promise((res) => {
+						const done = () => {
+							el.removeEventListener('seeked', done);
+							clearTimeout(to);
+							res();
+						};
+						const to = setTimeout(done, 700);
+						el.addEventListener('seeked', done);
+						el.currentTime = t;
+					});
+				}
 				frames.push(take());
 				this.app.ui.busy('Раскладываю видео на кадры', 0.1 + (0.85 * (i + 1)) / n);
 			}
@@ -2299,7 +2307,8 @@ export class EffectsEngine {
 			this.enableFrames();
 			return;
 		}
-		if (this._framesOn && !this._framesBusy && (!F.on || !this.videoReady)) {
+		// выключаем только когда режим отключён или видео закрыли: во время перемотки видео ненадолго «не готово», и это не повод всё сбрасывать
+		if (this._framesOn && !this._framesBusy && (!F.on || !this.videoLoaded)) {
 			F.on = false;
 			this.disableFrames();
 			return;

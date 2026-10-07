@@ -4009,12 +4009,10 @@ body {
 *::-webkit-scrollbar-thumb:hover {
 	background: var(--text-faint);
 	background-clip: padding-box;
-	border-width: 1px;
 }
 *::-webkit-scrollbar-thumb:active {
 	background: var(--accent);
 	background-clip: padding-box;
-	border-width: 1px;
 }
 *::-webkit-scrollbar-corner {
 	background: transparent;
@@ -4117,10 +4115,47 @@ body {
 }
 .toolrail .btn-tool svg,
 .toolrail .btn-tool > svg {
-	width: 22px !important;
-	height: 22px !important;
+	width: 21px !important;
+	height: 21px !important;
 }
 .tabs .tab {
 	font-size: 10px;
 	letter-spacing: 0;
+}
+
+/* список эффектов: ровная сетка. Одинаковые строки, плитка-превью фиксированного размера, выключатель у правого края */
+.fx-left-list,
+.panel {
+	scrollbar-gutter: stable;
+}
+.fx-left-list {
+	padding: 0 4px 20px 8px;
+	gap: 2px;
+}
+.fx-layer-head {
+	grid-template-columns: 38px minmax(0, 1fr) 30px;
+	height: 42px;
+	gap: 10px;
+	padding: 0 8px 0 5px;
+}
+.fx-layer-head .fx-prev {
+	width: 36px;
+	height: 29px;
+	margin: 0;
+	opacity: 1;
+	justify-self: center;
+	background: var(--bg-sunken);
+	border: 1px solid var(--line);
+	border-radius: var(--r-ctl);
+}
+.fx-layer.is-on .fx-prev,
+.fx-layer.is-selected .fx-prev {
+	border-color: var(--accent-line);
+	background: rgba(229, 138, 69, 0.07);
+}
+.fx-layer-head .switch {
+	justify-self: end;
+}
+.fx-layer {
+	border-radius: var(--r-box);
 }

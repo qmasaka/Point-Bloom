@@ -27,7 +27,7 @@ get ready() {
 return this.pm.ready;
 }
 get present() {
-return this.pm.ready && !!this.obj && !!this.obj.parent;
+return this.pm.ready && (this._rebuilding || (!!this.obj && !!this.obj.parent));
 }
 emit() {
 this.app.bus.emit('media');
@@ -64,9 +64,14 @@ const pts = cloudToPoints(cloud, pm.kind === 'image' ? 'Фото в точках
 pts.userData.media = true;
 this._muteFx();
 const old = this.obj;
+this._rebuilding = true;
+try {
 if (old && old.parent) app.model.remove(old);
 app.model.add(pts, app.viewport.root);
 this.obj = pts;
+} finally {
+this._rebuilding = false;
+}
 app.model.select(pts);
 if (frame) app.nav.frameAll(true);
 app.viewport.invalidate();

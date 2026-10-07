@@ -136094,9 +136094,14 @@ class EffectsEngine {
 	}
 
 	// ------------------------------------------------------------ раскадровка видео
-	get videoReady() {
+	/** Открыто видео (кадры можно брать, когда оно загружено) */
+	get videoLoaded() {
 		const pm = this.pm;
-		return !!(pm && pm.ready && pm.kind === 'video' && pm.el && pm.el.readyState >= 2);
+		return !!(pm && pm.ready && pm.kind === 'video' && pm.el);
+	}
+
+	get videoReady() {
+		return this.videoLoaded && this.pm.el.readyState >= 2;
 	}
 
 	/** Снимает n кадров: из всего видео равномерно или n раз текущий кадр (для бегущей ленты) */
@@ -136131,15 +136136,18 @@ class EffectsEngine {
 		try {
 			for (let i = 0; i < n; i++) {
 				const t = Math.min(dur - 0.05, (i / Math.max(1, n - 1)) * dur);
-				await new Promise((res) => {
-					const done = () => {
-						el.removeEventListener('seeked', done);
-						res();
-					};
-					el.addEventListener('seeked', done);
-					setTimeout(done, 900);
-					el.currentTime = t;
-				});
+				if (Math.abs(el.currentTime - t) > 0.02 || el.readyState < 2) {
+					await new Promise((res) => {
+						const done = () => {
+							el.removeEventListener('seeked', done);
+							clearTimeout(to);
+							res();
+						};
+						const to = setTimeout(done, 700);
+						el.addEventListener('seeked', done);
+						el.currentTime = t;
+					});
+				}
 				frames.push(take());
 				this.app.ui.busy('Раскладываю видео на кадры', 0.1 + (0.85 * (i + 1)) / n);
 			}
@@ -136207,7 +136215,8 @@ class EffectsEngine {
 			this.enableFrames();
 			return;
 		}
-		if (this._framesOn && !this._framesBusy && (!F.on || !this.videoReady)) {
+		// выключаем только когда режим отключён или видео закрыли: во время перемотки видео ненадолго «не готово», и это не повод всё сбрасывать
+		if (this._framesOn && !this._framesBusy && (!F.on || !this.videoLoaded)) {
 			F.on = false;
 			this.disableFrames();
 			return;
@@ -138370,6 +138379,7 @@ __def(__exports, 'attachPreview', () => attachPreview);
 const TAU = Math.PI * 2;
 const W = 30;
 const H = 24;
+const K = 1.2; // значки в списке чуть крупнее: рисуем в прежней системе координат, а холст растягиваем
 
 const dot = (c, x, y, r, a = 1) => {
 	c.globalAlpha = Math.max(0, Math.min(1, a));
@@ -138648,15 +138658,15 @@ function drawPreview(ctx, id, t, color, w = W, h = H) {
 /** Подключает иконку к canvas: движется при наведении на строку, иначе показывает один кадр */
 function attachPreview(canvas, id, card, getColor) {
 	const dpr = Math.min(2, window.devicePixelRatio || 1);
-	canvas.width = W * dpr;
-	canvas.height = H * dpr;
-	canvas.style.width = W + 'px';
-	canvas.style.height = H + 'px';
+	canvas.width = W * K * dpr;
+	canvas.height = H * K * dpr;
+	canvas.style.width = W * K + 'px';
+	canvas.style.height = H * K + 'px';
 	const ctx = canvas.getContext('2d');
 	let raf = 0;
 	let t0 = 0;
 	const paint = (t) => {
-		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		ctx.setTransform(dpr * K, 0, 0, dpr * K, 0, 0);
 		drawPreview(ctx, id, t, getColor(), W, H);
 	};
 	const frame = (now) => {
@@ -139680,7 +139690,7 @@ function createEffectsPanel(app, root, engine) {
 		modelNote.textContent = kind === 'cloud' ? `Берётся облако точек из редактора (${formatInt(engine.modelProvider.total())} точек). Больше этого частиц не будет.` : kind === 'mesh' ? 'Берутся точки с поверхности вашей модели.' : 'Модели в сцене нет: показана готовая форма. Добавьте модель, и она заменит её.';
 		countActive();
 		// режим раскадровки существует только для видео: без видео его папка в списке скрыта
-		for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoReady;
+		for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoLoaded;
 		renderReactList();
 		cards.forEach((c) => {
 			c.card.classList.toggle('is-on', c.L.on);
@@ -141463,7 +141473,8 @@ class MediaController {
 
 	/** Медиа открыто и его облако лежит в сцене (если объект удалили, вкладка и таймлайн прячутся) */
 	get present() {
-		return this.pm.ready && !!this.obj && !!this.obj.parent;
+		// пока облако пересобирается (старое снято, новое ещё не добавлено), считаем, что медиа на месте: иначе вкладка «Медиа» закрывалась и кидала на «Сцену»
+		return this.pm.ready && (this._rebuilding || (!!this.obj && !!this.obj.parent));
 	}
 
 	emit() {
@@ -141508,9 +141519,14 @@ class MediaController {
 		pts.userData.media = true;
 		this._muteFx();
 		const old = this.obj;
-		if (old && old.parent) app.model.remove(old);
-		app.model.add(pts, app.viewport.root);
-		this.obj = pts;
+		this._rebuilding = true;
+		try {
+			if (old && old.parent) app.model.remove(old);
+			app.model.add(pts, app.viewport.root);
+			this.obj = pts;
+		} finally {
+			this._rebuilding = false;
+		}
 		app.model.select(pts);
 		if (frame) app.nav.frameAll(true);
 		app.viewport.invalidate();
