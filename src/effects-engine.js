@@ -735,8 +735,8 @@ vec4 frShow(float k, out vec3 tcol) {
 		if (hl > 0.001) w = 1.0 - 0.5 * hl + (0.5 + 1.4 * hl) * max(0.0, 1.0 - abs(d) / 2.5) * hl;
 			// кадры впереди текущего (из «будущего») закрывали бы его спереди: по умолчанию приглушаем
 			// прошлые кадры тускнеют с глубиной, чтобы стопка не сливалась в серую кашу
-			if (d < -0.5) w *= 0.3 + 0.7 / (1.0 + 0.2 * (-d));
-			if (d > 0.5) w *= uFr5.z > 1.5 ? 0.0 : uFr5.z > 0.5 ? 0.14 : 1.0;
+			if (d < -0.5) w *= 0.45 + 0.55 / (1.0 + 0.2 * (-d));
+			if (d > 0.5) w *= uFr5.z > 1.5 ? 0.0 : uFr5.z > 0.5 ? 0.4 : 1.0;
 	} else if (mode == 1) {
 		if (d < 0.0) w = max(0.0, 1.0 + d / fw);
 		lift = 1.0 - w;
@@ -1218,6 +1218,7 @@ attribute vec3 aNormal;
 attribute vec3 aNormalB;
 attribute vec3 aColorB;
 attribute float aHide;
+uniform float uAdd;
 uniform highp sampler2DArray uFrTex;
 uniform sampler2D uHeroTex;
 attribute vec2 aVis;
@@ -1270,6 +1271,11 @@ void main() {
 		if (uFr4.y < 0.5) sh.x = 1.0;
 #endif
 		bool cull = sh.x < 0.02;
+		// без свечения затухание цветом дало бы чёрные точки: вместо этого точки гаснут рассыпаясь (часть выпадает), а цвет остаётся
+		if (uAdd < 0.5 && sh.x < 1.0) {
+			if (fract(sin(dot(fcell, vec2(39.346, 11.135)) + fk * 1.713) * 24634.6345) > sh.x) cull = true;
+			sh.x = mix(1.0, sh.x, 0.2);
+		}
 #ifndef HERO
 		// текущий кадр рисуется густым набором точек, поэтому в блоке его место пустое
 		if (uHero.w > 0.5 && abs(fk - floor(uFr4.x + 0.5)) < 0.1) cull = true;
@@ -2575,7 +2581,13 @@ export class EffectsEngine {
 			this._frameTex?.dispose();
 			this._frameTex = this._makeFrameTexture(frames, cols, rows);
 			this.shared.uFrTex.value = this._frameTex;
-			this._frames = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, gain: this._autoGain(frames) };
+			this._frames = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, gain: this._autoGain(frames), ts: null };
+			if (F.source === 'live') {
+				// время видео, с которого снят каждый слой ленты: по нему перемотка таймлайна двигает видео вдоль ленты
+				this._frames.ts = new Float32Array(n).fill(-1);
+				this._frames.ts[n - 1] = pm.el.currentTime || 0;
+				this._frames.tNew = pm.el.currentTime || 0;
+			}
 			// положения точек для переходов: считаем один раз, цвета не нужны (они в текстуре)
 			this._frameCloud = buildFrameBlock(frames.map(() => this._blankFrame(cols, rows)), cols, rows, aspect, F.layout, F.depth, true);
 			this._framesOn = true;
@@ -2735,7 +2747,7 @@ export class EffectsEngine {
 			}
 		}
 		// текущий кадр (дробный, поэтому показ идёт плавно, а не шагами). Его задаёт видео: крутите таймлайн, и блок следует за ним
-		const idx = F.source === 'live' ? fr.n - 1 : Math.max(0, Math.min(1, (this.pm.el.currentTime || 0) / Math.max(0.1, fr.dur))) * (fr.n - 1);
+		const idx = F.source === 'live' ? this._liveIdx(fr) : Math.max(0, Math.min(1, (this.pm.el.currentTime || 0) / Math.max(0.1, fr.dur))) * (fr.n - 1);
 		fr.cur = Math.round(idx);
 		const modeId = { off: 0, peel: 1, build: 2, window: 3, projector: 4, trail: 5 }[F.showMode] ?? 0;
 		u.uFr4.value.set(idx, modeId, F.showLen, F.hl);
@@ -2747,6 +2759,28 @@ export class EffectsEngine {
 		this._ensureHero(F, fr);
 		this._framesFollow(F, fr);
 		if (F.source === 'live') this._framesLive(F, fr);
+	}
+
+	/** Где на ленте текущее время видео: от начала ленты до её конца, дробное число между соседними кадрами */
+	_liveIdx(fr) {
+		const t = this.pm.el.currentTime || 0;
+		if (!fr.ts || t >= fr.tNew) return fr.n - 1;
+		let first = -1;
+		let prev = -1;
+		let tp = 0;
+		for (let k = 0; k < fr.n; k++) {
+			const tk = fr.ts[(k + fr.head) % fr.n];
+			if (tk < 0) continue;
+			if (first < 0) {
+				first = k;
+				if (t <= tk) return k;
+			} else if (t <= tk) {
+				return prev + (tk > tp ? (t - tp) / (tk - tp) : 0);
+			}
+			prev = k;
+			tp = tk;
+		}
+		return fr.n - 1;
 	}
 
 	/** Густой текущий кадр: отдельный набор точек с тем же шейдером, цвет берётся прямо из видео */
@@ -2842,7 +2876,9 @@ export class EffectsEngine {
 
 	/** Бегущая лента: новый кадр пишется в один слой текстуры, старые не трогаются; голова буфера сдвигается */
 	_framesLive(F, fr) {
-		if (this._time - fr.last < F.step || !this.pm.playing || this.morphing) return;
+		const tv = this.pm.el.currentTime || 0;
+		// пока видео перемотано назад, в прошлые кадры ленты ничего не пишем: лента пополняется только когда видео идёт дальше её конца
+		if (this._time - fr.last < F.step || !this.pm.playing || this.morphing || tv <= fr.tNew + 0.02 || !fr.ts) return;
 		fr.last = this._time;
 		const take = (this._liveTake ||= this._frameTaker(fr.cols, fr.rows));
 		const data = take();
@@ -2852,6 +2888,8 @@ export class EffectsEngine {
 		tex.addLayerUpdate && tex.addLayerUpdate(layer);
 		tex.needsUpdate = true;
 		fr.frames[layer] = data;
+		fr.ts[layer] = tv;
+		fr.tNew = tv;
 		fr.head++;
 		this.shared.uFr5.value.x = fr.head % fr.n;
 	}
@@ -3947,7 +3985,7 @@ export class EffectsEngine {
 		if (old) this._disposePoints();
 		// шлейф: до пяти призрачных копий (след, спираль, калейдоскоп), делят геометрию с основной
 		this.ghosts = [1, 2, 3, 4, 5].map((k) => {
-			const gm = mk({ uTOff: U(0), uGhost: U(0) });
+			const gm = mk({ uTOff: U(0), uGhost: U(0), uHero: U(new THREE.Vector4()) });
 			const gp = new THREE.Points(g, gm);
 			gp.frustumCulled = false;
 			gp.userData.helper = true;
