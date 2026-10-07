@@ -489,7 +489,8 @@ export function createEffectsPanel(app, root, engine) {
 				body.append(button({ label: 'Вернуть форму после лепки', icon: 'broom', variant: 'secondary', cls: 'btn-block', onClick: () => engine.clearSculpt() }));
 				body.append(h('div', { class: 'field-hint' }, 'При первом включении загружается модель распознавания рук (около 10 МБ), нужен интернет. Видео с камеры никуда не отправляется.'));
 			}
-			body.append(field('Сила', amount.el));
+			// у раскадровки «Силы» нет: блок либо собран, либо нет, а степень задают число кадров, точки и глубина
+			if (def.id !== 'frames') body.append(field('Сила', amount.el));
 			const extraCtl = {};
 			const whenList = [];
 			const put = (el, ex) => {
@@ -522,7 +523,7 @@ export function createEffectsPanel(app, root, engine) {
 					extraCtl[ex.key] = sg;
 					put(field(ex.label, sg.el, { wide: true }), ex);
 				} else {
-					const sl = slider({ min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : 2, unit: ex.unit, onInput: (v) => { L[ex.key] = v; }, onChange: after });
+					const sl = slider({ min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : 2, unit: ex.unit, log: ex.log, format: ex.log ? (v) => formatInt(v) : undefined, onInput: (v) => { L[ex.key] = v; }, onChange: after });
 					extraCtl[ex.key] = sl;
 					put(field(ex.label, sl.el), ex);
 				}

@@ -45,7 +45,7 @@ export const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкив�
 
 /** Слои-операторы. group: раздел в левой панели; extras: дополнительные параметры; relink: пересобрать связи */
 export const FX_LAYERS = [
-	{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Экспериментально: видео раскладывается на кадры, а кадры собираются в блок из точек. Только для видео', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', frames: 24, depth: 1.6, density: 3000, source: 'whole', step: 0.3 }, extras: [{ key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: время уходит вглубь'], ['wall', 'Стена кадров'], ['carousel', 'Карусель'], ['spiral', 'Спираль'], ['fan', 'Веер']], reframe: true }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 60, step: 1, int: true, reframe: true }, { key: 'density', label: 'Точек в кадре', min: 800, max: 12000, step: 200, int: true, reframe: true }, { key: 'depth', label: 'Глубина блока', min: 0.2, max: 4, step: 0.1, reframe: true }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
+	{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Экспериментально: видео раскладывается на кадры, а кадры собираются в блок из точек. Только для видео', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, hl: 0.7, follow: 'off' }, extras: [{ key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: время уходит вглубь'], ['wall', 'Стена кадров'], ['carousel', 'Карусель'], ['spiral', 'Спираль'], ['fan', 'Веер']], reframe: true }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'budget', label: 'Всего точек в блоке', min: 60000, max: 1500000, step: 10000, int: true, reframe: true, log: true }, { key: 'depth', label: 'Глубина блока', min: 0.2, max: 4, step: 0.1, reframe: true }, { type: 'title', label: 'Пока видео играет' }, { key: 'hl', label: 'Подсветка текущего кадра', min: 0, max: 1, step: 0.05, when: ['source', ['whole']] }, { key: 'follow', label: 'Следить за кадром', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']], when: ['source', ['whole']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
 	{ id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Частицы отрываются от формы и плывут по вихрям или потоку, а потом возвращаются', max: 2, def: { on: false, amount: 0.8, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['noise', 'Вихри'], ['stream', 'Поток и возврат']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }] },
 	{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается сверху вниз, осколки взлетают, закручиваются и падают на пол с отскоками. При сборке они возвращаются дугами и складываются обратно', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
 	{ id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма отзывается на частоты трека: шерсть, колонки эквалайзера или горный рельеф', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, mode: 'bars', bars: 24 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['bars', 'Колонки эквалайзера'], ['terrain', 'Горный рельеф'], ['wool', 'Шерсть по кругу'], ['height', 'Шерсть по высоте']] }, { key: 'bars', label: 'Число колонок', min: 8, max: 64, step: 1, int: true, when: ['mode', ['bars']] }] },
@@ -2259,11 +2259,14 @@ export class EffectsEngine {
 			this.app.ui.busy('Раскладываю видео на кадры', 0.05);
 			const pm = this.pm;
 			const aspect = (pm.el.videoWidth || 16) / (pm.el.videoHeight || 9);
-			const { cols, rows } = frameGrid(F.density, aspect);
-			const n = Math.round(F.frames);
+			// все кадры: примерно 24 кадра в секунду, но не больше 240 (больше блок не уместится в точки)
+			const dur = pm.el.duration || pm.duration || 1;
+			const n = F.source === 'whole' && F.all === 'on' ? Math.max(4, Math.min(240, Math.round(dur * 24))) : Math.round(F.frames);
+			// бюджет точек делится поровну между кадрами: чем больше кадров, тем меньше точек в каждом
+			const { cols, rows } = frameGrid(Math.max(300, F.budget / n), aspect);
 			const frames = await this._grabFrames(n, cols, rows, F.source === 'whole');
 			if (!F.on || !this.active) return;
-			this._frames = { frames, cols, rows, aspect, last: this._time };
+			this._frames = { frames, cols, rows, aspect, last: this._time, cur: -1, n, dur };
 			this._frameCloud = buildFrameBlock(frames, cols, rows, aspect, F.layout, F.depth);
 			this._framesOn = true;
 			this.cache.clear();
@@ -2299,6 +2302,57 @@ export class EffectsEngine {
 		}, 450);
 	}
 
+	/** Пока видео играет: текущий кадр блока подсвечивается и (по желанию) блок поворачивается или едет так, чтобы он оказался перед зрителем */
+	_framesPlayback(F) {
+		const fr = this._frames;
+		const pts = this.points;
+		if (!this._framesOn || !fr || !pts || F.source !== 'whole' || this.state.source !== 'frames' || this.morphing) {
+			if (pts && this._followed) {
+				pts.position.set(0, 0, 0);
+				this._followed = false;
+			}
+			return;
+		}
+		const el = this.pm.el;
+		const tn = Math.max(0, Math.min(1, (el.currentTime || 0) / Math.max(0.1, fr.dur)));
+		const idx = Math.round(tn * (fr.n - 1));
+		const g = this.geometry;
+		const okGeo = g && g.attributes.aColor && g.attributes.aColor.count === fr.cols * fr.rows * fr.n;
+		if (okGeo && idx !== fr.cur && this._time - (fr.hlT || -1) > 0.04) {
+			fr.cur = idx;
+			fr.hlT = this._time;
+			const w = new Float32Array(fr.n);
+			const k = Math.max(0, F.hl);
+			for (let i = 0; i < fr.n; i++) {
+				const d = Math.abs(i - idx);
+				// текущий кадр ярче обычного, соседние плавно спадают к приглушённым остальным
+				w[i] = 1 - 0.5 * k + (0.5 + 1.4 * k) * Math.max(0, 1 - d / 2.5) * k;
+				if (k === 0) w[i] = 1;
+			}
+			writeFrameColors(fr.frames, fr.cols, fr.rows, g.attributes.aColor.array, w);
+			g.attributes.aColorB.array.set(g.attributes.aColor.array);
+			g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
+		}
+		if (F.follow === 'on') {
+			const depth = F.depth;
+			const t = fr.n > 1 ? idx / (fr.n - 1) : 0.5;
+			const ease = 0.16;
+			if (F.layout === 'stack') pts.position.z += ((0.5 - t) * depth - pts.position.z) * ease;
+			else if (F.layout === 'spiral') pts.position.y += ((0.5 - t) * depth * 1.4 - pts.position.y) * ease;
+			if ((F.layout === 'carousel' || F.layout === 'spiral') && !this.state.look.autoRotate) {
+				const target = -((idx / fr.n) * Math.PI * 2);
+				let d = target - pts.rotation.y;
+				d = Math.atan2(Math.sin(d), Math.cos(d));
+				pts.rotation.y += d * ease;
+			}
+			this._followed = true;
+		} else if (this._followed) {
+			pts.position.set(0, 0, 0);
+			this._followed = false;
+		}
+		pts.updateMatrixWorld();
+	}
+
 	/** Бегущая лента: в блок по очереди добавляется новый кадр, старые уезжают, цвета обновляются без пересборки */
 	_framesTick() {
 		const F = this.state.layers.frames;
@@ -2313,6 +2367,7 @@ export class EffectsEngine {
 			this.disableFrames();
 			return;
 		}
+		this._framesPlayback(F);
 		if (!this._framesOn || !this._frames || F.source !== 'live' || this.state.source !== 'frames' || this.morphing) return;
 		const fr = this._frames;
 		if (this._time - fr.last < F.step || !this.pm.playing) return;

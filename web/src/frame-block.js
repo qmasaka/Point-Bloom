@@ -85,15 +85,16 @@ o++;
 }
 return { positions, normals, colors, count };
 }
-export function writeFrameColors(frames, cols, rows, target) {
+export function writeFrameColors(frames, cols, rows, target, weights = null) {
 const per = cols * rows;
 let o = 0;
 for (let k = 0; k < frames.length; k++) {
 const f = frames[k];
+const w = weights ? weights[k] : 1;
 for (let p = 0; p < per * 3; p += 3) {
-target[o++] = LUT[f[p]];
-target[o++] = LUT[f[p + 1]];
-target[o++] = LUT[f[p + 2]];
+target[o++] = LUT[f[p]] * w;
+target[o++] = LUT[f[p + 1]] * w;
+target[o++] = LUT[f[p + 2]] * w;
 }
 }
 }
