@@ -132880,14 +132880,8 @@ class HandTracker {
 	_tick() {
 		if (!this.running) return;
 		const v = this.video;
-		const tNow = performance.now();
-		// распознавание идёт в основном потоке и конкурирует с отрисовкой, поэтому не чаще, чем позволяет бюджет:
-		// не больше 30 раз в секунду, реже при медленной отрисовке и не больше 40% времени на само распознавание
-		const slow = (this.fpsHint ? this.fpsHint() : 60) < 38;
-		const minGap = Math.max(slow ? 50 : 33, (this._detMs || 0) * 1.6);
-		if (v.readyState >= 2 && v.currentTime !== this._last && tNow - (this._detT || 0) >= minGap) {
+		if (v.readyState >= 2 && v.currentTime !== this._last) {
 			this._last = v.currentTime;
-			this._detT = tNow;
 			const c = this._confFor();
 			if (c !== this._conf) {
 				this._conf = c;
@@ -132903,18 +132897,11 @@ class HandTracker {
 			} catch (e) {
 				res = null;
 			}
-			this._detMs = (this._detMs || 0) * 0.8 + (performance.now() - tNow) * 0.2;
 			const hands = this._hands(res, (v.videoWidth || 4) / (v.videoHeight || 3));
-			// окошко камеры обновляем не чаще 15 раз в секунду: оно только для глаз
-			if (tNow - (this._pvT || 0) > 66) {
-				this._pvT = tNow;
-				this._draw(hands);
-			}
+			this._draw(hands);
 			this.onFrame({ kind: 'hands', hands, aspect: (v.videoWidth || 4) / (v.videoHeight || 3) });
 		}
-		// следующий кадр сразу по готовности камеры: без пропусков и повторов кадров
-		if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(() => this._tick());
-		else this._timer = setTimeout(() => this._tick(), 16);
+		this._timer = setTimeout(() => this._tick(), 24);
 	}
 
 	/** Руки сопоставляются с прошлым кадром по близости запястья (а не по порядку и подписи «левая/правая», которые у модели прыгают) */
