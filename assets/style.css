@@ -4177,7 +4177,6 @@ body {
 /* ================================================================ плавающий стеклянный интерфейс режима «Эффекты» */
 .fxf-bar { display: none; }
 @container app (min-width: 901px) {
-	#app.fx-mode { position: relative; grid-template-rows: 0 minmax(0, 1fr) 0; --fxg-bg: rgba(22, 24, 28, 0.6); --fxg-line: rgba(255, 255, 255, 0.08); --fxg-blur: blur(22px) saturate(1.35); }
 	.fx-mode .workspace, .fx-mode .workspace.sidebar-hidden { grid-row: 2; grid-template-columns: minmax(0, 1fr); position: relative; }
 	.fx-mode .viewport { grid-column: 1; grid-row: 1; }
 
@@ -4197,10 +4196,6 @@ body {
 
 	/* шапка карточки: ручка, название, сворачивание */
 	.fx-mode .fxf-bar { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 8px 0 12px; flex: none; }
-	.fxf-grip { width: 22px; height: 22px; flex: none; cursor: grab; border-radius: 6px; background: radial-gradient(circle, var(--text-faint) 1.3px, transparent 1.6px) 0 0 / 7px 7px; opacity: 0.7; -webkit-mask: linear-gradient(#000, #000); }
-	.fxf-grip:hover { opacity: 1; }
-	.fxf-dragging .fxf-grip { cursor: grabbing; }
-	.fxf-dragging { transition: none !important; }
 	.fxf-title { flex: 1; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
 	.fxf-toggle { display: grid; place-items: center; width: 26px; height: 26px; border: 0; border-radius: 8px; background: transparent; color: var(--text-dim); cursor: pointer; transition: background 0.15s, transform 0.25s var(--ease); }
 	.fxf-toggle:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
@@ -4232,4 +4227,18 @@ body {
 	.fx-mode .sidebar.fxf-collapsed, .fx-mode .fx-left.fxf-collapsed { bottom: auto; height: auto; }
 	.fx-mode .fx-tabs .tab { background: rgba(255, 255, 255, 0.045); border: 1px solid var(--fxg-line); }
 	.fx-mode .fx-tabs .tab[aria-selected='true'] { background: var(--accent-soft); border-color: var(--accent-line); }
+}
+
+/* контейнер app сам не может получать правила из @container, поэтому его настройки здесь */
+@media (min-width: 901px) {
+	#app.fx-mode {
+		position: relative;
+		grid-template-rows: 0 minmax(0, 1fr) 0;
+		--fxg-line: rgba(255, 255, 255, 0.15);
+		--fxg-blur: blur(30px) saturate(1.75) brightness(1.04);
+		/* «жидкое стекло»: плотная тёмная основа, блик в левом верхнем углу и мягкий перелив */
+		--fxg-bg: radial-gradient(120% 75% at 0% 0%, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0) 58%), linear-gradient(165deg, rgba(58, 62, 72, 0.74), rgba(24, 26, 32, 0.84) 55%, rgba(30, 33, 40, 0.8));
+		--fxg-shadow: 0 26px 56px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 1.5px 0 rgba(255, 255, 255, 0.26), inset 0 -1px 0 rgba(0, 0, 0, 0.45), inset 1px 0 0 rgba(255, 255, 255, 0.07), inset -1px 0 0 rgba(255, 255, 255, 0.04);
+	}
+	.fx-mode .topbar, .fx-mode .fx-left, .fx-mode .sidebar, .fx-mode .fx-bar, .fx-mode .media-bar, .fx-mode .fx-anim { box-shadow: var(--fxg-shadow); }
 }
