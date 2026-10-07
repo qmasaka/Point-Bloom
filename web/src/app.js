@@ -39,7 +39,21 @@ this.model.applySnap();
 this.viewport.start();
 const q = new URLSearchParams(location.search);
 const model = q.get('model');
-if (model) this.ui.loadFromUrl(model, { textures: q.getAll('texture') });
+if (model) {
+const ok = /^https?:\/\//i.test(model) && q.getAll('texture').every((t) => /^https?:\/\//i.test(t));
+if (ok) {
+const host = (() => {
+try {
+return new URL(model).host;
+} catch (e) {
+return model;
+}
+})();
+this.ui.choose({ title: 'Открыть модель по ссылке?', text: `Страница просит загрузить файл с сайта ${host}. Открывайте только то, чему доверяете.`, buttons: [{ label: 'Не открывать', value: false }, { label: 'Открыть', variant: 'primary', value: true }] }).then((yes) => {
+if (yes) this.ui.loadFromUrl(model, { textures: q.getAll('texture') });
+});
+}
+}
 }
 wireGizmo() {
 const tc = this.viewport.tc;

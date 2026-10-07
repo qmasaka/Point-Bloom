@@ -435,6 +435,51 @@ export const loadIcons = () =>
 """
 
 
+def write_vercel_json():
+    """Заголовки безопасности для хостинга: политика содержимого (CSP), HTTPS, запрет встраивания и лишних возможностей браузера.
+    Хэш встроенного importmap считается здесь же, поэтому политика не расходится со страницей после пересборки."""
+    import base64, hashlib, json
+
+    m = re.search(r"<script type=\"importmap\">(.*?)</script>", WEB_SCRIPT, re.S)
+    digest = base64.b64encode(hashlib.sha256(m.group(1).encode("utf-8")).digest()).decode()
+    csp = "; ".join(
+        [
+            "default-src 'self'",
+            "script-src 'self' 'wasm-unsafe-eval' 'sha256-%s' https://cdn.jsdelivr.net" % digest,
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+            "font-src 'self' data: https://cdn.jsdelivr.net",
+            "img-src 'self' data: blob:",
+            "media-src 'self' blob: mediastream:",
+            "connect-src 'self' https: blob: data:",
+            "worker-src 'self' blob:",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'none'",
+            "frame-ancestors 'none'",
+            "upgrade-insecure-requests",
+        ]
+    )
+    headers = [
+        ("Content-Security-Policy", csp),
+        ("Strict-Transport-Security", "max-age=63072000; includeSubDomains"),
+        ("X-Content-Type-Options", "nosniff"),
+        ("X-Frame-Options", "DENY"),
+        ("Referrer-Policy", "strict-origin-when-cross-origin"),
+        ("Permissions-Policy", "camera=(self), microphone=(self), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()"),
+        ("Cross-Origin-Opener-Policy", "same-origin"),
+        ("Cross-Origin-Resource-Policy", "same-origin"),
+    ]
+    cfg = {
+        "version": 2,
+        "cleanUrls": True,
+        "outputDirectory": "web",
+        "headers": [{"source": "/(.*)", "headers": [{"key": k, "value": v} for k, v in headers]}],
+    }
+    with open(os.path.join(ROOT, "vercel.json"), "w", encoding="utf-8") as fh:
+        json.dump(cfg, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+
+
 def build_web():
     """Лёгкая версия для публикации: свой код (минифицированный) + three.js с CDN. Папка web/."""
     import shutil
@@ -467,6 +512,7 @@ def build_web():
     html = html.replace('<script src="assets/app.js"></script>', WEB_SCRIPT)
     with open(os.path.join(out, "index.html"), "w", encoding="utf-8") as fh:
         fh.write(html)
+    write_vercel_json()
     print("Веб-версия: web/ (JS %.0f КБ, CSS %.0f КБ, HTML %.0f КБ)" % (total / 1024, len(css) / 1024, len(html) / 1024))
 
 
