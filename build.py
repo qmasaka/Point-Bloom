@@ -468,6 +468,7 @@ def write_vercel_json():
         ("Permissions-Policy", "camera=(self), microphone=(self), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=()"),
         ("Cross-Origin-Opener-Policy", "same-origin"),
         ("Cross-Origin-Resource-Policy", "same-origin"),
+        ("Access-Control-Allow-Origin", "https://pointbloom.vercel.app"),
     ]
     cfg = {
         "version": 2,
