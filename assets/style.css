@@ -4242,3 +4242,21 @@ body {
 	}
 	.fx-mode .topbar, .fx-mode .fx-left, .fx-mode .sidebar, .fx-mode .fx-bar, .fx-mode .media-bar, .fx-mode .fx-anim { box-shadow: var(--fxg-shadow); }
 }
+
+/* вариант «Прибор»: прозрачный тёмный фон с лёгким размытием, строгие скругления, без блика, угловых меток и лишних разделителей */
+@media (min-width: 901px) {
+	#app.fx-mode {
+		--fxg-line: rgba(255, 255, 255, 0.13);
+		--fxg-blur: blur(9px) saturate(1.2);
+		--fxg-bg: rgba(13, 15, 18, 0.5);
+		--fxg-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+	}
+}
+@container app (min-width: 901px) {
+	.fx-mode .topbar, .fx-mode .fx-left, .fx-mode .sidebar { border-radius: 6px; }
+	.fx-mode .fx-bar, .fx-mode .media-bar, .fx-mode .fx-anim { border-radius: 8px; }
+	.fx-mode .fxf-bar { border-bottom: 0; }
+	.fx-mode .fx-tabs, .fx-mode .fx-tabs.tabs { border-bottom: 0; padding-bottom: 6px; }
+	.fx-mode .fx-tabs .tab { border-radius: 4px; }
+	.fx-mode .seg, .fx-mode .select { border-radius: 5px; }
+}
