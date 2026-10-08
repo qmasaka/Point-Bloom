@@ -5418,3 +5418,43 @@ body.is-resizing-h * {
 .fx-anim { container-type: inline-size; }
 @container (max-width: 470px) { .fx-anim-hint { display: none; } }
 .fx-mode .fx-cam { z-index: 25; }
+
+/* ================================================================ секвенсор анимации: единая типографика и формы под остальной интерфейс */
+.fx-mode .fx-anim { --seq-text: 12px; --seq-small: 11px; background: rgba(18, 20, 24, 0.86); border-radius: 16px; padding: 10px 16px 12px; font-family: var(--font); }
+.fx-mode .fx-anim .btn, .fx-mode .fx-anim .btn-label, .fx-mode .fx-anim label, .fx-mode .fx-anim input { font-family: var(--font); }
+/* шапка: счёт времени крупнее, остальное одним размером */
+.fx-mode .fx-anim-t-cur { font-size: 14px; font-weight: 500; color: var(--text); }
+.fx-mode .fx-anim-t-sep, .fx-mode .fx-anim-t-total { font-size: var(--seq-text); color: var(--text-faint); }
+.fx-mode .fx-anim-zoom-val { font-size: var(--seq-small); color: var(--text-dim); min-width: 22px; text-align: center; }
+.fx-mode .fx-anim .btn-sm, .fx-mode .fx-anim .btn-sm .btn-label { font-size: var(--seq-text); font-weight: 500; }
+.fx-mode .fx-anim .btn-sm { border-radius: 999px; height: 30px; padding-inline: 14px; }
+.fx-mode .fx-anim .fx-anim-dur, .fx-mode .fx-anim-insp-field .num-in { height: 28px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); border: 0; font-size: var(--seq-text); font-variant-numeric: tabular-nums; }
+.fx-mode .fx-anim-dur-unit, .fx-mode .fx-anim-insp-unit { font-size: var(--seq-small); color: var(--text-faint); }
+/* линейка и дорожки */
+.fx-mode .fx-anim-track-label { font-size: var(--seq-small); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
+.fx-mode .fx-anim-lane-name { font-size: var(--seq-text); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text); }
+.fx-mode .fx-anim-tick-label { font-size: var(--seq-small); color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.fx-mode .fx-anim-block { border-radius: 8px; }
+.fx-mode .fx-anim-block-title { font-size: var(--seq-text); font-weight: 500; }
+.fx-mode .fx-anim-block-time { font-size: var(--seq-small); color: rgba(255, 255, 255, 0.6); }
+/* панель свойств выбранного блока */
+.fx-mode .fx-anim-inspector { gap: 14px; }
+.fx-mode .fx-anim-insp-field { font-size: var(--seq-text); gap: 6px; }
+.fx-mode .fx-anim-insp-badge { border-radius: 999px; font-size: var(--seq-text); font-weight: 500; }
+.fx-mode .fx-anim-insp-val { font-size: var(--seq-text); font-variant-numeric: tabular-nums; min-width: 32px; }
+.fx-mode .fx-anim-insp-actions .btn-icon { border-radius: 50%; }
+/* полки со сценариями и слоями */
+.fx-mode .fx-anim-shelf-title { font-size: 13px; font-weight: 600; letter-spacing: 0; }
+.fx-mode .fx-anim-shelf-hint { font-size: var(--seq-small); }
+.fx-mode .fx-anim-shelf-card { border-radius: 12px; }
+.fx-mode .fx-anim-shelf-card-title { font-size: var(--seq-text); font-weight: 500; }
+.fx-mode .fx-anim-shelf-card-hint { font-size: var(--seq-small); }
+.fx-mode .fx-anim-shelf-chip { font-size: var(--seq-text); border-radius: 999px; }
+.fx-mode .fx-anim-empty-text { font-size: var(--seq-text); color: var(--text-dim); }
+/* магнит: включённое состояние как у остальных переключателей */
+.fx-mode .fx-anim .fx-anim-snap { border-radius: 50%; }
+.fx-mode .fx-anim .fx-anim-snap.is-active { background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--accent-line); }
+/* при открытом секвенсоре боковые карточки не заезжают под нижнюю панель кнопок */
+@container app (min-width: 901px) and (max-width: 1360px) {
+	.fx-mode.fx-anim-active .fx-left, .fx-mode.fx-anim-active .sidebar { bottom: calc(var(--fx-anim-h, 245px) + 76px); }
+}

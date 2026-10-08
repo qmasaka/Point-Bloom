@@ -89483,6 +89483,7 @@ const ICON_PATHS = {
 	'record': '<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm0-160a72,72,0,1,0,72,72A72.08,72.08,0,0,0,128,56Zm0,128a56,56,0,1,1,56-56A56.06,56.06,0,0,1,128,184Z"/>',
 	'repeat': '<path d="M24,128A72.08,72.08,0,0,1,96,56H204.69L194.34,45.66a8,8,0,0,1,11.32-11.32l24,24a8,8,0,0,1,0,11.32l-24,24a8,8,0,0,1-11.32-11.32L204.69,72H96a56.06,56.06,0,0,0-56,56,8,8,0,0,1-16,0Zm200-8a8,8,0,0,0-8,8,56.06,56.06,0,0,1-56,56H51.31l10.35-10.34a8,8,0,0,0-11.32-11.32l-24,24a8,8,0,0,0,0,11.32l24,24a8,8,0,0,0,11.32-11.32L51.31,200H160a72.08,72.08,0,0,0,72-72A8,8,0,0,0,224,120Z"/>',
 	'scan': '<path d="M224,40V80a8,8,0,0,1-16,0V48H176a8,8,0,0,1,0-16h40A8,8,0,0,1,224,40ZM80,208H48V176a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H80a8,8,0,0,0,0-16Zm136-40a8,8,0,0,0-8,8v32H176a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V176A8,8,0,0,0,216,168ZM40,88a8,8,0,0,0,8-8V48H80a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8V80A8,8,0,0,0,40,88ZM80,72h96a8,8,0,0,1,8,8v96a8,8,0,0,1-8,8H80a8,8,0,0,1-8-8V80A8,8,0,0,1,80,72Zm8,96h80V88H88Z"/>',
+	'scissors': '<path d="M157.73,113.13A8,8,0,0,1,159.82,102L227.48,55.7a8,8,0,0,1,9,13.21l-67.67,46.3a7.92,7.92,0,0,1-4.51,1.4A8,8,0,0,1,157.73,113.13Zm80.87,85.09a8,8,0,0,1-11.12,2.08L136,137.7,93.49,166.78a36,36,0,1,1-9-13.19L121.83,128,84.44,102.41a35.86,35.86,0,1,1,9-13.19l143,97.87A8,8,0,0,1,238.6,198.22ZM80,180a20,20,0,1,0-5.86,14.14A19.85,19.85,0,0,0,80,180ZM74.14,90.13a20,20,0,1,0-28.28,0A19.85,19.85,0,0,0,74.14,90.13Z"/>',
 	'selection': '<path d="M152,40a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h32A8,8,0,0,1,152,40Zm-8,168H112a8,8,0,0,0,0,16h32a8,8,0,0,0,0-16ZM208,32H184a8,8,0,0,0,0,16h24V72a8,8,0,0,0,16,0V48A16,16,0,0,0,208,32Zm8,72a8,8,0,0,0-8,8v32a8,8,0,0,0,16,0V112A8,8,0,0,0,216,104Zm0,72a8,8,0,0,0-8,8v24H184a8,8,0,0,0,0,16h24a16,16,0,0,0,16-16V184A8,8,0,0,0,216,176ZM40,152a8,8,0,0,0,8-8V112a8,8,0,0,0-16,0v32A8,8,0,0,0,40,152Zm32,56H48V184a8,8,0,0,0-16,0v24a16,16,0,0,0,16,16H72a8,8,0,0,0,0-16ZM72,32H48A16,16,0,0,0,32,48V72a8,8,0,0,0,16,0V48H72a8,8,0,0,0,0-16Z"/>',
 	'share-network': '<path d="M176,160a39.89,39.89,0,0,0-28.62,12.09l-46.1-29.63a39.8,39.8,0,0,0,0-28.92l46.1-29.63a40,40,0,1,0-8.66-13.45l-46.1,29.63a40,40,0,1,0,0,55.82l46.1,29.63A40,40,0,1,0,176,160Zm0-128a24,24,0,1,1-24,24A24,24,0,0,1,176,32ZM64,152a24,24,0,1,1,24-24A24,24,0,0,1,64,152Zm112,72a24,24,0,1,1,24-24A24,24,0,0,1,176,224Z"/>',
 	'sliders-horizontal': '<path d="M40,88H73a32,32,0,0,0,62,0h81a8,8,0,0,0,0-16H135a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16Zm64-24A16,16,0,1,1,88,80,16,16,0,0,1,104,64ZM216,168H199a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16h97a32,32,0,0,0,62,0h17a8,8,0,0,0,0-16Zm-48,24a16,16,0,1,1,16-16A16,16,0,0,1,168,192Z"/>',
@@ -137250,6 +137251,24 @@ class EffectsEngine {
 		});
 	}
 
+	/** Разрезать клип по времени t на два: у первого остаётся вход, у второго выход. Возвращает правую часть или null */
+	animSplitClip(clipId, t) {
+		const A = this.state.anim;
+		const clip = (A.clips || []).find((c) => c.id === clipId);
+		if (!clip || t <= clip.start + 0.3 || t >= clip.start + clip.dur - 0.3) return null;
+		const end = clip.start + clip.dur;
+		const outFade = clip.fadeOut;
+		const left = t - clip.start;
+		clip.dur = Math.round(left * 100) / 100;
+		clip.fadeIn = Math.min(clip.fadeIn, clip.dur * 0.45);
+		clip.fadeOut = Math.min(0.15, clip.dur * 0.3);
+		const right = this.animAddClip(clip.layerId, { start: t, dur: end - t, fadeIn: Math.min(0.15, (end - t) * 0.3), fadeOut: Math.min(outFade, (end - t) * 0.45), amount: clip.amount });
+		this.touch();
+		this.emit();
+		this.app.bus.emit('fxanim');
+		return right;
+	}
+
 	/** Очистить всю дорожку анимации */
 	animClear() {
 		const A = this.state.anim;
@@ -140906,7 +140925,7 @@ function createEffectsPanel(app, root, engine) {
 		addClipBtn.classList.remove('is-active');
 
 		const head = h('div', { class: 'fx-anim-shelf-head' },
-			h('span', { class: 'fx-anim-shelf-title' }, '✦ Готовые сценарии анимации'),
+			h('span', { class: 'fx-anim-shelf-title' }, 'Готовые сценарии анимации'),
 			h('span', { class: 'fx-anim-shelf-hint' }, 'Режиссерская последовательность эффектов и ракурсов'),
 			iconButton({ icon: 'x', title: 'Закрыть панель (Esc)', size: 12, cls: 'fx-anim-shelf-close', onClick: closeShelf })
 		);
@@ -140962,7 +140981,7 @@ function createEffectsPanel(app, root, engine) {
 		presetsBtn.classList.remove('is-active');
 
 		const head = h('div', { class: 'fx-anim-shelf-head' },
-			h('span', { class: 'fx-anim-shelf-title' }, '+ Добавить слой на таймлайн'),
+			h('span', { class: 'fx-anim-shelf-title' }, 'Добавить слой на таймлайн'),
 			h('span', { class: 'fx-anim-shelf-hint' }, 'Выберите эффект для добавления блока на шкалу времени:'),
 			iconButton({ icon: 'x', title: 'Закрыть панель (Esc)', size: 12, cls: 'fx-anim-shelf-close', onClick: closeShelf })
 		);
@@ -141058,7 +141077,37 @@ function createEffectsPanel(app, root, engine) {
 		cls: 'fx-anim-close',
 		onClick: () => toggleAnim(false)
 	});
-	const aSettings = h('div', { class: 'fx-anim-settings' }, aLoop, aDurBox, aRec, aClose);
+	// магнит: блоки прилипают к маркеру, краям соседних блоков и целым секундам; Alt при перетаскивании отключает на время
+	const aSnap = iconButton({
+		icon: 'magnet',
+		title: 'Магнит: блоки прилипают к маркеру, краям других блоков и целым секундам (Alt при перетаскивании отключает)',
+		cls: 'fx-anim-snap' + (st.anim.snap !== false ? ' is-active' : ''),
+		onClick: () => {
+			st.anim.snap = st.anim.snap === false;
+			aSnap.classList.toggle('is-active', st.anim.snap !== false);
+			save();
+		}
+	});
+	/** Ближайшая «точка притяжения» к времени t; ignoreId исключает свой блок. Возвращает t без изменений, если рядом ничего нет */
+	function snapTime(t, widthPx, ignoreId, ev) {
+		if (st.anim.snap === false || (ev && ev.altKey)) return t;
+		const dur = st.anim.dur || 8;
+		const thr = (9 / Math.max(1, widthPx)) * dur;
+		const pts = [0, dur, engine.animT];
+		for (let i = 1; i < dur; i++) pts.push(i);
+		for (const c of st.anim.clips || []) if (c.id !== ignoreId) pts.push(c.start, c.start + c.dur);
+		let best = t;
+		let bd = thr;
+		for (const q of pts) {
+			const d = Math.abs(q - t);
+			if (d < bd) {
+				bd = d;
+				best = q;
+			}
+		}
+		return best;
+	}
+	const aSettings = h('div', { class: 'fx-anim-settings' }, aSnap, aLoop, aDurBox, aRec, aClose);
 
 	const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, quickWrap, aSettings);
 
@@ -141200,6 +141249,25 @@ function createEffectsPanel(app, root, engine) {
 				selKey = null;
 				animSync();
 			}
+		} else if (e.code === 'KeyS' && !e.ctrlKey && !e.metaKey) {
+			e.preventDefault();
+			splitSelected();
+		} else if (e.code === 'KeyD' && (e.ctrlKey || e.metaKey) && selClip) {
+			e.preventDefault();
+			const cloned = engine.animDuplicateClip(selClip.id);
+			if (cloned) selClip = cloned;
+			animSync();
+		} else if (e.code === 'Home' || e.code === 'End') {
+			e.preventDefault();
+			engine.animPause();
+			engine.animSeek(e.code === 'Home' ? 0 : st.anim.dur || 8);
+			animSync();
+		} else if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+			e.preventDefault();
+			engine.animPause();
+			const step = e.shiftKey ? 1 : 0.1;
+			engine.animSeek(Math.max(0, Math.min(st.anim.dur || 8, engine.animT + (e.code === 'ArrowLeft' ? -step : step))));
+			animSync();
 		} else if (e.code === 'Escape') {
 			if (!shelf.hidden) {
 				closeShelf();
@@ -141210,6 +141278,21 @@ function createEffectsPanel(app, root, engine) {
 			}
 		}
 	});
+
+	/** Разрезает выбранный блок по маркеру времени на два: у первого остаётся вход, у второго выход */
+	function splitSelected() {
+		if (!selClip) {
+			app.toast('Выберите блок на дорожке, потом поставьте маркер времени там, где резать', 'info');
+			return;
+		}
+		const part = engine.animSplitClip(selClip.id, engine.animT);
+		if (!part) {
+			app.toast('Маркер времени должен стоять внутри выбранного блока', 'info');
+			return;
+		}
+		selClip = part;
+		animSync();
+	}
 
 	function renderInspector() {
 		inspector.textContent = '';
@@ -141271,6 +141354,13 @@ function createEffectsPanel(app, root, engine) {
 				}
 			});
 
+			const splitBtn = iconButton({
+				icon: 'scissors',
+				title: 'Разрезать блок по маркеру времени (S)',
+				cls: 'btn-sm',
+				onClick: () => splitSelected()
+			});
+
 			const delBtn = iconButton({
 				icon: 'trash',
 				title: 'Удалить блок',
@@ -141299,7 +141389,7 @@ function createEffectsPanel(app, root, engine) {
 				h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Вход:'), inFadeIn, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
 				h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Выход:'), inFadeOut, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
 				h('label', { class: 'fx-anim-insp-field fx-anim-insp-amt' }, h('span', {}, 'Сила:'), inAmt, inAmtVal),
-				h('div', { class: 'fx-anim-insp-actions' }, dupBtn, delBtn, closeBtn)
+				h('div', { class: 'fx-anim-insp-actions' }, splitBtn, dupBtn, delBtn, closeBtn)
 			);
 		} else if (selKey) {
 			const k = selKey;
@@ -141510,7 +141600,13 @@ function createEffectsPanel(app, root, engine) {
 					const mv = (ev) => {
 						const dx = ev.clientX - startX;
 						const dt = (dx / Math.max(1, r.width)) * durTotal;
-						const newStart = Math.max(0, Math.min(durTotal - clip.dur, origStart + dt));
+						let newStart = Math.max(0, Math.min(durTotal - clip.dur, origStart + dt));
+						// к чему ближе прилипнуть: к началу или к концу блока
+						const sS = snapTime(newStart, r.width, clip.id, ev);
+						const sE = snapTime(newStart + clip.dur, r.width, clip.id, ev) - clip.dur;
+						if (Math.abs(sS - newStart) <= Math.abs(sE - newStart) && sS !== newStart) newStart = sS;
+						else if (sE !== newStart) newStart = sE;
+						newStart = Math.max(0, Math.min(durTotal - clip.dur, newStart));
 						clip.start = newStart;
 						block.style.left = (newStart / durTotal) * 100 + '%';
 						blockContent.querySelector('.fx-anim-block-time').textContent = `${clip.dur.toFixed(1)}с`;
@@ -141550,7 +141646,7 @@ function createEffectsPanel(app, root, engine) {
 					const mv = (ev) => {
 						const dx = ev.clientX - startX;
 						const dt = (dx / Math.max(1, r.width)) * durTotal;
-						const newStart = Math.max(0, Math.min(origEnd - 0.1, origStart + dt));
+						const newStart = Math.max(0, Math.min(origEnd - 0.1, snapTime(origStart + dt, r.width, clip.id, ev)));
 						const newDur = origEnd - newStart;
 						clip.start = newStart;
 						clip.dur = newDur;
@@ -141594,7 +141690,8 @@ function createEffectsPanel(app, root, engine) {
 					const mv = (ev) => {
 						const dx = ev.clientX - startX;
 						const dt = (dx / Math.max(1, r.width)) * durTotal;
-						const newDur = Math.max(0.1, Math.min(durTotal - clip.start, origDur + dt));
+						const newEnd = Math.min(durTotal, snapTime(clip.start + origDur + dt, r.width, clip.id, ev));
+						const newDur = Math.max(0.1, Math.min(durTotal - clip.start, newEnd - clip.start));
 						clip.dur = newDur;
 						block.style.width = Math.max(1, (newDur / durTotal) * 100) + '%';
 						blockContent.querySelector('.fx-anim-block-time').textContent = `${newDur.toFixed(1)}с`;

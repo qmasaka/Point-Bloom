@@ -948,7 +948,7 @@ currentShelf = 'presets';
 presetsBtn.classList.add('is-active');
 addClipBtn.classList.remove('is-active');
 const head = h('div', { class: 'fx-anim-shelf-head' },
-h('span', { class: 'fx-anim-shelf-title' }, '✦ Готовые сценарии анимации'),
+h('span', { class: 'fx-anim-shelf-title' }, 'Готовые сценарии анимации'),
 h('span', { class: 'fx-anim-shelf-hint' }, 'Режиссерская последовательность эффектов и ракурсов'),
 iconButton({ icon: 'x', title: 'Закрыть панель (Esc)', size: 12, cls: 'fx-anim-shelf-close', onClick: closeShelf })
 );
@@ -999,7 +999,7 @@ currentShelf = 'effects';
 addClipBtn.classList.add('is-active');
 presetsBtn.classList.remove('is-active');
 const head = h('div', { class: 'fx-anim-shelf-head' },
-h('span', { class: 'fx-anim-shelf-title' }, '+ Добавить слой на таймлайн'),
+h('span', { class: 'fx-anim-shelf-title' }, 'Добавить слой на таймлайн'),
 h('span', { class: 'fx-anim-shelf-hint' }, 'Выберите эффект для добавления блока на шкалу времени:'),
 iconButton({ icon: 'x', title: 'Закрыть панель (Esc)', size: 12, cls: 'fx-anim-shelf-close', onClick: closeShelf })
 );
@@ -1088,7 +1088,35 @@ title: 'Закрыть анимацию',
 cls: 'fx-anim-close',
 onClick: () => toggleAnim(false)
 });
-const aSettings = h('div', { class: 'fx-anim-settings' }, aLoop, aDurBox, aRec, aClose);
+const aSnap = iconButton({
+icon: 'magnet',
+title: 'Магнит: блоки прилипают к маркеру, краям других блоков и целым секундам (Alt при перетаскивании отключает)',
+cls: 'fx-anim-snap' + (st.anim.snap !== false ? ' is-active' : ''),
+onClick: () => {
+st.anim.snap = st.anim.snap === false;
+aSnap.classList.toggle('is-active', st.anim.snap !== false);
+save();
+}
+});
+function snapTime(t, widthPx, ignoreId, ev) {
+if (st.anim.snap === false || (ev && ev.altKey)) return t;
+const dur = st.anim.dur || 8;
+const thr = (9 / Math.max(1, widthPx)) * dur;
+const pts = [0, dur, engine.animT];
+for (let i = 1; i < dur; i++) pts.push(i);
+for (const c of st.anim.clips || []) if (c.id !== ignoreId) pts.push(c.start, c.start + c.dur);
+let best = t;
+let bd = thr;
+for (const q of pts) {
+const d = Math.abs(q - t);
+if (d < bd) {
+bd = d;
+best = q;
+}
+}
+return best;
+}
+const aSettings = h('div', { class: 'fx-anim-settings' }, aSnap, aLoop, aDurBox, aRec, aClose);
 const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, quickWrap, aSettings);
 const stage = h('div', { class: 'fx-anim-stage' });
 const rulerTitle = h('div', { class: 'fx-anim-track-label fx-anim-ruler-title' }, 'Время');
@@ -1205,6 +1233,25 @@ engine.animRemoveKey(selKey);
 selKey = null;
 animSync();
 }
+} else if (e.code === 'KeyS' && !e.ctrlKey && !e.metaKey) {
+e.preventDefault();
+splitSelected();
+} else if (e.code === 'KeyD' && (e.ctrlKey || e.metaKey) && selClip) {
+e.preventDefault();
+const cloned = engine.animDuplicateClip(selClip.id);
+if (cloned) selClip = cloned;
+animSync();
+} else if (e.code === 'Home' || e.code === 'End') {
+e.preventDefault();
+engine.animPause();
+engine.animSeek(e.code === 'Home' ? 0 : st.anim.dur || 8);
+animSync();
+} else if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+e.preventDefault();
+engine.animPause();
+const step = e.shiftKey ? 1 : 0.1;
+engine.animSeek(Math.max(0, Math.min(st.anim.dur || 8, engine.animT + (e.code === 'ArrowLeft' ? -step : step))));
+animSync();
 } else if (e.code === 'Escape') {
 if (!shelf.hidden) {
 closeShelf();
@@ -1215,6 +1262,19 @@ animSync();
 }
 }
 });
+function splitSelected() {
+if (!selClip) {
+app.toast('Выберите блок на дорожке, потом поставьте маркер времени там, где резать', 'info');
+return;
+}
+const part = engine.animSplitClip(selClip.id, engine.animT);
+if (!part) {
+app.toast('Маркер времени должен стоять внутри выбранного блока', 'info');
+return;
+}
+selClip = part;
+animSync();
+}
 function renderInspector() {
 inspector.textContent = '';
 if (selClip) {
@@ -1267,6 +1327,12 @@ if (cloned) selClip = cloned;
 animSync();
 }
 });
+const splitBtn = iconButton({
+icon: 'scissors',
+title: 'Разрезать блок по маркеру времени (S)',
+cls: 'btn-sm',
+onClick: () => splitSelected()
+});
 const delBtn = iconButton({
 icon: 'trash',
 title: 'Удалить блок',
@@ -1293,7 +1359,7 @@ h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Длина:'), inDur,
 h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Вход:'), inFadeIn, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
 h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Выход:'), inFadeOut, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
 h('label', { class: 'fx-anim-insp-field fx-anim-insp-amt' }, h('span', {}, 'Сила:'), inAmt, inAmtVal),
-h('div', { class: 'fx-anim-insp-actions' }, dupBtn, delBtn, closeBtn)
+h('div', { class: 'fx-anim-insp-actions' }, splitBtn, dupBtn, delBtn, closeBtn)
 );
 } else if (selKey) {
 const k = selKey;
@@ -1476,7 +1542,12 @@ const r = laneBody.getBoundingClientRect();
 const mv = (ev) => {
 const dx = ev.clientX - startX;
 const dt = (dx / Math.max(1, r.width)) * durTotal;
-const newStart = Math.max(0, Math.min(durTotal - clip.dur, origStart + dt));
+let newStart = Math.max(0, Math.min(durTotal - clip.dur, origStart + dt));
+const sS = snapTime(newStart, r.width, clip.id, ev);
+const sE = snapTime(newStart + clip.dur, r.width, clip.id, ev) - clip.dur;
+if (Math.abs(sS - newStart) <= Math.abs(sE - newStart) && sS !== newStart) newStart = sS;
+else if (sE !== newStart) newStart = sE;
+newStart = Math.max(0, Math.min(durTotal - clip.dur, newStart));
 clip.start = newStart;
 block.style.left = (newStart / durTotal) * 100 + '%';
 blockContent.querySelector('.fx-anim-block-time').textContent = `${clip.dur.toFixed(1)}с`;
@@ -1510,7 +1581,7 @@ const r = laneBody.getBoundingClientRect();
 const mv = (ev) => {
 const dx = ev.clientX - startX;
 const dt = (dx / Math.max(1, r.width)) * durTotal;
-const newStart = Math.max(0, Math.min(origEnd - 0.1, origStart + dt));
+const newStart = Math.max(0, Math.min(origEnd - 0.1, snapTime(origStart + dt, r.width, clip.id, ev)));
 const newDur = origEnd - newStart;
 clip.start = newStart;
 clip.dur = newDur;
@@ -1548,7 +1619,8 @@ const r = laneBody.getBoundingClientRect();
 const mv = (ev) => {
 const dx = ev.clientX - startX;
 const dt = (dx / Math.max(1, r.width)) * durTotal;
-const newDur = Math.max(0.1, Math.min(durTotal - clip.start, origDur + dt));
+const newEnd = Math.min(durTotal, snapTime(clip.start + origDur + dt, r.width, clip.id, ev));
+const newDur = Math.max(0.1, Math.min(durTotal - clip.start, newEnd - clip.start));
 clip.dur = newDur;
 block.style.width = Math.max(1, (newDur / durTotal) * 100) + '%';
 blockContent.querySelector('.fx-anim-block-time').textContent = `${newDur.toFixed(1)}с`;

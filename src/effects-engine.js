@@ -3143,6 +3143,24 @@ export class EffectsEngine {
 		});
 	}
 
+	/** Разрезать клип по времени t на два: у первого остаётся вход, у второго выход. Возвращает правую часть или null */
+	animSplitClip(clipId, t) {
+		const A = this.state.anim;
+		const clip = (A.clips || []).find((c) => c.id === clipId);
+		if (!clip || t <= clip.start + 0.3 || t >= clip.start + clip.dur - 0.3) return null;
+		const end = clip.start + clip.dur;
+		const outFade = clip.fadeOut;
+		const left = t - clip.start;
+		clip.dur = Math.round(left * 100) / 100;
+		clip.fadeIn = Math.min(clip.fadeIn, clip.dur * 0.45);
+		clip.fadeOut = Math.min(0.15, clip.dur * 0.3);
+		const right = this.animAddClip(clip.layerId, { start: t, dur: end - t, fadeIn: Math.min(0.15, (end - t) * 0.3), fadeOut: Math.min(outFade, (end - t) * 0.45), amount: clip.amount });
+		this.touch();
+		this.emit();
+		this.app.bus.emit('fxanim');
+		return right;
+	}
+
 	/** Очистить всю дорожку анимации */
 	animClear() {
 		const A = this.state.anim;
