@@ -458,6 +458,8 @@ uniform vec3 uScopeC;
 float gDepth = 0.5;
 float gDepthG = 0.0;
 uniform vec4 uDepth, uDepthP, uDepthQ;
+uniform float uFlat;
+float gLum = 0.5;
 uniform vec4 uCurl, uSpec, uWave, uTwist, uPulse, uVoxel, uJitter, uCursor, uMask, uMaskA, uGlitch, uContact, uShockP;
 uniform vec4 uTrk[16];
 uniform vec4 uHand[12];
@@ -910,6 +912,8 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	}
 	if (uDepth.x > 0.001) base = depthShape(base);
 	vec3 rad = normalize(base + vec3(1e-4));
+	// у плоских источников (фото, видео, блок кадров) направление «наружу» это взгляд на кадр, иначе волны и импульсы лишь двигают картинку в её плоскости и почти не видны
+	rad = normalize(mix(rad, vec3(0.0, 0.0, 1.0), 0.8 * uFlat));
 	vec3 pos = base;
 
 	if (uTwist.x > 0.001) {
@@ -942,7 +946,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			vec3 wd = vec3(cos(uWaveSrc.w), 0.0, sin(uWaveSrc.w));
 			wv = sin(dot(base, wd) * uWave.y * 2.0 - t * 3.0 * uWaveP.x);
 		}
-		pos += rad * wv * uWave.x * 0.14;
+		pos += rad * wv * uWave.x * 0.14 * (1.0 + 1.5 * uFlat);
 	}
 	if (uSpec.x > 0.001) {
 		float y01s = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
@@ -971,7 +975,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			pe = 0.0;
 		}
 	}
-	pos += rad * pe * 0.28;
+	pos += rad * pe * 0.28 * (1.0 + 1.5 * uFlat);
 	pos *= 1.0 + pe * 0.1;
 	if (uBlast.x > 0.001) {
 		float age = uTime - uBlast.w;
@@ -1109,8 +1113,8 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		float r = hash11(band * 13.7 + floor(t * 10.0 * uGlitchP.y));
 		if (r > 0.7) {
 			float shf = (r - 0.7) * 3.3 * (hash11(band + 7.0) - 0.5) * uGlitch.x * 0.9;
-			pos.x += shf;
-			pos.z += shf * 2.2 * (hash11(band + 3.0) - 0.5);
+			pos.x += shf * (1.0 + uFlat);
+			pos.z += shf * 2.2 * (hash11(band + 3.0) - 0.5) * (1.0 + uFlat);
 			gGl = uGlitch.x;
 			if (uGlitchP.x > 0.5) {
 				float chn = floor(hash11(aIdx * 17.3) * 3.0);
@@ -1120,7 +1124,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		}
 	}
 	if (uVoxel.x > 0.01) {
-		float g = mix(0.3, 0.035, clamp(uVoxel.x, 0.0, 1.0));
+		float g = mix(0.3, mix(0.035, 0.07, uFlat), clamp(uVoxel.x, 0.0, 1.0));
 		if (uVoxelP.x > 1.5) g *= 1.0 + 0.35 * sin(t * uVoxelP.y * 2.0);
 		vec3 cell = floor(pos / g);
 		vec3 q = (cell + 0.5) * g;
@@ -1128,6 +1132,8 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			float h2 = hash11(dot(cell, vec3(12.9, 78.2, 37.7)));
 			q.y += (h2 - 0.5) * g * 2.0 * sin(t * uVoxelP.y * 1.5 + h2 * 6.2831);
 		}
+		// на фото кубики получают высоту по яркости: мозаика из столбиков, видная под углом
+		q.z += uFlat * (gLum - 0.5) * g * 9.0;
 		pos = mix(pos, q, smoothstep(0.0, 0.25, uVoxel.x));
 	}
 	if (uJitter.x > 0.001) {
@@ -1412,6 +1418,7 @@ void main() {
 	vec3 base;
 	float maskV;
 	gDepth = aDepth;
+	gLum = uFr.x > 0.5 ? dot(frCol, vec3(0.3, 0.59, 0.11)) : dot(aColor, vec3(0.3, 0.59, 0.11));
 	if (uScope.x > 0.001) {
 		// акселограф: aPath это место точки на пути пера (0..1), uScope.z это положение пера, у ещё не нарисованных точек размер падает до нуля
 		bool rv = uScope.y > 1.5;
@@ -5146,7 +5153,7 @@ export class EffectsEngine {
 			uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 			uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
 			uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
-			uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
+			uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 		};
 		const mk = (extra) =>
 			new THREE.ShaderMaterial({
@@ -5165,6 +5172,7 @@ export class EffectsEngine {
 		g.computeBoundingBox();
 		const bb = g.boundingBox;
 		shared.uYR.value.set(bb.min.y, bb.max.y);
+		this._yrBase = [bb.min.y, bb.max.y];
 		const old = this.points;
 		const rot = old ? old.rotation.clone() : null;
 		if (old) this._disposePoints();
@@ -5809,6 +5817,14 @@ export class EffectsEngine {
 			u.uJitter.value.set(this._eff(L.jitter), 0, 0, 0);
 			{
 				this._scopeTick(dt, L.scope, u);
+			}
+			// у фото, видео и блока кадров своя геометрия: направление наружу идёт по взгляду, а вертикальный размах берётся с кадра, а не с исходного облака
+			u.uFlat.value = st.source === 'media' || u.uFr.value.x > 0.5 ? 1 : 0;
+			if (this._yrBase) {
+				if (u.uFr.value.x > 0.5) {
+					const hh = u.uFr3.value.y > 0.5 && u.uFr3.value.y < 1.5 ? 1.25 : Math.max(0.3, u.uFr2.value.w * 0.5);
+					u.uYR.value.set(-hh, hh);
+				} else u.uYR.value.set(this._yrBase[0], this._yrBase[1]);
 			}
 			{
 				const Dp = L.depth;
