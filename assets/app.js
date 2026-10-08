@@ -140651,6 +140651,48 @@ function createEffectsPanel(app, root, engine) {
 	const recTime = h('span', { class: 'fx-rec-time' });
 	// ------------------------------------------------------------ анимация по ключам и блокам эффектов (секвенсор)
 	const animPanel = h('div', { class: 'fx-anim vp-pill', hidden: true, role: 'region', 'aria-label': 'Секвенсор анимации' });
+	const resizeHandle = h('div', { class: 'fx-anim-resize-handle', title: 'Потяните для изменения высоты таймлайна (двойной клик сбросит)' });
+	let curH = 245;
+	try {
+		const savedH = Number(localStorage.getItem('objglb.fx.anim.h'));
+		if (savedH >= 170 && savedH <= 480) curH = savedH;
+	} catch (_) {}
+	document.documentElement.style.setProperty('--fx-anim-h', curH + 'px');
+
+	let isResizingH = false;
+	let resizeStartY = 0;
+	let resizeStartH = 245;
+	resizeHandle.addEventListener('pointerdown', (e) => {
+		e.preventDefault();
+		isResizingH = true;
+		resizeStartY = e.clientY;
+		resizeStartH = curH;
+		resizeHandle.setPointerCapture(e.pointerId);
+		document.body.classList.add('is-resizing-h');
+		const onMove = (ev) => {
+			if (!isResizingH) return;
+			const dy = resizeStartY - ev.clientY;
+			curH = Math.max(170, Math.min(480, Math.round(resizeStartH + dy)));
+			document.documentElement.style.setProperty('--fx-anim-h', curH + 'px');
+		};
+		const onUp = () => {
+			isResizingH = false;
+			document.body.classList.remove('is-resizing-h');
+			resizeHandle.removeEventListener('pointermove', onMove);
+			resizeHandle.removeEventListener('pointerup', onUp);
+			resizeHandle.removeEventListener('pointercancel', onUp);
+			try { localStorage.setItem('objglb.fx.anim.h', curH); } catch (_) {}
+		};
+		resizeHandle.addEventListener('pointermove', onMove);
+		resizeHandle.addEventListener('pointerup', onUp);
+		resizeHandle.addEventListener('pointercancel', onUp);
+	});
+	resizeHandle.addEventListener('dblclick', () => {
+		curH = 245;
+		document.documentElement.style.setProperty('--fx-anim-h', '245px');
+		try { localStorage.setItem('objglb.fx.anim.h', 245); } catch (_) {}
+	});
+
 	const keyAnimBtn = button({
 		label: 'Анимация',
 		icon: 'film-strip',
@@ -140689,16 +140731,48 @@ function createEffectsPanel(app, root, engine) {
 		icon: 'arrow-counter-clockwise',
 		title: 'В начало (0.0 с)',
 		cls: 'fx-anim-rew',
-		onClick: () => engine.animSeek(0)
+		onClick: () => {
+			engine.animSeek(0);
+			animSync();
+		}
 	});
 	const aTimeCur = h('span', { class: 'fx-anim-t-cur' }, '00:00.0');
 	const aTimeSep = h('span', { class: 'fx-anim-t-sep' }, '/');
 	const aTimeTotal = h('span', { class: 'fx-anim-t-total' }, '00:08.0');
 	const aTimecode = h('div', { class: 'fx-anim-timecode' }, aTimeCur, aTimeSep, aTimeTotal);
-	const aTransport = h('div', { class: 'fx-anim-transport' }, aPlay, aRew, aTimecode);
+
+	// Зум времени
+	let animZoom = 1;
+	const zoomBtnOut = iconButton({
+		icon: 'minus',
+		title: 'Уменьшить масштаб шкалы времени',
+		size: 11,
+		cls: 'fx-anim-zoom-btn',
+		onClick: () => setZoom(animZoom <= 1.5 ? 1 : animZoom <= 2 ? 1.5 : 2)
+	});
+	const zoomVal = h('span', { class: 'fx-anim-zoom-val' }, '1x');
+	const zoomBtnIn = iconButton({
+		icon: 'plus',
+		title: 'Увеличить масштаб шкалы времени',
+		size: 11,
+		cls: 'fx-anim-zoom-btn',
+		onClick: () => setZoom(animZoom < 1.5 ? 1.5 : animZoom < 2 ? 2 : 3)
+	});
+	const zoomBox = h('div', { class: 'fx-anim-zoom-box', title: 'Масштаб времени (секунды)' }, zoomBtnOut, zoomVal, zoomBtnIn);
+
+	function setZoom(z) {
+		animZoom = z;
+		zoomVal.textContent = z + 'x';
+		stage.style.setProperty('--fx-anim-zoom', z);
+		stage.classList.toggle('is-zoomed', z > 1);
+		renderRuler();
+		animSync();
+	}
+
+	const aTransport = h('div', { class: 'fx-anim-transport' }, aPlay, aRew, aTimecode, zoomBox);
 
 	// Поповер сценариев
-	const presetsPop = h('div', { class: 'popover fx-anim-menu fx-anim-presets-pop', hidden: true });
+	const presetsPop = h('div', { class: 'fx-anim-menu fx-anim-presets-pop', hidden: true });
 	const presetsBtn = button({
 		label: 'Сценарии',
 		icon: 'sparkle',
@@ -140750,11 +140824,11 @@ function createEffectsPanel(app, root, engine) {
 		app.toast('Таймлайн очищен', 'info');
 		animSync();
 	});
-	presetsPop.append(h('div', { class: 'popover-divider' }), clearBtn);
+	presetsPop.append(h('div', { class: 'fx-anim-menu-divider' }), clearBtn);
 	const presetsWrap = h('div', { class: 'fx-anim-presets-wrap' }, presetsBtn, presetsPop);
 
 	// Поповер добавления эффекта
-	const addPop = h('div', { class: 'popover fx-anim-menu fx-anim-add-pop', hidden: true });
+	const addPop = h('div', { class: 'fx-anim-menu fx-anim-add-pop', hidden: true });
 	const addClipBtn = button({
 		label: 'Эффект',
 		icon: 'plus',
@@ -140889,11 +140963,11 @@ function createEffectsPanel(app, root, engine) {
 	// 3. Инспектор выбранного элемента (Inspector)
 	const inspector = h('div', { class: 'fx-anim-inspector', hidden: true });
 
-	animPanel.append(topBar, stage, inspector);
+	animPanel.append(resizeHandle, topBar, stage, inspector);
 	document.getElementById('viewport').append(animPanel);
 
-	function timeFromPointer(e, targetEl) {
-		const r = targetEl.getBoundingClientRect();
+	function timeFromPointer(e, targetEl, cachedRect) {
+		const r = cachedRect || targetEl.getBoundingClientRect();
 		const frac = Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(1, r.width)));
 		return frac * (st.anim.dur || 8);
 	}
@@ -140905,11 +140979,14 @@ function createEffectsPanel(app, root, engine) {
 			engine.animPause();
 			isScrubbing = true;
 			el.setPointerCapture(e.pointerId);
-			const t = timeFromPointer(e, el);
+			const rect = el.getBoundingClientRect();
+			const t = timeFromPointer(e, el, rect);
 			engine.animSeek(t);
+			animSync();
 			const onMove = (ev) => {
 				if (!isScrubbing) return;
-				engine.animSeek(timeFromPointer(ev, el));
+				engine.animSeek(timeFromPointer(ev, el, rect));
+				animSync();
 			};
 			const onUp = () => {
 				isScrubbing = false;
@@ -140931,6 +141008,7 @@ function createEffectsPanel(app, root, engine) {
 		animPanel.hidden = !on;
 		keyAnimBtn.classList.toggle('is-active', on);
 		animQuickBtn.classList.toggle('is-active', on);
+		appEl.classList.toggle('fx-anim-active', on);
 		if (!on) {
 			engine.animPause();
 			closeMenus();
@@ -141022,10 +141100,16 @@ function createEffectsPanel(app, root, engine) {
 				animSync();
 			});
 
-			const inAmt = h('input', { type: 'range', class: 'slider-range', min: 0.05, max: 2.0, step: 0.05, value: c.amount });
+			const inAmt = h('input', { type: 'range', class: 'range fx-anim-amt-range', min: 0.05, max: 2.0, step: 0.05, value: c.amount });
 			const inAmtVal = h('span', { class: 'fx-anim-insp-val' }, c.amount.toFixed(2));
+			const syncAmtFill = () => {
+				const pct = ((Number(inAmt.value) - 0.05) / (2.0 - 0.05)) * 100;
+				inAmt.style.setProperty('--p', pct.toFixed(1) + '%');
+			};
+			syncAmtFill();
 			inAmt.addEventListener('input', () => {
 				inAmtVal.textContent = Number(inAmt.value).toFixed(2);
+				syncAmtFill();
 				engine.animUpdateClip(c.id, { amount: Number(inAmt.value) });
 			});
 
@@ -141280,15 +141364,16 @@ function createEffectsPanel(app, root, engine) {
 						const dx = ev.clientX - startX;
 						const dt = (dx / Math.max(1, r.width)) * durTotal;
 						const newStart = Math.max(0, Math.min(durTotal - clip.dur, origStart + dt));
-						engine.animUpdateClip(clip.id, { start: Math.round(newStart * 10) / 10 });
-						engine.animSeek(clip.start);
-						animSync();
+						clip.start = newStart;
+						block.style.left = (newStart / durTotal) * 100 + '%';
+						blockContent.querySelector('.fx-anim-block-time').textContent = `${clip.dur.toFixed(1)}с`;
 					};
 
 					const up = () => {
 						block.removeEventListener('pointermove', mv);
 						block.removeEventListener('pointerup', up);
 						block.removeEventListener('pointercancel', up);
+						engine.animUpdateClip(clip.id, { start: Math.round(clip.start * 10) / 10 });
 						isDraggingItem = false;
 						animSync();
 					};
@@ -141318,20 +141403,23 @@ function createEffectsPanel(app, root, engine) {
 					const mv = (ev) => {
 						const dx = ev.clientX - startX;
 						const dt = (dx / Math.max(1, r.width)) * durTotal;
-						const newStart = Math.max(0, Math.min(origEnd - 0.2, origStart + dt));
+						const newStart = Math.max(0, Math.min(origEnd - 0.1, origStart + dt));
 						const newDur = origEnd - newStart;
-						engine.animUpdateClip(clip.id, {
-							start: Math.round(newStart * 10) / 10,
-							dur: Math.round(newDur * 10) / 10
-						});
-						engine.animSeek(clip.start);
-						animSync();
+						clip.start = newStart;
+						clip.dur = newDur;
+						block.style.left = (newStart / durTotal) * 100 + '%';
+						block.style.width = Math.max(1, (newDur / durTotal) * 100) + '%';
+						blockContent.querySelector('.fx-anim-block-time').textContent = `${newDur.toFixed(1)}с`;
 					};
 
 					const up = () => {
 						handleL.removeEventListener('pointermove', mv);
 						handleL.removeEventListener('pointerup', up);
 						handleL.removeEventListener('pointercancel', up);
+						engine.animUpdateClip(clip.id, {
+							start: Math.round(clip.start * 10) / 10,
+							dur: Math.round(clip.dur * 10) / 10
+						});
 						isDraggingItem = false;
 						animSync();
 					};
@@ -141359,16 +141447,19 @@ function createEffectsPanel(app, root, engine) {
 					const mv = (ev) => {
 						const dx = ev.clientX - startX;
 						const dt = (dx / Math.max(1, r.width)) * durTotal;
-						const newDur = Math.max(0.2, Math.min(durTotal - clip.start, origDur + dt));
-						engine.animUpdateClip(clip.id, { dur: Math.round(newDur * 10) / 10 });
-						engine.animSeek(clip.start + clip.dur);
-						animSync();
+						const newDur = Math.max(0.1, Math.min(durTotal - clip.start, origDur + dt));
+						clip.dur = newDur;
+						block.style.width = Math.max(1, (newDur / durTotal) * 100) + '%';
+						blockContent.querySelector('.fx-anim-block-time').textContent = `${newDur.toFixed(1)}с`;
 					};
 
 					const up = () => {
 						handleR.removeEventListener('pointermove', mv);
 						handleR.removeEventListener('pointerup', up);
 						handleR.removeEventListener('pointercancel', up);
+						engine.animUpdateClip(clip.id, {
+							dur: Math.round(clip.dur * 10) / 10
+						});
 						isDraggingItem = false;
 						animSync();
 					};
@@ -141390,12 +141481,14 @@ function createEffectsPanel(app, root, engine) {
 		const durTotal = st.anim.dur || 8;
 		rulerTicks.textContent = '';
 		const nSecs = Math.max(1, Math.round(durTotal));
-		const step = nSecs <= 10 ? 1 : nSecs <= 30 ? 2 : 5;
+		const step = nSecs <= 8 ? 1 : nSecs <= 24 ? 2 : nSecs <= 60 ? 5 : 10;
 
 		for (let s = 0; s <= nSecs; s += step) {
 			const pct = (s / durTotal) * 100;
-			const tick = h('div', { class: 'fx-anim-tick', style: { left: pct + '%' } },
-				h('span', { class: 'fx-anim-tick-label' }, `${s}с`)
+			if (pct > 100) continue;
+			const isEnd = pct >= 88 || s === nSecs;
+			const tick = h('div', { class: 'fx-anim-tick', style: { left: Math.min(100, Math.max(0, pct)) + '%' } },
+				h('span', { class: 'fx-anim-tick-label' + (isEnd ? ' is-end' : '') }, `${s}с`)
 			);
 			rulerTicks.append(tick);
 		}
