@@ -139323,10 +139323,13 @@ class EffectsEngine {
 			if (this.hasModel && !this.pm.ready) {
 				const saved = this.state.count;
 				this.state.count = Math.max(20000, Math.min(2000000, this.app.settings.point.surfaceCount));
+				// тихий режим: подготовка идёт в фоне и не должна показывать окно загрузки (раньше оно оставалось на экране навсегда)
+				this._quiet = true;
 				try {
 					await this._cloudFor('model');
 				} finally {
 					this.state.count = saved;
+					this._quiet = false;
 				}
 			}
 		} catch (e) {
