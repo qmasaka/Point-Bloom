@@ -149,7 +149,7 @@ dofDist: 5.2,
 dofRange: 1.4,
 },
 audio: { style: 'deep', gain: 1.3, idle: false, idleSet: false, volume: 0.8 },
-anim: { dur: 8, loop: true, keys: [] },
+anim: { dur: 8, loop: true, keys: [], clips: [] },
 };
 }
 const KEY = 'objglb.fx.v9';
@@ -2784,23 +2784,27 @@ fr.head++;
 this.shared.uFr5.value.x = fr.head % fr.n;
 }
 _animLayers() {
-return ['curl', 'spectrum', 'wave', 'twist', 'pulse', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'echo'];
+return ['curl', 'spectrum', 'wave', 'twist', 'pulse', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'echo', 'links', 'dissolve', 'gravity'];
 }
 animCapture() {
 const nav = this.app.nav;
 const L = this.state.layers;
 const layers = {};
-for (const id of this._animLayers()) layers[id] = L[id].on ? L[id].amount : 0;
+for (const id of this._animLayers()) layers[id] = L[id]?.on ? L[id].amount : 0;
 return { cam: { yaw: nav.yaw, pitch: nav.pitch, dist: nav.distance, tx: nav.target.x, ty: nav.target.y, tz: nav.target.z }, size: this.app.settings.point.size, bright: this.state.look.bright, glow: this.state.look.glow, layers };
 }
 get animKeys() {
-return this.state.anim.keys;
+return this.state.anim.keys || (this.state.anim.keys = []);
+}
+get animClips() {
+return this.state.anim.clips || (this.state.anim.clips = []);
 }
 _animSort() {
-this.state.anim.keys.sort((a, b) => a.t - b.t);
+this.animKeys.sort((a, b) => a.t - b.t);
 }
 animAddKey(t = this.animT) {
 const A = this.state.anim;
+if (!A.keys) A.keys = [];
 const snap = { t: Math.round(Math.min(A.dur, Math.max(0, t)) * 100) / 100, ...this.animCapture() };
 const near = A.keys.find((k) => Math.abs(k.t - snap.t) < 0.06);
 if (near) Object.assign(near, snap, { t: near.t });
@@ -2808,35 +2812,212 @@ else A.keys.push(snap);
 this._animSort();
 this.touch();
 this.emit();
+this.app.bus.emit('fxanim');
 return near || snap;
 }
 animUpdateKey(key) {
 Object.assign(key, this.animCapture(), { t: key.t });
 this.touch();
 this.emit();
+this.app.bus.emit('fxanim');
 }
 animRemoveKey(key) {
 const A = this.state.anim;
+if (!A.keys) return;
 A.keys = A.keys.filter((k) => k !== key);
 this.touch();
 this.emit();
+this.app.bus.emit('fxanim');
 }
 animMoveKey(key, t) {
 key.t = Math.round(Math.min(this.state.anim.dur, Math.max(0, t)) * 100) / 100;
 this._animSort();
 this.touch();
+this.app.bus.emit('fxanim');
+}
+animAddClip(layerId, opts = {}) {
+const A = this.state.anim;
+if (!A.clips) A.clips = [];
+const durTotal = A.dur || 8;
+const dur = Math.max(0.3, Math.min(durTotal, opts.dur ?? 2.5));
+const defaultStart = Math.min(Math.max(0, this.animT), Math.max(0, durTotal - dur));
+const start = Math.max(0, Math.min(durTotal - 0.2, opts.start ?? defaultStart));
+const actualDur = Math.min(dur, Math.max(0.2, durTotal - start));
+const fadeIn = Math.max(0, Math.min(actualDur * 0.45, opts.fadeIn ?? 0.4));
+const fadeOut = Math.max(0, Math.min(actualDur * 0.45, opts.fadeOut ?? 0.5));
+const defAmt = this.state.layers[layerId]?.amount ?? 1.0;
+const amount = Math.max(0.05, Math.min(2.0, opts.amount ?? (defAmt > 0 ? defAmt : 1.0)));
+const clip = {
+id: 'c_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+layerId,
+start: Math.round(start * 100) / 100,
+dur: Math.round(actualDur * 100) / 100,
+fadeIn: Math.round(fadeIn * 100) / 100,
+fadeOut: Math.round(fadeOut * 100) / 100,
+amount: Math.round(amount * 100) / 100,
+};
+A.clips.push(clip);
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+return clip;
+}
+animUpdateClip(clipId, patch = {}) {
+const A = this.state.anim;
+if (!A.clips) return null;
+const clip = A.clips.find((c) => c.id === clipId);
+if (!clip) return null;
+const durTotal = A.dur || 8;
+if (patch.start !== undefined) {
+clip.start = Math.max(0, Math.min(durTotal - 0.2, patch.start));
+if (clip.start + clip.dur > durTotal) {
+clip.dur = Math.max(0.2, durTotal - clip.start);
+}
+}
+if (patch.dur !== undefined) {
+clip.dur = Math.max(0.2, Math.min(durTotal - clip.start, patch.dur));
+}
+if (patch.fadeIn !== undefined) {
+clip.fadeIn = Math.max(0, Math.min(clip.dur, patch.fadeIn));
+}
+if (patch.fadeOut !== undefined) {
+clip.fadeOut = Math.max(0, Math.min(clip.dur, patch.fadeOut));
+}
+if (clip.fadeIn + clip.fadeOut > clip.dur) {
+const ratio = clip.dur / (clip.fadeIn + clip.fadeOut);
+clip.fadeIn *= ratio;
+clip.fadeOut *= ratio;
+}
+if (patch.amount !== undefined) {
+clip.amount = Math.max(0.05, Math.min(2.0, patch.amount));
+}
+if (patch.layerId !== undefined && this.state.layers[patch.layerId]) {
+clip.layerId = patch.layerId;
+}
+clip.start = Math.round(clip.start * 100) / 100;
+clip.dur = Math.round(clip.dur * 100) / 100;
+clip.fadeIn = Math.round(clip.fadeIn * 100) / 100;
+clip.fadeOut = Math.round(clip.fadeOut * 100) / 100;
+clip.amount = Math.round(clip.amount * 100) / 100;
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+return clip;
+}
+animRemoveClip(clipId) {
+const A = this.state.anim;
+if (!A.clips) return;
+A.clips = A.clips.filter((c) => c.id !== clipId);
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+}
+animDuplicateClip(clipId) {
+const A = this.state.anim;
+if (!A.clips) return null;
+const clip = A.clips.find((c) => c.id === clipId);
+if (!clip) return null;
+const durTotal = A.dur || 8;
+let newStart = clip.start + 0.5;
+if (newStart + clip.dur > durTotal) newStart = Math.max(0, durTotal - clip.dur);
+return this.animAddClip(clip.layerId, {
+start: newStart,
+dur: clip.dur,
+fadeIn: clip.fadeIn,
+fadeOut: clip.fadeOut,
+amount: clip.amount,
+});
+}
+animClear() {
+const A = this.state.anim;
+A.keys = [];
+A.clips = [];
+this.animT = 0;
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+}
+animLoadPreset(id) {
+const nav = this.app?.nav;
+const baseDist = nav?.distance || 5.2;
+const tx = nav?.target?.x || 0;
+const ty = nav?.target?.y || 0;
+const tz = nav?.target?.z || 0;
+if (id === 'dust_rebirth') {
+this.animSetDuration(9);
+const A = this.state.anim;
+A.keys = [
+{ t: 0.0, cam: { yaw: 0.2, pitch: 0.25, dist: baseDist * 0.75, tx, ty, tz }, size: 2.2, bright: 0.9, glow: 0.6, layers: {} },
+{ t: 4.5, cam: { yaw: 2.1, pitch: 0.15, dist: baseDist * 1.15, tx, ty, tz }, size: 3.8, bright: 1.2, glow: 1.0, layers: {} },
+{ t: 9.0, cam: { yaw: 4.0, pitch: 0.28, dist: baseDist * 0.85, tx, ty, tz }, size: 3.0, bright: 1.0, glow: 0.8, layers: {} },
+];
+A.clips = [
+{ id: 'c_pr_1', layerId: 'dissolve', start: 0.0, dur: 3.8, fadeIn: 0.2, fadeOut: 1.0, amount: 1.0 },
+{ id: 'c_pr_2', layerId: 'curl', start: 2.2, dur: 4.5, fadeIn: 0.8, fadeOut: 1.2, amount: 0.9 },
+{ id: 'c_pr_3', layerId: 'pulse', start: 5.2, dur: 3.2, fadeIn: 0.6, fadeOut: 0.8, amount: 0.75 },
+{ id: 'c_pr_4', layerId: 'wave', start: 6.2, dur: 2.8, fadeIn: 0.5, fadeOut: 0.8, amount: 0.65 },
+];
+} else if (id === 'scan_collapse') {
+this.animSetDuration(10);
+const A = this.state.anim;
+A.keys = [
+{ t: 0.0, cam: { yaw: -0.6, pitch: 0.45, dist: baseDist * 0.8, tx, ty: ty - 0.2, tz }, size: 2.8, bright: 1.0, glow: 0.7, layers: {} },
+{ t: 5.0, cam: { yaw: 1.2, pitch: 0.1, dist: baseDist * 1.2, tx, ty: ty + 0.1, tz }, size: 3.4, bright: 1.3, glow: 1.1, layers: {} },
+{ t: 10.0, cam: { yaw: 3.2, pitch: 0.35, dist: baseDist * 0.9, tx, ty, tz }, size: 3.0, bright: 1.0, glow: 0.8, layers: {} },
+];
+A.clips = [
+{ id: 'c_pr_5', layerId: 'slice', start: 0.0, dur: 4.0, fadeIn: 0.2, fadeOut: 0.8, amount: 1.0 },
+{ id: 'c_pr_6', layerId: 'links', start: 3.0, dur: 4.5, fadeIn: 0.8, fadeOut: 1.0, amount: 0.95 },
+{ id: 'c_pr_7', layerId: 'glitch', start: 5.5, dur: 3.5, fadeIn: 0.4, fadeOut: 0.8, amount: 0.85 },
+{ id: 'c_pr_8', layerId: 'echo', start: 7.0, dur: 3.0, fadeIn: 0.6, fadeOut: 0.8, amount: 0.8 },
+];
+} else if (id === 'glitch_morph') {
+this.animSetDuration(8);
+const A = this.state.anim;
+A.keys = [
+{ t: 0.0, cam: { yaw: 0.0, pitch: 0.2, dist: baseDist, tx, ty, tz }, size: 3.2, bright: 1.0, glow: 0.8, layers: {} },
+{ t: 3.5, cam: { yaw: 1.8, pitch: -0.1, dist: baseDist * 0.75, tx, ty, tz }, size: 4.2, bright: 1.4, glow: 1.2, layers: {} },
+{ t: 8.0, cam: { yaw: 3.6, pitch: 0.2, dist: baseDist, tx, ty, tz }, size: 3.2, bright: 1.0, glow: 0.8, layers: {} },
+];
+A.clips = [
+{ id: 'c_pr_9', layerId: 'glitch', start: 0.3, dur: 3.2, fadeIn: 0.2, fadeOut: 0.6, amount: 0.95 },
+{ id: 'c_pr_10', layerId: 'blast', start: 2.2, dur: 3.8, fadeIn: 0.3, fadeOut: 0.9, amount: 1.0 },
+{ id: 'c_pr_11', layerId: 'twist', start: 3.0, dur: 3.5, fadeIn: 0.6, fadeOut: 0.8, amount: 0.85 },
+{ id: 'c_pr_12', layerId: 'feedback', start: 4.8, dur: 3.2, fadeIn: 0.5, fadeOut: 1.0, amount: 0.9 },
+];
+}
+this.animSeek(0);
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
 }
 animSetDuration(d) {
 const A = this.state.anim;
 A.dur = Math.max(1, Math.min(120, d));
+if (A.keys) {
 for (const k of A.keys) k.t = Math.min(k.t, A.dur);
+}
+if (A.clips) {
+for (const c of A.clips) {
+c.start = Math.min(c.start, Math.max(0, A.dur - 0.2));
+c.dur = Math.min(c.dur, A.dur - c.start);
+if (c.fadeIn + c.fadeOut > c.dur) {
+c.fadeIn = Math.min(c.fadeIn, c.dur * 0.5);
+c.fadeOut = Math.min(c.fadeOut, c.dur * 0.5);
+}
+}
+}
 this.animT = Math.min(this.animT, A.dur);
 this.touch();
 this.emit();
+this.app.bus.emit('fxanim');
 }
 animApply(t) {
-const keys = this.state.anim.keys;
-if (!keys.length) return;
+const A = this.state.anim;
+const keys = A.keys || [];
+const clips = A.clips || [];
+if (!keys.length && !clips.length) return;
+if (keys.length > 0) {
 let a = keys[0];
 let b = keys[keys.length - 1];
 let u = 0;
@@ -2862,16 +3043,59 @@ nav.pitch = mix(a.cam.pitch, b.cam.pitch);
 nav.distance = Math.exp(mix(Math.log(a.cam.dist), Math.log(b.cam.dist)));
 nav.target.set(mix(a.cam.tx, b.cam.tx), mix(a.cam.ty, b.cam.ty), mix(a.cam.tz, b.cam.tz));
 nav.applyCamera();
+if (a.size !== undefined && b.size !== undefined) {
 this.app.settings.point.size = mix(a.size, b.size);
+}
+if (a.bright !== undefined && b.bright !== undefined) {
 this.state.look.bright = mix(a.bright, b.bright);
+}
+if (a.glow !== undefined && b.glow !== undefined) {
 this.state.look.glow = mix(a.glow, b.glow);
+}
+if (clips.length === 0 && a.layers && b.layers) {
 const L = this.state.layers;
 for (const id of this._animLayers()) {
+if (!L[id]) continue;
 const v = mix(a.layers[id] ?? 0, b.layers[id] ?? 0);
 if (v > 0.003) {
 L[id].on = true;
 L[id].amount = v;
-} else L[id].on = false;
+} else {
+L[id].on = false;
+}
+}
+}
+}
+if (clips.length > 0) {
+const L = this.state.layers;
+const clipLayerIds = new Set(clips.map((c) => c.layerId));
+for (const layerId of clipLayerIds) {
+if (!L[layerId]) continue;
+let maxVal = 0;
+for (const c of clips) {
+if (c.layerId !== layerId) continue;
+if (t < c.start || t > c.start + c.dur) continue;
+const elapsed = t - c.start;
+const remaining = c.start + c.dur - t;
+let env = 1.0;
+if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
+const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
+env = Math.min(env, f * f * (3 - 2 * f));
+}
+if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
+const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
+env = Math.min(env, f * f * (3 - 2 * f));
+}
+const val = (c.amount ?? 1.0) * env;
+if (val > maxVal) maxVal = val;
+}
+if (maxVal > 0.003) {
+L[layerId].on = true;
+L[layerId].amount = maxVal;
+} else {
+L[layerId].on = false;
+}
+}
 }
 clearTimeout(this._saveT);
 this._saveT = setTimeout(() => saveJSON(KEY, this.state), 500);
@@ -2882,7 +3106,9 @@ this.animApply(this.animT);
 this.app.bus.emit('fxanim');
 }
 animPlay() {
-if (this.state.anim.keys.length < 2) return false;
+const hasKeys = this.state.anim.keys && this.state.anim.keys.length >= 2;
+const hasClips = this.state.anim.clips && this.state.anim.clips.length >= 1;
+if (!hasKeys && !hasClips) return false;
 if (this.animT >= this.state.anim.dur - 0.01) this.animT = 0;
 this.animPlaying = true;
 this.app.bus.emit('fxanim');
@@ -2895,7 +3121,9 @@ this.emit();
 this.app.bus.emit('fxanim');
 }
 animRecord() {
-if (this.state.anim.keys.length < 2 || this.recording) return false;
+const hasKeys = this.state.anim.keys && this.state.anim.keys.length >= 2;
+const hasClips = this.state.anim.clips && this.state.anim.clips.length >= 1;
+if ((!hasKeys && !hasClips) || this.recording) return false;
 this.animT = 0;
 this.animApply(0);
 this.animRec = true;

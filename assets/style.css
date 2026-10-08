@@ -3253,79 +3253,442 @@ body {
 }
 
 /* дорожка анимации по ключам над нижней панелью эффектов */
+/* ============================================================ */
+/* FX-ANIM: Мультитрековый секвенсор анимации (Point Bloom Glass) */
+/* ============================================================ */
 .fx-anim {
+	--fx-head-w: 130px;
 	position: absolute;
 	left: 50%;
-	bottom: 64px;
+	bottom: 68px;
 	transform: translateX(-50%);
-	z-index: var(--z-overlay);
+	z-index: var(--z-overlay, 40);
 	display: none;
 	flex-direction: column;
 	gap: 8px;
-	width: min(560px, calc(100% - 24px));
-	padding: 8px 10px;
-	border-radius: var(--r-box);
+	width: min(840px, calc(100% - 24px));
+	padding: 10px 14px 12px;
+	border-radius: 18px;
+	background: var(--fxg-bg, rgba(20, 22, 27, 0.78));
+	backdrop-filter: var(--fxg-blur, blur(28px) saturate(180%));
+	-webkit-backdrop-filter: var(--fxg-blur, blur(28px) saturate(180%));
+	border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.1));
+	box-shadow: var(--fxg-shadow, 0 16px 40px rgba(0, 0, 0, 0.5));
+	user-select: none;
 }
 .fx-mode .fx-anim:not([hidden]) {
 	display: flex;
-	animation: fx-anim-in 0.2s var(--ease);
+	animation: fx-anim-in 0.22s var(--ease);
 }
 @keyframes fx-anim-in {
 	from {
 		opacity: 0;
-		transform: translate(-50%, 6px);
+		transform: translate(-50%, 8px);
 	}
 }
-.fx-anim-row {
+
+/* 1. Верхняя панель управления (Header Toolbar) */
+.fx-anim-topbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding-bottom: 6px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.fx-anim-transport {
 	display: flex;
 	align-items: center;
 	gap: 6px;
 }
-.fx-anim .btn-icon {
-	width: 28px;
-	height: 28px;
-	flex: none;
+.fx-anim-play {
+	width: 32px !important;
+	height: 32px !important;
+	border-radius: 50% !important;
+	background: var(--accent) !important;
+	color: var(--accent-ink, #14161b) !important;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: 0;
+	cursor: pointer;
+	transition: transform 0.15s var(--ease), background 0.15s;
 }
-.fx-anim-time {
-	flex: none;
-	min-width: 38px;
-	font: 600 12px var(--font-mono, ui-monospace, monospace);
+.fx-anim-play:hover {
+	transform: scale(1.05);
+	background: var(--accent-hover, #f4a261) !important;
+}
+.fx-anim-play:active {
+	transform: scale(0.96);
+}
+.fx-anim-play.is-active {
+	background: #fff !important;
+	color: #14161b !important;
+	box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+}
+.fx-anim-rew {
+	width: 28px !important;
+	height: 28px !important;
+	border-radius: 50% !important;
+	color: var(--text-dim) !important;
+}
+.fx-anim-rew:hover {
+	color: var(--text) !important;
+	background: rgba(255, 255, 255, 0.08) !important;
+}
+.fx-anim-timecode {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 3px;
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
 	color: var(--text-dim);
-	text-align: right;
+	padding: 2px 6px;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.04);
 }
-.fx-anim-track {
+.fx-anim-t-cur {
+	font-weight: 600;
+	color: var(--text);
+}
+.fx-anim-t-sep {
+	opacity: 0.4;
+}
+.fx-anim-t-total {
+	opacity: 0.7;
+}
+
+.fx-anim-quick {
+	display: flex;
+	align-items: center;
+	gap: 8px;
 	position: relative;
+}
+.fx-anim-presets-wrap,
+.fx-anim-add-wrap {
+	position: relative;
+}
+.fx-anim-presets-btn,
+.fx-anim-add-btn {
+	border-radius: 999px !important;
+	font-size: 12px !important;
+	height: 28px !important;
+	padding: 0 10px !important;
+	gap: 5px !important;
+}
+.fx-anim-settings {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+.fx-anim-loop {
+	width: 28px !important;
+	height: 28px !important;
+	border-radius: 50% !important;
+	color: var(--text-dim) !important;
+}
+.fx-anim-loop.is-active {
+	color: var(--accent) !important;
+	background: rgba(229, 138, 69, 0.15) !important;
+}
+.fx-anim-dur-box {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	background: rgba(255, 255, 255, 0.05);
+	padding: 1px 6px 1px 2px;
+	border-radius: 999px;
+}
+.fx-anim-dur {
+	width: 40px !important;
+	height: 24px !important;
+	padding: 0 4px !important;
+	border: 0 !important;
+	background: transparent !important;
+	color: var(--text) !important;
+	font-size: 12px !important;
+	text-align: center;
+}
+.fx-anim-dur-unit {
+	font-size: 11px;
+	color: var(--text-dim);
+}
+.fx-anim-rec-btn {
+	border-radius: 999px !important;
+	height: 28px !important;
+	font-size: 12px !important;
+	padding: 0 10px !important;
+	gap: 5px !important;
+}
+.fx-anim-close {
+	width: 28px !important;
+	height: 28px !important;
+	border-radius: 50% !important;
+	color: var(--text-dim) !important;
+}
+.fx-anim-close:hover {
+	color: var(--text) !important;
+	background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Поповер-меню (Presets и Add FX) — открываются вверх */
+.fx-anim-menu {
+	position: absolute;
+	bottom: calc(100% + 8px);
+	left: 0;
+	z-index: 120;
+	min-width: 220px;
+	max-height: 280px;
+	overflow-y: auto;
+	padding: 6px;
+	border-radius: 12px;
+	background: var(--fxg-bg, rgba(20, 22, 27, 0.95));
+	backdrop-filter: blur(24px);
+	-webkit-backdrop-filter: blur(24px);
+	border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.12));
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+.fx-anim-menu[hidden] {
+	display: none !important;
+}
+.fx-anim-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 6px 8px;
+	border-radius: 8px;
+	border: 0;
+	background: transparent;
+	color: var(--text);
+	text-align: left;
+	cursor: pointer;
+	font-size: 12px;
+	transition: background 0.12s;
+}
+.fx-anim-menu-item:hover {
+	background: rgba(255, 255, 255, 0.08);
+}
+.fx-anim-menu-item .ic-wrap {
+	color: var(--accent);
+	flex: none;
+}
+.fx-anim-menu-text {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	min-width: 0;
+}
+.fx-anim-menu-title {
+	font-weight: 500;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.fx-anim-menu-hint {
+	font-size: 10.5px;
+	color: var(--text-dim);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.fx-anim-menu-item.is-danger {
+	color: #ff5252;
+}
+.fx-anim-menu-item.is-danger .ic-wrap {
+	color: #ff5252;
+}
+.fx-anim-menu-item.is-danger:hover {
+	background: rgba(255, 82, 82, 0.12);
+}
+.popover-divider {
+	height: 1px;
+	background: rgba(255, 255, 255, 0.08);
+	margin: 4px 0;
+}
+
+/* 2. Область дорожек (Stage) */
+.fx-anim-stage {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+.fx-anim-lanes-scroll {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	max-height: 190px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding-right: 2px;
+}
+.fx-anim-lanes-scroll::-webkit-scrollbar {
+	width: 4px;
+}
+.fx-anim-lanes-scroll::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 4px;
+}
+
+.fx-anim-ruler-row,
+.fx-anim-lane {
+	display: flex;
+	align-items: center;
+	height: 30px;
+	position: relative;
+}
+.fx-anim-track-label {
+	width: var(--fx-head-w, 130px);
+	flex: none;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding-right: 8px;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--text);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.fx-anim-track-label .ic-wrap {
+	color: var(--accent);
+	flex: none;
+}
+.fx-anim-lane-name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.fx-anim-cam-add,
+.fx-anim-lane-add,
+.fx-anim-lane-del {
+	width: 20px !important;
+	height: 20px !important;
+	padding: 0 !important;
+	border-radius: 4px !important;
+	opacity: 0.6;
+	color: var(--text-dim) !important;
+}
+.fx-anim-cam-add:hover,
+.fx-anim-lane-add:hover {
+	opacity: 1;
+	color: var(--text) !important;
+	background: rgba(255, 255, 255, 0.1) !important;
+}
+.fx-anim-lane-del:hover {
+	opacity: 1;
+	color: #ff5252 !important;
+	background: rgba(255, 82, 82, 0.15) !important;
+}
+.fx-anim-lane-tools {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+/* Линейка времени */
+.fx-anim-ruler-title {
+	font-size: 11px;
+	color: var(--text-dim);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+.fx-anim-ruler-body {
+	flex: 1;
+	height: 20px;
+	position: relative;
+	cursor: pointer;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.fx-anim-ruler-ticks {
+	position: absolute;
+	inset: 0;
+}
+.fx-anim-tick {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 1px;
+	background: rgba(255, 255, 255, 0.15);
+}
+.fx-anim-tick-label {
+	position: absolute;
+	top: 2px;
+	left: 4px;
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 9.5px;
+	color: var(--text-dim);
+	pointer-events: none;
+}
+.fx-anim-playhead-needle {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 2px;
+	margin-left: -1px;
+	background: #fff;
+	pointer-events: none;
+	z-index: 10;
+}
+.fx-anim-playhead-needle::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -5px;
+	width: 0;
+	height: 0;
+	border-left: 6px solid transparent;
+	border-right: 6px solid transparent;
+	border-top: 7px solid #fff;
+	filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+/* Вертикальная линия плейхеда через всю высоту */
+.fx-anim-playhead-line {
+	position: absolute;
+	top: 20px;
+	bottom: 0;
+	width: 1px;
+	margin-left: -0.5px;
+	background: rgba(255, 255, 255, 0.65);
+	box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+	pointer-events: none;
+	z-index: 8;
+}
+
+/* Тело дорожек */
+.fx-anim-lane-body {
 	flex: 1;
 	height: 28px;
-	min-width: 80px;
-	margin: 0 8px;
+	position: relative;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.03);
+	border: 1px solid rgba(255, 255, 255, 0.05);
 	cursor: pointer;
 	touch-action: none;
 }
-/* сама дорожка: углублённая полоса с насечками каждую секунду, пятая насечка длиннее */
-.fx-anim-track::before {
-	content: '';
+
+/* Дорожка камеры */
+.fx-anim-cam-body {
+	background: rgba(229, 138, 69, 0.04);
+	border-color: rgba(229, 138, 69, 0.12);
+}
+.fx-anim-cam-line {
 	position: absolute;
 	left: 0;
 	right: 0;
 	top: 50%;
-	height: 14px;
-	margin-top: -7px;
-	border-radius: 7px;
-	background:
-		repeating-linear-gradient(90deg, var(--text-faint) 0 1px, transparent 1px calc(100% * 5 / var(--ticks, 8))) left bottom / 100% 7px no-repeat,
-		repeating-linear-gradient(90deg, var(--line-strong) 0 1px, transparent 1px calc(100% / var(--ticks, 8))) left bottom / 100% 4px no-repeat,
-		var(--bg-sunken);
-	box-shadow: inset 0 0 0 1px var(--line);
-}
-.fx-anim-fill {
-	position: absolute;
-	left: 0;
-	top: 50%;
-	height: 14px;
-	margin-top: -7px;
-	border-radius: 7px 0 0 7px;
-	background: linear-gradient(90deg, transparent, var(--accent-soft));
+	height: 2px;
+	margin-top: -1px;
+	background: rgba(229, 138, 69, 0.25);
 	pointer-events: none;
 }
 .fx-anim-keys {
@@ -3335,77 +3698,236 @@ body {
 .fx-anim-key {
 	position: absolute;
 	top: 50%;
-	width: 12px;
-	height: 12px;
-	margin: -6px 0 0 -6px;
+	width: 14px;
+	height: 14px;
+	margin: -7px 0 0 -7px;
 	padding: 0;
 	background: var(--accent);
-	border: 2px solid var(--bg-panel);
+	border: 2px solid rgba(20, 22, 27, 0.9);
 	border-radius: 3px;
 	transform: rotate(45deg);
 	cursor: grab;
-	transition: transform 0.12s var(--ease);
+	transition: transform 0.12s var(--ease), box-shadow 0.12s;
+	z-index: 5;
 }
 .fx-anim-key:hover {
-	transform: rotate(45deg) scale(1.15);
+	transform: rotate(45deg) scale(1.2);
 }
 .fx-anim-key.is-sel {
 	background: #fff;
-	box-shadow: 0 0 0 2px var(--accent);
+	box-shadow: 0 0 0 2px var(--accent), 0 0 8px rgba(229, 138, 69, 0.6);
 }
-.fx-anim-head {
+
+/* Блоки эффектов */
+.fx-anim-block {
 	position: absolute;
 	top: 2px;
 	bottom: 2px;
-	width: 2px;
-	margin-left: -1px;
-	background: var(--text);
-	border-radius: 1px;
-	pointer-events: none;
+	border-radius: 6px;
+	background: linear-gradient(135deg, rgba(229, 138, 69, 0.38), rgba(229, 138, 69, 0.22));
+	border: 1px solid rgba(229, 138, 69, 0.65);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+	cursor: grab;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	transition: border-color 0.12s, box-shadow 0.12s;
+	z-index: 4;
 }
-.fx-anim-head::before {
+.fx-anim-block:hover {
+	border-color: rgba(255, 255, 255, 0.8);
+	box-shadow: 0 2px 10px rgba(229, 138, 69, 0.4);
+}
+.fx-anim-block.is-sel {
+	border-color: #fff;
+	box-shadow: 0 0 0 2px var(--accent), 0 4px 14px rgba(229, 138, 69, 0.5);
+	background: linear-gradient(135deg, rgba(229, 138, 69, 0.55), rgba(229, 138, 69, 0.35));
+}
+.fx-anim-block-content {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0 10px;
+	white-space: nowrap;
+	pointer-events: none;
+	position: relative;
+	z-index: 2;
+}
+.fx-anim-block-title {
+	font-size: 11px;
+	font-weight: 600;
+	color: #fff;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.fx-anim-block-time {
+	font-size: 10px;
+	font-family: var(--font-mono, ui-monospace, monospace);
+	color: rgba(255, 255, 255, 0.8);
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* Огибающие fade-in и fade-out */
+.fx-anim-fade-in {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	background: linear-gradient(to right bottom, transparent 50%, rgba(255, 255, 255, 0.12) 50%);
+	border-right: 1px dashed rgba(255, 255, 255, 0.35);
+	pointer-events: none;
+	z-index: 1;
+}
+.fx-anim-fade-out {
+	position: absolute;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background: linear-gradient(to left bottom, transparent 50%, rgba(255, 255, 255, 0.12) 50%);
+	border-left: 1px dashed rgba(255, 255, 255, 0.35);
+	pointer-events: none;
+	z-index: 1;
+}
+
+/* Ручки изменения размера блока (Handles) */
+.fx-anim-handle {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 8px;
+	cursor: ew-resize;
+	z-index: 3;
+}
+.fx-anim-handle::after {
 	content: '';
 	position: absolute;
-	top: -2px;
-	left: -4px;
-	border: 5px solid transparent;
-	border-top: 6px solid var(--text);
-	border-bottom: 0;
+	top: 4px;
+	bottom: 4px;
+	width: 2px;
+	background: rgba(255, 255, 255, 0.6);
+	border-radius: 1px;
+	opacity: 0.6;
+	transition: opacity 0.12s, background 0.12s;
 }
-.fx-anim-dur-wrap {
-	display: inline-flex;
+.fx-anim-handle:hover::after {
+	opacity: 1;
+	background: #fff;
+}
+.fx-anim-handle.is-left {
+	left: 0;
+}
+.fx-anim-handle.is-left::after {
+	left: 2px;
+}
+.fx-anim-handle.is-right {
+	right: 0;
+}
+.fx-anim-handle.is-right::after {
+	right: 4px;
+}
+
+/* Пустой баннер */
+.fx-anim-empty-hint {
+	display: flex;
+	flex-direction: column;
 	align-items: center;
-	gap: 3px;
-	font-size: 12px;
-	color: var(--text-dim);
-}
-.fx-anim .fx-anim-dur {
-	width: 44px;
-	height: 26px;
-	padding: 0 4px;
+	justify-content: center;
+	gap: 8px;
+	padding: 14px 12px;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.02);
+	border: 1px dashed rgba(255, 255, 255, 0.1);
 	text-align: center;
 }
-.fx-anim-actions {
-	padding-top: 6px;
-	border-top: 1px solid var(--line);
+.fx-anim-empty-text {
+	font-size: 11.5px;
+	color: var(--text-dim);
 }
-.fx-anim-hint {
-	flex: 1;
-	min-width: 0;
+.fx-anim-empty-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+}
+.fx-anim-empty-actions .btn {
+	border-radius: 999px !important;
+	font-size: 11px !important;
+	height: 24px !important;
+	padding: 0 8px !important;
+}
+
+/* 3. Панель параметров выбранного клипа/ключа (Inspector) */
+.fx-anim-inspector {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+	padding-top: 8px;
+	border-top: 1px solid rgba(255, 255, 255, 0.07);
+	animation: fx-anim-in 0.15s var(--ease);
+}
+.fx-anim-insp-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: rgba(229, 138, 69, 0.18);
+	border: 1px solid rgba(229, 138, 69, 0.4);
+	color: var(--text);
+	font-size: 11.5px;
+	font-weight: 600;
+}
+.fx-anim-insp-badge .ic-wrap {
+	color: var(--accent);
+}
+.fx-anim-insp-field {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 11.5px;
+	color: var(--text-dim);
+}
+.fx-anim-insp-field .num-in {
+	width: 44px;
+	height: 24px;
 	padding: 0 4px;
-	font-size: 12px;
-	color: var(--text-faint);
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
+	font-size: 11.5px;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	color: var(--text);
+	text-align: center;
 }
-@media (max-width: 560px) {
-	.fx-anim-hint {
-		display: none;
-	}
-	.fx-anim-actions .btn-label {
-		display: none;
-	}
+.fx-anim-insp-amt {
+	min-width: 120px;
+}
+.fx-anim-insp-amt .slider-range {
+	width: 60px;
+}
+.fx-anim-insp-val {
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 11px;
+	color: var(--text);
+	min-width: 28px;
+}
+.fx-anim-insp-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-left: auto;
+}
+.fx-anim-insp-actions .btn-icon {
+	width: 24px !important;
+	height: 24px !important;
+	border-radius: 6px !important;
+}
+
+/* Кнопка в карточке инспектора эффекта */
+.fx-to-timeline-btn {
+	margin-top: 8px !important;
+	border-radius: 999px !important;
+	font-size: 12px !important;
 }
 
 /* морфинг: виды перехода и подсказка, пока нет второй модели */
@@ -4462,25 +4984,7 @@ body {
 .fx-focus .fx-cam-grip { display: block; }
 @container app (min-width: 901px) {
 	.fx-focus .fx-cam { left: 18px; bottom: 18px; }
-
-	.fx-mode .fx-anim { bottom: 92px; gap: 12px; width: min(600px, calc(100% - 2 * (var(--sidebar-w, 300px) + 40px))); padding: 14px 16px 12px; border-radius: 16px; }
-	.fx-mode .fx-anim .fx-anim-row { gap: 10px; }
-	.fx-mode .fx-anim .btn-icon { width: 32px; height: 32px; border-radius: 50%; }
-	.fx-mode .fx-anim .fx-anim-play { width: 38px; height: 38px; background: var(--accent); color: var(--accent-ink); }
-	.fx-mode .fx-anim .fx-anim-play:hover { background: var(--accent-hover); }
-	.fx-mode .fx-anim-time { font: 500 12.5px var(--font); font-variant-numeric: tabular-nums; color: var(--text-dim); min-width: 34px; }
-	.fx-mode .fx-anim-track { height: 32px; margin: 0 4px; }
-	.fx-mode .fx-anim-track::before { height: 8px; margin-top: -4px; border-radius: 999px; background: rgba(255, 255, 255, 0.09); box-shadow: none; }
-	.fx-mode .fx-anim-fill { height: 8px; margin-top: -4px; border-radius: 999px; background: linear-gradient(90deg, rgba(229, 138, 69, 0.15), rgba(229, 138, 69, 0.55)); }
-	.fx-mode .fx-anim-key { width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 2px solid rgba(20, 22, 27, 0.9); border-radius: 50%; transform: none; background: var(--accent); }
-	.fx-mode .fx-anim-key:hover { transform: scale(1.2); }
-	.fx-mode .fx-anim-key.is-sel { background: #fff; box-shadow: 0 0 0 2px var(--accent); }
-	.fx-mode .fx-anim-head { top: 4px; bottom: 4px; width: 2px; background: #fff; border-radius: 2px; box-shadow: 0 0 8px rgba(255, 255, 255, 0.45); }
-	.fx-mode .fx-anim-head::before { top: -3px; left: -4px; border: 5px solid transparent; border-top: 6px solid #fff; border-bottom: 0; }
-	.fx-mode .fx-anim .fx-anim-dur { width: 48px; height: 28px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); border: 0; }
-	.fx-mode .fx-anim-actions { padding-top: 0; border-top: 0; gap: 8px; }
-	.fx-mode .fx-anim-actions .btn { border-radius: 999px; }
-	.fx-mode .fx-anim-hint { font-size: 12px; }
+	.fx-mode .fx-anim { bottom: 84px; width: min(880px, calc(100% - 2 * (var(--sidebar-w, 300px) + 32px))); }
 }
 .fx-anim { container-type: inline-size; }
 @container (max-width: 470px) { .fx-anim-hint { display: none; } }

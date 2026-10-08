@@ -419,6 +419,9 @@ export function createEffectsPanel(app, root, engine) {
 			c.insp.classList.toggle('is-selected', c.def.id === id);
 		}
 	};
+	const ANIM_LAYERS = ['curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'gravity'];
+	let toggleAnim = () => {};
+	let animAddFromInspector = () => {};
 	for (const grp of FX_GROUP_NAMES) {
 		const folder = h('div', { class: 'fx-folder' });
 		const fhead = h('button', { type: 'button', class: 'fx-folder-head', 'aria-expanded': 'true' }, h('span', { class: 'fx-folder-caret', html: icon('caret-down', 13) }), h('span', { class: 'fx-folder-name' }, grp), h('span', { class: 'fx-folder-n' }));
@@ -588,6 +591,20 @@ export function createEffectsPanel(app, root, engine) {
 			});
 			band.el.addEventListener('click', () => requestAnimationFrame(syncAudioHead));
 			body.append(audioHead, audioWrap);
+			if (ANIM_LAYERS.includes(def.id)) {
+				const toTimelineBtn = button({
+					label: 'На таймлайн',
+					icon: 'film-strip',
+					variant: 'secondary',
+					cls: 'btn-block fx-to-timeline-btn',
+					title: `Добавить блок «${def.name}» на таймлайн анимации`,
+					onClick: () => {
+						animAddFromInspector(def.id);
+						app.toast(`Эффект «${def.name}» добавлен на таймлайн`, 'info');
+					}
+				});
+				body.append(toTimelineBtn);
+			}
 			syncAudioHead();
 			audioUiFull();
 			const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
@@ -820,127 +837,789 @@ export function createEffectsPanel(app, root, engine) {
 	const barMeters = makeMeters(true);
 	const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (MP4)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });
 	const recTime = h('span', { class: 'fx-rec-time' });
-	// ------------------------------------------------------------ анимация по ключам (дорожка времени)
-	const animPanel = h('div', { class: 'fx-anim vp-pill', hidden: true, role: 'group', 'aria-label': 'Анимация по ключам' });
-	const keyAnimBtn = iconButton({ icon: 'film-strip', title: 'Анимация: ключи камеры и эффектов на дорожке времени', onClick: () => toggleAnim() });
-	const aPlay = iconButton({ icon: 'play', title: 'Играть и остановить', cls: 'fx-anim-play', onClick: () => { if (engine.animPlaying) engine.animPause(); else if (!engine.animPlay()) app.toast('Поставьте минимум два ключа в разное время', 'info'); } });
-	const aTime = h('span', { class: 'fx-anim-time' });
-	const aKeys = h('div', { class: 'fx-anim-keys' });
-	const aHead = h('div', { class: 'fx-anim-head' });
-	const aFill = h('div', { class: 'fx-anim-fill' });
-	const aTrack = h('div', { class: 'fx-anim-track' }, aFill, aKeys, aHead);
-	const aLoop = iconButton({ icon: 'repeat', title: 'Повторять по кругу', onClick: () => { st.anim.loop = !st.anim.loop; save(); animSync(); } });
-	const aDur = h('input', { type: 'number', class: 'num-in fx-anim-dur', min: 1, max: 120, step: 1, value: 8, 'aria-label': 'Длина анимации, секунд', 'data-tip': 'Длина анимации, секунд' });
-	aDur.addEventListener('change', () => { engine.animSetDuration(Number(aDur.value) || 8); animSync(); });
-	const aClose = iconButton({ icon: 'x', title: 'Закрыть анимацию', onClick: () => toggleAnim(false) });
+	// ------------------------------------------------------------ анимация по ключам и блокам эффектов (секвенсор)
+	const animPanel = h('div', { class: 'fx-anim vp-pill', hidden: true, role: 'region', 'aria-label': 'Секвенсор анимации' });
+	const keyAnimBtn = iconButton({ icon: 'film-strip', title: 'Анимация: секвенсор эффектов и ключи камеры', onClick: () => toggleAnim() });
+
 	let selKey = null;
-	const aAdd = button({ label: 'Ключ', icon: 'plus', variant: 'primary', cls: 'btn-sm', title: 'Запомнить камеру и эффекты в этот момент времени', size: 14, onClick: () => { selKey = engine.animAddKey(); animSync(); } });
-	const aUpd = iconButton({ icon: 'arrow-clockwise', title: 'Обновить выбранный ключ тем, что сейчас на сцене', onClick: () => { if (selKey) engine.animUpdateKey(selKey); } });
-	const aDel = iconButton({ icon: 'trash', title: 'Удалить выбранный ключ', onClick: () => { if (selKey) { engine.animRemoveKey(selKey); selKey = null; animSync(); } } });
-	const aRec = button({ label: 'Записать', icon: 'record', variant: 'secondary', cls: 'btn-sm', title: 'Проиграет анимацию один раз и сохранит видео со звуком', size: 14, onClick: () => { if (!engine.animRecord()) app.toast('Поставьте минимум два ключа в разное время', 'info'); } });
-	const aHint = h('div', { class: 'fx-anim-hint' });
-	animPanel.append(
-		h('div', { class: 'fx-anim-row' }, aPlay, aTime, aTrack, aLoop, h('span', { class: 'fx-anim-dur-wrap' }, aDur, h('span', {}, 'с')), aClose),
-		h('div', { class: 'fx-anim-row fx-anim-actions' }, aAdd, aUpd, aDel, aHint, aRec)
+	let selClip = null;
+	let isScrubbing = false;
+	let isDraggingItem = false;
+	let lastRenderSig = '';
+
+	const formatTimecode = (sec) => {
+		const s = Math.max(0, sec || 0);
+		const m = Math.floor(s / 60);
+		const rem = (s % 60).toFixed(1);
+		const mm = String(m).padStart(2, '0');
+		const ss = rem < 10 ? '0' + rem : rem;
+		return `${mm}:${ss}`;
+	};
+
+	// 1. Верхняя панель управления (Header Toolbar)
+	const aPlay = iconButton({
+		icon: 'play',
+		title: 'Воспроизведение / Пауза (Пробел)',
+		cls: 'fx-anim-play',
+		onClick: () => {
+			if (engine.animPlaying) engine.animPause();
+			else if (!engine.animPlay()) app.toast('Добавьте минимум один блок эффекта или два ключа камеры', 'info');
+		}
+	});
+	const aRew = iconButton({
+		icon: 'arrow-counter-clockwise',
+		title: 'В начало (0.0 с)',
+		cls: 'fx-anim-rew',
+		onClick: () => engine.animSeek(0)
+	});
+	const aTimeCur = h('span', { class: 'fx-anim-t-cur' }, '00:00.0');
+	const aTimeSep = h('span', { class: 'fx-anim-t-sep' }, '/');
+	const aTimeTotal = h('span', { class: 'fx-anim-t-total' }, '00:08.0');
+	const aTimecode = h('div', { class: 'fx-anim-timecode' }, aTimeCur, aTimeSep, aTimeTotal);
+	const aTransport = h('div', { class: 'fx-anim-transport' }, aPlay, aRew, aTimecode);
+
+	// Поповер сценариев
+	const presetsPop = h('div', { class: 'popover fx-anim-menu fx-anim-presets-pop', hidden: true });
+	const presetsBtn = button({
+		label: 'Сценарии',
+		icon: 'sparkle',
+		variant: 'secondary',
+		cls: 'btn-sm fx-anim-presets-btn',
+		title: 'Готовые режиссерские сценарии',
+		onClick: (e) => {
+			e.stopPropagation();
+			const wasHidden = presetsPop.hidden;
+			closeMenus();
+			presetsPop.hidden = !wasHidden;
+		}
+	});
+	const presetItems = [
+		{ id: 'dust_rebirth', icon: 'sparkle', label: 'Рождение из пыли', hint: 'Растворение → Вихри → Пульс' },
+		{ id: 'scan_collapse', icon: 'scan', label: 'Лазерный скан и распад', hint: 'Срез → Связи → Глитч → Шлейф' },
+		{ id: 'glitch_morph', icon: 'lightning', label: 'Кибер-глитч и взрыв', hint: 'Глитч → Взрыв → Деформация → Следы' },
+	];
+	for (const p of presetItems) {
+		const b = h('button', { type: 'button', class: 'fx-anim-menu-item' },
+			h('span', { class: 'ic-wrap', html: icon(p.icon, 16) }),
+			h('div', { class: 'fx-anim-menu-text' },
+				h('span', { class: 'fx-anim-menu-title' }, p.label),
+				h('span', { class: 'fx-anim-menu-hint' }, p.hint)
+			)
+		);
+		b.addEventListener('click', () => {
+			engine.animLoadPreset(p.id);
+			selKey = null;
+			selClip = null;
+			closeMenus();
+			app.toast(`Загружен сценарий «${p.label}»`, 'success');
+			animSync();
+		});
+		presetsPop.append(b);
+	}
+	const clearBtn = h('button', { type: 'button', class: 'fx-anim-menu-item is-danger' },
+		h('span', { class: 'ic-wrap', html: icon('trash', 16) }),
+		h('div', { class: 'fx-anim-menu-text' },
+			h('span', { class: 'fx-anim-menu-title' }, 'Очистить таймлайн'),
+			h('span', { class: 'fx-anim-menu-hint' }, 'Удалить все блоки эффектов и ключи')
+		)
 	);
+	clearBtn.addEventListener('click', () => {
+		engine.animClear();
+		selKey = null;
+		selClip = null;
+		closeMenus();
+		app.toast('Таймлайн очищен', 'info');
+		animSync();
+	});
+	presetsPop.append(h('div', { class: 'popover-divider' }), clearBtn);
+	const presetsWrap = h('div', { class: 'fx-anim-presets-wrap' }, presetsBtn, presetsPop);
+
+	// Поповер добавления эффекта
+	const addPop = h('div', { class: 'popover fx-anim-menu fx-anim-add-pop', hidden: true });
+	const addClipBtn = button({
+		label: 'Эффект',
+		icon: 'plus',
+		variant: 'primary',
+		cls: 'btn-sm fx-anim-add-btn',
+		title: 'Добавить блок эффекта на дорожку',
+		onClick: (e) => {
+			e.stopPropagation();
+			const wasHidden = addPop.hidden;
+			closeMenus();
+			addPop.hidden = !wasHidden;
+		}
+	});
+	for (const id of ANIM_LAYERS) {
+		const l = FX_LAYERS.find((x) => x.id === id);
+		if (!l) continue;
+		const b = h('button', { type: 'button', class: 'fx-anim-menu-item' },
+			h('span', { class: 'ic-wrap', html: icon(l.icon || 'sparkle', 16) }),
+			h('div', { class: 'fx-anim-menu-text' },
+				h('span', { class: 'fx-anim-menu-title' }, l.name),
+				h('span', { class: 'fx-anim-menu-hint' }, l.hint ? l.hint.slice(0, 42) + '…' : '')
+			)
+		);
+		b.addEventListener('click', () => {
+			const clip = engine.animAddClip(l.id);
+			selClip = clip;
+			selKey = null;
+			closeMenus();
+			app.toast(`Добавлен блок: ${l.name}`, 'info');
+			animSync();
+		});
+		addPop.append(b);
+	}
+	const addWrap = h('div', { class: 'fx-anim-add-wrap' }, addClipBtn, addPop);
+
+	function closeMenus() {
+		presetsPop.hidden = true;
+		addPop.hidden = true;
+	}
+	document.addEventListener('pointerdown', (e) => {
+		if (!e.target.closest('.fx-anim-presets-wrap, .fx-anim-add-wrap, .fx-anim-menu')) closeMenus();
+	});
+
+	// Настройки справа: loop, dur, record, close
+	const aLoop = iconButton({
+		icon: 'repeat',
+		title: 'Повторять по кругу',
+		cls: 'fx-anim-loop' + (st.anim.loop ? ' is-active' : ''),
+		onClick: () => {
+			st.anim.loop = !st.anim.loop;
+			save();
+			animSync();
+		}
+	});
+	const aDur = h('input', {
+		type: 'number',
+		class: 'num-in fx-anim-dur',
+		min: 1,
+		max: 120,
+		step: 1,
+		value: st.anim.dur || 8,
+		'aria-label': 'Длина анимации, секунд',
+		'data-tip': 'Длина анимации, секунд'
+	});
+	aDur.addEventListener('change', () => {
+		engine.animSetDuration(Number(aDur.value) || 8);
+		animSync();
+	});
+	const aDurBox = h('div', { class: 'fx-anim-dur-box' }, aDur, h('span', { class: 'fx-anim-dur-unit' }, 'с'));
+	const aRec = button({
+		label: 'Записать',
+		icon: 'record',
+		variant: 'secondary',
+		cls: 'btn-sm fx-anim-rec-btn',
+		title: 'Проиграет анимацию один раз и запишет чистое MP4-видео со звуком',
+		size: 14,
+		onClick: () => {
+			if (!engine.animRecord()) app.toast('Добавьте минимум один блок эффекта или два ключа камеры', 'info');
+		}
+	});
+	const aClose = iconButton({
+		icon: 'x',
+		title: 'Закрыть анимацию',
+		cls: 'fx-anim-close',
+		onClick: () => toggleAnim(false)
+	});
+	const aSettings = h('div', { class: 'fx-anim-settings' }, aLoop, aDurBox, aRec, aClose);
+
+	const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, h('div', { class: 'fx-anim-quick' }, presetsWrap, addWrap), aSettings);
+
+	// 2. Область дорожек (Stage)
+	const stage = h('div', { class: 'fx-anim-stage' });
+
+	// Линейка времени
+	const rulerTitle = h('div', { class: 'fx-anim-track-label fx-anim-ruler-title' }, 'Время');
+	const rulerTicks = h('div', { class: 'fx-anim-ruler-ticks' });
+	const rulerNeedle = h('div', { class: 'fx-anim-playhead-needle' });
+	const rulerBody = h('div', { class: 'fx-anim-ruler-body' }, rulerTicks, rulerNeedle);
+	const rulerRow = h('div', { class: 'fx-anim-ruler-row' }, rulerTitle, rulerBody);
+
+	// Дорожка камеры
+	const camTitle = h('div', { class: 'fx-anim-track-label fx-anim-cam-label' },
+		h('span', { class: 'ic-wrap', html: icon('video-camera', 14) }),
+		h('span', { class: 'fx-anim-lane-name' }, 'Камера'),
+		iconButton({ icon: 'plus', title: 'Запомнить ракурс камеры в этот момент времени', size: 12, cls: 'fx-anim-cam-add', onClick: () => { selKey = engine.animAddKey(); selClip = null; animSync(); } })
+	);
+	const camKeysWrap = h('div', { class: 'fx-anim-keys' });
+	const camLine = h('div', { class: 'fx-anim-cam-line' });
+	const camTrackBody = h('div', { class: 'fx-anim-lane-body fx-anim-cam-body' }, camLine, camKeysWrap);
+	const camLane = h('div', { class: 'fx-anim-lane fx-anim-cam-lane' }, camTitle, camTrackBody);
+
+	// Дорожки эффектов
+	const fxLanesWrap = h('div', { class: 'fx-anim-fx-lanes' });
+
+	// Пустой баннер
+	const emptyHint = h('div', { class: 'fx-anim-empty-hint' },
+		h('span', { class: 'fx-anim-empty-text' }, 'На таймлайне пока нет эффектов. Выберите сценарий или добавьте эффект:'),
+		h('div', { class: 'fx-anim-empty-actions' },
+			button({ label: 'Рождение из пыли', icon: 'sparkle', variant: 'secondary', cls: 'btn-sm', onClick: () => { engine.animLoadPreset('dust_rebirth'); animSync(); } }),
+			button({ label: 'Лазерный скан', icon: 'scan', variant: 'secondary', cls: 'btn-sm', onClick: () => { engine.animLoadPreset('scan_collapse'); animSync(); } }),
+			button({ label: 'Кибер-глитч', icon: 'lightning', variant: 'secondary', cls: 'btn-sm', onClick: () => { engine.animLoadPreset('glitch_morph'); animSync(); } }),
+			button({ label: '+ Вихри', variant: 'primary', cls: 'btn-sm', onClick: () => { selClip = engine.animAddClip('curl'); animSync(); } }),
+			button({ label: '+ Волны', variant: 'primary', cls: 'btn-sm', onClick: () => { selClip = engine.animAddClip('wave'); animSync(); } })
+		)
+	);
+
+	const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, fxLanesWrap, emptyHint);
+	const playheadLine = h('div', { class: 'fx-anim-playhead-line' });
+
+	stage.append(rulerRow, lanesScroll, playheadLine);
+
+	// 3. Инспектор выбранного элемента (Inspector)
+	const inspector = h('div', { class: 'fx-anim-inspector', hidden: true });
+
+	animPanel.append(topBar, stage, inspector);
 	document.getElementById('viewport').append(animPanel);
-	function toggleAnim(on = animPanel.hidden) {
+
+	function timeFromPointer(e, targetEl) {
+		const r = targetEl.getBoundingClientRect();
+		const frac = Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(1, r.width)));
+		return frac * (st.anim.dur || 8);
+	}
+
+	function bindScrubbing(el) {
+		el.addEventListener('pointerdown', (e) => {
+			if (e.target.closest('.fx-anim-key, .fx-anim-block, button, input')) return;
+			e.preventDefault();
+			engine.animPause();
+			isScrubbing = true;
+			el.setPointerCapture(e.pointerId);
+			const t = timeFromPointer(e, el);
+			engine.animSeek(t);
+			const onMove = (ev) => {
+				if (!isScrubbing) return;
+				engine.animSeek(timeFromPointer(ev, el));
+			};
+			const onUp = () => {
+				isScrubbing = false;
+				el.removeEventListener('pointermove', onMove);
+				el.removeEventListener('pointerup', onUp);
+				el.removeEventListener('pointercancel', onUp);
+				animSync();
+			};
+			el.addEventListener('pointermove', onMove);
+			el.addEventListener('pointerup', onUp);
+			el.addEventListener('pointercancel', onUp);
+		});
+	}
+
+	bindScrubbing(rulerBody);
+	bindScrubbing(camTrackBody);
+
+	toggleAnim = function (on = animPanel.hidden) {
 		animPanel.hidden = !on;
 		keyAnimBtn.classList.toggle('is-active', on);
-		if (!on) engine.animPause();
-		// первый ключ ставим сразу: он запоминает то, что вы видите сейчас
-		else if (!st.anim.keys.length) selKey = engine.animAddKey(0);
-		animSync();
-	}
-	// зажали камеру мышью: анимация встаёт на паузу, чтобы не отнимать управление
-	document.getElementById('viewport').addEventListener('pointerdown', (e) => {
-		if (engine.animPlaying && !engine.animRec && !e.target.closest('.fx-anim, .fx-bar')) engine.animPause();
-	}, true);
-	const timeAt = (e) => {
-		const r = aTrack.getBoundingClientRect();
-		return Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(1, r.width))) * st.anim.dur;
+		if (!on) {
+			engine.animPause();
+			closeMenus();
+		} else {
+			if (!st.anim.keys?.length && !st.anim.clips?.length) {
+				selKey = engine.animAddKey(0);
+			}
+			animSync();
+		}
 	};
-	aTrack.addEventListener('pointerdown', (e) => {
-		if (e.target.closest('.fx-anim-key')) return;
-		engine.animPause();
-		aTrack.setPointerCapture(e.pointerId);
-		engine.animSeek(timeAt(e));
-		const mv = (ev) => engine.animSeek(timeAt(ev));
-		const up = () => {
-			aTrack.removeEventListener('pointermove', mv);
-			aTrack.removeEventListener('pointerup', up);
-		};
-		aTrack.addEventListener('pointermove', mv);
-		aTrack.addEventListener('pointerup', up);
+
+	animAddFromInspector = function (layerId) {
+		toggleAnim(true);
+		const c = engine.animAddClip(layerId);
+		selClip = c;
+		selKey = null;
+		animSync();
+	};
+
+	// Пауза анимации при вращении камеры в 3D
+	document.getElementById('viewport').addEventListener('pointerdown', (e) => {
+		if (engine.animPlaying && !engine.animRec && !e.target.closest('.fx-anim, .fx-bar, .popover')) {
+			engine.animPause();
+		}
+	}, true);
+
+	// Горячие клавиши (Space, Delete, Backspace, Escape)
+	window.addEventListener('keydown', (e) => {
+		if (animPanel.hidden) return;
+		if (e.target.matches('input, textarea, select')) return;
+		if (e.code === 'Space') {
+			e.preventDefault();
+			if (engine.animPlaying) engine.animPause();
+			else if (!engine.animPlay()) app.toast('Добавьте минимум один блок эффекта или два ключа камеры', 'info');
+		} else if (e.code === 'Delete' || e.code === 'Backspace') {
+			if (selClip) {
+				e.preventDefault();
+				engine.animRemoveClip(selClip.id);
+				selClip = null;
+				animSync();
+			} else if (selKey) {
+				e.preventDefault();
+				engine.animRemoveKey(selKey);
+				selKey = null;
+				animSync();
+			}
+		} else if (e.code === 'Escape') {
+			if (selClip || selKey) {
+				selClip = null;
+				selKey = null;
+				animSync();
+			}
+		}
 	});
-	let dragging = false;
-	const markSel = () => [...aKeys.children].forEach((el, i) => el.classList.toggle('is-sel', st.anim.keys[i] === selKey));
+
+	function renderInspector() {
+		inspector.textContent = '';
+		if (selClip) {
+			const c = selClip;
+			const layerDef = FX_LAYERS.find((l) => l.id === c.layerId) || { name: c.layerId, icon: 'sparkle' };
+			inspector.hidden = false;
+
+			const badge = h('div', { class: 'fx-anim-insp-badge' },
+				h('span', { class: 'ic-wrap', html: icon(layerDef.icon || 'sparkle', 14) }),
+				h('span', { class: 'fx-anim-insp-title' }, layerDef.name)
+			);
+
+			const inStart = h('input', { type: 'number', class: 'num-in', min: 0, max: (st.anim.dur || 8) - 0.2, step: 0.1, value: c.start });
+			inStart.addEventListener('change', () => {
+				engine.animUpdateClip(c.id, { start: Number(inStart.value) || 0 });
+				animSync();
+			});
+
+			const inDur = h('input', { type: 'number', class: 'num-in', min: 0.2, max: st.anim.dur || 8, step: 0.1, value: c.dur });
+			inDur.addEventListener('change', () => {
+				engine.animUpdateClip(c.id, { dur: Number(inDur.value) || 0.2 });
+				animSync();
+			});
+
+			const inFadeIn = h('input', { type: 'number', class: 'num-in', min: 0, max: c.dur, step: 0.1, value: c.fadeIn });
+			inFadeIn.addEventListener('change', () => {
+				engine.animUpdateClip(c.id, { fadeIn: Number(inFadeIn.value) || 0 });
+				animSync();
+			});
+
+			const inFadeOut = h('input', { type: 'number', class: 'num-in', min: 0, max: c.dur, step: 0.1, value: c.fadeOut });
+			inFadeOut.addEventListener('change', () => {
+				engine.animUpdateClip(c.id, { fadeOut: Number(inFadeOut.value) || 0 });
+				animSync();
+			});
+
+			const inAmt = h('input', { type: 'range', class: 'slider-range', min: 0.05, max: 2.0, step: 0.05, value: c.amount });
+			const inAmtVal = h('span', { class: 'fx-anim-insp-val' }, c.amount.toFixed(2));
+			inAmt.addEventListener('input', () => {
+				inAmtVal.textContent = Number(inAmt.value).toFixed(2);
+				engine.animUpdateClip(c.id, { amount: Number(inAmt.value) });
+			});
+
+			const dupBtn = iconButton({
+				icon: 'copy',
+				title: 'Дублировать блок',
+				cls: 'btn-sm',
+				onClick: () => {
+					const cloned = engine.animDuplicateClip(c.id);
+					if (cloned) selClip = cloned;
+					animSync();
+				}
+			});
+
+			const delBtn = iconButton({
+				icon: 'trash',
+				title: 'Удалить блок',
+				cls: 'btn-sm is-danger',
+				onClick: () => {
+					engine.animRemoveClip(c.id);
+					selClip = null;
+					animSync();
+				}
+			});
+
+			const closeBtn = iconButton({
+				icon: 'x',
+				title: 'Снять выбор',
+				cls: 'btn-sm',
+				onClick: () => {
+					selClip = null;
+					animSync();
+				}
+			});
+
+			inspector.append(
+				badge,
+				h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Старт:'), inStart, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
+				h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Длина:'), inDur, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
+				h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Вход:'), inFadeIn, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
+				h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Выход:'), inFadeOut, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
+				h('label', { class: 'fx-anim-insp-field fx-anim-insp-amt' }, h('span', {}, 'Сила:'), inAmt, inAmtVal),
+				h('div', { class: 'fx-anim-insp-actions' }, dupBtn, delBtn, closeBtn)
+			);
+		} else if (selKey) {
+			const k = selKey;
+			inspector.hidden = false;
+
+			const badge = h('div', { class: 'fx-anim-insp-badge' },
+				h('span', { class: 'ic-wrap', html: icon('video-camera', 14) }),
+				h('span', { class: 'fx-anim-insp-title' }, `Ключ камеры (${k.t.toFixed(1)} с)`)
+			);
+
+			const inT = h('input', { type: 'number', class: 'num-in', min: 0, max: st.anim.dur || 8, step: 0.1, value: k.t });
+			inT.addEventListener('change', () => {
+				engine.animMoveKey(k, Number(inT.value) || 0);
+				animSync();
+			});
+
+			const updBtn = button({
+				label: 'Обновить ракурс',
+				icon: 'arrow-clockwise',
+				variant: 'secondary',
+				cls: 'btn-sm',
+				title: 'Перезаписать ключ текущим положением камеры',
+				onClick: () => {
+					engine.animUpdateKey(k);
+					app.toast('Ключ обновлен', 'info');
+					animSync();
+				}
+			});
+
+			const delBtn = iconButton({
+				icon: 'trash',
+				title: 'Удалить ключ',
+				cls: 'btn-sm is-danger',
+				onClick: () => {
+					engine.animRemoveKey(k);
+					selKey = null;
+					animSync();
+				}
+			});
+
+			const closeBtn = iconButton({
+				icon: 'x',
+				title: 'Снять выбор',
+				cls: 'btn-sm',
+				onClick: () => {
+					selKey = null;
+					animSync();
+				}
+			});
+
+			inspector.append(
+				badge,
+				h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Время:'), inT, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
+				updBtn,
+				h('div', { class: 'fx-anim-insp-actions' }, delBtn, closeBtn)
+			);
+		} else {
+			inspector.hidden = true;
+		}
+	}
+
 	function renderKeys() {
 		const A = st.anim;
-		aKeys.textContent = '';
+		const durTotal = A.dur || 8;
+		camKeysWrap.textContent = '';
+		if (!A.keys) A.keys = [];
+
 		for (const k of A.keys) {
-			const b = h('button', { type: 'button', class: 'fx-anim-key' + (k === selKey ? ' is-sel' : ''), style: { left: (k.t / A.dur) * 100 + '%' }, 'data-tip': `Ключ, ${k.t.toFixed(1)} с. Тяните, чтобы сдвинуть по времени`, 'aria-label': 'Ключ' });
+			const b = h('button', {
+				type: 'button',
+				class: 'fx-anim-key' + (k === selKey ? ' is-sel' : ''),
+				style: { left: (k.t / durTotal) * 100 + '%' },
+				'data-tip': `Ключ камеры, ${k.t.toFixed(1)} с. Тяните для сдвига`,
+				'aria-label': 'Ключ камеры'
+			});
+
 			b.addEventListener('pointerdown', (e) => {
 				e.stopPropagation();
 				e.preventDefault();
 				engine.animPause();
 				selKey = k;
-				dragging = true;
-				// выбор и перетаскивание ключа не трогают камеру и эффекты: двигается только время
+				selClip = null;
+				isDraggingItem = true;
 				engine.animT = k.t;
-				markSel();
-				aUpd.disabled = aDel.disabled = false;
-				aTime.textContent = `${k.t.toFixed(1)} с`;
-				aHead.style.left = (k.t / A.dur) * 100 + '%';
 				b.setPointerCapture(e.pointerId);
+				animSync();
+
 				const mv = (ev) => {
-					engine.animMoveKey(k, timeAt(ev));
+					const t = timeFromPointer(ev, camTrackBody);
+					engine.animMoveKey(k, t);
 					engine.animT = k.t;
-					b.style.left = (k.t / A.dur) * 100 + '%';
-					aHead.style.left = (k.t / A.dur) * 100 + '%';
-					aTime.textContent = `${k.t.toFixed(1)} с`;
+					b.style.left = (k.t / durTotal) * 100 + '%';
+					animSync();
 				};
+
 				const up = () => {
 					b.removeEventListener('pointermove', mv);
 					b.removeEventListener('pointerup', up);
 					b.removeEventListener('pointercancel', up);
-					dragging = false;
-					keysSig = '';
+					isDraggingItem = false;
 					animSync();
 				};
+
 				b.addEventListener('pointermove', mv);
 				b.addEventListener('pointerup', up);
 				b.addEventListener('pointercancel', up);
 			});
-			aKeys.append(b);
+
+			camKeysWrap.append(b);
 		}
 	}
-	let keysSig = '';
+
+	function renderFxLanes() {
+		const A = st.anim;
+		const durTotal = A.dur || 8;
+		const clips = A.clips || [];
+		fxLanesWrap.textContent = '';
+
+		if (!clips.length) {
+			emptyHint.hidden = false;
+			return;
+		}
+		emptyHint.hidden = true;
+
+		const uniqueLayers = [...new Set(clips.map((c) => c.layerId))];
+
+		for (const layerId of uniqueLayers) {
+			const layerDef = FX_LAYERS.find((l) => l.id === layerId) || { name: layerId, icon: 'sparkle' };
+			const layerClips = clips.filter((c) => c.layerId === layerId);
+
+			const laneTitle = h('div', { class: 'fx-anim-track-label fx-anim-fx-label' },
+				h('span', { class: 'ic-wrap', html: icon(layerDef.icon || 'sparkle', 14) }),
+				h('span', { class: 'fx-anim-lane-name' }, layerDef.name),
+				h('div', { class: 'fx-anim-lane-tools' },
+					iconButton({
+						icon: 'plus',
+						title: `Добавить ещё блок «${layerDef.name}»`,
+						size: 12,
+						cls: 'fx-anim-lane-add',
+						onClick: () => {
+							selClip = engine.animAddClip(layerId);
+							selKey = null;
+							animSync();
+						}
+					}),
+					iconButton({
+						icon: 'trash',
+						title: `Удалить все блоки «${layerDef.name}»`,
+						size: 12,
+						cls: 'fx-anim-lane-del',
+						onClick: () => {
+							A.clips = A.clips.filter((c) => c.layerId !== layerId);
+							if (selClip && selClip.layerId === layerId) selClip = null;
+							engine.touch();
+							engine.emit();
+							animSync();
+						}
+					})
+				)
+			);
+
+			const laneBody = h('div', { class: 'fx-anim-lane-body fx-anim-fx-body' });
+			bindScrubbing(laneBody);
+
+			for (const clip of layerClips) {
+				const isSel = clip === selClip;
+				const block = h('div', {
+					class: 'fx-anim-block' + (isSel ? ' is-sel' : ''),
+					style: {
+						left: (clip.start / durTotal) * 100 + '%',
+						width: Math.max(2, (clip.dur / durTotal) * 100) + '%'
+					},
+					'data-tip': `${layerDef.name}: ${clip.start.toFixed(1)}с – ${(clip.start + clip.dur).toFixed(1)}с. Тяните для сдвига`,
+					'aria-label': `${layerDef.name} блок`
+				});
+
+				const fadeInPct = clip.dur > 0 ? Math.min(50, (clip.fadeIn / clip.dur) * 100) : 0;
+				const fadeOutPct = clip.dur > 0 ? Math.min(50, (clip.fadeOut / clip.dur) * 100) : 0;
+				const fadeInEl = h('div', { class: 'fx-anim-fade-in', style: { width: fadeInPct + '%' } });
+				const fadeOutEl = h('div', { class: 'fx-anim-fade-out', style: { width: fadeOutPct + '%' } });
+
+				const blockContent = h('div', { class: 'fx-anim-block-content' },
+					h('span', { class: 'fx-anim-block-title' }, layerDef.name),
+					h('span', { class: 'fx-anim-block-time' }, `${clip.dur.toFixed(1)}с`)
+				);
+
+				const handleL = h('div', { class: 'fx-anim-handle is-left', title: 'Тяните, чтобы изменить начало блока' });
+				const handleR = h('div', { class: 'fx-anim-handle is-right', title: 'Тяните, чтобы изменить длину блока' });
+
+				block.append(fadeInEl, fadeOutEl, blockContent, handleL, handleR);
+
+				// Перетаскивание блока
+				block.addEventListener('pointerdown', (e) => {
+					if (e.target.closest('.fx-anim-handle')) return;
+					e.stopPropagation();
+					e.preventDefault();
+					engine.animPause();
+					selClip = clip;
+					selKey = null;
+					isDraggingItem = true;
+					block.setPointerCapture(e.pointerId);
+					animSync();
+
+					const startX = e.clientX;
+					const origStart = clip.start;
+					const r = laneBody.getBoundingClientRect();
+
+					const mv = (ev) => {
+						const dx = ev.clientX - startX;
+						const dt = (dx / Math.max(1, r.width)) * durTotal;
+						const newStart = Math.max(0, Math.min(durTotal - clip.dur, origStart + dt));
+						engine.animUpdateClip(clip.id, { start: Math.round(newStart * 10) / 10 });
+						engine.animSeek(clip.start);
+						animSync();
+					};
+
+					const up = () => {
+						block.removeEventListener('pointermove', mv);
+						block.removeEventListener('pointerup', up);
+						block.removeEventListener('pointercancel', up);
+						isDraggingItem = false;
+						animSync();
+					};
+
+					block.addEventListener('pointermove', mv);
+					block.addEventListener('pointerup', up);
+					block.addEventListener('pointercancel', up);
+				});
+
+				// Ручка слева (trim start)
+				handleL.addEventListener('pointerdown', (e) => {
+					e.stopPropagation();
+					e.preventDefault();
+					engine.animPause();
+					selClip = clip;
+					selKey = null;
+					isDraggingItem = true;
+					handleL.setPointerCapture(e.pointerId);
+					animSync();
+
+					const startX = e.clientX;
+					const origStart = clip.start;
+					const origDur = clip.dur;
+					const origEnd = origStart + origDur;
+					const r = laneBody.getBoundingClientRect();
+
+					const mv = (ev) => {
+						const dx = ev.clientX - startX;
+						const dt = (dx / Math.max(1, r.width)) * durTotal;
+						const newStart = Math.max(0, Math.min(origEnd - 0.2, origStart + dt));
+						const newDur = origEnd - newStart;
+						engine.animUpdateClip(clip.id, {
+							start: Math.round(newStart * 10) / 10,
+							dur: Math.round(newDur * 10) / 10
+						});
+						engine.animSeek(clip.start);
+						animSync();
+					};
+
+					const up = () => {
+						handleL.removeEventListener('pointermove', mv);
+						handleL.removeEventListener('pointerup', up);
+						handleL.removeEventListener('pointercancel', up);
+						isDraggingItem = false;
+						animSync();
+					};
+
+					handleL.addEventListener('pointermove', mv);
+					handleL.addEventListener('pointerup', up);
+					handleL.addEventListener('pointercancel', up);
+				});
+
+				// Ручка справа (trim end)
+				handleR.addEventListener('pointerdown', (e) => {
+					e.stopPropagation();
+					e.preventDefault();
+					engine.animPause();
+					selClip = clip;
+					selKey = null;
+					isDraggingItem = true;
+					handleR.setPointerCapture(e.pointerId);
+					animSync();
+
+					const startX = e.clientX;
+					const origDur = clip.dur;
+					const r = laneBody.getBoundingClientRect();
+
+					const mv = (ev) => {
+						const dx = ev.clientX - startX;
+						const dt = (dx / Math.max(1, r.width)) * durTotal;
+						const newDur = Math.max(0.2, Math.min(durTotal - clip.start, origDur + dt));
+						engine.animUpdateClip(clip.id, { dur: Math.round(newDur * 10) / 10 });
+						engine.animSeek(clip.start + clip.dur);
+						animSync();
+					};
+
+					const up = () => {
+						handleR.removeEventListener('pointermove', mv);
+						handleR.removeEventListener('pointerup', up);
+						handleR.removeEventListener('pointercancel', up);
+						isDraggingItem = false;
+						animSync();
+					};
+
+					handleR.addEventListener('pointermove', mv);
+					handleR.addEventListener('pointerup', up);
+					handleR.addEventListener('pointercancel', up);
+				});
+
+				laneBody.append(block);
+			}
+
+			const lane = h('div', { class: 'fx-anim-lane fx-anim-fx-lane' }, laneTitle, laneBody);
+			fxLanesWrap.append(lane);
+		}
+	}
+
+	function renderRuler() {
+		const durTotal = st.anim.dur || 8;
+		rulerTicks.textContent = '';
+		const nSecs = Math.max(1, Math.round(durTotal));
+		const step = nSecs <= 10 ? 1 : nSecs <= 30 ? 2 : 5;
+
+		for (let s = 0; s <= nSecs; s += step) {
+			const pct = (s / durTotal) * 100;
+			const tick = h('div', { class: 'fx-anim-tick', style: { left: pct + '%' } },
+				h('span', { class: 'fx-anim-tick-label' }, `${s}с`)
+			);
+			rulerTicks.append(tick);
+		}
+	}
+
 	function animSync() {
 		const A = st.anim;
-		const frac = A.dur ? Math.min(1, engine.animT / A.dur) : 0;
-		aTime.textContent = `${engine.animT.toFixed(1)} с`;
-		aHead.style.left = frac * 100 + '%';
-		aFill.style.width = frac * 100 + '%';
-		aTrack.style.setProperty('--ticks', Math.max(1, Math.round(A.dur)));
-		aTrack.style.setProperty('--majors', Math.max(1, Math.round(A.dur)) / 5);
+		const durTotal = A.dur || 8;
+		const frac = durTotal ? Math.min(1, Math.max(0, engine.animT / durTotal)) : 0;
+		const pct = (frac * 100).toFixed(2) + '%';
+
+		// Положение иглы на линейке и вертикальной линии плейхеда
+		rulerNeedle.style.left = pct;
+		playheadLine.style.left = `calc(var(--fx-head-w, 130px) + (100% - var(--fx-head-w, 130px)) * ${frac})`;
+
+		// Таймкод
+		aTimeCur.textContent = formatTimecode(engine.animT);
+		aTimeTotal.textContent = formatTimecode(durTotal);
+
+		// Кнопки
 		aPlay.textContent = '';
 		aPlay.append(h('span', { class: 'ic-wrap', html: icon(engine.animPlaying ? 'pause' : 'play', 18) }));
 		aPlay.classList.toggle('is-active', engine.animPlaying);
 		aLoop.classList.toggle('is-active', !!A.loop);
 		aRec.disabled = engine.animRec;
-		if (document.activeElement !== aDur) aDur.value = A.dur;
-		if (selKey && !A.keys.includes(selKey)) selKey = null;
-		aUpd.disabled = aDel.disabled = !selKey;
-		const distinct = new Set(A.keys.map((k) => k.t)).size;
-		aHint.textContent = distinct < 2 ? (A.keys.length ? 'Передвиньте время, измените сцену и добавьте ещё ключ' : 'Нажмите «Ключ», чтобы запомнить сцену') : '';
-		if (dragging) return;
-		const sig = A.dur + '|' + A.keys.map((k) => k.t).join(',');
-		if (sig !== keysSig) {
-			keysSig = sig;
+		if (document.activeElement !== aDur) aDur.value = durTotal;
+
+		if (selKey && (!A.keys || !A.keys.includes(selKey))) selKey = null;
+		if (selClip && (!A.clips || !A.clips.includes(selClip))) selClip = null;
+
+		renderInspector();
+
+		if (isDraggingItem) return;
+
+		const keysStr = (A.keys || []).map((k) => `${k.t}`).join(',');
+		const clipsStr = (A.clips || []).map((c) => `${c.id}:${c.layerId}:${c.start}:${c.dur}:${c.fadeIn}:${c.fadeOut}:${c.amount}`).join(',');
+		const sig = `${durTotal}|${keysStr}|${clipsStr}|${selKey ? A.keys.indexOf(selKey) : -1}|${selClip ? selClip.id : ''}`;
+
+		if (sig !== lastRenderSig) {
+			lastRenderSig = sig;
+			renderRuler();
 			renderKeys();
+			renderFxLanes();
 		}
-		markSel();
 	}
 	app.bus.on('fxanim', animSync);
 	app.bus.on('fx', animSync);
