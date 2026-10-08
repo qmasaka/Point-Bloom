@@ -687,25 +687,79 @@ export function createEffectsPanel(app, root, engine) {
 	// какие эффекты сейчас слушают звук: клик по строке открывает настройки эффекта
 	const reactList = h('div', { class: 'fx-react-list' });
 	const reactTitle = h('div', { class: 'fx-sub' }, 'Что реагирует на звук');
-	const secAudio = section('Звук', { key: 'fx-audio' }, idle.el, sourceSeg.el, styleRow, meters.el, field('Чувствительность', gain.el), field('Громкость', volume.el), reactTitle, reactList);
+	// реакция всей сцены: яркость пульсирует в такт выбранным частотам
+	const sceneBand = segmented({ cls: 'seg-tight', options: BANDS.filter((x) => ['bass', 'mid', 'high', 'beat'].includes(x.id)).map((x) => ({ value: x.id, label: x.label, title: x.title })), value: st.look.audioBand || 'bass', onChange: (v) => { st.look.audioBand = v; save(); } });
+	const sceneBright = slider({ min: 0, max: 1, step: 0.05, value: st.look.brightAudio || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.brightAudio = v; }, onChange: save });
+	const sceneTitle = h('div', { class: 'fx-sub' }, 'Вся сцена');
+	const secAudio = section('Звук', { key: 'fx-audio' }, idle.el, sourceSeg.el, styleRow, meters.el, field('Чувствительность', gain.el), field('Громкость', volume.el), reactTitle, reactList, sceneTitle, field('Слушает', sceneBand.el, { wide: true }), field('Яркость в такт', sceneBright.el));
+	/** Список эффектов, которые слушают звук: у каждого свои частоты и сила реакции, эффекты можно добавлять и убирать прямо здесь */
 	function renderReactList() {
-		const BL = Object.fromEntries(BANDS.map((b) => [b.id, b.title.split(':')[0]]));
+		sceneBand.set(st.look.audioBand || 'bass');
+		sceneBright.set(st.look.brightAudio || 0);
 		const act = cards.filter((c) => c.L.on && c.L.band !== 'none');
+		const idle_ = cards.filter((c) => !(c.L.on && c.L.band !== 'none') && c.L.band !== undefined);
 		reactList.textContent = '';
 		reactTitle.hidden = false;
-		if (!act.length) {
-			reactList.append(h('div', { class: 'field-hint' }, 'Пока ни один эффект не слушает звук. Откройте эффект слева и выберите «Реагирует на звук»: бас, свой диапазон частот или удар.'));
-			return;
-		}
 		for (const c of act) {
-			const how = c.L.amode === 'gate' ? 'по порогу' : 'усиливается';
-			const where = c.L.band === 'custom' ? `${engine.hzAt(c.L.lo)}–${engine.hzAt(c.L.hi)} Гц` : BL[c.L.band];
-			const b = h('button', { type: 'button', class: 'fx-react-row' }, h('b', {}, c.def.name), h('span', {}, `${where}, ${how}`));
-			b.addEventListener('click', () => {
+			const L = c.L;
+			const bandSeg = segmented({
+				cls: 'seg-tight',
+				options: BANDS.filter((x) => x.id !== 'none' && (x.id !== 'custom' || L.band === 'custom')).map((x) => ({ value: x.id, label: x.id === 'custom' ? `${engine.hzAt(L.lo)}–${engine.hzAt(L.hi)} Гц` : x.label, title: x.title })),
+				value: L.band,
+				onChange: (v) => {
+					L.band = v;
+					save();
+					engine.emit();
+				},
+			});
+			const power = slider({
+				min: 0,
+				max: 1,
+				step: 0.05,
+				value: L.react || 0,
+				format: (v) => Math.round(v * 100) + '%',
+				onInput: (v) => {
+					L.react = v;
+					if (L.amode === 'gate') return;
+				},
+				onChange: () => {
+					save();
+					engine.emit();
+				},
+			});
+			const off = iconButton({
+				icon: 'x',
+				title: 'Больше не слушать звук',
+				cls: 'fx-react-off',
+				onClick: () => {
+					L.band = 'none';
+					save();
+					engine.emit();
+				},
+			});
+			const name = h('button', { type: 'button', class: 'fx-react-name' }, c.def.name);
+			name.addEventListener('click', () => {
 				select_(c.def.id);
 				showFxTab('insp');
 			});
-			reactList.append(b);
+			reactList.append(h('div', { class: 'fx-react-card' }, h('div', { class: 'fx-react-head' }, name, off), bandSeg.el, field('Сила реакции', power.el)));
+		}
+		if (!act.length) reactList.append(h('div', { class: 'field-hint' }, 'Пока ни один эффект не слушает звук. Добавьте эффект ниже и выберите частоты: бас, середину, верх или удар.'));
+		if (idle_.length) {
+			const pick = select({
+				options: [{ value: '', label: 'Добавить эффект…' }, ...idle_.map((c) => ({ value: c.def.id, label: c.def.name + (c.L.on ? '' : ' (выключен)') }))],
+				value: '',
+				onChange: (v) => {
+					const c = cards.find((x) => x.def.id === v);
+					if (!c) return;
+					c.L.on = true;
+					c.L.band = 'bass';
+					if (!c.L.react) c.L.react = 0.7;
+					save();
+					engine.emit();
+				},
+			});
+			reactList.append(pick.el);
 		}
 	}
 

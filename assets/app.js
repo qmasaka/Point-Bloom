@@ -134618,6 +134618,8 @@ function defaultState() {
 			rotSpeed: 0.25,
 			sizeNoise: 0.0,
 			sizeAudio: 0.0,
+			brightAudio: 0.0,
+			audioBand: 'bass',
 			glyph: 'off',
 			shade: 0,
 			bloom: 0.0,
@@ -139471,7 +139473,8 @@ class EffectsEngine {
 				}
 				u.uDens.value = Math.min(1.6, Math.sqrt(150000 / Math.max(1, n))) * fit;
 			}
-			u.uBright.value = look.bright;
+			// яркость всей сцены может пульсировать в такт выбранным частотам
+			u.uBright.value = look.bright * (1 + (look.brightAudio || 0) * this._bandLevel({ band: look.audioBand || 'bass' }) * 1.8);
 			u.uGlow.value = look.glow;
 			u.uColorBy.value = Math.max(0, COLOR_BY.findIndex((c) => c.id === look.colorBy));
 			u.uP0.value.set(pal.c[0]);
@@ -140965,25 +140968,79 @@ function createEffectsPanel(app, root, engine) {
 	// какие эффекты сейчас слушают звук: клик по строке открывает настройки эффекта
 	const reactList = h('div', { class: 'fx-react-list' });
 	const reactTitle = h('div', { class: 'fx-sub' }, 'Что реагирует на звук');
-	const secAudio = section('Звук', { key: 'fx-audio' }, idle.el, sourceSeg.el, styleRow, meters.el, field('Чувствительность', gain.el), field('Громкость', volume.el), reactTitle, reactList);
+	// реакция всей сцены: яркость пульсирует в такт выбранным частотам
+	const sceneBand = segmented({ cls: 'seg-tight', options: BANDS.filter((x) => ['bass', 'mid', 'high', 'beat'].includes(x.id)).map((x) => ({ value: x.id, label: x.label, title: x.title })), value: st.look.audioBand || 'bass', onChange: (v) => { st.look.audioBand = v; save(); } });
+	const sceneBright = slider({ min: 0, max: 1, step: 0.05, value: st.look.brightAudio || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.brightAudio = v; }, onChange: save });
+	const sceneTitle = h('div', { class: 'fx-sub' }, 'Вся сцена');
+	const secAudio = section('Звук', { key: 'fx-audio' }, idle.el, sourceSeg.el, styleRow, meters.el, field('Чувствительность', gain.el), field('Громкость', volume.el), reactTitle, reactList, sceneTitle, field('Слушает', sceneBand.el, { wide: true }), field('Яркость в такт', sceneBright.el));
+	/** Список эффектов, которые слушают звук: у каждого свои частоты и сила реакции, эффекты можно добавлять и убирать прямо здесь */
 	function renderReactList() {
-		const BL = Object.fromEntries(BANDS.map((b) => [b.id, b.title.split(':')[0]]));
+		sceneBand.set(st.look.audioBand || 'bass');
+		sceneBright.set(st.look.brightAudio || 0);
 		const act = cards.filter((c) => c.L.on && c.L.band !== 'none');
+		const idle_ = cards.filter((c) => !(c.L.on && c.L.band !== 'none') && c.L.band !== undefined);
 		reactList.textContent = '';
 		reactTitle.hidden = false;
-		if (!act.length) {
-			reactList.append(h('div', { class: 'field-hint' }, 'Пока ни один эффект не слушает звук. Откройте эффект слева и выберите «Реагирует на звук»: бас, свой диапазон частот или удар.'));
-			return;
-		}
 		for (const c of act) {
-			const how = c.L.amode === 'gate' ? 'по порогу' : 'усиливается';
-			const where = c.L.band === 'custom' ? `${engine.hzAt(c.L.lo)}–${engine.hzAt(c.L.hi)} Гц` : BL[c.L.band];
-			const b = h('button', { type: 'button', class: 'fx-react-row' }, h('b', {}, c.def.name), h('span', {}, `${where}, ${how}`));
-			b.addEventListener('click', () => {
+			const L = c.L;
+			const bandSeg = segmented({
+				cls: 'seg-tight',
+				options: BANDS.filter((x) => x.id !== 'none' && (x.id !== 'custom' || L.band === 'custom')).map((x) => ({ value: x.id, label: x.id === 'custom' ? `${engine.hzAt(L.lo)}–${engine.hzAt(L.hi)} Гц` : x.label, title: x.title })),
+				value: L.band,
+				onChange: (v) => {
+					L.band = v;
+					save();
+					engine.emit();
+				},
+			});
+			const power = slider({
+				min: 0,
+				max: 1,
+				step: 0.05,
+				value: L.react || 0,
+				format: (v) => Math.round(v * 100) + '%',
+				onInput: (v) => {
+					L.react = v;
+					if (L.amode === 'gate') return;
+				},
+				onChange: () => {
+					save();
+					engine.emit();
+				},
+			});
+			const off = iconButton({
+				icon: 'x',
+				title: 'Больше не слушать звук',
+				cls: 'fx-react-off',
+				onClick: () => {
+					L.band = 'none';
+					save();
+					engine.emit();
+				},
+			});
+			const name = h('button', { type: 'button', class: 'fx-react-name' }, c.def.name);
+			name.addEventListener('click', () => {
 				select_(c.def.id);
 				showFxTab('insp');
 			});
-			reactList.append(b);
+			reactList.append(h('div', { class: 'fx-react-card' }, h('div', { class: 'fx-react-head' }, name, off), bandSeg.el, field('Сила реакции', power.el)));
+		}
+		if (!act.length) reactList.append(h('div', { class: 'field-hint' }, 'Пока ни один эффект не слушает звук. Добавьте эффект ниже и выберите частоты: бас, середину, верх или удар.'));
+		if (idle_.length) {
+			const pick = select({
+				options: [{ value: '', label: 'Добавить эффект…' }, ...idle_.map((c) => ({ value: c.def.id, label: c.def.name + (c.L.on ? '' : ' (выключен)') }))],
+				value: '',
+				onChange: (v) => {
+					const c = cards.find((x) => x.def.id === v);
+					if (!c) return;
+					c.L.on = true;
+					c.L.band = 'bass';
+					if (!c.L.react) c.L.react = 0.7;
+					save();
+					engine.emit();
+				},
+			});
+			reactList.append(pick.el);
 		}
 	}
 
@@ -143314,14 +143371,75 @@ class UI {
 				useMode = choice;
 			}
 			this.busy('Читаю файлы', 0.02);
+			const before = new Set(app.viewport.root.children);
 			const r = await importFiles(app, files, { mode: useMode });
+			// шейдеры и текстуры готовим заранее, пока окно загрузки ещё закрывает сцену: иначе первый кадр с моделью подвисает
+			const fresh = app.viewport.root.children.filter((c) => !before.has(c) && !c.userData.helper);
+			await this.warmUp();
 			this.idle();
 			this.reportImport(r);
+			this.revealObjects(fresh);
 		} catch (e) {
 			this.idle();
 			console.error(e);
 			this.toast('Не удалось загрузить: ' + (e.message || e), 'error');
 		}
+	}
+
+	/** Заранее компилирует шейдеры и загружает текстуры на видеокарту */
+	async warmUp() {
+		const vp = this.app.viewport;
+		try {
+			if (vp.renderer.compileAsync) await vp.renderer.compileAsync(vp.scene, vp.camera);
+			else vp.renderer.compile(vp.scene, vp.camera);
+		} catch (e) {
+			/* предварительная подготовка не обязательна */
+		}
+	}
+
+	/** Новые объекты плавно проявляются: прозрачность от нуля и лёгкий рост, вместо резкого появления */
+	revealObjects(objs) {
+		if (!objs.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		const vp = this.app.viewport;
+		const saved = new Map();
+		const mats = () => {
+			const list = [];
+			for (const o of objs) {
+				o.traverse((n) => {
+					if (!(n.isMesh || n.isPoints || n.isLine) || n.userData.helper) return;
+					for (const m of Array.isArray(n.material) ? n.material : [n.material]) if (m) list.push(m);
+				});
+			}
+			return list;
+		};
+		const startScale = new Map(objs.map((o) => [o, o.scale.clone()]));
+		const t0 = performance.now();
+		const dur = 620;
+		const ease = (t) => 1 - Math.pow(1 - t, 3);
+		const step = (now) => {
+			const t = Math.min(1, (now - t0) / dur);
+			const e = ease(t);
+			for (const m of mats()) {
+				if (!saved.has(m)) saved.set(m, { opacity: m.opacity, transparent: m.transparent, depthWrite: m.depthWrite });
+				const o = saved.get(m);
+				m.transparent = true;
+				m.depthWrite = t >= 1 ? o.depthWrite : false;
+				m.opacity = o.opacity * e;
+				m.needsUpdate = t === 0 || t >= 1;
+			}
+			for (const [o, s0] of startScale) o.scale.copy(s0).multiplyScalar(0.94 + 0.06 * e);
+			if (t >= 1) {
+				for (const [m, o] of saved) {
+					m.opacity = o.opacity;
+					m.transparent = o.transparent;
+					m.depthWrite = o.depthWrite;
+					m.needsUpdate = true;
+				}
+			}
+			vp.invalidate();
+			if (t < 1) requestAnimationFrame(step);
+		};
+		requestAnimationFrame(step);
 	}
 
 	reportImport(r) {

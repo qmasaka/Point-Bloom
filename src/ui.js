@@ -904,14 +904,75 @@ export class UI {
 				useMode = choice;
 			}
 			this.busy('Читаю файлы', 0.02);
+			const before = new Set(app.viewport.root.children);
 			const r = await importFiles(app, files, { mode: useMode });
+			// шейдеры и текстуры готовим заранее, пока окно загрузки ещё закрывает сцену: иначе первый кадр с моделью подвисает
+			const fresh = app.viewport.root.children.filter((c) => !before.has(c) && !c.userData.helper);
+			await this.warmUp();
 			this.idle();
 			this.reportImport(r);
+			this.revealObjects(fresh);
 		} catch (e) {
 			this.idle();
 			console.error(e);
 			this.toast('Не удалось загрузить: ' + (e.message || e), 'error');
 		}
+	}
+
+	/** Заранее компилирует шейдеры и загружает текстуры на видеокарту */
+	async warmUp() {
+		const vp = this.app.viewport;
+		try {
+			if (vp.renderer.compileAsync) await vp.renderer.compileAsync(vp.scene, vp.camera);
+			else vp.renderer.compile(vp.scene, vp.camera);
+		} catch (e) {
+			/* предварительная подготовка не обязательна */
+		}
+	}
+
+	/** Новые объекты плавно проявляются: прозрачность от нуля и лёгкий рост, вместо резкого появления */
+	revealObjects(objs) {
+		if (!objs.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		const vp = this.app.viewport;
+		const saved = new Map();
+		const mats = () => {
+			const list = [];
+			for (const o of objs) {
+				o.traverse((n) => {
+					if (!(n.isMesh || n.isPoints || n.isLine) || n.userData.helper) return;
+					for (const m of Array.isArray(n.material) ? n.material : [n.material]) if (m) list.push(m);
+				});
+			}
+			return list;
+		};
+		const startScale = new Map(objs.map((o) => [o, o.scale.clone()]));
+		const t0 = performance.now();
+		const dur = 620;
+		const ease = (t) => 1 - Math.pow(1 - t, 3);
+		const step = (now) => {
+			const t = Math.min(1, (now - t0) / dur);
+			const e = ease(t);
+			for (const m of mats()) {
+				if (!saved.has(m)) saved.set(m, { opacity: m.opacity, transparent: m.transparent, depthWrite: m.depthWrite });
+				const o = saved.get(m);
+				m.transparent = true;
+				m.depthWrite = t >= 1 ? o.depthWrite : false;
+				m.opacity = o.opacity * e;
+				m.needsUpdate = t === 0 || t >= 1;
+			}
+			for (const [o, s0] of startScale) o.scale.copy(s0).multiplyScalar(0.94 + 0.06 * e);
+			if (t >= 1) {
+				for (const [m, o] of saved) {
+					m.opacity = o.opacity;
+					m.transparent = o.transparent;
+					m.depthWrite = o.depthWrite;
+					m.needsUpdate = true;
+				}
+			}
+			vp.invalidate();
+			if (t < 1) requestAnimationFrame(step);
+		};
+		requestAnimationFrame(step);
 	}
 
 	reportImport(r) {

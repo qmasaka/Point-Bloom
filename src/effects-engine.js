@@ -168,6 +168,8 @@ function defaultState() {
 			rotSpeed: 0.25,
 			sizeNoise: 0.0,
 			sizeAudio: 0.0,
+			brightAudio: 0.0,
+			audioBand: 'bass',
 			glyph: 'off',
 			shade: 0,
 			bloom: 0.0,
@@ -5021,7 +5023,8 @@ export class EffectsEngine {
 				}
 				u.uDens.value = Math.min(1.6, Math.sqrt(150000 / Math.max(1, n))) * fit;
 			}
-			u.uBright.value = look.bright;
+			// яркость всей сцены может пульсировать в такт выбранным частотам
+			u.uBright.value = look.bright * (1 + (look.brightAudio || 0) * this._bandLevel({ band: look.audioBand || 'bass' }) * 1.8);
 			u.uGlow.value = look.glow;
 			u.uColorBy.value = Math.max(0, COLOR_BY.findIndex((c) => c.id === look.colorBy));
 			u.uP0.value.set(pal.c[0]);

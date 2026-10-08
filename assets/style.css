@@ -5620,3 +5620,14 @@ html.booted .vp-dock, html.booted .fx-bar, html.booted .statusbar { animation: b
 html.booted .stage, html.booted .empty-state { animation: boot-fade 0.9s ease 0.1s backwards; }
 @media (prefers-reduced-motion: reduce) { .boot-mark, .boot-bar i, html.booted * { animation: none !important; } #boot { transition: opacity 0.2s linear; } }
 @container app (min-width: 901px) { .ui-float .fxf-scroll .panel { padding-bottom: 0; } }
+/* диалог «Как пользоваться»: прокручивается только внутренняя часть, снаружи второй полосы нет */
+.dlg { overflow: hidden; }
+.dlg-inner { max-height: calc(var(--vh) - 50px); }
+
+/* ================================================================ звук: управление реакцией эффектов прямо во вкладке */
+.fx-react-card { display: grid; gap: 8px; padding: 10px 12px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.035); }
+.fx-react-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fx-react-name { padding: 0; border: 0; background: none; color: var(--text); font: 600 13px var(--font); cursor: pointer; text-align: left; }
+.fx-react-name:hover { color: var(--accent-text); }
+.fx-react-off { width: 24px !important; height: 24px !important; color: var(--text-faint); }
+.fx-react-off:hover { color: var(--text); }
