@@ -1114,6 +1114,9 @@ engine.animSetDuration(Number(aDur.value) || 8);
 animSync();
 });
 const aDurBox = h('div', { class: 'fx-anim-dur-box' }, aDur, h('span', { class: 'fx-anim-dur-unit' }, 'с'));
+const fitDur = () => aDurBox.style.setProperty('--dur-w', Math.max(1, String(aDur.value || '').length) + 'ch');
+aDur.addEventListener('input', fitDur);
+fitDur();
 const aRec = button({
 label: 'Записать',
 icon: 'record',
@@ -1190,6 +1193,7 @@ button({ label: '+ Волны', variant: 'primary', cls: 'btn-sm', onClick: () =
 const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, fxLanesWrap, emptyHint);
 const playheadLine = h('div', { class: 'fx-anim-playhead-line' });
 stage.append(rulerRow, lanesScroll, playheadLine);
+stage.addEventListener('scroll', () => stage.classList.toggle('is-scrolled', stage.scrollLeft > 2), { passive: true });
 let rulerRaf = 0;
 new ResizeObserver(() => {
 cancelAnimationFrame(rulerRaf);
@@ -1752,6 +1756,7 @@ aPlay.classList.toggle('is-active', engine.animPlaying);
 aLoop.classList.toggle('is-active', !!A.loop);
 aRec.disabled = engine.animRec;
 if (document.activeElement !== aDur) aDur.value = durTotal;
+fitDur();
 if (selKey && (!A.keys || !A.keys.includes(selKey))) selKey = null;
 if (selClip && (!A.clips || !A.clips.includes(selClip))) selClip = null;
 renderInspector();

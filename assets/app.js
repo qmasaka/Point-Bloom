@@ -141467,6 +141467,10 @@ function createEffectsPanel(app, root, engine) {
 		animSync();
 	});
 	const aDurBox = h('div', { class: 'fx-anim-dur-box' }, aDur, h('span', { class: 'fx-anim-dur-unit' }, 'с'));
+	// ширина поля по числу цифр: «с» всегда стоит сразу после числа
+	const fitDur = () => aDurBox.style.setProperty('--dur-w', Math.max(1, String(aDur.value || '').length) + 'ch');
+	aDur.addEventListener('input', fitDur);
+	fitDur();
 	const aRec = button({
 		label: 'Записать',
 		icon: 'record',
@@ -141558,6 +141562,7 @@ function createEffectsPanel(app, root, engine) {
 	const playheadLine = h('div', { class: 'fx-anim-playhead-line' });
 
 	stage.append(rulerRow, lanesScroll, playheadLine);
+	stage.addEventListener('scroll', () => stage.classList.toggle('is-scrolled', stage.scrollLeft > 2), { passive: true });
 	// шаг и подписи линейки подбираются по реальной ширине: пересчёт при зуме, смене размера окна и открытии панели
 	let rulerRaf = 0;
 	new ResizeObserver(() => {
@@ -142199,6 +142204,7 @@ function createEffectsPanel(app, root, engine) {
 		aLoop.classList.toggle('is-active', !!A.loop);
 		aRec.disabled = engine.animRec;
 		if (document.activeElement !== aDur) aDur.value = durTotal;
+		fitDur();
 
 		if (selKey && (!A.keys || !A.keys.includes(selKey))) selKey = null;
 		if (selClip && (!A.clips || !A.clips.includes(selClip))) selClip = null;
