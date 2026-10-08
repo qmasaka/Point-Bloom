@@ -1164,8 +1164,7 @@ const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, quickWrap, aSet
 const stage = h('div', { class: 'fx-anim-stage' });
 const rulerTitle = h('div', { class: 'fx-anim-track-label fx-anim-ruler-title' }, 'Время');
 const rulerTicks = h('div', { class: 'fx-anim-ruler-ticks' });
-const needleTag = h('span', { class: 'fx-anim-needle-tag' }, '00:00.0');
-const rulerNeedle = h('div', { class: 'fx-anim-playhead-needle' }, needleTag);
+const rulerNeedle = h('div', { class: 'fx-anim-playhead-needle' });
 const rulerBody = h('div', { class: 'fx-anim-ruler-body' }, rulerTicks, rulerNeedle);
 const rulerRow = h('div', { class: 'fx-anim-ruler-row' }, rulerTitle, rulerBody);
 const camTitle = h('div', { class: 'fx-anim-track-label fx-anim-cam-label' },
@@ -1745,7 +1744,6 @@ const frac = durTotal ? Math.min(1, Math.max(0, engine.animT / durTotal)) : 0;
 const pct = (frac * 100).toFixed(2) + '%';
 rulerNeedle.style.left = pct;
 playheadLine.style.left = `calc(var(--fx-head-w, 130px) + (100% - var(--fx-head-w, 130px)) * ${(frac * animZoom).toFixed(5)})`;
-needleTag.textContent = formatTimecode(engine.animT);
 aTimeCur.textContent = formatTimecode(engine.animT);
 aTimeTotal.textContent = formatTimecode(durTotal);
 aPlay.textContent = '';
@@ -1758,7 +1756,6 @@ if (selKey && (!A.keys || !A.keys.includes(selKey))) selKey = null;
 if (selClip && (!A.clips || !A.clips.includes(selClip))) selClip = null;
 renderInspector();
 if (isDraggingItem) return;
-clampAnimH();
 const keysStr = (A.keys || []).map((k) => `${k.t}`).join(',');
 const clipsStr = (A.clips || []).map((c) => `${c.id}:${c.layerId}:${c.start}:${c.dur}:${c.fadeIn}:${c.fadeOut}:${c.amount}`).join(',');
 const sig = `${durTotal}|${keysStr}|${clipsStr}|${selKey ? A.keys.indexOf(selKey) : -1}|${selClip ? selClip.id : ''}`;
@@ -1767,8 +1764,8 @@ lastRenderSig = sig;
 renderRuler();
 renderKeys();
 renderFxLanes();
-clampAnimH();
 }
+clampAnimH();
 }
 app.bus.on('fxanim', animSync);
 app.bus.on('fx', animSync);

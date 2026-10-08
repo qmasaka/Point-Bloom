@@ -5520,3 +5520,6 @@ body.is-resizing-h * {
 /* строки шкалы шире окна при зуме: тогда подписи дорожек остаются на месте у левого края */
 .fx-anim-stage .fx-anim-lane, .fx-anim-stage .fx-anim-ruler-row { width: calc(var(--fx-head-w, 130px) + (100% - var(--fx-head-w, 130px)) * var(--fx-anim-zoom, 1)); }
 .fx-anim-stage .fx-anim-lanes-scroll { width: calc(var(--fx-head-w, 130px) + (100% - var(--fx-head-w, 130px)) * var(--fx-anim-zoom, 1)); }
+
+/* шкала не сжимается в колонке: иначе высота таймлайна не растёт, а вертикальная прокрутка не доходит до родителя */
+.fx-anim-stage { flex: 0 0 auto; }

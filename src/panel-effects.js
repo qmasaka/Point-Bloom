@@ -1247,8 +1247,7 @@ export function createEffectsPanel(app, root, engine) {
 	// Линейка времени
 	const rulerTitle = h('div', { class: 'fx-anim-track-label fx-anim-ruler-title' }, 'Время');
 	const rulerTicks = h('div', { class: 'fx-anim-ruler-ticks' });
-	const needleTag = h('span', { class: 'fx-anim-needle-tag' }, '00:00.0');
-	const rulerNeedle = h('div', { class: 'fx-anim-playhead-needle' }, needleTag);
+	const rulerNeedle = h('div', { class: 'fx-anim-playhead-needle' });
 	const rulerBody = h('div', { class: 'fx-anim-ruler-body' }, rulerTicks, rulerNeedle);
 	const rulerRow = h('div', { class: 'fx-anim-ruler-row' }, rulerTitle, rulerBody);
 
@@ -1911,7 +1910,6 @@ export function createEffectsPanel(app, root, engine) {
 		// Положение иглы на линейке и вертикальной линии плейхеда
 		rulerNeedle.style.left = pct;
 		playheadLine.style.left = `calc(var(--fx-head-w, 130px) + (100% - var(--fx-head-w, 130px)) * ${(frac * animZoom).toFixed(5)})`;
-		needleTag.textContent = formatTimecode(engine.animT);
 
 		// Таймкод
 		aTimeCur.textContent = formatTimecode(engine.animT);
@@ -1931,7 +1929,6 @@ export function createEffectsPanel(app, root, engine) {
 		renderInspector();
 
 		if (isDraggingItem) return;
-		clampAnimH();
 
 		const keysStr = (A.keys || []).map((k) => `${k.t}`).join(',');
 		const clipsStr = (A.clips || []).map((c) => `${c.id}:${c.layerId}:${c.start}:${c.dur}:${c.fadeIn}:${c.fadeOut}:${c.amount}`).join(',');
@@ -1942,8 +1939,8 @@ export function createEffectsPanel(app, root, engine) {
 			renderRuler();
 			renderKeys();
 			renderFxLanes();
-			clampAnimH();
 		}
+		clampAnimH();
 	}
 	app.bus.on('fxanim', animSync);
 	app.bus.on('fx', animSync);
