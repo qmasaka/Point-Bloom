@@ -134917,7 +134917,7 @@ const FX_LAYERS = [
 	{ id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Частицы отрываются от формы, уносятся ветром и гаснут, пока модель не исчезнет. Потом она собирается обратно', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', order: 'top', style: 'wind', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.8 }, extras: [{ key: 'style', label: 'Как исчезает', type: 'select', options: [['wind', 'Уносит ветром'], ['burn', 'Горение: пепел и угли'], ['bubbles', 'Пузыри всплывают']] }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'order', label: 'С какой стороны', type: 'seg', options: [['top', 'Сверху'], ['noise', 'Пятнами'], ['bottom', 'Снизу']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер в сторону', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Завихрения', min: 0, max: 2, step: 0.05 }] },
 	{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке и становятся квадратами: сетка, «Лего» или дыхание', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1, mode: 'grid', speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['grid', 'Сетка'], ['lego', 'Лего'], ['breathe', 'Дыхание']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe']] }] },
 	{ id: 'scope', group: 'Звук и ритм', name: 'Акселограф', icon: 'heartbeat', hint: 'По точкам модели бежит перо самописца: линия идёт от точки к точке по их координатам и вычерчивает форму. Ещё не нарисованные точки невидимы и проявляются, когда перо проходит по ним. Линия и точки двигаются вместе с остальными эффектами', max: 1, def: { on: false, amount: 0.7, band: 'none', react: 0.6, mode: 'draw', order: 'walk', dir: 'fwd', loop: 'loop', speed: 1, pens: 2, chaos: 0.6, trail: 0.5, detail: 6000, dim: 1, line: 1, width: 2.4, color: '#3dff7a', tint: 0.35, thick: 0.6, glow: 1, spark: 0 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивает: нарисованное остаётся'], ['comet', 'Комета: за пером тянется гаснущий след']] }, { key: 'order', label: 'Порядок обхода', type: 'select', options: [['walk', 'От точки к точке (ближайшая)'], ['up', 'Развёртка снизу вверх'], ['spin', 'Развёртка по кругу']] }, { key: 'dir', label: 'Направление', type: 'seg', options: [['fwd', 'Вперёд'], ['back', 'Назад']] }, { key: 'loop', label: 'В конце круга', type: 'seg', options: [['loop', 'Стирает и заново'], ['once', 'Остаётся']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'pens', label: 'Число перьев', min: 1, max: 8, step: 1, int: true }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true, when: ['order', ['walk']] }, { key: 'chaos', label: 'Хаотичность пути', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'dim', label: 'Прятать ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'color', label: 'Цвет акселографа', type: 'color' }, { key: 'line', label: 'Яркость линии', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'width', label: 'Толщина линии', min: 0.5, max: 8, step: 0.1, when: ['order', ['walk']] }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }, { key: 'spark', label: 'Искры у пера', min: 0, max: 2, step: 0.05 }] },
-	{ id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Нейросеть строит карту глубины снимка или каждого кадра видео, и точки выдавливаются по ней: рельеф, ступенчатые слои, сканер глубины, эффект Хичкока, пыль на дальнем плане и волны по контурам. Всё считается на вашем компьютере. Вращайте камеру, чтобы увидеть объём', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.5, zone: 0.12, bright: 0, contrast: 1, gamma: 1, blur: 0, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Рельеф: ближнее выступает вперёд'], ['layers', 'Слои: ступени, как вырезанные из картона'], ['scan', 'Сканер: плоскость бежит сквозь глубину'], ['vertigo', 'Вертиго: ближнее и дальнее зумятся по-разному'], ['dust', 'Пыль: дальний план рассыпается'], ['contour', 'Контуры: волны идут по глубине']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Глубина, что остаётся на месте', min: 0, max: 1, step: 0.01 }, { key: 'zone', label: 'Ширина зоны на месте', min: 0, max: 0.6, step: 0.01 }, { type: 'title', label: 'Правка карты глубины' }, { key: 'bright', label: 'Яркость карты', min: -0.5, max: 0.5, step: 0.01 }, { key: 'contrast', label: 'Контраст карты', min: 0.2, max: 3, step: 0.02 }, { key: 'gamma', label: 'Тени (гамма)', min: 0.3, max: 3, step: 0.02 }, { key: 'blur', label: 'Размытие карты', min: 0, max: 12, step: 1, int: true }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
+	{ id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Нейросеть строит карту глубины снимка или каждого кадра видео, и точки выдавливаются по ней: рельеф, ступени, дыхание, волна, рябь, карусель и разлёт слоёв. Всё считается на вашем компьютере. Вращайте камеру, чтобы увидеть объём', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.5, zone: 0.12, bright: 0, contrast: 1, gamma: 1, blur: 0, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Рельеф: ближнее выступает вперёд'], ['layers', 'Ступени: ровные плоскости по глубине'], ['breath', 'Дыхание: рельеф выдавливается и втягивается'], ['wave', 'Волна: рельеф вспухает бегущей волной'], ['ripple', 'Рябь: по рельефу расходятся круги'], ['twist', 'Карусель: слои поворачиваются по-разному'], ['burst', 'Разлёт: слои вылетают к зрителю и возвращаются']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Глубина, что остаётся на месте', min: 0, max: 1, step: 0.01 }, { key: 'zone', label: 'Ширина зоны на месте', min: 0, max: 0.6, step: 0.01 }, { type: 'title', label: 'Правка карты глубины' }, { key: 'bright', label: 'Яркость карты', min: -0.5, max: 0.5, step: 0.01 }, { key: 'contrast', label: 'Контраст карты', min: 0.2, max: 3, step: 0.02 }, { key: 'gamma', label: 'Тени (гамма)', min: 0.3, max: 3, step: 0.02 }, { key: 'blur', label: 'Размытие карты', min: 0, max: 12, step: 1, int: true }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
 	{ id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в трёх измерениях, цветовые каналы расходятся, картинка мерцает', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16, rgb: 'on', speed: 1 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
 	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими импульсами', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
@@ -135670,33 +135670,35 @@ vec3 depthShape(vec3 b) {
 	float dd = dzone(dn - fo);
 	int md = int(uDepth.y + 0.5);
 	if (md == 0) {
+		// рельеф: ближнее выступает вперёд
 		b.z += dd * A * 1.2;
 	} else if (md == 1) {
+		// ступени: глубина режется на ровные плоскости
 		float N = max(2.0, floor(uDepthP.x + 0.5));
 		float x = dn * N;
 		float dq = (floor(x) + smoothstep(0.38, 0.62, fract(x))) / N;
-		float dq2 = dzone(dq - fo);
-		b.z += dq2 * A * 1.5;
-		b.xy += vec2(sin(t * sp * 0.7 + dq * 7.0), cos(t * sp * 0.55 + dq * 5.0) * 0.5) * dq2 * A * 0.1;
+		b.z += dzone(dq - fo) * A * 1.5;
 	} else if (md == 2) {
-		float sw = abs(fract(t * sp * 0.16) * 2.0 - 1.0);
-		float q = (dn - sw) / 0.08;
-		float g = exp(-q * q);
-		b.z += dd * A * 0.18 + g * A * 0.7;
-		gDepthG = g;
+		// дыхание: рельеф выдавливается и втягивается обратно
+		b.z += dd * A * 1.3 * (0.5 + 0.5 * sin(t * sp * 0.9));
 	} else if (md == 3) {
-		float k = sin(t * sp * 0.8) * A * 0.55;
-		b.xy *= 1.0 + dd * k;
-		b.z += dd * A * 0.35;
+		// волна: глубина вспухает бегущей волной слева направо
+		b.z += dd * A * 1.4 * (0.55 + 0.45 * sin(b.x * 3.2 - t * sp * 1.6));
 	} else if (md == 4) {
-		float f = 1.0 - smoothstep(fo - 0.28, fo + 0.12, dn);
-		vec3 cn = curlNoise(b * 1.6 + vec3(0.0, -t * sp * 0.25, t * sp * 0.18));
-		b += cn * f * A * 0.5;
-		b.z += dd * A * 0.3 - f * A * 0.3;
+		// рябь: по рельефу расходятся круги, у ближнего они выше
+		b.z += (dd * 0.6 + sin(length(b.xy) * 9.0 - t * sp * 2.2) * 0.25 * (0.35 + dn)) * A;
+	} else if (md == 5) {
+		// карусель: слои разной глубины поворачиваются на разный угол вокруг вертикали
+		float a = dd * A * 1.6 * sin(t * sp * 0.7);
+		float cs = cos(a);
+		float sn = sin(a);
+		b.xz = mat2(cs, -sn, sn, cs) * b.xz;
+		b.z += dd * A * 0.5;
 	} else {
-		float w = sin(dn * 26.0 - t * sp * 2.6);
-		b.z += (dd * 0.55 + w * 0.14) * A;
-		gDepthG = pow(max(w, 0.0), 8.0) * 0.9;
+		// разлёт: слои по очереди вылетают к зрителю и возвращаются
+		float p = 0.5 + 0.5 * sin(t * sp * 0.8 - 1.5708);
+		b.z += dd * A * (0.4 + 1.8 * p * p);
+		b.xy *= 1.0 + dd * A * 0.5 * p * p;
 	}
 	// лёгкое покачивание: сдвиг по глубине даёт параллакс, плоский кадр оживает даже без вращения камеры
 	float a = t * sp * 0.8;
@@ -136395,7 +136397,6 @@ void main() {
 			vec3 jet = clamp(vec3(1.5 - abs(4.0 * gDepth - 3.0), 1.5 - abs(4.0 * gDepth - 2.0), 1.5 - abs(4.0 * gDepth - 1.0)), 0.0, 1.0);
 			vColor = mix(vColor, jet * (0.4 + 0.95 * dot(vColor, vec3(0.3, 0.59, 0.11))), 0.88);
 		} else if (uDepthP.w > 0.5) vColor = vec3(gDepth);
-		vColor += uP2 * gDepthG * 1.3;
 	}
 	// акселограф: линия окрашивается, голова пера горит
 	if (uScope.x > 0.001) {
@@ -140670,7 +140671,7 @@ class EffectsEngine {
 			{
 				const Dp = L.depth;
 				const on = Dp.on && st.source === 'media' && this.pm.ready;
-				u.uDepth.value.set(on ? clamp(this._eff(Dp), 0, 1.5) : 0, { relief: 0, layers: 1, scan: 2, vertigo: 3, dust: 4, contour: 5 }[Dp.mode] ?? 0, Dp.speed, Dp.focus);
+				u.uDepth.value.set(on ? clamp(this._eff(Dp), 0, 1.5) : 0, { relief: 0, layers: 1, breath: 2, wave: 3, ripple: 4, twist: 5, burst: 6 }[Dp.mode] ?? 0, Dp.speed, Dp.focus);
 				u.uDepthQ.value.set(Dp.zone ?? 0.12, 0, 0, 0);
 				u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, map: 1, heat: 2 }[Dp.view] ?? 0);
 			}
@@ -141217,15 +141218,12 @@ const DRAW = {
 		for (const [x, y, i, j] of grid(4, 4, 5.2, 4.8)) dot(c, x, y, 3.4 + Math.sin(t * 3 + i + j) * 0.9, 0.55 + 0.45 * Math.sin(t * 2 + i * j));
 	},
 	depth: (c, t) => {
-		// плоский ряд точек выдавливается рельефом, а светлая плоскость сканера бежит по глубине
-		const sw = Math.abs(((t * 0.45) % 1) * 2 - 1);
+		// плоский ряд точек то выдавливается рельефом, то втягивается обратно
+		const k = 0.55 + 0.45 * Math.sin(t * 2);
 		for (let j = 0; j < 5; j++) {
 			for (let i = 0; i < 9; i++) {
-				const x = (i - 4) * 3.1;
 				const d = Math.exp(-(((i - 4) / 2.6) ** 2) - ((j - 2) / 1.7) ** 2);
-				const y = (j - 2) * 3.6 - d * 4.2 - 1;
-				const g = Math.exp(-(((d - sw) / 0.16) ** 2));
-				dot(c, x + (j - 2) * 0.5 * d, y, 1.3 + d * 1.1 + g * 1.4, 0.3 + d * 0.5 + g * 0.5);
+				dot(c, (i - 4) * 3.1 + (j - 2) * 0.5 * d * k, (j - 2) * 3.6 - d * 4.2 * k - 1, 1.3 + d * 1.1 * k, 0.3 + d * 0.55);
 			}
 		}
 	},

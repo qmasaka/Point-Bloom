@@ -96,14 +96,11 @@ voxel: (c, t) => {
 for (const [x, y, i, j] of grid(4, 4, 5.2, 4.8)) dot(c, x, y, 3.4 + Math.sin(t * 3 + i + j) * 0.9, 0.55 + 0.45 * Math.sin(t * 2 + i * j));
 },
 depth: (c, t) => {
-const sw = Math.abs(((t * 0.45) % 1) * 2 - 1);
+const k = 0.55 + 0.45 * Math.sin(t * 2);
 for (let j = 0; j < 5; j++) {
 for (let i = 0; i < 9; i++) {
-const x = (i - 4) * 3.1;
 const d = Math.exp(-(((i - 4) / 2.6) ** 2) - ((j - 2) / 1.7) ** 2);
-const y = (j - 2) * 3.6 - d * 4.2 - 1;
-const g = Math.exp(-(((d - sw) / 0.16) ** 2));
-dot(c, x + (j - 2) * 0.5 * d, y, 1.3 + d * 1.1 + g * 1.4, 0.3 + d * 0.5 + g * 0.5);
+dot(c, (i - 4) * 3.1 + (j - 2) * 0.5 * d * k, (j - 2) * 3.6 - d * 4.2 * k - 1, 1.3 + d * 1.1 * k, 0.3 + d * 0.55);
 }
 }
 },
