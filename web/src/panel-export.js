@@ -177,8 +177,10 @@ app.ui.setExportLabel(f.id === 'obj' ? 'Скачать OBJ' : f.id === 'web' ? '
 rowTexFmt.hidden = !(f.id === 'glb' || f.id === 'gltf' || f.id === 'web');
 rowMaxTex.hidden = !(f.id === 'glb' || f.id === 'gltf' || f.id === 'usdz' || f.id === 'web');
 secWeb.el.hidden = f.id !== 'web';
-secCloud.el.hidden = f.id === 'stl' || f.id === 'usdz' || f.id === 'web';
-cloudExtra.hidden = s.cloud !== 'surface';
+secCloud.el.hidden = f.id === 'stl' || f.id === 'usdz' || f.id === 'web' || f.id === 'splatzip';
+secWhat.el.hidden = f.id === 'splatzip';
+secData.el.hidden = f.id === 'splatzip';
+cloudExtra.hidden = s.cloud !== 'surface' && f.id !== 'splat';
 nameInput.placeholder = defaultExportName(app);
 webTitle.placeholder = defaultExportName(app);
 syncWebMode();

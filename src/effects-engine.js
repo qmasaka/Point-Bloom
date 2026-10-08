@@ -2501,6 +2501,25 @@ export class EffectsEngine {
 		});
 	}
 
+	/** Снимает n кадров видео в заданном разрешении со скрытой копии (для экспорта): возвращает массив RGBA */
+	async captureFramesForExport(n, cols, rows, onProgress) {
+		const cap = await this._capVideo();
+		try {
+			const take = this._frameTaker(cols, rows, cap);
+			const dur = cap.duration || this.pm.el.duration || 1;
+			const out = [];
+			for (let k = 0; k < n; k++) {
+				await this._seekTo(cap, Math.min(Math.max(0.05, dur - 0.04), (k / Math.max(1, n - 1)) * dur));
+				out.push(take(new Uint8Array(cols * rows * 4)));
+				onProgress && onProgress((k + 1) / n);
+			}
+			return out;
+		} finally {
+			cap.removeAttribute('src');
+			cap.load();
+		}
+	}
+
 	/** Строка состояния съёмки в углу сцены (пока кадры доснимаются в фоне) */
 	_capStatus(text) {
 		if (!text) {

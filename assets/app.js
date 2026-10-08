@@ -130614,12 +130614,145 @@ function buildCamera( camera, usedNames, options ) {
 
 
 };
+__defs['src/frame-block.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'FRAME_LAYOUTS', () => FRAME_LAYOUTS);
+__def(__exports, 'frameGrid', () => frameGrid);
+__def(__exports, 'buildFrameBlock', () => buildFrameBlock);
+__def(__exports, 'writeOneFrame', () => writeOneFrame);
+__def(__exports, 'writeFrameColors', () => writeFrameColors);
+// Экспериментальный режим «Раскадровка»: видео раскладывается на кадры, а кадры собираются в блок из точек.
+// Каждый кадр это плоский лист из точек, его цвета берутся из соответствующего момента видео. Листы расставляются по-разному:
+// стопкой (ось времени уходит вглубь), стеной, плёнкой (кадры в ряд) или туннелем.
+
+const LUT = new Float32Array(256);
+for (let i = 0; i < 256; i++) {
+	const c = i / 255;
+	LUT[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+const FRAME_LAYOUTS = [
+	['stack', 'Стопка: время уходит вглубь'],
+	['wall', 'Стена кадров'],
+	['film', 'Плёнка'],
+	['tunnel', 'Туннель'],
+];
+
+/** Размер сетки одного кадра по числу точек в кадре и пропорциям видео */
+function frameGrid(density, aspect) {
+	const cols = Math.max(8, Math.round(Math.sqrt(density * aspect)));
+	const rows = Math.max(8, Math.round(cols / aspect));
+	return { cols, rows };
+}
+
+/** Положение точки листа в кадре k из n. u, v в -0.5..0.5: местные координаты листа (ширина и высота в единицах сцены) */
+function place(layout, k, n, u, v, W, H, depth, out) {
+	const t = n > 1 ? k / (n - 1) : 0.5;
+	let x = 0, y = 0, z = 0;
+	let nx = 0, ny = 0, nz = 1;
+	if (layout === 'wall') {
+		const gx = Math.ceil(Math.sqrt(n * (W / H)));
+		const gy = Math.ceil(n / gx);
+		const s = Math.min(2.4 / (gx * W), 2.4 / (gy * H));
+		const cx = k % gx, cy = Math.floor(k / gx);
+		x = (cx - (gx - 1) / 2) * W * s * 1.04 + u * W * s;
+		y = ((gy - 1) / 2 - cy) * H * s * 1.04 + v * H * s;
+	} else if (layout === 'film') {
+		x = (k - (n - 1) / 2) * W * 0.55 + u * W * 0.5;
+		y = v * H * 0.5;
+	} else {
+		x = u * W;
+		y = v * H;
+		z = (t - 0.5) * depth;
+	}
+	out[0] = x; out[1] = y; out[2] = z; out[3] = nx; out[4] = ny; out[5] = nz;
+}
+
+/** Облако точек из кадров: frames это массив Uint8Array RGB размера cols*rows */
+function buildFrameBlock(frames, cols, rows, aspect, layout = 'stack', depth = 1.6, positionsOnly = false) {
+	const n = frames.length;
+	const per = cols * rows;
+	const count = per * n;
+	const positions = new Float32Array(count * 3);
+	const normals = new Float32Array(count * 3);
+	const colors = new Float32Array(count * 3);
+	const W = aspect >= 1 ? 2.2 : 2.2 * aspect;
+	const H = W / aspect;
+	const tmp = new Float32Array(6);
+	let o = 0;
+	for (let k = 0; k < n; k++) {
+		const f = frames[k];
+		for (let j = 0; j < rows; j++) {
+			for (let i = 0; i < cols; i++) {
+				const u = (i + 0.5) / cols - 0.5;
+				const v = 0.5 - (j + 0.5) / rows;
+				place(layout, k, n, u, v, W, H, depth, tmp);
+				positions[o * 3] = tmp[0];
+				positions[o * 3 + 1] = tmp[1];
+				positions[o * 3 + 2] = tmp[2];
+				normals[o * 3] = tmp[3];
+				normals[o * 3 + 1] = tmp[4];
+				normals[o * 3 + 2] = tmp[5];
+				if (!positionsOnly) {
+					const p = (j * cols + i) * 3;
+					colors[o * 3] = LUT[f[p]];
+					colors[o * 3 + 1] = LUT[f[p + 1]];
+					colors[o * 3 + 2] = LUT[f[p + 2]];
+				} else {
+					colors[o * 3] = colors[o * 3 + 1] = colors[o * 3 + 2] = 1;
+				}
+				o++;
+			}
+		}
+	}
+	return { positions, normals, colors, count };
+}
+
+/** Один кадр целиком в массив цветов блока: offset это номер первой точки кадра, w это яркость */
+function writeOneFrame(frame, perFrame, target, firstPoint, w, tint = 0, rgb = null) {
+	let o = firstPoint * 3;
+	if (!tint || !rgb) {
+		for (let p = 0; p < perFrame * 3; p += 3) {
+			target[o++] = LUT[frame[p]] * w;
+			target[o++] = LUT[frame[p + 1]] * w;
+			target[o++] = LUT[frame[p + 2]] * w;
+		}
+		return;
+	}
+	// подкраска кадра цветом луча или шлейфа: цвет кадра смешивается с заданным, яркость сохраняется
+	const k = 1 - tint;
+	for (let p = 0; p < perFrame * 3; p += 3) {
+		const r = LUT[frame[p]], g = LUT[frame[p + 1]], b = LUT[frame[p + 2]];
+		const l = 0.3 * r + 0.59 * g + 0.11 * b;
+		target[o++] = (r * k + rgb[0] * (0.35 + l * 1.6) * tint) * w;
+		target[o++] = (g * k + rgb[1] * (0.35 + l * 1.6) * tint) * w;
+		target[o++] = (b * k + rgb[2] * (0.35 + l * 1.6) * tint) * w;
+	}
+}
+
+/** Записывает цвета кадров в уже построенный блок (когда меняются только кадры, а не раскладка) */
+function writeFrameColors(frames, cols, rows, target, weights = null, stride = 3) {
+	const per = cols * rows;
+	let o = 0;
+	for (let k = 0; k < frames.length; k++) {
+		const f = frames[k];
+		const w = weights ? weights[k] : 1;
+		for (let p = 0; p < per * stride; p += stride) {
+			target[o++] = LUT[f[p]] * w;
+			target[o++] = LUT[f[p + 1]] * w;
+			target[o++] = LUT[f[p + 2]] * w;
+		}
+	}
+}
+
+};
 __defs['src/exporters.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'EXPORT_FORMATS', () => EXPORT_FORMATS);
 __def(__exports, 'buildExportScene', () => buildExportScene);
 __def(__exports, 'verifyGLB', () => verifyGLB);
 __def(__exports, 'makeZip', () => makeZip);
+__def(__exports, 'exportSplatSequence', () => exportSplatSequence);
 __def(__exports, 'defaultExportName', () => defaultExportName);
 __def(__exports, 'exportModel', () => exportModel);
 __def(__exports, 'estimateExportSize', () => estimateExportSize);
@@ -130635,6 +130768,7 @@ const { materialTextures, hasAlphaChannel } = __req('src/materials.js');
 const { bakeVertexColors, sampleSurface, verticesToCloud, cloudToPoints } = __req('src/pointcloud.js');
 const { safeName, yieldUI, stripExt } = __req('src/util.js');
 const { Display } = __req('src/display.js');
+const { frameGrid } = __req('src/frame-block.js');
 
 const EXPORT_FORMATS = [
 	{ id: 'glb', label: 'GLB', ext: 'glb', title: 'glTF Binary', hint: 'Один файл с геометрией и текстурами. Лучший выбор для веба, AR и игровых движков.' },
@@ -130644,6 +130778,8 @@ const EXPORT_FORMATS = [
 	{ id: 'obj', label: 'OBJ', ext: 'zip', title: 'OBJ + MTL', hint: 'ZIP с .obj, .mtl и текстурами. Если текстур нет, скачается один .obj.' },
 	{ id: 'ply', label: 'PLY', ext: 'ply', title: 'PLY', hint: 'Сетка или облако точек с цветами вершин (цвет запекается из текстуры).' },
 	{ id: 'stl', label: 'STL', ext: 'stl', title: 'STL', hint: 'Только геометрия, без цвета. Для 3D-печати.' },
+	{ id: 'splat', label: 'Сплаты', ext: 'ply', title: 'PLY со сплатами', hint: 'Облако точек как гауссовы сплаты: каждая точка это круглое пятно с цветом. Открывается в SuperSplat, Postshot и других программах для сплатов. Число точек задаётся в разделе «Облако точек».' },
+	{ id: 'splatzip', label: 'Сплаты 4D', ext: 'zip', title: 'Последовательность сплатов', hint: 'Нужно открытое видео. ZIP с файлом PLY на каждый кадр (плоская картинка из сплатов) и описанием последовательности. Для программ, которые проигрывают сплаты по кадрам.' },
 ];
 
 // ------------------------------------------------------------ подготовка
@@ -131220,6 +131356,180 @@ async function exportOBJ(scene, o, baseName) {
 	return { blob: makeZip(files), ext: 'zip' };
 }
 
+
+// ------------------------------------------------------------ сплаты (гауссово представление)
+const SH0 = 0.28209479177387814;
+
+/** Среднее расстояние до ближайшего соседа по выборке точек: по нему подбирается размер сплата, чтобы пятна смыкались без дыр */
+function estimateSpacing(pos, count) {
+	let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+	for (let i = 0; i < count; i++) {
+		const x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2];
+		if (x < minX) minX = x; if (x > maxX) maxX = x;
+		if (y < minY) minY = y; if (y > maxY) maxY = y;
+		if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+	}
+	const diag = Math.hypot(maxX - minX, maxY - minY, maxZ - minZ) || 1;
+	const cell = Math.max(diag / Math.cbrt(Math.max(1, count)) * 0.5, 1e-6);
+	const key = (x, y, z) => x * 73856093 ^ y * 19349663 ^ z * 83492791;
+	const grid = new Map();
+	for (let i = 0; i < count; i++) {
+		const k = key(Math.floor(pos[i * 3] / cell), Math.floor(pos[i * 3 + 1] / cell), Math.floor(pos[i * 3 + 2] / cell));
+		const a = grid.get(k);
+		if (a) a.push(i);
+		else grid.set(k, [i]);
+	}
+	const step = Math.max(1, Math.floor(count / 4000));
+	const d = [];
+	for (let i = 0; i < count; i += step) {
+		const x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2];
+		const cx = Math.floor(x / cell), cy = Math.floor(y / cell), cz = Math.floor(z / cell);
+		let best = Infinity;
+		for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+			const a = grid.get(key(cx + dx, cy + dy, cz + dz));
+			if (!a) continue;
+			for (const j of a) {
+				if (j === i) continue;
+				const q = (pos[j * 3] - x) ** 2 + (pos[j * 3 + 1] - y) ** 2 + (pos[j * 3 + 2] - z) ** 2;
+				if (q < best) best = q;
+			}
+		}
+		if (best < Infinity) d.push(Math.sqrt(best));
+	}
+	if (!d.length) return diag * 0.01;
+	d.sort((a, b) => a - b);
+	return d[Math.floor(d.length / 2)];
+}
+
+/** Бинарный PLY в формате 3D Gaussian Splatting: положение, цвет (SH0), прозрачность, масштаб и поворот. rgb: sRGB 0..1, flat: плоские пятна (тонкие по нормали) */
+function splatPLY(pos, rgb, count, radius, flat = false) {
+	const header =
+		'ply\nformat binary_little_endian 1.0\ncomment Point Bloom splats\n' +
+		`element vertex ${count}\n` +
+		['x', 'y', 'z', 'nx', 'ny', 'nz', 'f_dc_0', 'f_dc_1', 'f_dc_2', 'opacity', 'scale_0', 'scale_1', 'scale_2', 'rot_0', 'rot_1', 'rot_2', 'rot_3'].map((n) => `property float ${n}\n`).join('') +
+		'end_header\n';
+	const head = new TextEncoder().encode(header);
+	const body = new ArrayBuffer(count * 68);
+	const dv = new DataView(body);
+	const ls = Math.log(Math.max(radius, 1e-6));
+	const lz = flat ? Math.log(Math.max(radius * 0.2, 1e-6)) : ls;
+	const op = Math.log(0.97 / 0.03);
+	let o = 0;
+	for (let i = 0; i < count; i++) {
+		dv.setFloat32(o, pos[i * 3], true);
+		dv.setFloat32(o + 4, pos[i * 3 + 1], true);
+		dv.setFloat32(o + 8, pos[i * 3 + 2], true);
+		dv.setFloat32(o + 12, 0, true);
+		dv.setFloat32(o + 16, 0, true);
+		dv.setFloat32(o + 20, 0, true);
+		dv.setFloat32(o + 24, (rgb[i * 3] - 0.5) / SH0, true);
+		dv.setFloat32(o + 28, (rgb[i * 3 + 1] - 0.5) / SH0, true);
+		dv.setFloat32(o + 32, (rgb[i * 3 + 2] - 0.5) / SH0, true);
+		dv.setFloat32(o + 36, op, true);
+		dv.setFloat32(o + 40, ls, true);
+		dv.setFloat32(o + 44, ls, true);
+		dv.setFloat32(o + 48, lz, true);
+		dv.setFloat32(o + 52, 1, true);
+		dv.setFloat32(o + 56, 0, true);
+		dv.setFloat32(o + 60, 0, true);
+		dv.setFloat32(o + 64, 0, true);
+		o += 68;
+	}
+	return new Blob([head, body], { type: 'application/octet-stream' });
+}
+
+/** Сплаты из облака точек сцены */
+function exportSplats(scene) {
+	scene.updateMatrixWorld(true);
+	const P = [];
+	const C = [];
+	let total = 0;
+	scene.traverse((n) => {
+		if (!n.isPoints) return;
+		const g = n.geometry;
+		const pos = g.attributes.position;
+		const col = g.attributes.color;
+		const e = n.matrixWorld.elements;
+		const p = new Float32Array(pos.count * 3);
+		const c = new Float32Array(pos.count * 3);
+		for (let i = 0; i < pos.count; i++) {
+			const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+			p[i * 3] = e[0] * x + e[4] * y + e[8] * z + e[12];
+			p[i * 3 + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
+			p[i * 3 + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+			c[i * 3] = col ? srgbByte(col.getX(i)) / 255 : 1;
+			c[i * 3 + 1] = col ? srgbByte(col.getY(i)) / 255 : 1;
+			c[i * 3 + 2] = col ? srgbByte(col.getZ(i)) / 255 : 1;
+		}
+		P.push(p);
+		C.push(c);
+		total += pos.count;
+	});
+	if (!total) throw new Error('В сцене нет точек для сплатов');
+	const pos = new Float32Array(total * 3);
+	const rgb = new Float32Array(total * 3);
+	let o = 0;
+	for (let k = 0; k < P.length; k++) {
+		pos.set(P[k], o);
+		rgb.set(C[k], o);
+		o += P[k].length;
+	}
+	return { blob: splatPLY(pos, rgb, total, estimateSpacing(pos, total) * 0.65), count: total };
+}
+
+/** Последовательность сплатов из видео: на каждый кадр свой PLY (плоская картинка из пятен), плюс описание последовательности */
+async function exportSplatSequence(app, o, progress) {
+	const eng = app.ui.effectsEngine;
+	if (!eng.videoLoaded) throw new Error('Для этого формата откройте видео: кнопка «Фото или видео» на стартовом экране');
+	const F = eng.state.layers.frames;
+	const dur = eng.pm.el.duration || 1;
+	const n = Math.max(2, F.all === 'on' ? Math.min(120, Math.round(dur * 12)) : Math.round(F.frames));
+	const aspect = (eng.pm.el.videoWidth || 16) / (eng.pm.el.videoHeight || 9);
+	// около 120 МБ на всю последовательность: чем больше кадров, тем меньше точек в каждом
+	const perFrame = Math.max(4000, Math.min(60000, Math.floor(120e6 / (68 * n))));
+	const { cols, rows } = frameGrid(perFrame, aspect);
+	const frames = await eng.captureFramesForExport(n, cols, rows, (p) => progress && progress('Снимаю кадры', 0.05 + p * 0.55));
+	const W = aspect >= 1 ? 2.2 : 2.2 * aspect;
+	const H = W / aspect;
+	const count = cols * rows;
+	const pos = new Float32Array(count * 3);
+	for (let r = 0; r < rows; r++) {
+		for (let c = 0; c < cols; c++) {
+			const i = r * cols + c;
+			pos[i * 3] = ((c + 0.5) / cols - 0.5) * W;
+			pos[i * 3 + 1] = (0.5 - (r + 0.5) / rows) * H;
+			pos[i * 3 + 2] = 0;
+		}
+	}
+	const radius = (W / cols) * 0.6;
+	const name = safeName(o.name || 'video');
+	const files = [];
+	const rgb = new Float32Array(count * 3);
+	for (let k = 0; k < n; k++) {
+		const d = frames[k];
+		for (let i = 0; i < count; i++) {
+			rgb[i * 3] = d[i * 4] / 255;
+			rgb[i * 3 + 1] = d[i * 4 + 1] / 255;
+			rgb[i * 3 + 2] = d[i * 4 + 2] / 255;
+		}
+		const blob = splatPLY(pos, rgb, count, radius, true);
+		files.push({ name: `${name}_${String(k).padStart(4, '0')}.ply`, bytes: new Uint8Array(await blob.arrayBuffer()) });
+		progress && progress('Собираю сплаты', 0.6 + (0.35 * (k + 1)) / n);
+		if (k % 6 === 5) await yieldUI();
+	}
+	const info = { format: 'ply-splat-sequence', frames: n, fps: Math.round((n / dur) * 100) / 100, duration: Math.round(dur * 100) / 100, splatsPerFrame: count, files: files.map((f) => f.name) };
+	const txt =
+		'Последовательность гауссовых сплатов из видео (Point Bloom).\n\n' +
+		`Кадров: ${n}, длительность ${dur.toFixed(2)} с, частота около ${(n / dur).toFixed(1)} кадров в секунду.\n` +
+		`Сплатов в кадре: ${count}. Каждый кадр плоская картинка из сплатов, глубины нет: она берётся только из видео.\n\n` +
+		'Как открыть: любой просмотрщик сплатов (например SuperSplat) открывает файлы по одному; программы с проигрыванием последовательностей берут их по порядку имён.\n';
+	files.push({ name: 'sequence.json', bytes: new TextEncoder().encode(JSON.stringify(info, null, 2)) });
+	files.push({ name: 'README.txt', bytes: new TextEncoder().encode(txt) });
+	progress && progress('Упаковываю ZIP', 0.97);
+	const blob = makeZip(files);
+	return { blob, filename: `${name}_splats.zip`, info: { bytes: blob.size, tris: 0, verts: count, points: count, meshes: n, textures: 0, ms: 0, verify: null, format: 'splatzip' } };
+}
+
 // -------------------------------------------------------------- главная
 function defaultExportName(app) {
 	const sel = app.model.selected;
@@ -131233,6 +131543,13 @@ async function exportModel(app, o, progress) {
 	const t0 = performance.now();
 	const name = safeName(o.name || defaultExportName(app));
 	const opts = { ...o, name };
+	if (o.format === 'splatzip') {
+		const r = await exportSplatSequence(app, opts, progress);
+		r.info.ms = Math.round(performance.now() - t0);
+		return r;
+	}
+	// сплаты строятся из облака точек: у сетки сначала берётся поверхность
+	if (o.format === 'splat' && (!o.cloud || o.cloud === 'mesh')) opts.cloud = 'surface';
 	progress && progress('Готовлю сцену', 0.05);
 	await yieldUI();
 	const scene = await buildExportScene(app, opts, progress);
@@ -131268,6 +131585,10 @@ async function exportModel(app, o, progress) {
 		case 'usdz':
 			blob = await exportUSDZ(scene, opts);
 			ext = 'usdz';
+			break;
+		case 'splat':
+			blob = exportSplats(scene).blob;
+			ext = 'ply';
 			break;
 		default:
 			throw new Error('Неизвестный формат ' + o.format);
@@ -132004,8 +132325,10 @@ function createExportPanel(app, root) {
 		rowTexFmt.hidden = !(f.id === 'glb' || f.id === 'gltf' || f.id === 'web');
 		rowMaxTex.hidden = !(f.id === 'glb' || f.id === 'gltf' || f.id === 'usdz' || f.id === 'web');
 		secWeb.el.hidden = f.id !== 'web';
-		secCloud.el.hidden = f.id === 'stl' || f.id === 'usdz' || f.id === 'web';
-		cloudExtra.hidden = s.cloud !== 'surface';
+		secCloud.el.hidden = f.id === 'stl' || f.id === 'usdz' || f.id === 'web' || f.id === 'splatzip';
+		secWhat.el.hidden = f.id === 'splatzip';
+		secData.el.hidden = f.id === 'splatzip';
+		cloudExtra.hidden = s.cloud !== 'surface' && f.id !== 'splat';
 		nameInput.placeholder = defaultExportName(app);
 		webTitle.placeholder = defaultExportName(app);
 		syncWebMode();
@@ -132984,138 +133307,6 @@ function makeCamMovable(box, appEl, viewport) {
 	mo.observe(appEl, { attributes: true, attributeFilter: ['class'] });
 	window.addEventListener('resize', clamp);
 	box._camCleanup = () => mo.disconnect();
-}
-
-};
-__defs['src/frame-block.js'] = function (__exports, __req) {
-'use strict';
-__def(__exports, 'FRAME_LAYOUTS', () => FRAME_LAYOUTS);
-__def(__exports, 'frameGrid', () => frameGrid);
-__def(__exports, 'buildFrameBlock', () => buildFrameBlock);
-__def(__exports, 'writeOneFrame', () => writeOneFrame);
-__def(__exports, 'writeFrameColors', () => writeFrameColors);
-// Экспериментальный режим «Раскадровка»: видео раскладывается на кадры, а кадры собираются в блок из точек.
-// Каждый кадр это плоский лист из точек, его цвета берутся из соответствующего момента видео. Листы расставляются по-разному:
-// стопкой (ось времени уходит вглубь), стеной, плёнкой (кадры в ряд) или туннелем.
-
-const LUT = new Float32Array(256);
-for (let i = 0; i < 256; i++) {
-	const c = i / 255;
-	LUT[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-}
-
-const FRAME_LAYOUTS = [
-	['stack', 'Стопка: время уходит вглубь'],
-	['wall', 'Стена кадров'],
-	['film', 'Плёнка'],
-	['tunnel', 'Туннель'],
-];
-
-/** Размер сетки одного кадра по числу точек в кадре и пропорциям видео */
-function frameGrid(density, aspect) {
-	const cols = Math.max(8, Math.round(Math.sqrt(density * aspect)));
-	const rows = Math.max(8, Math.round(cols / aspect));
-	return { cols, rows };
-}
-
-/** Положение точки листа в кадре k из n. u, v в -0.5..0.5: местные координаты листа (ширина и высота в единицах сцены) */
-function place(layout, k, n, u, v, W, H, depth, out) {
-	const t = n > 1 ? k / (n - 1) : 0.5;
-	let x = 0, y = 0, z = 0;
-	let nx = 0, ny = 0, nz = 1;
-	if (layout === 'wall') {
-		const gx = Math.ceil(Math.sqrt(n * (W / H)));
-		const gy = Math.ceil(n / gx);
-		const s = Math.min(2.4 / (gx * W), 2.4 / (gy * H));
-		const cx = k % gx, cy = Math.floor(k / gx);
-		x = (cx - (gx - 1) / 2) * W * s * 1.04 + u * W * s;
-		y = ((gy - 1) / 2 - cy) * H * s * 1.04 + v * H * s;
-	} else if (layout === 'film') {
-		x = (k - (n - 1) / 2) * W * 0.55 + u * W * 0.5;
-		y = v * H * 0.5;
-	} else {
-		x = u * W;
-		y = v * H;
-		z = (t - 0.5) * depth;
-	}
-	out[0] = x; out[1] = y; out[2] = z; out[3] = nx; out[4] = ny; out[5] = nz;
-}
-
-/** Облако точек из кадров: frames это массив Uint8Array RGB размера cols*rows */
-function buildFrameBlock(frames, cols, rows, aspect, layout = 'stack', depth = 1.6, positionsOnly = false) {
-	const n = frames.length;
-	const per = cols * rows;
-	const count = per * n;
-	const positions = new Float32Array(count * 3);
-	const normals = new Float32Array(count * 3);
-	const colors = new Float32Array(count * 3);
-	const W = aspect >= 1 ? 2.2 : 2.2 * aspect;
-	const H = W / aspect;
-	const tmp = new Float32Array(6);
-	let o = 0;
-	for (let k = 0; k < n; k++) {
-		const f = frames[k];
-		for (let j = 0; j < rows; j++) {
-			for (let i = 0; i < cols; i++) {
-				const u = (i + 0.5) / cols - 0.5;
-				const v = 0.5 - (j + 0.5) / rows;
-				place(layout, k, n, u, v, W, H, depth, tmp);
-				positions[o * 3] = tmp[0];
-				positions[o * 3 + 1] = tmp[1];
-				positions[o * 3 + 2] = tmp[2];
-				normals[o * 3] = tmp[3];
-				normals[o * 3 + 1] = tmp[4];
-				normals[o * 3 + 2] = tmp[5];
-				if (!positionsOnly) {
-					const p = (j * cols + i) * 3;
-					colors[o * 3] = LUT[f[p]];
-					colors[o * 3 + 1] = LUT[f[p + 1]];
-					colors[o * 3 + 2] = LUT[f[p + 2]];
-				} else {
-					colors[o * 3] = colors[o * 3 + 1] = colors[o * 3 + 2] = 1;
-				}
-				o++;
-			}
-		}
-	}
-	return { positions, normals, colors, count };
-}
-
-/** Один кадр целиком в массив цветов блока: offset это номер первой точки кадра, w это яркость */
-function writeOneFrame(frame, perFrame, target, firstPoint, w, tint = 0, rgb = null) {
-	let o = firstPoint * 3;
-	if (!tint || !rgb) {
-		for (let p = 0; p < perFrame * 3; p += 3) {
-			target[o++] = LUT[frame[p]] * w;
-			target[o++] = LUT[frame[p + 1]] * w;
-			target[o++] = LUT[frame[p + 2]] * w;
-		}
-		return;
-	}
-	// подкраска кадра цветом луча или шлейфа: цвет кадра смешивается с заданным, яркость сохраняется
-	const k = 1 - tint;
-	for (let p = 0; p < perFrame * 3; p += 3) {
-		const r = LUT[frame[p]], g = LUT[frame[p + 1]], b = LUT[frame[p + 2]];
-		const l = 0.3 * r + 0.59 * g + 0.11 * b;
-		target[o++] = (r * k + rgb[0] * (0.35 + l * 1.6) * tint) * w;
-		target[o++] = (g * k + rgb[1] * (0.35 + l * 1.6) * tint) * w;
-		target[o++] = (b * k + rgb[2] * (0.35 + l * 1.6) * tint) * w;
-	}
-}
-
-/** Записывает цвета кадров в уже построенный блок (когда меняются только кадры, а не раскладка) */
-function writeFrameColors(frames, cols, rows, target, weights = null, stride = 3) {
-	const per = cols * rows;
-	let o = 0;
-	for (let k = 0; k < frames.length; k++) {
-		const f = frames[k];
-		const w = weights ? weights[k] : 1;
-		for (let p = 0; p < per * stride; p += stride) {
-			target[o++] = LUT[f[p]] * w;
-			target[o++] = LUT[f[p + 1]] * w;
-			target[o++] = LUT[f[p + 2]] * w;
-		}
-	}
 }
 
 };
@@ -136607,6 +136798,25 @@ class EffectsEngine {
 			el.addEventListener('seeked', done);
 			el.currentTime = t;
 		});
+	}
+
+	/** Снимает n кадров видео в заданном разрешении со скрытой копии (для экспорта): возвращает массив RGBA */
+	async captureFramesForExport(n, cols, rows, onProgress) {
+		const cap = await this._capVideo();
+		try {
+			const take = this._frameTaker(cols, rows, cap);
+			const dur = cap.duration || this.pm.el.duration || 1;
+			const out = [];
+			for (let k = 0; k < n; k++) {
+				await this._seekTo(cap, Math.min(Math.max(0.05, dur - 0.04), (k / Math.max(1, n - 1)) * dur));
+				out.push(take(new Uint8Array(cols * rows * 4)));
+				onProgress && onProgress((k + 1) / n);
+			}
+			return out;
+		} finally {
+			cap.removeAttribute('src');
+			cap.load();
+		}
 	}
 
 	/** Строка состояния съёмки в углу сцены (пока кадры доснимаются в фоне) */

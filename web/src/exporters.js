@@ -9,6 +9,7 @@ import { materialTextures, hasAlphaChannel } from './materials.js';
 import { bakeVertexColors, sampleSurface, verticesToCloud, cloudToPoints } from './pointcloud.js';
 import { safeName, yieldUI, stripExt } from './util.js';
 import { Display } from './display.js';
+import { frameGrid } from './frame-block.js';
 export const EXPORT_FORMATS = [
 { id: 'glb', label: 'GLB', ext: 'glb', title: 'glTF Binary', hint: 'Один файл с геометрией и текстурами. Лучший выбор для веба, AR и игровых движков.' },
 { id: 'gltf', label: 'glTF', ext: 'gltf', title: 'glTF (JSON)', hint: 'Текстовый glTF, ресурсы встроены внутрь. Удобно читать и править.' },
@@ -17,6 +18,8 @@ export const EXPORT_FORMATS = [
 { id: 'obj', label: 'OBJ', ext: 'zip', title: 'OBJ + MTL', hint: 'ZIP с .obj, .mtl и текстурами. Если текстур нет, скачается один .obj.' },
 { id: 'ply', label: 'PLY', ext: 'ply', title: 'PLY', hint: 'Сетка или облако точек с цветами вершин (цвет запекается из текстуры).' },
 { id: 'stl', label: 'STL', ext: 'stl', title: 'STL', hint: 'Только геометрия, без цвета. Для 3D-печати.' },
+{ id: 'splat', label: 'Сплаты', ext: 'ply', title: 'PLY со сплатами', hint: 'Облако точек как гауссовы сплаты: каждая точка это круглое пятно с цветом. Открывается в SuperSplat, Postshot и других программах для сплатов. Число точек задаётся в разделе «Облако точек».' },
+{ id: 'splatzip', label: 'Сплаты 4D', ext: 'zip', title: 'Последовательность сплатов', hint: 'Нужно открытое видео. ZIP с файлом PLY на каждый кадр (плоская картинка из сплатов) и описанием последовательности. Для программ, которые проигрывают сплаты по кадрам.' },
 ];
 function pairUp(a, b, out) {
 out.push([a, b]);
@@ -552,6 +555,168 @@ const objBytes = new Uint8Array(await objBlob.arrayBuffer());
 files.unshift({ name: baseName + '.obj', bytes: objBytes }, { name: baseName + '.mtl', bytes: enc.encode(mtl.join('')) });
 return { blob: makeZip(files), ext: 'zip' };
 }
+const SH0 = 0.28209479177387814;
+function estimateSpacing(pos, count) {
+let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+for (let i = 0; i < count; i++) {
+const x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2];
+if (x < minX) minX = x; if (x > maxX) maxX = x;
+if (y < minY) minY = y; if (y > maxY) maxY = y;
+if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+}
+const diag = Math.hypot(maxX - minX, maxY - minY, maxZ - minZ) || 1;
+const cell = Math.max(diag / Math.cbrt(Math.max(1, count)) * 0.5, 1e-6);
+const key = (x, y, z) => x * 73856093 ^ y * 19349663 ^ z * 83492791;
+const grid = new Map();
+for (let i = 0; i < count; i++) {
+const k = key(Math.floor(pos[i * 3] / cell), Math.floor(pos[i * 3 + 1] / cell), Math.floor(pos[i * 3 + 2] / cell));
+const a = grid.get(k);
+if (a) a.push(i);
+else grid.set(k, [i]);
+}
+const step = Math.max(1, Math.floor(count / 4000));
+const d = [];
+for (let i = 0; i < count; i += step) {
+const x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2];
+const cx = Math.floor(x / cell), cy = Math.floor(y / cell), cz = Math.floor(z / cell);
+let best = Infinity;
+for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+const a = grid.get(key(cx + dx, cy + dy, cz + dz));
+if (!a) continue;
+for (const j of a) {
+if (j === i) continue;
+const q = (pos[j * 3] - x) ** 2 + (pos[j * 3 + 1] - y) ** 2 + (pos[j * 3 + 2] - z) ** 2;
+if (q < best) best = q;
+}
+}
+if (best < Infinity) d.push(Math.sqrt(best));
+}
+if (!d.length) return diag * 0.01;
+d.sort((a, b) => a - b);
+return d[Math.floor(d.length / 2)];
+}
+function splatPLY(pos, rgb, count, radius, flat = false) {
+const header =
+'ply\nformat binary_little_endian 1.0\ncomment Point Bloom splats\n' +
+`element vertex ${count}\n` +
+['x', 'y', 'z', 'nx', 'ny', 'nz', 'f_dc_0', 'f_dc_1', 'f_dc_2', 'opacity', 'scale_0', 'scale_1', 'scale_2', 'rot_0', 'rot_1', 'rot_2', 'rot_3'].map((n) => `property float ${n}\n`).join('') +
+'end_header\n';
+const head = new TextEncoder().encode(header);
+const body = new ArrayBuffer(count * 68);
+const dv = new DataView(body);
+const ls = Math.log(Math.max(radius, 1e-6));
+const lz = flat ? Math.log(Math.max(radius * 0.2, 1e-6)) : ls;
+const op = Math.log(0.97 / 0.03);
+let o = 0;
+for (let i = 0; i < count; i++) {
+dv.setFloat32(o, pos[i * 3], true);
+dv.setFloat32(o + 4, pos[i * 3 + 1], true);
+dv.setFloat32(o + 8, pos[i * 3 + 2], true);
+dv.setFloat32(o + 12, 0, true);
+dv.setFloat32(o + 16, 0, true);
+dv.setFloat32(o + 20, 0, true);
+dv.setFloat32(o + 24, (rgb[i * 3] - 0.5) / SH0, true);
+dv.setFloat32(o + 28, (rgb[i * 3 + 1] - 0.5) / SH0, true);
+dv.setFloat32(o + 32, (rgb[i * 3 + 2] - 0.5) / SH0, true);
+dv.setFloat32(o + 36, op, true);
+dv.setFloat32(o + 40, ls, true);
+dv.setFloat32(o + 44, ls, true);
+dv.setFloat32(o + 48, lz, true);
+dv.setFloat32(o + 52, 1, true);
+dv.setFloat32(o + 56, 0, true);
+dv.setFloat32(o + 60, 0, true);
+dv.setFloat32(o + 64, 0, true);
+o += 68;
+}
+return new Blob([head, body], { type: 'application/octet-stream' });
+}
+function exportSplats(scene) {
+scene.updateMatrixWorld(true);
+const P = [];
+const C = [];
+let total = 0;
+scene.traverse((n) => {
+if (!n.isPoints) return;
+const g = n.geometry;
+const pos = g.attributes.position;
+const col = g.attributes.color;
+const e = n.matrixWorld.elements;
+const p = new Float32Array(pos.count * 3);
+const c = new Float32Array(pos.count * 3);
+for (let i = 0; i < pos.count; i++) {
+const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+p[i * 3] = e[0] * x + e[4] * y + e[8] * z + e[12];
+p[i * 3 + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
+p[i * 3 + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+c[i * 3] = col ? srgbByte(col.getX(i)) / 255 : 1;
+c[i * 3 + 1] = col ? srgbByte(col.getY(i)) / 255 : 1;
+c[i * 3 + 2] = col ? srgbByte(col.getZ(i)) / 255 : 1;
+}
+P.push(p);
+C.push(c);
+total += pos.count;
+});
+if (!total) throw new Error('В сцене нет точек для сплатов');
+const pos = new Float32Array(total * 3);
+const rgb = new Float32Array(total * 3);
+let o = 0;
+for (let k = 0; k < P.length; k++) {
+pos.set(P[k], o);
+rgb.set(C[k], o);
+o += P[k].length;
+}
+return { blob: splatPLY(pos, rgb, total, estimateSpacing(pos, total) * 0.65), count: total };
+}
+export async function exportSplatSequence(app, o, progress) {
+const eng = app.ui.effectsEngine;
+if (!eng.videoLoaded) throw new Error('Для этого формата откройте видео: кнопка «Фото или видео» на стартовом экране');
+const F = eng.state.layers.frames;
+const dur = eng.pm.el.duration || 1;
+const n = Math.max(2, F.all === 'on' ? Math.min(120, Math.round(dur * 12)) : Math.round(F.frames));
+const aspect = (eng.pm.el.videoWidth || 16) / (eng.pm.el.videoHeight || 9);
+const perFrame = Math.max(4000, Math.min(60000, Math.floor(120e6 / (68 * n))));
+const { cols, rows } = frameGrid(perFrame, aspect);
+const frames = await eng.captureFramesForExport(n, cols, rows, (p) => progress && progress('Снимаю кадры', 0.05 + p * 0.55));
+const W = aspect >= 1 ? 2.2 : 2.2 * aspect;
+const H = W / aspect;
+const count = cols * rows;
+const pos = new Float32Array(count * 3);
+for (let r = 0; r < rows; r++) {
+for (let c = 0; c < cols; c++) {
+const i = r * cols + c;
+pos[i * 3] = ((c + 0.5) / cols - 0.5) * W;
+pos[i * 3 + 1] = (0.5 - (r + 0.5) / rows) * H;
+pos[i * 3 + 2] = 0;
+}
+}
+const radius = (W / cols) * 0.6;
+const name = safeName(o.name || 'video');
+const files = [];
+const rgb = new Float32Array(count * 3);
+for (let k = 0; k < n; k++) {
+const d = frames[k];
+for (let i = 0; i < count; i++) {
+rgb[i * 3] = d[i * 4] / 255;
+rgb[i * 3 + 1] = d[i * 4 + 1] / 255;
+rgb[i * 3 + 2] = d[i * 4 + 2] / 255;
+}
+const blob = splatPLY(pos, rgb, count, radius, true);
+files.push({ name: `${name}_${String(k).padStart(4, '0')}.ply`, bytes: new Uint8Array(await blob.arrayBuffer()) });
+progress && progress('Собираю сплаты', 0.6 + (0.35 * (k + 1)) / n);
+if (k % 6 === 5) await yieldUI();
+}
+const info = { format: 'ply-splat-sequence', frames: n, fps: Math.round((n / dur) * 100) / 100, duration: Math.round(dur * 100) / 100, splatsPerFrame: count, files: files.map((f) => f.name) };
+const txt =
+'Последовательность гауссовых сплатов из видео (Point Bloom).\n\n' +
+`Кадров: ${n}, длительность ${dur.toFixed(2)} с, частота около ${(n / dur).toFixed(1)} кадров в секунду.\n` +
+`Сплатов в кадре: ${count}. Каждый кадр плоская картинка из сплатов, глубины нет: она берётся только из видео.\n\n` +
+'Как открыть: любой просмотрщик сплатов (например SuperSplat) открывает файлы по одному; программы с проигрыванием последовательностей берут их по порядку имён.\n';
+files.push({ name: 'sequence.json', bytes: new TextEncoder().encode(JSON.stringify(info, null, 2)) });
+files.push({ name: 'README.txt', bytes: new TextEncoder().encode(txt) });
+progress && progress('Упаковываю ZIP', 0.97);
+const blob = makeZip(files);
+return { blob, filename: `${name}_splats.zip`, info: { bytes: blob.size, tris: 0, verts: count, points: count, meshes: n, textures: 0, ms: 0, verify: null, format: 'splatzip' } };
+}
 export function defaultExportName(app) {
 const sel = app.model.selected;
 if (sel && sel.name) return safeName(sel.name);
@@ -563,6 +728,12 @@ export async function exportModel(app, o, progress) {
 const t0 = performance.now();
 const name = safeName(o.name || defaultExportName(app));
 const opts = { ...o, name };
+if (o.format === 'splatzip') {
+const r = await exportSplatSequence(app, opts, progress);
+r.info.ms = Math.round(performance.now() - t0);
+return r;
+}
+if (o.format === 'splat' && (!o.cloud || o.cloud === 'mesh')) opts.cloud = 'surface';
 progress && progress('Готовлю сцену', 0.05);
 await yieldUI();
 const scene = await buildExportScene(app, opts, progress);
@@ -598,6 +769,10 @@ break;
 case 'usdz':
 blob = await exportUSDZ(scene, opts);
 ext = 'usdz';
+break;
+case 'splat':
+blob = exportSplats(scene).blob;
+ext = 'ply';
 break;
 default:
 throw new Error('Неизвестный формат ' + o.format);
