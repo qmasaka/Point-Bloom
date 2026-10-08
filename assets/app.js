@@ -90255,6 +90255,53 @@ class AxisGizmo {
 }
 
 };
+__defs['src/splat-tools.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'initSplat', () => initSplat);
+__def(__exports, 'applySplat', () => applySplat);
+// Сплаты из PLY живут в сцене как облако цветных точек. Здесь хранится исходный набор и пересборка по настройкам:
+// сколько точек оставить, какие прозрачные отбросить, насколько растянуть глубину.
+const THREE = __req('vendor/three/build/three.module.js');
+
+/** Запоминает исходные данные и применяет настройки по умолчанию */
+function initSplat(pts, src) {
+	pts.userData.splat = { total: src.total, src, cfg: { count: src.pos.length / 3, minOp: 0.05, depth: 1 } };
+	applySplat(pts);
+}
+
+/** Пересобирает геометрию по pts.userData.splat.cfg */
+function applySplat(pts) {
+	const S = pts.userData.splat;
+	const { pos, col, op } = S.src;
+	const n = pos.length / 3;
+	const keep = [];
+	for (let i = 0; i < n; i++) if (op[i] >= S.cfg.minOp) keep.push(i);
+	const want = Math.max(1000, Math.min(Math.round(S.cfg.count), keep.length));
+	const step = keep.length / want;
+	const m = Math.min(want, keep.length);
+	const P = new Float32Array(m * 3);
+	const C = new Float32Array(m * 3);
+	for (let k = 0; k < m; k++) {
+		const i = keep[Math.floor(k * step)];
+		P[k * 3] = pos[i * 3];
+		P[k * 3 + 1] = pos[i * 3 + 1];
+		P[k * 3 + 2] = pos[i * 3 + 2];
+		C[k * 3] = col[i * 3];
+		C[k * 3 + 1] = col[i * 3 + 1];
+		C[k * 3 + 2] = col[i * 3 + 2];
+	}
+	const old = pts.geometry;
+	const g = new THREE.BufferGeometry();
+	g.setAttribute('position', new THREE.BufferAttribute(P, 3));
+	g.setAttribute('color', new THREE.BufferAttribute(C, 3));
+	pts.geometry = g;
+	old.dispose();
+	pts.scale.z = S.cfg.depth;
+	S.shown = m;
+	S.available = keep.length;
+}
+
+};
 __defs['src/panel-scene.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'createScenePanel', () => createScenePanel);
@@ -90264,6 +90311,7 @@ const { h, fmt, formatInt, deg } = __req('src/util.js');
 const { icon } = __req('src/icons.js');
 const { section, field, numberField, slider, button, iconButton, empty, switchRow } = __req('src/ui-kit.js');
 const { triangleCount } = __req('src/geom.js');
+const { applySplat } = __req('src/splat-tools.js');
 
 const compact = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k' : String(n));
 
@@ -90508,11 +90556,49 @@ field('Сглаживание', angleSlider.el, {}),
 		field('Отразить', mirrorRow)
 );
 for (const b of need.slice(-3)) b.classList.add('btn-block');
+// --------------------------------------------------------- настройки сплатов (фото в сплаты, PLY со сплатами)
+	const splatInfo = h('div', { class: 'field-hint' });
+	const splatCount = slider({ log: true, min: 2000, max: 1500000, step: 1000, value: 200000, format: (v) => formatInt(v), onInput: (v) => splatApply({ count: v }), onChange: () => {} });
+	const splatOp = slider({ min: 0, max: 0.9, step: 0.01, value: 0.05, onInput: (v) => splatApply({ minOp: v }) });
+	const splatDepth = slider({ min: 0.1, max: 4, step: 0.05, value: 1, onInput: (v) => splatApply({ depth: v }) });
+	const splatBody = h('div', { class: 'sec-body', style: { padding: 0 } }, splatInfo, field('Сколько точек оставить', splatCount.el), field('Отсечь прозрачные', splatOp.el, { hint: 'Убирает почти невидимые сплаты и «пыль» вокруг объекта' }), field('Глубина', splatDepth.el, { hint: '1 это как посчитала нейросеть, больше растягивает сцену вглубь' }));
+	const secSplat = section('Сплаты', { key: 'splat' }, splatBody);
+	let splatTimer = 0;
+	function splatObj() {
+		const o = model.selected;
+		return o && o.isPoints && o.userData.splat ? o : null;
+	}
+	function splatApply(patch) {
+		const o = splatObj();
+		if (!o) return;
+		Object.assign(o.userData.splat.cfg, patch);
+		clearTimeout(splatTimer);
+		splatTimer = setTimeout(() => {
+			applySplat(o);
+			app.viewport.updateSceneBounds();
+			app.viewport.invalidate();
+			app.bus.emit('scene');
+			const S = o.userData.splat;
+			splatInfo.textContent = `В файле ${formatInt(S.total)} сплатов, сейчас точек: ${formatInt(S.shown || 0)}`;
+		}, 60);
+	}
+	function refreshSplat() {
+		const o = splatObj();
+		secSplat.el.hidden = !o;
+		if (!o) return;
+		const S = o.userData.splat;
+		const total = S.src.pos.length / 3;
+		splatCount.setRange && splatCount.setRange(2000, total);
+		splatCount.set(S.cfg.count);
+		splatOp.set(S.cfg.minOp);
+		splatDepth.set(S.cfg.depth);
+		splatInfo.textContent = `В файле ${formatInt(S.total)} сплатов, сейчас точек: ${formatInt(S.shown || 0)}`;
+	}
 const secTools = section('Правка', { key: 'tools' }, toolsBody);
 const secMesh = section('Сетка и нормали', { key: 'mesh', open: false }, meshBody);
 
 	// --------------------------------------------------------- облако точек
-	root.append(secObjects.el, secObject.el, secTools.el, secMesh.el);
+	root.append(secObjects.el, secObject.el, secSplat.el, secTools.el, secMesh.el);
 
 	const MESH_ONLY = ['Склеить вершины', 'Вывернуть нормали', 'Плоское затенение', 'Перевернуть UV'];
 	const syncEnabled = () => {
@@ -90531,6 +90617,7 @@ const secMesh = section('Сетка и нормали', { key: 'mesh', open: fal
 		renderTree();
 		refreshObject();
 		syncEnabled();
+		refreshSplat();
 		updateSimplifyHint();
 	};
 	app.bus.on('scene', () => {
@@ -124140,6 +124227,7 @@ const { TGALoader } = __req('vendor/three/addons/loaders/TGALoader.js');
 const { MeshoptDecoder } = __req('vendor/three/addons/libs/meshopt_decoder.module.js');
 const { unzipSync } = __req('vendor/three/addons/libs/fflate.module.js');
 const { extOf, baseName, stripExt, yieldUI } = __req('src/util.js');
+const { initSplat } = __req('src/splat-tools.js');
 const { weldExact } = __req('src/geom.js');
 const { toStandard, finalizeMaterial, fillTextureFromFile, loadTextureFile, detectSlot, assignTexture, slotByKey, SLOTS } = __req('src/materials.js');
 
@@ -124389,15 +124477,13 @@ function parseSplatPLY(buf, name, isOwn) {
 	const step = Math.max(1, count / cap);
 	const pos = new Float32Array(Math.min(count, cap + 1) * 3);
 	const col = new Float32Array(pos.length);
+	const opa = new Float32Array(pos.length / 3);
 	// сплаты из 3DGS обычно в системе «y вниз», собственные экспорты Point Bloom в «y вверх»
 	const flip = isOwn ? 1 : -1;
 	let k = 0;
 	for (let f = 0; f < count && k * 3 < pos.length; f += step) {
 		const i = Math.floor(f);
-		if (P.opacity) {
-			const op = 1 / (1 + Math.exp(-rd(P.opacity, i)));
-			if (op < 0.05) continue;
-		}
+		opa[k] = P.opacity ? 1 / (1 + Math.exp(-rd(P.opacity, i))) : 1;
 		pos[k * 3] = rd(P.x, i);
 		pos[k * 3 + 1] = rd(P.y, i) * flip;
 		pos[k * 3 + 2] = rd(P.z, i) * flip;
@@ -124408,11 +124494,10 @@ function parseSplatPLY(buf, name, isOwn) {
 	}
 	if (!k) return null;
 	const g = new THREE.BufferGeometry();
-	g.setAttribute('position', new THREE.BufferAttribute(pos.slice(0, k * 3), 3));
-	g.setAttribute('color', new THREE.BufferAttribute(col.slice(0, k * 3), 3));
+	g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
 	const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.01, vertexColors: true, sizeAttenuation: true }));
 	pts.name = 'Сплаты ' + name;
-	pts.userData.splat = { total: count, shown: k };
+	initSplat(pts, { total: count, pos: pos.slice(0, k * 3), col: col.slice(0, k * 3), op: opa.slice(0, k) });
 	return pts;
 }
 

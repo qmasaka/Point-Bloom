@@ -3,6 +3,7 @@ import { h, fmt, formatInt, deg } from './util.js';
 import { icon } from './icons.js';
 import { section, field, numberField, slider, button, iconButton, empty, switchRow } from './ui-kit.js';
 import { triangleCount } from './geom.js';
+import { applySplat } from './splat-tools.js';
 const compact = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k' : String(n));
 export function createScenePanel(app, root) {
 const model = app.model;
@@ -235,9 +236,46 @@ tbtn('Упростить сетку', 'arrows-in-simple', () => ops.simplify(sim
 field('Отразить', mirrorRow)
 );
 for (const b of need.slice(-3)) b.classList.add('btn-block');
+const splatInfo = h('div', { class: 'field-hint' });
+const splatCount = slider({ log: true, min: 2000, max: 1500000, step: 1000, value: 200000, format: (v) => formatInt(v), onInput: (v) => splatApply({ count: v }), onChange: () => {} });
+const splatOp = slider({ min: 0, max: 0.9, step: 0.01, value: 0.05, onInput: (v) => splatApply({ minOp: v }) });
+const splatDepth = slider({ min: 0.1, max: 4, step: 0.05, value: 1, onInput: (v) => splatApply({ depth: v }) });
+const splatBody = h('div', { class: 'sec-body', style: { padding: 0 } }, splatInfo, field('Сколько точек оставить', splatCount.el), field('Отсечь прозрачные', splatOp.el, { hint: 'Убирает почти невидимые сплаты и «пыль» вокруг объекта' }), field('Глубина', splatDepth.el, { hint: '1 это как посчитала нейросеть, больше растягивает сцену вглубь' }));
+const secSplat = section('Сплаты', { key: 'splat' }, splatBody);
+let splatTimer = 0;
+function splatObj() {
+const o = model.selected;
+return o && o.isPoints && o.userData.splat ? o : null;
+}
+function splatApply(patch) {
+const o = splatObj();
+if (!o) return;
+Object.assign(o.userData.splat.cfg, patch);
+clearTimeout(splatTimer);
+splatTimer = setTimeout(() => {
+applySplat(o);
+app.viewport.updateSceneBounds();
+app.viewport.invalidate();
+app.bus.emit('scene');
+const S = o.userData.splat;
+splatInfo.textContent = `В файле ${formatInt(S.total)} сплатов, сейчас точек: ${formatInt(S.shown || 0)}`;
+}, 60);
+}
+function refreshSplat() {
+const o = splatObj();
+secSplat.el.hidden = !o;
+if (!o) return;
+const S = o.userData.splat;
+const total = S.src.pos.length / 3;
+splatCount.setRange && splatCount.setRange(2000, total);
+splatCount.set(S.cfg.count);
+splatOp.set(S.cfg.minOp);
+splatDepth.set(S.cfg.depth);
+splatInfo.textContent = `В файле ${formatInt(S.total)} сплатов, сейчас точек: ${formatInt(S.shown || 0)}`;
+}
 const secTools = section('Правка', { key: 'tools' }, toolsBody);
 const secMesh = section('Сетка и нормали', { key: 'mesh', open: false }, meshBody);
-root.append(secObjects.el, secObject.el, secTools.el, secMesh.el);
+root.append(secObjects.el, secObject.el, secSplat.el, secTools.el, secMesh.el);
 const MESH_ONLY = ['Склеить вершины', 'Вывернуть нормали', 'Плоское затенение', 'Перевернуть UV'];
 const syncEnabled = () => {
 const sel = model.selected;
@@ -254,6 +292,7 @@ const refreshAll = () => {
 renderTree();
 refreshObject();
 syncEnabled();
+refreshSplat();
 updateSimplifyHint();
 };
 app.bus.on('scene', () => {

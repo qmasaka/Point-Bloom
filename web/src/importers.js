@@ -16,6 +16,7 @@ import { TGALoader } from 'three/addons/loaders/TGALoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { unzipSync } from 'three/addons/libs/fflate.module.js';
 import { extOf, baseName, stripExt, yieldUI } from './util.js';
+import { initSplat } from './splat-tools.js';
 import { weldExact } from './geom.js';
 import { toStandard, finalizeMaterial, fillTextureFromFile, loadTextureFile, detectSlot, assignTexture, slotByKey, SLOTS } from './materials.js';
 export const MODEL_FORMATS = {
@@ -240,14 +241,12 @@ const cap = 1500000;
 const step = Math.max(1, count / cap);
 const pos = new Float32Array(Math.min(count, cap + 1) * 3);
 const col = new Float32Array(pos.length);
+const opa = new Float32Array(pos.length / 3);
 const flip = isOwn ? 1 : -1;
 let k = 0;
 for (let f = 0; f < count && k * 3 < pos.length; f += step) {
 const i = Math.floor(f);
-if (P.opacity) {
-const op = 1 / (1 + Math.exp(-rd(P.opacity, i)));
-if (op < 0.05) continue;
-}
+opa[k] = P.opacity ? 1 / (1 + Math.exp(-rd(P.opacity, i))) : 1;
 pos[k * 3] = rd(P.x, i);
 pos[k * 3 + 1] = rd(P.y, i) * flip;
 pos[k * 3 + 2] = rd(P.z, i) * flip;
@@ -258,11 +257,10 @@ k++;
 }
 if (!k) return null;
 const g = new THREE.BufferGeometry();
-g.setAttribute('position', new THREE.BufferAttribute(pos.slice(0, k * 3), 3));
-g.setAttribute('color', new THREE.BufferAttribute(col.slice(0, k * 3), 3));
+g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
 const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.01, vertexColors: true, sizeAttenuation: true }));
 pts.name = 'Сплаты ' + name;
-pts.userData.splat = { total: count, shown: k };
+initSplat(pts, { total: count, pos: pos.slice(0, k * 3), col: col.slice(0, k * 3), op: opa.slice(0, k) });
 return pts;
 }
 async function loadPLY(file) {
