@@ -275,6 +275,43 @@ export function lumaDepth(rgb, w, h) {
 	return { w, h, data: o };
 }
 
+/** Правка готовой карты: размытие (радиус в пикселях карты), яркость, контраст и тени (гамма). Возвращает новую карту, исходная не меняется */
+export function adjustDepth(map, o) {
+	const { w, h } = map;
+	const n = w * h;
+	let d = map.data;
+	const r = Math.round(o.blur || 0);
+	if (r > 0) {
+		const box = (src, horiz) => {
+			const out = new Float32Array(n);
+			const len = horiz ? w : h;
+			const lines = horiz ? h : w;
+			const step = horiz ? 1 : w;
+			for (let l = 0; l < lines; l++) {
+				const base = horiz ? l * w : l;
+				let acc = 0;
+				// бегущая сумма по окну 2r+1, края повторяются
+				for (let k = -r; k <= r; k++) acc += src[base + Math.min(len - 1, Math.max(0, k)) * step];
+				for (let k = 0; k < len; k++) {
+					out[base + k * step] = acc / (2 * r + 1);
+					acc += src[base + Math.min(len - 1, k + r + 1) * step] - src[base + Math.max(0, k - r) * step];
+				}
+			}
+			return out;
+		};
+		// два прохода по каждой оси дают мягкое, почти гауссово размытие
+		d = box(box(box(box(d, true), false), true), false);
+	}
+	const c = o.contrast ?? 1, b = o.bright || 0, g = o.gamma ?? 1;
+	const out = new Float32Array(n);
+	for (let i = 0; i < n; i++) {
+		let v = (d[i] - 0.5) * c + 0.5 + b;
+		v = v < 0 ? 0 : v > 1 ? 1 : v;
+		out[i] = g === 1 ? v : Math.pow(v, g);
+	}
+	return { w, h, data: out };
+}
+
 /** Переносит карту глубины на сетку точек cols x rows (билинейно); out получает по числу на точку */
 export function depthToGrid(map, cols, rows, out) {
 	const { w, h, data } = map;
