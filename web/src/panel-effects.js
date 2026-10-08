@@ -644,7 +644,8 @@ const el = cs[0].fhead.querySelector('.fx-folder-n');
 el.textContent = k ? String(k) : '';
 }
 }
-select_((cards.find((c) => c.L.on) || cards.find((c) => c.def.group !== 'Видео' && c.def.group !== 'Фото и видео') || cards[0]).def.id);
+const hiddenGrp = (c) => c.def.group === 'Видео' || c.def.group === 'Фото и видео';
+select_((cards.find((c) => c.L.on && !hiddenGrp(c)) || cards.find((c) => !hiddenGrp(c)) || cards[0]).def.id);
 const sourceSeg = segmented({
 options: [
 { value: 'synth', label: 'Музыка', title: 'Встроенная музыка: эмбиент, джангл, брейккор' },
@@ -1920,6 +1921,8 @@ modelNote.textContent = kind === 'cloud' ? `Берётся облако точе
 countActive();
 for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoLoaded;
 for (const c of cards) if (c.def.group === 'Фото и видео') c.folder.hidden = !engine.pm.ready;
+const cur = cards.find((c) => c.def.id === selected);
+if (cur && cur.folder.hidden) select_((cards.find((c) => !c.folder.hidden && c.L.on) || cards.find((c) => !c.folder.hidden) || cards[0]).def.id);
 renderReactList();
 cards.forEach((c) => {
 c.card.classList.toggle('is-on', c.L.on);

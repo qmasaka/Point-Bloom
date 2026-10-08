@@ -675,7 +675,8 @@ export function createEffectsPanel(app, root, engine) {
 			el.textContent = k ? String(k) : '';
 		}
 	}
-	select_((cards.find((c) => c.L.on) || cards.find((c) => c.def.group !== 'Видео' && c.def.group !== 'Фото и видео') || cards[0]).def.id);
+	const hiddenGrp = (c) => c.def.group === 'Видео' || c.def.group === 'Фото и видео';
+	select_((cards.find((c) => c.L.on && !hiddenGrp(c)) || cards.find((c) => !hiddenGrp(c)) || cards[0]).def.id);
 	// ------------------------------------------------------------ звук
 	const sourceSeg = segmented({
 		options: [
@@ -2104,6 +2105,9 @@ export function createEffectsPanel(app, root, engine) {
 		// режим раскадровки существует только для видео: без видео его папка в списке скрыта
 		for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoLoaded;
 		for (const c of cards) if (c.def.group === 'Фото и видео') c.folder.hidden = !engine.pm.ready;
+		// настройки скрытого эффекта (глубина без фото, раскадровка без видео) не показываем: выбираем первый видимый
+		const cur = cards.find((c) => c.def.id === selected);
+		if (cur && cur.folder.hidden) select_((cards.find((c) => !c.folder.hidden && c.L.on) || cards.find((c) => !c.folder.hidden) || cards[0]).def.id);
 		renderReactList();
 		cards.forEach((c) => {
 			c.card.classList.toggle('is-on', c.L.on);
