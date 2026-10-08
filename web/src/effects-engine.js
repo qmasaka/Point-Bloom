@@ -4,9 +4,6 @@ import { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } from './util.js';
 import { buildFrameBlock, writeFrameColors, writeOneFrame, frameGrid } from './frame-block.js';
 import { TrackerHud } from './fx-hud.js';
 import { HandTracker } from './hand-tracker.js';
-import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
-import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
-import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { DepthAI, grabFrame, grabRGB as grabRGB4, normalizeDepth, lumaDepth, depthToGrid } from './depth-ai.js';
 import { encodeGIF } from './gif-encoder.js';
 export const FX_SHAPES = [
@@ -44,7 +41,7 @@ export const FX_LAYERS = [
 { id: 'flow', group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, поверхность выглядит живой, а силуэт не меняется', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
 { id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Частицы отрываются от формы, уносятся ветром и гаснут, пока модель не исчезнет. Потом она собирается обратно', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', order: 'top', style: 'wind', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.8 }, extras: [{ key: 'style', label: 'Как исчезает', type: 'select', options: [['wind', 'Уносит ветром'], ['burn', 'Горение: пепел и угли'], ['bubbles', 'Пузыри всплывают']] }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'order', label: 'С какой стороны', type: 'seg', options: [['top', 'Сверху'], ['noise', 'Пятнами'], ['bottom', 'Снизу']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер в сторону', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Завихрения', min: 0, max: 2, step: 0.05 }] },
 { id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке и становятся квадратами: сетка, «Лего» или дыхание', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1, mode: 'grid', speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['grid', 'Сетка'], ['lego', 'Лего'], ['breathe', 'Дыхание']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe']] }] },
-{ id: 'scope', group: 'Звук и ритм', name: 'Акселограф', icon: 'heartbeat', hint: 'По точкам модели бежит перо самописца: линия идёт от точки к точке по их координатам и вычерчивает форму, как плоттер или акселограф рисует трёхмерный объект. Ещё не нарисованное можно приглушить, след можно оставлять или гасить', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 0.6, mode: 'draw', speed: 1, trail: 0.5, detail: 2500, dim: 0.9, line: 1, tint: 0.25, thick: 0.6, glow: 1 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивает: нарисованное остаётся до конца круга'], ['comet', 'Комета: за пером тянется гаснущий след']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true }, { key: 'dim', label: 'Приглушить ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'line', label: 'Линия между точками', min: 0, max: 1, step: 0.02 }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }] },
+{ id: 'scope', group: 'Звук и ритм', name: 'Акселограф', icon: 'heartbeat', hint: 'По точкам модели бежит перо самописца: линия идёт от точки к точке по их координатам и вычерчивает форму. Ещё не нарисованные точки невидимы и проявляются, когда перо проходит по ним. Линия и точки двигаются вместе с остальными эффектами', max: 1, def: { on: false, amount: 0.7, band: 'none', react: 0.6, mode: 'draw', order: 'walk', dir: 'fwd', loop: 'loop', speed: 1, pens: 1, trail: 0.5, detail: 2500, dim: 1, line: 1, width: 2.4, color: '#3dff7a', tint: 0.35, thick: 0.6, glow: 1, spark: 0 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивает: нарисованное остаётся'], ['comet', 'Комета: за пером тянется гаснущий след']] }, { key: 'order', label: 'Порядок обхода', type: 'select', options: [['walk', 'От точки к точке (ближайшая)'], ['up', 'Развёртка снизу вверх'], ['spin', 'Развёртка по кругу']] }, { key: 'dir', label: 'Направление', type: 'seg', options: [['fwd', 'Вперёд'], ['back', 'Назад']] }, { key: 'loop', label: 'В конце круга', type: 'seg', options: [['loop', 'Заново'], ['once', 'Остаётся']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'pens', label: 'Число перьев', min: 1, max: 8, step: 1, int: true }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true, when: ['order', ['walk']] }, { key: 'dim', label: 'Прятать ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'color', label: 'Цвет акселографа', type: 'color' }, { key: 'line', label: 'Яркость линии', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'width', label: 'Толщина линии', min: 0.5, max: 8, step: 0.1, when: ['order', ['walk']] }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }, { key: 'spark', label: 'Искры у пера', min: 0, max: 2, step: 0.05 }] },
 { id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Нейросеть строит карту глубины снимка или каждого кадра видео, и точки выдавливаются по ней: рельеф, ступенчатые слои, сканер глубины, эффект Хичкока, пыль на дальнем плане и волны по контурам. Всё считается на вашем компьютере. Вращайте камеру, чтобы увидеть объём', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.4, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Рельеф: ближнее выступает вперёд'], ['layers', 'Слои: ступени, как вырезанные из картона'], ['scan', 'Сканер: плоскость бежит сквозь глубину'], ['vertigo', 'Вертиго: ближнее и дальнее зумятся по-разному'], ['dust', 'Пыль: дальний план рассыпается'], ['contour', 'Контуры: волны идут по глубине']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Что остаётся на месте', min: 0, max: 1, step: 0.02 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
 { id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 { id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в трёх измерениях, цветовые каналы расходятся, картинка мерцает', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16, rgb: 'on', speed: 1 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
@@ -399,6 +396,7 @@ float gScopeG = 0.0;
 float gScopeT = 0.0;
 float gScopeD = 0.0;
 uniform vec4 uScope, uScopeP, uScopeQ;
+uniform vec3 uScopeC;
 float gDepth = 0.5;
 float gDepthG = 0.0;
 uniform vec4 uDepth, uDepthP;
@@ -1342,15 +1340,22 @@ void main() {
 	float maskV;
 	gDepth = aDepth;
 	if (uScope.x > 0.001) {
-		// акселограф: aPath это место точки на пути пера (0..1), uScope.z это положение пера
-		float sAge = uScope.z - aPath;
+		// акселограф: aPath это место точки на пути пера (0..1), uScope.z это положение пера, у ещё не нарисованных точек размер падает до нуля
+		bool rv = uScope.y > 1.5;
+		float cm = rv ? uScope.y - 2.0 : uScope.y;
+		float ap = rv ? 1.0 - aPath : aPath;
+		if (uScopeP.w > 1.5) ap = fract(ap * uScopeP.w);
+		float sAge = uScope.z - ap;
+		float hideAll = uScopeP.z * min(1.0, uScopeP.x * 4.0);
 		if (sAge >= 0.0) {
-			gScopeT = (uScope.y < 0.5 ? 1.0 : exp(-sAge * 4.0 / max(uScope.w, 0.02))) * uScopeP.y;
+			gScopeT = (cm < 0.5 ? 1.0 : exp(-sAge * 4.0 / max(uScope.w, 0.02))) * uScopeP.y;
 			gScopeG = exp(-sAge * 45.0) * uScopeP.y;
-		} else gScopeD = clamp(uScopeP.x * uScope.x * 1.6, 0.0, 1.0) * uScopeP.y;
+			gScopeD = hideAll;
+		} else gScopeD = max(clamp(uScopeP.x * uScope.x * 1.6, 0.0, 1.0), hideAll);
 	}
 	vec3 pos = fxDisplace(aOrigin, aTarget, aIdx, base, maskV);
 	pos += aSculpt;
+	if (gScopeG > 0.01) pos += (vec3(hash11(aIdx * 13.1), hash11(aIdx * 7.7), hash11(aIdx * 3.3)) - 0.5) * gScopeG * uScopeQ.w * 0.4;
 	if (uFr.x > 0.5) pos += frNrm * frLift * 0.7;
 	float dkv = disK(base, aIdx);
 	float t = uTime - uTOff;
@@ -1461,9 +1466,8 @@ void main() {
 	}
 	// акселограф: линия окрашивается, голова пера горит
 	if (uScope.x > 0.001) {
-		vColor = mix(vColor, uP2 * 1.4, uScopeQ.x * gScopeT);
-		vColor += uP2 * gScopeG * uScopeQ.z * 3.0;
-		vColor *= 1.0 - gScopeD * 0.75;
+		vColor = mix(vColor, uScopeC * 1.4, uScopeQ.x * gScopeT);
+		vColor += uScopeC * gScopeG * uScopeQ.z * 3.0;
 	}
 	// глитч: мерцание, строки-помехи и раздельные цветовые каналы
 	if (gGl > 0.0) {
@@ -1517,9 +1521,13 @@ void main() {
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
 	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.7 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
-	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD * 0.8);
+	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
 	gl_PointSize = clamp(s, 1.0, 95.0);
+	if (gScopeD > 0.97) {
+		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+		gl_PointSize = 0.0;
+	}
 }
 `;
 const frag = `
@@ -1628,6 +1636,70 @@ void main() {
 	vec4 c = mix(cA, cB, aEnd);
 	c.xy += nrm * aSide * (uLinkW + 1.0) / uRes.y * c.w;
 	gl_Position = c;
+}
+`;
+const scopeVert = `
+attribute vec3 aOrigin;
+attribute vec3 aTarget;
+attribute float aIdx;
+attribute vec3 aOriginB;
+attribute vec3 aTargetB;
+attribute float aIdxB;
+attribute float aDepth;
+attribute float aDepthB;
+attribute float aEnd;
+attribute float aSide;
+attribute float aSeg;
+uniform vec3 uP0;
+uniform vec3 uP1;
+uniform vec3 uP2;
+uniform vec2 uRes;
+uniform float uScopeW;
+uniform float uScopeLB;
+varying vec3 vC;
+varying float vA;
+varying float vSide;
+` + common + `
+void main() {
+	vec3 bA, bB;
+	float mA, mB;
+	gDepth = aDepth;
+	vec3 pA = fxDisplace(aOrigin, aTarget, aIdx, bA, mA);
+	gDepth = aDepthB;
+	vec3 pB = fxDisplace(aOriginB, aTargetB, aIdxB, bB, mB);
+	bool rv = uScope.y > 1.5;
+	float cm = rv ? uScope.y - 2.0 : uScope.y;
+	float sp = rv ? 1.0 - aSeg : aSeg;
+	if (uScopeP.w > 1.5) sp = fract(sp * uScopeP.w);
+	float age = uScope.z - sp;
+	float lit = age < 0.0 || aSeg < 0.0 ? 0.0 : (cm < 0.5 ? 1.0 : exp(-age * 4.0 / max(uScope.w, 0.02))) * uScopeP.y;
+	vA = lit * uScope.x * min(1.0, uScope.x * 2.0) * (1.0 - uScopeP.z) * uScopeLB;
+	vC = uScopeC * (1.0 + exp(-max(age, 0.0) * 45.0) * uScopeQ.z * 2.0);
+	vSide = aSide;
+	mat4 mvp = projectionMatrix * modelViewMatrix;
+	vec4 cA = mvp * vec4(pA, 1.0);
+	vec4 cB = mvp * vec4(pB, 1.0);
+	vec2 sA = cA.xy / cA.w;
+	vec2 sB = cB.xy / cB.w;
+	vec2 dir = (sB - sA) * vec2(uRes.x / uRes.y, 1.0);
+	float dl = length(dir);
+	dir = dl > 1e-5 ? dir / dl : vec2(1.0, 0.0);
+	vec2 nrm = vec2(-dir.y, dir.x) * vec2(uRes.y / uRes.x, 1.0);
+	vec4 c = mix(cA, cB, aEnd);
+	c.xy += nrm * aSide * (uScopeW + 1.0) / uRes.y * c.w;
+	gl_Position = c;
+}
+`;
+const scopeFrag = `
+precision highp float;
+varying vec3 vC;
+varying float vA;
+varying float vSide;
+void main() {
+	float edge = 1.0 - smoothstep(0.35, 1.0, abs(vSide));
+	gl_FragColor = vec4(vC * (vA * edge), vA * edge);
+	#include <tonemapping_fragment>
+	#include <colorspace_fragment>
 }
 `;
 const lineFrag = `
@@ -3848,10 +3920,24 @@ this._saveT = setTimeout(() => saveJSON(KEY, this.state), 250);
 emit() {
 this.app.bus.emit('fx');
 }
-_scopeBuild(S) {
+_scopeBuild(S, order) {
 const g = this.geometry;
 const T = g.attributes.aTarget.array;
 const N = g.attributes.position.count;
+const path = g.attributes.aPath;
+this._scopeDropLine();
+if (order !== 'walk') {
+let mn = Infinity, mx = -Infinity;
+for (let i = 0; i < N; i++) {
+const v = order === 'up' ? T[i * 3 + 1] : Math.atan2(T[i * 3 + 2], T[i * 3]);
+if (v < mn) mn = v;
+if (v > mx) mx = v;
+}
+const span = Math.max(mx - mn, 1e-6);
+for (let i = 0; i < N; i++) path.array[i] = ((order === 'up' ? T[i * 3 + 1] : Math.atan2(T[i * 3 + 2], T[i * 3])) - mn) / span;
+path.needsUpdate = true;
+return;
+}
 const sc = Math.max(8, Math.min(S, N));
 const ids = new Int32Array(sc);
 for (let i = 0; i < sc; i++) ids[i] = Math.floor((i * N) / sc);
@@ -3873,15 +3959,17 @@ const a = grid.get(k);
 if (a) a.push(i);
 else grid.set(k, [i]);
 }
+const full = new Map();
+for (const [k, v] of grid) full.set(k, v.slice());
 const used = new Uint8Array(sc);
-const order = new Int32Array(sc);
+const ord = new Int32Array(sc);
 const d2 = (i, p) => (T[ids[i] * 3] - p[0]) ** 2 + (T[ids[i] * 3 + 1] - p[1]) ** 2 + (T[ids[i] * 3 + 2] - p[2]) ** 2;
 let cur = 0;
 for (let i = 1; i < sc; i++) if (T[ids[i] * 3 + 1] < T[ids[cur] * 3 + 1]) cur = i;
 let prev = null;
 for (let n = 0; n < sc; n++) {
 used[cur] = 1;
-order[n] = cur;
+ord[n] = cur;
 if (n === sc - 1) break;
 const p = [T[ids[cur] * 3], T[ids[cur] * 3 + 1], T[ids[cur] * 3 + 2]];
 const bx = cx(p[0], 0), by = cx(p[1], 1), bz = cx(p[2], 2);
@@ -3917,15 +4005,13 @@ best = j;
 }
 }
 }
-const q = best * 3;
-const vx = T[ids[best] * 3] - p[0], vy = T[ids[best] * 3 + 1] - p[1], vz = T[ids[best] * 3 + 2] - p[2];
-const len = Math.hypot(vx, vy, vz);
-prev = [vx, vy, vz, len];
+prev = [T[ids[best] * 3] - p[0], T[ids[best] * 3 + 1] - p[1], T[ids[best] * 3 + 2] - p[2], 0];
+prev[3] = Math.hypot(prev[0], prev[1], prev[2]);
 cur = best;
 }
 const rank = new Int32Array(sc);
-for (let n = 0; n < sc; n++) rank[order[n]] = n;
-const path = g.attributes.aPath;
+for (let n = 0; n < sc; n++) rank[ord[n]] = n;
+const cut2 = (cell * 2.4) ** 2;
 for (let i = 0; i < N; i++) {
 const x = T[i * 3], y = T[i * 3 + 1], z = T[i * 3 + 2];
 const bx = cx(x, 0), by = cx(y, 1), bz = cx(z, 2);
@@ -3933,7 +4019,7 @@ let best = -1, bd = Infinity;
 for (let r = 0; r <= 3 && best < 0; r++) {
 for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) for (let dz = -r; dz <= r; dz++) {
 if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue;
-const a = grid.get(key(bx + dx, by + dy, bz + dz));
+const a = full.get(key(bx + dx, by + dy, bz + dz));
 if (!a) continue;
 for (const j of a) {
 const d = (T[ids[j] * 3] - x) ** 2 + (T[ids[j] * 3 + 1] - y) ** 2 + (T[ids[j] * 3 + 2] - z) ** 2;
@@ -3944,80 +4030,123 @@ best = j;
 }
 }
 }
-path.array[i] = best < 0 ? 0 : rank[best] / (sc - 1);
+if (best < 0) {
+path.array[i] = 0;
+continue;
+}
+let rk = rank[best];
+const P = (j) => ids[ord[j]] * 3;
+let bt = 0, bj = -1;
+for (const nj of [rk - 1, rk + 1]) {
+if (nj < 0 || nj >= sc) continue;
+const p0 = ids[best] * 3, p1 = P(nj);
+const ex = T[p1] - T[p0], ey = T[p1 + 1] - T[p0 + 1], ez = T[p1 + 2] - T[p0 + 2];
+const l2 = ex * ex + ey * ey + ez * ez;
+if (l2 < 1e-12 || l2 > cut2) continue;
+const t = ((x - T[p0]) * ex + (y - T[p0 + 1]) * ey + (z - T[p0 + 2]) * ez) / l2;
+if (t > bt) {
+bt = Math.min(t, 1);
+bj = nj;
+}
+}
+path.array[i] = (rk + (bj < 0 ? 0 : (bj - rk) * bt)) / (sc - 1);
 }
 path.needsUpdate = true;
-const pos = new Float32Array((sc - 1) * 6);
-const cut = cell * 4;
-for (let n = 0; n < sc - 1; n++) {
-const a = ids[order[n]] * 3, b = ids[order[n + 1]] * 3;
-const far = Math.hypot(T[a] - T[b], T[a + 1] - T[b + 1], T[a + 2] - T[b + 2]) > cut;
+const L = sc - 1;
+const V = L * 4;
+const O = g.attributes.aOrigin.array;
+const D = g.attributes.aDepth.array;
+const A = new Float32Array(V * 3), TA = new Float32Array(V * 3), B = new Float32Array(V * 3), TB = new Float32Array(V * 3);
+const ia = new Float32Array(V), ib = new Float32Array(V), da = new Float32Array(V), db = new Float32Array(V), end = new Float32Array(V), side = new Float32Array(V), seg = new Float32Array(V);
+const index = new Uint32Array(L * 6);
+const cut = cell * 2.4;
+for (let l = 0; l < L; l++) {
+const a = ids[ord[l]], b = ids[ord[l + 1]];
+const far = Math.hypot(T[a * 3] - T[b * 3], T[a * 3 + 1] - T[b * 3 + 1], T[a * 3 + 2] - T[b * 3 + 2]) > cut;
+index.set([l * 4, l * 4 + 1, l * 4 + 2, l * 4 + 2, l * 4 + 1, l * 4 + 3], l * 6);
+for (let v = 0; v < 4; v++) {
+const q = l * 4 + v;
 for (let c = 0; c < 3; c++) {
-pos[n * 6 + c] = T[a + c];
-pos[n * 6 + 3 + c] = far ? T[a + c] : T[b + c];
+A[q * 3 + c] = O[a * 3 + c];
+TA[q * 3 + c] = T[a * 3 + c];
+B[q * 3 + c] = O[b * 3 + c];
+TB[q * 3 + c] = T[b * 3 + c];
+}
+ia[q] = a / N;
+ib[q] = b / N;
+da[q] = D[a];
+db[q] = D[b];
+end[q] = v >> 1;
+side[q] = v & 1 ? 1 : -1;
+seg[q] = far ? -1 : l / L;
 }
 }
-if (this._scopeLine) {
-this._scopeLine.parent?.remove(this._scopeLine);
-this._scopeLine.geometry.dispose();
-this._scopeLine.material.dispose();
-}
-const lg = new LineSegmentsGeometry();
-lg.setPositions(pos);
-lg.setColors(new Float32Array((sc - 1) * 6));
-const line = new LineSegments2(lg, new LineMaterial({ color: 0xffffff, linewidth: 2.4, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+const lg = new THREE.BufferGeometry();
+lg.setAttribute('position', new THREE.BufferAttribute(A.slice(), 3));
+lg.setAttribute('aOrigin', new THREE.BufferAttribute(A, 3));
+lg.setAttribute('aTarget', new THREE.BufferAttribute(TA, 3));
+lg.setAttribute('aOriginB', new THREE.BufferAttribute(B, 3));
+lg.setAttribute('aTargetB', new THREE.BufferAttribute(TB, 3));
+lg.setAttribute('aIdx', new THREE.BufferAttribute(ia, 1));
+lg.setAttribute('aIdxB', new THREE.BufferAttribute(ib, 1));
+lg.setAttribute('aDepth', new THREE.BufferAttribute(da, 1));
+lg.setAttribute('aDepthB', new THREE.BufferAttribute(db, 1));
+lg.setAttribute('aEnd', new THREE.BufferAttribute(end, 1));
+lg.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
+lg.setAttribute('aSeg', new THREE.BufferAttribute(seg, 1));
+lg.setIndex(new THREE.BufferAttribute(index, 1));
+const mat = new THREE.ShaderMaterial({ vertexShader: scopeVert, fragmentShader: scopeFrag, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, uniforms: { ...this.shared, uTOff: { value: 0 } } });
+const line = new THREE.Mesh(lg, mat);
 line.frustumCulled = false;
 line.userData.helper = true;
-line.visible = false;
 this.points.add(line);
 this._scopeLine = line;
-this._scopeSegs = sc - 1;
+}
+_scopeDropLine() {
+const l = this._scopeLine;
+if (!l) return;
+l.parent?.remove(l);
+l.geometry.dispose();
+l.material.dispose();
+this._scopeLine = null;
 }
 _scopeTick(dt, S, u) {
 const amount = clamp(this._eff(S), 0, 1);
-const line = this._scopeLine;
 if (amount <= 0.001 || !this.geometry || !this.points || !this.geometry.attributes.aPath) {
 u.uScope.value.set(0, 0, 0, 1);
-if (line) line.visible = false;
+if (this._scopeLine) this._scopeLine.visible = false;
+this._scopeT = 0;
 return;
 }
-const gk = this.geometry.uuid + ':' + Math.round(S.detail);
-if (this._scopeKey !== gk || (line && line.parent !== this.points)) {
-if (!this._scopeKey || this._scopeKey.split(':')[0] !== this.geometry.uuid || !this._scopeWait || performance.now() - this._scopeWait > 250 || (line && line.parent !== this.points)) {
+const order = S.order || 'walk';
+const gk = this.geometry.uuid + ':' + order + ':' + (order === 'walk' ? Math.round(S.detail) : 0);
+const lost = this._scopeLine && this._scopeLine.parent !== this.points;
+if (this._scopeKey !== gk || lost) {
+const sameGeo = this._scopeKey && this._scopeKey.split(':')[0] === this.geometry.uuid;
+if (!sameGeo || lost || !this._scopeWait || performance.now() - this._scopeWait > 250) {
 this._scopeKey = gk;
 this._scopeWait = performance.now();
-this._scopeBuild(Math.round(S.detail));
+if (lost) this._scopeLine = null;
+this._scopeBuild(Math.round(S.detail), order);
 }
 }
 this._scopeT = (this._scopeT || 0) + dt * S.speed * 0.07;
-const c = this._scopeT % 1;
-const head = c / 0.9;
-const env = Math.min(1, c / 0.03) * (1 - Math.min(1, Math.max(0, (c - 0.9) / 0.1)));
+const once = S.loop === 'once';
+const c = once ? Math.min(this._scopeT, 0.93) : this._scopeT % 1;
+const head = Math.min(c / 0.8, 1.05);
+const ramp = Math.min(1, c / 0.03);
+const env = ramp * (1 - Math.min(1, Math.max(0, (c - 0.8) / 0.08)));
+const out = once ? 0 : Math.min(1, Math.max(0, (c - 0.93) / 0.07));
 const comet = S.mode === 'comet';
-u.uScope.value.set(amount, comet ? 1 : 0, head, S.trail);
-u.uScopeP.value.set(S.dim, env, 0, 0);
-u.uScopeQ.value.set(S.tint, S.thick, S.glow, 0);
+u.uScope.value.set(amount, (comet ? 1 : 0) + (S.dir === 'back' ? 2 : 0), head, S.trail);
+u.uScopeP.value.set(S.dim, env, out, S.pens);
+u.uScopeQ.value.set(S.tint, S.thick, S.glow, S.spark);
+if (S.color === 'auto' || !S.color) u.uScopeC.value.copy(u.uP2.value);
+else u.uScopeC.value.set(S.color);
+u.uScopeW.value = S.width;
+u.uScopeLB.value = S.line;
 const L = this._scopeLine;
-if (!L) return;
-const segs = this._scopeSegs;
-const col = L.geometry.attributes.instanceColorStart.data;
-const base = new THREE.Color().copy(u.uP2.value).lerp(new THREE.Color(1, 1, 1), 0.35);
-const k0 = S.line * env * Math.min(1, amount * 2);
-const tr = Math.max(S.trail, 0.02);
-let any = false;
-for (let n = 0; n < segs; n++) {
-const age = head - n / segs;
-const lit = age < 0 ? 0 : (comet ? Math.exp((-age * 4) / tr) : 1) * k0;
-if (lit > 0.01) any = true;
-const o = n * 6;
-col.array[o] = col.array[o + 3] = base.r * lit;
-col.array[o + 1] = col.array[o + 4] = base.g * lit;
-col.array[o + 2] = col.array[o + 5] = base.b * lit;
-}
-col.needsUpdate = true;
-const sz = this.app.viewport.renderer.getSize(new THREE.Vector2());
-L.material.resolution.set(sz.x, sz.y);
-L.visible = S.line > 0.01 && any;
+if (L) L.visible = order === 'walk' && S.line > 0.01;
 }
 onDepthChange(fn) {
 this._dListeners.add(fn);
@@ -4513,7 +4642,7 @@ uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
 uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
 uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
-uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
+uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 };
 const mk = (extra) =>
 new THREE.ShaderMaterial({
