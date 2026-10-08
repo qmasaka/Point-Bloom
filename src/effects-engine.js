@@ -3099,7 +3099,7 @@ export class EffectsEngine {
 		if (patch.amount !== undefined) {
 			clip.amount = Math.max(0.05, Math.min(2.0, patch.amount));
 		}
-		if (patch.layerId !== undefined && this.state.layers[patch.layerId]) {
+		if (patch.layerId !== undefined && (this.state.layers[patch.layerId] || ['morph', 'rotate', 'bloom'].includes(patch.layerId))) {
 			clip.layerId = patch.layerId;
 		}
 
@@ -3154,6 +3154,35 @@ export class EffectsEngine {
 		this.app.bus.emit('fxanim');
 	}
 
+	/** Подготавливает целевое облако точек для дорожки морфинга на таймлайне */
+	async _prepareMorphTrack() {
+		if (!this.geometry || this._morphTrackReady || this._morphTrackLoading) return;
+		this._morphTrackLoading = true;
+		try {
+			const forms = this.forms();
+			let targetKey = null;
+			if (forms.length >= 2) {
+				targetKey = forms.find((f) => f.key !== (this.curKey || this.state.source))?.key || forms[1].key;
+			} else {
+				targetKey = this.state.source === 'sphere' ? 'torus' : 'sphere';
+			}
+			const target = await this._cloudFor(targetKey);
+			if (target && this.geometry) {
+				const g = this.geometry;
+				const t = g.attributes.aTarget;
+				if (t && target.positions && target.positions.length === t.array.length) {
+					t.array.set(target.positions);
+					t.needsUpdate = true;
+					this._morphTrackReady = true;
+				}
+			}
+		} catch (e) {
+			/* не критично */
+		} finally {
+			this._morphTrackLoading = false;
+		}
+	}
+
 	/** Загрузить готовый режиссерский сценарий */
 	animLoadPreset(id) {
 		const nav = this.app?.nav;
@@ -3188,7 +3217,7 @@ export class EffectsEngine {
 				{ id: 'c_pr_5', layerId: 'slice', start: 0.0, dur: 4.0, fadeIn: 0.2, fadeOut: 0.8, amount: 1.0 },
 				{ id: 'c_pr_6', layerId: 'links', start: 3.0, dur: 4.5, fadeIn: 0.8, fadeOut: 1.0, amount: 0.95 },
 				{ id: 'c_pr_7', layerId: 'glitch', start: 5.5, dur: 3.5, fadeIn: 0.4, fadeOut: 0.8, amount: 0.85 },
-				{ id: 'c_pr_8', layerId: 'echo', start: 7.0, dur: 3.0, fadeIn: 0.6, fadeOut: 0.8, amount: 0.8 },
+				{ id: 'c_pr_8', layerId: 'bloom', start: 6.5, dur: 3.0, fadeIn: 0.5, fadeOut: 0.8, amount: 0.9 },
 			];
 		} else if (id === 'glitch_morph') {
 			this.animSetDuration(8);
@@ -3199,10 +3228,11 @@ export class EffectsEngine {
 				{ t: 8.0, cam: { yaw: 3.6, pitch: 0.2, dist: baseDist, tx, ty, tz }, size: 3.2, bright: 1.0, glow: 0.8, layers: {} },
 			];
 			A.clips = [
-				{ id: 'c_pr_9', layerId: 'glitch', start: 0.3, dur: 3.2, fadeIn: 0.2, fadeOut: 0.6, amount: 0.95 },
-				{ id: 'c_pr_10', layerId: 'blast', start: 2.2, dur: 3.8, fadeIn: 0.3, fadeOut: 0.9, amount: 1.0 },
-				{ id: 'c_pr_11', layerId: 'twist', start: 3.0, dur: 3.5, fadeIn: 0.6, fadeOut: 0.8, amount: 0.85 },
-				{ id: 'c_pr_12', layerId: 'feedback', start: 4.8, dur: 3.2, fadeIn: 0.5, fadeOut: 1.0, amount: 0.9 },
+				{ id: 'c_pr_9', layerId: 'glitch', start: 0.3, dur: 3.0, fadeIn: 0.2, fadeOut: 0.6, amount: 0.95 },
+				{ id: 'c_pr_10', layerId: 'morph', start: 1.5, dur: 4.5, fadeIn: 0.4, fadeOut: 0.6, amount: 1.0 },
+				{ id: 'c_pr_11', layerId: 'blast', start: 2.2, dur: 3.8, fadeIn: 0.3, fadeOut: 0.9, amount: 1.0 },
+				{ id: 'c_pr_12', layerId: 'bloom', start: 3.5, dur: 3.0, fadeIn: 0.4, fadeOut: 0.8, amount: 0.9 },
+				{ id: 'c_pr_13', layerId: 'twist', start: 4.0, dur: 3.5, fadeIn: 0.6, fadeOut: 0.8, amount: 0.85 },
 			];
 		}
 		this.animSeek(0);
@@ -3324,6 +3354,78 @@ export class EffectsEngine {
 					L[layerId].amount = maxVal;
 				} else {
 					L[layerId].on = false;
+				}
+			}
+
+			// Дорожка морфинга
+			if (clipLayerIds.has('morph')) {
+				if (!this._morphTrackReady && !this._morphTrackLoading) {
+					this._prepareMorphTrack();
+				}
+				let mVal = 0;
+				for (const c of clips) {
+					if (c.layerId !== 'morph') continue;
+					if (t <= c.start) continue;
+					if (t >= c.start + c.dur) {
+						mVal = 1.0;
+						continue;
+					}
+					const p = (t - c.start) / Math.max(0.01, c.dur);
+					mVal = Math.max(mVal, p * (c.amount ?? 1.0));
+				}
+				this.morph = Math.max(0, Math.min(1, mVal));
+				if (this.shared?.uMorph) this.shared.uMorph.value = this.morph;
+			}
+
+			// Дорожка вращения
+			if (clipLayerIds.has('rotate')) {
+				let rotVal = 0;
+				for (const c of clips) {
+					if (c.layerId !== 'rotate') continue;
+					if (t < c.start || t > c.start + c.dur) continue;
+					const elapsed = t - c.start;
+					const remaining = c.start + c.dur - t;
+					let env = 1.0;
+					if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
+						const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
+						env = Math.min(env, f * f * (3 - 2 * f));
+					}
+					if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
+						const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
+						env = Math.min(env, f * f * (3 - 2 * f));
+					}
+					rotVal = Math.max(rotVal, (c.amount ?? 1.0) * env);
+				}
+				if (rotVal > 0.001 && this.points) {
+					this.points.rotation.y = t * 1.6 * rotVal;
+					this.points.updateMatrixWorld();
+				}
+			}
+
+			// Дорожка блума и вспышки
+			if (clipLayerIds.has('bloom')) {
+				let bVal = 0;
+				for (const c of clips) {
+					if (c.layerId !== 'bloom') continue;
+					if (t < c.start || t > c.start + c.dur) continue;
+					const elapsed = t - c.start;
+					const remaining = c.start + c.dur - t;
+					let env = 1.0;
+					if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
+						const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
+						env = Math.min(env, f * f * (3 - 2 * f));
+					}
+					if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
+						const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
+						env = Math.min(env, f * f * (3 - 2 * f));
+					}
+					bVal = Math.max(bVal, (c.amount ?? 1.0) * env);
+				}
+				if (bVal > 0.001) {
+					this.state.look.glow = 0.8 + bVal * 1.5;
+					this.state.look.bright = 1.0 + bVal * 0.8;
+					if (this.shared?.uGlow) this.shared.uGlow.value = this.state.look.glow;
+					if (this.shared?.uBright) this.shared.uBright.value = this.state.look.bright;
 				}
 			}
 		}

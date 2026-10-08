@@ -137206,7 +137206,7 @@ class EffectsEngine {
 		if (patch.amount !== undefined) {
 			clip.amount = Math.max(0.05, Math.min(2.0, patch.amount));
 		}
-		if (patch.layerId !== undefined && this.state.layers[patch.layerId]) {
+		if (patch.layerId !== undefined && (this.state.layers[patch.layerId] || ['morph', 'rotate', 'bloom'].includes(patch.layerId))) {
 			clip.layerId = patch.layerId;
 		}
 
@@ -137261,6 +137261,35 @@ class EffectsEngine {
 		this.app.bus.emit('fxanim');
 	}
 
+	/** Подготавливает целевое облако точек для дорожки морфинга на таймлайне */
+	async _prepareMorphTrack() {
+		if (!this.geometry || this._morphTrackReady || this._morphTrackLoading) return;
+		this._morphTrackLoading = true;
+		try {
+			const forms = this.forms();
+			let targetKey = null;
+			if (forms.length >= 2) {
+				targetKey = forms.find((f) => f.key !== (this.curKey || this.state.source))?.key || forms[1].key;
+			} else {
+				targetKey = this.state.source === 'sphere' ? 'torus' : 'sphere';
+			}
+			const target = await this._cloudFor(targetKey);
+			if (target && this.geometry) {
+				const g = this.geometry;
+				const t = g.attributes.aTarget;
+				if (t && target.positions && target.positions.length === t.array.length) {
+					t.array.set(target.positions);
+					t.needsUpdate = true;
+					this._morphTrackReady = true;
+				}
+			}
+		} catch (e) {
+			/* не критично */
+		} finally {
+			this._morphTrackLoading = false;
+		}
+	}
+
 	/** Загрузить готовый режиссерский сценарий */
 	animLoadPreset(id) {
 		const nav = this.app?.nav;
@@ -137295,7 +137324,7 @@ class EffectsEngine {
 				{ id: 'c_pr_5', layerId: 'slice', start: 0.0, dur: 4.0, fadeIn: 0.2, fadeOut: 0.8, amount: 1.0 },
 				{ id: 'c_pr_6', layerId: 'links', start: 3.0, dur: 4.5, fadeIn: 0.8, fadeOut: 1.0, amount: 0.95 },
 				{ id: 'c_pr_7', layerId: 'glitch', start: 5.5, dur: 3.5, fadeIn: 0.4, fadeOut: 0.8, amount: 0.85 },
-				{ id: 'c_pr_8', layerId: 'echo', start: 7.0, dur: 3.0, fadeIn: 0.6, fadeOut: 0.8, amount: 0.8 },
+				{ id: 'c_pr_8', layerId: 'bloom', start: 6.5, dur: 3.0, fadeIn: 0.5, fadeOut: 0.8, amount: 0.9 },
 			];
 		} else if (id === 'glitch_morph') {
 			this.animSetDuration(8);
@@ -137306,10 +137335,11 @@ class EffectsEngine {
 				{ t: 8.0, cam: { yaw: 3.6, pitch: 0.2, dist: baseDist, tx, ty, tz }, size: 3.2, bright: 1.0, glow: 0.8, layers: {} },
 			];
 			A.clips = [
-				{ id: 'c_pr_9', layerId: 'glitch', start: 0.3, dur: 3.2, fadeIn: 0.2, fadeOut: 0.6, amount: 0.95 },
-				{ id: 'c_pr_10', layerId: 'blast', start: 2.2, dur: 3.8, fadeIn: 0.3, fadeOut: 0.9, amount: 1.0 },
-				{ id: 'c_pr_11', layerId: 'twist', start: 3.0, dur: 3.5, fadeIn: 0.6, fadeOut: 0.8, amount: 0.85 },
-				{ id: 'c_pr_12', layerId: 'feedback', start: 4.8, dur: 3.2, fadeIn: 0.5, fadeOut: 1.0, amount: 0.9 },
+				{ id: 'c_pr_9', layerId: 'glitch', start: 0.3, dur: 3.0, fadeIn: 0.2, fadeOut: 0.6, amount: 0.95 },
+				{ id: 'c_pr_10', layerId: 'morph', start: 1.5, dur: 4.5, fadeIn: 0.4, fadeOut: 0.6, amount: 1.0 },
+				{ id: 'c_pr_11', layerId: 'blast', start: 2.2, dur: 3.8, fadeIn: 0.3, fadeOut: 0.9, amount: 1.0 },
+				{ id: 'c_pr_12', layerId: 'bloom', start: 3.5, dur: 3.0, fadeIn: 0.4, fadeOut: 0.8, amount: 0.9 },
+				{ id: 'c_pr_13', layerId: 'twist', start: 4.0, dur: 3.5, fadeIn: 0.6, fadeOut: 0.8, amount: 0.85 },
 			];
 		}
 		this.animSeek(0);
@@ -137431,6 +137461,78 @@ class EffectsEngine {
 					L[layerId].amount = maxVal;
 				} else {
 					L[layerId].on = false;
+				}
+			}
+
+			// Дорожка морфинга
+			if (clipLayerIds.has('morph')) {
+				if (!this._morphTrackReady && !this._morphTrackLoading) {
+					this._prepareMorphTrack();
+				}
+				let mVal = 0;
+				for (const c of clips) {
+					if (c.layerId !== 'morph') continue;
+					if (t <= c.start) continue;
+					if (t >= c.start + c.dur) {
+						mVal = 1.0;
+						continue;
+					}
+					const p = (t - c.start) / Math.max(0.01, c.dur);
+					mVal = Math.max(mVal, p * (c.amount ?? 1.0));
+				}
+				this.morph = Math.max(0, Math.min(1, mVal));
+				if (this.shared?.uMorph) this.shared.uMorph.value = this.morph;
+			}
+
+			// Дорожка вращения
+			if (clipLayerIds.has('rotate')) {
+				let rotVal = 0;
+				for (const c of clips) {
+					if (c.layerId !== 'rotate') continue;
+					if (t < c.start || t > c.start + c.dur) continue;
+					const elapsed = t - c.start;
+					const remaining = c.start + c.dur - t;
+					let env = 1.0;
+					if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
+						const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
+						env = Math.min(env, f * f * (3 - 2 * f));
+					}
+					if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
+						const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
+						env = Math.min(env, f * f * (3 - 2 * f));
+					}
+					rotVal = Math.max(rotVal, (c.amount ?? 1.0) * env);
+				}
+				if (rotVal > 0.001 && this.points) {
+					this.points.rotation.y = t * 1.6 * rotVal;
+					this.points.updateMatrixWorld();
+				}
+			}
+
+			// Дорожка блума и вспышки
+			if (clipLayerIds.has('bloom')) {
+				let bVal = 0;
+				for (const c of clips) {
+					if (c.layerId !== 'bloom') continue;
+					if (t < c.start || t > c.start + c.dur) continue;
+					const elapsed = t - c.start;
+					const remaining = c.start + c.dur - t;
+					let env = 1.0;
+					if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
+						const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
+						env = Math.min(env, f * f * (3 - 2 * f));
+					}
+					if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
+						const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
+						env = Math.min(env, f * f * (3 - 2 * f));
+					}
+					bVal = Math.max(bVal, (c.amount ?? 1.0) * env);
+				}
+				if (bVal > 0.001) {
+					this.state.look.glow = 0.8 + bVal * 1.5;
+					this.state.look.bright = 1.0 + bVal * 0.8;
+					if (this.shared?.uGlow) this.shared.uGlow.value = this.state.look.glow;
+					if (this.shared?.uBright) this.shared.uBright.value = this.state.look.bright;
 				}
 			}
 		}
@@ -140215,7 +140317,13 @@ function createEffectsPanel(app, root, engine) {
 			c.insp.classList.toggle('is-selected', c.def.id === id);
 		}
 	};
-	const ANIM_LAYERS = ['curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'gravity'];
+	const EXTRA_ANIM_LAYERS = {
+		morph: { id: 'morph', name: 'Морфинг', icon: 'cube', hint: 'Плавный морфинг между формами и моделями' },
+		rotate: { id: 'rotate', name: 'Вращение', icon: 'arrows-clockwise', hint: 'Плавное вращение формы вокруг оси' },
+		bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
+	};
+	const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
+	const ANIM_LAYERS = ['morph', 'curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity'];
 	let toggleAnim = () => {};
 	let animAddFromInspector = () => {};
 	const animQuickBtn = button({
@@ -140771,8 +140879,116 @@ function createEffectsPanel(app, root, engine) {
 
 	const aTransport = h('div', { class: 'fx-anim-transport' }, aPlay, aRew, aTimecode, zoomBox);
 
-	// Поповер сценариев
-	const presetsPop = h('div', { class: 'fx-anim-menu fx-anim-presets-pop', hidden: true });
+	// Встроенная интерактивная полка сценариев и добавления эффектов
+	const shelf = h('div', { class: 'fx-anim-shelf', hidden: true });
+	let currentShelf = null;
+
+	const closeShelf = () => {
+		shelf.hidden = true;
+		currentShelf = null;
+		presetsBtn.classList.remove('is-active');
+		addClipBtn.classList.remove('is-active');
+	};
+
+	const presetItems = [
+		{ id: 'dust_rebirth', icon: 'sparkle', label: 'Рождение из пыли', hint: 'Растворение → Вихри → Пульс' },
+		{ id: 'scan_collapse', icon: 'scan', label: 'Лазерный скан и распад', hint: 'Срез → Связи → Глитч → Блум' },
+		{ id: 'glitch_morph', icon: 'lightning', label: 'Кибер-глитч и морфинг', hint: 'Глитч → Морфинг → Взрыв → Блум' },
+	];
+
+	function openPresetsShelf() {
+		if (currentShelf === 'presets' && !shelf.hidden) {
+			closeShelf();
+			return;
+		}
+		currentShelf = 'presets';
+		presetsBtn.classList.add('is-active');
+		addClipBtn.classList.remove('is-active');
+
+		const head = h('div', { class: 'fx-anim-shelf-head' },
+			h('span', { class: 'fx-anim-shelf-title' }, '✦ Готовые сценарии анимации'),
+			h('span', { class: 'fx-anim-shelf-hint' }, 'Режиссерская последовательность эффектов и ракурсов'),
+			iconButton({ icon: 'x', title: 'Закрыть панель (Esc)', size: 12, cls: 'fx-anim-shelf-close', onClick: closeShelf })
+		);
+
+		const grid = h('div', { class: 'fx-anim-shelf-presets' });
+		for (const p of presetItems) {
+			const b = h('button', { type: 'button', class: 'fx-anim-shelf-card' },
+				h('span', { class: 'fx-anim-shelf-card-icon', html: icon(p.icon, 18) }),
+				h('div', { class: 'fx-anim-shelf-card-text' },
+					h('span', { class: 'fx-anim-shelf-card-title' }, p.label),
+					h('span', { class: 'fx-anim-shelf-card-hint' }, p.hint)
+				)
+			);
+			b.addEventListener('click', () => {
+				engine.animLoadPreset(p.id);
+				selKey = null;
+				selClip = null;
+				closeShelf();
+				app.toast(`Загружен сценарий «${p.label}»`, 'success');
+				animSync();
+			});
+			grid.append(b);
+		}
+
+		const clearBtn = h('button', { type: 'button', class: 'fx-anim-shelf-card is-danger' },
+			h('span', { class: 'fx-anim-shelf-card-icon', html: icon('trash', 18) }),
+			h('div', { class: 'fx-anim-shelf-card-text' },
+				h('span', { class: 'fx-anim-shelf-card-title' }, 'Очистить таймлайн'),
+				h('span', { class: 'fx-anim-shelf-card-hint' }, 'Удалить все блоки эффектов и ключи')
+			)
+		);
+		clearBtn.addEventListener('click', () => {
+			engine.animClear();
+			selKey = null;
+			selClip = null;
+			closeShelf();
+			app.toast('Таймлайн очищен', 'info');
+			animSync();
+		});
+		grid.append(clearBtn);
+
+		shelf.replaceChildren(head, grid);
+		shelf.hidden = false;
+	}
+
+	function openEffectsShelf() {
+		if (currentShelf === 'effects' && !shelf.hidden) {
+			closeShelf();
+			return;
+		}
+		currentShelf = 'effects';
+		addClipBtn.classList.add('is-active');
+		presetsBtn.classList.remove('is-active');
+
+		const head = h('div', { class: 'fx-anim-shelf-head' },
+			h('span', { class: 'fx-anim-shelf-title' }, '+ Добавить слой на таймлайн'),
+			h('span', { class: 'fx-anim-shelf-hint' }, 'Выберите эффект для добавления блока на шкалу времени:'),
+			iconButton({ icon: 'x', title: 'Закрыть панель (Esc)', size: 12, cls: 'fx-anim-shelf-close', onClick: closeShelf })
+		);
+
+		const chips = h('div', { class: 'fx-anim-shelf-chips' });
+		for (const id of ANIM_LAYERS) {
+			const l = getLayerDef(id);
+			const b = h('button', { type: 'button', class: 'fx-anim-shelf-chip', 'data-tip': l.hint },
+				h('span', { class: 'ic-wrap', html: icon(l.icon || 'sparkle', 14) }),
+				h('span', {}, l.name)
+			);
+			b.addEventListener('click', () => {
+				const clip = engine.animAddClip(l.id);
+				selClip = clip;
+				selKey = null;
+				closeShelf();
+				app.toast(`Добавлен блок: ${l.name}`, 'info');
+				animSync();
+			});
+			chips.append(b);
+		}
+
+		shelf.replaceChildren(head, chips);
+		shelf.hidden = false;
+	}
+
 	const presetsBtn = button({
 		label: 'Сценарии',
 		icon: 'sparkle',
@@ -140781,54 +140997,10 @@ function createEffectsPanel(app, root, engine) {
 		title: 'Готовые режиссерские сценарии',
 		onClick: (e) => {
 			e.stopPropagation();
-			const wasHidden = presetsPop.hidden;
-			closeMenus();
-			presetsPop.hidden = !wasHidden;
+			openPresetsShelf();
 		}
 	});
-	const presetItems = [
-		{ id: 'dust_rebirth', icon: 'sparkle', label: 'Рождение из пыли', hint: 'Растворение → Вихри → Пульс' },
-		{ id: 'scan_collapse', icon: 'scan', label: 'Лазерный скан и распад', hint: 'Срез → Связи → Глитч → Шлейф' },
-		{ id: 'glitch_morph', icon: 'lightning', label: 'Кибер-глитч и взрыв', hint: 'Глитч → Взрыв → Деформация → Следы' },
-	];
-	for (const p of presetItems) {
-		const b = h('button', { type: 'button', class: 'fx-anim-menu-item' },
-			h('span', { class: 'ic-wrap', html: icon(p.icon, 16) }),
-			h('div', { class: 'fx-anim-menu-text' },
-				h('span', { class: 'fx-anim-menu-title' }, p.label),
-				h('span', { class: 'fx-anim-menu-hint' }, p.hint)
-			)
-		);
-		b.addEventListener('click', () => {
-			engine.animLoadPreset(p.id);
-			selKey = null;
-			selClip = null;
-			closeMenus();
-			app.toast(`Загружен сценарий «${p.label}»`, 'success');
-			animSync();
-		});
-		presetsPop.append(b);
-	}
-	const clearBtn = h('button', { type: 'button', class: 'fx-anim-menu-item is-danger' },
-		h('span', { class: 'ic-wrap', html: icon('trash', 16) }),
-		h('div', { class: 'fx-anim-menu-text' },
-			h('span', { class: 'fx-anim-menu-title' }, 'Очистить таймлайн'),
-			h('span', { class: 'fx-anim-menu-hint' }, 'Удалить все блоки эффектов и ключи')
-		)
-	);
-	clearBtn.addEventListener('click', () => {
-		engine.animClear();
-		selKey = null;
-		selClip = null;
-		closeMenus();
-		app.toast('Таймлайн очищен', 'info');
-		animSync();
-	});
-	presetsPop.append(h('div', { class: 'fx-anim-menu-divider' }), clearBtn);
-	const presetsWrap = h('div', { class: 'fx-anim-presets-wrap' }, presetsBtn, presetsPop);
 
-	// Поповер добавления эффекта
-	const addPop = h('div', { class: 'fx-anim-menu fx-anim-add-pop', hidden: true });
 	const addClipBtn = button({
 		label: 'Эффект',
 		icon: 'plus',
@@ -140837,40 +141009,11 @@ function createEffectsPanel(app, root, engine) {
 		title: 'Добавить блок эффекта на дорожку',
 		onClick: (e) => {
 			e.stopPropagation();
-			const wasHidden = addPop.hidden;
-			closeMenus();
-			addPop.hidden = !wasHidden;
+			openEffectsShelf();
 		}
 	});
-	for (const id of ANIM_LAYERS) {
-		const l = FX_LAYERS.find((x) => x.id === id);
-		if (!l) continue;
-		const b = h('button', { type: 'button', class: 'fx-anim-menu-item' },
-			h('span', { class: 'ic-wrap', html: icon(l.icon || 'sparkle', 16) }),
-			h('div', { class: 'fx-anim-menu-text' },
-				h('span', { class: 'fx-anim-menu-title' }, l.name),
-				h('span', { class: 'fx-anim-menu-hint' }, l.hint ? l.hint.slice(0, 42) + '…' : '')
-			)
-		);
-		b.addEventListener('click', () => {
-			const clip = engine.animAddClip(l.id);
-			selClip = clip;
-			selKey = null;
-			closeMenus();
-			app.toast(`Добавлен блок: ${l.name}`, 'info');
-			animSync();
-		});
-		addPop.append(b);
-	}
-	const addWrap = h('div', { class: 'fx-anim-add-wrap' }, addClipBtn, addPop);
 
-	function closeMenus() {
-		presetsPop.hidden = true;
-		addPop.hidden = true;
-	}
-	document.addEventListener('pointerdown', (e) => {
-		if (!e.target.closest('.fx-anim-presets-wrap, .fx-anim-add-wrap, .fx-anim-menu')) closeMenus();
-	});
+	const quickWrap = h('div', { class: 'fx-anim-quick' }, presetsBtn, addClipBtn);
 
 	// Настройки справа: loop, dur, record, close
 	const aLoop = iconButton({
@@ -140917,7 +141060,7 @@ function createEffectsPanel(app, root, engine) {
 	});
 	const aSettings = h('div', { class: 'fx-anim-settings' }, aLoop, aDurBox, aRec, aClose);
 
-	const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, h('div', { class: 'fx-anim-quick' }, presetsWrap, addWrap), aSettings);
+	const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, quickWrap, aSettings);
 
 	// 2. Область дорожек (Stage)
 	const stage = h('div', { class: 'fx-anim-stage' });
@@ -140950,6 +141093,7 @@ function createEffectsPanel(app, root, engine) {
 			button({ label: 'Рождение из пыли', icon: 'sparkle', variant: 'secondary', cls: 'btn-sm', onClick: () => { engine.animLoadPreset('dust_rebirth'); animSync(); } }),
 			button({ label: 'Лазерный скан', icon: 'scan', variant: 'secondary', cls: 'btn-sm', onClick: () => { engine.animLoadPreset('scan_collapse'); animSync(); } }),
 			button({ label: 'Кибер-глитч', icon: 'lightning', variant: 'secondary', cls: 'btn-sm', onClick: () => { engine.animLoadPreset('glitch_morph'); animSync(); } }),
+			button({ label: '+ Морфинг', icon: 'cube', variant: 'primary', cls: 'btn-sm', onClick: () => { selClip = engine.animAddClip('morph'); animSync(); } }),
 			button({ label: '+ Вихри', variant: 'primary', cls: 'btn-sm', onClick: () => { selClip = engine.animAddClip('curl'); animSync(); } }),
 			button({ label: '+ Волны', variant: 'primary', cls: 'btn-sm', onClick: () => { selClip = engine.animAddClip('wave'); animSync(); } })
 		)
@@ -140963,7 +141107,8 @@ function createEffectsPanel(app, root, engine) {
 	// 3. Инспектор выбранного элемента (Inspector)
 	const inspector = h('div', { class: 'fx-anim-inspector', hidden: true });
 
-	animPanel.append(resizeHandle, topBar, stage, inspector);
+	const body = h('div', { class: 'fx-anim-body' }, shelf, stage, inspector);
+	animPanel.append(resizeHandle, topBar, body);
 	document.getElementById('viewport').append(animPanel);
 
 	function timeFromPointer(e, targetEl, cachedRect) {
@@ -141011,7 +141156,7 @@ function createEffectsPanel(app, root, engine) {
 		appEl.classList.toggle('fx-anim-active', on);
 		if (!on) {
 			engine.animPause();
-			closeMenus();
+			closeShelf();
 		} else {
 			if (!st.anim.keys?.length && !st.anim.clips?.length) {
 				selKey = engine.animAddKey(0);
@@ -141056,7 +141201,9 @@ function createEffectsPanel(app, root, engine) {
 				animSync();
 			}
 		} else if (e.code === 'Escape') {
-			if (selClip || selKey) {
+			if (!shelf.hidden) {
+				closeShelf();
+			} else if (selClip || selKey) {
 				selClip = null;
 				selKey = null;
 				animSync();
@@ -141068,7 +141215,7 @@ function createEffectsPanel(app, root, engine) {
 		inspector.textContent = '';
 		if (selClip) {
 			const c = selClip;
-			const layerDef = FX_LAYERS.find((l) => l.id === c.layerId) || { name: c.layerId, icon: 'sparkle' };
+			const layerDef = getLayerDef(c.layerId);
 			inspector.hidden = false;
 
 			const badge = h('div', { class: 'fx-anim-insp-badge' },
@@ -141280,7 +141427,7 @@ function createEffectsPanel(app, root, engine) {
 		const uniqueLayers = [...new Set(clips.map((c) => c.layerId))];
 
 		for (const layerId of uniqueLayers) {
-			const layerDef = FX_LAYERS.find((l) => l.id === layerId) || { name: layerId, icon: 'sparkle' };
+			const layerDef = getLayerDef(layerId);
 			const layerClips = clips.filter((c) => c.layerId === layerId);
 
 			const laneTitle = h('div', { class: 'fx-anim-track-label fx-anim-fx-label' },

@@ -391,7 +391,13 @@ c.card.classList.toggle('is-selected', c.def.id === id);
 c.insp.classList.toggle('is-selected', c.def.id === id);
 }
 };
-const ANIM_LAYERS = ['curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'gravity'];
+const EXTRA_ANIM_LAYERS = {
+morph: { id: 'morph', name: 'Морфинг', icon: 'cube', hint: 'Плавный морфинг между формами и моделями' },
+rotate: { id: 'rotate', name: 'Вращение', icon: 'arrows-clockwise', hint: 'Плавное вращение формы вокруг оси' },
+bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
+};
+const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
+const ANIM_LAYERS = ['morph', 'curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity'];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
 const animQuickBtn = button({
@@ -920,7 +926,103 @@ renderRuler();
 animSync();
 }
 const aTransport = h('div', { class: 'fx-anim-transport' }, aPlay, aRew, aTimecode, zoomBox);
-const presetsPop = h('div', { class: 'fx-anim-menu fx-anim-presets-pop', hidden: true });
+const shelf = h('div', { class: 'fx-anim-shelf', hidden: true });
+let currentShelf = null;
+const closeShelf = () => {
+shelf.hidden = true;
+currentShelf = null;
+presetsBtn.classList.remove('is-active');
+addClipBtn.classList.remove('is-active');
+};
+const presetItems = [
+{ id: 'dust_rebirth', icon: 'sparkle', label: 'Рождение из пыли', hint: 'Растворение → Вихри → Пульс' },
+{ id: 'scan_collapse', icon: 'scan', label: 'Лазерный скан и распад', hint: 'Срез → Связи → Глитч → Блум' },
+{ id: 'glitch_morph', icon: 'lightning', label: 'Кибер-глитч и морфинг', hint: 'Глитч → Морфинг → Взрыв → Блум' },
+];
+function openPresetsShelf() {
+if (currentShelf === 'presets' && !shelf.hidden) {
+closeShelf();
+return;
+}
+currentShelf = 'presets';
+presetsBtn.classList.add('is-active');
+addClipBtn.classList.remove('is-active');
+const head = h('div', { class: 'fx-anim-shelf-head' },
+h('span', { class: 'fx-anim-shelf-title' }, '✦ Готовые сценарии анимации'),
+h('span', { class: 'fx-anim-shelf-hint' }, 'Режиссерская последовательность эффектов и ракурсов'),
+iconButton({ icon: 'x', title: 'Закрыть панель (Esc)', size: 12, cls: 'fx-anim-shelf-close', onClick: closeShelf })
+);
+const grid = h('div', { class: 'fx-anim-shelf-presets' });
+for (const p of presetItems) {
+const b = h('button', { type: 'button', class: 'fx-anim-shelf-card' },
+h('span', { class: 'fx-anim-shelf-card-icon', html: icon(p.icon, 18) }),
+h('div', { class: 'fx-anim-shelf-card-text' },
+h('span', { class: 'fx-anim-shelf-card-title' }, p.label),
+h('span', { class: 'fx-anim-shelf-card-hint' }, p.hint)
+)
+);
+b.addEventListener('click', () => {
+engine.animLoadPreset(p.id);
+selKey = null;
+selClip = null;
+closeShelf();
+app.toast(`Загружен сценарий «${p.label}»`, 'success');
+animSync();
+});
+grid.append(b);
+}
+const clearBtn = h('button', { type: 'button', class: 'fx-anim-shelf-card is-danger' },
+h('span', { class: 'fx-anim-shelf-card-icon', html: icon('trash', 18) }),
+h('div', { class: 'fx-anim-shelf-card-text' },
+h('span', { class: 'fx-anim-shelf-card-title' }, 'Очистить таймлайн'),
+h('span', { class: 'fx-anim-shelf-card-hint' }, 'Удалить все блоки эффектов и ключи')
+)
+);
+clearBtn.addEventListener('click', () => {
+engine.animClear();
+selKey = null;
+selClip = null;
+closeShelf();
+app.toast('Таймлайн очищен', 'info');
+animSync();
+});
+grid.append(clearBtn);
+shelf.replaceChildren(head, grid);
+shelf.hidden = false;
+}
+function openEffectsShelf() {
+if (currentShelf === 'effects' && !shelf.hidden) {
+closeShelf();
+return;
+}
+currentShelf = 'effects';
+addClipBtn.classList.add('is-active');
+presetsBtn.classList.remove('is-active');
+const head = h('div', { class: 'fx-anim-shelf-head' },
+h('span', { class: 'fx-anim-shelf-title' }, '+ Добавить слой на таймлайн'),
+h('span', { class: 'fx-anim-shelf-hint' }, 'Выберите эффект для добавления блока на шкалу времени:'),
+iconButton({ icon: 'x', title: 'Закрыть панель (Esc)', size: 12, cls: 'fx-anim-shelf-close', onClick: closeShelf })
+);
+const chips = h('div', { class: 'fx-anim-shelf-chips' });
+for (const id of ANIM_LAYERS) {
+const l = getLayerDef(id);
+const b = h('button', { type: 'button', class: 'fx-anim-shelf-chip', 'data-tip': l.hint },
+h('span', { class: 'ic-wrap', html: icon(l.icon || 'sparkle', 14) }),
+h('span', {}, l.name)
+);
+b.addEventListener('click', () => {
+const clip = engine.animAddClip(l.id);
+selClip = clip;
+selKey = null;
+closeShelf();
+app.toast(`Добавлен блок: ${l.name}`, 'info');
+animSync();
+});
+chips.append(b);
+}
+shelf.replaceChildren(head, chips);
+shelf.hidden = false;
+}
 const presetsBtn = button({
 label: 'Сценарии',
 icon: 'sparkle',
@@ -929,52 +1031,9 @@ cls: 'btn-sm fx-anim-presets-btn',
 title: 'Готовые режиссерские сценарии',
 onClick: (e) => {
 e.stopPropagation();
-const wasHidden = presetsPop.hidden;
-closeMenus();
-presetsPop.hidden = !wasHidden;
+openPresetsShelf();
 }
 });
-const presetItems = [
-{ id: 'dust_rebirth', icon: 'sparkle', label: 'Рождение из пыли', hint: 'Растворение → Вихри → Пульс' },
-{ id: 'scan_collapse', icon: 'scan', label: 'Лазерный скан и распад', hint: 'Срез → Связи → Глитч → Шлейф' },
-{ id: 'glitch_morph', icon: 'lightning', label: 'Кибер-глитч и взрыв', hint: 'Глитч → Взрыв → Деформация → Следы' },
-];
-for (const p of presetItems) {
-const b = h('button', { type: 'button', class: 'fx-anim-menu-item' },
-h('span', { class: 'ic-wrap', html: icon(p.icon, 16) }),
-h('div', { class: 'fx-anim-menu-text' },
-h('span', { class: 'fx-anim-menu-title' }, p.label),
-h('span', { class: 'fx-anim-menu-hint' }, p.hint)
-)
-);
-b.addEventListener('click', () => {
-engine.animLoadPreset(p.id);
-selKey = null;
-selClip = null;
-closeMenus();
-app.toast(`Загружен сценарий «${p.label}»`, 'success');
-animSync();
-});
-presetsPop.append(b);
-}
-const clearBtn = h('button', { type: 'button', class: 'fx-anim-menu-item is-danger' },
-h('span', { class: 'ic-wrap', html: icon('trash', 16) }),
-h('div', { class: 'fx-anim-menu-text' },
-h('span', { class: 'fx-anim-menu-title' }, 'Очистить таймлайн'),
-h('span', { class: 'fx-anim-menu-hint' }, 'Удалить все блоки эффектов и ключи')
-)
-);
-clearBtn.addEventListener('click', () => {
-engine.animClear();
-selKey = null;
-selClip = null;
-closeMenus();
-app.toast('Таймлайн очищен', 'info');
-animSync();
-});
-presetsPop.append(h('div', { class: 'fx-anim-menu-divider' }), clearBtn);
-const presetsWrap = h('div', { class: 'fx-anim-presets-wrap' }, presetsBtn, presetsPop);
-const addPop = h('div', { class: 'fx-anim-menu fx-anim-add-pop', hidden: true });
 const addClipBtn = button({
 label: 'Эффект',
 icon: 'plus',
@@ -983,39 +1042,10 @@ cls: 'btn-sm fx-anim-add-btn',
 title: 'Добавить блок эффекта на дорожку',
 onClick: (e) => {
 e.stopPropagation();
-const wasHidden = addPop.hidden;
-closeMenus();
-addPop.hidden = !wasHidden;
+openEffectsShelf();
 }
 });
-for (const id of ANIM_LAYERS) {
-const l = FX_LAYERS.find((x) => x.id === id);
-if (!l) continue;
-const b = h('button', { type: 'button', class: 'fx-anim-menu-item' },
-h('span', { class: 'ic-wrap', html: icon(l.icon || 'sparkle', 16) }),
-h('div', { class: 'fx-anim-menu-text' },
-h('span', { class: 'fx-anim-menu-title' }, l.name),
-h('span', { class: 'fx-anim-menu-hint' }, l.hint ? l.hint.slice(0, 42) + '…' : '')
-)
-);
-b.addEventListener('click', () => {
-const clip = engine.animAddClip(l.id);
-selClip = clip;
-selKey = null;
-closeMenus();
-app.toast(`Добавлен блок: ${l.name}`, 'info');
-animSync();
-});
-addPop.append(b);
-}
-const addWrap = h('div', { class: 'fx-anim-add-wrap' }, addClipBtn, addPop);
-function closeMenus() {
-presetsPop.hidden = true;
-addPop.hidden = true;
-}
-document.addEventListener('pointerdown', (e) => {
-if (!e.target.closest('.fx-anim-presets-wrap, .fx-anim-add-wrap, .fx-anim-menu')) closeMenus();
-});
+const quickWrap = h('div', { class: 'fx-anim-quick' }, presetsBtn, addClipBtn);
 const aLoop = iconButton({
 icon: 'repeat',
 title: 'Повторять по кругу',
@@ -1059,7 +1089,7 @@ cls: 'fx-anim-close',
 onClick: () => toggleAnim(false)
 });
 const aSettings = h('div', { class: 'fx-anim-settings' }, aLoop, aDurBox, aRec, aClose);
-const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, h('div', { class: 'fx-anim-quick' }, presetsWrap, addWrap), aSettings);
+const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, quickWrap, aSettings);
 const stage = h('div', { class: 'fx-anim-stage' });
 const rulerTitle = h('div', { class: 'fx-anim-track-label fx-anim-ruler-title' }, 'Время');
 const rulerTicks = h('div', { class: 'fx-anim-ruler-ticks' });
@@ -1082,6 +1112,7 @@ h('div', { class: 'fx-anim-empty-actions' },
 button({ label: 'Рождение из пыли', icon: 'sparkle', variant: 'secondary', cls: 'btn-sm', onClick: () => { engine.animLoadPreset('dust_rebirth'); animSync(); } }),
 button({ label: 'Лазерный скан', icon: 'scan', variant: 'secondary', cls: 'btn-sm', onClick: () => { engine.animLoadPreset('scan_collapse'); animSync(); } }),
 button({ label: 'Кибер-глитч', icon: 'lightning', variant: 'secondary', cls: 'btn-sm', onClick: () => { engine.animLoadPreset('glitch_morph'); animSync(); } }),
+button({ label: '+ Морфинг', icon: 'cube', variant: 'primary', cls: 'btn-sm', onClick: () => { selClip = engine.animAddClip('morph'); animSync(); } }),
 button({ label: '+ Вихри', variant: 'primary', cls: 'btn-sm', onClick: () => { selClip = engine.animAddClip('curl'); animSync(); } }),
 button({ label: '+ Волны', variant: 'primary', cls: 'btn-sm', onClick: () => { selClip = engine.animAddClip('wave'); animSync(); } })
 )
@@ -1090,7 +1121,8 @@ const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, fxLanes
 const playheadLine = h('div', { class: 'fx-anim-playhead-line' });
 stage.append(rulerRow, lanesScroll, playheadLine);
 const inspector = h('div', { class: 'fx-anim-inspector', hidden: true });
-animPanel.append(resizeHandle, topBar, stage, inspector);
+const body = h('div', { class: 'fx-anim-body' }, shelf, stage, inspector);
+animPanel.append(resizeHandle, topBar, body);
 document.getElementById('viewport').append(animPanel);
 function timeFromPointer(e, targetEl, cachedRect) {
 const r = cachedRect || targetEl.getBoundingClientRect();
@@ -1134,7 +1166,7 @@ animQuickBtn.classList.toggle('is-active', on);
 appEl.classList.toggle('fx-anim-active', on);
 if (!on) {
 engine.animPause();
-closeMenus();
+closeShelf();
 } else {
 if (!st.anim.keys?.length && !st.anim.clips?.length) {
 selKey = engine.animAddKey(0);
@@ -1174,7 +1206,9 @@ selKey = null;
 animSync();
 }
 } else if (e.code === 'Escape') {
-if (selClip || selKey) {
+if (!shelf.hidden) {
+closeShelf();
+} else if (selClip || selKey) {
 selClip = null;
 selKey = null;
 animSync();
@@ -1185,7 +1219,7 @@ function renderInspector() {
 inspector.textContent = '';
 if (selClip) {
 const c = selClip;
-const layerDef = FX_LAYERS.find((l) => l.id === c.layerId) || { name: c.layerId, icon: 'sparkle' };
+const layerDef = getLayerDef(c.layerId);
 inspector.hidden = false;
 const badge = h('div', { class: 'fx-anim-insp-badge' },
 h('span', { class: 'ic-wrap', html: icon(layerDef.icon || 'sparkle', 14) }),
@@ -1370,7 +1404,7 @@ return;
 emptyHint.hidden = true;
 const uniqueLayers = [...new Set(clips.map((c) => c.layerId))];
 for (const layerId of uniqueLayers) {
-const layerDef = FX_LAYERS.find((l) => l.id === layerId) || { name: layerId, icon: 'sparkle' };
+const layerDef = getLayerDef(layerId);
 const layerClips = clips.filter((c) => c.layerId === layerId);
 const laneTitle = h('div', { class: 'fx-anim-track-label fx-anim-fx-label' },
 h('span', { class: 'ic-wrap', html: icon(layerDef.icon || 'sparkle', 14) }),

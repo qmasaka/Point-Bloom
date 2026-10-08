@@ -3265,14 +3265,16 @@ body {
 .fx-anim {
 	--fx-head-w: 130px;
 	position: absolute;
-	left: 50%;
+	left: 14px;
+	right: 14px;
 	bottom: 12px;
-	transform: translateX(-50%);
 	z-index: calc(var(--z-overlay, 40) + 5);
 	display: none;
 	flex-direction: column;
 	gap: 6px;
-	width: min(960px, calc(100% - 24px));
+	width: auto;
+	max-width: none;
+	transform: none;
 	height: var(--fx-anim-h, 245px);
 	padding: 8px 14px 10px;
 	border-radius: 18px;
@@ -3284,7 +3286,7 @@ body {
 	user-select: none;
 	font-feature-settings: 'zero' 0, 'tnum' 1;
 	font-variant-numeric: tabular-nums;
-	transition: width 0.25s var(--ease);
+	transition: left 0.3s var(--ease), right 0.3s var(--ease), bottom 0.35s var(--ease), height 0.2s var(--ease);
 }
 .fx-mode .fx-anim:not([hidden]) {
 	display: flex;
@@ -3293,7 +3295,11 @@ body {
 @keyframes fx-anim-in {
 	from {
 		opacity: 0;
-		transform: translate(-50%, 12px);
+		transform: translateY(14px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
 	}
 }
 
@@ -3340,6 +3346,28 @@ body.is-resizing-h * {
 		bottom: calc(var(--fx-anim-h, 245px) + 26px);
 		transition: bottom 0.35s var(--ease);
 	}
+}
+
+/* Плавное скрытие FPS, подсказок и статусных подписей при открытой анимации */
+.statusbar,
+.status-hint,
+.status-stats,
+.status-fps,
+.fx-meters,
+.fx-hint {
+	transition: opacity 0.32s var(--ease), transform 0.32s var(--ease), visibility 0s linear 0s;
+}
+.fx-mode.fx-anim-active .statusbar,
+.fx-mode.fx-anim-active .status-hint,
+.fx-mode.fx-anim-active .status-stats,
+.fx-mode.fx-anim-active .status-fps,
+.fx-mode.fx-anim-active .fx-meters,
+.fx-mode.fx-anim-active .fx-hint {
+	opacity: 0 !important;
+	visibility: hidden !important;
+	pointer-events: none !important;
+	transform: translateY(6px);
+	transition: opacity 0.32s var(--ease), transform 0.32s var(--ease), visibility 0s linear 0.32s !important;
 }
 
 /* Кнопка запуска секвенсора в нижнем баре */
@@ -3678,6 +3706,179 @@ body.is-resizing-h * {
 	margin: 4px 0;
 }
 
+/* Внутренний контейнер таймлайна с плавным вертикальным скроллом */
+.fx-anim-body {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding-right: 2px;
+}
+.fx-anim-body::-webkit-scrollbar {
+	width: 5px;
+}
+.fx-anim-body::-webkit-scrollbar-track {
+	background: transparent;
+}
+.fx-anim-body::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 4px;
+}
+.fx-anim-body::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.35);
+}
+
+/* Встроенная стеклянная полка сценариев и эффектов (внутри таймлайна, не перекрывает 3D) */
+.fx-anim-shelf {
+	background: rgba(14, 16, 22, 0.78);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 12px;
+	padding: 8px 12px 10px;
+	margin-bottom: 2px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	animation: fx-shelf-in 0.18s var(--ease);
+}
+.fx-anim-shelf[hidden] {
+	display: none !important;
+}
+@keyframes fx-shelf-in {
+	from {
+		opacity: 0;
+		transform: translateY(-6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+.fx-anim-shelf-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.fx-anim-shelf-title {
+	font-size: 11.5px;
+	font-weight: 600;
+	color: var(--text);
+	letter-spacing: 0.02em;
+}
+.fx-anim-shelf-hint {
+	font-size: 11px;
+	color: var(--text-dim);
+	flex: 1;
+}
+.fx-anim-shelf-close {
+	width: 20px !important;
+	height: 20px !important;
+	border-radius: 50% !important;
+	color: var(--text-dim) !important;
+}
+.fx-anim-shelf-close:hover {
+	color: var(--text) !important;
+	background: rgba(255, 255, 255, 0.1) !important;
+}
+.fx-anim-shelf-presets {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+	gap: 8px;
+}
+.fx-anim-shelf-card {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 12px;
+	border-radius: 9px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.07);
+	color: var(--text);
+	text-align: left;
+	cursor: pointer;
+	transition: background 0.15s, border-color 0.15s, transform 0.12s;
+}
+.fx-anim-shelf-card:hover {
+	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(255, 255, 255, 0.18);
+	transform: translateY(-1px);
+}
+.fx-anim-shelf-card:active {
+	transform: translateY(0);
+}
+.fx-anim-shelf-card.is-danger {
+	border-color: rgba(239, 68, 68, 0.25);
+}
+.fx-anim-shelf-card.is-danger:hover {
+	background: rgba(239, 68, 68, 0.12);
+	border-color: rgba(239, 68, 68, 0.45);
+}
+.fx-anim-shelf-card-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--accent);
+	flex: none;
+}
+.fx-anim-shelf-card.is-danger .fx-anim-shelf-card-icon {
+	color: #ef4444;
+}
+.fx-anim-shelf-card-text {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	min-width: 0;
+}
+.fx-anim-shelf-card-title {
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--text);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.fx-anim-shelf-card-hint {
+	font-size: 10.5px;
+	color: var(--text-dim);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.fx-anim-shelf-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	max-height: 120px;
+	overflow-y: auto;
+	padding-right: 2px;
+}
+.fx-anim-shelf-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.09);
+	color: var(--text);
+	font-size: 11.5px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.fx-anim-shelf-chip:hover {
+	background: rgba(237, 137, 54, 0.2);
+	border-color: rgba(237, 137, 54, 0.45);
+	color: #fff;
+}
+.fx-anim-shelf-chip .ic-wrap {
+	display: flex;
+	align-items: center;
+	color: var(--accent);
+}
+
 /* 2. Область дорожек (Stage) */
 .fx-anim-stage {
 	position: relative;
@@ -3689,20 +3890,20 @@ body.is-resizing-h * {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
-	max-height: 190px;
-	overflow-y: auto;
 	overflow-x: hidden;
 	padding-right: 2px;
 }
-.fx-anim-lanes-scroll::-webkit-scrollbar {
-	width: 4px;
-}
-.fx-anim-lanes-scroll::-webkit-scrollbar-thumb {
-	background: rgba(255, 255, 255, 0.2);
-	border-radius: 4px;
-}
 
-.fx-anim-ruler-row,
+.fx-anim-ruler-row {
+	display: flex;
+	align-items: center;
+	height: 30px;
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	background: rgba(18, 20, 26, 0.96);
+	backdrop-filter: blur(12px);
+}
 .fx-anim-lane {
 	display: flex;
 	align-items: center;
@@ -5212,7 +5413,7 @@ body.is-resizing-h * {
 .fx-focus .fx-cam-grip { display: block; }
 @container app (min-width: 901px) {
 	.fx-focus .fx-cam { left: 18px; bottom: 18px; }
-	.fx-mode .fx-anim { bottom: 12px; width: min(960px, calc(100% - 24px)); }
+	.fx-mode .fx-anim { bottom: 12px; left: 14px; right: 14px; width: auto; max-width: none; }
 }
 .fx-anim { container-type: inline-size; }
 @container (max-width: 470px) { .fx-anim-hint { display: none; } }
