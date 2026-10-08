@@ -11,6 +11,8 @@
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5.3.0/index.css">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist-mono@5.3.0/index.css">
 	<link rel="stylesheet" href="assets/style.css">
+	<style>html.booting body { background: #0d0f12; } html.booting #app { opacity: 0; } #boot { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: #0d0f12; }</style>
+	<script>document.documentElement.classList.add('booting');</script>
 </head>
 <body>
 <div id="app" class="ui-float">
@@ -152,6 +154,8 @@
 	</footer>
 </div>
 
+<div id="boot" aria-hidden="true"><div class="boot-inner"><div class="boot-mark" id="bootMark"></div><div class="boot-bar"><i></i></div></div></div>
+<script>(function(){var m=document.querySelector('.brand-svg'),t=document.getElementById('bootMark');if(m&&t){var c=m.cloneNode(true);c.setAttribute('width','64');c.setAttribute('height','64');t.appendChild(c);}})();</script>
 <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <input type="file" id="fileInput" multiple hidden>

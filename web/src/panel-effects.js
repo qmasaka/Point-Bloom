@@ -575,20 +575,6 @@ picker.draw();
 });
 band.el.addEventListener('click', () => requestAnimationFrame(syncAudioHead));
 body.append(audioHead, audioWrap);
-if (ANIM_LAYERS.includes(def.id)) {
-const toTimelineBtn = button({
-label: 'На таймлайн',
-icon: 'film-strip',
-variant: 'secondary',
-cls: 'btn-block fx-to-timeline-btn',
-title: `Добавить блок «${def.name}» на таймлайн анимации`,
-onClick: () => {
-animAddFromInspector(def.id);
-app.toast(`Эффект «${def.name}» добавлен на таймлайн`, 'info');
-}
-});
-body.append(toTimelineBtn);
-}
 syncAudioHead();
 audioUiFull();
 const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });

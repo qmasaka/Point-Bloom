@@ -8,8 +8,28 @@ import { exportForWeb } from './web-export.js';
 import { runBenchmark } from './capabilities.js';
 import { guardDevice } from './device-guard.js';
 
+/** Плавное открытие: пока всё строится, виден экран загрузки, потом он гаснет, а панели выезжают на места */
+function revealApp() {
+	const done = () => {
+		const root = document.documentElement;
+		root.classList.remove('booting');
+		root.classList.add('booted');
+		const boot = document.getElementById('boot');
+		if (boot) {
+			boot.classList.add('is-done');
+			setTimeout(() => boot.remove(), 700);
+		}
+		setTimeout(() => root.classList.remove('booted'), 1400);
+	};
+	setTimeout(done, 4000); // страховка: если вкладка скрыта и кадры не рисуются, интерфейс всё равно покажется
+	const fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+	Promise.all([fonts, new Promise((r) => setTimeout(r, 450))]).then(() => requestAnimationFrame(() => requestAnimationFrame(done)));
+}
+
 function showFatal(e) {
 	console.error(e);
+	document.documentElement.classList.remove('booting');
+	document.getElementById('boot')?.remove();
 	const box = document.getElementById('fatal');
 	if (!box) return;
 	const webgl = /webgl/i.test(String(e && e.message));
@@ -31,6 +51,7 @@ iconsReady
 		const app = new App();
 		app.start();
 		window.__app = app; // удобно для отладки из консоли
+		revealApp();
 		window.__dev = { THREE, GLTFLoader, exportModel, verifyGLB, makeTextureSampler, makeDemoFiles, exportForWeb, runBenchmark }; // для отладки и автотестов
 	})
 	.catch(showFatal);

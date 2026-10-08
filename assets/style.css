@@ -5592,3 +5592,31 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 	.ui-float .sidebar .fxf-bar { flex: none; }
 	.ui-float .fxf-scroll { flex: 0 1 auto; min-height: 0; }
 }
+
+/* низ правой панели: без хвостовой линии и пустого места, карточка заканчивается на последней настройке */
+@container app (min-width: 901px) {
+	.ui-float .fxf-scroll::after { height: 0; }
+	.ui-float .fxf-scroll { margin-bottom: -1px; }
+}
+
+/* ================================================================ плавное открытие сайта */
+.boot-inner { display: grid; justify-items: center; gap: 22px; color: #e8ebef; }
+.boot-mark { animation: boot-pulse 1.8s ease-in-out infinite; }
+.boot-bar { width: 116px; height: 2px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.boot-bar i { display: block; width: 38%; height: 100%; border-radius: 2px; background: #e58a45; animation: boot-bar 1.15s ease-in-out infinite; }
+#boot { transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.55s; }
+#boot.is-done { opacity: 0; visibility: hidden; pointer-events: none; }
+@keyframes boot-pulse { 0%, 100% { opacity: 0.75; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1); } }
+@keyframes boot-bar { 0% { transform: translateX(-110%); } 100% { transform: translateX(300%); } }
+@keyframes boot-top { from { opacity: 0; transform: translateY(-16px); } }
+@keyframes boot-left { from { opacity: 0; transform: translateX(-24px); } }
+@keyframes boot-right { from { opacity: 0; transform: translateX(24px); } }
+@keyframes boot-bottom { from { opacity: 0; transform: translateY(16px); } }
+@keyframes boot-fade { from { opacity: 0; } }
+html.booted .topbar { animation: boot-top 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+html.booted .toolrail, html.booted .fx-left { animation: boot-left 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.08s backwards; }
+html.booted .sidebar { animation: boot-right 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.12s backwards; }
+html.booted .vp-dock, html.booted .fx-bar, html.booted .statusbar { animation: boot-bottom 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.18s backwards; }
+html.booted .stage, html.booted .empty-state { animation: boot-fade 0.9s ease 0.1s backwards; }
+@media (prefers-reduced-motion: reduce) { .boot-mark, .boot-bar i, html.booted * { animation: none !important; } #boot { transition: opacity 0.2s linear; } }
+@container app (min-width: 901px) { .ui-float .fxf-scroll .panel { padding-bottom: 0; } }
