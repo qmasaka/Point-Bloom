@@ -5458,3 +5458,32 @@ body.is-resizing-h * {
 @container app (min-width: 901px) and (max-width: 1360px) {
 	.fx-mode.fx-anim-active .fx-left, .fx-mode.fx-anim-active .sidebar { bottom: calc(var(--fx-anim-h, 245px) + 76px); }
 }
+
+/* ================================================================ секвенсор: панель свойств ползунками, линии до краёв, без лишнего фона, свой скролл */
+.fx-mode .fx-anim-insp-badge, .fx-mode .fx-anim-insp-field .fx-anim-insp-badge { display: none; }
+.fx-mode .fx-anim-topbar { margin-inline: -16px; padding-inline: 16px; padding-bottom: 8px; }
+.fx-mode .fx-anim-inspector { margin-inline: -16px; padding: 10px 16px 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 8px 28px; align-items: center; }
+.fx-mode .fx-anim-inspector[hidden] { display: none; }
+.fx-mode .fx-anim-insp-slider { display: grid; grid-template-columns: 46px minmax(0, 1fr) 50px; align-items: center; gap: 10px; font-size: 12px; color: var(--text-dim); }
+.fx-mode .fx-anim-insp-lab { color: var(--text-dim); }
+.fx-mode .fx-anim-insp-slider .range { width: 100%; }
+.fx-mode .fx-anim-insp-val { text-align: right; color: var(--text); }
+.fx-mode .fx-anim-inspector > .fx-anim-insp-field { grid-column: span 3; }
+.fx-mode .fx-anim-inspector > .btn { grid-column: auto; }
+.fx-mode .fx-anim-insp-actions { margin-left: 0; justify-self: end; display: flex; gap: 4px; }
+.fx-mode .fx-anim-ruler-row { background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.fx-mode .fx-anim-ruler-body { border-bottom-color: rgba(255, 255, 255, 0.06); }
+.fx-mode .fx-anim-body { padding-right: 0; }
+.fx-mode .fx-anim-body::-webkit-scrollbar { width: 8px; height: 8px; }
+.fx-mode .fx-anim-body::-webkit-scrollbar-track { background: transparent; }
+.fx-mode .fx-anim-body::-webkit-scrollbar-thumb { background: var(--line-strong); border: 2px solid transparent; border-radius: 4px; background-clip: padding-box; min-height: 28px; }
+.fx-mode .fx-anim-body::-webkit-scrollbar-thumb:hover { background: var(--text-faint); background-clip: padding-box; }
+.fx-mode .fx-anim-body::-webkit-scrollbar-thumb:active { background: var(--accent); background-clip: padding-box; }
+@supports (-moz-appearance: none) { .fx-mode .fx-anim-body { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; } }
+/* боковые карточки тянутся до самого таймлайна; под нижнюю панель кнопок отступают только в узких окнах */
+@container app (min-width: 901px) {
+	.fx-mode.fx-anim-active .fx-left, .fx-mode.fx-anim-active .sidebar { bottom: calc(var(--fx-anim-h, 245px) + 26px); }
+}
+@container app (min-width: 901px) and (max-width: 1180px) {
+	.fx-mode.fx-anim-active .fx-left, .fx-mode.fx-anim-active .sidebar { bottom: calc(var(--fx-anim-h, 245px) + 76px); }
+}

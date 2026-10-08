@@ -140786,6 +140786,23 @@ function createEffectsPanel(app, root, engine) {
 	} catch (_) {}
 	document.documentElement.style.setProperty('--fx-anim-h', curH + 'px');
 
+	/** Выше естественной высоты содержимого таймлайн тянуть нельзя: иначе внизу остаётся пустая серая зона */
+	function maxAnimH() {
+		const body = animPanel.querySelector('.fx-anim-body');
+		if (!body || animPanel.hidden) return 480;
+		const kids = [...body.children].filter((el) => !el.hidden && el.offsetHeight > 0);
+		const gap = parseFloat(getComputedStyle(body).rowGap) || 0;
+		const natural = kids.reduce((a, el) => a + el.offsetHeight, 0) + gap * Math.max(0, kids.length - 1);
+		const chrome = animPanel.offsetHeight - body.clientHeight;
+		return Math.max(150, Math.min(480, Math.ceil(chrome + natural)));
+	}
+	function clampAnimH() {
+		const m = maxAnimH();
+		if (curH > m) {
+			curH = m;
+			document.documentElement.style.setProperty('--fx-anim-h', curH + 'px');
+		}
+	}
 	let isResizingH = false;
 	let resizeStartY = 0;
 	let resizeStartH = 245;
@@ -140799,7 +140816,8 @@ function createEffectsPanel(app, root, engine) {
 		const onMove = (ev) => {
 			if (!isResizingH) return;
 			const dy = resizeStartY - ev.clientY;
-			curH = Math.max(170, Math.min(480, Math.round(resizeStartH + dy)));
+			curH = Math.max(150, Math.min(480, Math.round(resizeStartH + dy)));
+			curH = Math.min(curH, maxAnimH());
 			document.documentElement.style.setProperty('--fx-anim-h', curH + 'px');
 		};
 		const onUp = () => {
@@ -141294,54 +141312,57 @@ function createEffectsPanel(app, root, engine) {
 		animSync();
 	}
 
+	let inspSig = '';
+	let inspRefs = null;
 	function renderInspector() {
+		const sig = selClip ? 'c:' + selClip.id : selKey ? 'k:' + selKey.t : '';
+		// панель свойств пересобирается только при смене выбора: при каждом кадре воспроизведения и при перетаскивании ползунка трогаем лишь значения
+		if (sig === inspSig && inspRefs) {
+			inspRefs.update && inspRefs.update();
+			return;
+		}
+		inspSig = sig;
+		inspRefs = null;
+		buildInspector();
+	}
+	function buildInspector() {
 		inspector.textContent = '';
 		if (selClip) {
 			const c = selClip;
 			const layerDef = getLayerDef(c.layerId);
 			inspector.hidden = false;
 
-			const badge = h('div', { class: 'fx-anim-insp-badge' },
-				h('span', { class: 'ic-wrap', html: icon(layerDef.icon || 'sparkle', 14) }),
-				h('span', { class: 'fx-anim-insp-title' }, layerDef.name)
-			);
-
-			const inStart = h('input', { type: 'number', class: 'num-in', min: 0, max: (st.anim.dur || 8) - 0.2, step: 0.1, value: c.start });
-			inStart.addEventListener('change', () => {
-				engine.animUpdateClip(c.id, { start: Number(inStart.value) || 0 });
-				animSync();
-			});
-
-			const inDur = h('input', { type: 'number', class: 'num-in', min: 0.2, max: st.anim.dur || 8, step: 0.1, value: c.dur });
-			inDur.addEventListener('change', () => {
-				engine.animUpdateClip(c.id, { dur: Number(inDur.value) || 0.2 });
-				animSync();
-			});
-
-			const inFadeIn = h('input', { type: 'number', class: 'num-in', min: 0, max: c.dur, step: 0.1, value: c.fadeIn });
-			inFadeIn.addEventListener('change', () => {
-				engine.animUpdateClip(c.id, { fadeIn: Number(inFadeIn.value) || 0 });
-				animSync();
-			});
-
-			const inFadeOut = h('input', { type: 'number', class: 'num-in', min: 0, max: c.dur, step: 0.1, value: c.fadeOut });
-			inFadeOut.addEventListener('change', () => {
-				engine.animUpdateClip(c.id, { fadeOut: Number(inFadeOut.value) || 0 });
-				animSync();
-			});
-
-			const inAmt = h('input', { type: 'range', class: 'range fx-anim-amt-range', min: 0.05, max: 2.0, step: 0.05, value: c.amount });
-			const inAmtVal = h('span', { class: 'fx-anim-insp-val' }, c.amount.toFixed(2));
-			const syncAmtFill = () => {
-				const pct = ((Number(inAmt.value) - 0.05) / (2.0 - 0.05)) * 100;
-				inAmt.style.setProperty('--p', pct.toFixed(1) + '%');
+			const mkSlider = (label, min, max, step, value, fmt, onInput) => {
+				const inp = h('input', { type: 'range', class: 'range fx-anim-insp-range', min, max, step, value });
+				const val = h('span', { class: 'fx-anim-insp-val' }, fmt(value));
+				const fill = () => inp.style.setProperty('--p', (((Number(inp.value) - Number(inp.min)) / Math.max(1e-6, Number(inp.max) - Number(inp.min))) * 100).toFixed(1) + '%');
+				fill();
+				inp.addEventListener('input', () => {
+					val.textContent = fmt(Number(inp.value));
+					fill();
+					onInput(Number(inp.value));
+				});
+				return {
+					row: h('label', { class: 'fx-anim-insp-slider' }, h('span', { class: 'fx-anim-insp-lab' }, label), inp, val),
+					set: (v, mx) => {
+						if (mx !== undefined) inp.max = mx;
+						if (document.activeElement !== inp) inp.value = v;
+						val.textContent = fmt(Number(inp.value));
+						fill();
+					},
+				};
 			};
-			syncAmtFill();
-			inAmt.addEventListener('input', () => {
-				inAmtVal.textContent = Number(inAmt.value).toFixed(2);
-				syncAmtFill();
-				engine.animUpdateClip(c.id, { amount: Number(inAmt.value) });
-			});
+			const secFmt = (v) => v.toFixed(2) + ' с';
+			const sFadeIn = mkSlider('Вход', 0, c.dur, 0.05, c.fadeIn, secFmt, (v) => engine.animUpdateClip(c.id, { fadeIn: v }));
+			const sFadeOut = mkSlider('Выход', 0, c.dur, 0.05, c.fadeOut, secFmt, (v) => engine.animUpdateClip(c.id, { fadeOut: v }));
+			const sAmt = mkSlider('Сила', 0.05, 2, 0.05, c.amount, (v) => v.toFixed(2), (v) => engine.animUpdateClip(c.id, { amount: v }));
+			inspRefs = {
+				update: () => {
+					sFadeIn.set(c.fadeIn, c.dur);
+					sFadeOut.set(c.fadeOut, c.dur);
+					sAmt.set(c.amount);
+				},
+			};
 
 			const dupBtn = iconButton({
 				icon: 'copy',
@@ -141382,23 +141403,10 @@ function createEffectsPanel(app, root, engine) {
 				}
 			});
 
-			inspector.append(
-				badge,
-				h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Старт:'), inStart, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
-				h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Длина:'), inDur, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
-				h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Вход:'), inFadeIn, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
-				h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Выход:'), inFadeOut, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
-				h('label', { class: 'fx-anim-insp-field fx-anim-insp-amt' }, h('span', {}, 'Сила:'), inAmt, inAmtVal),
-				h('div', { class: 'fx-anim-insp-actions' }, splitBtn, dupBtn, delBtn, closeBtn)
-			);
+			inspector.append(sFadeIn.row, sFadeOut.row, sAmt.row, h('div', { class: 'fx-anim-insp-actions' }, splitBtn, dupBtn, delBtn, closeBtn));
 		} else if (selKey) {
 			const k = selKey;
 			inspector.hidden = false;
-
-			const badge = h('div', { class: 'fx-anim-insp-badge' },
-				h('span', { class: 'ic-wrap', html: icon('video-camera', 14) }),
-				h('span', { class: 'fx-anim-insp-title' }, `Ключ камеры (${k.t.toFixed(1)} с)`)
-			);
 
 			const inT = h('input', { type: 'number', class: 'num-in', min: 0, max: st.anim.dur || 8, step: 0.1, value: k.t });
 			inT.addEventListener('change', () => {
@@ -141441,8 +141449,7 @@ function createEffectsPanel(app, root, engine) {
 			});
 
 			inspector.append(
-				badge,
-				h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Время:'), inT, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
+				h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Время ключа:'), inT, h('span', { class: 'fx-anim-insp-unit' }, 'с')),
 				updBtn,
 				h('div', { class: 'fx-anim-insp-actions' }, delBtn, closeBtn)
 			);
@@ -141766,6 +141773,7 @@ function createEffectsPanel(app, root, engine) {
 		renderInspector();
 
 		if (isDraggingItem) return;
+		clampAnimH();
 
 		const keysStr = (A.keys || []).map((k) => `${k.t}`).join(',');
 		const clipsStr = (A.clips || []).map((c) => `${c.id}:${c.layerId}:${c.start}:${c.dur}:${c.fadeIn}:${c.fadeOut}:${c.amount}`).join(',');
@@ -141776,6 +141784,7 @@ function createEffectsPanel(app, root, engine) {
 			renderRuler();
 			renderKeys();
 			renderFxLanes();
+			clampAnimH();
 		}
 	}
 	app.bus.on('fxanim', animSync);
