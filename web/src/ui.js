@@ -593,17 +593,24 @@ const tw = tip.offsetWidth;
 const th = tip.offsetHeight;
 const GAP = 10;
 const EDGE = 12;
+const sr = (sel) => {
+const sf = el.closest(sel);
+if (!sf) return r;
+const b2 = sf.getBoundingClientRect();
+return { left: b2.left / z, right: b2.right / z, top: b2.top / z, bottom: b2.bottom / z };
+};
 let x, y;
 if (pos === 'right') {
-x = r.right + GAP;
+x = sr('.fx-left, .sidebar, .toolrail').right + GAP;
 y = r.top + (r.height - th) / 2;
 } else if (pos === 'left') {
-x = r.left - tw - GAP;
+x = sr('.fx-left, .sidebar, .toolrail').left - tw - GAP;
 y = r.top + (r.height - th) / 2;
 } else {
+const bar = sr('.topbar, .fx-bar, .vp-dock, .media-bar, .statusbar, .fx-anim');
 x = r.left + (r.width - tw) / 2;
-y = r.bottom + GAP;
-if (y + th > window.innerHeight / z - EDGE) y = r.top - th - GAP;
+y = bar.bottom + GAP;
+if (y + th > window.innerHeight / z - EDGE) y = bar.top - th - GAP;
 }
 x = Math.round(Math.max(EDGE, Math.min(window.innerWidth / z - tw - EDGE, x)));
 y = Math.round(Math.max(EDGE, y));
