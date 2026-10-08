@@ -5631,3 +5631,10 @@ html.booted .stage, html.booted .empty-state { animation: boot-fade 0.9s ease 0.
 .fx-react-name:hover { color: var(--accent-text); }
 .fx-react-off { width: 24px !important; height: 24px !important; color: var(--text-faint); }
 .fx-react-off:hover { color: var(--text); }
+
+/* ================================================================ подсказки в стиле сайта */
+.tooltip { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font: 500 12px/1.35 var(--font); border-radius: 10px; background: rgba(20, 22, 27, 0.92); backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3); color: var(--text); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45); max-width: 300px; transform: translateY(3px); transition: opacity 0.14s var(--ease), transform 0.18s var(--ease); }
+.tooltip.is-on { transform: none; }
+.tooltip[hidden] { display: none; }
+.tip-text { min-width: 0; }
+.tip-key { flex: none; padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-dim); font: 500 11px var(--font); letter-spacing: 0.02em; }

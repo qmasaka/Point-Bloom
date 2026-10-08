@@ -49,6 +49,10 @@ this.app.bus.emit('scene');
 }
 add(obj, parent = this.root, { select = false } = {}) {
 parent.add(obj);
+if (this.holdNew && parent === this.root) {
+obj.visible = false;
+this.holdNew.push(obj);
+}
 obj.traverse((o) => this.app.display.attach(o));
 this.changed();
 if (select) this.select(obj);

@@ -85424,6 +85424,10 @@ class Model {
 
 	add(obj, parent = this.root, { select = false } = {}) {
 		parent.add(obj);
+		if (this.holdNew && parent === this.root) {
+			obj.visible = false;
+			this.holdNew.push(obj);
+		}
 		obj.traverse((o) => this.app.display.attach(o));
 		this.changed();
 		if (select) this.select(obj);
@@ -143147,7 +143151,13 @@ class UI {
 		const show = (el) => {
 			const text = el.dataset.tip;
 			if (!text) return;
-			tip.textContent = text;
+			// горячая клавиша в скобках в конце подсказки показывается отдельной плашкой
+			tip.textContent = '';
+			const m = text.match(/^(.*?)\s*\(([^()]{1,18})\)\s*$/);
+			const looksKey = m && /^(Ctrl|Cmd|Shift|Alt|Esc|Home|Пробел|Space|Enter|Tab|[A-Za-zА-Яа-я0-9?]\b)/.test(m[2]);
+			if (looksKey) {
+				tip.append(h('span', { class: 'tip-text' }, m[1]), ...m[2].split('+').map((k) => h('kbd', { class: 'tip-key' }, k.trim())));
+			} else tip.append(h('span', { class: 'tip-text' }, text));
 			tip.hidden = false;
 			const z = uiZoom();
 			const br = el.getBoundingClientRect();
@@ -143372,9 +143382,23 @@ class UI {
 			}
 			this.busy('Читаю файлы', 0.02);
 			const before = new Set(app.viewport.root.children);
-			const r = await importFiles(app, files, { mode: useMode });
+			// новые объекты сразу прячем: иначе модель мелькает целиком, исчезает и только потом плавно появляется (выглядит как двойной запуск)
+			app.model.holdNew = [];
+			let r;
+			try {
+				r = await importFiles(app, files, { mode: useMode });
+			} catch (e) {
+				for (const o of app.model.holdNew || []) o.visible = true;
+				app.model.holdNew = null;
+				throw e;
+			}
 			// шейдеры и текстуры готовим заранее, пока окно загрузки ещё закрывает сцену: иначе первый кадр с моделью подвисает
+			const held = app.model.holdNew || [];
+			app.model.holdNew = null;
 			const fresh = app.viewport.root.children.filter((c) => !before.has(c) && !c.userData.helper);
+			// объекты возвращаются в сцену полностью прозрачными, прогреваются шейдеры, и только потом идёт проявление
+			this.fadePrepare(fresh);
+			for (const o of held) o.visible = true;
 			await this.warmUp();
 			this.idle();
 			this.reportImport(r);
@@ -143398,6 +143422,23 @@ class UI {
 	}
 
 	/** Новые объекты плавно проявляются: прозрачность от нуля и лёгкий рост, вместо резкого появления */
+	fadePrepare(objs) {
+		if (!objs.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		for (const o of objs) {
+			o.traverse((n) => {
+				if (!(n.isMesh || n.isPoints || n.isLine) || n.userData.helper) return;
+				for (const m of Array.isArray(n.material) ? n.material : [n.material]) {
+					if (!m) continue;
+					if (!m.userData._fade) m.userData._fade = { opacity: m.opacity, transparent: m.transparent, depthWrite: m.depthWrite };
+					m.transparent = true;
+					m.depthWrite = false;
+					m.opacity = 0;
+					m.needsUpdate = true;
+				}
+			});
+		}
+	}
+
 	revealObjects(objs) {
 		if (!objs.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 		const vp = this.app.viewport;
@@ -143420,7 +143461,7 @@ class UI {
 			const t = Math.min(1, (now - t0) / dur);
 			const e = ease(t);
 			for (const m of mats()) {
-				if (!saved.has(m)) saved.set(m, { opacity: m.opacity, transparent: m.transparent, depthWrite: m.depthWrite });
+				if (!saved.has(m)) saved.set(m, m.userData._fade || { opacity: m.opacity, transparent: m.transparent, depthWrite: m.depthWrite });
 				const o = saved.get(m);
 				m.transparent = true;
 				m.depthWrite = t >= 1 ? o.depthWrite : false;
@@ -143434,6 +143475,7 @@ class UI {
 					m.transparent = o.transparent;
 					m.depthWrite = o.depthWrite;
 					m.needsUpdate = true;
+					delete m.userData._fade;
 				}
 			}
 			vp.invalidate();
