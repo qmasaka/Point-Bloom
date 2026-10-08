@@ -394,6 +394,15 @@ c.insp.classList.toggle('is-selected', c.def.id === id);
 const ANIM_LAYERS = ['curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'gravity'];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
+const animQuickBtn = button({
+label: 'Секвенсор анимации',
+icon: 'film-strip',
+variant: 'secondary',
+cls: 'btn-block fx-anim-quick-btn',
+title: 'Открыть таймлайн для анимации эффектов и камеры',
+onClick: () => toggleAnim()
+});
+left.append(animQuickBtn);
 for (const grp of FX_GROUP_NAMES) {
 const folder = h('div', { class: 'fx-folder' });
 const fhead = h('button', { type: 'button', class: 'fx-folder-head', 'aria-expanded': 'true' }, h('span', { class: 'fx-folder-caret', html: icon('caret-down', 13) }), h('span', { class: 'fx-folder-name' }, grp), h('span', { class: 'fx-folder-n' }));
@@ -749,8 +758,15 @@ const rotate = switchRow('Вращать форму', { value: st.look.autoRotat
 const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
 const rotSpeedRow = field('Скорость вращения', rotSpeed.el);
 const syncRotate = () => { rotSpeedRow.hidden = !st.look.autoRotate; };
-syncRotate();
-const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Объём (тень)', shade.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, rotSpeedRow, hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Производительность'), autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), perfHint, h('div', { class: 'fx-sub' }, 'Сохранить анимацию'), field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
+const animTimelineOpenBtn = button({
+label: 'Открыть секвенсор анимации',
+icon: 'film-strip',
+variant: 'primary',
+cls: 'btn-block',
+title: 'Открыть мультитрековый таймлайн анимации',
+onClick: () => toggleAnim(true)
+});
+const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Объём (тень)', shade.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, rotSpeedRow, hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Производительность'), autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), perfHint, h('div', { class: 'fx-sub' }, 'Секвенсор и запись анимации'), animTimelineOpenBtn, field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 const secMedia = createMediaPanel(app, null, { fx: true }).section;
 const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
 const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
@@ -795,7 +811,14 @@ const barMeters = makeMeters(true);
 const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (MP4)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });
 const recTime = h('span', { class: 'fx-rec-time' });
 const animPanel = h('div', { class: 'fx-anim vp-pill', hidden: true, role: 'region', 'aria-label': 'Секвенсор анимации' });
-const keyAnimBtn = iconButton({ icon: 'film-strip', title: 'Анимация: секвенсор эффектов и ключи камеры', onClick: () => toggleAnim() });
+const keyAnimBtn = button({
+label: 'Анимация',
+icon: 'film-strip',
+variant: 'secondary',
+cls: 'fx-bar-anim-btn',
+title: 'Секвенсор анимации: таймлайн эффектов и ключи камеры',
+onClick: () => toggleAnim()
+});
 let selKey = null;
 let selClip = null;
 let isScrubbing = false;
@@ -1036,6 +1059,7 @@ bindScrubbing(camTrackBody);
 toggleAnim = function (on = animPanel.hidden) {
 animPanel.hidden = !on;
 keyAnimBtn.classList.toggle('is-active', on);
+animQuickBtn.classList.toggle('is-active', on);
 if (!on) {
 engine.animPause();
 closeMenus();

@@ -2677,6 +2677,12 @@ body {
 	.fx-track {
 		display: none;
 	}
+	.fx-bar .fx-bar-anim-btn .btn-label {
+		display: none;
+	}
+	.fx-bar .fx-bar-anim-btn {
+		padding: 0 8px;
+	}
 	.vp-dock {
 		bottom: 8px;
 	}
@@ -3285,6 +3291,64 @@ body {
 		opacity: 0;
 		transform: translate(-50%, 8px);
 	}
+}
+
+/* Кнопка запуска секвенсора в нижнем баре */
+.fx-bar .fx-bar-anim-btn {
+	height: 32px;
+	padding: 0 12px;
+	gap: 6px;
+	border-radius: 999px !important;
+	font-size: 12px;
+	font-weight: 500;
+	display: inline-flex;
+	align-items: center;
+	background: rgba(229, 138, 69, 0.16);
+	border: 1px solid rgba(229, 138, 69, 0.45);
+	color: var(--text);
+	cursor: pointer;
+	white-space: nowrap;
+	transition: all 0.2s var(--ease);
+}
+.fx-bar .fx-bar-anim-btn:hover {
+	background: rgba(229, 138, 69, 0.28);
+	border-color: rgba(229, 138, 69, 0.7);
+	color: #fff;
+}
+.fx-bar .fx-bar-anim-btn.is-active {
+	background: var(--accent);
+	color: var(--accent-ink);
+	border-color: var(--accent);
+	box-shadow: 0 0 14px rgba(229, 138, 69, 0.4);
+}
+
+/* Кнопка быстрого запуска в левой панели эффектов */
+.fx-anim-quick-btn {
+	margin: 8px 10px 10px;
+	width: calc(100% - 20px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	height: 34px;
+	border-radius: 10px;
+	font-size: 12.5px;
+	font-weight: 500;
+	background: rgba(229, 138, 69, 0.12);
+	border: 1px solid rgba(229, 138, 69, 0.35);
+	color: var(--text);
+	transition: all 0.2s var(--ease);
+	box-sizing: border-box;
+}
+.fx-anim-quick-btn:hover {
+	background: rgba(229, 138, 69, 0.24);
+	border-color: rgba(229, 138, 69, 0.65);
+	color: #fff;
+}
+.fx-anim-quick-btn.is-active {
+	background: var(--accent);
+	color: var(--accent-ink);
+	border-color: var(--accent);
 }
 
 /* 1. Верхняя панель управления (Header Toolbar) */
