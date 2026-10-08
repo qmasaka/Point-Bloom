@@ -2587,6 +2587,7 @@ export class EffectsEngine {
 		// как только в сцене что-то появилось, в паузу готовим шейдеры эффектов
 		app.bus.on('scene', () => {
 			clearTimeout(this._warmT);
+			if (!this.active) this.cache.clear();
 			this._warmT = setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(() => this.prewarm()), 1200);
 		});
 		app.bus.on('pointtex', () => {
@@ -4498,7 +4499,22 @@ export class EffectsEngine {
 
 	/** Заранее собирает шейдер эффектов, пока вы работаете в редакторе: первый вход в «Эффекты» не подвисает на компиляции (на Windows она идёт секунды) */
 	async prewarm() {
-		if (this._warmMat || this.active) return;
+		if (this.active) return;
+		// облако точек модели тоже считаем заранее: при входе остаётся только построить буферы
+		try {
+			if (this.hasModel && !this.pm.ready) {
+				const saved = this.state.count;
+				this.state.count = Math.max(20000, Math.min(2000000, this.app.settings.point.surfaceCount));
+				try {
+					await this._cloudFor('model');
+				} finally {
+					this.state.count = saved;
+				}
+			}
+		} catch (e) {
+			/* не обязательно */
+		}
+		if (this._warmMat) return;
 		try {
 			const vp = this.app.viewport;
 			const m = new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: frag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} });
@@ -5403,7 +5419,7 @@ export class EffectsEngine {
 		document.getElementById('app').classList.add('fx-mode');
 		// модель из редактора (меш или облако точек) важнее любого примитива
 		this.state.source = this.pm.ready ? 'media' : this.hasModel ? 'model' : this.state.source === 'model' ? 'sphere' : this.state.source;
-		app.ui.busy('Готовлю частицы', 0.3);
+		// окна загрузки при переключении режимов нет: сцена на это время плавно гаснет, а облако уже готово заранее
 		try {
 			await this._build();
 		} catch (e) {

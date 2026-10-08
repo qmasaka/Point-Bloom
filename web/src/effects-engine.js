@@ -2458,6 +2458,7 @@ this._D = { key: null, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, g
 app.bus.on('settings', () => this._histSoon());
 app.bus.on('scene', () => {
 clearTimeout(this._warmT);
+if (!this.active) this.cache.clear();
 this._warmT = setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(() => this.prewarm()), 1200);
 });
 app.bus.on('pointtex', () => {
@@ -4177,7 +4178,20 @@ const L = this._scopeLine;
 if (L) L.visible = order === 'walk' && S.line > 0.01;
 }
 async prewarm() {
-if (this._warmMat || this.active) return;
+if (this.active) return;
+try {
+if (this.hasModel && !this.pm.ready) {
+const saved = this.state.count;
+this.state.count = Math.max(20000, Math.min(2000000, this.app.settings.point.surfaceCount));
+try {
+await this._cloudFor('model');
+} finally {
+this.state.count = saved;
+}
+}
+} catch (e) {
+}
+if (this._warmMat) return;
 try {
 const vp = this.app.viewport;
 const m = new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: frag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} });
@@ -5006,7 +5020,6 @@ vp.fxHide = true;
 if (app.nav.ortho) app.nav.setOrtho(false);
 document.getElementById('app').classList.add('fx-mode');
 this.state.source = this.pm.ready ? 'media' : this.hasModel ? 'model' : this.state.source === 'model' ? 'sphere' : this.state.source;
-app.ui.busy('Готовлю частицы', 0.3);
 try {
 await this._build();
 } catch (e) {
