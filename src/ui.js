@@ -694,19 +694,23 @@ export class UI {
 			const pos = el.dataset.tipPos || 'bottom';
 			const tw = tip.offsetWidth;
 			const th = tip.offsetHeight;
+			// везде один и тот же зазор от элемента до подсказки, положение по целым пикселям
+			const GAP = 10;
+			const EDGE = 12;
 			let x, y;
 			if (pos === 'right') {
-				x = r.right + 10;
+				x = r.right + GAP;
 				y = r.top + (r.height - th) / 2;
 			} else if (pos === 'left') {
-				x = r.left - tw - 10;
+				x = r.left - tw - GAP;
 				y = r.top + (r.height - th) / 2;
 			} else {
 				x = r.left + (r.width - tw) / 2;
-				y = r.bottom + 8;
-				if (y + th > window.innerHeight / z - 8) y = r.top - th - 8;
+				y = r.bottom + GAP;
+				if (y + th > window.innerHeight / z - EDGE) y = r.top - th - GAP;
 			}
-			x = Math.max(8, Math.min(window.innerWidth / z - tw - 8, x));
+			x = Math.round(Math.max(EDGE, Math.min(window.innerWidth / z - tw - EDGE, x)));
+			y = Math.round(Math.max(EDGE, y));
 			tip.style.left = x + 'px';
 			tip.style.top = y + 'px';
 			requestAnimationFrame(() => tip.classList.add('is-on'));
@@ -754,17 +758,29 @@ export class UI {
 			bar.classList.remove('is-indeterminate');
 			bar.style.width = Math.max(4, Math.min(100, progress * 100)) + '%';
 		}
-		if (!box.hidden) return;
+		clearTimeout(this.busyHide);
+		if (!box.hidden) {
+			box.classList.add('is-on');
+			return;
+		}
 		if (this.busyTimer) return;
+		// окно загрузки показывается, только если работа идёт заметно долго, и появляется плавно: короткая загрузка не мигает экраном
 		this.busyTimer = setTimeout(() => {
 			this.busyTimer = null;
 			box.hidden = false;
-		}, 140);
+			requestAnimationFrame(() => box.classList.add('is-on'));
+		}, 420);
 	}
 	idle() {
 		clearTimeout(this.busyTimer);
 		this.busyTimer = null;
-		$('#busy').hidden = true;
+		const box = $('#busy');
+		if (box.hidden) return;
+		box.classList.remove('is-on');
+		clearTimeout(this.busyHide);
+		this.busyHide = setTimeout(() => {
+			if (!box.classList.contains('is-on')) box.hidden = true;
+		}, 260);
 	}
 
 	// ------------------------------------------------------------- диалоги

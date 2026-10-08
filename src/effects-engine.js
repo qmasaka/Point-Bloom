@@ -4729,7 +4729,9 @@ export class EffectsEngine {
 			}
 			this.app.ui.busy('Готовлю частицы', 0.2);
 			try {
-				await this._build();
+				// новая модель плавно перетекает из прежней формы: полная пересборка точек гасила сцену на кадр, и экран мигал
+				if (this.geometry && this.hasModel && this.state.source === 'model') await this.setSource('model');
+				else await this._build();
 			} catch (e) {
 				console.error(e);
 			} finally {

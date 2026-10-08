@@ -4372,7 +4372,8 @@ this.syncLookFromPoints();
 }
 this.app.ui.busy('Готовлю частицы', 0.2);
 try {
-await this._build();
+if (this.geometry && this.hasModel && this.state.source === 'model') await this.setSource('model');
+else await this._build();
 } catch (e) {
 console.error(e);
 } finally {
