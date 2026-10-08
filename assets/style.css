@@ -5492,3 +5492,31 @@ body.is-resizing-h * {
 .fx-mode .fx-anim-ruler-row { position: static; }
 .fx-mode .fx-anim .fx-anim-cam-btn .btn-label { font-size: 12px; }
 .fx-mode .fx-anim .fx-anim-cam-btn svg { color: var(--accent); }
+
+/* ================================================================ шкала времени как в профессиональном редакторе, зум и спокойная кнопка «Анимация» */
+.fx-anim-stage { overflow-x: auto; overflow-y: hidden; }
+.fx-anim-lanes-scroll { overflow: visible; }
+.fx-anim-stage .fx-anim-lane-body, .fx-anim-stage .fx-anim-ruler-body { flex: 0 0 calc((100% - var(--fx-head-w, 130px)) * var(--fx-anim-zoom, 1)); min-width: 0; }
+.fx-anim-stage .fx-anim-track-label { position: sticky; left: 0; z-index: 12; background: #15171c; }
+.fx-anim-stage::-webkit-scrollbar { height: 8px; }
+.fx-anim-stage::-webkit-scrollbar-track { background: transparent; }
+.fx-anim-stage::-webkit-scrollbar-thumb { background: var(--line-strong); border: 2px solid transparent; border-radius: 4px; background-clip: padding-box; }
+.fx-anim-stage::-webkit-scrollbar-thumb:hover { background: var(--text-faint); background-clip: padding-box; }
+.fx-mode .fx-anim-ruler-body { height: 26px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.fx-mode .fx-anim-ruler-row { height: 32px; }
+.fx-mode .fx-anim-tick { background: rgba(255, 255, 255, 0.14); top: auto; bottom: 0; height: 5px; }
+.fx-mode .fx-anim-tick.is-mid { height: 8px; background: rgba(255, 255, 255, 0.24); }
+.fx-mode .fx-anim-tick.is-major { height: 100%; background: rgba(255, 255, 255, 0.28); }
+.fx-mode .fx-anim-tick.is-end-mark { height: 100%; background: rgba(229, 138, 69, 0.55); }
+.fx-mode .fx-anim-tick-label { top: 3px; left: 5px; font-family: var(--font); font-size: 11px; font-weight: 500; color: var(--text-dim); letter-spacing: 0.01em; }
+.fx-mode .fx-anim-tick-label.is-end { left: auto !important; right: 5px !important; color: var(--accent-text); }
+.fx-mode .fx-anim-needle-tag { position: absolute; top: 4px; left: 7px; padding: 1px 6px; border-radius: 999px; background: #fff; color: #14161b; font: 600 10.5px var(--font); font-variant-numeric: tabular-nums; white-space: nowrap; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); }
+.fx-mode .fx-anim-playhead-line { top: 26px; }
+/* кнопка «Анимация» в нижней панели: спокойная, без оранжевой заливки */
+.fx-bar .fx-bar-anim-btn { background: rgba(255, 255, 255, 0.06); border: 1px solid transparent; color: var(--text-dim); }
+.fx-bar .fx-bar-anim-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: transparent; color: var(--text); }
+.fx-bar .fx-bar-anim-btn.is-active { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.18); color: var(--text); box-shadow: none; }
+.fx-bar .fx-bar-anim-btn.is-active svg { color: var(--accent); }
+/* строки шкалы шире окна при зуме: тогда подписи дорожек остаются на месте у левого края */
+.fx-anim-stage .fx-anim-lane, .fx-anim-stage .fx-anim-ruler-row { width: calc(var(--fx-head-w, 130px) + (100% - var(--fx-head-w, 130px)) * var(--fx-anim-zoom, 1)); }
+.fx-anim-stage .fx-anim-lanes-scroll { width: calc(var(--fx-head-w, 130px) + (100% - var(--fx-head-w, 130px)) * var(--fx-anim-zoom, 1)); }

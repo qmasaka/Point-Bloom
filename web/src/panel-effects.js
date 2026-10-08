@@ -917,27 +917,37 @@ const aTimeSep = h('span', { class: 'fx-anim-t-sep' }, '/');
 const aTimeTotal = h('span', { class: 'fx-anim-t-total' }, '00:08.0');
 const aTimecode = h('div', { class: 'fx-anim-timecode' }, aTimeCur, aTimeSep, aTimeTotal);
 let animZoom = 1;
+const ZMIN = 1;
+const ZMAX = 24;
 const zoomBtnOut = iconButton({
 icon: 'minus',
-title: 'Уменьшить масштаб шкалы времени',
+title: 'Уменьшить масштаб шкалы времени (Ctrl + колесо)',
 size: 11,
 cls: 'fx-anim-zoom-btn',
-onClick: () => setZoom(animZoom <= 1.5 ? 1 : animZoom <= 2 ? 1.5 : 2)
+onClick: () => setZoom(animZoom / 1.6)
 });
 const zoomVal = h('span', { class: 'fx-anim-zoom-val' }, '1x');
 const zoomBtnIn = iconButton({
 icon: 'plus',
-title: 'Увеличить масштаб шкалы времени',
+title: 'Увеличить масштаб шкалы времени (Ctrl + колесо)',
 size: 11,
 cls: 'fx-anim-zoom-btn',
-onClick: () => setZoom(animZoom < 1.5 ? 1.5 : animZoom < 2 ? 2 : 3)
+onClick: () => setZoom(animZoom * 1.6)
 });
-const zoomBox = h('div', { class: 'fx-anim-zoom-box', title: 'Масштаб времени (секунды)' }, zoomBtnOut, zoomVal, zoomBtnIn);
-function setZoom(z) {
+const zoomBox = h('div', { class: 'fx-anim-zoom-box', title: 'Масштаб шкалы времени. Двойной клик возвращает 1x' }, zoomBtnOut, zoomVal, zoomBtnIn);
+zoomVal.addEventListener('dblclick', () => setZoom(1));
+function setZoom(z, anchor) {
+z = Math.max(ZMIN, Math.min(ZMAX, z));
+const dur = st.anim.dur || 8;
+const headW = parseFloat(getComputedStyle(stage).getPropertyValue('--fx-head-w')) || 130;
+const viewW = stage.clientWidth - headW;
+const t = anchor ? anchor.t : engine.animT;
+const xInView = anchor ? anchor.x : Math.max(0, Math.min(viewW, (t / dur) * viewW * animZoom - stage.scrollLeft));
 animZoom = z;
-zoomVal.textContent = z + 'x';
+zoomVal.textContent = (Math.round(z * 10) / 10) + 'x';
 stage.style.setProperty('--fx-anim-zoom', z);
 stage.classList.toggle('is-zoomed', z > 1);
+stage.scrollLeft = Math.max(0, (t / dur) * viewW * z - xInView);
 renderRuler();
 animSync();
 }
@@ -1154,7 +1164,8 @@ const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, quickWrap, aSet
 const stage = h('div', { class: 'fx-anim-stage' });
 const rulerTitle = h('div', { class: 'fx-anim-track-label fx-anim-ruler-title' }, 'Время');
 const rulerTicks = h('div', { class: 'fx-anim-ruler-ticks' });
-const rulerNeedle = h('div', { class: 'fx-anim-playhead-needle' });
+const needleTag = h('span', { class: 'fx-anim-needle-tag' }, '00:00.0');
+const rulerNeedle = h('div', { class: 'fx-anim-playhead-needle' }, needleTag);
 const rulerBody = h('div', { class: 'fx-anim-ruler-body' }, rulerTicks, rulerNeedle);
 const rulerRow = h('div', { class: 'fx-anim-ruler-row' }, rulerTitle, rulerBody);
 const camTitle = h('div', { class: 'fx-anim-track-label fx-anim-cam-label' },
@@ -1180,6 +1191,26 @@ button({ label: '+ Волны', variant: 'primary', cls: 'btn-sm', onClick: () =
 const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, fxLanesWrap, emptyHint);
 const playheadLine = h('div', { class: 'fx-anim-playhead-line' });
 stage.append(rulerRow, lanesScroll, playheadLine);
+let rulerRaf = 0;
+new ResizeObserver(() => {
+cancelAnimationFrame(rulerRaf);
+rulerRaf = requestAnimationFrame(() => renderRuler());
+}).observe(rulerBody);
+stage.addEventListener(
+'wheel',
+(e) => {
+if (!(e.ctrlKey || e.metaKey)) return;
+e.preventDefault();
+const dur = st.anim.dur || 8;
+const headW = parseFloat(getComputedStyle(stage).getPropertyValue('--fx-head-w')) || 130;
+const r = stage.getBoundingClientRect();
+const x = Math.max(0, Math.min(stage.clientWidth - headW, e.clientX - r.left - headW));
+const viewW = stage.clientWidth - headW;
+const t = Math.max(0, Math.min(dur, ((stage.scrollLeft + x) / (viewW * animZoom)) * dur));
+setZoom(animZoom * Math.exp(-e.deltaY * 0.0022), { t, x });
+},
+{ passive: false }
+);
 const inspector = h('div', { class: 'fx-anim-inspector', hidden: true });
 const body = h('div', { class: 'fx-anim-body' }, shelf, stage, inspector);
 animPanel.append(resizeHandle, topBar, body);
@@ -1674,20 +1705,38 @@ const lane = h('div', { class: 'fx-anim-lane fx-anim-fx-lane' }, laneTitle, lane
 fxLanesWrap.append(lane);
 }
 }
+function fmtRuler(t, step) {
+const m = Math.floor(t / 60);
+const sec = t - m * 60;
+if (step >= 1) return m + ':' + String(Math.round(sec)).padStart(2, '0');
+const d = step >= 0.1 ? 1 : 2;
+return m + ':' + sec.toFixed(d).padStart(d + 3, '0');
+}
+const RULER_STEPS = [0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120];
+const RULER_MINOR = { 0.05: 5, 0.1: 5, 0.2: 4, 0.5: 5, 1: 5, 2: 4, 5: 5, 10: 5, 15: 3, 30: 6, 60: 6, 120: 4 };
 function renderRuler() {
 const durTotal = st.anim.dur || 8;
 rulerTicks.textContent = '';
-const nSecs = Math.max(1, Math.round(durTotal));
-const step = nSecs <= 8 ? 1 : nSecs <= 24 ? 2 : nSecs <= 60 ? 5 : 10;
-for (let s = 0; s <= nSecs; s += step) {
-const pct = (s / durTotal) * 100;
-if (pct > 100) continue;
-const isEnd = pct >= 88 || s === nSecs;
-const tick = h('div', { class: 'fx-anim-tick', style: { left: Math.min(100, Math.max(0, pct)) + '%' } },
-h('span', { class: 'fx-anim-tick-label' + (isEnd ? ' is-end' : '') }, `${s}с`)
-);
-rulerTicks.append(tick);
+const w = rulerBody.getBoundingClientRect().width || 600;
+const pxPerSec = w / durTotal;
+const major = RULER_STEPS.find((x) => x * pxPerSec >= 84) || 120;
+const div = RULER_MINOR[major];
+const minor = major / div;
+const frag = document.createDocumentFragment();
+const eps = 1e-6;
+const total = Math.floor(durTotal / minor + eps);
+for (let i = 0; i <= total; i++) {
+const t = Math.round(i * minor * 1000) / 1000;
+const isMajor = i % div === 0;
+if (!isMajor && minor * pxPerSec < 7) continue;
+const mid = !isMajor && div % 2 === 0 && i % (div / 2) === 0;
+const tick = h('div', { class: 'fx-anim-tick' + (isMajor ? ' is-major' : mid ? ' is-mid' : ''), style: { left: (t / durTotal) * 100 + '%' } });
+if (isMajor) tick.append(h('span', { class: 'fx-anim-tick-label' }, fmtRuler(t, major)));
+frag.append(tick);
 }
+const end = h('div', { class: 'fx-anim-tick is-end-mark', style: { left: '100%' } }, h('span', { class: 'fx-anim-tick-label is-end' }, fmtRuler(durTotal, Math.min(major, 1))));
+frag.append(end);
+rulerTicks.append(frag);
 }
 function animSync() {
 const A = st.anim;
@@ -1695,7 +1744,8 @@ const durTotal = A.dur || 8;
 const frac = durTotal ? Math.min(1, Math.max(0, engine.animT / durTotal)) : 0;
 const pct = (frac * 100).toFixed(2) + '%';
 rulerNeedle.style.left = pct;
-playheadLine.style.left = `calc(var(--fx-head-w, 130px) + (100% - var(--fx-head-w, 130px)) * ${frac})`;
+playheadLine.style.left = `calc(var(--fx-head-w, 130px) + (100% - var(--fx-head-w, 130px)) * ${(frac * animZoom).toFixed(5)})`;
+needleTag.textContent = formatTimecode(engine.animT);
 aTimeCur.textContent = formatTimecode(engine.animT);
 aTimeTotal.textContent = formatTimecode(durTotal);
 aPlay.textContent = '';
