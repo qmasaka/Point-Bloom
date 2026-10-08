@@ -5572,3 +5572,12 @@ body.is-resizing-h * {
 /* родные стрелки числовых полей на всём сайте скрыты: вместо них свои кнопки или ввод с клавиатуры */
 input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* поле длины: компактная капсула, число, «с» и кнопки на одной линии */
+.fx-mode .fx-anim .fx-anim-dur-box { display: inline-flex; align-items: center; gap: 0; height: 32px; padding: 0 5px 0 13px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); }
+.fx-mode .fx-anim .fx-anim-dur { line-height: 1; font-size: 13px !important; height: 100% !important; align-self: stretch; }
+.fx-mode .fx-anim .fx-anim-dur-unit { margin: 0 0 0 3px; font-size: 13px; line-height: 1; color: var(--text-dim); }
+.fx-mode .fx-anim .fx-anim-stepper { margin-left: 5px; gap: 0; }
+.fx-mode .fx-anim .fx-anim-step { width: 20px; height: 13px; border-radius: 4px; }
+.fx-mode .fx-anim .fx-anim-dur-box { height: 28px; }
+.fx-mode .fx-anim .fx-anim-step { height: 12px; }

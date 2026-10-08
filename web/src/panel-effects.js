@@ -951,7 +951,7 @@ stage.scrollLeft = Math.max(0, (t / dur) * viewW * z - xInView);
 renderRuler();
 animSync();
 }
-const aTransport = h('div', { class: 'fx-anim-transport' }, aPlay, aRew, aTimecode, zoomBox);
+const aTransport = h('div', { class: 'fx-anim-transport' }, aPlay, aTimecode, zoomBox);
 const shelf = h('div', { class: 'fx-anim-shelf', hidden: true });
 let currentShelf = null;
 const closeShelf = () => {

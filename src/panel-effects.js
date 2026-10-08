@@ -1008,7 +1008,7 @@ export function createEffectsPanel(app, root, engine) {
 		animSync();
 	}
 
-	const aTransport = h('div', { class: 'fx-anim-transport' }, aPlay, aRew, aTimecode, zoomBox);
+	const aTransport = h('div', { class: 'fx-anim-transport' }, aPlay, aTimecode, zoomBox);
 
 	// Встроенная интерактивная полка сценариев и добавления эффектов
 	const shelf = h('div', { class: 'fx-anim-shelf', hidden: true });
