@@ -134268,6 +134268,1450 @@ function rgba(hex, a) {
 }
 
 };
+__defs['vendor/three/addons/lines/LineSegmentsGeometry.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'LineSegmentsGeometry', () => LineSegmentsGeometry);
+const { Box3, Float32BufferAttribute, InstancedBufferGeometry, InstancedInterleavedBuffer, InterleavedBufferAttribute, Sphere, Vector3, WireframeGeometry } = __req('vendor/three/build/three.module.js');
+
+const _box = new Box3();
+const _vector = new Vector3();
+
+/**
+ * A series of vertex pairs, forming line segments.
+ *
+ * This is used in {@link LineSegments2} to describe the shape.
+ *
+ * @augments InstancedBufferGeometry
+ * @three_import import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
+ */
+class LineSegmentsGeometry extends InstancedBufferGeometry {
+
+	/**
+	 * Constructs a new line segments geometry.
+	 */
+	constructor() {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isLineSegmentsGeometry = true;
+
+		this.type = 'LineSegmentsGeometry';
+
+		const positions = [ - 1, 2, 0, 1, 2, 0, - 1, 1, 0, 1, 1, 0, - 1, 0, 0, 1, 0, 0, - 1, - 1, 0, 1, - 1, 0 ];
+		const uvs = [ - 1, 2, 1, 2, - 1, 1, 1, 1, - 1, - 1, 1, - 1, - 1, - 2, 1, - 2 ];
+		const index = [ 0, 2, 1, 2, 3, 1, 2, 4, 3, 4, 5, 3, 4, 6, 5, 6, 7, 5 ];
+
+		this.setIndex( index );
+		this.setAttribute( 'position', new Float32BufferAttribute( positions, 3 ) );
+		this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
+
+	}
+
+	/**
+	 * Applies the given 4x4 transformation matrix to the geometry.
+	 *
+	 * @param {Matrix4} matrix - The matrix to apply.
+	 * @return {LineSegmentsGeometry} A reference to this instance.
+	 */
+	applyMatrix4( matrix ) {
+
+		const start = this.attributes.instanceStart;
+		const end = this.attributes.instanceEnd;
+
+		if ( start !== undefined ) {
+
+			start.applyMatrix4( matrix );
+
+			end.applyMatrix4( matrix );
+
+			start.needsUpdate = true;
+
+		}
+
+		if ( this.boundingBox !== null ) {
+
+			this.computeBoundingBox();
+
+		}
+
+		if ( this.boundingSphere !== null ) {
+
+			this.computeBoundingSphere();
+
+		}
+
+		return this;
+
+	}
+
+	/**
+	 * Sets the given line positions for this geometry. The length must be a multiple of six since
+	 * each line segment is defined by a start end vertex in the pattern `(xyz xyz)`.
+	 *
+	 * @param {Float32Array|Array<number>} array - The position data to set.
+	 * @return {LineSegmentsGeometry} A reference to this geometry.
+	 */
+	setPositions( array ) {
+
+		let lineSegments;
+
+		if ( array instanceof Float32Array ) {
+
+			lineSegments = array;
+
+		} else if ( Array.isArray( array ) ) {
+
+			lineSegments = new Float32Array( array );
+
+		}
+
+		const instanceBuffer = new InstancedInterleavedBuffer( lineSegments, 6, 1 ); // xyz, xyz
+
+		this.setAttribute( 'instanceStart', new InterleavedBufferAttribute( instanceBuffer, 3, 0 ) ); // xyz
+		this.setAttribute( 'instanceEnd', new InterleavedBufferAttribute( instanceBuffer, 3, 3 ) ); // xyz
+
+		this.instanceCount = this.attributes.instanceStart.count;
+
+		//
+
+		this.computeBoundingBox();
+		this.computeBoundingSphere();
+
+		return this;
+
+	}
+
+	/**
+	 * Sets the given line colors for this geometry. The length must be a multiple of six since
+	 * each line segment is defined by a start end color in the pattern `(rgb rgb)`.
+	 *
+	 * @param {Float32Array|Array<number>} array - The position data to set.
+	 * @return {LineSegmentsGeometry} A reference to this geometry.
+	 */
+	setColors( array ) {
+
+		let colors;
+
+		if ( array instanceof Float32Array ) {
+
+			colors = array;
+
+		} else if ( Array.isArray( array ) ) {
+
+			colors = new Float32Array( array );
+
+		}
+
+		const instanceColorBuffer = new InstancedInterleavedBuffer( colors, 6, 1 ); // rgb, rgb
+
+		this.setAttribute( 'instanceColorStart', new InterleavedBufferAttribute( instanceColorBuffer, 3, 0 ) ); // rgb
+		this.setAttribute( 'instanceColorEnd', new InterleavedBufferAttribute( instanceColorBuffer, 3, 3 ) ); // rgb
+
+		return this;
+
+	}
+
+	/**
+	 * Setups this line segments geometry from the given wireframe geometry.
+	 *
+	 * @param {WireframeGeometry} geometry - The geometry that should be used as a data source for this geometry.
+	 * @return {LineSegmentsGeometry} A reference to this geometry.
+	 */
+	fromWireframeGeometry( geometry ) {
+
+		this.setPositions( geometry.attributes.position.array );
+
+		return this;
+
+	}
+
+	/**
+	 * Setups this line segments geometry from the given edges geometry.
+	 *
+	 * @param {EdgesGeometry} geometry - The geometry that should be used as a data source for this geometry.
+	 * @return {LineSegmentsGeometry} A reference to this geometry.
+	 */
+	fromEdgesGeometry( geometry ) {
+
+		this.setPositions( geometry.attributes.position.array );
+
+		return this;
+
+	}
+
+	/**
+	 * Setups this line segments geometry from the given mesh.
+	 *
+	 * @param {Mesh} mesh - The mesh geometry that should be used as a data source for this geometry.
+	 * @return {LineSegmentsGeometry} A reference to this geometry.
+	 */
+	fromMesh( mesh ) {
+
+		this.fromWireframeGeometry( new WireframeGeometry( mesh.geometry ) );
+
+		// set colors, maybe
+
+		return this;
+
+	}
+
+	/**
+	 * Setups this line segments geometry from the given line segments.
+	 *
+	 * @param {LineSegments} lineSegments - The line segments that should be used as a data source for this geometry.
+	 * Assumes the source geometry is not using indices.
+	 * @return {LineSegmentsGeometry} A reference to this geometry.
+	 */
+	fromLineSegments( lineSegments ) {
+
+		const geometry = lineSegments.geometry;
+
+		this.setPositions( geometry.attributes.position.array ); // assumes non-indexed
+
+		// set colors, maybe
+
+		return this;
+
+	}
+
+	computeBoundingBox() {
+
+		if ( this.boundingBox === null ) {
+
+			this.boundingBox = new Box3();
+
+		}
+
+		const start = this.attributes.instanceStart;
+		const end = this.attributes.instanceEnd;
+
+		if ( start !== undefined && end !== undefined ) {
+
+			this.boundingBox.setFromBufferAttribute( start );
+
+			_box.setFromBufferAttribute( end );
+
+			this.boundingBox.union( _box );
+
+		}
+
+	}
+
+	computeBoundingSphere() {
+
+		if ( this.boundingSphere === null ) {
+
+			this.boundingSphere = new Sphere();
+
+		}
+
+		if ( this.boundingBox === null ) {
+
+			this.computeBoundingBox();
+
+		}
+
+		const start = this.attributes.instanceStart;
+		const end = this.attributes.instanceEnd;
+
+		if ( start !== undefined && end !== undefined ) {
+
+			const center = this.boundingSphere.center;
+
+			this.boundingBox.getCenter( center );
+
+			let maxRadiusSq = 0;
+
+			for ( let i = 0, il = start.count; i < il; i ++ ) {
+
+				_vector.fromBufferAttribute( start, i );
+				maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( _vector ) );
+
+				_vector.fromBufferAttribute( end, i );
+				maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( _vector ) );
+
+			}
+
+			this.boundingSphere.radius = Math.sqrt( maxRadiusSq );
+
+			if ( isNaN( this.boundingSphere.radius ) ) {
+
+				console.error( 'THREE.LineSegmentsGeometry.computeBoundingSphere(): Computed radius is NaN. The instanced position data is likely to have NaN values.', this );
+
+			}
+
+		}
+
+	}
+
+	toJSON() {
+
+		// todo
+
+	}
+
+}
+
+
+};
+__defs['vendor/three/addons/lines/LineMaterial.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'LineMaterial', () => LineMaterial);
+const { ShaderLib, ShaderMaterial, UniformsLib, UniformsUtils, Vector2 } = __req('vendor/three/build/three.module.js');
+
+UniformsLib.line = {
+
+	worldUnits: { value: 1 },
+	linewidth: { value: 1 },
+	resolution: { value: new Vector2() },
+	dashOffset: { value: 0 },
+	dashScale: { value: 1 },
+	dashSize: { value: 1 },
+	gapSize: { value: 1 } // todo FIX - maybe change to totalSize
+
+};
+
+ShaderLib[ 'line' ] = {
+
+	uniforms: UniformsUtils.merge( [
+		UniformsLib.common,
+		UniformsLib.fog,
+		UniformsLib.line
+	] ),
+
+	vertexShader:
+	/* glsl */`
+		#include <common>
+		#include <color_pars_vertex>
+		#include <fog_pars_vertex>
+		#include <logdepthbuf_pars_vertex>
+		#include <clipping_planes_pars_vertex>
+
+		uniform float linewidth;
+		uniform vec2 resolution;
+
+		attribute vec3 instanceStart;
+		attribute vec3 instanceEnd;
+
+		attribute vec3 instanceColorStart;
+		attribute vec3 instanceColorEnd;
+
+		#ifdef WORLD_UNITS
+
+			varying vec4 worldPos;
+			varying vec3 worldStart;
+			varying vec3 worldEnd;
+
+			#ifdef USE_DASH
+
+				varying vec2 vUv;
+
+			#endif
+
+		#else
+
+			varying vec2 vUv;
+
+		#endif
+
+		#ifdef USE_DASH
+
+			uniform float dashScale;
+			attribute float instanceDistanceStart;
+			attribute float instanceDistanceEnd;
+			varying float vLineDistance;
+
+		#endif
+
+		float trimSegmentAlpha( const in vec4 start, const in vec4 end ) {
+
+			// compute the interpolation factor needed to trim the segment so it terminates
+			// between the camera plane and the near plane
+
+			// conservative estimate of the near plane
+			float a = projectionMatrix[ 2 ][ 2 ]; // 3nd entry in 3th column
+			float b = projectionMatrix[ 3 ][ 2 ]; // 3nd entry in 4th column
+
+			// we need different nearEstimate formula for reversed and default depth buffer
+			// a is positive with a reversed depth buffer so it can be used for controlling the code flow
+			float nearEstimate = ( a > 0.0 ) ? ( - b / ( a + 1.0 ) ) : ( - 0.5 * b / a );
+
+			return ( nearEstimate - start.z ) / ( end.z - start.z );
+
+		}
+
+		void main() {
+
+			#ifdef USE_COLOR
+
+				vColor.xyz = ( position.y < 0.5 ) ? instanceColorStart : instanceColorEnd;
+
+			#endif
+
+			float aspect = resolution.x / resolution.y;
+
+			// camera space
+			vec4 start = modelViewMatrix * vec4( instanceStart, 1.0 );
+			vec4 end = modelViewMatrix * vec4( instanceEnd, 1.0 );
+
+			#ifdef USE_DASH
+
+				float lineDistanceStart = dashScale * instanceDistanceStart;
+				float lineDistanceEnd = dashScale * instanceDistanceEnd;
+
+			#endif
+
+			#ifdef WORLD_UNITS
+
+				worldStart = start.xyz;
+				worldEnd = end.xyz;
+
+			#else
+
+				vUv = uv;
+
+			#endif
+
+			// special case for perspective projection, and segments that terminate either in, or behind, the camera plane
+			// clearly the gpu firmware has a way of addressing this issue when projecting into ndc space
+			// but we need to perform ndc-space calculations in the shader, so we must address this issue directly
+			// perhaps there is a more elegant solution -- WestLangley
+
+			bool perspective = ( projectionMatrix[ 2 ][ 3 ] == - 1.0 ); // 4th entry in the 3rd column
+
+			if ( perspective ) {
+
+				if ( start.z < 0.0 && end.z >= 0.0 ) {
+
+					float alpha = trimSegmentAlpha( start, end );
+					end.xyz = mix( start.xyz, end.xyz, alpha );
+
+					#ifdef USE_DASH
+
+						lineDistanceEnd = mix( lineDistanceStart, lineDistanceEnd, alpha );
+
+					#endif
+
+				} else if ( end.z < 0.0 && start.z >= 0.0 ) {
+
+					float alpha = trimSegmentAlpha( end, start );
+					start.xyz = mix( end.xyz, start.xyz, alpha );
+
+					#ifdef USE_DASH
+
+						lineDistanceStart = mix( lineDistanceEnd, lineDistanceStart, alpha );
+
+					#endif
+
+				}
+
+			}
+
+			#ifdef USE_DASH
+
+				vLineDistance = ( position.y < 0.5 ) ? lineDistanceStart : lineDistanceEnd;
+				vUv = uv;
+
+			#endif
+
+			// clip space
+			vec4 clipStart = projectionMatrix * start;
+			vec4 clipEnd = projectionMatrix * end;
+
+			// ndc space
+			vec3 ndcStart = clipStart.xyz / clipStart.w;
+			vec3 ndcEnd = clipEnd.xyz / clipEnd.w;
+
+			// direction
+			vec2 dir = ndcEnd.xy - ndcStart.xy;
+
+			// account for clip-space aspect ratio
+			dir.x *= aspect;
+			dir = normalize( dir );
+
+			#ifdef WORLD_UNITS
+
+				vec3 worldDir = normalize( end.xyz - start.xyz );
+				vec3 tmpFwd = normalize( mix( start.xyz, end.xyz, 0.5 ) );
+				vec3 worldUp = normalize( cross( worldDir, tmpFwd ) );
+				vec3 worldFwd = cross( worldDir, worldUp );
+				worldPos = position.y < 0.5 ? start: end;
+
+				// height offset
+				float hw = linewidth * 0.5;
+				worldPos.xyz += position.x < 0.0 ? hw * worldUp : - hw * worldUp;
+
+				// don't extend the line if we're rendering dashes because we
+				// won't be rendering the endcaps
+				#ifndef USE_DASH
+
+					// cap extension
+					worldPos.xyz += position.y < 0.5 ? - hw * worldDir : hw * worldDir;
+
+					// add width to the box
+					worldPos.xyz += worldFwd * hw;
+
+					// endcaps
+					if ( position.y > 1.0 || position.y < 0.0 ) {
+
+						worldPos.xyz -= worldFwd * 2.0 * hw;
+
+					}
+
+				#endif
+
+				// project the worldpos
+				vec4 clip = projectionMatrix * worldPos;
+
+				// shift the depth of the projected points so the line
+				// segments overlap neatly
+				vec3 clipPose = ( position.y < 0.5 ) ? ndcStart : ndcEnd;
+				clip.z = clipPose.z * clip.w;
+
+			#else
+
+				vec2 offset = vec2( dir.y, - dir.x );
+				// undo aspect ratio adjustment
+				dir.x /= aspect;
+				offset.x /= aspect;
+
+				// sign flip
+				if ( position.x < 0.0 ) offset *= - 1.0;
+
+				// endcaps
+				if ( position.y < 0.0 ) {
+
+					offset += - dir;
+
+				} else if ( position.y > 1.0 ) {
+
+					offset += dir;
+
+				}
+
+				// adjust for linewidth
+				offset *= linewidth;
+
+				// adjust for clip-space to screen-space conversion // maybe resolution should be based on viewport ...
+				offset /= resolution.y;
+
+				// select end
+				vec4 clip = ( position.y < 0.5 ) ? clipStart : clipEnd;
+
+				// back to clip space
+				offset *= clip.w;
+
+				clip.xy += offset;
+
+			#endif
+
+			gl_Position = clip;
+
+			vec4 mvPosition = ( position.y < 0.5 ) ? start : end; // this is an approximation
+
+			#include <logdepthbuf_vertex>
+			#include <clipping_planes_vertex>
+			#include <fog_vertex>
+
+		}
+		`,
+
+	fragmentShader:
+	/* glsl */`
+		uniform vec3 diffuse;
+		uniform float opacity;
+		uniform float linewidth;
+
+		#ifdef USE_DASH
+
+			uniform float dashOffset;
+			uniform float dashSize;
+			uniform float gapSize;
+
+		#endif
+
+		varying float vLineDistance;
+
+		#ifdef WORLD_UNITS
+
+			varying vec4 worldPos;
+			varying vec3 worldStart;
+			varying vec3 worldEnd;
+
+			#ifdef USE_DASH
+
+				varying vec2 vUv;
+
+			#endif
+
+		#else
+
+			varying vec2 vUv;
+
+		#endif
+
+		#include <common>
+		#include <color_pars_fragment>
+		#include <fog_pars_fragment>
+		#include <logdepthbuf_pars_fragment>
+		#include <clipping_planes_pars_fragment>
+
+		vec2 closestLineToLine(vec3 p1, vec3 p2, vec3 p3, vec3 p4) {
+
+			float mua;
+			float mub;
+
+			vec3 p13 = p1 - p3;
+			vec3 p43 = p4 - p3;
+
+			vec3 p21 = p2 - p1;
+
+			float d1343 = dot( p13, p43 );
+			float d4321 = dot( p43, p21 );
+			float d1321 = dot( p13, p21 );
+			float d4343 = dot( p43, p43 );
+			float d2121 = dot( p21, p21 );
+
+			float denom = d2121 * d4343 - d4321 * d4321;
+
+			float numer = d1343 * d4321 - d1321 * d4343;
+
+			mua = numer / denom;
+			mua = clamp( mua, 0.0, 1.0 );
+			mub = ( d1343 + d4321 * ( mua ) ) / d4343;
+			mub = clamp( mub, 0.0, 1.0 );
+
+			return vec2( mua, mub );
+
+		}
+
+		void main() {
+
+			float alpha = opacity;
+			vec4 diffuseColor = vec4( diffuse, alpha );
+
+			#include <clipping_planes_fragment>
+
+			#ifdef USE_DASH
+
+				if ( vUv.y < - 1.0 || vUv.y > 1.0 ) discard; // discard endcaps
+
+				if ( mod( vLineDistance + dashOffset, dashSize + gapSize ) > dashSize ) discard; // todo - FIX
+
+			#endif
+
+			#ifdef WORLD_UNITS
+
+				// Find the closest points on the view ray and the line segment
+				vec3 rayEnd = normalize( worldPos.xyz ) * 1e5;
+				vec3 lineDir = worldEnd - worldStart;
+				vec2 params = closestLineToLine( worldStart, worldEnd, vec3( 0.0, 0.0, 0.0 ), rayEnd );
+
+				vec3 p1 = worldStart + lineDir * params.x;
+				vec3 p2 = rayEnd * params.y;
+				vec3 delta = p1 - p2;
+				float len = length( delta );
+				float norm = len / linewidth;
+
+				#ifndef USE_DASH
+
+					#ifdef USE_ALPHA_TO_COVERAGE
+
+						float dnorm = fwidth( norm );
+						alpha = 1.0 - smoothstep( 0.5 - dnorm, 0.5 + dnorm, norm );
+
+					#else
+
+						if ( norm > 0.5 ) {
+
+							discard;
+
+						}
+
+					#endif
+
+				#endif
+
+			#else
+
+				#ifdef USE_ALPHA_TO_COVERAGE
+
+					// artifacts appear on some hardware if a derivative is taken within a conditional
+					float a = vUv.x;
+					float b = ( vUv.y > 0.0 ) ? vUv.y - 1.0 : vUv.y + 1.0;
+					float len2 = a * a + b * b;
+					float dlen = fwidth( len2 );
+
+					if ( abs( vUv.y ) > 1.0 ) {
+
+						alpha = 1.0 - smoothstep( 1.0 - dlen, 1.0 + dlen, len2 );
+
+					}
+
+				#else
+
+					if ( abs( vUv.y ) > 1.0 ) {
+
+						float a = vUv.x;
+						float b = ( vUv.y > 0.0 ) ? vUv.y - 1.0 : vUv.y + 1.0;
+						float len2 = a * a + b * b;
+
+						if ( len2 > 1.0 ) discard;
+
+					}
+
+				#endif
+
+			#endif
+
+			#include <logdepthbuf_fragment>
+			#include <color_fragment>
+
+			gl_FragColor = vec4( diffuseColor.rgb, alpha );
+
+			#include <tonemapping_fragment>
+			#include <colorspace_fragment>
+			#include <fog_fragment>
+			#include <premultiplied_alpha_fragment>
+
+		}
+		`
+};
+
+/**
+ * A material for drawing wireframe-style geometries.
+ *
+ * Unlike {@link LineBasicMaterial}, it supports arbitrary line widths and allows using world units
+ * instead of screen space units. This material is used with {@link LineSegments2} and {@link Line2}.
+ *
+ * This module can only be used with {@link WebGLRenderer}. When using {@link WebGPURenderer},
+ * use {@link Line2NodeMaterial}.
+ *
+ * @augments ShaderMaterial
+ * @three_import import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+ */
+class LineMaterial extends ShaderMaterial {
+
+	/**
+	 * Constructs a new line segments geometry.
+	 *
+	 * @param {Object} [parameters] - An object with one or more properties
+	 * defining the material's appearance. Any property of the material
+	 * (including any property from inherited materials) can be passed
+	 * in here. Color values can be passed any type of value accepted
+	 * by {@link Color#set}.
+	 */
+	constructor( parameters ) {
+
+		super( {
+
+			type: 'LineMaterial',
+			uniforms: UniformsUtils.clone( ShaderLib[ 'line' ].uniforms ),
+
+			vertexShader: ShaderLib[ 'line' ].vertexShader,
+			fragmentShader: ShaderLib[ 'line' ].fragmentShader,
+
+			clipping: true // required for clipping support
+
+		} );
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isLineMaterial = true;
+
+		this.setValues( parameters );
+
+	}
+
+	/**
+	 * The material's color.
+	 *
+	 * @type {Color}
+	 * @default (1,1,1)
+	 */
+	get color() {
+
+		return this.uniforms.diffuse.value;
+
+	}
+
+	set color( value ) {
+
+		this.uniforms.diffuse.value = value;
+
+	}
+
+	/**
+	 * Whether the material's sizes (width, dash gaps) are in world units.
+	 *
+	 * @type {boolean}
+	 * @default false
+	 */
+	get worldUnits() {
+
+		return 'WORLD_UNITS' in this.defines;
+
+	}
+
+	set worldUnits( value ) {
+
+		if ( ( value === true ) !== this.worldUnits ) {
+
+			this.needsUpdate = true;
+
+		}
+
+		if ( value === true ) {
+
+			this.defines.WORLD_UNITS = '';
+
+		} else {
+
+			delete this.defines.WORLD_UNITS;
+
+		}
+
+	}
+
+	/**
+	 * Controls line thickness in CSS pixel units when `worldUnits` is `false` (default),
+	 * or in world units when `worldUnits` is `true`.
+	 *
+	 * @type {number}
+	 * @default 1
+	 */
+	get linewidth() {
+
+		return this.uniforms.linewidth.value;
+
+	}
+
+	set linewidth( value ) {
+
+		if ( ! this.uniforms.linewidth ) return;
+		this.uniforms.linewidth.value = value;
+
+	}
+
+	/**
+	 * Whether the line is dashed, or solid.
+	 *
+	 * @type {boolean}
+	 * @default false
+	 */
+	get dashed() {
+
+		return 'USE_DASH' in this.defines;
+
+	}
+
+	set dashed( value ) {
+
+		if ( ( value === true ) !== this.dashed ) {
+
+			this.needsUpdate = true;
+
+		}
+
+		if ( value === true ) {
+
+			this.defines.USE_DASH = '';
+
+		} else {
+
+			delete this.defines.USE_DASH;
+
+		}
+
+	}
+
+	/**
+	 * The scale of the dashes and gaps.
+	 *
+	 * @type {number}
+	 * @default 1
+	 */
+	get dashScale() {
+
+		return this.uniforms.dashScale.value;
+
+	}
+
+	set dashScale( value ) {
+
+		this.uniforms.dashScale.value = value;
+
+	}
+
+	/**
+	 * The size of the dash.
+	 *
+	 * @type {number}
+	 * @default 1
+	 */
+	get dashSize() {
+
+		return this.uniforms.dashSize.value;
+
+	}
+
+	set dashSize( value ) {
+
+		this.uniforms.dashSize.value = value;
+
+	}
+
+	/**
+	 * Where in the dash cycle the dash starts.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get dashOffset() {
+
+		return this.uniforms.dashOffset.value;
+
+	}
+
+	set dashOffset( value ) {
+
+		this.uniforms.dashOffset.value = value;
+
+	}
+
+	/**
+	 * The size of the gap.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get gapSize() {
+
+		return this.uniforms.gapSize.value;
+
+	}
+
+	set gapSize( value ) {
+
+		this.uniforms.gapSize.value = value;
+
+	}
+
+	/**
+	 * The opacity.
+	 *
+	 * @type {number}
+	 * @default 1
+	 */
+	get opacity() {
+
+		return this.uniforms.opacity.value;
+
+	}
+
+	set opacity( value ) {
+
+		if ( ! this.uniforms ) return;
+		this.uniforms.opacity.value = value;
+
+	}
+
+	/**
+	 * The size of the viewport, in screen pixels. This must be kept updated to make
+	 * screen-space rendering accurate. The `LineSegments2.onBeforeRender` callback
+	 * performs the update for visible objects.
+	 *
+	 * @type {Vector2}
+	 */
+	get resolution() {
+
+		return this.uniforms.resolution.value;
+
+	}
+
+	set resolution( value ) {
+
+		this.uniforms.resolution.value.copy( value );
+
+	}
+
+	/**
+	 * Whether to use alphaToCoverage or not. When enabled, this can improve the
+	 * anti-aliasing of line edges when using MSAA.
+	 *
+	 * @type {boolean}
+	 */
+	get alphaToCoverage() {
+
+		return 'USE_ALPHA_TO_COVERAGE' in this.defines;
+
+	}
+
+	set alphaToCoverage( value ) {
+
+		if ( ! this.defines ) return;
+
+		if ( ( value === true ) !== this.alphaToCoverage ) {
+
+			this.needsUpdate = true;
+
+		}
+
+		if ( value === true ) {
+
+			this.defines.USE_ALPHA_TO_COVERAGE = '';
+
+		} else {
+
+			delete this.defines.USE_ALPHA_TO_COVERAGE;
+
+		}
+
+	}
+
+}
+
+
+};
+__defs['vendor/three/addons/lines/LineSegments2.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'LineSegments2', () => LineSegments2);
+const { Box3, InstancedInterleavedBuffer, InterleavedBufferAttribute, Line3, MathUtils, Matrix4, Mesh, Sphere, Vector3, Vector4 } = __req('vendor/three/build/three.module.js');
+const { LineSegmentsGeometry } = __req('vendor/three/addons/lines/LineSegmentsGeometry.js');
+const { LineMaterial } = __req('vendor/three/addons/lines/LineMaterial.js');
+
+const _viewport = new Vector4();
+
+const _start = new Vector3();
+const _end = new Vector3();
+
+const _start4 = new Vector4();
+const _end4 = new Vector4();
+
+const _ssOrigin = new Vector4();
+const _ssOrigin3 = new Vector3();
+const _mvMatrix = new Matrix4();
+const _line = new Line3();
+const _closestPoint = new Vector3();
+
+const _box = new Box3();
+const _sphere = new Sphere();
+const _clipToWorldVector = new Vector4();
+
+let _ray, _lineWidth;
+
+// Returns the margin required to expand by in world space given the distance from the camera,
+// line width, resolution, and camera projection
+function getWorldSpaceHalfWidth( camera, distance, resolution ) {
+
+	// transform into clip space, adjust the x and y values by the pixel width offset, then
+	// transform back into world space to get world offset. Note clip space is [-1, 1] so full
+	// width does not need to be halved.
+	_clipToWorldVector.set( 0, 0, - distance, 1.0 ).applyMatrix4( camera.projectionMatrix );
+	_clipToWorldVector.multiplyScalar( 1.0 / _clipToWorldVector.w );
+	_clipToWorldVector.x = _lineWidth / resolution.width;
+	_clipToWorldVector.y = _lineWidth / resolution.height;
+	_clipToWorldVector.applyMatrix4( camera.projectionMatrixInverse );
+	_clipToWorldVector.multiplyScalar( 1.0 / _clipToWorldVector.w );
+
+	return Math.abs( Math.max( _clipToWorldVector.x, _clipToWorldVector.y ) );
+
+}
+
+function raycastWorldUnits( lineSegments, intersects ) {
+
+	const matrixWorld = lineSegments.matrixWorld;
+	const geometry = lineSegments.geometry;
+	const instanceStart = geometry.attributes.instanceStart;
+	const instanceEnd = geometry.attributes.instanceEnd;
+	const segmentCount = Math.min( geometry.instanceCount, instanceStart.count );
+
+	for ( let i = 0, l = segmentCount; i < l; i ++ ) {
+
+		_line.start.fromBufferAttribute( instanceStart, i );
+		_line.end.fromBufferAttribute( instanceEnd, i );
+
+		_line.applyMatrix4( matrixWorld );
+
+		const pointOnLine = new Vector3();
+		const point = new Vector3();
+
+		_ray.distanceSqToSegment( _line.start, _line.end, point, pointOnLine );
+		const isInside = point.distanceTo( pointOnLine ) < _lineWidth * 0.5;
+
+		if ( isInside ) {
+
+			intersects.push( {
+				point,
+				pointOnLine,
+				distance: _ray.origin.distanceTo( point ),
+				object: lineSegments,
+				face: null,
+				faceIndex: i,
+				uv: null,
+				uv1: null,
+			} );
+
+		}
+
+	}
+
+}
+
+function raycastScreenSpace( lineSegments, camera, intersects ) {
+
+	const projectionMatrix = camera.projectionMatrix;
+	const material = lineSegments.material;
+	const resolution = material.resolution;
+	const matrixWorld = lineSegments.matrixWorld;
+
+	const geometry = lineSegments.geometry;
+	const instanceStart = geometry.attributes.instanceStart;
+	const instanceEnd = geometry.attributes.instanceEnd;
+	const segmentCount = Math.min( geometry.instanceCount, instanceStart.count );
+
+	const near = - camera.near;
+
+	//
+
+	// pick a point 1 unit out along the ray to avoid the ray origin
+	// sitting at the camera origin which will cause "w" to be 0 when
+	// applying the projection matrix.
+	_ray.at( 1, _ssOrigin );
+
+	// ndc space [ - 1.0, 1.0 ]
+	_ssOrigin.w = 1;
+	_ssOrigin.applyMatrix4( camera.matrixWorldInverse );
+	_ssOrigin.applyMatrix4( projectionMatrix );
+	_ssOrigin.multiplyScalar( 1 / _ssOrigin.w );
+
+	// screen space
+	_ssOrigin.x *= resolution.x / 2;
+	_ssOrigin.y *= resolution.y / 2;
+	_ssOrigin.z = 0;
+
+	_ssOrigin3.copy( _ssOrigin );
+
+	_mvMatrix.multiplyMatrices( camera.matrixWorldInverse, matrixWorld );
+
+	for ( let i = 0, l = segmentCount; i < l; i ++ ) {
+
+		_start4.fromBufferAttribute( instanceStart, i );
+		_end4.fromBufferAttribute( instanceEnd, i );
+
+		_start4.w = 1;
+		_end4.w = 1;
+
+		// camera space
+		_start4.applyMatrix4( _mvMatrix );
+		_end4.applyMatrix4( _mvMatrix );
+
+		// skip the segment if it's entirely behind the camera
+		const isBehindCameraNear = _start4.z > near && _end4.z > near;
+		if ( isBehindCameraNear ) {
+
+			continue;
+
+		}
+
+		// trim the segment if it extends behind camera near
+		if ( _start4.z > near ) {
+
+			const deltaDist = _start4.z - _end4.z;
+			const t = ( _start4.z - near ) / deltaDist;
+			_start4.lerp( _end4, t );
+
+		} else if ( _end4.z > near ) {
+
+			const deltaDist = _end4.z - _start4.z;
+			const t = ( _end4.z - near ) / deltaDist;
+			_end4.lerp( _start4, t );
+
+		}
+
+		// clip space
+		_start4.applyMatrix4( projectionMatrix );
+		_end4.applyMatrix4( projectionMatrix );
+
+		// ndc space [ - 1.0, 1.0 ]
+		_start4.multiplyScalar( 1 / _start4.w );
+		_end4.multiplyScalar( 1 / _end4.w );
+
+		// screen space
+		_start4.x *= resolution.x / 2;
+		_start4.y *= resolution.y / 2;
+
+		_end4.x *= resolution.x / 2;
+		_end4.y *= resolution.y / 2;
+
+		// create 2d segment
+		_line.start.copy( _start4 );
+		_line.start.z = 0;
+
+		_line.end.copy( _end4 );
+		_line.end.z = 0;
+
+		// get closest point on ray to segment
+		const param = _line.closestPointToPointParameter( _ssOrigin3, true );
+		_line.at( param, _closestPoint );
+
+		// check if the intersection point is within clip space
+		const zPos = MathUtils.lerp( _start4.z, _end4.z, param );
+		const isInClipSpace = zPos >= - 1 && zPos <= 1;
+
+		const isInside = _ssOrigin3.distanceTo( _closestPoint ) < _lineWidth * 0.5;
+
+		if ( isInClipSpace && isInside ) {
+
+			_line.start.fromBufferAttribute( instanceStart, i );
+			_line.end.fromBufferAttribute( instanceEnd, i );
+
+			_line.start.applyMatrix4( matrixWorld );
+			_line.end.applyMatrix4( matrixWorld );
+
+			const pointOnLine = new Vector3();
+			const point = new Vector3();
+
+			_ray.distanceSqToSegment( _line.start, _line.end, point, pointOnLine );
+
+			intersects.push( {
+				point: point,
+				pointOnLine: pointOnLine,
+				distance: _ray.origin.distanceTo( point ),
+				object: lineSegments,
+				face: null,
+				faceIndex: i,
+				uv: null,
+				uv1: null,
+			} );
+
+		}
+
+	}
+
+}
+
+/**
+ * A series of lines drawn between pairs of vertices.
+ *
+ * This adds functionality beyond {@link LineSegments}, like arbitrary line width and changing width
+ * to be in world units. {@link Line2} extends this object, forming a polyline instead of individual
+ * segments.
+ *
+ * This module can only be used with {@link WebGLRenderer}. When using {@link WebGPURenderer},
+ * import the class from `lines/webgpu/LineSegments2.js`.
+ *
+ *  ```js
+ * const geometry = new LineSegmentsGeometry();
+ * geometry.setPositions( positions );
+ * geometry.setColors( colors );
+ *
+ * const material = new LineMaterial( { linewidth: 5, vertexColors: true } };
+ *
+ * const lineSegments = new LineSegments2( geometry, material );
+ * scene.add( lineSegments );
+ * ```
+ *
+ * @augments Mesh
+ * @three_import import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+ */
+class LineSegments2 extends Mesh {
+
+	/**
+	 * Constructs a new wide line.
+	 *
+	 * @param {LineSegmentsGeometry} [geometry] - The line geometry.
+	 * @param {LineMaterial} [material] - The line material.
+	 */
+	constructor( geometry = new LineSegmentsGeometry(), material = new LineMaterial( { color: Math.random() * 0xffffff } ) ) {
+
+		super( geometry, material );
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isLineSegments2 = true;
+
+		this.type = 'LineSegments2';
+
+	}
+
+	/**
+	 * Computes an array of distance values which are necessary for rendering dashed lines.
+	 * For each vertex in the geometry, the method calculates the cumulative length from the
+	 * current point to the very beginning of the line.
+	 *
+	 * @return {LineSegments2} A reference to this instance.
+	 */
+	computeLineDistances() {
+
+		// for backwards-compatibility, but could be a method of LineSegmentsGeometry...
+
+		const geometry = this.geometry;
+
+		const instanceStart = geometry.attributes.instanceStart;
+		const instanceEnd = geometry.attributes.instanceEnd;
+		const lineDistances = new Float32Array( 2 * instanceStart.count );
+
+		for ( let i = 0, j = 0, l = instanceStart.count; i < l; i ++, j += 2 ) {
+
+			_start.fromBufferAttribute( instanceStart, i );
+			_end.fromBufferAttribute( instanceEnd, i );
+
+			lineDistances[ j ] = ( j === 0 ) ? 0 : lineDistances[ j - 1 ];
+			lineDistances[ j + 1 ] = lineDistances[ j ] + _start.distanceTo( _end );
+
+		}
+
+		const instanceDistanceBuffer = new InstancedInterleavedBuffer( lineDistances, 2, 1 ); // d0, d1
+
+		geometry.setAttribute( 'instanceDistanceStart', new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 0 ) ); // d0
+		geometry.setAttribute( 'instanceDistanceEnd', new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 1 ) ); // d1
+
+		return this;
+
+	}
+
+	/**
+	 * Computes intersection points between a casted ray and this instance.
+	 *
+	 * @param {Raycaster} raycaster - The raycaster.
+	 * @param {Array<Object>} intersects - The target array that holds the intersection points.
+	 */
+	raycast( raycaster, intersects ) {
+
+		const worldUnits = this.material.worldUnits;
+		const camera = raycaster.camera;
+
+		if ( camera === null && ! worldUnits ) {
+
+			console.error( 'LineSegments2: "Raycaster.camera" needs to be set in order to raycast against LineSegments2 while worldUnits is set to false.' );
+
+		}
+
+		// early out if no resolution has been set (line was not rendered yet)
+
+		if ( worldUnits === false && ( this.material.resolution.x === 0 || this.material.resolution.y === 0 ) ) {
+
+			return;
+
+		}
+
+		const threshold = ( raycaster.params.Line2 !== undefined ) ? raycaster.params.Line2.threshold || 0 : 0;
+
+		_ray = raycaster.ray;
+
+		const matrixWorld = this.matrixWorld;
+		const geometry = this.geometry;
+		const material = this.material;
+
+		_lineWidth = material.linewidth + threshold;
+
+		// check if we intersect the sphere bounds
+		if ( geometry.boundingSphere === null ) {
+
+			geometry.computeBoundingSphere();
+
+		}
+
+		_sphere.copy( geometry.boundingSphere ).applyMatrix4( matrixWorld );
+
+		// increase the sphere bounds by the worst case line screen space width
+		let sphereMargin;
+		if ( worldUnits ) {
+
+			sphereMargin = _lineWidth * 0.5;
+
+		} else {
+
+			const distanceToSphere = Math.max( camera.near, _sphere.distanceToPoint( _ray.origin ) );
+			sphereMargin = getWorldSpaceHalfWidth( camera, distanceToSphere, material.resolution );
+
+		}
+
+		_sphere.radius += sphereMargin;
+
+		if ( _ray.intersectsSphere( _sphere ) === false ) {
+
+			return;
+
+		}
+
+		// check if we intersect the box bounds
+		if ( geometry.boundingBox === null ) {
+
+			geometry.computeBoundingBox();
+
+		}
+
+		_box.copy( geometry.boundingBox ).applyMatrix4( matrixWorld );
+
+		// increase the box bounds by the worst case line width
+		let boxMargin;
+		if ( worldUnits ) {
+
+			boxMargin = _lineWidth * 0.5;
+
+		} else {
+
+			const distanceToBox = Math.max( camera.near, _box.distanceToPoint( _ray.origin ) );
+			boxMargin = getWorldSpaceHalfWidth( camera, distanceToBox, material.resolution );
+
+		}
+
+		_box.expandByScalar( boxMargin );
+
+		if ( _ray.intersectsBox( _box ) === false ) {
+
+			return;
+
+		}
+
+		if ( worldUnits ) {
+
+			raycastWorldUnits( this, intersects );
+
+		} else {
+
+			raycastScreenSpace( this, camera, intersects );
+
+		}
+
+	}
+
+	onBeforeRender( renderer ) {
+
+		const uniforms = this.material.uniforms;
+
+		if ( uniforms && uniforms.resolution ) {
+
+			renderer.getViewport( _viewport );
+			this.material.uniforms.resolution.value.set( _viewport.z, _viewport.w );
+
+		}
+
+	}
+
+}
+
+
+};
 __defs['src/depth-ai.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'DepthAI', () => DepthAI);
@@ -134766,6 +136210,9 @@ const { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } = __req('src/util.j
 const { buildFrameBlock, writeFrameColors, writeOneFrame, frameGrid } = __req('src/frame-block.js');
 const { TrackerHud } = __req('src/fx-hud.js');
 const { HandTracker } = __req('src/hand-tracker.js');
+const { LineSegments2 } = __req('vendor/three/addons/lines/LineSegments2.js');
+const { LineSegmentsGeometry } = __req('vendor/three/addons/lines/LineSegmentsGeometry.js');
+const { LineMaterial } = __req('vendor/three/addons/lines/LineMaterial.js');
 const { DepthAI, grabFrame, grabRGB: grabRGB4, normalizeDepth, lumaDepth, depthToGrid } = __req('src/depth-ai.js');
 const { encodeGIF } = __req('src/gif-encoder.js');
 
@@ -134815,7 +136262,7 @@ const FX_LAYERS = [
 	{ id: 'flow', group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, поверхность выглядит живой, а силуэт не меняется', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
 	{ id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Частицы отрываются от формы, уносятся ветром и гаснут, пока модель не исчезнет. Потом она собирается обратно', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', order: 'top', style: 'wind', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.8 }, extras: [{ key: 'style', label: 'Как исчезает', type: 'select', options: [['wind', 'Уносит ветром'], ['burn', 'Горение: пепел и угли'], ['bubbles', 'Пузыри всплывают']] }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'order', label: 'С какой стороны', type: 'seg', options: [['top', 'Сверху'], ['noise', 'Пятнами'], ['bottom', 'Снизу']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер в сторону', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Завихрения', min: 0, max: 2, step: 0.05 }] },
 	{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке и становятся квадратами: сетка, «Лего» или дыхание', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1, mode: 'grid', speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['grid', 'Сетка'], ['lego', 'Лего'], ['breathe', 'Дыхание']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe']] }] },
-	{ id: 'scope', group: 'Звук и ритм', name: 'Акселограф', icon: 'heartbeat', hint: 'По форме бежит перо самописца: точки собираются в линию-сигнал и тянут за собой светящийся след, а старые участки линии рассыпаются обратно в форму. Сейсмограф, кардиограмма, радар, спираль и водопад линий', max: 1, def: { on: false, amount: 0.3, band: 'none', react: 0.6, mode: 'strip', wave: 'seismo', speed: 1, trail: 0.55, amp: 1, lines: 10, tint: 0.6, thick: 0.35 }, extras: [{ key: 'mode', label: 'Как рисуется', type: 'select', options: [['strip', 'Лента: перо идёт слева направо'], ['radar', 'Радар: перо кружит по кольцу'], ['spiral', 'Спираль: сигнал вьётся вокруг формы'], ['wf', 'Водопад: стопка линий в глубину']] }, { key: 'wave', label: 'Какой сигнал', type: 'select', options: [['seismo', 'Сейсмограф: шум и толчки'], ['ecg', 'Кардиограмма'], ['sine', 'Синусы'], ['spec', 'Спектр звука (нужна музыка)']] }, { key: 'speed', label: 'Скорость пера', min: 0.2, max: 4, step: 0.05 }, { key: 'trail', label: 'Длина следа', min: 0.1, max: 1, step: 0.02 }, { key: 'amp', label: 'Размах сигнала', min: 0.2, max: 2.5, step: 0.05 }, { key: 'lines', label: 'Линий в водопаде', min: 3, max: 24, step: 1, int: true, when: ['mode', ['wf']] }, { key: 'tint', label: 'Окраска линии', min: 0, max: 1, step: 0.05 }, { key: 'thick', label: 'Толщина линии', min: 0, max: 2, step: 0.05 }] },
+	{ id: 'scope', group: 'Звук и ритм', name: 'Акселограф', icon: 'heartbeat', hint: 'По точкам модели бежит перо самописца: линия идёт от точки к точке по их координатам и вычерчивает форму, как плоттер или акселограф рисует трёхмерный объект. Ещё не нарисованное можно приглушить, след можно оставлять или гасить', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 0.6, mode: 'draw', speed: 1, trail: 0.5, detail: 2500, dim: 0.9, line: 1, tint: 0.25, thick: 0.6, glow: 1 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивает: нарисованное остаётся до конца круга'], ['comet', 'Комета: за пером тянется гаснущий след']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true }, { key: 'dim', label: 'Приглушить ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'line', label: 'Линия между точками', min: 0, max: 1, step: 0.02 }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }] },
 	{ id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Нейросеть строит карту глубины снимка или каждого кадра видео, и точки выдавливаются по ней: рельеф, ступенчатые слои, сканер глубины, эффект Хичкока, пыль на дальнем плане и волны по контурам. Всё считается на вашем компьютере. Вращайте камеру, чтобы увидеть объём', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.4, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Рельеф: ближнее выступает вперёд'], ['layers', 'Слои: ступени, как вырезанные из картона'], ['scan', 'Сканер: плоскость бежит сквозь глубину'], ['vertigo', 'Вертиго: ближнее и дальнее зумятся по-разному'], ['dust', 'Пыль: дальний план рассыпается'], ['contour', 'Контуры: волны идут по глубине']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Что остаётся на месте', min: 0, max: 1, step: 0.02 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
 	{ id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в трёх измерениях, цветовые каналы расходятся, картинка мерцает', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16, rgb: 'on', speed: 1 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
@@ -135209,6 +136656,7 @@ float gGl = 0.0;
 float gCh = -1.0;
 float gScopeG = 0.0;
 float gScopeT = 0.0;
+float gScopeD = 0.0;
 uniform vec4 uScope, uScopeP, uScopeQ;
 float gDepth = 0.5;
 float gDepthG = 0.0;
@@ -135551,37 +136999,6 @@ vec4 frShow(float k, out vec3 tcol) {
 }
 
 
-float scopeGauss(float x, float c, float w) {
-	float q = (x - c) / w;
-	return exp(-q * q);
-}
-// Сигнал самописца в точке s (0..1 вдоль линии): tau это номер прохода пера, ln номер линии
-float scopeSig(float s, float tau, float ln) {
-	int wv = int(uScopeP.z + 0.5);
-	float au = uScopeP.w;
-	float ph = tau * 1.7 + ln * 3.1;
-	if (wv == 1) {
-		// кардиограмма: зубец P, комплекс QRS и зубец T в каждом ударе
-		float x = fract(s * 5.0 + tau * 0.37 + ln * 0.21);
-		return 0.12 * scopeGauss(x, 0.18, 0.05) - 0.14 * scopeGauss(x, 0.44, 0.012) + scopeGauss(x, 0.5, 0.014) - 0.26 * scopeGauss(x, 0.56, 0.015) + 0.28 * scopeGauss(x, 0.76, 0.06);
-	}
-	if (wv == 2) return sin(s * 18.0 + ph) * 0.55 + sin(s * 7.0 - ph * 0.7) * 0.3;
-	if (wv == 3) {
-		float sp = texture2D(uSpecTex, vec2(abs(s * 2.0 - 1.0), 0.5)).r;
-		return sp * 1.5 - 0.55 + snoise(vec3(s * 40.0, ln, tau * 3.0)) * 0.12;
-	}
-	// сейсмограф: фоновый шум и редкие толчки, которые затухают
-	float n = snoise(vec3(s * 36.0, ln * 4.1, tau * 0.7)) * 0.22 + snoise(vec3(s * 70.0, ln, tau * 8.0)) * 0.035;
-	float ev = 0.0;
-	for (int k = 0; k < 3; k++) {
-		float c = hash11(tau * 7.31 + float(k) * 3.7 + ln * 1.7);
-		float d = s - c;
-		ev += d > 0.0 ? exp(-d * 9.0) * sin(d * 150.0 + float(k)) * (0.35 + 0.65 * hash11(c * 91.0)) : 0.0;
-	}
-	return n + ev * (0.8 + au);
-}
-
-
 // Выдавливание по карте глубины: gDepth 0..1 (1 ближе всего). uDepth: сила, режим, скорость, фокус; uDepthP: слоёв, знак, покачивание, вид
 vec3 depthShape(vec3 b) {
 	float t = uTime - uTOff;
@@ -135911,44 +137328,6 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	if (uJitter.x > 0.001) {
 		pos += vec3(sin(t * 17.0 + aIdx * 91.0), sin(t * 13.0 + aIdx * 57.0), sin(t * 11.0 + aIdx * 33.0)) * uJitter.x * 0.03;
 	}
-	if (uScope.x > 0.001) {
-		// Акселограф: часть точек собирается в линию сигнала, перо бежит и оставляет след, старый след рассыпается обратно в форму
-		float hp = hash11(aIdx * 3.713 + 0.37);
-		if (hp < clamp(uScope.x, 0.0, 1.0)) {
-			int md = int(uScope.y + 0.5);
-			float nl = md == 3 ? max(1.0, floor(uScopeP.y + 0.5)) : 1.0;
-			float h1 = hash11(aIdx * 17.77 + 1.3);
-			float h2 = hash11(aIdx * 5.19 + 2.9);
-			float ln = floor(h2 * nl);
-			float s = h1;
-			float tt = t * uScope.z * 0.12 + ln * 0.11;
-			float cyc = floor(tt - s);
-			float age = fract(tt - s);
-			float vis = 1.0 - smoothstep(uScope.w * 0.55, uScope.w, age);
-			float yc = 0.5 * (uYR.x + uYR.y);
-			float Hh = max(uYR.y - uYR.x, 0.5);
-			float Ww = max(2.0, Hh * 1.4);
-			float amp = uScopeP.x * Hh * 0.17;
-			float sg = clamp(scopeSig(s, cyc, ln) * (0.75 + 0.7 * uScopeP.w), -1.4, 1.4);
-			vec3 tp;
-			if (md == 0) tp = vec3((s - 0.5) * Ww, yc + sg * amp, 0.0);
-			else if (md == 1) {
-				float a = s * 6.2831853;
-				float rr = Ww * 0.3 + sg * amp * 0.55;
-				tp = vec3(cos(a) * rr, yc + sin(a) * rr, 0.0);
-			} else if (md == 2) {
-				float a = s * 6.2831853 * 3.0;
-				float rr = Ww * 0.26 + sg * amp * 0.5;
-				tp = vec3(cos(a) * rr, yc + (s - 0.5) * Hh * 1.3, sin(a) * rr);
-			} else {
-				tp = vec3((s - 0.5) * Ww, yc + (ln / max(nl - 1.0, 1.0) - 0.5) * Hh * 0.35 + sg * amp * 0.5, (ln / max(nl - 1.0, 1.0) - 0.5) * Ww * 0.9);
-			}
-			tp += (vec3(hash11(aIdx * 2.1), hash11(aIdx * 4.3), hash11(aIdx * 6.7)) - 0.5) * 0.006;
-			pos = mix(pos, tp, pow(vis, 0.45));
-			gScopeT = vis;
-			gScopeG = vis * exp(-age * 22.0 / max(uScope.w, 0.1));
-		}
-	}
 	maskV = 1.0;
 	if (uMask.x > 0.5) {
 		float y01 = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
@@ -136108,6 +137487,7 @@ attribute vec3 aNormalB;
 attribute vec3 aColorB;
 attribute float aHide;
 attribute float aDepth;
+attribute float aPath;
 uniform float uAdd;
 uniform highp sampler2DArray uFrTex;
 uniform sampler2D uHeroTex;
@@ -136221,6 +137601,14 @@ void main() {
 	vec3 base;
 	float maskV;
 	gDepth = aDepth;
+	if (uScope.x > 0.001) {
+		// акселограф: aPath это место точки на пути пера (0..1), uScope.z это положение пера
+		float sAge = uScope.z - aPath;
+		if (sAge >= 0.0) {
+			gScopeT = (uScope.y < 0.5 ? 1.0 : exp(-sAge * 4.0 / max(uScope.w, 0.02))) * uScopeP.y;
+			gScopeG = exp(-sAge * 45.0) * uScopeP.y;
+		} else gScopeD = clamp(uScopeP.x * uScope.x * 1.6, 0.0, 1.0) * uScopeP.y;
+	}
 	vec3 pos = fxDisplace(aOrigin, aTarget, aIdx, base, maskV);
 	pos += aSculpt;
 	if (uFr.x > 0.5) pos += frNrm * frLift * 0.7;
@@ -136332,9 +137720,10 @@ void main() {
 		vColor += uP2 * gDepthG * 1.3;
 	}
 	// акселограф: линия окрашивается, голова пера горит
-	if (gScopeT > 0.0) {
-		vColor = mix(vColor, uP2 * 1.4, uScopeQ.x * gScopeT * 0.85);
-		vColor += uP2 * gScopeG * 2.6;
+	if (uScope.x > 0.001) {
+		vColor = mix(vColor, uP2 * 1.4, uScopeQ.x * gScopeT);
+		vColor += uP2 * gScopeG * uScopeQ.z * 3.0;
+		vColor *= 1.0 - gScopeD * 0.75;
 	}
 	// глитч: мерцание, строки-помехи и раздельные цветовые каналы
 	if (gGl > 0.0) {
@@ -136388,7 +137777,7 @@ void main() {
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
 	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.7 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
-	s *= 1.0 + gScopeT * uScopeQ.y + gScopeG * 1.2 + gDepthG * 0.8;
+	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD * 0.8);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
 	gl_PointSize = clamp(s, 1.0, 95.0);
 }
@@ -137819,6 +139208,7 @@ class EffectsEngine {
 			g.setAttribute('aIdx', new THREE.BufferAttribute(idxA, 1));
 			g.setAttribute('aHide', new THREE.BufferAttribute(new Float32Array(count), 1));
 			g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(count).fill(0.5), 1));
+			g.setAttribute('aPath', new THREE.BufferAttribute(new Float32Array(count), 1));
 			g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
 			const m = new THREE.ShaderMaterial({
 				vertexShader: this.material.vertexShader,
@@ -138964,6 +140354,188 @@ class EffectsEngine {
 	emit() {
 		this.app.bus.emit('fx');
 	}
+	// ------------------------------------------------------------ акселограф: перо бежит от точки к точке по координатам модели
+	/** Строит путь пера: берёт часть точек и обходит их «ближайшим соседом», каждой точке облака даёт место на пути (aPath), а линию собирает из отрезков между соседями по пути */
+	_scopeBuild(S) {
+		const g = this.geometry;
+		const T = g.attributes.aTarget.array;
+		const N = g.attributes.position.count;
+		const sc = Math.max(8, Math.min(S, N));
+		const ids = new Int32Array(sc);
+		for (let i = 0; i < sc; i++) ids[i] = Math.floor((i * N) / sc);
+		const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+		for (let i = 0; i < sc; i++) for (let c = 0; c < 3; c++) {
+			const v = T[ids[i] * 3 + c];
+			if (v < mn[c]) mn[c] = v;
+			if (v > mx[c]) mx[c] = v;
+		}
+		const ext = [0, 1, 2].map((c) => Math.max(mx[c] - mn[c], 0.03));
+		const cell = Math.cbrt((ext[0] * ext[1] * ext[2]) / sc) * 1.7;
+		const key = (x, y, z) => ((x + 512) * 1024 + (y + 512)) * 1024 + (z + 512);
+		const cx = (v, c) => Math.floor((v - mn[c]) / cell);
+		const grid = new Map();
+		for (let i = 0; i < sc; i++) {
+			const p = ids[i] * 3;
+			const k = key(cx(T[p], 0), cx(T[p + 1], 1), cx(T[p + 2], 2));
+			const a = grid.get(k);
+			if (a) a.push(i);
+			else grid.set(k, [i]);
+		}
+		const used = new Uint8Array(sc);
+		const order = new Int32Array(sc);
+		const d2 = (i, p) => (T[ids[i] * 3] - p[0]) ** 2 + (T[ids[i] * 3 + 1] - p[1]) ** 2 + (T[ids[i] * 3 + 2] - p[2]) ** 2;
+		// старт снизу формы: перо поднимается вверх
+		let cur = 0;
+		for (let i = 1; i < sc; i++) if (T[ids[i] * 3 + 1] < T[ids[cur] * 3 + 1]) cur = i;
+		let prev = null;
+		for (let n = 0; n < sc; n++) {
+			used[cur] = 1;
+			order[n] = cur;
+			if (n === sc - 1) break;
+			const p = [T[ids[cur] * 3], T[ids[cur] * 3 + 1], T[ids[cur] * 3 + 2]];
+			const bx = cx(p[0], 0), by = cx(p[1], 1), bz = cx(p[2], 2);
+			let best = -1, bd = Infinity;
+			for (let r = 0; r <= 5 && best < 0; r++) {
+				for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) for (let dz = -r; dz <= r; dz++) {
+					if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue;
+					const a = grid.get(key(bx + dx, by + dy, bz + dz));
+					if (!a) continue;
+					for (let q = a.length - 1; q >= 0; q--) {
+						const j = a[q];
+						if (used[j]) {
+							a[q] = a[a.length - 1];
+							a.pop();
+							continue;
+						}
+						let d = d2(j, p);
+						// небольшая инерция: предпочитаем идти дальше в ту же сторону, а не возвращаться
+						if (prev) d *= 1.25 - 0.25 * Math.max(-1, Math.min(1, ((T[ids[j] * 3] - p[0]) * prev[0] + (T[ids[j] * 3 + 1] - p[1]) * prev[1] + (T[ids[j] * 3 + 2] - p[2]) * prev[2]) / (Math.sqrt(d2(j, p)) * prev[3] + 1e-9)));
+						if (d < bd) {
+							bd = d;
+							best = j;
+						}
+					}
+				}
+			}
+			if (best < 0) {
+				for (let j = 0; j < sc; j++) {
+					if (used[j]) continue;
+					const d = d2(j, p);
+					if (d < bd) {
+						bd = d;
+						best = j;
+					}
+				}
+			}
+			const q = best * 3;
+			const vx = T[ids[best] * 3] - p[0], vy = T[ids[best] * 3 + 1] - p[1], vz = T[ids[best] * 3 + 2] - p[2];
+			const len = Math.hypot(vx, vy, vz);
+			prev = [vx, vy, vz, len];
+			cur = best;
+		}
+		const rank = new Int32Array(sc);
+		for (let n = 0; n < sc; n++) rank[order[n]] = n;
+		// место каждой точки облака на пути: берём ближайшую точку пути
+		const path = g.attributes.aPath;
+		for (let i = 0; i < N; i++) {
+			const x = T[i * 3], y = T[i * 3 + 1], z = T[i * 3 + 2];
+			const bx = cx(x, 0), by = cx(y, 1), bz = cx(z, 2);
+			let best = -1, bd = Infinity;
+			for (let r = 0; r <= 3 && best < 0; r++) {
+				for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) for (let dz = -r; dz <= r; dz++) {
+					if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue;
+					const a = grid.get(key(bx + dx, by + dy, bz + dz));
+					if (!a) continue;
+					for (const j of a) {
+						const d = (T[ids[j] * 3] - x) ** 2 + (T[ids[j] * 3 + 1] - y) ** 2 + (T[ids[j] * 3 + 2] - z) ** 2;
+						if (d < bd) {
+							bd = d;
+							best = j;
+						}
+					}
+				}
+			}
+			path.array[i] = best < 0 ? 0 : rank[best] / (sc - 1);
+		}
+		path.needsUpdate = true;
+		// линия: отрезок между соседними точками пути, слишком длинные прыжки превращаем в пустые отрезки
+		const pos = new Float32Array((sc - 1) * 6);
+		const cut = cell * 4;
+		for (let n = 0; n < sc - 1; n++) {
+			const a = ids[order[n]] * 3, b = ids[order[n + 1]] * 3;
+			const far = Math.hypot(T[a] - T[b], T[a + 1] - T[b + 1], T[a + 2] - T[b + 2]) > cut;
+			for (let c = 0; c < 3; c++) {
+				pos[n * 6 + c] = T[a + c];
+				pos[n * 6 + 3 + c] = far ? T[a + c] : T[b + c];
+			}
+		}
+		if (this._scopeLine) {
+			this._scopeLine.parent?.remove(this._scopeLine);
+			this._scopeLine.geometry.dispose();
+			this._scopeLine.material.dispose();
+		}
+		// толстая линия: обычные линии WebGL всегда в один пиксель и теряются среди точек
+		const lg = new LineSegmentsGeometry();
+		lg.setPositions(pos);
+		lg.setColors(new Float32Array((sc - 1) * 6));
+		const line = new LineSegments2(lg, new LineMaterial({ color: 0xffffff, linewidth: 2.4, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+		line.frustumCulled = false;
+		line.userData.helper = true;
+		line.visible = false;
+		this.points.add(line);
+		this._scopeLine = line;
+		this._scopeSegs = sc - 1;
+	}
+
+	_scopeTick(dt, S, u) {
+		const amount = clamp(this._eff(S), 0, 1);
+		const line = this._scopeLine;
+		if (amount <= 0.001 || !this.geometry || !this.points || !this.geometry.attributes.aPath) {
+			u.uScope.value.set(0, 0, 0, 1);
+			if (line) line.visible = false;
+			return;
+		}
+		const gk = this.geometry.uuid + ':' + Math.round(S.detail);
+		if (this._scopeKey !== gk || (line && line.parent !== this.points)) {
+			// пока двигают ползунок, путь пересчитывается не чаще раза в четверть секунды
+			if (!this._scopeKey || this._scopeKey.split(':')[0] !== this.geometry.uuid || !this._scopeWait || performance.now() - this._scopeWait > 250 || (line && line.parent !== this.points)) {
+				this._scopeKey = gk;
+				this._scopeWait = performance.now();
+				this._scopeBuild(Math.round(S.detail));
+			}
+		}
+		this._scopeT = (this._scopeT || 0) + dt * S.speed * 0.07;
+		const c = this._scopeT % 1;
+		const head = c / 0.9;
+		const env = Math.min(1, c / 0.03) * (1 - Math.min(1, Math.max(0, (c - 0.9) / 0.1)));
+		const comet = S.mode === 'comet';
+		u.uScope.value.set(amount, comet ? 1 : 0, head, S.trail);
+		u.uScopeP.value.set(S.dim, env, 0, 0);
+		u.uScopeQ.value.set(S.tint, S.thick, S.glow, 0);
+		const L = this._scopeLine;
+		if (!L) return;
+		const segs = this._scopeSegs;
+		// яркость каждого отрезка зависит от того, как давно по нему прошло перо
+		const col = L.geometry.attributes.instanceColorStart.data;
+		const base = new THREE.Color().copy(u.uP2.value).lerp(new THREE.Color(1, 1, 1), 0.35);
+		const k0 = S.line * env * Math.min(1, amount * 2);
+		const tr = Math.max(S.trail, 0.02);
+		let any = false;
+		for (let n = 0; n < segs; n++) {
+			const age = head - n / segs;
+			const lit = age < 0 ? 0 : (comet ? Math.exp((-age * 4) / tr) : 1) * k0;
+			if (lit > 0.01) any = true;
+			const o = n * 6;
+			col.array[o] = col.array[o + 3] = base.r * lit;
+			col.array[o + 1] = col.array[o + 4] = base.g * lit;
+			col.array[o + 2] = col.array[o + 5] = base.b * lit;
+		}
+		col.needsUpdate = true;
+		const sz = this.app.viewport.renderer.getSize(new THREE.Vector2());
+		L.material.resolution.set(sz.x, sz.y);
+		L.visible = S.line > 0.01 && any;
+	}
+
 	// ------------------------------------------------------------ глубина (фото и видео)
 	onDepthChange(fn) {
 		this._dListeners.add(fn);
@@ -139484,6 +141056,7 @@ class EffectsEngine {
 		g.setAttribute('aColorB', new THREE.BufferAttribute(new Float32Array(g.attributes.aColor.array), 3));
 		g.setAttribute('aHide', new THREE.BufferAttribute(c.hide && c.hide.length === count ? new Float32Array(c.hide) : new Float32Array(count), 1));
 		g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(count).fill(0.5), 1));
+		g.setAttribute('aPath', new THREE.BufferAttribute(new Float32Array(count), 1));
 		g.setAttribute('aIdx', new THREE.BufferAttribute(idx, 1));
 		g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
 		g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
@@ -140162,11 +141735,7 @@ class EffectsEngine {
 			u.uVoxelP.value.set({ grid: 0, lego: 1, breathe: 2 }[L.voxel.mode] ?? 0, L.voxel.speed, 0, 0);
 			u.uJitter.value.set(this._eff(L.jitter), 0, 0, 0);
 			{
-				const S = L.scope;
-				const lvl = S.band !== 'none' ? this._bandLevel(S) : 0;
-				u.uScope.value.set(clamp(this._eff(S), 0, 1), { strip: 0, radar: 1, spiral: 2, wf: 3 }[S.mode] ?? 0, S.speed, S.trail);
-				u.uScopeP.value.set(S.amp, S.lines, { seismo: 0, ecg: 1, sine: 2, spec: 3 }[S.wave] ?? 0, lvl);
-				u.uScopeQ.value.set(S.tint, S.thick, 0, 0);
+				this._scopeTick(dt, L.scope, u);
 			}
 			{
 				const Dp = L.depth;
@@ -140729,15 +142298,25 @@ const DRAW = {
 		}
 	},
 	scope: (c, t) => {
-		// лента самописца: перо бежит слева направо, за ним светящийся след из точек
-		const pen = (t * 0.55) % 1;
-		for (let i = 0; i < 30; i++) {
-			const s = i / 29;
-			const age = (pen - s + 1) % 1;
-			if (age > 0.75) continue;
-			const y = Math.sin(s * 15 + 1.2) * 4 * (0.5 + 0.5 * Math.sin(s * 5)) + (Math.abs(s - 0.55) < 0.05 ? -7 : 0);
-			dot(c, (s - 0.5) * 24, y, age < 0.06 ? 3 : 1.6, 1 - age * 1.2);
+		// перо бежит по точкам фигуры: за ним остаётся линия, ещё не нарисованное тусклее
+		const P = [[-11, 7], [-6, -2], [-9, -8], [-1, -4], [3, -9], [10, -4], [6, 3], [11, 8], [2, 5], [-3, 9]];
+		const k = (t * 0.5) % 1;
+		const seg = k * (P.length - 1);
+		c.globalAlpha = 0.5;
+		c.lineWidth = 1;
+		c.strokeStyle = c.fillStyle;
+		c.beginPath();
+		for (let i = 0; i <= Math.floor(seg); i++) {
+			if (i === 0) c.moveTo(P[0][0], P[0][1]);
+			else c.lineTo(P[i][0], P[i][1]);
 		}
+		const i0 = Math.floor(seg), f = seg - i0;
+		const hx = P[i0][0] + ((P[Math.min(i0 + 1, P.length - 1)][0] - P[i0][0]) * f);
+		const hy = P[i0][1] + ((P[Math.min(i0 + 1, P.length - 1)][1] - P[i0][1]) * f);
+		c.lineTo(hx, hy);
+		c.stroke();
+		P.forEach(([x, y], i) => dot(c, x, y, i <= seg ? 2 : 1.4, i <= seg ? 0.95 : 0.3));
+		dot(c, hx, hy, 3.6, 1);
 	},
 	glitch: (c, t) => {
 		for (let j = 0; j < 7; j++) {

@@ -119,15 +119,25 @@ const DRAW = {
 		}
 	},
 	scope: (c, t) => {
-		// лента самописца: перо бежит слева направо, за ним светящийся след из точек
-		const pen = (t * 0.55) % 1;
-		for (let i = 0; i < 30; i++) {
-			const s = i / 29;
-			const age = (pen - s + 1) % 1;
-			if (age > 0.75) continue;
-			const y = Math.sin(s * 15 + 1.2) * 4 * (0.5 + 0.5 * Math.sin(s * 5)) + (Math.abs(s - 0.55) < 0.05 ? -7 : 0);
-			dot(c, (s - 0.5) * 24, y, age < 0.06 ? 3 : 1.6, 1 - age * 1.2);
+		// перо бежит по точкам фигуры: за ним остаётся линия, ещё не нарисованное тусклее
+		const P = [[-11, 7], [-6, -2], [-9, -8], [-1, -4], [3, -9], [10, -4], [6, 3], [11, 8], [2, 5], [-3, 9]];
+		const k = (t * 0.5) % 1;
+		const seg = k * (P.length - 1);
+		c.globalAlpha = 0.5;
+		c.lineWidth = 1;
+		c.strokeStyle = c.fillStyle;
+		c.beginPath();
+		for (let i = 0; i <= Math.floor(seg); i++) {
+			if (i === 0) c.moveTo(P[0][0], P[0][1]);
+			else c.lineTo(P[i][0], P[i][1]);
 		}
+		const i0 = Math.floor(seg), f = seg - i0;
+		const hx = P[i0][0] + ((P[Math.min(i0 + 1, P.length - 1)][0] - P[i0][0]) * f);
+		const hy = P[i0][1] + ((P[Math.min(i0 + 1, P.length - 1)][1] - P[i0][1]) * f);
+		c.lineTo(hx, hy);
+		c.stroke();
+		P.forEach(([x, y], i) => dot(c, x, y, i <= seg ? 2 : 1.4, i <= seg ? 0.95 : 0.3));
+		dot(c, hx, hy, 3.6, 1);
 	},
 	glitch: (c, t) => {
 		for (let j = 0; j < 7; j++) {

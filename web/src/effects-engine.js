@@ -4,6 +4,9 @@ import { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } from './util.js';
 import { buildFrameBlock, writeFrameColors, writeOneFrame, frameGrid } from './frame-block.js';
 import { TrackerHud } from './fx-hud.js';
 import { HandTracker } from './hand-tracker.js';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { DepthAI, grabFrame, grabRGB as grabRGB4, normalizeDepth, lumaDepth, depthToGrid } from './depth-ai.js';
 import { encodeGIF } from './gif-encoder.js';
 export const FX_SHAPES = [
@@ -41,7 +44,7 @@ export const FX_LAYERS = [
 { id: 'flow', group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, поверхность выглядит живой, а силуэт не меняется', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
 { id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Частицы отрываются от формы, уносятся ветром и гаснут, пока модель не исчезнет. Потом она собирается обратно', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', order: 'top', style: 'wind', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.8 }, extras: [{ key: 'style', label: 'Как исчезает', type: 'select', options: [['wind', 'Уносит ветром'], ['burn', 'Горение: пепел и угли'], ['bubbles', 'Пузыри всплывают']] }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'order', label: 'С какой стороны', type: 'seg', options: [['top', 'Сверху'], ['noise', 'Пятнами'], ['bottom', 'Снизу']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер в сторону', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Завихрения', min: 0, max: 2, step: 0.05 }] },
 { id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке и становятся квадратами: сетка, «Лего» или дыхание', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1, mode: 'grid', speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['grid', 'Сетка'], ['lego', 'Лего'], ['breathe', 'Дыхание']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe']] }] },
-{ id: 'scope', group: 'Звук и ритм', name: 'Акселограф', icon: 'heartbeat', hint: 'По форме бежит перо самописца: точки собираются в линию-сигнал и тянут за собой светящийся след, а старые участки линии рассыпаются обратно в форму. Сейсмограф, кардиограмма, радар, спираль и водопад линий', max: 1, def: { on: false, amount: 0.3, band: 'none', react: 0.6, mode: 'strip', wave: 'seismo', speed: 1, trail: 0.55, amp: 1, lines: 10, tint: 0.6, thick: 0.35 }, extras: [{ key: 'mode', label: 'Как рисуется', type: 'select', options: [['strip', 'Лента: перо идёт слева направо'], ['radar', 'Радар: перо кружит по кольцу'], ['spiral', 'Спираль: сигнал вьётся вокруг формы'], ['wf', 'Водопад: стопка линий в глубину']] }, { key: 'wave', label: 'Какой сигнал', type: 'select', options: [['seismo', 'Сейсмограф: шум и толчки'], ['ecg', 'Кардиограмма'], ['sine', 'Синусы'], ['spec', 'Спектр звука (нужна музыка)']] }, { key: 'speed', label: 'Скорость пера', min: 0.2, max: 4, step: 0.05 }, { key: 'trail', label: 'Длина следа', min: 0.1, max: 1, step: 0.02 }, { key: 'amp', label: 'Размах сигнала', min: 0.2, max: 2.5, step: 0.05 }, { key: 'lines', label: 'Линий в водопаде', min: 3, max: 24, step: 1, int: true, when: ['mode', ['wf']] }, { key: 'tint', label: 'Окраска линии', min: 0, max: 1, step: 0.05 }, { key: 'thick', label: 'Толщина линии', min: 0, max: 2, step: 0.05 }] },
+{ id: 'scope', group: 'Звук и ритм', name: 'Акселограф', icon: 'heartbeat', hint: 'По точкам модели бежит перо самописца: линия идёт от точки к точке по их координатам и вычерчивает форму, как плоттер или акселограф рисует трёхмерный объект. Ещё не нарисованное можно приглушить, след можно оставлять или гасить', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 0.6, mode: 'draw', speed: 1, trail: 0.5, detail: 2500, dim: 0.9, line: 1, tint: 0.25, thick: 0.6, glow: 1 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивает: нарисованное остаётся до конца круга'], ['comet', 'Комета: за пером тянется гаснущий след']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true }, { key: 'dim', label: 'Приглушить ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'line', label: 'Линия между точками', min: 0, max: 1, step: 0.02 }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }] },
 { id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Нейросеть строит карту глубины снимка или каждого кадра видео, и точки выдавливаются по ней: рельеф, ступенчатые слои, сканер глубины, эффект Хичкока, пыль на дальнем плане и волны по контурам. Всё считается на вашем компьютере. Вращайте камеру, чтобы увидеть объём', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.4, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Рельеф: ближнее выступает вперёд'], ['layers', 'Слои: ступени, как вырезанные из картона'], ['scan', 'Сканер: плоскость бежит сквозь глубину'], ['vertigo', 'Вертиго: ближнее и дальнее зумятся по-разному'], ['dust', 'Пыль: дальний план рассыпается'], ['contour', 'Контуры: волны идут по глубине']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Что остаётся на месте', min: 0, max: 1, step: 0.02 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
 { id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 { id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в трёх измерениях, цветовые каналы расходятся, картинка мерцает', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16, rgb: 'on', speed: 1 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
@@ -394,6 +397,7 @@ float gGl = 0.0;
 float gCh = -1.0;
 float gScopeG = 0.0;
 float gScopeT = 0.0;
+float gScopeD = 0.0;
 uniform vec4 uScope, uScopeP, uScopeQ;
 float gDepth = 0.5;
 float gDepthG = 0.0;
@@ -736,37 +740,6 @@ vec4 frShow(float k, out vec3 tcol) {
 }
 
 
-float scopeGauss(float x, float c, float w) {
-	float q = (x - c) / w;
-	return exp(-q * q);
-}
-// Сигнал самописца в точке s (0..1 вдоль линии): tau это номер прохода пера, ln номер линии
-float scopeSig(float s, float tau, float ln) {
-	int wv = int(uScopeP.z + 0.5);
-	float au = uScopeP.w;
-	float ph = tau * 1.7 + ln * 3.1;
-	if (wv == 1) {
-		// кардиограмма: зубец P, комплекс QRS и зубец T в каждом ударе
-		float x = fract(s * 5.0 + tau * 0.37 + ln * 0.21);
-		return 0.12 * scopeGauss(x, 0.18, 0.05) - 0.14 * scopeGauss(x, 0.44, 0.012) + scopeGauss(x, 0.5, 0.014) - 0.26 * scopeGauss(x, 0.56, 0.015) + 0.28 * scopeGauss(x, 0.76, 0.06);
-	}
-	if (wv == 2) return sin(s * 18.0 + ph) * 0.55 + sin(s * 7.0 - ph * 0.7) * 0.3;
-	if (wv == 3) {
-		float sp = texture2D(uSpecTex, vec2(abs(s * 2.0 - 1.0), 0.5)).r;
-		return sp * 1.5 - 0.55 + snoise(vec3(s * 40.0, ln, tau * 3.0)) * 0.12;
-	}
-	// сейсмограф: фоновый шум и редкие толчки, которые затухают
-	float n = snoise(vec3(s * 36.0, ln * 4.1, tau * 0.7)) * 0.22 + snoise(vec3(s * 70.0, ln, tau * 8.0)) * 0.035;
-	float ev = 0.0;
-	for (int k = 0; k < 3; k++) {
-		float c = hash11(tau * 7.31 + float(k) * 3.7 + ln * 1.7);
-		float d = s - c;
-		ev += d > 0.0 ? exp(-d * 9.0) * sin(d * 150.0 + float(k)) * (0.35 + 0.65 * hash11(c * 91.0)) : 0.0;
-	}
-	return n + ev * (0.8 + au);
-}
-
-
 // Выдавливание по карте глубины: gDepth 0..1 (1 ближе всего). uDepth: сила, режим, скорость, фокус; uDepthP: слоёв, знак, покачивание, вид
 vec3 depthShape(vec3 b) {
 	float t = uTime - uTOff;
@@ -1096,44 +1069,6 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	if (uJitter.x > 0.001) {
 		pos += vec3(sin(t * 17.0 + aIdx * 91.0), sin(t * 13.0 + aIdx * 57.0), sin(t * 11.0 + aIdx * 33.0)) * uJitter.x * 0.03;
 	}
-	if (uScope.x > 0.001) {
-		// Акселограф: часть точек собирается в линию сигнала, перо бежит и оставляет след, старый след рассыпается обратно в форму
-		float hp = hash11(aIdx * 3.713 + 0.37);
-		if (hp < clamp(uScope.x, 0.0, 1.0)) {
-			int md = int(uScope.y + 0.5);
-			float nl = md == 3 ? max(1.0, floor(uScopeP.y + 0.5)) : 1.0;
-			float h1 = hash11(aIdx * 17.77 + 1.3);
-			float h2 = hash11(aIdx * 5.19 + 2.9);
-			float ln = floor(h2 * nl);
-			float s = h1;
-			float tt = t * uScope.z * 0.12 + ln * 0.11;
-			float cyc = floor(tt - s);
-			float age = fract(tt - s);
-			float vis = 1.0 - smoothstep(uScope.w * 0.55, uScope.w, age);
-			float yc = 0.5 * (uYR.x + uYR.y);
-			float Hh = max(uYR.y - uYR.x, 0.5);
-			float Ww = max(2.0, Hh * 1.4);
-			float amp = uScopeP.x * Hh * 0.17;
-			float sg = clamp(scopeSig(s, cyc, ln) * (0.75 + 0.7 * uScopeP.w), -1.4, 1.4);
-			vec3 tp;
-			if (md == 0) tp = vec3((s - 0.5) * Ww, yc + sg * amp, 0.0);
-			else if (md == 1) {
-				float a = s * 6.2831853;
-				float rr = Ww * 0.3 + sg * amp * 0.55;
-				tp = vec3(cos(a) * rr, yc + sin(a) * rr, 0.0);
-			} else if (md == 2) {
-				float a = s * 6.2831853 * 3.0;
-				float rr = Ww * 0.26 + sg * amp * 0.5;
-				tp = vec3(cos(a) * rr, yc + (s - 0.5) * Hh * 1.3, sin(a) * rr);
-			} else {
-				tp = vec3((s - 0.5) * Ww, yc + (ln / max(nl - 1.0, 1.0) - 0.5) * Hh * 0.35 + sg * amp * 0.5, (ln / max(nl - 1.0, 1.0) - 0.5) * Ww * 0.9);
-			}
-			tp += (vec3(hash11(aIdx * 2.1), hash11(aIdx * 4.3), hash11(aIdx * 6.7)) - 0.5) * 0.006;
-			pos = mix(pos, tp, pow(vis, 0.45));
-			gScopeT = vis;
-			gScopeG = vis * exp(-age * 22.0 / max(uScope.w, 0.1));
-		}
-	}
 	maskV = 1.0;
 	if (uMask.x > 0.5) {
 		float y01 = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
@@ -1292,6 +1227,7 @@ attribute vec3 aNormalB;
 attribute vec3 aColorB;
 attribute float aHide;
 attribute float aDepth;
+attribute float aPath;
 uniform float uAdd;
 uniform highp sampler2DArray uFrTex;
 uniform sampler2D uHeroTex;
@@ -1405,6 +1341,14 @@ void main() {
 	vec3 base;
 	float maskV;
 	gDepth = aDepth;
+	if (uScope.x > 0.001) {
+		// акселограф: aPath это место точки на пути пера (0..1), uScope.z это положение пера
+		float sAge = uScope.z - aPath;
+		if (sAge >= 0.0) {
+			gScopeT = (uScope.y < 0.5 ? 1.0 : exp(-sAge * 4.0 / max(uScope.w, 0.02))) * uScopeP.y;
+			gScopeG = exp(-sAge * 45.0) * uScopeP.y;
+		} else gScopeD = clamp(uScopeP.x * uScope.x * 1.6, 0.0, 1.0) * uScopeP.y;
+	}
 	vec3 pos = fxDisplace(aOrigin, aTarget, aIdx, base, maskV);
 	pos += aSculpt;
 	if (uFr.x > 0.5) pos += frNrm * frLift * 0.7;
@@ -1516,9 +1460,10 @@ void main() {
 		vColor += uP2 * gDepthG * 1.3;
 	}
 	// акселограф: линия окрашивается, голова пера горит
-	if (gScopeT > 0.0) {
-		vColor = mix(vColor, uP2 * 1.4, uScopeQ.x * gScopeT * 0.85);
-		vColor += uP2 * gScopeG * 2.6;
+	if (uScope.x > 0.001) {
+		vColor = mix(vColor, uP2 * 1.4, uScopeQ.x * gScopeT);
+		vColor += uP2 * gScopeG * uScopeQ.z * 3.0;
+		vColor *= 1.0 - gScopeD * 0.75;
 	}
 	// глитч: мерцание, строки-помехи и раздельные цветовые каналы
 	if (gGl > 0.0) {
@@ -1572,7 +1517,7 @@ void main() {
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
 	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.7 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
-	s *= 1.0 + gScopeT * uScopeQ.y + gScopeG * 1.2 + gDepthG * 0.8;
+	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD * 0.8);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
 	gl_PointSize = clamp(s, 1.0, 95.0);
 }
@@ -2877,6 +2822,7 @@ g.setAttribute('aNormalB', new THREE.BufferAttribute(nrm.slice(), 3));
 g.setAttribute('aIdx', new THREE.BufferAttribute(idxA, 1));
 g.setAttribute('aHide', new THREE.BufferAttribute(new Float32Array(count), 1));
 g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(count).fill(0.5), 1));
+g.setAttribute('aPath', new THREE.BufferAttribute(new Float32Array(count), 1));
 g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
 const m = new THREE.ShaderMaterial({
 vertexShader: this.material.vertexShader,
@@ -3902,6 +3848,177 @@ this._saveT = setTimeout(() => saveJSON(KEY, this.state), 250);
 emit() {
 this.app.bus.emit('fx');
 }
+_scopeBuild(S) {
+const g = this.geometry;
+const T = g.attributes.aTarget.array;
+const N = g.attributes.position.count;
+const sc = Math.max(8, Math.min(S, N));
+const ids = new Int32Array(sc);
+for (let i = 0; i < sc; i++) ids[i] = Math.floor((i * N) / sc);
+const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+for (let i = 0; i < sc; i++) for (let c = 0; c < 3; c++) {
+const v = T[ids[i] * 3 + c];
+if (v < mn[c]) mn[c] = v;
+if (v > mx[c]) mx[c] = v;
+}
+const ext = [0, 1, 2].map((c) => Math.max(mx[c] - mn[c], 0.03));
+const cell = Math.cbrt((ext[0] * ext[1] * ext[2]) / sc) * 1.7;
+const key = (x, y, z) => ((x + 512) * 1024 + (y + 512)) * 1024 + (z + 512);
+const cx = (v, c) => Math.floor((v - mn[c]) / cell);
+const grid = new Map();
+for (let i = 0; i < sc; i++) {
+const p = ids[i] * 3;
+const k = key(cx(T[p], 0), cx(T[p + 1], 1), cx(T[p + 2], 2));
+const a = grid.get(k);
+if (a) a.push(i);
+else grid.set(k, [i]);
+}
+const used = new Uint8Array(sc);
+const order = new Int32Array(sc);
+const d2 = (i, p) => (T[ids[i] * 3] - p[0]) ** 2 + (T[ids[i] * 3 + 1] - p[1]) ** 2 + (T[ids[i] * 3 + 2] - p[2]) ** 2;
+let cur = 0;
+for (let i = 1; i < sc; i++) if (T[ids[i] * 3 + 1] < T[ids[cur] * 3 + 1]) cur = i;
+let prev = null;
+for (let n = 0; n < sc; n++) {
+used[cur] = 1;
+order[n] = cur;
+if (n === sc - 1) break;
+const p = [T[ids[cur] * 3], T[ids[cur] * 3 + 1], T[ids[cur] * 3 + 2]];
+const bx = cx(p[0], 0), by = cx(p[1], 1), bz = cx(p[2], 2);
+let best = -1, bd = Infinity;
+for (let r = 0; r <= 5 && best < 0; r++) {
+for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) for (let dz = -r; dz <= r; dz++) {
+if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue;
+const a = grid.get(key(bx + dx, by + dy, bz + dz));
+if (!a) continue;
+for (let q = a.length - 1; q >= 0; q--) {
+const j = a[q];
+if (used[j]) {
+a[q] = a[a.length - 1];
+a.pop();
+continue;
+}
+let d = d2(j, p);
+if (prev) d *= 1.25 - 0.25 * Math.max(-1, Math.min(1, ((T[ids[j] * 3] - p[0]) * prev[0] + (T[ids[j] * 3 + 1] - p[1]) * prev[1] + (T[ids[j] * 3 + 2] - p[2]) * prev[2]) / (Math.sqrt(d2(j, p)) * prev[3] + 1e-9)));
+if (d < bd) {
+bd = d;
+best = j;
+}
+}
+}
+}
+if (best < 0) {
+for (let j = 0; j < sc; j++) {
+if (used[j]) continue;
+const d = d2(j, p);
+if (d < bd) {
+bd = d;
+best = j;
+}
+}
+}
+const q = best * 3;
+const vx = T[ids[best] * 3] - p[0], vy = T[ids[best] * 3 + 1] - p[1], vz = T[ids[best] * 3 + 2] - p[2];
+const len = Math.hypot(vx, vy, vz);
+prev = [vx, vy, vz, len];
+cur = best;
+}
+const rank = new Int32Array(sc);
+for (let n = 0; n < sc; n++) rank[order[n]] = n;
+const path = g.attributes.aPath;
+for (let i = 0; i < N; i++) {
+const x = T[i * 3], y = T[i * 3 + 1], z = T[i * 3 + 2];
+const bx = cx(x, 0), by = cx(y, 1), bz = cx(z, 2);
+let best = -1, bd = Infinity;
+for (let r = 0; r <= 3 && best < 0; r++) {
+for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) for (let dz = -r; dz <= r; dz++) {
+if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue;
+const a = grid.get(key(bx + dx, by + dy, bz + dz));
+if (!a) continue;
+for (const j of a) {
+const d = (T[ids[j] * 3] - x) ** 2 + (T[ids[j] * 3 + 1] - y) ** 2 + (T[ids[j] * 3 + 2] - z) ** 2;
+if (d < bd) {
+bd = d;
+best = j;
+}
+}
+}
+}
+path.array[i] = best < 0 ? 0 : rank[best] / (sc - 1);
+}
+path.needsUpdate = true;
+const pos = new Float32Array((sc - 1) * 6);
+const cut = cell * 4;
+for (let n = 0; n < sc - 1; n++) {
+const a = ids[order[n]] * 3, b = ids[order[n + 1]] * 3;
+const far = Math.hypot(T[a] - T[b], T[a + 1] - T[b + 1], T[a + 2] - T[b + 2]) > cut;
+for (let c = 0; c < 3; c++) {
+pos[n * 6 + c] = T[a + c];
+pos[n * 6 + 3 + c] = far ? T[a + c] : T[b + c];
+}
+}
+if (this._scopeLine) {
+this._scopeLine.parent?.remove(this._scopeLine);
+this._scopeLine.geometry.dispose();
+this._scopeLine.material.dispose();
+}
+const lg = new LineSegmentsGeometry();
+lg.setPositions(pos);
+lg.setColors(new Float32Array((sc - 1) * 6));
+const line = new LineSegments2(lg, new LineMaterial({ color: 0xffffff, linewidth: 2.4, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+line.frustumCulled = false;
+line.userData.helper = true;
+line.visible = false;
+this.points.add(line);
+this._scopeLine = line;
+this._scopeSegs = sc - 1;
+}
+_scopeTick(dt, S, u) {
+const amount = clamp(this._eff(S), 0, 1);
+const line = this._scopeLine;
+if (amount <= 0.001 || !this.geometry || !this.points || !this.geometry.attributes.aPath) {
+u.uScope.value.set(0, 0, 0, 1);
+if (line) line.visible = false;
+return;
+}
+const gk = this.geometry.uuid + ':' + Math.round(S.detail);
+if (this._scopeKey !== gk || (line && line.parent !== this.points)) {
+if (!this._scopeKey || this._scopeKey.split(':')[0] !== this.geometry.uuid || !this._scopeWait || performance.now() - this._scopeWait > 250 || (line && line.parent !== this.points)) {
+this._scopeKey = gk;
+this._scopeWait = performance.now();
+this._scopeBuild(Math.round(S.detail));
+}
+}
+this._scopeT = (this._scopeT || 0) + dt * S.speed * 0.07;
+const c = this._scopeT % 1;
+const head = c / 0.9;
+const env = Math.min(1, c / 0.03) * (1 - Math.min(1, Math.max(0, (c - 0.9) / 0.1)));
+const comet = S.mode === 'comet';
+u.uScope.value.set(amount, comet ? 1 : 0, head, S.trail);
+u.uScopeP.value.set(S.dim, env, 0, 0);
+u.uScopeQ.value.set(S.tint, S.thick, S.glow, 0);
+const L = this._scopeLine;
+if (!L) return;
+const segs = this._scopeSegs;
+const col = L.geometry.attributes.instanceColorStart.data;
+const base = new THREE.Color().copy(u.uP2.value).lerp(new THREE.Color(1, 1, 1), 0.35);
+const k0 = S.line * env * Math.min(1, amount * 2);
+const tr = Math.max(S.trail, 0.02);
+let any = false;
+for (let n = 0; n < segs; n++) {
+const age = head - n / segs;
+const lit = age < 0 ? 0 : (comet ? Math.exp((-age * 4) / tr) : 1) * k0;
+if (lit > 0.01) any = true;
+const o = n * 6;
+col.array[o] = col.array[o + 3] = base.r * lit;
+col.array[o + 1] = col.array[o + 4] = base.g * lit;
+col.array[o + 2] = col.array[o + 5] = base.b * lit;
+}
+col.needsUpdate = true;
+const sz = this.app.viewport.renderer.getSize(new THREE.Vector2());
+L.material.resolution.set(sz.x, sz.y);
+L.visible = S.line > 0.01 && any;
+}
 onDepthChange(fn) {
 this._dListeners.add(fn);
 return () => this._dListeners.delete(fn);
@@ -4373,6 +4490,7 @@ g.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(model.colors
 g.setAttribute('aColorB', new THREE.BufferAttribute(new Float32Array(g.attributes.aColor.array), 3));
 g.setAttribute('aHide', new THREE.BufferAttribute(c.hide && c.hide.length === count ? new Float32Array(c.hide) : new Float32Array(count), 1));
 g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(count).fill(0.5), 1));
+g.setAttribute('aPath', new THREE.BufferAttribute(new Float32Array(count), 1));
 g.setAttribute('aIdx', new THREE.BufferAttribute(idx, 1));
 g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
 g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
@@ -5003,11 +5121,7 @@ u.uVoxel.value.set(clamp(this._eff(L.voxel), 0, 1), 0, 0, 0);
 u.uVoxelP.value.set({ grid: 0, lego: 1, breathe: 2 }[L.voxel.mode] ?? 0, L.voxel.speed, 0, 0);
 u.uJitter.value.set(this._eff(L.jitter), 0, 0, 0);
 {
-const S = L.scope;
-const lvl = S.band !== 'none' ? this._bandLevel(S) : 0;
-u.uScope.value.set(clamp(this._eff(S), 0, 1), { strip: 0, radar: 1, spiral: 2, wf: 3 }[S.mode] ?? 0, S.speed, S.trail);
-u.uScopeP.value.set(S.amp, S.lines, { seismo: 0, ecg: 1, sine: 2, spec: 3 }[S.wave] ?? 0, lvl);
-u.uScopeQ.value.set(S.tint, S.thick, 0, 0);
+this._scopeTick(dt, L.scope, u);
 }
 {
 const Dp = L.depth;
