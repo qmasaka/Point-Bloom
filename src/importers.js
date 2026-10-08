@@ -37,7 +37,7 @@ export const MODEL_FORMATS = {
 	usdz: 'USDZ',
 	off: 'OFF',
 };
-export const IMAGE_EXT = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'tga', 'avif'];
+export const IMAGE_EXT = ['png', 'apng', 'jpg', 'jpeg', 'jpe', 'jfif', 'pjpeg', 'webp', 'bmp', 'gif', 'tga', 'avif', 'heic', 'heif', 'svg', 'ico', 'tif', 'tiff'];
 const isModelFile = (f) => extOf(f.name) in MODEL_FORMATS;
 const isImageFile = (f) => IMAGE_EXT.includes(extOf(f.name));
 

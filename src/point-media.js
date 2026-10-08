@@ -1,6 +1,56 @@
 // Фото и видео в точки: каждая точка берёт цвет пикселя (и, по желанию, высоту по яркости).
 // Видео можно записать в точечный ролик и сохранить: .pcv (повторно открывается здесь) или PLY-кадры в ZIP.
 import { zlibSync, unzlibSync, zipSync } from 'three/addons/libs/fflate.module.js';
+import { TGALoader } from 'three/addons/loaders/TGALoader.js';
+
+/** Читает картинку: сначала обычным путём браузера, затем запасными (TGA своим разбором, остальное через createImageBitmap и холст) */
+async function decodeImageFile(file, url, ext) {
+	const img = new Image();
+	img.src = url;
+	try {
+		await img.decode();
+		if (img.naturalWidth) return { el: img, url };
+	} catch (e) {
+		/* пробуем запасные пути */
+	}
+	let canvas = null;
+	if (ext === 'tga') {
+		const t = new TGALoader().parse(await file.arrayBuffer());
+		canvas = document.createElement('canvas');
+		canvas.width = t.width;
+		canvas.height = t.height;
+		const id = new ImageData(new Uint8ClampedArray(t.data.buffer, t.data.byteOffset, t.data.byteLength), t.width, t.height);
+		canvas.getContext('2d').putImageData(id, 0, 0);
+		if (t.flipY) {
+			const c2 = document.createElement('canvas');
+			c2.width = t.width;
+			c2.height = t.height;
+			const g = c2.getContext('2d');
+			g.translate(0, t.height);
+			g.scale(1, -1);
+			g.drawImage(canvas, 0, 0);
+			canvas = c2;
+		}
+	} else {
+		try {
+			const bmp = await createImageBitmap(file);
+			canvas = document.createElement('canvas');
+			canvas.width = bmp.width;
+			canvas.height = bmp.height;
+			canvas.getContext('2d').drawImage(bmp, 0, 0);
+		} catch (e) {
+			canvas = null;
+		}
+	}
+	if (!canvas) throw new Error(`Этот браузер не читает формат .${ext || 'файла'}. Сохраните картинку как JPG или PNG и откройте снова`);
+	const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
+	const nurl = URL.createObjectURL(blob);
+	const out = new Image();
+	out.src = nurl;
+	await out.decode();
+	URL.revokeObjectURL(url);
+	return { el: out, url: nurl };
+}
 
 // sRGB-байт в линейное значение: шейдер сам вернёт цвет в sRGB
 const LUT = new Float32Array(256);
@@ -116,7 +166,7 @@ export class PointMedia {
 			this._lastKey = -1;
 			return;
 		}
-		const url = URL.createObjectURL(file);
+		let url = URL.createObjectURL(file);
 		const isVideo = (file.type || '').startsWith('video') || /\.(mp4|webm|mov|m4v|ogv)$/i.test(name);
 		this.muted = true;
 		this.onMute = null;
@@ -135,9 +185,9 @@ export class PointMedia {
 				});
 				this.aspect = el.videoWidth / el.videoHeight;
 			} else {
-				el = new Image();
-				el.src = url;
-				await el.decode();
+				const dec = await decodeImageFile(file, url, (name.split('.').pop() || '').toLowerCase());
+				el = dec.el;
+				url = dec.url;
 				this.aspect = el.naturalWidth / el.naturalHeight;
 			}
 		} catch (e) {

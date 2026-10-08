@@ -100,7 +100,7 @@ export class UI {
 		$('#btnEmptyMedia').addEventListener('click', () => {
 			const inp = document.createElement('input');
 			inp.type = 'file';
-			inp.accept = 'video/*,image/*,.pcv';
+			inp.accept = 'video/*,image/*,.pcv,.tga,.tif,.tiff,.heic,.heif,.jfif,.ico,.svg,.avif,.bmp,.apng';
 			inp.addEventListener('change', () => inp.files[0] && this.openMedia(inp.files[0]));
 			inp.click();
 		});

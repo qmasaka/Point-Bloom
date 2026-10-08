@@ -35,7 +35,7 @@ amf: 'AMF',
 usdz: 'USDZ',
 off: 'OFF',
 };
-export const IMAGE_EXT = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'tga', 'avif'];
+export const IMAGE_EXT = ['png', 'apng', 'jpg', 'jpeg', 'jpe', 'jfif', 'pjpeg', 'webp', 'bmp', 'gif', 'tga', 'avif', 'heic', 'heif', 'svg', 'ico', 'tif', 'tiff'];
 const isModelFile = (f) => extOf(f.name) in MODEL_FORMATS;
 const isImageFile = (f) => IMAGE_EXT.includes(extOf(f.name));
 export const ACCEPT_ALL = ['.zip', '.mtl', '.bin', ...Object.keys(MODEL_FORMATS).map((e) => '.' + e), ...IMAGE_EXT.map((e) => '.' + e), '.mp4', '.webm', '.mov', '.pcv'].join(',');
