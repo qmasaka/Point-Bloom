@@ -235,8 +235,72 @@ async function loadSTL(file) {
 	return new THREE.Mesh(g, mat);
 }
 
+/** PLY со сплатами (3D Gaussian Splatting): читаем положение, цвет из SH0 и прозрачность, получаем облако цветных точек */
+function parseSplatPLY(buf, name, isOwn) {
+	const bytes = new Uint8Array(buf);
+	const text = new TextDecoder('latin1').decode(bytes.subarray(0, Math.min(bytes.length, 8192)));
+	const endIdx = text.indexOf('end_header');
+	if (endIdx < 0) return null;
+	const header = text.slice(0, endIdx);
+	if (!/format\s+binary_little_endian/.test(header)) return null;
+	const nl = text.indexOf('\n', endIdx) + 1;
+	const count = parseInt((header.match(/element vertex (\d+)/) || [])[1], 10);
+	if (!count) return null;
+	const SIZE = { float: 4, float32: 4, double: 8, float64: 8, uchar: 1, uint8: 1, char: 1, int8: 1, ushort: 2, uint16: 2, short: 2, int16: 2, uint: 4, uint32: 4, int: 4, int32: 4 };
+	const vertexPart = header.split(/element /).find((b) => b.startsWith('vertex')) || '';
+	const props = [];
+	let off = 0;
+	for (const m of vertexPart.matchAll(/property\s+(\w+)\s+(\w+)/g)) {
+		props.push({ type: m[1], name: m[2], off });
+		off += SIZE[m[1]] || 4;
+	}
+	const stride = off;
+	const P = Object.fromEntries(props.map((q) => [q.name, q]));
+	if (!P.f_dc_0 || !P.x) return null;
+	const dv = new DataView(buf, nl);
+	const rd = (q, i) => (q.type === 'double' || q.type === 'float64' ? dv.getFloat64(i * stride + q.off, true) : dv.getFloat32(i * stride + q.off, true));
+	const SH0 = 0.28209479177387814;
+	const lin = (c) => Math.pow(Math.max(0, Math.min(1, c)), 2.2);
+	// слишком большие облака прореживаем равномерно: остальное всё равно не нарисуется в реальном времени
+	const cap = 1500000;
+	const step = Math.max(1, count / cap);
+	const pos = new Float32Array(Math.min(count, cap + 1) * 3);
+	const col = new Float32Array(pos.length);
+	// сплаты из 3DGS обычно в системе «y вниз», собственные экспорты Point Bloom в «y вверх»
+	const flip = isOwn ? 1 : -1;
+	let k = 0;
+	for (let f = 0; f < count && k * 3 < pos.length; f += step) {
+		const i = Math.floor(f);
+		if (P.opacity) {
+			const op = 1 / (1 + Math.exp(-rd(P.opacity, i)));
+			if (op < 0.05) continue;
+		}
+		pos[k * 3] = rd(P.x, i);
+		pos[k * 3 + 1] = rd(P.y, i) * flip;
+		pos[k * 3 + 2] = rd(P.z, i) * flip;
+		col[k * 3] = lin(0.5 + SH0 * rd(P.f_dc_0, i));
+		col[k * 3 + 1] = lin(0.5 + SH0 * rd(P.f_dc_1, i));
+		col[k * 3 + 2] = lin(0.5 + SH0 * rd(P.f_dc_2, i));
+		k++;
+	}
+	if (!k) return null;
+	const g = new THREE.BufferGeometry();
+	g.setAttribute('position', new THREE.BufferAttribute(pos.slice(0, k * 3), 3));
+	g.setAttribute('color', new THREE.BufferAttribute(col.slice(0, k * 3), 3));
+	const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.01, vertexColors: true, sizeAttenuation: true }));
+	pts.name = 'Сплаты ' + name;
+	pts.userData.splat = { total: count, shown: k };
+	return pts;
+}
+
 async function loadPLY(file) {
-	const g = new PLYLoader().parse(await file.arrayBuffer());
+	const buf = await file.arrayBuffer();
+	const head = new TextDecoder('latin1').decode(new Uint8Array(buf, 0, Math.min(buf.byteLength, 4096)));
+	if (head.includes('f_dc_0')) {
+		const pts = parseSplatPLY(buf, stripExt(file.name), head.includes('Point Bloom'));
+		if (pts) return pts;
+	}
+	const g = new PLYLoader().parse(buf);
 	const hasFaces = !!g.index || (g.attributes.position && g.userData && g.userData.faces);
 	const hasColor = !!g.attributes.color;
 	if (g.index) {
