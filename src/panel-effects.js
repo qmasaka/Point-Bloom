@@ -1268,7 +1268,7 @@ export function createEffectsPanel(app, root, engine) {
 		}
 		return best;
 	}
-	const aSettings = h('div', { class: 'fx-anim-settings' }, aSnap, aLoop, aDurBox, aRec, aClose);
+	const aSettings = h('div', { class: 'fx-anim-settings' }, aSnap, aLoop, aDurBox, aRec);
 
 	const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, quickWrap, aSettings);
 

@@ -5581,3 +5581,14 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .fx-mode .fx-anim .fx-anim-step { width: 20px; height: 13px; border-radius: 4px; }
 .fx-mode .fx-anim .fx-anim-dur-box { height: 28px; }
 .fx-mode .fx-anim .fx-anim-step { height: 12px; }
+
+/* ================================================================ правая панель подстраивается по высоте под свои настройки */
+.ui-float .sidebar { --sb-bottom: 50px; }
+@container app (min-width: 901px) and (max-width: 1250px) { .ui-float .sidebar { --sb-bottom: 156px; } }
+@container app (min-width: 901px) { .fx-mode.fx-anim-active .sidebar { --sb-bottom: calc(var(--fx-anim-h, 245px) + 26px); } }
+@container app (min-width: 901px) and (max-width: 1180px) { .fx-mode.fx-anim-active .sidebar { --sb-bottom: calc(var(--fx-anim-h, 245px) + 76px); } }
+@container app (min-width: 901px) {
+	.ui-float .sidebar { display: flex; flex-direction: column; height: fit-content; max-height: calc(100% - 68px - var(--sb-bottom)); }
+	.ui-float .sidebar .fxf-bar { flex: none; }
+	.ui-float .fxf-scroll { flex: 0 1 auto; min-height: 0; }
+}

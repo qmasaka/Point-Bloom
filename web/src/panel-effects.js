@@ -1188,7 +1188,7 @@ best = q;
 }
 return best;
 }
-const aSettings = h('div', { class: 'fx-anim-settings' }, aSnap, aLoop, aDurBox, aRec, aClose);
+const aSettings = h('div', { class: 'fx-anim-settings' }, aSnap, aLoop, aDurBox, aRec);
 const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, quickWrap, aSettings);
 const stage = h('div', { class: 'fx-anim-stage' });
 const rulerTitle = h('div', { class: 'fx-anim-track-label fx-anim-ruler-title' }, 'Время');
