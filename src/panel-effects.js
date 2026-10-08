@@ -436,7 +436,6 @@ export function createEffectsPanel(app, root, engine) {
 		title: 'Открыть таймлайн для анимации эффектов и камеры',
 		onClick: () => toggleAnim()
 	});
-	left.append(animQuickBtn);
 	for (const grp of FX_GROUP_NAMES) {
 		const folder = h('div', { class: 'fx-folder' });
 		const fhead = h('button', { type: 'button', class: 'fx-folder-head', 'aria-expanded': 'true' }, h('span', { class: 'fx-folder-caret', html: icon('caret-down', 13) }), h('span', { class: 'fx-folder-name' }, grp), h('span', { class: 'fx-folder-n' }));
@@ -1133,7 +1132,25 @@ export function createEffectsPanel(app, root, engine) {
 		}
 	});
 
-	const quickWrap = h('div', { class: 'fx-anim-quick' }, presetsBtn, addClipBtn);
+	// понятная кнопка камеры: повернули сцену как нужно, нажали, и ракурс записан в текущий момент времени
+	const addCamKey = () => {
+		selKey = engine.animAddKey();
+		selClip = null;
+		animSync();
+		app.toast('Ракурс камеры записан на ' + engine.animT.toFixed(1) + ' с', 'info', 1600);
+	};
+	const camKeyBtn = button({
+		label: 'Ракурс',
+		icon: 'video-camera',
+		variant: 'secondary',
+		cls: 'btn-sm fx-anim-cam-btn',
+		title: 'Запомнить текущий ракурс камеры в момент времени, где стоит маркер (C). Повернули сцену, нажали, и камера будет возвращаться сюда',
+		onClick: (e) => {
+			e.stopPropagation();
+			addCamKey();
+		}
+	});
+	const quickWrap = h('div', { class: 'fx-anim-quick' }, presetsBtn, addClipBtn, camKeyBtn);
 
 	// Настройки справа: loop, dur, record, close
 	const aLoop = iconButton({
@@ -1225,8 +1242,7 @@ export function createEffectsPanel(app, root, engine) {
 	// Дорожка камеры
 	const camTitle = h('div', { class: 'fx-anim-track-label fx-anim-cam-label' },
 		h('span', { class: 'ic-wrap', html: icon('video-camera', 14) }),
-		h('span', { class: 'fx-anim-lane-name' }, 'Камера'),
-		iconButton({ icon: 'plus', title: 'Запомнить ракурс камеры в этот момент времени', size: 12, cls: 'fx-anim-cam-add', onClick: () => { selKey = engine.animAddKey(); selClip = null; animSync(); } })
+		h('span', { class: 'fx-anim-lane-name' }, 'Камера')
 	);
 	const camKeysWrap = h('div', { class: 'fx-anim-keys' });
 	const camLine = h('div', { class: 'fx-anim-cam-line' });
@@ -1350,6 +1366,9 @@ export function createEffectsPanel(app, root, engine) {
 				selKey = null;
 				animSync();
 			}
+		} else if (e.code === 'KeyC' && !e.ctrlKey && !e.metaKey) {
+			e.preventDefault();
+			addCamKey();
 		} else if (e.code === 'KeyS' && !e.ctrlKey && !e.metaKey) {
 			e.preventDefault();
 			splitSelected();

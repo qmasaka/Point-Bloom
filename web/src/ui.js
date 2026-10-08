@@ -919,7 +919,7 @@ return;
 }
 break;
 case 'Space':
-if (this.workspace === 'fx') {
+if (this.workspace === 'fx' && !$('#app').classList.contains('fx-anim-active')) {
 e.preventDefault();
 this.effectsEngine.toggle().catch(() => {});
 return;

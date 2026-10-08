@@ -1008,7 +1008,8 @@ export class UI {
 					}
 					break;
 				case 'Space':
-					if (this.workspace === 'fx') {
+					// при открытом секвенсоре пробел запускает таймлайн, звук отдельно не переключаем
+					if (this.workspace === 'fx' && !$('#app').classList.contains('fx-anim-active')) {
 						e.preventDefault();
 						this.effectsEngine.toggle().catch(() => {});
 						return;

@@ -5487,3 +5487,8 @@ body.is-resizing-h * {
 @container app (min-width: 901px) and (max-width: 1180px) {
 	.fx-mode.fx-anim-active .fx-left, .fx-mode.fx-anim-active .sidebar { bottom: calc(var(--fx-anim-h, 245px) + 76px); }
 }
+
+/* время на таймлайне не прилипает при прокрутке; кнопка камеры в шапке */
+.fx-mode .fx-anim-ruler-row { position: static; }
+.fx-mode .fx-anim .fx-anim-cam-btn .btn-label { font-size: 12px; }
+.fx-mode .fx-anim .fx-anim-cam-btn svg { color: var(--accent); }
