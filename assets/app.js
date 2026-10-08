@@ -137402,6 +137402,11 @@ class EffectsEngine {
 		this.depthAI.onChange = () => this._depthEmit();
 		this._D = { key: null, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, geo: null, dirty: false, snap: false, moving: false, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, force: false, err: '', n: 0 };
 		app.bus.on('settings', () => this._histSoon());
+		// как только в сцене что-то появилось, в паузу готовим шейдеры эффектов
+		app.bus.on('scene', () => {
+			clearTimeout(this._warmT);
+			this._warmT = setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(() => this.prewarm()), 1200);
+		});
 		app.bus.on('pointtex', () => {
 			if (this.active) {
 				this.cache.clear();
@@ -139309,6 +139314,24 @@ class EffectsEngine {
 		if (L) L.visible = order === 'walk' && S.line > 0.01;
 	}
 
+	/** Заранее собирает шейдер эффектов, пока вы работаете в редакторе: первый вход в «Эффекты» не подвисает на компиляции (на Windows она идёт секунды) */
+	async prewarm() {
+		if (this._warmMat || this.active) return;
+		try {
+			const vp = this.app.viewport;
+			const m = new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: frag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} });
+			const g = new THREE.BufferGeometry();
+			g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
+			const sc = new THREE.Scene();
+			sc.add(new THREE.Points(g, m));
+			this._warmMat = m; // материал держим живым: программа остаётся в кеше и настоящий материал берёт её готовой
+			if (vp.renderer.compileAsync) await vp.renderer.compileAsync(sc, vp.camera);
+			else vp.renderer.compile(sc, vp.camera);
+		} catch (e) {
+			/* подготовка не обязательна */
+		}
+	}
+
 	// ------------------------------------------------------------ глубина (фото и видео)
 	onDepthChange(fn) {
 		this._dListeners.add(fn);
@@ -140238,7 +140261,8 @@ class EffectsEngine {
 			const ab = this.state.look.aberration || 0;
 			this.post.render(scene, camera, fb, bloom, ab);
 		};
-		app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 400);
+		// камера встаёт на место мгновенно, пока сцена скрыта переходом: плавный подъезд был виден как «разбухание» модели
+		app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 0);
 		this.syncLookFromPoints();
 		// открытое видео сразу становится источником и продолжает играть
 		if (this.pm.ready) {
@@ -140287,7 +140311,7 @@ class EffectsEngine {
 		stage.removeEventListener('pointerup', this._up);
 		document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 		this.app.display.apply();
-		this.app.nav.frameAll(true);
+		this.app.nav.frameAll(false);
 		vp.invalidate();
 		this.emit();
 	}
@@ -144002,6 +144026,8 @@ class UI {
 		const fxPanel = $('#panel-effects');
 		const vpEl = $('#viewport');
 		vpEl.classList.add('ws-out'); // сцена плавно гаснет на время переключения
+		// даём гашению начаться: тяжёлая работа ниже блокирует страницу, а затухание идёт на видеокарте и дойдёт до конца, не выглядя подвисанием
+		await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 130)));
 		if (ws === 'fx') {
 			this.prevTab = $$('.tab').find((t) => t.getAttribute('aria-selected') === 'true')?.dataset.tab || 'scene';
 			this.closeOverlayPop && this.closeOverlayPop();
@@ -145889,10 +145915,14 @@ const { guardDevice } = __req('src/device-guard.js');
 
 /** Плавное открытие: пока всё строится, виден экран загрузки, потом он гаснет, а панели выезжают на места */
 function revealApp() {
-	const done = () => {
+	let revealed = false;
+	// animate=false: интерфейс просто появляется. Выезд панелей нужен только при обычном открытии: если открытие затянулось (вкладка была в фоне, страница занята) или пользователь уже что-то делает, повторять его поверх модели нельзя, это и было миганием после добавления файла
+	const done = (animate = true) => {
+		if (revealed) return;
+		revealed = true;
 		const root = document.documentElement;
 		root.classList.remove('booting');
-		root.classList.add('booted');
+		if (animate && performance.now() < 6000 && document.visibilityState === 'visible') root.classList.add('booted');
 		const boot = document.getElementById('boot');
 		if (boot) {
 			boot.classList.add('is-done');
@@ -145900,9 +145930,13 @@ function revealApp() {
 		}
 		setTimeout(() => root.classList.remove('booted'), 1400);
 	};
-	setTimeout(done, 4000); // страховка: если вкладка скрыта и кадры не рисуются, интерфейс всё равно покажется
+	const early = () => done(false);
+	window.addEventListener('pointerdown', early, { once: true, capture: true });
+	window.addEventListener('keydown', early, { once: true, capture: true });
+	window.addEventListener('drop', early, { once: true, capture: true });
+	setTimeout(() => done(false), 4000); // страховка: если вкладка скрыта и кадры не рисуются, интерфейс всё равно покажется
 	const fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-	Promise.all([fonts, new Promise((r) => setTimeout(r, 450))]).then(() => requestAnimationFrame(() => requestAnimationFrame(done)));
+	Promise.all([fonts, new Promise((r) => setTimeout(r, 450))]).then(() => requestAnimationFrame(() => requestAnimationFrame(() => done(true))));
 }
 
 function showFatal(e) {

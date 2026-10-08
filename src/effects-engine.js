@@ -2584,6 +2584,11 @@ export class EffectsEngine {
 		this.depthAI.onChange = () => this._depthEmit();
 		this._D = { key: null, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, geo: null, dirty: false, snap: false, moving: false, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, force: false, err: '', n: 0 };
 		app.bus.on('settings', () => this._histSoon());
+		// как только в сцене что-то появилось, в паузу готовим шейдеры эффектов
+		app.bus.on('scene', () => {
+			clearTimeout(this._warmT);
+			this._warmT = setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(() => this.prewarm()), 1200);
+		});
 		app.bus.on('pointtex', () => {
 			if (this.active) {
 				this.cache.clear();
@@ -4491,6 +4496,24 @@ export class EffectsEngine {
 		if (L) L.visible = order === 'walk' && S.line > 0.01;
 	}
 
+	/** Заранее собирает шейдер эффектов, пока вы работаете в редакторе: первый вход в «Эффекты» не подвисает на компиляции (на Windows она идёт секунды) */
+	async prewarm() {
+		if (this._warmMat || this.active) return;
+		try {
+			const vp = this.app.viewport;
+			const m = new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: frag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} });
+			const g = new THREE.BufferGeometry();
+			g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
+			const sc = new THREE.Scene();
+			sc.add(new THREE.Points(g, m));
+			this._warmMat = m; // материал держим живым: программа остаётся в кеше и настоящий материал берёт её готовой
+			if (vp.renderer.compileAsync) await vp.renderer.compileAsync(sc, vp.camera);
+			else vp.renderer.compile(sc, vp.camera);
+		} catch (e) {
+			/* подготовка не обязательна */
+		}
+	}
+
 	// ------------------------------------------------------------ глубина (фото и видео)
 	onDepthChange(fn) {
 		this._dListeners.add(fn);
@@ -5420,7 +5443,8 @@ export class EffectsEngine {
 			const ab = this.state.look.aberration || 0;
 			this.post.render(scene, camera, fb, bloom, ab);
 		};
-		app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 400);
+		// камера встаёт на место мгновенно, пока сцена скрыта переходом: плавный подъезд был виден как «разбухание» модели
+		app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 0);
 		this.syncLookFromPoints();
 		// открытое видео сразу становится источником и продолжает играть
 		if (this.pm.ready) {
@@ -5469,7 +5493,7 @@ export class EffectsEngine {
 		stage.removeEventListener('pointerup', this._up);
 		document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 		this.app.display.apply();
-		this.app.nav.frameAll(true);
+		this.app.nav.frameAll(false);
 		vp.invalidate();
 		this.emit();
 	}

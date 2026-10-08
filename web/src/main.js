@@ -8,10 +8,13 @@ import { exportForWeb } from './web-export.js';
 import { runBenchmark } from './capabilities.js';
 import { guardDevice } from './device-guard.js';
 function revealApp() {
-const done = () => {
+let revealed = false;
+const done = (animate = true) => {
+if (revealed) return;
+revealed = true;
 const root = document.documentElement;
 root.classList.remove('booting');
-root.classList.add('booted');
+if (animate && performance.now() < 6000 && document.visibilityState === 'visible') root.classList.add('booted');
 const boot = document.getElementById('boot');
 if (boot) {
 boot.classList.add('is-done');
@@ -19,9 +22,13 @@ setTimeout(() => boot.remove(), 700);
 }
 setTimeout(() => root.classList.remove('booted'), 1400);
 };
-setTimeout(done, 4000);
+const early = () => done(false);
+window.addEventListener('pointerdown', early, { once: true, capture: true });
+window.addEventListener('keydown', early, { once: true, capture: true });
+window.addEventListener('drop', early, { once: true, capture: true });
+setTimeout(() => done(false), 4000);
 const fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-Promise.all([fonts, new Promise((r) => setTimeout(r, 450))]).then(() => requestAnimationFrame(() => requestAnimationFrame(done)));
+Promise.all([fonts, new Promise((r) => setTimeout(r, 450))]).then(() => requestAnimationFrame(() => requestAnimationFrame(() => done(true))));
 }
 function showFatal(e) {
 console.error(e);

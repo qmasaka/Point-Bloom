@@ -10,10 +10,14 @@ import { guardDevice } from './device-guard.js';
 
 /** Плавное открытие: пока всё строится, виден экран загрузки, потом он гаснет, а панели выезжают на места */
 function revealApp() {
-	const done = () => {
+	let revealed = false;
+	// animate=false: интерфейс просто появляется. Выезд панелей нужен только при обычном открытии: если открытие затянулось (вкладка была в фоне, страница занята) или пользователь уже что-то делает, повторять его поверх модели нельзя, это и было миганием после добавления файла
+	const done = (animate = true) => {
+		if (revealed) return;
+		revealed = true;
 		const root = document.documentElement;
 		root.classList.remove('booting');
-		root.classList.add('booted');
+		if (animate && performance.now() < 6000 && document.visibilityState === 'visible') root.classList.add('booted');
 		const boot = document.getElementById('boot');
 		if (boot) {
 			boot.classList.add('is-done');
@@ -21,9 +25,13 @@ function revealApp() {
 		}
 		setTimeout(() => root.classList.remove('booted'), 1400);
 	};
-	setTimeout(done, 4000); // страховка: если вкладка скрыта и кадры не рисуются, интерфейс всё равно покажется
+	const early = () => done(false);
+	window.addEventListener('pointerdown', early, { once: true, capture: true });
+	window.addEventListener('keydown', early, { once: true, capture: true });
+	window.addEventListener('drop', early, { once: true, capture: true });
+	setTimeout(() => done(false), 4000); // страховка: если вкладка скрыта и кадры не рисуются, интерфейс всё равно покажется
 	const fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-	Promise.all([fonts, new Promise((r) => setTimeout(r, 450))]).then(() => requestAnimationFrame(() => requestAnimationFrame(done)));
+	Promise.all([fonts, new Promise((r) => setTimeout(r, 450))]).then(() => requestAnimationFrame(() => requestAnimationFrame(() => done(true))));
 }
 
 function showFatal(e) {

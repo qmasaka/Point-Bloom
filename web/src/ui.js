@@ -407,6 +407,7 @@ if (ws === this.workspace) return;
 const fxPanel = $('#panel-effects');
 const vpEl = $('#viewport');
 vpEl.classList.add('ws-out');
+await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 130)));
 if (ws === 'fx') {
 this.prevTab = $$('.tab').find((t) => t.getAttribute('aria-selected') === 'true')?.dataset.tab || 'scene';
 this.closeOverlayPop && this.closeOverlayPop();

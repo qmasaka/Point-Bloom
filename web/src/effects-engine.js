@@ -2456,6 +2456,10 @@ this._dListeners = new Set();
 this.depthAI.onChange = () => this._depthEmit();
 this._D = { key: null, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, geo: null, dirty: false, snap: false, moving: false, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, force: false, err: '', n: 0 };
 app.bus.on('settings', () => this._histSoon());
+app.bus.on('scene', () => {
+clearTimeout(this._warmT);
+this._warmT = setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(() => this.prewarm()), 1200);
+});
 app.bus.on('pointtex', () => {
 if (this.active) {
 this.cache.clear();
@@ -4172,6 +4176,21 @@ u.uScopeLB.value = S.line;
 const L = this._scopeLine;
 if (L) L.visible = order === 'walk' && S.line > 0.01;
 }
+async prewarm() {
+if (this._warmMat || this.active) return;
+try {
+const vp = this.app.viewport;
+const m = new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: frag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} });
+const g = new THREE.BufferGeometry();
+g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
+const sc = new THREE.Scene();
+sc.add(new THREE.Points(g, m));
+this._warmMat = m;
+if (vp.renderer.compileAsync) await vp.renderer.compileAsync(sc, vp.camera);
+else vp.renderer.compile(sc, vp.camera);
+} catch (e) {
+}
+}
 onDepthChange(fn) {
 this._dListeners.add(fn);
 return () => this._dListeners.delete(fn);
@@ -5024,7 +5043,7 @@ const bloom = this.state.look.bloom || 0;
 const ab = this.state.look.aberration || 0;
 this.post.render(scene, camera, fb, bloom, ab);
 };
-app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 400);
+app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 0);
 this.syncLookFromPoints();
 if (this.pm.ready) {
 this.state.look.colorBy = 'model';
@@ -5070,7 +5089,7 @@ stage.removeEventListener('pointerdown', this._dn);
 stage.removeEventListener('pointerup', this._up);
 document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 this.app.display.apply();
-this.app.nav.frameAll(true);
+this.app.nav.frameAll(false);
 vp.invalidate();
 this.emit();
 }

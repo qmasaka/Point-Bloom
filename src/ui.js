@@ -460,6 +460,8 @@ export class UI {
 		const fxPanel = $('#panel-effects');
 		const vpEl = $('#viewport');
 		vpEl.classList.add('ws-out'); // сцена плавно гаснет на время переключения
+		// даём гашению начаться: тяжёлая работа ниже блокирует страницу, а затухание идёт на видеокарте и дойдёт до конца, не выглядя подвисанием
+		await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 130)));
 		if (ws === 'fx') {
 			this.prevTab = $$('.tab').find((t) => t.getAttribute('aria-selected') === 'true')?.dataset.tab || 'scene';
 			this.closeOverlayPop && this.closeOverlayPop();
