@@ -54,6 +54,9 @@ export class MediaController {
 	async load(file) {
 		await this.pm.load(file);
 		this.rebuild();
+		// открыли новое фото или видео прямо в режиме эффектов: частицы должны перейти на него, а не остаться от прежнего
+		const eng = this.app.ui?.effectsEngine;
+		if (eng?.active) await eng.useMedia();
 		this.app.toast(this.pm.kind === 'image' ? 'Фото превращено в точки' : this.pm.kind === 'video' ? 'Видео превращено в точки. Его можно записать в точечный ролик' : 'Точечный ролик открыт', 'ok');
 		this.emit();
 	}

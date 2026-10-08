@@ -95,6 +95,28 @@ for (let i = -2; i <= 2; i++) dot(c, (i / 2) * w, y, 1.6, 0.5 + 0.5 * Math.abs(M
 voxel: (c, t) => {
 for (const [x, y, i, j] of grid(4, 4, 5.2, 4.8)) dot(c, x, y, 3.4 + Math.sin(t * 3 + i + j) * 0.9, 0.55 + 0.45 * Math.sin(t * 2 + i * j));
 },
+depth: (c, t) => {
+const sw = Math.abs(((t * 0.45) % 1) * 2 - 1);
+for (let j = 0; j < 5; j++) {
+for (let i = 0; i < 9; i++) {
+const x = (i - 4) * 3.1;
+const d = Math.exp(-(((i - 4) / 2.6) ** 2) - ((j - 2) / 1.7) ** 2);
+const y = (j - 2) * 3.6 - d * 4.2 - 1;
+const g = Math.exp(-(((d - sw) / 0.16) ** 2));
+dot(c, x + (j - 2) * 0.5 * d, y, 1.3 + d * 1.1 + g * 1.4, 0.3 + d * 0.5 + g * 0.5);
+}
+}
+},
+scope: (c, t) => {
+const pen = (t * 0.55) % 1;
+for (let i = 0; i < 30; i++) {
+const s = i / 29;
+const age = (pen - s + 1) % 1;
+if (age > 0.75) continue;
+const y = Math.sin(s * 15 + 1.2) * 4 * (0.5 + 0.5 * Math.sin(s * 5)) + (Math.abs(s - 0.55) < 0.05 ? -7 : 0);
+dot(c, (s - 0.5) * 24, y, age < 0.06 ? 3 : 1.6, 1 - age * 1.2);
+}
+},
 glitch: (c, t) => {
 for (let j = 0; j < 7; j++) {
 const r = Math.abs(Math.sin(j * 12.9 + Math.floor(t * 5) * 4.1));

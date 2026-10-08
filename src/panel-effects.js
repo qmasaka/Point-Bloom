@@ -425,7 +425,7 @@ export function createEffectsPanel(app, root, engine) {
 		bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 	};
 	const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-	const ANIM_LAYERS = ['morph', 'curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity'];
+	const ANIM_LAYERS = ['morph', 'curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth'];
 	let toggleAnim = () => {};
 	let animAddFromInspector = () => {};
 	const animQuickBtn = button({
@@ -491,6 +491,40 @@ export function createEffectsPanel(app, root, engine) {
 			} else if (def.id === 'dissolve') {
 				const disBtn = button({ label: 'Растворить / собрать', icon: 'snowflake', variant: 'primary', cls: 'btn-block', onClick: () => engine.toggleDissolve() });
 				body.append(disBtn);
+			} else if (def.id === 'depth') {
+				const map = h('canvas', { class: 'fx-depth-map', width: 160, height: 100, 'aria-hidden': 'true' });
+				const stat = h('div', { class: 'fx-depth-stat' });
+				const goBtn = button({ label: 'Построить карту глубины', icon: 'mountains', variant: 'primary', cls: 'btn-block', title: 'Загрузить нейросеть (один раз) и посчитать карту глубины текущего кадра', onClick: () => engine.buildDepth() });
+				const saveMap = button({ label: 'Сохранить карту (PNG)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', onClick: () => engine.saveDepthMap() });
+				const depthUpd = () => {
+					const I = engine.depthInfo();
+					let t;
+					if (!I.media) t = 'Откройте фото или видео: эффект работает с ними.';
+					else if (I.src === 'luma') t = 'Быстрая карта по яркости: светлое считается ближе. Для настоящей глубины выберите «Нейросеть».';
+					else if (I.phase === 'error') t = 'Нейросеть не запустилась: ' + (I.error || 'нет связи') + '. Пока работает быстрая карта по яркости. Нажмите кнопку, чтобы повторить.';
+					else if (I.phase === 'loading') t = 'Загрузка нейросети: ' + Math.round(I.prog * 100) + '%. Это один раз, потом модель берётся из кеша браузера. Пока видна быстрая карта по яркости.';
+					else if (I.phase === 'ready') t = (I.device === 'webgpu' ? 'Нейросеть работает на видеокарте.' : 'Нейросеть работает на процессоре, на видео это медленнее.') + (I.video ? ' Карта обновляется по ходу видео.' : '') + (I.error ? ' Ошибка: ' + I.error : '');
+					else t = I.hasMap ? 'Пока видна быстрая карта по яркости. Нажмите кнопку или включите эффект, чтобы загрузить нейросеть.' : 'Нейросеть загрузится при включении эффекта (около 50 МБ один раз, нужен интернет).';
+					stat.textContent = t;
+					map.hidden = !I.hasMap;
+					// превью карты перерисовываем не чаще нескольких раз в секунду: у видео карта приходит десятки раз в секунду
+					const now = performance.now();
+					if (I.hasMap && now - (depthUpd.t || 0) > 160) {
+						depthUpd.t = now;
+						engine.drawDepthMap(map);
+					} else if (I.hasMap && !depthUpd.pend) {
+						depthUpd.pend = setTimeout(() => {
+							depthUpd.pend = 0;
+							depthUpd();
+						}, 200);
+					}
+					goBtn.hidden = I.src !== 'ai';
+					goBtn.disabled = !I.media || I.phase === 'loading';
+					saveMap.hidden = !I.hasMap;
+				};
+				engine.onDepthChange(depthUpd);
+				depthUpd();
+				body.append(h('div', { class: 'fx-depth-box' }, map, stat), goBtn, saveMap);
 			} else if (def.id === 'camTrack') {
 				const camBtn = button({
 					label: engine.camTracker?.running ? 'Выключить камеру' : 'Включить камеру',
@@ -641,7 +675,7 @@ export function createEffectsPanel(app, root, engine) {
 			el.textContent = k ? String(k) : '';
 		}
 	}
-	select_((cards.find((c) => c.L.on) || cards.find((c) => c.def.group !== 'Видео') || cards[0]).def.id);
+	select_((cards.find((c) => c.L.on) || cards.find((c) => c.def.group !== 'Видео' && c.def.group !== 'Фото и видео') || cards[0]).def.id);
 	// ------------------------------------------------------------ звук
 	const sourceSeg = segmented({
 		options: [
@@ -2069,6 +2103,7 @@ export function createEffectsPanel(app, root, engine) {
 		countActive();
 		// режим раскадровки существует только для видео: без видео его папка в списке скрыта
 		for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoLoaded;
+		for (const c of cards) if (c.def.group === 'Фото и видео') c.folder.hidden = !engine.pm.ready;
 		renderReactList();
 		cards.forEach((c) => {
 			c.card.classList.toggle('is-on', c.L.on);

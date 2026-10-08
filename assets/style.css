@@ -5643,3 +5643,8 @@ html.booted .stage, html.booted .empty-state { animation: boot-fade 0.9s ease 0.
 .busy { opacity: 0; backdrop-filter: none; background: color-mix(in srgb, var(--bg-app) 38%, transparent); transition: opacity 0.26s var(--ease); }
 .busy.is-on { opacity: 1; }
 .busy[hidden] { display: none; }
+
+/* ================================================================ глубина: карта и статус в панели эффекта */
+.fx-depth-box { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.035); }
+.fx-depth-map { width: 100%; height: auto; max-height: 150px; object-fit: contain; border-radius: 8px; background: #000; image-rendering: auto; }
+.fx-depth-stat { font-size: 12px; line-height: 1.45; color: var(--text-dim); }

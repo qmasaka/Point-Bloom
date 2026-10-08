@@ -9,6 +9,7 @@ import { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } from './util.js';
 import { buildFrameBlock, writeFrameColors, writeOneFrame, frameGrid } from './frame-block.js';
 import { TrackerHud } from './fx-hud.js';
 import { HandTracker } from './hand-tracker.js';
+import { DepthAI, grabFrame, grabRGB as grabRGB4, normalizeDepth, lumaDepth, depthToGrid } from './depth-ai.js';
 import { encodeGIF } from './gif-encoder.js';
 
 // ───────────────────────────────────────────────────────────── описания
@@ -57,6 +58,8 @@ export const FX_LAYERS = [
 	{ id: 'flow', group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, поверхность выглядит живой, а силуэт не меняется', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
 	{ id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Частицы отрываются от формы, уносятся ветром и гаснут, пока модель не исчезнет. Потом она собирается обратно', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', order: 'top', style: 'wind', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.8 }, extras: [{ key: 'style', label: 'Как исчезает', type: 'select', options: [['wind', 'Уносит ветром'], ['burn', 'Горение: пепел и угли'], ['bubbles', 'Пузыри всплывают']] }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'order', label: 'С какой стороны', type: 'seg', options: [['top', 'Сверху'], ['noise', 'Пятнами'], ['bottom', 'Снизу']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер в сторону', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Завихрения', min: 0, max: 2, step: 0.05 }] },
 	{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке и становятся квадратами: сетка, «Лего» или дыхание', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1, mode: 'grid', speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['grid', 'Сетка'], ['lego', 'Лего'], ['breathe', 'Дыхание']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe']] }] },
+	{ id: 'scope', group: 'Звук и ритм', name: 'Акселограф', icon: 'heartbeat', hint: 'По форме бежит перо самописца: точки собираются в линию-сигнал и тянут за собой светящийся след, а старые участки линии рассыпаются обратно в форму. Сейсмограф, кардиограмма, радар, спираль и водопад линий', max: 1, def: { on: false, amount: 0.3, band: 'none', react: 0.6, mode: 'strip', wave: 'seismo', speed: 1, trail: 0.55, amp: 1, lines: 10, tint: 0.6, thick: 0.35 }, extras: [{ key: 'mode', label: 'Как рисуется', type: 'select', options: [['strip', 'Лента: перо идёт слева направо'], ['radar', 'Радар: перо кружит по кольцу'], ['spiral', 'Спираль: сигнал вьётся вокруг формы'], ['wf', 'Водопад: стопка линий в глубину']] }, { key: 'wave', label: 'Какой сигнал', type: 'select', options: [['seismo', 'Сейсмограф: шум и толчки'], ['ecg', 'Кардиограмма'], ['sine', 'Синусы'], ['spec', 'Спектр звука (нужна музыка)']] }, { key: 'speed', label: 'Скорость пера', min: 0.2, max: 4, step: 0.05 }, { key: 'trail', label: 'Длина следа', min: 0.1, max: 1, step: 0.02 }, { key: 'amp', label: 'Размах сигнала', min: 0.2, max: 2.5, step: 0.05 }, { key: 'lines', label: 'Линий в водопаде', min: 3, max: 24, step: 1, int: true, when: ['mode', ['wf']] }, { key: 'tint', label: 'Окраска линии', min: 0, max: 1, step: 0.05 }, { key: 'thick', label: 'Толщина линии', min: 0, max: 2, step: 0.05 }] },
+	{ id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Нейросеть строит карту глубины снимка или каждого кадра видео, и точки выдавливаются по ней: рельеф, ступенчатые слои, сканер глубины, эффект Хичкока, пыль на дальнем плане и волны по контурам. Всё считается на вашем компьютере. Вращайте камеру, чтобы увидеть объём', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.4, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Рельеф: ближнее выступает вперёд'], ['layers', 'Слои: ступени, как вырезанные из картона'], ['scan', 'Сканер: плоскость бежит сквозь глубину'], ['vertigo', 'Вертиго: ближнее и дальнее зумятся по-разному'], ['dust', 'Пыль: дальний план рассыпается'], ['contour', 'Контуры: волны идут по глубине']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Что остаётся на месте', min: 0, max: 1, step: 0.02 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
 	{ id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в трёх измерениях, цветовые каналы расходятся, картинка мерцает', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16, rgb: 'on', speed: 1 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
 	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими импульсами', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
@@ -74,8 +77,9 @@ export const FX_LAYERS = [
 // разделы списка эффектов: логика по тому, что эффект делает
 const FX_GROUPS = {
 	'Видео': ['frames'],
+	'Фото и видео': ['depth'],
 	'Движение': ['curl', 'flow', 'gravity'],
-	'Звук и ритм': ['spectrum', 'wave', 'pulse', 'blast'],
+	'Звук и ритм': ['spectrum', 'wave', 'pulse', 'blast', 'scope'],
 	'Превращения': ['twist', 'voxel', 'glitch', 'physics', 'dissolve'],
 	'Графика': ['links', 'slice', 'feedback', 'echo'],
 	'Управление': ['cursor', 'brush', 'tracking', 'shock', 'camTrack'],
@@ -446,6 +450,12 @@ uniform float uShade;
 uniform vec4 uCurlP, uSpecP, uWaveP, uWaveSrc, uPulseP, uVoxelP, uGlitchP, uBlast, uFlow, uDisP;
 float gGl = 0.0;
 float gCh = -1.0;
+float gScopeG = 0.0;
+float gScopeT = 0.0;
+uniform vec4 uScope, uScopeP, uScopeQ;
+float gDepth = 0.5;
+float gDepthG = 0.0;
+uniform vec4 uDepth, uDepthP;
 uniform vec4 uCurl, uSpec, uWave, uTwist, uPulse, uVoxel, uJitter, uCursor, uMask, uMaskA, uGlitch, uContact, uShockP;
 uniform vec4 uTrk[16];
 uniform vec4 uHand[12];
@@ -783,6 +793,82 @@ vec4 frShow(float k, out vec3 tcol) {
 	return vec4(w, lift, tint, 0.0);
 }
 
+
+float scopeGauss(float x, float c, float w) {
+	float q = (x - c) / w;
+	return exp(-q * q);
+}
+// Сигнал самописца в точке s (0..1 вдоль линии): tau это номер прохода пера, ln номер линии
+float scopeSig(float s, float tau, float ln) {
+	int wv = int(uScopeP.z + 0.5);
+	float au = uScopeP.w;
+	float ph = tau * 1.7 + ln * 3.1;
+	if (wv == 1) {
+		// кардиограмма: зубец P, комплекс QRS и зубец T в каждом ударе
+		float x = fract(s * 5.0 + tau * 0.37 + ln * 0.21);
+		return 0.12 * scopeGauss(x, 0.18, 0.05) - 0.14 * scopeGauss(x, 0.44, 0.012) + scopeGauss(x, 0.5, 0.014) - 0.26 * scopeGauss(x, 0.56, 0.015) + 0.28 * scopeGauss(x, 0.76, 0.06);
+	}
+	if (wv == 2) return sin(s * 18.0 + ph) * 0.55 + sin(s * 7.0 - ph * 0.7) * 0.3;
+	if (wv == 3) {
+		float sp = texture2D(uSpecTex, vec2(abs(s * 2.0 - 1.0), 0.5)).r;
+		return sp * 1.5 - 0.55 + snoise(vec3(s * 40.0, ln, tau * 3.0)) * 0.12;
+	}
+	// сейсмограф: фоновый шум и редкие толчки, которые затухают
+	float n = snoise(vec3(s * 36.0, ln * 4.1, tau * 0.7)) * 0.22 + snoise(vec3(s * 70.0, ln, tau * 8.0)) * 0.035;
+	float ev = 0.0;
+	for (int k = 0; k < 3; k++) {
+		float c = hash11(tau * 7.31 + float(k) * 3.7 + ln * 1.7);
+		float d = s - c;
+		ev += d > 0.0 ? exp(-d * 9.0) * sin(d * 150.0 + float(k)) * (0.35 + 0.65 * hash11(c * 91.0)) : 0.0;
+	}
+	return n + ev * (0.8 + au);
+}
+
+
+// Выдавливание по карте глубины: gDepth 0..1 (1 ближе всего). uDepth: сила, режим, скорость, фокус; uDepthP: слоёв, знак, покачивание, вид
+vec3 depthShape(vec3 b) {
+	float t = uTime - uTOff;
+	float A = uDepth.x;
+	float sp = uDepth.z;
+	float dn = uDepthP.y > 0.0 ? gDepth : 1.0 - gDepth;
+	float fo = uDepthP.y > 0.0 ? uDepth.w : 1.0 - uDepth.w;
+	float dd = dn - fo;
+	int md = int(uDepth.y + 0.5);
+	if (md == 0) {
+		b.z += dd * A * 1.2;
+	} else if (md == 1) {
+		float N = max(2.0, floor(uDepthP.x + 0.5));
+		float x = dn * N;
+		float dq = (floor(x) + smoothstep(0.38, 0.62, fract(x))) / N;
+		float dq2 = dq - fo;
+		b.z += dq2 * A * 1.5;
+		b.xy += vec2(sin(t * sp * 0.7 + dq * 7.0), cos(t * sp * 0.55 + dq * 5.0) * 0.5) * dq2 * A * 0.1;
+	} else if (md == 2) {
+		float sw = abs(fract(t * sp * 0.16) * 2.0 - 1.0);
+		float q = (dn - sw) / 0.08;
+		float g = exp(-q * q);
+		b.z += dd * A * 0.18 + g * A * 0.7;
+		gDepthG = g;
+	} else if (md == 3) {
+		float k = sin(t * sp * 0.8) * A * 0.55;
+		b.xy *= 1.0 + dd * k;
+		b.z += dd * A * 0.35;
+	} else if (md == 4) {
+		float f = 1.0 - smoothstep(fo - 0.28, fo + 0.12, dn);
+		vec3 cn = curlNoise(b * 1.6 + vec3(0.0, -t * sp * 0.25, t * sp * 0.18));
+		b += cn * f * A * 0.5;
+		b.z += dd * A * 0.3 - f * A * 0.3;
+	} else {
+		float w = sin(dn * 26.0 - t * sp * 2.6);
+		b.z += (dd * 0.55 + w * 0.14) * A;
+		gDepthG = pow(max(w, 0.0), 8.0) * 0.9;
+	}
+	// лёгкое покачивание: сдвиг по глубине даёт параллакс, плоский кадр оживает даже без вращения камеры
+	float a = t * sp * 0.8;
+	b.xy += vec2(cos(a), sin(a) * 0.55) * dd * uDepthP.z * A * 0.4;
+	return b;
+}
+
 // Положение одной точки после всех эффектов. base: форма без эффектов, maskV: доля эффектов в этой точке (зона)
 vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float maskV) {
 	float t = uTime - uTOff;
@@ -843,6 +929,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			base.xz = vec2(base.x * cs - base.z * sn, base.x * sn + base.z * cs);
 		}
 	}
+	if (uDepth.x > 0.001) base = depthShape(base);
 	vec3 rad = normalize(base + vec3(1e-4));
 	vec3 pos = base;
 
@@ -1067,6 +1154,44 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	if (uJitter.x > 0.001) {
 		pos += vec3(sin(t * 17.0 + aIdx * 91.0), sin(t * 13.0 + aIdx * 57.0), sin(t * 11.0 + aIdx * 33.0)) * uJitter.x * 0.03;
 	}
+	if (uScope.x > 0.001) {
+		// Акселограф: часть точек собирается в линию сигнала, перо бежит и оставляет след, старый след рассыпается обратно в форму
+		float hp = hash11(aIdx * 3.713 + 0.37);
+		if (hp < clamp(uScope.x, 0.0, 1.0)) {
+			int md = int(uScope.y + 0.5);
+			float nl = md == 3 ? max(1.0, floor(uScopeP.y + 0.5)) : 1.0;
+			float h1 = hash11(aIdx * 17.77 + 1.3);
+			float h2 = hash11(aIdx * 5.19 + 2.9);
+			float ln = floor(h2 * nl);
+			float s = h1;
+			float tt = t * uScope.z * 0.12 + ln * 0.11;
+			float cyc = floor(tt - s);
+			float age = fract(tt - s);
+			float vis = 1.0 - smoothstep(uScope.w * 0.55, uScope.w, age);
+			float yc = 0.5 * (uYR.x + uYR.y);
+			float Hh = max(uYR.y - uYR.x, 0.5);
+			float Ww = max(2.0, Hh * 1.4);
+			float amp = uScopeP.x * Hh * 0.17;
+			float sg = clamp(scopeSig(s, cyc, ln) * (0.75 + 0.7 * uScopeP.w), -1.4, 1.4);
+			vec3 tp;
+			if (md == 0) tp = vec3((s - 0.5) * Ww, yc + sg * amp, 0.0);
+			else if (md == 1) {
+				float a = s * 6.2831853;
+				float rr = Ww * 0.3 + sg * amp * 0.55;
+				tp = vec3(cos(a) * rr, yc + sin(a) * rr, 0.0);
+			} else if (md == 2) {
+				float a = s * 6.2831853 * 3.0;
+				float rr = Ww * 0.26 + sg * amp * 0.5;
+				tp = vec3(cos(a) * rr, yc + (s - 0.5) * Hh * 1.3, sin(a) * rr);
+			} else {
+				tp = vec3((s - 0.5) * Ww, yc + (ln / max(nl - 1.0, 1.0) - 0.5) * Hh * 0.35 + sg * amp * 0.5, (ln / max(nl - 1.0, 1.0) - 0.5) * Ww * 0.9);
+			}
+			tp += (vec3(hash11(aIdx * 2.1), hash11(aIdx * 4.3), hash11(aIdx * 6.7)) - 0.5) * 0.006;
+			pos = mix(pos, tp, pow(vis, 0.45));
+			gScopeT = vis;
+			gScopeG = vis * exp(-age * 22.0 / max(uScope.w, 0.1));
+		}
+	}
 	maskV = 1.0;
 	if (uMask.x > 0.5) {
 		float y01 = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
@@ -1225,6 +1350,7 @@ attribute vec3 aNormal;
 attribute vec3 aNormalB;
 attribute vec3 aColorB;
 attribute float aHide;
+attribute float aDepth;
 uniform float uAdd;
 uniform highp sampler2DArray uFrTex;
 uniform sampler2D uHeroTex;
@@ -1337,6 +1463,7 @@ void main() {
 	}
 	vec3 base;
 	float maskV;
+	gDepth = aDepth;
 	vec3 pos = fxDisplace(aOrigin, aTarget, aIdx, base, maskV);
 	pos += aSculpt;
 	if (uFr.x > 0.5) pos += frNrm * frLift * 0.7;
@@ -1438,6 +1565,20 @@ void main() {
 			vColor += (uSliceM.z > 0.5 ? vColor * 0.25 : uSliceC) * sl * 2.2;
 		}
 	}
+	// глубина: показ карты или окраска по глубине, блики сканера и контуров
+	if (uDepth.x > 0.001) {
+		if (uDepthP.w > 1.5) {
+			// цвет глубины: от синего (далеко) через жёлтый к красному (близко), яркость берётся от кадра, чтобы не пропали детали
+			vec3 jet = clamp(vec3(1.5 - abs(4.0 * gDepth - 3.0), 1.5 - abs(4.0 * gDepth - 2.0), 1.5 - abs(4.0 * gDepth - 1.0)), 0.0, 1.0);
+			vColor = mix(vColor, jet * (0.4 + 0.95 * dot(vColor, vec3(0.3, 0.59, 0.11))), 0.88);
+		} else if (uDepthP.w > 0.5) vColor = vec3(gDepth);
+		vColor += uP2 * gDepthG * 1.3;
+	}
+	// акселограф: линия окрашивается, голова пера горит
+	if (gScopeT > 0.0) {
+		vColor = mix(vColor, uP2 * 1.4, uScopeQ.x * gScopeT * 0.85);
+		vColor += uP2 * gScopeG * 2.6;
+	}
 	// глитч: мерцание, строки-помехи и раздельные цветовые каналы
 	if (gGl > 0.0) {
 		vColor *= 0.72 + 0.28 * hash11(floor(uTime * 24.0) + floor(pos.y * 14.0));
@@ -1490,6 +1631,7 @@ void main() {
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
 	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.7 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
+	s *= 1.0 + gScopeT * uScopeQ.y + gScopeG * 1.2 + gDepthG * 0.8;
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
 	gl_PointSize = clamp(s, 1.0, 95.0);
 }
@@ -1562,6 +1704,8 @@ attribute float aIdx;
 attribute vec3 aOriginB;
 attribute vec3 aTargetB;
 attribute float aIdxB;
+attribute float aDepth;
+attribute float aDepthB;
 attribute float aEnd;
 attribute float aSide;
 uniform vec3 uP0;
@@ -1579,7 +1723,9 @@ varying float vSide;
 void main() {
 	vec3 bA, bB;
 	float mA, mB;
+	gDepth = aDepth;
 	vec3 pA = fxDisplace(aOrigin, aTarget, aIdx, bA, mA);
+	gDepth = aDepthB;
 	vec3 pB = fxDisplace(aOriginB, aTargetB, aIdxB, bB, mB);
 	float len = distance(pA, pB);
 	vA = uLink.x * (1.0 - smoothstep(uLink.y * 0.8, uLink.y * 1.9, len));
@@ -2411,6 +2557,11 @@ export class EffectsEngine {
 		this.recording = false;
 		this.modelProvider = null; // { available(), kind(), total(), get(n) }
 		this.pm = app.media.pm;
+		// карта глубины для фото и видео: нейросеть работает в отдельном потоке, результат переносится на сетку точек
+		this.depthAI = new DepthAI();
+		this._dListeners = new Set();
+		this.depthAI.onChange = () => this._depthEmit();
+		this._D = { key: null, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, geo: null, dirty: false, snap: false, moving: false, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, force: false, err: '', n: 0 };
 		app.bus.on('settings', () => this._histSoon());
 		app.bus.on('pointtex', () => {
 			if (this.active) {
@@ -2910,6 +3061,7 @@ export class EffectsEngine {
 			g.setAttribute('aNormalB', new THREE.BufferAttribute(nrm.slice(), 3));
 			g.setAttribute('aIdx', new THREE.BufferAttribute(idxA, 1));
 			g.setAttribute('aHide', new THREE.BufferAttribute(new Float32Array(count), 1));
+			g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(count).fill(0.5), 1));
 			g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
 			const m = new THREE.ShaderMaterial({
 				vertexShader: this.material.vertexShader,
@@ -2997,7 +3149,7 @@ export class EffectsEngine {
 	// ------------------------------------------------------------ анимация по ключам и блокам эффектов (секвенсор)
 	/** Слои, которыми можно анимировать: эффекты формы, звука и графики */
 	_animLayers() {
-		return ['curl', 'spectrum', 'wave', 'twist', 'pulse', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'echo', 'links', 'dissolve', 'gravity'];
+		return ['curl', 'spectrum', 'wave', 'twist', 'pulse', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth'];
 	}
 
 	/** Снимок того, что можно анимировать: камера, размер, яркость, свечение и сила каждого эффекта (выключенный = 0) */
@@ -4055,6 +4207,168 @@ export class EffectsEngine {
 	emit() {
 		this.app.bus.emit('fx');
 	}
+	// ------------------------------------------------------------ глубина (фото и видео)
+	onDepthChange(fn) {
+		this._dListeners.add(fn);
+		return () => this._dListeners.delete(fn);
+	}
+
+	_depthEmit() {
+		for (const f of this._dListeners) f();
+	}
+
+	depthInfo() {
+		const ai = this.depthAI;
+		const D = this._D;
+		const L = this.state.layers.depth;
+		return { media: !!this.pm.ready, video: this.pm.kind === 'video', src: L.src, phase: ai.phase, prog: ai.prog, device: ai.device, error: ai.error || D.err, hasMap: !!D.map, aiMap: !!D.map && D.mapSrc === 'ai', busy: D.busy };
+	}
+
+	/** Рисует текущую карту глубины серой картинкой в холст */
+	drawDepthMap(cv) {
+		const m = this._D.map;
+		if (!m) return;
+		if (cv.width !== m.w || cv.height !== m.h) {
+			cv.width = m.w;
+			cv.height = m.h;
+		}
+		const g = cv.getContext('2d');
+		const id = g.createImageData(m.w, m.h);
+		for (let i = 0; i < m.data.length; i++) {
+			const v = Math.round(m.data[i] * 255);
+			id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = v;
+			id.data[i * 4 + 3] = 255;
+		}
+		g.putImageData(id, 0, 0);
+	}
+
+	/** Нажатие «Построить карту глубины»: загружает нейросеть (если ещё нет) и считает карту для текущего кадра */
+	buildDepth() {
+		const D = this._D;
+		D.force = true;
+		D.err = '';
+		if (this.depthAI.phase === 'error') this.depthAI.dispose();
+		this.depthAI.init().catch(() => {});
+		this._depthEmit();
+	}
+
+	saveDepthMap() {
+		const m = this._D.map;
+		if (!m) return;
+		const cv = document.createElement('canvas');
+		this.drawDepthMap(cv);
+		cv.toBlob((b) => b && downloadBlob(b, 'depth-map.png'), 'image/png');
+	}
+
+	/** Каждый кадр: карта глубины (нейросеть или яркость), перенос на точки и плавный переход к новой карте */
+	_depthTick(dt, rgb) {
+		const L = this.state.layers.depth;
+		const D = this._D;
+		const pm = this.pm;
+		const g = this.geometry;
+		const n = pm.count;
+		const key = pm.rec || pm.el;
+		if (D.key !== key) {
+			Object.assign(D, { key, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, err: '' });
+			this._depthEmit();
+		}
+		if (rgb) {
+			D.rgb = rgb;
+			D.rgbN++;
+		}
+		if (!L.on) return;
+		const ai = L.src === 'ai';
+		// быстрая карта по яркости: основная при выборе «По яркости» и временная, пока нейросеть думает
+		if (D.rgb && D.lumaN !== D.rgbN && (!ai || !D.aiHas)) {
+			D.lumaN = D.rgbN;
+			D.map = lumaDepth(D.rgb, pm.cols, pm.rows);
+			D.mapSrc = 'luma';
+			D.dirty = true;
+			this._depthEmit();
+		}
+		if (!ai && D.aiHas) {
+			D.aiHas = false;
+			D.lumaN = -1;
+		}
+		if (ai && !D.busy && this.depthAI.phase !== 'error') {
+			const el = pm.isRec ? null : pm.el;
+			const vt = pm.isRec ? pm.t : el.currentTime || 0;
+			const ready = pm.isRec ? !!D.rgb : el && (pm.kind === 'image' || el.readyState >= 2);
+			const need = D.force || !D.aiHas || (pm.kind === 'video' && Math.abs(vt - D.reqT) > 0.03);
+			if (ready && need) {
+				D.busy = true;
+				D.force = false;
+				D.reqT = vt;
+				const cpu = this.depthAI.device === 'wasm';
+				// размер кадра для нейросети (длинная сторона): разрешение карты равно ему, на процессоре и на видео берём поменьше, чтобы карта успевала за кадром
+				const side = pm.kind === 'video' ? (cpu ? 280 : 448) : cpu ? 420 : 640;
+				const frame = pm.isRec ? grabRGB4(D.rgb, pm.cols, pm.rows) : grabFrame(el, side);
+				if (!frame) D.busy = false;
+				else {
+					this.depthAI
+						.estimate(frame)
+						.then((r) => {
+							if (D.key !== key) return;
+							D.map = { w: r.w, h: r.h, data: normalizeDepth(r.data, D.st, pm.kind === 'video' ? 0.35 : 0) };
+							D.mapSrc = 'ai';
+							D.aiHas = true;
+							D.dirty = true;
+							D.err = '';
+						})
+						.catch((e) => {
+							D.err = e.message || String(e);
+						})
+						.finally(() => {
+							D.busy = false;
+							this._depthEmit();
+						});
+					this._depthEmit();
+				}
+			}
+		}
+		// карта на сетку точек
+		if (D.map && (D.dirty || !D.tgt || D.tgt.length !== n)) {
+			if (!D.tgt || D.tgt.length !== n) {
+				D.tgt = new Float32Array(n);
+				D.snap = true;
+			}
+			depthToGrid(D.map, pm.cols, pm.rows, D.tgt);
+			D.dirty = false;
+			D.moving = true;
+		}
+		const attr = g.attributes.aDepth;
+		if (!D.tgt || !attr || attr.array.length !== n) return;
+		const arr = attr.array;
+		if (D.geo !== g) {
+			D.geo = g;
+			D.snap = true;
+		}
+		let changed = false;
+		if (D.snap) {
+			arr.set(D.tgt);
+			D.snap = false;
+			D.moving = false;
+			changed = true;
+		} else if (D.moving) {
+			// переход к новой карте: у видео глубина поспевает за кадром, у фото плавно «проявляется»
+			const rate = 1 - Math.exp(-dt * (2.5 + (1 - L.smooth) * 18));
+			const tg = D.tgt;
+			let mx = 0;
+			for (let i = 0; i < n; i++) {
+				const d = tg[i] - arr[i];
+				arr[i] += d * rate;
+				const a = d < 0 ? -d : d;
+				if (a > mx) mx = a;
+			}
+			if (mx < 0.002) D.moving = false;
+			changed = true;
+		}
+		if (changed) {
+			attr.needsUpdate = true;
+			if (this.state.layers.links.on && (D._lk = ((D._lk || 0) + 1) % 5) === 0) this._syncLinks();
+		}
+	}
+
 	get hasModel() {
 		return !!(this.modelProvider && this.modelProvider.available());
 	}
@@ -4412,6 +4726,7 @@ export class EffectsEngine {
 		g.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(model.colors.length === c.colors.length ? model.colors : c.colors), 3));
 		g.setAttribute('aColorB', new THREE.BufferAttribute(new Float32Array(g.attributes.aColor.array), 3));
 		g.setAttribute('aHide', new THREE.BufferAttribute(c.hide && c.hide.length === count ? new Float32Array(c.hide) : new Float32Array(count), 1));
+		g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(count).fill(0.5), 1));
 		g.setAttribute('aIdx', new THREE.BufferAttribute(idx, 1));
 		g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
 		g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
@@ -4435,7 +4750,7 @@ export class EffectsEngine {
 			uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 			uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
 			uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
-			uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
+			uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 		};
 		const mk = (extra) =>
 			new THREE.ShaderMaterial({
@@ -4550,6 +4865,8 @@ export class EffectsEngine {
 		const V = L * 4;
 		const A = new Float32Array(V * 3), TA = new Float32Array(V * 3), B = new Float32Array(V * 3), TB = new Float32Array(V * 3);
 		const ia = new Float32Array(V), ib = new Float32Array(V), end = new Float32Array(V), side = new Float32Array(V);
+		const da = new Float32Array(V), db = new Float32Array(V);
+		const DP = g.attributes.aDepth ? g.attributes.aDepth.array : null;
 		const index = new Uint32Array(L * 6);
 		for (let l = 0; l < L; l++) {
 			const a = ids[pairs[l * 2]], b = ids[pairs[l * 2 + 1]];
@@ -4565,6 +4882,8 @@ export class EffectsEngine {
 				}
 				ia[l * 4 + v] = a / N;
 				ib[l * 4 + v] = b / N;
+				da[l * 4 + v] = DP ? DP[a] : 0.5;
+				db[l * 4 + v] = DP ? DP[b] : 0.5;
 				end[l * 4 + v] = v >> 1;
 				side[l * 4 + v] = v & 1 ? 1 : -1;
 			}
@@ -4577,6 +4896,8 @@ export class EffectsEngine {
 		lg.setAttribute('aTargetB', new THREE.BufferAttribute(TB, 3));
 		lg.setAttribute('aIdx', new THREE.BufferAttribute(ia, 1));
 		lg.setAttribute('aIdxB', new THREE.BufferAttribute(ib, 1));
+		lg.setAttribute('aDepth', new THREE.BufferAttribute(da, 1));
+		lg.setAttribute('aDepthB', new THREE.BufferAttribute(db, 1));
 		lg.setAttribute('aEnd', new THREE.BufferAttribute(end, 1));
 		lg.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
 		lg.setIndex(new THREE.BufferAttribute(index, 1));
@@ -4608,6 +4929,18 @@ export class EffectsEngine {
 		set('aTarget', T, 0);
 		set('aOriginB', O, 1);
 		set('aTargetB', T, 1);
+		const DP = this.geometry.attributes.aDepth?.array;
+		if (DP && lg.attributes.aDepth) {
+			const da = lg.attributes.aDepth.array, db = lg.attributes.aDepthB.array;
+			for (let l = 0; l < list.length / 2; l++) {
+				const a = DP[ids[list[l * 2]]], b = DP[ids[list[l * 2 + 1]]];
+				for (let v = 0; v < 4; v++) {
+					da[l * 4 + v] = a;
+					db[l * 4 + v] = b;
+				}
+			}
+			lg.attributes.aDepth.needsUpdate = lg.attributes.aDepthB.needsUpdate = true;
+		}
 	}
 
 	relink() {
@@ -5071,6 +5404,19 @@ export class EffectsEngine {
 			u.uVoxel.value.set(clamp(this._eff(L.voxel), 0, 1), 0, 0, 0);
 			u.uVoxelP.value.set({ grid: 0, lego: 1, breathe: 2 }[L.voxel.mode] ?? 0, L.voxel.speed, 0, 0);
 			u.uJitter.value.set(this._eff(L.jitter), 0, 0, 0);
+			{
+				const S = L.scope;
+				const lvl = S.band !== 'none' ? this._bandLevel(S) : 0;
+				u.uScope.value.set(clamp(this._eff(S), 0, 1), { strip: 0, radar: 1, spiral: 2, wf: 3 }[S.mode] ?? 0, S.speed, S.trail);
+				u.uScopeP.value.set(S.amp, S.lines, { seismo: 0, ecg: 1, sine: 2, spec: 3 }[S.wave] ?? 0, lvl);
+				u.uScopeQ.value.set(S.tint, S.thick, 0, 0);
+			}
+			{
+				const Dp = L.depth;
+				const on = Dp.on && st.source === 'media' && this.pm.ready;
+				u.uDepth.value.set(on ? clamp(this._eff(Dp), 0, 1.5) : 0, { relief: 0, layers: 1, scan: 2, vertigo: 3, dust: 4, contour: 5 }[Dp.mode] ?? 0, Dp.speed, Dp.focus);
+				u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, map: 1, heat: 2 }[Dp.view] ?? 0);
+			}
 			u.uGlitch.value.set(this._eff(L.glitch), L.glitch.slices, 0, 0);
 			u.uGlitchP.value.set(L.glitch.rgb === 'on' ? 1 : 0, L.glitch.speed, 0, 0);
 			u.uDisP.value.set({ wind: 0, burn: 1, bubbles: 2 }[L.dissolve.style] ?? 0, 0, 0, 0);
@@ -5147,8 +5493,10 @@ export class EffectsEngine {
 			u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
 
 			// фото и видео: обновляем цвета и высоту точек по текущему кадру
+			let rgbNew = null;
 			if (st.source === 'media' && this.pm.ready && this.geometry && !this.morphing && this.geometry.attributes.position.count === this.pm.count) {
 				const rgb = this.pm.advance(dt);
+				rgbNew = rgb;
 				if (rgb) {
 					const g = this.geometry;
 					const n = this.pm.count;
@@ -5165,6 +5513,7 @@ export class EffectsEngine {
 					if (L.links.on) this._syncLinks();
 				}
 			}
+			if (st.source === 'media' && this.pm.ready && this.geometry && this.geometry.attributes.position.count === this.pm.count) this._depthTick(dt, rgbNew);
 			// морфинг по списку форм
 			{
 				const mc = st.morphCfg;
