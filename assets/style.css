@@ -5523,3 +5523,27 @@ body.is-resizing-h * {
 
 /* шкала не сжимается в колонке: иначе высота таймлайна не растёт, а вертикальная прокрутка не доходит до родителя */
 .fx-anim-stage { flex: 0 0 auto; }
+
+/* ================================================================ секвенсор: чистая шкала без лишних подсветок, засечек и скролл-бара */
+.fx-mode .fx-anim { background: #14171b; }
+.fx-anim-stage .fx-anim-track-label, .fx-mode .fx-anim-ruler-title { background: #14171b; box-shadow: none; }
+.fx-anim-stage { scrollbar-width: none; }
+.fx-anim-stage::-webkit-scrollbar { display: none; height: 0; }
+.fx-mode .fx-anim-playhead-line { box-shadow: none; background: rgba(255, 255, 255, 0.7); }
+.fx-mode .fx-anim-playhead-needle { box-shadow: none; }
+.fx-mode .fx-anim-playhead-needle::before { filter: none; }
+.fx-mode .fx-anim-head { box-shadow: none; }
+/* блоки эффектов: вход и выход мягкими скосами без пунктирных линий, ручки только на самом краю и только при наведении */
+.fx-mode .fx-anim-fade-in { border-right: 0; background: linear-gradient(to right bottom, rgba(20, 23, 27, 0.35) 50%, transparent 50%); }
+.fx-mode .fx-anim-fade-out { border-left: 0; background: linear-gradient(to left bottom, rgba(20, 23, 27, 0.35) 50%, transparent 50%); }
+.fx-mode .fx-anim-handle { width: 7px; }
+.fx-mode .fx-anim-handle::after { top: 5px; bottom: 5px; width: 3px; border-radius: 2px; opacity: 0; background: rgba(255, 255, 255, 0.85); }
+.fx-mode .fx-anim-block:hover .fx-anim-handle::after, .fx-mode .fx-anim-block.is-sel .fx-anim-handle::after { opacity: 0.45; }
+.fx-mode .fx-anim-handle:hover::after { opacity: 1; background: #fff; }
+.fx-mode .fx-anim-handle.is-left::after { left: 2px; }
+.fx-mode .fx-anim-handle.is-right::after { right: 2px; }
+.fx-mode .fx-anim-block.is-sel { background: rgba(229, 138, 69, 0.34); border-color: rgba(255, 255, 255, 0.45); box-shadow: none; }
+/* длина анимации: «с» стоит вплотную к числу */
+.fx-mode .fx-anim-dur-box { gap: 2px; padding: 0 11px 0 4px; background: rgba(255, 255, 255, 0.06); }
+.fx-mode .fx-anim .fx-anim-dur { width: 28px !important; padding: 0 !important; text-align: right !important; background: transparent !important; }
+.fx-mode .fx-anim-dur-unit { font-size: 12px; color: var(--text-dim); }
