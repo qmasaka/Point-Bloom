@@ -96,6 +96,7 @@ export class UI {
 		document.fonts && document.fonts.ready.then(() => this.moveModeIndicator());
 		$('#btnEmptyOpen').addEventListener('click', () => this.openFiles('auto'));
 		$('#btnEmptyDemo').addEventListener('click', () => app.loadDemo());
+		this.initLocalSharp();
 		$('#btnEmptyMedia').addEventListener('click', () => {
 			const inp = document.createElement('input');
 			inp.type = 'file';
@@ -347,6 +348,51 @@ export class UI {
 			app.nav.toggleOrtho();
 			app.saveSettings();
 		});
+	}
+
+	/** Локальный режим: если рядом запущен сервер с Apple SHARP, появляется кнопка «Фото в сплаты» */
+	async initLocalSharp() {
+		if (!/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) return;
+		let ready = false;
+		try {
+			const r = await fetch('/sharp/status', { cache: 'no-store' });
+			ready = r.ok && (await r.json()).ready === true;
+		} catch (e) {
+			ready = false;
+		}
+		if (!ready) return;
+		const run = () => {
+			const inp = document.createElement('input');
+			inp.type = 'file';
+			inp.accept = 'image/*,.heic,.heif';
+			inp.addEventListener('change', () => inp.files[0] && this.sharpFromPhoto(inp.files[0]));
+			inp.click();
+		};
+		for (const id of ['btnSharp', 'btnEmptySharp']) {
+			const b = $('#' + id);
+			b.hidden = false;
+			b.addEventListener('click', run);
+		}
+	}
+
+	/** Отправляет фото локальному SHARP, получает PLY со сплатами и открывает его как облако точек */
+	async sharpFromPhoto(file) {
+		try {
+			this.busy('SHARP строит сплаты из фото (около 10–20 секунд)');
+			const r = await fetch('/sharp/predict', { method: 'POST', headers: { 'X-Filename': encodeURIComponent(file.name) }, body: file });
+			const j = await r.json();
+			if (!r.ok) throw new Error(j.error || 'ошибка сервера');
+			const blob = await (await fetch(j.url)).blob();
+			this.idle();
+			await this.handleFiles([new File([blob], j.name + '.ply')], { mode: 'auto' });
+			// взгляд с места, откуда сделана фотография
+			this.app.nav.setView('front');
+			this.app.nav.frameAll(true);
+			this.toast(`Сплаты готовы за ${j.seconds} с`, 'ok', 2600);
+		} catch (e) {
+			this.idle();
+			this.toast('Не получилось построить сплаты: ' + (e.message || e), 'error');
+		}
 	}
 
 	toggleSidebar(force) {
