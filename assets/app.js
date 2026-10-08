@@ -89430,6 +89430,7 @@ const ICON_PATHS = {
 	'camera': '<path d="M208,56H180.28L166.65,35.56A8,8,0,0,0,160,32H96a8,8,0,0,0-6.65,3.56L75.71,56H48A24,24,0,0,0,24,80V192a24,24,0,0,0,24,24H208a24,24,0,0,0,24-24V80A24,24,0,0,0,208,56Zm8,136a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V80a8,8,0,0,1,8-8H80a8,8,0,0,0,6.66-3.56L100.28,48h55.43l13.63,20.44A8,8,0,0,0,176,72h32a8,8,0,0,1,8,8ZM128,88a44,44,0,1,0,44,44A44.05,44.05,0,0,0,128,88Zm0,72a28,28,0,1,1,28-28A28,28,0,0,1,128,160Z"/>',
 	'caret-down': '<path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"/>',
 	'caret-right': '<path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/>',
+	'caret-up': '<path d="M213.66,165.66a8,8,0,0,1-11.32,0L128,91.31,53.66,165.66a8,8,0,0,1-11.32-11.32l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,213.66,165.66Z"/>',
 	'check-circle': '<path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/>',
 	'check': '<path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/>',
 	'checkerboard': '<path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Zm-12.69,88L136,60.69V48h12.69L208,107.32V120ZM136,83.31,172.69,120H136Zm72,1.38L171.31,48H208ZM120,48v72H48V48ZM107.31,208,48,148.69V136H60.69L120,195.31V208ZM120,172.69,83.31,136H120Zm-72-1.38L84.69,208H48ZM208,208H136V136h72v72Z"/>',
@@ -141467,6 +141468,33 @@ function createEffectsPanel(app, root, engine) {
 		animSync();
 	});
 	const aDurBox = h('div', { class: 'fx-anim-dur-box' }, aDur, h('span', { class: 'fx-anim-dur-unit' }, 'с'));
+	// свои кнопки «больше / меньше» справа от секунд: клик меняет на 1, Shift на 5, удержание повторяет
+	const stepDur = (dir, big) => {
+		const v = Math.max(1, Math.min(120, Math.round((Number(aDur.value) || 8) + dir * (big ? 5 : 1))));
+		aDur.value = v;
+		fitDur();
+		engine.animSetDuration(v);
+		animSync();
+	};
+	const mkStep = (dir, name) => {
+		const b = h('button', { type: 'button', class: 'fx-anim-step', 'aria-label': dir > 0 ? 'Длиннее на секунду' : 'Короче на секунду', 'data-tip': (dir > 0 ? 'Длиннее' : 'Короче') + ' на 1 с (Shift: на 5 с, удержание повторяет)', html: icon(name, 11) });
+		let t1 = 0;
+		let t2 = 0;
+		const stop = () => {
+			clearTimeout(t1);
+			clearInterval(t2);
+		};
+		b.addEventListener('pointerdown', (e) => {
+			e.preventDefault();
+			stepDur(dir, e.shiftKey);
+			t1 = setTimeout(() => {
+				t2 = setInterval(() => stepDur(dir, e.shiftKey), 70);
+			}, 380);
+		});
+		for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, stop);
+		return b;
+	};
+	aDurBox.append(h('span', { class: 'fx-anim-stepper' }, mkStep(1, 'caret-up'), mkStep(-1, 'caret-down')));
 	// ширина поля по числу цифр: «с» всегда стоит сразу после числа
 	const fitDur = () => aDurBox.style.setProperty('--dur-w', Math.max(1, String(aDur.value || '').length) + 'ch');
 	aDur.addEventListener('input', fitDur);

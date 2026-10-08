@@ -1190,6 +1190,33 @@ export function createEffectsPanel(app, root, engine) {
 		animSync();
 	});
 	const aDurBox = h('div', { class: 'fx-anim-dur-box' }, aDur, h('span', { class: 'fx-anim-dur-unit' }, 'с'));
+	// свои кнопки «больше / меньше» справа от секунд: клик меняет на 1, Shift на 5, удержание повторяет
+	const stepDur = (dir, big) => {
+		const v = Math.max(1, Math.min(120, Math.round((Number(aDur.value) || 8) + dir * (big ? 5 : 1))));
+		aDur.value = v;
+		fitDur();
+		engine.animSetDuration(v);
+		animSync();
+	};
+	const mkStep = (dir, name) => {
+		const b = h('button', { type: 'button', class: 'fx-anim-step', 'aria-label': dir > 0 ? 'Длиннее на секунду' : 'Короче на секунду', 'data-tip': (dir > 0 ? 'Длиннее' : 'Короче') + ' на 1 с (Shift: на 5 с, удержание повторяет)', html: icon(name, 11) });
+		let t1 = 0;
+		let t2 = 0;
+		const stop = () => {
+			clearTimeout(t1);
+			clearInterval(t2);
+		};
+		b.addEventListener('pointerdown', (e) => {
+			e.preventDefault();
+			stepDur(dir, e.shiftKey);
+			t1 = setTimeout(() => {
+				t2 = setInterval(() => stepDur(dir, e.shiftKey), 70);
+			}, 380);
+		});
+		for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, stop);
+		return b;
+	};
+	aDurBox.append(h('span', { class: 'fx-anim-stepper' }, mkStep(1, 'caret-up'), mkStep(-1, 'caret-down')));
 	// ширина поля по числу цифр: «с» всегда стоит сразу после числа
 	const fitDur = () => aDurBox.style.setProperty('--dur-w', Math.max(1, String(aDur.value || '').length) + 'ch');
 	aDur.addEventListener('input', fitDur);

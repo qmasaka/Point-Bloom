@@ -5559,3 +5559,16 @@ body.is-resizing-h * {
 .fx-mode .fx-anim .fx-anim-dur { width: var(--dur-w, 1ch) !important; min-width: 1ch; height: auto !important; padding: 0 !important; border: 0 !important; background: transparent !important; text-align: left !important; font-size: 13px !important; -moz-appearance: textfield; appearance: textfield; }
 .fx-mode .fx-anim .fx-anim-dur::-webkit-inner-spin-button, .fx-mode .fx-anim .fx-anim-dur::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .fx-mode .fx-anim-dur-unit { font-size: 13px; color: var(--text-dim); }
+
+/* ================================================================ секвенсор: свои кнопки секунд, без лишней плашки под управлением, чуть прозрачнее */
+.fx-mode .fx-anim { background: rgba(19, 21, 26, 0.82); }
+.fx-mode .fx-anim .fx-anim-topbar { background: none; border-radius: 0; }
+.fx-mode .fx-anim-dur-box { padding-right: 6px; }
+.fx-anim-stepper { display: inline-flex; flex-direction: column; margin-left: 4px; align-self: center; }
+.fx-anim-step { display: grid; place-items: center; width: 18px; height: 12px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--text-faint); cursor: pointer; transition: background 0.12s, color 0.12s; }
+.fx-anim-step:hover { background: rgba(255, 255, 255, 0.1); color: var(--text); }
+.fx-anim-step:active { background: var(--accent-soft); color: var(--accent-text); }
+.fx-anim-step svg { width: 10px; height: 10px; }
+/* родные стрелки числовых полей на всём сайте скрыты: вместо них свои кнопки или ввод с клавиатуры */
+input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
+input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
