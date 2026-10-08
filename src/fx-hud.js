@@ -55,6 +55,8 @@ export class TrackerHud {
 	}
 
 	_pick(geometry, morph) {
+		// в раскадровке точки формы не видны: рамки выбирают места на текущем кадре блока
+		if (this.pickOverride) return this.pickOverride();
 		const o = geometry.attributes.aOrigin.array;
 		const t = geometry.attributes.aTarget.array;
 		const n = geometry.attributes.position.count;
@@ -73,7 +75,7 @@ export class TrackerHud {
 		let bestScore = -1;
 		for (let s = 0; s < 10; s++) {
 			const i = Math.floor(Math.random() * n) * 3;
-			const p = new THREE.Vector3(o[i] + (t[i] - o[i]) * m, o[i + 1] + (t[i + 1] - o[i + 1]) * m, o[i + 2] + (t[i + 2] - o[i + 2]) * m);
+			const p = this.pickOverride ? this.pickOverride() : new THREE.Vector3(o[i] + (t[i] - o[i]) * m, o[i + 1] + (t[i + 1] - o[i + 1]) * m, o[i + 2] + (t[i + 2] - o[i + 2]) * m);
 			let near = 9;
 			for (const it of this.items) near = Math.min(near, p.distanceTo(it.target));
 			const score = near + Math.random() * 0.25;

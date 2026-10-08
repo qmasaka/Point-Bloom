@@ -1274,10 +1274,16 @@ void main() {
 	vec3 frCol = vec3(1.0);
 	vec3 frNrm = vec3(0.0, 0.0, 1.0);
 	float frLift = 0.0;
+	float frAp = -1.0;
 	if (uFr.x > 0.5) {
 		float fk;
 		vec2 fcell;
 		vec3 fp = frBlockPos(aIdx, frNrm, fk, fcell);
+#ifdef HERO
+		frAp = (fcell.y + fcell.x / uHero.x) / uHero.y;
+#else
+		frAp = (fcell.y + fcell.x / uFr2.x) / uFr2.y;
+#endif
 		vec3 tcol;
 		vec4 sh = frShow(fk, tcol);
 #ifdef HERO
@@ -1349,7 +1355,9 @@ void main() {
 		// акселограф: aPath это место точки на пути пера (0..1), uScope.z это положение пера, у ещё не нарисованных точек размер падает до нуля
 		bool rv = uScope.y > 1.5;
 		float cm = rv ? uScope.y - 2.0 : uScope.y;
-		float ap = rv ? 1.0 - aPath : aPath;
+		// в раскадровке путь это строчная развёртка кадра (точки формы там не видны), иначе перо шло бы по невидимым точкам
+		float ap0 = frAp >= 0.0 ? frAp : aPath;
+		float ap = rv ? 1.0 - ap0 : ap0;
 		if (uScopeP.w > 1.5) ap = fract(ap * uScopeP.w);
 		float sAge = uScope.z - ap;
 		float hideAll = (ap < uScopeP.z ? 1.0 : 0.0) * min(1.0, uScopeP.x * 4.0);
@@ -4138,6 +4146,34 @@ line.userData.helper = true;
 this.points.add(line);
 this._scopeLine = line;
 }
+_frameSample() {
+const u = this.shared;
+const n = u.uFr.value.y;
+const W = u.uFr2.value.z, H = u.uFr2.value.w;
+const idx = u.uFr4.value.x;
+const k = clamp(Math.round(idx), 0, Math.max(0, n - 1));
+const depth = u.uFr3.value.x;
+const uu = (Math.random() - 0.5) * 0.9, vv = (Math.random() - 0.5) * 0.9;
+const dz = u.uFr4.value.y > 0.5 && u.uFr4.value.y < 1.5 ? -1 : 1;
+const cen = u.uFr6.value.y > 0.5 ? (n - 1) * 0.5 : idx;
+const place = (lay) => {
+if (lay > 0.5 && lay < 1.5) {
+const gx = Math.ceil(Math.sqrt(n * (W / H)));
+const gy = Math.ceil(n / gx);
+const s = Math.min(2.4 / (gx * W), 2.4 / (gy * H));
+return new THREE.Vector3((k % gx - (gx - 1) * 0.5) * W * s * 1.04 + uu * W * s, ((gy - 1) * 0.5 - Math.floor(k / gx)) * H * s * 1.04 + vv * H * s, 0);
+}
+if (lay > 1.5 && lay < 2.5) return new THREE.Vector3(uu * W, vv * H, 0);
+return new THREE.Vector3(uu * W, vv * H, ((idx - cen) * depth) / Math.max(n - 1, 1) * dz);
+};
+const a = place(u.uFr3.value.y);
+const w = u.uFr3.value.w;
+if (w > 0.0001) {
+const m = w * w * (3 - 2 * w);
+a.lerp(place(u.uFr3.value.z), m);
+}
+return a;
+}
 _scopeDropLine() {
 const l = this._scopeLine;
 if (!l) return;
@@ -4181,7 +4217,7 @@ else u.uScopeC.value.set(S.color);
 u.uScopeW.value = S.width;
 u.uScopeLB.value = S.line;
 const L = this._scopeLine;
-if (L) L.visible = order === 'walk' && S.line > 0.01;
+if (L) L.visible = order === 'walk' && S.line > 0.01 && !(u.uFr.value.x > 0.5);
 }
 async prewarm() {
 if (this.active) return;
@@ -5592,6 +5628,7 @@ if (T.follow === 'pointer') {
 if (this.camTracker?.running && this._handPtrs?.length && this._time - (this._handsT ?? -9) < 0.4) tgs = this._handPtrs.map((q) => q.local);
 else if (this.mouseOn) tgs = [this.mouse];
 }
+this.hud.pickOverride = this.shared.uFr.value.x > 0.5 ? () => this._frameSample() : null;
 this.hud.update(n, this.geometry, this.morph, this.levels, dt, tgs);
 const hex = (c) => '#' + new THREE.Color(c).getHexString(THREE.SRGBColorSpace);
 const cols = [hex(pal.c[0]), hex(pal.c[2])];
