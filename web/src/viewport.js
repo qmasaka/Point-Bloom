@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Grid } from './grid.js';
+import { perf } from './perf.js';
 export const LAYER = { MESH: 1, POINTS: 2, WIRE: 3, FACES: 4 };
 export const BACKGROUNDS = {
 dark: { label: 'Тёмный градиент', css: 'radial-gradient(ellipse at 50% 25%, #3d4149 0%, #24272d 62%, #1b1d22 100%)', solid: '#2a2d33', light: false },
@@ -38,8 +39,8 @@ this.raycaster.layers.set(LAYER.MESH);
 this.canvas = document.createElement('canvas');
 this.canvas.className = 'gl';
 stage.appendChild(this.canvas);
-this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-this._basePR = Math.min(window.devicePixelRatio || 1, 2);
+this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: perf.antialias, alpha: true, powerPreference: 'high-performance' });
+this._basePR = Math.min(window.devicePixelRatio || 1, perf.maxPR);
 this._qs = 1;
 this.renderer.setPixelRatio(this._basePR);
 this.renderer.setClearColor(0x000000, 0);
@@ -209,6 +210,7 @@ if (this._qLow >= 3 && this._qs > 0.6) {
 this._qLow = 0;
 this._qDown = now;
 this.setScale(Math.max(0.6, this._qs * 0.85));
+document.documentElement.classList.add('perf-flat');
 } else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 20000) this.setScale(Math.min(1, this._qs * 1.15));
 }
 setScale(v) {
@@ -235,7 +237,7 @@ start() {
 let lastF = 0;
 const loop = (now) => {
 requestAnimationFrame(loop);
-const cap = this.app.settings.render.fpsCap;
+const cap = this.app.settings.render.fpsCap || perf.maxFps;
 if (cap && now - lastF < 1000 / cap - 3) return;
 lastF = now;
 this.frame(now);

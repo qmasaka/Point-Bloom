@@ -83722,6 +83722,45 @@ class Grid extends THREE.Mesh {
 }
 
 };
+__defs['src/perf.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'perf', () => perf);
+// Оценка мощности видеокарты один раз при запуске: от неё зависят сглаживание, разрешение отрисовки, лимит кадров и «тяжесть» стекла в интерфейсе.
+// Слабые видеокарты (встроенная графика Windows и ноутбуков) получают облегчённый режим, мощные (Apple, NVIDIA, AMD) остаются как есть.
+
+function gpuName() {
+	try {
+		const c = document.createElement('canvas');
+		const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+		if (!gl) return '';
+		const ext = gl.getExtension('WEBGL_debug_renderer_info');
+		const name = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || '') : '';
+		gl.getExtension('WEBGL_lose_context')?.loseContext();
+		return name;
+	} catch (e) {
+		return '';
+	}
+}
+
+const gpu = gpuName();
+const ua = (navigator.userAgent || '') + ' ' + (navigator.platform || '');
+const mobile = /Android|iPhone|iPad|Mobile/i.test(ua);
+const strong = /Apple M|Apple GPU|NVIDIA|GeForce|RTX|GTX|Quadro|Radeon RX|Radeon Pro|Radeon\(TM\) RX|Arc\(TM\) [AB]\d|RX \d{3,4}/i.test(gpu);
+// на Mac внешне всегда «Apple», на Windows с дискретной картой в названии NVIDIA или Radeon RX; всё остальное считаем встроенной графикой
+const tier = mobile ? 'low' : strong ? 'high' : 'low';
+
+const perf = {
+	gpu,
+	tier,
+	antialias: tier === 'high',
+	maxPR: tier === 'high' ? 2 : 1.5,
+	maxFps: tier === 'high' ? 0 : 60,
+};
+
+// лёгкое стекло интерфейса: на слабой видеокарте размытие под панелями считается каждый кадр и заметно тормозит
+if (tier !== 'high') document.documentElement.classList.add('perf-lite');
+
+};
 __defs['src/viewport.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'LAYER', () => LAYER);
@@ -83731,6 +83770,7 @@ const THREE = __req('vendor/three/build/three.module.js');
 const { TransformControls } = __req('vendor/three/addons/controls/TransformControls.js');
 const { RoomEnvironment } = __req('vendor/three/addons/environments/RoomEnvironment.js');
 const { Grid } = __req('src/grid.js');
+const { perf } = __req('src/perf.js');
 
 /** Слои: чем рисуется. 0 — служебное (сетка, гизмо), остальное — содержимое сцены. */
 const LAYER = { MESH: 1, POINTS: 2, WIRE: 3, FACES: 4 };
@@ -83774,8 +83814,8 @@ class Viewport {
 		this.canvas = document.createElement('canvas');
 		this.canvas.className = 'gl';
 		stage.appendChild(this.canvas);
-		this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-		this._basePR = Math.min(window.devicePixelRatio || 1, 2);
+		this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: perf.antialias, alpha: true, powerPreference: 'high-performance' });
+		this._basePR = Math.min(window.devicePixelRatio || 1, perf.maxPR);
 		this._qs = 1; // текущий масштаб разрешения (авто-качество)
 		this.renderer.setPixelRatio(this._basePR);
 		this.renderer.setClearColor(0x000000, 0);
@@ -83979,6 +84019,8 @@ class Viewport {
 			this._qLow = 0;
 			this._qDown = now;
 			this.setScale(Math.max(0.6, this._qs * 0.85));
+			// размытие под панелями тоже стоит кадров: при просадке интерфейс переходит на плоское стекло
+			document.documentElement.classList.add('perf-flat');
 		} else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 20000) this.setScale(Math.min(1, this._qs * 1.15));
 	}
 
@@ -84010,7 +84052,7 @@ class Viewport {
 		const loop = (now) => {
 			requestAnimationFrame(loop);
 			// лимит кадров (например, 30 в секунду) экономит заряд и нагрев
-			const cap = this.app.settings.render.fpsCap;
+			const cap = this.app.settings.render.fpsCap || perf.maxFps;
 			if (cap && now - lastF < 1000 / cap - 3) return;
 			lastF = now;
 			this.frame(now);
@@ -132321,17 +132363,33 @@ function createExportPanel(app, root) {
 		e.stopPropagation();
 		if (e.key === 'Enter') run();
 	});
-	const fmt = segmented({
-		options: EXPORT_FORMATS.map((f) => ({ value: f.id, label: f.label, title: f.title })),
-		value: s.format,
-		cls: 'fmt',
-		label: 'Формат',
-		onChange: (v) => {
-			s.format = v;
-			touch();
-			syncFormat();
+	// форматы плитками с короткой подписью, по группам
+	const FMT_CAPTION = { glb: 'Веб, AR, игры', gltf: 'Текстовый, читаемый', usdz: 'AR на iPhone и iPad', obj: 'Универсальный', ply: 'Цвет вершин', stl: 'Для 3D-печати', splat: 'Гауссовы сплаты', splatzip: 'Видео в сплатах', web: 'Страница и код' };
+	const FMT_GROUPS = [['3D-модель', ['glb', 'gltf', 'usdz', 'obj', 'ply', 'stl']], ['Облака точек и сайт', ['splat', 'splatzip', 'web']]];
+	const tiles = new Map();
+	const fmtWrap = h('div', { class: 'fmt-groups', role: 'radiogroup', 'aria-label': 'Формат' });
+	for (const [gname, ids] of FMT_GROUPS) {
+		const grid = h('div', { class: 'fmt-grid' });
+		for (const id of ids) {
+			const f = EXPORT_FORMATS.find((x) => x.id === id);
+			if (!f) continue;
+			const t = h('button', { type: 'button', class: 'fmt-tile', role: 'radio', 'aria-checked': 'false', 'data-tip': f.title }, h('b', {}, f.label), h('span', {}, FMT_CAPTION[id] || ''));
+			t.addEventListener('click', () => {
+				s.format = id;
+				touch();
+				syncFormat();
+			});
+			tiles.set(id, t);
+			grid.append(t);
+		}
+		fmtWrap.append(h('div', { class: 'fmt-group-name' }, gname), grid);
+	}
+	const fmt = {
+		el: fmtWrap,
+		set: (v) => {
+			for (const [id, t] of tiles) t.setAttribute('aria-checked', String(id === v));
 		},
-	});
+	};
 	const secFormat = section('Формат', { key: 'e-format' }, fmt.el, fmtDesc, field('Имя файла', h('div', { class: 'name-field' }, nameInput, ext), { wide: true }));
 
 	// -------------------------------------------------------- страница для сайта
@@ -132452,10 +132510,13 @@ function createExportPanel(app, root) {
 	const resultBox = h('div');
 	const estimate = h('div', { class: 'estimate' });
 	const cta = h('div', { class: 'export-cta' });
-	const goBtn = button({ label: 'Скачать GLB', icon: 'download-simple', variant: 'primary', cls: 'btn-lg btn-block', onClick: () => run() });
+	const goBtn = button({ label: 'Скачать GLB', icon: 'download-simple', variant: 'primary', cls: 'btn-lg', onClick: () => run() });
 	cta.append(estimate, goBtn);
 
-	root.append(h('div', { class: 'result-slot' }, resultBox), h('div', { class: 'export-cols' }, secFormat.el, secWeb.el, secWhat.el, secData.el, secCloud.el), cta);
+	// слева выбор формата и имя файла (для сайта ещё и страница), справа параметры преобразования
+	const colL = h('div', { class: 'exp-col exp-left' }, secFormat.el, secWeb.el);
+	const colR = h('div', { class: 'exp-col exp-right' }, secWhat.el, secData.el, secCloud.el);
+	root.append(h('div', { class: 'result-slot' }, resultBox), h('div', { class: 'exp-grid' }, colL, colR), cta);
 
 	function updateEstimate() {
 		const f = fmtInfo();
@@ -134815,7 +134876,7 @@ const FX_LAYERS = [
 	{ id: 'flow', group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, поверхность выглядит живой, а силуэт не меняется', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
 	{ id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Частицы отрываются от формы, уносятся ветром и гаснут, пока модель не исчезнет. Потом она собирается обратно', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', order: 'top', style: 'wind', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.8 }, extras: [{ key: 'style', label: 'Как исчезает', type: 'select', options: [['wind', 'Уносит ветром'], ['burn', 'Горение: пепел и угли'], ['bubbles', 'Пузыри всплывают']] }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'order', label: 'С какой стороны', type: 'seg', options: [['top', 'Сверху'], ['noise', 'Пятнами'], ['bottom', 'Снизу']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер в сторону', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Завихрения', min: 0, max: 2, step: 0.05 }] },
 	{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке и становятся квадратами: сетка, «Лего» или дыхание', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1, mode: 'grid', speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['grid', 'Сетка'], ['lego', 'Лего'], ['breathe', 'Дыхание']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe']] }] },
-	{ id: 'scope', group: 'Звук и ритм', name: 'Акселограф', icon: 'heartbeat', hint: 'По точкам модели бежит перо самописца: линия идёт от точки к точке по их координатам и вычерчивает форму. Ещё не нарисованные точки невидимы и проявляются, когда перо проходит по ним. Линия и точки двигаются вместе с остальными эффектами', max: 1, def: { on: false, amount: 0.7, band: 'none', react: 0.6, mode: 'draw', order: 'walk', dir: 'fwd', loop: 'loop', speed: 1, pens: 1, trail: 0.5, detail: 2500, dim: 1, line: 1, width: 2.4, color: '#3dff7a', tint: 0.35, thick: 0.6, glow: 1, spark: 0 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивает: нарисованное остаётся'], ['comet', 'Комета: за пером тянется гаснущий след']] }, { key: 'order', label: 'Порядок обхода', type: 'select', options: [['walk', 'От точки к точке (ближайшая)'], ['up', 'Развёртка снизу вверх'], ['spin', 'Развёртка по кругу']] }, { key: 'dir', label: 'Направление', type: 'seg', options: [['fwd', 'Вперёд'], ['back', 'Назад']] }, { key: 'loop', label: 'В конце круга', type: 'seg', options: [['loop', 'Заново'], ['once', 'Остаётся']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'pens', label: 'Число перьев', min: 1, max: 8, step: 1, int: true }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true, when: ['order', ['walk']] }, { key: 'dim', label: 'Прятать ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'color', label: 'Цвет акселографа', type: 'color' }, { key: 'line', label: 'Яркость линии', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'width', label: 'Толщина линии', min: 0.5, max: 8, step: 0.1, when: ['order', ['walk']] }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }, { key: 'spark', label: 'Искры у пера', min: 0, max: 2, step: 0.05 }] },
+	{ id: 'scope', group: 'Звук и ритм', name: 'Акселограф', icon: 'heartbeat', hint: 'По точкам модели бежит перо самописца: линия идёт от точки к точке по их координатам и вычерчивает форму. Ещё не нарисованные точки невидимы и проявляются, когда перо проходит по ним. Линия и точки двигаются вместе с остальными эффектами', max: 1, def: { on: false, amount: 0.7, band: 'none', react: 0.6, mode: 'draw', order: 'walk', dir: 'fwd', loop: 'loop', speed: 1, pens: 2, chaos: 0.6, trail: 0.5, detail: 6000, dim: 1, line: 1, width: 2.4, color: '#3dff7a', tint: 0.35, thick: 0.6, glow: 1, spark: 0 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивает: нарисованное остаётся'], ['comet', 'Комета: за пером тянется гаснущий след']] }, { key: 'order', label: 'Порядок обхода', type: 'select', options: [['walk', 'От точки к точке (ближайшая)'], ['up', 'Развёртка снизу вверх'], ['spin', 'Развёртка по кругу']] }, { key: 'dir', label: 'Направление', type: 'seg', options: [['fwd', 'Вперёд'], ['back', 'Назад']] }, { key: 'loop', label: 'В конце круга', type: 'seg', options: [['loop', 'Стирает и заново'], ['once', 'Остаётся']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'pens', label: 'Число перьев', min: 1, max: 8, step: 1, int: true }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true, when: ['order', ['walk']] }, { key: 'chaos', label: 'Хаотичность пути', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'dim', label: 'Прятать ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'color', label: 'Цвет акселографа', type: 'color' }, { key: 'line', label: 'Яркость линии', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'width', label: 'Толщина линии', min: 0.5, max: 8, step: 0.1, when: ['order', ['walk']] }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }, { key: 'spark', label: 'Искры у пера', min: 0, max: 2, step: 0.05 }] },
 	{ id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Нейросеть строит карту глубины снимка или каждого кадра видео, и точки выдавливаются по ней: рельеф, ступенчатые слои, сканер глубины, эффект Хичкока, пыль на дальнем плане и волны по контурам. Всё считается на вашем компьютере. Вращайте камеру, чтобы увидеть объём', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.4, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Рельеф: ближнее выступает вперёд'], ['layers', 'Слои: ступени, как вырезанные из картона'], ['scan', 'Сканер: плоскость бежит сквозь глубину'], ['vertigo', 'Вертиго: ближнее и дальнее зумятся по-разному'], ['dust', 'Пыль: дальний план рассыпается'], ['contour', 'Контуры: волны идут по глубине']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Что остаётся на месте', min: 0, max: 1, step: 0.02 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
 	{ id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в трёх измерениях, цветовые каналы расходятся, картинка мерцает', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16, rgb: 'on', speed: 1 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
@@ -136162,10 +136223,12 @@ void main() {
 		float ap = rv ? 1.0 - aPath : aPath;
 		if (uScopeP.w > 1.5) ap = fract(ap * uScopeP.w);
 		float sAge = uScope.z - ap;
-		float hideAll = uScopeP.z * min(1.0, uScopeP.x * 4.0);
+		float hideAll = (ap < uScopeP.z ? 1.0 : 0.0) * min(1.0, uScopeP.x * 4.0);
 		if (sAge >= 0.0) {
 			gScopeT = (cm < 0.5 ? 1.0 : exp(-sAge * 4.0 / max(uScope.w, 0.02))) * uScopeP.y;
 			gScopeG = exp(-sAge * 45.0) * uScopeP.y;
+			// стирание: перо идёт по следу второй раз и съедает нарисованное, на кромке светится
+			if (uScopeP.z > 0.0 && ap >= uScopeP.z) gScopeG = max(gScopeG, exp(-(ap - uScopeP.z) * 45.0));
 			gScopeD = hideAll;
 		} else gScopeD = max(clamp(uScopeP.x * uScope.x * 1.6, 0.0, 1.0), hideAll);
 	}
@@ -136493,7 +136556,7 @@ void main() {
 	if (uScopeP.w > 1.5) sp = fract(sp * uScopeP.w);
 	float age = uScope.z - sp;
 	float lit = age < 0.0 || aSeg < 0.0 ? 0.0 : (cm < 0.5 ? 1.0 : exp(-age * 4.0 / max(uScope.w, 0.02))) * uScopeP.y;
-	vA = lit * uScope.x * min(1.0, uScope.x * 2.0) * (1.0 - uScopeP.z) * uScopeLB;
+	vA = lit * step(uScopeP.z, sp) * uScope.x * min(1.0, uScope.x * 2.0) * uScopeLB;
 	vC = uScopeC * (1.0 + exp(-max(age, 0.0) * 45.0) * uScopeQ.z * 2.0);
 	vSide = aSide;
 	mat4 mvp = projectionMatrix * modelViewMatrix;
@@ -138986,7 +139049,7 @@ class EffectsEngine {
 	}
 	// ------------------------------------------------------------ акселограф: перо бежит от точки к точке по координатам модели
 	/** Строит путь пера: берёт часть точек и обходит их «ближайшим соседом», каждой точке облака даёт место на пути (aPath), а линию собирает из отрезков между соседями по пути. Остальные порядки: развёртка по высоте или по кругу */
-	_scopeBuild(S, order) {
+	_scopeBuild(S, order, chaosV = 0.5) {
 		const g = this.geometry;
 		const T = g.attributes.aTarget.array;
 		const N = g.attributes.position.count;
@@ -139031,54 +139094,79 @@ class EffectsEngine {
 		const used = new Uint8Array(sc);
 		const ord = new Int32Array(sc);
 		const d2 = (i, p) => (T[ids[i] * 3] - p[0]) ** 2 + (T[ids[i] * 3 + 1] - p[1]) ** 2 + (T[ids[i] * 3 + 2] - p[2]) ** 2;
-		let cur = 0;
-		for (let i = 1; i < sc; i++) if (T[ids[i] * 3 + 1] < T[ids[cur] * 3 + 1]) cur = i;
-		let prev = null;
-		for (let n = 0; n < sc; n++) {
-			used[cur] = 1;
-			ord[n] = cur;
-			if (n === sc - 1) break;
-			const p = [T[ids[cur] * 3], T[ids[cur] * 3 + 1], T[ids[cur] * 3 + 2]];
-			const bx = cx(p[0], 0), by = cx(p[1], 1), bz = cx(p[2], 2);
-			let best = -1, bd = Infinity;
-			for (let r = 0; r <= 5 && best < 0; r++) {
-				for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) for (let dz = -r; dz <= r; dz++) {
-					if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue;
-					const a = grid.get(key(bx + dx, by + dy, bz + dz));
-					if (!a) continue;
-					for (let q = a.length - 1; q >= 0; q--) {
-						const j = a[q];
-						if (used[j]) {
-							a[q] = a[a.length - 1];
-							a.pop();
-							continue;
-						}
-						let d = d2(j, p);
-						if (prev) d *= 1.25 - 0.25 * Math.max(-1, Math.min(1, ((T[ids[j] * 3] - p[0]) * prev[0] + (T[ids[j] * 3 + 1] - p[1]) * prev[1] + (T[ids[j] * 3 + 2] - p[2]) * prev[2]) / (Math.sqrt(d2(j, p)) * prev[3] + 1e-9)));
-						if (d < bd) {
-							bd = d;
-							best = j;
+		// «хаос»: путь режется на штрихи, каждый штрих стартует в случайном месте и идёт по ближайшим точкам, с лёгкой случайностью в выборе шага
+		let seed = 1234567;
+		const rnd = () => {
+			seed = (seed + 0x6d2b79f5) | 0;
+			let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+			t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+			return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+		};
+		const chaos = Math.max(0, Math.min(1, chaosV));
+		const strokes = 1 + Math.round(chaos * chaos * 120);
+		const strokeLen = Math.max(6, Math.ceil(sc / strokes));
+		const rem = new Int32Array(sc);
+		const posIn = new Int32Array(sc);
+		for (let i = 0; i < sc; i++) rem[i] = posIn[i] = i;
+		let remN = sc;
+		const take = (j) => {
+			const pj = posIn[j];
+			const last = rem[--remN];
+			rem[pj] = last;
+			posIn[last] = pj;
+			used[j] = 1;
+		};
+		const brk = new Uint8Array(sc + 1);
+		let n = 0;
+		while (n < sc) {
+			if (n > 0) brk[n] = 1;
+			let cur = 0;
+			if (n === 0 && strokes === 1) {
+				for (let i = 1; i < sc; i++) if (T[ids[i] * 3 + 1] < T[ids[cur] * 3 + 1]) cur = i;
+			} else cur = rem[Math.floor(rnd() * remN)];
+			take(cur);
+			ord[n++] = cur;
+			let prev = null;
+			let left = strokeLen - 1;
+			while (left > 0 && n < sc) {
+				const p = [T[ids[cur] * 3], T[ids[cur] * 3 + 1], T[ids[cur] * 3 + 2]];
+				const bx = cx(p[0], 0), by = cx(p[1], 1), bz = cx(p[2], 2);
+				const cand = [];
+				for (let r = 0; r <= 5 && cand.length < 3; r++) {
+					for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) for (let dz = -r; dz <= r; dz++) {
+						if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue;
+						const a = grid.get(key(bx + dx, by + dy, bz + dz));
+						if (!a) continue;
+						for (let q = a.length - 1; q >= 0; q--) {
+							const j = a[q];
+							if (used[j]) {
+								a[q] = a[a.length - 1];
+								a.pop();
+								continue;
+							}
+							let d = d2(j, p);
+							if (prev) d *= 1.25 - 0.25 * Math.max(-1, Math.min(1, ((T[ids[j] * 3] - p[0]) * prev[0] + (T[ids[j] * 3 + 1] - p[1]) * prev[1] + (T[ids[j] * 3 + 2] - p[2]) * prev[2]) / (Math.sqrt(d2(j, p)) * prev[3] + 1e-9)));
+							cand.push([d, j]);
 						}
 					}
 				}
+				if (!cand.length) break;
+				cand.sort((x, y) => x[0] - y[0]);
+				// чем больше хаос, тем чаще перо выбирает не самую близкую из трёх ближайших
+				let pick = 0;
+				if (cand.length > 1 && rnd() < chaos * 0.75) pick = 1 + (cand.length > 2 && rnd() < 0.4 ? 1 : 0);
+				const best = cand[pick][1];
+				prev = [T[ids[best] * 3] - p[0], T[ids[best] * 3 + 1] - p[1], T[ids[best] * 3 + 2] - p[2], 0];
+				prev[3] = Math.hypot(prev[0], prev[1], prev[2]);
+				take(best);
+				ord[n++] = best;
+				cur = best;
+				left--;
 			}
-			if (best < 0) {
-				for (let j = 0; j < sc; j++) {
-					if (used[j]) continue;
-					const d = d2(j, p);
-					if (d < bd) {
-						bd = d;
-						best = j;
-					}
-				}
-			}
-			prev = [T[ids[best] * 3] - p[0], T[ids[best] * 3 + 1] - p[1], T[ids[best] * 3 + 2] - p[2], 0];
-			prev[3] = Math.hypot(prev[0], prev[1], prev[2]);
-			cur = best;
 		}
 		const rank = new Int32Array(sc);
 		for (let n = 0; n < sc; n++) rank[ord[n]] = n;
-		const cut2 = (cell * 2.4) ** 2;
+		const cut2 = (cell * 1.4) ** 2;
 		for (let i = 0; i < N; i++) {
 			const x = T[i * 3], y = T[i * 3 + 1], z = T[i * 3 + 2];
 			const bx = cx(x, 0), by = cx(y, 1), bz = cx(z, 2);
@@ -139102,11 +139190,11 @@ class EffectsEngine {
 				continue;
 			}
 			// между двумя соседними точками пути место считаем плавно, иначе проявление идёт квадратиками по ячейкам
-			let rk = rank[best];
+			const rk = rank[best];
 			const P = (j) => ids[ord[j]] * 3;
 			let bt = 0, bj = -1;
 			for (const nj of [rk - 1, rk + 1]) {
-				if (nj < 0 || nj >= sc) continue;
+				if (nj < 0 || nj >= sc || brk[Math.max(rk, nj)]) continue;
 				const p0 = ids[best] * 3, p1 = P(nj);
 				const ex = T[p1] - T[p0], ey = T[p1 + 1] - T[p0 + 1], ez = T[p1 + 2] - T[p0 + 2];
 				const l2 = ex * ex + ey * ey + ez * ez;
@@ -139128,10 +139216,10 @@ class EffectsEngine {
 		const A = new Float32Array(V * 3), TA = new Float32Array(V * 3), B = new Float32Array(V * 3), TB = new Float32Array(V * 3);
 		const ia = new Float32Array(V), ib = new Float32Array(V), da = new Float32Array(V), db = new Float32Array(V), end = new Float32Array(V), side = new Float32Array(V), seg = new Float32Array(V);
 		const index = new Uint32Array(L * 6);
-		const cut = cell * 2.4;
+		const cut = cell * 1.4;
 		for (let l = 0; l < L; l++) {
 			const a = ids[ord[l]], b = ids[ord[l + 1]];
-			const far = Math.hypot(T[a * 3] - T[b * 3], T[a * 3 + 1] - T[b * 3 + 1], T[a * 3 + 2] - T[b * 3 + 2]) > cut;
+			const far = brk[l + 1] === 1 || Math.hypot(T[a * 3] - T[b * 3], T[a * 3 + 1] - T[b * 3 + 1], T[a * 3 + 2] - T[b * 3 + 2]) > cut;
 			index.set([l * 4, l * 4 + 1, l * 4 + 2, l * 4 + 2, l * 4 + 1, l * 4 + 3], l * 6);
 			for (let v = 0; v < 4; v++) {
 				const q = l * 4 + v;
@@ -139190,7 +139278,7 @@ class EffectsEngine {
 			return;
 		}
 		const order = S.order || 'walk';
-		const gk = this.geometry.uuid + ':' + order + ':' + (order === 'walk' ? Math.round(S.detail) : 0);
+		const gk = this.geometry.uuid + ':' + order + ':' + (order === 'walk' ? Math.round(S.detail) + '/' + Math.round(S.chaos * 20) : 0);
 		const lost = this._scopeLine && this._scopeLine.parent !== this.points;
 		if (this._scopeKey !== gk || lost) {
 			// пока двигают ползунок, путь пересчитывается не чаще раза в четверть секунды
@@ -139199,17 +139287,16 @@ class EffectsEngine {
 				this._scopeKey = gk;
 				this._scopeWait = performance.now();
 				if (lost) this._scopeLine = null;
-				this._scopeBuild(Math.round(S.detail), order);
+				this._scopeBuild(Math.round(S.detail), order, S.chaos);
 			}
 		}
 		this._scopeT = (this._scopeT || 0) + dt * S.speed * 0.07;
-		// круг: 0..0.8 перо рисует, до 0.93 готовая форма держится, дальше плавно гаснет и всё начинается заново; «Остаётся» замирает на готовой форме
+		// круг: 0..0.5 перо рисует, до 0.6 готовая форма держится, затем перо идёт по ней вторым проходом и стирает; «Остаётся» замирает на готовой форме
 		const once = S.loop === 'once';
-		const c = once ? Math.min(this._scopeT, 0.93) : this._scopeT % 1;
-		const head = Math.min(c / 0.8, 1.05);
-		const ramp = Math.min(1, c / 0.03);
-		const env = ramp * (1 - Math.min(1, Math.max(0, (c - 0.8) / 0.08)));
-		const out = once ? 0 : Math.min(1, Math.max(0, (c - 0.93) / 0.07));
+		const c = once ? Math.min(this._scopeT, 0.55) : this._scopeT % 1;
+		const head = Math.min(c / 0.5, 1.05);
+		const env = Math.min(1, c / 0.03);
+		const out = once ? 0 : Math.max(0, (c - 0.6) / 0.4) * 1.02;
 		const comet = S.mode === 'comet';
 		u.uScope.value.set(amount, (comet ? 1 : 0) + (S.dir === 'back' ? 2 : 0), head, S.trail);
 		u.uScopeP.value.set(S.dim, env, out, S.pens);
@@ -140122,6 +140209,12 @@ class EffectsEngine {
 			vp.fxHide = false;
 			document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 			throw e;
+		}
+		// шейдеры эффектов большие: на Windows (ANGLE и D3D11) их компиляция идёт секунды, поэтому готовим их заранее, пока виден экран загрузки, а не на первом кадре
+		try {
+			if (app.viewport.renderer.compileAsync) await app.viewport.renderer.compileAsync(app.viewport.scene, app.viewport.camera);
+		} catch (e) {
+			/* подготовка не обязательна */
 		}
 		app.ui.idle();
 		// облака выбранных для морфинга моделей считаем заранее, пока вы смотрите на сцену
@@ -144060,7 +144153,20 @@ class UI {
 	refreshScene() {
 		const app = this.app;
 		const top = app.viewport.root.children.filter((c) => !c.userData.helper);
-		$('#emptyState').hidden = top.length > 0;
+		const es = $('#emptyState');
+		// стартовая карточка уходит плавно и только когда модель начала проявляться: раньше она пропадала сразу, а модель ещё готовилась, и экран на миг оставался пустым
+		const gone = top.length > 0 && !this._importing;
+		if (!gone) {
+			clearTimeout(this._esT);
+			es.hidden = false;
+			es.classList.remove('is-leaving');
+		} else if (!es.hidden && !es.classList.contains('is-leaving')) {
+			es.classList.add('is-leaving');
+			this._esT = setTimeout(() => {
+				if (this.app.viewport.root.children.some((c) => !c.userData.helper) && !this._importing) es.hidden = true;
+				es.classList.remove('is-leaving');
+			}, 360);
+		}
 		const title = $('#docTitle');
 		if (!top.length) title.textContent = 'Нет модели';
 		else if (top.length === 1) title.innerHTML = `<b>${escapeHtml(top[0].name || 'Модель')}</b>`;
@@ -144329,6 +144435,7 @@ class UI {
 				useMode = choice;
 			}
 			this.busy('Читаю файлы', 0.02);
+			this._importing = true;
 			const before = new Set(app.viewport.root.children);
 			// новые объекты сразу прячем: иначе модель мелькает целиком, исчезает и только потом плавно появляется (выглядит как двойной запуск)
 			app.model.holdNew = [];
@@ -144349,9 +144456,13 @@ class UI {
 			for (const o of held) o.visible = true;
 			await this.warmUp();
 			this.idle();
+			this._importing = false;
+			this.refreshScene();
 			this.reportImport(r);
 			this.revealObjects(fresh);
 		} catch (e) {
+			this._importing = false;
+			this.refreshScene();
 			this.idle();
 			console.error(e);
 			this.toast('Не удалось загрузить: ' + (e.message || e), 'error');

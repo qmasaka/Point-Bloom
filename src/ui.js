@@ -611,7 +611,20 @@ export class UI {
 	refreshScene() {
 		const app = this.app;
 		const top = app.viewport.root.children.filter((c) => !c.userData.helper);
-		$('#emptyState').hidden = top.length > 0;
+		const es = $('#emptyState');
+		// стартовая карточка уходит плавно и только когда модель начала проявляться: раньше она пропадала сразу, а модель ещё готовилась, и экран на миг оставался пустым
+		const gone = top.length > 0 && !this._importing;
+		if (!gone) {
+			clearTimeout(this._esT);
+			es.hidden = false;
+			es.classList.remove('is-leaving');
+		} else if (!es.hidden && !es.classList.contains('is-leaving')) {
+			es.classList.add('is-leaving');
+			this._esT = setTimeout(() => {
+				if (this.app.viewport.root.children.some((c) => !c.userData.helper) && !this._importing) es.hidden = true;
+				es.classList.remove('is-leaving');
+			}, 360);
+		}
 		const title = $('#docTitle');
 		if (!top.length) title.textContent = 'Нет модели';
 		else if (top.length === 1) title.innerHTML = `<b>${escapeHtml(top[0].name || 'Модель')}</b>`;
@@ -880,6 +893,7 @@ export class UI {
 				useMode = choice;
 			}
 			this.busy('Читаю файлы', 0.02);
+			this._importing = true;
 			const before = new Set(app.viewport.root.children);
 			// новые объекты сразу прячем: иначе модель мелькает целиком, исчезает и только потом плавно появляется (выглядит как двойной запуск)
 			app.model.holdNew = [];
@@ -900,9 +914,13 @@ export class UI {
 			for (const o of held) o.visible = true;
 			await this.warmUp();
 			this.idle();
+			this._importing = false;
+			this.refreshScene();
 			this.reportImport(r);
 			this.revealObjects(fresh);
 		} catch (e) {
+			this._importing = false;
+			this.refreshScene();
 			this.idle();
 			console.error(e);
 			this.toast('Не удалось загрузить: ' + (e.message || e), 'error');

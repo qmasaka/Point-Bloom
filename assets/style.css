@@ -5648,3 +5648,57 @@ html.booted .stage, html.booted .empty-state { animation: boot-fade 0.9s ease 0.
 .fx-depth-box { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.035); }
 .fx-depth-map { width: 100%; height: auto; max-height: 150px; object-fit: contain; border-radius: 8px; background: #000; image-rendering: auto; }
 .fx-depth-stat { font-size: 12px; line-height: 1.45; color: var(--text-dim); }
+
+/* стартовая карточка уходит плавно */
+.empty-state { transition: opacity 0.32s ease; }
+.empty-state.is-leaving { opacity: 0; pointer-events: none; }
+
+/* ================================================================ экспорт: матовое полупрозрачное окно, форматы плитками, параметры справа, кнопка внизу */
+.export-pop { background: rgba(6, 8, 11, 0.4); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.export-card, .ui-float .export-card {
+	width: min(1040px, 100%);
+	background: var(--fxg-bg, rgba(18, 20, 24, 0.72));
+	backdrop-filter: var(--fxg-blur, blur(22px) saturate(1.25));
+	-webkit-backdrop-filter: var(--fxg-blur, blur(22px) saturate(1.25));
+	border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.1));
+	border-radius: 20px;
+	box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+.export-pop-head { padding: 20px 20px 6px 28px; display: flex; align-items: center; justify-content: space-between; }
+.export-pop-head strong { font-size: 20px; font-weight: 600; }
+#panel-export.export-body { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.exp-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 0 28px; padding: 4px 28px 8px; overflow-y: auto; min-height: 0; flex: 1; }
+.exp-col { min-width: 0; }
+.exp-col > .sec { border: 0; border-radius: 0; background: transparent; }
+.exp-col .sec-head { padding-inline: 0; }
+.exp-col .sec-body { padding-inline: 0; }
+.exp-right { border-left: 1px solid rgba(255, 255, 255, 0.08); padding-left: 28px; }
+.fmt-group-name { margin: 2px 0 8px; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
+.fmt-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.fmt-tile { display: grid; gap: 2px; padding: 10px 12px 11px; text-align: left; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 12px; background: rgba(255, 255, 255, 0.04); color: var(--text-dim); cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.15s; }
+.fmt-tile b { font-size: 15px; font-weight: 600; color: var(--text); }
+.fmt-tile span { font-size: 11.5px; line-height: 1.3; color: var(--text-faint); }
+.fmt-tile:hover { background: rgba(255, 255, 255, 0.08); }
+.fmt-tile:active { transform: scale(0.98); }
+.fmt-tile[aria-checked='true'] { background: var(--accent-soft); border-color: var(--accent-line); }
+.fmt-tile[aria-checked='true'] b { color: var(--accent-text); }
+.fmt-tile[aria-checked='true'] span { color: var(--text-dim); }
+.export-card .fmt-desc { margin-top: 2px; padding: 11px 13px; border-radius: 12px; background: rgba(255, 255, 255, 0.045); font-size: 13px; line-height: 1.5; }
+.export-card .export-cta { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px 28px 20px; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0, 0, 0, 0.14); }
+.export-card .export-cta .estimate { text-align: left; font-size: 13px; color: var(--text-dim); }
+.export-card .export-cta .btn-lg { min-width: 230px; height: 44px; border-radius: 12px; }
+@media (max-width: 820px) {
+	.exp-grid { grid-template-columns: minmax(0, 1fr); }
+	.exp-right { border-left: 0; padding-left: 0; }
+	.export-card .export-cta { flex-direction: column; align-items: stretch; }
+}
+
+/* ================================================================ лёгкий режим для слабых видеокарт: стекло без тяжёлых фильтров, при просадке совсем плоское */
+@media (min-width: 901px) {
+	html.perf-lite #app.ui-float { --fxg-blur: blur(10px); }
+	html.perf-flat #app.ui-float { --fxg-blur: none; --fxg-bg: rgba(19, 21, 26, 0.92); }
+}
+html.perf-lite .export-pop { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(6, 8, 11, 0.55); }
+html.perf-lite .export-card, html.perf-lite .ui-float .export-card { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+html.perf-flat .export-card, html.perf-flat .ui-float .export-card, html.perf-flat .empty-card, html.perf-flat .popover, html.perf-flat .dlg { backdrop-filter: none; -webkit-backdrop-filter: none; background: #15181d; }
+html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px); }

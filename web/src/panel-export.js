@@ -32,17 +32,32 @@ nameInput.addEventListener('keydown', (e) => {
 e.stopPropagation();
 if (e.key === 'Enter') run();
 });
-const fmt = segmented({
-options: EXPORT_FORMATS.map((f) => ({ value: f.id, label: f.label, title: f.title })),
-value: s.format,
-cls: 'fmt',
-label: 'Формат',
-onChange: (v) => {
-s.format = v;
+const FMT_CAPTION = { glb: 'Веб, AR, игры', gltf: 'Текстовый, читаемый', usdz: 'AR на iPhone и iPad', obj: 'Универсальный', ply: 'Цвет вершин', stl: 'Для 3D-печати', splat: 'Гауссовы сплаты', splatzip: 'Видео в сплатах', web: 'Страница и код' };
+const FMT_GROUPS = [['3D-модель', ['glb', 'gltf', 'usdz', 'obj', 'ply', 'stl']], ['Облака точек и сайт', ['splat', 'splatzip', 'web']]];
+const tiles = new Map();
+const fmtWrap = h('div', { class: 'fmt-groups', role: 'radiogroup', 'aria-label': 'Формат' });
+for (const [gname, ids] of FMT_GROUPS) {
+const grid = h('div', { class: 'fmt-grid' });
+for (const id of ids) {
+const f = EXPORT_FORMATS.find((x) => x.id === id);
+if (!f) continue;
+const t = h('button', { type: 'button', class: 'fmt-tile', role: 'radio', 'aria-checked': 'false', 'data-tip': f.title }, h('b', {}, f.label), h('span', {}, FMT_CAPTION[id] || ''));
+t.addEventListener('click', () => {
+s.format = id;
 touch();
 syncFormat();
-},
 });
+tiles.set(id, t);
+grid.append(t);
+}
+fmtWrap.append(h('div', { class: 'fmt-group-name' }, gname), grid);
+}
+const fmt = {
+el: fmtWrap,
+set: (v) => {
+for (const [id, t] of tiles) t.setAttribute('aria-checked', String(id === v));
+},
+};
 const secFormat = section('Формат', { key: 'e-format' }, fmt.el, fmtDesc, field('Имя файла', h('div', { class: 'name-field' }, nameInput, ext), { wide: true }));
 const webTitle = h('input', { type: 'text', class: 'num-in', style: { textAlign: 'left', fontFamily: 'var(--font)', fontSize: '13px', height: '32px' }, spellcheck: 'false', placeholder: 'Название страницы', 'aria-label': 'Название страницы' });
 webTitle.value = w.title || '';
@@ -152,9 +167,11 @@ const secCloud = section('Облако точек', { key: 'e-cloud', open: fals
 const resultBox = h('div');
 const estimate = h('div', { class: 'estimate' });
 const cta = h('div', { class: 'export-cta' });
-const goBtn = button({ label: 'Скачать GLB', icon: 'download-simple', variant: 'primary', cls: 'btn-lg btn-block', onClick: () => run() });
+const goBtn = button({ label: 'Скачать GLB', icon: 'download-simple', variant: 'primary', cls: 'btn-lg', onClick: () => run() });
 cta.append(estimate, goBtn);
-root.append(h('div', { class: 'result-slot' }, resultBox), h('div', { class: 'export-cols' }, secFormat.el, secWeb.el, secWhat.el, secData.el, secCloud.el), cta);
+const colL = h('div', { class: 'exp-col exp-left' }, secFormat.el, secWeb.el);
+const colR = h('div', { class: 'exp-col exp-right' }, secWhat.el, secData.el, secCloud.el);
+root.append(h('div', { class: 'result-slot' }, resultBox), h('div', { class: 'exp-grid' }, colL, colR), cta);
 function updateEstimate() {
 const f = fmtInfo();
 if (!['glb', 'gltf', 'usdz', 'web'].includes(f.id) || !app.viewport.root.children.some((c) => !c.userData.helper)) {
