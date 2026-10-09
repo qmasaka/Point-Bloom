@@ -3536,9 +3536,30 @@ export class EffectsEngine {
 		const clips = this.state.anim.clips || [];
 		const L = this.state.layers;
 		const clipLayerIds = new Set(clips.map((c) => c.layerId));
-		// эффект, чьи блоки удалили, выключается: иначе он оставался включённым с последней силой и работал без блока
-		for (const id of this._gatedIds || []) if (!clipLayerIds.has(id) && L[id]) L[id].on = false;
-		this._gatedIds = clipLayerIds;
+		// как только у эффекта появляется первый блок, его ручные значения запоминаются, а сила падает до нуля: дальше им управляет только таймлайн.
+		// Когда последний блок удалён, прежние значения возвращаются
+		const S = (this.state.anim.saved ||= {});
+		let changed = false;
+		for (const id of clipLayerIds) {
+			if (!L[id] || S[id]) continue;
+			S[id] = { on: !!L[id].on, amount: L[id].amount };
+			L[id].on = false;
+			L[id].amount = 0;
+			changed = true;
+		}
+		for (const id of Object.keys(S)) {
+			if (clipLayerIds.has(id)) continue;
+			if (L[id]) {
+				L[id].on = S[id].on;
+				L[id].amount = S[id].amount;
+			}
+			delete S[id];
+			changed = true;
+		}
+		if (changed) {
+			this.touch();
+			this.emit();
+		}
 			for (const layerId of clipLayerIds) {
 				if (!L[layerId]) continue;
 				let maxVal = 0;
@@ -6059,7 +6080,7 @@ export class EffectsEngine {
 			u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
 
 			// курсор стоит на таймлайне: эффекты с блоками включены только там, где под курсором есть их блок
-			if (!this.animPlaying && !this.animRec && (this.state.anim.clips?.length || this._gatedIds?.size)) this._animGate(this.animT);
+			if (!this.animPlaying && !this.animRec && (this.state.anim.clips?.length || (this.state.anim.saved && Object.keys(this.state.anim.saved).length))) this._animGate(this.animT);
 			// персонаж идёт по времени таймлайна, пока таймлайн играет: дорожка «Персонаж» совпадает с тем, что видно в сцене
 			{
 				const A = this.app.anim;
