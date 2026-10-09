@@ -171,6 +171,8 @@ async function loadGLTF(file, res, ctx) {
 	const wait = waitManager(manager);
 	const gltf = await new Promise((resolve, reject) => loader.parse(data, '', resolve, (e) => reject(e && e.message ? e : new Error(String(e)))));
 	await wait;
+	// клипы анимации едут вместе с моделью: проигрывает их контроллер анимации
+	gltf.scene.userData.clips = gltf.animations || [];
 	return gltf.scene;
 }
 
@@ -179,6 +181,7 @@ async function loadFBX(file, res, ctx) {
 	const wait = waitManager(manager);
 	const obj = new FBXLoader(manager).parse(await file.arrayBuffer(), '');
 	await wait;
+	obj.userData.clips = obj.animations || [];
 	return obj;
 }
 
@@ -388,6 +391,7 @@ function centerObject(obj) {
 
 function processImported(root, fileName, ctx, opts) {
 	const name = stripExt(fileName);
+	const clips = root.userData.clips || [];
 	// лишнее (свет, камеры) убираем, структура и позиции сохраняются
 	const junk = [];
 	root.traverse((o) => {
@@ -429,7 +433,13 @@ function processImported(root, fileName, ctx, opts) {
 		}
 	}
 	top.name = name || top.name || 'Модель';
-	if (opts.centerOrigin) {
+	if (clips.length) top.userData.clips = clips;
+	// персонажи со скелетом не сдвигаем: смещение меша и костей по отдельности ломает привязку к скелету
+	let rigged = false;
+	top.traverse((o) => {
+		if (o.isSkinnedMesh) rigged = true;
+	});
+	if (opts.centerOrigin && !rigged) {
 		top.updateMatrixWorld(true);
 		centerObject(top);
 	}

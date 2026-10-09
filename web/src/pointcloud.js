@@ -130,7 +130,7 @@ t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
 return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 };
 }
-export async function sampleSurface(entries, count, { seed = 1337, onProgress } = {}) {
+export async function sampleSurface(entries, count, { seed = 1337, onProgress, anim = false } = {}) {
 const rng = mulberry32(seed);
 const parts = [];
 let totalArea = 0;
@@ -172,7 +172,7 @@ for (let t = t0; t < t1; t++) triMat[t] = grp.materialIndex;
 }
 const nm = new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld).elements;
 const list = Array.isArray(mats) ? mats : [mats];
-parts.push({ mesh, g, wp, tri, T, cum, area: acc, triMat, nm, fns: list.map(makeColorFn), uv: g.attributes.uv, nrm: g.attributes.normal, vcol: g.attributes.color });
+parts.push({ pi: parts.length, skinned: !!(mesh.isSkinnedMesh && g.attributes.skinIndex && mesh.skeleton), mesh, g, wp, tri, T, cum, area: acc, triMat, nm, fns: list.map(makeColorFn), uv: g.attributes.uv, nrm: g.attributes.normal, vcol: g.attributes.color });
 totalArea += acc;
 }
 if (!parts.length) return { positions: new Float32Array(0), colors: new Float32Array(0), normals: new Float32Array(0), count: 0 };
@@ -184,6 +184,7 @@ remaining -= p.n;
 const positions = new Float32Array(count * 3);
 const colors = new Float32Array(count * 3);
 const normals = new Float32Array(count * 3);
+const A_ = anim ? { parts: parts.map((q) => ({ mesh: q.mesh, skinned: q.skinned })), part: new Uint8Array(count), bp: new Float32Array(count * 3), bi: new Uint16Array(count * 4), bw: new Float32Array(count * 4) } : null;
 let w = 0;
 const vc = [1, 1, 1];
 const tmpC = [0, 0, 0];
@@ -229,6 +230,26 @@ vc[0] = A * vcol.getX(i0) + B * vcol.getX(i1) + C * vcol.getX(i2);
 vc[1] = A * vcol.getY(i0) + B * vcol.getY(i1) + C * vcol.getY(i2);
 vc[2] = A * vcol.getZ(i0) + B * vcol.getZ(i1) + C * vcol.getZ(i2);
 }
+if (A_) {
+const pa = p.g.attributes.position;
+const lx = A * pa.getX(i0) + B * pa.getX(i1) + C * pa.getX(i2);
+const ly = A * pa.getY(i0) + B * pa.getY(i1) + C * pa.getY(i2);
+const lz = A * pa.getZ(i0) + B * pa.getZ(i1) + C * pa.getZ(i2);
+A_.part[w] = p.pi;
+if (p.skinned) {
+const be = p.mesh.bindMatrix.elements;
+A_.bp[o] = be[0] * lx + be[4] * ly + be[8] * lz + be[12];
+A_.bp[o + 1] = be[1] * lx + be[5] * ly + be[9] * lz + be[13];
+A_.bp[o + 2] = be[2] * lx + be[6] * ly + be[10] * lz + be[14];
+const iv = A >= B && A >= C ? i0 : B >= C ? i1 : i2;
+const si = p.g.attributes.skinIndex, sw = p.g.attributes.skinWeight;
+const wsum = sw.getX(iv) + sw.getY(iv) + sw.getZ(iv) + sw.getW(iv) || 1;
+A_.bi[w * 4] = si.getX(iv); A_.bi[w * 4 + 1] = si.getY(iv); A_.bi[w * 4 + 2] = si.getZ(iv); A_.bi[w * 4 + 3] = si.getW(iv);
+A_.bw[w * 4] = sw.getX(iv) / wsum; A_.bw[w * 4 + 1] = sw.getY(iv) / wsum; A_.bw[w * 4 + 2] = sw.getZ(iv) / wsum; A_.bw[w * 4 + 3] = sw.getW(iv) / wsum;
+} else {
+A_.bp[o] = lx; A_.bp[o + 1] = ly; A_.bp[o + 2] = lz;
+}
+}
 const fn = p.fns[p.triMat ? p.triMat[t] : 0] || p.fns[0];
 fn(u, v, vcol ? vc : null, tmpC, 0);
 colors[o] = tmpC[0]; colors[o + 1] = tmpC[1]; colors[o + 2] = tmpC[2];
@@ -238,7 +259,7 @@ await yieldUI();
 }
 }
 }
-return { positions, colors, normals, count: w };
+return { positions, colors, normals, count: w, anim: A_ && A_.parts.some((q) => q.skinned) ? A_ : null };
 }
 export function verticesToCloud(entries) {
 const P = [], C = [], N = [];

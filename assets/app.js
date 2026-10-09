@@ -84040,6 +84040,10 @@ class Viewport {
 	}
 
 	frame(now) {
+		// анимация персонажа идёт своим временем: поза обновляется до отрисовки
+		const dtA = Math.min(0.1, (now - (this._animT || now)) / 1000);
+		this._animT = now;
+		this.app.anim?.tick(dtA);
 		const animating = this.app.nav.tick(now);
 		if (this.dirty || animating) {
 			this.dirty = false;
@@ -85767,7 +85771,7 @@ function mulberry32(a) {
  * Равномерная выборка точек по поверхности мешей (в мировых координатах).
  * entries: [{ mesh, mats }]; возвращает { positions, colors, normals, count }
  */
-async function sampleSurface(entries, count, { seed = 1337, onProgress } = {}) {
+async function sampleSurface(entries, count, { seed = 1337, onProgress, anim = false } = {}) {
 	const rng = mulberry32(seed);
 	const parts = [];
 	let totalArea = 0;
@@ -85809,7 +85813,7 @@ async function sampleSurface(entries, count, { seed = 1337, onProgress } = {}) {
 		}
 		const nm = new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld).elements;
 		const list = Array.isArray(mats) ? mats : [mats];
-		parts.push({ mesh, g, wp, tri, T, cum, area: acc, triMat, nm, fns: list.map(makeColorFn), uv: g.attributes.uv, nrm: g.attributes.normal, vcol: g.attributes.color });
+		parts.push({ pi: parts.length, skinned: !!(mesh.isSkinnedMesh && g.attributes.skinIndex && mesh.skeleton), mesh, g, wp, tri, T, cum, area: acc, triMat, nm, fns: list.map(makeColorFn), uv: g.attributes.uv, nrm: g.attributes.normal, vcol: g.attributes.color });
 		totalArea += acc;
 	}
 	if (!parts.length) return { positions: new Float32Array(0), colors: new Float32Array(0), normals: new Float32Array(0), count: 0 };
@@ -85824,6 +85828,8 @@ async function sampleSurface(entries, count, { seed = 1337, onProgress } = {}) {
 	const positions = new Float32Array(count * 3);
 	const colors = new Float32Array(count * 3);
 	const normals = new Float32Array(count * 3);
+	// для анимации: к какому мешу относится точка, где она в «позе привязки» и какие кости её ведут
+	const A_ = anim ? { parts: parts.map((q) => ({ mesh: q.mesh, skinned: q.skinned })), part: new Uint8Array(count), bp: new Float32Array(count * 3), bi: new Uint16Array(count * 4), bw: new Float32Array(count * 4) } : null;
 	let w = 0;
 	const vc = [1, 1, 1];
 	const tmpC = [0, 0, 0];
@@ -85872,6 +85878,26 @@ async function sampleSurface(entries, count, { seed = 1337, onProgress } = {}) {
 				vc[1] = A * vcol.getY(i0) + B * vcol.getY(i1) + C * vcol.getY(i2);
 				vc[2] = A * vcol.getZ(i0) + B * vcol.getZ(i1) + C * vcol.getZ(i2);
 			}
+			if (A_) {
+				const pa = p.g.attributes.position;
+				const lx = A * pa.getX(i0) + B * pa.getX(i1) + C * pa.getX(i2);
+				const ly = A * pa.getY(i0) + B * pa.getY(i1) + C * pa.getY(i2);
+				const lz = A * pa.getZ(i0) + B * pa.getZ(i1) + C * pa.getZ(i2);
+				A_.part[w] = p.pi;
+				if (p.skinned) {
+					const be = p.mesh.bindMatrix.elements;
+					A_.bp[o] = be[0] * lx + be[4] * ly + be[8] * lz + be[12];
+					A_.bp[o + 1] = be[1] * lx + be[5] * ly + be[9] * lz + be[13];
+					A_.bp[o + 2] = be[2] * lx + be[6] * ly + be[10] * lz + be[14];
+					const iv = A >= B && A >= C ? i0 : B >= C ? i1 : i2;
+					const si = p.g.attributes.skinIndex, sw = p.g.attributes.skinWeight;
+					const wsum = sw.getX(iv) + sw.getY(iv) + sw.getZ(iv) + sw.getW(iv) || 1;
+					A_.bi[w * 4] = si.getX(iv); A_.bi[w * 4 + 1] = si.getY(iv); A_.bi[w * 4 + 2] = si.getZ(iv); A_.bi[w * 4 + 3] = si.getW(iv);
+					A_.bw[w * 4] = sw.getX(iv) / wsum; A_.bw[w * 4 + 1] = sw.getY(iv) / wsum; A_.bw[w * 4 + 2] = sw.getZ(iv) / wsum; A_.bw[w * 4 + 3] = sw.getW(iv) / wsum;
+				} else {
+					A_.bp[o] = lx; A_.bp[o + 1] = ly; A_.bp[o + 2] = lz;
+				}
+			}
 			const fn = p.fns[p.triMat ? p.triMat[t] : 0] || p.fns[0];
 			fn(u, v, vcol ? vc : null, tmpC, 0);
 			colors[o] = tmpC[0]; colors[o + 1] = tmpC[1]; colors[o + 2] = tmpC[2];
@@ -85882,7 +85908,7 @@ async function sampleSurface(entries, count, { seed = 1337, onProgress } = {}) {
 			}
 		}
 	}
-	return { positions, colors, normals, count: w };
+	return { positions, colors, normals, count: w, anim: A_ && A_.parts.some((q) => q.skinned) ? A_ : null };
 }
 
 /** Вершины мешей как облако точек (мировые координаты, цвета из текстур) */
@@ -90678,6 +90704,54 @@ const secMesh = section('Сетка и нормали', { key: 'mesh', open: fal
 	app.bus.on('history', refreshObject);
 	refreshAll();
 	return { refresh: refreshAll };
+}
+
+};
+__defs['src/panel-anim.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'createAnimPanel', () => createAnimPanel);
+// Блок «Анимация персонажа»: клип, воспроизведение, время, скорость, скелет. Появляется, когда в сцене есть модель с анимацией.
+const { h } = __req('src/util.js');
+const { icon } = __req('src/icons.js');
+const { section, field, slider, segmented, switchRow, select, iconButton } = __req('src/ui-kit.js');
+
+function createAnimPanel(app, key = 'anim') {
+	const A = app.anim;
+	const clipSel = select({ options: [{ value: '0', label: '-' }], value: '0', onChange: (v) => A.setClip(parseInt(v, 10)) });
+	const playBtn = iconButton({ icon: 'pause', title: 'Играть или остановить', cls: 'anim-play', onClick: () => A.toggle() });
+	const time = slider({ min: 0, max: 1, step: 0.01, value: 0, digits: 2, unit: ' с', onInput: (v) => A.seek(v), onChange: () => {} });
+	const speed = segmented({ cls: 'seg-tight', options: [{ value: '0.5', label: '0.5×' }, { value: '1', label: '1×' }, { value: '2', label: '2×' }], value: '1', onChange: (v) => A.setSpeed(parseFloat(v)) });
+	const loop = switchRow('Зациклить', { value: true, onChange: (v) => A.setLoop(v) });
+	const skel = switchRow('Показать скелет', { value: false, onChange: (v) => A.setSkeleton(v) }, 'Кости видны поверх модели; сайт их не анимирует, а проигрывает готовую анимацию из файла');
+	const info = h('div', { class: 'field-hint' });
+	const body = h('div', { class: 'anim-row' }, playBtn, h('div', { class: 'anim-time' }, time.el));
+	const sec = section('Анимация персонажа', { key: 'anim-' + key }, field('Клип', clipSel.el, { wide: true }), body, field('Скорость', speed.el, { wide: true }), loop.el, skel.el, info);
+	let lastKey = '';
+	function sync() {
+		sec.el.hidden = !A.has;
+		if (!A.has) return;
+		const k = A.clips.map((c) => c.name).join('|');
+		if (k !== lastKey) {
+			lastKey = k;
+			clipSel.setOptions(A.clips.map((c, i) => ({ value: String(i), label: c.name || 'Клип ' + (i + 1) })));
+		}
+		clipSel.set(String(A.clipIndex));
+		playBtn.textContent = '';
+		playBtn.innerHTML = icon(A.playing ? 'pause' : 'play', 17);
+		time.setRange(0, A.duration);
+		time.set(A.time);
+		speed.set(String(A.speed));
+		loop.set(A.loop);
+		skel.set(A.skeletonOn);
+		info.textContent = `Клипов в файле: ${A.clips.length}. В режиме «Эффекты» точки двигаются вместе с персонажем.`;
+	}
+	A.onChange(sync);
+	// время на ползунке идёт вместе с проигрыванием
+	app.bus.on('animpose', () => {
+		if (A.has && A.playing) time.set(A.time);
+	});
+	sync();
+	return { el: sec.el, sync };
 }
 
 };
@@ -124429,6 +124503,8 @@ async function loadGLTF(file, res, ctx) {
 	const wait = waitManager(manager);
 	const gltf = await new Promise((resolve, reject) => loader.parse(data, '', resolve, (e) => reject(e && e.message ? e : new Error(String(e)))));
 	await wait;
+	// клипы анимации едут вместе с моделью: проигрывает их контроллер анимации
+	gltf.scene.userData.clips = gltf.animations || [];
 	return gltf.scene;
 }
 
@@ -124437,6 +124513,7 @@ async function loadFBX(file, res, ctx) {
 	const wait = waitManager(manager);
 	const obj = new FBXLoader(manager).parse(await file.arrayBuffer(), '');
 	await wait;
+	obj.userData.clips = obj.animations || [];
 	return obj;
 }
 
@@ -124646,6 +124723,7 @@ function centerObject(obj) {
 
 function processImported(root, fileName, ctx, opts) {
 	const name = stripExt(fileName);
+	const clips = root.userData.clips || [];
 	// лишнее (свет, камеры) убираем, структура и позиции сохраняются
 	const junk = [];
 	root.traverse((o) => {
@@ -124687,7 +124765,13 @@ function processImported(root, fileName, ctx, opts) {
 		}
 	}
 	top.name = name || top.name || 'Модель';
-	if (opts.centerOrigin) {
+	if (clips.length) top.userData.clips = clips;
+	// персонажи со скелетом не сдвигаем: смещение меша и костей по отдельности ломает привязку к скелету
+	let rigged = false;
+	top.traverse((o) => {
+		if (o.isSkinnedMesh) rigged = true;
+	});
+	if (opts.centerOrigin && !rigged) {
 		top.updateMatrixWorld(true);
 		centerObject(top);
 	}
@@ -130957,6 +131041,7 @@ __def(__exports, 'estimateExportSize', () => estimateExportSize);
 // Экспорт сцены: GLB / glTF / OBJ(+MTL+текстуры, ZIP) / PLY / STL, с проверкой результата.
 const THREE = __req('vendor/three/build/three.module.js');
 const { GLTFExporter } = __req('vendor/three/addons/exporters/GLTFExporter.js');
+const SkeletonUtils = __req('vendor/three/addons/utils/SkeletonUtils.js');
 const { GLTFLoader } = __req('vendor/three/addons/loaders/GLTFLoader.js');
 const { STLExporter } = __req('vendor/three/addons/exporters/STLExporter.js');
 const { USDZExporter } = __req('vendor/three/addons/exporters/USDZExporter.js');
@@ -130969,8 +131054,8 @@ const { Display } = __req('src/display.js');
 const { frameGrid } = __req('src/frame-block.js');
 
 const EXPORT_FORMATS = [
-	{ id: 'glb', label: 'GLB', ext: 'glb', title: 'glTF Binary', hint: 'Один файл с геометрией и текстурами. Лучший выбор для веба, AR и игровых движков.' },
-	{ id: 'gltf', label: 'glTF', ext: 'gltf', title: 'glTF (JSON)', hint: 'Текстовый glTF, ресурсы встроены внутрь. Удобно читать и править.' },
+	{ id: 'glb', label: 'GLB', ext: 'glb', title: 'glTF Binary', hint: 'Один файл с геометрией и текстурами. Лучший выбор для веба, AR и игровых движков. Персонаж с анимацией сохраняется вместе со скелетом и клипами.' },
+	{ id: 'gltf', label: 'glTF', ext: 'gltf', title: 'glTF (JSON)', hint: 'Текстовый glTF, ресурсы встроены внутрь. Удобно читать и править. Скелет и анимация сохраняются.' },
 	{ id: 'usdz', label: 'USDZ', ext: 'usdz', title: 'USDZ (Apple AR)', hint: 'Для дополненной реальности на iPhone и iPad (Quick Look) и приложений Apple. Нужны только меши с материалами.' },
 	{ id: 'web', label: 'Сайт', ext: 'zip', title: 'Для сайта', hint: 'Готовая веб-страница с интерактивной 3D-моделью и код, который можно вставить на любой сайт.' },
 	{ id: 'obj', label: 'OBJ', ext: 'zip', title: 'OBJ + MTL', hint: 'ZIP с .obj, .mtl и текстурами. Если текстур нет, скачается один .obj.' },
@@ -130997,8 +131082,24 @@ async function buildExportScene(app, o, progress) {
 	vp.root.updateMatrixWorld(true);
 	let group = new THREE.Group();
 	const pairs = [];
+	// персонажи со скелетом клонируются вместе с костями (обычное клонирование оставило бы меш привязанным к чужому скелету)
+	const clips = [];
+	const hasSkin = (r) => {
+		let f = false;
+		r.traverse((n) => {
+			if (n.isSkinnedMesh) f = true;
+		});
+		return f;
+	};
 	for (const r of roots) {
-		const c = r.clone(true);
+		const skinned = hasSkin(r);
+		if (r.userData.clips) clips.push(...r.userData.clips);
+		const c = skinned ? SkeletonUtils.clone(r) : r.clone(true);
+		if (skinned) {
+			c.traverse((n) => {
+				if (n.isSkinnedMesh && n.skeleton) n.skeleton.pose(); // в файл идёт поза привязки, движение задают клипы
+			});
+		}
 		pairUp(r, c, pairs);
 		// положение «как в сцене» (на случай, если выбран вложенный объект)
 		r.updateWorldMatrix(true, false);
@@ -131068,6 +131169,15 @@ async function buildExportScene(app, o, progress) {
 	const scene = new THREE.Scene();
 	scene.name = o.name || 'Scene';
 	for (const child of [...group.children]) scene.add(child);
+	// клипы анимации: при смене масштаба сдвиги костей масштабируются так же, как модель
+	if (clips.length && !(o.cloud && o.cloud !== 'mesh')) {
+		const k = o.scale || 1;
+		scene.userData.exportClips = clips.map((cl) => {
+			const c2 = cl.clone();
+			if (k !== 1) for (const t of c2.tracks) if (/\.position$/.test(t.name)) for (let i = 0; i < t.values.length; i++) t.values[i] *= k;
+			return c2;
+		});
+	}
 	scene.updateMatrixWorld(true);
 
 	// UV нужны только мешам с текстурами: у остальных убираем, файл станет чуть легче
@@ -131145,7 +131255,7 @@ async function exportGLTF(scene, o, binary) {
 		t.userData.mimeType = mime === 'image/jpeg' ? 'image/jpeg' : 'image/png';
 	}
 	const exporter = new GLTFExporter();
-	const result = await exporter.parseAsync(scene, { binary, trs: true, onlyVisible: true, maxTextureSize: o.maxTex > 0 ? o.maxTex : Infinity });
+	const result = await exporter.parseAsync(scene, { binary, trs: true, onlyVisible: true, animations: scene.userData.exportClips || [], maxTextureSize: o.maxTex > 0 ? o.maxTex : Infinity });
 	if (binary) return { blob: new Blob([result], { type: 'model/gltf-binary' }), buffer: result };
 	const json = JSON.stringify(result);
 	return { blob: new Blob([json], { type: 'model/gltf+json' }), buffer: null };
@@ -134331,6 +134441,292 @@ function rgba(hex, a) {
 }
 
 };
+__defs['src/anim-controller.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'AnimController', () => AnimController);
+__def(__exports, 'evalAnimPoints', () => evalAnimPoints);
+// Анимация персонажей: клипы из файла проигрываются на модели в сцене, скелет можно показать.
+// Анимацию сайт не создаёт: она приходит готовой вместе с моделью (GLB, glTF, FBX).
+const THREE = __req('vendor/three/build/three.module.js');
+
+class AnimController {
+	constructor(app) {
+		this.app = app;
+		this.models = []; // { obj, mixer, clips, helper }
+		this.playing = false;
+		this.speed = 1;
+		this.loop = true;
+		this.clipIndex = 0;
+		this.time = 0;
+		this.skeletonOn = false;
+		this.version = 0; // растёт при каждой смене позы: по нему точки понимают, что пора пересчитаться
+		this._listeners = new Set();
+	}
+
+	onChange(fn) {
+		this._listeners.add(fn);
+		return () => this._listeners.delete(fn);
+	}
+
+	_emit() {
+		for (const f of this._listeners) f();
+	}
+
+	get has() {
+		return this.models.length > 0;
+	}
+
+	get clips() {
+		return this.models.length ? this.models[0].clips : [];
+	}
+
+	get duration() {
+		const c = this.clips[this.clipIndex];
+		return c ? Math.max(c.duration, 0.01) : 1;
+	}
+
+	/** Находит в сцене модели с клипами; новые получают проигрыватель, удалённые отпускаются */
+	scan() {
+		const root = this.app.viewport.root;
+		const found = [];
+		for (const o of root.children) {
+			if (o.userData.helper) continue;
+			if (o.userData.clips && o.userData.clips.length) found.push(o);
+		}
+		const keep = [];
+		for (const m of this.models) {
+			if (found.includes(m.obj) && m.obj.parent === root) keep.push(m);
+			else this._dispose(m);
+		}
+		for (const obj of found) {
+			if (keep.some((m) => m.obj === obj)) continue;
+			const mixer = new THREE.AnimationMixer(obj);
+			const m = { obj, mixer, clips: obj.userData.clips, helper: null, action: null };
+			keep.push(m);
+		}
+		const had = this.models.length;
+		this.models = keep;
+		if (this.clipIndex >= this.clips.length) this.clipIndex = 0;
+		if (this.models.length && !had) {
+			this.playing = true;
+			this.time = 0;
+		}
+		if (!this.models.length) this.playing = false;
+		this._setClip();
+		this._helpers();
+		this.apply();
+		this._emit();
+	}
+
+	_dispose(m) {
+		try {
+			m.mixer.stopAllAction();
+			m.mixer.uncacheRoot(m.obj);
+		} catch (e) {
+			/* уже снято */
+		}
+		if (m.helper) {
+			m.helper.removeFromParent();
+			m.helper.dispose();
+			m.helper = null;
+		}
+		if (m.joints) {
+			m.joints.removeFromParent();
+			m.joints.geometry.dispose();
+			m.joints = null;
+		}
+	}
+
+	_setClip() {
+		for (const m of this.models) {
+			if (m.action) m.action.stop();
+			const clip = m.clips[Math.min(this.clipIndex, m.clips.length - 1)];
+			m.action = clip ? m.mixer.clipAction(clip) : null;
+			if (m.action) {
+				m.action.setLoop(THREE.LoopRepeat, Infinity);
+				m.action.play();
+			}
+		}
+	}
+
+	_helpers() {
+		for (const m of this.models) {
+			let hasBones = false;
+			m.obj.traverse((o) => {
+				if (o.isBone || o.isSkinnedMesh) hasBones = true;
+			});
+			if (this.skeletonOn && hasBones && !m.helper) {
+				m.helper = new THREE.SkeletonHelper(m.obj);
+				m.helper.userData.helper = true;
+				m.helper.material.depthTest = false;
+				m.helper.material.transparent = true;
+				m.helper.renderOrder = 999;
+				m.helper.frustumCulled = false;
+				m.helper.material.toneMapped = false;
+				m.helper.material.vertexColors = false;
+				m.helper.material.color.set('#ffd27a');
+				// суставы крупными точками: одиночные линии в один пиксель на экране почти не видны
+				m.bones = [];
+				m.obj.traverse((o) => o.isBone && m.bones.push(o));
+				const jg = new THREE.BufferGeometry();
+				jg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(m.bones.length * 3), 3));
+				m.joints = new THREE.Points(jg, new THREE.PointsMaterial({ size: 8, sizeAttenuation: false, color: '#ff9a3c', depthTest: false, depthWrite: false, transparent: true, toneMapped: false }));
+				m.joints.userData.helper = true;
+				m.joints.frustumCulled = false;
+				m.joints.renderOrder = 1000;
+				m.joints.matrixAutoUpdate = false;
+				this.app.viewport.root.add(m.joints);
+				this.app.viewport.root.add(m.helper);
+			}
+			if (m.helper) m.helper.visible = this.skeletonOn;
+			if (m.joints) m.joints.visible = this.skeletonOn;
+		}
+	}
+
+	setClip(i) {
+		this.clipIndex = Math.max(0, Math.min(this.clips.length - 1, i | 0));
+		this.time = 0;
+		this._setClip();
+		this.apply();
+		this._emit();
+	}
+
+	play() {
+		if (!this.has) return;
+		this.playing = true;
+		this.app.viewport.invalidate();
+		this._emit();
+	}
+
+	pause() {
+		this.playing = false;
+		this._emit();
+	}
+
+	toggle() {
+		if (this.playing) this.pause();
+		else this.play();
+	}
+
+	seek(t) {
+		this.time = Math.max(0, Math.min(this.duration, t));
+		this.apply();
+		this._emit();
+	}
+
+	setSpeed(v) {
+		this.speed = v;
+		this._emit();
+	}
+
+	setLoop(v) {
+		this.loop = v;
+		this._emit();
+	}
+
+	setSkeleton(v) {
+		this.skeletonOn = v;
+		this._helpers();
+		this.app.viewport.invalidate();
+		this._emit();
+	}
+
+	/** Каждый кадр: время идёт, поза обновляется */
+	tick(dt) {
+		if (!this.has || !this.playing) return false;
+		this.time += dt * this.speed;
+		const d = this.duration;
+		if (this.time >= d) {
+			if (this.loop) this.time %= d;
+			else {
+				this.time = d;
+				this.playing = false;
+				this._emit();
+			}
+		} else if (this.time < 0) this.time = this.loop ? d + (this.time % d) : 0;
+		this.apply();
+		this.app.viewport.invalidate();
+		return true;
+	}
+
+	/** Ставит позу на текущее время; кости и матрицы обновляются, даже если сцена скрыта (режим эффектов) */
+	apply() {
+		for (const m of this.models) {
+			if (!m.action) continue;
+			const clip = m.action.getClip();
+			m.mixer.setTime(clip.duration > 0 ? Math.min(this.time, clip.duration - 1e-4) : 0);
+			m.obj.updateMatrixWorld(true);
+			m.obj.traverse((o) => {
+				if (o.isSkinnedMesh && o.skeleton) o.skeleton.update();
+			});
+			if (m.joints && m.bones) {
+				const a = m.joints.geometry.attributes.position.array;
+				const v = new THREE.Vector3();
+				m.bones.forEach((b, i) => {
+					b.getWorldPosition(v);
+					a[i * 3] = v.x;
+					a[i * 3 + 1] = v.y;
+					a[i * 3 + 2] = v.z;
+				});
+				m.joints.geometry.attributes.position.needsUpdate = true;
+			}
+		}
+		this.version++;
+		this.app.bus.emit('animpose');
+	}
+}
+
+/**
+ * Положение точек, посаженных на персонажа, в текущей позе. anim: { parts, part, bp, bi, bw } (см. sampleSurface),
+ * norm: приведение к размеру сцены эффектов. Записывает по три числа на точку в out.
+ */
+function evalAnimPoints(anim, norm, out) {
+	const { parts, part, bp, bi, bw } = anim;
+	const n = part.length;
+	const post = parts.map((p) => {
+		const mw = p.mesh.matrixWorld;
+		if (p.skinned) {
+			const inv = p.mesh.bindMatrixInverse;
+			p.mesh.updateWorldMatrix(true, false);
+			return { m: new THREE.Matrix4().multiplyMatrices(p.mesh.matrixWorld, inv).elements, bones: p.mesh.skeleton.boneMatrices };
+		}
+		return { m: mw.elements, bones: null };
+	});
+	const cx = norm ? norm.cx : 0, cy = norm ? norm.cy : 0, cz = norm ? norm.cz : 0, k = norm ? norm.k : 1;
+	for (let i = 0; i < n; i++) {
+		const P = post[part[i]];
+		const x = bp[i * 3], y = bp[i * 3 + 1], z = bp[i * 3 + 2];
+		let sx = x, sy = y, sz = z;
+		if (P.bones) {
+			sx = sy = sz = 0;
+			let wsum = 0;
+			const B = P.bones;
+			for (let j = 0; j < 4; j++) {
+				const w = bw[i * 4 + j];
+				if (w <= 0) continue;
+				const o = bi[i * 4 + j] * 16;
+				sx += w * (B[o] * x + B[o + 4] * y + B[o + 8] * z + B[o + 12]);
+				sy += w * (B[o + 1] * x + B[o + 5] * y + B[o + 9] * z + B[o + 13]);
+				sz += w * (B[o + 2] * x + B[o + 6] * y + B[o + 10] * z + B[o + 14]);
+				wsum += w;
+			}
+			if (wsum < 1e-6) {
+				sx = x;
+				sy = y;
+				sz = z;
+			}
+		}
+		const e = P.m;
+		const wx = e[0] * sx + e[4] * sy + e[8] * sz + e[12];
+		const wy = e[1] * sx + e[5] * sy + e[9] * sz + e[13];
+		const wz = e[2] * sx + e[6] * sy + e[10] * sz + e[14];
+		out[i * 3] = (wx - cx) * k;
+		out[i * 3 + 1] = (wy - cy) * k;
+		out[i * 3 + 2] = (wz - cz) * k;
+	}
+}
+
+};
 __defs['src/depth-ai.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'DepthAI', () => DepthAI);
@@ -134867,6 +135263,8 @@ const { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } = __req('src/util.j
 const { buildFrameBlock, writeFrameColors, writeOneFrame, frameGrid } = __req('src/frame-block.js');
 const { TrackerHud } = __req('src/fx-hud.js');
 const { HandTracker } = __req('src/hand-tracker.js');
+const { evalAnimPoints } = __req('src/anim-controller.js');
+const { perf } = __req('src/perf.js');
 const { DepthAI, grabFrame, grabRGB: grabRGB4, normalizeDepth, lumaDepth, depthToGrid, adjustDepth } = __req('src/depth-ai.js');
 const { encodeGIF } = __req('src/gif-encoder.js');
 
@@ -135212,18 +135610,37 @@ function generateShapePoints(type, count = 100000) {
 }
 
 /** Растягивает или прореживает облако до ровно n точек */
+/** Переставляет данные анимации точек (кость, вес, положение в позе привязки) вслед за перестановкой самих точек: src[i] это номер исходной точки */
+function reorderAnim(a, src) {
+	if (!a) return null;
+	const n = src.length;
+	const out = { parts: a.parts, part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4) };
+	for (let i = 0; i < n; i++) {
+		const j = src[i];
+		out.part[i] = a.part[j];
+		for (let k = 0; k < 3; k++) out.bp[i * 3 + k] = a.bp[j * 3 + k];
+		for (let k = 0; k < 4; k++) {
+			out.bi[i * 4 + k] = a.bi[j * 4 + k];
+			out.bw[i * 4 + k] = a.bw[j * 4 + k];
+		}
+	}
+	return out;
+}
+
 function fitCount(c, n) {
 	if (c.count === n) return c;
 	const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+	const src = new Int32Array(n);
 	for (let i = 0; i < n; i++) {
 		const j = Math.min(c.count - 1, Math.floor((i * c.count) / n));
+		src[i] = j;
 		for (let k = 0; k < 3; k++) {
 			pos[i * 3 + k] = c.positions[j * 3 + k];
 			nor[i * 3 + k] = c.normals[j * 3 + k];
 			col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
 		}
 	}
-	return { positions: pos, normals: nor, colors: col, count: n };
+	return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm };
 }
 
 /** Приводит облако к единичному размеру и центру: все формы получаются сопоставимого масштаба */
@@ -135243,7 +135660,7 @@ function normalizeCloud(c) {
 		out[i + 1] = (p[i + 1] - cy) * k;
 		out[i + 2] = (p[i + 2] - cz) * k;
 	}
-	return { positions: out, normals: c.normals, colors: c.colors, count: c.count };
+	return { positions: out, normals: c.normals, colors: c.colors, count: c.count, anim: c.anim, norm: { cx, cy, cz, k } };
 }
 
 /**
@@ -135278,15 +135695,17 @@ function mortonSort(c) {
 	}
 	keys.sort();
 	const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+	const src = new Int32Array(n);
 	for (let i = 0; i < n; i++) {
 		const j = keys[i] % M;
+		src[i] = j;
 		for (let k = 0; k < 3; k++) {
 			pos[i * 3 + k] = P[j * 3 + k];
 			nor[i * 3 + k] = c.normals[j * 3 + k];
 			col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
 		}
 	}
-	return { positions: pos, normals: nor, colors: col, count: n };
+	return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm };
 }
 
 // ───────────────────────────────────────────────────────────── шейдеры
@@ -136544,6 +136963,7 @@ attribute float aDepthB;
 attribute float aEnd;
 attribute float aSide;
 uniform vec3 uP0;
+uniform vec3 uP1;
 uniform vec3 uP2;
 uniform float uBright;
 uniform vec4 uLink;
@@ -139992,6 +140412,9 @@ class EffectsEngine {
 		g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
 		g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
 		this._grabs = new Map();
+		// облако посажено на персонажа с анимацией: каждый кадр точки пересчитываются по позе скелета
+		this._animCloud = st.source === 'model' && c.anim && c.norm ? c : null;
+		this._animVer = -1;
 		if (!this.specTex) {
 			this.specTex = new THREE.DataTexture(new Uint8Array(64), 64, 1, THREE.RedFormat, THREE.UnsignedByteType);
 			this.specTex.minFilter = this.specTex.magFilter = THREE.LinearFilter;
@@ -140766,6 +141189,22 @@ class EffectsEngine {
 			u.uGlyph.value.set(gm === 'off' ? 0 : 1, gm === 'off' ? 1 : 2.3, u.uAtlas.value.userData?.n || 8);
 			u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
 
+			// персонаж с анимацией: точки идут за позой скелета
+			if (this._animCloud && st.source === 'model' && this.geometry && !this.morphing && this.app.anim.has && this._animVer !== this.app.anim.version && performance.now() - (this._animT || 0) >= (perf.tier === 'high' ? 0 : 33)) {
+				this._animVer = this.app.anim.version;
+				this._animT = performance.now();
+				const g = this.geometry;
+				const ac = this._animCloud;
+				if (g.attributes.position.count === ac.count) {
+					if (!this._animBuf || this._animBuf.length !== ac.count * 3) this._animBuf = new Float32Array(ac.count * 3);
+					evalAnimPoints(ac.anim, ac.norm, this._animBuf);
+					g.attributes.aTarget.array.set(this._animBuf);
+					g.attributes.aOrigin.array.set(this._animBuf);
+					g.attributes.position.array.set(this._animBuf);
+					g.attributes.aTarget.needsUpdate = g.attributes.aOrigin.needsUpdate = g.attributes.position.needsUpdate = true;
+					if (L.links.on && (this._alk = ((this._alk || 0) + 1) % 4) === 0) this._syncLinks();
+				}
+			}
 			// фото и видео: обновляем цвета и высоту точек по текущему кадру
 			let rgbNew = null;
 			if (st.source === 'media' && this.pm.ready && this.geometry && !this.morphing && this.geometry.attributes.position.count === this.pm.count) {
@@ -141495,6 +141934,7 @@ const { sampleSurface, overrideMats } = __req('src/pointcloud.js');
 const { getDevice } = __req('src/device-card.js');
 const { formatCount } = __req('src/capabilities.js');
 const { createMediaPanel } = __req('src/panel-media.js');
+const { createAnimPanel } = __req('src/panel-anim.js');
 const { attachPreview } = __req('src/fx-previews.js');
 const { SHAPES: POINT_SHAPE_LIST } = __req('src/panel-points.js');
 const { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, BANDS, BAND_RANGE, FREQ_QUICK, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } = __req('src/effects-engine.js');
@@ -141582,7 +142022,7 @@ function makeModelProvider(app) {
 			const list = meshes();
 			if (!list.length) return null;
 			const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
-			return sampleSurface(entries, count, { onProgress: (p) => {
+			return sampleSurface(entries, count, { anim: app.anim.has, onProgress: (p) => {
 				// фоновая подготовка к морфингу не показывает окно загрузки: иначе оно зависает поверх сцены
 				if (!app.ui.effectsEngine?._quiet) app.ui.busy('Беру точки с модели', 0.2 + p * 0.7);
 			} });
@@ -142375,7 +142815,7 @@ function createEffectsPanel(app, root, engine) {
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
 	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
-	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, createAnimPanel(app, 'fx'), secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
 	try {
@@ -143720,6 +144160,7 @@ const { initFloatingPanels } = __req('src/fx-float.js');
 const { segmented, switchRow, button } = __req('src/ui-kit.js');
 const { AxisGizmo } = __req('src/gizmo.js');
 const { createScenePanel } = __req('src/panel-scene.js');
+const { createAnimPanel } = __req('src/panel-anim.js');
 const { createMaterialPanel } = __req('src/panel-material.js');
 const { createViewPanel, DISPLAY_MODES } = __req('src/panel-view.js');
 const { createExportPanel } = __req('src/panel-export.js');
@@ -143809,6 +144250,7 @@ class UI {
 		document.fonts && document.fonts.ready.then(() => this.moveModeIndicator());
 		$('#btnEmptyOpen').addEventListener('click', () => this.openFiles('auto'));
 		$('#btnEmptyDemo').addEventListener('click', () => app.loadDemo());
+		$('#btnEmptyChar').addEventListener('click', () => app.loadDemoCharacter());
 		$('#btnEmptyMedia').addEventListener('click', () => {
 			const inp = document.createElement('input');
 			inp.type = 'file';
@@ -144085,6 +144527,9 @@ class UI {
 		for (const name of ['scene', 'material', 'points', 'media', 'view']) this.tabs[name] = $(`#panel-${name}`);
 		$$('.tab').forEach((t) => t.addEventListener('click', () => this.showTab(t.dataset.tab)));
 		this.scenePanel = createScenePanel(app, this.tabs.scene);
+		// блок анимации персонажа: виден, только если в файле есть клипы
+		this.animPanel = createAnimPanel(app, 'edit');
+		this.tabs.scene.insertBefore(this.animPanel.el, this.tabs.scene.children[2] || null);
 		this.materialPanel = createMaterialPanel(app, this.tabs.material);
 		this.viewPanel = createViewPanel(app, this.tabs.view);
 		this.pointsPanel = createPointsPanel(app, this.tabs.points);
@@ -145750,8 +146195,10 @@ class MediaController {
 __defs['src/demo.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'makeDemoFiles', () => makeDemoFiles);
+__def(__exports, 'makeDemoCharacterFile', () => makeDemoCharacterFile);
 // Демо-модель: настоящие файлы .obj + .mtl + .png, которые идут тем же путём, что и ваши.
 const THREE = __req('vendor/three/build/three.module.js');
+const { GLTFExporter } = __req('vendor/three/addons/exporters/GLTFExporter.js');
 
 function objText(parts, mtlName) {
 	const out = [`# Point Bloom demo\nmtllib ${mtlName}\n`];
@@ -145839,6 +146286,179 @@ async function makeDemoFiles() {
 	return [new File([obj], 'demo.obj', { type: 'text/plain' }), new File([mtl], 'demo.mtl', { type: 'text/plain' }), new File([png], 'demo_texture.png', { type: 'image/png' })];
 }
 
+// ---------------------------------------------------------------- демо-персонаж с анимацией
+/** Простой человечек со скелетом, текстурой и двумя клипами (ходьба, приветствие): настоящий GLB, который идёт тем же путём, что и ваши файлы */
+async function makeDemoCharacterFile() {
+	const bones = {};
+	const mk = (name, parent, x, y, z) => {
+		const b = new THREE.Bone();
+		b.name = name;
+		b.position.set(x, y, z);
+		if (parent) bones[parent].add(b);
+		bones[name] = b;
+		return b;
+	};
+	mk('Hips', null, 0, 1.0, 0);
+	mk('Spine', 'Hips', 0, 0.2, 0);
+	mk('Chest', 'Spine', 0, 0.25, 0);
+	mk('Neck', 'Chest', 0, 0.25, 0);
+	mk('Head', 'Neck', 0, 0.12, 0);
+	for (const [s, sx] of [['L', 1], ['R', -1]]) {
+		mk('Shoulder' + s, 'Chest', sx * 0.2, 0.2, 0);
+		mk('Elbow' + s, 'Shoulder' + s, sx * 0.3, 0, 0);
+		mk('Wrist' + s, 'Elbow' + s, sx * 0.28, 0, 0);
+		mk('Hip' + s, 'Hips', sx * 0.1, -0.05, 0);
+		mk('Knee' + s, 'Hip' + s, 0, -0.45, 0);
+		mk('Ankle' + s, 'Knee' + s, 0, -0.45, 0);
+	}
+	bones.Hips.updateMatrixWorld(true);
+	const list = Object.values(bones);
+	const idxOf = (n) => list.indexOf(bones[n]);
+	const wp = (n) => new THREE.Vector3().setFromMatrixPosition(bones[n].matrixWorld);
+
+	const geos = [];
+	const addPart = (geo, nameA, nameB) => {
+		// вес кости B растёт вдоль длины части: у сгиба вершины ведут обе кости
+		const pos = geo.attributes.position;
+		geo.computeBoundingBox();
+		const bb = geo.boundingBox;
+		const n = pos.count;
+		const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
+		const a = idxOf(nameA), b = idxOf(nameB || nameA);
+		const axis = nameB ? (Math.abs(wp(nameB).x - wp(nameA).x) > Math.abs(wp(nameB).y - wp(nameA).y) ? 'x' : 'y') : 'y';
+		for (let i = 0; i < n; i++) {
+			let t = 0;
+			if (nameB) {
+				const v = axis === 'x' ? pos.getX(i) : pos.getY(i);
+				const lo = axis === 'x' ? bb.min.x : bb.min.y, hi = axis === 'x' ? bb.max.x : bb.max.y;
+				const A = axis === 'x' ? wp(nameA).x : wp(nameA).y, Bv = axis === 'x' ? wp(nameB).x : wp(nameB).y;
+				t = THREE.MathUtils.clamp((v - A) / (Bv - A || 1), 0, 1);
+				t = t * t * (3 - 2 * t);
+			}
+			si[i * 4] = a;
+			si[i * 4 + 1] = b;
+			sw[i * 4] = 1 - t;
+			sw[i * 4 + 1] = t;
+		}
+		geo.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4));
+		geo.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
+		geos.push(geo);
+	};
+	const limb = (from, to, r0, r1, seg = 14) => {
+		const A = wp(from), B = wp(to);
+		const len = A.distanceTo(B);
+		const g = new THREE.CylinderGeometry(r1, r0, len, 14, seg, false);
+		const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize());
+		g.applyQuaternion(q);
+		const m = A.clone().add(B).multiplyScalar(0.5);
+		g.translate(m.x, m.y, m.z);
+		return g;
+	};
+	const ball = (name, r, x, y, z) => {
+		const g = new THREE.SphereGeometry(r, 18, 14);
+		g.translate(x, y, z);
+		addPart(g, name);
+	};
+	addPart(limb('Hips', 'Chest', 0.17, 0.2, 10), 'Hips', 'Chest');
+	addPart(limb('Chest', 'Neck', 0.2, 0.09, 6), 'Chest', 'Neck');
+	{
+		const h = wp('Head');
+		ball('Head', 0.14, h.x, h.y + 0.1, h.z);
+	}
+	for (const s of ['L', 'R']) {
+		addPart(limb('Shoulder' + s, 'Elbow' + s, 0.07, 0.06), 'Shoulder' + s, 'Elbow' + s);
+		addPart(limb('Elbow' + s, 'Wrist' + s, 0.06, 0.045), 'Elbow' + s, 'Wrist' + s);
+		const w = wp('Wrist' + s);
+		ball('Wrist' + s, 0.055, w.x, w.y, w.z);
+		addPart(limb('Hip' + s, 'Knee' + s, 0.09, 0.07), 'Hip' + s, 'Knee' + s);
+		addPart(limb('Knee' + s, 'Ankle' + s, 0.07, 0.05), 'Knee' + s, 'Ankle' + s);
+		const a = wp('Ankle' + s);
+		ball('Ankle' + s, 0.065, a.x, a.y - 0.02, a.z + 0.05);
+	}
+	// склейка частей в один меш; UV дают развёртку «по высоте и по кругу», чтобы текстура читалась на всём теле
+	let total = 0;
+	for (const g of geos) total += g.attributes.position.count;
+	const P = new Float32Array(total * 3), N = new Float32Array(total * 3), U = new Float32Array(total * 2), SI = new Uint16Array(total * 4), SW = new Float32Array(total * 4);
+	const IDX = [];
+	let off = 0;
+	for (const g of geos) {
+		const c = g.attributes.position.count;
+		P.set(g.attributes.position.array, off * 3);
+		N.set(g.attributes.normal.array, off * 3);
+		SI.set(g.attributes.skinIndex.array, off * 4);
+		SW.set(g.attributes.skinWeight.array, off * 4);
+		for (let i = 0; i < c; i++) {
+			const x = P[(off + i) * 3], y = P[(off + i) * 3 + 1], z = P[(off + i) * 3 + 2];
+			U[(off + i) * 2] = 0.5 + Math.atan2(x, z) / (2 * Math.PI) * 1.0;
+			U[(off + i) * 2 + 1] = THREE.MathUtils.clamp(y / 1.9, 0, 1);
+		}
+		const ix = g.index;
+		for (let i = 0; i < ix.count; i++) IDX.push(ix.getX(i) + off);
+		off += c;
+	}
+	const geo = new THREE.BufferGeometry();
+	geo.setAttribute('position', new THREE.BufferAttribute(P, 3));
+	geo.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+	geo.setAttribute('uv', new THREE.BufferAttribute(U, 2));
+	geo.setAttribute('skinIndex', new THREE.BufferAttribute(SI, 4));
+	geo.setAttribute('skinWeight', new THREE.BufferAttribute(SW, 4));
+	geo.setIndex(IDX);
+	// цветная полосатая текстура: по ней видно, что точки берут цвет текстуры
+	const cv = document.createElement('canvas');
+	cv.width = 512;
+	cv.height = 512;
+	const g2 = cv.getContext('2d');
+	const grd = g2.createLinearGradient(0, 512, 0, 0);
+	grd.addColorStop(0, '#2a6df4');
+	grd.addColorStop(0.35, '#2fd9a0');
+	grd.addColorStop(0.65, '#ffb347');
+	grd.addColorStop(1, '#ff4f8b');
+	g2.fillStyle = grd;
+	g2.fillRect(0, 0, 512, 512);
+	g2.fillStyle = 'rgba(255,255,255,0.35)';
+	for (let i = 0; i < 16; i++) g2.fillRect(i * 32, 0, 12, 512);
+	const tex = new THREE.CanvasTexture(cv);
+	tex.colorSpace = THREE.SRGBColorSpace;
+	tex.flipY = false;
+	const mesh = new THREE.SkinnedMesh(geo, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6, metalness: 0.05 }));
+	mesh.name = 'Человечек';
+	const root = new THREE.Group();
+	root.name = 'Персонаж';
+	root.add(bones.Hips);
+	root.add(mesh);
+	root.updateMatrixWorld(true);
+	mesh.bind(new THREE.Skeleton(list), mesh.matrixWorld);
+
+	// клипы
+	const E = (x, y, z) => new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z)).toArray();
+	const rot = (name, times, eulers) => new THREE.QuaternionKeyframeTrack(name + '.quaternion', times, eulers.flatMap((e) => E(...e)));
+	const T = [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2];
+	const sw8 = (amp, ph = 0) => T.map((t) => Math.sin(((t / 1.2) * 2 + ph) * Math.PI) * amp);
+	const walk = new THREE.AnimationClip('Ходьба', 1.2, [
+		new THREE.VectorKeyframeTrack('Hips.position', T, T.flatMap((t) => [0, 1.0 + Math.abs(Math.sin((t / 1.2) * 2 * Math.PI)) * 0.04, 0])),
+		rot('HipL', T, sw8(0.6).map((a) => [a, 0, 0])),
+		rot('HipR', T, sw8(0.6, 1).map((a) => [a, 0, 0])),
+		rot('KneeL', T, sw8(0.5, 0.5).map((a) => [Math.max(0, a) + 0.1, 0, 0])),
+		rot('KneeR', T, sw8(0.5, 1.5).map((a) => [Math.max(0, a) + 0.1, 0, 0])),
+		rot('ShoulderL', T, sw8(0.5, 1).map((a) => [0, 0, a * 0.3])),
+		rot('ShoulderR', T, sw8(0.5).map((a) => [0, 0, a * 0.3])),
+		rot('ElbowL', T, sw8(0.4).map((a) => [0, a, 0])),
+		rot('ElbowR', T, sw8(0.4, 1).map((a) => [0, a, 0])),
+		rot('Spine', T, sw8(0.15).map((a) => [0, a, 0])),
+	]);
+	const T2 = [0, 0.4, 0.8, 1.2, 1.6, 2.0];
+	const wave = new THREE.AnimationClip('Приветствие', 2.0, [
+		rot('ShoulderR', T2, [[0, 0, 0], [0, 0, 1.9], [0, 0, 1.9], [0, 0, 1.9], [0, 0, 1.9], [0, 0, 0]]),
+		rot('ElbowR', T2, [[0, 0, 0], [0, 0.2, 0], [0, -0.7, 0], [0, 0.2, 0], [0, -0.7, 0], [0, 0, 0]]),
+		rot('Head', T2, [[0, 0, 0], [0, 0.2, 0.1], [0, 0.2, 0.1], [0, -0.2, -0.1], [0, 0, 0], [0, 0, 0]]),
+		rot('Spine', T2, [[0, 0, 0], [0.05, 0, 0.05], [0.05, 0, 0.05], [0.05, 0, -0.05], [0, 0, 0], [0, 0, 0]]),
+	]);
+	const scene = new THREE.Scene();
+	scene.add(root);
+	const buf = await new GLTFExporter().parseAsync(scene, { binary: true, animations: [walk, wave], trs: true });
+	return new File([buf], 'demo-character.glb', { type: 'model/gltf-binary' });
+}
+
 };
 __defs['src/app.js'] = function (__exports, __req) {
 'use strict';
@@ -145854,8 +146474,9 @@ const { Nav } = __req('src/nav.js');
 const { Ops, snapOf } = __req('src/ops.js');
 const { UI } = __req('src/ui.js');
 const { MediaController } = __req('src/media-controller.js');
+const { AnimController } = __req('src/anim-controller.js');
 const { setTextureLimits } = __req('src/materials.js');
-const { makeDemoFiles } = __req('src/demo.js');
+const { makeDemoFiles, makeDemoCharacterFile } = __req('src/demo.js');
 const THREE = __req('vendor/three/build/three.module.js');
 
 class App {
@@ -145871,6 +146492,8 @@ class App {
 		this.nav = new Nav(this);
 		this.ops = new Ops(this);
 		this.media = new MediaController(this);
+		this.anim = new AnimController(this);
+		this.bus.on('scene', () => this.anim.scan());
 		this.ui = new UI(this);
 	}
 
@@ -146000,6 +146623,10 @@ class App {
 		this.bus.emit('material');
 		this.bus.emit('geometry');
 		this.viewport.invalidate();
+	}
+
+	async loadDemoCharacter() {
+		await this.ui.handleFiles([await makeDemoCharacterFile()], { mode: 'replace' });
 	}
 
 	async loadDemo() {

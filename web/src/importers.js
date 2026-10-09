@@ -156,6 +156,7 @@ const data = ext === 'glb' ? await file.arrayBuffer() : await file.text();
 const wait = waitManager(manager);
 const gltf = await new Promise((resolve, reject) => loader.parse(data, '', resolve, (e) => reject(e && e.message ? e : new Error(String(e)))));
 await wait;
+gltf.scene.userData.clips = gltf.animations || [];
 return gltf.scene;
 }
 async function loadFBX(file, res, ctx) {
@@ -163,6 +164,7 @@ const manager = makeManager(res, ctx);
 const wait = waitManager(manager);
 const obj = new FBXLoader(manager).parse(await file.arrayBuffer(), '');
 await wait;
+obj.userData.clips = obj.animations || [];
 return obj;
 }
 async function loadDAE(file, res, ctx) {
@@ -352,6 +354,7 @@ obj.updateMatrixWorld(true);
 }
 function processImported(root, fileName, ctx, opts) {
 const name = stripExt(fileName);
+const clips = root.userData.clips || [];
 const junk = [];
 root.traverse((o) => {
 if (o.isLight || o.isCamera) junk.push(o);
@@ -389,7 +392,12 @@ top = grp;
 }
 }
 top.name = name || top.name || 'Модель';
-if (opts.centerOrigin) {
+if (clips.length) top.userData.clips = clips;
+let rigged = false;
+top.traverse((o) => {
+if (o.isSkinnedMesh) rigged = true;
+});
+if (opts.centerOrigin && !rigged) {
 top.updateMatrixWorld(true);
 centerObject(top);
 }

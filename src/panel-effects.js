@@ -7,6 +7,7 @@ import { sampleSurface, overrideMats } from './pointcloud.js';
 import { getDevice } from './device-card.js';
 import { formatCount } from './capabilities.js';
 import { createMediaPanel } from './panel-media.js';
+import { createAnimPanel } from './panel-anim.js';
 import { attachPreview } from './fx-previews.js';
 import { SHAPES as POINT_SHAPE_LIST } from './panel-points.js';
 import { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, BANDS, BAND_RANGE, FREQ_QUICK, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } from './effects-engine.js';
@@ -94,7 +95,7 @@ export function makeModelProvider(app) {
 			const list = meshes();
 			if (!list.length) return null;
 			const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
-			return sampleSurface(entries, count, { onProgress: (p) => {
+			return sampleSurface(entries, count, { anim: app.anim.has, onProgress: (p) => {
 				// фоновая подготовка к морфингу не показывает окно загрузки: иначе оно зависает поверх сцены
 				if (!app.ui.effectsEngine?._quiet) app.ui.busy('Беру точки с модели', 0.2 + p * 0.7);
 			} });
@@ -887,7 +888,7 @@ export function createEffectsPanel(app, root, engine) {
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
 	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
-	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, createAnimPanel(app, 'fx'), secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
 	try {

@@ -1,6 +1,7 @@
 // Экспорт сцены: GLB / glTF / OBJ(+MTL+текстуры, ZIP) / PLY / STL, с проверкой результата.
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { USDZExporter } from 'three/addons/exporters/USDZExporter.js';
@@ -13,8 +14,8 @@ import { Display } from './display.js';
 import { frameGrid } from './frame-block.js';
 
 export const EXPORT_FORMATS = [
-	{ id: 'glb', label: 'GLB', ext: 'glb', title: 'glTF Binary', hint: 'Один файл с геометрией и текстурами. Лучший выбор для веба, AR и игровых движков.' },
-	{ id: 'gltf', label: 'glTF', ext: 'gltf', title: 'glTF (JSON)', hint: 'Текстовый glTF, ресурсы встроены внутрь. Удобно читать и править.' },
+	{ id: 'glb', label: 'GLB', ext: 'glb', title: 'glTF Binary', hint: 'Один файл с геометрией и текстурами. Лучший выбор для веба, AR и игровых движков. Персонаж с анимацией сохраняется вместе со скелетом и клипами.' },
+	{ id: 'gltf', label: 'glTF', ext: 'gltf', title: 'glTF (JSON)', hint: 'Текстовый glTF, ресурсы встроены внутрь. Удобно читать и править. Скелет и анимация сохраняются.' },
 	{ id: 'usdz', label: 'USDZ', ext: 'usdz', title: 'USDZ (Apple AR)', hint: 'Для дополненной реальности на iPhone и iPad (Quick Look) и приложений Apple. Нужны только меши с материалами.' },
 	{ id: 'web', label: 'Сайт', ext: 'zip', title: 'Для сайта', hint: 'Готовая веб-страница с интерактивной 3D-моделью и код, который можно вставить на любой сайт.' },
 	{ id: 'obj', label: 'OBJ', ext: 'zip', title: 'OBJ + MTL', hint: 'ZIP с .obj, .mtl и текстурами. Если текстур нет, скачается один .obj.' },
@@ -41,8 +42,24 @@ export async function buildExportScene(app, o, progress) {
 	vp.root.updateMatrixWorld(true);
 	let group = new THREE.Group();
 	const pairs = [];
+	// персонажи со скелетом клонируются вместе с костями (обычное клонирование оставило бы меш привязанным к чужому скелету)
+	const clips = [];
+	const hasSkin = (r) => {
+		let f = false;
+		r.traverse((n) => {
+			if (n.isSkinnedMesh) f = true;
+		});
+		return f;
+	};
 	for (const r of roots) {
-		const c = r.clone(true);
+		const skinned = hasSkin(r);
+		if (r.userData.clips) clips.push(...r.userData.clips);
+		const c = skinned ? SkeletonUtils.clone(r) : r.clone(true);
+		if (skinned) {
+			c.traverse((n) => {
+				if (n.isSkinnedMesh && n.skeleton) n.skeleton.pose(); // в файл идёт поза привязки, движение задают клипы
+			});
+		}
 		pairUp(r, c, pairs);
 		// положение «как в сцене» (на случай, если выбран вложенный объект)
 		r.updateWorldMatrix(true, false);
@@ -112,6 +129,15 @@ export async function buildExportScene(app, o, progress) {
 	const scene = new THREE.Scene();
 	scene.name = o.name || 'Scene';
 	for (const child of [...group.children]) scene.add(child);
+	// клипы анимации: при смене масштаба сдвиги костей масштабируются так же, как модель
+	if (clips.length && !(o.cloud && o.cloud !== 'mesh')) {
+		const k = o.scale || 1;
+		scene.userData.exportClips = clips.map((cl) => {
+			const c2 = cl.clone();
+			if (k !== 1) for (const t of c2.tracks) if (/\.position$/.test(t.name)) for (let i = 0; i < t.values.length; i++) t.values[i] *= k;
+			return c2;
+		});
+	}
 	scene.updateMatrixWorld(true);
 
 	// UV нужны только мешам с текстурами: у остальных убираем, файл станет чуть легче
@@ -189,7 +215,7 @@ async function exportGLTF(scene, o, binary) {
 		t.userData.mimeType = mime === 'image/jpeg' ? 'image/jpeg' : 'image/png';
 	}
 	const exporter = new GLTFExporter();
-	const result = await exporter.parseAsync(scene, { binary, trs: true, onlyVisible: true, maxTextureSize: o.maxTex > 0 ? o.maxTex : Infinity });
+	const result = await exporter.parseAsync(scene, { binary, trs: true, onlyVisible: true, animations: scene.userData.exportClips || [], maxTextureSize: o.maxTex > 0 ? o.maxTex : Infinity });
 	if (binary) return { blob: new Blob([result], { type: 'model/gltf-binary' }), buffer: result };
 	const json = JSON.stringify(result);
 	return { blob: new Blob([json], { type: 'model/gltf+json' }), buffer: null };

@@ -272,6 +272,10 @@ export class Viewport {
 	}
 
 	frame(now) {
+		// анимация персонажа идёт своим временем: поза обновляется до отрисовки
+		const dtA = Math.min(0.1, (now - (this._animT || now)) / 1000);
+		this._animT = now;
+		this.app.anim?.tick(dtA);
 		const animating = this.app.nav.tick(now);
 		if (this.dirty || animating) {
 			this.dirty = false;

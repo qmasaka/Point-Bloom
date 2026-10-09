@@ -9,6 +9,8 @@ import { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } from './util.js';
 import { buildFrameBlock, writeFrameColors, writeOneFrame, frameGrid } from './frame-block.js';
 import { TrackerHud } from './fx-hud.js';
 import { HandTracker } from './hand-tracker.js';
+import { evalAnimPoints } from './anim-controller.js';
+import { perf } from './perf.js';
 import { DepthAI, grabFrame, grabRGB as grabRGB4, normalizeDepth, lumaDepth, depthToGrid, adjustDepth } from './depth-ai.js';
 import { encodeGIF } from './gif-encoder.js';
 
@@ -354,18 +356,37 @@ export function generateShapePoints(type, count = 100000) {
 }
 
 /** Растягивает или прореживает облако до ровно n точек */
+/** Переставляет данные анимации точек (кость, вес, положение в позе привязки) вслед за перестановкой самих точек: src[i] это номер исходной точки */
+function reorderAnim(a, src) {
+	if (!a) return null;
+	const n = src.length;
+	const out = { parts: a.parts, part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4) };
+	for (let i = 0; i < n; i++) {
+		const j = src[i];
+		out.part[i] = a.part[j];
+		for (let k = 0; k < 3; k++) out.bp[i * 3 + k] = a.bp[j * 3 + k];
+		for (let k = 0; k < 4; k++) {
+			out.bi[i * 4 + k] = a.bi[j * 4 + k];
+			out.bw[i * 4 + k] = a.bw[j * 4 + k];
+		}
+	}
+	return out;
+}
+
 function fitCount(c, n) {
 	if (c.count === n) return c;
 	const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+	const src = new Int32Array(n);
 	for (let i = 0; i < n; i++) {
 		const j = Math.min(c.count - 1, Math.floor((i * c.count) / n));
+		src[i] = j;
 		for (let k = 0; k < 3; k++) {
 			pos[i * 3 + k] = c.positions[j * 3 + k];
 			nor[i * 3 + k] = c.normals[j * 3 + k];
 			col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
 		}
 	}
-	return { positions: pos, normals: nor, colors: col, count: n };
+	return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm };
 }
 
 /** Приводит облако к единичному размеру и центру: все формы получаются сопоставимого масштаба */
@@ -385,7 +406,7 @@ function normalizeCloud(c) {
 		out[i + 1] = (p[i + 1] - cy) * k;
 		out[i + 2] = (p[i + 2] - cz) * k;
 	}
-	return { positions: out, normals: c.normals, colors: c.colors, count: c.count };
+	return { positions: out, normals: c.normals, colors: c.colors, count: c.count, anim: c.anim, norm: { cx, cy, cz, k } };
 }
 
 /**
@@ -420,15 +441,17 @@ function mortonSort(c) {
 	}
 	keys.sort();
 	const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+	const src = new Int32Array(n);
 	for (let i = 0; i < n; i++) {
 		const j = keys[i] % M;
+		src[i] = j;
 		for (let k = 0; k < 3; k++) {
 			pos[i * 3 + k] = P[j * 3 + k];
 			nor[i * 3 + k] = c.normals[j * 3 + k];
 			col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
 		}
 	}
-	return { positions: pos, normals: nor, colors: col, count: n };
+	return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm };
 }
 
 // ───────────────────────────────────────────────────────────── шейдеры
@@ -1686,6 +1709,7 @@ attribute float aDepthB;
 attribute float aEnd;
 attribute float aSide;
 uniform vec3 uP0;
+uniform vec3 uP1;
 uniform vec3 uP2;
 uniform float uBright;
 uniform vec4 uLink;
@@ -5134,6 +5158,9 @@ export class EffectsEngine {
 		g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
 		g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
 		this._grabs = new Map();
+		// облако посажено на персонажа с анимацией: каждый кадр точки пересчитываются по позе скелета
+		this._animCloud = st.source === 'model' && c.anim && c.norm ? c : null;
+		this._animVer = -1;
 		if (!this.specTex) {
 			this.specTex = new THREE.DataTexture(new Uint8Array(64), 64, 1, THREE.RedFormat, THREE.UnsignedByteType);
 			this.specTex.minFilter = this.specTex.magFilter = THREE.LinearFilter;
@@ -5908,6 +5935,22 @@ export class EffectsEngine {
 			u.uGlyph.value.set(gm === 'off' ? 0 : 1, gm === 'off' ? 1 : 2.3, u.uAtlas.value.userData?.n || 8);
 			u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
 
+			// персонаж с анимацией: точки идут за позой скелета
+			if (this._animCloud && st.source === 'model' && this.geometry && !this.morphing && this.app.anim.has && this._animVer !== this.app.anim.version && performance.now() - (this._animT || 0) >= (perf.tier === 'high' ? 0 : 33)) {
+				this._animVer = this.app.anim.version;
+				this._animT = performance.now();
+				const g = this.geometry;
+				const ac = this._animCloud;
+				if (g.attributes.position.count === ac.count) {
+					if (!this._animBuf || this._animBuf.length !== ac.count * 3) this._animBuf = new Float32Array(ac.count * 3);
+					evalAnimPoints(ac.anim, ac.norm, this._animBuf);
+					g.attributes.aTarget.array.set(this._animBuf);
+					g.attributes.aOrigin.array.set(this._animBuf);
+					g.attributes.position.array.set(this._animBuf);
+					g.attributes.aTarget.needsUpdate = g.attributes.aOrigin.needsUpdate = g.attributes.position.needsUpdate = true;
+					if (L.links.on && (this._alk = ((this._alk || 0) + 1) % 4) === 0) this._syncLinks();
+				}
+			}
 			// фото и видео: обновляем цвета и высоту точек по текущему кадру
 			let rgbNew = null;
 			if (st.source === 'media' && this.pm.ready && this.geometry && !this.morphing && this.geometry.attributes.position.count === this.pm.count) {

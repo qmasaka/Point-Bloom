@@ -5710,3 +5710,8 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 	backdrop-filter: blur(28px) saturate(1.1);
 	-webkit-backdrop-filter: blur(28px) saturate(1.1);
 }
+
+/* анимация персонажа */
+.anim-row { display: flex; align-items: center; gap: 10px; padding: 2px 0 6px; }
+.anim-time { flex: 1; min-width: 0; }
+.anim-play { flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-text); }

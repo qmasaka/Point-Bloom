@@ -8,8 +8,9 @@ import { Nav } from './nav.js';
 import { Ops, snapOf } from './ops.js';
 import { UI } from './ui.js';
 import { MediaController } from './media-controller.js';
+import { AnimController } from './anim-controller.js';
 import { setTextureLimits } from './materials.js';
-import { makeDemoFiles } from './demo.js';
+import { makeDemoFiles, makeDemoCharacterFile } from './demo.js';
 import * as THREE from 'three';
 export class App {
 constructor() {
@@ -24,6 +25,8 @@ this.history = new History(this);
 this.nav = new Nav(this);
 this.ops = new Ops(this);
 this.media = new MediaController(this);
+this.anim = new AnimController(this);
+this.bus.on('scene', () => this.anim.scan());
 this.ui = new UI(this);
 }
 start() {
@@ -138,6 +141,9 @@ else this.display.apply();
 this.bus.emit('material');
 this.bus.emit('geometry');
 this.viewport.invalidate();
+}
+async loadDemoCharacter() {
+await this.ui.handleFiles([await makeDemoCharacterFile()], { mode: 'replace' });
 }
 async loadDemo() {
 const files = await makeDemoFiles();

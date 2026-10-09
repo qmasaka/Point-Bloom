@@ -6,6 +6,7 @@ import { sampleSurface, overrideMats } from './pointcloud.js';
 import { getDevice } from './device-card.js';
 import { formatCount } from './capabilities.js';
 import { createMediaPanel } from './panel-media.js';
+import { createAnimPanel } from './panel-anim.js';
 import { attachPreview } from './fx-previews.js';
 import { SHAPES as POINT_SHAPE_LIST } from './panel-points.js';
 import { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, BANDS, BAND_RANGE, FREQ_QUICK, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } from './effects-engine.js';
@@ -87,7 +88,7 @@ if (c.length) return fromClouds(c, count);
 const list = meshes();
 if (!list.length) return null;
 const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
-return sampleSurface(entries, count, { onProgress: (p) => {
+return sampleSurface(entries, count, { anim: app.anim.has, onProgress: (p) => {
 if (!app.ui.effectsEngine?._quiet) app.ui.busy('Беру точки с модели', 0.2 + p * 0.7);
 } });
 },
@@ -845,7 +846,7 @@ onClick: () => toggleAnim(true)
 });
 const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Объём (тень)', shade.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, rotSpeedRow, hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Производительность'), autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), perfHint, h('div', { class: 'fx-sub' }, 'Секвенсор и запись анимации'), animTimelineOpenBtn, field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 const secMedia = createMediaPanel(app, null, { fx: true }).section;
-const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
+const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, createAnimPanel(app, 'fx'), secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
 const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 let curTab = 'insp';
 try {
