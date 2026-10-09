@@ -4175,6 +4175,7 @@ line.frustumCulled = false;
 line.userData.helper = true;
 this.points.add(line);
 this._scopeLine = line;
+this._scopePath = { ids, ord, L };
 }
 _frameSample() {
 const u = this.shared;
@@ -4204,6 +4205,26 @@ a.lerp(place(u.uFr3.value.z), m);
 }
 return a;
 }
+_scopeSyncLine() {
+const sp = this._scopePath;
+const lg = this._scopeLine?.geometry;
+if (!sp || !lg || !this.geometry) return;
+const T = this.geometry.attributes.aTarget.array;
+const { ids, ord, L } = sp;
+const names = ['aOrigin', 'aTarget', 'aOriginB', 'aTargetB'];
+const arrs = names.map((n) => lg.attributes[n].array);
+for (let l = 0; l < L; l++) {
+const a = ids[ord[l]] * 3, b = ids[ord[l + 1]] * 3;
+for (let v = 0; v < 4; v++) {
+const q = (l * 4 + v) * 3;
+for (let c = 0; c < 3; c++) {
+arrs[0][q + c] = arrs[1][q + c] = T[a + c];
+arrs[2][q + c] = arrs[3][q + c] = T[b + c];
+}
+}
+}
+for (const n of names) lg.attributes[n].needsUpdate = true;
+}
 _scopeDropLine() {
 const l = this._scopeLine;
 if (!l) return;
@@ -4231,6 +4252,10 @@ this._scopeWait = performance.now();
 if (lost) this._scopeLine = null;
 this._scopeBuild(Math.round(S.detail), order, S.chaos);
 }
+}
+if (this._animCloud && this._scopeLine && this._scopeAnimVer !== this._animVer) {
+this._scopeAnimVer = this._animVer;
+this._scopeSyncLine();
 }
 this._scopeT = (this._scopeT || 0) + dt * S.speed * 0.07;
 const once = S.loop === 'once';
@@ -5496,6 +5521,16 @@ const ac = this._animCloud;
 if (g.attributes.position.count === ac.count) {
 if (!this._animBuf || this._animBuf.length !== ac.count * 3) this._animBuf = new Float32Array(ac.count * 3);
 evalAnimPoints(ac.anim, ac.norm, this._animBuf);
+{
+const b = this._animBuf;
+let mn = Infinity, mx = -Infinity;
+for (let i = 1; i < b.length; i += 3) {
+if (b[i] < mn) mn = b[i];
+if (b[i] > mx) mx = b[i];
+}
+this._yrBase = [mn, mx];
+this.shared.uYR.value.set(mn, mx);
+}
 g.attributes.aTarget.array.set(this._animBuf);
 g.attributes.aOrigin.array.set(this._animBuf);
 g.attributes.position.array.set(this._animBuf);
