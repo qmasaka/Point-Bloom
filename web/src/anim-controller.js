@@ -176,6 +176,18 @@ this.apply();
 this.app.viewport.invalidate();
 return true;
 }
+_movePoints() {
+for (const o of this.app.viewport.root.children) {
+const a = o.userData.animPts;
+if (!a || !o.isPoints) continue;
+const pos = o.geometry.attributes.position;
+if (pos.count !== a.part.length) continue;
+evalAnimPoints(a, null, pos.array);
+pos.needsUpdate = true;
+o.geometry.boundingSphere = null;
+o.geometry.boundingBox = null;
+}
+}
 apply() {
 for (const m of this.models) {
 if (!m.action) continue;
@@ -197,6 +209,8 @@ a[i * 3 + 2] = v.z;
 m.joints.geometry.attributes.position.needsUpdate = true;
 }
 }
+this._movePoints();
+this.app.viewport.invalidate();
 this.version++;
 this.app.bus.emit('animpose');
 }

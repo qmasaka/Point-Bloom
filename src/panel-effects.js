@@ -41,9 +41,19 @@ export function makeModelProvider(app) {
 		let k = 0;
 		let seen = 0;
 		let next = 0;
+		// облака, посаженные на персонажа, сохраняют связь со скелетом: в эффектах точки продолжат двигаться по анимации
+		const animated = list.some((o) => o.userData.animPts);
+		const A = animated ? { parts: [], part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4) } : null;
 		for (const o of list) {
 			o.updateWorldMatrix(true, false);
 			const g = o.geometry.attributes;
+			let poff = 0;
+			const src = o.userData.animPts;
+			if (A) {
+				poff = A.parts.length;
+				if (src) A.parts.push(...src.parts);
+				else A.parts.push({ mesh: o, skinned: false });
+			}
 			const cnt = g.position.count;
 			const nm = new THREE.Matrix3().getNormalMatrix(o.matrixWorld);
 			for (let i = 0; i < cnt && k < n; i++, seen++) {
@@ -51,6 +61,19 @@ export function makeModelProvider(app) {
 				next += step;
 				v.fromBufferAttribute(g.position, i).applyMatrix4(o.matrixWorld);
 				positions.set([v.x, v.y, v.z], k * 3);
+				if (A) {
+					if (src && i < src.part.length) {
+						A.part[k] = src.part[i] + poff;
+						A.bp.set([src.bp[i * 3], src.bp[i * 3 + 1], src.bp[i * 3 + 2]], k * 3);
+						for (let q = 0; q < 4; q++) {
+							A.bi[k * 4 + q] = src.bi[i * 4 + q];
+							A.bw[k * 4 + q] = src.bw[i * 4 + q];
+						}
+					} else {
+						A.part[k] = poff;
+						A.bp.set([g.position.getX(i), g.position.getY(i), g.position.getZ(i)], k * 3);
+					}
+				}
 				if (g.normal) {
 					v.fromBufferAttribute(g.normal, i).applyMatrix3(nm).normalize();
 					normals.set([v.x, v.y, v.z], k * 3);
@@ -59,7 +82,9 @@ export function makeModelProvider(app) {
 				k++;
 			}
 		}
-		return { positions: positions.slice(0, k * 3), normals: normals.slice(0, k * 3), colors: colors.slice(0, k * 3), count: k };
+		const out = { positions: positions.slice(0, k * 3), normals: normals.slice(0, k * 3), colors: colors.slice(0, k * 3), count: k };
+		if (A && A.parts.some((q) => q.skinned)) out.anim = { parts: A.parts, part: A.part.slice(0, k), bp: A.bp.slice(0, k * 3), bi: A.bi.slice(0, k * 4), bw: A.bw.slice(0, k * 4) };
+		return out;
 	};
 	const topObjects = () => root.children.filter((o) => !o.userData.helper && !o.userData.media && o.name !== '__fx' && (() => { let ok = false; o.traverse((c) => { if (!c.userData.helper && (c.isMesh || c.isPoints)) ok = true; }); return ok; })());
 	return {

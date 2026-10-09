@@ -261,13 +261,15 @@ await yieldUI();
 }
 return { positions, colors, normals, count: w, anim: A_ && A_.parts.some((q) => q.skinned) ? A_ : null };
 }
-export function verticesToCloud(entries) {
+export function verticesToCloud(entries, { anim = false } = {}) {
 const P = [], C = [], N = [];
+const AN = [];
+const animParts = [];
 let total = 0;
 for (const { mesh, mats } of entries) {
 let g = mesh.geometry;
 if (!g.attributes.position) continue;
-if (!g.index) g = weldExact(g);
+if (!g.index && !mesh.isSkinnedMesh) g = weldExact(g);
 mesh.updateWorldMatrix(true, false);
 const colors = bakeVertexColors(g, mats);
 const pos = g.attributes.position;
@@ -292,6 +294,28 @@ nn[i * 3] = gx / l; nn[i * 3 + 1] = gy / l; nn[i * 3 + 2] = gz / l;
 }
 }
 P.push(p); C.push(colors); N.push(nn);
+if (anim) {
+const skinned = !!(mesh.isSkinnedMesh && g.attributes.skinIndex && mesh.skeleton);
+const pi = animParts.length;
+animParts.push({ mesh, skinned });
+const part = new Uint8Array(n).fill(pi), bp = new Float32Array(n * 3), bi = new Uint16Array(n * 4), bw = new Float32Array(n * 4);
+const be = skinned ? mesh.bindMatrix.elements : null;
+const si = g.attributes.skinIndex, sw = g.attributes.skinWeight;
+for (let i = 0; i < n; i++) {
+const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+if (skinned) {
+bp[i * 3] = be[0] * x + be[4] * y + be[8] * z + be[12];
+bp[i * 3 + 1] = be[1] * x + be[5] * y + be[9] * z + be[13];
+bp[i * 3 + 2] = be[2] * x + be[6] * y + be[10] * z + be[14];
+const ws = sw.getX(i) + sw.getY(i) + sw.getZ(i) + sw.getW(i) || 1;
+bi[i * 4] = si.getX(i); bi[i * 4 + 1] = si.getY(i); bi[i * 4 + 2] = si.getZ(i); bi[i * 4 + 3] = si.getW(i);
+bw[i * 4] = sw.getX(i) / ws; bw[i * 4 + 1] = sw.getY(i) / ws; bw[i * 4 + 2] = sw.getZ(i) / ws; bw[i * 4 + 3] = sw.getW(i) / ws;
+} else {
+bp[i * 3] = x; bp[i * 3 + 1] = y; bp[i * 3 + 2] = z;
+}
+}
+AN.push({ part, bp, bi, bw });
+}
 total += n;
 }
 const cat = (arrs) => {
@@ -303,7 +327,17 @@ o += a.length;
 }
 return out;
 };
-return { positions: cat(P), colors: cat(C), normals: cat(N), count: total };
+const out = { positions: cat(P), colors: cat(C), normals: cat(N), count: total };
+if (anim && animParts.some((q) => q.skinned)) {
+const part = new Uint8Array(total), bp = new Float32Array(total * 3), bi = new Uint16Array(total * 4), bw = new Float32Array(total * 4);
+let o = 0;
+for (const a of AN) {
+part.set(a.part, o); bp.set(a.bp, o * 3); bi.set(a.bi, o * 4); bw.set(a.bw, o * 4);
+o += a.part.length;
+}
+out.anim = { parts: animParts, part, bp, bi, bw };
+}
+return out;
 }
 export function cloudToPoints(cloud, name = 'Облако точек') {
 const g = new THREE.BufferGeometry();

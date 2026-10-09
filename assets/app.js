@@ -85912,13 +85912,16 @@ async function sampleSurface(entries, count, { seed = 1337, onProgress, anim = f
 }
 
 /** Вершины мешей как облако точек (мировые координаты, цвета из текстур) */
-function verticesToCloud(entries) {
+function verticesToCloud(entries, { anim = false } = {}) {
 	const P = [], C = [], N = [];
+	const AN = []; // данные анимации по мешам
+	const animParts = [];
 	let total = 0;
 	for (const { mesh, mats } of entries) {
 		let g = mesh.geometry;
 		if (!g.attributes.position) continue;
-		if (!g.index) g = weldExact(g);
+		// у меша со скелетом вершины не склеиваем: порядок вершин связан с костями
+		if (!g.index && !mesh.isSkinnedMesh) g = weldExact(g);
 		mesh.updateWorldMatrix(true, false);
 		const colors = bakeVertexColors(g, mats);
 		const pos = g.attributes.position;
@@ -85943,6 +85946,28 @@ function verticesToCloud(entries) {
 			}
 		}
 		P.push(p); C.push(colors); N.push(nn);
+		if (anim) {
+			const skinned = !!(mesh.isSkinnedMesh && g.attributes.skinIndex && mesh.skeleton);
+			const pi = animParts.length;
+			animParts.push({ mesh, skinned });
+			const part = new Uint8Array(n).fill(pi), bp = new Float32Array(n * 3), bi = new Uint16Array(n * 4), bw = new Float32Array(n * 4);
+			const be = skinned ? mesh.bindMatrix.elements : null;
+			const si = g.attributes.skinIndex, sw = g.attributes.skinWeight;
+			for (let i = 0; i < n; i++) {
+				const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+				if (skinned) {
+					bp[i * 3] = be[0] * x + be[4] * y + be[8] * z + be[12];
+					bp[i * 3 + 1] = be[1] * x + be[5] * y + be[9] * z + be[13];
+					bp[i * 3 + 2] = be[2] * x + be[6] * y + be[10] * z + be[14];
+					const ws = sw.getX(i) + sw.getY(i) + sw.getZ(i) + sw.getW(i) || 1;
+					bi[i * 4] = si.getX(i); bi[i * 4 + 1] = si.getY(i); bi[i * 4 + 2] = si.getZ(i); bi[i * 4 + 3] = si.getW(i);
+					bw[i * 4] = sw.getX(i) / ws; bw[i * 4 + 1] = sw.getY(i) / ws; bw[i * 4 + 2] = sw.getZ(i) / ws; bw[i * 4 + 3] = sw.getW(i) / ws;
+				} else {
+					bp[i * 3] = x; bp[i * 3 + 1] = y; bp[i * 3 + 2] = z;
+				}
+			}
+			AN.push({ part, bp, bi, bw });
+		}
 		total += n;
 	}
 	const cat = (arrs) => {
@@ -85954,7 +85979,17 @@ function verticesToCloud(entries) {
 		}
 		return out;
 	};
-	return { positions: cat(P), colors: cat(C), normals: cat(N), count: total };
+	const out = { positions: cat(P), colors: cat(C), normals: cat(N), count: total };
+	if (anim && animParts.some((q) => q.skinned)) {
+		const part = new Uint8Array(total), bp = new Float32Array(total * 3), bi = new Uint16Array(total * 4), bw = new Float32Array(total * 4);
+		let o = 0;
+		for (const a of AN) {
+			part.set(a.part, o); bp.set(a.bp, o * 3); bi.set(a.bi, o * 4); bw.set(a.bw, o * 4);
+			o += a.part.length;
+		}
+		out.anim = { parts: animParts, part, bp, bi, bw };
+	}
+	return out;
 }
 
 /** Собирает THREE.Points из результата sampleSurface/verticesToCloud */
@@ -133140,13 +133175,16 @@ function createPointsPanel(app, root) {
 			await new Promise((r) => setTimeout(r, 30));
 			const entries = meshes.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
 			const kind = pt.source;
-			const cloud = kind === 'vertices' ? verticesToCloud(entries) : await sampleSurface(entries, pt.surfaceCount, { onProgress: (p) => app.ui.busy('Строю облако точек', 0.1 + p * 0.85) });
+			const cloud = kind === 'vertices' ? verticesToCloud(entries, { anim: app.anim.has }) : await sampleSurface(entries, pt.surfaceCount, { anim: app.anim.has, onProgress: (p) => app.ui.busy('Строю облако точек', 0.1 + p * 0.85) });
 			if (!cloud.count) throw new Error('получилось 0 точек');
 			const pts = cloudToPoints(cloud, `Облако точек (${compact(cloud.count)})`);
+			// облако посажено на персонажа: оно двигается вместе со скелетом, пока играет анимация
+			if (cloud.anim) pts.userData.animPts = cloud.anim;
 			if (cur) {
 				// заменяем геометрию в уже созданном облаке, история не засоряется
 				const old = cur.obj.geometry;
 				cur.obj.geometry = pts.geometry;
+				cur.obj.userData.animPts = cloud.anim || null;
 				cur.obj.name = pts.name;
 				cur.kind = kind;
 				old.dispose();
@@ -134649,6 +134687,20 @@ class AnimController {
 		return true;
 	}
 
+	/** Облака точек, посаженные на персонажа в редакторе, идут за его позой */
+	_movePoints() {
+		for (const o of this.app.viewport.root.children) {
+			const a = o.userData.animPts;
+			if (!a || !o.isPoints) continue;
+			const pos = o.geometry.attributes.position;
+			if (pos.count !== a.part.length) continue;
+			evalAnimPoints(a, null, pos.array);
+			pos.needsUpdate = true;
+			o.geometry.boundingSphere = null;
+			o.geometry.boundingBox = null;
+		}
+	}
+
 	/** Ставит позу на текущее время; кости и матрицы обновляются, даже если сцена скрыта (режим эффектов) */
 	apply() {
 		for (const m of this.models) {
@@ -134671,6 +134723,8 @@ class AnimController {
 				m.joints.geometry.attributes.position.needsUpdate = true;
 			}
 		}
+		this._movePoints();
+		this.app.viewport.invalidate();
 		this.version++;
 		this.app.bus.emit('animpose');
 	}
@@ -141968,9 +142022,19 @@ function makeModelProvider(app) {
 		let k = 0;
 		let seen = 0;
 		let next = 0;
+		// облака, посаженные на персонажа, сохраняют связь со скелетом: в эффектах точки продолжат двигаться по анимации
+		const animated = list.some((o) => o.userData.animPts);
+		const A = animated ? { parts: [], part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4) } : null;
 		for (const o of list) {
 			o.updateWorldMatrix(true, false);
 			const g = o.geometry.attributes;
+			let poff = 0;
+			const src = o.userData.animPts;
+			if (A) {
+				poff = A.parts.length;
+				if (src) A.parts.push(...src.parts);
+				else A.parts.push({ mesh: o, skinned: false });
+			}
 			const cnt = g.position.count;
 			const nm = new THREE.Matrix3().getNormalMatrix(o.matrixWorld);
 			for (let i = 0; i < cnt && k < n; i++, seen++) {
@@ -141978,6 +142042,19 @@ function makeModelProvider(app) {
 				next += step;
 				v.fromBufferAttribute(g.position, i).applyMatrix4(o.matrixWorld);
 				positions.set([v.x, v.y, v.z], k * 3);
+				if (A) {
+					if (src && i < src.part.length) {
+						A.part[k] = src.part[i] + poff;
+						A.bp.set([src.bp[i * 3], src.bp[i * 3 + 1], src.bp[i * 3 + 2]], k * 3);
+						for (let q = 0; q < 4; q++) {
+							A.bi[k * 4 + q] = src.bi[i * 4 + q];
+							A.bw[k * 4 + q] = src.bw[i * 4 + q];
+						}
+					} else {
+						A.part[k] = poff;
+						A.bp.set([g.position.getX(i), g.position.getY(i), g.position.getZ(i)], k * 3);
+					}
+				}
 				if (g.normal) {
 					v.fromBufferAttribute(g.normal, i).applyMatrix3(nm).normalize();
 					normals.set([v.x, v.y, v.z], k * 3);
@@ -141986,7 +142063,9 @@ function makeModelProvider(app) {
 				k++;
 			}
 		}
-		return { positions: positions.slice(0, k * 3), normals: normals.slice(0, k * 3), colors: colors.slice(0, k * 3), count: k };
+		const out = { positions: positions.slice(0, k * 3), normals: normals.slice(0, k * 3), colors: colors.slice(0, k * 3), count: k };
+		if (A && A.parts.some((q) => q.skinned)) out.anim = { parts: A.parts, part: A.part.slice(0, k), bp: A.bp.slice(0, k * 3), bi: A.bi.slice(0, k * 4), bw: A.bw.slice(0, k * 4) };
+		return out;
 	};
 	const topObjects = () => root.children.filter((o) => !o.userData.helper && !o.userData.media && o.name !== '__fx' && (() => { let ok = false; o.traverse((c) => { if (!c.userData.helper && (c.isMesh || c.isPoints)) ok = true; }); return ok; })());
 	return {

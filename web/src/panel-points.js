@@ -88,12 +88,14 @@ app.ui.busy('Строю облако точек', 0.1);
 await new Promise((r) => setTimeout(r, 30));
 const entries = meshes.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
 const kind = pt.source;
-const cloud = kind === 'vertices' ? verticesToCloud(entries) : await sampleSurface(entries, pt.surfaceCount, { onProgress: (p) => app.ui.busy('Строю облако точек', 0.1 + p * 0.85) });
+const cloud = kind === 'vertices' ? verticesToCloud(entries, { anim: app.anim.has }) : await sampleSurface(entries, pt.surfaceCount, { anim: app.anim.has, onProgress: (p) => app.ui.busy('Строю облако точек', 0.1 + p * 0.85) });
 if (!cloud.count) throw new Error('получилось 0 точек');
 const pts = cloudToPoints(cloud, `Облако точек (${compact(cloud.count)})`);
+if (cloud.anim) pts.userData.animPts = cloud.anim;
 if (cur) {
 const old = cur.obj.geometry;
 cur.obj.geometry = pts.geometry;
+cur.obj.userData.animPts = cloud.anim || null;
 cur.obj.name = pts.name;
 cur.kind = kind;
 old.dispose();
