@@ -135370,6 +135370,7 @@ const FX_LAYERS = [
 	{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке и становятся квадратами: сетка, «Лего» или дыхание', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1, mode: 'grid', speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['grid', 'Сетка'], ['lego', 'Лего'], ['breathe', 'Дыхание']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe']] }] },
 	{ id: 'scope', group: 'Звук и ритм', name: 'Акселограф', icon: 'heartbeat', hint: 'По точкам модели бежит перо самописца: линия идёт от точки к точке по их координатам и вычерчивает форму. Ещё не нарисованные точки невидимы и проявляются, когда перо проходит по ним. Линия и точки двигаются вместе с остальными эффектами', max: 1, def: { on: false, amount: 0.7, band: 'none', react: 0.6, mode: 'draw', order: 'walk', dir: 'fwd', loop: 'loop', speed: 1, pens: 2, chaos: 0.6, trail: 0.5, detail: 6000, dim: 1, line: 1, width: 2.4, color: '#3dff7a', tint: 0.35, thick: 0.6, glow: 1, spark: 0 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивает: нарисованное остаётся'], ['comet', 'Комета: за пером тянется гаснущий след']] }, { key: 'order', label: 'Порядок обхода', type: 'select', options: [['walk', 'От точки к точке (ближайшая)'], ['up', 'Развёртка снизу вверх'], ['spin', 'Развёртка по кругу']] }, { key: 'dir', label: 'Направление', type: 'seg', options: [['fwd', 'Вперёд'], ['back', 'Назад']] }, { key: 'loop', label: 'В конце круга', type: 'seg', options: [['loop', 'Стирает и заново'], ['once', 'Остаётся']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'pens', label: 'Число перьев', min: 1, max: 8, step: 1, int: true }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true, when: ['order', ['walk']] }, { key: 'chaos', label: 'Хаотичность пути', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'dim', label: 'Прятать ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'color', label: 'Цвет акселографа', type: 'color' }, { key: 'line', label: 'Яркость линии', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'width', label: 'Толщина линии', min: 0.5, max: 8, step: 0.1, when: ['order', ['walk']] }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }, { key: 'spark', label: 'Искры у пера', min: 0, max: 2, step: 0.05 }] },
 	{ id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Нейросеть строит карту глубины снимка или каждого кадра видео, и точки выдавливаются по ней: рельеф, ступени, дыхание, волна, рябь, карусель и разлёт слоёв. Всё считается на вашем компьютере. Вращайте камеру, чтобы увидеть объём', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.5, zone: 0.12, bright: 0, contrast: 1, gamma: 1, blur: 0, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Рельеф: ближнее выступает вперёд'], ['layers', 'Ступени: ровные плоскости по глубине'], ['breath', 'Дыхание: рельеф выдавливается и втягивается'], ['wave', 'Волна: рельеф вспухает бегущей волной'], ['ripple', 'Рябь: по рельефу расходятся круги'], ['twist', 'Карусель: слои поворачиваются по-разному'], ['burst', 'Разлёт: слои вылетают к зрителю и возвращаются']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Глубина, что остаётся на месте', min: 0, max: 1, step: 0.01 }, { key: 'zone', label: 'Ширина зоны на месте', min: 0, max: 0.6, step: 0.01 }, { type: 'title', label: 'Правка карты глубины' }, { key: 'bright', label: 'Яркость карты', min: -0.5, max: 0.5, step: 0.01 }, { key: 'contrast', label: 'Контраст карты', min: 0.2, max: 3, step: 0.02 }, { key: 'gamma', label: 'Тени (гамма)', min: 0.3, max: 3, step: 0.02 }, { key: 'blur', label: 'Размытие карты', min: 0, max: 12, step: 1, int: true }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
+	{ id: 'trail', group: 'Персонаж', name: 'Шлейф персонажа', icon: 'stack', hint: 'Пока персонаж двигается, за ним остаются полупрозрачные копии прошлых поз: шаг, взмах или бег оставляют след из точек. Эффект появляется, только когда в сцене персонаж с анимацией', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 0.5, count: 8, step: 0.12, fade: 0.78, pts: 30000, size: 0.8, tint: 0.12, shrink: 0.3 }, extras: [{ key: 'count', label: 'Сколько копий в шлейфе', min: 2, max: 24, step: 1, int: true }, { key: 'step', label: 'Время между копиями, с', min: 0.03, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Как быстро гаснут копии', min: 0.4, max: 0.97, step: 0.01 }, { key: 'shrink', label: 'Как мельчают копии', min: 0, max: 0.9, step: 0.02 }, { key: 'pts', label: 'Точек в копии', min: 5000, max: 80000, step: 1000, int: true }, { key: 'size', label: 'Размер точек', min: 0.3, max: 2.5, step: 0.05 }, { key: 'tint', label: 'Окраска цветом палитры', min: 0, max: 1, step: 0.02 }] },
 	{ id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в трёх измерениях, цветовые каналы расходятся, картинка мерцает', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16, rgb: 'on', speed: 1 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
 	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими импульсами', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
@@ -135388,6 +135389,7 @@ const FX_LAYERS = [
 const FX_GROUPS = {
 	'Видео': ['frames'],
 	'Фото и видео': ['depth'],
+	'Персонаж': ['trail'],
 	'Движение': ['curl', 'flow', 'gravity'],
 	'Звук и ритм': ['spectrum', 'wave', 'pulse', 'blast', 'scope'],
 	'Превращения': ['twist', 'voxel', 'glitch', 'physics', 'dissolve'],
@@ -139908,6 +139910,89 @@ class EffectsEngine {
 		if (L) L.visible = order === 'walk' && S.line > 0.01 && !(u.uFr.value.x > 0.5);
 	}
 
+	get animReady() {
+		return !!this._animCloud;
+	}
+
+	/** Шлейф персонажа: копии прошлых поз остаются на месте и гаснут. Снимки берутся из уже посчитанных положений точек, поэтому это почти бесплатно */
+	_trailTick(T) {
+		const ac = this._animCloud;
+		const tr0 = this._trail;
+		const hide = () => {
+			if (tr0) tr0.group.visible = false;
+		};
+		if (!T.on || !ac || !this.geometry || !this.points || !this._animBuf || this.state.source !== 'model') return hide();
+		const amount = clamp(this._eff(T), 0, 1);
+		if (amount < 0.005) return hide();
+		const m0 = Math.max(1000, Math.min(Math.round(T.pts), ac.count));
+		const stride = Math.max(1, Math.floor(ac.count / m0));
+		const mm = Math.floor(ac.count / stride);
+		const n = Math.max(2, Math.round(T.count));
+		let tr = this._trail;
+		if (!tr || tr.group.parent !== this.points || tr.mm !== mm || tr.n !== n || tr.geo !== this.geometry) {
+			if (tr) {
+				tr.group.removeFromParent();
+				tr.group.traverse((o) => {
+					if (o.material) o.material.dispose();
+					if (o.geometry) o.geometry.dispose();
+				});
+			}
+			const col = new Float32Array(mm * 3);
+			const ca = this.geometry.attributes.aColor.array;
+			for (let i = 0; i < mm; i++) for (let c = 0; c < 3; c++) col[i * 3 + c] = ca[i * stride * 3 + c];
+			const colAttr = new THREE.BufferAttribute(col, 3);
+			const group = new THREE.Group();
+			group.userData.helper = true;
+			const snaps = [];
+			const ghosts = [];
+			const cur = new Float32Array(mm * 3);
+			for (let i = 0; i < mm; i++) for (let c = 0; c < 3; c++) cur[i * 3 + c] = this._animBuf[i * stride * 3 + c];
+			for (let k = 0; k <= n; k++) snaps.push(cur.slice());
+			for (let k = 0; k < n; k++) {
+				const g = new THREE.BufferGeometry();
+				g.setAttribute('position', new THREE.BufferAttribute(snaps[k + 1], 3));
+				g.setAttribute('color', colAttr);
+				const mat = new THREE.ShaderMaterial({
+					uniforms: { uSize: { value: 1 }, uAlpha: { value: 0 }, uTint: { value: 0 }, uTintC: { value: new THREE.Color() } },
+					vertexShader: 'attribute vec3 color; uniform float uSize; uniform float uTint; uniform vec3 uTintC; varying vec3 vC; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = clamp(uSize * 3.8 / max(-mv.z, 0.4), 1.0, 60.0); vC = mix(color, uTintC, uTint); }',
+					fragmentShader: 'precision highp float; uniform float uAlpha; varying vec3 vC; void main() {\n if (length(gl_PointCoord - 0.5) > 0.5) discard;\n  gl_FragColor = vec4(vC * uAlpha, uAlpha);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}',
+					transparent: true,
+					depthWrite: false,
+					blending: THREE.AdditiveBlending,
+				});
+				const p = new THREE.Points(g, mat);
+				p.frustumCulled = false;
+				p.userData.helper = true;
+				group.add(p);
+				ghosts.push(p);
+			}
+			this.points.add(group);
+			tr = this._trail = { group, snaps, ghosts, mm, n, stride, last: this._time, geo: this.geometry };
+		}
+		tr.group.visible = true;
+		// новый снимок раз в «шаг» времени, пока идёт анимация; остановили анимацию, шлейф замирает
+		if (this.app.anim.playing && this._time - tr.last >= T.step) {
+			tr.last = this._time;
+			const old = tr.snaps.pop();
+			for (let i = 0; i < mm; i++) for (let c = 0; c < 3; c++) old[i * 3 + c] = this._animBuf[i * tr.stride * 3 + c];
+			tr.snaps.unshift(old);
+			tr.ghosts.forEach((p, k) => {
+				const a = p.geometry.attributes.position;
+				a.array = tr.snaps[k + 1];
+				a.needsUpdate = true;
+			});
+		}
+		const u = this.shared;
+		const base = u.uSize.value * u.uPR.value * T.size;
+		tr.ghosts.forEach((p, k) => {
+			const mt = p.material.uniforms;
+			mt.uAlpha.value = amount * Math.pow(T.fade, k + 1) * 0.9;
+			mt.uSize.value = base * (1 - T.shrink * (k / Math.max(1, n - 1)));
+			mt.uTint.value = T.tint;
+			mt.uTintC.value.copy(u.uP2.value);
+		});
+	}
+
 	/** Заранее собирает шейдер эффектов, пока вы работаете в редакторе: первый вход в «Эффекты» не подвисает на компиляции (на Windows она идёт секунды) */
 	async prewarm() {
 		if (this.active) return;
@@ -141297,6 +141382,7 @@ class EffectsEngine {
 					if (L.links.on && (this._alk = ((this._alk || 0) + 1) % 4) === 0) this._syncLinks();
 				}
 			}
+			this._trailTick(L.trail);
 			// фото и видео: обновляем цвета и высоту точек по текущему кадру
 			let rgbNew = null;
 			if (st.source === 'media' && this.pm.ready && this.geometry && !this.morphing && this.geometry.attributes.position.count === this.pm.count) {
@@ -141653,6 +141739,75 @@ class EffectsEngine {
 }
 
 };
+__defs['src/anim-activity.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'clipActivity', () => clipActivity);
+// Активность костей по времени клипа: сколько кость движется в каждый момент. По ней рисуется полоса «Персонаж» на таймлайне.
+const THREE = __req('vendor/three/build/three.module.js');
+
+const cache = new WeakMap();
+
+/** { n, total: Float32Array 0..1, bones: [{ name, vals: Float32Array 0..1, sum }] }, кости от самых подвижных к спокойным */
+function clipActivity(clip, N = 160) {
+	if (cache.has(clip)) return cache.get(clip);
+	const dur = Math.max(clip.duration, 0.01);
+	const dt = dur / (N - 1);
+	const byBone = new Map();
+	for (const tr of clip.tracks) {
+		let parsed;
+		try {
+			parsed = THREE.PropertyBinding.parseTrackName(tr.name);
+		} catch (e) {
+			continue;
+		}
+		const { nodeName, propertyName } = parsed;
+		if (!nodeName) continue;
+		const isQ = tr.ValueTypeName === 'quaternion';
+		if (!isQ && propertyName !== 'position') continue;
+		const itp = tr.createInterpolant();
+		let prev = Array.from(itp.evaluate(0));
+		const arr = byBone.get(nodeName) || new Float32Array(N);
+		for (let i = 1; i < N; i++) {
+			const v = Array.from(itp.evaluate(dt * i));
+			let d;
+			if (isQ) d = 2 * Math.acos(Math.min(1, Math.abs(prev[0] * v[0] + prev[1] * v[1] + prev[2] * v[2] + prev[3] * v[3])));
+			else d = Math.hypot(v[0] - prev[0], v[1] - prev[1], v[2] - prev[2]) * 2;
+			arr[i] += d / dt;
+			prev = v;
+		}
+		arr[0] = arr[1];
+		byBone.set(nodeName, arr);
+	}
+	const bones = [];
+	let gmax = 1e-6;
+	for (const [name, a] of byBone) {
+		// лёгкое сглаживание, чтобы полоса не рябила
+		const s = new Float32Array(N);
+		for (let i = 0; i < N; i++) s[i] = (a[Math.max(0, i - 1)] + a[i] * 2 + a[Math.min(N - 1, i + 1)]) / 4;
+		let sum = 0;
+		for (let i = 0; i < N; i++) {
+			sum += s[i];
+			if (s[i] > gmax) gmax = s[i];
+		}
+		bones.push({ name: name.replace(/^.*[:|]/, ''), vals: s, sum });
+	}
+	const total = new Float32Array(N);
+	let tmax = 1e-6;
+	for (const b of bones) {
+		for (let i = 0; i < N; i++) {
+			b.vals[i] = Math.min(1, b.vals[i] / gmax);
+			total[i] += b.vals[i];
+		}
+	}
+	for (let i = 0; i < N; i++) if (total[i] > tmax) tmax = total[i];
+	for (let i = 0; i < N; i++) total[i] /= tmax;
+	bones.sort((a, b) => b.sum - a.sum);
+	const res = { n: N, total, bones };
+	cache.set(clip, res);
+	return res;
+}
+
+};
 __defs['src/fx-previews.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'drawPreview', () => drawPreview);
@@ -141772,6 +141927,20 @@ const DRAW = {
 				const d = Math.exp(-(((i - 4) / 2.6) ** 2) - ((j - 2) / 1.7) ** 2);
 				dot(c, (i - 4) * 3.1 + (j - 2) * 0.5 * d * k, (j - 2) * 3.6 - d * 4.2 * k - 1, 1.3 + d * 1.1 * k, 0.3 + d * 0.55);
 			}
+		}
+	},
+	trail: (c, t) => {
+		// фигурка идёт вправо, за ней гаснут копии
+		const x0 = ((t * 0.5) % 1) * 22 - 11;
+		for (let k = 0; k < 5; k++) {
+			const x = x0 - k * 4.2;
+			if (x < -12) continue;
+			const a = Math.pow(0.7, k);
+			dot(c, x, -7, 2, a);
+			dot(c, x, -3, 2.4, a);
+			dot(c, x, 1, 2.4, a);
+			dot(c, x - 1.4 * Math.sin(t * 6 + k), 6, 1.8, a);
+			dot(c, x + 1.4 * Math.sin(t * 6 + k), 6, 1.8, a);
 		}
 	},
 	scope: (c, t) => {
@@ -142027,6 +142196,7 @@ const { getDevice } = __req('src/device-card.js');
 const { formatCount } = __req('src/capabilities.js');
 const { createMediaPanel } = __req('src/panel-media.js');
 const { createAnimPanel } = __req('src/panel-anim.js');
+const { clipActivity } = __req('src/anim-activity.js');
 const { attachPreview } = __req('src/fx-previews.js');
 const { SHAPES: POINT_SHAPE_LIST } = __req('src/panel-points.js');
 const { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, BANDS, BAND_RANGE, FREQ_QUICK, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } = __req('src/effects-engine.js');
@@ -142720,7 +142890,7 @@ function createEffectsPanel(app, root, engine) {
 			el.textContent = k ? String(k) : '';
 		}
 	}
-	const hiddenGrp = (c) => c.def.group === 'Видео' || c.def.group === 'Фото и видео';
+	const hiddenGrp = (c) => c.def.group === 'Видео' || c.def.group === 'Фото и видео' || c.def.group === 'Персонаж';
 	select_((cards.find((c) => c.L.on && !hiddenGrp(c)) || cards.find((c) => !hiddenGrp(c)) || cards[0]).def.id);
 	// ------------------------------------------------------------ звук
 	const sourceSeg = segmented({
@@ -143412,6 +143582,87 @@ function createEffectsPanel(app, root, engine) {
 	const camTrackBody = h('div', { class: 'fx-anim-lane-body fx-anim-cam-body' }, camLine, camKeysWrap);
 	const camLane = h('div', { class: 'fx-anim-lane fx-anim-cam-lane' }, camTitle, camTrackBody);
 
+	// Дорожка персонажа: когда в клипе какие кости двигаются; клик и перетаскивание перематывают клип
+	const charArrow = h('span', { class: 'ic-wrap fx-anim-char-arrow', html: icon('caret-right', 12) });
+	const charTitle = h('div', { class: 'fx-anim-track-label fx-anim-char-label', role: 'button', tabindex: '0', 'data-tip': 'Нажмите, чтобы показать отдельные кости' }, charArrow, h('span', { class: 'fx-anim-lane-name' }, 'Персонаж'));
+	const charCanvas = h('canvas', { class: 'fx-anim-char-canvas' });
+	const charMark = h('div', { class: 'fx-anim-char-mark' });
+	const charBody = h('div', { class: 'fx-anim-lane-body fx-anim-char-body', 'data-tip': 'Яркость показывает, как сильно двигается кость. Тяните по полосе, чтобы перемотать клип', 'data-tip-pos': 'top' }, charCanvas, charMark);
+	const charLane = h('div', { class: 'fx-anim-lane fx-anim-char-lane' }, charTitle, charBody);
+	charLane.hidden = true;
+	let charOpen = false;
+	function drawChar() {
+		const A = app.anim;
+		charLane.hidden = !A.has;
+		if (!A.has) return;
+		const clip = A.clips[A.clipIndex];
+		if (!clip) return;
+		const act = clipActivity(clip);
+		const rows = charOpen ? act.bones.slice(0, 12).map((b) => [b.name, b.vals]) : [['', act.total]];
+		const rh = charOpen ? 14 : 24;
+		const dpr = Math.min(2, window.devicePixelRatio || 1);
+		const W = Math.max(200, Math.round((charBody.clientWidth || 600) * dpr));
+		charCanvas.width = W;
+		charCanvas.height = Math.round(rows.length * rh * dpr);
+		charCanvas.style.height = rows.length * rh + 'px';
+		const g = charCanvas.getContext('2d');
+		const acc = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45';
+		g.clearRect(0, 0, charCanvas.width, charCanvas.height);
+		rows.forEach(([name, vals], r) => {
+			const y0 = Math.round(r * rh * dpr), hh = Math.round((rh - 2) * dpr);
+			g.globalAlpha = 0.1;
+			g.fillStyle = '#fff';
+			g.fillRect(0, y0, W, hh);
+			g.fillStyle = acc;
+			const cw = W / act.n;
+			for (let i = 0; i < act.n; i++) {
+				const v = Math.pow(vals[i], 0.7);
+				if (v < 0.03) continue;
+				g.globalAlpha = 0.12 + 0.88 * v;
+				g.fillRect(i * cw, y0, cw + 1, hh);
+			}
+			if (name) {
+				g.globalAlpha = 0.95;
+				g.fillStyle = '#fff';
+				g.font = `${Math.round(9.5 * dpr)}px sans-serif`;
+				g.textBaseline = 'middle';
+				g.shadowColor = 'rgba(0,0,0,0.8)';
+				g.shadowBlur = 3;
+				g.fillText(name, 6 * dpr, y0 + hh / 2);
+				g.shadowBlur = 0;
+			}
+		});
+		g.globalAlpha = 1;
+		moveCharMark();
+	}
+	function moveCharMark() {
+		const A = app.anim;
+		if (!A.has) return;
+		charMark.style.left = ((A.time / A.duration) * 100).toFixed(2) + '%';
+	}
+	charTitle.addEventListener('click', () => {
+		charOpen = !charOpen;
+		charArrow.innerHTML = icon(charOpen ? 'caret-down' : 'caret-right', 12);
+		drawChar();
+		clampAnimH();
+	});
+	let charDrag = false;
+	const charSeek = (e) => {
+		const r = charBody.getBoundingClientRect();
+		app.anim.seek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * app.anim.duration);
+	};
+	charBody.addEventListener('pointerdown', (e) => {
+		charDrag = true;
+		charBody.setPointerCapture(e.pointerId);
+		app.anim.pause();
+		charSeek(e);
+	});
+	charBody.addEventListener('pointermove', (e) => charDrag && charSeek(e));
+	charBody.addEventListener('pointerup', () => (charDrag = false));
+	app.anim.onChange(drawChar);
+	app.bus.on('animpose', moveCharMark);
+	new ResizeObserver(() => drawChar()).observe(charBody);
+
 	// Дорожки эффектов
 	const fxLanesWrap = h('div', { class: 'fx-anim-fx-lanes' });
 
@@ -143428,7 +143679,7 @@ function createEffectsPanel(app, root, engine) {
 		)
 	);
 
-	const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, fxLanesWrap, emptyHint);
+	const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, charLane, fxLanesWrap, emptyHint);
 	const playheadLine = h('div', { class: 'fx-anim-playhead-line' });
 
 	stage.append(rulerRow, lanesScroll, playheadLine);
@@ -144150,6 +144401,8 @@ function createEffectsPanel(app, root, engine) {
 		// режим раскадровки существует только для видео: без видео его папка в списке скрыта
 		for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoLoaded;
 		for (const c of cards) if (c.def.group === 'Фото и видео') c.folder.hidden = !engine.pm.ready;
+		// шлейф персонажа есть только у персонажа с анимацией
+		for (const c of cards) if (c.def.group === 'Персонаж') c.folder.hidden = !engine.animReady;
 		// настройки скрытого эффекта (глубина без фото, раскадровка без видео) не показываем: выбираем первый видимый
 		const cur = cards.find((c) => c.def.id === selected);
 		if (cur && cur.folder.hidden) select_((cards.find((c) => !c.folder.hidden && c.L.on) || cards.find((c) => !c.folder.hidden) || cards[0]).def.id);

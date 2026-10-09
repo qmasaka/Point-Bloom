@@ -104,6 +104,19 @@ dot(c, (i - 4) * 3.1 + (j - 2) * 0.5 * d * k, (j - 2) * 3.6 - d * 4.2 * k - 1, 1
 }
 }
 },
+trail: (c, t) => {
+const x0 = ((t * 0.5) % 1) * 22 - 11;
+for (let k = 0; k < 5; k++) {
+const x = x0 - k * 4.2;
+if (x < -12) continue;
+const a = Math.pow(0.7, k);
+dot(c, x, -7, 2, a);
+dot(c, x, -3, 2.4, a);
+dot(c, x, 1, 2.4, a);
+dot(c, x - 1.4 * Math.sin(t * 6 + k), 6, 1.8, a);
+dot(c, x + 1.4 * Math.sin(t * 6 + k), 6, 1.8, a);
+}
+},
 scope: (c, t) => {
 const P = [[-11, 7], [-6, -2], [-9, -8], [-1, -4], [3, -9], [10, -4], [6, 3], [11, 8], [2, 5], [-3, 9]];
 const k = (t * 0.5) % 1;

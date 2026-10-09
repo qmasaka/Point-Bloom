@@ -7,6 +7,7 @@ import { getDevice } from './device-card.js';
 import { formatCount } from './capabilities.js';
 import { createMediaPanel } from './panel-media.js';
 import { createAnimPanel } from './panel-anim.js';
+import { clipActivity } from './anim-activity.js';
 import { attachPreview } from './fx-previews.js';
 import { SHAPES as POINT_SHAPE_LIST } from './panel-points.js';
 import { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, BANDS, BAND_RANGE, FREQ_QUICK, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } from './effects-engine.js';
@@ -669,7 +670,7 @@ const el = cs[0].fhead.querySelector('.fx-folder-n');
 el.textContent = k ? String(k) : '';
 }
 }
-const hiddenGrp = (c) => c.def.group === 'Видео' || c.def.group === 'Фото и видео';
+const hiddenGrp = (c) => c.def.group === 'Видео' || c.def.group === 'Фото и видео' || c.def.group === 'Персонаж';
 select_((cards.find((c) => c.L.on && !hiddenGrp(c)) || cards.find((c) => !hiddenGrp(c)) || cards[0]).def.id);
 const sourceSeg = segmented({
 options: [
@@ -1301,6 +1302,85 @@ const camKeysWrap = h('div', { class: 'fx-anim-keys' });
 const camLine = h('div', { class: 'fx-anim-cam-line' });
 const camTrackBody = h('div', { class: 'fx-anim-lane-body fx-anim-cam-body' }, camLine, camKeysWrap);
 const camLane = h('div', { class: 'fx-anim-lane fx-anim-cam-lane' }, camTitle, camTrackBody);
+const charArrow = h('span', { class: 'ic-wrap fx-anim-char-arrow', html: icon('caret-right', 12) });
+const charTitle = h('div', { class: 'fx-anim-track-label fx-anim-char-label', role: 'button', tabindex: '0', 'data-tip': 'Нажмите, чтобы показать отдельные кости' }, charArrow, h('span', { class: 'fx-anim-lane-name' }, 'Персонаж'));
+const charCanvas = h('canvas', { class: 'fx-anim-char-canvas' });
+const charMark = h('div', { class: 'fx-anim-char-mark' });
+const charBody = h('div', { class: 'fx-anim-lane-body fx-anim-char-body', 'data-tip': 'Яркость показывает, как сильно двигается кость. Тяните по полосе, чтобы перемотать клип', 'data-tip-pos': 'top' }, charCanvas, charMark);
+const charLane = h('div', { class: 'fx-anim-lane fx-anim-char-lane' }, charTitle, charBody);
+charLane.hidden = true;
+let charOpen = false;
+function drawChar() {
+const A = app.anim;
+charLane.hidden = !A.has;
+if (!A.has) return;
+const clip = A.clips[A.clipIndex];
+if (!clip) return;
+const act = clipActivity(clip);
+const rows = charOpen ? act.bones.slice(0, 12).map((b) => [b.name, b.vals]) : [['', act.total]];
+const rh = charOpen ? 14 : 24;
+const dpr = Math.min(2, window.devicePixelRatio || 1);
+const W = Math.max(200, Math.round((charBody.clientWidth || 600) * dpr));
+charCanvas.width = W;
+charCanvas.height = Math.round(rows.length * rh * dpr);
+charCanvas.style.height = rows.length * rh + 'px';
+const g = charCanvas.getContext('2d');
+const acc = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45';
+g.clearRect(0, 0, charCanvas.width, charCanvas.height);
+rows.forEach(([name, vals], r) => {
+const y0 = Math.round(r * rh * dpr), hh = Math.round((rh - 2) * dpr);
+g.globalAlpha = 0.1;
+g.fillStyle = '#fff';
+g.fillRect(0, y0, W, hh);
+g.fillStyle = acc;
+const cw = W / act.n;
+for (let i = 0; i < act.n; i++) {
+const v = Math.pow(vals[i], 0.7);
+if (v < 0.03) continue;
+g.globalAlpha = 0.12 + 0.88 * v;
+g.fillRect(i * cw, y0, cw + 1, hh);
+}
+if (name) {
+g.globalAlpha = 0.95;
+g.fillStyle = '#fff';
+g.font = `${Math.round(9.5 * dpr)}px sans-serif`;
+g.textBaseline = 'middle';
+g.shadowColor = 'rgba(0,0,0,0.8)';
+g.shadowBlur = 3;
+g.fillText(name, 6 * dpr, y0 + hh / 2);
+g.shadowBlur = 0;
+}
+});
+g.globalAlpha = 1;
+moveCharMark();
+}
+function moveCharMark() {
+const A = app.anim;
+if (!A.has) return;
+charMark.style.left = ((A.time / A.duration) * 100).toFixed(2) + '%';
+}
+charTitle.addEventListener('click', () => {
+charOpen = !charOpen;
+charArrow.innerHTML = icon(charOpen ? 'caret-down' : 'caret-right', 12);
+drawChar();
+clampAnimH();
+});
+let charDrag = false;
+const charSeek = (e) => {
+const r = charBody.getBoundingClientRect();
+app.anim.seek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * app.anim.duration);
+};
+charBody.addEventListener('pointerdown', (e) => {
+charDrag = true;
+charBody.setPointerCapture(e.pointerId);
+app.anim.pause();
+charSeek(e);
+});
+charBody.addEventListener('pointermove', (e) => charDrag && charSeek(e));
+charBody.addEventListener('pointerup', () => (charDrag = false));
+app.anim.onChange(drawChar);
+app.bus.on('animpose', moveCharMark);
+new ResizeObserver(() => drawChar()).observe(charBody);
 const fxLanesWrap = h('div', { class: 'fx-anim-fx-lanes' });
 const emptyHint = h('div', { class: 'fx-anim-empty-hint' },
 h('span', { class: 'fx-anim-empty-text' }, 'На таймлайне пока нет эффектов. Выберите сценарий или добавьте эффект:'),
@@ -1313,7 +1393,7 @@ button({ label: '+ Вихри', variant: 'primary', cls: 'btn-sm', onClick: () =
 button({ label: '+ Волны', variant: 'primary', cls: 'btn-sm', onClick: () => { selClip = engine.animAddClip('wave'); animSync(); } })
 )
 );
-const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, fxLanesWrap, emptyHint);
+const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, charLane, fxLanesWrap, emptyHint);
 const playheadLine = h('div', { class: 'fx-anim-playhead-line' });
 stage.append(rulerRow, lanesScroll, playheadLine);
 stage.addEventListener('scroll', () => stage.classList.toggle('is-scrolled', stage.scrollLeft > 2), { passive: true });
@@ -1946,6 +2026,7 @@ modelNote.textContent = kind === 'cloud' ? `Берётся облако точе
 countActive();
 for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoLoaded;
 for (const c of cards) if (c.def.group === 'Фото и видео') c.folder.hidden = !engine.pm.ready;
+for (const c of cards) if (c.def.group === 'Персонаж') c.folder.hidden = !engine.animReady;
 const cur = cards.find((c) => c.def.id === selected);
 if (cur && cur.folder.hidden) select_((cards.find((c) => !c.folder.hidden && c.L.on) || cards.find((c) => !c.folder.hidden) || cards[0]).def.id);
 renderReactList();

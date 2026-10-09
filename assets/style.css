@@ -5715,3 +5715,13 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 .anim-row { display: flex; align-items: center; gap: 10px; padding: 2px 0 6px; }
 .anim-time { flex: 1; min-width: 0; }
 .anim-play { flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-text); }
+
+/* дорожка персонажа на таймлайне */
+.fx-anim-char-body { position: relative; height: auto !important; min-height: 26px; cursor: ew-resize; }
+.fx-anim-char-canvas { display: block; width: 100%; border-radius: 6px; }
+.fx-anim-char-mark { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, 0.7); pointer-events: none; }
+.fx-anim-char-label { cursor: pointer; }
+.fx-anim-char-label:hover { color: var(--text); }
+.fx-anim-char-lane { height: auto !important; min-height: 30px; align-items: flex-start; }
+.fx-anim-char-lane .fx-anim-track-label { align-self: stretch; height: auto; min-height: 30px; }
+.fx-anim-char-lane .fx-anim-lane-body { padding: 3px 0; }
