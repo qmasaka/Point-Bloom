@@ -5725,3 +5725,90 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 .fx-anim-char-lane { height: auto !important; min-height: 30px; align-items: flex-start; }
 .fx-anim-char-lane .fx-anim-track-label { align-self: stretch; height: auto; min-height: 30px; }
 .fx-anim-char-lane .fx-anim-lane-body { padding: 3px 0; }
+
+/* ================================================================ телефоны и планшеты: сцена сверху, панель настроек нижним листом */
+.sheet-handle { display: none; }
+@media (max-width: 900px) {
+	#app { grid-template-rows: 44px minmax(0, 1fr) 0; }
+	.statusbar { display: none; }
+	.topbar { height: 44px; }
+	.scale-widget, #btnHelp { display: none !important; }
+	.topbar .btn-icon { min-width: 38px; height: 38px; }
+	.workspace, .fx-mode .workspace, .workspace.sidebar-hidden, .fx-mode .workspace.sidebar-hidden {
+		position: relative;
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr) var(--sheet-h, 84px);
+		transition: grid-template-rows 0.28s var(--ease);
+	}
+	.workspace.dragging { transition: none !important; }
+	#viewport { grid-area: 1 / 1; min-height: 0; }
+	/* инструменты плавают поверх сцены слева сверху */
+	.toolrail { position: absolute; z-index: 14; left: 8px; top: 8px; width: 44px; height: auto; max-height: calc(var(--vh) - 44px - var(--sheet-h, 84px) - 16px); overflow-y: auto; flex-direction: column; padding: 4px; gap: 2px; border: 1px solid var(--line); border-radius: 14px; background: rgba(18, 20, 24, 0.82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); scrollbar-width: none; }
+	.fx-mode .toolrail { display: none; }
+	.sidebar, .workspace.sidebar-hidden .sidebar {
+		grid-area: 2 / 1;
+		position: relative !important;
+		inset: auto !important;
+		width: auto !important;
+		height: auto !important;
+		transform: none !important;
+		visibility: visible !important;
+		pointer-events: auto !important;
+		display: grid;
+		grid-template-rows: auto auto minmax(0, 1fr) !important;
+		border: 1px solid var(--line);
+		border-bottom: 0;
+		border-radius: 18px 18px 0 0;
+		box-shadow: 0 -14px 34px rgba(0, 0, 0, 0.5);
+		background: var(--bg-panel);
+		overflow: hidden;
+		z-index: 25;
+	}
+	.sidebar-resizer { display: none !important; }
+	.fx-mode .fx-left, .fx-mode .fx-left.fx-left-open {
+		grid-area: 2 / 1;
+		position: relative;
+		inset: auto;
+		width: auto;
+		height: auto;
+		transform: none;
+		display: flex;
+		flex-direction: column;
+		border: 1px solid var(--line);
+		border-bottom: 0;
+		border-radius: 18px 18px 0 0;
+		box-shadow: 0 -14px 34px rgba(0, 0, 0, 0.5);
+		background: var(--bg-panel);
+		overflow: hidden;
+		z-index: 25;
+	}
+	.fx-mode .fx-left .fx-left-list { flex: 1; min-height: 0; overflow-y: auto; }
+	#app:not(.fx-mode) .fx-left { display: none; }
+	.fx-mode[data-msheet='list'] .sidebar { display: none; }
+	.fx-mode[data-msheet='settings'] .fx-left { display: none; }
+	.sheet-handle { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 12px 4px; min-height: 26px; cursor: grab; touch-action: none; flex: none; }
+	.sheet-grab { width: 42px; height: 4px; border-radius: 2px; background: var(--line-strong); }
+	.sheet-switch { display: none; width: 100%; gap: 6px; }
+	.fx-mode .sheet-switch { display: flex; }
+	.sheet-switch button { flex: 1; height: 32px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.05); color: var(--text-dim); font: 600 13px var(--font); }
+	.sheet-switch button.is-on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
+	.fx-left-head { display: none; }
+	/* нижняя панель эффектов и режимы вида живут над листом, шире экрана не выходят */
+	.fx-bar, .vp-dock { max-width: calc(100% - 16px); overflow-x: auto; scrollbar-width: none; bottom: 8px; }
+	.fx-mode .fx-anim { display: none !important; }
+	.media-bar { max-width: calc(100% - 16px); }
+	/* стартовая карточка и окно экспорта по размеру экрана */
+	.empty-state { padding: 12px 12px 12px 62px; }
+	.empty-card { padding: 18px 16px 16px; }
+	.empty-card .empty-text { font-size: 13px; }
+	.chips { display: none; }
+	.export-pop { padding: 0; }
+	.export-card, .ui-float .export-card { width: 100%; max-height: var(--vh); height: var(--vh); border-radius: 0; }
+	.export-card .export-cta { padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
+	.exp-grid { padding-inline: 16px; }
+	.export-pop-head { padding: 14px 12px 4px 16px; }
+	.fx-cam { display: none; }
+	.tabs { overflow-x: auto; scrollbar-width: none; }
+}
+
+@media (max-width: 900px) { .sidebar, .fx-mode .fx-left { padding-bottom: env(safe-area-inset-bottom, 0px); } }

@@ -89576,6 +89576,7 @@ const ICON_PATHS = {
 	'images': '<path d="M216,40H72A16,16,0,0,0,56,56V72H40A16,16,0,0,0,24,88V200a16,16,0,0,0,16,16H184a16,16,0,0,0,16-16V184h16a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM72,56H216v62.75l-10.07-10.06a16,16,0,0,0-22.63,0l-20,20-44-44a16,16,0,0,0-22.62,0L72,109.37ZM184,200H40V88H56v80a16,16,0,0,0,16,16H184Zm32-32H72V132l36-36,49.66,49.66a8,8,0,0,0,11.31,0L194.63,120,216,141.38V168ZM160,84a12,12,0,1,1,12,12A12,12,0,0,1,160,84Z"/>',
 	'info': '<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z"/>',
 	'lightning': '<path d="M215.79,118.17a8,8,0,0,0-5-5.66L153.18,90.9l14.66-73.33a8,8,0,0,0-13.69-7l-112,120a8,8,0,0,0,3,13l57.63,21.61L88.16,238.43a8,8,0,0,0,13.69,7l112-120A8,8,0,0,0,215.79,118.17ZM109.37,214l10.47-52.38a8,8,0,0,0-5-9.06L62,132.71l84.62-90.66L136.16,94.43a8,8,0,0,0,5,9.06l52.8,19.8Z"/>',
+	'list': '<path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"/>',
 	'magnet': '<path d="M207,50.25A87.46,87.46,0,0,0,144.6,24h-.33A87.48,87.48,0,0,0,82,49.81L20.61,112a16,16,0,0,0,.06,22.56l28.66,28.66a15.92,15.92,0,0,0,11.32,4.69h.09a16,16,0,0,0,11.36-4.82L133,100.69a16.08,16.08,0,0,1,22.41-.21,15.6,15.6,0,0,1,4.73,11.19,16.89,16.89,0,0,1-4.85,12L93,183.88a16,16,0,0,0-.17,22.79l28.66,28.66a16.06,16.06,0,0,0,22.52.12L205.81,175C240.26,140.5,240.79,84.56,207,50.25ZM60.65,151.89,32,123.24,55.8,99.12l28.52,28.52ZM132.79,224l-28.68-28.65,24.38-23.57L157,200.32Zm61.76-60.44-26.11,25.54L140,160.68l26.44-25.57.1-.09a33,33,0,0,0,9.57-23.5A31.44,31.44,0,0,0,166.47,89a32.2,32.2,0,0,0-44.9.5L95.49,116.18,67,87.74,93.35,61.09A71.51,71.51,0,0,1,144.27,40h.27a71.55,71.55,0,0,1,51.05,21.48C223.25,89.55,222.75,135.38,194.55,163.58Z"/>',
 	'minus': '<path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128Z"/>',
 	'monitor': '<path d="M208,40H48A24,24,0,0,0,24,64V176a24,24,0,0,0,24,24H208a24,24,0,0,0,24-24V64A24,24,0,0,0,208,40Zm8,136a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V64a8,8,0,0,1,8-8H208a8,8,0,0,1,8,8Zm-48,48a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,224Z"/>',
@@ -90787,6 +90788,122 @@ function createAnimPanel(app, key = 'anim') {
 	});
 	sync();
 	return { el: sec.el, sync };
+}
+
+};
+__defs['src/mobile.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'initMobile', () => initMobile);
+// Телефоны и планшеты: панель настроек становится нижним листом, который тянется вверх и вниз, а сцена остаётся сверху.
+// На широких экранах модуль ничего не делает (стили работают только до 900 px).
+const MIN = 84; // ручка и вкладки
+
+function initMobile(app) {
+	const root = document.getElementById('app');
+	const ws = document.querySelector('.workspace');
+	const sidebar = document.getElementById('sidebar');
+	const fxLeft = document.getElementById('fxLeft');
+	const mq = window.matchMedia('(max-width: 900px)');
+	let state = 'min';
+
+	const vh = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+	// в альбомной ориентации телефона высоты мало: лист ниже и выше открывается почти на весь экран
+	const heights = () => (vh() < 520 ? { min: MIN, mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: MIN, mid: Math.round(vh() * 0.46), full: Math.round(vh() - 110) });
+	const setH = (px) => root.style.setProperty('--sheet-h', Math.round(px) + 'px');
+	function setState(s) {
+		state = s;
+		root.dataset.sheet = s;
+		setH(heights()[s]);
+		setTimeout(() => app.viewport.resize(), 320);
+	}
+
+	function makeHandle() {
+		const hd = document.createElement('div');
+		hd.className = 'sheet-handle';
+		hd.innerHTML = '<span class="sheet-grab"></span><div class="sheet-switch"><button type="button" data-ms="list">Эффекты</button><button type="button" data-ms="settings">Настройки</button></div>';
+		let sy = 0, sh = 0, moved = false, drag = false;
+		hd.addEventListener('pointerdown', (e) => {
+			if (e.target.closest('.sheet-switch')) return;
+			drag = true;
+			moved = false;
+			sy = e.clientY;
+			sh = parseFloat(getComputedStyle(root).getPropertyValue('--sheet-h')) || heights()[state];
+			hd.setPointerCapture(e.pointerId);
+			ws.classList.add('dragging');
+		});
+		hd.addEventListener('pointermove', (e) => {
+			if (!drag) return;
+			const dy = sy - e.clientY;
+			if (Math.abs(dy) > 5) moved = true;
+			const H = heights();
+			setH(Math.max(H.min, Math.min(H.full, sh + dy)));
+		});
+		const end = (e) => {
+			if (!drag) return;
+			drag = false;
+			ws.classList.remove('dragging');
+			const H = heights();
+			if (!moved) return setState(state === 'min' ? 'mid' : state === 'mid' ? 'full' : 'min');
+			const cur = parseFloat(getComputedStyle(root).getPropertyValue('--sheet-h'));
+			// ближайшее из трёх положений
+			setState(Object.entries(H).sort((a, b) => Math.abs(a[1] - cur) - Math.abs(b[1] - cur))[0][0]);
+		};
+		hd.addEventListener('pointerup', end);
+		hd.addEventListener('pointercancel', end);
+		hd.querySelectorAll('[data-ms]').forEach((b) =>
+			b.addEventListener('click', () => {
+				setMsheet(b.dataset.ms);
+				if (state === 'min') setState('mid');
+			})
+		);
+		return hd;
+	}
+	const hS = makeHandle();
+	const hF = makeHandle();
+	sidebar.insertBefore(hS, sidebar.querySelector('.tabs'));
+	fxLeft.insertBefore(hF, fxLeft.firstChild);
+
+	function setMsheet(v) {
+		root.dataset.msheet = v;
+		document.querySelectorAll('.sheet-switch button').forEach((b) => b.classList.toggle('is-on', b.dataset.ms === v));
+	}
+	setMsheet('list');
+
+	// выбор вкладки раскрывает свёрнутый лист; выбор эффекта в списке переключает на его настройки
+	sidebar.addEventListener('click', (e) => {
+		if (!mq.matches) return;
+		if (e.target.closest('.tab, .fx-tab') && state === 'min') setState('mid');
+	});
+	fxLeft.addEventListener('click', (e) => {
+		if (!mq.matches || e.target.closest('.sheet-handle')) return;
+		if (e.target.closest('.fx-layer-head') && !e.target.closest('.switch')) setMsheet('settings');
+	});
+
+	// режим эффектов: список эффектов первым, редактор: лист свёрнут, пока не откроете вкладку
+	let wasFx = root.classList.contains('fx-mode');
+	new MutationObserver(() => {
+		const fx = root.classList.contains('fx-mode');
+		if (fx === wasFx) return;
+		wasFx = fx;
+		if (!mq.matches) return;
+		if (fx) {
+			setMsheet('list');
+			setState('mid');
+		} else setState('min');
+	}).observe(root, { attributes: true, attributeFilter: ['class'] });
+
+	function apply() {
+		root.classList.toggle('is-mobile', mq.matches);
+		if (mq.matches) setState(state);
+		else {
+			root.style.removeProperty('--sheet-h');
+			delete root.dataset.sheet;
+			setTimeout(() => app.viewport.resize(), 50);
+		}
+	}
+	mq.addEventListener('change', apply);
+	window.visualViewport?.addEventListener('resize', () => mq.matches && !ws.classList.contains('dragging') && setH(heights()[state]));
+	apply();
 }
 
 };
@@ -144531,6 +144648,7 @@ const { segmented, switchRow, button } = __req('src/ui-kit.js');
 const { AxisGizmo } = __req('src/gizmo.js');
 const { createScenePanel } = __req('src/panel-scene.js');
 const { createAnimPanel } = __req('src/panel-anim.js');
+const { initMobile } = __req('src/mobile.js');
 const { createMaterialPanel } = __req('src/panel-material.js');
 const { createViewPanel, DISPLAY_MODES } = __req('src/panel-view.js');
 const { createExportPanel } = __req('src/panel-export.js');
@@ -144918,6 +145036,7 @@ class UI {
 		this.effectsPanel = createEffectsPanel(app, $('#panel-effects'), this.effectsEngine);
 		this.buildExportPop();
 		this.makeSidebarResizable();
+		initMobile(app);
 	}
 
 	buildUiScale() {

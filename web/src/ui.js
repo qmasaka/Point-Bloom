@@ -6,6 +6,7 @@ import { segmented, switchRow, button } from './ui-kit.js';
 import { AxisGizmo } from './gizmo.js';
 import { createScenePanel } from './panel-scene.js';
 import { createAnimPanel } from './panel-anim.js';
+import { initMobile } from './mobile.js';
 import { createMaterialPanel } from './panel-material.js';
 import { createViewPanel, DISPLAY_MODES } from './panel-view.js';
 import { createExportPanel } from './panel-export.js';
@@ -352,6 +353,7 @@ this.effectsEngine.modelProvider = makeModelProvider(app);
 this.effectsPanel = createEffectsPanel(app, $('#panel-effects'), this.effectsEngine);
 this.buildExportPop();
 this.makeSidebarResizable();
+initMobile(app);
 }
 buildUiScale() {
 const SCALES = [0.75, 0.85, 0.92, 1.0, 1.1, 1.2, 1.35];
