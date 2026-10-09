@@ -1316,7 +1316,13 @@ charLane.hidden = !A.has;
 if (!A.has) return;
 const clip = A.clips[A.clipIndex];
 if (!clip) return;
-const act = clipActivity(clip);
+let act;
+try {
+act = clipActivity(clip);
+} catch (e) {
+act = null;
+}
+if (!act || !act.bones.length) act = { n: 2, total: new Float32Array([0.35, 0.35]), bones: [] };
 const rows = charOpen ? act.bones.slice(0, 12).map((b) => [b.name, b.vals]) : [['', act.total]];
 const rh = charOpen ? 14 : 24;
 const dpr = Math.min(2, window.devicePixelRatio || 1);

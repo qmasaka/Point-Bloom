@@ -138956,6 +138956,41 @@ class EffectsEngine {
 	}
 
 	/** Выставляет сцену по времени t: интерполяция ключей камеры + огибающие блоков эффектов */
+	/** Эффекты, у которых есть блоки на таймлайне, работают только внутри своих блоков (с плавными входом и выходом); где блока нет, эффект выключен */
+	_animGate(t) {
+		const clips = this.state.anim.clips || [];
+		const L = this.state.layers;
+		const clipLayerIds = new Set(clips.map((c) => c.layerId));
+			for (const layerId of clipLayerIds) {
+				if (!L[layerId]) continue;
+				let maxVal = 0;
+				for (const c of clips) {
+					if (c.layerId !== layerId) continue;
+					if (t < c.start || t > c.start + c.dur) continue;
+					const elapsed = t - c.start;
+					const remaining = c.start + c.dur - t;
+					let env = 1.0;
+					if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
+						const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
+						env = Math.min(env, f * f * (3 - 2 * f));
+					}
+					if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
+						const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
+						env = Math.min(env, f * f * (3 - 2 * f));
+					}
+					const val = (c.amount ?? 1.0) * env;
+					if (val > maxVal) maxVal = val;
+				}
+
+				if (maxVal > 0.003) {
+					L[layerId].on = true;
+					L[layerId].amount = maxVal;
+				} else {
+					L[layerId].on = false;
+				}
+			}
+	}
+
 	animApply(t) {
 		const A = this.state.anim;
 		const keys = A.keys || [];
@@ -139020,34 +139055,7 @@ class EffectsEngine {
 			const L = this.state.layers;
 			const clipLayerIds = new Set(clips.map((c) => c.layerId));
 
-			for (const layerId of clipLayerIds) {
-				if (!L[layerId]) continue;
-				let maxVal = 0;
-				for (const c of clips) {
-					if (c.layerId !== layerId) continue;
-					if (t < c.start || t > c.start + c.dur) continue;
-					const elapsed = t - c.start;
-					const remaining = c.start + c.dur - t;
-					let env = 1.0;
-					if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
-						const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
-						env = Math.min(env, f * f * (3 - 2 * f));
-					}
-					if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
-						const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
-						env = Math.min(env, f * f * (3 - 2 * f));
-					}
-					const val = (c.amount ?? 1.0) * env;
-					if (val > maxVal) maxVal = val;
-				}
-
-				if (maxVal > 0.003) {
-					L[layerId].on = true;
-					L[layerId].amount = maxVal;
-				} else {
-					L[layerId].on = false;
-				}
-			}
+			this._animGate(t);
 
 			// Дорожка морфинга
 			if (clipLayerIds.has('morph')) {
@@ -141472,6 +141480,8 @@ class EffectsEngine {
 			u.uGlyph.value.set(gm === 'off' ? 0 : 1, gm === 'off' ? 1 : 2.3, u.uAtlas.value.userData?.n || 8);
 			u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
 
+			// курсор стоит на таймлайне: эффекты с блоками включены только там, где под курсором есть их блок
+			if (!this.animPlaying && !this.animRec && this.state.anim.clips?.length) this._animGate(this.animT);
 			// персонаж с анимацией: точки идут за позой скелета
 			if (this._animCloud && st.source === 'model' && this.geometry && !this.morphing && this.app.anim.has && this._animVer !== this.app.anim.version && performance.now() - (this._animT || 0) >= (perf.tier === 'high' ? 0 : 33)) {
 				this._animVer = this.app.anim.version;
@@ -141871,13 +141881,15 @@ function clipActivity(clip, N = 160) {
 	const dt = dur / (N - 1);
 	const byBone = new Map();
 	for (const tr of clip.tracks) {
-		let parsed;
+		// имя дорожки «кость.свойство»; если разбор three не справился (двоеточия и точки в именах), делим по последней точке сами
+		let nodeName, propertyName;
 		try {
-			parsed = THREE.PropertyBinding.parseTrackName(tr.name);
+			({ nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(tr.name));
 		} catch (e) {
-			continue;
+			const k = tr.name.lastIndexOf('.');
+			nodeName = k > 0 ? tr.name.slice(0, k) : '';
+			propertyName = k > 0 ? tr.name.slice(k + 1) : '';
 		}
-		const { nodeName, propertyName } = parsed;
 		if (!nodeName) continue;
 		const isQ = tr.ValueTypeName === 'quaternion';
 		if (!isQ && propertyName !== 'position') continue;
@@ -143714,7 +143726,14 @@ function createEffectsPanel(app, root, engine) {
 		if (!A.has) return;
 		const clip = A.clips[A.clipIndex];
 		if (!clip) return;
-		const act = clipActivity(clip);
+		let act;
+		try {
+			act = clipActivity(clip);
+		} catch (e) {
+			act = null;
+		}
+		// если по клипу нечего показать (нет дорожек костей), рисуем ровную полосу: дорожка и отметка времени всё равно видны
+		if (!act || !act.bones.length) act = { n: 2, total: new Float32Array([0.35, 0.35]), bones: [] };
 		const rows = charOpen ? act.bones.slice(0, 12).map((b) => [b.name, b.vals]) : [['', act.total]];
 		const rh = charOpen ? 14 : 24;
 		const dpr = Math.min(2, window.devicePixelRatio || 1);

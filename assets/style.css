@@ -5812,3 +5812,8 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 }
 
 @media (max-width: 900px) { .sidebar, .fx-mode .fx-left { padding-bottom: env(safe-area-inset-bottom, 0px); } }
+
+/* панель клипа внизу таймлайна: без фоновой полосы и рамки */
+.fx-anim-inspector, .fx-mode .fx-anim-inspector { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+/* отметка времени персонажа с точкой сверху */
+.fx-anim-char-mark::before { content: ''; position: absolute; top: -3px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px rgba(255, 255, 255, 0.9); }

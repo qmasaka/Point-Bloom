@@ -6,13 +6,14 @@ const dur = Math.max(clip.duration, 0.01);
 const dt = dur / (N - 1);
 const byBone = new Map();
 for (const tr of clip.tracks) {
-let parsed;
+let nodeName, propertyName;
 try {
-parsed = THREE.PropertyBinding.parseTrackName(tr.name);
+({ nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(tr.name));
 } catch (e) {
-continue;
+const k = tr.name.lastIndexOf('.');
+nodeName = k > 0 ? tr.name.slice(0, k) : '';
+propertyName = k > 0 ? tr.name.slice(k + 1) : '';
 }
-const { nodeName, propertyName } = parsed;
 if (!nodeName) continue;
 const isQ = tr.ValueTypeName === 'quaternion';
 if (!isQ && propertyName !== 'position') continue;
