@@ -53,6 +53,10 @@ export class AnimController {
 		}
 		for (const obj of found) {
 			if (keep.some((m) => m.obj === obj)) continue;
+			// у меша со скелетом ограничивающая сфера считается один раз по позе привязки: когда анимация уносит его далеко (прыжки, бег), его бы отсекло как невидимый
+			obj.traverse((o) => {
+				if (o.isSkinnedMesh) o.frustumCulled = false;
+			});
 			const mixer = new THREE.AnimationMixer(obj);
 			const m = { obj, mixer, clips: obj.userData.clips, helper: null, action: null };
 			keep.push(m);
@@ -190,6 +194,25 @@ export class AnimController {
 		const d = this.duration;
 		this.time = this.loop ? (t * this.speed) % d : Math.min(d, t * this.speed);
 		this.apply();
+	}
+
+	/** Охват всего движения клипа: камера ставится так, чтобы персонаж не уезжал за кадр (прыжки, бег) */
+	animatedBounds(samples = 14) {
+		const box = new THREE.Box3();
+		const saved = this.time;
+		for (let i = 0; i <= samples; i++) {
+			this.time = (i / samples) * this.duration;
+			this.apply();
+			for (const m of this.models) {
+				m.obj.updateWorldMatrix(true, true);
+				// у меша со скелетом габариты кешируются: пересчитываем по текущей позе
+				m.obj.traverse((o) => o.isSkinnedMesh && o.computeBoundingBox());
+				box.union(new THREE.Box3().setFromObject(m.obj));
+			}
+		}
+		this.time = saved;
+		this.apply();
+		return box;
 	}
 
 	/** Каждый кадр: время идёт, поза обновляется */

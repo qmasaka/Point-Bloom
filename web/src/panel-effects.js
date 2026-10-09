@@ -77,6 +77,7 @@ k++;
 }
 }
 const out = { positions: positions.slice(0, k * 3), normals: normals.slice(0, k * 3), colors: colors.slice(0, k * 3), count: k };
+if (A && A.parts.some((q) => q.skinned) && app.anim.has) out.animBox = app.anim.animatedBounds();
 if (A && A.parts.some((q) => q.skinned)) out.anim = { parts: A.parts, part: A.part.slice(0, k), bp: A.bp.slice(0, k * 3), bi: A.bi.slice(0, k * 4), bw: A.bw.slice(0, k * 4) };
 return out;
 };
@@ -113,9 +114,11 @@ if (c.length) return fromClouds(c, count);
 const list = meshes();
 if (!list.length) return null;
 const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
-return sampleSurface(entries, count, { anim: app.anim.has, onProgress: (p) => {
+const cl = await sampleSurface(entries, count, { anim: app.anim.has, onProgress: (p) => {
 if (!app.ui.effectsEngine?._quiet) app.ui.busy('Беру точки с модели', 0.2 + p * 0.7);
 } });
+if (cl.anim && app.anim.has) cl.animBox = app.anim.animatedBounds();
+return cl;
 },
 };
 }

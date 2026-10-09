@@ -923,6 +923,10 @@ reportImport(r) {
 const app = this.app;
 if (r.models.length) {
 app.nav.frameAll(true);
+if (app.anim.has) {
+const ab = app.anim.animatedBounds();
+if (!ab.isEmpty()) app.nav.frameBox(ab, true, true);
+}
 const st = app.model.stats();
 this.toast(`Загружено: ${r.models.join(', ')}. Треугольников: ${formatInt(st.tris || st.points)}`, 'ok');
 const hasTex = app.model.materials().some((m) => m.map);

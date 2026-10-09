@@ -349,6 +349,10 @@ if (p[i] < minx) minx = p[i]; if (p[i] > maxx) maxx = p[i];
 if (p[i + 1] < miny) miny = p[i + 1]; if (p[i + 1] > maxy) maxy = p[i + 1];
 if (p[i + 2] < minz) minz = p[i + 2]; if (p[i + 2] > maxz) maxz = p[i + 2];
 }
+if (c.animBox && !c.animBox.isEmpty()) {
+const B = c.animBox;
+minx = B.min.x; miny = B.min.y; minz = B.min.z; maxx = B.max.x; maxy = B.max.y; maxz = B.max.z;
+}
 const cx = (minx + maxx) / 2, cy = (miny + maxy) / 2, cz = (minz + maxz) / 2;
 const k = 2.2 / Math.max(maxx - minx, maxy - miny, maxz - minz, 1e-9);
 const out = new Float32Array(p.length);

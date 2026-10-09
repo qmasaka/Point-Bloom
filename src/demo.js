@@ -74,189 +74,104 @@ function texturePNG() {
 
 export async function makeDemoFiles() {
 	const knot = new THREE.TorusKnotGeometry(0.9, 0.3, 260, 40, 2, 3);
-	const base = new THREE.CylinderGeometry(1.7, 1.85, 0.16, 72, 1);
-	base.translate(0, -1.62, 0);
-	const obj = objText(
-		[
-			{ name: 'Узел', geo: knot, mtl: 'demo_knot' },
-			{ name: 'Подставка', geo: base, mtl: 'demo_base' },
-		],
-		'demo.mtl'
-	);
-	const mtl = 'newmtl demo_knot\nKd 1 1 1\nNs 120\nmap_Kd demo_texture.png\n\nnewmtl demo_base\nKd 0.20 0.22 0.26\nNs 30\n';
+	// развёртка по умолчанию растянута вдоль узла: u идёт по всей длине кривой, v вокруг трубки. Растягиваем u в число раз, равное отношению длины узла к длине окружности трубки, и клетки становятся квадратными
+	{
+		const pos = knot.attributes.position, uv = knot.attributes.uv;
+		const rs = 40 + 1;
+		let len = 0;
+		for (let i = 0; i < 260; i++) {
+			const a = i * rs, b = (i + 1) * rs;
+			len += Math.hypot(pos.getX(b) - pos.getX(a), pos.getY(b) - pos.getY(a), pos.getZ(b) - pos.getZ(a));
+		}
+		const k = len / (2 * Math.PI * 0.3);
+		for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * k);
+	}
+	const obj = objText([{ name: 'Узел', geo: knot, mtl: 'demo_knot' }], 'demo.mtl');
+	const mtl = 'newmtl demo_knot\nKd 1 1 1\nNs 120\nmap_Kd demo_texture.png\n';
 	const png = await texturePNG();
 	return [new File([obj], 'demo.obj', { type: 'text/plain' }), new File([mtl], 'demo.mtl', { type: 'text/plain' }), new File([png], 'demo_texture.png', { type: 'image/png' })];
 }
 
-// ---------------------------------------------------------------- демо-персонаж с анимацией
-/** Простой человечек со скелетом, текстурой и двумя клипами (ходьба, приветствие): настоящий GLB, который идёт тем же путём, что и ваши файлы */
+// ---------------------------------------------------------------- демо-анимация: прыгающий шарик
+/** Шарик со скелетом из одной кости, текстурой и клипом: прыжки вдоль горизонтали с затуханием, сплющивание при ударе и качение. Настоящий GLB, идёт тем же путём, что ваши файлы */
 export async function makeDemoCharacterFile() {
-	const bones = {};
-	const mk = (name, parent, x, y, z) => {
-		const b = new THREE.Bone();
-		b.name = name;
-		b.position.set(x, y, z);
-		if (parent) bones[parent].add(b);
-		bones[name] = b;
-		return b;
-	};
-	mk('Hips', null, 0, 1.0, 0);
-	mk('Spine', 'Hips', 0, 0.2, 0);
-	mk('Chest', 'Spine', 0, 0.25, 0);
-	mk('Neck', 'Chest', 0, 0.25, 0);
-	mk('Head', 'Neck', 0, 0.12, 0);
-	for (const [s, sx] of [['L', 1], ['R', -1]]) {
-		mk('Shoulder' + s, 'Chest', sx * 0.2, 0.2, 0);
-		mk('Elbow' + s, 'Shoulder' + s, sx * 0.3, 0, 0);
-		mk('Wrist' + s, 'Elbow' + s, sx * 0.28, 0, 0);
-		mk('Hip' + s, 'Hips', sx * 0.1, -0.05, 0);
-		mk('Knee' + s, 'Hip' + s, 0, -0.45, 0);
-		mk('Ankle' + s, 'Knee' + s, 0, -0.45, 0);
-	}
-	bones.Hips.updateMatrixWorld(true);
-	const list = Object.values(bones);
-	const idxOf = (n) => list.indexOf(bones[n]);
-	const wp = (n) => new THREE.Vector3().setFromMatrixPosition(bones[n].matrixWorld);
-
-	const geos = [];
-	const addPart = (geo, nameA, nameB) => {
-		// вес кости B растёт вдоль длины части: у сгиба вершины ведут обе кости
-		const pos = geo.attributes.position;
-		geo.computeBoundingBox();
-		const bb = geo.boundingBox;
-		const n = pos.count;
-		const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
-		const a = idxOf(nameA), b = idxOf(nameB || nameA);
-		const axis = nameB ? (Math.abs(wp(nameB).x - wp(nameA).x) > Math.abs(wp(nameB).y - wp(nameA).y) ? 'x' : 'y') : 'y';
-		for (let i = 0; i < n; i++) {
-			let t = 0;
-			if (nameB) {
-				const v = axis === 'x' ? pos.getX(i) : pos.getY(i);
-				const lo = axis === 'x' ? bb.min.x : bb.min.y, hi = axis === 'x' ? bb.max.x : bb.max.y;
-				const A = axis === 'x' ? wp(nameA).x : wp(nameA).y, Bv = axis === 'x' ? wp(nameB).x : wp(nameB).y;
-				t = THREE.MathUtils.clamp((v - A) / (Bv - A || 1), 0, 1);
-				t = t * t * (3 - 2 * t);
-			}
-			si[i * 4] = a;
-			si[i * 4 + 1] = b;
-			sw[i * 4] = 1 - t;
-			sw[i * 4 + 1] = t;
-		}
-		geo.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4));
-		geo.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
-		geos.push(geo);
-	};
-	const limb = (from, to, r0, r1, seg = 14) => {
-		const A = wp(from), B = wp(to);
-		const len = A.distanceTo(B);
-		const g = new THREE.CylinderGeometry(r1, r0, len, 14, seg, false);
-		const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize());
-		g.applyQuaternion(q);
-		const m = A.clone().add(B).multiplyScalar(0.5);
-		g.translate(m.x, m.y, m.z);
-		return g;
-	};
-	const ball = (name, r, x, y, z) => {
-		const g = new THREE.SphereGeometry(r, 18, 14);
-		g.translate(x, y, z);
-		addPart(g, name);
-	};
-	addPart(limb('Hips', 'Chest', 0.17, 0.2, 10), 'Hips', 'Chest');
-	addPart(limb('Chest', 'Neck', 0.2, 0.09, 6), 'Chest', 'Neck');
-	{
-		const h = wp('Head');
-		ball('Head', 0.14, h.x, h.y + 0.1, h.z);
-	}
-	for (const s of ['L', 'R']) {
-		addPart(limb('Shoulder' + s, 'Elbow' + s, 0.07, 0.06), 'Shoulder' + s, 'Elbow' + s);
-		addPart(limb('Elbow' + s, 'Wrist' + s, 0.06, 0.045), 'Elbow' + s, 'Wrist' + s);
-		const w = wp('Wrist' + s);
-		ball('Wrist' + s, 0.055, w.x, w.y, w.z);
-		addPart(limb('Hip' + s, 'Knee' + s, 0.09, 0.07), 'Hip' + s, 'Knee' + s);
-		addPart(limb('Knee' + s, 'Ankle' + s, 0.07, 0.05), 'Knee' + s, 'Ankle' + s);
-		const a = wp('Ankle' + s);
-		ball('Ankle' + s, 0.065, a.x, a.y - 0.02, a.z + 0.05);
-	}
-	// склейка частей в один меш; UV дают развёртку «по высоте и по кругу», чтобы текстура читалась на всём теле
-	let total = 0;
-	for (const g of geos) total += g.attributes.position.count;
-	const P = new Float32Array(total * 3), N = new Float32Array(total * 3), U = new Float32Array(total * 2), SI = new Uint16Array(total * 4), SW = new Float32Array(total * 4);
-	const IDX = [];
-	let off = 0;
-	for (const g of geos) {
-		const c = g.attributes.position.count;
-		P.set(g.attributes.position.array, off * 3);
-		N.set(g.attributes.normal.array, off * 3);
-		SI.set(g.attributes.skinIndex.array, off * 4);
-		SW.set(g.attributes.skinWeight.array, off * 4);
-		for (let i = 0; i < c; i++) {
-			const x = P[(off + i) * 3], y = P[(off + i) * 3 + 1], z = P[(off + i) * 3 + 2];
-			U[(off + i) * 2] = 0.5 + Math.atan2(x, z) / (2 * Math.PI) * 1.0;
-			U[(off + i) * 2 + 1] = THREE.MathUtils.clamp(y / 1.9, 0, 1);
-		}
-		const ix = g.index;
-		for (let i = 0; i < ix.count; i++) IDX.push(ix.getX(i) + off);
-		off += c;
-	}
-	const geo = new THREE.BufferGeometry();
-	geo.setAttribute('position', new THREE.BufferAttribute(P, 3));
-	geo.setAttribute('normal', new THREE.BufferAttribute(N, 3));
-	geo.setAttribute('uv', new THREE.BufferAttribute(U, 2));
-	geo.setAttribute('skinIndex', new THREE.BufferAttribute(SI, 4));
-	geo.setAttribute('skinWeight', new THREE.BufferAttribute(SW, 4));
-	geo.setIndex(IDX);
-	// цветная полосатая текстура: по ней видно, что точки берут цвет текстуры
+	const R = 0.35;
+	const bone = new THREE.Bone();
+	bone.name = 'Ball';
+	bone.position.set(0, R, 0);
+	const geo = new THREE.SphereGeometry(R, 56, 36);
+	geo.translate(0, R, 0);
+	const n = geo.attributes.position.count;
+	geo.setAttribute('skinIndex', new THREE.BufferAttribute(new Uint16Array(n * 4), 4));
+	const sw = new Float32Array(n * 4);
+	for (let i = 0; i < n; i++) sw[i * 4] = 1;
+	geo.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
+	// текстура: цветные полосы с клетками и стрелкой-меткой, по ней видно и развёртку, и вращение при качении
 	const cv = document.createElement('canvas');
-	cv.width = 512;
+	cv.width = 1024;
 	cv.height = 512;
-	const g2 = cv.getContext('2d');
-	const grd = g2.createLinearGradient(0, 512, 0, 0);
-	grd.addColorStop(0, '#2a6df4');
-	grd.addColorStop(0.35, '#2fd9a0');
-	grd.addColorStop(0.65, '#ffb347');
-	grd.addColorStop(1, '#ff4f8b');
-	g2.fillStyle = grd;
-	g2.fillRect(0, 0, 512, 512);
-	g2.fillStyle = 'rgba(255,255,255,0.35)';
-	for (let i = 0; i < 16; i++) g2.fillRect(i * 32, 0, 12, 512);
+	const g = cv.getContext('2d');
+	const grd = g.createLinearGradient(0, 0, 1024, 0);
+	[18, 346, 275, 212, 168, 18].forEach((hue, i, a) => grd.addColorStop(i / (a.length - 1), `hsl(${hue} 80% 56%)`));
+	g.fillStyle = grd;
+	g.fillRect(0, 0, 1024, 512);
+	const sh = g.createLinearGradient(0, 0, 0, 512);
+	sh.addColorStop(0, 'rgba(255,255,255,0.25)');
+	sh.addColorStop(0.5, 'rgba(255,255,255,0)');
+	sh.addColorStop(1, 'rgba(0,0,0,0.3)');
+	g.fillStyle = sh;
+	g.fillRect(0, 0, 1024, 512);
+	for (let y = 0; y < 8; y++) for (let x = 0; x < 16; x++) if ((x + y) % 2 === 0) {
+		g.fillStyle = 'rgba(255,255,255,0.14)';
+		g.fillRect(x * 64, y * 64, 64, 64);
+	}
+	g.fillStyle = 'rgba(10,12,16,0.8)';
+	g.font = '700 54px sans-serif';
+	g.textAlign = 'center';
+	g.textBaseline = 'middle';
+	g.fillText('\u25B2', 512, 256);
 	const tex = new THREE.CanvasTexture(cv);
 	tex.colorSpace = THREE.SRGBColorSpace;
 	tex.flipY = false;
-	const mesh = new THREE.SkinnedMesh(geo, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6, metalness: 0.05 }));
-	mesh.name = 'Человечек';
+	const mesh = new THREE.SkinnedMesh(geo, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.45, metalness: 0.05 }));
+	mesh.name = 'Шарик';
 	const root = new THREE.Group();
-	root.name = 'Персонаж';
-	root.add(bones.Hips);
+	root.name = 'Шарик (анимация)';
+	root.add(bone);
 	root.add(mesh);
 	root.updateMatrixWorld(true);
-	mesh.bind(new THREE.Skeleton(list), mesh.matrixWorld);
+	mesh.bind(new THREE.Skeleton([bone]), mesh.matrixWorld);
 
-	// клипы
-	const E = (x, y, z) => new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z)).toArray();
-	const rot = (name, times, eulers) => new THREE.QuaternionKeyframeTrack(name + '.quaternion', times, eulers.flatMap((e) => E(...e)));
-	const T = [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2];
-	const sw8 = (amp, ph = 0) => T.map((t) => Math.sin(((t / 1.2) * 2 + ph) * Math.PI) * amp);
-	const walk = new THREE.AnimationClip('Ходьба', 1.2, [
-		new THREE.VectorKeyframeTrack('Hips.position', T, T.flatMap((t) => [0, 1.0 + Math.abs(Math.sin((t / 1.2) * 2 * Math.PI)) * 0.04, 0])),
-		rot('HipL', T, sw8(0.6).map((a) => [a, 0, 0])),
-		rot('HipR', T, sw8(0.6, 1).map((a) => [a, 0, 0])),
-		rot('KneeL', T, sw8(0.5, 0.5).map((a) => [Math.max(0, a) + 0.1, 0, 0])),
-		rot('KneeR', T, sw8(0.5, 1.5).map((a) => [Math.max(0, a) + 0.1, 0, 0])),
-		rot('ShoulderL', T, sw8(0.5, 1).map((a) => [0, 0, a * 0.3])),
-		rot('ShoulderR', T, sw8(0.5).map((a) => [0, 0, a * 0.3])),
-		rot('ElbowL', T, sw8(0.4).map((a) => [0, a, 0])),
-		rot('ElbowR', T, sw8(0.4, 1).map((a) => [0, a, 0])),
-		rot('Spine', T, sw8(0.15).map((a) => [0, a, 0])),
-	]);
-	const T2 = [0, 0.4, 0.8, 1.2, 1.6, 2.0];
-	const wave = new THREE.AnimationClip('Приветствие', 2.0, [
-		rot('ShoulderR', T2, [[0, 0, 0], [0, 0, 1.9], [0, 0, 1.9], [0, 0, 1.9], [0, 0, 1.9], [0, 0, 0]]),
-		rot('ElbowR', T2, [[0, 0, 0], [0, 0.2, 0], [0, -0.7, 0], [0, 0.2, 0], [0, -0.7, 0], [0, 0, 0]]),
-		rot('Head', T2, [[0, 0, 0], [0, 0.2, 0.1], [0, 0.2, 0.1], [0, -0.2, -0.1], [0, 0, 0], [0, 0, 0]]),
-		rot('Spine', T2, [[0, 0, 0], [0.05, 0, 0.05], [0.05, 0, 0.05], [0.05, 0, -0.05], [0, 0, 0], [0, 0, 0]]),
+	// прыжки по горизонтали: каждый короче и ниже предыдущего (высота растёт как квадрат времени полёта), в точке удара шарик сплющивается
+	const fps = 30;
+	const ts = [], pos = [], rot = [], scl = [];
+	const T0 = 0.9, decay = 0.72, H0 = 0.95, bounces = 7, span = 3.2;
+	const bounceT = Array.from({ length: bounces }, (_, k) => T0 * Math.pow(decay, k));
+	const total = bounceT.reduce((a, b) => a + b, 0);
+	const q = new THREE.Quaternion(), ax = new THREE.Vector3(0, 0, 1);
+	for (let f = 0; f <= Math.round(total * fps); f++) {
+		const t = f / fps;
+		let acc = 0, k = 0;
+		while (k < bounces - 1 && t > acc + bounceT[k]) acc += bounceT[k++];
+		const u = THREE.MathUtils.clamp((t - acc) / bounceT[k], 0, 1);
+		const h = H0 * Math.pow(decay, 2 * k) * 4 * u * (1 - u);
+		const x = (t / total) * span - span / 2;
+		const edge = Math.min(u, 1 - u) / (bounceT[k] > 0.3 ? 0.07 : 0.1);
+		const hit = Math.exp(-edge * edge) * Math.min(1, 0.35 + 0.65 * Math.pow(decay, k));
+		const sy = 1 - 0.32 * hit + 0.08 * Math.min(1, h / H0) , sxz = 1 + 0.2 * hit;
+		ts.push(t);
+		pos.push(x, R * sy + h, 0);
+		q.setFromAxisAngle(ax, -x / R);
+		rot.push(q.x, q.y, q.z, q.w);
+		scl.push(sxz, sy, sxz);
+	}
+	const clip = new THREE.AnimationClip('Прыжки', total, [
+		new THREE.VectorKeyframeTrack('Ball.position', ts, pos),
+		new THREE.QuaternionKeyframeTrack('Ball.quaternion', ts, rot),
+		new THREE.VectorKeyframeTrack('Ball.scale', ts, scl),
 	]);
 	const scene = new THREE.Scene();
 	scene.add(root);
-	const buf = await new GLTFExporter().parseAsync(scene, { binary: true, animations: [walk, wave], trs: true });
-	return new File([buf], 'demo-character.glb', { type: 'model/gltf-binary' });
+	const buf = await new GLTFExporter().parseAsync(scene, { binary: true, animations: [clip], trs: true });
+	return new File([buf], 'demo-ball.glb', { type: 'model/gltf-binary' });
 }
