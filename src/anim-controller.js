@@ -184,6 +184,14 @@ export class AnimController {
 		this._emit();
 	}
 
+	/** Время клипа берётся со стороны (таймлайн эффектов): клип повторяется по кругу */
+	syncTime(t) {
+		if (!this.has) return;
+		const d = this.duration;
+		this.time = this.loop ? (t * this.speed) % d : Math.min(d, t * this.speed);
+		this.apply();
+	}
+
 	/** Каждый кадр: время идёт, поза обновляется */
 	tick(dt) {
 		if (!this.has || !this.playing) return false;

@@ -3536,6 +3536,9 @@ export class EffectsEngine {
 		const clips = this.state.anim.clips || [];
 		const L = this.state.layers;
 		const clipLayerIds = new Set(clips.map((c) => c.layerId));
+		// эффект, чьи блоки удалили, выключается: иначе он оставался включённым с последней силой и работал без блока
+		for (const id of this._gatedIds || []) if (!clipLayerIds.has(id) && L[id]) L[id].on = false;
+		this._gatedIds = clipLayerIds;
 			for (const layerId of clipLayerIds) {
 				if (!L[layerId]) continue;
 				let maxVal = 0;
@@ -6056,7 +6059,22 @@ export class EffectsEngine {
 			u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
 
 			// курсор стоит на таймлайне: эффекты с блоками включены только там, где под курсором есть их блок
-			if (!this.animPlaying && !this.animRec && this.state.anim.clips?.length) this._animGate(this.animT);
+			if (!this.animPlaying && !this.animRec && (this.state.anim.clips?.length || this._gatedIds?.size)) this._animGate(this.animT);
+			// персонаж идёт по времени таймлайна, пока таймлайн играет: дорожка «Персонаж» совпадает с тем, что видно в сцене
+			{
+				const A = this.app.anim;
+				if (this.animPlaying && A.has) {
+					if (!this._charSync) {
+						this._charSync = true;
+						this._charWas = A.playing;
+						A.playing = false;
+					}
+					A.syncTime(this.animT);
+				} else if (this._charSync) {
+					this._charSync = false;
+					A.playing = this._charWas;
+				}
+			}
 			// персонаж с анимацией: точки идут за позой скелета
 			if (this._animCloud && st.source === 'model' && this.geometry && !this.morphing && this.app.anim.has && this._animVer !== this.app.anim.version && performance.now() - (this._animT || 0) >= (perf.tier === 'high' ? 0 : 33)) {
 				this._animVer = this.app.anim.version;

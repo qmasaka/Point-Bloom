@@ -160,6 +160,12 @@ this._helpers();
 this.app.viewport.invalidate();
 this._emit();
 }
+syncTime(t) {
+if (!this.has) return;
+const d = this.duration;
+this.time = this.loop ? (t * this.speed) % d : Math.min(d, t * this.speed);
+this.apply();
+}
 tick(dt) {
 if (!this.has || !this.playing) return false;
 this.time += dt * this.speed;

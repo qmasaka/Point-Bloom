@@ -3300,6 +3300,8 @@ _animGate(t) {
 const clips = this.state.anim.clips || [];
 const L = this.state.layers;
 const clipLayerIds = new Set(clips.map((c) => c.layerId));
+for (const id of this._gatedIds || []) if (!clipLayerIds.has(id) && L[id]) L[id].on = false;
+this._gatedIds = clipLayerIds;
 for (const layerId of clipLayerIds) {
 if (!L[layerId]) continue;
 let maxVal = 0;
@@ -5600,7 +5602,21 @@ u.uAtlas.value = glyphAtlas(gm);
 }
 u.uGlyph.value.set(gm === 'off' ? 0 : 1, gm === 'off' ? 1 : 2.3, u.uAtlas.value.userData?.n || 8);
 u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
-if (!this.animPlaying && !this.animRec && this.state.anim.clips?.length) this._animGate(this.animT);
+if (!this.animPlaying && !this.animRec && (this.state.anim.clips?.length || this._gatedIds?.size)) this._animGate(this.animT);
+{
+const A = this.app.anim;
+if (this.animPlaying && A.has) {
+if (!this._charSync) {
+this._charSync = true;
+this._charWas = A.playing;
+A.playing = false;
+}
+A.syncTime(this.animT);
+} else if (this._charSync) {
+this._charSync = false;
+A.playing = this._charWas;
+}
+}
 if (this._animCloud && st.source === 'model' && this.geometry && !this.morphing && this.app.anim.has && this._animVer !== this.app.anim.version && performance.now() - (this._animT || 0) >= (perf.tier === 'high' ? 0 : 33)) {
 this._animVer = this.app.anim.version;
 this._animT = performance.now();

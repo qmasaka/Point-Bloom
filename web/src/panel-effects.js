@@ -1303,10 +1303,10 @@ const camLine = h('div', { class: 'fx-anim-cam-line' });
 const camTrackBody = h('div', { class: 'fx-anim-lane-body fx-anim-cam-body' }, camLine, camKeysWrap);
 const camLane = h('div', { class: 'fx-anim-lane fx-anim-cam-lane' }, camTitle, camTrackBody);
 const charArrow = h('span', { class: 'ic-wrap fx-anim-char-arrow', html: icon('caret-right', 12) });
-const charTitle = h('div', { class: 'fx-anim-track-label fx-anim-char-label', role: 'button', tabindex: '0', 'data-tip': 'Нажмите, чтобы показать отдельные кости' }, charArrow, h('span', { class: 'fx-anim-lane-name' }, 'Персонаж'));
+const charSub = h('span', { class: 'fx-anim-char-sub' });
+const charTitle = h('div', { class: 'fx-anim-track-label fx-anim-char-label', role: 'button', tabindex: '0', 'data-tip': 'Яркость показывает, как сильно движется персонаж. Нажмите, чтобы увидеть отдельные кости', 'data-tip-pos': 'right' }, charArrow, h('span', { class: 'fx-anim-char-names' }, h('span', { class: 'fx-anim-lane-name' }, 'Персонаж'), charSub));
 const charCanvas = h('canvas', { class: 'fx-anim-char-canvas' });
-const charMark = h('div', { class: 'fx-anim-char-mark' });
-const charBody = h('div', { class: 'fx-anim-lane-body fx-anim-char-body', 'data-tip': 'Яркость показывает, как сильно двигается кость. Тяните по полосе, чтобы перемотать клип', 'data-tip-pos': 'top' }, charCanvas, charMark);
+const charBody = h('div', { class: 'fx-anim-lane-body fx-anim-char-body', 'data-tip': 'Яркая полоса: кости движутся. Тёмная: персонаж почти стоит. Тонкие линии: начало нового повтора клипа', 'data-tip-pos': 'top' }, charCanvas);
 const charLane = h('div', { class: 'fx-anim-lane fx-anim-char-lane' }, charTitle, charBody);
 charLane.hidden = true;
 let charOpen = false;
@@ -1316,6 +1316,7 @@ charLane.hidden = !A.has;
 if (!A.has) return;
 const clip = A.clips[A.clipIndex];
 if (!clip) return;
+charSub.textContent = (clip.name || 'Клип') + ' · ' + clip.duration.toFixed(1) + ' с';
 let act;
 try {
 act = clipActivity(clip);
@@ -1324,7 +1325,7 @@ act = null;
 }
 if (!act || !act.bones.length) act = { n: 2, total: new Float32Array([0.35, 0.35]), bones: [] };
 const rows = charOpen ? act.bones.slice(0, 12).map((b) => [b.name, b.vals]) : [['', act.total]];
-const rh = charOpen ? 14 : 24;
+const rh = charOpen ? 15 : 22;
 const dpr = Math.min(2, window.devicePixelRatio || 1);
 const W = Math.max(200, Math.round((charBody.clientWidth || 600) * dpr));
 charCanvas.width = W;
@@ -1332,61 +1333,71 @@ charCanvas.height = Math.round(rows.length * rh * dpr);
 charCanvas.style.height = rows.length * rh + 'px';
 const g = charCanvas.getContext('2d');
 const acc = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45';
+const durTotal = st.anim.dur || 8;
+const period = Math.max(0.05, clip.duration / Math.max(0.1, A.speed || 1));
 g.clearRect(0, 0, charCanvas.width, charCanvas.height);
 rows.forEach(([name, vals], r) => {
-const y0 = Math.round(r * rh * dpr), hh = Math.round((rh - 2) * dpr);
-g.globalAlpha = 0.1;
+const y0 = Math.round(r * rh * dpr), hh = Math.round((rh - 3) * dpr);
+g.save();
+g.beginPath();
+g.roundRect(0, y0, W, hh, Math.min(6 * dpr, hh / 2));
+g.clip();
+g.globalAlpha = 0.07;
 g.fillStyle = '#fff';
 g.fillRect(0, y0, W, hh);
 g.fillStyle = acc;
-const cw = W / act.n;
-for (let i = 0; i < act.n; i++) {
-const v = Math.pow(vals[i], 0.7);
-if (v < 0.03) continue;
-g.globalAlpha = 0.12 + 0.88 * v;
-g.fillRect(i * cw, y0, cw + 1, hh);
+for (let x = 0; x < W; x += 2) {
+const t = (x / W) * durTotal;
+const ph = (t % period) / period;
+const v = Math.pow(vals[Math.min(act.n - 1, Math.floor(ph * (act.n - 1)))], 0.75);
+if (v < 0.04) continue;
+g.globalAlpha = 0.18 + 0.82 * v;
+const bh = hh * (0.35 + 0.65 * v);
+g.fillRect(x, y0 + (hh - bh) / 2, 2.2, bh);
 }
+g.globalAlpha = 0.28;
+g.fillStyle = '#fff';
+for (let k = 1; k * period < durTotal; k++) g.fillRect(Math.round((k * period / durTotal) * W), y0, Math.max(1, dpr * 0.8), hh);
+g.restore();
 if (name) {
 g.globalAlpha = 0.95;
 g.fillStyle = '#fff';
 g.font = `${Math.round(9.5 * dpr)}px sans-serif`;
 g.textBaseline = 'middle';
-g.shadowColor = 'rgba(0,0,0,0.8)';
+g.shadowColor = 'rgba(0,0,0,0.85)';
 g.shadowBlur = 3;
-g.fillText(name, 6 * dpr, y0 + hh / 2);
+g.fillText(name, 7 * dpr, y0 + hh / 2);
 g.shadowBlur = 0;
 }
 });
 g.globalAlpha = 1;
-moveCharMark();
-}
-function moveCharMark() {
-const A = app.anim;
-if (!A.has) return;
-charMark.style.left = ((A.time / A.duration) * 100).toFixed(2) + '%';
 }
 charTitle.addEventListener('click', () => {
 charOpen = !charOpen;
 charArrow.innerHTML = icon(charOpen ? 'caret-down' : 'caret-right', 12);
+charLane.classList.toggle('is-open', charOpen);
 drawChar();
 clampAnimH();
 });
 let charDrag = false;
 const charSeek = (e) => {
 const r = charBody.getBoundingClientRect();
-app.anim.seek(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * app.anim.duration);
+const dur = st.anim.dur || 8;
+engine.animT = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * dur;
+engine.animApply(engine.animT);
+app.bus.emit('fxanim');
 };
 charBody.addEventListener('pointerdown', (e) => {
 charDrag = true;
 charBody.setPointerCapture(e.pointerId);
-app.anim.pause();
+engine.animPause();
 charSeek(e);
 });
 charBody.addEventListener('pointermove', (e) => charDrag && charSeek(e));
 charBody.addEventListener('pointerup', () => (charDrag = false));
 app.anim.onChange(drawChar);
-app.bus.on('animpose', moveCharMark);
 new ResizeObserver(() => drawChar()).observe(charBody);
+let lastCharDur = 0;
 const fxLanesWrap = h('div', { class: 'fx-anim-fx-lanes' });
 const emptyHint = h('div', { class: 'fx-anim-empty-hint' },
 h('span', { class: 'fx-anim-empty-text' }, 'На таймлайне пока нет эффектов. Выберите сценарий или добавьте эффект:'),
@@ -1969,6 +1980,10 @@ fitDur();
 if (selKey && (!A.keys || !A.keys.includes(selKey))) selKey = null;
 if (selClip && (!A.clips || !A.clips.includes(selClip))) selClip = null;
 renderInspector();
+if (lastCharDur !== durTotal) {
+lastCharDur = durTotal;
+drawChar();
+}
 if (isDraggingItem) return;
 const keysStr = (A.keys || []).map((k) => `${k.t}`).join(',');
 const clipsStr = (A.clips || []).map((c) => `${c.id}:${c.layerId}:${c.start}:${c.dur}:${c.fadeIn}:${c.fadeOut}:${c.amount}`).join(',');
