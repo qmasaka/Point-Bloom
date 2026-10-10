@@ -5919,7 +5919,12 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 	.ui-float.fx-mode .viewport { --lft-res: calc(var(--fxl-w, 252px) + 24px); }
 	.ui-float .workspace.sidebar-hidden .viewport { --sb-res: 0px; }
 	.ui-float.fx-focus .viewport { --lft-res: 0px; --sb-res: 0px; }
-	.ui-float .vp-dock, .ui-float .fx-bar, .ui-float .media-bar, .ui-float .anim-bar { left: calc(var(--lft-res) + (100% - var(--lft-res) - var(--sb-res)) / 2); }
+	/* панели по центру окна; ширина симметрична, чтобы не заходить ни на левую, ни на правую панель */
+	.ui-float .vp-dock, .ui-float .fx-bar, .ui-float .media-bar, .ui-float .anim-bar, .ui-float .fx-hint { left: 50%; }
+	.ui-float .media-bar { width: min(520px, calc(100% - 2 * max(var(--lft-res), var(--sb-res)))); min-width: min(360px, calc(100% - 24px)); }
+	.ui-float .anim-bar { width: min(640px, calc(100% - 2 * max(var(--lft-res), var(--sb-res)))); min-width: min(360px, calc(100% - 24px)); }
+	.ui-float .fx-bar { max-width: calc(100% - 2 * max(var(--lft-res), var(--sb-res))); }
+}
 	.ui-float .media-bar { width: min(520px, calc(100% - var(--lft-res) - var(--sb-res) - 24px)); }
 	.ui-float .anim-bar { width: min(640px, calc(100% - var(--lft-res) - var(--sb-res) - 24px)); }
 	.ui-float .fx-bar { max-width: calc(100% - var(--lft-res) - var(--sb-res) - 24px); }
