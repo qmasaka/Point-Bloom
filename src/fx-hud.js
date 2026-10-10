@@ -94,9 +94,11 @@ export class TrackerHud {
 	/** Симуляция «захваченных» точек: рамки динамически следуют за зонами активности */
 	update(want, geometry, morph, levels, dt, targets) {
 		this.t += dt;
+		// скорость перемещения рамок по форме: как часто выбирают новое место и как быстро к нему идут
+		const sp = Math.max(0.1, this.speed || 1);
 		while (this.items.length < want) {
 			const p = this._pickHotspot(geometry, morph, levels);
-			this.items.push({ idx: this.lastIdx, id: Math.floor(rnd(1, 99)), pos: p.clone(), target: p, next: this.t + rnd(0.8, 2.8), speed: 0, conf: rnd(0.85, 0.99), touch: 0 });
+			this.items.push({ idx: this.lastIdx, id: Math.floor(rnd(1, 99)), pos: p.clone(), target: p, next: this.t + rnd(0.8, 2.8) / sp, speed: 0, conf: rnd(0.85, 0.99), touch: 0 });
 		}
 		this.items.length = want;
 		const oArr = geometry.attributes.aOrigin.array;
@@ -112,7 +114,7 @@ export class TrackerHud {
 				if (it.touch > 0.3) this.imprints.push({ pos: it.target.clone(), t0: this.time, s: it.touch });
 				it.target = this._pickHotspot(geometry, morph, levels);
 				it.idx = this.lastIdx;
-				it.next = this.t + rnd(1.0, 3.2);
+				it.next = this.t + rnd(1.0, 3.2) / sp;
 				it.id = Math.floor(rnd(1, 99));
 				it.conf = rnd(0.82, 0.99);
 			}
@@ -128,7 +130,7 @@ export class TrackerHud {
 				}
 			}
 			const before = it.pos.clone();
-			it.pos.lerp(it.target, 1 - Math.exp(-dt * (this.follow ? 20 : 6.5)));
+			it.pos.lerp(it.target, 1 - Math.exp(-dt * Math.max(this.follow ? 20 : 0, 6.5 * sp)));
 			it.speed += (it.pos.distanceTo(before) / Math.max(dt, 1e-3) - it.speed) * 0.2;
 			it.touch += (1 - Math.min(1, it.pos.distanceTo(it.target) * 2.5) - it.touch) * 0.15;
 		});

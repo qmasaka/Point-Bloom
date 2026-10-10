@@ -544,11 +544,20 @@ body.append(h('div', { class: 'field-hint' }, 'При первом включе�
 if (def.id !== 'frames') body.append(field('Сила', amount.el));
 const extraCtl = {};
 const whenList = [];
+let cur = body;
+const groups = [];
 const put = (el, ex) => {
-body.append(el);
+cur.append(el);
 if (ex.when) whenList.push([el, ex.when]);
 };
-const applyWhen = () => whenList.forEach(([el, w]) => (el.hidden = !w[1].includes(L[w[0]])));
+const applyWhen = () => {
+whenList.forEach(([el, w]) => (el.hidden = !w[1].includes(L[w[0]])));
+groups.forEach((g) => {
+const any = [...g.box.children].some((c) => !c.hidden);
+g.head.hidden = !any;
+g.box.hidden = !any || !g.open;
+});
+};
 if (def.extras.some((x) => x.key) && def.extras[0].type !== 'title') body.append(h('div', { class: 'fx-sub' }, 'Параметры'));
 for (const ex of def.extras) {
 const after = () => {
@@ -565,7 +574,16 @@ put(field(ex.label, sl.el, { wide: true }), ex);
 } else if (ex.type === 'note') {
 put(h('div', { class: 'field-hint' }, ex.text), ex);
 } else if (ex.type === 'title') {
-put(h('div', { class: 'fx-sub' }, ex.label), ex);
+const g = { open: groups.length === 0, box: h('div', { class: 'fx-grp-body' }) };
+g.head = h('button', { type: 'button', class: 'fx-sub fx-sub-toggle', 'aria-expanded': String(g.open) }, h('span', { class: 'ic-wrap', html: icon('caret-down', 12) }), ex.label);
+g.head.addEventListener('click', () => {
+g.open = !g.open;
+g.head.setAttribute('aria-expanded', String(g.open));
+applyWhen();
+});
+groups.push(g);
+body.append(g.head, g.box);
+cur = g.box;
 } else if (ex.type === 'color') {
 const ctl = colorChoice(L, ex.key, after, !!ex.natural);
 extraCtl[ex.key] = ctl;
