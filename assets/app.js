@@ -85521,7 +85521,16 @@ class Model {
 
 	// ------------------------------------------------------------ выделение
 	/** Выделение; add: Shift-клик добавляет объект к выделению или снимает его */
+	/** Меш со скелетом сам по себе не двигается: скелет гасит его трансформацию. Поэтому клик по такому мешу или кости выбирает всю модель */
+	rigTarget(obj) {
+		if (!obj || !(obj.isSkinnedMesh || obj.isBone)) return obj;
+		let top = obj;
+		while (top.parent && top.parent !== this.root) top = top.parent;
+		return top.parent === this.root ? top : obj;
+	}
+
 	select(obj, { add = false } = {}) {
+		obj = this.rigTarget(obj);
 		if (obj === this.root) obj = null;
 		if (add && obj) {
 			const i = this.selection.indexOf(obj);
@@ -90767,7 +90776,7 @@ __def(__exports, 'createAnimBar', () => createAnimBar);
 // Анимацию сайт не создаёт: она приходит готовой вместе с моделью.
 const { h } = __req('src/util.js');
 const { icon } = __req('src/icons.js');
-const { segmented, select, iconButton } = __req('src/ui-kit.js');
+const { select, iconButton } = __req('src/ui-kit.js');
 
 const fmt = (t) => {
 	t = Math.max(0, t || 0);
@@ -90780,10 +90789,15 @@ function createAnimSettings(app) {
 	const A = app.anim;
 	const clipSel = select({ options: [{ value: '0', label: '-' }], value: '0', onChange: (v) => A.setClip(parseInt(v, 10)) });
 	const clipWrap = h('div', { class: 'as-clip' }, clipSel.el);
-	const speed = segmented({ cls: 'seg-tight', options: [{ value: '0.5', label: '0.5×' }, { value: '1', label: '1×' }, { value: '2', label: '2×' }], value: '1', onChange: (v) => A.setSpeed(parseFloat(v)) });
+	// скорость: один блок, каждый клик берёт следующее значение по кругу
+	const SPEEDS = [0.25, 0.5, 1, 1.5, 2, 3];
+	const speed = h('button', { type: 'button', class: 'as-speed', 'data-tip': 'Скорость анимации: нажмите, чтобы переключить' });
+	speed.addEventListener('click', () => {
+		const i = SPEEDS.findIndex((x) => Math.abs(x - A.speed) < 1e-6);
+		A.setSpeed(SPEEDS[(i + 1) % SPEEDS.length]);
+	});
 	const loop = iconButton({ icon: 'repeat', title: 'Повторять анимацию', onClick: () => A.setLoop(!A.loop) });
-	const skel = iconButton({ icon: 'tree-structure', title: 'Показать скелет: кости видны поверх модели', onClick: () => A.setSkeleton(!A.skeletonOn) });
-	const el = h('div', { class: 'anim-settings' }, clipWrap, speed.el, loop, skel);
+	const el = h('div', { class: 'anim-settings' }, clipWrap, speed, loop);
 	let lastKey = '';
 	function sync() {
 		if (!A.has) return;
@@ -90794,9 +90808,8 @@ function createAnimSettings(app) {
 		}
 		clipWrap.hidden = A.clips.length < 2;
 		clipSel.set(String(A.clipIndex));
-		speed.set(String(A.speed));
+		speed.textContent = A.speed + '×';
 		loop.setAttribute('aria-pressed', String(A.loop));
-		skel.setAttribute('aria-pressed', String(A.skeletonOn));
 	}
 	A.onChange(sync);
 	sync();
@@ -125474,7 +125487,15 @@ function createViewPanel(app, root) {
 	const fps = switchRow('Показывать FPS', { value: s.render.fps, onChange: (v) => { s.render.fps = v; app.ui.refreshFps(); save(); } });
 	const autoQ = switchRow('Авто-качество', { value: s.render.autoQuality, onChange: (v) => { s.render.autoQuality = v; save(); } });
 	const capSeg = segmented({ cls: 'seg-tight', options: [{ value: 0, label: 'Без лимита' }, { value: 30, label: '30 к/с', title: 'Вдвое меньше нагрузка на видеокарту и нагрев' }], value: s.render.fpsCap, onChange: (v) => { s.render.fpsCap = Number(v); save(); } });
-	const secDisplay = section('Отображение', { key: 'v-display' }, flat.el, fps.el, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }));
+	// скелет есть смысл показывать, только когда в сцене модель с анимацией
+	const skel = switchRow('Показать скелет', { value: app.anim.skeletonOn, onChange: (v) => app.anim.setSkeleton(v) }, 'Кости видны поверх модели; сайт их не анимирует, а проигрывает готовую анимацию из файла');
+	const syncSkel = () => {
+		skel.el.hidden = !app.anim.has;
+		skel.set(app.anim.skeletonOn);
+	};
+	app.anim.onChange(syncSkel);
+	syncSkel();
+	const secDisplay = section('Отображение', { key: 'v-display' }, flat.el, fps.el, autoQ.el, skel.el, field('Лимит кадров', capSeg.el, { wide: true }));
 
 	// ------------------------------------------------------------------ точки
 	const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Фон сцены' });

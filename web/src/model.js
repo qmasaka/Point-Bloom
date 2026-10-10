@@ -92,7 +92,14 @@ this.app.history.clear();
 this.changed();
 this.app.bus.emit('newdoc');
 }
+rigTarget(obj) {
+if (!obj || !(obj.isSkinnedMesh || obj.isBone)) return obj;
+let top = obj;
+while (top.parent && top.parent !== this.root) top = top.parent;
+return top.parent === this.root ? top : obj;
+}
 select(obj, { add = false } = {}) {
+obj = this.rigTarget(obj);
 if (obj === this.root) obj = null;
 if (add && obj) {
 const i = this.selection.indexOf(obj);

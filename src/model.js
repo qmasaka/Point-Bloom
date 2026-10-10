@@ -108,7 +108,16 @@ export class Model {
 
 	// ------------------------------------------------------------ выделение
 	/** Выделение; add: Shift-клик добавляет объект к выделению или снимает его */
+	/** Меш со скелетом сам по себе не двигается: скелет гасит его трансформацию. Поэтому клик по такому мешу или кости выбирает всю модель */
+	rigTarget(obj) {
+		if (!obj || !(obj.isSkinnedMesh || obj.isBone)) return obj;
+		let top = obj;
+		while (top.parent && top.parent !== this.root) top = top.parent;
+		return top.parent === this.root ? top : obj;
+	}
+
 	select(obj, { add = false } = {}) {
+		obj = this.rigTarget(obj);
 		if (obj === this.root) obj = null;
 		if (add && obj) {
 			const i = this.selection.indexOf(obj);

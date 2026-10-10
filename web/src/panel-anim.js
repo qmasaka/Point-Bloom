@@ -1,6 +1,6 @@
 import { h } from './util.js';
 import { icon } from './icons.js';
-import { segmented, select, iconButton } from './ui-kit.js';
+import { select, iconButton } from './ui-kit.js';
 const fmt = (t) => {
 t = Math.max(0, t || 0);
 const m = Math.floor(t / 60);
@@ -10,10 +10,14 @@ export function createAnimSettings(app) {
 const A = app.anim;
 const clipSel = select({ options: [{ value: '0', label: '-' }], value: '0', onChange: (v) => A.setClip(parseInt(v, 10)) });
 const clipWrap = h('div', { class: 'as-clip' }, clipSel.el);
-const speed = segmented({ cls: 'seg-tight', options: [{ value: '0.5', label: '0.5×' }, { value: '1', label: '1×' }, { value: '2', label: '2×' }], value: '1', onChange: (v) => A.setSpeed(parseFloat(v)) });
+const SPEEDS = [0.25, 0.5, 1, 1.5, 2, 3];
+const speed = h('button', { type: 'button', class: 'as-speed', 'data-tip': 'Скорость анимации: нажмите, чтобы переключить' });
+speed.addEventListener('click', () => {
+const i = SPEEDS.findIndex((x) => Math.abs(x - A.speed) < 1e-6);
+A.setSpeed(SPEEDS[(i + 1) % SPEEDS.length]);
+});
 const loop = iconButton({ icon: 'repeat', title: 'Повторять анимацию', onClick: () => A.setLoop(!A.loop) });
-const skel = iconButton({ icon: 'tree-structure', title: 'Показать скелет: кости видны поверх модели', onClick: () => A.setSkeleton(!A.skeletonOn) });
-const el = h('div', { class: 'anim-settings' }, clipWrap, speed.el, loop, skel);
+const el = h('div', { class: 'anim-settings' }, clipWrap, speed, loop);
 let lastKey = '';
 function sync() {
 if (!A.has) return;
@@ -24,9 +28,8 @@ clipSel.setOptions(A.clips.map((c, i) => ({ value: String(i), label: c.name || '
 }
 clipWrap.hidden = A.clips.length < 2;
 clipSel.set(String(A.clipIndex));
-speed.set(String(A.speed));
+speed.textContent = A.speed + '×';
 loop.setAttribute('aria-pressed', String(A.loop));
-skel.setAttribute('aria-pressed', String(A.skeletonOn));
 }
 A.onChange(sync);
 sync();

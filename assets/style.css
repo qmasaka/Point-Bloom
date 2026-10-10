@@ -5847,3 +5847,45 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 /* перетаскивание эффекта на таймлайн */
 .fx-anim.is-drop { outline: 2px dashed var(--accent); outline-offset: -4px; }
 .is-fx-dragging .fx-anim:not([hidden]) { box-shadow: 0 0 0 2px var(--accent-soft, rgba(229, 138, 69, 0.4)); }
+.anim-settings .as-speed { min-width: 44px; height: 28px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--text); font: inherit; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.anim-settings .as-speed:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--accent); }
+.anim-settings .as-speed:active { transform: scale(0.96); }
+
+/* ручки изменения размера: тонкий скруглённый грип по центру края, а не оранжевая линия во всю высоту */
+.sidebar-resizer::after {
+	top: 50%;
+	bottom: auto;
+	left: 50%;
+	width: 4px;
+	height: 38px;
+	margin: -19px 0 0 -2px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.22);
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+	opacity: 0.55;
+	transition: height 0.18s var(--ease, ease), margin 0.18s var(--ease, ease), background 0.18s, opacity 0.18s, box-shadow 0.18s;
+}
+.sidebar-resizer:hover::after,
+.workspace.is-resizing .sidebar-resizer::after {
+	height: 64px;
+	margin-top: -32px;
+	opacity: 1;
+	background: color-mix(in srgb, var(--accent) 70%, white 30%);
+	box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.fx-anim-resize-handle::after {
+	width: 44px;
+	height: 4px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.22);
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+	opacity: 0.55;
+	transition: width 0.18s var(--ease, ease), background 0.18s, opacity 0.18s, box-shadow 0.18s;
+}
+.fx-anim-resize-handle:hover::after,
+body.is-resizing-h .fx-anim-resize-handle::after {
+	width: 72px;
+	opacity: 1;
+	background: color-mix(in srgb, var(--accent) 70%, white 30%);
+	box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
+}
