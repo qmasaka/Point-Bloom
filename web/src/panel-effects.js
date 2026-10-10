@@ -133,8 +133,8 @@ b.addEventListener('click', () => pick(val));
 chips.push([val, b]);
 row.append(b);
 };
-mkChip('auto', 'Цвета палитры');
 if (natural) mkChip('model', 'Естественные цвета модели', { background: 'conic-gradient(#ff3d6e, #ffd90f, #7cff6b, #00f0ff, #b06bff, #ff3d6e)' });
+mkChip('auto', 'Цвета палитры');
 for (const c of TRACK_COLORS) mkChip(c, c, { background: c });
 const custom = colorField({ value: L[key] === 'auto' ? '#ffffff' : L[key], onInput: (v) => pick(v, true), onChange: done });
 wrap.append(row, custom.el);
@@ -574,7 +574,7 @@ const sg = segmented({ cls: ex.options.length > 3 ? 'seg-tight' : undefined, opt
 extraCtl[ex.key] = sg;
 put(field(ex.label, sg.el, { wide: true }), ex);
 } else {
-const sl = slider({ min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : 2, unit: ex.unit, log: ex.log, format: ex.log ? (v) => formatInt(v) : undefined, onInput: (v) => { L[ex.key] = v; if (ex.relayout) engine.relayoutFrames(); }, onChange: after });
+const sl = slider({ noNorm: !!(ex.int && /сколько|число|копий|кадров|точек|узлов|слоёв|перьев|колонок|линий|рамок/i.test(ex.label)), min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : 2, unit: ex.unit, log: ex.log, format: ex.log ? (v) => formatInt(v) : undefined, onInput: (v) => { L[ex.key] = v; if (ex.relayout) engine.relayoutFrames(); }, onChange: after });
 extraCtl[ex.key] = sl;
 put(field(ex.label, sl.el), ex);
 }
@@ -799,6 +799,12 @@ b.addEventListener('click', () => {
 st.look.palette = p.id;
 if (st.look.colorBy === 'model') st.look.colorBy = 'disp';
 engine._userColor = true;
+for (const c of cards) {
+if (c.def.extras.some((x) => x.type === 'color' && x.natural) && c.L.color === 'model') {
+c.L.color = 'auto';
+c.extraCtl.color?.set('auto');
+}
+}
 sync();
 save();
 });

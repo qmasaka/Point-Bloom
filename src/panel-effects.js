@@ -146,8 +146,9 @@ function colorChoice(L, key, done, natural = false) {
 		chips.push([val, b]);
 		row.append(b);
 	};
-	mkChip('auto', 'Цвета палитры');
+	// сначала естественные цвета модели, они выбраны по умолчанию; как только меняется палитра, цвет переходит на цвета палитры
 	if (natural) mkChip('model', 'Естественные цвета модели', { background: 'conic-gradient(#ff3d6e, #ffd90f, #7cff6b, #00f0ff, #b06bff, #ff3d6e)' });
+	mkChip('auto', 'Цвета палитры');
 	for (const c of TRACK_COLORS) mkChip(c, c, { background: c });
 	const custom = colorField({ value: L[key] === 'auto' ? '#ffffff' : L[key], onInput: (v) => pick(v, true), onChange: done });
 	wrap.append(row, custom.el);
@@ -606,7 +607,7 @@ export function createEffectsPanel(app, root, engine) {
 					extraCtl[ex.key] = sg;
 					put(field(ex.label, sg.el, { wide: true }), ex);
 				} else {
-					const sl = slider({ min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : 2, unit: ex.unit, log: ex.log, format: ex.log ? (v) => formatInt(v) : undefined, onInput: (v) => { L[ex.key] = v; if (ex.relayout) engine.relayoutFrames(); }, onChange: after });
+					const sl = slider({ noNorm: !!(ex.int && /сколько|число|копий|кадров|точек|узлов|слоёв|перьев|колонок|линий|рамок/i.test(ex.label)), min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : 2, unit: ex.unit, log: ex.log, format: ex.log ? (v) => formatInt(v) : undefined, onInput: (v) => { L[ex.key] = v; if (ex.relayout) engine.relayoutFrames(); }, onChange: after });
 					extraCtl[ex.key] = sl;
 					put(field(ex.label, sl.el), ex);
 				}
@@ -838,6 +839,13 @@ export function createEffectsPanel(app, root, engine) {
 			st.look.palette = p.id;
 			if (st.look.colorBy === 'model') st.look.colorBy = 'disp';
 			engine._userColor = true;
+			// линии и срезы, окрашенные естественным цветом модели, берут цвет новой палитры
+			for (const c of cards) {
+				if (c.def.extras.some((x) => x.type === 'color' && x.natural) && c.L.color === 'model') {
+					c.L.color = 'auto';
+					c.extraCtl.color?.set('auto');
+				}
+			}
 			sync();
 			save();
 		});
