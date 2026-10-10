@@ -164,6 +164,19 @@ const k = Math.max(0, Math.min(1, p * 1.5 - (y + 8) / 14));
 dot(c, x + k * 5 + Math.sin(t * 3 + i) * k * 2, y - k * 4, 1.7 * (1 - k * 0.6), 1 - k);
 }
 },
+explode: (c, t) => {
+const k = 0.5 - 0.5 * Math.cos(t * 2.2);
+const parts = [[-1, -1, 0.5], [1, -1, -0.4], [-1, 1, -0.6], [1, 1, 0.3]];
+for (const [sx, sy, rot] of parts) {
+const cx = sx * (3.2 + k * 5.2);
+const cy = sy * (3.2 + k * 4.4);
+const a = rot * k * 1.2;
+for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+const x = (i - 1) * 2.1, y = (j - 1) * 2.1;
+dot(c, cx + x * Math.cos(a) - y * Math.sin(a), cy + x * Math.sin(a) + y * Math.cos(a), 1.5, 0.55 + 0.45 * k);
+}
+}
+},
 links: (c, t) => {
 const home = [[-10, -2], [-4, -7], [4, -6], [10, 0], [3, 7], [-5, 6]];
 const pts = home.map(([x, y], i) => [x + Math.sin(t * 1.9 + i * 1.7) * 2.6, y + Math.cos(t * 1.6 + i * 2.3) * 2.6]);
