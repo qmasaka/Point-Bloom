@@ -22,6 +22,7 @@ __def(__exports, 'deg', () => deg);
 __def(__exports, 'rad', () => rad);
 __def(__exports, 'formatBytes', () => formatBytes);
 __def(__exports, 'formatInt', () => formatInt);
+__def(__exports, 'placeAbove', () => placeAbove);
 __def(__exports, 'fmt', () => fmt);
 __def(__exports, 'extOf', () => extOf);
 __def(__exports, 'stripExt', () => stripExt);
@@ -74,6 +75,23 @@ function formatBytes(n) {
 
 function formatInt(n) {
 	return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+/** Ставит всплывающее меню над кнопкой. Меню лежит прямо в сцене, а не внутри панели с размытием: вложенное размытие не видит сцену за собой. align: 'center' | 'right' */
+function placeAbove(pop, btn, host, align = 'center', gap = 14) {
+	const hr = host.getBoundingClientRect();
+	const br = btn.getBoundingClientRect();
+	pop.style.top = 'auto';
+	pop.style.bottom = Math.round(hr.bottom - br.top + gap) + 'px';
+	if (align === 'right') {
+		pop.style.left = 'auto';
+		pop.style.transform = 'none';
+		pop.style.right = Math.round(hr.right - br.right - 6) + 'px';
+	} else {
+		pop.style.right = 'auto';
+		pop.style.transform = 'translateX(-50%)';
+		pop.style.left = Math.round(br.left + br.width / 2 - hr.left) + 'px';
+	}
 }
 
 /** Число без хвоста нулей, до `digits` знаков */
@@ -142557,7 +142575,7 @@ __defs['src/panel-effects.js'] = function (__exports, __req) {
 __def(__exports, 'makeModelProvider', () => makeModelProvider);
 __def(__exports, 'createEffectsPanel', () => createEffectsPanel);
 // Режим «Эффекты»: боковая панель (источник, эффекты, звук, вид) и нижняя панель управления в сцене.
-const { h, formatInt } = __req('src/util.js');
+const { h, formatInt, placeAbove } = __req('src/util.js');
 const { icon } = __req('src/icons.js');
 const { section, field, fxSlider: slider, segmented, switchRow, toggle, button, iconButton, select, colorField } = __req('src/ui-kit.js');
 const THREE = __req('vendor/three/build/three.module.js');
@@ -144850,7 +144868,7 @@ function createEffectsPanel(app, root, engine) {
 	const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#ffffff', 'Белый']];
 	const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));
 	const bgPop = h('div', { class: 'fx-bg-pop popover', hidden: true });
-	const bgWrap = h('div', { class: 'vp-overlay-wrap fx-bg-wrap' }, bgBtn, bgPop);
+	const bgWrap = bgBtn;
 	const bgSw = h('div', { class: 'fx-bg-sw' });
 	const bgSwBtns = BGS.map(([c, name]) => {
 		const b = h('button', { type: 'button', class: 'fx-bg-chip', 'aria-label': name, 'data-tip': name, style: c ? { background: c } : {} });
@@ -144861,6 +144879,7 @@ function createEffectsPanel(app, root, engine) {
 	});
 	const bgColor = colorField({ value: st.look.bg || '#14161b', onInput: (v) => setBg(v, true), onChange: save });
 	const bgVig = switchRow('Затемнение к краям', { value: st.look.vignette, onChange: (v) => { st.look.vignette = v; engine.applyBg(); save(); } });
+	document.getElementById('viewport').append(bgPop);
 	const bgGrid = switchRow('Сетка на полу', { value: !!st.look.grid, onChange: (v) => { st.look.grid = v; app.viewport.fxGrid = v; app.viewport.invalidate(); save(); } }, 'Плоскость из квадратов, как в редакторе');
 	bgPop.append(h('div', { class: 'fx-bg-title' }, 'Фон и сцена'), bgSw, field('Свой цвет', bgColor.el), bgVig.el, bgGrid.el);
 	function setBg(c, live) {
@@ -144880,6 +144899,7 @@ function createEffectsPanel(app, root, engine) {
 	bgBtn.addEventListener('click', (e) => {
 		e.stopPropagation();
 		bgPop.hidden = !bgPop.hidden;
+		if (!bgPop.hidden) placeAbove(bgPop, bgBtn, document.getElementById('viewport'), 'center');
 		bgBtn.setAttribute('aria-expanded', String(!bgPop.hidden));
 	});
 	document.addEventListener('pointerdown', (e) => {
@@ -145026,7 +145046,7 @@ __def(__exports, 'UI', () => UI);
 // Оболочка интерфейса: шапка, панель инструментов, оверлеи вьюпорта, вкладки, подсказки, тосты,
 // перетаскивание файлов, горячие клавиши, справка.
 const THREE = __req('vendor/three/build/three.module.js');
-const { h, $, $$, extOf, formatInt, downloadBlob } = __req('src/util.js');
+const { h, $, $$, extOf, formatInt, downloadBlob, placeAbove } = __req('src/util.js');
 const { icon, hydrateIcons, iconsReady } = __req('src/icons.js');
 const { initFloatingPanels } = __req('src/fx-float.js');
 const { segmented, switchRow, button } = __req('src/ui-kit.js');
@@ -145366,6 +145386,7 @@ class UI {
 			['faces', 'Ориентация граней', 'Синий: лицо, красный: изнанка'],
 			['bbox', 'Рамка выделения', 'Габаритный бокс выбранного объекта'],
 		];
+		pop.append(h('div', { class: 'fx-bg-title' }, 'Подсказки на сцене'));
 		for (const [key, label, hint] of rows) {
 			const r = switchRow(label, { value: s.overlays[key], onChange: (v) => {
 				s.overlays[key] = v;
@@ -145383,9 +145404,12 @@ class UI {
 			pop.hidden = true;
 			btn.setAttribute('aria-expanded', 'false');
 		};
+		// меню живёт в самой сцене, а не в нижней панели: у панели своё размытие, и вложенное не видит сцену
+		$('#viewport').append(pop);
 		btn.addEventListener('click', (e) => {
 			e.stopPropagation();
 			pop.hidden = !pop.hidden;
+			if (!pop.hidden) placeAbove(pop, btn, $('#viewport'), 'right');
 			btn.setAttribute('aria-expanded', String(!pop.hidden));
 		});
 		document.addEventListener('pointerdown', (e) => {

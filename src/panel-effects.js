@@ -1,5 +1,5 @@
 // Режим «Эффекты»: боковая панель (источник, эффекты, звук, вид) и нижняя панель управления в сцене.
-import { h, formatInt } from './util.js';
+import { h, formatInt, placeAbove } from './util.js';
 import { icon } from './icons.js';
 import { section, field, fxSlider as slider, segmented, switchRow, toggle, button, iconButton, select, colorField } from './ui-kit.js';
 import * as THREE from 'three';
@@ -2292,7 +2292,7 @@ export function createEffectsPanel(app, root, engine) {
 	const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#ffffff', 'Белый']];
 	const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));
 	const bgPop = h('div', { class: 'fx-bg-pop popover', hidden: true });
-	const bgWrap = h('div', { class: 'vp-overlay-wrap fx-bg-wrap' }, bgBtn, bgPop);
+	const bgWrap = bgBtn;
 	const bgSw = h('div', { class: 'fx-bg-sw' });
 	const bgSwBtns = BGS.map(([c, name]) => {
 		const b = h('button', { type: 'button', class: 'fx-bg-chip', 'aria-label': name, 'data-tip': name, style: c ? { background: c } : {} });
@@ -2303,6 +2303,7 @@ export function createEffectsPanel(app, root, engine) {
 	});
 	const bgColor = colorField({ value: st.look.bg || '#14161b', onInput: (v) => setBg(v, true), onChange: save });
 	const bgVig = switchRow('Затемнение к краям', { value: st.look.vignette, onChange: (v) => { st.look.vignette = v; engine.applyBg(); save(); } });
+	document.getElementById('viewport').append(bgPop);
 	const bgGrid = switchRow('Сетка на полу', { value: !!st.look.grid, onChange: (v) => { st.look.grid = v; app.viewport.fxGrid = v; app.viewport.invalidate(); save(); } }, 'Плоскость из квадратов, как в редакторе');
 	bgPop.append(h('div', { class: 'fx-bg-title' }, 'Фон и сцена'), bgSw, field('Свой цвет', bgColor.el), bgVig.el, bgGrid.el);
 	function setBg(c, live) {
@@ -2322,6 +2323,7 @@ export function createEffectsPanel(app, root, engine) {
 	bgBtn.addEventListener('click', (e) => {
 		e.stopPropagation();
 		bgPop.hidden = !bgPop.hidden;
+		if (!bgPop.hidden) placeAbove(bgPop, bgBtn, document.getElementById('viewport'), 'center');
 		bgBtn.setAttribute('aria-expanded', String(!bgPop.hidden));
 	});
 	document.addEventListener('pointerdown', (e) => {

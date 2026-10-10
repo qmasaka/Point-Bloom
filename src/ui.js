@@ -1,7 +1,7 @@
 // Оболочка интерфейса: шапка, панель инструментов, оверлеи вьюпорта, вкладки, подсказки, тосты,
 // перетаскивание файлов, горячие клавиши, справка.
 import * as THREE from 'three';
-import { h, $, $$, extOf, formatInt, downloadBlob } from './util.js';
+import { h, $, $$, extOf, formatInt, downloadBlob, placeAbove } from './util.js';
 import { icon, hydrateIcons, iconsReady } from './icons.js';
 import { initFloatingPanels } from './fx-float.js';
 import { segmented, switchRow, button } from './ui-kit.js';
@@ -341,6 +341,7 @@ export class UI {
 			['faces', 'Ориентация граней', 'Синий: лицо, красный: изнанка'],
 			['bbox', 'Рамка выделения', 'Габаритный бокс выбранного объекта'],
 		];
+		pop.append(h('div', { class: 'fx-bg-title' }, 'Подсказки на сцене'));
 		for (const [key, label, hint] of rows) {
 			const r = switchRow(label, { value: s.overlays[key], onChange: (v) => {
 				s.overlays[key] = v;
@@ -358,9 +359,12 @@ export class UI {
 			pop.hidden = true;
 			btn.setAttribute('aria-expanded', 'false');
 		};
+		// меню живёт в самой сцене, а не в нижней панели: у панели своё размытие, и вложенное не видит сцену
+		$('#viewport').append(pop);
 		btn.addEventListener('click', (e) => {
 			e.stopPropagation();
 			pop.hidden = !pop.hidden;
+			if (!pop.hidden) placeAbove(pop, btn, $('#viewport'), 'right');
 			btn.setAttribute('aria-expanded', String(!pop.hidden));
 		});
 		document.addEventListener('pointerdown', (e) => {

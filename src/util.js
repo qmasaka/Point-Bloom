@@ -39,6 +39,23 @@ export function formatInt(n) {
 	return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
+/** Ставит всплывающее меню над кнопкой. Меню лежит прямо в сцене, а не внутри панели с размытием: вложенное размытие не видит сцену за собой. align: 'center' | 'right' */
+export function placeAbove(pop, btn, host, align = 'center', gap = 14) {
+	const hr = host.getBoundingClientRect();
+	const br = btn.getBoundingClientRect();
+	pop.style.top = 'auto';
+	pop.style.bottom = Math.round(hr.bottom - br.top + gap) + 'px';
+	if (align === 'right') {
+		pop.style.left = 'auto';
+		pop.style.transform = 'none';
+		pop.style.right = Math.round(hr.right - br.right - 6) + 'px';
+	} else {
+		pop.style.right = 'auto';
+		pop.style.transform = 'translateX(-50%)';
+		pop.style.left = Math.round(br.left + br.width / 2 - hr.left) + 'px';
+	}
+}
+
 /** Число без хвоста нулей, до `digits` знаков */
 export function fmt(n, digits = 3) {
 	if (!isFinite(n)) return '-';
