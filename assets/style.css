@@ -5894,3 +5894,8 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 @container app (min-width: 901px) {
 	.ui-float .sidebar { width: max(280px, var(--sidebar-w, 300px)); }
 }
+
+/* настройки выключенного эффекта приглушены: их можно менять заранее, но видно, что эффект сейчас не работает */
+.fx-insp { transition: opacity 0.2s var(--ease, ease), filter 0.2s var(--ease, ease); }
+.fx-insp.is-off { opacity: 0.45; filter: grayscale(0.85); }
+.fx-insp.is-off:hover, .fx-insp.is-off:focus-within { opacity: 0.7; }

@@ -134315,8 +134315,10 @@ class TrackerHud {
 		const m = morph * morph * (3 - 2 * morph);
 		let best = null;
 		let bestScore = -1;
+		this.lastIdx = null;
 		for (let s = 0; s < 10; s++) {
-			const i = Math.floor(Math.random() * n) * 3;
+			const idx = Math.floor(Math.random() * n);
+			const i = idx * 3;
 			const p = this.pickOverride ? this.pickOverride() : new THREE.Vector3(o[i] + (t[i] - o[i]) * m, o[i + 1] + (t[i + 1] - o[i + 1]) * m, o[i + 2] + (t[i + 2] - o[i + 2]) * m);
 			let near = 9;
 			for (const it of this.items) near = Math.min(near, p.distanceTo(it.target));
@@ -134324,6 +134326,8 @@ class TrackerHud {
 			if (score > bestScore) {
 				bestScore = score;
 				best = p;
+				// номер точки запоминаем: рамка держится за неё и идёт следом, когда форма двигается
+				this.lastIdx = this.pickOverride ? null : idx;
 			}
 		}
 		return best;
@@ -134334,9 +134338,12 @@ class TrackerHud {
 		this.t += dt;
 		while (this.items.length < want) {
 			const p = this._pickHotspot(geometry, morph, levels);
-			this.items.push({ id: Math.floor(rnd(1, 99)), pos: p.clone(), target: p, next: this.t + rnd(0.8, 2.8), speed: 0, conf: rnd(0.85, 0.99), touch: 0 });
+			this.items.push({ idx: this.lastIdx, id: Math.floor(rnd(1, 99)), pos: p.clone(), target: p, next: this.t + rnd(0.8, 2.8), speed: 0, conf: rnd(0.85, 0.99), touch: 0 });
 		}
 		this.items.length = want;
+		const oArr = geometry.attributes.aOrigin.array;
+		const tArr = geometry.attributes.aTarget.array;
+		const mm = morph * morph * (3 - 2 * morph);
 		while (this.imprints.length > 32 || (this.imprints[0] && this.time - this.imprints[0].t0 > 8)) this.imprints.shift();
 		const beatNew = levels.beat > 0.9 && this.beatSeen <= 0.9;
 		this.beatSeen = levels.beat;
@@ -134346,12 +134353,24 @@ class TrackerHud {
 			} else if (this.t > it.next || (beatNew && Math.random() < 0.35)) {
 				if (it.touch > 0.3) this.imprints.push({ pos: it.target.clone(), t0: this.time, s: it.touch });
 				it.target = this._pickHotspot(geometry, morph, levels);
+				it.idx = this.lastIdx;
 				it.next = this.t + rnd(1.0, 3.2);
 				it.id = Math.floor(rnd(1, 99));
 				it.conf = rnd(0.82, 0.99);
 			}
+			// форма движется (анимация модели): цель каждый кадр берётся с текущего места закреплённой точки, а рамка подтягивается быстрее
+			if (this.follow && it.idx != null && !(targets && targets.length) && !this.pickOverride) {
+				const i3 = it.idx * 3;
+				if (i3 + 2 < tArr.length) {
+					const nx = oArr[i3] + (tArr[i3] - oArr[i3]) * mm, ny = oArr[i3 + 1] + (tArr[i3 + 1] - oArr[i3 + 1]) * mm, nz = oArr[i3 + 2] + (tArr[i3 + 2] - oArr[i3 + 2]) * mm;
+					// рамка едет вместе с точкой, а плавность только дотягивает остаток
+					if (it.carry) it.pos.set(it.pos.x + nx - it.target.x, it.pos.y + ny - it.target.y, it.pos.z + nz - it.target.z);
+					it.target.set(nx, ny, nz);
+					it.carry = true;
+				}
+			}
 			const before = it.pos.clone();
-			it.pos.lerp(it.target, 1 - Math.exp(-dt * 6.5));
+			it.pos.lerp(it.target, 1 - Math.exp(-dt * (this.follow ? 20 : 6.5)));
 			it.speed += (it.pos.distanceTo(before) / Math.max(dt, 1e-3) - it.speed) * 0.2;
 			it.touch += (1 - Math.min(1, it.pos.distanceTo(it.target) * 2.5) - it.touch) * 0.15;
 		});
@@ -141894,6 +141913,7 @@ class EffectsEngine {
 					else if (this.mouseOn) tgs = [this.mouse];
 				}
 				this.hud.pickOverride = this.shared.uFr.value.x > 0.5 ? () => this._frameSample() : null;
+				this.hud.follow = !!(this._animCloud && this.app.anim.has);
 				this.hud.update(n, this.geometry, this.morph, this.levels, dt, tgs);
 				const hex = (c) => '#' + new THREE.Color(c).getHexString(THREE.SRGBColorSpace);
 				const cols = [hex(pal.c[0]), hex(pal.c[2])];
@@ -142992,6 +143012,7 @@ function createEffectsPanel(app, root, engine) {
 				onChange: (v) => {
 					L.on = v;
 					card.classList.toggle('is-on', v);
+					insp.classList.toggle('is-off', !v);
 					if (v) {
 						select_(def.id);
 						fxTabHook();
@@ -143182,6 +143203,8 @@ function createEffectsPanel(app, root, engine) {
 			const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
 			const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right', 'data-tip-delay': '1300' }, row);
 			const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, body);
+			// у выключенного эффекта настройки приглушены: их можно менять, но видно, что эффект сейчас не работает
+			insp.classList.toggle('is-off', !L.on);
 			row.addEventListener('click', (e) => {
 				if (!e.target.closest('.switch')) {
 					select_(def.id);
@@ -144825,6 +144848,7 @@ function createEffectsPanel(app, root, engine) {
 		renderReactList();
 		cards.forEach((c) => {
 			c.card.classList.toggle('is-on', c.L.on);
+			c.insp.classList.toggle('is-off', !c.L.on);
 			c.sw.set(c.L.on);
 			c.amount.set(c.L.amount);
 			c.react.set(c.L.react);

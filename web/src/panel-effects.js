@@ -456,6 +456,7 @@ label: def.name,
 onChange: (v) => {
 L.on = v;
 card.classList.toggle('is-on', v);
+insp.classList.toggle('is-off', !v);
 if (v) {
 select_(def.id);
 fxTabHook();
@@ -643,6 +644,7 @@ const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
 const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
 const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right', 'data-tip-delay': '1300' }, row);
 const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, body);
+insp.classList.toggle('is-off', !L.on);
 row.addEventListener('click', (e) => {
 if (!e.target.closest('.switch')) {
 select_(def.id);
@@ -2118,6 +2120,7 @@ if (cur && cur.folder.hidden) select_((cards.find((c) => !c.folder.hidden && c.L
 renderReactList();
 cards.forEach((c) => {
 c.card.classList.toggle('is-on', c.L.on);
+c.insp.classList.toggle('is-off', !c.L.on);
 c.sw.set(c.L.on);
 c.amount.set(c.L.amount);
 c.react.set(c.L.react);

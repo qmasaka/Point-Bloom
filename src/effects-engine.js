@@ -6345,6 +6345,7 @@ export class EffectsEngine {
 					else if (this.mouseOn) tgs = [this.mouse];
 				}
 				this.hud.pickOverride = this.shared.uFr.value.x > 0.5 ? () => this._frameSample() : null;
+				this.hud.follow = !!(this._animCloud && this.app.anim.has);
 				this.hud.update(n, this.geometry, this.morph, this.levels, dt, tgs);
 				const hex = (c) => '#' + new THREE.Color(c).getHexString(THREE.SRGBColorSpace);
 				const cols = [hex(pal.c[0]), hex(pal.c[2])];
