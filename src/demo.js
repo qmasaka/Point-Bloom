@@ -106,7 +106,7 @@ export async function makeDemoCharacterFile() {
 	const sw = new Float32Array(n * 4);
 	for (let i = 0; i < n; i++) sw[i * 4] = 1;
 	geo.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
-	// текстура: цветные полосы с клетками и стрелкой-меткой, по ней видно и развёртку, и вращение при качении
+	// текстура: цветные полосы с клетками, по ним видно и развёртку, и вращение при качении
 	const cv = document.createElement('canvas');
 	cv.width = 1024;
 	cv.height = 512;
@@ -125,11 +125,6 @@ export async function makeDemoCharacterFile() {
 		g.fillStyle = 'rgba(255,255,255,0.14)';
 		g.fillRect(x * 64, y * 64, 64, 64);
 	}
-	g.fillStyle = 'rgba(10,12,16,0.8)';
-	g.font = '700 54px sans-serif';
-	g.textAlign = 'center';
-	g.textBaseline = 'middle';
-	g.fillText('\u25B2', 512, 256);
 	const tex = new THREE.CanvasTexture(cv);
 	tex.colorSpace = THREE.SRGBColorSpace;
 	tex.flipY = false;

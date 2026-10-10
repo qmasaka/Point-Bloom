@@ -83917,8 +83917,10 @@ class Viewport {
 		obj.updateWorldMatrix(true, true);
 		obj.traverse((o) => {
 			if (o.userData.helper || !o.geometry || !(o.isMesh || o.isPoints || o.isLine)) return;
-			if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
-			const b = o.geometry.boundingBox;
+			// у меша со скелетом габариты считаются по текущей позе костей, иначе рамка выделения остаётся на месте
+			if (o.isSkinnedMesh && o.skeleton) o.computeBoundingBox();
+			else if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+			const b = o.isSkinnedMesh && o.boundingBox ? o.boundingBox : o.geometry.boundingBox;
 			if (!b || b.isEmpty()) return;
 			target.union(_tmpBox.copy(b).applyMatrix4(o.matrixWorld));
 		});
@@ -90745,49 +90747,87 @@ const secMesh = section('Сетка и нормали', { key: 'mesh', open: fal
 };
 __defs['src/panel-anim.js'] = function (__exports, __req) {
 'use strict';
-__def(__exports, 'createAnimPanel', () => createAnimPanel);
-// Блок «Анимация персонажа»: клип, воспроизведение, время, скорость, скелет. Появляется, когда в сцене есть модель с анимацией.
+__def(__exports, 'createAnimSettings', () => createAnimSettings);
+__def(__exports, 'createAnimBar', () => createAnimBar);
+// Управление анимацией модели: полоса над сценой в редакторе и компактные настройки (клип, скорость, повтор, скелет) для таймлайна эффектов.
+// Анимацию сайт не создаёт: она приходит готовой вместе с моделью.
 const { h } = __req('src/util.js');
 const { icon } = __req('src/icons.js');
-const { section, field, slider, segmented, switchRow, select, iconButton } = __req('src/ui-kit.js');
+const { segmented, select, iconButton } = __req('src/ui-kit.js');
 
-function createAnimPanel(app, key = 'anim') {
+const fmt = (t) => {
+	t = Math.max(0, t || 0);
+	const m = Math.floor(t / 60);
+	return `${m}:${(t - m * 60).toFixed(1).padStart(4, '0')}`;
+};
+
+/** Клип, скорость, повтор и показ скелета: общий набор настроек анимации */
+function createAnimSettings(app) {
 	const A = app.anim;
 	const clipSel = select({ options: [{ value: '0', label: '-' }], value: '0', onChange: (v) => A.setClip(parseInt(v, 10)) });
-	const playBtn = iconButton({ icon: 'pause', title: 'Играть или остановить', cls: 'anim-play', onClick: () => A.toggle() });
-	const time = slider({ min: 0, max: 1, step: 0.01, value: 0, digits: 2, unit: ' с', onInput: (v) => A.seek(v), onChange: () => {} });
+	const clipWrap = h('div', { class: 'as-clip' }, clipSel.el);
 	const speed = segmented({ cls: 'seg-tight', options: [{ value: '0.5', label: '0.5×' }, { value: '1', label: '1×' }, { value: '2', label: '2×' }], value: '1', onChange: (v) => A.setSpeed(parseFloat(v)) });
-	const loop = switchRow('Зациклить', { value: true, onChange: (v) => A.setLoop(v) });
-	const skel = switchRow('Показать скелет', { value: false, onChange: (v) => A.setSkeleton(v) }, 'Кости видны поверх модели; сайт их не анимирует, а проигрывает готовую анимацию из файла');
-	const info = h('div', { class: 'field-hint' });
-	const body = h('div', { class: 'anim-row' }, playBtn, h('div', { class: 'anim-time' }, time.el));
-	const sec = section('Анимация персонажа', { key: 'anim-' + key }, field('Клип', clipSel.el, { wide: true }), body, field('Скорость', speed.el, { wide: true }), loop.el, skel.el, info);
+	const loop = iconButton({ icon: 'repeat', title: 'Повторять анимацию', onClick: () => A.setLoop(!A.loop) });
+	const skel = iconButton({ icon: 'tree-structure', title: 'Показать скелет: кости видны поверх модели', onClick: () => A.setSkeleton(!A.skeletonOn) });
+	const el = h('div', { class: 'anim-settings' }, clipWrap, speed.el, loop, skel);
 	let lastKey = '';
 	function sync() {
-		sec.el.hidden = !A.has;
 		if (!A.has) return;
 		const k = A.clips.map((c) => c.name).join('|');
 		if (k !== lastKey) {
 			lastKey = k;
-			clipSel.setOptions(A.clips.map((c, i) => ({ value: String(i), label: c.name || 'Клип ' + (i + 1) })));
+			clipSel.setOptions(A.clips.map((c, i) => ({ value: String(i), label: c.name || 'Анимация ' + (i + 1) })));
 		}
+		clipWrap.hidden = A.clips.length < 2;
 		clipSel.set(String(A.clipIndex));
-		playBtn.textContent = '';
-		playBtn.innerHTML = icon(A.playing ? 'pause' : 'play', 17);
-		time.setRange(0, A.duration);
-		time.set(A.time);
 		speed.set(String(A.speed));
-		loop.set(A.loop);
-		skel.set(A.skeletonOn);
-		info.textContent = `Клипов в файле: ${A.clips.length}. В режиме «Эффекты» точки двигаются вместе с персонажем.`;
+		loop.setAttribute('aria-pressed', String(A.loop));
+		skel.setAttribute('aria-pressed', String(A.skeletonOn));
 	}
 	A.onChange(sync);
-	// время на ползунке идёт вместе с проигрыванием
-	app.bus.on('animpose', () => {
-		if (A.has && A.playing) time.set(A.time);
-	});
 	sync();
-	return { el: sec.el, sync };
+	return { el, sync };
+}
+
+/** Полоса над сценой: пуск и пауза, перемотка, время и настройки. Показывается, пока в сцене есть анимация и не открыт таймлайн эффектов */
+function createAnimBar(app, host) {
+	const A = app.anim;
+	const play = iconButton({ icon: 'pause', title: 'Играть или пауза', onClick: () => A.toggle() });
+	const time = h('span', { class: 'mb-time' }, '0:00.0');
+	const total = h('span', { class: 'mb-time mb-total' }, '0:00.0');
+	const seek = h('input', { type: 'range', class: 'range mb-seek', min: 0, max: 1, step: 0.01, value: 0, 'aria-label': 'Перемотка анимации' });
+	seek.addEventListener('input', () => {
+		A.pause();
+		A.seek(parseFloat(seek.value));
+	});
+	const settings = createAnimSettings(app);
+	const el = h('div', { class: 'media-bar anim-bar vp-pill', hidden: true, role: 'region', 'aria-label': 'Анимация' }, play, time, seek, total, settings.el);
+	host.append(el);
+	function paint() {
+		time.textContent = fmt(A.time);
+		total.textContent = fmt(A.duration);
+		seek.max = A.duration;
+		if (document.activeElement !== seek) seek.value = A.time;
+		seek.style.setProperty('--p', Math.min(100, (A.time / A.duration) * 100) + '%');
+	}
+	function sync() {
+		const vid = (app.media.pm.kind === 'video' || app.media.pm.kind === 'rec') && app.media.present;
+		el.hidden = !A.has || vid || document.getElementById('app')?.classList.contains('fx-anim-active');
+		if (el.hidden) return;
+		play.innerHTML = '<span class="ic-wrap">' + icon(A.playing ? 'pause' : 'play', 18) + '</span>';
+		play.dataset.tip = A.playing ? 'Пауза' : 'Играть';
+		play.classList.toggle('is-paused', !A.playing);
+		paint();
+	}
+	A.onChange(sync);
+	app.bus.on('animpose', () => {
+		if (!el.hidden) paint();
+	});
+	app.bus.on('media', sync);
+	app.bus.on('fxanim', sync);
+	new MutationObserver(sync).observe(document.getElementById('app') || document.body, { attributes: true, attributeFilter: ['class'] });
+	sync();
+	return { el, sync };
 }
 
 };
@@ -134872,7 +134912,9 @@ class AnimController {
 			}
 		}
 		this._movePoints();
-		this.app.viewport.invalidate();
+		// рамка выделения идёт за движущейся моделью
+		if (this.app.model?.selection?.length) this.app.viewport.updateSelectionBox();
+		else this.app.viewport.invalidate();
 		this.version++;
 		this.app.bus.emit('animpose');
 	}
@@ -135518,7 +135560,7 @@ const FX_LAYERS = [
 	{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке и становятся квадратами: сетка, «Лего» или дыхание', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1, mode: 'grid', speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['grid', 'Сетка'], ['lego', 'Лего'], ['breathe', 'Дыхание']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe']] }] },
 	{ id: 'scope', group: 'Звук и ритм', name: 'Акселограф', icon: 'heartbeat', hint: 'По точкам модели бежит перо самописца: линия идёт от точки к точке по их координатам и вычерчивает форму. Ещё не нарисованные точки невидимы и проявляются, когда перо проходит по ним. Линия и точки двигаются вместе с остальными эффектами', max: 1, def: { on: false, amount: 0.7, band: 'none', react: 0.6, mode: 'draw', order: 'walk', dir: 'fwd', loop: 'loop', speed: 1, pens: 2, chaos: 0.6, trail: 0.5, detail: 6000, dim: 1, line: 1, width: 2.4, color: '#3dff7a', tint: 0.35, thick: 0.6, glow: 1, spark: 0 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивает: нарисованное остаётся'], ['comet', 'Комета: за пером тянется гаснущий след']] }, { key: 'order', label: 'Порядок обхода', type: 'select', options: [['walk', 'От точки к точке (ближайшая)'], ['up', 'Развёртка снизу вверх'], ['spin', 'Развёртка по кругу']] }, { key: 'dir', label: 'Направление', type: 'seg', options: [['fwd', 'Вперёд'], ['back', 'Назад']] }, { key: 'loop', label: 'В конце круга', type: 'seg', options: [['loop', 'Стирает и заново'], ['once', 'Остаётся']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'pens', label: 'Число перьев', min: 1, max: 8, step: 1, int: true }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true, when: ['order', ['walk']] }, { key: 'chaos', label: 'Хаотичность пути', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'dim', label: 'Прятать ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'color', label: 'Цвет акселографа', type: 'color' }, { key: 'line', label: 'Яркость линии', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'width', label: 'Толщина линии', min: 0.5, max: 8, step: 0.1, when: ['order', ['walk']] }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }, { key: 'spark', label: 'Искры у пера', min: 0, max: 2, step: 0.05 }] },
 	{ id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Нейросеть строит карту глубины снимка или каждого кадра видео, и точки выдавливаются по ней: рельеф, ступени, дыхание, волна, рябь, карусель и разлёт слоёв. Всё считается на вашем компьютере. Вращайте камеру, чтобы увидеть объём', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.5, zone: 0.12, bright: 0, contrast: 1, gamma: 1, blur: 0, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Рельеф: ближнее выступает вперёд'], ['layers', 'Ступени: ровные плоскости по глубине'], ['breath', 'Дыхание: рельеф выдавливается и втягивается'], ['wave', 'Волна: рельеф вспухает бегущей волной'], ['ripple', 'Рябь: по рельефу расходятся круги'], ['twist', 'Карусель: слои поворачиваются по-разному'], ['burst', 'Разлёт: слои вылетают к зрителю и возвращаются']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Глубина, что остаётся на месте', min: 0, max: 1, step: 0.01 }, { key: 'zone', label: 'Ширина зоны на месте', min: 0, max: 0.6, step: 0.01 }, { type: 'title', label: 'Правка карты глубины' }, { key: 'bright', label: 'Яркость карты', min: -0.5, max: 0.5, step: 0.01 }, { key: 'contrast', label: 'Контраст карты', min: 0.2, max: 3, step: 0.02 }, { key: 'gamma', label: 'Тени (гамма)', min: 0.3, max: 3, step: 0.02 }, { key: 'blur', label: 'Размытие карты', min: 0, max: 12, step: 1, int: true }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
-	{ id: 'trail', group: 'Персонаж', name: 'Шлейф', icon: 'stack', hint: 'Пока персонаж двигается, за ним остаются полупрозрачные копии прошлых поз: шаг, взмах или бег оставляют след из точек. Эффект появляется, только когда в сцене персонаж с анимацией', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 0.5, count: 8, step: 0.1, fade: 0.8, pts: 25000, size: 0.6, tint: 0, shrink: 0.35 }, extras: [{ key: 'count', label: 'Сколько копий в шлейфе', min: 2, max: 24, step: 1, int: true }, { key: 'step', label: 'Время между копиями, с', min: 0.03, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Как быстро гаснут копии', min: 0.4, max: 0.97, step: 0.01 }, { key: 'shrink', label: 'Как мельчают копии', min: 0, max: 0.9, step: 0.02 }, { key: 'pts', label: 'Точек в копии', min: 5000, max: 80000, step: 1000, int: true }, { key: 'size', label: 'Размер точек', min: 0.3, max: 2.5, step: 0.05 }, { key: 'tint', label: 'Окраска цветом палитры', min: 0, max: 1, step: 0.02 }] },
+	{ id: 'trail', group: 'Анимация', name: 'Шлейф', icon: 'stack', hint: 'Пока персонаж двигается, за ним остаются полупрозрачные копии прошлых поз: шаг, взмах или бег оставляют след из точек. Эффект появляется, только когда в сцене персонаж с анимацией', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 0.5, count: 8, step: 0.1, fade: 0.8, pts: 25000, size: 0.6, tint: 0, shrink: 0.35 }, extras: [{ key: 'count', label: 'Сколько копий в шлейфе', min: 2, max: 24, step: 1, int: true }, { key: 'step', label: 'Время между копиями, с', min: 0.03, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Как быстро гаснут копии', min: 0.4, max: 0.97, step: 0.01 }, { key: 'shrink', label: 'Как мельчают копии', min: 0, max: 0.9, step: 0.02 }, { key: 'pts', label: 'Точек в копии', min: 5000, max: 80000, step: 1000, int: true }, { key: 'size', label: 'Размер точек', min: 0.3, max: 2.5, step: 0.05 }, { key: 'tint', label: 'Окраска цветом палитры', min: 0, max: 1, step: 0.02 }] },
 	{ id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 	{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Полосы формы рывками сдвигаются в трёх измерениях, цветовые каналы расходятся, картинка мерцает', max: 2, def: { on: false, amount: 0.8, band: 'beat', react: 1, slices: 16, rgb: 'on', speed: 1 }, extras: [{ key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
 	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими импульсами', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
@@ -135537,7 +135579,7 @@ const FX_LAYERS = [
 const FX_GROUPS = {
 	'Видео': ['frames'],
 	'Фото и видео': ['depth'],
-	'Персонаж': ['trail'],
+	'Анимация': ['trail'],
 	'Движение': ['curl', 'flow', 'gravity'],
 	'Звук и ритм': ['spectrum', 'wave', 'pulse', 'blast', 'scope'],
 	'Превращения': ['twist', 'voxel', 'glitch', 'physics', 'dissolve'],
@@ -140854,6 +140896,12 @@ class EffectsEngine {
 	/** Подбирает пары соседних узлов (по итоговой форме) и записывает атрибуты линий */
 	_computeLinks() {
 		if (!this.geometry || !this.linkObj) return;
+		// связи нужны только включённому эффекту: при входе в режим их подбор занимал десятки миллисекунд зря
+		if (!this.state.layers.links.on) {
+			this._linksStale = true;
+			return;
+		}
+		this._linksStale = false;
 		const g = this.geometry;
 		const N = g.attributes.position.count;
 		const S = Math.min(N, Math.round(this.state.layers.links.count));
@@ -141585,7 +141633,8 @@ class EffectsEngine {
 					if (L.links.on && (this._alk = ((this._alk || 0) + 1) % 4) === 0) this._syncLinks();
 				}
 			}
-			this._trailTick(L.trail);
+			if (this._linksStale && L.links.on) this._computeLinks();
+		this._trailTick(L.trail);
 			// фото и видео: обновляем цвета и высоту точек по текущему кадру
 			let rgbNew = null;
 			if (st.source === 'media' && this.pm.ready && this.geometry && !this.morphing && this.geometry.attributes.position.count === this.pm.count) {
@@ -142400,7 +142449,7 @@ const { sampleSurface, overrideMats } = __req('src/pointcloud.js');
 const { getDevice } = __req('src/device-card.js');
 const { formatCount } = __req('src/capabilities.js');
 const { createMediaPanel } = __req('src/panel-media.js');
-const { createAnimPanel } = __req('src/panel-anim.js');
+const { createAnimSettings } = __req('src/panel-anim.js');
 const { clipActivity } = __req('src/anim-activity.js');
 const { attachPreview } = __req('src/fx-previews.js');
 const { SHAPES: POINT_SHAPE_LIST } = __req('src/panel-points.js');
@@ -142849,7 +142898,7 @@ function createEffectsPanel(app, root, engine) {
 		bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 	};
 	const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-	const ANIM_LAYERS = ['morph', 'curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth'];
+	const ANIM_LAYERS = ['morph', 'curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail'];
 	let toggleAnim = () => {};
 	let animAddFromInspector = () => {};
 	const animQuickBtn = button({
@@ -143099,7 +143148,7 @@ function createEffectsPanel(app, root, engine) {
 			el.textContent = k ? String(k) : '';
 		}
 	}
-	const hiddenGrp = (c) => c.def.group === 'Видео' || c.def.group === 'Фото и видео' || c.def.group === 'Персонаж';
+	const hiddenGrp = (c) => c.def.group === 'Видео' || c.def.group === 'Фото и видео' || c.def.group === 'Анимация';
 	select_((cards.find((c) => c.L.on && !hiddenGrp(c)) || cards.find((c) => !hiddenGrp(c)) || cards[0]).def.id);
 	// ------------------------------------------------------------ звук
 	const sourceSeg = segmented({
@@ -143311,7 +143360,7 @@ function createEffectsPanel(app, root, engine) {
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
 	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
-	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, createAnimPanel(app, 'fx'), secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
 	try {
@@ -143794,9 +143843,12 @@ function createEffectsPanel(app, root, engine) {
 	// Дорожка персонажа: когда в клипе какие кости двигаются. Клип повторяется по кругу на всю длину таймлайна, поэтому полоса стоит под общей линейкой времени
 	const charArrow = h('span', { class: 'ic-wrap fx-anim-char-arrow', html: icon('caret-right', 12) });
 	const charSub = h('span', { class: 'fx-anim-char-sub' });
-	const charTitle = h('div', { class: 'fx-anim-track-label fx-anim-char-label', role: 'button', tabindex: '0', 'data-tip': 'Яркость показывает, как сильно движется персонаж. Нажмите, чтобы увидеть отдельные кости', 'data-tip-pos': 'right' }, charArrow, h('span', { class: 'fx-anim-char-names' }, h('span', { class: 'fx-anim-lane-name' }, 'Персонаж'), charSub));
+	const charTitle = h('div', { class: 'fx-anim-track-label fx-anim-char-label', role: 'button', tabindex: '0', 'data-tip': 'Яркость показывает, как сильно движется модель. Нажмите, чтобы увидеть отдельные кости и настройки анимации', 'data-tip-pos': 'right' }, charArrow, h('span', { class: 'fx-anim-char-names' }, h('span', { class: 'fx-anim-lane-name' }, 'Анимация'), charSub));
 	const charCanvas = h('canvas', { class: 'fx-anim-char-canvas' });
-	const charBody = h('div', { class: 'fx-anim-lane-body fx-anim-char-body', 'data-tip': 'Яркая полоса: кости движутся. Тёмная: персонаж почти стоит. Тонкие линии: начало нового повтора клипа', 'data-tip-pos': 'top' }, charCanvas);
+	const charBody = h('div', { class: 'fx-anim-lane-body fx-anim-char-body', 'data-tip': 'Яркая полоса: кости движутся. Тёмная: модель почти стоит. Тонкие линии: начало нового повтора клипа', 'data-tip-pos': 'top' }, charCanvas);
+	const charSet = createAnimSettings(app);
+	const charSetRow = h('div', { class: 'fx-anim-char-set' }, charSet.el);
+	charSetRow.hidden = true;
 	const charLane = h('div', { class: 'fx-anim-lane fx-anim-char-lane' }, charTitle, charBody);
 	charLane.hidden = true;
 	let charOpen = false;
@@ -143870,6 +143922,7 @@ function createEffectsPanel(app, root, engine) {
 		charOpen = !charOpen;
 		charArrow.innerHTML = icon(charOpen ? 'caret-down' : 'caret-right', 12);
 		charLane.classList.toggle('is-open', charOpen);
+		charSetRow.hidden = !charOpen;
 		drawChar();
 		clampAnimH();
 	});
@@ -143910,7 +143963,7 @@ function createEffectsPanel(app, root, engine) {
 		)
 	);
 
-	const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, charLane, fxLanesWrap, emptyHint);
+	const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, charLane, charSetRow, fxLanesWrap, emptyHint);
 	const playheadLine = h('div', { class: 'fx-anim-playhead-line' });
 
 	stage.append(rulerRow, lanesScroll, playheadLine);
@@ -144006,6 +144059,53 @@ function createEffectsPanel(app, root, engine) {
 		selKey = null;
 		animSync();
 	};
+
+	// Перетаскивание эффекта из списка на таймлайн: блок встаёт туда, куда отпустили. Если таймлайн закрыт, он открывается, а блок встаёт на текущий момент
+	{
+		const MIME = 'application/x-fx-layer';
+		for (const c of cards) {
+			if (!ANIM_LAYERS.includes(c.def.id)) continue;
+			c.card.draggable = true;
+			c.card.addEventListener('dragstart', (e) => {
+				e.dataTransfer.setData(MIME, c.def.id);
+				e.dataTransfer.setData('text/plain', c.def.name);
+				e.dataTransfer.effectAllowed = 'copy';
+				appEl.classList.add('is-fx-dragging');
+			});
+			c.card.addEventListener('dragend', () => appEl.classList.remove('is-fx-dragging'));
+		}
+		const vp = document.getElementById('viewport');
+		const has = (e) => Array.from(e.dataTransfer?.types || []).includes(MIME);
+		vp.addEventListener('dragover', (e) => {
+			if (!has(e)) return;
+			e.preventDefault();
+			e.dataTransfer.dropEffect = 'copy';
+			animPanel.classList.toggle('is-drop', !animPanel.hidden && !!e.target.closest('.fx-anim'));
+		});
+		vp.addEventListener('dragleave', (e) => {
+			if (!e.relatedTarget || !vp.contains(e.relatedTarget)) animPanel.classList.remove('is-drop');
+		});
+		vp.addEventListener('drop', (e) => {
+			if (!has(e)) return;
+			e.preventDefault();
+			animPanel.classList.remove('is-drop');
+			appEl.classList.remove('is-fx-dragging');
+			const id = e.dataTransfer.getData(MIME);
+			if (!ANIM_LAYERS.includes(id)) return;
+			const wasHidden = animPanel.hidden;
+			let start;
+			if (!wasHidden && e.target.closest('.fx-anim')) {
+				const r = rulerBody.getBoundingClientRect();
+				if (r.width > 0) start = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (st.anim.dur || 8) - 0.5;
+			}
+			if (wasHidden) toggleAnim(true);
+			const c = engine.animAddClip(id, start == null ? {} : { start: Math.max(0, start) });
+			selClip = c;
+			selKey = null;
+			animSync();
+			app.toast(`Блок «${getLayerDef(id).name}» добавлен на таймлайн`, 'info');
+		});
+	}
 
 	// Пауза анимации при вращении камеры в 3D
 	document.getElementById('viewport').addEventListener('pointerdown', (e) => {
@@ -144638,7 +144738,7 @@ function createEffectsPanel(app, root, engine) {
 		for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoLoaded;
 		for (const c of cards) if (c.def.group === 'Фото и видео') c.folder.hidden = !engine.pm.ready;
 		// шлейф персонажа есть только у персонажа с анимацией
-		for (const c of cards) if (c.def.group === 'Персонаж') c.folder.hidden = !engine.animReady;
+		for (const c of cards) if (c.def.group === 'Анимация') c.folder.hidden = !engine.animReady;
 		// настройки скрытого эффекта (глубина без фото, раскадровка без видео) не показываем: выбираем первый видимый
 		const cur = cards.find((c) => c.def.id === selected);
 		if (cur && cur.folder.hidden) select_((cards.find((c) => !c.folder.hidden && c.L.on) || cards.find((c) => !c.folder.hidden) || cards[0]).def.id);
@@ -144766,7 +144866,7 @@ const { initFloatingPanels } = __req('src/fx-float.js');
 const { segmented, switchRow, button } = __req('src/ui-kit.js');
 const { AxisGizmo } = __req('src/gizmo.js');
 const { createScenePanel } = __req('src/panel-scene.js');
-const { createAnimPanel } = __req('src/panel-anim.js');
+const { createAnimBar } = __req('src/panel-anim.js');
 const { initMobile } = __req('src/mobile.js');
 const { createMaterialPanel } = __req('src/panel-material.js');
 const { createViewPanel, DISPLAY_MODES } = __req('src/panel-view.js');
@@ -145134,9 +145234,8 @@ class UI {
 		for (const name of ['scene', 'material', 'points', 'media', 'view']) this.tabs[name] = $(`#panel-${name}`);
 		$$('.tab').forEach((t) => t.addEventListener('click', () => this.showTab(t.dataset.tab)));
 		this.scenePanel = createScenePanel(app, this.tabs.scene);
-		// блок анимации персонажа: виден, только если в файле есть клипы
-		this.animPanel = createAnimPanel(app, 'edit');
-		this.tabs.scene.insertBefore(this.animPanel.el, this.tabs.scene.children[2] || null);
+		// полоса анимации над сценой: видна, только если в файле есть клипы
+		this.animBar = createAnimBar(app, $('#viewport'));
 		this.materialPanel = createMaterialPanel(app, this.tabs.material);
 		this.viewPanel = createViewPanel(app, this.tabs.view);
 		this.pointsPanel = createPointsPanel(app, this.tabs.points);
@@ -146917,7 +147016,7 @@ async function makeDemoCharacterFile() {
 	const sw = new Float32Array(n * 4);
 	for (let i = 0; i < n; i++) sw[i * 4] = 1;
 	geo.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
-	// текстура: цветные полосы с клетками и стрелкой-меткой, по ней видно и развёртку, и вращение при качении
+	// текстура: цветные полосы с клетками, по ним видно и развёртку, и вращение при качении
 	const cv = document.createElement('canvas');
 	cv.width = 1024;
 	cv.height = 512;
@@ -146936,11 +147035,6 @@ async function makeDemoCharacterFile() {
 		g.fillStyle = 'rgba(255,255,255,0.14)';
 		g.fillRect(x * 64, y * 64, 64, 64);
 	}
-	g.fillStyle = 'rgba(10,12,16,0.8)';
-	g.font = '700 54px sans-serif';
-	g.textAlign = 'center';
-	g.textBaseline = 'middle';
-	g.fillText('\u25B2', 512, 256);
 	const tex = new THREE.CanvasTexture(cv);
 	tex.colorSpace = THREE.SRGBColorSpace;
 	tex.flipY = false;

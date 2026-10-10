@@ -235,7 +235,8 @@ m.joints.geometry.attributes.position.needsUpdate = true;
 }
 }
 this._movePoints();
-this.app.viewport.invalidate();
+if (this.app.model?.selection?.length) this.app.viewport.updateSelectionBox();
+else this.app.viewport.invalidate();
 this.version++;
 this.app.bus.emit('animpose');
 }

@@ -270,7 +270,9 @@ export class AnimController {
 			}
 		}
 		this._movePoints();
-		this.app.viewport.invalidate();
+		// рамка выделения идёт за движущейся моделью
+		if (this.app.model?.selection?.length) this.app.viewport.updateSelectionBox();
+		else this.app.viewport.invalidate();
 		this.version++;
 		this.app.bus.emit('animpose');
 	}

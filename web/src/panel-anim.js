@@ -1,40 +1,73 @@
 import { h } from './util.js';
 import { icon } from './icons.js';
-import { section, field, slider, segmented, switchRow, select, iconButton } from './ui-kit.js';
-export function createAnimPanel(app, key = 'anim') {
+import { segmented, select, iconButton } from './ui-kit.js';
+const fmt = (t) => {
+t = Math.max(0, t || 0);
+const m = Math.floor(t / 60);
+return `${m}:${(t - m * 60).toFixed(1).padStart(4, '0')}`;
+};
+export function createAnimSettings(app) {
 const A = app.anim;
 const clipSel = select({ options: [{ value: '0', label: '-' }], value: '0', onChange: (v) => A.setClip(parseInt(v, 10)) });
-const playBtn = iconButton({ icon: 'pause', title: 'Играть или остановить', cls: 'anim-play', onClick: () => A.toggle() });
-const time = slider({ min: 0, max: 1, step: 0.01, value: 0, digits: 2, unit: ' с', onInput: (v) => A.seek(v), onChange: () => {} });
+const clipWrap = h('div', { class: 'as-clip' }, clipSel.el);
 const speed = segmented({ cls: 'seg-tight', options: [{ value: '0.5', label: '0.5×' }, { value: '1', label: '1×' }, { value: '2', label: '2×' }], value: '1', onChange: (v) => A.setSpeed(parseFloat(v)) });
-const loop = switchRow('Зациклить', { value: true, onChange: (v) => A.setLoop(v) });
-const skel = switchRow('Показать скелет', { value: false, onChange: (v) => A.setSkeleton(v) }, 'Кости видны поверх модели; сайт их не анимирует, а проигрывает готовую анимацию из файла');
-const info = h('div', { class: 'field-hint' });
-const body = h('div', { class: 'anim-row' }, playBtn, h('div', { class: 'anim-time' }, time.el));
-const sec = section('Анимация персонажа', { key: 'anim-' + key }, field('Клип', clipSel.el, { wide: true }), body, field('Скорость', speed.el, { wide: true }), loop.el, skel.el, info);
+const loop = iconButton({ icon: 'repeat', title: 'Повторять анимацию', onClick: () => A.setLoop(!A.loop) });
+const skel = iconButton({ icon: 'tree-structure', title: 'Показать скелет: кости видны поверх модели', onClick: () => A.setSkeleton(!A.skeletonOn) });
+const el = h('div', { class: 'anim-settings' }, clipWrap, speed.el, loop, skel);
 let lastKey = '';
 function sync() {
-sec.el.hidden = !A.has;
 if (!A.has) return;
 const k = A.clips.map((c) => c.name).join('|');
 if (k !== lastKey) {
 lastKey = k;
-clipSel.setOptions(A.clips.map((c, i) => ({ value: String(i), label: c.name || 'Клип ' + (i + 1) })));
+clipSel.setOptions(A.clips.map((c, i) => ({ value: String(i), label: c.name || 'Анимация ' + (i + 1) })));
 }
+clipWrap.hidden = A.clips.length < 2;
 clipSel.set(String(A.clipIndex));
-playBtn.textContent = '';
-playBtn.innerHTML = icon(A.playing ? 'pause' : 'play', 17);
-time.setRange(0, A.duration);
-time.set(A.time);
 speed.set(String(A.speed));
-loop.set(A.loop);
-skel.set(A.skeletonOn);
-info.textContent = `Клипов в файле: ${A.clips.length}. В режиме «Эффекты» точки двигаются вместе с персонажем.`;
+loop.setAttribute('aria-pressed', String(A.loop));
+skel.setAttribute('aria-pressed', String(A.skeletonOn));
+}
+A.onChange(sync);
+sync();
+return { el, sync };
+}
+export function createAnimBar(app, host) {
+const A = app.anim;
+const play = iconButton({ icon: 'pause', title: 'Играть или пауза', onClick: () => A.toggle() });
+const time = h('span', { class: 'mb-time' }, '0:00.0');
+const total = h('span', { class: 'mb-time mb-total' }, '0:00.0');
+const seek = h('input', { type: 'range', class: 'range mb-seek', min: 0, max: 1, step: 0.01, value: 0, 'aria-label': 'Перемотка анимации' });
+seek.addEventListener('input', () => {
+A.pause();
+A.seek(parseFloat(seek.value));
+});
+const settings = createAnimSettings(app);
+const el = h('div', { class: 'media-bar anim-bar vp-pill', hidden: true, role: 'region', 'aria-label': 'Анимация' }, play, time, seek, total, settings.el);
+host.append(el);
+function paint() {
+time.textContent = fmt(A.time);
+total.textContent = fmt(A.duration);
+seek.max = A.duration;
+if (document.activeElement !== seek) seek.value = A.time;
+seek.style.setProperty('--p', Math.min(100, (A.time / A.duration) * 100) + '%');
+}
+function sync() {
+const vid = (app.media.pm.kind === 'video' || app.media.pm.kind === 'rec') && app.media.present;
+el.hidden = !A.has || vid || document.getElementById('app')?.classList.contains('fx-anim-active');
+if (el.hidden) return;
+play.innerHTML = '<span class="ic-wrap">' + icon(A.playing ? 'pause' : 'play', 18) + '</span>';
+play.dataset.tip = A.playing ? 'Пауза' : 'Играть';
+play.classList.toggle('is-paused', !A.playing);
+paint();
 }
 A.onChange(sync);
 app.bus.on('animpose', () => {
-if (A.has && A.playing) time.set(A.time);
+if (!el.hidden) paint();
 });
+app.bus.on('media', sync);
+app.bus.on('fxanim', sync);
+new MutationObserver(sync).observe(document.getElementById('app') || document.body, { attributes: true, attributeFilter: ['class'] });
 sync();
-return { el: sec.el, sync };
+return { el, sync };
 }

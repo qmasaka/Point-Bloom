@@ -6,7 +6,7 @@ import { sampleSurface, overrideMats } from './pointcloud.js';
 import { getDevice } from './device-card.js';
 import { formatCount } from './capabilities.js';
 import { createMediaPanel } from './panel-media.js';
-import { createAnimPanel } from './panel-anim.js';
+import { createAnimSettings } from './panel-anim.js';
 import { clipActivity } from './anim-activity.js';
 import { attachPreview } from './fx-previews.js';
 import { SHAPES as POINT_SHAPE_LIST } from './panel-points.js';
@@ -426,7 +426,7 @@ rotate: { id: 'rotate', name: 'Вращение', icon: 'arrows-clockwise', hint
 bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 };
 const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-const ANIM_LAYERS = ['morph', 'curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth'];
+const ANIM_LAYERS = ['morph', 'curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail'];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
 const animQuickBtn = button({
@@ -673,7 +673,7 @@ const el = cs[0].fhead.querySelector('.fx-folder-n');
 el.textContent = k ? String(k) : '';
 }
 }
-const hiddenGrp = (c) => c.def.group === 'Видео' || c.def.group === 'Фото и видео' || c.def.group === 'Персонаж';
+const hiddenGrp = (c) => c.def.group === 'Видео' || c.def.group === 'Фото и видео' || c.def.group === 'Анимация';
 select_((cards.find((c) => c.L.on && !hiddenGrp(c)) || cards.find((c) => !hiddenGrp(c)) || cards[0]).def.id);
 const sourceSeg = segmented({
 options: [
@@ -874,7 +874,7 @@ onClick: () => toggleAnim(true)
 });
 const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Объём (тень)', shade.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, rotSpeedRow, hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Производительность'), autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), perfHint, h('div', { class: 'fx-sub' }, 'Секвенсор и запись анимации'), animTimelineOpenBtn, field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 const secMedia = createMediaPanel(app, null, { fx: true }).section;
-const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, createAnimPanel(app, 'fx'), secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
+const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
 const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 let curTab = 'insp';
 try {
@@ -1307,9 +1307,12 @@ const camTrackBody = h('div', { class: 'fx-anim-lane-body fx-anim-cam-body' }, c
 const camLane = h('div', { class: 'fx-anim-lane fx-anim-cam-lane' }, camTitle, camTrackBody);
 const charArrow = h('span', { class: 'ic-wrap fx-anim-char-arrow', html: icon('caret-right', 12) });
 const charSub = h('span', { class: 'fx-anim-char-sub' });
-const charTitle = h('div', { class: 'fx-anim-track-label fx-anim-char-label', role: 'button', tabindex: '0', 'data-tip': 'Яркость показывает, как сильно движется персонаж. Нажмите, чтобы увидеть отдельные кости', 'data-tip-pos': 'right' }, charArrow, h('span', { class: 'fx-anim-char-names' }, h('span', { class: 'fx-anim-lane-name' }, 'Персонаж'), charSub));
+const charTitle = h('div', { class: 'fx-anim-track-label fx-anim-char-label', role: 'button', tabindex: '0', 'data-tip': 'Яркость показывает, как сильно движется модель. Нажмите, чтобы увидеть отдельные кости и настройки анимации', 'data-tip-pos': 'right' }, charArrow, h('span', { class: 'fx-anim-char-names' }, h('span', { class: 'fx-anim-lane-name' }, 'Анимация'), charSub));
 const charCanvas = h('canvas', { class: 'fx-anim-char-canvas' });
-const charBody = h('div', { class: 'fx-anim-lane-body fx-anim-char-body', 'data-tip': 'Яркая полоса: кости движутся. Тёмная: персонаж почти стоит. Тонкие линии: начало нового повтора клипа', 'data-tip-pos': 'top' }, charCanvas);
+const charBody = h('div', { class: 'fx-anim-lane-body fx-anim-char-body', 'data-tip': 'Яркая полоса: кости движутся. Тёмная: модель почти стоит. Тонкие линии: начало нового повтора клипа', 'data-tip-pos': 'top' }, charCanvas);
+const charSet = createAnimSettings(app);
+const charSetRow = h('div', { class: 'fx-anim-char-set' }, charSet.el);
+charSetRow.hidden = true;
 const charLane = h('div', { class: 'fx-anim-lane fx-anim-char-lane' }, charTitle, charBody);
 charLane.hidden = true;
 let charOpen = false;
@@ -1379,6 +1382,7 @@ charTitle.addEventListener('click', () => {
 charOpen = !charOpen;
 charArrow.innerHTML = icon(charOpen ? 'caret-down' : 'caret-right', 12);
 charLane.classList.toggle('is-open', charOpen);
+charSetRow.hidden = !charOpen;
 drawChar();
 clampAnimH();
 });
@@ -1413,7 +1417,7 @@ button({ label: '+ Вихри', variant: 'primary', cls: 'btn-sm', onClick: () =
 button({ label: '+ Волны', variant: 'primary', cls: 'btn-sm', onClick: () => { selClip = engine.animAddClip('wave'); animSync(); } })
 )
 );
-const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, charLane, fxLanesWrap, emptyHint);
+const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, charLane, charSetRow, fxLanesWrap, emptyHint);
 const playheadLine = h('div', { class: 'fx-anim-playhead-line' });
 stage.append(rulerRow, lanesScroll, playheadLine);
 stage.addEventListener('scroll', () => stage.classList.toggle('is-scrolled', stage.scrollLeft > 2), { passive: true });
@@ -1498,6 +1502,51 @@ selClip = c;
 selKey = null;
 animSync();
 };
+{
+const MIME = 'application/x-fx-layer';
+for (const c of cards) {
+if (!ANIM_LAYERS.includes(c.def.id)) continue;
+c.card.draggable = true;
+c.card.addEventListener('dragstart', (e) => {
+e.dataTransfer.setData(MIME, c.def.id);
+e.dataTransfer.setData('text/plain', c.def.name);
+e.dataTransfer.effectAllowed = 'copy';
+appEl.classList.add('is-fx-dragging');
+});
+c.card.addEventListener('dragend', () => appEl.classList.remove('is-fx-dragging'));
+}
+const vp = document.getElementById('viewport');
+const has = (e) => Array.from(e.dataTransfer?.types || []).includes(MIME);
+vp.addEventListener('dragover', (e) => {
+if (!has(e)) return;
+e.preventDefault();
+e.dataTransfer.dropEffect = 'copy';
+animPanel.classList.toggle('is-drop', !animPanel.hidden && !!e.target.closest('.fx-anim'));
+});
+vp.addEventListener('dragleave', (e) => {
+if (!e.relatedTarget || !vp.contains(e.relatedTarget)) animPanel.classList.remove('is-drop');
+});
+vp.addEventListener('drop', (e) => {
+if (!has(e)) return;
+e.preventDefault();
+animPanel.classList.remove('is-drop');
+appEl.classList.remove('is-fx-dragging');
+const id = e.dataTransfer.getData(MIME);
+if (!ANIM_LAYERS.includes(id)) return;
+const wasHidden = animPanel.hidden;
+let start;
+if (!wasHidden && e.target.closest('.fx-anim')) {
+const r = rulerBody.getBoundingClientRect();
+if (r.width > 0) start = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (st.anim.dur || 8) - 0.5;
+}
+if (wasHidden) toggleAnim(true);
+const c = engine.animAddClip(id, start == null ? {} : { start: Math.max(0, start) });
+selClip = c;
+selKey = null;
+animSync();
+app.toast(`Блок «${getLayerDef(id).name}» добавлен на таймлайн`, 'info');
+});
+}
 document.getElementById('viewport').addEventListener('pointerdown', (e) => {
 if (engine.animPlaying && !engine.animRec && !e.target.closest('.fx-anim, .fx-bar, .popover')) {
 engine.animPause();
@@ -2050,7 +2099,7 @@ modelNote.textContent = kind === 'cloud' ? `Берётся облако точе
 countActive();
 for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoLoaded;
 for (const c of cards) if (c.def.group === 'Фото и видео') c.folder.hidden = !engine.pm.ready;
-for (const c of cards) if (c.def.group === 'Персонаж') c.folder.hidden = !engine.animReady;
+for (const c of cards) if (c.def.group === 'Анимация') c.folder.hidden = !engine.animReady;
 const cur = cards.find((c) => c.def.id === selected);
 if (cur && cur.folder.hidden) select_((cards.find((c) => !c.folder.hidden && c.L.on) || cards.find((c) => !c.folder.hidden) || cards[0]).def.id);
 renderReactList();

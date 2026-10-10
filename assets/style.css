@@ -5823,3 +5823,27 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 .fx-anim-char-names { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
 .fx-anim-char-sub { font-size: 10px; font-weight: 400; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; }
 .fx-anim-char-body { cursor: pointer; }
+
+/* ------------------------------------------------ управление анимацией модели */
+.anim-bar { width: min(640px, calc(100% - 140px)); }
+.anim-bar .mb-seek { flex: 1; min-width: 60px; }
+.anim-settings { display: flex; align-items: center; gap: 6px; flex: none; }
+.anim-settings .as-clip { width: 112px; }
+.anim-settings .as-clip[hidden] { display: none; }
+.anim-settings .btn-icon { width: 28px; height: 28px; flex: none; }
+.anim-settings .btn-icon[aria-pressed='true'] { color: var(--accent-text); background: var(--accent-soft, rgba(255, 255, 255, 0.08)); }
+.fx-anim-char-set { display: flex; justify-content: flex-end; padding: 4px 0 6px var(--fx-head-w, 130px); }
+.fx-anim-char-set[hidden] { display: none; }
+@media (max-width: 900px) {
+	.anim-bar { flex-wrap: wrap; width: calc(100% - 16px); }
+	.anim-bar .mb-seek { order: 5; flex-basis: 100%; }
+}
+
+/* разделители внутри стеклянных блоков такие же прозрачные, как рамки блоков: непрозрачная линия просвечивала тёмной полосой */
+@container app (min-width: 901px) {
+	.ui-float .sidebar, .ui-float .fx-left, .ui-float .fx-bar, .ui-float .media-bar, .ui-float .fx-anim, .ui-float .topbar, .ui-float .popover { --line: var(--fxg-line); }
+}
+
+/* перетаскивание эффекта на таймлайн */
+.fx-anim.is-drop { outline: 2px dashed var(--accent); outline-offset: -4px; }
+.is-fx-dragging .fx-anim:not([hidden]) { box-shadow: 0 0 0 2px var(--accent-soft, rgba(229, 138, 69, 0.4)); }

@@ -116,11 +116,6 @@ for (let y = 0; y < 8; y++) for (let x = 0; x < 16; x++) if ((x + y) % 2 === 0) 
 g.fillStyle = 'rgba(255,255,255,0.14)';
 g.fillRect(x * 64, y * 64, 64, 64);
 }
-g.fillStyle = 'rgba(10,12,16,0.8)';
-g.font = '700 54px sans-serif';
-g.textAlign = 'center';
-g.textBaseline = 'middle';
-g.fillText('\u25B2', 512, 256);
 const tex = new THREE.CanvasTexture(cv);
 tex.colorSpace = THREE.SRGBColorSpace;
 tex.flipY = false;

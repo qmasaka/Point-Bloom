@@ -149,8 +149,10 @@ export class Viewport {
 		obj.updateWorldMatrix(true, true);
 		obj.traverse((o) => {
 			if (o.userData.helper || !o.geometry || !(o.isMesh || o.isPoints || o.isLine)) return;
-			if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
-			const b = o.geometry.boundingBox;
+			// у меша со скелетом габариты считаются по текущей позе костей, иначе рамка выделения остаётся на месте
+			if (o.isSkinnedMesh && o.skeleton) o.computeBoundingBox();
+			else if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+			const b = o.isSkinnedMesh && o.boundingBox ? o.boundingBox : o.geometry.boundingBox;
 			if (!b || b.isEmpty()) return;
 			target.union(_tmpBox.copy(b).applyMatrix4(o.matrixWorld));
 		});

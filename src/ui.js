@@ -7,7 +7,7 @@ import { initFloatingPanels } from './fx-float.js';
 import { segmented, switchRow, button } from './ui-kit.js';
 import { AxisGizmo } from './gizmo.js';
 import { createScenePanel } from './panel-scene.js';
-import { createAnimPanel } from './panel-anim.js';
+import { createAnimBar } from './panel-anim.js';
 import { initMobile } from './mobile.js';
 import { createMaterialPanel } from './panel-material.js';
 import { createViewPanel, DISPLAY_MODES } from './panel-view.js';
@@ -375,9 +375,8 @@ export class UI {
 		for (const name of ['scene', 'material', 'points', 'media', 'view']) this.tabs[name] = $(`#panel-${name}`);
 		$$('.tab').forEach((t) => t.addEventListener('click', () => this.showTab(t.dataset.tab)));
 		this.scenePanel = createScenePanel(app, this.tabs.scene);
-		// блок анимации персонажа: виден, только если в файле есть клипы
-		this.animPanel = createAnimPanel(app, 'edit');
-		this.tabs.scene.insertBefore(this.animPanel.el, this.tabs.scene.children[2] || null);
+		// полоса анимации над сценой: видна, только если в файле есть клипы
+		this.animBar = createAnimBar(app, $('#viewport'));
 		this.materialPanel = createMaterialPanel(app, this.tabs.material);
 		this.viewPanel = createViewPanel(app, this.tabs.view);
 		this.pointsPanel = createPointsPanel(app, this.tabs.points);
