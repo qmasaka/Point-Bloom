@@ -494,7 +494,7 @@ export function createEffectsPanel(app, root, engine) {
 					save();
 				},
 			});
-			const amount = slider({ min: 0, max: def.max, step: 0.05, value: L.amount, digits: 2, onInput: (v) => { L.amount = v; }, onChange: save });
+			const amount = slider({ noNorm: true, min: 0, max: def.max, step: 0.05, value: L.amount, digits: 2, onInput: (v) => { L.amount = v; }, onChange: save });
 			const body = h('div', { class: 'fx-layer-body' });
 			if (def.id === 'physics') {
 				const collapseBtn = button({

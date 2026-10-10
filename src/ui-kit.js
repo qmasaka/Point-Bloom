@@ -124,13 +124,17 @@ export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onCh
 	let lo = min;
 	let hi = max;
 	// log: бегунок работает по шкале 0..1000, значение растёт по степенному закону (для больших диапазонов)
-	const toPos = (v) => (log ? (Math.log(Math.max(v, lo) / lo) / Math.log(hi / lo)) * 1000 : v);
+	// norm: бегунок идёт по шкале 0..1000, поэтому крайнее положение всегда ровно 1, даже если диапазон не делится на шаг
+	const scaled = log || norm;
+	const toPos = (v) => (log ? (Math.log(Math.max(v, lo) / lo) / Math.log(hi / lo)) * 1000 : norm ? clamp((v - lo) / (hi - lo), 0, 1) * 1000 : v);
 	const fromPos = (p) => {
-		if (!log) return p;
-		const v = lo * Math.pow(hi / lo, p / 1000);
+		if (!scaled) return p;
+		if (p >= 1000) return hi;
+		if (p <= 0) return lo;
+		const v = log ? lo * Math.pow(hi / lo, p / 1000) : lo + (p / 1000) * (hi - lo);
 		return clamp(Math.round(v / step) * step, lo, hi);
 	};
-	const range = h('input', { type: 'range', class: 'range', min: log ? 0 : min, max: log ? 1000 : max, step: log ? 1 : step, value: toPos(value) });
+	const range = h('input', { type: 'range', class: 'range', min: scaled ? 0 : min, max: scaled ? 1000 : max, step: scaled ? 1 : step, value: toPos(value) });
 	const out = h('input', { type: 'text', class: 'num-out', inputmode: 'decimal', 'aria-label': 'Значение' });
 	const cur = () => fromPos(parseFloat(range.value));
 	// norm: движок получает реальное значение, а на экране шкала всегда от 0 до 1, чтобы числа читались одинаково во всех настройках
@@ -139,9 +143,9 @@ export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onCh
 		const v = log ? lo * Math.pow(hi / lo, f) : lo + f * (hi - lo);
 		return clamp(Math.round(v / step) * step, lo, hi);
 	};
-	const show = () => (out.value = norm ? fmt(frac(cur()), 2) : format ? format(cur()) : fmt(cur(), digits) + unit);
+	const show = () => (out.value = norm ? fmt(Math.round(parseFloat(range.value) / 10) / 100, 2) : format ? format(cur()) : fmt(cur(), digits) + unit);
 	const paint = () => {
-		const p = log ? parseFloat(range.value) / 10 : ((parseFloat(range.value) - lo) / (hi - lo)) * 100;
+		const p = scaled ? parseFloat(range.value) / 10 : ((parseFloat(range.value) - lo) / (hi - lo)) * 100;
 		range.style.setProperty('--p', clamp(p, 0, 100) + '%');
 		show();
 	};
@@ -177,7 +181,7 @@ export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onCh
 			const v = cur();
 			lo = a;
 			hi = b;
-			if (!log) {
+			if (!scaled) {
 				range.min = a;
 				range.max = b;
 			}
@@ -189,7 +193,7 @@ export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onCh
 /** Ползунок настроек эффектов: числа читаются одинаково, шкала до 1 (до 2, если так задумано). noNorm оставляет реальные величины: число точек, секунды, кадры */
 export function fxSlider(o) {
 	if (o.noNorm) return slider(o);
-	if (o.min >= -1 && o.min <= 0.1 && o.max <= 2) return slider({ ...o, format: undefined, unit: '', digits: 2 });
+	if ((o.min === 0 || o.min === -1) && (o.max === 1 || o.max === 2)) return slider({ ...o, format: undefined, unit: '', digits: 2 });
 	return slider({ ...o, norm: true });
 }
 export function numberField({ value = 0, step = 0.1, onChange, axis, digits = 4, min = -Infinity, max = Infinity, cls = '' }) {

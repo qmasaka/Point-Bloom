@@ -446,6 +446,7 @@ setTimeout(() => this.app.viewport.resize(), 60);
 setTimeout(() => vpEl.classList.remove('ws-out'), 160);
 }
 makeSidebarResizable() {
+const SIDEBAR_MIN = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--fxl-w'), 10) || 252;
 const resizer = $('#sidebarResizer');
 const sidebar = $('#sidebar');
 const ws = $('.workspace');
@@ -454,7 +455,7 @@ try {
 const saved = localStorage.getItem('objglb.sidebar-w');
 if (saved) {
 const w = parseInt(saved, 10);
-if (w >= 200 && w <= 700) {
+if (w >= SIDEBAR_MIN && w <= 700) {
 document.documentElement.style.setProperty('--sidebar-w', `${w}px`);
 }
 }
@@ -479,7 +480,7 @@ if (!isResizing) return;
 const z = uiZoom();
 const delta = (startX - e.clientX) / z;
 let newW = Math.round(startW / z + delta);
-const minW = 200;
+const minW = SIDEBAR_MIN;
 const maxW = Math.max(minW, Math.min(650, window.innerWidth / z - 200));
 newW = Math.max(minW, Math.min(maxW, newW));
 document.documentElement.style.setProperty('--sidebar-w', `${newW}px`);
