@@ -1,5 +1,5 @@
 import { h } from './util.js';
-import { section, field, slider, segmented, select, switchRow, numberField } from './ui-kit.js';
+import { section, field, slider, fxSlider, segmented, select, switchRow, numberField } from './ui-kit.js';
 import { BACKGROUNDS } from './viewport.js';
 export const DISPLAY_MODES = [
 { value: 'material', label: 'Материал', icon: 'palette', title: 'Текстуры и материалы (1)' },
@@ -17,9 +17,14 @@ app.display.apply();
 save();
 };
 const flat = switchRow('Плоское затенение', { value: s.flat, onChange: (v) => { s.flat = v; redisplay(); } });
-const fps = switchRow('Показывать FPS', { value: s.render.fps, onChange: (v) => { s.render.fps = v; app.ui.refreshFps(); save(); } });
-const autoQ = switchRow('Авто-качество', { value: s.render.autoQuality, onChange: (v) => { s.render.autoQuality = v; save(); } });
-const capSeg = segmented({ cls: 'seg-tight', options: [{ value: 0, label: 'Без лимита' }, { value: 30, label: '30 к/с', title: 'Вдвое меньше нагрузка на видеокарту и нагрев' }], value: s.render.fpsCap, onChange: (v) => { s.render.fpsCap = Number(v); save(); } });
+const ovRows = {};
+for (const [key, label, hint] of [
+['grid', 'Сетка', 'Плоскость пола и шаг сетки'],
+['axes', 'Оси координат', 'Красная линия X, синяя Z'],
+['bbox', 'Рамка выделения', 'Габаритный бокс выбранного объекта'],
+]) {
+ovRows[key] = switchRow(label, { value: s.overlays[key], onChange: (v) => { s.overlays[key] = v; app.display.apply(); app.viewport.updateSelectionBox(); save(); } }, hint);
+}
 const skel = switchRow('Показать скелет', { value: app.anim.skeletonOn, onChange: (v) => app.anim.setSkeleton(v) }, 'Кости видны поверх модели; сайт их не анимирует, а проигрывает готовую анимацию из файла');
 const syncSkel = () => {
 skel.el.hidden = !app.anim.has;
@@ -27,7 +32,7 @@ skel.set(app.anim.skeletonOn);
 };
 app.anim.onChange(syncSkel);
 syncSkel();
-const secDisplay = section('Отображение', { key: 'v-display' }, flat.el, fps.el, autoQ.el, skel.el, field('Лимит кадров', capSeg.el, { wide: true }));
+const secDisplay = section('Отображение', { key: 'v-display' }, flat.el, ovRows.grid.el, ovRows.axes.el, ovRows.bbox.el, skel.el);
 const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Фон сцены' });
 const swButtons = new Map();
 for (const [id, bg] of Object.entries(BACKGROUNDS)) {
@@ -57,20 +62,20 @@ app.display.apply();
 save();
 },
 });
-const exposure = slider({ min: 0.2, max: 3, step: 0.05, value: s.render.exposure, onInput: (v) => { s.render.exposure = v; app.viewport.applyRenderSettings(); }, onChange: save });
-const env = slider({ min: 0, max: 2, step: 0.05, value: s.render.env, onInput: (v) => { s.render.env = v; app.viewport.applyRenderSettings(); }, onChange: save });
+const exposure = fxSlider({ min: 0, max: 2, step: 0.05, value: s.render.exposure, onInput: (v) => { s.render.exposure = v; app.viewport.applyRenderSettings(); }, onChange: save });
+const env = fxSlider({ min: 0, max: 2, step: 0.05, value: s.render.env, onInput: (v) => { s.render.env = v; app.viewport.applyRenderSettings(); }, onChange: save });
 const head = switchRow('Свет от камеры', { value: s.render.headlight, onChange: (v) => { s.render.headlight = v; app.viewport.applyRenderSettings(); save(); } });
-const secLight = section('Свет и фон', { key: 'v-light', open: false }, field('Фон', swatches), field('Тон', tone.el), field('Экспозиция', exposure.el), field('Окружение', env.el), head.el);
-const fov = slider({ min: 10, max: 100, step: 1, value: s.render.fov, digits: 0, unit: '°', onInput: (v) => { s.render.fov = v; app.nav.applyCamera(); }, onChange: save });
-const ortho = switchRow('Ортогональная проекция', { value: s.nav.ortho, onChange: () => { app.nav.toggleOrtho(); save(); } });
-const secCamera = section('Камера', { key: 'v-camera', open: false }, field('Поле зрения', fov.el), ortho.el);
+const secLight = section('Свет и фон', { key: 'v-light' }, field('Фон', swatches), field('Тон', tone.el), field('Яркость', exposure.el), field('Окружение', env.el), head.el);
 const nav = s.nav;
+const fov = fxSlider({ noNorm: true, min: 10, max: 100, step: 1, value: s.render.fov, digits: 0, unit: '°', onInput: (v) => { s.render.fov = v; app.nav.applyCamera(); }, onChange: save });
+const ortho = switchRow('Ортогональная проекция', { value: s.nav.ortho, onChange: () => { app.nav.toggleOrtho(); save(); } });
+const autoPersp = switchRow('Авто-перспектива', { value: nav.autoPersp, onChange: (v) => { nav.autoPersp = v; save(); } }, 'Виды спереди и сверху включают ортогональную проекцию');
+const secCamera = section('Камера', { key: 'v-camera' }, field('Поле зрения', fov.el), ortho.el, autoPersp.el);
 const rows = {
 leftOrbit: switchRow('Левая кнопка вращает', { value: nav.leftOrbit, onChange: (v) => { nav.leftOrbit = v; save(); } }),
 trackpad: switchRow('Режим трекпада', { value: nav.trackpad, onChange: (v) => { nav.trackpad = v; save(); } }, 'Скролл двумя пальцами вращает сцену'),
 zoomToCursor: switchRow('Масштаб к курсору', { value: nav.zoomToCursor, onChange: (v) => { nav.zoomToCursor = v; save(); } }),
 invertZoom: switchRow('Инвертировать колесо', { value: nav.invertZoom, onChange: (v) => { nav.invertZoom = v; save(); } }),
-autoPersp: switchRow('Авто-перспектива', { value: nav.autoPersp, onChange: (v) => { nav.autoPersp = v; save(); } }, 'Виды спереди и сверху включают ортогональную проекцию'),
 };
 const legend = h(
 'div',
@@ -83,16 +88,21 @@ const legend = h(
 ['Центр на точке', 'Двойной клик по модели'],
 ].map(([a, b]) => h('div', { class: 'help-row' }, h('span', {}, a), h('span', { class: 'help-keys' }, b)))
 );
-const secNav = section('Навигация', { key: 'v-nav', open: false }, ...Object.values(rows).map((r) => r.el), legend);
+const secNav = section('Управление мышью', { key: 'v-nav', open: false }, ...Object.values(rows).map((r) => r.el), legend);
 const snapOn = switchRow('Привязка к шагу', { value: s.snap.on, onChange: (v) => { s.snap.on = v; app.model.applySnap(); app.bus.emit('tool'); save(); } });
 const snapMove = numberField({ value: s.snap.move, step: 0.05, digits: 4, min: 0.0001, onChange: (v) => { s.snap.move = v; app.model.applySnap(); save(); } });
 const snapRot = numberField({ value: s.snap.rotate, step: 5, digits: 2, min: 0.1, onChange: (v) => { s.snap.rotate = v; app.model.applySnap(); save(); } });
 const snapScale = numberField({ value: s.snap.scale, step: 0.05, digits: 3, min: 0.001, onChange: (v) => { s.snap.scale = v; app.model.applySnap(); save(); } });
 const secSnap = section('Привязка', { key: 'v-snap', open: false }, snapOn.el, field('Шаг сдвига', snapMove.el), field('Шаг поворота °', snapRot.el), field('Шаг масштаба', snapScale.el));
-root.append(secDisplay.el, secLight.el, secCamera.el, secNav.el, secSnap.el);
+const autoQ = switchRow('Авто-качество', { value: s.render.autoQuality, onChange: (v) => { s.render.autoQuality = v; save(); } }, 'Снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется');
+const capSeg = segmented({ cls: 'seg-tight', options: [{ value: 0, label: 'Без лимита' }, { value: 30, label: '30 к/с', title: 'Вдвое меньше нагрузка на видеокарту и нагрев' }], value: s.render.fpsCap, onChange: (v) => { s.render.fpsCap = Number(v); save(); } });
+const fps = switchRow('Показывать FPS', { value: s.render.fps, onChange: (v) => { s.render.fps = v; app.ui.refreshFps(); save(); } });
+const secPerf = section('Производительность', { key: 'v-perf', open: false }, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), fps.el);
+root.append(secDisplay.el, secLight.el, secCamera.el, secNav.el, secSnap.el, secPerf.el);
 const sync = () => {
 swButtons.forEach((x, k) => x.setAttribute('aria-checked', String(k === s.render.bg)));
 flat.set(s.flat);
+for (const k of Object.keys(ovRows)) ovRows[k].set(s.overlays[k]);
 ortho.set(app.nav.ortho);
 snapOn.set(s.snap.on);
 };

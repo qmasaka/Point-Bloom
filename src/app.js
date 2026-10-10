@@ -30,6 +30,7 @@ export class App {
 		this.anim = new AnimController(this);
 		this.bus.on('scene', () => this.anim.scan());
 		this.ui = new UI(this);
+		this._setLast = this._settingsSnap();
 	}
 
 	start() {
@@ -147,7 +148,68 @@ export class App {
 
 	saveSettings() {
 		saveSettings(this.settings);
+		this._recordSettings();
 		this.bus.emit('settings');
+	}
+
+	/** Настройки вида, точек и медиа отменяются Ctrl+Z, как и правки модели. Частые изменения подряд (тяга ползунка) склеиваются в одну отмену */
+	_settingsSnap() {
+		const { exportOpts, importOpts, ...rest } = this.settings;
+		return JSON.stringify(rest);
+	}
+
+	_recordSettings() {
+		const snap = this._settingsSnap();
+		if (this._setLast === undefined) {
+			this._setLast = snap;
+			return;
+		}
+		if (snap === this._setLast) return;
+		const prev = this._setLast;
+		this._setLast = snap;
+		const st = this.history.undoStack;
+		const top = st[st.length - 1];
+		const now = performance.now();
+		if (top && top.kind === 'settings' && now - top.t < 900) {
+			top.after = snap;
+			top.t = now;
+			return;
+		}
+		const app = this;
+		this.history.push({
+			kind: 'settings',
+			label: 'Настройки',
+			before: prev,
+			after: snap,
+			t: now,
+			undo() {
+				app._restoreSettings(this.before);
+			},
+			redo() {
+				app._restoreSettings(this.after);
+			},
+		});
+	}
+
+	_restoreSettings(snap) {
+		const data = JSON.parse(snap);
+		const put = (dst, src) => {
+			for (const k of Object.keys(src)) {
+				if (src[k] && typeof src[k] === 'object' && !Array.isArray(src[k]) && dst[k] && typeof dst[k] === 'object') put(dst[k], src[k]);
+				else dst[k] = src[k];
+			}
+		};
+		put(this.settings, data);
+		this._setLast = snap;
+		saveSettings(this.settings);
+		if (this.nav.ortho !== this.settings.nav.ortho) this.nav.setOrtho(this.settings.nav.ortho);
+		this.viewport.applyRenderSettings();
+		this.display.apply();
+		this.model.applySnap();
+		this.ui.rebuildSettingsPanels();
+		this.bus.emit('view');
+		this.bus.emit('settings');
+		this.viewport.invalidate();
 	}
 
 	/** После любых изменений материалов и текстур */

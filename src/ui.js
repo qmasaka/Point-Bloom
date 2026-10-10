@@ -243,7 +243,24 @@ export class UI {
 	toggleExportPop(force) {
 		const pop = this.exportPop;
 		const open = force !== undefined ? force : pop.hidden;
+		const wasOpen = !pop.hidden;
 		pop.hidden = !open;
+		// пока открыт экспорт, всё, что играло на фоне (анимация модели, таймлайн эффектов, видео), стоит на паузе; при выходе продолжает с того же места
+		const app = this.app;
+		const eng = this.effectsEngine;
+		if (open && !wasOpen) {
+			const pm = app.media.pm;
+			this._expPaused = { anim: app.anim.playing, fx: !!eng.animPlaying && !eng.animRec, media: !!pm.playing && !pm.recording };
+			if (this._expPaused.anim) app.anim.pause();
+			if (this._expPaused.fx) eng.animPause();
+			if (this._expPaused.media) pm.pause();
+		} else if (!open && wasOpen && this._expPaused) {
+			const was = this._expPaused;
+			this._expPaused = null;
+			if (was.anim) app.anim.play();
+			if (was.fx) eng.animPlay();
+			if (was.media) app.media.pm.play();
+		}
 		$('#btnExport').setAttribute('aria-expanded', String(open));
 	}
 
@@ -328,8 +345,12 @@ export class UI {
 				app.viewport.updateSelectionBox();
 				app.saveSettings();
 			} }, hint);
+			(this._ovRows ||= {})[key] = r;
 			pop.append(r.el);
 		}
+		app.bus.on('view', () => {
+			for (const k of Object.keys(this._ovRows)) this._ovRows[k].set(s.overlays[k]);
+		});
 		const close = () => {
 			pop.hidden = true;
 			btn.setAttribute('aria-expanded', 'false');
@@ -370,6 +391,15 @@ export class UI {
 	}
 
 	// --------------------------------------------------------- боковая панель
+	/** После отмены настроек панели собираются заново и показывают восстановленные значения */
+	rebuildSettingsPanels() {
+		const app = this.app;
+		for (const [name, make, prop] of [['view', createViewPanel, 'viewPanel'], ['points', createPointsPanel, 'pointsPanel'], ['media', createMediaPanel, 'mediaPanel']]) {
+			this.tabs[name].replaceChildren();
+			this[prop] = make(app, this.tabs[name]);
+		}
+	}
+
 	buildSidebar() {
 		const app = this.app;
 		for (const name of ['scene', 'material', 'points', 'media', 'view']) this.tabs[name] = $(`#panel-${name}`);

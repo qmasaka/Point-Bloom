@@ -218,7 +218,23 @@ if (!pop.hidden && e.target === pop) this.toggleExportPop(false);
 toggleExportPop(force) {
 const pop = this.exportPop;
 const open = force !== undefined ? force : pop.hidden;
+const wasOpen = !pop.hidden;
 pop.hidden = !open;
+const app = this.app;
+const eng = this.effectsEngine;
+if (open && !wasOpen) {
+const pm = app.media.pm;
+this._expPaused = { anim: app.anim.playing, fx: !!eng.animPlaying && !eng.animRec, media: !!pm.playing && !pm.recording };
+if (this._expPaused.anim) app.anim.pause();
+if (this._expPaused.fx) eng.animPause();
+if (this._expPaused.media) pm.pause();
+} else if (!open && wasOpen && this._expPaused) {
+const was = this._expPaused;
+this._expPaused = null;
+if (was.anim) app.anim.play();
+if (was.fx) eng.animPlay();
+if (was.media) app.media.pm.play();
+}
 $('#btnExport').setAttribute('aria-expanded', String(open));
 }
 exportNow() {
@@ -294,8 +310,12 @@ app.display.apply();
 app.viewport.updateSelectionBox();
 app.saveSettings();
 } }, hint);
+(this._ovRows ||= {})[key] = r;
 pop.append(r.el);
 }
+app.bus.on('view', () => {
+for (const k of Object.keys(this._ovRows)) this._ovRows[k].set(s.overlays[k]);
+});
 const close = () => {
 pop.hidden = true;
 btn.setAttribute('aria-expanded', 'false');
@@ -328,6 +348,13 @@ refreshViewLabel() {
 const app = this.app;
 $('#btnOrtho').setAttribute('aria-pressed', String(app.nav.ortho));
 $('#btnOrtho').dataset.tip = app.nav.ortho ? 'Сейчас: ортогональная. Включить перспективу (5)' : 'Сейчас: перспектива. Включить ортогональную (5)';
+}
+rebuildSettingsPanels() {
+const app = this.app;
+for (const [name, make, prop] of [['view', createViewPanel, 'viewPanel'], ['points', createPointsPanel, 'pointsPanel'], ['media', createMediaPanel, 'mediaPanel']]) {
+this.tabs[name].replaceChildren();
+this[prop] = make(app, this.tabs[name]);
+}
 }
 buildSidebar() {
 const app = this.app;

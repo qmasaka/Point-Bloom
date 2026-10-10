@@ -125464,9 +125464,9 @@ __defs['src/panel-view.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'DISPLAY_MODES', () => DISPLAY_MODES);
 __def(__exports, 'createViewPanel', () => createViewPanel);
-// Вкладка «Вид»: режимы, точки, свет и фон, камера, навигация, привязка.
+// Вкладка «Вид»: отображение, свет и фон, камера, управление мышью, привязка, производительность. Те же блоки и подписи в «Виде» режима эффектов.
 const { h } = __req('src/util.js');
-const { section, field, slider, segmented, select, switchRow, numberField } = __req('src/ui-kit.js');
+const { section, field, slider, fxSlider, segmented, select, switchRow, numberField } = __req('src/ui-kit.js');
 const { BACKGROUNDS } = __req('src/viewport.js');
 
 const DISPLAY_MODES = [
@@ -125488,9 +125488,14 @@ function createViewPanel(app, root) {
 
 	// ------------------------------------------------------------ отображение
 	const flat = switchRow('Плоское затенение', { value: s.flat, onChange: (v) => { s.flat = v; redisplay(); } });
-	const fps = switchRow('Показывать FPS', { value: s.render.fps, onChange: (v) => { s.render.fps = v; app.ui.refreshFps(); save(); } });
-	const autoQ = switchRow('Авто-качество', { value: s.render.autoQuality, onChange: (v) => { s.render.autoQuality = v; save(); } });
-	const capSeg = segmented({ cls: 'seg-tight', options: [{ value: 0, label: 'Без лимита' }, { value: 30, label: '30 к/с', title: 'Вдвое меньше нагрузка на видеокарту и нагрев' }], value: s.render.fpsCap, onChange: (v) => { s.render.fpsCap = Number(v); save(); } });
+	const ovRows = {};
+	for (const [key, label, hint] of [
+		['grid', 'Сетка', 'Плоскость пола и шаг сетки'],
+		['axes', 'Оси координат', 'Красная линия X, синяя Z'],
+		['bbox', 'Рамка выделения', 'Габаритный бокс выбранного объекта'],
+	]) {
+		ovRows[key] = switchRow(label, { value: s.overlays[key], onChange: (v) => { s.overlays[key] = v; app.display.apply(); app.viewport.updateSelectionBox(); save(); } }, hint);
+	}
 	// скелет есть смысл показывать, только когда в сцене модель с анимацией
 	const skel = switchRow('Показать скелет', { value: app.anim.skeletonOn, onChange: (v) => app.anim.setSkeleton(v) }, 'Кости видны поверх модели; сайт их не анимирует, а проигрывает готовую анимацию из файла');
 	const syncSkel = () => {
@@ -125499,9 +125504,9 @@ function createViewPanel(app, root) {
 	};
 	app.anim.onChange(syncSkel);
 	syncSkel();
-	const secDisplay = section('Отображение', { key: 'v-display' }, flat.el, fps.el, autoQ.el, skel.el, field('Лимит кадров', capSeg.el, { wide: true }));
+	const secDisplay = section('Отображение', { key: 'v-display' }, flat.el, ovRows.grid.el, ovRows.axes.el, ovRows.bbox.el, skel.el);
 
-	// ------------------------------------------------------------------ точки
+	// --------------------------------------------------------------- свет и фон
 	const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Фон сцены' });
 	const swButtons = new Map();
 	for (const [id, bg] of Object.entries(BACKGROUNDS)) {
@@ -125531,24 +125536,24 @@ function createViewPanel(app, root) {
 			save();
 		},
 	});
-	const exposure = slider({ min: 0.2, max: 3, step: 0.05, value: s.render.exposure, onInput: (v) => { s.render.exposure = v; app.viewport.applyRenderSettings(); }, onChange: save });
-	const env = slider({ min: 0, max: 2, step: 0.05, value: s.render.env, onInput: (v) => { s.render.env = v; app.viewport.applyRenderSettings(); }, onChange: save });
+	const exposure = fxSlider({ min: 0, max: 2, step: 0.05, value: s.render.exposure, onInput: (v) => { s.render.exposure = v; app.viewport.applyRenderSettings(); }, onChange: save });
+	const env = fxSlider({ min: 0, max: 2, step: 0.05, value: s.render.env, onInput: (v) => { s.render.env = v; app.viewport.applyRenderSettings(); }, onChange: save });
 	const head = switchRow('Свет от камеры', { value: s.render.headlight, onChange: (v) => { s.render.headlight = v; app.viewport.applyRenderSettings(); save(); } });
-	const secLight = section('Свет и фон', { key: 'v-light', open: false }, field('Фон', swatches), field('Тон', tone.el), field('Экспозиция', exposure.el), field('Окружение', env.el), head.el);
+	const secLight = section('Свет и фон', { key: 'v-light' }, field('Фон', swatches), field('Тон', tone.el), field('Яркость', exposure.el), field('Окружение', env.el), head.el);
 
 	// ------------------------------------------------------------------ камера
-	const fov = slider({ min: 10, max: 100, step: 1, value: s.render.fov, digits: 0, unit: '°', onInput: (v) => { s.render.fov = v; app.nav.applyCamera(); }, onChange: save });
-	const ortho = switchRow('Ортогональная проекция', { value: s.nav.ortho, onChange: () => { app.nav.toggleOrtho(); save(); } });
-	const secCamera = section('Камера', { key: 'v-camera', open: false }, field('Поле зрения', fov.el), ortho.el);
-
-	// ---------------------------------------------------------------- навигация
 	const nav = s.nav;
+	const fov = fxSlider({ noNorm: true, min: 10, max: 100, step: 1, value: s.render.fov, digits: 0, unit: '°', onInput: (v) => { s.render.fov = v; app.nav.applyCamera(); }, onChange: save });
+	const ortho = switchRow('Ортогональная проекция', { value: s.nav.ortho, onChange: () => { app.nav.toggleOrtho(); save(); } });
+	const autoPersp = switchRow('Авто-перспектива', { value: nav.autoPersp, onChange: (v) => { nav.autoPersp = v; save(); } }, 'Виды спереди и сверху включают ортогональную проекцию');
+	const secCamera = section('Камера', { key: 'v-camera' }, field('Поле зрения', fov.el), ortho.el, autoPersp.el);
+
+	// --------------------------------------------------------------- управление
 	const rows = {
 		leftOrbit: switchRow('Левая кнопка вращает', { value: nav.leftOrbit, onChange: (v) => { nav.leftOrbit = v; save(); } }),
 		trackpad: switchRow('Режим трекпада', { value: nav.trackpad, onChange: (v) => { nav.trackpad = v; save(); } }, 'Скролл двумя пальцами вращает сцену'),
 		zoomToCursor: switchRow('Масштаб к курсору', { value: nav.zoomToCursor, onChange: (v) => { nav.zoomToCursor = v; save(); } }),
 		invertZoom: switchRow('Инвертировать колесо', { value: nav.invertZoom, onChange: (v) => { nav.invertZoom = v; save(); } }),
-		autoPersp: switchRow('Авто-перспектива', { value: nav.autoPersp, onChange: (v) => { nav.autoPersp = v; save(); } }, 'Виды спереди и сверху включают ортогональную проекцию'),
 	};
 	const legend = h(
 		'div',
@@ -125561,7 +125566,7 @@ function createViewPanel(app, root) {
 			['Центр на точке', 'Двойной клик по модели'],
 		].map(([a, b]) => h('div', { class: 'help-row' }, h('span', {}, a), h('span', { class: 'help-keys' }, b)))
 	);
-	const secNav = section('Навигация', { key: 'v-nav', open: false }, ...Object.values(rows).map((r) => r.el), legend);
+	const secNav = section('Управление мышью', { key: 'v-nav', open: false }, ...Object.values(rows).map((r) => r.el), legend);
 
 	// ---------------------------------------------------------------- привязка
 	const snapOn = switchRow('Привязка к шагу', { value: s.snap.on, onChange: (v) => { s.snap.on = v; app.model.applySnap(); app.bus.emit('tool'); save(); } });
@@ -125570,11 +125575,18 @@ function createViewPanel(app, root) {
 	const snapScale = numberField({ value: s.snap.scale, step: 0.05, digits: 3, min: 0.001, onChange: (v) => { s.snap.scale = v; app.model.applySnap(); save(); } });
 	const secSnap = section('Привязка', { key: 'v-snap', open: false }, snapOn.el, field('Шаг сдвига', snapMove.el), field('Шаг поворота °', snapRot.el), field('Шаг масштаба', snapScale.el));
 
-	root.append(secDisplay.el, secLight.el, secCamera.el, secNav.el, secSnap.el);
+	// ------------------------------------------------------------ производительность
+	const autoQ = switchRow('Авто-качество', { value: s.render.autoQuality, onChange: (v) => { s.render.autoQuality = v; save(); } }, 'Снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется');
+	const capSeg = segmented({ cls: 'seg-tight', options: [{ value: 0, label: 'Без лимита' }, { value: 30, label: '30 к/с', title: 'Вдвое меньше нагрузка на видеокарту и нагрев' }], value: s.render.fpsCap, onChange: (v) => { s.render.fpsCap = Number(v); save(); } });
+	const fps = switchRow('Показывать FPS', { value: s.render.fps, onChange: (v) => { s.render.fps = v; app.ui.refreshFps(); save(); } });
+	const secPerf = section('Производительность', { key: 'v-perf', open: false }, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), fps.el);
+
+	root.append(secDisplay.el, secLight.el, secCamera.el, secNav.el, secSnap.el, secPerf.el);
 
 	const sync = () => {
 		swButtons.forEach((x, k) => x.setAttribute('aria-checked', String(k === s.render.bg)));
 		flat.set(s.flat);
+		for (const k of Object.keys(ovRows)) ovRows[k].set(s.overlays[k]);
 		ortho.set(app.nav.ortho);
 		snapOn.set(s.snap.on);
 	};
@@ -143375,7 +143387,7 @@ function createEffectsPanel(app, root, engine) {
 	const sizeAudio = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeAudio || 0, digits: 2, onInput: (v) => { st.look.sizeAudio = v; }, onChange: save });
 	const shade = slider({ min: 0, max: 1, step: 0.05, value: st.look.shade || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.shade = v; }, onChange: save });
 	const glow = slider({ min: 0, max: 1, step: 0.05, value: st.look.glow, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.glow = v; }, onChange: save });
-	const bright = slider({ min: 0.3, max: 2, step: 0.05, value: st.look.bright, digits: 2, onInput: (v) => { st.look.bright = v; }, onChange: save });
+	const bright = slider({ min: 0, max: 2, step: 0.05, value: st.look.bright, digits: 2, onInput: (v) => { st.look.bright = v; }, onChange: save });
 	const bloom = slider({ min: 0, max: 1, step: 0.05, value: st.look.bloom || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.bloom = v; }, onChange: save });
 	const aberration = slider({ min: 0, max: 1, step: 0.05, value: st.look.aberration || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.aberration = v; }, onChange: save });
 	const dofOn = switchRow('Глубина резкости (DoF)', { value: st.look.dofOn || false, onChange: (v) => { st.look.dofOn = v; syncDof(); save(); } });
@@ -143397,11 +143409,20 @@ function createEffectsPanel(app, root, engine) {
 		title: 'Открыть мультитрековый таймлайн анимации',
 		onClick: () => toggleAnim(true)
 	});
-	const secLook = section('Вид', { key: 'fx-look' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Объём (тень)', shade.el), field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Свечение', glow.el), field('Яркость', bright.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el), dofOn.el, dofBody, field('Точки', blend.el, { wide: true }), rotate.el, rotSpeedRow, hudSw.el, hudSpec.el, h('div', { class: 'fx-sub' }, 'Производительность'), autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), perfHint, h('div', { class: 'fx-sub' }, 'Секвенсор и запись анимации'), animTimelineOpenBtn, field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
+	// общие с редактором настройки: поле зрения и показ FPS читаются и работают там же одинаково
+	const fovFx = slider({ noNorm: true, min: 10, max: 100, step: 1, value: rset.fov, digits: 0, unit: '°', onInput: (v) => { rset.fov = v; app.nav.applyCamera(); }, onChange: () => app.saveSettings() });
+	const fpsFx = switchRow('Показывать FPS', { value: rset.fps, onChange: (v) => { rset.fps = v; app.ui.refreshFps(); app.saveSettings(); } });
+	// те же блоки и названия, что во вкладке «Вид» редактора
+	const secLookPts = section('Цвет и форма точек', { key: 'fx-look-pts' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Точки', blend.el, { wide: true }));
+	const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el));
+	const secLookCam = section('Камера', { key: 'fx-look-cam' }, field('Поле зрения', fovFx.el), dofOn.el, dofBody, rotate.el, rotSpeedRow);
+	const secLookShow = section('Отображение', { key: 'fx-look-show' }, hudSw.el, hudSpec.el);
+	const secLookPerf = section('Производительность', { key: 'fx-look-perf', open: false }, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), fpsFx.el, perfHint);
+	const secLookRec = section('Запись анимации', { key: 'fx-look-rec', open: false }, animTimelineOpenBtn, field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
 	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
-	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLook]]];
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookPts, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
 	try {
@@ -145143,7 +145164,24 @@ class UI {
 	toggleExportPop(force) {
 		const pop = this.exportPop;
 		const open = force !== undefined ? force : pop.hidden;
+		const wasOpen = !pop.hidden;
 		pop.hidden = !open;
+		// пока открыт экспорт, всё, что играло на фоне (анимация модели, таймлайн эффектов, видео), стоит на паузе; при выходе продолжает с того же места
+		const app = this.app;
+		const eng = this.effectsEngine;
+		if (open && !wasOpen) {
+			const pm = app.media.pm;
+			this._expPaused = { anim: app.anim.playing, fx: !!eng.animPlaying && !eng.animRec, media: !!pm.playing && !pm.recording };
+			if (this._expPaused.anim) app.anim.pause();
+			if (this._expPaused.fx) eng.animPause();
+			if (this._expPaused.media) pm.pause();
+		} else if (!open && wasOpen && this._expPaused) {
+			const was = this._expPaused;
+			this._expPaused = null;
+			if (was.anim) app.anim.play();
+			if (was.fx) eng.animPlay();
+			if (was.media) app.media.pm.play();
+		}
 		$('#btnExport').setAttribute('aria-expanded', String(open));
 	}
 
@@ -145228,8 +145266,12 @@ class UI {
 				app.viewport.updateSelectionBox();
 				app.saveSettings();
 			} }, hint);
+			(this._ovRows ||= {})[key] = r;
 			pop.append(r.el);
 		}
+		app.bus.on('view', () => {
+			for (const k of Object.keys(this._ovRows)) this._ovRows[k].set(s.overlays[k]);
+		});
 		const close = () => {
 			pop.hidden = true;
 			btn.setAttribute('aria-expanded', 'false');
@@ -145270,6 +145312,15 @@ class UI {
 	}
 
 	// --------------------------------------------------------- боковая панель
+	/** После отмены настроек панели собираются заново и показывают восстановленные значения */
+	rebuildSettingsPanels() {
+		const app = this.app;
+		for (const [name, make, prop] of [['view', createViewPanel, 'viewPanel'], ['points', createPointsPanel, 'pointsPanel'], ['media', createMediaPanel, 'mediaPanel']]) {
+			this.tabs[name].replaceChildren();
+			this[prop] = make(app, this.tabs[name]);
+		}
+	}
+
 	buildSidebar() {
 		const app = this.app;
 		for (const name of ['scene', 'material', 'points', 'media', 'view']) this.tabs[name] = $(`#panel-${name}`);
@@ -147160,6 +147211,7 @@ class App {
 		this.anim = new AnimController(this);
 		this.bus.on('scene', () => this.anim.scan());
 		this.ui = new UI(this);
+		this._setLast = this._settingsSnap();
 	}
 
 	start() {
@@ -147277,7 +147329,68 @@ class App {
 
 	saveSettings() {
 		saveSettings(this.settings);
+		this._recordSettings();
 		this.bus.emit('settings');
+	}
+
+	/** Настройки вида, точек и медиа отменяются Ctrl+Z, как и правки модели. Частые изменения подряд (тяга ползунка) склеиваются в одну отмену */
+	_settingsSnap() {
+		const { exportOpts, importOpts, ...rest } = this.settings;
+		return JSON.stringify(rest);
+	}
+
+	_recordSettings() {
+		const snap = this._settingsSnap();
+		if (this._setLast === undefined) {
+			this._setLast = snap;
+			return;
+		}
+		if (snap === this._setLast) return;
+		const prev = this._setLast;
+		this._setLast = snap;
+		const st = this.history.undoStack;
+		const top = st[st.length - 1];
+		const now = performance.now();
+		if (top && top.kind === 'settings' && now - top.t < 900) {
+			top.after = snap;
+			top.t = now;
+			return;
+		}
+		const app = this;
+		this.history.push({
+			kind: 'settings',
+			label: 'Настройки',
+			before: prev,
+			after: snap,
+			t: now,
+			undo() {
+				app._restoreSettings(this.before);
+			},
+			redo() {
+				app._restoreSettings(this.after);
+			},
+		});
+	}
+
+	_restoreSettings(snap) {
+		const data = JSON.parse(snap);
+		const put = (dst, src) => {
+			for (const k of Object.keys(src)) {
+				if (src[k] && typeof src[k] === 'object' && !Array.isArray(src[k]) && dst[k] && typeof dst[k] === 'object') put(dst[k], src[k]);
+				else dst[k] = src[k];
+			}
+		};
+		put(this.settings, data);
+		this._setLast = snap;
+		saveSettings(this.settings);
+		if (this.nav.ortho !== this.settings.nav.ortho) this.nav.setOrtho(this.settings.nav.ortho);
+		this.viewport.applyRenderSettings();
+		this.display.apply();
+		this.model.applySnap();
+		this.ui.rebuildSettingsPanels();
+		this.bus.emit('view');
+		this.bus.emit('settings');
+		this.viewport.invalidate();
 	}
 
 	/** После любых изменений материалов и текстур */
