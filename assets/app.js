@@ -89739,6 +89739,7 @@ __def(__exports, 'segmented', () => segmented);
 __def(__exports, 'select', () => select);
 __def(__exports, 'parseHuman', () => parseHuman);
 __def(__exports, 'slider', () => slider);
+__def(__exports, 'fxSlider', () => fxSlider);
 __def(__exports, 'numberField', () => numberField);
 __def(__exports, 'colorField', () => colorField);
 __def(__exports, 'empty', () => empty);
@@ -89864,7 +89865,7 @@ function parseHuman(s) {
 	return parseFloat(m[1]) * mult;
 }
 
-function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, digits = 2, unit = '', format, log = false }) {
+function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, digits = 2, unit = '', format, log = false, norm = false }) {
 	let lo = min;
 	let hi = max;
 	// log: бегунок работает по шкале 0..1000, значение растёт по степенному закону (для больших диапазонов)
@@ -89877,7 +89878,13 @@ function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, d
 	const range = h('input', { type: 'range', class: 'range', min: log ? 0 : min, max: log ? 1000 : max, step: log ? 1 : step, value: toPos(value) });
 	const out = h('input', { type: 'text', class: 'num-out', inputmode: 'decimal', 'aria-label': 'Значение' });
 	const cur = () => fromPos(parseFloat(range.value));
-	const show = () => (out.value = format ? format(cur()) : fmt(cur(), digits) + unit);
+	// norm: движок получает реальное значение, а на экране шкала всегда от 0 до 1, чтобы числа читались одинаково во всех настройках
+	const frac = (v) => clamp(log ? Math.log(Math.max(v, lo) / lo) / Math.log(hi / lo) : (v - lo) / (hi - lo), 0, 1);
+	const unfrac = (f) => {
+		const v = log ? lo * Math.pow(hi / lo, f) : lo + f * (hi - lo);
+		return clamp(Math.round(v / step) * step, lo, hi);
+	};
+	const show = () => (out.value = norm ? fmt(frac(cur()), 2) : format ? format(cur()) : fmt(cur(), digits) + unit);
 	const paint = () => {
 		const p = log ? parseFloat(range.value) / 10 : ((parseFloat(range.value) - lo) / (hi - lo)) * 100;
 		range.style.setProperty('--p', clamp(p, 0, 100) + '%');
@@ -89889,7 +89896,8 @@ function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, d
 	});
 	range.addEventListener('change', () => onChange && onChange(cur()));
 	const commitText = () => {
-		const v = parseHuman(out.value);
+		const t = parseHuman(out.value);
+		const v = norm && isFinite(t) ? unfrac(clamp(t, 0, 1)) : t;
 		if (isFinite(v)) {
 			range.value = toPos(clamp(v, lo, hi));
 			paint();
@@ -89922,6 +89930,12 @@ function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, d
 			paint();
 		},
 	};
+}
+/** Ползунок настроек эффектов: числа читаются одинаково, шкала до 1 (до 2, если так задумано). noNorm оставляет реальные величины: число точек, секунды, кадры */
+function fxSlider(o) {
+	if (o.noNorm) return slider(o);
+	if (o.min >= -1 && o.min <= 0.1 && o.max <= 2) return slider({ ...o, format: undefined, unit: '', digits: 2 });
+	return slider({ ...o, norm: true });
 }
 function numberField({ value = 0, step = 0.1, onChange, axis, digits = 4, min = -Infinity, max = Infinity, cls = '' }) {
 	let v = value;
@@ -133524,7 +133538,7 @@ __def(__exports, 'createMediaPanel', () => createMediaPanel);
 // Панель «Медиа»: настройки точек для фото и видео, параметры записи, сохранение.
 // Воспроизведение, перемотка и запись живут на таймлайне во вьюпорте.
 const { h, formatInt } = __req('src/util.js');
-const { section, field, slider, segmented, switchRow, button, colorField } = __req('src/ui-kit.js');
+const { section, field, fxSlider: slider, segmented, switchRow, button, colorField } = __req('src/ui-kit.js');
 
 function createMediaPanel(app, root, { fx = false } = {}) {
 	const mc = app.media;
@@ -133535,7 +133549,7 @@ function createMediaPanel(app, root, { fx = false } = {}) {
 
 	const info = h('div', { class: 'field-hint' });
 	const sound = switchRow('Звук видео', { value: !pm.muted, onChange: (v) => { pm.setMuted(!v); mc.emit(); } });
-	const pts = slider({ log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
+	const pts = slider({ noNorm: true, log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
 	const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
 	const depth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; mc.styleChanged(); }, onChange: save });
 	// фильтры: прячут точки по яркости, цвету или краям и правят цвет
@@ -133552,8 +133566,8 @@ function createMediaPanel(app, root, { fx = false } = {}) {
 	const invert = switchRow('Инвертировать цвета', { value: md.invert, onChange: (v) => { md.invert = v; touchF(); } });
 	const resetF = button({ label: 'Сбросить фильтры', icon: 'arrow-counter-clockwise', variant: 'secondary', cls: 'btn-block', onClick: () => { Object.assign(md, { cutDark: 0, cutLight: 1, keyTol: 0, edges: 0, contrast: 1, sat: 1, post: 0, invert: false }); touchF(); sync(); } });
 	const filtersBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Фильтры'), field('Убрать тёмное', cutDark.el), field('Убрать светлое', cutLight.el), field('Убрать цвет', keyPick.el), field('Допуск цвета', keyTol.el), field('Только контуры', edges.el), field('Контраст', contrast.el), field('Насыщенность', sat.el), field('Постеризация', post.el), invert.el, resetF);
-	const recFps = slider({ min: 5, max: 30, step: 1, value: md.recFps, digits: 0, unit: ' к/с', onInput: (v) => { md.recFps = v; }, onChange: save });
-	const recSec = slider({ min: 1, max: 30, step: 1, value: md.recSec, digits: 0, unit: ' с', onInput: (v) => { md.recSec = v; }, onChange: save });
+	const recFps = slider({ noNorm: true, min: 5, max: 30, step: 1, value: md.recFps, digits: 0, unit: ' к/с', onInput: (v) => { md.recFps = v; }, onChange: save });
+	const recSec = slider({ noNorm: true, min: 1, max: 30, step: 1, value: md.recSec, digits: 0, unit: ' с', onInput: (v) => { md.recSec = v; }, onChange: save });
 	const recInfo = h('div', { class: 'field-hint' });
 	const bScene = button({ label: 'Кадр в сцену (копия)', icon: 'cube', variant: 'secondary', cls: 'btn-block', title: 'Замороженный кадр отдельным облаком точек', onClick: () => mc.snapshot() });
 	const bPly = button({ label: 'Текущий кадр (.ply)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', onClick: () => mc.downloadPLY() });
@@ -142445,7 +142459,7 @@ __def(__exports, 'createEffectsPanel', () => createEffectsPanel);
 // Режим «Эффекты»: боковая панель (источник, эффекты, звук, вид) и нижняя панель управления в сцене.
 const { h, formatInt } = __req('src/util.js');
 const { icon } = __req('src/icons.js');
-const { section, field, slider, segmented, switchRow, toggle, button, iconButton, select, colorField } = __req('src/ui-kit.js');
+const { section, field, fxSlider: slider, segmented, switchRow, toggle, button, iconButton, select, colorField } = __req('src/ui-kit.js');
 const THREE = __req('vendor/three/build/three.module.js');
 const { sampleSurface, overrideMats } = __req('src/pointcloud.js');
 const { getDevice } = __req('src/device-card.js');
@@ -142623,7 +142637,7 @@ function createEffectsPanel(app, root, engine) {
 	const size = slider({ min: 1, max: 24, step: 0.5, value: pset.size, digits: 1, unit: ' px', onInput: (v) => { pset.size = v; }, onChange: () => app.saveSettings() });
 	const dev = getDevice(app);
 	const cap = () => Math.max(100000, Math.min(2000000, getDevice(app).limits.cap));
-	const count = slider({
+	const count = slider({ noNorm: true,
 		log: true,
 		min: 20000,
 		max: cap(),
@@ -143322,7 +143336,7 @@ function createEffectsPanel(app, root, engine) {
 	// сохранение зацикленной анимации
 	const anim = { format: 'gif', seconds: 4 };
 	const animFmt = segmented({ options: [{ value: 'gif', label: 'GIF', title: 'Зацикленная анимация, открывается везде' }, { value: 'mp4', label: 'MP4 со звуком', title: 'Видео в хорошем качестве, открывается везде' }], value: anim.format, onChange: (v) => { anim.format = v; } });
-	const animSec = slider({ min: 1, max: 15, step: 1, value: anim.seconds, digits: 0, unit: ' с', onInput: (v) => { anim.seconds = v; } });
+	const animSec = slider({ noNorm: true, min: 1, max: 15, step: 1, value: anim.seconds, digits: 0, unit: ' с', onInput: (v) => { anim.seconds = v; } });
 	const animBtn = button({ label: 'Записать и сохранить', icon: 'record', variant: 'primary', cls: 'btn-block', onClick: () => engine.saveAnimation({ format: anim.format, seconds: anim.seconds }) });
 	const animInfo = h('div', { class: 'field-hint' }, 'Запишется то, что сейчас видно на сцене, вместе со всеми эффектами.');
 	const rset = app.settings.render;

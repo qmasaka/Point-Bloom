@@ -1,6 +1,6 @@
 import { h, formatInt } from './util.js';
 import { icon } from './icons.js';
-import { section, field, slider, segmented, switchRow, toggle, button, iconButton, select, colorField } from './ui-kit.js';
+import { section, field, fxSlider as slider, segmented, switchRow, toggle, button, iconButton, select, colorField } from './ui-kit.js';
 import * as THREE from 'three';
 import { sampleSurface, overrideMats } from './pointcloud.js';
 import { getDevice } from './device-card.js';
@@ -163,7 +163,7 @@ const pset = app.settings.point;
 const size = slider({ min: 1, max: 24, step: 0.5, value: pset.size, digits: 1, unit: ' px', onInput: (v) => { pset.size = v; }, onChange: () => app.saveSettings() });
 const dev = getDevice(app);
 const cap = () => Math.max(100000, Math.min(2000000, getDevice(app).limits.cap));
-const count = slider({
+const count = slider({ noNorm: true,
 log: true,
 min: 20000,
 max: cap(),
@@ -836,7 +836,7 @@ const solidRow = field('Свой цвет', solidPick.el);
 const origBtn = button({ label: 'Исходный цвет модели', icon: 'arrow-counter-clockwise', variant: 'secondary', cls: 'btn-block', title: 'Вернуть настоящие цвета и текстуру модели вместо палитры', onClick: () => engine.setColorBy('model') });
 const anim = { format: 'gif', seconds: 4 };
 const animFmt = segmented({ options: [{ value: 'gif', label: 'GIF', title: 'Зацикленная анимация, открывается везде' }, { value: 'mp4', label: 'MP4 со звуком', title: 'Видео в хорошем качестве, открывается везде' }], value: anim.format, onChange: (v) => { anim.format = v; } });
-const animSec = slider({ min: 1, max: 15, step: 1, value: anim.seconds, digits: 0, unit: ' с', onInput: (v) => { anim.seconds = v; } });
+const animSec = slider({ noNorm: true, min: 1, max: 15, step: 1, value: anim.seconds, digits: 0, unit: ' с', onInput: (v) => { anim.seconds = v; } });
 const animBtn = button({ label: 'Записать и сохранить', icon: 'record', variant: 'primary', cls: 'btn-block', onClick: () => engine.saveAnimation({ format: anim.format, seconds: anim.seconds }) });
 const animInfo = h('div', { class: 'field-hint' }, 'Запишется то, что сейчас видно на сцене, вместе со всеми эффектами.');
 const rset = app.settings.render;

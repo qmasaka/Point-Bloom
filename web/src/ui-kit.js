@@ -105,7 +105,7 @@ if (!m) return NaN;
 const mult = !m[2] ? 1 : /^(млн|м|m)$/.test(m[2]) ? 1e6 : 1e3;
 return parseFloat(m[1]) * mult;
 }
-export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, digits = 2, unit = '', format, log = false }) {
+export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, digits = 2, unit = '', format, log = false, norm = false }) {
 let lo = min;
 let hi = max;
 const toPos = (v) => (log ? (Math.log(Math.max(v, lo) / lo) / Math.log(hi / lo)) * 1000 : v);
@@ -117,7 +117,12 @@ return clamp(Math.round(v / step) * step, lo, hi);
 const range = h('input', { type: 'range', class: 'range', min: log ? 0 : min, max: log ? 1000 : max, step: log ? 1 : step, value: toPos(value) });
 const out = h('input', { type: 'text', class: 'num-out', inputmode: 'decimal', 'aria-label': 'Значение' });
 const cur = () => fromPos(parseFloat(range.value));
-const show = () => (out.value = format ? format(cur()) : fmt(cur(), digits) + unit);
+const frac = (v) => clamp(log ? Math.log(Math.max(v, lo) / lo) / Math.log(hi / lo) : (v - lo) / (hi - lo), 0, 1);
+const unfrac = (f) => {
+const v = log ? lo * Math.pow(hi / lo, f) : lo + f * (hi - lo);
+return clamp(Math.round(v / step) * step, lo, hi);
+};
+const show = () => (out.value = norm ? fmt(frac(cur()), 2) : format ? format(cur()) : fmt(cur(), digits) + unit);
 const paint = () => {
 const p = log ? parseFloat(range.value) / 10 : ((parseFloat(range.value) - lo) / (hi - lo)) * 100;
 range.style.setProperty('--p', clamp(p, 0, 100) + '%');
@@ -129,7 +134,8 @@ onInput && onInput(cur());
 });
 range.addEventListener('change', () => onChange && onChange(cur()));
 const commitText = () => {
-const v = parseHuman(out.value);
+const t = parseHuman(out.value);
+const v = norm && isFinite(t) ? unfrac(clamp(t, 0, 1)) : t;
 if (isFinite(v)) {
 range.value = toPos(clamp(v, lo, hi));
 paint();
@@ -162,6 +168,11 @@ range.value = toPos(clamp(v, lo, hi));
 paint();
 },
 };
+}
+export function fxSlider(o) {
+if (o.noNorm) return slider(o);
+if (o.min >= -1 && o.min <= 0.1 && o.max <= 2) return slider({ ...o, format: undefined, unit: '', digits: 2 });
+return slider({ ...o, norm: true });
 }
 export function numberField({ value = 0, step = 0.1, onChange, axis, digits = 4, min = -Infinity, max = Infinity, cls = '' }) {
 let v = value;

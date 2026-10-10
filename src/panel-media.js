@@ -1,7 +1,7 @@
 // Панель «Медиа»: настройки точек для фото и видео, параметры записи, сохранение.
 // Воспроизведение, перемотка и запись живут на таймлайне во вьюпорте.
 import { h, formatInt } from './util.js';
-import { section, field, slider, segmented, switchRow, button, colorField } from './ui-kit.js';
+import { section, field, fxSlider as slider, segmented, switchRow, button, colorField } from './ui-kit.js';
 
 export function createMediaPanel(app, root, { fx = false } = {}) {
 	const mc = app.media;
@@ -12,7 +12,7 @@ export function createMediaPanel(app, root, { fx = false } = {}) {
 
 	const info = h('div', { class: 'field-hint' });
 	const sound = switchRow('Звук видео', { value: !pm.muted, onChange: (v) => { pm.setMuted(!v); mc.emit(); } });
-	const pts = slider({ log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
+	const pts = slider({ noNorm: true, log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
 	const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
 	const depth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; mc.styleChanged(); }, onChange: save });
 	// фильтры: прячут точки по яркости, цвету или краям и правят цвет
@@ -29,8 +29,8 @@ export function createMediaPanel(app, root, { fx = false } = {}) {
 	const invert = switchRow('Инвертировать цвета', { value: md.invert, onChange: (v) => { md.invert = v; touchF(); } });
 	const resetF = button({ label: 'Сбросить фильтры', icon: 'arrow-counter-clockwise', variant: 'secondary', cls: 'btn-block', onClick: () => { Object.assign(md, { cutDark: 0, cutLight: 1, keyTol: 0, edges: 0, contrast: 1, sat: 1, post: 0, invert: false }); touchF(); sync(); } });
 	const filtersBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Фильтры'), field('Убрать тёмное', cutDark.el), field('Убрать светлое', cutLight.el), field('Убрать цвет', keyPick.el), field('Допуск цвета', keyTol.el), field('Только контуры', edges.el), field('Контраст', contrast.el), field('Насыщенность', sat.el), field('Постеризация', post.el), invert.el, resetF);
-	const recFps = slider({ min: 5, max: 30, step: 1, value: md.recFps, digits: 0, unit: ' к/с', onInput: (v) => { md.recFps = v; }, onChange: save });
-	const recSec = slider({ min: 1, max: 30, step: 1, value: md.recSec, digits: 0, unit: ' с', onInput: (v) => { md.recSec = v; }, onChange: save });
+	const recFps = slider({ noNorm: true, min: 5, max: 30, step: 1, value: md.recFps, digits: 0, unit: ' к/с', onInput: (v) => { md.recFps = v; }, onChange: save });
+	const recSec = slider({ noNorm: true, min: 1, max: 30, step: 1, value: md.recSec, digits: 0, unit: ' с', onInput: (v) => { md.recSec = v; }, onChange: save });
 	const recInfo = h('div', { class: 'field-hint' });
 	const bScene = button({ label: 'Кадр в сцену (копия)', icon: 'cube', variant: 'secondary', cls: 'btn-block', title: 'Замороженный кадр отдельным облаком точек', onClick: () => mc.snapshot() });
 	const bPly = button({ label: 'Текущий кадр (.ply)', icon: 'download-simple', variant: 'secondary', cls: 'btn-block', onClick: () => mc.downloadPLY() });
