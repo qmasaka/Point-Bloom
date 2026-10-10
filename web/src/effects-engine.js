@@ -445,6 +445,7 @@ uniform vec4 uPhysP;
 uniform float uAsm;
 uniform vec4 uDis;
 uniform float uDisT;
+uniform float uAnimN;
 uniform vec4 uGravP;
 uniform vec4 uHandP;
 uniform vec4 uImp[32];
@@ -597,7 +598,8 @@ float disK(vec3 b, float idx) {
 	float h = hash11(idx * 37.3);
 	float ord;
 	if (uDis.y < 0.5) ord = (1.0 - y01) * 0.72 + h * 0.28;
-	else if (uDis.y < 1.5) ord = (snoise(b * 1.7) * 0.5 + 0.5) * 0.75 + h * 0.25;
+	// у анимированной модели порядок отрыва не зависит от места в кадре: шум по положению мерцал бы, пока модель движется
+	else if (uDis.y < 1.5) ord = ((uAnimN > 0.5 ? hash11(idx * 13.7) : snoise(b * 1.7) * 0.5 + 0.5)) * 0.75 + h * 0.25;
 	else ord = y01 * 0.72 + h * 0.28;
 	return clamp((uDis.x * 1.4 - ord) / 0.32, 0.0, 1.0);
 }
@@ -887,6 +889,8 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	vec3 rad = normalize(base + vec3(1e-4));
 	// у плоских источников (фото, видео, блок кадров) направление «наружу» это взгляд на кадр, иначе волны и импульсы лишь двигают картинку в её плоскости и почти не видны
 	rad = normalize(mix(rad, vec3(0.0, 0.0, 1.0), 0.8 * uFlat));
+	// движущаяся анимированная модель: «наружу» это нормаль её поверхности, а не направление от центра сцены (оно смотрит не туда, когда модель далеко от центра)
+	if (uAnimN > 0.5 && dot(aNormal, aNormal) > 0.01) rad = normalize(aNormal);
 	vec3 pos = base;
 
 	if (uTwist.x > 0.001) {
@@ -974,7 +978,8 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	if (uSliceM.x > 0.5 && uSliceM.x < 1.5) pos += rad * sliceK(base) * uSliceM.y;
 	float dk = disK(base, aIdx);
 	if (dk > 0.0) {
-		pos += curlNoise(base * 1.8 + vec3(0.0, -t * 0.6, t * 0.3)) * dk * uDisT * 0.9;
+		vec3 dsp = uAnimN > 0.5 ? vec3(hash11(aIdx * 1.7), hash11(aIdx * 2.3), hash11(aIdx * 3.1)) * 8.0 : base * 1.8;
+		pos += curlNoise(dsp + vec3(0.0, -t * 0.6, t * 0.3)) * dk * uDisT * 0.9;
 		if (uDisP.x < 0.5) {
 			pos.y -= dk * dk * uDis.z * 1.5;
 			pos.x += dk * uDis.w * 1.1;
@@ -4953,7 +4958,7 @@ uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
 uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
 uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
-uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
+uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uAnimN: U(0), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 };
 const mk = (extra) =>
 new THREE.ShaderMaterial({
@@ -5680,6 +5685,7 @@ this._charSync = false;
 A.playing = this._charWas;
 }
 }
+if (!this._animCloud && this.shared.uAnimN.value) this.shared.uAnimN.value = 0;
 if (this._animCloud && st.source === 'model' && this.geometry && !this.morphing && this.app.anim.has && this._animVer !== this.app.anim.version && performance.now() - (this._animT || 0) >= (perf.tier === 'high' ? 0 : 33)) {
 this._animVer = this.app.anim.version;
 this._animT = performance.now();
@@ -5706,6 +5712,7 @@ g.attributes.aOrigin.array.set(this._animBuf);
 g.attributes.position.array.set(this._animBuf);
 g.attributes.aTarget.needsUpdate = g.attributes.aOrigin.needsUpdate = g.attributes.position.needsUpdate = true;
 if (ac.anim.bn) {
+this.shared.uAnimN.value = 1;
 g.attributes.aNormal.array.set(this._animBufN);
 g.attributes.aNormalB.array.set(this._animBufN);
 g.attributes.aNormal.needsUpdate = g.attributes.aNormalB.needsUpdate = true;
