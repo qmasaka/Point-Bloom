@@ -74,6 +74,7 @@ this.frustumCulled = false;
 this.renderOrder = -10;
 this.name = '__grid';
 this.spacing = 1;
+this.floorY = 0;
 }
 update(nav, camera) {
 const u = this.material.uniforms;
@@ -112,7 +113,7 @@ u.uAxisV.value.set(0, 0, 1);
 u.uNormal.value.set(0, 1, 0);
 u.uColU.value.set(...G);
 u.uColV.value.set(...R);
-this.position.set(nav.target.x, 0, nav.target.z);
+this.position.set(nav.target.x, this.floorY, nav.target.z);
 }
 u.uCenter.value.copy(nav.target);
 u.uCam.value.copy(camera.position);

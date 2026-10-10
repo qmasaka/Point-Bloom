@@ -5940,3 +5940,16 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-bg-pop { width: 262px; }
 .fx-bg-title { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
 .fx-bg-chip { border-color: rgba(255, 255, 255, 0.16); }
+
+/* панели не выделяются случайно при перетаскивании ползунков и кликах по подписям: выделяется текст только в полях ввода */
+.sidebar, .fx-left, .fx-bar, .fx-anim, .topbar, .toolrail, .vp-dock, .media-bar, .anim-bar, #overlayPop, .fx-bg-pop {
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
+}
+.sidebar input, .sidebar textarea, .fx-left input, .fx-anim input, .topbar input {
+	-webkit-user-select: text;
+	user-select: text;
+}
+.range:focus:not(:focus-visible), .switch:focus:not(:focus-visible), .btn:focus:not(:focus-visible), .tab:focus:not(:focus-visible), .fx-layer-head:focus:not(:focus-visible) { outline: none; box-shadow: none; }
+::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); color: inherit; }

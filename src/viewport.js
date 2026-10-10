@@ -214,6 +214,7 @@ export class Viewport {
 		const nav = app.nav;
 		const o = app.settings.overlays;
 		// в режиме «Эффекты» сетка-плоскость включается отдельной кнопкой в меню фона
+		this.grid.floorY = this.fxHide ? (this.fxFloorY ?? 0) : 0;
 		const showGrid = this.fxHide ? !!this.fxGrid : o.grid;
 		this.grid.visible = showGrid;
 		this.grid.material.uniforms.uAxes.value = o.axes && !this.fxHide ? 1 : 0;
