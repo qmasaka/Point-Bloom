@@ -254,9 +254,11 @@ export class UI {
 			if (this._expPaused.anim) app.anim.pause();
 			if (this._expPaused.fx) eng.animPause();
 			if (this._expPaused.media) pm.pause();
+			eng.setFrozen(true);
 		} else if (!open && wasOpen && this._expPaused) {
 			const was = this._expPaused;
 			this._expPaused = null;
+			eng.setFrozen(false);
 			if (was.anim) app.anim.play();
 			if (was.fx) eng.animPlay();
 			if (was.media) app.media.pm.play();
@@ -324,7 +326,8 @@ export class UI {
 		const app = this.app;
 		const s = app.settings;
 		// режимы отображения
-		this.modeBar = segmented({ options: DISPLAY_MODES, value: s.display, label: 'Режим отображения', onChange: (v) => app.setDisplay(v) });
+		// режим «Облако точек из вершин» из панели убран: для точек есть вкладка «Точки» и режим «Эффекты»
+		this.modeBar = segmented({ options: DISPLAY_MODES.filter((m) => m.value !== 'points'), value: s.display, label: 'Режим отображения', onChange: (v) => app.setDisplay(v) });
 		$('#modeBar').append(this.modeBar.el);
 		this.modeBar.el.style.cssText = 'background:transparent;border:0;padding:0';
 

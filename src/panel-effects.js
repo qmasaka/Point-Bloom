@@ -584,6 +584,21 @@ export function createEffectsPanel(app, root, engine) {
 				cur.append(el);
 				if (ex.when) whenList.push([el, ex.when]);
 			};
+			const startGroup = (label, open) => {
+				const g = { open, box: h('div', { class: 'fx-grp-body' }) };
+				g.head = h('button', { type: 'button', class: 'fx-sub fx-sub-toggle', 'aria-expanded': String(g.open) }, h('span', { class: 'ic-wrap', html: icon('caret-down', 12) }), label);
+				g.head.addEventListener('click', () => {
+					g.open = !g.open;
+					g.head.setAttribute('aria-expanded', String(g.open));
+					applyWhen();
+				});
+				groups.push(g);
+				body.append(g.head, g.box);
+				cur = g.box;
+			};
+			// у эффекта много настроек и нет своих разделов: первые пять на виду, остальные сворачиваются в «Ещё настройки»
+			const autoSplit = !def.extras.some((x) => x.type === 'title') && def.extras.filter((x) => x.key).length > 7;
+			let ctlN = 0;
 			const applyWhen = () => {
 				whenList.forEach(([el, w]) => (el.hidden = !w[1].includes(L[w[0]])));
 				groups.forEach((g) => {
@@ -594,6 +609,7 @@ export function createEffectsPanel(app, root, engine) {
 			};
 			if (def.extras.some((x) => x.key) && def.extras[0].type !== 'title') body.append(h('div', { class: 'fx-sub' }, 'Параметры'));
 			for (const ex of def.extras) {
+				if (autoSplit && ex.key && ++ctlN === 6) startGroup('Ещё настройки', false);
 				const after = () => {
 					applyWhen();
 					save();
@@ -608,16 +624,7 @@ export function createEffectsPanel(app, root, engine) {
 				} else if (ex.type === 'note') {
 					put(h('div', { class: 'field-hint' }, ex.text), ex);
 				} else if (ex.type === 'title') {
-					const g = { open: groups.length === 0, box: h('div', { class: 'fx-grp-body' }) };
-					g.head = h('button', { type: 'button', class: 'fx-sub fx-sub-toggle', 'aria-expanded': String(g.open) }, h('span', { class: 'ic-wrap', html: icon('caret-down', 12) }), ex.label);
-					g.head.addEventListener('click', () => {
-						g.open = !g.open;
-						g.head.setAttribute('aria-expanded', String(g.open));
-						applyWhen();
-					});
-					groups.push(g);
-					body.append(g.head, g.box);
-					cur = g.box;
+					startGroup(ex.label, groups.length === 0);
 				} else if (ex.type === 'color') {
 					const ctl = colorChoice(L, ex.key, after, !!ex.natural);
 					extraCtl[ex.key] = ctl;

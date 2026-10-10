@@ -5435,13 +5435,27 @@ return l.amount * e.v * g;
 if (!l.react) return l.amount * g;
 return l.amount * (1 - l.react + l.react * b * 2) * g;
 }
+setFrozen(v) {
+v = !!v;
+if (v === !!this.frozen) return;
+this.frozen = v;
+const ctx = this.ctx;
+if (v) {
+this._ctxWasRunning = !!ctx && ctx.state === 'running';
+if (this._ctxWasRunning) ctx.suspend().catch(() => {});
+} else if (this._ctxWasRunning && ctx) {
+ctx.resume().catch(() => {});
+this._ctxWasRunning = false;
+}
+this.app.viewport.invalidate();
+}
 _loop() {
 const tick = (now) => {
 if (!this.active) return;
 this._raf = requestAnimationFrame(tick);
 const capFps = this.app.settings.render.fpsCap;
 if (capFps && now - this._lastT < 1000 / capFps - 3) return;
-const dt = Math.min(0.1, (now - this._lastT) / 1000);
+const dt = this.frozen ? 0 : Math.min(0.1, (now - this._lastT) / 1000);
 this._lastT = now;
 this._lastDt = dt;
 const st0 = this.state;

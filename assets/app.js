@@ -141447,13 +141447,30 @@ class EffectsEngine {
 		return l.amount * (1 - l.react + l.react * b * 2) * g;
 	}
 
+	/** Заморозка: время эффектов и звук стоят, пока открыто окно экспорта; после него всё продолжается с того же места */
+	setFrozen(v) {
+		v = !!v;
+		if (v === !!this.frozen) return;
+		this.frozen = v;
+		const ctx = this.ctx;
+		if (v) {
+			this._ctxWasRunning = !!ctx && ctx.state === 'running';
+			if (this._ctxWasRunning) ctx.suspend().catch(() => {});
+		} else if (this._ctxWasRunning && ctx) {
+			ctx.resume().catch(() => {});
+			this._ctxWasRunning = false;
+		}
+		this.app.viewport.invalidate();
+	}
+
 	_loop() {
 		const tick = (now) => {
 			if (!this.active) return;
 			this._raf = requestAnimationFrame(tick);
 			const capFps = this.app.settings.render.fpsCap;
 			if (capFps && now - this._lastT < 1000 / capFps - 3) return;
-			const dt = Math.min(0.1, (now - this._lastT) / 1000);
+			// пока открыто окно экспорта, время эффектов стоит на месте
+			const dt = this.frozen ? 0 : Math.min(0.1, (now - this._lastT) / 1000);
 			this._lastT = now;
 			this._lastDt = dt;
 			const st0 = this.state;
@@ -143113,6 +143130,21 @@ function createEffectsPanel(app, root, engine) {
 				cur.append(el);
 				if (ex.when) whenList.push([el, ex.when]);
 			};
+			const startGroup = (label, open) => {
+				const g = { open, box: h('div', { class: 'fx-grp-body' }) };
+				g.head = h('button', { type: 'button', class: 'fx-sub fx-sub-toggle', 'aria-expanded': String(g.open) }, h('span', { class: 'ic-wrap', html: icon('caret-down', 12) }), label);
+				g.head.addEventListener('click', () => {
+					g.open = !g.open;
+					g.head.setAttribute('aria-expanded', String(g.open));
+					applyWhen();
+				});
+				groups.push(g);
+				body.append(g.head, g.box);
+				cur = g.box;
+			};
+			// у эффекта много настроек и нет своих разделов: первые пять на виду, остальные сворачиваются в «Ещё настройки»
+			const autoSplit = !def.extras.some((x) => x.type === 'title') && def.extras.filter((x) => x.key).length > 7;
+			let ctlN = 0;
 			const applyWhen = () => {
 				whenList.forEach(([el, w]) => (el.hidden = !w[1].includes(L[w[0]])));
 				groups.forEach((g) => {
@@ -143123,6 +143155,7 @@ function createEffectsPanel(app, root, engine) {
 			};
 			if (def.extras.some((x) => x.key) && def.extras[0].type !== 'title') body.append(h('div', { class: 'fx-sub' }, 'Параметры'));
 			for (const ex of def.extras) {
+				if (autoSplit && ex.key && ++ctlN === 6) startGroup('Ещё настройки', false);
 				const after = () => {
 					applyWhen();
 					save();
@@ -143137,16 +143170,7 @@ function createEffectsPanel(app, root, engine) {
 				} else if (ex.type === 'note') {
 					put(h('div', { class: 'field-hint' }, ex.text), ex);
 				} else if (ex.type === 'title') {
-					const g = { open: groups.length === 0, box: h('div', { class: 'fx-grp-body' }) };
-					g.head = h('button', { type: 'button', class: 'fx-sub fx-sub-toggle', 'aria-expanded': String(g.open) }, h('span', { class: 'ic-wrap', html: icon('caret-down', 12) }), ex.label);
-					g.head.addEventListener('click', () => {
-						g.open = !g.open;
-						g.head.setAttribute('aria-expanded', String(g.open));
-						applyWhen();
-					});
-					groups.push(g);
-					body.append(g.head, g.box);
-					cur = g.box;
+					startGroup(ex.label, groups.length === 0);
 				} else if (ex.type === 'color') {
 					const ctl = colorChoice(L, ex.key, after, !!ex.natural);
 					extraCtl[ex.key] = ctl;
@@ -145240,9 +145264,11 @@ class UI {
 			if (this._expPaused.anim) app.anim.pause();
 			if (this._expPaused.fx) eng.animPause();
 			if (this._expPaused.media) pm.pause();
+			eng.setFrozen(true);
 		} else if (!open && wasOpen && this._expPaused) {
 			const was = this._expPaused;
 			this._expPaused = null;
+			eng.setFrozen(false);
 			if (was.anim) app.anim.play();
 			if (was.fx) eng.animPlay();
 			if (was.media) app.media.pm.play();
@@ -145310,7 +145336,8 @@ class UI {
 		const app = this.app;
 		const s = app.settings;
 		// режимы отображения
-		this.modeBar = segmented({ options: DISPLAY_MODES, value: s.display, label: 'Режим отображения', onChange: (v) => app.setDisplay(v) });
+		// режим «Облако точек из вершин» из панели убран: для точек есть вкладка «Точки» и режим «Эффекты»
+		this.modeBar = segmented({ options: DISPLAY_MODES.filter((m) => m.value !== 'points'), value: s.display, label: 'Режим отображения', onChange: (v) => app.setDisplay(v) });
 		$('#modeBar').append(this.modeBar.el);
 		this.modeBar.el.style.cssText = 'background:transparent;border:0;padding:0';
 
@@ -147275,6 +147302,9 @@ class App {
 		this.media = new MediaController(this);
 		this.anim = new AnimController(this);
 		this.bus.on('scene', () => this.anim.scan());
+		this._matSnaps = new WeakMap();
+		this.bus.on('material', () => this._recordMaterials());
+		this.bus.on('scene', () => this._recordMaterials(true));
 		this.ui = new UI(this);
 		this._setLast = this._settingsSnap();
 	}
@@ -147435,6 +147465,82 @@ class App {
 				app._restoreSettings(this.after);
 			},
 		});
+	}
+
+	/** Параметры материалов и назначенные текстуры тоже отменяются: снимок состояния до и после, частые изменения склеиваются */
+	_materialList() {
+		const out = new Set();
+		for (const m of this.model.meshes()) {
+			const o = this.display.getOriginal(m);
+			for (const x of Array.isArray(o) ? o : [o]) if (x && x.isMaterial) out.add(x);
+		}
+		return [...out];
+	}
+
+	_matState(m) {
+		const st = { n: {}, c: {}, t: {}, v: {} };
+		for (const k of ['roughness', 'metalness', 'opacity', 'envMapIntensity', 'emissiveIntensity', 'bumpScale', 'aoMapIntensity', 'displacementScale', 'displacementBias', 'alphaTest', 'side']) if (typeof m[k] === 'number') st.n[k] = m[k];
+		for (const k of ['color', 'emissive']) if (m[k] && m[k].isColor) st.c[k] = m[k].getHex();
+		for (const k of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap', 'alphaMap', 'bumpMap', 'displacementMap']) if (k in m) st.t[k] = m[k] || null;
+		for (const k of ['transparent', 'wireframe', 'flatShading', 'vertexColors']) if (k in m) st.v[k] = m[k];
+		if (m.normalScale) st.ns = [m.normalScale.x, m.normalScale.y];
+		return st;
+	}
+
+	_sameMat(a, b) {
+		const eq = (x, y) => Object.keys(x).every((k) => x[k] === y[k]);
+		return eq(a.n, b.n) && eq(a.c, b.c) && eq(a.t, b.t) && eq(a.v, b.v) && (!a.ns || (a.ns[0] === b.ns[0] && a.ns[1] === b.ns[1]));
+	}
+
+	_applyMat(m, st) {
+		Object.assign(m, st.n, st.v, st.t);
+		for (const k of Object.keys(st.c)) m[k].setHex(st.c[k]);
+		if (st.ns && m.normalScale) m.normalScale.set(st.ns[0], st.ns[1]);
+		m.needsUpdate = true;
+	}
+
+	_recordMaterials(baselineOnly = false) {
+		const changes = [];
+		for (const m of this._materialList()) {
+			const now = this._matState(m);
+			const prev = this._matSnaps.get(m);
+			this._matSnaps.set(m, now);
+			if (baselineOnly || !prev || this._sameMat(prev, now)) continue;
+			changes.push({ m, before: prev, after: now });
+		}
+		if (!changes.length) return;
+		const st = this.history.undoStack;
+		const top = st[st.length - 1];
+		const t = performance.now();
+		const key = changes.map((c) => c.m.uuid).join();
+		if (top && top.kind === 'material' && top.key === key && t - top.t < 900) {
+			top.t = t;
+			for (const c of top.changes) c.after = changes.find((x) => x.m === c.m)?.after || c.after;
+			return;
+		}
+		const app = this;
+		const cmd = {
+			kind: 'material',
+			label: 'Материал',
+			key,
+			t,
+			changes,
+			undo() {
+				for (const c of this.changes) {
+					app._matSnaps.set(c.m, c.before);
+					app._applyMat(c.m, c.before);
+				}
+				app.afterMaterialChange();
+			},
+			redo() {
+				for (const c of this.changes) {
+					app._matSnaps.set(c.m, c.after);
+					app._applyMat(c.m, c.after);
+				}
+				app.afterMaterialChange();
+			},
+		};
+		this.history.push(cmd);
 	}
 
 	_restoreSettings(snap) {

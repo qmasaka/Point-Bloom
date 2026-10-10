@@ -5899,3 +5899,14 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-insp { transition: opacity 0.2s var(--ease, ease), filter 0.2s var(--ease, ease); }
 .fx-insp.is-off { opacity: 0.45; filter: grayscale(0.85); }
 .fx-insp.is-off:hover, .fx-insp.is-off:focus-within { opacity: 0.7; }
+
+/* меню «Сетка, оси, каркас» открывается вверх и лежит поверх полосы анимации и таймлайна, а не прячется под ними */
+.vp-dock { z-index: 30; }
+.vp-dock .popover { top: auto; bottom: calc(100% + 12px); left: 50%; transform: translateX(-50%); }
+.ui-float .vp-dock .popover { background: var(--fxg-bg, var(--bg-panel)); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line, var(--line-strong)); box-shadow: var(--fxg-shadow, var(--shadow-pop)); }
+/* полоски между кнопками слева и в нижней панели такие же прозрачные, как рамки блоков */
+@container app (min-width: 901px) {
+	.ui-float .toolrail, .ui-float .vp-dock, .ui-float .fx-cam, .ui-float .export-pop, .ui-float .export-card { --line: var(--fxg-line); }
+	.ui-float .rail-sep, .ui-float .dock-sep { background: var(--fxg-line); opacity: 1; }
+}
+@container app (min-width: 901px) { .ui-float .fx-bar-sep { background: var(--fxg-line); } }

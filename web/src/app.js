@@ -27,6 +27,9 @@ this.ops = new Ops(this);
 this.media = new MediaController(this);
 this.anim = new AnimController(this);
 this.bus.on('scene', () => this.anim.scan());
+this._matSnaps = new WeakMap();
+this.bus.on('material', () => this._recordMaterials());
+this.bus.on('scene', () => this._recordMaterials(true));
 this.ui = new UI(this);
 this._setLast = this._settingsSnap();
 }
@@ -171,6 +174,76 @@ redo() {
 app._restoreSettings(this.after);
 },
 });
+}
+_materialList() {
+const out = new Set();
+for (const m of this.model.meshes()) {
+const o = this.display.getOriginal(m);
+for (const x of Array.isArray(o) ? o : [o]) if (x && x.isMaterial) out.add(x);
+}
+return [...out];
+}
+_matState(m) {
+const st = { n: {}, c: {}, t: {}, v: {} };
+for (const k of ['roughness', 'metalness', 'opacity', 'envMapIntensity', 'emissiveIntensity', 'bumpScale', 'aoMapIntensity', 'displacementScale', 'displacementBias', 'alphaTest', 'side']) if (typeof m[k] === 'number') st.n[k] = m[k];
+for (const k of ['color', 'emissive']) if (m[k] && m[k].isColor) st.c[k] = m[k].getHex();
+for (const k of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap', 'alphaMap', 'bumpMap', 'displacementMap']) if (k in m) st.t[k] = m[k] || null;
+for (const k of ['transparent', 'wireframe', 'flatShading', 'vertexColors']) if (k in m) st.v[k] = m[k];
+if (m.normalScale) st.ns = [m.normalScale.x, m.normalScale.y];
+return st;
+}
+_sameMat(a, b) {
+const eq = (x, y) => Object.keys(x).every((k) => x[k] === y[k]);
+return eq(a.n, b.n) && eq(a.c, b.c) && eq(a.t, b.t) && eq(a.v, b.v) && (!a.ns || (a.ns[0] === b.ns[0] && a.ns[1] === b.ns[1]));
+}
+_applyMat(m, st) {
+Object.assign(m, st.n, st.v, st.t);
+for (const k of Object.keys(st.c)) m[k].setHex(st.c[k]);
+if (st.ns && m.normalScale) m.normalScale.set(st.ns[0], st.ns[1]);
+m.needsUpdate = true;
+}
+_recordMaterials(baselineOnly = false) {
+const changes = [];
+for (const m of this._materialList()) {
+const now = this._matState(m);
+const prev = this._matSnaps.get(m);
+this._matSnaps.set(m, now);
+if (baselineOnly || !prev || this._sameMat(prev, now)) continue;
+changes.push({ m, before: prev, after: now });
+}
+if (!changes.length) return;
+const st = this.history.undoStack;
+const top = st[st.length - 1];
+const t = performance.now();
+const key = changes.map((c) => c.m.uuid).join();
+if (top && top.kind === 'material' && top.key === key && t - top.t < 900) {
+top.t = t;
+for (const c of top.changes) c.after = changes.find((x) => x.m === c.m)?.after || c.after;
+return;
+}
+const app = this;
+const cmd = {
+kind: 'material',
+label: 'Материал',
+key,
+t,
+changes,
+undo() {
+for (const c of this.changes) {
+app._matSnaps.set(c.m, c.before);
+app._applyMat(c.m, c.before);
+}
+app.afterMaterialChange();
+},
+redo() {
+for (const c of this.changes) {
+app._matSnaps.set(c.m, c.after);
+app._applyMat(c.m, c.after);
+}
+app.afterMaterialChange();
+},
+};
+this.history.push(cmd);
 }
 _restoreSettings(snap) {
 const data = JSON.parse(snap);
