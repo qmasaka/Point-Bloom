@@ -265,6 +265,13 @@ c.lineTo(x, y - sy * 3);
 }
 c.stroke();
 },
+holo: (c, t) => {
+for (let j = 0; j < 8; j++) {
+const y = j * 2.6 - 9;
+const k = 0.35 + 0.65 * Math.max(0, Math.sin(y * 0.9 - t * 4));
+for (let i = -6; i <= 6; i += 2) dot(c, i * 1.25 + (j === 3 && Math.sin(t * 6) > 0.7 ? 2 : 0), y, 1.3, k);
+}
+},
 shock: (c, t) => {
 const r = ((t * 5) % 15) + 1;
 for (const [x, y] of ring(30, 10)) dot(c, x * 1.25, y * 0.9, 1.2, 0.3);
