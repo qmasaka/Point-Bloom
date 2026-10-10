@@ -2292,6 +2292,7 @@ export function createEffectsPanel(app, root, engine) {
 	const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#ffffff', 'Белый']];
 	const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));
 	const bgPop = h('div', { class: 'fx-bg-pop popover', hidden: true });
+	const bgWrap = h('div', { class: 'vp-overlay-wrap fx-bg-wrap' }, bgBtn, bgPop);
 	const bgSw = h('div', { class: 'fx-bg-sw' });
 	const bgSwBtns = BGS.map(([c, name]) => {
 		const b = h('button', { type: 'button', class: 'fx-bg-chip', 'aria-label': name, 'data-tip': name, style: c ? { background: c } : {} });
@@ -2302,8 +2303,8 @@ export function createEffectsPanel(app, root, engine) {
 	});
 	const bgColor = colorField({ value: st.look.bg || '#14161b', onInput: (v) => setBg(v, true), onChange: save });
 	const bgVig = switchRow('Затемнение к краям', { value: st.look.vignette, onChange: (v) => { st.look.vignette = v; engine.applyBg(); save(); } });
-	bgPop.append(h('div', { class: 'fx-bg-title' }, 'Цвет фона'), bgSw, field('Свой цвет', bgColor.el), bgVig.el);
-	document.getElementById('viewport').append(bgPop);
+	const bgGrid = switchRow('Сетка на полу', { value: !!st.look.grid, onChange: (v) => { st.look.grid = v; app.viewport.fxGrid = v; app.viewport.invalidate(); save(); } }, 'Плоскость из квадратов, как в редакторе');
+	bgPop.append(h('div', { class: 'fx-bg-title' }, 'Фон и сцена'), bgSw, field('Свой цвет', bgColor.el), bgVig.el, bgGrid.el);
 	function setBg(c, live) {
 		st.look.bg = c;
 		engine.applyBg();
@@ -2315,6 +2316,8 @@ export function createEffectsPanel(app, root, engine) {
 		bgBtn.querySelector('.fx-bg-dot').style.background = st.look.bg || 'var(--bg-sunken)';
 		bgSwBtns.forEach(([c, b]) => b.classList.toggle('is-active', c === st.look.bg));
 		bgVig.set(st.look.vignette);
+		bgGrid.set(!!st.look.grid);
+		app.viewport.fxGrid = !!st.look.grid;
 	}
 	bgBtn.addEventListener('click', (e) => {
 		e.stopPropagation();
@@ -2329,7 +2332,7 @@ export function createEffectsPanel(app, root, engine) {
 	});
 	syncBg();
 	const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
-	bar.append(leftBtn, playBtn, camBtn, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgBtn, orthoBtn, focusBtn, h('span', { class: 'fx-bar-sep' }), recBtn, keyAnimBtn, recTime);
+	bar.append(leftBtn, playBtn, camBtn, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgWrap, orthoBtn, focusBtn, h('span', { class: 'fx-bar-sep' }), recBtn, keyAnimBtn, recTime);
 
 	// ------------------------------------------------------------ синхронизация
 	function sync() {

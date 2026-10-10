@@ -83963,6 +83963,10 @@ class Viewport {
 		const wpp = (2 * nav.distance * Math.tan(fov / 2)) / this.size.height;
 		this.raycaster.params.Points.threshold = wpp * (this.app.settings.point.size * 0.5 + 4);
 		this.raycaster.params.Line.threshold = wpp * 3;
+		// у меша со скелетом ограничивающая сфера считается один раз по позе привязки: без пересчёта клик по движущейся модели не попадал в неё
+		this.root.traverse((o) => {
+			if (o.isSkinnedMesh) o.boundingSphere = null;
+		});
 		const hits = this.raycaster.intersectObject(this.root, true);
 		for (const h of hits) {
 			if (h.object.userData.helper) continue;
@@ -83977,9 +83981,11 @@ class Viewport {
 		const app = this.app;
 		const nav = app.nav;
 		const o = app.settings.overlays;
-		this.grid.visible = o.grid && !this.fxHide;
-		this.grid.material.uniforms.uAxes.value = o.axes ? 1 : 0;
-		if (o.grid) this.grid.update(nav, this.camera);
+		// в режиме «Эффекты» сетка-плоскость включается отдельной кнопкой в меню фона
+		const showGrid = this.fxHide ? !!this.fxGrid : o.grid;
+		this.grid.visible = showGrid;
+		this.grid.material.uniforms.uAxes.value = o.axes && !this.fxHide ? 1 : 0;
+		if (showGrid) this.grid.update(nav, this.camera);
 		app.display.updateUniforms(this.camera, this.size, nav);
 
 		if (this.headlight.visible) {
@@ -135737,6 +135743,7 @@ function defaultState() {
 		mask: { mode: 'none', size: 0.5, soft: 0.4, speed: 0.5, invert: false, show: false },
 		look: {
 			bg: '',
+			grid: false,
 			vignette: true,
 			palette: 'brand',
 			colorBy: 'disp',
@@ -141296,6 +141303,7 @@ class EffectsEngine {
 		stage.addEventListener('pointerup', this._up);
 		this._offScene = app.bus.on('scene', () => this._onScene());
 		this.hud = new TrackerHud(document.getElementById('viewport'));
+		this.app.viewport.fxGrid = !!this.state.look.grid;
 		this.applyBg();
 		this.post = new PostPipeline(vp.renderer);
 		vp.renderHook = (renderer, scene, camera) => {
@@ -144842,6 +144850,7 @@ function createEffectsPanel(app, root, engine) {
 	const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#ffffff', 'Белый']];
 	const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));
 	const bgPop = h('div', { class: 'fx-bg-pop popover', hidden: true });
+	const bgWrap = h('div', { class: 'vp-overlay-wrap fx-bg-wrap' }, bgBtn, bgPop);
 	const bgSw = h('div', { class: 'fx-bg-sw' });
 	const bgSwBtns = BGS.map(([c, name]) => {
 		const b = h('button', { type: 'button', class: 'fx-bg-chip', 'aria-label': name, 'data-tip': name, style: c ? { background: c } : {} });
@@ -144852,8 +144861,8 @@ function createEffectsPanel(app, root, engine) {
 	});
 	const bgColor = colorField({ value: st.look.bg || '#14161b', onInput: (v) => setBg(v, true), onChange: save });
 	const bgVig = switchRow('Затемнение к краям', { value: st.look.vignette, onChange: (v) => { st.look.vignette = v; engine.applyBg(); save(); } });
-	bgPop.append(h('div', { class: 'fx-bg-title' }, 'Цвет фона'), bgSw, field('Свой цвет', bgColor.el), bgVig.el);
-	document.getElementById('viewport').append(bgPop);
+	const bgGrid = switchRow('Сетка на полу', { value: !!st.look.grid, onChange: (v) => { st.look.grid = v; app.viewport.fxGrid = v; app.viewport.invalidate(); save(); } }, 'Плоскость из квадратов, как в редакторе');
+	bgPop.append(h('div', { class: 'fx-bg-title' }, 'Фон и сцена'), bgSw, field('Свой цвет', bgColor.el), bgVig.el, bgGrid.el);
 	function setBg(c, live) {
 		st.look.bg = c;
 		engine.applyBg();
@@ -144865,6 +144874,8 @@ function createEffectsPanel(app, root, engine) {
 		bgBtn.querySelector('.fx-bg-dot').style.background = st.look.bg || 'var(--bg-sunken)';
 		bgSwBtns.forEach(([c, b]) => b.classList.toggle('is-active', c === st.look.bg));
 		bgVig.set(st.look.vignette);
+		bgGrid.set(!!st.look.grid);
+		app.viewport.fxGrid = !!st.look.grid;
 	}
 	bgBtn.addEventListener('click', (e) => {
 		e.stopPropagation();
@@ -144879,7 +144890,7 @@ function createEffectsPanel(app, root, engine) {
 	});
 	syncBg();
 	const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
-	bar.append(leftBtn, playBtn, camBtn, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgBtn, orthoBtn, focusBtn, h('span', { class: 'fx-bar-sep' }), recBtn, keyAnimBtn, recTime);
+	bar.append(leftBtn, playBtn, camBtn, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgWrap, orthoBtn, focusBtn, h('span', { class: 'fx-bar-sep' }), recBtn, keyAnimBtn, recTime);
 
 	// ------------------------------------------------------------ синхронизация
 	function sync() {

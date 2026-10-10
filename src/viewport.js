@@ -195,6 +195,10 @@ export class Viewport {
 		const wpp = (2 * nav.distance * Math.tan(fov / 2)) / this.size.height;
 		this.raycaster.params.Points.threshold = wpp * (this.app.settings.point.size * 0.5 + 4);
 		this.raycaster.params.Line.threshold = wpp * 3;
+		// у меша со скелетом ограничивающая сфера считается один раз по позе привязки: без пересчёта клик по движущейся модели не попадал в неё
+		this.root.traverse((o) => {
+			if (o.isSkinnedMesh) o.boundingSphere = null;
+		});
 		const hits = this.raycaster.intersectObject(this.root, true);
 		for (const h of hits) {
 			if (h.object.userData.helper) continue;
@@ -209,9 +213,11 @@ export class Viewport {
 		const app = this.app;
 		const nav = app.nav;
 		const o = app.settings.overlays;
-		this.grid.visible = o.grid && !this.fxHide;
-		this.grid.material.uniforms.uAxes.value = o.axes ? 1 : 0;
-		if (o.grid) this.grid.update(nav, this.camera);
+		// в режиме «Эффекты» сетка-плоскость включается отдельной кнопкой в меню фона
+		const showGrid = this.fxHide ? !!this.fxGrid : o.grid;
+		this.grid.visible = showGrid;
+		this.grid.material.uniforms.uAxes.value = o.axes && !this.fxHide ? 1 : 0;
+		if (showGrid) this.grid.update(nav, this.camera);
 		app.display.updateUniforms(this.camera, this.size, nav);
 
 		if (this.headlight.visible) {

@@ -135,6 +135,7 @@ morphCfg: { mode: 'manual', interval: 4, time: 2.6, order: 'seq', weight: 'auto'
 mask: { mode: 'none', size: 0.5, soft: 0.4, speed: 0.5, invert: false, show: false },
 look: {
 bg: '',
+grid: false,
 vignette: true,
 palette: 'brand',
 colorBy: 'disp',
@@ -5297,6 +5298,7 @@ stage.addEventListener('pointerdown', this._dn);
 stage.addEventListener('pointerup', this._up);
 this._offScene = app.bus.on('scene', () => this._onScene());
 this.hud = new TrackerHud(document.getElementById('viewport'));
+this.app.viewport.fxGrid = !!this.state.look.grid;
 this.applyBg();
 this.post = new PostPipeline(vp.renderer);
 vp.renderHook = (renderer, scene, camera) => {
