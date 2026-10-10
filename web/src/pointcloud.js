@@ -184,7 +184,7 @@ remaining -= p.n;
 const positions = new Float32Array(count * 3);
 const colors = new Float32Array(count * 3);
 const normals = new Float32Array(count * 3);
-const A_ = anim ? { parts: parts.map((q) => ({ mesh: q.mesh, skinned: q.skinned })), part: new Uint8Array(count), bp: new Float32Array(count * 3), bi: new Uint16Array(count * 4), bw: new Float32Array(count * 4) } : null;
+const A_ = anim ? { parts: parts.map((q) => ({ mesh: q.mesh, skinned: q.skinned })), part: new Uint8Array(count), bp: new Float32Array(count * 3), bi: new Uint16Array(count * 4), bw: new Float32Array(count * 4), bn: new Float32Array(count * 3) } : null;
 let w = 0;
 const vc = [1, 1, 1];
 const tmpC = [0, 0, 0];
@@ -236,6 +236,18 @@ const lx = A * pa.getX(i0) + B * pa.getX(i1) + C * pa.getX(i2);
 const ly = A * pa.getY(i0) + B * pa.getY(i1) + C * pa.getY(i2);
 const lz = A * pa.getZ(i0) + B * pa.getZ(i1) + C * pa.getZ(i2);
 A_.part[w] = p.pi;
+if (nrm) {
+const nx0 = A * nrm.getX(i0) + B * nrm.getX(i1) + C * nrm.getX(i2), ny0 = A * nrm.getY(i0) + B * nrm.getY(i1) + C * nrm.getY(i2), nz0 = A * nrm.getZ(i0) + B * nrm.getZ(i1) + C * nrm.getZ(i2);
+let bx = nx0, by = ny0, bz = nz0;
+if (p.skinned) {
+const be0 = p.mesh.bindMatrix.elements;
+bx = be0[0] * nx0 + be0[4] * ny0 + be0[8] * nz0;
+by = be0[1] * nx0 + be0[5] * ny0 + be0[9] * nz0;
+bz = be0[2] * nx0 + be0[6] * ny0 + be0[10] * nz0;
+}
+const bl = Math.hypot(bx, by, bz) || 1;
+A_.bn[o] = bx / bl; A_.bn[o + 1] = by / bl; A_.bn[o + 2] = bz / bl;
+}
 if (p.skinned) {
 const be = p.mesh.bindMatrix.elements;
 A_.bp[o] = be[0] * lx + be[4] * ly + be[8] * lz + be[12];
@@ -298,11 +310,22 @@ if (anim) {
 const skinned = !!(mesh.isSkinnedMesh && g.attributes.skinIndex && mesh.skeleton);
 const pi = animParts.length;
 animParts.push({ mesh, skinned });
-const part = new Uint8Array(n).fill(pi), bp = new Float32Array(n * 3), bi = new Uint16Array(n * 4), bw = new Float32Array(n * 4);
+const part = new Uint8Array(n).fill(pi), bp = new Float32Array(n * 3), bi = new Uint16Array(n * 4), bw = new Float32Array(n * 4), bn = new Float32Array(n * 3);
 const be = skinned ? mesh.bindMatrix.elements : null;
 const si = g.attributes.skinIndex, sw = g.attributes.skinWeight;
 for (let i = 0; i < n; i++) {
 const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+if (nrm) {
+const nx0 = nrm.getX(i), ny0 = nrm.getY(i), nz0 = nrm.getZ(i);
+let bx = nx0, by = ny0, bz = nz0;
+if (skinned) {
+bx = be[0] * nx0 + be[4] * ny0 + be[8] * nz0;
+by = be[1] * nx0 + be[5] * ny0 + be[9] * nz0;
+bz = be[2] * nx0 + be[6] * ny0 + be[10] * nz0;
+}
+const bl = Math.hypot(bx, by, bz) || 1;
+bn[i * 3] = bx / bl; bn[i * 3 + 1] = by / bl; bn[i * 3 + 2] = bz / bl;
+}
 if (skinned) {
 bp[i * 3] = be[0] * x + be[4] * y + be[8] * z + be[12];
 bp[i * 3 + 1] = be[1] * x + be[5] * y + be[9] * z + be[13];
@@ -314,7 +337,7 @@ bw[i * 4] = sw.getX(i) / ws; bw[i * 4 + 1] = sw.getY(i) / ws; bw[i * 4 + 2] = sw
 bp[i * 3] = x; bp[i * 3 + 1] = y; bp[i * 3 + 2] = z;
 }
 }
-AN.push({ part, bp, bi, bw });
+AN.push({ part, bp, bi, bw, bn });
 }
 total += n;
 }
@@ -329,13 +352,13 @@ return out;
 };
 const out = { positions: cat(P), colors: cat(C), normals: cat(N), count: total };
 if (anim && animParts.some((q) => q.skinned)) {
-const part = new Uint8Array(total), bp = new Float32Array(total * 3), bi = new Uint16Array(total * 4), bw = new Float32Array(total * 4);
+const part = new Uint8Array(total), bp = new Float32Array(total * 3), bi = new Uint16Array(total * 4), bw = new Float32Array(total * 4), bn = new Float32Array(total * 3);
 let o = 0;
 for (const a of AN) {
-part.set(a.part, o); bp.set(a.bp, o * 3); bi.set(a.bi, o * 4); bw.set(a.bw, o * 4);
+part.set(a.part, o); bp.set(a.bp, o * 3); bi.set(a.bi, o * 4); bw.set(a.bw, o * 4); bn.set(a.bn, o * 3);
 o += a.part.length;
 }
-out.anim = { parts: animParts, part, bp, bi, bw };
+out.anim = { parts: animParts, part, bp, bi, bw, bn };
 }
 return out;
 }

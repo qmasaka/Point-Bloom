@@ -85864,7 +85864,7 @@ async function sampleSurface(entries, count, { seed = 1337, onProgress, anim = f
 	const colors = new Float32Array(count * 3);
 	const normals = new Float32Array(count * 3);
 	// для анимации: к какому мешу относится точка, где она в «позе привязки» и какие кости её ведут
-	const A_ = anim ? { parts: parts.map((q) => ({ mesh: q.mesh, skinned: q.skinned })), part: new Uint8Array(count), bp: new Float32Array(count * 3), bi: new Uint16Array(count * 4), bw: new Float32Array(count * 4) } : null;
+	const A_ = anim ? { parts: parts.map((q) => ({ mesh: q.mesh, skinned: q.skinned })), part: new Uint8Array(count), bp: new Float32Array(count * 3), bi: new Uint16Array(count * 4), bw: new Float32Array(count * 4), bn: new Float32Array(count * 3) } : null;
 	let w = 0;
 	const vc = [1, 1, 1];
 	const tmpC = [0, 0, 0];
@@ -85919,6 +85919,19 @@ async function sampleSurface(entries, count, { seed = 1337, onProgress, anim = f
 				const ly = A * pa.getY(i0) + B * pa.getY(i1) + C * pa.getY(i2);
 				const lz = A * pa.getZ(i0) + B * pa.getZ(i1) + C * pa.getZ(i2);
 				A_.part[w] = p.pi;
+				// нормаль в том же пространстве, что и положение в позе привязки: по ней эффекты с направлением следуют за поворотом модели
+				if (nrm) {
+					const nx0 = A * nrm.getX(i0) + B * nrm.getX(i1) + C * nrm.getX(i2), ny0 = A * nrm.getY(i0) + B * nrm.getY(i1) + C * nrm.getY(i2), nz0 = A * nrm.getZ(i0) + B * nrm.getZ(i1) + C * nrm.getZ(i2);
+					let bx = nx0, by = ny0, bz = nz0;
+					if (p.skinned) {
+						const be0 = p.mesh.bindMatrix.elements;
+						bx = be0[0] * nx0 + be0[4] * ny0 + be0[8] * nz0;
+						by = be0[1] * nx0 + be0[5] * ny0 + be0[9] * nz0;
+						bz = be0[2] * nx0 + be0[6] * ny0 + be0[10] * nz0;
+					}
+					const bl = Math.hypot(bx, by, bz) || 1;
+					A_.bn[o] = bx / bl; A_.bn[o + 1] = by / bl; A_.bn[o + 2] = bz / bl;
+				}
 				if (p.skinned) {
 					const be = p.mesh.bindMatrix.elements;
 					A_.bp[o] = be[0] * lx + be[4] * ly + be[8] * lz + be[12];
@@ -85985,11 +85998,22 @@ function verticesToCloud(entries, { anim = false } = {}) {
 			const skinned = !!(mesh.isSkinnedMesh && g.attributes.skinIndex && mesh.skeleton);
 			const pi = animParts.length;
 			animParts.push({ mesh, skinned });
-			const part = new Uint8Array(n).fill(pi), bp = new Float32Array(n * 3), bi = new Uint16Array(n * 4), bw = new Float32Array(n * 4);
+			const part = new Uint8Array(n).fill(pi), bp = new Float32Array(n * 3), bi = new Uint16Array(n * 4), bw = new Float32Array(n * 4), bn = new Float32Array(n * 3);
 			const be = skinned ? mesh.bindMatrix.elements : null;
 			const si = g.attributes.skinIndex, sw = g.attributes.skinWeight;
 			for (let i = 0; i < n; i++) {
 				const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+				if (nrm) {
+					const nx0 = nrm.getX(i), ny0 = nrm.getY(i), nz0 = nrm.getZ(i);
+					let bx = nx0, by = ny0, bz = nz0;
+					if (skinned) {
+						bx = be[0] * nx0 + be[4] * ny0 + be[8] * nz0;
+						by = be[1] * nx0 + be[5] * ny0 + be[9] * nz0;
+						bz = be[2] * nx0 + be[6] * ny0 + be[10] * nz0;
+					}
+					const bl = Math.hypot(bx, by, bz) || 1;
+					bn[i * 3] = bx / bl; bn[i * 3 + 1] = by / bl; bn[i * 3 + 2] = bz / bl;
+				}
 				if (skinned) {
 					bp[i * 3] = be[0] * x + be[4] * y + be[8] * z + be[12];
 					bp[i * 3 + 1] = be[1] * x + be[5] * y + be[9] * z + be[13];
@@ -86001,7 +86025,7 @@ function verticesToCloud(entries, { anim = false } = {}) {
 					bp[i * 3] = x; bp[i * 3 + 1] = y; bp[i * 3 + 2] = z;
 				}
 			}
-			AN.push({ part, bp, bi, bw });
+			AN.push({ part, bp, bi, bw, bn });
 		}
 		total += n;
 	}
@@ -86016,13 +86040,13 @@ function verticesToCloud(entries, { anim = false } = {}) {
 	};
 	const out = { positions: cat(P), colors: cat(C), normals: cat(N), count: total };
 	if (anim && animParts.some((q) => q.skinned)) {
-		const part = new Uint8Array(total), bp = new Float32Array(total * 3), bi = new Uint16Array(total * 4), bw = new Float32Array(total * 4);
+		const part = new Uint8Array(total), bp = new Float32Array(total * 3), bi = new Uint16Array(total * 4), bw = new Float32Array(total * 4), bn = new Float32Array(total * 3);
 		let o = 0;
 		for (const a of AN) {
-			part.set(a.part, o); bp.set(a.bp, o * 3); bi.set(a.bi, o * 4); bw.set(a.bw, o * 4);
+			part.set(a.part, o); bp.set(a.bp, o * 3); bi.set(a.bi, o * 4); bw.set(a.bw, o * 4); bn.set(a.bn, o * 3);
 			o += a.part.length;
 		}
-		out.anim = { parts: animParts, part, bp, bi, bw };
+		out.anim = { parts: animParts, part, bp, bi, bw, bn };
 	}
 	return out;
 }
@@ -135024,8 +135048,8 @@ class AnimController {
  * Положение точек, посаженных на персонажа, в текущей позе. anim: { parts, part, bp, bi, bw } (см. sampleSurface),
  * norm: приведение к размеру сцены эффектов. Записывает по три числа на точку в out.
  */
-function evalAnimPoints(anim, norm, out) {
-	const { parts, part, bp, bi, bw } = anim;
+function evalAnimPoints(anim, norm, out, outN = null) {
+	const { parts, part, bp, bi, bw, bn } = anim;
 	const n = part.length;
 	const post = parts.map((p) => {
 		const mw = p.mesh.matrixWorld;
@@ -135067,6 +135091,37 @@ function evalAnimPoints(anim, norm, out) {
 		out[i * 3] = (wx - cx) * k;
 		out[i * 3 + 1] = (wy - cy) * k;
 		out[i * 3 + 2] = (wz - cz) * k;
+		if (outN && bn) {
+			// нормаль: та же кость и тот же поворот, без сдвига
+			const nx = bn[i * 3], ny = bn[i * 3 + 1], nz = bn[i * 3 + 2];
+			let tx = nx, ty = ny, tz = nz;
+			if (P.bones && (nx || ny || nz)) {
+				tx = ty = tz = 0;
+				const B = P.bones;
+				let ws = 0;
+				for (let j = 0; j < 4; j++) {
+					const w = bw[i * 4 + j];
+					if (w <= 0) continue;
+					const o = bi[i * 4 + j] * 16;
+					tx += w * (B[o] * nx + B[o + 4] * ny + B[o + 8] * nz);
+					ty += w * (B[o + 1] * nx + B[o + 5] * ny + B[o + 9] * nz);
+					tz += w * (B[o + 2] * nx + B[o + 6] * ny + B[o + 10] * nz);
+					ws += w;
+				}
+				if (ws < 1e-6) {
+					tx = nx;
+					ty = ny;
+					tz = nz;
+				}
+			}
+			const gx = e[0] * tx + e[4] * ty + e[8] * tz;
+			const gy = e[1] * tx + e[5] * ty + e[9] * tz;
+			const gz = e[2] * tx + e[6] * ty + e[10] * tz;
+			const gl = Math.hypot(gx, gy, gz) || 1;
+			outN[i * 3] = gx / gl;
+			outN[i * 3 + 1] = gy / gl;
+			outN[i * 3 + 2] = gz / gl;
+		}
 	}
 }
 
@@ -135961,11 +136016,14 @@ function generateShapePoints(type, count = 100000) {
 function reorderAnim(a, src) {
 	if (!a) return null;
 	const n = src.length;
-	const out = { parts: a.parts, part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4) };
+	const out = { parts: a.parts, part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4), bn: a.bn ? new Float32Array(n * 3) : null };
 	for (let i = 0; i < n; i++) {
 		const j = src[i];
 		out.part[i] = a.part[j];
-		for (let k = 0; k < 3; k++) out.bp[i * 3 + k] = a.bp[j * 3 + k];
+		for (let k = 0; k < 3; k++) {
+			out.bp[i * 3 + k] = a.bp[j * 3 + k];
+			if (out.bn) out.bn[i * 3 + k] = a.bn[j * 3 + k];
+		}
 		for (let k = 0; k < 4; k++) {
 			out.bi[i * 4 + k] = a.bi[j * 4 + k];
 			out.bw[i * 4 + k] = a.bw[j * 4 + k];
@@ -136949,6 +137007,7 @@ uniform vec3 uSliceC;
 uniform vec3 uMarkC;
 varying vec3 vColor;
 varying float vD;
+varying float vDk;
 varying float vCoc;
 varying float vGl;
 ` + common + `
@@ -137073,6 +137132,7 @@ void main() {
 	if (gScopeG > 0.01) pos += (vec3(hash11(aIdx * 13.1), hash11(aIdx * 7.7), hash11(aIdx * 3.3)) - 0.5) * gScopeG * uScopeQ.w * 0.4;
 	if (uFr.x > 0.5) pos += frNrm * frLift * 0.7;
 	float dkv = disK(base, aIdx);
+	vDk = dkv;
 	float t = uTime - uTOff;
 	float disp = clamp(length(pos - base) * 1.5, 0.0, 1.0);
 	float k;
@@ -137096,7 +137156,7 @@ void main() {
 	// видимость точки при морфинге между моделями с разным числом точек: лишние плавно гаснут, недостающие проявляются
 	float vm = uMorph * uMorph * (3.0 - 2.0 * uMorph);
 	float vis = mix(aVis.x, aVis.y, vm);
-	vColor = col * uBright * (1.0 + uBeat * 0.3) * (1.0 - dkv) * vis;
+	vColor = col * uBright * (1.0 + uBeat * 0.3) * vis;
 	if (uMask.x > 0.5 && uMaskShow > 0.5) vColor = mix(vColor, uP2 * 1.4, maskV * 0.55);
 	// объём: свет сверху слева по нормалям, обратная сторона формы темнее
 	if (uShade > 0.001 && dot(nrmM, nrmM) > 0.01) {
@@ -137233,12 +137293,12 @@ void main() {
 	vCoc = coc;
 
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
-	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.7 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
+	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.85 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
 	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
 	gl_PointSize = clamp(s, 1.0, 95.0);
-	if (gScopeD > 0.97) {
+	if (gScopeD > 0.97 || dkv > 0.97) {
 		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;
 	}
@@ -137257,6 +137317,7 @@ uniform vec3 uGlyph;
 uniform sampler2D uAtlas;
 varying vec3 vColor;
 varying float vD;
+varying float vDk;
 varying float vCoc;
 varying float vGl;
 void main() {
@@ -137290,14 +137351,14 @@ void main() {
 	float dofAlpha = 1.0 / (1.0 + vCoc * 1.8);
 	if (uAdd > 0.5) {
 		float aura = pow(core, mix(1.8, 0.7, uGlow));
-		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha * sph;
-		float ga = core * uGhost * dofAlpha;
+		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha * sph * (1.0 - vDk);
+		float ga = core * uGhost * dofAlpha * (1.0 - vDk);
 		// тёмные места видео должны быть прозрачными, а не чёрными: яркость точки определяет и её непрозрачность
 		if (uFr.x > 0.5) ga *= clamp(dot(vColor, vec3(0.3, 0.59, 0.11)) * 5.0, 0.0, 1.0);
 		gl_FragColor = vec4(col, ga);
 	} else {
 		// у кадров видео точка плоская, без затемнения к краю: цвет остаётся точным
-		gl_FragColor = vec4(vColor * (uFr.x > 0.5 ? 1.0 : 0.55 + 0.45 * core) * sph, dofAlpha);
+		gl_FragColor = vec4(vColor * (uFr.x > 0.5 ? 1.0 : 0.55 + 0.45 * core) * sph, dofAlpha * (1.0 - vDk));
 	}
 	#include <tonemapping_fragment>
 	#include <colorspace_fragment>
@@ -141744,8 +141805,12 @@ class EffectsEngine {
 				const g = this.geometry;
 				const ac = this._animCloud;
 				if (g.attributes.position.count === ac.count) {
-					if (!this._animBuf || this._animBuf.length !== ac.count * 3) this._animBuf = new Float32Array(ac.count * 3);
-					evalAnimPoints(ac.anim, ac.norm, this._animBuf);
+					if (!this._animBuf || this._animBuf.length !== ac.count * 3) {
+						this._animBuf = new Float32Array(ac.count * 3);
+						this._animBufN = new Float32Array(ac.count * 3);
+					}
+					// нормали идут за позой вместе с точками: эффекты с направлением (толчок вдоль нормали, ветер, выдавливание) не «штырит» при повороте модели
+					evalAnimPoints(ac.anim, ac.norm, this._animBuf, ac.anim.bn ? this._animBufN : null);
 					// вертикальный размах формы следует за позой: эффекты по высоте (полосы, срезы, наклон) считаются от текущего роста персонажа
 					{
 						const b = this._animBuf;
@@ -141761,6 +141826,11 @@ class EffectsEngine {
 					g.attributes.aOrigin.array.set(this._animBuf);
 					g.attributes.position.array.set(this._animBuf);
 					g.attributes.aTarget.needsUpdate = g.attributes.aOrigin.needsUpdate = g.attributes.position.needsUpdate = true;
+					if (ac.anim.bn) {
+						g.attributes.aNormal.array.set(this._animBufN);
+						g.attributes.aNormalB.array.set(this._animBufN);
+						g.attributes.aNormal.needsUpdate = g.attributes.aNormalB.needsUpdate = true;
+					}
 					if (L.links.on && (this._alk = ((this._alk || 0) + 1) % 4) === 0) this._syncLinks();
 				}
 			}
@@ -142620,7 +142690,7 @@ function makeModelProvider(app) {
 		let next = 0;
 		// облака, посаженные на персонажа, сохраняют связь со скелетом: в эффектах точки продолжат двигаться по анимации
 		const animated = list.some((o) => o.userData.animPts);
-		const A = animated ? { parts: [], part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4) } : null;
+		const A = animated ? { parts: [], part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4), bn: new Float32Array(n * 3) } : null;
 		for (const o of list) {
 			o.updateWorldMatrix(true, false);
 			const g = o.geometry.attributes;
@@ -142642,6 +142712,7 @@ function makeModelProvider(app) {
 					if (src && i < src.part.length) {
 						A.part[k] = src.part[i] + poff;
 						A.bp.set([src.bp[i * 3], src.bp[i * 3 + 1], src.bp[i * 3 + 2]], k * 3);
+						if (src.bn) A.bn.set([src.bn[i * 3], src.bn[i * 3 + 1], src.bn[i * 3 + 2]], k * 3);
 						for (let q = 0; q < 4; q++) {
 							A.bi[k * 4 + q] = src.bi[i * 4 + q];
 							A.bw[k * 4 + q] = src.bw[i * 4 + q];
@@ -142649,6 +142720,7 @@ function makeModelProvider(app) {
 					} else {
 						A.part[k] = poff;
 						A.bp.set([g.position.getX(i), g.position.getY(i), g.position.getZ(i)], k * 3);
+						if (g.normal) A.bn.set([g.normal.getX(i), g.normal.getY(i), g.normal.getZ(i)], k * 3);
 					}
 				}
 				if (g.normal) {
@@ -142661,7 +142733,7 @@ function makeModelProvider(app) {
 		}
 		const out = { positions: positions.slice(0, k * 3), normals: normals.slice(0, k * 3), colors: colors.slice(0, k * 3), count: k };
 		if (A && A.parts.some((q) => q.skinned) && app.anim.has) out.animBox = app.anim.animatedBounds();
-		if (A && A.parts.some((q) => q.skinned)) out.anim = { parts: A.parts, part: A.part.slice(0, k), bp: A.bp.slice(0, k * 3), bi: A.bi.slice(0, k * 4), bw: A.bw.slice(0, k * 4) };
+		if (A && A.parts.some((q) => q.skinned)) out.anim = { parts: A.parts, part: A.part.slice(0, k), bp: A.bp.slice(0, k * 3), bi: A.bi.slice(0, k * 4), bw: A.bw.slice(0, k * 4), bn: A.bn.slice(0, k * 3) };
 		return out;
 	};
 	const topObjects = () => root.children.filter((o) => !o.userData.helper && !o.userData.media && o.name !== '__fx' && (() => { let ok = false; o.traverse((c) => { if (!c.userData.helper && (c.isMesh || c.isPoints)) ok = true; }); return ok; })());

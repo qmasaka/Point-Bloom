@@ -363,11 +363,14 @@ export function generateShapePoints(type, count = 100000) {
 function reorderAnim(a, src) {
 	if (!a) return null;
 	const n = src.length;
-	const out = { parts: a.parts, part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4) };
+	const out = { parts: a.parts, part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4), bn: a.bn ? new Float32Array(n * 3) : null };
 	for (let i = 0; i < n; i++) {
 		const j = src[i];
 		out.part[i] = a.part[j];
-		for (let k = 0; k < 3; k++) out.bp[i * 3 + k] = a.bp[j * 3 + k];
+		for (let k = 0; k < 3; k++) {
+			out.bp[i * 3 + k] = a.bp[j * 3 + k];
+			if (out.bn) out.bn[i * 3 + k] = a.bn[j * 3 + k];
+		}
 		for (let k = 0; k < 4; k++) {
 			out.bi[i * 4 + k] = a.bi[j * 4 + k];
 			out.bw[i * 4 + k] = a.bw[j * 4 + k];
@@ -1351,6 +1354,7 @@ uniform vec3 uSliceC;
 uniform vec3 uMarkC;
 varying vec3 vColor;
 varying float vD;
+varying float vDk;
 varying float vCoc;
 varying float vGl;
 ` + common + `
@@ -1475,6 +1479,7 @@ void main() {
 	if (gScopeG > 0.01) pos += (vec3(hash11(aIdx * 13.1), hash11(aIdx * 7.7), hash11(aIdx * 3.3)) - 0.5) * gScopeG * uScopeQ.w * 0.4;
 	if (uFr.x > 0.5) pos += frNrm * frLift * 0.7;
 	float dkv = disK(base, aIdx);
+	vDk = dkv;
 	float t = uTime - uTOff;
 	float disp = clamp(length(pos - base) * 1.5, 0.0, 1.0);
 	float k;
@@ -1498,7 +1503,7 @@ void main() {
 	// видимость точки при морфинге между моделями с разным числом точек: лишние плавно гаснут, недостающие проявляются
 	float vm = uMorph * uMorph * (3.0 - 2.0 * uMorph);
 	float vis = mix(aVis.x, aVis.y, vm);
-	vColor = col * uBright * (1.0 + uBeat * 0.3) * (1.0 - dkv) * vis;
+	vColor = col * uBright * (1.0 + uBeat * 0.3) * vis;
 	if (uMask.x > 0.5 && uMaskShow > 0.5) vColor = mix(vColor, uP2 * 1.4, maskV * 0.55);
 	// объём: свет сверху слева по нормалям, обратная сторона формы темнее
 	if (uShade > 0.001 && dot(nrmM, nrmM) > 0.01) {
@@ -1635,12 +1640,12 @@ void main() {
 	vCoc = coc;
 
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
-	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.7 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
+	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.85 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
 	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
 	gl_PointSize = clamp(s, 1.0, 95.0);
-	if (gScopeD > 0.97) {
+	if (gScopeD > 0.97 || dkv > 0.97) {
 		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;
 	}
@@ -1659,6 +1664,7 @@ uniform vec3 uGlyph;
 uniform sampler2D uAtlas;
 varying vec3 vColor;
 varying float vD;
+varying float vDk;
 varying float vCoc;
 varying float vGl;
 void main() {
@@ -1692,14 +1698,14 @@ void main() {
 	float dofAlpha = 1.0 / (1.0 + vCoc * 1.8);
 	if (uAdd > 0.5) {
 		float aura = pow(core, mix(1.8, 0.7, uGlow));
-		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha * sph;
-		float ga = core * uGhost * dofAlpha;
+		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha * sph * (1.0 - vDk);
+		float ga = core * uGhost * dofAlpha * (1.0 - vDk);
 		// тёмные места видео должны быть прозрачными, а не чёрными: яркость точки определяет и её непрозрачность
 		if (uFr.x > 0.5) ga *= clamp(dot(vColor, vec3(0.3, 0.59, 0.11)) * 5.0, 0.0, 1.0);
 		gl_FragColor = vec4(col, ga);
 	} else {
 		// у кадров видео точка плоская, без затемнения к краю: цвет остаётся точным
-		gl_FragColor = vec4(vColor * (uFr.x > 0.5 ? 1.0 : 0.55 + 0.45 * core) * sph, dofAlpha);
+		gl_FragColor = vec4(vColor * (uFr.x > 0.5 ? 1.0 : 0.55 + 0.45 * core) * sph, dofAlpha * (1.0 - vDk));
 	}
 	#include <tonemapping_fragment>
 	#include <colorspace_fragment>
@@ -6146,8 +6152,12 @@ export class EffectsEngine {
 				const g = this.geometry;
 				const ac = this._animCloud;
 				if (g.attributes.position.count === ac.count) {
-					if (!this._animBuf || this._animBuf.length !== ac.count * 3) this._animBuf = new Float32Array(ac.count * 3);
-					evalAnimPoints(ac.anim, ac.norm, this._animBuf);
+					if (!this._animBuf || this._animBuf.length !== ac.count * 3) {
+						this._animBuf = new Float32Array(ac.count * 3);
+						this._animBufN = new Float32Array(ac.count * 3);
+					}
+					// нормали идут за позой вместе с точками: эффекты с направлением (толчок вдоль нормали, ветер, выдавливание) не «штырит» при повороте модели
+					evalAnimPoints(ac.anim, ac.norm, this._animBuf, ac.anim.bn ? this._animBufN : null);
 					// вертикальный размах формы следует за позой: эффекты по высоте (полосы, срезы, наклон) считаются от текущего роста персонажа
 					{
 						const b = this._animBuf;
@@ -6163,6 +6173,11 @@ export class EffectsEngine {
 					g.attributes.aOrigin.array.set(this._animBuf);
 					g.attributes.position.array.set(this._animBuf);
 					g.attributes.aTarget.needsUpdate = g.attributes.aOrigin.needsUpdate = g.attributes.position.needsUpdate = true;
+					if (ac.anim.bn) {
+						g.attributes.aNormal.array.set(this._animBufN);
+						g.attributes.aNormalB.array.set(this._animBufN);
+						g.attributes.aNormal.needsUpdate = g.attributes.aNormalB.needsUpdate = true;
+					}
 					if (L.links.on && (this._alk = ((this._alk || 0) + 1) % 4) === 0) this._syncLinks();
 				}
 			}

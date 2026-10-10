@@ -241,8 +241,8 @@ this.version++;
 this.app.bus.emit('animpose');
 }
 }
-export function evalAnimPoints(anim, norm, out) {
-const { parts, part, bp, bi, bw } = anim;
+export function evalAnimPoints(anim, norm, out, outN = null) {
+const { parts, part, bp, bi, bw, bn } = anim;
 const n = part.length;
 const post = parts.map((p) => {
 const mw = p.mesh.matrixWorld;
@@ -284,5 +284,35 @@ const wz = e[2] * sx + e[6] * sy + e[10] * sz + e[14];
 out[i * 3] = (wx - cx) * k;
 out[i * 3 + 1] = (wy - cy) * k;
 out[i * 3 + 2] = (wz - cz) * k;
+if (outN && bn) {
+const nx = bn[i * 3], ny = bn[i * 3 + 1], nz = bn[i * 3 + 2];
+let tx = nx, ty = ny, tz = nz;
+if (P.bones && (nx || ny || nz)) {
+tx = ty = tz = 0;
+const B = P.bones;
+let ws = 0;
+for (let j = 0; j < 4; j++) {
+const w = bw[i * 4 + j];
+if (w <= 0) continue;
+const o = bi[i * 4 + j] * 16;
+tx += w * (B[o] * nx + B[o + 4] * ny + B[o + 8] * nz);
+ty += w * (B[o + 1] * nx + B[o + 5] * ny + B[o + 9] * nz);
+tz += w * (B[o + 2] * nx + B[o + 6] * ny + B[o + 10] * nz);
+ws += w;
+}
+if (ws < 1e-6) {
+tx = nx;
+ty = ny;
+tz = nz;
+}
+}
+const gx = e[0] * tx + e[4] * ty + e[8] * tz;
+const gy = e[1] * tx + e[5] * ty + e[9] * tz;
+const gz = e[2] * tx + e[6] * ty + e[10] * tz;
+const gl = Math.hypot(gx, gy, gz) || 1;
+outN[i * 3] = gx / gl;
+outN[i * 3 + 1] = gy / gl;
+outN[i * 3 + 2] = gz / gl;
+}
 }
 }
