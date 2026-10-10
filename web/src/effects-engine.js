@@ -41,7 +41,7 @@ export const FX_LAYERS = [
 { id: 'pulse', group: 'Движение', name: 'Пульс', icon: 'pulse', hint: 'Форма бьётся, как сердце: волна расширения бежит от центра к краю', max: 2, def: { on: false, amount: 0.8, band: 'none', react: 0, mode: 'shell', delay: 0.35, speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['shell', 'Бегущая оболочка'], ['squash', 'Сжатие и растяжение'], ['flat', 'Вся форма сразу']] }, { key: 'delay', label: 'Задержка к краю', min: 0, max: 1, step: 0.02, when: ['mode', ['shell', 'squash']] }, { key: 'speed', label: 'Скорость затухания', min: 0.3, max: 3, step: 0.05 }] },
 { id: 'blast', group: 'Движение', name: 'Взрыв по биту', icon: 'asterisk', hint: 'На каждый удар точки отлетают от формы и пружинят обратно с перелётом', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, decay: 2.2, random: 0.6, period: 1.6 }, extras: [{ key: 'decay', label: 'Возврат (пружина)', min: 0.8, max: 6, step: 0.1 }, { key: 'random', label: 'Разброс направлений', min: 0, max: 1, step: 0.05 }, { key: 'period', label: 'Без музыки бьёт раз в, с', min: 0.4, max: 5, step: 0.1 }] },
 { id: 'flow', group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, поверхность выглядит живой, а силуэт не меняется', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
-{ id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Частицы отрываются от формы, уносятся ветром и гаснут, пока модель не исчезнет. Потом она собирается обратно', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', order: 'top', style: 'wind', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.8 }, extras: [{ key: 'style', label: 'Как исчезает', type: 'select', options: [['wind', 'Уносит ветром'], ['burn', 'Горение: пепел и угли'], ['bubbles', 'Пузыри всплывают']] }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'order', label: 'С какой стороны', type: 'seg', options: [['top', 'Сверху'], ['noise', 'Пятнами'], ['bottom', 'Снизу']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер в сторону', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Завихрения', min: 0, max: 2, step: 0.05 }] },
+{ id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Форма распадается на частицы и исчезает: ветром, песком, огнём, осколками, смерчем или цифровыми блоками. Потом собирается обратно. Можно задать, с какой стороны начинается, как быстро распад и сборка и насколько ярко светится кромка', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', dir: 'both', order: 'top', style: 'wind', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.8, scatter: 1, edge: 0.32, glow: 0.35, shrink: 0.85 }, extras: [{ type: 'title', label: 'Как растворяется' }, { key: 'style', label: 'Вид', type: 'select', options: [['wind', 'Уносит ветром'], ['sand', 'Песок: осыпается на пол'], ['burn', 'Горение: пепел и угли'], ['shatter', 'Осколки разлетаются'], ['vortex', 'Смерч уносит вверх'], ['bubbles', 'Пузыри всплывают'], ['pixel', 'Цифровые пиксели'], ['melt', 'Оплавление: стекает каплями']] }, { key: 'order', label: 'Откуда начинается', type: 'select', options: [['top', 'Сверху вниз'], ['bottom', 'Снизу вверх'], ['side', 'Слева направо'], ['center', 'Из центра наружу'], ['edges', 'С краёв к центру'], ['noise', 'Пятнами']] }, { type: 'title', label: 'Запуск' }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'dir', label: 'Что дольше', type: 'seg', options: [['both', 'Поровну'], ['out', 'Распад'], ['in', 'Сборка']], when: ['mode', ['loop']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01, when: ['mode', ['slider']] }, { type: 'title', label: 'Движение частиц' }, { key: 'scatter', label: 'Сила разлёта', min: 0.2, max: 2.5, step: 0.05 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер в сторону', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Завихрения', min: 0, max: 2, step: 0.05 }, { type: 'title', label: 'Кромка и частицы' }, { key: 'edge', label: 'Ширина кромки распада', min: 0.1, max: 0.7, step: 0.02 }, { key: 'glow', label: 'Свечение кромки', min: 0, max: 1.5, step: 0.05 }, { key: 'shrink', label: 'Мельчание частиц', min: 0, max: 1, step: 0.05 }] },
 { id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки прилипают к кубической сетке и становятся квадратами: сетка, «Лего» или дыхание', max: 1, def: { on: false, amount: 0.6, band: 'beat', react: 1, mode: 'grid', speed: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['grid', 'Сетка'], ['lego', 'Лего'], ['breathe', 'Дыхание']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe']] }] },
 { id: 'scope', group: 'Звук и ритм', name: 'Акселограф', icon: 'heartbeat', hint: 'По точкам модели бежит перо самописца: линия идёт от точки к точке по их координатам и вычерчивает форму. Ещё не нарисованные точки невидимы и проявляются, когда перо проходит по ним. Линия и точки двигаются вместе с остальными эффектами', max: 1, def: { on: false, amount: 0.7, band: 'none', react: 0.6, mode: 'draw', order: 'walk', dir: 'fwd', loop: 'loop', speed: 1, pens: 2, chaos: 0.6, trail: 0.5, detail: 6000, dim: 1, line: 1, width: 2.4, color: '#3dff7a', tint: 0.35, thick: 0.6, glow: 1, spark: 0 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивает: нарисованное остаётся'], ['comet', 'Комета: за пером тянется гаснущий след']] }, { key: 'order', label: 'Порядок обхода', type: 'select', options: [['walk', 'От точки к точке (ближайшая)'], ['up', 'Развёртка снизу вверх'], ['spin', 'Развёртка по кругу']] }, { key: 'dir', label: 'Направление', type: 'seg', options: [['fwd', 'Вперёд'], ['back', 'Назад']] }, { key: 'loop', label: 'В конце круга', type: 'seg', options: [['loop', 'Стирает и заново'], ['once', 'Остаётся']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'pens', label: 'Число перьев', min: 1, max: 8, step: 1, int: true }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true, when: ['order', ['walk']] }, { key: 'chaos', label: 'Хаотичность пути', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'dim', label: 'Прятать ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'color', label: 'Цвет акселографа', type: 'color' }, { key: 'line', label: 'Яркость линии', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'width', label: 'Толщина линии', min: 0.5, max: 8, step: 0.1, when: ['order', ['walk']] }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }, { key: 'spark', label: 'Искры у пера', min: 0, max: 2, step: 0.05 }] },
 { id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Нейросеть строит карту глубины снимка или каждого кадра видео, и точки выдавливаются по ней: рельеф, ступени, дыхание, волна, рябь, карусель и разлёт слоёв. Всё считается на вашем компьютере. Вращайте камеру, чтобы увидеть объём', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.5, zone: 0.12, bright: 0, contrast: 1, gamma: 1, blur: 0, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Рельеф: ближнее выступает вперёд'], ['layers', 'Ступени: ровные плоскости по глубине'], ['breath', 'Дыхание: рельеф выдавливается и втягивается'], ['wave', 'Волна: рельеф вспухает бегущей волной'], ['ripple', 'Рябь: по рельефу расходятся круги'], ['twist', 'Карусель: слои поворачиваются по-разному'], ['burst', 'Разлёт: слои вылетают к зрителю и возвращаются']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Глубина, что остаётся на месте', min: 0, max: 1, step: 0.01 }, { key: 'zone', label: 'Ширина зоны на месте', min: 0, max: 0.6, step: 0.01 }, { type: 'title', label: 'Правка карты глубины' }, { key: 'bright', label: 'Яркость карты', min: -0.5, max: 0.5, step: 0.01 }, { key: 'contrast', label: 'Контраст карты', min: 0.2, max: 3, step: 0.02 }, { key: 'gamma', label: 'Тени (гамма)', min: 0.3, max: 3, step: 0.02 }, { key: 'blur', label: 'Размытие карты', min: 0, max: 12, step: 1, int: true }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
@@ -446,6 +446,7 @@ uniform float uAsm;
 uniform vec4 uDis;
 uniform float uDisT;
 uniform float uAnimN;
+uniform vec4 uDisQ; // x: ширина кромки, y: сила разлёта, z: свечение кромки, w: мельчание точек
 uniform vec4 uGravP;
 uniform vec4 uHandP;
 uniform vec4 uImp[32];
@@ -596,12 +597,21 @@ float disK(vec3 b, float idx) {
 	if (uDis.x < 0.001) return 0.0;
 	float y01 = clamp((b.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
 	float h = hash11(idx * 37.3);
+	float m = uDis.y;
+	// у анимированной модели положение в кадре меняется, поэтому порядки по оси X, от центра и пятнами берут устойчивый шум по номеру точки: иначе точки мерцали бы, пока модель движется
+	bool still = uAnimN < 0.5;
 	float ord;
-	if (uDis.y < 0.5) ord = (1.0 - y01) * 0.72 + h * 0.28;
-	// у анимированной модели порядок отрыва не зависит от места в кадре: шум по положению мерцал бы, пока модель движется
-	else if (uDis.y < 1.5) ord = ((uAnimN > 0.5 ? hash11(idx * 13.7) : snoise(b * 1.7) * 0.5 + 0.5)) * 0.75 + h * 0.25;
-	else ord = y01 * 0.72 + h * 0.28;
-	return clamp((uDis.x * 1.4 - ord) / 0.32, 0.0, 1.0);
+	if (m < 0.5) ord = (1.0 - y01) * 0.72 + h * 0.28;
+	else if (m < 1.5) ord = ((still ? snoise(b * 1.7) * 0.5 + 0.5 : hash11(idx * 13.7))) * 0.75 + h * 0.25;
+	else if (m < 2.5) ord = y01 * 0.72 + h * 0.28;
+	else if (m < 3.5) ord = (still ? clamp(b.x * 0.3 + 0.5, 0.0, 1.0) : hash11(idx * 13.7)) * 0.72 + h * 0.28;
+	else {
+		float r01 = clamp(length(b - vec3(0.0, (uYR.x + uYR.y) * 0.5, 0.0)) / max((uYR.y - uYR.x) * 0.6, 0.3), 0.0, 1.0);
+		float rr = still ? r01 : hash11(idx * 13.7);
+		ord = (m < 4.5 ? rr : 1.0 - rr) * 0.72 + h * 0.28;
+	}
+	float w = max(uDisQ.x, 0.06);
+	return clamp((uDis.x * (1.0 + w) - ord) / w, 0.0, 1.0);
 }
 
 // Местное время морфинга точки 0..1: расслоение задаёт, насколько позже стартуют точки, порядок задаёт, какие первыми
@@ -978,17 +988,48 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	if (uSliceM.x > 0.5 && uSliceM.x < 1.5) pos += rad * sliceK(base) * uSliceM.y;
 	float dk = disK(base, aIdx);
 	if (dk > 0.0) {
+		float sc = uDisQ.y;
+		float hh = hash11(aIdx * 5.1);
+		float hh2 = hash11(aIdx * 7.7);
 		vec3 dsp = uAnimN > 0.5 ? vec3(hash11(aIdx * 1.7), hash11(aIdx * 2.3), hash11(aIdx * 3.1)) * 8.0 : base * 1.8;
-		pos += curlNoise(dsp + vec3(0.0, -t * 0.6, t * 0.3)) * dk * uDisT * 0.9;
-		if (uDisP.x < 0.5) {
-			pos.y -= dk * dk * uDis.z * 1.5;
-			pos.x += dk * uDis.w * 1.1;
-		} else if (uDisP.x < 1.5) {
-			pos.y += dk * dk * 0.9;
-			pos.x += dk * uDis.w * 0.6;
+		pos += curlNoise(dsp + vec3(0.0, -t * 0.6, t * 0.3)) * dk * uDisT * 0.9 * sc;
+		float ds = uDisP.x;
+		if (ds < 0.5) {
+			// ветер: уносит вбок и вниз
+			pos.y -= dk * dk * uDis.z * 1.5 * sc;
+			pos.x += dk * uDis.w * 1.1 * sc;
+		} else if (ds < 1.5) {
+			// горение: пепел поднимается вверх
+			pos.y += dk * dk * 0.9 * sc;
+			pos.x += dk * uDis.w * 0.6 * sc;
+		} else if (ds < 2.5) {
+			// пузыри всплывают
+			pos.y += dk * 0.75 * sc;
+			pos.xz += vec2(sin(t * 2.0 + aIdx * 40.0), cos(t * 1.7 + aIdx * 30.0)) * dk * 0.12 * sc;
+		} else if (ds < 3.5) {
+			// песок: осыпается вниз и ложится кучкой на пол
+			float fl = uYR.x + hh * 0.07;
+			pos.y = max(pos.y - dk * dk * (0.6 + uDis.z) * 2.2 * sc * (0.6 + hh), fl);
+			pos.xz += (vec2(hh, hh2) - 0.5) * dk * 0.35 * sc + vec2(uDis.w, 0.0) * dk * 0.3 * sc;
+		} else if (ds < 4.5) {
+			// осколки: разлетаются от поверхности в стороны и падают
+			vec3 dd = normalize(rad + (vec3(hh, hh2, hash11(aIdx * 9.3)) - 0.5) * 0.9);
+			pos += dd * dk * (0.35 + hh * 0.9) * sc;
+			pos.y -= dk * dk * uDis.z * 0.7 * sc;
+		} else if (ds < 5.5) {
+			// смерч: закручиваются вокруг формы и уходят вверх
+			vec3 tg = normalize(cross(vec3(0.0, 1.0, 0.0), rad) + vec3(1e-4));
+			pos += (tg * (0.5 + hh) * 0.9 + rad * 0.25 * hh2) * dk * sc + vec3(0.0, dk * (0.4 + hh2 * 1.1) * sc, 0.0);
+		} else if (ds < 6.5) {
+			// цифровое: точки слипаются в крупные пиксели сетки, которые уходят блоками
+			float cell = 0.04 + dk * 0.16;
+			pos = mix(pos, (floor(pos / cell) + 0.5) * cell, smoothstep(0.0, 0.5, dk));
+			pos.y -= dk * dk * uDis.z * 0.5 * sc * step(0.5, hh);
+			pos.x += dk * uDis.w * 0.4 * sc * step(hh, 0.4);
 		} else {
-			pos.y += dk * 0.75;
-			pos.xz += vec2(sin(t * 2.0 + aIdx * 40.0), cos(t * 1.7 + aIdx * 30.0)) * dk * 0.12;
+			// оплавление: стекает вниз каплями разной длины
+			pos.y -= dk * (0.25 + hh * 1.1) * (0.4 + uDis.z) * sc;
+			pos.xz += (vec2(hh2, hh) - 0.5) * dk * 0.05;
 		}
 	}
 	if (uGrav.x > 0.001) {
@@ -1076,7 +1117,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	}
 	if (uCurl.x > 0.001) {
 		// сила растёт мягче линейной: на максимуме точки уходят заметно, но форма ещё читается
-		float ca = pow(uCurl.x, 1.35) * 0.045;
+		float ca = pow(uCurl.x, 1.45) * 0.055;
 		float thr = snoise(base * 1.8 + t * 0.3) * 0.5 + 0.5;
 		float det = smoothstep(0.35, 0.85, thr + min(uCurl.x, 1.0) * 0.12);
 		vec3 cn = curlNoise(base * uCurl.y + vec3(t * 0.4, t * 0.3, t * 0.5) * uCurlP.x) * det * ca;
@@ -1539,10 +1580,11 @@ void main() {
 		vColor *= 1.0 - 0.28 * gGl * step(0.5, fract(pos.y * 38.0));
 		if (gCh > -0.5) vColor = mix(vColor, vColor * vec3(gCh < 0.5 ? 1.8 : 0.1, abs(gCh - 1.0) < 0.5 ? 1.8 : 0.1, gCh > 1.5 ? 1.8 : 0.1), min(1.0, gGl));
 	}
-	// горение: тлеющая кромка перед исчезновением
-	if (uDisP.x > 0.5 && uDisP.x < 1.5 && dkv > 0.0) {
+	// светящаяся кромка растворения: у горения огненная, у остальных цвета палитры, яркость задаёт настройка
+	if (dkv > 0.0) {
 		float edge = smoothstep(0.02, 0.25, dkv) * (1.0 - smoothstep(0.25, 0.75, dkv));
-		vColor += vec3(1.0, 0.42, 0.08) * edge * 2.4;
+		if (uDisP.x > 0.5 && uDisP.x < 1.5) vColor += vec3(1.0, 0.42, 0.08) * edge * 2.4;
+		else vColor += uP2 * edge * uDisQ.z * 2.0;
 	}
 	// вспышка в момент перехода: точки в пути ярче и крупнее
 	float mkm = 0.0;
@@ -1583,7 +1625,7 @@ void main() {
 	vCoc = coc;
 
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
-	s *= max(0.15, szNoise * szAudio) * (1.0 - 0.85 * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
+	s *= max(0.15, szNoise * szAudio) * (1.0 - uDisQ.w * dkv) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
 	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
@@ -4958,7 +5000,7 @@ uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
 uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
 uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
-uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uAnimN: U(0), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
+uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uAnimN: U(0), uDisQ: U(new THREE.Vector4(0.32, 1, 0.35, 0.85)), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 };
 const mk = (extra) =>
 new THREE.ShaderMaterial({
@@ -5608,7 +5650,7 @@ u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, m
 }
 u.uGlitch.value.set(this._eff(L.glitch), L.glitch.slices, 0, 0);
 u.uGlitchP.value.set(L.glitch.rgb === 'on' ? 1 : 0, L.glitch.speed, 0, 0);
-u.uDisP.value.set({ wind: 0, burn: 1, bubbles: 2 }[L.dissolve.style] ?? 0, 0, 0, 0);
+u.uDisP.value.set({ wind: 0, burn: 1, bubbles: 2, sand: 3, shatter: 4, vortex: 5, pixel: 6, melt: 7 }[L.dissolve.style] ?? 0, 0, 0, 0);
 u.uCursor.value.set(this._eff(L.cursor), L.cursor.radius, L.cursor.mode === 'attract' ? -1 : 1, 0);
 {
 const P = L.physics;
@@ -5757,8 +5799,9 @@ let p = 0;
 if (D.on) {
 if (D.mode === 'loop') {
 this._disT = (this._disT || 0) + dt * D.speed * 0.25;
-const ph = this._disT % 2;
-const x = ph < 1 ? ph : 2 - ph;
+const split = D.dir === 'out' ? 0.7 : D.dir === 'in' ? 0.3 : 0.5;
+const c = (this._disT % 2) / 2;
+const x = c < split ? c / split : 1 - (c - split) / (1 - split);
 p = clamp((x - 0.12) / 0.76, 0, 1);
 } else if (D.mode === 'button') {
 const tg = this._disTarget ? 1 : 0;
@@ -5771,7 +5814,8 @@ p = p * p * (3 - 2 * p) * Math.min(1, D.amount);
 const hand = this.camTracker?.running && this._handDis && this._time - (this._handsT ?? -9) < 0.4;
 this._disH = (this._disH || 0) + ((hand ? 1 : 0) - (this._disH || 0)) * (1 - Math.exp(-dt * Math.max(0.5, D.speed) * 1.2));
 if (this._disH > 0.002) p = Math.max(p, this._disH * this._disH * (3 - 2 * this._disH));
-u.uDis.value.set(p, { top: 0, noise: 1, bottom: 2 }[D.order] ?? 0, D.fall, D.wind);
+u.uDis.value.set(p, { top: 0, noise: 1, bottom: 2, side: 3, center: 4, edges: 5 }[D.order] ?? 0, D.fall, D.wind);
+u.uDisQ.value.set(D.edge ?? 0.32, D.scatter ?? 1, D.glow ?? 0.35, D.shrink ?? 0.85);
 u.uDisT.value = D.turb;
 }
 if (this._sculptLive && this.geometry && !(this._grabs && this._grabs.size)) {
