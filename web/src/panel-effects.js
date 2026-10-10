@@ -1523,6 +1523,7 @@ bindScrubbing(rulerBody);
 bindScrubbing(camTrackBody);
 toggleAnim = function (on = animPanel.hidden) {
 animPanel.hidden = !on;
+engine.timelineOpen = !!on;
 keyAnimBtn.classList.toggle('is-active', on);
 animQuickBtn.classList.toggle('is-active', on);
 appEl.classList.toggle('fx-anim-active', on);
