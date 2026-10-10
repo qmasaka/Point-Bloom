@@ -2645,6 +2645,16 @@ export class EffectsEngine {
 			if (!this.active) this.cache.clear();
 			this._warmT = setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(() => this.prewarm()), 1200);
 		});
+		// новая текстура, цвет материала или правка сетки в редакторе: готовое облако устарело, при входе в «Эффекты» оно соберётся заново с новыми цветами
+		const stale = () => {
+			if (this.active) return;
+			this.cache.clear();
+			clearTimeout(this._warmT);
+			this._warmT = setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(() => this.prewarm()), 900);
+		};
+		app.bus.on('material', stale);
+		app.bus.on('geometry', stale);
+		app.bus.on('pointtex', stale);
 		app.bus.on('pointtex', () => {
 			if (this.active) {
 				this.cache.clear();
