@@ -5890,7 +5890,7 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 	box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
-/* настройки не уже списка эффектов слева */
+/* настройки не уже 280 px, это шире списка эффектов слева (252 px) */
 @container app (min-width: 901px) {
-	.ui-float .sidebar { width: max(var(--fxl-w, 252px), var(--sidebar-w, 300px)); }
+	.ui-float .sidebar { width: max(280px, var(--sidebar-w, 300px)); }
 }

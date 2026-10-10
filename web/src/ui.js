@@ -446,7 +446,7 @@ setTimeout(() => this.app.viewport.resize(), 60);
 setTimeout(() => vpEl.classList.remove('ws-out'), 160);
 }
 makeSidebarResizable() {
-const SIDEBAR_MIN = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--fxl-w'), 10) || 252;
+const SIDEBAR_MIN = 280;
 const resizer = $('#sidebarResizer');
 const sidebar = $('#sidebar');
 const ws = $('.workspace');

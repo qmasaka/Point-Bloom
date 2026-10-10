@@ -145402,8 +145402,8 @@ class UI {
 	}
 
 	makeSidebarResizable() {
-		// не уже левой панели эффектов: ширина настроек и списка эффектов читается одинаково
-		const SIDEBAR_MIN = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--fxl-w'), 10) || 252;
+		// настройки не уже 280 px: это шире левой панели эффектов (252 px), чтобы поля и подписи не сжимались
+		const SIDEBAR_MIN = 280;
 		const resizer = $('#sidebarResizer');
 		const sidebar = $('#sidebar');
 		const ws = $('.workspace');
