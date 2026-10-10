@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { h, formatBytes } from './util.js';
 import { icon } from './icons.js';
-import { section, field, select, slider, segmented, colorField, numberField, switchRow, iconButton, empty } from './ui-kit.js';
+import { section, field, select, fxSlider as slider, segmented, colorField, numberField, switchRow, iconButton, empty } from './ui-kit.js';
 import { SLOTS, thumbnail, drawUVLayout, getAlphaMode, setAlphaMode, slotByKey } from './materials.js';
 import { assignTextureFiles, IMAGE_EXT } from './importers.js';
 import { extOf } from './util.js';

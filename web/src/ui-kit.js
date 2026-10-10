@@ -174,7 +174,9 @@ paint();
 }
 export function fxSlider(o) {
 if (o.noNorm) return slider(o);
-if ((o.min === 0 || o.min === -1) && (o.max === 1 || o.max === 2)) return slider({ ...o, format: undefined, unit: '', digits: 2 });
+const lo = o.min ?? 0;
+const hi = o.max ?? 1;
+if ((lo === 0 || lo === -1) && (hi === 1 || hi === 2)) return slider({ ...o, format: undefined, unit: '', digits: 2 });
 return slider({ ...o, norm: true });
 }
 export function numberField({ value = 0, step = 0.1, onChange, axis, digits = 4, min = -Infinity, max = Infinity, cls = '' }) {

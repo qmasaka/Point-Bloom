@@ -484,7 +484,7 @@ try {
 const saved = localStorage.getItem('objglb.sidebar-w');
 if (saved) {
 const w = parseInt(saved, 10);
-if (w >= SIDEBAR_MIN && w <= 700) {
+if (w >= SIDEBAR_MIN && w <= 420) {
 document.documentElement.style.setProperty('--sidebar-w', `${w}px`);
 }
 }
@@ -510,7 +510,7 @@ const z = uiZoom();
 const delta = (startX - e.clientX) / z;
 let newW = Math.round(startW / z + delta);
 const minW = SIDEBAR_MIN;
-const maxW = Math.max(minW, Math.min(650, window.innerWidth / z - 200));
+const maxW = Math.max(minW, Math.min(420, Math.floor((window.innerWidth / z) * 0.38)));
 newW = Math.max(minW, Math.min(maxW, newW));
 document.documentElement.style.setProperty('--sidebar-w', `${newW}px`);
 this.app.viewport.resize();

@@ -89947,7 +89947,9 @@ function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, d
 /** Ползунок настроек эффектов: числа читаются одинаково, шкала до 1 (до 2, если так задумано). noNorm оставляет реальные величины: число точек, секунды, кадры */
 function fxSlider(o) {
 	if (o.noNorm) return slider(o);
-	if ((o.min === 0 || o.min === -1) && (o.max === 1 || o.max === 2)) return slider({ ...o, format: undefined, unit: '', digits: 2 });
+	const lo = o.min ?? 0;
+	const hi = o.max ?? 1;
+	if ((lo === 0 || lo === -1) && (hi === 1 || hi === 2)) return slider({ ...o, format: undefined, unit: '', digits: 2 });
 	return slider({ ...o, norm: true });
 }
 function numberField({ value = 0, step = 0.1, onChange, axis, digits = 4, min = -Infinity, max = Infinity, cls = '' }) {
@@ -90448,7 +90450,7 @@ __def(__exports, 'createScenePanel', () => createScenePanel);
 const THREE = __req('vendor/three/build/three.module.js');
 const { h, fmt, formatInt, deg } = __req('src/util.js');
 const { icon } = __req('src/icons.js');
-const { section, field, numberField, slider, button, iconButton, empty, switchRow } = __req('src/ui-kit.js');
+const { section, field, numberField, fxSlider: slider, button, iconButton, empty, switchRow } = __req('src/ui-kit.js');
 const { triangleCount } = __req('src/geom.js');
 const { applySplat } = __req('src/splat-tools.js');
 
@@ -90653,7 +90655,7 @@ row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 		return b;
 	};
 	const smooth = { angle: 60 };
-	const angleSlider = slider({ min: 5, max: 180, step: 1, value: 60, digits: 0, unit: '°', onInput: (v) => (smooth.angle = v) });
+	const angleSlider = slider({ noNorm: true, min: 5, max: 180, step: 1, value: 60, digits: 0, unit: '°', onInput: (v) => (smooth.angle = v) });
 	const simplify = { keep: 50 };
 	const simplifyHint = h('div', { class: 'field-hint' });
 	const updateSimplifyHint = () => {
@@ -90662,7 +90664,7 @@ row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 		const tris = meshes.reduce((n, m) => n + triangleCount(m.geometry), 0);
 		simplifyHint.textContent = tris ? `Граней: ${formatInt(tris)}, останется около ${formatInt(Math.round((tris * simplify.keep) / 100))}` : 'Выберите объект';
 	};
-	const simplifySlider = slider({ min: 5, max: 95, step: 5, value: 50, digits: 0, unit: '%', onInput: (v) => { simplify.keep = v; updateSimplifyHint(); } });
+	const simplifySlider = slider({ noNorm: true, min: 5, max: 95, step: 5, value: 50, digits: 0, unit: '%', onInput: (v) => { simplify.keep = v; updateSimplifyHint(); } });
 	const mirrorRow = h(
 		'div',
 		{ class: 'tool-grid', style: { gridTemplateColumns: 'repeat(3, minmax(0,1fr))' } },
@@ -90697,7 +90699,7 @@ field('Сглаживание', angleSlider.el, {}),
 for (const b of need.slice(-3)) b.classList.add('btn-block');
 // --------------------------------------------------------- настройки сплатов (фото в сплаты, PLY со сплатами)
 	const splatInfo = h('div', { class: 'field-hint' });
-	const splatCount = slider({ log: true, min: 2000, max: 1500000, step: 1000, value: 200000, format: (v) => formatInt(v), onInput: (v) => splatApply({ count: v }), onChange: () => {} });
+	const splatCount = slider({ noNorm: true, log: true, min: 2000, max: 1500000, step: 1000, value: 200000, format: (v) => formatInt(v), onInput: (v) => splatApply({ count: v }), onChange: () => {} });
 	const splatOp = slider({ min: 0, max: 0.9, step: 0.01, value: 0.05, onInput: (v) => splatApply({ minOp: v }) });
 	const splatDepth = slider({ min: 0.1, max: 4, step: 0.05, value: 1, onInput: (v) => splatApply({ depth: v }) });
 	const splatBody = h('div', { class: 'sec-body', style: { padding: 0 } }, splatInfo, field('Сколько точек оставить', splatCount.el), field('Отсечь прозрачные', splatOp.el, { hint: 'Убирает почти невидимые сплаты и «пыль» вокруг объекта' }), field('Глубина', splatDepth.el, { hint: '1 это как посчитала нейросеть, больше растягивает сцену вглубь' }));
@@ -125175,7 +125177,7 @@ __def(__exports, 'createMaterialPanel', () => createMaterialPanel);
 const THREE = __req('vendor/three/build/three.module.js');
 const { h, formatBytes } = __req('src/util.js');
 const { icon } = __req('src/icons.js');
-const { section, field, select, slider, segmented, colorField, numberField, switchRow, iconButton, empty } = __req('src/ui-kit.js');
+const { section, field, select, fxSlider: slider, segmented, colorField, numberField, switchRow, iconButton, empty } = __req('src/ui-kit.js');
 const { SLOTS, thumbnail, drawUVLayout, getAlphaMode, setAlphaMode, slotByKey } = __req('src/materials.js');
 const { assignTextureFiles, IMAGE_EXT } = __req('src/importers.js');
 const { extOf } = __req('src/util.js');
@@ -133285,7 +133287,7 @@ __def(__exports, 'SHAPES', () => SHAPES);
 __def(__exports, 'createPointsPanel', () => createPointsPanel);
 // Вкладка «Точки»: создание облака точек, выбор количества и внешний вид точек.
 const { h, formatInt } = __req('src/util.js');
-const { section, field, slider, segmented, switchRow, colorField, button } = __req('src/ui-kit.js');
+const { section, field, fxSlider: slider, segmented, switchRow, colorField, button } = __req('src/ui-kit.js');
 const THREE = __req('vendor/three/build/three.module.js');
 const { sampleSurface, verticesToCloud, cloudToPoints, overrideMats } = __req('src/pointcloud.js');
 const { getDevice, hintForCount } = __req('src/device-card.js');
@@ -133337,6 +133339,7 @@ function createPointsPanel(app, root) {
 		},
 	});
 	const count = slider({
+		noNorm: true,
 		log: true,
 		min: 10000,
 		max: cap(),
@@ -133442,7 +133445,7 @@ function createPointsPanel(app, root) {
 	const inv = () => {
 		app.viewport.invalidate();
 	};
-	const tiles = h('div', { class: 'shape-grid', role: 'radiogroup', 'aria-label': 'Форма точек' });
+	const tiles = h('div', { class: 'shape-grid shape-row shape-six', role: 'radiogroup', 'aria-label': 'Форма точек' });
 	const tileBtns = new Map();
 	for (const s of SHAPES) {
 		const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'aria-checked': String(pt.shape === s.value), 'data-shape': s.value }, h('span', { class: 'shape-glyph' }), h('span', { class: 'shape-name' }, s.label));
@@ -133453,6 +133456,7 @@ function createPointsPanel(app, root) {
 			inv();
 			save();
 		});
+		b.dataset.tip = s.label;
 		tileBtns.set(s.value, b);
 		tiles.append(b);
 	}
@@ -145556,7 +145560,7 @@ class UI {
 			const saved = localStorage.getItem('objglb.sidebar-w');
 			if (saved) {
 				const w = parseInt(saved, 10);
-				if (w >= SIDEBAR_MIN && w <= 700) {
+				if (w >= SIDEBAR_MIN && w <= 420) {
 					document.documentElement.style.setProperty('--sidebar-w', `${w}px`);
 				}
 			}
@@ -145585,7 +145589,8 @@ class UI {
 			const delta = (startX - e.clientX) / z;
 			let newW = Math.round(startW / z + delta);
 			const minW = SIDEBAR_MIN;
-			const maxW = Math.max(minW, Math.min(650, window.innerWidth / z - 200));
+			// не шире 420 px и не больше 38% окна: панель не должна занимать пол-экрана
+			const maxW = Math.max(minW, Math.min(420, Math.floor((window.innerWidth / z) * 0.38)));
 			newW = Math.max(minW, Math.min(maxW, newW));
 			document.documentElement.style.setProperty('--sidebar-w', `${newW}px`);
 			this.app.viewport.resize();

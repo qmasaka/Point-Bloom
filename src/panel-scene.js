@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { h, fmt, formatInt, deg } from './util.js';
 import { icon } from './icons.js';
-import { section, field, numberField, slider, button, iconButton, empty, switchRow } from './ui-kit.js';
+import { section, field, numberField, fxSlider as slider, button, iconButton, empty, switchRow } from './ui-kit.js';
 import { triangleCount } from './geom.js';
 import { applySplat } from './splat-tools.js';
 
@@ -207,7 +207,7 @@ row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 		return b;
 	};
 	const smooth = { angle: 60 };
-	const angleSlider = slider({ min: 5, max: 180, step: 1, value: 60, digits: 0, unit: '°', onInput: (v) => (smooth.angle = v) });
+	const angleSlider = slider({ noNorm: true, min: 5, max: 180, step: 1, value: 60, digits: 0, unit: '°', onInput: (v) => (smooth.angle = v) });
 	const simplify = { keep: 50 };
 	const simplifyHint = h('div', { class: 'field-hint' });
 	const updateSimplifyHint = () => {
@@ -216,7 +216,7 @@ row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 		const tris = meshes.reduce((n, m) => n + triangleCount(m.geometry), 0);
 		simplifyHint.textContent = tris ? `Граней: ${formatInt(tris)}, останется около ${formatInt(Math.round((tris * simplify.keep) / 100))}` : 'Выберите объект';
 	};
-	const simplifySlider = slider({ min: 5, max: 95, step: 5, value: 50, digits: 0, unit: '%', onInput: (v) => { simplify.keep = v; updateSimplifyHint(); } });
+	const simplifySlider = slider({ noNorm: true, min: 5, max: 95, step: 5, value: 50, digits: 0, unit: '%', onInput: (v) => { simplify.keep = v; updateSimplifyHint(); } });
 	const mirrorRow = h(
 		'div',
 		{ class: 'tool-grid', style: { gridTemplateColumns: 'repeat(3, minmax(0,1fr))' } },
@@ -251,7 +251,7 @@ field('Сглаживание', angleSlider.el, {}),
 for (const b of need.slice(-3)) b.classList.add('btn-block');
 // --------------------------------------------------------- настройки сплатов (фото в сплаты, PLY со сплатами)
 	const splatInfo = h('div', { class: 'field-hint' });
-	const splatCount = slider({ log: true, min: 2000, max: 1500000, step: 1000, value: 200000, format: (v) => formatInt(v), onInput: (v) => splatApply({ count: v }), onChange: () => {} });
+	const splatCount = slider({ noNorm: true, log: true, min: 2000, max: 1500000, step: 1000, value: 200000, format: (v) => formatInt(v), onInput: (v) => splatApply({ count: v }), onChange: () => {} });
 	const splatOp = slider({ min: 0, max: 0.9, step: 0.01, value: 0.05, onInput: (v) => splatApply({ minOp: v }) });
 	const splatDepth = slider({ min: 0.1, max: 4, step: 0.05, value: 1, onInput: (v) => splatApply({ depth: v }) });
 	const splatBody = h('div', { class: 'sec-body', style: { padding: 0 } }, splatInfo, field('Сколько точек оставить', splatCount.el), field('Отсечь прозрачные', splatOp.el, { hint: 'Убирает почти невидимые сплаты и «пыль» вокруг объекта' }), field('Глубина', splatDepth.el, { hint: '1 это как посчитала нейросеть, больше растягивает сцену вглубь' }));

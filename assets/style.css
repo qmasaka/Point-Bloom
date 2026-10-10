@@ -5910,3 +5910,19 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 	.ui-float .rail-sep, .ui-float .dock-sep { background: var(--fxg-line); opacity: 1; }
 }
 @container app (min-width: 901px) { .ui-float .fx-bar-sep { background: var(--fxg-line); } }
+
+/* ширина боковой панели ограничена: не меньше 280 и не больше 420 px (и не больше 38% окна), чтобы она не занимала пол-экрана */
+@container app (min-width: 901px) {
+	.ui-float .sidebar { width: clamp(280px, var(--sidebar-w, 300px), min(420px, 38vw)); }
+	/* нижние панели (режимы, полоса анимации, видео, панель эффектов) живут в свободной области между левой и правой панелями и не наезжают на настройки */
+	.ui-float .viewport { --lft-res: 60px; --sb-res: calc(clamp(280px, var(--sidebar-w, 300px), min(420px, 38vw)) + 24px); }
+	.ui-float.fx-mode .viewport { --lft-res: calc(var(--fxl-w, 252px) + 24px); }
+	.ui-float .workspace.sidebar-hidden .viewport { --sb-res: 0px; }
+	.ui-float.fx-focus .viewport { --lft-res: 0px; --sb-res: 0px; }
+	.ui-float .vp-dock, .ui-float .fx-bar, .ui-float .media-bar, .ui-float .anim-bar { left: calc(var(--lft-res) + (100% - var(--lft-res) - var(--sb-res)) / 2); }
+	.ui-float .media-bar { width: min(520px, calc(100% - var(--lft-res) - var(--sb-res) - 24px)); }
+	.ui-float .anim-bar { width: min(640px, calc(100% - var(--lft-res) - var(--sb-res) - 24px)); }
+	.ui-float .fx-bar { max-width: calc(100% - var(--lft-res) - var(--sb-res) - 24px); }
+	.ui-float .fx-hint { left: calc(var(--lft-res) + (100% - var(--lft-res) - var(--sb-res)) / 2); }
+}
+.shape-grid.shape-six { grid-template-columns: repeat(6, minmax(0, 1fr)); }

@@ -1,6 +1,6 @@
 // Вкладка «Точки»: создание облака точек, выбор количества и внешний вид точек.
 import { h, formatInt } from './util.js';
-import { section, field, slider, segmented, switchRow, colorField, button } from './ui-kit.js';
+import { section, field, fxSlider as slider, segmented, switchRow, colorField, button } from './ui-kit.js';
 import * as THREE from 'three';
 import { sampleSurface, verticesToCloud, cloudToPoints, overrideMats } from './pointcloud.js';
 import { getDevice, hintForCount } from './device-card.js';
@@ -52,6 +52,7 @@ export function createPointsPanel(app, root) {
 		},
 	});
 	const count = slider({
+		noNorm: true,
 		log: true,
 		min: 10000,
 		max: cap(),
@@ -157,7 +158,7 @@ export function createPointsPanel(app, root) {
 	const inv = () => {
 		app.viewport.invalidate();
 	};
-	const tiles = h('div', { class: 'shape-grid', role: 'radiogroup', 'aria-label': 'Форма точек' });
+	const tiles = h('div', { class: 'shape-grid shape-row shape-six', role: 'radiogroup', 'aria-label': 'Форма точек' });
 	const tileBtns = new Map();
 	for (const s of SHAPES) {
 		const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'aria-checked': String(pt.shape === s.value), 'data-shape': s.value }, h('span', { class: 'shape-glyph' }), h('span', { class: 'shape-name' }, s.label));
@@ -168,6 +169,7 @@ export function createPointsPanel(app, root) {
 			inv();
 			save();
 		});
+		b.dataset.tip = s.label;
 		tileBtns.set(s.value, b);
 		tiles.append(b);
 	}

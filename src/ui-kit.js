@@ -193,7 +193,9 @@ export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onCh
 /** Ползунок настроек эффектов: числа читаются одинаково, шкала до 1 (до 2, если так задумано). noNorm оставляет реальные величины: число точек, секунды, кадры */
 export function fxSlider(o) {
 	if (o.noNorm) return slider(o);
-	if ((o.min === 0 || o.min === -1) && (o.max === 1 || o.max === 2)) return slider({ ...o, format: undefined, unit: '', digits: 2 });
+	const lo = o.min ?? 0;
+	const hi = o.max ?? 1;
+	if ((lo === 0 || lo === -1) && (hi === 1 || hi === 2)) return slider({ ...o, format: undefined, unit: '', digits: 2 });
 	return slider({ ...o, norm: true });
 }
 export function numberField({ value = 0, step = 0.1, onChange, axis, digits = 4, min = -Infinity, max = Infinity, cls = '' }) {
