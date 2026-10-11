@@ -5997,3 +5997,10 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 	background: none;
 }
 .toast .ic svg { width: 20px; height: 20px; }
+.toast .ic { width: 20px; height: 20px; flex: none; }
+.toast.ok .ic { color: #5fd38a; }
+.toast.warn .ic { color: #f5c04a; }
+.toast.error .ic { color: #ff6b6b; }
+.toast.info .ic { color: #8fb7ff; }
+.toast { align-items: flex-start; }
+.toast .ic { margin-top: -1px; }
