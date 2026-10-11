@@ -5988,3 +5988,12 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 @media (max-width: 900px) {
 	.toasts { top: 62px; }
 }
+
+/* значок в уведомлении без круглой подложки */
+.toast .ic {
+	width: auto;
+	height: auto;
+	border-radius: 0;
+	background: none;
+}
+.toast .ic svg { width: 20px; height: 20px; }
