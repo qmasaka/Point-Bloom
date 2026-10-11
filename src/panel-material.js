@@ -44,7 +44,7 @@ export function createMaterialPanel(app, root) {
 	};
 
 	for (const s of SLOTS) {
-		const thumb = h('button', { type: 'button', class: 'slot-thumb', 'aria-label': 'Загрузить текстуру: ' + s.short, 'data-tip': 'Выбрать файл текстуры', onclick: (e) => {
+		const thumb = h('button', { type: 'button', class: 'slot-thumb', 'aria-label': 'Загрузить текстуру: ' + s.short, onclick: (e) => {
 			e.stopPropagation();
 			pickFor(s.key);
 		} });

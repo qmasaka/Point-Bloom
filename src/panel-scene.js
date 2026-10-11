@@ -105,7 +105,6 @@ export function createScenePanel(app, root) {
 				h('span', { style: { display: 'flex', alignItems: 'baseline', minWidth: 0 } }, nameEl, meta),
 				h('div', { class: 'tree-actions' }, del, eye)
 			);
-			row.dataset.tip = 'Двойной клик: переименовать';
 row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 			row.addEventListener('dblclick', (e) => {
 				e.preventDefault();

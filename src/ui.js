@@ -741,9 +741,12 @@ export class UI {
 		document.addEventListener('pointerover', (e) => {
 			const el = e.target.closest && e.target.closest('[data-tip]');
 			if (!el || el === current) return;
+			// в редакторе подсказки только у кнопок без текста: там, где подпись видна, подсказка лишняя
+			const iconOnly = el.matches('.btn-tool, .dock-btn, .btn-icon, .sw, .shape-tile');
+			if (this.workspace !== 'fx' && !iconOnly && (el.textContent || '').trim().length > 0) return;
 			hide();
 			current = el;
-			timer = setTimeout(() => show(el), Number(el.dataset.tipDelay) || 450);
+			timer = setTimeout(() => show(el), Number(el.dataset.tipDelay) || (this.workspace === 'fx' ? 450 : 750));
 		});
 		document.addEventListener('pointerout', (e) => {
 			if (current && !current.contains(e.relatedTarget)) hide();

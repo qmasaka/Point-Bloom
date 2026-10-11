@@ -5953,3 +5953,38 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 }
 .range:focus:not(:focus-visible), .switch:focus:not(:focus-visible), .btn:focus:not(:focus-visible), .tab:focus:not(:focus-visible), .fx-layer-head:focus:not(:focus-visible) { outline: none; box-shadow: none; }
 ::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); color: inherit; }
+
+/* уведомления: то же стекло, что у панелей сайта, аккуратный отступ от верхней панели, значок в цветном кружке */
+.toasts {
+	top: 74px;
+	gap: 10px;
+	width: min(460px, calc(var(--vw) - 32px));
+}
+.toast {
+	align-items: center;
+	gap: 12px;
+	padding: 11px 16px 11px 12px;
+	background: var(--fxg-bg, rgba(18, 20, 24, 0.78));
+	-webkit-backdrop-filter: var(--fxg-blur, blur(22px) saturate(1.25));
+	backdrop-filter: var(--fxg-blur, blur(22px) saturate(1.25));
+	border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.1));
+	border-radius: 14px;
+	box-shadow: var(--fxg-shadow, 0 18px 40px rgba(0, 0, 0, 0.35));
+	font-size: 13px;
+	line-height: 1.4;
+	color: var(--text);
+}
+.toast .ic {
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 28px;
+	height: 28px;
+	margin: 0;
+	border-radius: 50%;
+	background: color-mix(in srgb, currentColor 16%, transparent);
+}
+.toast .ic svg { width: 16px; height: 16px; }
+@media (max-width: 900px) {
+	.toasts { top: 62px; }
+}

@@ -90602,7 +90602,6 @@ function createScenePanel(app, root) {
 				h('span', { style: { display: 'flex', alignItems: 'baseline', minWidth: 0 } }, nameEl, meta),
 				h('div', { class: 'tree-actions' }, del, eye)
 			);
-			row.dataset.tip = 'Двойной клик: переименовать';
 row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 			row.addEventListener('dblclick', (e) => {
 				e.preventDefault();
@@ -125268,7 +125267,7 @@ function createMaterialPanel(app, root) {
 	};
 
 	for (const s of SLOTS) {
-		const thumb = h('button', { type: 'button', class: 'slot-thumb', 'aria-label': 'Загрузить текстуру: ' + s.short, 'data-tip': 'Выбрать файл текстуры', onclick: (e) => {
+		const thumb = h('button', { type: 'button', class: 'slot-thumb', 'aria-label': 'Загрузить текстуру: ' + s.short, onclick: (e) => {
 			e.stopPropagation();
 			pickFor(s.key);
 		} });
@@ -146252,9 +146251,12 @@ class UI {
 		document.addEventListener('pointerover', (e) => {
 			const el = e.target.closest && e.target.closest('[data-tip]');
 			if (!el || el === current) return;
+			// в редакторе подсказки только у кнопок без текста: там, где подпись видна, подсказка лишняя
+			const iconOnly = el.matches('.btn-tool, .dock-btn, .btn-icon, .sw, .shape-tile');
+			if (this.workspace !== 'fx' && !iconOnly && (el.textContent || '').trim().length > 0) return;
 			hide();
 			current = el;
-			timer = setTimeout(() => show(el), Number(el.dataset.tipDelay) || 450);
+			timer = setTimeout(() => show(el), Number(el.dataset.tipDelay) || (this.workspace === 'fx' ? 450 : 750));
 		});
 		document.addEventListener('pointerout', (e) => {
 			if (current && !current.contains(e.relatedTarget)) hide();
