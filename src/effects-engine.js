@@ -187,7 +187,7 @@ function defaultState() {
 			dofRange: 1.4,
 		},
 		audio: { style: 'deep', gain: 1.3, idle: false, idleSet: false, volume: 0.8 },
-		anim: { dur: 8, loop: true, keys: [], clips: [] },
+		anim: { dur: 8, loop: true, keys: [], clips: [], markers: [], work: null, speed: 1, lanes: {} },
 	};
 }
 
@@ -3556,6 +3556,9 @@ export class EffectsEngine {
 			fadeIn: Math.round(fadeIn * 100) / 100,
 			fadeOut: Math.round(fadeOut * 100) / 100,
 			amount: Math.round(amount * 100) / 100,
+			shape: opts.shape || 'plateau',
+			ease: opts.ease || 'smooth',
+			off: !!opts.off,
 		};
 		A.clips.push(clip);
 		this.touch();
@@ -3595,6 +3598,9 @@ export class EffectsEngine {
 		if (patch.amount !== undefined) {
 			clip.amount = Math.max(0.05, Math.min(2.0, patch.amount));
 		}
+		if (patch.shape !== undefined && ['plateau', 'ramp', 'fall', 'peak'].includes(patch.shape)) clip.shape = patch.shape;
+		if (patch.ease !== undefined && ['smooth', 'linear', 'sharp'].includes(patch.ease)) clip.ease = patch.ease;
+		if (patch.off !== undefined) clip.off = !!patch.off;
 		if (patch.layerId !== undefined && (this.state.layers[patch.layerId] || ['morph', 'rotate', 'bloom'].includes(patch.layerId))) {
 			clip.layerId = patch.layerId;
 		}
@@ -3609,6 +3615,72 @@ export class EffectsEngine {
 		this.emit();
 		this.app.bus.emit('fxanim');
 		return clip;
+	}
+
+	/** Метки на линейке времени: быстрые переходы и прилипание блоков */
+	animAddMarker(t, name = '') {
+		const A = this.state.anim;
+		(A.markers ||= []).push({ t: Math.round(Math.max(0, Math.min(A.dur, t)) * 100) / 100, name });
+		A.markers.sort((a, b) => a.t - b.t);
+		this.touch();
+		this.emit();
+		this.app.bus.emit('fxanim');
+		return A.markers.find((m) => m.t === Math.round(Math.max(0, Math.min(A.dur, t)) * 100) / 100 && m.name === name);
+	}
+
+	animUpdateMarker(m, patch = {}) {
+		const A = this.state.anim;
+		if (!A.markers || !A.markers.includes(m)) return;
+		if (patch.t !== undefined) m.t = Math.round(Math.max(0, Math.min(A.dur, patch.t)) * 100) / 100;
+		if (patch.name !== undefined) m.name = String(patch.name).slice(0, 24);
+		A.markers.sort((a, b) => a.t - b.t);
+		this.touch();
+		this.emit();
+		this.app.bus.emit('fxanim');
+	}
+
+	animRemoveMarker(m) {
+		const A = this.state.anim;
+		A.markers = (A.markers || []).filter((x) => x !== m);
+		this.touch();
+		this.emit();
+		this.app.bus.emit('fxanim');
+	}
+
+	/** Рабочая область: воспроизведение, повтор и запись идут только внутри неё. null снимает */
+	animSetWork(a, b) {
+		const A = this.state.anim;
+		if (a == null) A.work = null;
+		else {
+			const lo = Math.max(0, Math.min(a, b));
+			const hi = Math.min(A.dur, Math.max(a, b));
+			A.work = hi - lo >= 0.2 ? { a: Math.round(lo * 100) / 100, b: Math.round(hi * 100) / 100 } : null;
+		}
+		this.touch();
+		this.emit();
+		this.app.bus.emit('fxanim');
+	}
+
+	/** Состояние дорожки эффекта: заглушить, соло, закрепить */
+	animSetLane(layerId, patch = {}) {
+		const A = this.state.anim;
+		const l = ((A.lanes ||= {})[layerId] ||= {});
+		Object.assign(l, patch);
+		if (!l.mute && !l.solo && !l.lock) delete A.lanes[layerId];
+		this.touch();
+		this.emit();
+		this.app.bus.emit('fxanim');
+	}
+
+	/** Вставляет копии блоков так, что самый ранний начинается в момент t. Возвращает новые блоки */
+	animPasteClips(list, t) {
+		if (!list || !list.length) return [];
+		const t0 = Math.min(...list.map((c) => c.start));
+		const out = [];
+		for (const c of list) {
+			out.push(this.animAddClip(c.layerId, { start: t + (c.start - t0), dur: c.dur, fadeIn: c.fadeIn, fadeOut: c.fadeOut, amount: c.amount, shape: c.shape, ease: c.ease, off: c.off }));
+		}
+		return out;
 	}
 
 	/** Удалить клип эффекта */
@@ -3636,6 +3708,9 @@ export class EffectsEngine {
 			fadeIn: clip.fadeIn,
 			fadeOut: clip.fadeOut,
 			amount: clip.amount,
+			shape: clip.shape,
+			ease: clip.ease,
+			off: clip.off,
 		});
 	}
 
@@ -3662,6 +3737,9 @@ export class EffectsEngine {
 		const A = this.state.anim;
 		A.keys = [];
 		A.clips = [];
+		A.markers = [];
+		A.work = null;
+		A.lanes = {};
 		this.animT = 0;
 		this.touch();
 		this.emit();
@@ -3777,6 +3855,23 @@ export class EffectsEngine {
 		this.app.bus.emit('fxanim');
 	}
 
+	/** Огибающая блока в момент t: вход и выход по выбранной кривой, умноженные на форму (плато, нарастание, спад, пик) */
+	_clipEnv(c, t) {
+		const curve = (f) => {
+			f = Math.min(1, Math.max(0, f));
+			return c.ease === 'linear' ? f : c.ease === 'sharp' ? Math.pow(f, 0.35) : f * f * (3 - 2 * f);
+		};
+		const elapsed = t - c.start;
+		const remaining = c.start + c.dur - t;
+		let env = 1;
+		if (c.fadeIn > 0.001 && elapsed < c.fadeIn) env = Math.min(env, curve(elapsed / c.fadeIn));
+		if (c.fadeOut > 0.001 && remaining < c.fadeOut) env = Math.min(env, curve(remaining / c.fadeOut));
+		const u = c.dur > 0 ? Math.min(1, Math.max(0, elapsed / c.dur)) : 0;
+		const shape = c.shape || 'plateau';
+		const k = shape === 'ramp' ? curve(u) : shape === 'fall' ? curve(1 - u) : shape === 'peak' ? curve(1 - Math.abs(2 * u - 1)) : 1;
+		return env * k;
+	}
+
 	/** Выставляет сцену по времени t: интерполяция ключей камеры + огибающие блоков эффектов */
 	/** Эффекты, у которых есть блоки на таймлайне, работают только внутри своих блоков (с плавными входом и выходом); где блока нет, эффект выключен */
 	_animGate(t) {
@@ -3811,21 +3906,14 @@ export class EffectsEngine {
 			for (const layerId of clipLayerIds) {
 				if (!L[layerId]) continue;
 				let maxVal = 0;
+				// дорожка заглушена, или включено соло у другой дорожки: её блоки не работают
+				const lanes = this.state.anim.lanes || {};
+				const anySolo = Object.values(lanes).some((x) => x && x.solo);
+				const laneOff = !!(lanes[layerId] && lanes[layerId].mute) || (anySolo && !(lanes[layerId] && lanes[layerId].solo));
 				for (const c of clips) {
-					if (c.layerId !== layerId) continue;
+					if (c.layerId !== layerId || c.off || laneOff) continue;
 					if (t < c.start || t > c.start + c.dur) continue;
-					const elapsed = t - c.start;
-					const remaining = c.start + c.dur - t;
-					let env = 1.0;
-					if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
-						const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
-						env = Math.min(env, f * f * (3 - 2 * f));
-					}
-					if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
-						const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
-						env = Math.min(env, f * f * (3 - 2 * f));
-					}
-					const val = (c.amount ?? 1.0) * env;
+					const val = (c.amount ?? 1.0) * this._clipEnv(c, t);
 					if (val > maxVal) maxVal = val;
 				}
 
@@ -3991,7 +4079,8 @@ export class EffectsEngine {
 		const hasKeys = this.state.anim.keys && this.state.anim.keys.length >= 2;
 		const hasClips = this.state.anim.clips && this.state.anim.clips.length >= 1;
 		if (!hasKeys && !hasClips) return false;
-		if (this.animT >= this.state.anim.dur - 0.01) this.animT = 0;
+		const [ra, rb] = this._animRange();
+		if (this.animT >= rb - 0.01 || this.animT < ra - 0.001) this.animT = ra;
 		this.animPlaying = true;
 		this.app.bus.emit('fxanim');
 		return true;
@@ -4009,8 +4098,8 @@ export class EffectsEngine {
 		const hasKeys = this.state.anim.keys && this.state.anim.keys.length >= 2;
 		const hasClips = this.state.anim.clips && this.state.anim.clips.length >= 1;
 		if ((!hasKeys && !hasClips) || this.recording) return false;
-		this.animT = 0;
-		this.animApply(0);
+		this.animT = this._animRange()[0];
+		this.animApply(this.animT);
 		this.animRec = true;
 		this.startRecording();
 		this.animPlaying = true;
@@ -4018,24 +4107,33 @@ export class EffectsEngine {
 		return true;
 	}
 
+	/** Диапазон воспроизведения: рабочая область между метками «начало» и «конец», а без неё вся длина */
+	_animRange() {
+		const A = this.state.anim;
+		const w = A.work;
+		if (w && w.b - w.a >= 0.2) return [Math.max(0, w.a), Math.min(A.dur, w.b)];
+		return [0, A.dur];
+	}
+
 	_animStep(dt) {
 		const A = this.state.anim;
-		this.animT += dt;
-		if (this.animT >= A.dur) {
+		const [ra, rb] = this._animRange();
+		this.animT += dt * (A.speed || 1);
+		if (this.animT >= rb) {
 			if (this.animRec) {
-				this.animT = A.dur;
-				this.animApply(A.dur);
+				this.animT = rb;
+				this.animApply(rb);
 				this.animRec = false;
 				this.animPlaying = false;
 				this.stopRecording();
 				this.emit();
-			} else if (A.loop) this.animT %= A.dur;
+			} else if (A.loop) this.animT = ra + ((this.animT - ra) % Math.max(0.05, rb - ra));
 			else {
-				this.animT = A.dur;
+				this.animT = rb;
 				this.animPlaying = false;
 				this.emit();
 			}
-		}
+		} else if (this.animT < ra && A.work) this.animT = ra;
 		this.animApply(this.animT);
 		this._animEmitT = (this._animEmitT || 0) + dt;
 		if (this._animEmitT > 0.05) {
