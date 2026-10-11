@@ -305,6 +305,8 @@ export class Nav {
 		const mod = shift ? 'pan' : ctrl ? 'zoom' : 'orbit';
 		if (e.button === 1 || (e.button === 0 && e.altKey)) return mod;
 		if (e.button === 2) return ctrl ? 'zoom' : shift ? 'orbit' : 'pan';
+		// режим рисования: левая кнопка не вращает сцену (рисует кисть), вращение по Alt; два пальца на тачскрине по-прежнему двигают вид
+		if (e.button === 0 && this.paintLock) return null;
 		if (e.button === 0) return this.settings.leftOrbit || e.pointerType === 'touch' ? 'pending' : 'click';
 		return null;
 	}

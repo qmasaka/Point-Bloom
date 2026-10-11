@@ -5496,7 +5496,6 @@ body.is-resizing-h * {
 /* ================================================================ шкала времени как в профессиональном редакторе, зум и спокойная кнопка «Анимация» */
 .fx-anim-stage { overflow-x: auto; overflow-y: hidden; }
 .fx-anim-lanes-scroll { overflow: visible; }
-.fx-anim-stage .fx-anim-lane-body, .fx-anim-stage .fx-anim-ruler-body { flex: 0 0 calc((100% - var(--fx-head-w, 130px)) * var(--fx-anim-zoom, 1)); min-width: 0; }
 .fx-anim-stage .fx-anim-track-label { position: sticky; left: 0; z-index: 12; background: #15171c; }
 .fx-anim-stage::-webkit-scrollbar { height: 8px; }
 .fx-anim-stage::-webkit-scrollbar-track { background: transparent; }
@@ -5518,7 +5517,6 @@ body.is-resizing-h * {
 .fx-bar .fx-bar-anim-btn.is-active { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.18); color: var(--text); box-shadow: none; }
 .fx-bar .fx-bar-anim-btn.is-active svg { color: var(--accent); }
 /* строки шкалы шире окна при зуме: тогда подписи дорожек остаются на месте у левого края */
-.fx-anim-stage .fx-anim-lane, .fx-anim-stage .fx-anim-ruler-row { width: calc(var(--fx-head-w, 130px) + (100% - var(--fx-head-w, 130px)) * var(--fx-anim-zoom, 1)); }
 .fx-anim-stage .fx-anim-lanes-scroll { width: calc(var(--fx-head-w, 130px) + (100% - var(--fx-head-w, 130px)) * var(--fx-anim-zoom, 1)); }
 
 /* шкала не сжимается в колонке: иначе высота таймлайна не растёт, а вертикальная прокрутка не доходит до родителя */
@@ -6006,13 +6004,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .toast .ic { margin-top: -1px; }
 
 /* ------------------------------------------------ секвенсор: метки, рабочая область, выбор нескольких блоков, меню */
-.fx-anim-marks { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
-.fx-anim-marker { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; gap: 3px; padding: 0 5px 0 3px; margin-left: -1px; border-left: 1.5px solid var(--accent); color: var(--accent-text); font-size: 10px; font-weight: 600; pointer-events: auto; cursor: ew-resize; background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, transparent), transparent); max-width: 120px; }
-.fx-anim-marker:hover, .fx-anim-marker.is-sel { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 42%, transparent), transparent); color: var(--text); }
-.fx-anim-marker-flag { display: grid; place-items: center; }
-.fx-anim-marker-flag svg { width: 11px; height: 11px; }
-.fx-anim-marker-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fx-anim-marker-input { width: 76px; height: 16px; padding: 0 4px; border-radius: 4px; border: 1px solid var(--accent); background: rgba(0, 0, 0, 0.45); color: var(--text); font: inherit; font-size: 10px; }
 .fx-anim-work { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--accent) 14%, transparent); border-top: 2px solid var(--accent); z-index: 2; pointer-events: none; }
 .fx-anim-work[hidden] { display: none; }
 .fx-anim-work-h { position: absolute; top: -2px; bottom: 0; width: 8px; background: color-mix(in srgb, var(--accent) 70%, transparent); border-radius: 3px; cursor: ew-resize; pointer-events: auto; }
@@ -6063,36 +6054,75 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-anim-lane-tools .btn-icon:not(.is-on) { display: none; }
 .fx-anim-fx-label:hover .fx-anim-lane-tools .btn-icon { display: inline-grid; }
 
-/* свойства выбранного блока: плавающая палитра над таймлайном, то же стекло, что у остальных панелей */
-.fx-insp-pop {
-	position: absolute;
-	z-index: 40;
-	width: 400px;
-	max-width: calc(100% - 24px);
-	flex-direction: column;
-	align-items: stretch;
-	flex-wrap: nowrap;
-	gap: 9px;
-	padding: 14px 16px 12px;
-	border-top: 0;
-	background: var(--fxg-bg, rgba(18, 20, 24, 0.7));
-	-webkit-backdrop-filter: var(--fxg-blur, blur(22px));
-	backdrop-filter: var(--fxg-blur, blur(22px));
-	border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.1));
-	border-radius: 14px;
-	box-shadow: var(--fxg-shadow, 0 18px 40px rgba(0, 0, 0, 0.35));
+/* ================================================================ секвенсор: масштаб шкалы, подписи дорожек, плашка свойств блока */
+/* Ширина шкалы задаётся один раз: строка линейки и блок дорожек = подпись + (окно - подпись) × зум. Остальное внутри заполняет остаток */
+.fx-anim-stage { overflow-x: auto; overflow-y: hidden; }
+.fx-anim-stage .fx-anim-ruler-row,
+.fx-anim-stage .fx-anim-lanes-scroll { width: calc(var(--fx-head-w, 156px) + (100% - var(--fx-head-w, 156px)) * var(--fx-anim-zoom, 1)); }
+.fx-anim-stage .fx-anim-lane,
+.fx-anim-stage .fx-anim-char-set { width: 100%; }
+.fx-anim-stage .fx-anim-lane-body,
+.fx-anim-stage .fx-anim-ruler-body { flex: 1 1 0; min-width: 0; }
+/* подписи стоят у левого края при прокрутке: плотная подложка с мягким краем, без видимых плашек в покое */
+.fx-anim-stage .fx-anim-track-label,
+.fx-anim-stage .fx-anim-ruler-title { position: sticky; left: 0; z-index: 12; background: transparent; box-shadow: none; overflow: visible; }
+.fx-anim-stage.is-scrolled .fx-anim-track-label,
+.fx-anim-stage.is-scrolled .fx-anim-ruler-title { background: #14171b; }
+.fx-anim-stage.is-scrolled .fx-anim-track-label::after,
+.fx-anim-stage.is-scrolled .fx-anim-ruler-title::after { content: ''; position: absolute; top: 0; bottom: 0; left: 100%; width: 14px; background: linear-gradient(90deg, #14171b, rgba(20, 23, 27, 0)); pointer-events: none; }
+.fx-anim-stage .fx-anim-track-label > .fx-anim-lane-name { overflow: hidden; }
+.fx-anim-playhead-line { z-index: 8; will-change: left; }
+.fx-anim-ruler-body { overflow: visible; }
+/* кнопки дорожки: включённые видны всегда, остальные плавно появляются при наведении поверх названия */
+.fx-anim-fx-label { position: sticky; }
+.fx-anim-lane-tools { position: absolute; right: 6px; top: 50%; translate: 0 -50%; display: flex; align-items: center; gap: 1px; padding-left: 14px; background: none; }
+.fx-anim-lane-tools .btn-icon { display: inline-grid !important; width: 24px; height: 24px; padding: 0; border-radius: 50%; border: 0; background: transparent; color: var(--text-dim); opacity: 0; pointer-events: none; transition: opacity 0.14s var(--ease), background 0.14s var(--ease), color 0.14s var(--ease); }
+.fx-anim-lane-tools .btn-icon.is-on { opacity: 1; pointer-events: auto; color: var(--accent-text); background: var(--accent-soft, color-mix(in srgb, var(--accent) 20%, transparent)); }
+.fx-anim-fx-label:hover .fx-anim-lane-tools { background: linear-gradient(90deg, rgba(20, 23, 27, 0), #14171b 14px); }
+.fx-anim-fx-label:hover .fx-anim-lane-tools .btn-icon { opacity: 1; pointer-events: auto; }
+.fx-anim-fx-label:hover .fx-anim-lane-tools .btn-icon:hover { background: rgba(255, 255, 255, 0.1); color: var(--text); }
+.fx-anim-fx-label:hover .fx-anim-lane-tools .btn-icon.is-on:hover { background: color-mix(in srgb, var(--accent) 32%, transparent); color: var(--accent-text); }
+.fx-anim-lane-tools .btn-icon svg { width: 14px; height: 14px; }
+
+/* плашка свойств блока: в правой колонке под панелью настроек, то же стекло и скругление */
+.fx-clip-panel { display: none; }
+.fx-mode .fx-clip-panel:not([hidden]) { display: flex; }
+.fx-focus .fx-clip-panel { display: none !important; }
+.ui-float .fx-clip-panel { position: absolute; z-index: 19; right: 12px; bottom: calc(var(--fx-anim-h, 245px) + 84px); width: min(340px, calc(100% - 24px)); flex-direction: column; overflow: hidden; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 20px; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+.fx-clip-panel .fxf-bar { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 8px 0 12px; flex: none; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+.fx-clip-panel .fxf-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fx-clip-panel.fxf-collapsed > :not(.fxf-bar) { display: none; }
+.fx-clip-panel.fxf-collapsed .fxf-bar { border-bottom: 0; }
+.fx-clip-panel.fxf-collapsed .fxf-toggle svg { rotate: 180deg; }
+.fx-clip-body { display: flex; flex-direction: column; gap: 7px; padding: 10px 14px 12px; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.fx-clip-panel .fx-anim-insp-slider { display: grid; grid-template-columns: 56px minmax(0, 1fr) 54px; align-items: center; gap: 10px; font-size: 12px; }
+.fx-clip-panel .fx-anim-insp-lab { color: var(--text-dim); font-size: 12px; min-width: 56px; }
+.fx-clip-panel .fx-anim-insp-val { text-align: right; color: var(--text); font-size: 12px; min-width: 0; font-variant-numeric: tabular-nums; }
+.fx-clip-panel .fx-anim-insp-row { display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 10px; }
+.fx-clip-panel .fx-anim-insp-seg { display: flex; width: 100%; }
+.fx-clip-panel .fx-anim-insp-segbtn { flex: 1 1 0; min-width: 0; padding: 0 4px; white-space: nowrap; }
+.fx-clip-panel .fx-anim-insp-times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fx-clip-panel .fx-anim-insp-field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); }
+.fx-clip-panel .fx-anim-insp-field .num-in { flex: 1; min-width: 0; width: auto; height: 28px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); border: 0; font-size: 12px; font-variant-numeric: tabular-nums; }
+.fx-clip-panel .fx-anim-insp-times .num-in { width: auto; }
+.fx-clip-panel .select, .fx-clip-panel .sel { width: 100%; }
+.fx-clip-acts { display: flex; align-items: center; gap: 2px; flex: none; }
+.fx-clip-acts .btn-icon { width: 26px; height: 26px; padding: 0; border-radius: 50%; }
+.fx-clip-acts .btn-icon.is-danger:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 16%, transparent); }
+.fx-clip-panel .fxf-title { flex: 1 1 auto; }
+.fx-clip-panel .fxf-bar { padding-right: 6px; }
+.fx-clip-note { margin: 0; font-size: 12px; color: var(--text-dim); }
+@container app (min-width: 901px) {
+	.ui-float .fx-clip-panel { top: var(--fx-clip-top, 300px); bottom: auto; width: var(--sidebar-w, 300px); max-height: calc(100% - var(--fx-clip-top, 300px) - var(--fx-low, 271px)); }
+	.fx-mode.fx-anim-active .workspace { --fx-low: calc(var(--fx-anim-h, 245px) + 26px); }
+	/* пока плашка открыта, правая панель настроек уступает ей место, но не ниже разумной высоты */
+	.ui-float.fx-clip-open .sidebar { max-height: max(190px, calc(100% - 68px - var(--sb-bottom) - var(--fx-clip-h, 0px))); }
 }
-.fx-insp-pop[hidden] { display: none; }
-.fx-insp-pop .fx-anim-insp-slider { display: grid; grid-template-columns: 74px 1fr 56px; align-items: center; gap: 10px; }
-.fx-insp-pop .fx-anim-insp-row { justify-content: space-between; }
-.fx-insp-pop .fx-anim-insp-lab { color: var(--text-dim); font-size: 12px; min-width: 74px; }
-.fx-insp-pop .fx-anim-insp-actions { margin-left: 0; justify-content: flex-end; }
-.fx-anim-inspector.fx-insp-pop { display: flex; flex-direction: column; height: auto; max-height: none; grid-template-columns: none; grid-template-rows: none; align-items: stretch; }
-.fx-anim-inspector.fx-insp-pop[hidden] { display: none; }
-.fx-anim-inspector.fx-insp-pop, .fx-mode .fx-anim-inspector.fx-insp-pop {
-	background: var(--fxg-bg, rgba(18, 20, 24, 0.82)) !important;
-	border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.12)) !important;
-	box-shadow: var(--fxg-shadow, 0 18px 40px rgba(0, 0, 0, 0.35)) !important;
-	margin-inline: 0;
-	padding: 14px 16px 12px;
+@container app (min-width: 901px) and (max-width: 1180px) {
+	.fx-mode.fx-anim-active .workspace { --fx-low: calc(var(--fx-anim-h, 245px) + 76px); }
 }
+
+/* кисть: камера зафиксирована, курсор прицелом; Alt вращает, правая кнопка двигает */
+.viewport.paint-lock .stage { cursor: crosshair; }
+.viewport.paint-lock.nav-orbit .stage { cursor: grabbing; }
+.fx-bar .fx-paint-lock-btn.is-active { background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--accent-line); }
