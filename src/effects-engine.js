@@ -71,8 +71,8 @@ export const FX_LAYERS = [
 	{ id: 'echo', group: 'Графика', name: 'Эхо', icon: 'ghost', hint: 'Призрачные копии формы. Виды: спираль, зеркала, ореол', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, mode: 'spiral', copies: 4, delay: 0.14, spread: 0.45, fade: 0.7 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['spiral', 'Спираль'], ['kaleido', 'Зеркала'], ['time', 'Ореол']] }, { key: 'copies', label: 'Копий', min: 1, max: 5, step: 1, int: true }, { key: 'spread', label: 'Угол между копиями', min: 0.05, max: 1.5, step: 0.05 }, { key: 'delay', label: 'Задержка, с', min: 0.02, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Затухание копий', min: 0.3, max: 0.95, step: 0.05 }] },
 	{ id: 'tracking', group: 'Взаимодействие', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки следят за точками формы и могут её касаться: подъём, вихрь, втягивание и другое', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, opacity: 1, speed: 1, shape: 'corners', fill: 'none', color: 'auto', thick: 1.5, labels: 'on', labelSize: 1, labelInfo: 'full', labelBg: 'off', lines: 'on', lineStyle: 'dashed', lineMode: 'nearest', lineWidth: 1, lineAlpha: 0.5, follow: 'wander', mark: 'none', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ type: 'title', label: 'Рамки' }, { key: 'count', label: 'Сколько рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 8, max: 160, step: 1, int: true }, { key: 'opacity', label: 'Прозрачность рамок', min: 0.05, max: 1, step: 0.05 }, { key: 'speed', label: 'Скорость перемещения рамок', min: 0.1, max: 3, step: 0.05 }, { key: 'shape', label: 'Вид рамки', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'fill', label: 'Заливка', type: 'seg', options: [['none', 'Нет'], ['tint', 'Тон'], ['hatch', 'Штрих']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'follow', label: 'Куда смотрят рамки', type: 'seg', options: [['wander', 'Бродят'], ['pointer', 'За руками']] }, { type: 'title', label: 'Подписи' }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'labelInfo', label: 'Что написано', type: 'select', options: [['full', 'Всё: номер, координаты, скорость'], ['id', 'Только номер'], ['conf', 'Номер и уверенность'], ['coords', 'Координаты X Y Z'], ['speed', 'Номер и скорость'], ['bars', 'Номер и шкалы'], ['dist', 'Расстояние до центра']], when: ['labels', ['on']] }, { key: 'labelSize', label: 'Масштаб текста', min: 0.5, max: 3, step: 0.1, when: ['labels', ['on']] }, { key: 'labelBg', label: 'Подложка под текст', type: 'seg', options: [['off', 'Нет'], ['on', 'Есть']], when: ['labels', ['on']] }, { type: 'title', label: 'Связи между рамками' }, { key: 'lines', label: 'Линии связи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lineMode', label: 'Кто с кем связан', type: 'select', options: [['nearest', 'Каждая с ближайшей'], ['chain', 'Цепочкой по порядку'], ['all', 'Все близкие друг с другом'], ['hub', 'Все к центру']], when: ['lines', ['on']] }, { key: 'lineStyle', label: 'Вид линии', type: 'select', options: [['dashed', 'Пунктир'], ['solid', 'Сплошная'], ['curve', 'Дуга'], ['elbow', 'Ломаная под прямым углом'], ['dots', 'Точки'], ['pulse', 'С бегущим огоньком']], when: ['lines', ['on']] }, { key: 'lineWidth', label: 'Толщина связей', min: 0.5, max: 4, step: 0.25, when: ['lines', ['on']] }, { key: 'lineAlpha', label: 'Яркость связей', min: 0.1, max: 1, step: 0.05, when: ['lines', ['on']] }, { type: 'title', label: 'Эффект в области рамок' }, { key: 'mark', label: 'Что происходит', type: 'select', options: [['none', 'Ничего'], ['invert', 'Негатив'], ['rainbow', 'Радуга'], ['hole', 'Дыра с пульсирующим краем'], ['lens', 'Лупа'], ['pixel', 'Пиксели'], ['glow', 'Свет']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'select', options: [['none', 'Нет'], ['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втягивание'], ['push', 'Отталкивание'], ['ripple', 'Рябь'], ['melt', 'Таяние вниз'], ['scatter', 'Разлёт искрами'], ['vanish', 'Исчезновение']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус области', min: 0.02, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
 	{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки. Настраиваются радиус и действие', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.05, max: 2, step: 0.01 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
-	{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Рисуйте по форме курсором: мазки светятся и со временем гаснут', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, radius: 0.4, dry: 3.5 }, extras: [{ key: 'radius', label: 'Радиус кисти', min: 0.02, max: 0.9, step: 0.01 }, { key: 'dry', label: 'Высыхание, с', min: 1.0, max: 8.0, step: 0.5 }] },
-	{ id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки, у каждого жеста своё действие: ладонь, кулак, щипок, указательный палец', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush', g_peace: 'wave', g_rock: 'fx:glitch', g_thumb: 'gravity', power: 0.35, radius: 0.35, depth: 0.85, spin: 5, inertia: 0.6, axis: 'y', clay: 0.5, elastic: 0.6, stretch: 'off', keep: 'on', smooth: 0.5, sens: 0.6, hold: 0.12, skeleton: 'on', preview: 'on' }, extras: [{ type: 'title', label: 'Что делает жест' }, { key: 'g_palm', label: 'Ладонь (пальцы раскрыты)', type: 'select', options: FX_ACTIONS }, { key: 'g_fist', label: 'Кулак', type: 'select', options: FX_ACTIONS }, { key: 'g_pinch', label: 'Щипок (большой + указательный)', type: 'select', options: FX_ACTIONS }, { key: 'g_point', label: 'Указательный палец', type: 'select', options: FX_ACTIONS }, { key: 'g_peace', label: 'Два пальца (знак мира)', type: 'select', options: FX_ACTIONS }, { key: 'g_rock', label: 'Рога (указательный и мизинец)', type: 'select', options: FX_ACTIONS }, { key: 'g_thumb', label: 'Большой палец вверх', type: 'select', options: FX_ACTIONS }, { type: 'title', label: 'Касание пальцами' }, { key: 'power', label: 'Мощность', min: 0.05, max: 1.5, step: 0.05 }, { key: 'radius', label: 'Радиус', min: 0.02, max: 0.9, step: 0.01 }, { key: 'depth', label: 'Глубина касания', min: 0.1, max: 1.5, step: 0.05 }, { type: 'title', label: 'Вращение' }, { key: 'spin', label: 'Скорость', min: 1, max: 14, step: 0.5 }, { key: 'inertia', label: 'Инерция', min: 0, max: 0.98, step: 0.02 }, { key: 'axis', label: 'Оси', type: 'seg', options: [['y', 'Вокруг'], ['xy', 'Свободно']] }, { type: 'title', label: 'Лепка' }, { key: 'clay', label: 'Размер куска глины', min: 0.05, max: 1.2, step: 0.01 }, { key: 'elastic', label: 'Упругость (возврат формы)', min: 0, max: 3, step: 0.1 }, { type: 'title', label: 'Две руки' }, { key: 'stretch', label: 'Меняют размер формы', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']] }, { key: 'keep', label: 'Запоминать размер', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }, { type: 'title', label: 'Распознавание и показ' }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'hold', label: 'Задержка жеста, с', min: 0, max: 0.5, step: 0.02 }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
+	{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Акварель по форме: рисуйте курсором или щипком, краска смешивается как настоящая, растекается и подсыхает с тёмным краем. Есть ластик и «смыть всё»', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, tool: 'paint', color: 'auto', radius: 0.14, pigment: 0.6, water: 0.5, dry: 3, edge: 0.5, grain: 0.5, mode: 'paper' }, extras: [{ type: 'title', label: 'Мазок' }, { key: 'tool', label: 'Инструмент', type: 'seg', options: [['paint', 'Краска'], ['lift', 'Ластик']] }, { key: 'color', label: 'Цвет краски', type: 'color' }, { key: 'radius', label: 'Размер кисти', min: 0.03, max: 0.6, step: 0.01 }, { key: 'pigment', label: 'Густота краски', min: 0.1, max: 1, step: 0.05, when: ['tool', ['paint']] }, { type: 'title', label: 'Растекание' }, { key: 'water', label: 'Вода: насколько растекается', min: 0, max: 1, step: 0.05 }, { key: 'dry', label: 'Время растекания, с', min: 0.5, max: 8, step: 0.5 }, { key: 'edge', label: 'Тёмный край у мазка', min: 0, max: 1, step: 0.05, when: ['tool', ['paint']] }, { type: 'title', label: 'Бумага' }, { key: 'mode', label: 'Краска ложится', type: 'seg', options: [['paper', 'На бумагу'], ['glaze', 'Прозрачно на цвет']] }, { key: 'grain', label: 'Зернистость бумаги', min: 0, max: 1, step: 0.05 }] },
+	{ id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки, у каждого жеста своё действие: ладонь, кулак, щипок, указательный палец', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush', g_peace: 'wave', g_rock: 'fx:glitch', g_thumb: 'gravity', power: 0.35, radius: 0.35, depth: 0.85, spin: 5, inertia: 0.6, axis: 'y', clay: 0.5, elastic: 0.6, stretch: 'off', keep: 'on', smooth: 0.5, sens: 0.6, hold: 0.12, handsN: '2', skeleton: 'on', preview: 'on' }, extras: [{ type: 'title', label: 'Что делает жест' }, { key: 'g_palm', label: 'Ладонь (пальцы раскрыты)', type: 'select', options: FX_ACTIONS }, { key: 'g_fist', label: 'Кулак', type: 'select', options: FX_ACTIONS }, { key: 'g_pinch', label: 'Щипок (большой + указательный)', type: 'select', options: FX_ACTIONS }, { key: 'g_point', label: 'Указательный палец', type: 'select', options: FX_ACTIONS }, { key: 'g_peace', label: 'Два пальца (знак мира)', type: 'select', options: FX_ACTIONS }, { key: 'g_rock', label: 'Рога (указательный и мизинец)', type: 'select', options: FX_ACTIONS }, { key: 'g_thumb', label: 'Большой палец вверх', type: 'select', options: FX_ACTIONS }, { type: 'title', label: 'Касание пальцами' }, { key: 'power', label: 'Мощность', min: 0.05, max: 1.5, step: 0.05 }, { key: 'radius', label: 'Радиус', min: 0.02, max: 0.9, step: 0.01 }, { key: 'depth', label: 'Глубина касания', min: 0.1, max: 1.5, step: 0.05 }, { type: 'title', label: 'Вращение' }, { key: 'spin', label: 'Скорость', min: 1, max: 14, step: 0.5 }, { key: 'inertia', label: 'Инерция', min: 0, max: 0.98, step: 0.02 }, { key: 'axis', label: 'Оси', type: 'seg', options: [['y', 'Вокруг'], ['xy', 'Свободно']] }, { type: 'title', label: 'Лепка' }, { key: 'clay', label: 'Размер куска глины', min: 0.05, max: 1.2, step: 0.01 }, { key: 'elastic', label: 'Упругость (возврат формы)', min: 0, max: 3, step: 0.1 }, { type: 'title', label: 'Две руки' }, { key: 'stretch', label: 'Меняют размер формы', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']] }, { key: 'keep', label: 'Запоминать размер', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }, { type: 'title', label: 'Распознавание и показ' }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'hold', label: 'Задержка жеста, с', min: 0, max: 0.5, step: 0.02 }, { key: 'handsN', label: 'Сколько рук ищет', type: 'seg', options: [['2', 'Две'], ['1', 'Одна, быстрее']] }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
 	{ id: 'gravity', group: 'Взаимодействие', name: 'Гравитация', icon: 'planet', hint: 'Точки кружат вокруг центра. Виды: галактика, кольца, квазар (падение в центр и струи), рой, невесомость', max: 1, def: { on: false, amount: 0.8, band: 'none', react: 0.4, mode: 'orbit', target: 'center', radius: 2.4, speed: 1, tilt: 0.5, precess: 0.15, flatten: 0.6, jet: 1.4, spread: 0.5 }, extras: [{ key: 'mode', label: 'Вид поля', type: 'select', options: [['orbit', 'Галактика: диск со спиральными рукавами'], ['rings', 'Кольца: диск из вращающихся колец'], ['hole', 'Квазар: падение в центр и джеты'], ['swarm', 'Рой: у каждой точки своя орбита'], ['float', 'Невесомость: медленный дрейф']] }, { type: 'note', when: ['mode', ['orbit']], text: 'Форма раскручивается диском: у центра быстрее, на краю медленнее.' }, { type: 'note', when: ['mode', ['rings']], text: 'Форма раскладывается на круглые кольца, соседние вращаются в разные стороны, как у планеты с кольцами.' }, { type: 'note', when: ['mode', ['hole']], text: 'Точки по спирали падают в центр, а затем вылетают двумя струями вдоль оси.' }, { type: 'note', when: ['mode', ['swarm']], text: 'Каждая точка летает по своей наклонной орбите, получается шар из орбит, как у атома.' }, { type: 'note', when: ['mode', ['float']], text: 'Точки плавно покачиваются и расходятся, как в невесомости.' }, { type: 'title', label: 'Где центр' }, { key: 'target', label: 'Центр поля', type: 'seg', options: [['cursor', 'Курсор, рука'], ['center', 'Центр формы']] }, { key: 'radius', label: 'Радиус действия', min: 0.1, max: 3.5, step: 0.05 }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.1 }, { key: 'spread', label: 'Размах', min: 0, max: 1, step: 0.05, when: ['mode', ['swarm', 'float']] }, { key: 'flatten', label: 'Сплющивание в диск', min: 0, max: 0.95, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'tilt', label: 'Наклон диска', min: 0, max: 1.5, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'precess', label: 'Покачивание оси', min: 0, max: 1, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'jet', label: 'Длина струй', min: 0, max: 3, step: 0.1, when: ['mode', ['hole']] }] },
 ];
 
@@ -526,6 +526,7 @@ uniform vec4 uJelP; // частота, затухание, сила, сплющ�
 uniform vec4 uPhysics;
 uniform float uCollapseTime;
 uniform vec4 uBrushHits[20];
+uniform vec4 uPaintP; // акварель: x включена, y зернистость, z режим (0 на бумагу, 1 прозрачно)
 uniform vec4 uBrushParam;
 uniform vec4 uLookP2;
 uniform vec4 uDof;
@@ -1544,6 +1545,7 @@ attribute float aIdx;
 attribute vec3 aSculpt;
 attribute vec3 aNormal;
 attribute vec3 aNormalB;
+attribute vec4 aPaint; // акварель на точке: rgb цвет краски, w её количество
 attribute vec3 aColorB;
 attribute float aHide;
 attribute float aDepth;
@@ -1717,6 +1719,14 @@ void main() {
 	float vm = uMorph * uMorph * (3.0 - 2.0 * uMorph);
 	float vis = mix(aVis.x, aVis.y, vm);
 	vColor = col * uBright * (1.0 + uBeat * 0.3) * vis;
+	// акварель: краска, нанесённая кистью, хранится на самой точке и остаётся после мазка
+	if (uPaintP.x > 0.5 && aPaint.w > 0.002) {
+		float pa = aPaint.w;
+		float cov = 1.0 - exp(-pa * 3.4);
+		cov *= mix(1.0, 0.8 + 0.4 * hash11(aIdx * 91.7), uPaintP.y);
+		vec3 pig = pow(max(aPaint.rgb, vec3(0.002)), vec3(0.7 + 0.5 * min(pa, 1.6)));
+		vColor = uPaintP.z > 0.5 ? vColor * mix(vec3(1.0), pig * 1.15, cov) : mix(vColor, pig * uBright, cov);
+	}
 	if (uMask.x > 0.5 && uMaskShow > 0.5) vColor = mix(vColor, uP2 * 1.4, maskV * 0.55);
 	// объём: свет сверху слева по нормалям, обратная сторона формы темнее
 	if (uShade > 0.001 && dot(nrmM, nrmM) > 0.01) {
@@ -2820,6 +2830,11 @@ export class EffectsEngine {
 		for (const l of FX_LAYERS) this.state.layers[l.id] = { ...AUDIO_DEF, ...l.def, ...this.state.layers[l.id] };
 		this.state.look = { ...defaultState().look, ...this.state.look };
 		// у срезов, сохранённых раньше, линии теперь по умолчанию естественного цвета модели
+		if (this.state.layers.brush && this.state.layers.brush.radius > 0.3 && !this.state._m5) {
+			this.state.layers.brush.radius = 0.14;
+			this.state.layers.brush.dry = 3;
+		}
+		this.state._m5 = 1;
 		if (!this.state._m4) {
 			if (this.state.layers.slice) this.state.layers.slice.color = 'model';
 			this.state._m4 = 1;
@@ -3381,6 +3396,7 @@ export class EffectsEngine {
 			for (let i = 2; i < nrm.length; i += 3) nrm[i] = 1;
 			g.setAttribute('aNormal', new THREE.BufferAttribute(nrm, 3));
 			g.setAttribute('aNormalB', new THREE.BufferAttribute(nrm.slice(), 3));
+			g.setAttribute('aPaint', new THREE.BufferAttribute(new Float32Array(count * 4), 4));
 			g.setAttribute('aIdx', new THREE.BufferAttribute(idxA, 1));
 			g.setAttribute('aHide', new THREE.BufferAttribute(new Float32Array(count), 1));
 			g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(count).fill(0.5), 1));
@@ -4292,16 +4308,158 @@ export class EffectsEngine {
 		this._sculptLive = false;
 	}
 
+	/** Смыть всю краску */
 	clearBrush() {
 		this.brushHits = [];
+		this._dabs = [];
+		this._painted = false;
+		const a = this.geometry?.attributes.aPaint;
+		if (a) {
+			a.array.fill(0);
+			a.needsUpdate = true;
+		}
 		this.emit();
 	}
 
+	/** Мазок кистью в точке pos (на плоскости перед формой). Из точки идёт луч от камеры, краска ложится на ближнюю к камере поверхность в радиусе кисти */
 	addBrushHit(pos) {
-		if (!pos) return;
-		if (this.brushHits.length > 0 && this.brushHits[0].pos.distanceTo(pos) < 0.05) return;
-		this.brushHits.unshift({ pos: pos.clone(), t0: this._time });
-		this.brushHits.length = Math.min(this.brushHits.length, 20);
+		if (!pos || !this.geometry || !this.geometry.attributes.aPaint) return;
+		const B = this.state.layers.brush;
+		const sp = Math.max(0.015, B.radius * 0.28);
+		const T0 = this._lastDabT ?? -9;
+		if (this._lastDab && this._lastDab.distanceTo(pos) < sp && this._time - T0 < 0.4) return;
+		const newStroke = this._time - T0 > 0.3;
+		(this._lastDab ||= new THREE.Vector3()).copy(pos);
+		this._lastDabT = this._time;
+		if (newStroke) this._strokeN = (this._strokeN || 0) + 1;
+		this._makeDab(pos);
+	}
+
+	_paintColor() {
+		const B = this.state.layers.brush;
+		let hex = B.color;
+		if (!hex || hex === 'auto' || hex === 'model') {
+			const pal = FX_PALETTES.find((x) => x.id === this.state.look.palette) || FX_PALETTES[0];
+			hex = pal.c[(this._strokeN || 0) % 3];
+		}
+		return new THREE.Color(hex);
+	}
+
+	_makeDab(pos) {
+		const g = this.geometry;
+		const B = this.state.layers.brush;
+		const n = g.attributes.position.count;
+		const T = g.attributes.aTarget.array;
+		const cam = this.app.viewport.camera;
+		const pts = this.points;
+		const o = new THREE.Vector3();
+		const d = new THREE.Vector3();
+		if (cam.isOrthographicCamera) {
+			cam.getWorldDirection(d);
+			d.transformDirection(pts.matrixWorld.clone().invert());
+			o.copy(pos).addScaledVector(d, -10);
+		} else {
+			pts.worldToLocal(cam.getWorldPosition(o));
+			d.copy(pos).sub(o).normalize();
+		}
+		const rMax = B.radius * (1 + B.water * 1.4);
+		const r2 = rMax * rMax;
+		if (!this._pIdx || this._pIdx.length < n) {
+			this._pIdx = new Int32Array(n);
+			this._pD2 = new Float32Array(n);
+			this._pDep = new Float32Array(n);
+			this._pOut = new Int32Array(n);
+			this._pOutD = new Float32Array(n);
+		}
+		const idx = this._pIdx, d2a = this._pD2, dep = this._pDep;
+		let m = 0;
+		let tmin = Infinity;
+		const ox = o.x, oy = o.y, oz = o.z, dx = d.x, dy = d.y, dz = d.z;
+		for (let i = 0; i < n; i++) {
+			const vx = T[i * 3] - ox, vy = T[i * 3 + 1] - oy, vz = T[i * 3 + 2] - oz;
+			const cx = vy * dz - vz * dy, cy = vz * dx - vx * dz, cz = vx * dy - vy * dx;
+			const dd = cx * cx + cy * cy + cz * cz;
+			if (dd < r2) {
+				const t = vx * dx + vy * dy + vz * dz;
+				idx[m] = i;
+				d2a[m] = dd;
+				dep[m] = t;
+				if (t < tmin) tmin = t;
+				m++;
+			}
+		}
+		if (!m) return;
+		// краска ложится только на ближнюю к камере поверхность, а не пробивает форму насквозь
+		const tlim = tmin + rMax * 0.9;
+		const NB = 64;
+		const cnt = new Int32Array(NB + 1);
+		let k = 0;
+		for (let a = 0; a < m; a++) {
+			if (dep[a] > tlim) continue;
+			idx[k] = idx[a];
+			const b = Math.min(NB - 1, Math.floor((Math.sqrt(d2a[a]) / rMax) * NB));
+			d2a[k] = b;
+			cnt[b + 1]++;
+			k++;
+		}
+		for (let b = 0; b < NB; b++) cnt[b + 1] += cnt[b];
+		const out = new Int32Array(k), outD = new Float32Array(k);
+		const pos2 = cnt.slice();
+		for (let a = 0; a < k; a++) {
+			const b = d2a[a];
+			const q = pos2[b]++;
+			out[q] = idx[a];
+			outD[q] = ((b + 0.5) / NB) * rMax;
+		}
+		const col = this._paintColor();
+		this._dabs.push({ idx: out, dist: outD, n: k, ptr: 0, t0: this._time, r0: B.radius, rMax, wetT: Math.max(0.3, B.dry), lr: Math.log(Math.max(1e-3, col.r)), lg: Math.log(Math.max(1e-3, col.g)), lb: Math.log(Math.max(1e-3, col.b)), tool: B.tool, pig: B.pigment * 0.75 * Math.min(1.5, Math.max(0.3, B.amount)), edge: B.edge });
+		if (this._dabs.length > 40) this._dabs.shift();
+	}
+
+	/** Каждый кадр: мазки растекаются от места нанесения, краска смешивается с уже лежащей и подсыхает тёмной кромкой */
+	_paintTick() {
+		const ds = this._dabs;
+		const attr = this.geometry?.attributes.aPaint;
+		if (!ds || !ds.length || !attr) return;
+		const arr = attr.array;
+		let dirty = false;
+		for (let q = ds.length - 1; q >= 0; q--) {
+			const dab = ds[q];
+			const age = this._time - dab.t0;
+			const f = 1 - Math.exp((-4 * age) / dab.wetT);
+			const radius = dab.r0 + (dab.rMax - dab.r0) * f;
+			while (dab.ptr < dab.n && dab.dist[dab.ptr] <= radius) {
+				const dn = dab.dist[dab.ptr] / dab.rMax;
+				const i = dab.idx[dab.ptr];
+				const fall = Math.pow(Math.max(0, 1 - dn * dn), 1.1);
+				const edgeK = dn <= 0.55 ? 0 : Math.min(1, (dn - 0.55) / 0.45);
+				const o = i * 4;
+				const a0 = arr[o + 3];
+				if (dab.tool === 'lift') {
+					arr[o + 3] = Math.max(0, a0 - dab.pig * 3 * fall);
+				} else {
+					const da = dab.pig * fall * (1 + dab.edge * 2.4 * f * f * edgeK);
+					const a1 = Math.min(1.6, a0 + da);
+					if (a0 < 1e-4) {
+						arr[o] = Math.exp(dab.lr);
+						arr[o + 1] = Math.exp(dab.lg);
+						arr[o + 2] = Math.exp(dab.lb);
+					} else {
+						// вычитающее смешение: среднее по логарифму цвета, как у настоящей краски (синий и жёлтый дают зелёный)
+						const wt = da / (a0 + da);
+						arr[o] = Math.exp((1 - wt) * Math.log(Math.max(arr[o], 1e-3)) + wt * dab.lr);
+						arr[o + 1] = Math.exp((1 - wt) * Math.log(Math.max(arr[o + 1], 1e-3)) + wt * dab.lg);
+						arr[o + 2] = Math.exp((1 - wt) * Math.log(Math.max(arr[o + 2], 1e-3)) + wt * dab.lb);
+					}
+					arr[o + 3] = a1;
+					this._painted = true;
+				}
+				dab.ptr++;
+				dirty = true;
+			}
+			if (dab.ptr >= dab.n || age > dab.wetT * 1.25) ds.splice(q, 1);
+		}
+		if (dirty) attr.needsUpdate = true;
 	}
 
 	async toggleMotionCam() {
@@ -4425,7 +4583,10 @@ export class EffectsEngine {
 	}
 
 	_onHands(f, cfg) {
-		const hands = f.hands;
+		// рабочая зона: центральная часть кадра (15-85%) растягивается на весь экран, чтобы не тянуться к краям камеры; скелет на сцене рисуется по тем же точкам, что и курсор
+		const bx = (v) => clamp((v - 0.15) / 0.7, 0, 1);
+		const mapP = (p) => [bx(p[0]), bx(p[1])];
+		const hands = f.hands.map((h) => ({ ...h, pts: h.pts.map(mapP), tips: h.tips.map(mapP), palm: mapP(h.palm) }));
 		this._hands = hands;
 		this._camActive = hands.length > 0;
 		const actLabel = (a) => (FX_ACTIONS.find((x) => x[0] === a) || [0, ''])[1];
@@ -4442,8 +4603,12 @@ export class EffectsEngine {
 		const loc2 = (p) => this._ndcToLocal(p[0] * 2 - 1, -(p[1] * 2 - 1), new THREE.Vector3(), cfg.depth);
 		let wantBreak = false, wantDis = false, grav = null, brushNow = false, sliceHand = null;
 		const wantFx = new Set();
+		this.camTracker.setNumHands && this.camTracker.setNumHands(cfg.handsN === '1' ? 1 : 2);
 		for (const hd of hands) {
-			const g = hd.gesture;
+			// щипок без задержки: он включается и выключается по самому сжатию пальцев, а остальные жесты проходят через голосование против дрожания
+			let g = hd.gesture;
+			if (hd.pinch) g = 'pinch';
+			else if (g === 'pinch') g = hd.rawGesture && hd.rawGesture !== 'pinch' ? hd.rawGesture : 'none';
 			const a = g === 'none' ? 'none' : cfg['g_' + g];
 			const prev = st.get(hd.id) || { palmX: hd.palm[0], palmY: hd.palm[1], a: 'none', g: 'none', t: now };
 			const dtH = Math.max(0.016, Math.min(0.2, now - prev.t));
@@ -5668,6 +5833,9 @@ export class EffectsEngine {
 		g.setAttribute('aTarget', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
 		g.setAttribute('aNormal', new THREE.BufferAttribute(new Float32Array(c.normals), 3));
 		g.setAttribute('aNormalB', new THREE.BufferAttribute(new Float32Array(c.normals), 3));
+		g.setAttribute('aPaint', new THREE.BufferAttribute(new Float32Array(count * 4), 4));
+		this._dabs = [];
+		this._painted = false;
 		g.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(model.colors.length === c.colors.length ? model.colors : c.colors), 3));
 		g.setAttribute('aColorB', new THREE.BufferAttribute(new Float32Array(g.attributes.aColor.array), 3));
 		g.setAttribute('aHide', new THREE.BufferAttribute(c.hide && c.hide.length === count ? new Float32Array(c.hide) : new Float32Array(count), 1));
@@ -5703,7 +5871,7 @@ export class EffectsEngine {
 			uTrk: U(Array.from({ length: 16 }, () => new THREE.Vector4())), uImp: U(Array.from({ length: 32 }, () => new THREE.Vector4())), uShock: U(Array.from({ length: 4 }, () => new THREE.Vector4(0, 0, 0, -1))),
 			uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
 			uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
-			uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()),
+			uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()), uPaintP: U(new THREE.Vector4()),
 			uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
 			uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uAnimN: U(0), uCen: U(new THREE.Vector3()), uExp: U(new THREE.Vector4()), uExpP: U(new THREE.Vector4()), uPieceTex: U(this.pieceTex), uGrow: U(new THREE.Vector4()), uGrowP: U(new THREE.Vector4()), uGrowSeed: U(new THREE.Vector3()), uJel: U(Array.from({ length: 3 }, () => new THREE.Vector4(0, 0, 0, -99))), uJelO: U(Array.from({ length: 3 }, () => new THREE.Vector4())), uJelP: U(new THREE.Vector4()),  uDisQ: U(new THREE.Vector4(0.32, 1, 0.35, 0.85)), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 		};
@@ -6537,7 +6705,10 @@ export class EffectsEngine {
 					brArr[i].set(0, 0, 0, -1);
 				}
 			}
-			u.uBrushParam.value.set(brE, L.brush ? L.brush.radius : 0.4, L.brush ? L.brush.dry : 3.5, 1);
+			u.uBrushParam.value.set(0, 0.4, 3.5, 1);
+			// акварель: растекание мазков и вывод краски на форму (краска остаётся, даже если кисть выключили)
+			this._paintTick();
+			u.uPaintP.value.set(this._painted ? 1 : 0, L.brush.grain, L.brush.mode === 'glaze' ? 1 : 0, 0);
 
 			// Срез / Изолинии
 			const sl = L.slice;

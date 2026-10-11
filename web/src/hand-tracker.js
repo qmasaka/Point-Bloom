@@ -9,16 +9,24 @@ export const HAND_LINKS = [
 [0, 17],
 ];
 export const TIPS = [4, 8, 12, 16, 20];
-let libPromise = null;
-const loadLib = () => (libPromise ||= import( VISION + '/vision_bundle.mjs'));
-async function createLandmarker(conf) {
-const lib = await loadLib();
-const fileset = await lib.FilesetResolver.forVisionTasks(VISION + '/wasm');
+const LOCAL = new URL('vendor/mediapipe/', document.baseURI).href;
+const SOURCES = [
+{ name: 'local', lib: LOCAL + 'vision_bundle.mjs', wasm: LOCAL + 'wasm', model: LOCAL + 'hand_landmarker.task' },
+{ name: 'cdn', lib: VISION + '/vision_bundle.mjs', wasm: VISION + '/wasm', model: MODEL },
+];
+const libs = {};
+const loadLib = (s) => (libs[s.name] ||= import( s.lib));
+async function createLandmarker(conf, numHands = 2) {
+let lastErr;
+for (const s of SOURCES) {
+try {
+const lib = await loadLib(s);
+const fileset = await lib.FilesetResolver.forVisionTasks(s.wasm);
 const make = (delegate) =>
 lib.HandLandmarker.createFromOptions(fileset, {
-baseOptions: { modelAssetPath: MODEL, delegate },
+baseOptions: { modelAssetPath: s.model, delegate },
 runningMode: 'VIDEO',
-numHands: 2,
+numHands,
 minHandDetectionConfidence: conf,
 minHandPresenceConfidence: Math.max(0.3, conf - 0.12),
 minTrackingConfidence: Math.max(0.3, conf - 0.12),
@@ -26,8 +34,14 @@ minTrackingConfidence: Math.max(0.3, conf - 0.12),
 try {
 return await make('GPU');
 } catch (e) {
-return make('CPU');
+return await make('CPU');
 }
+} catch (e) {
+lastErr = e;
+delete libs[s.name];
+}
+}
+throw lastErr;
 }
 export class HandTracker {
 constructor(onFrame, onStatus) {
@@ -54,6 +68,23 @@ this._tracks = [];
 this._nextId = 1;
 this.hold = 0.12;
 this.names = {};
+this.numHands = 2;
+this._lastTs = 0;
+this._vfc = null;
+this._vis = () => {
+if (!document.hidden) return;
+this._tracks = [];
+this._draw([]);
+this.onFrame({ kind: 'hands', hands: [], aspect: (this.video.videoWidth || 4) / (this.video.videoHeight || 3) });
+};
+}
+setNumHands(n) {
+if (n === this.numHands) return;
+this.numHands = n;
+try {
+this.landmarker?.setOptions({ numHands: n });
+} catch (e) {
+}
 }
 _confFor() {
 return Math.round((0.75 - this.sens * 0.45) * 100) / 100;
@@ -69,10 +100,11 @@ this.running = true;
 this._draw([]);
 this.onStatus('Загружаю распознавание рук…');
 this._conf = this._confFor();
-this.landmarker = await createLandmarker(this._conf);
+this.landmarker = await createLandmarker(this._conf, this.numHands);
 if (!this.running) return;
 this.onStatus('');
-this._tick();
+document.addEventListener('visibilitychange', this._vis);
+this._schedule();
 } catch (err) {
 const keepStream = err && err.name !== 'NotAllowedError' && err.name !== 'NotFoundError' && this.stream;
 if (!keepStream) this.stop();
@@ -80,8 +112,20 @@ err.handsLoadFailed = !!keepStream;
 throw err;
 }
 }
+_schedule() {
+if (!this.running) return;
+const v = this.video;
+if (v.requestVideoFrameCallback) this._vfc = v.requestVideoFrameCallback(() => this._tick());
+this._timer = setTimeout(() => this._tick(), v.requestVideoFrameCallback ? 80 : 16);
+}
 _tick() {
 if (!this.running) return;
+clearTimeout(this._timer);
+try {
+if (this._vfc != null && this.video.cancelVideoFrameCallback) this.video.cancelVideoFrameCallback(this._vfc);
+} catch (e) {
+}
+this._vfc = null;
 const v = this.video;
 if (v.readyState >= 2 && v.currentTime !== this._last) {
 this._last = v.currentTime;
@@ -95,7 +139,9 @@ this.landmarker.setOptions({ minHandDetectionConfidence: c, minHandPresenceConfi
 }
 let res = null;
 try {
-res = this.landmarker.detectForVideo(v, performance.now());
+const ts = Math.max(performance.now(), this._lastTs + 1);
+this._lastTs = ts;
+res = this.landmarker.detectForVideo(v, ts);
 } catch (e) {
 res = null;
 }
@@ -103,7 +149,7 @@ const hands = this._hands(res, (v.videoWidth || 4) / (v.videoHeight || 3));
 this._draw(hands);
 this.onFrame({ kind: 'hands', hands, aspect: (v.videoWidth || 4) / (v.videoHeight || 3) });
 }
-this._timer = setTimeout(() => this._tick(), 24);
+this._schedule();
 }
 _hands(res, aspect) {
 const now = performance.now();
@@ -143,7 +189,7 @@ const hd = measure(t, pts, aspect);
 hd.gesture = this._stable(t, hd.rawGesture, now);
 t.hd = hd;
 }
-this._tracks = this._tracks.filter((t) => matched.some(([m]) => m === t) || now - t.lastSeen < 380).concat(matched.map(([t]) => t).filter((t) => !this._tracks.includes(t)));
+this._tracks = this._tracks.filter((t) => matched.some(([m]) => m === t) || now - t.lastSeen < (t.hd && t.hd.pinch ? 150 : 380)).concat(matched.map(([t]) => t).filter((t) => !this._tracks.includes(t)));
 return this._tracks.filter((t) => t.hd).map((t) => t.hd);
 }
 _newTrack() {
@@ -223,6 +269,12 @@ c.fillText(text, wr[0] - tw / 2, wr[1] + 20);
 stop() {
 this.running = false;
 clearTimeout(this._timer);
+document.removeEventListener('visibilitychange', this._vis);
+try {
+if (this._vfc != null && this.video.cancelVideoFrameCallback) this.video.cancelVideoFrameCallback(this._vfc);
+} catch (e) {
+}
+this._vfc = null;
 if (this.stream) {
 this.stream.getTracks().forEach((t) => t.stop());
 this.stream = null;

@@ -12,26 +12,42 @@ export const HAND_LINKS = [
 ];
 export const TIPS = [4, 8, 12, 16, 20];
 
-let libPromise = null;
-const loadLib = () => (libPromise ||= import(/* @vite-ignore */ VISION + '/vision_bundle.mjs'));
+// Файлы распознавания лежат на самом сайте (vendor/mediapipe): один домен, без внешних запросов и зависимости от чужих серверов.
+// Если их нет (например, страница открыта как файл), берутся с CDN
+const LOCAL = new URL('vendor/mediapipe/', document.baseURI).href;
+const SOURCES = [
+	{ name: 'local', lib: LOCAL + 'vision_bundle.mjs', wasm: LOCAL + 'wasm', model: LOCAL + 'hand_landmarker.task' },
+	{ name: 'cdn', lib: VISION + '/vision_bundle.mjs', wasm: VISION + '/wasm', model: MODEL },
+];
+const libs = {};
+const loadLib = (s) => (libs[s.name] ||= import(/* @vite-ignore */ s.lib));
 
-async function createLandmarker(conf) {
-	const lib = await loadLib();
-	const fileset = await lib.FilesetResolver.forVisionTasks(VISION + '/wasm');
-	const make = (delegate) =>
-		lib.HandLandmarker.createFromOptions(fileset, {
-			baseOptions: { modelAssetPath: MODEL, delegate },
-			runningMode: 'VIDEO',
-			numHands: 2,
-			minHandDetectionConfidence: conf,
-			minHandPresenceConfidence: Math.max(0.3, conf - 0.12),
-			minTrackingConfidence: Math.max(0.3, conf - 0.12),
-		});
-	try {
-		return await make('GPU');
-	} catch (e) {
-		return make('CPU');
+async function createLandmarker(conf, numHands = 2) {
+	let lastErr;
+	for (const s of SOURCES) {
+		try {
+			const lib = await loadLib(s);
+			const fileset = await lib.FilesetResolver.forVisionTasks(s.wasm);
+			const make = (delegate) =>
+				lib.HandLandmarker.createFromOptions(fileset, {
+					baseOptions: { modelAssetPath: s.model, delegate },
+					runningMode: 'VIDEO',
+					numHands,
+					minHandDetectionConfidence: conf,
+					minHandPresenceConfidence: Math.max(0.3, conf - 0.12),
+					minTrackingConfidence: Math.max(0.3, conf - 0.12),
+				});
+			try {
+				return await make('GPU');
+			} catch (e) {
+				return await make('CPU');
+			}
+		} catch (e) {
+			lastErr = e;
+			delete libs[s.name];
+		}
 	}
+	throw lastErr;
 }
 
 export class HandTracker {
@@ -59,6 +75,27 @@ export class HandTracker {
 		this._nextId = 1;
 		this.hold = 0.12;
 		this.names = {};
+		this.numHands = 2;
+		this._lastTs = 0;
+		this._vfc = null;
+		// вкладка скрыта: камера и руки больше не валидны, всё сбрасывается, чтобы жест не «залип»
+		this._vis = () => {
+			if (!document.hidden) return;
+			this._tracks = [];
+			this._draw([]);
+			this.onFrame({ kind: 'hands', hands: [], aspect: (this.video.videoWidth || 4) / (this.video.videoHeight || 3) });
+		};
+	}
+
+	/** Сколько рук искать: одна быстрее и точнее на слабом компьютере; меняется на ходу */
+	setNumHands(n) {
+		if (n === this.numHands) return;
+		this.numHands = n;
+		try {
+			this.landmarker?.setOptions({ numHands: n });
+		} catch (e) {
+			/* не критично */
+		}
 	}
 
 	_confFor() {
@@ -76,10 +113,11 @@ export class HandTracker {
 			this._draw([]);
 			this.onStatus('Загружаю распознавание рук…');
 			this._conf = this._confFor();
-			this.landmarker = await createLandmarker(this._conf);
+			this.landmarker = await createLandmarker(this._conf, this.numHands);
 			if (!this.running) return;
 			this.onStatus('');
-			this._tick();
+			document.addEventListener('visibilitychange', this._vis);
+			this._schedule();
 		} catch (err) {
 			const keepStream = err && err.name !== 'NotAllowedError' && err.name !== 'NotFoundError' && this.stream;
 			if (!keepStream) this.stop();
@@ -88,8 +126,24 @@ export class HandTracker {
 		}
 	}
 
+	/** Следующий шаг привязан к новому кадру камеры (по одному распознаванию на кадр, без пропусков и повторов); без этой возможности работает таймер */
+	_schedule() {
+		if (!this.running) return;
+		const v = this.video;
+		if (v.requestVideoFrameCallback) this._vfc = v.requestVideoFrameCallback(() => this._tick());
+		// страховка: если колбэк кадра не придёт (скрытое видео), шаг всё равно будет
+		this._timer = setTimeout(() => this._tick(), v.requestVideoFrameCallback ? 80 : 16);
+	}
+
 	_tick() {
 		if (!this.running) return;
+		clearTimeout(this._timer);
+		try {
+			if (this._vfc != null && this.video.cancelVideoFrameCallback) this.video.cancelVideoFrameCallback(this._vfc);
+		} catch (e) {
+			/* не критично */
+		}
+		this._vfc = null;
 		const v = this.video;
 		if (v.readyState >= 2 && v.currentTime !== this._last) {
 			this._last = v.currentTime;
@@ -104,7 +158,10 @@ export class HandTracker {
 			}
 			let res = null;
 			try {
-				res = this.landmarker.detectForVideo(v, performance.now());
+				// MediaPipe требует строго возрастающие метки времени, даже если два кадра пришли в одну миллисекунду
+				const ts = Math.max(performance.now(), this._lastTs + 1);
+				this._lastTs = ts;
+				res = this.landmarker.detectForVideo(v, ts);
 			} catch (e) {
 				res = null;
 			}
@@ -112,7 +169,7 @@ export class HandTracker {
 			this._draw(hands);
 			this.onFrame({ kind: 'hands', hands, aspect: (v.videoWidth || 4) / (v.videoHeight || 3) });
 		}
-		this._timer = setTimeout(() => this._tick(), 24);
+		this._schedule();
 	}
 
 	/** Руки сопоставляются с прошлым кадром по близости запястья (а не по порядку и подписи «левая/правая», которые у модели прыгают) */
@@ -156,7 +213,8 @@ export class HandTracker {
 			t.hd = hd;
 		}
 		// потеряли руку на несколько кадров: держим её ещё чуть-чуть, чтобы жест не обрывался
-		this._tracks = this._tracks.filter((t) => matched.some(([m]) => m === t) || now - t.lastSeen < 380).concat(matched.map(([t]) => t).filter((t) => !this._tracks.includes(t)));
+		// рука со щипком (рисование) держится после потери совсем недолго, чтобы не дорисовывать мазок вслепую; остальные жесты 0,38 с
+		this._tracks = this._tracks.filter((t) => matched.some(([m]) => m === t) || now - t.lastSeen < (t.hd && t.hd.pinch ? 150 : 380)).concat(matched.map(([t]) => t).filter((t) => !this._tracks.includes(t)));
 		return this._tracks.filter((t) => t.hd).map((t) => t.hd);
 	}
 
@@ -241,6 +299,13 @@ export class HandTracker {
 	stop() {
 		this.running = false;
 		clearTimeout(this._timer);
+		document.removeEventListener('visibilitychange', this._vis);
+		try {
+			if (this._vfc != null && this.video.cancelVideoFrameCallback) this.video.cancelVideoFrameCallback(this._vfc);
+		} catch (e) {
+			/* не критично */
+		}
+		this._vfc = null;
 		if (this.stream) {
 			this.stream.getTracks().forEach((t) => t.stop());
 			this.stream = null;

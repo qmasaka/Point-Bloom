@@ -474,7 +474,11 @@ def write_vercel_json():
         "version": 2,
         "cleanUrls": True,
         "outputDirectory": "web",
-        "headers": [{"source": "/(.*)", "headers": [{"key": k, "value": v} for k, v in headers]}],
+        "headers": [
+            {"source": "/(.*)", "headers": [{"key": k, "value": v} for k, v in headers]},
+            # тяжёлые файлы распознавания рук кэшируются на месяц: повторные запуски камеры не качают их заново
+            {"source": "/vendor/mediapipe/(.*)", "headers": [{"key": "Cache-Control", "value": "public, max-age=2592000"}]},
+        ],
     }
     with open(os.path.join(ROOT, "vercel.json"), "w", encoding="utf-8") as fh:
         json.dump(cfg, fh, indent=2, ensure_ascii=False)
@@ -503,6 +507,10 @@ def build_web():
         with open(os.path.join(out, "src", name), "w", encoding="utf-8") as fh:
             fh.write(code)
         total += len(code.encode("utf-8"))
+    # распознавание рук: модель и WASM лежат на самом сайте
+    mp_src = os.path.join(ROOT, "vendor", "mediapipe")
+    if os.path.isdir(mp_src):
+        shutil.copytree(mp_src, os.path.join(out, "vendor", "mediapipe"))
     with open(os.path.join(ROOT, "assets", "style.css"), encoding="utf-8") as fh:
         css = minify_css(fh.read())
     with open(os.path.join(out, "assets", "style.css"), "w", encoding="utf-8") as fh:

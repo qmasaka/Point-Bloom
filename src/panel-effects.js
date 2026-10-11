@@ -516,7 +516,7 @@ export function createEffectsPanel(app, root, engine) {
 				body.append(h('div', { class: 'field-hint' }, 'Видео раскладывается на кадры, кадры собираются в блок из точек. Текущий кадр рисуется густо, остальные реже. Что сейчас показано, задаёт таймлайн внизу: играйте и перематывайте видео, блок следует за ним. Остальные эффекты работают поверх блока.'), button({ label: 'Снять кадры заново', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Снять кадры с видео заново с текущими настройками', onClick: () => engine.rebuildFramesSoon() }));
 			} else if (def.id === 'brush') {
 				const clearBtn = button({
-					label: 'Стереть краску',
+					label: 'Смыть всю краску',
 					icon: 'broom',
 					variant: 'secondary',
 					cls: 'btn-block',
