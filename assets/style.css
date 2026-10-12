@@ -6328,3 +6328,18 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 	scrollbar-gutter: stable;
 }
 .ui-float .fx-left-list, .ui-float .panel { scrollbar-gutter: auto; }
+
+/* ================================================================ переключатели: скругление выбранной кнопки концентрично рамке блока (радиус рамки минус поле минус линия), углы совпадают */
+.seg { --seg-r: var(--r-box); --seg-pad: 2px; padding: var(--seg-pad); border-radius: var(--seg-r); }
+.seg-btn { border-radius: max(2px, calc(var(--seg-r) - var(--seg-pad) - 1px)); }
+@container app (min-width: 901px) {
+	.ui-float .seg { --seg-r: 10px; border-radius: var(--seg-r); }
+}
+.fx-mode .sidebar .seg { --seg-r: 999px; }
+.fx-mode .sidebar .seg-btn { border-radius: 999px; }
+#modeBar.seg { --seg-pad: 3px; }
+.pe-panel > * { flex-shrink: 0; }
+@container app (min-width: 901px) {
+	/* нижняя плашка режимов: рамка 16px, поле 6px, линия 1px, значит у кнопок 9px */
+	.ui-float .vp-dock .dock-btn, .ui-float #modeBar .seg-btn { border-radius: 9px; }
+}

@@ -51,6 +51,7 @@ export default {
 		'Удаление точек': 'Point deletion',
 		'Перекраска точек': 'Point recoloring',
 		'Удалено точек: {}': 'Points deleted: {}',
+		'Закрашено точек: {}': 'Points painted: {}',
 		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'Point color switched to “Texture”, otherwise the recoloring is not visible',
 	},
 	uk: {
@@ -104,6 +105,7 @@ export default {
 		'Удаление точек': 'Видалення точок',
 		'Перекраска точек': 'Перефарбування точок',
 		'Удалено точек: {}': 'Видалено точок: {}',
+		'Закрашено точек: {}': 'Зафарбовано точок: {}',
 		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'Колір точок перемкнено на «Текстура»: інакше перефарбування не видно',
 	},
 	es: {
@@ -157,6 +159,7 @@ export default {
 		'Удаление точек': 'Eliminación de puntos',
 		'Перекраска точек': 'Recoloración de puntos',
 		'Удалено точек: {}': 'Puntos eliminados: {}',
+		'Закрашено точек: {}': 'Puntos pintados: {}',
 		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'El color de los puntos cambió a «Textura»: si no, el recoloreado no se ve',
 	},
 	de: {
@@ -210,6 +213,7 @@ export default {
 		'Удаление точек': 'Punkte löschen',
 		'Перекраска точек': 'Punkte umfärben',
 		'Удалено точек: {}': 'Punkte gelöscht: {}',
+		'Закрашено точек: {}': 'Punkte eingefärbt: {}',
 		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'Die Punktfarbe wurde auf „Textur“ umgestellt, sonst ist das Umfärben nicht sichtbar',
 	},
 };

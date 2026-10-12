@@ -430,6 +430,8 @@ o.geometry.attributes.color.needsUpdate = true;
 this._emit();
 };
 app.history.push({ label: 'Перекраска точек', redo: () => write(after), undo: () => write(before) }, true);
+this.clear();
+app.toast(`Закрашено точек: ${ids.length.toLocaleString('ru')}`, 'ok', 1800);
 const pt = app.settings.point;
 if (pt.color !== 'texture') {
 pt.color = 'texture';

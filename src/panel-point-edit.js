@@ -6,7 +6,7 @@ import { section, field, fxSlider as slider, segmented, switchRow, colorField, b
 
 export function createPointEditSection(app) {
 	const pe = app.pointEdit;
-	let paintHex = '#ff7a2e';
+	let paintHex = '#3fc8e4';
 	let strength = 1;
 
 	// ---------------------------------------------------------------- плавающая панель
@@ -71,20 +71,28 @@ export function createPointEditSection(app) {
 	function place() {
 		if (panel.hidden) return;
 		const ws = panel.parentElement.getBoundingClientRect();
-		const btn = document.querySelector('.btn-tool[data-tool="psel"]');
+		const rail = document.querySelector('.toolrail');
 		const side = document.getElementById('sidebar');
-		const w = side && side.offsetWidth ? side.offsetWidth : 300;
-		panel.style.width = w + 'px';
-		const br = btn.getBoundingClientRect();
-		let top = br.top - ws.top;
-		const maxH = ws.height - 24;
-		panel.style.maxHeight = maxH + 'px';
-		const hgt = Math.min(panel.offsetHeight, maxH);
-		top = Math.max(12, Math.min(top, ws.height - hgt - 12));
-		panel.style.left = br.right - ws.left + 12 + 'px';
+		const rr = rail.getBoundingClientRect();
+		const sr = side ? side.getBoundingClientRect() : null;
+		const gap = 8;
+		// колонка кнопок и панель вместе по ширине равны блоку настроек, по высоте панель стоит между теми же верхним и нижним краями
+		const sideW = sr && sr.width ? sr.width : 300;
+		panel.style.width = Math.max(220, sideW - rr.width - gap) + 'px';
+		panel.style.left = rr.right - ws.left + gap + 'px';
+		const top = sr && sr.height ? sr.top - ws.top : rr.top - ws.top;
+		const collapsed = side && side.classList.contains('fxf-collapsed');
+		const maxH = sr && sr.height && !collapsed ? sr.height : ws.height - top - 20;
 		panel.style.top = top + 'px';
+		panel.style.maxHeight = maxH + 'px';
 	}
 	window.addEventListener('resize', place);
+	if (window.ResizeObserver) {
+		const ro = new ResizeObserver(place);
+		const side = document.getElementById('sidebar');
+		if (side) ro.observe(side);
+		ro.observe(document.querySelector('.toolrail'));
+	}
 
 	// ---------------------------------------------------------------- раздел во вкладке «Точки»
 	const toggle = button({ label: 'Выделять точки', icon: 'selection', variant: 'primary', cls: 'btn-block pe-toggle', onClick: () => pe.setActive(!pe.active) });

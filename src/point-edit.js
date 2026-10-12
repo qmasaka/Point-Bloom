@@ -471,6 +471,9 @@ export class PointEditor {
 			this._emit();
 		};
 		app.history.push({ label: 'Перекраска точек', redo: () => write(after), undo: () => write(before) }, true);
+		// выбранные точки светятся оранжевым и скрыли бы новый цвет, поэтому после перекраски выбор снимается
+		this.clear();
+		app.toast(`Закрашено точек: ${ids.length.toLocaleString('ru')}`, 'ok', 1800);
 		// перекраска видна только в режиме «Текстура»: в других цвет точек задаёт сам режим
 		const pt = app.settings.point;
 		if (pt.color !== 'texture') {
