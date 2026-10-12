@@ -147210,7 +147210,7 @@ class UI {
 		// клавиши рисуются отдельными «кнопками»: «Ctrl+Shift+Z» это три клавиши; несколько вариантов через «/»
 		const combo = (s) => h('span', { class: 'kd-combo' }, ...s.split(/\+(?=.)/).flatMap((k, i) => (i ? [h('i', {}, '+'), h('kbd', {}, k)] : [h('kbd', {}, k)])));
 		const row = (label, ...variants) => h('div', { class: 'kd-row' }, h('span', { class: 'kd-label' }, label), h('span', { class: 'kd-keys' }, ...variants.flatMap((v, i) => (i ? [h('em', {}, 'или'), combo(v)] : [combo(v)]))));
-		const group = (title, icn, ...rows) => h('section', { class: 'kd-group' }, h('h3', {}, h('span', { class: 'kd-ic', html: icon(icn, 15) }), title), ...rows);
+		const group = (title, icn, ...rows) => h('section', { class: 'kd-group' + (title === 'Таймлайн анимации' ? ' kd-wide' : '') }, h('h3', {}, h('span', { class: 'kd-ic', html: icon(icn, 15) }), title), ...rows);
 		const dlg = this.dialog;
 		dlg.textContent = '';
 		const xBtn = h('button', { type: 'button', class: 'kd-x btn btn-icon', 'aria-label': 'Закрыть', 'data-tip': 'Закрыть (Esc)', onclick: () => dlg.close(), html: icon('x', 18) });
