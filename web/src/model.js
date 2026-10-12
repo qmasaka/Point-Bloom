@@ -136,7 +136,7 @@ if (this.pivot) {
 this.pivot.removeFromParent();
 this.pivot = null;
 }
-if (sel && this.tool !== 'select') {
+if (sel && (this.tool === 'translate' || this.tool === 'rotate' || this.tool === 'scale')) {
 tc.setMode(this.tool);
 if (this.selection.length > 1) {
 const vp = this.app.viewport;

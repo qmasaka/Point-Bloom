@@ -81414,6 +81414,7 @@ class PointEditor {
 		el.addEventListener('pointerleave', () => (this._cursor.hidden = true));
 		// клавиши правки перехватываются раньше общих: Delete и X здесь удаляют точки, а не весь объект
 		window.addEventListener('keydown', (e) => this._key(e), true);
+		app.bus.on('tool', () => this._syncTool());
 		app.bus.on('selection', () => this.retarget());
 		app.bus.on('scene', () => this.retarget());
 	}
@@ -81436,24 +81437,61 @@ class PointEditor {
 		this._emit();
 	}
 
+	get isPointTool() {
+		const t = this.app.model.tool;
+		return t === 'pbrush' || t === 'prect';
+	}
+
+	/** Включить или выключить правку: это обычные инструменты слева (кисть, рамка), поэтому всё идёт через model.setTool */
 	setActive(on) {
-		on = !!on;
-		if (on === this.active) return;
-		this.active = on;
-		const nav = this.app.nav;
+		const model = this.app.model;
+		if (on) model.setTool(this.tool === 'rect' ? 'prect' : 'pbrush');
+		else if (this.isPointTool) model.setTool(this._back || 'select');
+	}
+
+	/** Переключает вид выделения: 'brush' или 'rect' */
+	setTool(t) {
+		this.tool = t;
+		if (this.active) this.app.model.setTool(t === 'rect' ? 'prect' : 'pbrush');
+		else this._emit();
+	}
+
+	/** Вызывается при каждой смене инструмента слева */
+	_syncTool() {
+		const model = this.app.model;
+		const on = this.isPointTool;
+		if (!on) this._back = model.tool;
+		if (on === this.active) {
+			if (on) {
+				this.tool = model.tool === 'prect' ? 'rect' : 'brush';
+				this._emit();
+			}
+			return;
+		}
 		if (on) {
+			// облако ещё не выбрано: берём единственное в сцене, иначе просим выбрать
+			if (!this.target()) {
+				const cand = this.app.viewport.root.children.filter((c) => c.isPoints && !c.userData.helper && c.visible && c.geometry.attributes.position);
+				if (cand.length === 1) model.select(cand[0]);
+			}
+			if (!this.target()) {
+				this.app.toast('Выберите облако точек в сцене, чтобы править его точки', 'info', 2600);
+				model.setTool(this._back || 'select');
+				return;
+			}
+			this.active = true;
+			this.tool = model.tool === 'prect' ? 'rect' : 'brush';
 			this.retarget();
-			this._prevTool = this.app.model.tool;
-			this.app.model.setTool('select'); // рамка преобразований мешает кисти
 			if (this.app.settings.display !== 'points') this.app.setDisplay('points');
 		} else {
+			this.active = false;
 			this._cursor.hidden = true;
 			this._rect.hidden = true;
 			this._drag = null;
 		}
 		// пока включена правка, левая кнопка выделяет, а не вращает сцену (Alt вращает)
-		nav.paintLock = on;
-		this.app.viewport.container.classList.toggle('pe-active', on);
+		this.app.nav.paintLock = this.active;
+		this.app.viewport.container.classList.toggle('pe-active', this.active);
 		this._emit();
 	}
 
@@ -85997,7 +86035,7 @@ class Model {
 			this.pivot.removeFromParent();
 			this.pivot = null;
 		}
-		if (sel && this.tool !== 'select') {
+		if (sel && (this.tool === 'translate' || this.tool === 'rotate' || this.tool === 'scale')) {
 			tc.setMode(this.tool);
 			if (this.selection.length > 1) {
 				// несколько объектов двигаются вместе через общую опору в центре выделения
@@ -90055,6 +90093,7 @@ const ICON_PATHS = {
 	'monitor': '<path d="M208,40H48A24,24,0,0,0,24,64V176a24,24,0,0,0,24,24H208a24,24,0,0,0,24-24V64A24,24,0,0,0,208,40Zm8,136a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V64a8,8,0,0,1,8-8H208a8,8,0,0,1,8,8Zm-48,48a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,224Z"/>',
 	'mountains': '<path d="M164,80a28,28,0,1,0-28-28A28,28,0,0,0,164,80Zm0-40a12,12,0,1,1-12,12A12,12,0,0,1,164,40Zm90.88,155.92-54.56-92.08A15.87,15.87,0,0,0,186.55,96h0a15.85,15.85,0,0,0-13.76,7.84L146.63,148l-44.84-76.1a16,16,0,0,0-27.58,0L1.11,195.94A8,8,0,0,0,8,208H248a8,8,0,0,0,6.88-12.08ZM88,80l23.57,40H64.43ZM22,192l33-56h66l18.74,31.8,0,0L154,192Zm150.57,0-16.66-28.28L186.55,112,234,192Z"/>',
 	'paint-brush': '<path d="M232,32a8,8,0,0,0-8-8c-44.08,0-89.31,49.71-114.43,82.63A60,60,0,0,0,32,164c0,30.88-19.54,44.73-20.47,45.37A8,8,0,0,0,16,224H92a60,60,0,0,0,57.37-77.57C182.3,121.31,232,76.08,232,32ZM92,208H34.63C41.38,198.41,48,183.92,48,164a44,44,0,1,1,44,44Zm32.42-94.45q5.14-6.66,10.09-12.55A76.23,76.23,0,0,1,155,121.49q-5.9,4.94-12.55,10.09A60.54,60.54,0,0,0,124.42,113.55Zm42.7-2.68a92.57,92.57,0,0,0-22-22c31.78-34.53,55.75-45,69.9-47.91C212.17,55.12,201.65,79.09,167.12,110.87Z"/>',
+	'paint-bucket': '<path d="M234.53,139.07a8,8,0,0,0,3.13-13.24L122.17,10.34a8,8,0,0,0-11.31,0L70.25,51,45.65,26.34A8,8,0,0,0,34.34,37.66l24.6,24.6L15,106.17a24,24,0,0,0,0,33.94L99.89,225a24,24,0,0,0,33.94,0l78.49-78.49Zm-32.19-5.24-79.83,79.83a8,8,0,0,1-11.31,0L26.34,128.8a8,8,0,0,1,0-11.31L70.25,73.57l29.12,29.12a28,28,0,1,0,11.31-11.32L81.57,62.26l35-34.95L217.19,128l-11.72,3.9A8.09,8.09,0,0,0,202.34,133.83Zm-86.83-26.31,0,0a13.26,13.26,0,1,1-.05.06S115.51,107.53,115.51,107.52Zm123.15,56a8,8,0,0,0-13.32,0C223.57,166.23,208,190.09,208,208a24,24,0,0,0,48,0C256,190.09,240.43,166.23,238.66,163.56ZM232,216a8,8,0,0,1-8-8c0-6.8,4-16.32,8-24.08,4,7.76,8,17.34,8,24.08A8,8,0,0,1,232,216Z"/>',
 	'palette': '<path d="M200.77,53.89A103.27,103.27,0,0,0,128,24h-1.07A104,104,0,0,0,24,128c0,43,26.58,79.06,69.36,94.17A32,32,0,0,0,136,192a16,16,0,0,1,16-16h46.21a31.81,31.81,0,0,0,31.2-24.88,104.43,104.43,0,0,0,2.59-24A103.28,103.28,0,0,0,200.77,53.89Zm13,93.71A15.89,15.89,0,0,1,198.21,160H152a32,32,0,0,0-32,32,16,16,0,0,1-21.31,15.07C62.49,194.3,40,164,40,128a88,88,0,0,1,87.09-88h.9a88.35,88.35,0,0,1,88,87.25A88.86,88.86,0,0,1,213.81,147.6ZM140,76a12,12,0,1,1-12-12A12,12,0,0,1,140,76ZM96,100A12,12,0,1,1,84,88,12,12,0,0,1,96,100Zm0,56a12,12,0,1,1-12-12A12,12,0,0,1,96,156Zm88-56a12,12,0,1,1-12-12A12,12,0,0,1,184,100Z"/>',
 	'path': '<path d="M200,168a32.06,32.06,0,0,0-31,24H72a32,32,0,0,1,0-64h96a40,40,0,0,0,0-80H72a8,8,0,0,0,0,16h96a24,24,0,0,1,0,48H72a48,48,0,0,0,0,96h97a32,32,0,1,0,31-40Zm0,48a16,16,0,1,1,16-16A16,16,0,0,1,200,216Z"/>',
 	'pause': '<path d="M216,48V208a16,16,0,0,1-16,16H160a16,16,0,0,1-16-16V48a16,16,0,0,1,16-16h40A16,16,0,0,1,216,48ZM112,48V208a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V48A16,16,0,0,1,56,32H96A16,16,0,0,1,112,48Zm-16,0H56V208H96Zm104,0H160V208h40Z"/>',
@@ -133879,10 +133918,7 @@ function createPointEditSection(app) {
 			{ value: 'rect', label: 'Прямоугольник', title: 'Протяните рамку: выберутся все точки внутри' },
 		],
 		value: pe.tool,
-		onChange: (v) => {
-			pe.tool = v;
-			sync();
-		},
+		onChange: (v) => pe.setTool(v),
 	});
 	const mode = segmented({
 		options: [
@@ -133903,10 +133939,45 @@ function createPointEditSection(app) {
 	const rowSel = h('div', { class: 'pe-row' }, bAll, bNone, bInv);
 	const count = h('div', { class: 'pe-count' });
 	const bDel = button({ label: 'Удалить выбранные', icon: 'trash', variant: 'secondary', cls: 'btn-block pe-del', title: 'Удалить выбранные точки (Delete или X)', onClick: () => pe.deleteSelected() });
-	const color = colorField({ value: paintHex, onInput: (v) => (paintHex = v), onChange: (v) => (paintHex = v) });
+	const setHex = (v) => {
+		paintHex = v;
+		color.set(v);
+		barColor.set(v);
+	};
+	const color = colorField({ value: paintHex, onInput: (v) => setHex(v), onChange: (v) => setHex(v) });
+	const barColor = colorField({ value: paintHex, onInput: (v) => setHex(v), onChange: (v) => setHex(v) });
 	const str = slider({ noNorm: true, min: 5, max: 100, step: 5, value: 100, format: (v) => v + '%', onInput: (v) => (strength = v / 100) });
 	const bPaint = button({ label: 'Закрасить выбранные', icon: 'paint-brush', variant: 'primary', cls: 'btn-block', title: 'Перекрасить выбранные точки в этот цвет', onClick: () => pe.paintSelected(paintHex, strength) });
 	const keys = h('div', { class: 'field-hint hint pe-keys' }, 'Alt + протяжка: вращать сцену. Колесо: приблизить. [ и ]: размер кисти. Esc: выйти.');
+
+	// плавающая панель над сценой: параметры выделения и действия, пока выбран инструмент слева
+	const barMode = segmented({
+		options: [
+			{ value: 'add', label: 'Добавлять', title: 'Выбирать точки' },
+			{ value: 'sub', label: 'Убирать', title: 'Снимать выбор с точек (то же с зажатым Ctrl)' },
+		],
+		value: pe.mode,
+		onChange: (v) => {
+			pe.mode = v;
+			sync();
+		},
+	});
+	const barRadius = slider({ noNorm: true, min: 4, max: 200, step: 1, value: pe.radius, format: (v) => v + ' px', onInput: (v) => {
+		pe.radius = v;
+		radius.set(v);
+	} });
+	const barRadiusWrap = h('div', { class: 'pe-bar-radius' }, h('span', {}, 'Размер кисти'), barRadius.el);
+	const bAll2 = button({ label: 'Все', variant: 'secondary', cls: 'btn-sm', title: 'Выбрать все точки (Ctrl+A)', onClick: () => pe.selectAll() });
+	const bNone2 = button({ label: 'Снять', variant: 'secondary', cls: 'btn-sm', title: 'Снять выбор', onClick: () => pe.clear() });
+	const bInv2 = button({ label: 'Наоборот', variant: 'secondary', cls: 'btn-sm', title: 'Инвертировать выбор (Ctrl+I)', onClick: () => pe.invert() });
+	const barCount = h('span', { class: 'pe-bar-count' });
+	const bDel2 = button({ label: 'Удалить', icon: 'trash', variant: 'secondary', cls: 'btn-sm pe-del', title: 'Удалить выбранные точки (Delete или X)', onClick: () => pe.deleteSelected() });
+	const bPaint2 = button({ label: 'Закрасить', icon: 'paint-bucket', variant: 'primary', cls: 'btn-sm', title: 'Перекрасить выбранные точки в этот цвет', onClick: () => pe.paintSelected(paintHex, strength) });
+	const bDone = button({ label: 'Готово', variant: 'secondary', cls: 'btn-sm', title: 'Выйти из правки точек (Esc)', onClick: () => pe.setActive(false) });
+	const bar = h('div', { class: 'pe-bar', hidden: true },
+		barMode.el, barRadiusWrap, h('span', { class: 'pe-bar-sep' }), bAll2, bNone2, bInv2, barCount,
+		h('span', { class: 'pe-bar-sep' }), bDel2, barColor.el, bPaint2, h('span', { class: 'pe-bar-sep' }), bDone);
+	document.getElementById('viewport').append(bar);
 
 	const sec = section('Правка точек', { key: 'p-edit' }, note, toggle, tool.el, mode.el, rowRadius, through.el, rowSel, count, bDel, field('Цвет', color.el), field('Сила', str.el), bPaint, keys);
 
@@ -133926,6 +133997,14 @@ function createPointEditSection(app) {
 		bDel.disabled = !has;
 		bPaint.disabled = !has;
 		keys.hidden = !pe.active;
+		// плавающая панель
+		bar.hidden = !pe.active;
+		barMode.set(pe.mode);
+		barRadiusWrap.hidden = pe.tool !== 'brush';
+		barRadius.set(pe.radius);
+		barCount.textContent = t ? `Выбрано: ${formatInt(pe.count)} из ${formatInt(n)}` : '';
+		bDel2.disabled = !has;
+		bPaint2.disabled = !has;
 	}
 	app.bus.on('pointedit', sync);
 	app.bus.on('selection', sync);
@@ -141155,6 +141234,18 @@ __def(__exports, 'default', () => __default);
 // Новые строки интерфейса для всех языков (правка точек и другое). Ключ это русский текст, {} это подставляемое значение.
 const __default = {
 	en: {
+		'Кисть выделения точек (B)': 'Point selection brush (B)',
+		'Рамка выделения точек (M)': 'Point selection box (M)',
+		'Выделение точек кистью': 'Select points with a brush',
+		'Выделение точек рамкой': 'Select points with a box',
+		'Закрасить': 'Paint',
+		'выделять': 'select',
+		'снимать': 'deselect',
+		'вращать': 'rotate',
+		'удалить': 'delete',
+		'выход': 'exit',
+		'Выберите облако точек в сцене, чтобы править его точки': 'Select a point cloud in the scene to edit its points',
+		'Выйти из правки точек (Esc)': 'Leave point editing (Esc)',
 		'Снять': 'Clear',
 		'Сначала выберите точки': 'Select some points first',
 		'Правка точек': 'Edit points',
@@ -141184,6 +141275,18 @@ const __default = {
 		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'Point color switched to “Texture”, otherwise the recoloring is not visible',
 	},
 	uk: {
+		'Кисть выделения точек (B)': 'Пензель виділення точок (B)',
+		'Рамка выделения точек (M)': 'Рамка виділення точок (M)',
+		'Выделение точек кистью': 'Виділення точок пензлем',
+		'Выделение точек рамкой': 'Виділення точок рамкою',
+		'Закрасить': 'Зафарбувати',
+		'выделять': 'виділяти',
+		'снимать': 'знімати',
+		'вращать': 'обертати',
+		'удалить': 'видалити',
+		'выход': 'вихід',
+		'Выберите облако точек в сцене, чтобы править его точки': 'Виберіть хмару точок у сцені, щоб правити її точки',
+		'Выйти из правки точек (Esc)': 'Вийти з правки точок (Esc)',
 		'Снять': 'Зняти',
 		'Сначала выберите точки': 'Спершу виберіть точки',
 		'Правка точек': 'Правка точок',
@@ -141213,6 +141316,18 @@ const __default = {
 		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'Колір точок перемкнено на «Текстура»: інакше перефарбування не видно',
 	},
 	es: {
+		'Кисть выделения точек (B)': 'Pincel de selección de puntos (B)',
+		'Рамка выделения точек (M)': 'Recuadro de selección de puntos (M)',
+		'Выделение точек кистью': 'Seleccionar puntos con pincel',
+		'Выделение точек рамкой': 'Seleccionar puntos con recuadro',
+		'Закрасить': 'Pintar',
+		'выделять': 'seleccionar',
+		'снимать': 'quitar',
+		'вращать': 'girar',
+		'удалить': 'eliminar',
+		'выход': 'salir',
+		'Выберите облако точек в сцене, чтобы править его точки': 'Selecciona una nube de puntos en la escena para editar sus puntos',
+		'Выйти из правки точек (Esc)': 'Salir de la edición de puntos (Esc)',
 		'Снять': 'Quitar',
 		'Сначала выберите точки': 'Primero selecciona algunos puntos',
 		'Правка точек': 'Edición de puntos',
@@ -141242,6 +141357,18 @@ const __default = {
 		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'El color de los puntos cambió a «Textura»: si no, el recoloreado no se ve',
 	},
 	de: {
+		'Кисть выделения точек (B)': 'Pinsel zur Punktauswahl (B)',
+		'Рамка выделения точек (M)': 'Rahmen zur Punktauswahl (M)',
+		'Выделение точек кистью': 'Punkte mit dem Pinsel auswählen',
+		'Выделение точек рамкой': 'Punkte mit einem Rahmen auswählen',
+		'Закрасить': 'Einfärben',
+		'выделять': 'auswählen',
+		'снимать': 'abwählen',
+		'вращать': 'drehen',
+		'удалить': 'löschen',
+		'выход': 'Beenden',
+		'Выберите облако точек в сцене, чтобы править его точки': 'Wähle eine Punktwolke in der Szene aus, um ihre Punkte zu bearbeiten',
+		'Выйти из правки точек (Esc)': 'Punktbearbeitung verlassen (Esc)',
 		'Снять': 'Aufheben',
 		'Сначала выберите точки': 'Wähle zuerst Punkte aus',
 		'Правка точек': 'Punkte bearbeiten',
@@ -154613,6 +154740,8 @@ class UI {
 		if (tool === 'select') {
 			const left = app.settings.nav.leftOrbit ? `${k('ЛКМ')} вращать` : `${k('СКМ')} вращать`;
 			html = `${left} &nbsp; ${k('Shift')}+${k('СКМ')} сдвиг &nbsp; ${k('Колесо')} масштаб &nbsp; ${k('Клик')} выбрать &nbsp; ${k('?')} все клавиши`;
+		} else if (tool === 'pbrush' || tool === 'prect') {
+			html = `${k('ЛКМ')} выделять &nbsp; ${k('Ctrl')}+${k('ЛКМ')} снимать &nbsp; ${k('Alt')}+${k('ЛКМ')} вращать &nbsp; ${k('Delete')} удалить &nbsp; ${k('Esc')} выход`;
 		} else {
 			const names = { translate: 'перемещение', rotate: 'вращение', scale: 'масштаб' };
 			html = `Режим: ${names[tool]}. Тяните стрелки на модели. ${k('Q')} выбор &nbsp; ${k('G')} ${k('R')} ${k('S')} инструменты &nbsp; ${k('N')} привязка`;
@@ -155242,6 +155371,10 @@ class UI {
 					return nav.frameAll();
 				case 'KeyQ':
 					return app.model.setTool('select');
+				case 'KeyB':
+					return app.model.setTool('pbrush');
+				case 'KeyM':
+					return app.model.setTool('prect');
 				case 'KeyG':
 					return app.model.setTool('translate');
 				case 'KeyR':

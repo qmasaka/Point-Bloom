@@ -655,6 +655,8 @@ export class UI {
 		if (tool === 'select') {
 			const left = app.settings.nav.leftOrbit ? `${k('ЛКМ')} вращать` : `${k('СКМ')} вращать`;
 			html = `${left} &nbsp; ${k('Shift')}+${k('СКМ')} сдвиг &nbsp; ${k('Колесо')} масштаб &nbsp; ${k('Клик')} выбрать &nbsp; ${k('?')} все клавиши`;
+		} else if (tool === 'pbrush' || tool === 'prect') {
+			html = `${k('ЛКМ')} выделять &nbsp; ${k('Ctrl')}+${k('ЛКМ')} снимать &nbsp; ${k('Alt')}+${k('ЛКМ')} вращать &nbsp; ${k('Delete')} удалить &nbsp; ${k('Esc')} выход`;
 		} else {
 			const names = { translate: 'перемещение', rotate: 'вращение', scale: 'масштаб' };
 			html = `Режим: ${names[tool]}. Тяните стрелки на модели. ${k('Q')} выбор &nbsp; ${k('G')} ${k('R')} ${k('S')} инструменты &nbsp; ${k('N')} привязка`;
@@ -1284,6 +1286,10 @@ export class UI {
 					return nav.frameAll();
 				case 'KeyQ':
 					return app.model.setTool('select');
+				case 'KeyB':
+					return app.model.setTool('pbrush');
+				case 'KeyM':
+					return app.model.setTool('prect');
 				case 'KeyG':
 					return app.model.setTool('translate');
 				case 'KeyR':

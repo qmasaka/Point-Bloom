@@ -24,6 +24,7 @@ el.addEventListener('pointerup', (e) => this._up(e));
 el.addEventListener('pointercancel', (e) => this._up(e));
 el.addEventListener('pointerleave', () => (this._cursor.hidden = true));
 window.addEventListener('keydown', (e) => this._key(e), true);
+app.bus.on('tool', () => this._syncTool());
 app.bus.on('selection', () => this.retarget());
 app.bus.on('scene', () => this.retarget());
 }
@@ -42,23 +43,53 @@ this.count = 0;
 this._proj = null;
 this._emit();
 }
+get isPointTool() {
+const t = this.app.model.tool;
+return t === 'pbrush' || t === 'prect';
+}
 setActive(on) {
-on = !!on;
-if (on === this.active) return;
-this.active = on;
-const nav = this.app.nav;
+const model = this.app.model;
+if (on) model.setTool(this.tool === 'rect' ? 'prect' : 'pbrush');
+else if (this.isPointTool) model.setTool(this._back || 'select');
+}
+setTool(t) {
+this.tool = t;
+if (this.active) this.app.model.setTool(t === 'rect' ? 'prect' : 'pbrush');
+else this._emit();
+}
+_syncTool() {
+const model = this.app.model;
+const on = this.isPointTool;
+if (!on) this._back = model.tool;
+if (on === this.active) {
 if (on) {
+this.tool = model.tool === 'prect' ? 'rect' : 'brush';
+this._emit();
+}
+return;
+}
+if (on) {
+if (!this.target()) {
+const cand = this.app.viewport.root.children.filter((c) => c.isPoints && !c.userData.helper && c.visible && c.geometry.attributes.position);
+if (cand.length === 1) model.select(cand[0]);
+}
+if (!this.target()) {
+this.app.toast('Выберите облако точек в сцене, чтобы править его точки', 'info', 2600);
+model.setTool(this._back || 'select');
+return;
+}
+this.active = true;
+this.tool = model.tool === 'prect' ? 'rect' : 'brush';
 this.retarget();
-this._prevTool = this.app.model.tool;
-this.app.model.setTool('select');
 if (this.app.settings.display !== 'points') this.app.setDisplay('points');
 } else {
+this.active = false;
 this._cursor.hidden = true;
 this._rect.hidden = true;
 this._drag = null;
 }
-nav.paintLock = on;
-this.app.viewport.container.classList.toggle('pe-active', on);
+this.app.nav.paintLock = this.active;
+this.app.viewport.container.classList.toggle('pe-active', this.active);
 this._emit();
 }
 _emit() {

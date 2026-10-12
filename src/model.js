@@ -157,7 +157,7 @@ export class Model {
 			this.pivot.removeFromParent();
 			this.pivot = null;
 		}
-		if (sel && this.tool !== 'select') {
+		if (sel && (this.tool === 'translate' || this.tool === 'rotate' || this.tool === 'scale')) {
 			tc.setMode(this.tool);
 			if (this.selection.length > 1) {
 				// несколько объектов двигаются вместе через общую опору в центре выделения
