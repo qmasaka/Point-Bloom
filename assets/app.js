@@ -35133,6 +35133,7 @@ const gpu = gpuName();
 const ua = (navigator.userAgent || '') + ' ' + (navigator.platform || '');
 const mobile = /Android|iPhone|iPad|Mobile/i.test(ua);
 const windows = /Windows|Win32|Win64/i.test(ua);
+const isApple = /Apple M|Apple GPU/i.test(gpu) || (/Mac|iPhone|iPad|Macintosh/i.test(ua) && !windows);
 const strong = /Apple M|Apple GPU|NVIDIA|GeForce|RTX|GTX|Quadro|Radeon RX|Radeon Pro|Radeon\(TM\) RX|RX \d{3,4}|Arc(?:\(TM\))?(?: Pro)?(?: Graphics| [AB]\d)|Radeon.*(?:[6789]\d0M|\bGraphics\b)|Iris Xe/i.test(gpu);
 const software = /SwiftShader|llvmpipe|Basic Render|Software/i.test(gpu);
 const tier = mobile || software ? 'low' : strong ? 'high' : 'mid';
@@ -35140,6 +35141,7 @@ const perf = {
 gpu,
 tier,
 windows,
+isApple,
 antialias: !mobile && !software,
 maxPR: mobile || software ? 1.5 : 2,
 maxFps: mobile || software ? 60 : 0,
@@ -77252,11 +77254,25 @@ this.quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 this.quadGeo = new THREE.PlaneGeometry(2, 2);
 this.width = 0;
 this.height = 0;
+const gl = renderer.getContext();
+let canHalfFloat = false;
+try {
+const isWebGL2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
+if (isWebGL2) {
+canHalfFloat = !!(gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float'));
+} else {
+canHalfFloat = !!(gl.getExtension('EXT_color_buffer_half_float') && gl.getExtension('OES_texture_half_float'));
+}
+} catch (e) {
+canHalfFloat = false;
+}
+this.targetType = canHalfFloat ? THREE.HalfFloatType : THREE.UnsignedByteType;
+this._disabled = false;
 const opt = {
 minFilter: THREE.LinearFilter,
 magFilter: THREE.LinearFilter,
 format: THREE.RGBAFormat,
-type: THREE.HalfFloatType,
+type: this.targetType,
 };
 this.rtScene = new THREE.WebGLRenderTarget(1, 1, opt);
 this.rtPing = new THREE.WebGLRenderTarget(1, 1, opt);
@@ -77400,12 +77416,13 @@ this.setSize(dom.clientWidth, dom.clientHeight, dpr);
 const useFb = feedbackCfg && feedbackCfg.on && feedbackCfg.amount > 0.01;
 const useBloom = bloomVal > 0.01;
 const useAb = abVal > 0.01;
-if (!useFb && !useBloom && !useAb) {
+if ((!useFb && !useBloom && !useAb) || this._disabled) {
 r.setRenderTarget(null);
 r.render(scene, camera);
 this.hasHistory = false;
 return;
 }
+try {
 r.setRenderTarget(this.rtScene);
 r.clear();
 r.render(scene, camera);
@@ -77443,6 +77460,23 @@ this.quadScene.clear();
 this.quadScene.add(this.outMesh);
 r.setRenderTarget(null);
 r.render(this.quadScene, this.quadCam);
+} catch (e) {
+console.warn('PostPipeline fallback to direct render:', e);
+if (this.targetType === THREE.HalfFloatType) {
+this.targetType = THREE.UnsignedByteType;
+this.rtScene.dispose();
+this.rtPing.dispose();
+this.rtPong.dispose();
+const opt = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type: THREE.UnsignedByteType };
+this.rtScene = new THREE.WebGLRenderTarget(this.width || 1, this.height || 1, opt);
+this.rtPing = new THREE.WebGLRenderTarget(this.width || 1, this.height || 1, opt);
+this.rtPong = new THREE.WebGLRenderTarget(this.width || 1, this.height || 1, opt);
+} else {
+this._disabled = true;
+}
+r.setRenderTarget(null);
+r.render(scene, camera);
+}
 }
 dispose() {
 this.rtScene.dispose();
@@ -80057,7 +80091,12 @@ return (SYNTH_STYLES.find((s) => s.id === this.state.audio.style) || SYNTH_STYLE
 }
 async play() {
 this._ensureCtx();
-if (this.ctx.state === 'suspended') await this.ctx.resume();
+if (this.ctx.state === 'suspended') {
+try {
+await this.ctx.resume();
+} catch (e) {
+}
+}
 if (this.sourceType === 'synth') {
 this.synth.start(this.state.audio.style);
 this.playing = true;
@@ -80707,7 +80746,8 @@ this.active = true;
 this.state.look.autoRotate = false;
 this.state.layers.frames.on = false;
 this._framesOn = false;
-this.state.count = Math.max(20000, Math.min(2000000, app.settings.point.surfaceCount));
+const maxFxCount = perf.isApple ? 2000000 : perf.windows ? (perf.tier === 'high' ? 450000 : 250000) : 1000000;
+this.state.count = Math.max(20000, Math.min(maxFxCount, app.settings.point.surfaceCount));
 const vp = app.viewport;
 this._saved = { rootVisible: vp.root.visible, ortho: app.nav.ortho };
 app.model.select(null);
@@ -80911,8 +80951,8 @@ if (document.hidden) {
 this._lastT = now;
 return;
 }
-const capFps = this.app.settings.render.fpsCap;
-if (capFps && now - this._lastT < 1000 / capFps - 3) return;
+const capFps = this.app.settings.render.fpsCap || (perf.windows ? 60 : 0);
+if (capFps && now - this._lastT < 1000 / capFps - 2) return;
 const dt = this.frozen ? 0 : Math.min(0.1, (now - this._lastT) / 1000);
 this._lastT = now;
 this._lastDt = dt;
@@ -87239,27 +87279,9 @@ box.innerHTML =
 box.querySelector('code').textContent = String(e && e.message ? e.message : e);
 }
 const { iconsReady } = __req('src/icons.js');
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
-window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
 }
-let installEvent = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-e.preventDefault();
-installEvent = e;
-const b = document.getElementById('btnInstall');
-if (b) b.hidden = false;
-});
-window.addEventListener('appinstalled', () => {
-installEvent = null;
-const b = document.getElementById('btnInstall');
-if (b) b.hidden = true;
-});
-document.addEventListener('click', (e) => {
-if (e.target.closest && e.target.closest('#btnInstall') && installEvent) {
-installEvent.prompt();
-installEvent = null;
-}
-});
 iconsReady
 .then(() => {
 guardDevice();

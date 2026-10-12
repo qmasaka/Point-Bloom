@@ -2472,11 +2472,27 @@ class PostPipeline {
 		this.width = 0;
 		this.height = 0;
 
+		const gl = renderer.getContext();
+		let canHalfFloat = false;
+		try {
+			const isWebGL2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
+			if (isWebGL2) {
+				canHalfFloat = !!(gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float'));
+			} else {
+				canHalfFloat = !!(gl.getExtension('EXT_color_buffer_half_float') && gl.getExtension('OES_texture_half_float'));
+			}
+		} catch (e) {
+			canHalfFloat = false;
+		}
+
+		this.targetType = canHalfFloat ? THREE.HalfFloatType : THREE.UnsignedByteType;
+		this._disabled = false;
+
 		const opt = {
 			minFilter: THREE.LinearFilter,
 			magFilter: THREE.LinearFilter,
 			format: THREE.RGBAFormat,
-			type: THREE.HalfFloatType,
+			type: this.targetType,
 		};
 		this.rtScene = new THREE.WebGLRenderTarget(1, 1, opt);
 		this.rtPing = new THREE.WebGLRenderTarget(1, 1, opt);
@@ -2627,58 +2643,76 @@ class PostPipeline {
 		const useBloom = bloomVal > 0.01;
 		const useAb = abVal > 0.01;
 
-		if (!useFb && !useBloom && !useAb) {
+		if ((!useFb && !useBloom && !useAb) || this._disabled) {
 			r.setRenderTarget(null);
 			r.render(scene, camera);
 			this.hasHistory = false;
 			return;
 		}
 
-		r.setRenderTarget(this.rtScene);
-		r.clear();
-		r.render(scene, camera);
+		try {
+			r.setRenderTarget(this.rtScene);
+			r.clear();
+			r.render(scene, camera);
 
-		let sourceTex = this.rtScene.texture;
+			let sourceTex = this.rtScene.texture;
 
-		if (useFb) {
-			const tun = feedbackCfg.mode === 'tunnel';
-			const zoom = tun ? feedbackCfg.zoom || 1.0 : 1.0;
-			const twist = tun ? feedbackCfg.twist || 0.0 : 0.0;
-			const decay = Math.min(0.99, feedbackCfg.amount || 0.92);
-			this.fbMat.uniforms.uTint.value.copy(this.tint || new THREE.Color(1, 1, 1));
-			this.fbMat.uniforms.uTintK.value = feedbackCfg.tint ?? 0.5;
+			if (useFb) {
+				const tun = feedbackCfg.mode === 'tunnel';
+				const zoom = tun ? feedbackCfg.zoom || 1.0 : 1.0;
+				const twist = tun ? feedbackCfg.twist || 0.0 : 0.0;
+				const decay = Math.min(0.99, feedbackCfg.amount || 0.92);
+				this.fbMat.uniforms.uTint.value.copy(this.tint || new THREE.Color(1, 1, 1));
+				this.fbMat.uniforms.uTintK.value = feedbackCfg.tint ?? 0.5;
 
-			this.fbMat.uniforms.uScene.value = this.rtScene.texture;
-			this.fbMat.uniforms.uPrev.value = this.rtPing.texture;
-			this.fbMat.uniforms.uDecay.value = decay;
-			this.fbMat.uniforms.uZoom.value = zoom;
-			this.fbMat.uniforms.uTwist.value = twist;
-			this.fbMat.uniforms.uHasPrev.value = this.hasHistory ? 1.0 : 0.0;
+				this.fbMat.uniforms.uScene.value = this.rtScene.texture;
+				this.fbMat.uniforms.uPrev.value = this.rtPing.texture;
+				this.fbMat.uniforms.uDecay.value = decay;
+				this.fbMat.uniforms.uZoom.value = zoom;
+				this.fbMat.uniforms.uTwist.value = twist;
+				this.fbMat.uniforms.uHasPrev.value = this.hasHistory ? 1.0 : 0.0;
+
+				this.quadScene.clear();
+				this.quadScene.add(this.fbMesh);
+				r.setRenderTarget(this.rtPong);
+				r.clear();
+				r.render(this.quadScene, this.quadCam);
+
+				const tmp = this.rtPing;
+				this.rtPing = this.rtPong;
+				this.rtPong = tmp;
+				this.hasHistory = true;
+
+				sourceTex = this.rtPing.texture;
+			} else {
+				this.hasHistory = false;
+			}
+
+			this.outMat.uniforms.uTex.value = sourceTex;
+			this.outMat.uniforms.uBloom.value = bloomVal;
+			this.outMat.uniforms.uAberration.value = abVal;
 
 			this.quadScene.clear();
-			this.quadScene.add(this.fbMesh);
-			r.setRenderTarget(this.rtPong);
-			r.clear();
+			this.quadScene.add(this.outMesh);
+			r.setRenderTarget(null);
 			r.render(this.quadScene, this.quadCam);
-
-			const tmp = this.rtPing;
-			this.rtPing = this.rtPong;
-			this.rtPong = tmp;
-			this.hasHistory = true;
-
-			sourceTex = this.rtPing.texture;
-		} else {
-			this.hasHistory = false;
+		} catch (e) {
+			console.warn('PostPipeline fallback to direct render:', e);
+			if (this.targetType === THREE.HalfFloatType) {
+				this.targetType = THREE.UnsignedByteType;
+				this.rtScene.dispose();
+				this.rtPing.dispose();
+				this.rtPong.dispose();
+				const opt = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type: THREE.UnsignedByteType };
+				this.rtScene = new THREE.WebGLRenderTarget(this.width || 1, this.height || 1, opt);
+				this.rtPing = new THREE.WebGLRenderTarget(this.width || 1, this.height || 1, opt);
+				this.rtPong = new THREE.WebGLRenderTarget(this.width || 1, this.height || 1, opt);
+			} else {
+				this._disabled = true;
+			}
+			r.setRenderTarget(null);
+			r.render(scene, camera);
 		}
-
-		this.outMat.uniforms.uTex.value = sourceTex;
-		this.outMat.uniforms.uBloom.value = bloomVal;
-		this.outMat.uniforms.uAberration.value = abVal;
-
-		this.quadScene.clear();
-		this.quadScene.add(this.outMesh);
-		r.setRenderTarget(null);
-		r.render(this.quadScene, this.quadCam);
 	}
 
 	dispose() {
@@ -5580,7 +5614,13 @@ export class EffectsEngine {
 
 	async play() {
 		this._ensureCtx();
-		if (this.ctx.state === 'suspended') await this.ctx.resume();
+		if (this.ctx.state === 'suspended') {
+			try {
+				await this.ctx.resume();
+			} catch (e) {
+				/* браузер может блокировать автоплей звука до клика пользователя */
+			}
+		}
 		if (this.sourceType === 'synth') {
 			this.synth.start(this.state.audio.style);
 			this.playing = true;
@@ -6287,8 +6327,9 @@ export class EffectsEngine {
 		this.state.look.autoRotate = false; // при входе форма не крутится сама, включается в «Вид»
 		this.state.layers.frames.on = false; // раскадровка включается вручную и только пока открыто видео
 		this._framesOn = false;
-		// число частиц общее с вкладкой «Точки»: что задали в редакторе, то и здесь
-		this.state.count = Math.max(20000, Math.min(2000000, app.settings.point.surfaceCount));
+		// число частиц: на Mac с единой памятью тянет до 2 млн; на Windows для защиты от перегрева и зависания драйвера ставим комфортный потолок (до 450 тыс. на мощных GPU, до 250 тыс. на встроенных)
+		const maxFxCount = perf.isApple ? 2000000 : perf.windows ? (perf.tier === 'high' ? 450000 : 250000) : 1000000;
+		this.state.count = Math.max(20000, Math.min(maxFxCount, app.settings.point.surfaceCount));
 		const vp = app.viewport;
 		this._saved = { rootVisible: vp.root.visible, ortho: app.nav.ortho };
 		app.model.select(null);
@@ -6519,8 +6560,9 @@ export class EffectsEngine {
 				this._lastT = now;
 				return;
 			}
-			const capFps = this.app.settings.render.fpsCap;
-			if (capFps && now - this._lastT < 1000 / capFps - 3) return;
+			// в режиме эффектов на Windows (где дисплеи 120-165+ Гц) ограничиваем 60 к/с, чтобы видеокарта не раскалялась и вентиляторы не шумели
+			const capFps = this.app.settings.render.fpsCap || (perf.windows ? 60 : 0);
+			if (capFps && now - this._lastT < 1000 / capFps - 2) return;
 			// пока открыто окно экспорта, время эффектов стоит на месте
 			const dt = this.frozen ? 0 : Math.min(0.1, (now - this._lastT) / 1000);
 			this._lastT = now;

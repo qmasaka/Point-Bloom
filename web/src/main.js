@@ -49,27 +49,9 @@ box.innerHTML =
 box.querySelector('code').textContent = String(e && e.message ? e.message : e);
 }
 import { iconsReady } from './icons.js';
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
-window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
 }
-let installEvent = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-e.preventDefault();
-installEvent = e;
-const b = document.getElementById('btnInstall');
-if (b) b.hidden = false;
-});
-window.addEventListener('appinstalled', () => {
-installEvent = null;
-const b = document.getElementById('btnInstall');
-if (b) b.hidden = true;
-});
-document.addEventListener('click', (e) => {
-if (e.target.closest && e.target.closest('#btnInstall') && installEvent) {
-installEvent.prompt();
-installEvent = null;
-}
-});
 iconsReady
 .then(() => {
 guardDevice();

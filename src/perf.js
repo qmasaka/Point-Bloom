@@ -19,6 +19,7 @@ const gpu = gpuName();
 const ua = (navigator.userAgent || '') + ' ' + (navigator.platform || '');
 const mobile = /Android|iPhone|iPad|Mobile/i.test(ua);
 const windows = /Windows|Win32|Win64/i.test(ua);
+const isApple = /Apple M|Apple GPU/i.test(gpu) || (/Mac|iPhone|iPad|Macintosh/i.test(ua) && !windows);
 // мощные видеокарты: Apple, NVIDIA, дискретные Radeon, встроенная графика AMD (Radeon 680M, 780M, «Radeon Graphics») и все Intel Arc, в том числе «Arc Graphics» у Core Ultra
 const strong = /Apple M|Apple GPU|NVIDIA|GeForce|RTX|GTX|Quadro|Radeon RX|Radeon Pro|Radeon\(TM\) RX|RX \d{3,4}|Arc(?:\(TM\))?(?: Pro)?(?: Graphics| [AB]\d)|Radeon.*(?:[6789]\d0M|\bGraphics\b)|Iris Xe/i.test(gpu);
 // программная отрисовка почти без видеокарты: единственный случай, когда настольному браузеру нужен совсем лёгкий режим
@@ -30,6 +31,7 @@ export const perf = {
 	gpu,
 	tier,
 	windows,
+	isApple,
 	// сглаживание нужно на любом настольном браузере: MSAA 4x на современных ПК почти ничего не стоит
 	antialias: !mobile && !software,
 	// на экранах с масштабом 175–200% разрешение не занижается: картинка не мылится
