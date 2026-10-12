@@ -91,6 +91,28 @@ $('#btnEmptyChar').addEventListener('click', () => app.loadDemoCharacter());
 $('#btnUndo').addEventListener('click', () => this.undo());
 $('#btnRedo').addEventListener('click', () => this.redo());
 $('#btnHelp').addEventListener('click', () => this.showHelp());
+{
+const btn = $('#btnSupport');
+const pop = $('#supportPop');
+const close = () => {
+pop.hidden = true;
+btn.setAttribute('aria-expanded', 'false');
+};
+btn.addEventListener('click', (e) => {
+e.stopPropagation();
+pop.hidden = !pop.hidden;
+btn.setAttribute('aria-expanded', String(!pop.hidden));
+if (!pop.hidden) {
+const r = btn.getBoundingClientRect();
+pop.style.top = Math.round(r.bottom + 10) + 'px';
+pop.style.right = Math.max(12, Math.round(window.innerWidth - r.right - 8)) + 'px';
+}
+});
+document.addEventListener('pointerdown', (e) => {
+if (!pop.hidden && !pop.contains(e.target) && !btn.contains(e.target)) close();
+});
+window.addEventListener('keydown', (e) => e.key === 'Escape' && !pop.hidden && close());
+}
 $('#btnExport').addEventListener('click', (e) => {
 e.stopPropagation();
 this.toggleExportPop();

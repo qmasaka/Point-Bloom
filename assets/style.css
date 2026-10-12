@@ -6207,3 +6207,25 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .empty-card .empty-actions { grid-template-columns: minmax(0, 1fr); }
 .empty-card .empty-row .btn { min-width: 0; }
 @media (max-width: 480px) { .empty-card .empty-row { grid-template-columns: minmax(0, 1fr); } }
+
+/* поддержка автора: кнопка-сердце в шапке, плашка и строка на стартовой карточке */
+.btn-support { color: var(--accent-text); }
+.btn-support:hover { background: var(--accent-soft); }
+.support-pop { position: fixed; z-index: 90; width: min(340px, calc(100vw - 24px)); padding: 18px; display: grid; gap: 12px; border-radius: 20px; background: var(--fxg-bg, rgba(18, 20, 24, 0.82)); backdrop-filter: blur(22px) saturate(1.25); -webkit-backdrop-filter: blur(22px) saturate(1.25); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05); overflow: hidden; }
+.support-pop[hidden] { display: none; }
+.support-pop::before { content: ''; position: absolute; left: 50%; top: -40%; width: 120%; height: 80%; translate: -50% 0; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 22%, transparent), transparent); pointer-events: none; }
+.support-pop > * { position: relative; }
+.support-head { display: flex; align-items: center; gap: 12px; }
+.support-heart { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); flex: none; }
+.support-title { margin: 0; font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
+.support-sub { margin: 2px 0 0; font-size: 12.5px; color: var(--text-dim); }
+.support-text { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-dim); }
+.support-btn { width: 100%; height: 42px; justify-content: center; border-radius: 999px; text-decoration: none; }
+.support-btn.btn-secondary { background: rgba(255, 255, 255, 0.07); border-color: transparent; }
+.support-btn.btn-secondary:hover { background: rgba(255, 255, 255, 0.12); }
+.empty-support { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 2px; font-size: 12.5px; }
+.empty-support a { display: inline-flex; align-items: center; gap: 6px; color: var(--text-dim); text-decoration: none; padding: 4px 6px; border-radius: 999px; transition: color 0.15s, background 0.15s; }
+.empty-support a:hover { color: var(--accent-text); background: var(--accent-soft); }
+.empty-support a svg { color: var(--accent-text); }
+.empty-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-faint); }
+@media (max-height: 700px) { .empty-card .empty-hint { display: none; } }
