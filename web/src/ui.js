@@ -751,7 +751,7 @@ h(
 'div',
 { class: 'dlg-inner' },
 xBtn,
-h('h2', {}, 'Как пользоваться'),
+h('h2', {}, 'Горячие клавиши'),
 h('p', {}, 'Перетащите модель в окно (вместе с .mtl и текстурами или всей папкой), при необходимости добавьте текстуру, затем нажмите «Скачать GLB».'),
 h(
 'div',
@@ -759,7 +759,8 @@ h(
 group('Навигация', row('Вращение', 'СКМ'), row('Вращение (трекпад)', 'Alt', 'ЛКМ'), row('Сдвиг', 'Shift', 'СКМ'), row('Масштаб', 'Колесо'), row('Центр на точке', 'Двойной клик'), row('Показать всё', 'Home'), row('Показать выбранное', 'F')),
 group('Виды', row('Спереди / сзади', 'Num 1'), row('Справа / слева', 'Num 3'), row('Сверху / снизу', 'Num 7'), row('Без Numpad', 'Alt', '1 3 7'), row('Ортогональная', 'Num 5', 'P'), row('Шаг вращения', 'Num 4 6 8 2')),
 group('Правка', row('Выбор', 'Q'), row('Переместить', 'G'), row('Вращать', 'R'), row('Масштаб', 'S'), row('Привязка к шагу', 'N'), row('Оси: мир / локальные', 'L'), row('Дублировать', 'Shift', 'D'), row('Удалить', 'X'), row('Скрыть / показать', 'H', 'Alt+H')),
-group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть', 'O'), row('Вставить файл', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Музыка: пуск / пауза', 'Пробел'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
+group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть', 'O'), row('Вставить файл', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Пуск / пауза: звук, видео, таймлайн', 'Пробел'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0')),
+group('Таймлайн анимации', row('Играть или пауза', 'Пробел'), row('Сдвинуть курсор', '←', '→'), row('Курсор на секунду', 'Shift', '← →'), row('К краю соседнего блока', ',', '.'), row('В начало / в конец', 'Home', 'End'), row('Записать ракурс камеры', 'C'), row('Разрезать блок по курсору', 'S'), row('Дублировать блоки', 'Ctrl', 'D'), row('Копировать / вставить', 'Ctrl+C', 'Ctrl+V'), row('Выбрать все блоки', 'Ctrl', 'A'), row('Добавить к выбору', 'Shift', 'клик'), row('Выбрать рамкой', 'Shift', 'протяжка'), row('Сдвинуть блок на 0.1 с', 'Alt', '← →'), row('Начало / конец области, снять', 'I', 'O', 'X'), row('Удалить выбранное', 'Delete'), row('Без прилипания', 'Alt', 'протяжка'), row('Масштаб шкалы', 'Ctrl', 'колесо'), row('Меню блока, дорожки, линейки', 'ПКМ'))
 ),
 h('div', { class: 'dlg-actions' }, close)
 )
@@ -983,6 +984,30 @@ buildShortcuts() {
 const app = this.app;
 const isTyping = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
 const modeKeys = DISPLAY_MODES.map((m) => m.value);
+window.addEventListener(
+'keydown',
+(e) => {
+if (e.code !== 'Space' || this.dialog.open || e.ctrlKey || e.metaKey || e.altKey) return;
+const t = e.target;
+const textual = t && (t.isContentEditable || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || (t.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button'].includes(t.type)));
+if (textual) return;
+const fx = this.workspace === 'fx';
+const animOn = $('#app').classList.contains('fx-anim-active');
+const bar = this.mediaBar;
+const videoOn = bar && !bar.el.hidden;
+if (!(videoOn || fx)) return;
+if (t && t !== document.body && t.blur) t.blur();
+e.preventDefault();
+e.stopImmediatePropagation();
+const eng = this.effectsEngine;
+if (fx && animOn) {
+if (eng.animPlaying) eng.animPause();
+else if (!eng.animPlay()) this.toast('Добавьте минимум один блок эффекта или два ключа камеры', 'info');
+} else if (videoOn) bar.toggle();
+else eng.toggle().catch(() => {});
+},
+true
+);
 window.addEventListener('keydown', (e) => {
 if (this.dialog.open) {
 return;

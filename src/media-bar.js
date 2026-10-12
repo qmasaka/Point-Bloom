@@ -13,7 +13,15 @@ const fmt = (t) => {
 export function createMediaBar(app, host) {
 	const mc = app.media;
 	const pm = mc.pm;
-	const play = iconButton({ icon: 'pause', title: 'Играть или пауза', onClick: () => { pm.playing ? pm.pause() : pm.play(); sync(); } });
+	// истина о воспроизведении: сам элемент видео, а не флаг (флаг мог разойтись с элементом, и пауза мышью не срабатывала)
+	const isOn = () => (pm.kind === 'video' && pm.el ? pm.playing && !pm.el.paused : pm.playing);
+	const toggle = () => {
+		if (isOn()) pm.pause();
+		else pm.play();
+		sync();
+		play.blur();
+	};
+	const play = iconButton({ icon: 'pause', title: 'Играть или пауза (Пробел)', onClick: toggle });
 	const time = h('span', { class: 'mb-time' }, '0:00.0');
 	const seek = h('input', { type: 'range', class: 'range mb-seek', min: 0, max: 1, step: 0.01, value: 0, 'aria-label': 'Перемотка' });
 	// перемотка: на время перетаскивания видео ставится на паузу, а запросы сливаются в один, чтобы кадры не копились в очереди
@@ -93,5 +101,5 @@ export function createMediaBar(app, host) {
 		if (!scrubbing) seek.value = pm.time;
 		paint();
 	}, 150);
-	return { sync, el };
+	return { sync, el, toggle };
 }

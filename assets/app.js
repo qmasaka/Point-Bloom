@@ -89630,6 +89630,7 @@ const ICON_PATHS = {
 	'flip-vertical': '<path d="M56,120H216a16,16,0,0,0,6.23-30.74l-.14-.06-159.93-64A16,16,0,0,0,40,40v64A16,16,0,0,0,56,120Zm0-80,.15.06L216,104H56l0-64Zm160,96H56a16,16,0,0,0-16,16v64a16,16,0,0,0,22.15,14.78l159.93-64,.14-.06A16,16,0,0,0,216,136ZM56.15,215.93,56,216V152H216Z"/>',
 	'folder-open': '<path d="M245,110.64A16,16,0,0,0,232,104H216V88a16,16,0,0,0-16-16H130.67L102.94,51.2a16.14,16.14,0,0,0-9.6-3.2H40A16,16,0,0,0,24,64V208h0a8,8,0,0,0,8,8H211.1a8,8,0,0,0,7.59-5.47l28.49-85.47A16.05,16.05,0,0,0,245,110.64ZM93.34,64,123.2,86.4A8,8,0,0,0,128,88h72v16H69.77a16,16,0,0,0-15.18,10.94L40,158.7V64Zm112,136H43.1l26.67-80H232Z"/>',
 	'gauge': '<path d="M207.06,72.67A111.24,111.24,0,0,0,128,40h-.4C66.07,40.21,16,91,16,153.13V176a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V152A111.25,111.25,0,0,0,207.06,72.67ZM224,176H119.71l54.76-75.3a8,8,0,0,0-12.94-9.42L99.92,176H32V153.13c0-3.08.15-6.12.43-9.13H56a8,8,0,0,0,0-16H35.27c10.32-38.86,44-68.24,84.73-71.66V80a8,8,0,0,0,16,0V56.33A96.14,96.14,0,0,1,221,128H200a8,8,0,0,0,0,16h23.67c.21,2.65.33,5.31.33,8Z"/>',
+	'gear-six': '<path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm109.94-52.79a8,8,0,0,0-3.89-5.4l-29.83-17-.12-33.62a8,8,0,0,0-2.83-6.08,111.91,111.91,0,0,0-36.72-20.67,8,8,0,0,0-6.46.59L128,41.85,97.88,25a8,8,0,0,0-6.47-.6A112.1,112.1,0,0,0,54.73,45.15a8,8,0,0,0-2.83,6.07l-.15,33.65-29.83,17a8,8,0,0,0-3.89,5.4,106.47,106.47,0,0,0,0,41.56,8,8,0,0,0,3.89,5.4l29.83,17,.12,33.62a8,8,0,0,0,2.83,6.08,111.91,111.91,0,0,0,36.72,20.67,8,8,0,0,0,6.46-.59L128,214.15,158.12,231a7.91,7.91,0,0,0,3.9,1,8.09,8.09,0,0,0,2.57-.42,112.1,112.1,0,0,0,36.68-20.73,8,8,0,0,0,2.83-6.07l.15-33.65,29.83-17a8,8,0,0,0,3.89-5.4A106.47,106.47,0,0,0,237.94,107.21Zm-15,34.91-28.57,16.25a8,8,0,0,0-3,3c-.58,1-1.19,2.06-1.81,3.06a7.94,7.94,0,0,0-1.22,4.21l-.15,32.25a95.89,95.89,0,0,1-25.37,14.3L134,199.13a8,8,0,0,0-3.91-1h-.19c-1.21,0-2.43,0-3.64,0a8.08,8.08,0,0,0-4.1,1l-28.84,16.1A96,96,0,0,1,67.88,201l-.11-32.2a8,8,0,0,0-1.22-4.22c-.62-1-1.23-2-1.8-3.06a8.09,8.09,0,0,0-3-3.06l-28.6-16.29a90.49,90.49,0,0,1,0-28.26L61.67,97.63a8,8,0,0,0,3-3c.58-1,1.19-2.06,1.81-3.06a7.94,7.94,0,0,0,1.22-4.21l.15-32.25a95.89,95.89,0,0,1,25.37-14.3L122,56.87a8,8,0,0,0,4.1,1c1.21,0,2.43,0,3.64,0a8.08,8.08,0,0,0,4.1-1l28.84-16.1A96,96,0,0,1,188.12,55l.11,32.2a8,8,0,0,0,1.22,4.22c.62,1,1.23,2,1.8,3.06a8.09,8.09,0,0,0,3,3.06l28.6,16.29A90.49,90.49,0,0,1,222.9,142.12Z"/>',
 	'ghost': '<path d="M112,116a12,12,0,1,1-12-12A12,12,0,0,1,112,116Zm44-12a12,12,0,1,0,12,12A12,12,0,0,0,156,104Zm68,16v96a8,8,0,0,1-13.07,6.19l-24.26-19.85L162.4,222.19a8,8,0,0,1-10.13,0L128,202.34l-24.27,19.85a8,8,0,0,1-10.13,0L69.33,202.34,45.07,222.19A8,8,0,0,1,32,216V120a96,96,0,0,1,192,0Zm-16,0a80,80,0,0,0-160,0v79.12l16.27-13.31a8,8,0,0,1,10.13,0l24.27,19.85,24.26-19.85a8,8,0,0,1,10.14,0l24.26,19.85,24.27-19.85a8,8,0,0,1,10.13,0L208,199.12Z"/>',
 	'grid-four': '<path d="M200,40H56A16,16,0,0,0,40,56V200a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,80H136V56h64ZM120,56v64H56V56ZM56,136h64v64H56Zm144,64H136V136h64v64Z"/>',
 	'hand': '<path d="M188,48a27.75,27.75,0,0,0-12,2.71V44a28,28,0,0,0-54.65-8.6A28,28,0,0,0,80,60v64l-3.82-6.13a28,28,0,0,0-48.6,27.82c16,33.77,28.93,57.72,43.72,72.69C86.24,233.54,103.2,240,128,240a88.1,88.1,0,0,0,88-88V76A28,28,0,0,0,188,48Zm12,104a72.08,72.08,0,0,1-72,72c-20.38,0-33.51-4.88-45.33-16.85C69.44,193.74,57.26,171,41.9,138.58a6.36,6.36,0,0,0-.3-.58,12,12,0,0,1,20.79-12,1.76,1.76,0,0,0,.14.23l18.67,30A8,8,0,0,0,96,152V60a12,12,0,0,1,24,0v60a8,8,0,0,0,16,0V44a12,12,0,0,1,24,0v76a8,8,0,0,0,16,0V76a12,12,0,0,1,24,0Z"/>',
@@ -89637,7 +89638,6 @@ const ICON_PATHS = {
 	'image': '<path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,16V158.75l-26.07-26.06a16,16,0,0,0-22.63,0l-20,20-44-44a16,16,0,0,0-22.62,0L40,149.37V56ZM40,172l52-52,80,80H40Zm176,28H194.63l-36-36,20-20L216,181.38V200ZM144,100a12,12,0,1,1,12,12A12,12,0,0,1,144,100Z"/>',
 	'images': '<path d="M216,40H72A16,16,0,0,0,56,56V72H40A16,16,0,0,0,24,88V200a16,16,0,0,0,16,16H184a16,16,0,0,0,16-16V184h16a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM72,56H216v62.75l-10.07-10.06a16,16,0,0,0-22.63,0l-20,20-44-44a16,16,0,0,0-22.62,0L72,109.37ZM184,200H40V88H56v80a16,16,0,0,0,16,16H184Zm32-32H72V132l36-36,49.66,49.66a8,8,0,0,0,11.31,0L194.63,120,216,141.38V168ZM160,84a12,12,0,1,1,12,12A12,12,0,0,1,160,84Z"/>',
 	'info': '<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z"/>',
-	'keyboard': '<path d="M224,48H32A16,16,0,0,0,16,64V192a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V64A16,16,0,0,0,224,48Zm0,144H32V64H224V192Zm-16-64a8,8,0,0,1-8,8H56a8,8,0,0,1,0-16H200A8,8,0,0,1,208,128Zm0-32a8,8,0,0,1-8,8H56a8,8,0,0,1,0-16H200A8,8,0,0,1,208,96ZM72,160a8,8,0,0,1-8,8H56a8,8,0,0,1,0-16h8A8,8,0,0,1,72,160Zm96,0a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,160Zm40,0a8,8,0,0,1-8,8h-8a8,8,0,0,1,0-16h8A8,8,0,0,1,208,160Z"/>',
 	'lightning': '<path d="M215.79,118.17a8,8,0,0,0-5-5.66L153.18,90.9l14.66-73.33a8,8,0,0,0-13.69-7l-112,120a8,8,0,0,0,3,13l57.63,21.61L88.16,238.43a8,8,0,0,0,13.69,7l112-120A8,8,0,0,0,215.79,118.17ZM109.37,214l10.47-52.38a8,8,0,0,0-5-9.06L62,132.71l84.62-90.66L136.16,94.43a8,8,0,0,0,5,9.06l52.8,19.8Z"/>',
 	'list': '<path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"/>',
 	'lock-simple-open': '<path d="M208,80H96V56a32,32,0,0,1,32-32c15.37,0,29.2,11,32.16,25.59a8,8,0,0,0,15.68-3.18C171.32,24.15,151.2,8,128,8A48.05,48.05,0,0,0,80,56V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80Zm0,128H48V96H208V208Z"/>',
@@ -133739,7 +133739,15 @@ const fmt = (t) => {
 function createMediaBar(app, host) {
 	const mc = app.media;
 	const pm = mc.pm;
-	const play = iconButton({ icon: 'pause', title: 'Играть или пауза', onClick: () => { pm.playing ? pm.pause() : pm.play(); sync(); } });
+	// истина о воспроизведении: сам элемент видео, а не флаг (флаг мог разойтись с элементом, и пауза мышью не срабатывала)
+	const isOn = () => (pm.kind === 'video' && pm.el ? pm.playing && !pm.el.paused : pm.playing);
+	const toggle = () => {
+		if (isOn()) pm.pause();
+		else pm.play();
+		sync();
+		play.blur();
+	};
+	const play = iconButton({ icon: 'pause', title: 'Играть или пауза (Пробел)', onClick: toggle });
 	const time = h('span', { class: 'mb-time' }, '0:00.0');
 	const seek = h('input', { type: 'range', class: 'range mb-seek', min: 0, max: 1, step: 0.01, value: 0, 'aria-label': 'Перемотка' });
 	// перемотка: на время перетаскивания видео ставится на паузу, а запросы сливаются в один, чтобы кадры не копились в очереди
@@ -133819,7 +133827,7 @@ function createMediaBar(app, host) {
 		if (!scrubbing) seek.value = pm.time;
 		paint();
 	}, 150);
-	return { sync, el };
+	return { sync, el, toggle };
 }
 
 };
@@ -144785,41 +144793,7 @@ function createEffectsPanel(app, root, engine) {
 			animSync();
 		}
 	});
-	const SHORTCUTS = [
-		['Пробел', 'Играть или пауза'],
-		['← →', 'Сдвинуть курсор времени (Shift: на секунду)'],
-		[', .', 'К краю предыдущего и следующего блока'],
-		['C', 'Записать ракурс камеры'],
-		['I  O  X', 'Начало и конец рабочей области, снять область'],
-		['S', 'Разрезать выбранный блок по курсору'],
-		['Ctrl+D', 'Дублировать выбранные блоки'],
-		['Ctrl+C  Ctrl+V', 'Копировать блоки и вставить на курсор'],
-		['Ctrl+A', 'Выбрать все блоки'],
-		['Shift+клик', 'Добавить блок к выбору'],
-		['Shift+протяжка', 'Выбрать блоки рамкой'],
-		['Alt+← →', 'Подвинуть выбранные блоки на 0.1 с'],
-		['Delete', 'Удалить выбранное'],
-		['Alt при протяжке', 'Без прилипания'],
-		['Ctrl+колесо', 'Масштаб шкалы времени'],
-		['ПКМ', 'Меню блока, дорожки и линейки'],
-	];
-	const helpPop = h('div', { class: 'fx-help-pop popover', hidden: true });
-	helpPop.append(h('div', { class: 'fx-bg-title' }, 'Горячие клавиши'), ...SHORTCUTS.map(([k, d]) => h('div', { class: 'fx-help-row' }, h('span', { class: 'fx-help-key' }, k), h('span', { class: 'fx-help-desc' }, d))));
-	document.getElementById('viewport').append(helpPop);
-	const aHelp = iconButton({
-		icon: 'keyboard',
-		title: 'Горячие клавиши секвенсора',
-		cls: 'fx-anim-help',
-		onClick: (e) => {
-			e.stopPropagation();
-			helpPop.hidden = !helpPop.hidden;
-			if (!helpPop.hidden) placeAbove(helpPop, aHelp, document.getElementById('viewport'), 'right');
-		}
-	});
-	document.addEventListener('pointerdown', (e) => {
-		if (!helpPop.hidden && !helpPop.contains(e.target) && !aHelp.contains(e.target)) helpPop.hidden = true;
-	});
-	const aSettings = h('div', { class: 'fx-anim-settings' }, aSnap, aLoop, aDurBox, aClear, aHelp, aRec);
+	const aSettings = h('div', { class: 'fx-anim-settings' }, aSnap, aLoop, aDurBox, aClear, aRec);
 
 	const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, quickWrap, aSettings);
 
@@ -145427,27 +145401,59 @@ function createEffectsPanel(app, root, engine) {
 		buildInspector();
 		placeInspector();
 	}
-	// плашка свойств стоит в правой колонке под панелью настроек; правая панель при этом чуть сжимается
-	const sideEl = document.getElementById('sidebar');
+	// плашка свойств стоит в левой колонке под списком эффектов; список при этом сжимается. Высоту можно тянуть за верхнюю кромку
+	const CLIP_H_KEY = 'objglb.fx.clip.h';
+	let clipUserH = 0;
+	try {
+		clipUserH = Number(localStorage.getItem(CLIP_H_KEY)) || 0;
+	} catch (_) {}
 	function placeInspector() {
 		const open = !inspector.hidden;
 		appEl.classList.toggle('fx-clip-open', open);
 		if (!open) {
 			appEl.style.removeProperty('--fx-clip-h');
+			inspector.style.removeProperty('--fx-clip-ph');
 			return;
 		}
-		const ws = inspector.parentElement;
-		if (sideEl && ws && sideEl.offsetParent) {
-			const wr = ws.getBoundingClientRect();
-			const sr = sideEl.getBoundingClientRect();
-			inspector.style.setProperty('--fx-clip-top', Math.round(sr.bottom - wr.top + 10) + 'px');
-		}
-		// сколько места плашке нужно по содержимому (а не сколько осталось): правая панель настроек уступит ровно столько
-		const natural = clipCollapsed ? 34 : Math.min(330, clipBody.scrollHeight + 36);
-		appEl.style.setProperty('--fx-clip-h', Math.round(natural + 10) + 'px');
+		const natural = Math.min(340, clipBody.scrollHeight + 36);
+		// списку эффектов над плашкой всегда остаётся не меньше 150 px
+		const room = Math.max(150, window.innerHeight - 68 - animPanel.offsetHeight - 50 - 150);
+		const hh = clipCollapsed ? 34 : Math.min(room, clipUserH || natural);
+		inspector.style.setProperty('--fx-clip-ph', hh + 'px');
+		appEl.style.setProperty('--fx-clip-h', Math.round(inspector.offsetHeight || hh) + 10 + 'px');
 	}
-	if (sideEl) new ResizeObserver(() => placeInspector()).observe(sideEl);
-	new ResizeObserver(() => placeInspector()).observe(inspector);
+	window.addEventListener('resize', () => placeInspector());
+	const clipResize = h('div', { class: 'fx-clip-resize', title: 'Потяните, чтобы изменить высоту (двойной клик вернёт по содержимому)' });
+	inspector.prepend(clipResize);
+	clipResize.addEventListener('pointerdown', (e) => {
+		e.preventDefault();
+		if (clipCollapsed) return;
+		clipResize.setPointerCapture(e.pointerId);
+		const y0 = e.clientY;
+		const h0 = inspector.offsetHeight;
+		const mv = (ev) => {
+			clipUserH = Math.max(150, Math.min(640, Math.round(h0 + (y0 - ev.clientY))));
+			placeInspector();
+		};
+		const up = () => {
+			clipResize.removeEventListener('pointermove', mv);
+			clipResize.removeEventListener('pointerup', up);
+			clipResize.removeEventListener('pointercancel', up);
+			try {
+				localStorage.setItem(CLIP_H_KEY, String(clipUserH));
+			} catch (_) {}
+		};
+		clipResize.addEventListener('pointermove', mv);
+		clipResize.addEventListener('pointerup', up);
+		clipResize.addEventListener('pointercancel', up);
+	});
+	clipResize.addEventListener('dblclick', () => {
+		clipUserH = 0;
+		try {
+			localStorage.removeItem(CLIP_H_KEY);
+		} catch (_) {}
+		placeInspector();
+	});
 	function buildInspector() {
 		clipBody.textContent = '';
 		clipActs.textContent = '';
@@ -145494,14 +145500,34 @@ function createEffectsPanel(app, root, engine) {
 			clipTitle.textContent = 'Блок: ' + layerDef.name;
 
 			const secFmt = (v) => v.toFixed(2) + ' с';
-			const sFadeIn = mkSlider('Вход', 0, c.dur, 0.05, c.fadeIn, secFmt, (v) => engine.animUpdateClip(c.id, { fadeIn: v }));
-			const sFadeOut = mkSlider('Выход', 0, c.dur, 0.05, c.fadeOut, secFmt, (v) => engine.animUpdateClip(c.id, { fadeOut: v }));
+			const sFadeIn = mkSlider('Нарастание', 0, c.dur, 0.05, c.fadeIn, secFmt, (v) => engine.animUpdateClip(c.id, { fadeIn: v }));
+			const sFadeOut = mkSlider('Затухание', 0, c.dur, 0.05, c.fadeOut, secFmt, (v) => engine.animUpdateClip(c.id, { fadeOut: v }));
 			const sAmt = mkSlider('Сила', 0.05, 2, 0.05, c.amount, (v) => v.toFixed(2), (v) => engine.animUpdateClip(c.id, { amount: v }));
+			sFadeIn.row.dataset.tip = 'Сколько секунд сила эффекта растёт от нуля до полной';
+			sFadeOut.row.dataset.tip = 'Сколько секунд сила эффекта спадает до нуля в конце блока';
+			sAmt.row.dataset.tip = '1.00: как в настройках эффекта. Больше: сильнее, меньше: слабее';
+			// график силы эффекта по времени внутри блока: сразу видно, как он нарастает и затихает
+			const graphSvg = () => {
+				let d = '';
+				for (let i = 0; i <= 40; i++) {
+					const tt = c.start + (c.dur * Math.min(0.9999, i / 40));
+					const v = engine._clipEnv(c, tt);
+					d += (i ? 'L' : 'M') + ((i / 40) * 100).toFixed(1) + ' ' + (46 - Math.min(1, v) * 40).toFixed(1) + ' ';
+				}
+				return `<svg viewBox="0 0 100 50" preserveAspectRatio="none"><path class="fill" d="${d}L100 46 L0 46 Z" /><path class="line" d="${d}" /></svg>`;
+			};
+			const graph = h('div', { class: 'fx-clip-graph', html: graphSvg(), 'data-tip': 'Как сила эффекта меняется по ходу блока' });
+			let graphSig = '';
 			inspRefs = {
 				update: () => {
 					sFadeIn.set(c.fadeIn, c.dur);
 					sFadeOut.set(c.fadeOut, c.dur);
 					sAmt.set(c.amount);
+					const sg = `${c.dur}|${c.fadeIn}|${c.fadeOut}|${c.shape}|${c.ease}`;
+					if (sg !== graphSig) {
+						graphSig = sg;
+						graph.innerHTML = graphSvg();
+					}
 				},
 			};
 
@@ -145519,17 +145545,10 @@ function createEffectsPanel(app, root, engine) {
 				});
 				return h('div', { class: 'fx-anim-insp-row' }, h('span', { class: 'fx-anim-insp-lab' }, label), wrap);
 			};
-			const shapeRow = mkSeg('Форма', [['plateau', 'Ровная', 'Сила держится на одном уровне'], ['ramp', 'Рост', 'Сила растёт от нуля к максимуму'], ['fall', 'Спад', 'Сила падает от максимума к нулю'], ['peak', 'Пик', 'Сила растёт к середине блока и падает']], c.shape || 'plateau', (v) => engine.animUpdateClip(c.id, { shape: v }));
+			const shapeRow = mkSeg('Профиль', [['plateau', 'Ровная', 'Сила держится на одном уровне'], ['ramp', 'Рост', 'Сила растёт от нуля к максимуму'], ['fall', 'Спад', 'Сила падает от максимума к нулю'], ['peak', 'Пик', 'Сила растёт к середине блока и падает']], c.shape || 'plateau', (v) => engine.animUpdateClip(c.id, { shape: v }));
 			const easeRow = mkSeg('Кривая', [['smooth', 'Плавно', 'Мягкий вход и выход'], ['linear', 'Ровно', 'Линейное нарастание и спад'], ['sharp', 'Резко', 'Быстрый вход и резкий спад в конце']], c.ease || 'smooth', (v) => engine.animUpdateClip(c.id, { ease: v }));
-			const numField = (label, val, min, max, onSet) => {
-				const inp = h('input', { type: 'number', class: 'num-in', min, max, step: 0.1, value: val });
-				inp.addEventListener('change', () => {
-					onSet(Number(inp.value) || 0);
-					animSync();
-				});
-				return h('label', { class: 'fx-anim-insp-field' }, h('span', {}, label), inp, h('span', { class: 'fx-anim-insp-unit' }, 'с'));
-			};
-			const timeRow = h('div', { class: 'fx-anim-insp-times' }, numField('Начало', c.start, 0, st.anim.dur || 8, (v) => engine.animUpdateClip(c.id, { start: v })), numField('Длина', c.dur, 0.2, st.anim.dur || 8, (v) => engine.animUpdateClip(c.id, { dur: v })));
+			const about = h('p', { class: 'fx-clip-note' }, layerDef.hint || '');
+			const openFx = button({ label: 'Настройки эффекта', icon: 'gear-six', variant: 'secondary', cls: 'btn-sm fx-clip-open-fx', title: 'Открыть параметры этого эффекта в правой панели', onClick: () => { select_(c.layerId); sync(); } });
 			const effSel = select({
 				options: ANIM_LAYERS.map((id) => ({ value: id, label: getLayerDef(id).name })),
 				value: c.layerId,
@@ -145546,7 +145565,7 @@ function createEffectsPanel(app, root, engine) {
 				iconButton({ icon: 'trash', title: 'Удалить блок (Delete)', cls: 'is-danger', onClick: () => { engine.animRemoveClip(c.id); selectOnly(null); animSync(); } }),
 				iconButton({ icon: 'x', title: 'Снять выбор (Esc)', onClick: () => { selectOnly(null); animSync(); } })
 			);
-			clipBody.append(effRow, sFadeIn.row, sFadeOut.row, sAmt.row, shapeRow, easeRow, timeRow);
+			clipBody.append(effRow, about, graph, sAmt.row, sFadeIn.row, sFadeOut.row, shapeRow, easeRow, openFx);
 		} else if (selKey) {
 			const k = selKey;
 			inspector.hidden = false;
@@ -147072,7 +147091,7 @@ class UI {
 				'div',
 				{ class: 'dlg-inner' },
 				xBtn,
-				h('h2', {}, 'Как пользоваться'),
+				h('h2', {}, 'Горячие клавиши'),
 				h('p', {}, 'Перетащите модель в окно (вместе с .mtl и текстурами или всей папкой), при необходимости добавьте текстуру, затем нажмите «Скачать GLB».'),
 				h(
 					'div',
@@ -147080,7 +147099,8 @@ class UI {
 					group('Навигация', row('Вращение', 'СКМ'), row('Вращение (трекпад)', 'Alt', 'ЛКМ'), row('Сдвиг', 'Shift', 'СКМ'), row('Масштаб', 'Колесо'), row('Центр на точке', 'Двойной клик'), row('Показать всё', 'Home'), row('Показать выбранное', 'F')),
 					group('Виды', row('Спереди / сзади', 'Num 1'), row('Справа / слева', 'Num 3'), row('Сверху / снизу', 'Num 7'), row('Без Numpad', 'Alt', '1 3 7'), row('Ортогональная', 'Num 5', 'P'), row('Шаг вращения', 'Num 4 6 8 2')),
 					group('Правка', row('Выбор', 'Q'), row('Переместить', 'G'), row('Вращать', 'R'), row('Масштаб', 'S'), row('Привязка к шагу', 'N'), row('Оси: мир / локальные', 'L'), row('Дублировать', 'Shift', 'D'), row('Удалить', 'X'), row('Скрыть / показать', 'H', 'Alt+H')),
-					group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть', 'O'), row('Вставить файл', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Музыка: пуск / пауза', 'Пробел'), row('Эффекты частиц', 'E'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0'))
+					group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть', 'O'), row('Вставить файл', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Пуск / пауза: звук, видео, таймлайн', 'Пробел'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0')),
+					group('Таймлайн анимации', row('Играть или пауза', 'Пробел'), row('Сдвинуть курсор', '←', '→'), row('Курсор на секунду', 'Shift', '← →'), row('К краю соседнего блока', ',', '.'), row('В начало / в конец', 'Home', 'End'), row('Записать ракурс камеры', 'C'), row('Разрезать блок по курсору', 'S'), row('Дублировать блоки', 'Ctrl', 'D'), row('Копировать / вставить', 'Ctrl+C', 'Ctrl+V'), row('Выбрать все блоки', 'Ctrl', 'A'), row('Добавить к выбору', 'Shift', 'клик'), row('Выбрать рамкой', 'Shift', 'протяжка'), row('Сдвинуть блок на 0.1 с', 'Alt', '← →'), row('Начало / конец области, снять', 'I', 'O', 'X'), row('Удалить выбранное', 'Delete'), row('Без прилипания', 'Alt', 'протяжка'), row('Масштаб шкалы', 'Ctrl', 'колесо'), row('Меню блока, дорожки, линейки', 'ПКМ'))
 				),
 				h('div', { class: 'dlg-actions' }, close)
 			)
@@ -147325,6 +147345,31 @@ class UI {
 		const app = this.app;
 		const isTyping = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
 		const modeKeys = DISPLAY_MODES.map((m) => m.value);
+		// Пробел всегда запускает и останавливает воспроизведение: кнопка или ползунок, на которых остался фокус, его не перехватывают
+		window.addEventListener(
+			'keydown',
+			(e) => {
+				if (e.code !== 'Space' || this.dialog.open || e.ctrlKey || e.metaKey || e.altKey) return;
+				const t = e.target;
+				const textual = t && (t.isContentEditable || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || (t.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button'].includes(t.type)));
+				if (textual) return;
+				const fx = this.workspace === 'fx';
+				const animOn = $('#app').classList.contains('fx-anim-active');
+				const bar = this.mediaBar;
+				const videoOn = bar && !bar.el.hidden;
+				if (!(videoOn || fx)) return;
+				if (t && t !== document.body && t.blur) t.blur();
+				e.preventDefault();
+				e.stopImmediatePropagation();
+				const eng = this.effectsEngine;
+				if (fx && animOn) {
+					if (eng.animPlaying) eng.animPause();
+					else if (!eng.animPlay()) this.toast('Добавьте минимум один блок эффекта или два ключа камеры', 'info');
+				} else if (videoOn) bar.toggle();
+				else eng.toggle().catch(() => {});
+			},
+			true
+		);
 		window.addEventListener('keydown', (e) => {
 			if (this.dialog.open) {
 				return;

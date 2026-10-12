@@ -1396,41 +1396,7 @@ export function createEffectsPanel(app, root, engine) {
 			animSync();
 		}
 	});
-	const SHORTCUTS = [
-		['Пробел', 'Играть или пауза'],
-		['← →', 'Сдвинуть курсор времени (Shift: на секунду)'],
-		[', .', 'К краю предыдущего и следующего блока'],
-		['C', 'Записать ракурс камеры'],
-		['I  O  X', 'Начало и конец рабочей области, снять область'],
-		['S', 'Разрезать выбранный блок по курсору'],
-		['Ctrl+D', 'Дублировать выбранные блоки'],
-		['Ctrl+C  Ctrl+V', 'Копировать блоки и вставить на курсор'],
-		['Ctrl+A', 'Выбрать все блоки'],
-		['Shift+клик', 'Добавить блок к выбору'],
-		['Shift+протяжка', 'Выбрать блоки рамкой'],
-		['Alt+← →', 'Подвинуть выбранные блоки на 0.1 с'],
-		['Delete', 'Удалить выбранное'],
-		['Alt при протяжке', 'Без прилипания'],
-		['Ctrl+колесо', 'Масштаб шкалы времени'],
-		['ПКМ', 'Меню блока, дорожки и линейки'],
-	];
-	const helpPop = h('div', { class: 'fx-help-pop popover', hidden: true });
-	helpPop.append(h('div', { class: 'fx-bg-title' }, 'Горячие клавиши'), ...SHORTCUTS.map(([k, d]) => h('div', { class: 'fx-help-row' }, h('span', { class: 'fx-help-key' }, k), h('span', { class: 'fx-help-desc' }, d))));
-	document.getElementById('viewport').append(helpPop);
-	const aHelp = iconButton({
-		icon: 'keyboard',
-		title: 'Горячие клавиши секвенсора',
-		cls: 'fx-anim-help',
-		onClick: (e) => {
-			e.stopPropagation();
-			helpPop.hidden = !helpPop.hidden;
-			if (!helpPop.hidden) placeAbove(helpPop, aHelp, document.getElementById('viewport'), 'right');
-		}
-	});
-	document.addEventListener('pointerdown', (e) => {
-		if (!helpPop.hidden && !helpPop.contains(e.target) && !aHelp.contains(e.target)) helpPop.hidden = true;
-	});
-	const aSettings = h('div', { class: 'fx-anim-settings' }, aSnap, aLoop, aDurBox, aClear, aHelp, aRec);
+	const aSettings = h('div', { class: 'fx-anim-settings' }, aSnap, aLoop, aDurBox, aClear, aRec);
 
 	const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, quickWrap, aSettings);
 
@@ -2038,27 +2004,59 @@ export function createEffectsPanel(app, root, engine) {
 		buildInspector();
 		placeInspector();
 	}
-	// плашка свойств стоит в правой колонке под панелью настроек; правая панель при этом чуть сжимается
-	const sideEl = document.getElementById('sidebar');
+	// плашка свойств стоит в левой колонке под списком эффектов; список при этом сжимается. Высоту можно тянуть за верхнюю кромку
+	const CLIP_H_KEY = 'objglb.fx.clip.h';
+	let clipUserH = 0;
+	try {
+		clipUserH = Number(localStorage.getItem(CLIP_H_KEY)) || 0;
+	} catch (_) {}
 	function placeInspector() {
 		const open = !inspector.hidden;
 		appEl.classList.toggle('fx-clip-open', open);
 		if (!open) {
 			appEl.style.removeProperty('--fx-clip-h');
+			inspector.style.removeProperty('--fx-clip-ph');
 			return;
 		}
-		const ws = inspector.parentElement;
-		if (sideEl && ws && sideEl.offsetParent) {
-			const wr = ws.getBoundingClientRect();
-			const sr = sideEl.getBoundingClientRect();
-			inspector.style.setProperty('--fx-clip-top', Math.round(sr.bottom - wr.top + 10) + 'px');
-		}
-		// сколько места плашке нужно по содержимому (а не сколько осталось): правая панель настроек уступит ровно столько
-		const natural = clipCollapsed ? 34 : Math.min(330, clipBody.scrollHeight + 36);
-		appEl.style.setProperty('--fx-clip-h', Math.round(natural + 10) + 'px');
+		const natural = Math.min(340, clipBody.scrollHeight + 36);
+		// списку эффектов над плашкой всегда остаётся не меньше 150 px
+		const room = Math.max(150, window.innerHeight - 68 - animPanel.offsetHeight - 50 - 150);
+		const hh = clipCollapsed ? 34 : Math.min(room, clipUserH || natural);
+		inspector.style.setProperty('--fx-clip-ph', hh + 'px');
+		appEl.style.setProperty('--fx-clip-h', Math.round(inspector.offsetHeight || hh) + 10 + 'px');
 	}
-	if (sideEl) new ResizeObserver(() => placeInspector()).observe(sideEl);
-	new ResizeObserver(() => placeInspector()).observe(inspector);
+	window.addEventListener('resize', () => placeInspector());
+	const clipResize = h('div', { class: 'fx-clip-resize', title: 'Потяните, чтобы изменить высоту (двойной клик вернёт по содержимому)' });
+	inspector.prepend(clipResize);
+	clipResize.addEventListener('pointerdown', (e) => {
+		e.preventDefault();
+		if (clipCollapsed) return;
+		clipResize.setPointerCapture(e.pointerId);
+		const y0 = e.clientY;
+		const h0 = inspector.offsetHeight;
+		const mv = (ev) => {
+			clipUserH = Math.max(150, Math.min(640, Math.round(h0 + (y0 - ev.clientY))));
+			placeInspector();
+		};
+		const up = () => {
+			clipResize.removeEventListener('pointermove', mv);
+			clipResize.removeEventListener('pointerup', up);
+			clipResize.removeEventListener('pointercancel', up);
+			try {
+				localStorage.setItem(CLIP_H_KEY, String(clipUserH));
+			} catch (_) {}
+		};
+		clipResize.addEventListener('pointermove', mv);
+		clipResize.addEventListener('pointerup', up);
+		clipResize.addEventListener('pointercancel', up);
+	});
+	clipResize.addEventListener('dblclick', () => {
+		clipUserH = 0;
+		try {
+			localStorage.removeItem(CLIP_H_KEY);
+		} catch (_) {}
+		placeInspector();
+	});
 	function buildInspector() {
 		clipBody.textContent = '';
 		clipActs.textContent = '';
@@ -2105,14 +2103,34 @@ export function createEffectsPanel(app, root, engine) {
 			clipTitle.textContent = 'Блок: ' + layerDef.name;
 
 			const secFmt = (v) => v.toFixed(2) + ' с';
-			const sFadeIn = mkSlider('Вход', 0, c.dur, 0.05, c.fadeIn, secFmt, (v) => engine.animUpdateClip(c.id, { fadeIn: v }));
-			const sFadeOut = mkSlider('Выход', 0, c.dur, 0.05, c.fadeOut, secFmt, (v) => engine.animUpdateClip(c.id, { fadeOut: v }));
+			const sFadeIn = mkSlider('Нарастание', 0, c.dur, 0.05, c.fadeIn, secFmt, (v) => engine.animUpdateClip(c.id, { fadeIn: v }));
+			const sFadeOut = mkSlider('Затухание', 0, c.dur, 0.05, c.fadeOut, secFmt, (v) => engine.animUpdateClip(c.id, { fadeOut: v }));
 			const sAmt = mkSlider('Сила', 0.05, 2, 0.05, c.amount, (v) => v.toFixed(2), (v) => engine.animUpdateClip(c.id, { amount: v }));
+			sFadeIn.row.dataset.tip = 'Сколько секунд сила эффекта растёт от нуля до полной';
+			sFadeOut.row.dataset.tip = 'Сколько секунд сила эффекта спадает до нуля в конце блока';
+			sAmt.row.dataset.tip = '1.00: как в настройках эффекта. Больше: сильнее, меньше: слабее';
+			// график силы эффекта по времени внутри блока: сразу видно, как он нарастает и затихает
+			const graphSvg = () => {
+				let d = '';
+				for (let i = 0; i <= 40; i++) {
+					const tt = c.start + (c.dur * Math.min(0.9999, i / 40));
+					const v = engine._clipEnv(c, tt);
+					d += (i ? 'L' : 'M') + ((i / 40) * 100).toFixed(1) + ' ' + (46 - Math.min(1, v) * 40).toFixed(1) + ' ';
+				}
+				return `<svg viewBox="0 0 100 50" preserveAspectRatio="none"><path class="fill" d="${d}L100 46 L0 46 Z" /><path class="line" d="${d}" /></svg>`;
+			};
+			const graph = h('div', { class: 'fx-clip-graph', html: graphSvg(), 'data-tip': 'Как сила эффекта меняется по ходу блока' });
+			let graphSig = '';
 			inspRefs = {
 				update: () => {
 					sFadeIn.set(c.fadeIn, c.dur);
 					sFadeOut.set(c.fadeOut, c.dur);
 					sAmt.set(c.amount);
+					const sg = `${c.dur}|${c.fadeIn}|${c.fadeOut}|${c.shape}|${c.ease}`;
+					if (sg !== graphSig) {
+						graphSig = sg;
+						graph.innerHTML = graphSvg();
+					}
 				},
 			};
 
@@ -2130,17 +2148,10 @@ export function createEffectsPanel(app, root, engine) {
 				});
 				return h('div', { class: 'fx-anim-insp-row' }, h('span', { class: 'fx-anim-insp-lab' }, label), wrap);
 			};
-			const shapeRow = mkSeg('Форма', [['plateau', 'Ровная', 'Сила держится на одном уровне'], ['ramp', 'Рост', 'Сила растёт от нуля к максимуму'], ['fall', 'Спад', 'Сила падает от максимума к нулю'], ['peak', 'Пик', 'Сила растёт к середине блока и падает']], c.shape || 'plateau', (v) => engine.animUpdateClip(c.id, { shape: v }));
+			const shapeRow = mkSeg('Профиль', [['plateau', 'Ровная', 'Сила держится на одном уровне'], ['ramp', 'Рост', 'Сила растёт от нуля к максимуму'], ['fall', 'Спад', 'Сила падает от максимума к нулю'], ['peak', 'Пик', 'Сила растёт к середине блока и падает']], c.shape || 'plateau', (v) => engine.animUpdateClip(c.id, { shape: v }));
 			const easeRow = mkSeg('Кривая', [['smooth', 'Плавно', 'Мягкий вход и выход'], ['linear', 'Ровно', 'Линейное нарастание и спад'], ['sharp', 'Резко', 'Быстрый вход и резкий спад в конце']], c.ease || 'smooth', (v) => engine.animUpdateClip(c.id, { ease: v }));
-			const numField = (label, val, min, max, onSet) => {
-				const inp = h('input', { type: 'number', class: 'num-in', min, max, step: 0.1, value: val });
-				inp.addEventListener('change', () => {
-					onSet(Number(inp.value) || 0);
-					animSync();
-				});
-				return h('label', { class: 'fx-anim-insp-field' }, h('span', {}, label), inp, h('span', { class: 'fx-anim-insp-unit' }, 'с'));
-			};
-			const timeRow = h('div', { class: 'fx-anim-insp-times' }, numField('Начало', c.start, 0, st.anim.dur || 8, (v) => engine.animUpdateClip(c.id, { start: v })), numField('Длина', c.dur, 0.2, st.anim.dur || 8, (v) => engine.animUpdateClip(c.id, { dur: v })));
+			const about = h('p', { class: 'fx-clip-note' }, layerDef.hint || '');
+			const openFx = button({ label: 'Настройки эффекта', icon: 'gear-six', variant: 'secondary', cls: 'btn-sm fx-clip-open-fx', title: 'Открыть параметры этого эффекта в правой панели', onClick: () => { select_(c.layerId); sync(); } });
 			const effSel = select({
 				options: ANIM_LAYERS.map((id) => ({ value: id, label: getLayerDef(id).name })),
 				value: c.layerId,
@@ -2157,7 +2168,7 @@ export function createEffectsPanel(app, root, engine) {
 				iconButton({ icon: 'trash', title: 'Удалить блок (Delete)', cls: 'is-danger', onClick: () => { engine.animRemoveClip(c.id); selectOnly(null); animSync(); } }),
 				iconButton({ icon: 'x', title: 'Снять выбор (Esc)', onClick: () => { selectOnly(null); animSync(); } })
 			);
-			clipBody.append(effRow, sFadeIn.row, sFadeOut.row, sAmt.row, shapeRow, easeRow, timeRow);
+			clipBody.append(effRow, about, graph, sAmt.row, sFadeIn.row, sFadeOut.row, shapeRow, easeRow, openFx);
 		} else if (selKey) {
 			const k = selKey;
 			inspector.hidden = false;
