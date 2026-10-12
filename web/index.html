@@ -95,20 +95,17 @@
 
 			<div class="empty-state" id="emptyState">
 				<div class="empty-card">
-					<div class="empty-icon" data-icon="cube-focus" data-icon-size="34"></div>
 					<h1 class="empty-title">Перетащите модель сюда</h1>
-					<p class="empty-text">Поддерживаются OBJ, GLB, FBX, STL, PLY и другие форматы. Файлы .mtl и текстуры (PNG, JPG, TGA) можно перетащить вместе с моделью или целой папкой. Фото (JPG, PNG, WebP, AVIF, HEIC, GIF, BMP, TIFF, SVG, TGA, ICO) и видео (MP4, WebM, MOV) тоже можно перетащить сюда: они превратятся в точки.</p>
+					<p class="empty-text">Модели, фото и видео превращаются в живые облака точек. Можно и просто открыть файл кнопкой.</p>
 					<div class="empty-actions">
-						<div class="empty-row">
-							<button class="btn btn-primary btn-lg" id="btnEmptyOpen" type="button"><span data-icon="folder-open" data-icon-size="18"></span><span class="btn-label">Выбрать файлы</span></button>
-							<button class="btn btn-secondary btn-lg" id="btnEmptyMedia" type="button"><span data-icon="film-strip" data-icon-size="18"></span><span class="btn-label">Фото или видео</span></button>
-						</div>
+						<button class="btn btn-primary btn-lg" id="btnEmptyOpen" type="button"><span data-icon="folder-open" data-icon-size="18"></span><span class="btn-label">Выбрать файлы</span></button>
 						<div class="empty-row">
 							<button class="btn btn-secondary btn-lg" id="btnEmptyDemo" type="button"><span data-icon="sparkle" data-icon-size="18"></span><span class="btn-label">Демо-модель</span></button>
 							<button class="btn btn-secondary btn-lg" id="btnEmptyChar" type="button"><span data-icon="play" data-icon-size="18"></span><span class="btn-label">Демо-анимация</span></button>
 						</div>
 					</div>
 					<div class="chips" id="formatChips" aria-label="Поддерживаемые форматы"></div>
+					<p class="empty-hint">Текстуры (.mtl, PNG, JPG, TGA) лучше перетащить вместе с моделью или целой папкой.</p>
 				</div>
 			</div>
 

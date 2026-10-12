@@ -88,13 +88,6 @@ document.fonts && document.fonts.ready.then(() => this.moveModeIndicator());
 $('#btnEmptyOpen').addEventListener('click', () => this.openFiles('auto'));
 $('#btnEmptyDemo').addEventListener('click', () => app.loadDemo());
 $('#btnEmptyChar').addEventListener('click', () => app.loadDemoCharacter());
-$('#btnEmptyMedia').addEventListener('click', () => {
-const inp = document.createElement('input');
-inp.type = 'file';
-inp.accept = 'video/*,image/*,.pcv,.tga,.tif,.tiff,.heic,.heif,.jfif,.ico,.svg,.avif,.bmp,.apng';
-inp.addEventListener('change', () => inp.files[0] && this.openMedia(inp.files[0]));
-inp.click();
-});
 $('#btnUndo').addEventListener('click', () => this.undo());
 $('#btnRedo').addEventListener('click', () => this.redo());
 $('#btnHelp').addEventListener('click', () => this.showHelp());
