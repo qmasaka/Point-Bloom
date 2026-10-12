@@ -3361,7 +3361,6 @@ body.is-resizing-h * {
 .fx-mode.fx-anim-active .status-hint,
 .fx-mode.fx-anim-active .status-stats,
 .fx-mode.fx-anim-active .status-fps,
-.fx-mode.fx-anim-active .fx-meters,
 .fx-mode.fx-anim-active .fx-hint {
 	opacity: 0 !important;
 	visibility: hidden !important;
@@ -6155,3 +6154,24 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-clip-quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
 .fx-clip-quick .btn { padding-inline: 4px; min-width: 0; height: 28px; }
 .fx-clip-quick .btn .btn-label { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* таймлайн: узкая колонка подписей, которая стоит на месте при зуме шкалы; кнопки дорожек убраны, состояние показано значками */
+.fx-anim { --fx-head-w: 108px; }
+.fx-anim-stage .fx-anim-track-label,
+.fx-anim-stage .fx-anim-ruler-title { background: #14171b; gap: 5px; padding-left: 2px; }
+.fx-anim-stage .fx-anim-track-label::after,
+.fx-anim-stage .fx-anim-ruler-title::after { content: ''; position: absolute; top: 0; bottom: 0; left: 100%; width: 10px; background: linear-gradient(90deg, #14171b, rgba(20, 23, 27, 0)); pointer-events: none; }
+.fx-anim-stage .fx-anim-track-label { font-size: 12px; }
+.fx-anim-char-set { padding-left: var(--fx-head-w, 108px); }
+.fx-anim-lane-tools { right: 4px; padding-left: 0; gap: 3px; background: none !important; pointer-events: none; }
+.fx-anim-lane-tools .fx-lane-flag { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; color: var(--accent-text); background: #14171b; }
+.fx-anim-lane-tools .fx-lane-flag svg { width: 12px; height: 12px; }
+
+/* ручки изменения блока: скрыты, появляются под курсором оранжевой полоской, при нажатии горят ярче */
+.fx-mode .fx-anim-handle { width: 10px; }
+.fx-mode .fx-anim-block .fx-anim-handle::after { opacity: 0; background: var(--accent); width: 4px; top: 6px; bottom: 6px; border-radius: 3px; transition: opacity 0.12s var(--ease), box-shadow 0.12s var(--ease); }
+.fx-mode .fx-anim-block:hover .fx-anim-handle::after, .fx-mode .fx-anim-block.is-sel .fx-anim-handle::after { opacity: 0; }
+.fx-mode .fx-anim-block .fx-anim-handle:hover::after { opacity: 1; background: var(--accent); }
+.fx-mode .fx-anim-block .fx-anim-handle:active::after { opacity: 1; background: var(--accent-text, var(--accent)); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent); }
+.fx-mode .fx-anim-handle.is-left::after { left: 3px; }
+.fx-mode .fx-anim-handle.is-right::after { right: 3px; }

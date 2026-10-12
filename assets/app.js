@@ -145770,12 +145770,11 @@ function createEffectsPanel(app, root, engine) {
 			const laneTitle = h('div', { class: 'fx-anim-track-label fx-anim-fx-label' },
 				h('span', { class: 'ic-wrap', html: icon(layerDef.icon || 'sparkle', 14) }),
 				h('span', { class: 'fx-anim-lane-name' }, layerDef.name),
-				// включённые значки видны всегда, остальные появляются при наведении
+				// состояние дорожки показано значками; переключается через меню по правой кнопке
 				h('div', { class: 'fx-anim-lane-tools' },
-					iconButton({ icon: ls.mute ? 'eye-slash' : 'eye', title: ls.mute ? 'Включить дорожку' : 'Заглушить дорожку: её блоки не работают', size: 14, cls: 'fx-anim-lane-mute' + (ls.mute ? ' is-on' : ''), onClick: () => toggleLane({ mute: !ls.mute }) }),
-					iconButton({ icon: 'target', title: ls.solo ? 'Выключить соло' : 'Соло: работает только эта дорожка', size: 14, cls: 'fx-anim-lane-solo' + (ls.solo ? ' is-on' : ''), onClick: () => toggleLane({ solo: !ls.solo }) }),
-					iconButton({ icon: ls.lock ? 'lock-simple' : 'lock-simple-open', title: ls.lock ? 'Открепить дорожку' : 'Закрепить дорожку: блоки не сдвинутся и не удалятся случайно', size: 14, cls: 'fx-anim-lane-lock' + (ls.lock ? ' is-on' : ''), onClick: () => toggleLane({ lock: !ls.lock }) }),
-					iconButton({ icon: 'plus', title: `Добавить ещё блок «${layerDef.name}»`, size: 14, cls: 'fx-anim-lane-add', onClick: addToLane })
+					ls.mute ? h('span', { class: 'fx-lane-flag', html: icon('eye-slash', 12), 'data-tip': 'Дорожка заглушена' }) : null,
+					ls.solo ? h('span', { class: 'fx-lane-flag', html: icon('target', 12), 'data-tip': 'Соло' }) : null,
+					ls.lock ? h('span', { class: 'fx-lane-flag', html: icon('lock-simple', 12), 'data-tip': 'Дорожка закреплена' }) : null
 				)
 			);
 			laneTitle.addEventListener('contextmenu', (e) => {
