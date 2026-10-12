@@ -14,8 +14,8 @@ for (const k of Object.keys(DICTS)) Object.assign(DICTS[k], MORE[k]);
 const SUPPORTED = ['ru', 'uk', 'es', 'de'];
 const CY = /[А-Яа-яЁё]/;
 const ATTRS = ['title', 'aria-label', 'placeholder', 'alt', 'data-tip'];
-const RU_TITLE = 'Point Bloom: облака точек, эффекты и конвертер OBJ в GLB';
-const RU_DESC = 'Point Bloom превращает 3D-модели, фото, видео и текст в живые облака точек. Эффекты под музыку и камеру, редактор сцены и конвертер OBJ, FBX, STL, PLY в GLB прямо в браузере.';
+const RU_TITLE = 'Point Bloom: студия 3D-облаков точек';
+const RU_DESC = 'Превращайте 3D-модели, фото, видео и текст в живые облака точек. Добавляйте эффекты, правьте точки и экспортируйте в GLB, PLY или веб-страницу прямо в браузере.';
 
 /** Интерфейс всегда английский. Другой язык выбирается, только если страницу перевели через Google Translate (адрес с _x_tr_tl) */
 function detect() {

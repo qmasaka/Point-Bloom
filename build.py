@@ -477,6 +477,8 @@ def write_vercel_json():
         "headers": [
             {"source": "/(.*)", "headers": [{"key": k, "value": v} for k, v in headers]},
             # тяжёлые файлы распознавания рук кэшируются на месяц: повторные запуски камеры не качают их заново
+            {"source": "/sw.js", "headers": [{"key": "Cache-Control", "value": "no-cache"}, {"key": "Service-Worker-Allowed", "value": "/"}]},
+            {"source": "/manifest.webmanifest", "headers": [{"key": "Content-Type", "value": "application/manifest+json"}, {"key": "Cache-Control", "value": "no-cache"}]},
             {"source": "/vendor/mediapipe/(.*)", "headers": [{"key": "Cache-Control", "value": "public, max-age=2592000"}]},
         ],
     }
@@ -511,6 +513,10 @@ def build_web():
     mp_src = os.path.join(ROOT, "vendor", "mediapipe")
     if os.path.isdir(mp_src):
         shutil.copytree(mp_src, os.path.join(out, "vendor", "mediapipe"))
+    # установка как приложения: манифест, иконки и сервис-воркер лежат в корне сайта
+    for f in ("manifest.webmanifest", "sw.js"):
+        shutil.copy(os.path.join(ROOT, f), os.path.join(out, f))
+    shutil.copytree(os.path.join(ROOT, "assets", "pwa"), os.path.join(out, "assets", "pwa"))
     with open(os.path.join(ROOT, "assets", "style.css"), encoding="utf-8") as fh:
         css = minify_css(fh.read())
     with open(os.path.join(out, "assets", "style.css"), "w", encoding="utf-8") as fh:

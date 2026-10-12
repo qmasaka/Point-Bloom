@@ -1,0 +1,19 @@
+{
+  "name": "Point Bloom",
+  "short_name": "Point Bloom",
+  "description": "Turn 3D models, photos, video and text into living point clouds. Add effects, edit points and export to GLB, PLY or a web page.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#14161b",
+  "theme_color": "#14161b",
+  "lang": "en",
+  "categories": ["graphics", "design", "productivity"],
+  "icons": [
+    { "src": "assets/pwa/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/pwa/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/pwa/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

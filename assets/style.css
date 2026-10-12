@@ -6290,17 +6290,24 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .pe-del:not(:disabled):hover { color: var(--danger); }
 .pe-keys { margin-top: 2px; }
 
-/* панель правки точек над сценой: стекло как у остальных панелей */
-.pe-bar { position: absolute; z-index: 25; top: 68px; left: 50%; translate: -50% 0; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 700px); min-width: 560px; flex-wrap: wrap; justify-content: center; padding: 8px 10px; border-radius: 18px; background: var(--fxg-bg, rgba(18, 20, 24, 0.82)); backdrop-filter: blur(22px) saturate(1.25); -webkit-backdrop-filter: blur(22px) saturate(1.25); border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.1)); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
-.pe-bar[hidden] { display: none; }
-.fx-mode .pe-bar { display: none; }
-.pe-bar .seg { height: 30px; }
-.pe-bar-radius { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); }
-.pe-bar-radius .range { width: 90px; }
-.pe-bar-sep { width: 1px; height: 22px; background: var(--fxg-line, rgba(255, 255, 255, 0.1)); }
-.pe-bar-count { font-size: 12.5px; color: var(--text-dim); font-variant-numeric: tabular-nums; padding: 0 4px; white-space: nowrap; }
-.pe-bar .btn-sm { border-radius: 999px; height: 30px; }
-.pe-bar .cp-dot { width: 26px; height: 26px; }
-.pe-bar .hex-in { width: 78px; }
-@media (max-width: 1250px) { .pe-bar { max-width: calc(100% - 120px); min-width: 0; } }
-@media (max-width: 900px) { .pe-bar { max-width: calc(100% - 24px); top: 62px; } }
+
+/* панель правки точек: справа от кнопки инструмента, стекло как у боковых панелей */
+.pe-panel { position: absolute; z-index: 24; display: flex; flex-direction: column; gap: 10px; padding: 14px; overflow-y: auto; border-radius: 20px; background: var(--fxg-bg, rgba(18, 20, 24, 0.82)); backdrop-filter: blur(22px) saturate(1.25); -webkit-backdrop-filter: blur(22px) saturate(1.25); border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.1)); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05); scrollbar-width: thin; }
+.pe-panel[hidden] { display: none; }
+.fx-mode .pe-panel { display: none; }
+.pe-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pe-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
+.pe-close { width: 28px; height: 28px; border-radius: 50%; }
+.pe-label { margin-top: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
+.pe-methods { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.pe-method { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 9px 4px 8px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.07); background: rgba(255, 255, 255, 0.04); color: var(--text-dim); font: inherit; font-size: 11.5px; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.pe-method span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pe-method:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+.pe-method[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: var(--accent-line, var(--accent)); color: var(--text); }
+.pe-method[aria-pressed="true"] svg { color: var(--accent-text); }
+.pe-panel .pe-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.pe-panel .btn-block { width: 100%; justify-content: center; }
+.pe-panel .field { margin: 0; }
+.pe-lasso { position: absolute; inset: 0; z-index: 29; width: 100%; height: 100%; pointer-events: none; }
+.pe-lasso[hidden] { display: none; }
+@media (max-width: 900px) { .pe-panel { left: 64px !important; right: 12px; width: auto !important; } }

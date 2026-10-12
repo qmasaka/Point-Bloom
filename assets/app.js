@@ -81405,7 +81405,8 @@ class PointEditor {
 		this._raf = 0;
 		this._cursor = h('div', { class: 'pe-cursor', hidden: true });
 		this._rect = h('div', { class: 'pe-rect', hidden: true });
-		document.getElementById('viewport').append(this._cursor, this._rect);
+		this._lasso = h('canvas', { class: 'pe-lasso', hidden: true });
+		document.getElementById('viewport').append(this._cursor, this._rect, this._lasso);
 		const el = app.viewport.canvas;
 		el.addEventListener('pointerdown', (e) => this._down(e));
 		el.addEventListener('pointermove', (e) => this._move(e));
@@ -81438,21 +81439,20 @@ class PointEditor {
 	}
 
 	get isPointTool() {
-		const t = this.app.model.tool;
-		return t === 'pbrush' || t === 'prect';
+		return this.app.model.tool === 'psel';
 	}
 
-	/** Включить или выключить правку: это обычные инструменты слева (кисть, рамка), поэтому всё идёт через model.setTool */
+	/** Включить или выключить правку: это инструмент в левой колонке, поэтому всё идёт через model.setTool */
 	setActive(on) {
 		const model = this.app.model;
-		if (on) model.setTool(this.tool === 'rect' ? 'prect' : 'pbrush');
+		if (on) model.setTool('psel');
 		else if (this.isPointTool) model.setTool(this._back || 'select');
 	}
 
-	/** Переключает вид выделения: 'brush' или 'rect' */
+	/** Способ выделения: 'brush', 'rect' или 'lasso'. Если правка выключена, она включается */
 	setTool(t) {
 		this.tool = t;
-		if (this.active) this.app.model.setTool(t === 'rect' ? 'prect' : 'pbrush');
+		if (!this.active) this.setActive(true);
 		else this._emit();
 	}
 
@@ -81462,10 +81462,7 @@ class PointEditor {
 		const on = this.isPointTool;
 		if (!on) this._back = model.tool;
 		if (on === this.active) {
-			if (on) {
-				this.tool = model.tool === 'prect' ? 'rect' : 'brush';
-				this._emit();
-			}
+			if (on) this._emit();
 			return;
 		}
 		if (on) {
@@ -81480,13 +81477,13 @@ class PointEditor {
 				return;
 			}
 			this.active = true;
-			this.tool = model.tool === 'prect' ? 'rect' : 'brush';
 			this.retarget();
 			if (this.app.settings.display !== 'points') this.app.setDisplay('points');
 		} else {
 			this.active = false;
 			this._cursor.hidden = true;
 			this._rect.hidden = true;
+			this._lassoOff();
 			this._drag = null;
 		}
 		// пока включена правка, левая кнопка выделяет, а не вращает сцену (Alt вращает)
@@ -81561,7 +81558,7 @@ class PointEditor {
 		e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId);
 		this._project();
 		const remove = this.mode === 'sub' || e.ctrlKey || e.metaKey;
-		this._drag = { x0: e.clientX, y0: e.clientY, remove, id: e.pointerId };
+		this._drag = { x0: e.clientX, y0: e.clientY, remove, id: e.pointerId, path: [[e.clientX, e.clientY]] };
 		if (this.tool === 'brush') this._brush(e.clientX, e.clientY, remove);
 	}
 
@@ -81580,7 +81577,11 @@ class PointEditor {
 		const d = this._drag;
 		if (!d) return;
 		if (this.tool === 'brush') this._brush(e.clientX, e.clientY, d.remove);
-		else {
+		else if (this.tool === 'lasso') {
+			const last = d.path[d.path.length - 1];
+			if (Math.hypot(e.clientX - last[0], e.clientY - last[1]) >= 3) d.path.push([e.clientX, e.clientY]);
+			this._lassoDraw(d.path, d.remove);
+		} else {
 			const s = this._rect.style;
 			const l = Math.min(d.x0, e.clientX), t = Math.min(d.y0, e.clientY);
 			s.left = l - this._vpLeft() + 'px';
@@ -81596,10 +81597,58 @@ class PointEditor {
 		const d = this._drag;
 		if (!d) return;
 		this._drag = null;
-		if (this.tool === 'rect') {
+		if (this.tool === 'lasso') {
+			this._lassoOff();
+			const path = d.path;
+			if (path.length >= 3) {
+				// многоугольник из линии: проверка «точка внутри» по лучу, сначала быстрый отсев по габаритам
+				let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+				for (const [x, y] of path) {
+					if (x < x0) x0 = x;
+					if (y < y0) y0 = y;
+					if (x > x1) x1 = x;
+					if (y > y1) y1 = y;
+				}
+				const m = path.length;
+				this._apply((x, y) => {
+					if (x < x0 || x > x1 || y < y0 || y > y1) return false;
+					let inside = false;
+					for (let i = 0, j = m - 1; i < m; j = i++) {
+						const xi = path[i][0], yi = path[i][1], xj = path[j][0], yj = path[j][1];
+						if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+					}
+					return inside;
+				}, d.remove);
+			}
+		} else if (this.tool === 'rect') {
 			this._rect.hidden = true;
 			this._apply((x, y) => x >= Math.min(d.x0, e.clientX) && x <= Math.max(d.x0, e.clientX) && y >= Math.min(d.y0, e.clientY) && y <= Math.max(d.y0, e.clientY), d.remove);
 		}
+	}
+
+	_lassoDraw(path, remove) {
+		const cv = this._lasso;
+		const vp = document.getElementById('viewport').getBoundingClientRect();
+		if (cv.width !== Math.round(vp.width) || cv.height !== Math.round(vp.height)) {
+			cv.width = Math.round(vp.width);
+			cv.height = Math.round(vp.height);
+		}
+		cv.hidden = false;
+		const g = cv.getContext('2d');
+		g.clearRect(0, 0, cv.width, cv.height);
+		g.beginPath();
+		path.forEach(([x, y], i) => (i ? g.lineTo(x - vp.left, y - vp.top) : g.moveTo(x - vp.left, y - vp.top)));
+		g.closePath();
+		const c = remove ? '255,107,107' : '229,138,69';
+		g.fillStyle = `rgba(${c},0.14)`;
+		g.fill();
+		g.lineWidth = 1.5;
+		g.setLineDash([6, 4]);
+		g.strokeStyle = `rgb(${c})`;
+		g.stroke();
+	}
+	_lassoOff() {
+		this._lasso.hidden = true;
 	}
 
 	_vpLeft() {
@@ -90101,6 +90150,7 @@ const ICON_PATHS = {
 	'planet': '<path d="M245.11,60.68c-7.65-13.19-27.84-16.16-58.5-8.66A95.93,95.93,0,0,0,32,128a98,98,0,0,0,.78,12.31C5.09,169,5.49,186,10.9,195.32,16,204.16,26.64,208,40.64,208a124.11,124.11,0,0,0,28.79-4A95.93,95.93,0,0,0,224,128a97.08,97.08,0,0,0-.77-12.25c12.5-13,20.82-25.35,23.65-35.92C248.83,72.51,248.24,66.07,245.11,60.68ZM128,48a80.11,80.11,0,0,1,78,62.2c-17.06,16.06-40.15,32.53-62.07,45.13C116.38,171.14,92.48,181,73.42,186.4A79.94,79.94,0,0,1,128,48ZM24.74,187.29c-1.46-2.51-.65-7.24,2.22-13a79.05,79.05,0,0,1,10.29-15.05,96,96,0,0,0,18,31.32C38,193.46,27.24,191.61,24.74,187.29ZM128,208a79.45,79.45,0,0,1-38.56-9.94,370,370,0,0,0,62.43-28.86c21.58-12.39,40.68-25.82,56.07-39.08A80.07,80.07,0,0,1,128,208ZM231.42,75.69c-1.7,6.31-6.19,13.53-12.63,21.13a95.69,95.69,0,0,0-18-31.35c14.21-2.35,27.37-2.17,30.5,3.24C232.19,70.28,232.24,72.63,231.42,75.69Z"/>',
 	'play': '<path d="M240,128a15.74,15.74,0,0,1-7.6,13.51L88.32,229.65a16,16,0,0,1-16.2.3A15.86,15.86,0,0,1,64,216.13V39.87a15.86,15.86,0,0,1,8.12-13.82,16,16,0,0,1,16.2.3l144.08,88.14A15.74,15.74,0,0,1,240,128Zm-160,72.48,118.4-72.48L80,55.52Z"/>',
 	'plus': '<path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/>',
+	'polygon': '<path d="M230.64,49.36a32,32,0,0,0-45.26,0h0a31.9,31.9,0,0,0-5.16,6.76L152,48.42A32,32,0,0,0,97.37,25.36h0a32.06,32.06,0,0,0-5.76,37.41L57.67,93.32a32.05,32.05,0,0,0-40.31,4.05h0a32,32,0,0,0,42.89,47.41l70,51.36a32,32,0,1,0,47.57-14.69l27.39-77.59q1.38.12,2.76.12a32,32,0,0,0,22.63-54.62Zm-122-12.69h0a16,16,0,1,1,0,22.64A16,16,0,0,1,108.68,36.67Zm-80,94.65a16,16,0,0,1,0-22.64h0a16,16,0,1,1,0,22.64Zm142.65,88a16,16,0,0,1-22.63-22.63h0a16,16,0,1,1,22.63,22.63Zm-8.55-43.18a32,32,0,0,0-23,7.08l-70-51.36a32.17,32.17,0,0,0-1.34-26.65l33.95-30.55a32,32,0,0,0,45.47-10.81L176,71.56a32,32,0,0,0,14.12,27Zm56.56-92.84A16,16,0,1,1,196.7,60.68h0a16,16,0,0,1,22.63,22.63Z"/>',
 	'pulse': '<path d="M240,128a8,8,0,0,1-8,8H204.94l-37.78,75.58A8,8,0,0,1,160,216h-.4a8,8,0,0,1-7.08-5.14L95.35,60.76,63.28,131.31A8,8,0,0,1,56,136H24a8,8,0,0,1,0-16H50.85L88.72,36.69a8,8,0,0,1,14.76.46l57.51,151,31.85-63.71A8,8,0,0,1,200,120h32A8,8,0,0,1,240,128Z"/>',
 	'question': '<path d="M140,180a12,12,0,1,1-12-12A12,12,0,0,1,140,180ZM128,72c-22.06,0-40,16.15-40,36v4a8,8,0,0,0,16,0v-4c0-11,10.77-20,24-20s24,9,24,20-10.77,20-24,20a8,8,0,0,0-8,8v8a8,8,0,0,0,16,0v-.72c18.24-3.35,32-17.9,32-35.28C168,88.15,150.06,72,128,72Zm104,56A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/>',
 	'record': '<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm0-160a72,72,0,1,0,72,72A72.08,72.08,0,0,0,128,56Zm0,128a56,56,0,1,1,56-56A56.06,56.06,0,0,1,128,184Z"/>',
@@ -133901,24 +133951,27 @@ function createTextSection(app) {
 __defs['src/panel-point-edit.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'createPointEditSection', () => createPointEditSection);
-// Раздел «Правка точек» во вкладке «Точки»: выделение, удаление и перекраска точек облака.
+// Правка точек: панель появляется справа от кнопки инструмента в левой колонке (выбор способа, режим, действия),
+// а во вкладке «Точки» остаётся короткий раздел-подсказка.
 const { h, formatInt } = __req('src/util.js');
-const { section, field, fxSlider: slider, segmented, switchRow, colorField, button } = __req('src/ui-kit.js');
+const { icon } = __req('src/icons.js');
+const { section, field, fxSlider: slider, segmented, switchRow, colorField, button, iconButton } = __req('src/ui-kit.js');
 
 function createPointEditSection(app) {
 	const pe = app.pointEdit;
 	let paintHex = '#ff7a2e';
 	let strength = 1;
 
-	const note = h('div', { class: 'field-hint hint pe-note' });
-	const toggle = button({ label: 'Выделять точки', icon: 'selection', variant: 'primary', cls: 'btn-block pe-toggle', onClick: () => pe.setActive(!pe.active) });
-	const tool = segmented({
-		options: [
-			{ value: 'brush', label: 'Кисть', title: 'Закрашивайте точки кистью: всё под кругом выбирается' },
-			{ value: 'rect', label: 'Прямоугольник', title: 'Протяните рамку: выберутся все точки внутри' },
-		],
-		value: pe.tool,
-		onChange: (v) => pe.setTool(v),
+	// ---------------------------------------------------------------- плавающая панель
+	const METHODS = [
+		['brush', 'Кисть', 'paint-brush', 'Закрашивайте точки кистью: всё под кругом выбирается (B)'],
+		['rect', 'Прямоугольник', 'selection', 'Протяните рамку: выберутся все точки внутри (M)'],
+		['lasso', 'Лассо', 'polygon', 'Обведите точки от руки: выберутся все внутри контура'],
+	];
+	const methodBtns = METHODS.map(([id, label, ic, tip]) => {
+		const b = h('button', { type: 'button', class: 'pe-method', 'data-method': id, 'data-tip': tip, 'aria-pressed': 'false' }, h('span', { class: 'ic-wrap', html: icon(ic, 18) }), h('span', {}, label));
+		b.addEventListener('click', () => pe.setTool(id));
+		return b;
 	});
 	const mode = segmented({
 		options: [
@@ -133936,80 +133989,87 @@ function createPointEditSection(app) {
 	const bAll = button({ label: 'Все', variant: 'secondary', cls: 'btn-sm', title: 'Выбрать все точки (Ctrl+A)', onClick: () => pe.selectAll() });
 	const bNone = button({ label: 'Снять', variant: 'secondary', cls: 'btn-sm', title: 'Снять выбор', onClick: () => pe.clear() });
 	const bInv = button({ label: 'Наоборот', variant: 'secondary', cls: 'btn-sm', title: 'Инвертировать выбор (Ctrl+I)', onClick: () => pe.invert() });
-	const rowSel = h('div', { class: 'pe-row' }, bAll, bNone, bInv);
 	const count = h('div', { class: 'pe-count' });
 	const bDel = button({ label: 'Удалить выбранные', icon: 'trash', variant: 'secondary', cls: 'btn-block pe-del', title: 'Удалить выбранные точки (Delete или X)', onClick: () => pe.deleteSelected() });
-	const setHex = (v) => {
-		paintHex = v;
-		color.set(v);
-		barColor.set(v);
-	};
-	const color = colorField({ value: paintHex, onInput: (v) => setHex(v), onChange: (v) => setHex(v) });
-	const barColor = colorField({ value: paintHex, onInput: (v) => setHex(v), onChange: (v) => setHex(v) });
+	// у цвета одно поле: общий цвет для панели и кнопки, никакой синхронизации между копиями
+	const color = colorField({ value: paintHex, onInput: (v) => (paintHex = v), onChange: (v) => (paintHex = v) });
 	const str = slider({ noNorm: true, min: 5, max: 100, step: 5, value: 100, format: (v) => v + '%', onInput: (v) => (strength = v / 100) });
-	const bPaint = button({ label: 'Закрасить выбранные', icon: 'paint-brush', variant: 'primary', cls: 'btn-block', title: 'Перекрасить выбранные точки в этот цвет', onClick: () => pe.paintSelected(paintHex, strength) });
+	const bPaint = button({ label: 'Закрасить выбранные', icon: 'paint-bucket', variant: 'primary', cls: 'btn-block', title: 'Перекрасить выбранные точки в этот цвет', onClick: () => pe.paintSelected(paintHex, strength) });
 	const keys = h('div', { class: 'field-hint hint pe-keys' }, 'Alt + протяжка: вращать сцену. Колесо: приблизить. [ и ]: размер кисти. Esc: выйти.');
+	const close = iconButton({ icon: 'x', title: 'Готово (Esc)', cls: 'pe-close', size: 16, onClick: () => pe.setActive(false) });
+	const head = h('div', { class: 'pe-head' }, h('span', { class: 'pe-title' }, 'Правка точек'), close);
+	const note = h('div', { class: 'field-hint hint pe-note' });
 
-	// плавающая панель над сценой: параметры выделения и действия, пока выбран инструмент слева
-	const barMode = segmented({
-		options: [
-			{ value: 'add', label: 'Добавлять', title: 'Выбирать точки' },
-			{ value: 'sub', label: 'Убирать', title: 'Снимать выбор с точек (то же с зажатым Ctrl)' },
-		],
-		value: pe.mode,
-		onChange: (v) => {
-			pe.mode = v;
-			sync();
-		},
-	});
-	const barRadius = slider({ noNorm: true, min: 4, max: 200, step: 1, value: pe.radius, format: (v) => v + ' px', onInput: (v) => {
-		pe.radius = v;
-		radius.set(v);
-	} });
-	const barRadiusWrap = h('div', { class: 'pe-bar-radius' }, h('span', {}, 'Размер кисти'), barRadius.el);
-	const bAll2 = button({ label: 'Все', variant: 'secondary', cls: 'btn-sm', title: 'Выбрать все точки (Ctrl+A)', onClick: () => pe.selectAll() });
-	const bNone2 = button({ label: 'Снять', variant: 'secondary', cls: 'btn-sm', title: 'Снять выбор', onClick: () => pe.clear() });
-	const bInv2 = button({ label: 'Наоборот', variant: 'secondary', cls: 'btn-sm', title: 'Инвертировать выбор (Ctrl+I)', onClick: () => pe.invert() });
-	const barCount = h('span', { class: 'pe-bar-count' });
-	const bDel2 = button({ label: 'Удалить', icon: 'trash', variant: 'secondary', cls: 'btn-sm pe-del', title: 'Удалить выбранные точки (Delete или X)', onClick: () => pe.deleteSelected() });
-	const bPaint2 = button({ label: 'Закрасить', icon: 'paint-bucket', variant: 'primary', cls: 'btn-sm', title: 'Перекрасить выбранные точки в этот цвет', onClick: () => pe.paintSelected(paintHex, strength) });
-	const bDone = button({ label: 'Готово', variant: 'secondary', cls: 'btn-sm', title: 'Выйти из правки точек (Esc)', onClick: () => pe.setActive(false) });
-	const bar = h('div', { class: 'pe-bar', hidden: true },
-		barMode.el, barRadiusWrap, h('span', { class: 'pe-bar-sep' }), bAll2, bNone2, bInv2, barCount,
-		h('span', { class: 'pe-bar-sep' }), bDel2, barColor.el, bPaint2, h('span', { class: 'pe-bar-sep' }), bDone);
-	document.getElementById('viewport').append(bar);
+	const panel = h('div', { class: 'pe-panel', hidden: true, role: 'dialog', 'aria-label': 'Правка точек' },
+		head,
+		note,
+		h('div', { class: 'pe-label' }, 'Способ выделения'),
+		h('div', { class: 'pe-methods' }, ...methodBtns),
+		mode.el,
+		rowRadius,
+		through.el,
+		h('div', { class: 'pe-label' }, 'Выбранные точки'),
+		count,
+		h('div', { class: 'pe-row' }, bAll, bNone, bInv),
+		bDel,
+		h('div', { class: 'pe-label' }, 'Перекраска'),
+		field('Цвет', color.el),
+		field('Сила', str.el),
+		bPaint,
+		keys
+	);
+	(document.querySelector('.workspace') || document.body).append(panel);
 
-	const sec = section('Правка точек', { key: 'p-edit' }, note, toggle, tool.el, mode.el, rowRadius, through.el, rowSel, count, bDel, field('Цвет', color.el), field('Сила', str.el), bPaint, keys);
+	/** Панель стоит справа от кнопки инструмента и по ширине равна панели настроек */
+	function place() {
+		if (panel.hidden) return;
+		const ws = panel.parentElement.getBoundingClientRect();
+		const btn = document.querySelector('.btn-tool[data-tool="psel"]');
+		const side = document.getElementById('sidebar');
+		const w = side && side.offsetWidth ? side.offsetWidth : 300;
+		panel.style.width = w + 'px';
+		const br = btn.getBoundingClientRect();
+		let top = br.top - ws.top;
+		const maxH = ws.height - 24;
+		panel.style.maxHeight = maxH + 'px';
+		const hgt = Math.min(panel.offsetHeight, maxH);
+		top = Math.max(12, Math.min(top, ws.height - hgt - 12));
+		panel.style.left = br.right - ws.left + 12 + 'px';
+		panel.style.top = top + 'px';
+	}
+	window.addEventListener('resize', place);
+
+	// ---------------------------------------------------------------- раздел во вкладке «Точки»
+	const toggle = button({ label: 'Выделять точки', icon: 'selection', variant: 'primary', cls: 'btn-block pe-toggle', onClick: () => pe.setActive(!pe.active) });
+	const sideNote = h('div', { class: 'field-hint hint' });
+	const sec = section('Правка точек', { key: 'p-edit' }, sideNote, toggle);
 
 	function sync() {
 		const t = pe.target();
 		const n = t ? t.geometry.attributes.position.count : 0;
-		note.textContent = !t ? 'Выберите облако точек в сцене. Если у вас сетка, сначала создайте из неё облако точек выше.' : `Облако: ${formatInt(n)} точек. Выделите нужные и удалите или перекрасьте их.`;
-		toggle.disabled = !t;
+		const text = !t ? 'Выберите облако точек в сцене. Если у вас сетка, сначала создайте из неё облако точек выше.' : `Облако: ${formatInt(n)} точек. Выделите нужные и удалите или перекрасьте их.`;
+		note.textContent = text;
+		sideNote.textContent = text;
+		toggle.disabled = !t && !pe.active;
 		toggle.querySelector('.btn-label').textContent = pe.active ? 'Готово' : 'Выделять точки';
 		toggle.classList.toggle('is-active', pe.active);
-		rowRadius.hidden = pe.tool !== 'brush';
-		tool.set(pe.tool);
+		panel.hidden = !pe.active;
+		methodBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.method === pe.tool)));
 		mode.set(pe.mode);
+		rowRadius.hidden = pe.tool !== 'brush';
 		radius.set(pe.radius);
 		count.textContent = t ? `Выбрано: ${formatInt(pe.count)} из ${formatInt(n)}` : '';
 		const has = !!t && pe.count > 0;
 		bDel.disabled = !has;
 		bPaint.disabled = !has;
 		keys.hidden = !pe.active;
-		// плавающая панель
-		bar.hidden = !pe.active;
-		barMode.set(pe.mode);
-		barRadiusWrap.hidden = pe.tool !== 'brush';
-		barRadius.set(pe.radius);
-		barCount.textContent = t ? `Выбрано: ${formatInt(pe.count)} из ${formatInt(n)}` : '';
-		bDel2.disabled = !has;
-		bPaint2.disabled = !has;
+		place();
 	}
 	app.bus.on('pointedit', sync);
 	app.bus.on('selection', sync);
 	app.bus.on('scene', sync);
 	app.bus.on('geometry', sync);
+	app.bus.on('tool', sync);
 	sync();
 	return sec;
 }
@@ -141234,6 +141294,16 @@ __def(__exports, 'default', () => __default);
 // Новые строки интерфейса для всех языков (правка точек и другое). Ключ это русский текст, {} это подставляемое значение.
 const __default = {
 	en: {
+		'Установить приложение': 'Install app',
+		'Point Bloom: студия 3D-облаков точек': 'Point Bloom: 3D point cloud studio',
+		'Превращайте 3D-модели, фото, видео и текст в живые облака точек. Добавляйте эффекты, правьте точки и экспортируйте в GLB, PLY или веб-страницу прямо в браузере.': 'Turn 3D models, photos, video and text into living point clouds. Add effects, edit points and export to GLB, PLY or a web page, all in your browser.',
+		'Выделение точек': 'Select points',
+		'Выделение точек: кисть, рамка, лассо (B)': 'Point selection: brush, box, lasso (B)',
+		'Способ выделения': 'Selection method',
+		'Лассо': 'Lasso',
+		'Выбранные точки': 'Selected points',
+		'Перекраска': 'Recoloring',
+		'Обведите точки от руки: выберутся все внутри контура': 'Outline points by hand: everything inside the outline is selected',
 		'Кисть выделения точек (B)': 'Point selection brush (B)',
 		'Рамка выделения точек (M)': 'Point selection box (M)',
 		'Выделение точек кистью': 'Select points with a brush',
@@ -141275,6 +141345,16 @@ const __default = {
 		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'Point color switched to “Texture”, otherwise the recoloring is not visible',
 	},
 	uk: {
+		'Установить приложение': 'Встановити застосунок',
+		'Point Bloom: студия 3D-облаков точек': 'Point Bloom: студія 3D-хмар точок',
+		'Превращайте 3D-модели, фото, видео и текст в живые облака точек. Добавляйте эффекты, правьте точки и экспортируйте в GLB, PLY или веб-страницу прямо в браузере.': 'Перетворюйте 3D-моделі, фото, відео й текст на живі хмари точок. Додавайте ефекти, правте точки та експортуйте в GLB, PLY або вебсторінку просто в браузері.',
+		'Выделение точек': 'Виділення точок',
+		'Способ выделения': 'Спосіб виділення',
+		'Лассо': 'Ласо',
+		'Выбранные точки': 'Вибрані точки',
+		'Перекраска': 'Перефарбування',
+		'Обведите точки от руки: выберутся все внутри контура': 'Обведіть точки від руки: виберуться всі всередині контуру',
+		'Выделение точек: кисть, рамка, лассо (B)': 'Виділення точок: пензель, рамка, ласо (B)',
 		'Кисть выделения точек (B)': 'Пензель виділення точок (B)',
 		'Рамка выделения точек (M)': 'Рамка виділення точок (M)',
 		'Выделение точек кистью': 'Виділення точок пензлем',
@@ -141316,6 +141396,16 @@ const __default = {
 		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'Колір точок перемкнено на «Текстура»: інакше перефарбування не видно',
 	},
 	es: {
+		'Установить приложение': 'Instalar la aplicación',
+		'Point Bloom: студия 3D-облаков точек': 'Point Bloom: estudio de nubes de puntos 3D',
+		'Превращайте 3D-модели, фото, видео и текст в живые облака точек. Добавляйте эффекты, правьте точки и экспортируйте в GLB, PLY или веб-страницу прямо в браузере.': 'Convierte modelos 3D, fotos, vídeo y texto en nubes de puntos vivas. Añade efectos, edita puntos y exporta a GLB, PLY o una página web, todo en tu navegador.',
+		'Выделение точек': 'Seleccionar puntos',
+		'Способ выделения': 'Método de selección',
+		'Лассо': 'Lazo',
+		'Выбранные точки': 'Puntos seleccionados',
+		'Перекраска': 'Recoloración',
+		'Обведите точки от руки: выберутся все внутри контура': 'Rodea puntos a mano: se seleccionan todos los del interior del contorno',
+		'Выделение точек: кисть, рамка, лассо (B)': 'Selección de puntos: pincel, recuadro, lazo (B)',
 		'Кисть выделения точек (B)': 'Pincel de selección de puntos (B)',
 		'Рамка выделения точек (M)': 'Recuadro de selección de puntos (M)',
 		'Выделение точек кистью': 'Seleccionar puntos con pincel',
@@ -141357,6 +141447,16 @@ const __default = {
 		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'El color de los puntos cambió a «Textura»: si no, el recoloreado no se ve',
 	},
 	de: {
+		'Установить приложение': 'App installieren',
+		'Point Bloom: студия 3D-облаков точек': 'Point Bloom: Studio für 3D-Punktwolken',
+		'Превращайте 3D-модели, фото, видео и текст в живые облака точек. Добавляйте эффекты, правьте точки и экспортируйте в GLB, PLY или веб-страницу прямо в браузере.': 'Verwandle 3D-Modelle, Fotos, Videos und Text in lebendige Punktwolken. Füge Effekte hinzu, bearbeite Punkte und exportiere als GLB, PLY oder Webseite, alles im Browser.',
+		'Выделение точек': 'Punkte auswählen',
+		'Способ выделения': 'Auswahlmethode',
+		'Лассо': 'Lasso',
+		'Выбранные точки': 'Ausgewählte Punkte',
+		'Перекраска': 'Umfärben',
+		'Обведите точки от руки: выберутся все внутри контура': 'Umrande Punkte von Hand: Alle innerhalb der Kontur werden ausgewählt',
+		'Выделение точек: кисть, рамка, лассо (B)': 'Punktauswahl: Pinsel, Rahmen, Lasso (B)',
 		'Кисть выделения точек (B)': 'Pinsel zur Punktauswahl (B)',
 		'Рамка выделения точек (M)': 'Rahmen zur Punktauswahl (M)',
 		'Выделение точек кистью': 'Punkte mit dem Pinsel auswählen',
@@ -141423,8 +141523,8 @@ for (const k of Object.keys(DICTS)) Object.assign(DICTS[k], MORE[k]);
 const SUPPORTED = ['ru', 'uk', 'es', 'de'];
 const CY = /[А-Яа-яЁё]/;
 const ATTRS = ['title', 'aria-label', 'placeholder', 'alt', 'data-tip'];
-const RU_TITLE = 'Point Bloom: облака точек, эффекты и конвертер OBJ в GLB';
-const RU_DESC = 'Point Bloom превращает 3D-модели, фото, видео и текст в живые облака точек. Эффекты под музыку и камеру, редактор сцены и конвертер OBJ, FBX, STL, PLY в GLB прямо в браузере.';
+const RU_TITLE = 'Point Bloom: студия 3D-облаков точек';
+const RU_DESC = 'Превращайте 3D-модели, фото, видео и текст в живые облака точек. Добавляйте эффекты, правьте точки и экспортируйте в GLB, PLY или веб-страницу прямо в браузере.';
 
 /** Интерфейс всегда английский. Другой язык выбирается, только если страницу перевели через Google Translate (адрес с _x_tr_tl) */
 function detect() {
@@ -154740,7 +154840,7 @@ class UI {
 		if (tool === 'select') {
 			const left = app.settings.nav.leftOrbit ? `${k('ЛКМ')} вращать` : `${k('СКМ')} вращать`;
 			html = `${left} &nbsp; ${k('Shift')}+${k('СКМ')} сдвиг &nbsp; ${k('Колесо')} масштаб &nbsp; ${k('Клик')} выбрать &nbsp; ${k('?')} все клавиши`;
-		} else if (tool === 'pbrush' || tool === 'prect') {
+		} else if (tool === 'psel') {
 			html = `${k('ЛКМ')} выделять &nbsp; ${k('Ctrl')}+${k('ЛКМ')} снимать &nbsp; ${k('Alt')}+${k('ЛКМ')} вращать &nbsp; ${k('Delete')} удалить &nbsp; ${k('Esc')} выход`;
 		} else {
 			const names = { translate: 'перемещение', rotate: 'вращение', scale: 'масштаб' };
@@ -155372,9 +155472,9 @@ class UI {
 				case 'KeyQ':
 					return app.model.setTool('select');
 				case 'KeyB':
-					return app.model.setTool('pbrush');
+					return app.pointEdit.setTool('brush');
 				case 'KeyM':
-					return app.model.setTool('prect');
+					return app.pointEdit.setTool('rect');
 				case 'KeyG':
 					return app.model.setTool('translate');
 				case 'KeyR':
@@ -156881,6 +156981,29 @@ function showFatal(e) {
 }
 
 const { iconsReady } = __req('src/icons.js');
+
+// установка как приложения: сервис-воркер нужен браузеру, чтобы предложить установку; кнопка в окне поддержки появляется, когда установка доступна
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+	window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+let installEvent = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+	e.preventDefault();
+	installEvent = e;
+	const b = document.getElementById('btnInstall');
+	if (b) b.hidden = false;
+});
+window.addEventListener('appinstalled', () => {
+	installEvent = null;
+	const b = document.getElementById('btnInstall');
+	if (b) b.hidden = true;
+});
+document.addEventListener('click', (e) => {
+	if (e.target.closest && e.target.closest('#btnInstall') && installEvent) {
+		installEvent.prompt();
+		installEvent = null;
+	}
+});
 
 iconsReady
 	.then(() => {

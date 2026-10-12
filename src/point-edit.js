@@ -18,7 +18,8 @@ export class PointEditor {
 		this._raf = 0;
 		this._cursor = h('div', { class: 'pe-cursor', hidden: true });
 		this._rect = h('div', { class: 'pe-rect', hidden: true });
-		document.getElementById('viewport').append(this._cursor, this._rect);
+		this._lasso = h('canvas', { class: 'pe-lasso', hidden: true });
+		document.getElementById('viewport').append(this._cursor, this._rect, this._lasso);
 		const el = app.viewport.canvas;
 		el.addEventListener('pointerdown', (e) => this._down(e));
 		el.addEventListener('pointermove', (e) => this._move(e));
@@ -51,21 +52,20 @@ export class PointEditor {
 	}
 
 	get isPointTool() {
-		const t = this.app.model.tool;
-		return t === 'pbrush' || t === 'prect';
+		return this.app.model.tool === 'psel';
 	}
 
-	/** Включить или выключить правку: это обычные инструменты слева (кисть, рамка), поэтому всё идёт через model.setTool */
+	/** Включить или выключить правку: это инструмент в левой колонке, поэтому всё идёт через model.setTool */
 	setActive(on) {
 		const model = this.app.model;
-		if (on) model.setTool(this.tool === 'rect' ? 'prect' : 'pbrush');
+		if (on) model.setTool('psel');
 		else if (this.isPointTool) model.setTool(this._back || 'select');
 	}
 
-	/** Переключает вид выделения: 'brush' или 'rect' */
+	/** Способ выделения: 'brush', 'rect' или 'lasso'. Если правка выключена, она включается */
 	setTool(t) {
 		this.tool = t;
-		if (this.active) this.app.model.setTool(t === 'rect' ? 'prect' : 'pbrush');
+		if (!this.active) this.setActive(true);
 		else this._emit();
 	}
 
@@ -75,10 +75,7 @@ export class PointEditor {
 		const on = this.isPointTool;
 		if (!on) this._back = model.tool;
 		if (on === this.active) {
-			if (on) {
-				this.tool = model.tool === 'prect' ? 'rect' : 'brush';
-				this._emit();
-			}
+			if (on) this._emit();
 			return;
 		}
 		if (on) {
@@ -93,13 +90,13 @@ export class PointEditor {
 				return;
 			}
 			this.active = true;
-			this.tool = model.tool === 'prect' ? 'rect' : 'brush';
 			this.retarget();
 			if (this.app.settings.display !== 'points') this.app.setDisplay('points');
 		} else {
 			this.active = false;
 			this._cursor.hidden = true;
 			this._rect.hidden = true;
+			this._lassoOff();
 			this._drag = null;
 		}
 		// пока включена правка, левая кнопка выделяет, а не вращает сцену (Alt вращает)
@@ -174,7 +171,7 @@ export class PointEditor {
 		e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId);
 		this._project();
 		const remove = this.mode === 'sub' || e.ctrlKey || e.metaKey;
-		this._drag = { x0: e.clientX, y0: e.clientY, remove, id: e.pointerId };
+		this._drag = { x0: e.clientX, y0: e.clientY, remove, id: e.pointerId, path: [[e.clientX, e.clientY]] };
 		if (this.tool === 'brush') this._brush(e.clientX, e.clientY, remove);
 	}
 
@@ -193,7 +190,11 @@ export class PointEditor {
 		const d = this._drag;
 		if (!d) return;
 		if (this.tool === 'brush') this._brush(e.clientX, e.clientY, d.remove);
-		else {
+		else if (this.tool === 'lasso') {
+			const last = d.path[d.path.length - 1];
+			if (Math.hypot(e.clientX - last[0], e.clientY - last[1]) >= 3) d.path.push([e.clientX, e.clientY]);
+			this._lassoDraw(d.path, d.remove);
+		} else {
 			const s = this._rect.style;
 			const l = Math.min(d.x0, e.clientX), t = Math.min(d.y0, e.clientY);
 			s.left = l - this._vpLeft() + 'px';
@@ -209,10 +210,58 @@ export class PointEditor {
 		const d = this._drag;
 		if (!d) return;
 		this._drag = null;
-		if (this.tool === 'rect') {
+		if (this.tool === 'lasso') {
+			this._lassoOff();
+			const path = d.path;
+			if (path.length >= 3) {
+				// многоугольник из линии: проверка «точка внутри» по лучу, сначала быстрый отсев по габаритам
+				let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+				for (const [x, y] of path) {
+					if (x < x0) x0 = x;
+					if (y < y0) y0 = y;
+					if (x > x1) x1 = x;
+					if (y > y1) y1 = y;
+				}
+				const m = path.length;
+				this._apply((x, y) => {
+					if (x < x0 || x > x1 || y < y0 || y > y1) return false;
+					let inside = false;
+					for (let i = 0, j = m - 1; i < m; j = i++) {
+						const xi = path[i][0], yi = path[i][1], xj = path[j][0], yj = path[j][1];
+						if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+					}
+					return inside;
+				}, d.remove);
+			}
+		} else if (this.tool === 'rect') {
 			this._rect.hidden = true;
 			this._apply((x, y) => x >= Math.min(d.x0, e.clientX) && x <= Math.max(d.x0, e.clientX) && y >= Math.min(d.y0, e.clientY) && y <= Math.max(d.y0, e.clientY), d.remove);
 		}
+	}
+
+	_lassoDraw(path, remove) {
+		const cv = this._lasso;
+		const vp = document.getElementById('viewport').getBoundingClientRect();
+		if (cv.width !== Math.round(vp.width) || cv.height !== Math.round(vp.height)) {
+			cv.width = Math.round(vp.width);
+			cv.height = Math.round(vp.height);
+		}
+		cv.hidden = false;
+		const g = cv.getContext('2d');
+		g.clearRect(0, 0, cv.width, cv.height);
+		g.beginPath();
+		path.forEach(([x, y], i) => (i ? g.lineTo(x - vp.left, y - vp.top) : g.moveTo(x - vp.left, y - vp.top)));
+		g.closePath();
+		const c = remove ? '255,107,107' : '229,138,69';
+		g.fillStyle = `rgba(${c},0.14)`;
+		g.fill();
+		g.lineWidth = 1.5;
+		g.setLineDash([6, 4]);
+		g.strokeStyle = `rgb(${c})`;
+		g.stroke();
+	}
+	_lassoOff() {
+		this._lasso.hidden = true;
 	}
 
 	_vpLeft() {

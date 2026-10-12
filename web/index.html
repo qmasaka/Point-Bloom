@@ -3,9 +3,15 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-	<title>Point Bloom: point clouds, effects and an OBJ to GLB converter</title>
-	<meta name="description" content="Point Bloom turns 3D models, photos, videos and text into living point clouds. Music- and camera-driven effects, a scene editor and an OBJ, FBX, STL, PLY to GLB converter right in your browser.">
+	<title>Point Bloom: 3D point cloud studio</title>
+	<meta name="description" content="Turn 3D models, photos, video and text into living point clouds. Add effects, edit points and export to GLB, PLY or a web page, all in your browser.">
 	<meta name="color-scheme" content="dark light">
+	<meta name="theme-color" content="#14161b">
+	<link rel="manifest" href="manifest.webmanifest">
+	<link rel="apple-touch-icon" href="assets/pwa/apple-touch-icon.png">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-title" content="Point Bloom">
 	<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cline x1=%2216.00%22 y1=%2215.80%22 x2=%223.60%22 y2=%2223.00%22 stroke=%22%23d9dde3%22 stroke-opacity=%22.5%22 stroke-width=%221.3%22/%3E%3Cline x1=%2216.00%22 y1=%2215.80%22 x2=%2216.00%22 y2=%221.80%22 stroke=%22%23d9dde3%22 stroke-opacity=%22.5%22 stroke-width=%221.3%22/%3E%3Cline x1=%2216.00%22 y1=%2215.80%22 x2=%2228.40%22 y2=%2223.00%22 stroke=%22%23d9dde3%22 stroke-opacity=%22.5%22 stroke-width=%221.3%22/%3E%3Cline x1=%223.60%22 y1=%2223.00%22 x2=%223.60%22 y2=%229.00%22 stroke=%22%23d9dde3%22 stroke-opacity=%22.5%22 stroke-width=%221.3%22/%3E%3Cline x1=%223.60%22 y1=%2223.00%22 x2=%2216.00%22 y2=%2230.20%22 stroke=%22%23d9dde3%22 stroke-opacity=%22.5%22 stroke-width=%221.3%22/%3E%3Cline x1=%2216.00%22 y1=%221.80%22 x2=%223.60%22 y2=%229.00%22 stroke=%22%23d9dde3%22 stroke-opacity=%22.5%22 stroke-width=%221.3%22/%3E%3Cline x1=%2216.00%22 y1=%221.80%22 x2=%2228.40%22 y2=%229.00%22 stroke=%22%23d9dde3%22 stroke-opacity=%22.5%22 stroke-width=%221.3%22/%3E%3Cline x1=%223.60%22 y1=%229.00%22 x2=%2216.00%22 y2=%2216.20%22 stroke=%22%23d9dde3%22 stroke-opacity=%22.5%22 stroke-width=%221.3%22/%3E%3Cline x1=%2228.40%22 y1=%2223.00%22 x2=%2216.00%22 y2=%2230.20%22 stroke=%22%23d9dde3%22 stroke-opacity=%22.5%22 stroke-width=%221.3%22/%3E%3Cline x1=%2228.40%22 y1=%2223.00%22 x2=%2228.40%22 y2=%229.00%22 stroke=%22%23d9dde3%22 stroke-opacity=%22.5%22 stroke-width=%221.3%22/%3E%3Cline x1=%2216.00%22 y1=%2230.20%22 x2=%2216.00%22 y2=%2216.20%22 stroke=%22%23d9dde3%22 stroke-opacity=%22.5%22 stroke-width=%221.3%22/%3E%3Cline x1=%2228.40%22 y1=%229.00%22 x2=%2216.00%22 y2=%2216.20%22 stroke=%22%23d9dde3%22 stroke-opacity=%22.5%22 stroke-width=%221.3%22/%3E%3Ccircle cx=%2216.00%22 cy=%2215.80%22 r=%222%22 fill=%22%23d9dde3%22 fill-opacity=%221%22/%3E%3Ccircle cx=%223.60%22 cy=%2223.00%22 r=%222%22 fill=%22%23d9dde3%22 fill-opacity=%221%22/%3E%3Ccircle cx=%2216.00%22 cy=%221.80%22 r=%222%22 fill=%22%23d9dde3%22 fill-opacity=%221%22/%3E%3Ccircle cx=%223.60%22 cy=%229.00%22 r=%222%22 fill=%22%23d9dde3%22 fill-opacity=%221%22/%3E%3Ccircle cx=%2228.40%22 cy=%2223.00%22 r=%222%22 fill=%22%23d9dde3%22 fill-opacity=%221%22/%3E%3Ccircle cx=%2216.00%22 cy=%2230.20%22 r=%222%22 fill=%22%23d9dde3%22 fill-opacity=%221%22/%3E%3Ccircle cx=%2228.40%22 cy=%229.00%22 r=%222%22 fill=%22%23d9dde3%22 fill-opacity=%221%22/%3E%3Ccircle cx=%2216.00%22 cy=%2216.20%22 r=%222.5%22 fill=%22%23e58a45%22 fill-opacity=%221%22/%3E%3C/svg%3E">
 	<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist@5.3.0/index.css">
@@ -50,6 +56,7 @@
 		<p class="support-text">Если сайт пригодился, можно сказать спасибо донатом. А в Инстаграме я показываю новые эффекты и работы.</p>
 		<a class="btn btn-primary support-btn" href="https://donatello.to/dxt.masaka" target="_blank" rel="noopener noreferrer"><span data-icon="heart" data-icon-size="18"></span><span class="btn-label">Поддержать на Donatello</span></a>
 		<a class="btn btn-secondary support-btn" href="https://instagram.com/dxt.masaka" target="_blank" rel="noopener noreferrer"><span data-icon="instagram-logo" data-icon-size="18"></span><span class="btn-label">Instagram @dxt.masaka</span></a>
+		<button class="btn btn-secondary support-btn" id="btnInstall" type="button" hidden><span data-icon="download-simple" data-icon-size="18"></span><span class="btn-label">Установить приложение</span></button>
 	</section>
 
 	<section class="export-pop" id="exportPop" aria-label="Экспорт" hidden>
@@ -66,8 +73,7 @@
 			<button class="btn btn-tool" type="button" data-tool="rotate" data-tip="Вращение (R)" data-tip-pos="right" aria-label="Вращение" data-icon="arrows-clockwise" data-icon-size="20"></button>
 			<button class="btn btn-tool" type="button" data-tool="scale" data-tip="Масштаб (S)" data-tip-pos="right" aria-label="Масштаб" data-icon="arrows-out-simple" data-icon-size="20"></button>
 			<span class="rail-sep"></span>
-			<button class="btn btn-tool" type="button" data-tool="pbrush" data-tip="Кисть выделения точек (B)" data-tip-pos="right" aria-label="Выделение точек кистью" data-icon="paint-brush" data-icon-size="20"></button>
-			<button class="btn btn-tool" type="button" data-tool="prect" data-tip="Рамка выделения точек (M)" data-tip-pos="right" aria-label="Выделение точек рамкой" data-icon="selection" data-icon-size="20"></button>
+			<button class="btn btn-tool" type="button" data-tool="psel" data-tip="Выделение точек: кисть, рамка, лассо (B)" data-tip-pos="right" aria-label="Выделение точек" data-icon="selection" data-icon-size="20"></button>
 			<span class="rail-sep"></span>
 			<button class="btn btn-tool" type="button" id="btnSnap" data-tip="Привязка к шагу (N)" data-tip-pos="right" aria-label="Привязка к шагу" aria-pressed="false" data-icon="magnet" data-icon-size="20"></button>
 			<button class="btn btn-tool" type="button" id="btnSpace" data-tip="Оси гизмо: глобальные (L)" data-tip-pos="right" aria-label="Оси гизмо" aria-pressed="false" data-icon="compass" data-icon-size="20"></button>
