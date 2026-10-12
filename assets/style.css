@@ -6271,3 +6271,9 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .export-card, .ui-float .export-card, .dlg:has(.kd-inner) { background: rgba(20, 23, 28, 0.85); backdrop-filter: blur(33px) saturate(1.1); -webkit-backdrop-filter: blur(33px) saturate(1.1); }
 /* длинные подписи в других языках не ломают кнопки профиля и кривой */
 .fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* мигание при прокрутке окон со стеклом: размытие в два слоя поверх живой 3D-сцены перерисовывалось рывками.
+   Подложка без собственного размытия, у окон свой слой композитора */
+.export-pop { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(6, 8, 11, 0.66); }
+.export-card, .ui-float .export-card, .dlg, .support-pop { transform: translateZ(0); backface-visibility: hidden; isolation: isolate; }
+.export-card .export-body, #panel-export.export-body, .dlg-inner { overscroll-behavior: contain; }

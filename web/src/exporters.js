@@ -26,6 +26,14 @@ function pairUp(a, b, out) {
 out.push([a, b]);
 for (let i = 0; i < a.children.length; i++) pairUp(a.children[i], b.children[i], out);
 }
+export function pointWorldSize(app) {
+const s = app.settings.point;
+const vp = app.viewport;
+const H = Math.max(200, (vp.size && vp.size.height) || 800);
+const fov = vp.camera && vp.camera.isPerspectiveCamera ? vp.camera.fov : 45;
+const t = Math.tan((fov * Math.PI) / 360);
+return (s.size * (app.nav.refDistance || 4) * 2 * t) / H;
+}
 export async function buildExportScene(app, o, progress) {
 const vp = app.viewport;
 const model = app.model;
@@ -115,6 +123,15 @@ group.scale.set(1, 1, 1);
 const scene = new THREE.Scene();
 scene.name = o.name || 'Scene';
 for (const child of [...group.children]) scene.add(child);
+{
+const ws = pointWorldSize(app) * (o.scale || 1);
+scene.traverse((n) => {
+if (n.isPoints) {
+n.userData.pointSize = ws;
+n.userData.pointShape = app.settings.point.shape;
+}
+});
+}
 if (clips.length && !(o.cloud && o.cloud !== 'mesh')) {
 const k = o.scale || 1;
 scene.userData.exportClips = clips.map((cl) => {
@@ -689,7 +706,12 @@ pos.set(P[k], o);
 rgb.set(C[k], o);
 o += P[k].length;
 }
-return { blob: splatPLY(pos, rgb, total, estimateSpacing(pos, total) * 0.65), count: total };
+let ps = 0;
+scene.traverse((n) => {
+if (n.isPoints && n.userData.pointSize > ps) ps = n.userData.pointSize;
+});
+const radius = ps > 0 ? ps * 0.5 : estimateSpacing(pos, total) * 0.65;
+return { blob: splatPLY(pos, rgb, total, radius), count: total };
 }
 export async function exportSplatSequence(app, o, progress) {
 const eng = app.ui.effectsEngine;

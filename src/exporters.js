@@ -32,6 +32,20 @@ function pairUp(a, b, out) {
 }
 
 /** Клонирует сцену для экспорта: исходные материалы, без служебных объектов, с нужными преобразованиями */
+/**
+ * Размер точки в мировых единицах сцены: такой, какой она видна в редакторе.
+ * В редакторе точка занимает «размер» пикселей на опорном расстоянии камеры, поэтому в мире это
+ * размер × опорное расстояние × 2·tan(fov/2) / высота окна. Так размер не зависит от экрана, на котором смотрят файл.
+ */
+export function pointWorldSize(app) {
+	const s = app.settings.point;
+	const vp = app.viewport;
+	const H = Math.max(200, (vp.size && vp.size.height) || 800);
+	const fov = vp.camera && vp.camera.isPerspectiveCamera ? vp.camera.fov : 45;
+	const t = Math.tan((fov * Math.PI) / 360);
+	return (s.size * (app.nav.refDistance || 4) * 2 * t) / H;
+}
+
 export async function buildExportScene(app, o, progress) {
 	const vp = app.viewport;
 	const model = app.model;
@@ -129,6 +143,16 @@ export async function buildExportScene(app, o, progress) {
 	const scene = new THREE.Scene();
 	scene.name = o.name || 'Scene';
 	for (const child of [...group.children]) scene.add(child);
+	// размер и форма точек из редактора записываются в файл (glTF не хранит размер точки, поэтому это extras узла)
+	{
+		const ws = pointWorldSize(app) * (o.scale || 1);
+		scene.traverse((n) => {
+			if (n.isPoints) {
+				n.userData.pointSize = ws;
+				n.userData.pointShape = app.settings.point.shape;
+			}
+		});
+	}
 	// клипы анимации: при смене масштаба сдвиги костей масштабируются так же, как модель
 	if (clips.length && !(o.cloud && o.cloud !== 'mesh')) {
 		const k = o.scale || 1;
@@ -742,7 +766,13 @@ function exportSplats(scene) {
 		rgb.set(C[k], o);
 		o += P[k].length;
 	}
-	return { blob: splatPLY(pos, rgb, total, estimateSpacing(pos, total) * 0.65), count: total };
+	// радиус пятна берётся из размера точки в редакторе; если его нет (старые данные), по густоте облака
+	let ps = 0;
+	scene.traverse((n) => {
+		if (n.isPoints && n.userData.pointSize > ps) ps = n.userData.pointSize;
+	});
+	const radius = ps > 0 ? ps * 0.5 : estimateSpacing(pos, total) * 0.65;
+	return { blob: splatPLY(pos, rgb, total, radius), count: total };
 }
 
 /** Последовательность сплатов из видео: на каждый кадр свой PLY (плоская картинка из пятен), плюс описание последовательности */

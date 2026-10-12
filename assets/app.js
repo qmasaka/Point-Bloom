@@ -131330,6 +131330,7 @@ function writeFrameColors(frames, cols, rows, target, weights = null, stride = 3
 __defs['src/exporters.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'EXPORT_FORMATS', () => EXPORT_FORMATS);
+__def(__exports, 'pointWorldSize', () => pointWorldSize);
 __def(__exports, 'buildExportScene', () => buildExportScene);
 __def(__exports, 'verifyGLB', () => verifyGLB);
 __def(__exports, 'makeZip', () => makeZip);
@@ -131371,6 +131372,20 @@ function pairUp(a, b, out) {
 }
 
 /** Клонирует сцену для экспорта: исходные материалы, без служебных объектов, с нужными преобразованиями */
+/**
+ * Размер точки в мировых единицах сцены: такой, какой она видна в редакторе.
+ * В редакторе точка занимает «размер» пикселей на опорном расстоянии камеры, поэтому в мире это
+ * размер × опорное расстояние × 2·tan(fov/2) / высота окна. Так размер не зависит от экрана, на котором смотрят файл.
+ */
+function pointWorldSize(app) {
+	const s = app.settings.point;
+	const vp = app.viewport;
+	const H = Math.max(200, (vp.size && vp.size.height) || 800);
+	const fov = vp.camera && vp.camera.isPerspectiveCamera ? vp.camera.fov : 45;
+	const t = Math.tan((fov * Math.PI) / 360);
+	return (s.size * (app.nav.refDistance || 4) * 2 * t) / H;
+}
+
 async function buildExportScene(app, o, progress) {
 	const vp = app.viewport;
 	const model = app.model;
@@ -131468,6 +131483,16 @@ async function buildExportScene(app, o, progress) {
 	const scene = new THREE.Scene();
 	scene.name = o.name || 'Scene';
 	for (const child of [...group.children]) scene.add(child);
+	// размер и форма точек из редактора записываются в файл (glTF не хранит размер точки, поэтому это extras узла)
+	{
+		const ws = pointWorldSize(app) * (o.scale || 1);
+		scene.traverse((n) => {
+			if (n.isPoints) {
+				n.userData.pointSize = ws;
+				n.userData.pointShape = app.settings.point.shape;
+			}
+		});
+	}
 	// клипы анимации: при смене масштаба сдвиги костей масштабируются так же, как модель
 	if (clips.length && !(o.cloud && o.cloud !== 'mesh')) {
 		const k = o.scale || 1;
@@ -132081,7 +132106,13 @@ function exportSplats(scene) {
 		rgb.set(C[k], o);
 		o += P[k].length;
 	}
-	return { blob: splatPLY(pos, rgb, total, estimateSpacing(pos, total) * 0.65), count: total };
+	// радиус пятна берётся из размера точки в редакторе; если его нет (старые данные), по густоте облака
+	let ps = 0;
+	scene.traverse((n) => {
+		if (n.isPoints && n.userData.pointSize > ps) ps = n.userData.pointSize;
+	});
+	const radius = ps > 0 ? ps * 0.5 : estimateSpacing(pos, total) * 0.65;
+	return { blob: splatPLY(pos, rgb, total, radius), count: total };
 }
 
 /** Последовательность сплатов из видео: на каждый кадр свой PLY (плоская картинка из пятен), плюс описание последовательности */
@@ -132313,6 +132344,85 @@ function pageHtml({ title, bg, glb, usdz, poster, autoRotate, ar }) {
 `;
 }
 
+const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.186.1';
+
+/**
+ * Страница для облака точек: model-viewer рисует точки в 1 пиксель и размер из редактора теряется,
+ * поэтому точки показывает three.js. Размер и форма берутся из extras узлов (pointSize в мировых единицах, pointShape).
+ */
+function pointsPageHtml({ title, bg, glb }) {
+	return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)}</title>
+<style>
+	html, body { height: 100%; margin: 0; overflow: hidden; }
+	body { background: ${BG[bg] || BG.dark}; }
+	canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+</style>
+<script type="importmap">{"imports":{"three":"${THREE_URL}/build/three.module.js","three/addons/":"${THREE_URL}/examples/jsm/"}}</script>
+</head>
+<body>
+<script type="module">
+\u0069mport * as THREE from 'three';
+\u0069mport { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+\u0069mport { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+const FOV = 45;
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: ${bg === 'transparent'} });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+document.body.append(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(FOV, 1, 0.001, 1000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+function sprite(shape) {
+	if (shape === 'square') return null;
+	const c = document.createElement('canvas');
+	c.width = c.height = 64;
+	const g = c.getContext('2d');
+	g.fillStyle = '#fff';
+	g.beginPath();
+	if (shape === 'diamond') { g.moveTo(32, 2); g.lineTo(62, 32); g.lineTo(32, 62); g.lineTo(2, 32); g.closePath(); g.fill(); }
+	else if (shape === 'ring') { g.arc(32, 32, 28, 0, 7); g.arc(32, 32, 16, 0, 7, true); g.fill('evenodd'); }
+	else if (shape === 'plus') { g.fillRect(24, 2, 16, 60); g.fillRect(2, 24, 60, 16); }
+	else { g.arc(32, 32, 30, 0, 7); g.fill(); }
+	return new THREE.CanvasTexture(c);
+}
+new GLTFLoader().load(${JSON.stringify(glb)}, (gltf) => {
+	scene.add(gltf.scene);
+	const k = 1 / Math.tan((FOV * Math.PI) / 360);
+	gltf.scene.traverse((n) => {
+		if (!n.isPoints) return;
+		const size = (n.userData && n.userData.pointSize) || 0.01;
+		const tex = sprite((n.userData && n.userData.pointShape) || 'circle');
+		// у three.js размер точки с перспективой считается без учёта угла обзора, поэтому делится на tan(fov/2)
+		n.material = new THREE.PointsMaterial({ size: size * k, vertexColors: !!n.geometry.attributes.color, sizeAttenuation: true, map: tex, alphaTest: tex ? 0.5 : 0, transparent: false });
+	});
+	const box = new THREE.Box3().setFromObject(gltf.scene);
+	const c = box.getCenter(new THREE.Vector3());
+	const r = Math.max(box.getSize(new THREE.Vector3()).length() / 2, 1e-3);
+	controls.target.copy(c);
+	camera.position.copy(c).add(new THREE.Vector3(0, r * 0.35, r / Math.sin((FOV * Math.PI) / 360) * 0.9));
+	camera.far = r * 100;
+	camera.updateProjectionMatrix();
+});
+function resize() {
+	const w = window.innerWidth, h = window.innerHeight;
+	renderer.setSize(w, h, false);
+	camera.aspect = w / h;
+	camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+</script>
+</body>
+</html>
+`;
+}
+
 function blobToDataURL(blob) {
 	return new Promise((resolve, reject) => {
 		const r = new FileReader();
@@ -132415,14 +132525,17 @@ async function exportForWeb(app, o, progress) {
 	const common = { title, bg: w.bg, autoRotate: false, ar: false };
 	const info = { ...glb.info, format: 'web', glbBytes: glb.info.bytes, usdzBytes: usdz ? usdz.info.bytes : 0, ms: 0 };
 	let blob, filename, files;
-	const snippet = embedSnippet({ ...common, glb: 'model.glb', poster: posterName, usdz: usdz ? 'model.usdz' : null });
+	// облако точек показывает своя страница на three.js: model-viewer не хранит размер точки
+	const hasPoints = glb.info.points > 0;
+	const makePage = (glbRef, posterRef) => (hasPoints ? pointsPageHtml({ title, bg: w.bg, glb: glbRef }) : pageHtml({ ...common, glb: glbRef, poster: posterRef, usdz: usdz ? 'model.usdz' : null }));
+	const snippet = hasPoints ? '<iframe src="index.html" style="width:100%;height:480px;border:0" title="3D"></iframe>' : embedSnippet({ ...common, glb: 'model.glb', poster: posterName, usdz: usdz ? 'model.usdz' : null });
 
 	if (w.single) {
 		progress && progress('Упаковываю в один файл', 0.85);
 		if (glb.blob.size > 25 * 1048576) warnings.push('Модель больше 25 МБ: один HTML-файл получится тяжёлым, лучше выбрать ZIP с файлами.');
 		const glbUrl = await blobToDataURL(glb.blob);
 		const posterUrl = await blobToDataURL(poster.blob);
-		const html = pageHtml({ ...common, glb: glbUrl, poster: posterUrl, usdz: null });
+		const html = makePage(glbUrl, posterUrl);
 		blob = new Blob([html], { type: 'text/html' });
 		filename = `${name}.html`;
 		files = [{ name: filename, size: blob.size }];
@@ -132431,7 +132544,7 @@ async function exportForWeb(app, o, progress) {
 	} else {
 		progress && progress('Упаковываю архив', 0.88);
 		const enc = new TextEncoder();
-		const index = pageHtml({ ...common, glb: 'model.glb', poster: posterName, usdz: usdz ? 'model.usdz' : null });
+		const index = makePage('model.glb', posterName);
 		const readme = [
 			'Страница с интерактивной 3D-моделью (создано в «Point Bloom»)',
 			'',
