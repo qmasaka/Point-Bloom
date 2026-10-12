@@ -6133,3 +6133,10 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .viewport.paint-lock .stage { cursor: crosshair; }
 .viewport.paint-lock.nav-orbit .stage { cursor: grabbing; }
 .fx-bar .fx-paint-lock-btn.is-active { background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--accent-line); }
+
+/* плашка блока: компактно, профиль и кривая картинками */
+.fx-clip-body { gap: 10px; }
+.fx-clip-panel .fx-anim-insp-seg.is-icons { gap: 2px; }
+.fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn { display: grid; place-items: center; height: 26px; padding: 0; }
+.fx-clip-panel .fx-anim-insp-seg.is-icons svg { display: block; }
+.fx-clip-open-fx { align-self: stretch; justify-content: center; }

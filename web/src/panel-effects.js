@@ -1884,6 +1884,9 @@ const natural = Math.min(340, clipBody.scrollHeight + 36);
 const room = Math.max(150, window.innerHeight - 68 - animPanel.offsetHeight - 50 - 150);
 const hh = clipCollapsed ? 34 : Math.min(room, clipUserH || natural);
 inspector.style.setProperty('--fx-clip-ph', hh + 'px');
+const fl = document.getElementById('fxLeft');
+if (window.innerWidth > 900 && fl && fl.offsetWidth) inspector.style.width = fl.offsetWidth + 'px';
+else inspector.style.width = '';
 appEl.style.setProperty('--fx-clip-h', Math.round(inspector.offsetHeight || hh) + 10 + 'px');
 }
 window.addEventListener('resize', () => placeInspector());
@@ -1960,7 +1963,7 @@ if (selClip) {
 const c = selClip;
 const layerDef = getLayerDef(c.layerId);
 inspector.hidden = false;
-clipTitle.textContent = 'Блок: ' + layerDef.name;
+clipTitle.textContent = layerDef.name;
 const secFmt = (v) => v.toFixed(2) + ' с';
 const sFadeIn = mkSlider('Нарастание', 0, c.dur, 0.05, c.fadeIn, secFmt, (v) => engine.animUpdateClip(c.id, { fadeIn: v }));
 const sFadeOut = mkSlider('Затухание', 0, c.dur, 0.05, c.fadeOut, secFmt, (v) => engine.animUpdateClip(c.id, { fadeOut: v }));
@@ -1991,10 +1994,19 @@ graph.innerHTML = graphSvg();
 }
 },
 };
+const SHAPES = {
+plateau: 'M2 4 H22',
+ramp: 'M2 12 L22 4',
+fall: 'M2 4 L22 12',
+peak: 'M2 12 L12 3 L22 12',
+smooth: 'M2 12 C10 12 14 4 22 4',
+linear: 'M2 12 L22 4',
+sharp: 'M2 12 C4 5 8 4 22 4',
+};
 const mkSeg = (label, opts, cur, onPick) => {
-const wrap = h('div', { class: 'fx-anim-insp-seg' });
-const btns = opts.map(([v, l, tip]) => {
-const b = h('button', { type: 'button', class: 'fx-anim-insp-segbtn' + (cur === v ? ' is-on' : ''), 'data-tip': tip }, l);
+const wrap = h('div', { class: 'fx-anim-insp-seg is-icons' });
+const btns = opts.map(([v, tip]) => {
+const b = h('button', { type: 'button', class: 'fx-anim-insp-segbtn' + (cur === v ? ' is-on' : ''), 'data-tip': tip, 'aria-label': tip, html: `<svg viewBox="0 0 24 16" width="24" height="16"><path d="${SHAPES[v]}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` });
 b.addEventListener('click', () => {
 onPick(v);
 btns.forEach(([vv, bb]) => bb.classList.toggle('is-on', vv === v));
@@ -2004,19 +2016,9 @@ return [v, b];
 });
 return h('div', { class: 'fx-anim-insp-row' }, h('span', { class: 'fx-anim-insp-lab' }, label), wrap);
 };
-const shapeRow = mkSeg('Профиль', [['plateau', 'Ровная', 'Сила держится на одном уровне'], ['ramp', 'Рост', 'Сила растёт от нуля к максимуму'], ['fall', 'Спад', 'Сила падает от максимума к нулю'], ['peak', 'Пик', 'Сила растёт к середине блока и падает']], c.shape || 'plateau', (v) => engine.animUpdateClip(c.id, { shape: v }));
-const easeRow = mkSeg('Кривая', [['smooth', 'Плавно', 'Мягкий вход и выход'], ['linear', 'Ровно', 'Линейное нарастание и спад'], ['sharp', 'Резко', 'Быстрый вход и резкий спад в конце']], c.ease || 'smooth', (v) => engine.animUpdateClip(c.id, { ease: v }));
-const about = h('p', { class: 'fx-clip-note' }, layerDef.hint || '');
+const shapeRow = mkSeg('Профиль', [['plateau', 'Ровная: сила держится на одном уровне'], ['ramp', 'Нарастает: сила растёт к концу блока'], ['fall', 'Спадает: сила падает к концу блока'], ['peak', 'Пик: сила растёт к середине и падает']], c.shape || 'plateau', (v) => engine.animUpdateClip(c.id, { shape: v }));
+const easeRow = mkSeg('Кривая', [['smooth', 'Плавно: мягкий вход и выход'], ['linear', 'Ровно: линейное нарастание и спад'], ['sharp', 'Резко: быстрый вход, резкий спад']], c.ease || 'smooth', (v) => engine.animUpdateClip(c.id, { ease: v }));
 const openFx = button({ label: 'Настройки эффекта', icon: 'gear-six', variant: 'secondary', cls: 'btn-sm fx-clip-open-fx', title: 'Открыть параметры этого эффекта в правой панели', onClick: () => { select_(c.layerId); sync(); } });
-const effSel = select({
-options: ANIM_LAYERS.map((id) => ({ value: id, label: getLayerDef(id).name })),
-value: c.layerId,
-onChange: (v) => {
-engine.animUpdateClip(c.id, { layerId: v });
-animSync();
-},
-});
-const effRow = h('div', { class: 'fx-anim-insp-row' }, h('span', { class: 'fx-anim-insp-lab' }, 'Эффект'), effSel.el);
 clipActs.append(
 iconButton({ icon: 'scissors', title: 'Разрезать блок по курсору времени (S)', onClick: () => splitSelected() }),
 iconButton({ icon: 'copy', title: 'Дублировать блок (Ctrl+D)', onClick: () => { const cloned = engine.animDuplicateClip(c.id); if (cloned) selectOnly(cloned); animSync(); } }),
@@ -2024,7 +2026,7 @@ iconButton({ icon: c.off ? 'eye' : 'eye-slash', title: c.off ? 'Включить
 iconButton({ icon: 'trash', title: 'Удалить блок (Delete)', cls: 'is-danger', onClick: () => { engine.animRemoveClip(c.id); selectOnly(null); animSync(); } }),
 iconButton({ icon: 'x', title: 'Снять выбор (Esc)', onClick: () => { selectOnly(null); animSync(); } })
 );
-clipBody.append(effRow, about, graph, sAmt.row, sFadeIn.row, sFadeOut.row, shapeRow, easeRow, openFx);
+clipBody.append(graph, sAmt.row, sFadeIn.row, sFadeOut.row, shapeRow, easeRow, openFx);
 } else if (selKey) {
 const k = selKey;
 inspector.hidden = false;
