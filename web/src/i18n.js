@@ -144,11 +144,19 @@ n.__ruAttrs = null;
 n = tw.nextNode();
 }
 }
+const EN_META = { title: '', desc: '' };
 function meta() {
 const d = document.querySelector('meta[name="description"]');
+if (!EN_META.title) {
+EN_META.title = document.title;
+EN_META.desc = d ? d.getAttribute('content') : '';
+}
 if (lang === 'ru') {
 document.title = RU_TITLE;
 if (d) d.setAttribute('content', RU_DESC);
+} else {
+document.title = EN_META.title;
+if (d) d.setAttribute('content', EN_META.desc);
 }
 if (!translatorOn()) document.documentElement.lang = lang;
 }
@@ -167,8 +175,10 @@ busy = false;
 }
 }
 const translatorOn = () => /\btranslated-(ltr|rtl)\b/.test(document.documentElement.className);
+let forced = false;
 function forceRu() {
-if (lang === 'ru' && document.documentElement.getAttribute('translate') === 'no') return;
+if (forced) return;
+forced = true;
 lang = 'ru';
 busy = true;
 try {
@@ -198,9 +208,17 @@ document.head.append(m);
 meta();
 window.dispatchEvent(new CustomEvent('langchange', { detail: 'ru' }));
 }
+function revertEn() {
+if (!forced) return;
+forced = false;
+document.documentElement.removeAttribute('translate');
+document.querySelector('meta[name="google"][content="notranslate"]')?.remove();
+setLang('en');
+}
 function watchTranslator() {
 const check = () => {
 if (translatorOn() && /^ru\b/i.test(document.documentElement.lang || '')) forceRu();
+else if (forced && (!translatorOn() || !/^ru\b/i.test(document.documentElement.lang || ''))) revertEn();
 };
 new MutationObserver(check).observe(document.documentElement, { attributes: true, attributeFilter: ['lang', 'class'] });
 check();

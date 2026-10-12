@@ -96,6 +96,13 @@ export class UI {
 		this.moveModeIndicator();
 		window.addEventListener('resize', () => this.moveModeIndicator());
 		document.fonts && document.fonts.ready.then(() => this.moveModeIndicator());
+		// подпись кнопки меняет ширину при переводе страницы: подсветка режима пересчитывается по размеру самих кнопок
+		if (window.ResizeObserver) {
+			const ro = new ResizeObserver(() => this.moveModeIndicator());
+			ro.observe($('#modeSwitch'));
+			$('#modeSwitch').querySelectorAll('button').forEach((b) => ro.observe(b));
+		}
+		window.addEventListener('langchange', () => requestAnimationFrame(() => this.moveModeIndicator()));
 		$('#btnEmptyOpen').addEventListener('click', () => this.openFiles('auto'));
 		$('#btnEmptyDemo').addEventListener('click', () => app.loadDemo());
 		$('#btnEmptyChar').addEventListener('click', () => app.loadDemoCharacter());

@@ -135790,11 +135790,19 @@ function restore(root) {
 	}
 }
 
+const EN_META = { title: '', desc: '' };
 function meta() {
 	const d = document.querySelector('meta[name="description"]');
+	if (!EN_META.title) {
+		EN_META.title = document.title;
+		EN_META.desc = d ? d.getAttribute('content') : '';
+	}
 	if (lang === 'ru') {
 		document.title = RU_TITLE;
 		if (d) d.setAttribute('content', RU_DESC);
+	} else {
+		document.title = EN_META.title;
+		if (d) d.setAttribute('content', EN_META.desc);
 	}
 	if (!translatorOn()) document.documentElement.lang = lang;
 }
@@ -135817,8 +135825,10 @@ function onMutations(list) {
 const translatorOn = () => /\btranslated-(ltr|rtl)\b/.test(document.documentElement.className);
 
 /** Chrome и Google Translate после перевода страницы ставят на html класс translated-* и свой lang. Если выбран русский, возвращаем свой русский текст и просим переводчик больше не трогать страницу. */
+let forced = false;
 function forceRu() {
-	if (lang === 'ru' && document.documentElement.getAttribute('translate') === 'no') return;
+	if (forced) return;
+	forced = true;
 	lang = 'ru';
 	busy = true;
 	try {
@@ -135849,9 +135859,19 @@ function forceRu() {
 	window.dispatchEvent(new CustomEvent('langchange', { detail: 'ru' }));
 }
 
+/** Переводчик выключили («Показать оригинал» или другой язык): возвращаем английский и снимаем запрет на повторный перевод. */
+function revertEn() {
+	if (!forced) return;
+	forced = false;
+	document.documentElement.removeAttribute('translate');
+	document.querySelector('meta[name="google"][content="notranslate"]')?.remove();
+	setLang('en');
+}
+
 function watchTranslator() {
 	const check = () => {
 		if (translatorOn() && /^ru\b/i.test(document.documentElement.lang || '')) forceRu();
+		else if (forced && (!translatorOn() || !/^ru\b/i.test(document.documentElement.lang || ''))) revertEn();
 	};
 	new MutationObserver(check).observe(document.documentElement, { attributes: true, attributeFilter: ['lang', 'class'] });
 	check();
@@ -148390,6 +148410,13 @@ class UI {
 		this.moveModeIndicator();
 		window.addEventListener('resize', () => this.moveModeIndicator());
 		document.fonts && document.fonts.ready.then(() => this.moveModeIndicator());
+		// подпись кнопки меняет ширину при переводе страницы: подсветка режима пересчитывается по размеру самих кнопок
+		if (window.ResizeObserver) {
+			const ro = new ResizeObserver(() => this.moveModeIndicator());
+			ro.observe($('#modeSwitch'));
+			$('#modeSwitch').querySelectorAll('button').forEach((b) => ro.observe(b));
+		}
+		window.addEventListener('langchange', () => requestAnimationFrame(() => this.moveModeIndicator()));
 		$('#btnEmptyOpen').addEventListener('click', () => this.openFiles('auto'));
 		$('#btnEmptyDemo').addEventListener('click', () => app.loadDemo());
 		$('#btnEmptyChar').addEventListener('click', () => app.loadDemoCharacter());

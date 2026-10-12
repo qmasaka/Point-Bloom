@@ -85,6 +85,12 @@ sw.style.setProperty('--iw', sel.offsetWidth + 'px');
 this.moveModeIndicator();
 window.addEventListener('resize', () => this.moveModeIndicator());
 document.fonts && document.fonts.ready.then(() => this.moveModeIndicator());
+if (window.ResizeObserver) {
+const ro = new ResizeObserver(() => this.moveModeIndicator());
+ro.observe($('#modeSwitch'));
+$('#modeSwitch').querySelectorAll('button').forEach((b) => ro.observe(b));
+}
+window.addEventListener('langchange', () => requestAnimationFrame(() => this.moveModeIndicator()));
 $('#btnEmptyOpen').addEventListener('click', () => this.openFiles('auto'));
 $('#btnEmptyDemo').addEventListener('click', () => app.loadDemo());
 $('#btnEmptyChar').addEventListener('click', () => app.loadDemoCharacter());
