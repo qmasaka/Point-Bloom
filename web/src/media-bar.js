@@ -90,10 +90,19 @@ rec.classList.toggle('is-rec', pm.recording);
 paint();
 }
 app.bus.on('media', sync);
-setInterval(() => {
-if (el.hidden || pm.recording) return;
+let timer = 0;
+const tick = () => {
+if (pm.recording) return;
 if (!scrubbing) seek.value = pm.time;
 paint();
-}, 150);
+};
+const watch = () => {
+if (el.hidden && timer) {
+clearInterval(timer);
+timer = 0;
+} else if (!el.hidden && !timer) timer = setInterval(tick, 150);
+};
+app.bus.on('media', watch);
+watch();
 return { sync, el, toggle };
 }

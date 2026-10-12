@@ -2591,7 +2591,7 @@ body {
 .fx-folder-n {
 	min-width: 16px;
 	text-align: center;
-	font-size: 10.5px;
+	font-size: 11px;
 	border-radius: 8px;
 	color: var(--accent-text);
 }
@@ -2697,7 +2697,7 @@ body {
 }
 
 .fx-left-btn {
-	display: none !important;
+	display: none;
 }
 @container app (max-width: 1100px) {
 	.fx-mode .workspace {
@@ -3374,7 +3374,7 @@ body.is-resizing-h * {
 	height: 32px;
 	padding: 0 12px;
 	gap: 6px;
-	border-radius: 999px !important;
+	border-radius: 999px;
 	font-size: 12px;
 	font-weight: 500;
 	display: inline-flex;
@@ -3451,12 +3451,12 @@ body.is-resizing-h * {
 	margin-left: 2px;
 }
 .fx-anim-zoom-btn {
-	width: 20px !important;
+	width: 20px;
 	height: 20px !important;
-	padding: 0 !important;
-	border-radius: 50% !important;
-	border: 0 !important;
-	color: var(--text-dim) !important;
+	padding: 0;
+	border-radius: 50%;
+	border: 0;
+	color: var(--text-dim);
 }
 .fx-anim-zoom-btn:hover {
 	color: var(--text) !important;
@@ -3466,17 +3466,17 @@ body.is-resizing-h * {
 	font-family: var(--mono, var(--font));
 	font-variant-numeric: tabular-nums;
 	font-feature-settings: 'zero' 0;
-	font-size: 10px;
+	font-size: 11px;
 	color: var(--text-dim);
 	min-width: 18px;
 	text-align: center;
 }
 .fx-anim-play {
-	width: 32px !important;
-	height: 32px !important;
-	border-radius: 50% !important;
-	background: var(--accent) !important;
-	color: var(--accent-ink, #14161b) !important;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	background: var(--accent);
+	color: var(--accent-ink, #14161b);
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -3544,11 +3544,11 @@ body.is-resizing-h * {
 }
 .fx-anim-presets-btn,
 .fx-anim-add-btn {
-	border-radius: 999px !important;
-	font-size: 12px !important;
+	border-radius: 999px;
+	font-size: 12px;
 	height: 28px !important;
-	padding: 0 10px !important;
-	gap: 5px !important;
+	padding: 0 10px;
+	gap: 5px;
 }
 .fx-anim-settings {
 	display: flex;
@@ -3556,14 +3556,14 @@ body.is-resizing-h * {
 	gap: 6px;
 }
 .fx-anim-loop {
-	width: 28px !important;
+	width: 28px;
 	height: 28px !important;
-	border-radius: 50% !important;
-	color: var(--text-dim) !important;
+	border-radius: 50%;
+	color: var(--text-dim);
 }
 .fx-anim-loop.is-active {
 	color: var(--accent) !important;
-	background: rgba(229, 138, 69, 0.15) !important;
+	background: rgba(229, 138, 69, 0.15);
 }
 .fx-anim-dur-box {
 	display: inline-flex;
@@ -3574,28 +3574,28 @@ body.is-resizing-h * {
 	border-radius: 999px;
 }
 .fx-anim-dur {
-	width: 40px !important;
-	height: 24px !important;
+	width: 40px;
+	height: 24px;
 	padding: 0 4px !important;
-	border: 0 !important;
+	border: 0;
 	background: transparent !important;
-	color: var(--text) !important;
+	color: var(--text);
 	font-size: 12px !important;
 	text-align: center;
-	font-family: var(--mono, var(--font)) !important;
-	font-variant-numeric: tabular-nums !important;
-	font-feature-settings: 'zero' 0, 'tnum' 1 !important;
+	font-family: var(--mono, var(--font));
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: 'zero' 0, 'tnum' 1;
 }
 .fx-anim-dur-unit {
 	font-size: 11px;
 	color: var(--text-dim);
 }
 .fx-anim-rec-btn {
-	border-radius: 999px !important;
+	border-radius: 999px;
 	height: 28px !important;
-	font-size: 12px !important;
-	padding: 0 10px !important;
-	gap: 5px !important;
+	font-size: 12px;
+	padding: 0 10px;
+	gap: 5px;
 }
 .fx-anim-close {
 	width: 28px !important;
@@ -3679,7 +3679,7 @@ body.is-resizing-h * {
 	text-overflow: ellipsis;
 }
 .fx-anim-menu-hint {
-	font-size: 10.5px;
+	font-size: 11px;
 	color: var(--text-dim);
 	white-space: nowrap;
 	overflow: hidden;
@@ -3743,7 +3743,7 @@ body.is-resizing-h * {
 	animation: fx-shelf-in 0.18s var(--ease);
 }
 .fx-anim-shelf[hidden] {
-	display: none !important;
+	display: none;
 }
 @keyframes fx-shelf-in {
 	from {
@@ -3772,10 +3772,10 @@ body.is-resizing-h * {
 	flex: 1;
 }
 .fx-anim-shelf-close {
-	width: 20px !important;
+	width: 20px;
 	height: 20px !important;
-	border-radius: 50% !important;
-	color: var(--text-dim) !important;
+	border-radius: 50%;
+	color: var(--text-dim);
 }
 .fx-anim-shelf-close:hover {
 	color: var(--text) !important;
@@ -3839,7 +3839,7 @@ body.is-resizing-h * {
 	text-overflow: ellipsis;
 }
 .fx-anim-shelf-card-hint {
-	font-size: 10.5px;
+	font-size: 11px;
 	color: var(--text-dim);
 	white-space: nowrap;
 	overflow: hidden;
@@ -3992,7 +3992,7 @@ body.is-resizing-h * {
 	top: 2px;
 	left: 4px;
 	font-family: var(--mono, var(--font));
-	font-size: 9.5px;
+	font-size: 11px;
 	font-variant-numeric: tabular-nums;
 	font-feature-settings: 'zero' 0, 'tnum' 1;
 	color: var(--text-dim);
@@ -4000,8 +4000,8 @@ body.is-resizing-h * {
 	white-space: nowrap;
 }
 .fx-anim-tick-label.is-end {
-	left: auto !important;
-	right: 4px !important;
+	left: auto;
+	right: 4px;
 	text-align: right;
 }
 .fx-anim-playhead-needle {
@@ -4137,7 +4137,7 @@ body.is-resizing-h * {
 	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 .fx-anim-block-time {
-	font-size: 10px;
+	font-size: 11px;
 	font-family: var(--mono, var(--font));
 	font-variant-numeric: tabular-nums;
 	font-feature-settings: 'zero' 0, 'tnum' 1;
@@ -4229,10 +4229,10 @@ body.is-resizing-h * {
 	gap: 6px;
 }
 .fx-anim-empty-actions .btn {
-	border-radius: 999px !important;
-	font-size: 11px !important;
-	height: 24px !important;
-	padding: 0 8px !important;
+	border-radius: 999px;
+	font-size: 11px;
+	height: 24px;
+	padding: 0 8px;
 }
 
 /* 3. Панель параметров выбранного клипа/ключа (Inspector) */
@@ -4477,7 +4477,7 @@ body.is-resizing-h * {
 	border-radius: 0;
 	background: var(--bg-sunken);
 	color: var(--text-dim);
-	font-size: 10.5px;
+	font-size: 11px;
 	font-weight: 500;
 	letter-spacing: 0.03em;
 }
@@ -4625,7 +4625,7 @@ body.is-resizing-h * {
 	margin-top: 6px;
 	padding-top: 0;
 	border-top: 0;
-	font: 600 10.5px var(--font);
+	font: 600 11px var(--font);
 	letter-spacing: 0.1em;
 	color: var(--text-faint);
 }
@@ -4682,7 +4682,7 @@ body.is-resizing-h * {
 	font-size: 11px;
 }
 .sec.is-empty {
-	display: none !important;
+	display: none;
 }
 
 /* ползунок: тонкая линия и светящаяся точка («цветок» из названия), без насечек */
@@ -4775,7 +4775,7 @@ body.is-resizing-h * {
 .fx-sub-state {
 	order: 3;
 	margin-left: auto;
-	font: 500 10.5px var(--font);
+	font: 500 11px var(--font);
 	letter-spacing: 0.04em;
 	text-transform: none;
 	color: var(--accent-text);
@@ -4819,7 +4819,7 @@ body.is-resizing-h * {
 	gap: 8px;
 }
 .slot.is-empty .slot-file {
-	font-size: 10.5px;
+	font-size: 11px;
 	letter-spacing: 0.02em;
 	text-transform: uppercase;
 	color: var(--text-faint);
@@ -5067,11 +5067,11 @@ body.is-resizing-h * {
 }
 .toolrail .btn-tool svg,
 .toolrail .btn-tool > svg {
-	width: 21px !important;
-	height: 21px !important;
+	width: 21px;
+	height: 21px;
 }
 .tabs .tab {
-	font-size: 10px;
+	font-size: 11px;
 	letter-spacing: 0;
 }
 
@@ -5310,7 +5310,7 @@ body.is-resizing-h * {
 .ui-float .status-stats { display: flex; gap: 14px; }
 
 /* подсказки внизу убраны, нижняя панель опущена */
-.fx-hint { display: none !important; }
+.fx-hint { display: none; }
 @container app (min-width: 901px) {
 	.ui-float .status-hint { display: none; }
 	.fx-mode .fx-bar { bottom: 36px; }
@@ -5508,7 +5508,7 @@ body.is-resizing-h * {
 .fx-mode .fx-anim-tick.is-end-mark { height: 100%; background: rgba(229, 138, 69, 0.55); }
 .fx-mode .fx-anim-tick-label { top: 3px; left: 5px; font-family: var(--font); font-size: 11px; font-weight: 500; color: var(--text-dim); letter-spacing: 0.01em; }
 .fx-mode .fx-anim-tick-label.is-end { left: auto !important; right: 5px !important; color: var(--accent-text); }
-.fx-mode .fx-anim-needle-tag { position: absolute; top: 4px; left: 7px; padding: 1px 6px; border-radius: 999px; background: #fff; color: #14161b; font: 600 10.5px var(--font); font-variant-numeric: tabular-nums; white-space: nowrap; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); }
+.fx-mode .fx-anim-needle-tag { position: absolute; top: 4px; left: 7px; padding: 1px 6px; border-radius: 999px; background: #fff; color: #14161b; font: 600 11px var(--font); font-variant-numeric: tabular-nums; white-space: nowrap; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); }
 .fx-mode .fx-anim-playhead-line { top: 26px; }
 /* кнопка «Анимация» в нижней панели: спокойная, без оранжевой заливки */
 .fx-bar .fx-bar-anim-btn { background: rgba(255, 255, 255, 0.06); border: 1px solid transparent; color: var(--text-dim); }
@@ -5714,12 +5714,12 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 .anim-play { flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-text); }
 
 /* дорожка персонажа на таймлайне */
-.fx-anim-char-body { position: relative; height: auto !important; min-height: 26px; cursor: ew-resize; }
+.fx-anim-char-body { position: relative; height: auto; min-height: 26px; cursor: ew-resize; }
 .fx-anim-char-canvas { display: block; width: 100%; border-radius: 6px; }
 .fx-anim-char-mark { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, 0.7); pointer-events: none; }
 .fx-anim-char-label { cursor: pointer; }
 .fx-anim-char-label:hover { color: var(--text); }
-.fx-anim-char-lane { height: auto !important; min-height: 30px; align-items: flex-start; }
+.fx-anim-char-lane { height: auto; min-height: 30px; align-items: flex-start; }
 .fx-anim-char-lane .fx-anim-track-label { align-self: stretch; height: auto; min-height: 30px; }
 .fx-anim-char-lane .fx-anim-lane-body { padding: 3px 0; }
 
@@ -5818,7 +5818,7 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 /* дорожка персонажа: название клипа под заголовком, без отдельного бегунка */
 .fx-anim-char-mark { display: none !important; }
 .fx-anim-char-names { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
-.fx-anim-char-sub { font-size: 10px; font-weight: 400; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; }
+.fx-anim-char-sub { font-size: 11px; font-weight: 400; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; }
 .fx-anim-char-body { cursor: pointer; }
 
 /* ------------------------------------------------ управление анимацией модели */
@@ -6114,7 +6114,7 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-clip-group { display: flex; flex-direction: column; gap: 5px; }
 .fx-clip-panel .fx-anim-insp-seg.is-icons { display: flex; gap: 4px; padding: 0; background: none; border: 0; }
 .fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 2px; height: auto; padding: 5px 2px 4px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.07); background: rgba(255, 255, 255, 0.035); color: var(--text-dim); }
-.fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn span { font-size: 10.5px; line-height: 1; }
+.fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn span { font-size: 11px; line-height: 1; }
 .fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn:hover { background: rgba(255, 255, 255, 0.07); color: var(--text); }
 .fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn.is-on { background: color-mix(in srgb, var(--accent) 16%, transparent); border-color: var(--accent-line, var(--accent)); color: var(--text); }
 .fx-clip-panel .mf { fill: rgba(255, 255, 255, 0.14); stroke: none; }
@@ -6136,7 +6136,7 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 
 /* ================================================================ таймлайн: колонка подписей без фона стоит на месте, зумится только шкала справа */
 .fx-anim { --fx-head-w: 100px; }
-.fx-anim-stage { position: relative; display: grid !important; grid-template-columns: var(--fx-head-w) minmax(0, 1fr); align-items: start; overflow: visible !important; width: 100%; }
+.fx-anim-stage { position: relative; display: grid; grid-template-columns: var(--fx-head-w) minmax(0, 1fr); align-items: start; overflow: visible; width: 100%; }
 .fx-anim-heads { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .fx-anim-fx-heads, .fx-anim-fx-lanes { display: flex; flex-direction: column; gap: 4px; }
 .fx-anim-scroller { min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
@@ -6148,11 +6148,11 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-anim-inner .fx-anim-ruler-body { width: 100%; height: 26px; margin-top: 3px; flex: none; }
 .fx-anim-inner .fx-anim-lane { display: flex; width: 100%; height: 30px; }
 .fx-anim-inner .fx-anim-lane-body { flex: 1 1 auto; width: 100%; min-width: 0; }
-.fx-anim-inner .fx-anim-char-lane { height: auto !important; min-height: 30px; }
+.fx-anim-inner .fx-anim-char-lane { height: auto; min-height: 30px; }
 .fx-anim-inner .fx-anim-char-set { width: 100%; padding-left: 0; justify-content: flex-start; }
 .fx-anim-inner .fx-anim-playhead-line { top: 28px; z-index: 8; margin-left: -0.5px; }
 /* подписи: без фона, одной высоты со строками справа */
-.fx-anim-heads .fx-anim-track-label { position: static; width: 100%; height: 30px; background: none !important; box-shadow: none; padding: 0 4px 0 2px; gap: 6px; overflow: hidden; }
+.fx-anim-heads .fx-anim-track-label { position: static; width: 100%; height: 30px; background: none; box-shadow: none; padding: 0 4px 0 2px; gap: 6px; overflow: hidden; }
 .fx-anim-heads .fx-anim-ruler-title { height: 32px; padding-top: 3px; }
 .fx-anim-heads .fx-anim-char-label { height: auto; min-height: 30px; align-items: flex-start; padding-top: 6px; }
 .fx-anim-heads .fx-anim-track-label::after { content: none; }
@@ -6168,3 +6168,17 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .sidebar-resizer::after, .fx-anim-resize-handle::after, .fx-clip-resize::after { opacity: 0 !important; background: var(--accent) !important; box-shadow: none !important; transition: opacity 0.14s var(--ease, ease), box-shadow 0.14s, width 0.18s var(--ease, ease), height 0.18s var(--ease, ease), margin 0.18s var(--ease, ease) !important; }
 .sidebar-resizer:hover::after, .fx-anim-resize-handle:hover::after, .fx-clip-resize:hover::after { opacity: 0.9 !important; }
 .sidebar-resizer:active::after, .workspace.is-resizing .sidebar-resizer::after, .fx-anim-resize-handle:active::after, body.is-resizing-h .fx-anim-resize-handle::after, .fx-clip-resize:active::after { opacity: 1 !important; background: var(--accent-text, var(--accent)) !important; box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent) !important; }
+
+/* сенсорные экраны: зона нажатия не меньше 44 px, а сами кнопки выглядят как прежде (область растёт невидимо) */
+@media (pointer: coarse), (max-width: 700px) {
+	:where(.btn, .mode-btn, .btn-icon, .btn-tool, .seg-btn, .dock-btn, .sec-head, .tab, .fxf-toggle, .fx-anim-insp-segbtn, .fx-anim-zoom-btn, .fx-anim-speed) { position: relative; }
+	:where(.btn, .mode-btn, .btn-icon, .btn-tool, .seg-btn, .dock-btn, .sec-head, .tab, .fxf-toggle, .fx-anim-insp-segbtn, .fx-anim-zoom-btn, .fx-anim-speed)::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		width: max(100%, 44px);
+		height: max(100%, 44px);
+		transform: translate(-50%, -50%);
+	}
+}
