@@ -1104,15 +1104,14 @@ zoomVal.addEventListener('dblclick', () => setZoom(1));
 function setZoom(z, anchor) {
 z = Math.max(ZMIN, Math.min(ZMAX, z));
 const dur = st.anim.dur || 8;
-const headW = parseFloat(getComputedStyle(stage).getPropertyValue('--fx-head-w')) || 130;
-const viewW = stage.clientWidth - headW;
+const viewW = scroller.clientWidth;
 const t = anchor ? anchor.t : engine.animT;
-const xInView = anchor ? anchor.x : Math.max(0, Math.min(viewW, (t / dur) * viewW * animZoom - stage.scrollLeft));
+const xInView = anchor ? anchor.x : Math.max(0, Math.min(viewW, (t / dur) * viewW * animZoom - scroller.scrollLeft));
 animZoom = z;
 zoomVal.textContent = (Math.round(z * 10) / 10) + 'x';
-stage.style.setProperty('--fx-anim-zoom', z);
+scroller.style.setProperty('--fx-anim-zoom', z);
 stage.classList.toggle('is-zoomed', z > 1);
-stage.scrollLeft = Math.max(0, (t / dur) * viewW * z - xInView);
+scroller.scrollLeft = Math.max(0, (t / dur) * viewW * z - xInView);
 renderRuler();
 animSync();
 }
@@ -1316,7 +1315,7 @@ const rulerTicks = h('div', { class: 'fx-anim-ruler-ticks' });
 const rulerNeedle = h('div', { class: 'fx-anim-playhead-needle' });
 const rulerWork = h('div', { class: 'fx-anim-work', hidden: true });
 const rulerBody = h('div', { class: 'fx-anim-ruler-body' }, rulerWork, rulerTicks, rulerNeedle);
-const rulerRow = h('div', { class: 'fx-anim-ruler-row' }, rulerTitle, rulerBody);
+const rulerRow = h('div', { class: 'fx-anim-ruler-row' }, rulerBody);
 const camTitle = h('div', { class: 'fx-anim-track-label fx-anim-cam-label' },
 h('span', { class: 'ic-wrap', html: icon('video-camera', 14) }),
 h('span', { class: 'fx-anim-lane-name' }, 'Камера')
@@ -1324,7 +1323,7 @@ h('span', { class: 'fx-anim-lane-name' }, 'Камера')
 const camKeysWrap = h('div', { class: 'fx-anim-keys' });
 const camLine = h('div', { class: 'fx-anim-cam-line' });
 const camTrackBody = h('div', { class: 'fx-anim-lane-body fx-anim-cam-body' }, camLine, camKeysWrap);
-const camLane = h('div', { class: 'fx-anim-lane fx-anim-cam-lane' }, camTitle, camTrackBody);
+const camLane = h('div', { class: 'fx-anim-lane fx-anim-cam-lane' }, camTrackBody);
 const charArrow = h('span', { class: 'ic-wrap fx-anim-char-arrow', html: icon('caret-right', 12) });
 const charSub = h('span', { class: 'fx-anim-char-sub' });
 const charTitle = h('div', { class: 'fx-anim-track-label fx-anim-char-label', role: 'button', tabindex: '0', 'data-tip': 'Яркость показывает, как сильно движется модель. Нажмите, чтобы увидеть отдельные кости и настройки анимации', 'data-tip-pos': 'right' }, charArrow, h('span', { class: 'fx-anim-char-names' }, h('span', { class: 'fx-anim-lane-name' }, 'Анимация'), charSub));
@@ -1333,12 +1332,21 @@ const charBody = h('div', { class: 'fx-anim-lane-body fx-anim-char-body', 'data-
 const charSet = createAnimSettings(app);
 const charSetRow = h('div', { class: 'fx-anim-char-set' }, charSet.el);
 charSetRow.hidden = true;
-const charLane = h('div', { class: 'fx-anim-lane fx-anim-char-lane' }, charTitle, charBody);
+const charLane = h('div', { class: 'fx-anim-lane fx-anim-char-lane' }, charBody);
 charLane.hidden = true;
+charTitle.hidden = true;
+const charSetSpacer = h('div', { class: 'fx-anim-char-spacer' });
+charSetSpacer.hidden = true;
+const syncCharHeads = () => {
+charTitle.style.height = charLane.offsetHeight ? charLane.offsetHeight + 'px' : '';
+charSetSpacer.hidden = charSetRow.hidden;
+charSetSpacer.style.height = charSetRow.offsetHeight + 'px';
+};
 let charOpen = false;
 function drawChar() {
 const A = app.anim;
 charLane.hidden = !A.has;
+charTitle.hidden = !A.has;
 if (!A.has) return;
 const clip = A.clips[A.clipIndex];
 if (!clip) return;
@@ -1404,6 +1412,7 @@ charArrow.innerHTML = icon(charOpen ? 'caret-down' : 'caret-right', 12);
 charLane.classList.toggle('is-open', charOpen);
 charSetRow.hidden = !charOpen;
 drawChar();
+syncCharHeads();
 clampAnimH();
 });
 let charDrag = false;
@@ -1434,8 +1443,14 @@ button({ label: 'Добавить эффект', icon: 'plus', variant: 'primary
 );
 const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, charLane, charSetRow, fxLanesWrap, emptyHint);
 const playheadLine = h('div', { class: 'fx-anim-playhead-line' });
-stage.append(rulerRow, lanesScroll, playheadLine);
-stage.addEventListener('scroll', () => stage.classList.toggle('is-scrolled', stage.scrollLeft > 2), { passive: true });
+const headsFx = h('div', { class: 'fx-anim-fx-heads' });
+const headsCol = h('div', { class: 'fx-anim-heads' }, rulerTitle, camTitle, charTitle, charSetSpacer, headsFx);
+const inner = h('div', { class: 'fx-anim-inner' }, rulerRow, lanesScroll, playheadLine);
+const scroller = h('div', { class: 'fx-anim-scroller' }, inner);
+stage.append(headsCol, scroller);
+scroller.addEventListener('scroll', () => scroller.classList.toggle('is-scrolled', scroller.scrollLeft > 2), { passive: true });
+new ResizeObserver(() => syncCharHeads()).observe(charLane);
+new ResizeObserver(() => syncCharHeads()).observe(charSetRow);
 let rulerRaf = 0;
 new ResizeObserver(() => {
 cancelAnimationFrame(rulerRaf);
@@ -1447,11 +1462,10 @@ stage.addEventListener(
 if (!(e.ctrlKey || e.metaKey)) return;
 e.preventDefault();
 const dur = st.anim.dur || 8;
-const headW = parseFloat(getComputedStyle(stage).getPropertyValue('--fx-head-w')) || 130;
-const r = stage.getBoundingClientRect();
-const x = Math.max(0, Math.min(stage.clientWidth - headW, e.clientX - r.left - headW));
-const viewW = stage.clientWidth - headW;
-const t = Math.max(0, Math.min(dur, ((stage.scrollLeft + x) / (viewW * animZoom)) * dur));
+const r = scroller.getBoundingClientRect();
+const viewW = scroller.clientWidth;
+const x = Math.max(0, Math.min(viewW, e.clientX - r.left));
+const t = Math.max(0, Math.min(dur, ((scroller.scrollLeft + x) / (viewW * animZoom)) * dur));
 setZoom(animZoom * Math.exp(-e.deltaY * 0.0022), { t, x });
 },
 { passive: false }
@@ -2124,6 +2138,7 @@ const A = st.anim;
 const durTotal = A.dur || 8;
 const clips = A.clips || [];
 fxLanesWrap.textContent = '';
+headsFx.textContent = '';
 blockEls.clear();
 if (!clips.length) {
 emptyHint.hidden = false;
@@ -2344,7 +2359,11 @@ handleR.addEventListener('pointercancel', up);
 });
 laneBody.append(block);
 }
-const lane = h('div', { class: 'fx-anim-lane fx-anim-fx-lane' + (laneSt(layerId).mute ? ' is-muted' : '') + (laneSt(layerId).solo ? ' is-solo' : '') + (laneSt(layerId).lock ? ' is-locked' : '') }, laneTitle, laneBody);
+const lane = h('div', { class: 'fx-anim-lane fx-anim-fx-lane' + (laneSt(layerId).mute ? ' is-muted' : '') + (laneSt(layerId).solo ? ' is-solo' : '') + (laneSt(layerId).lock ? ' is-locked' : '') }, laneBody);
+laneTitle.classList.toggle('is-muted', !!laneSt(layerId).mute);
+laneTitle.classList.toggle('is-solo', !!laneSt(layerId).solo);
+laneTitle.classList.toggle('is-locked', !!laneSt(layerId).lock);
+headsFx.append(laneTitle);
 fxLanesWrap.append(lane);
 }
 }
@@ -2429,11 +2448,11 @@ const frac = durTotal ? Math.min(1, Math.max(0, engine.animT / durTotal)) : 0;
 const pct = (frac * 100).toFixed(2) + '%';
 rulerNeedle.style.left = pct;
 if (animZoom > 1 && !isScrubbing && !isDraggingItem && engine.animPlaying) {
-const viewW = stage.clientWidth - (parseFloat(getComputedStyle(stage).getPropertyValue('--fx-head-w')) || 130);
+const viewW = scroller.clientWidth;
 const x = frac * viewW * animZoom;
-if (x < stage.scrollLeft + viewW * 0.04 || x > stage.scrollLeft + viewW * 0.92) stage.scrollLeft = Math.max(0, x - viewW * 0.12);
+if (x < scroller.scrollLeft + viewW * 0.04 || x > scroller.scrollLeft + viewW * 0.92) scroller.scrollLeft = Math.max(0, x - viewW * 0.12);
 }
-playheadLine.style.left = `calc(var(--fx-head-w, 130px) + (100% - var(--fx-head-w, 130px)) * ${(frac * animZoom).toFixed(5)})`;
+playheadLine.style.left = pct;
 aTimeCur.textContent = formatTimecode(engine.animT);
 aTimeTotal.textContent = formatTimecode(durTotal);
 aPlay.textContent = '';

@@ -6053,36 +6053,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-anim-lane-tools .btn-icon:not(.is-on) { display: none; }
 .fx-anim-fx-label:hover .fx-anim-lane-tools .btn-icon { display: inline-grid; }
 
-/* ================================================================ секвенсор: масштаб шкалы, подписи дорожек, плашка свойств блока */
-/* Ширина шкалы задаётся один раз: строка линейки и блок дорожек = подпись + (окно - подпись) × зум. Остальное внутри заполняет остаток */
-.fx-anim-stage { overflow-x: auto; overflow-y: hidden; }
-.fx-anim-stage .fx-anim-ruler-row,
-.fx-anim-stage .fx-anim-lanes-scroll { width: calc(var(--fx-head-w, 156px) + (100% - var(--fx-head-w, 156px)) * var(--fx-anim-zoom, 1)); }
-.fx-anim-stage .fx-anim-lane,
-.fx-anim-stage .fx-anim-char-set { width: 100%; }
-.fx-anim-stage .fx-anim-lane-body,
-.fx-anim-stage .fx-anim-ruler-body { flex: 1 1 0; min-width: 0; }
-/* подписи стоят у левого края при прокрутке: плотная подложка с мягким краем, без видимых плашек в покое */
-.fx-anim-stage .fx-anim-track-label,
-.fx-anim-stage .fx-anim-ruler-title { position: sticky; left: 0; z-index: 12; background: transparent; box-shadow: none; overflow: visible; }
-.fx-anim-stage.is-scrolled .fx-anim-track-label,
-.fx-anim-stage.is-scrolled .fx-anim-ruler-title { background: #14171b; }
-.fx-anim-stage.is-scrolled .fx-anim-track-label::after,
-.fx-anim-stage.is-scrolled .fx-anim-ruler-title::after { content: ''; position: absolute; top: 0; bottom: 0; left: 100%; width: 14px; background: linear-gradient(90deg, #14171b, rgba(20, 23, 27, 0)); pointer-events: none; }
-.fx-anim-stage .fx-anim-track-label > .fx-anim-lane-name { overflow: hidden; }
-.fx-anim-playhead-line { z-index: 8; will-change: left; }
-.fx-anim-ruler-body { overflow: visible; }
-/* кнопки дорожки: включённые видны всегда, остальные плавно появляются при наведении поверх названия */
-.fx-anim-fx-label { position: sticky; }
-.fx-anim-lane-tools { position: absolute; right: 6px; top: 50%; translate: 0 -50%; display: flex; align-items: center; gap: 1px; padding-left: 14px; background: none; }
-.fx-anim-lane-tools .btn-icon { display: inline-grid !important; width: 24px; height: 24px; padding: 0; border-radius: 50%; border: 0; background: transparent; color: var(--text-dim); opacity: 0; pointer-events: none; transition: opacity 0.14s var(--ease), background 0.14s var(--ease), color 0.14s var(--ease); }
-.fx-anim-lane-tools .btn-icon.is-on { opacity: 1; pointer-events: auto; color: var(--accent-text); background: var(--accent-soft, color-mix(in srgb, var(--accent) 20%, transparent)); }
-.fx-anim-fx-label:hover .fx-anim-lane-tools { background: linear-gradient(90deg, rgba(20, 23, 27, 0), #14171b 14px); }
-.fx-anim-fx-label:hover .fx-anim-lane-tools .btn-icon { opacity: 1; pointer-events: auto; }
-.fx-anim-fx-label:hover .fx-anim-lane-tools .btn-icon:hover { background: rgba(255, 255, 255, 0.1); color: var(--text); }
-.fx-anim-fx-label:hover .fx-anim-lane-tools .btn-icon.is-on:hover { background: color-mix(in srgb, var(--accent) 32%, transparent); color: var(--accent-text); }
-.fx-anim-lane-tools .btn-icon svg { width: 14px; height: 14px; }
-
 /* плашка свойств блока: в левой колонке под списком эффектов, то же стекло и скругление; высоту можно тянуть */
 .fx-clip-panel { display: none; }
 .fx-mode .fx-clip-panel:not([hidden]) { display: flex; }
@@ -6155,18 +6125,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-clip-quick .btn { padding-inline: 4px; min-width: 0; height: 28px; }
 .fx-clip-quick .btn .btn-label { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* таймлайн: узкая колонка подписей, которая стоит на месте при зуме шкалы; кнопки дорожек убраны, состояние показано значками */
-.fx-anim { --fx-head-w: 108px; }
-.fx-anim-stage .fx-anim-track-label,
-.fx-anim-stage .fx-anim-ruler-title { background: #14171b; gap: 5px; padding-left: 2px; }
-.fx-anim-stage .fx-anim-track-label::after,
-.fx-anim-stage .fx-anim-ruler-title::after { content: ''; position: absolute; top: 0; bottom: 0; left: 100%; width: 10px; background: linear-gradient(90deg, #14171b, rgba(20, 23, 27, 0)); pointer-events: none; }
-.fx-anim-stage .fx-anim-track-label { font-size: 12px; }
-.fx-anim-char-set { padding-left: var(--fx-head-w, 108px); }
-.fx-anim-lane-tools { right: 4px; padding-left: 0; gap: 3px; background: none !important; pointer-events: none; }
-.fx-anim-lane-tools .fx-lane-flag { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; color: var(--accent-text); background: #14171b; }
-.fx-anim-lane-tools .fx-lane-flag svg { width: 12px; height: 12px; }
-
 /* ручки изменения блока: скрыты, появляются под курсором оранжевой полоской, при нажатии горят ярче */
 .fx-mode .fx-anim-handle { width: 10px; }
 .fx-mode .fx-anim-block .fx-anim-handle::after { opacity: 0; background: var(--accent); width: 4px; top: 6px; bottom: 6px; border-radius: 3px; transition: opacity 0.12s var(--ease), box-shadow 0.12s var(--ease); }
@@ -6175,3 +6133,38 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-mode .fx-anim-block .fx-anim-handle:active::after { opacity: 1; background: var(--accent-text, var(--accent)); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent); }
 .fx-mode .fx-anim-handle.is-left::after { left: 3px; }
 .fx-mode .fx-anim-handle.is-right::after { right: 3px; }
+
+/* ================================================================ таймлайн: колонка подписей без фона стоит на месте, зумится только шкала справа */
+.fx-anim { --fx-head-w: 100px; }
+.fx-anim-stage { position: relative; display: grid !important; grid-template-columns: var(--fx-head-w) minmax(0, 1fr); align-items: start; overflow: visible !important; width: 100%; }
+.fx-anim-heads { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fx-anim-fx-heads, .fx-anim-fx-lanes { display: flex; flex-direction: column; gap: 4px; }
+.fx-anim-scroller { min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.fx-anim-scroller::-webkit-scrollbar { display: none; height: 0; }
+.fx-anim-scroller.is-scrolled { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px); mask-image: linear-gradient(90deg, transparent 0, #000 14px); }
+.fx-anim-inner { position: relative; width: calc(100% * var(--fx-anim-zoom, 1)); min-width: 100%; display: flex; flex-direction: column; gap: 4px; }
+.fx-anim-inner .fx-anim-lanes-scroll { display: flex; flex-direction: column; gap: 4px; width: 100%; padding-right: 0; overflow: visible; }
+.fx-anim-inner .fx-anim-ruler-row { display: block; width: 100%; height: 32px; position: static; background: none; backdrop-filter: none; }
+.fx-anim-inner .fx-anim-ruler-body { width: 100%; height: 26px; margin-top: 3px; flex: none; }
+.fx-anim-inner .fx-anim-lane { display: flex; width: 100%; height: 30px; }
+.fx-anim-inner .fx-anim-lane-body { flex: 1 1 auto; width: 100%; min-width: 0; }
+.fx-anim-inner .fx-anim-char-lane { height: auto !important; min-height: 30px; }
+.fx-anim-inner .fx-anim-char-set { width: 100%; padding-left: 0; justify-content: flex-start; }
+.fx-anim-inner .fx-anim-playhead-line { top: 28px; z-index: 8; margin-left: -0.5px; }
+/* подписи: без фона, одной высоты со строками справа */
+.fx-anim-heads .fx-anim-track-label { position: static; width: 100%; height: 30px; background: none !important; box-shadow: none; padding: 0 4px 0 2px; gap: 6px; overflow: hidden; }
+.fx-anim-heads .fx-anim-ruler-title { height: 32px; padding-top: 3px; }
+.fx-anim-heads .fx-anim-char-label { height: auto; min-height: 30px; align-items: flex-start; padding-top: 6px; }
+.fx-anim-heads .fx-anim-track-label::after { content: none; }
+.fx-anim-fx-label.is-muted .fx-anim-lane-name { opacity: 0.5; text-decoration: line-through; }
+.fx-anim-fx-label.is-solo .fx-anim-lane-name { color: var(--accent-text); }
+.fx-anim-lane-tools { position: absolute; right: 2px; top: 50%; translate: 0 -50%; display: flex; gap: 2px; pointer-events: none; }
+.fx-anim-fx-label { position: relative !important; }
+.fx-anim-lane-tools .fx-lane-flag { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; color: var(--accent-text); background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.fx-anim-lane-tools .fx-lane-flag svg { width: 11px; height: 11px; }
+.fx-anim-fx-label .fx-anim-lane-name { padding-right: 18px; }
+
+/* ручки изменения размера панелей: не видны, пока курсор не рядом; под курсором оранжевые, при нажатии горят ярче */
+.sidebar-resizer::after, .fx-anim-resize-handle::after, .fx-clip-resize::after { opacity: 0 !important; background: var(--accent) !important; box-shadow: none !important; transition: opacity 0.14s var(--ease, ease), box-shadow 0.14s, width 0.18s var(--ease, ease), height 0.18s var(--ease, ease), margin 0.18s var(--ease, ease) !important; }
+.sidebar-resizer:hover::after, .fx-anim-resize-handle:hover::after, .fx-clip-resize:hover::after { opacity: 0.9 !important; }
+.sidebar-resizer:active::after, .workspace.is-resizing .sidebar-resizer::after, .fx-anim-resize-handle:active::after, body.is-resizing-h .fx-anim-resize-handle::after, .fx-clip-resize:active::after { opacity: 1 !important; background: var(--accent-text, var(--accent)) !important; box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent) !important; }
