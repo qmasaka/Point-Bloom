@@ -3514,6 +3514,7 @@ export class EffectsEngine {
 
 	/** Ключ камеры и сцены на текущем времени: если рядом уже есть, обновляем его */
 	animAddKey(t = this.animT) {
+		this._histFlush();
 		const A = this.state.anim;
 		if (!A.keys) A.keys = [];
 		const snap = { t: Math.round(Math.min(A.dur, Math.max(0, t)) * 100) / 100, ...this.animCapture() };
@@ -3535,6 +3536,7 @@ export class EffectsEngine {
 	}
 
 	animRemoveKey(key) {
+		this._histFlush();
 		const A = this.state.anim;
 		if (!A.keys) return;
 		A.keys = A.keys.filter((k) => k !== key);
@@ -3552,6 +3554,7 @@ export class EffectsEngine {
 
 	/** Добавить клип эффекта на дорожку времени */
 	animAddClip(layerId, opts = {}) {
+		if (!this._batch) this._histFlush();
 		const A = this.state.anim;
 		if (!A.clips) A.clips = [];
 		const durTotal = A.dur || 8;
@@ -3575,6 +3578,8 @@ export class EffectsEngine {
 			shape: opts.shape || 'plateau',
 			ease: opts.ease || 'smooth',
 			off: !!opts.off,
+			repeat: Math.max(1, Math.min(12, Math.round(opts.repeat || 1))),
+			rev: !!opts.rev,
 		};
 		A.clips.push(clip);
 		this.touch();
@@ -3617,6 +3622,8 @@ export class EffectsEngine {
 		if (patch.shape !== undefined && ['plateau', 'ramp', 'fall', 'peak'].includes(patch.shape)) clip.shape = patch.shape;
 		if (patch.ease !== undefined && ['smooth', 'linear', 'sharp'].includes(patch.ease)) clip.ease = patch.ease;
 		if (patch.off !== undefined) clip.off = !!patch.off;
+		if (patch.repeat !== undefined) clip.repeat = Math.max(1, Math.min(12, Math.round(patch.repeat)));
+		if (patch.rev !== undefined) clip.rev = !!patch.rev;
 		if (patch.layerId !== undefined && (this.state.layers[patch.layerId] || ['morph', 'rotate', 'bloom'].includes(patch.layerId))) {
 			clip.layerId = patch.layerId;
 		}
@@ -3665,6 +3672,7 @@ export class EffectsEngine {
 
 	/** Рабочая область: воспроизведение, повтор и запись идут только внутри неё. null снимает */
 	animSetWork(a, b) {
+		this._histFlush();
 		const A = this.state.anim;
 		if (a == null) A.work = null;
 		else {
@@ -3679,6 +3687,7 @@ export class EffectsEngine {
 
 	/** Состояние дорожки эффекта: заглушить, соло, закрепить */
 	animSetLane(layerId, patch = {}) {
+		this._histFlush();
 		const A = this.state.anim;
 		const l = ((A.lanes ||= {})[layerId] ||= {});
 		Object.assign(l, patch);
@@ -3691,16 +3700,27 @@ export class EffectsEngine {
 	/** Вставляет копии блоков так, что самый ранний начинается в момент t. Возвращает новые блоки */
 	animPasteClips(list, t) {
 		if (!list || !list.length) return [];
+		this._histFlush();
+		this._batch = true;
+		try {
+			return this._animPasteClips(list, t);
+		} finally {
+			this._batch = false;
+		}
+	}
+
+	_animPasteClips(list, t) {
 		const t0 = Math.min(...list.map((c) => c.start));
 		const out = [];
 		for (const c of list) {
-			out.push(this.animAddClip(c.layerId, { start: t + (c.start - t0), dur: c.dur, fadeIn: c.fadeIn, fadeOut: c.fadeOut, amount: c.amount, shape: c.shape, ease: c.ease, off: c.off }));
+			out.push(this.animAddClip(c.layerId, { start: t + (c.start - t0), dur: c.dur, fadeIn: c.fadeIn, fadeOut: c.fadeOut, amount: c.amount, shape: c.shape, ease: c.ease, off: c.off, repeat: c.repeat, rev: c.rev }));
 		}
 		return out;
 	}
 
 	/** Удалить клип эффекта */
 	animRemoveClip(clipId) {
+		this._histFlush();
 		const A = this.state.anim;
 		if (!A.clips) return;
 		A.clips = A.clips.filter((c) => c.id !== clipId);
@@ -3710,7 +3730,17 @@ export class EffectsEngine {
 	}
 
 	/** Продублировать клип эффекта со сдвигом по времени */
-	animDuplicateClip(clipId) {
+	animDuplicateClip(clipId, batch) {
+		if (!batch) this._histFlush();
+		this._batch = true;
+		try {
+			return this._animDuplicateClip(clipId);
+		} finally {
+			this._batch = false;
+		}
+	}
+
+	_animDuplicateClip(clipId) {
 		const A = this.state.anim;
 		if (!A.clips) return null;
 		const clip = A.clips.find((c) => c.id === clipId);
@@ -3727,11 +3757,14 @@ export class EffectsEngine {
 			shape: clip.shape,
 			ease: clip.ease,
 			off: clip.off,
+			repeat: clip.repeat,
+			rev: clip.rev,
 		});
 	}
 
 	/** Разрезать клип по времени t на два: у первого остаётся вход, у второго выход. Возвращает правую часть или null */
 	animSplitClip(clipId, t) {
+		this._histFlush();
 		const A = this.state.anim;
 		const clip = (A.clips || []).find((c) => c.id === clipId);
 		if (!clip || t <= clip.start + 0.3 || t >= clip.start + clip.dur - 0.3) return null;
@@ -3741,7 +3774,9 @@ export class EffectsEngine {
 		clip.dur = Math.round(left * 100) / 100;
 		clip.fadeIn = Math.min(clip.fadeIn, clip.dur * 0.45);
 		clip.fadeOut = Math.min(0.15, clip.dur * 0.3);
-		const right = this.animAddClip(clip.layerId, { start: t, dur: end - t, fadeIn: Math.min(0.15, (end - t) * 0.3), fadeOut: Math.min(outFade, (end - t) * 0.45), amount: clip.amount });
+		this._batch = true;
+		const right = this.animAddClip(clip.layerId, { start: t, dur: end - t, fadeIn: Math.min(0.15, (end - t) * 0.3), fadeOut: Math.min(outFade, (end - t) * 0.45), amount: clip.amount, shape: clip.shape, ease: clip.ease, repeat: clip.repeat, rev: clip.rev });
+		this._batch = false;
 		this.touch();
 		this.emit();
 		this.app.bus.emit('fxanim');
@@ -3750,6 +3785,7 @@ export class EffectsEngine {
 
 	/** Очистить всю дорожку анимации */
 	animClear() {
+		this._histFlush();
 		const A = this.state.anim;
 		A.keys = [];
 		A.clips = [];
@@ -3873,6 +3909,18 @@ export class EffectsEngine {
 
 	/** Огибающая блока в момент t: вход и выход по выбранной кривой, умноженные на форму (плато, нарастание, спад, пик) */
 	_clipEnv(c, t) {
+		// пульсация: блок повторяет свою форму несколько раз подряд; реверс читает её с конца
+		const n = Math.max(1, c.repeat || 1);
+		if (c.rev) t = c.start + c.dur - (t - c.start);
+		if (n > 1) {
+			const seg = c.dur / n;
+			const k = Math.max(0, Math.min(n - 1, Math.floor((t - c.start) / seg)));
+			return this._clipEnv1({ ...c, rev: false, repeat: 1, start: c.start + k * seg, dur: seg, fadeIn: Math.min(c.fadeIn, seg * 0.45), fadeOut: Math.min(c.fadeOut, seg * 0.45) }, t);
+		}
+		return this._clipEnv1(c, t);
+	}
+
+	_clipEnv1(c, t) {
 		const curve = (f) => {
 			f = Math.min(1, Math.max(0, f));
 			return c.ease === 'linear' ? f : c.ease === 'sharp' ? Math.pow(f, 0.35) : f * f * (3 - 2 * f);
@@ -4716,7 +4764,14 @@ export class EffectsEngine {
 			layers[id] = l;
 		}
 		const p = this.app.settings.point;
-		return JSON.stringify({ source: st.source, count: st.count, layers, look: st.look, mask: st.mask, morphCfg: st.morphCfg, pt: { shape: p.shape, size: p.size, color: p.color, solidColor: p.solidColor, attenuate: p.attenuate } });
+		return JSON.stringify({ anim: st.anim, source: st.source, count: st.count, layers, look: st.look, mask: st.mask, morphCfg: st.morphCfg, pt: { shape: p.shape, size: p.size, color: p.color, solidColor: p.solidColor, attenuate: p.attenuate } });
+	}
+
+	/** Дискретные правки таймлайна (добавить, удалить, разрезать) сохраняются отдельным шагом отмены, а не сливаются с соседними */
+	_histFlush() {
+		if (!this.active || this._histBusy) return;
+		clearTimeout(this._histT);
+		this._histCommit();
 	}
 
 	_histSoon() {
@@ -4780,6 +4835,7 @@ export class EffectsEngine {
 	_diffLabel(a, b) {
 		try {
 			const A = JSON.parse(a), B = JSON.parse(b);
+			if (JSON.stringify(A.anim) !== JSON.stringify(B.anim)) return 'таймлайн';
 			for (const id of Object.keys(B.layers)) {
 				if (JSON.stringify(A.layers[id]) !== JSON.stringify(B.layers[id])) return 'эффект «' + (FX_LAYERS.find((l) => l.id === id)?.name || id) + '»';
 			}
@@ -4812,6 +4868,13 @@ export class EffectsEngine {
 		const st = this.state;
 		this._histBusy = true;
 		try {
+			// таймлайн подменяется на месте: панель держит ссылки на st.anim
+			if (d.anim) {
+				for (const k of Object.keys(st.anim)) delete st.anim[k];
+				Object.assign(st.anim, d.anim);
+				this._animVer = (this._animVer || 0) + 1;
+				this.app.bus.emit('fxanim');
+			}
 			for (const id of Object.keys(d.layers)) if (st.layers[id]) Object.assign(st.layers[id], d.layers[id]);
 			Object.assign(st.look, d.look);
 			Object.assign(st.mask, d.mask);

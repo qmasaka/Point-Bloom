@@ -1963,7 +1963,7 @@ export function createEffectsPanel(app, root, engine) {
 		animSync();
 	}
 	function dupClips() {
-		const made = selList().map((c) => engine.animDuplicateClip(c.id)).filter(Boolean);
+		const made = selList().map((c, i) => engine.animDuplicateClip(c.id, i > 0)).filter(Boolean);
 		if (!made.length) return;
 		selSet.clear();
 		made.forEach((c) => selSet.add(c.id));
@@ -2018,7 +2018,7 @@ export function createEffectsPanel(app, root, engine) {
 			inspector.style.removeProperty('--fx-clip-ph');
 			return;
 		}
-		const natural = Math.min(340, clipBody.scrollHeight + 36);
+		const natural = Math.min(420, clipBody.scrollHeight + 36);
 		// списку эффектов над плашкой всегда остаётся не меньше 150 px
 		const room = Math.max(150, window.innerHeight - 68 - animPanel.offsetHeight - 50 - 150);
 		const hh = clipCollapsed ? 34 : Math.min(room, clipUserH || natural);
@@ -2109,6 +2109,8 @@ export function createEffectsPanel(app, root, engine) {
 			const sFadeIn = mkSlider('Нарастание', 0, c.dur, 0.05, c.fadeIn, secFmt, (v) => engine.animUpdateClip(c.id, { fadeIn: v }));
 			const sFadeOut = mkSlider('Затухание', 0, c.dur, 0.05, c.fadeOut, secFmt, (v) => engine.animUpdateClip(c.id, { fadeOut: v }));
 			const sAmt = mkSlider('Сила', 0.05, 2, 0.05, c.amount, (v) => v.toFixed(2), (v) => engine.animUpdateClip(c.id, { amount: v }));
+			const sRep = mkSlider('Пульсации', 1, 12, 1, c.repeat || 1, (v) => '×' + v, (v) => engine.animUpdateClip(c.id, { repeat: v }));
+			sRep.row.dataset.tip = 'Сколько раз блок повторяет свою форму подряд: пульсация вместо одного плавного хода';
 			sFadeIn.row.dataset.tip = 'Сколько секунд сила эффекта растёт от нуля до полной';
 			sFadeOut.row.dataset.tip = 'Сколько секунд сила эффекта спадает до нуля в конце блока';
 			sAmt.row.dataset.tip = '1.00: как в настройках эффекта. Больше: сильнее, меньше: слабее';
@@ -2129,7 +2131,8 @@ export function createEffectsPanel(app, root, engine) {
 					sFadeIn.set(c.fadeIn, c.dur);
 					sFadeOut.set(c.fadeOut, c.dur);
 					sAmt.set(c.amount);
-					const sg = `${c.dur}|${c.fadeIn}|${c.fadeOut}|${c.shape}|${c.ease}`;
+					sRep.set(c.repeat || 1);
+					const sg = `${c.dur}|${c.fadeIn}|${c.fadeOut}|${c.shape}|${c.ease}|${c.repeat}|${c.rev}`;
 					if (sg !== graphSig) {
 						graphSig = sg;
 						graph.innerHTML = graphSvg();
@@ -2137,20 +2140,29 @@ export function createEffectsPanel(app, root, engine) {
 				},
 			};
 
-			// профиль и кривая: маленькие картинки вместо текста, название появляется в подсказке
-			const SHAPES = {
-				plateau: 'M2 4 H22',
-				ramp: 'M2 12 L22 4',
-				fall: 'M2 4 L22 12',
-				peak: 'M2 12 L12 3 L22 12',
-				smooth: 'M2 12 C10 12 14 4 22 4',
-				linear: 'M2 12 L22 4',
-				sharp: 'M2 12 C4 5 8 4 22 4',
+			// профиль и кривая: мини-графики силы со своей подписью. Рисуются той же функцией, что и сама анимация
+			const miniPath = (spec) => {
+				const clipM = { start: 0, dur: 1, fadeIn: 0, fadeOut: 0, shape: 'plateau', ease: 'smooth', ...spec };
+				let d = '';
+				for (let i = 0; i <= 36; i++) {
+					const v = engine._clipEnv(clipM, Math.min(0.9999, i / 36));
+					d += (i ? 'L' : 'M') + (2 + (i / 36) * 36).toFixed(1) + ' ' + (19 - Math.min(1, v) * 15).toFixed(1) + ' ';
+				}
+				return `<svg viewBox="0 0 40 22" width="40" height="22"><path class="mf" d="${d}L38 19 L2 19 Z"/><path class="ml" d="${d}"/></svg>`;
+			};
+			const SPEC = {
+				plateau: { shape: 'plateau' },
+				ramp: { shape: 'ramp' },
+				fall: { shape: 'fall' },
+				peak: { shape: 'peak' },
+				smooth: { fadeIn: 0.5, fadeOut: 0.5, ease: 'smooth' },
+				linear: { fadeIn: 0.5, fadeOut: 0.5, ease: 'linear' },
+				sharp: { fadeIn: 0.5, fadeOut: 0.5, ease: 'sharp' },
 			};
 			const mkSeg = (label, opts, cur, onPick) => {
 				const wrap = h('div', { class: 'fx-anim-insp-seg is-icons' });
-				const btns = opts.map(([v, tip]) => {
-					const b = h('button', { type: 'button', class: 'fx-anim-insp-segbtn' + (cur === v ? ' is-on' : ''), 'data-tip': tip, 'aria-label': tip, html: `<svg viewBox="0 0 24 16" width="24" height="16"><path d="${SHAPES[v]}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` });
+				const btns = opts.map(([v, name, tip]) => {
+					const b = h('button', { type: 'button', class: 'fx-anim-insp-segbtn' + (cur === v ? ' is-on' : ''), 'data-tip': tip, 'aria-label': tip, html: miniPath(SPEC[v]) + `<span>${name}</span>` });
 					b.addEventListener('click', () => {
 						onPick(v);
 						btns.forEach(([vv, bb]) => bb.classList.toggle('is-on', vv === v));
@@ -2158,10 +2170,16 @@ export function createEffectsPanel(app, root, engine) {
 					wrap.append(b);
 					return [v, b];
 				});
-				return h('div', { class: 'fx-anim-insp-row' }, h('span', { class: 'fx-anim-insp-lab' }, label), wrap);
+				return h('div', { class: 'fx-clip-group' }, h('span', { class: 'fx-anim-insp-lab' }, label), wrap);
 			};
-			const shapeRow = mkSeg('Профиль', [['plateau', 'Ровная: сила держится на одном уровне'], ['ramp', 'Нарастает: сила растёт к концу блока'], ['fall', 'Спадает: сила падает к концу блока'], ['peak', 'Пик: сила растёт к середине и падает']], c.shape || 'plateau', (v) => engine.animUpdateClip(c.id, { shape: v }));
-			const easeRow = mkSeg('Кривая', [['smooth', 'Плавно: мягкий вход и выход'], ['linear', 'Ровно: линейное нарастание и спад'], ['sharp', 'Резко: быстрый вход, резкий спад']], c.ease || 'smooth', (v) => engine.animUpdateClip(c.id, { ease: v }));
+			const shapeRow = mkSeg('Профиль', [['plateau', 'Ровная', 'Сила держится на одном уровне весь блок'], ['ramp', 'Растёт', 'Сила растёт от нуля к концу блока'], ['fall', 'Спадает', 'Сила падает от максимума к концу блока'], ['peak', 'Пик', 'Сила растёт к середине блока и падает']], c.shape || 'plateau', (v) => engine.animUpdateClip(c.id, { shape: v }));
+			const easeRow = mkSeg('Кривая', [['smooth', 'Плавно', 'Мягкий вход и выход'], ['linear', 'Ровно', 'Линейное нарастание и спад'], ['sharp', 'Резко', 'Быстрый вход, резкий спад']], c.ease || 'smooth', (v) => engine.animUpdateClip(c.id, { ease: v }));
+			const revSw = switchRow('Задом наперёд', { value: !!c.rev, onChange: (v) => { engine.animUpdateClip(c.id, { rev: v }); } });
+			const quick = h('div', { class: 'fx-clip-quick' },
+				button({ label: 'Начало здесь', variant: 'secondary', cls: 'btn-sm', title: 'Блок начнётся там, где стоит курсор времени, длина сохранится', onClick: () => { engine.animUpdateClip(c.id, { start: engine.animT }); animSync(); } }),
+				button({ label: 'Конец здесь', variant: 'secondary', cls: 'btn-sm', title: 'Блок закончится там, где стоит курсор времени', onClick: () => { const d = engine.animT - c.start; if (d < 0.2) { app.toast('Курсор должен стоять правее начала блока', 'info'); return; } engine.animUpdateClip(c.id, { dur: d }); animSync(); } }),
+				button({ label: 'На всю длину', variant: 'secondary', cls: 'btn-sm', title: 'Растянуть блок на весь таймлайн', onClick: () => { engine.animUpdateClip(c.id, { start: 0 }); engine.animUpdateClip(c.id, { dur: st.anim.dur || 8 }); animSync(); } })
+			);
 			const openFx = button({ label: 'Настройки эффекта', icon: 'gear-six', variant: 'secondary', cls: 'btn-sm fx-clip-open-fx', title: 'Открыть параметры этого эффекта в правой панели', onClick: () => { select_(c.layerId); sync(); } });
 			clipActs.append(
 				iconButton({ icon: 'scissors', title: 'Разрезать блок по курсору времени (S)', onClick: () => splitSelected() }),
@@ -2170,7 +2188,7 @@ export function createEffectsPanel(app, root, engine) {
 				iconButton({ icon: 'trash', title: 'Удалить блок (Delete)', cls: 'is-danger', onClick: () => { engine.animRemoveClip(c.id); selectOnly(null); animSync(); } }),
 				iconButton({ icon: 'x', title: 'Снять выбор (Esc)', onClick: () => { selectOnly(null); animSync(); } })
 			);
-			clipBody.append(graph, sAmt.row, sFadeIn.row, sFadeOut.row, shapeRow, easeRow, openFx);
+			clipBody.append(graph, sAmt.row, sFadeIn.row, sFadeOut.row, sRep.row, shapeRow, easeRow, revSw.el, quick, openFx);
 		} else if (selKey) {
 			const k = selKey;
 			inspector.hidden = false;
@@ -2649,7 +2667,7 @@ export function createEffectsPanel(app, root, engine) {
 		if (isDraggingItem) return;
 
 		const keysStr = (A.keys || []).map((k) => `${k.t}`).join(',');
-		const clipsStr = (A.clips || []).map((c) => `${c.id}:${c.layerId}:${c.start}:${c.dur}:${c.fadeIn}:${c.fadeOut}:${c.amount}:${c.shape}:${c.ease}:${c.off ? 1 : 0}`).join(',');
+		const clipsStr = (A.clips || []).map((c) => `${c.id}:${c.layerId}:${c.start}:${c.dur}:${c.fadeIn}:${c.fadeOut}:${c.amount}:${c.shape}:${c.ease}:${c.off ? 1 : 0}:${c.repeat || 1}:${c.rev ? 1 : 0}`).join(',');
 		const marksStr = (A.work ? `${A.work.a}-${A.work.b}` : '') + '|' + JSON.stringify(A.lanes || {});
 		const sig = `${durTotal}|${keysStr}|${clipsStr}|${marksStr}|${selKey ? A.keys.indexOf(selKey) : -1}|${[...selSet].join(',')}`;
 

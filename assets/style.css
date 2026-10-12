@@ -6140,3 +6140,18 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn { display: grid; place-items: center; height: 26px; padding: 0; }
 .fx-clip-panel .fx-anim-insp-seg.is-icons svg { display: block; }
 .fx-clip-open-fx { align-self: stretch; justify-content: center; }
+
+/* профиль и кривая: мини-графики с подписью */
+.fx-clip-group { display: flex; flex-direction: column; gap: 5px; }
+.fx-clip-panel .fx-anim-insp-seg.is-icons { display: flex; gap: 4px; padding: 0; background: none; border: 0; }
+.fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 2px; height: auto; padding: 5px 2px 4px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.07); background: rgba(255, 255, 255, 0.035); color: var(--text-dim); }
+.fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn span { font-size: 10.5px; line-height: 1; }
+.fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn:hover { background: rgba(255, 255, 255, 0.07); color: var(--text); }
+.fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn.is-on { background: color-mix(in srgb, var(--accent) 16%, transparent); border-color: var(--accent-line, var(--accent)); color: var(--text); }
+.fx-clip-panel .mf { fill: rgba(255, 255, 255, 0.14); stroke: none; }
+.fx-clip-panel .ml { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.fx-clip-panel .is-on .mf { fill: color-mix(in srgb, var(--accent) 38%, transparent); }
+.fx-clip-panel .is-on .ml { stroke: var(--accent-text, var(--accent)); }
+.fx-clip-quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.fx-clip-quick .btn { padding-inline: 4px; min-width: 0; height: 28px; }
+.fx-clip-quick .btn .btn-label { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

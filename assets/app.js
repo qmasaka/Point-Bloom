@@ -139245,6 +139245,7 @@ class EffectsEngine {
 
 	/** Ключ камеры и сцены на текущем времени: если рядом уже есть, обновляем его */
 	animAddKey(t = this.animT) {
+		this._histFlush();
 		const A = this.state.anim;
 		if (!A.keys) A.keys = [];
 		const snap = { t: Math.round(Math.min(A.dur, Math.max(0, t)) * 100) / 100, ...this.animCapture() };
@@ -139266,6 +139267,7 @@ class EffectsEngine {
 	}
 
 	animRemoveKey(key) {
+		this._histFlush();
 		const A = this.state.anim;
 		if (!A.keys) return;
 		A.keys = A.keys.filter((k) => k !== key);
@@ -139283,6 +139285,7 @@ class EffectsEngine {
 
 	/** Добавить клип эффекта на дорожку времени */
 	animAddClip(layerId, opts = {}) {
+		if (!this._batch) this._histFlush();
 		const A = this.state.anim;
 		if (!A.clips) A.clips = [];
 		const durTotal = A.dur || 8;
@@ -139306,6 +139309,8 @@ class EffectsEngine {
 			shape: opts.shape || 'plateau',
 			ease: opts.ease || 'smooth',
 			off: !!opts.off,
+			repeat: Math.max(1, Math.min(12, Math.round(opts.repeat || 1))),
+			rev: !!opts.rev,
 		};
 		A.clips.push(clip);
 		this.touch();
@@ -139348,6 +139353,8 @@ class EffectsEngine {
 		if (patch.shape !== undefined && ['plateau', 'ramp', 'fall', 'peak'].includes(patch.shape)) clip.shape = patch.shape;
 		if (patch.ease !== undefined && ['smooth', 'linear', 'sharp'].includes(patch.ease)) clip.ease = patch.ease;
 		if (patch.off !== undefined) clip.off = !!patch.off;
+		if (patch.repeat !== undefined) clip.repeat = Math.max(1, Math.min(12, Math.round(patch.repeat)));
+		if (patch.rev !== undefined) clip.rev = !!patch.rev;
 		if (patch.layerId !== undefined && (this.state.layers[patch.layerId] || ['morph', 'rotate', 'bloom'].includes(patch.layerId))) {
 			clip.layerId = patch.layerId;
 		}
@@ -139396,6 +139403,7 @@ class EffectsEngine {
 
 	/** Рабочая область: воспроизведение, повтор и запись идут только внутри неё. null снимает */
 	animSetWork(a, b) {
+		this._histFlush();
 		const A = this.state.anim;
 		if (a == null) A.work = null;
 		else {
@@ -139410,6 +139418,7 @@ class EffectsEngine {
 
 	/** Состояние дорожки эффекта: заглушить, соло, закрепить */
 	animSetLane(layerId, patch = {}) {
+		this._histFlush();
 		const A = this.state.anim;
 		const l = ((A.lanes ||= {})[layerId] ||= {});
 		Object.assign(l, patch);
@@ -139422,16 +139431,27 @@ class EffectsEngine {
 	/** Вставляет копии блоков так, что самый ранний начинается в момент t. Возвращает новые блоки */
 	animPasteClips(list, t) {
 		if (!list || !list.length) return [];
+		this._histFlush();
+		this._batch = true;
+		try {
+			return this._animPasteClips(list, t);
+		} finally {
+			this._batch = false;
+		}
+	}
+
+	_animPasteClips(list, t) {
 		const t0 = Math.min(...list.map((c) => c.start));
 		const out = [];
 		for (const c of list) {
-			out.push(this.animAddClip(c.layerId, { start: t + (c.start - t0), dur: c.dur, fadeIn: c.fadeIn, fadeOut: c.fadeOut, amount: c.amount, shape: c.shape, ease: c.ease, off: c.off }));
+			out.push(this.animAddClip(c.layerId, { start: t + (c.start - t0), dur: c.dur, fadeIn: c.fadeIn, fadeOut: c.fadeOut, amount: c.amount, shape: c.shape, ease: c.ease, off: c.off, repeat: c.repeat, rev: c.rev }));
 		}
 		return out;
 	}
 
 	/** Удалить клип эффекта */
 	animRemoveClip(clipId) {
+		this._histFlush();
 		const A = this.state.anim;
 		if (!A.clips) return;
 		A.clips = A.clips.filter((c) => c.id !== clipId);
@@ -139441,7 +139461,17 @@ class EffectsEngine {
 	}
 
 	/** Продублировать клип эффекта со сдвигом по времени */
-	animDuplicateClip(clipId) {
+	animDuplicateClip(clipId, batch) {
+		if (!batch) this._histFlush();
+		this._batch = true;
+		try {
+			return this._animDuplicateClip(clipId);
+		} finally {
+			this._batch = false;
+		}
+	}
+
+	_animDuplicateClip(clipId) {
 		const A = this.state.anim;
 		if (!A.clips) return null;
 		const clip = A.clips.find((c) => c.id === clipId);
@@ -139458,11 +139488,14 @@ class EffectsEngine {
 			shape: clip.shape,
 			ease: clip.ease,
 			off: clip.off,
+			repeat: clip.repeat,
+			rev: clip.rev,
 		});
 	}
 
 	/** Разрезать клип по времени t на два: у первого остаётся вход, у второго выход. Возвращает правую часть или null */
 	animSplitClip(clipId, t) {
+		this._histFlush();
 		const A = this.state.anim;
 		const clip = (A.clips || []).find((c) => c.id === clipId);
 		if (!clip || t <= clip.start + 0.3 || t >= clip.start + clip.dur - 0.3) return null;
@@ -139472,7 +139505,9 @@ class EffectsEngine {
 		clip.dur = Math.round(left * 100) / 100;
 		clip.fadeIn = Math.min(clip.fadeIn, clip.dur * 0.45);
 		clip.fadeOut = Math.min(0.15, clip.dur * 0.3);
-		const right = this.animAddClip(clip.layerId, { start: t, dur: end - t, fadeIn: Math.min(0.15, (end - t) * 0.3), fadeOut: Math.min(outFade, (end - t) * 0.45), amount: clip.amount });
+		this._batch = true;
+		const right = this.animAddClip(clip.layerId, { start: t, dur: end - t, fadeIn: Math.min(0.15, (end - t) * 0.3), fadeOut: Math.min(outFade, (end - t) * 0.45), amount: clip.amount, shape: clip.shape, ease: clip.ease, repeat: clip.repeat, rev: clip.rev });
+		this._batch = false;
 		this.touch();
 		this.emit();
 		this.app.bus.emit('fxanim');
@@ -139481,6 +139516,7 @@ class EffectsEngine {
 
 	/** Очистить всю дорожку анимации */
 	animClear() {
+		this._histFlush();
 		const A = this.state.anim;
 		A.keys = [];
 		A.clips = [];
@@ -139604,6 +139640,18 @@ class EffectsEngine {
 
 	/** Огибающая блока в момент t: вход и выход по выбранной кривой, умноженные на форму (плато, нарастание, спад, пик) */
 	_clipEnv(c, t) {
+		// пульсация: блок повторяет свою форму несколько раз подряд; реверс читает её с конца
+		const n = Math.max(1, c.repeat || 1);
+		if (c.rev) t = c.start + c.dur - (t - c.start);
+		if (n > 1) {
+			const seg = c.dur / n;
+			const k = Math.max(0, Math.min(n - 1, Math.floor((t - c.start) / seg)));
+			return this._clipEnv1({ ...c, rev: false, repeat: 1, start: c.start + k * seg, dur: seg, fadeIn: Math.min(c.fadeIn, seg * 0.45), fadeOut: Math.min(c.fadeOut, seg * 0.45) }, t);
+		}
+		return this._clipEnv1(c, t);
+	}
+
+	_clipEnv1(c, t) {
 		const curve = (f) => {
 			f = Math.min(1, Math.max(0, f));
 			return c.ease === 'linear' ? f : c.ease === 'sharp' ? Math.pow(f, 0.35) : f * f * (3 - 2 * f);
@@ -140447,7 +140495,14 @@ class EffectsEngine {
 			layers[id] = l;
 		}
 		const p = this.app.settings.point;
-		return JSON.stringify({ source: st.source, count: st.count, layers, look: st.look, mask: st.mask, morphCfg: st.morphCfg, pt: { shape: p.shape, size: p.size, color: p.color, solidColor: p.solidColor, attenuate: p.attenuate } });
+		return JSON.stringify({ anim: st.anim, source: st.source, count: st.count, layers, look: st.look, mask: st.mask, morphCfg: st.morphCfg, pt: { shape: p.shape, size: p.size, color: p.color, solidColor: p.solidColor, attenuate: p.attenuate } });
+	}
+
+	/** Дискретные правки таймлайна (добавить, удалить, разрезать) сохраняются отдельным шагом отмены, а не сливаются с соседними */
+	_histFlush() {
+		if (!this.active || this._histBusy) return;
+		clearTimeout(this._histT);
+		this._histCommit();
 	}
 
 	_histSoon() {
@@ -140511,6 +140566,7 @@ class EffectsEngine {
 	_diffLabel(a, b) {
 		try {
 			const A = JSON.parse(a), B = JSON.parse(b);
+			if (JSON.stringify(A.anim) !== JSON.stringify(B.anim)) return 'таймлайн';
 			for (const id of Object.keys(B.layers)) {
 				if (JSON.stringify(A.layers[id]) !== JSON.stringify(B.layers[id])) return 'эффект «' + (FX_LAYERS.find((l) => l.id === id)?.name || id) + '»';
 			}
@@ -140543,6 +140599,13 @@ class EffectsEngine {
 		const st = this.state;
 		this._histBusy = true;
 		try {
+			// таймлайн подменяется на месте: панель держит ссылки на st.anim
+			if (d.anim) {
+				for (const k of Object.keys(st.anim)) delete st.anim[k];
+				Object.assign(st.anim, d.anim);
+				this._animVer = (this._animVer || 0) + 1;
+				this.app.bus.emit('fxanim');
+			}
 			for (const id of Object.keys(d.layers)) if (st.layers[id]) Object.assign(st.layers[id], d.layers[id]);
 			Object.assign(st.look, d.look);
 			Object.assign(st.mask, d.mask);
@@ -145360,7 +145423,7 @@ function createEffectsPanel(app, root, engine) {
 		animSync();
 	}
 	function dupClips() {
-		const made = selList().map((c) => engine.animDuplicateClip(c.id)).filter(Boolean);
+		const made = selList().map((c, i) => engine.animDuplicateClip(c.id, i > 0)).filter(Boolean);
 		if (!made.length) return;
 		selSet.clear();
 		made.forEach((c) => selSet.add(c.id));
@@ -145415,7 +145478,7 @@ function createEffectsPanel(app, root, engine) {
 			inspector.style.removeProperty('--fx-clip-ph');
 			return;
 		}
-		const natural = Math.min(340, clipBody.scrollHeight + 36);
+		const natural = Math.min(420, clipBody.scrollHeight + 36);
 		// списку эффектов над плашкой всегда остаётся не меньше 150 px
 		const room = Math.max(150, window.innerHeight - 68 - animPanel.offsetHeight - 50 - 150);
 		const hh = clipCollapsed ? 34 : Math.min(room, clipUserH || natural);
@@ -145506,6 +145569,8 @@ function createEffectsPanel(app, root, engine) {
 			const sFadeIn = mkSlider('Нарастание', 0, c.dur, 0.05, c.fadeIn, secFmt, (v) => engine.animUpdateClip(c.id, { fadeIn: v }));
 			const sFadeOut = mkSlider('Затухание', 0, c.dur, 0.05, c.fadeOut, secFmt, (v) => engine.animUpdateClip(c.id, { fadeOut: v }));
 			const sAmt = mkSlider('Сила', 0.05, 2, 0.05, c.amount, (v) => v.toFixed(2), (v) => engine.animUpdateClip(c.id, { amount: v }));
+			const sRep = mkSlider('Пульсации', 1, 12, 1, c.repeat || 1, (v) => '×' + v, (v) => engine.animUpdateClip(c.id, { repeat: v }));
+			sRep.row.dataset.tip = 'Сколько раз блок повторяет свою форму подряд: пульсация вместо одного плавного хода';
 			sFadeIn.row.dataset.tip = 'Сколько секунд сила эффекта растёт от нуля до полной';
 			sFadeOut.row.dataset.tip = 'Сколько секунд сила эффекта спадает до нуля в конце блока';
 			sAmt.row.dataset.tip = '1.00: как в настройках эффекта. Больше: сильнее, меньше: слабее';
@@ -145526,7 +145591,8 @@ function createEffectsPanel(app, root, engine) {
 					sFadeIn.set(c.fadeIn, c.dur);
 					sFadeOut.set(c.fadeOut, c.dur);
 					sAmt.set(c.amount);
-					const sg = `${c.dur}|${c.fadeIn}|${c.fadeOut}|${c.shape}|${c.ease}`;
+					sRep.set(c.repeat || 1);
+					const sg = `${c.dur}|${c.fadeIn}|${c.fadeOut}|${c.shape}|${c.ease}|${c.repeat}|${c.rev}`;
 					if (sg !== graphSig) {
 						graphSig = sg;
 						graph.innerHTML = graphSvg();
@@ -145534,20 +145600,29 @@ function createEffectsPanel(app, root, engine) {
 				},
 			};
 
-			// профиль и кривая: маленькие картинки вместо текста, название появляется в подсказке
-			const SHAPES = {
-				plateau: 'M2 4 H22',
-				ramp: 'M2 12 L22 4',
-				fall: 'M2 4 L22 12',
-				peak: 'M2 12 L12 3 L22 12',
-				smooth: 'M2 12 C10 12 14 4 22 4',
-				linear: 'M2 12 L22 4',
-				sharp: 'M2 12 C4 5 8 4 22 4',
+			// профиль и кривая: мини-графики силы со своей подписью. Рисуются той же функцией, что и сама анимация
+			const miniPath = (spec) => {
+				const clipM = { start: 0, dur: 1, fadeIn: 0, fadeOut: 0, shape: 'plateau', ease: 'smooth', ...spec };
+				let d = '';
+				for (let i = 0; i <= 36; i++) {
+					const v = engine._clipEnv(clipM, Math.min(0.9999, i / 36));
+					d += (i ? 'L' : 'M') + (2 + (i / 36) * 36).toFixed(1) + ' ' + (19 - Math.min(1, v) * 15).toFixed(1) + ' ';
+				}
+				return `<svg viewBox="0 0 40 22" width="40" height="22"><path class="mf" d="${d}L38 19 L2 19 Z"/><path class="ml" d="${d}"/></svg>`;
+			};
+			const SPEC = {
+				plateau: { shape: 'plateau' },
+				ramp: { shape: 'ramp' },
+				fall: { shape: 'fall' },
+				peak: { shape: 'peak' },
+				smooth: { fadeIn: 0.5, fadeOut: 0.5, ease: 'smooth' },
+				linear: { fadeIn: 0.5, fadeOut: 0.5, ease: 'linear' },
+				sharp: { fadeIn: 0.5, fadeOut: 0.5, ease: 'sharp' },
 			};
 			const mkSeg = (label, opts, cur, onPick) => {
 				const wrap = h('div', { class: 'fx-anim-insp-seg is-icons' });
-				const btns = opts.map(([v, tip]) => {
-					const b = h('button', { type: 'button', class: 'fx-anim-insp-segbtn' + (cur === v ? ' is-on' : ''), 'data-tip': tip, 'aria-label': tip, html: `<svg viewBox="0 0 24 16" width="24" height="16"><path d="${SHAPES[v]}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` });
+				const btns = opts.map(([v, name, tip]) => {
+					const b = h('button', { type: 'button', class: 'fx-anim-insp-segbtn' + (cur === v ? ' is-on' : ''), 'data-tip': tip, 'aria-label': tip, html: miniPath(SPEC[v]) + `<span>${name}</span>` });
 					b.addEventListener('click', () => {
 						onPick(v);
 						btns.forEach(([vv, bb]) => bb.classList.toggle('is-on', vv === v));
@@ -145555,10 +145630,16 @@ function createEffectsPanel(app, root, engine) {
 					wrap.append(b);
 					return [v, b];
 				});
-				return h('div', { class: 'fx-anim-insp-row' }, h('span', { class: 'fx-anim-insp-lab' }, label), wrap);
+				return h('div', { class: 'fx-clip-group' }, h('span', { class: 'fx-anim-insp-lab' }, label), wrap);
 			};
-			const shapeRow = mkSeg('Профиль', [['plateau', 'Ровная: сила держится на одном уровне'], ['ramp', 'Нарастает: сила растёт к концу блока'], ['fall', 'Спадает: сила падает к концу блока'], ['peak', 'Пик: сила растёт к середине и падает']], c.shape || 'plateau', (v) => engine.animUpdateClip(c.id, { shape: v }));
-			const easeRow = mkSeg('Кривая', [['smooth', 'Плавно: мягкий вход и выход'], ['linear', 'Ровно: линейное нарастание и спад'], ['sharp', 'Резко: быстрый вход, резкий спад']], c.ease || 'smooth', (v) => engine.animUpdateClip(c.id, { ease: v }));
+			const shapeRow = mkSeg('Профиль', [['plateau', 'Ровная', 'Сила держится на одном уровне весь блок'], ['ramp', 'Растёт', 'Сила растёт от нуля к концу блока'], ['fall', 'Спадает', 'Сила падает от максимума к концу блока'], ['peak', 'Пик', 'Сила растёт к середине блока и падает']], c.shape || 'plateau', (v) => engine.animUpdateClip(c.id, { shape: v }));
+			const easeRow = mkSeg('Кривая', [['smooth', 'Плавно', 'Мягкий вход и выход'], ['linear', 'Ровно', 'Линейное нарастание и спад'], ['sharp', 'Резко', 'Быстрый вход, резкий спад']], c.ease || 'smooth', (v) => engine.animUpdateClip(c.id, { ease: v }));
+			const revSw = switchRow('Задом наперёд', { value: !!c.rev, onChange: (v) => { engine.animUpdateClip(c.id, { rev: v }); } });
+			const quick = h('div', { class: 'fx-clip-quick' },
+				button({ label: 'Начало здесь', variant: 'secondary', cls: 'btn-sm', title: 'Блок начнётся там, где стоит курсор времени, длина сохранится', onClick: () => { engine.animUpdateClip(c.id, { start: engine.animT }); animSync(); } }),
+				button({ label: 'Конец здесь', variant: 'secondary', cls: 'btn-sm', title: 'Блок закончится там, где стоит курсор времени', onClick: () => { const d = engine.animT - c.start; if (d < 0.2) { app.toast('Курсор должен стоять правее начала блока', 'info'); return; } engine.animUpdateClip(c.id, { dur: d }); animSync(); } }),
+				button({ label: 'На всю длину', variant: 'secondary', cls: 'btn-sm', title: 'Растянуть блок на весь таймлайн', onClick: () => { engine.animUpdateClip(c.id, { start: 0 }); engine.animUpdateClip(c.id, { dur: st.anim.dur || 8 }); animSync(); } })
+			);
 			const openFx = button({ label: 'Настройки эффекта', icon: 'gear-six', variant: 'secondary', cls: 'btn-sm fx-clip-open-fx', title: 'Открыть параметры этого эффекта в правой панели', onClick: () => { select_(c.layerId); sync(); } });
 			clipActs.append(
 				iconButton({ icon: 'scissors', title: 'Разрезать блок по курсору времени (S)', onClick: () => splitSelected() }),
@@ -145567,7 +145648,7 @@ function createEffectsPanel(app, root, engine) {
 				iconButton({ icon: 'trash', title: 'Удалить блок (Delete)', cls: 'is-danger', onClick: () => { engine.animRemoveClip(c.id); selectOnly(null); animSync(); } }),
 				iconButton({ icon: 'x', title: 'Снять выбор (Esc)', onClick: () => { selectOnly(null); animSync(); } })
 			);
-			clipBody.append(graph, sAmt.row, sFadeIn.row, sFadeOut.row, shapeRow, easeRow, openFx);
+			clipBody.append(graph, sAmt.row, sFadeIn.row, sFadeOut.row, sRep.row, shapeRow, easeRow, revSw.el, quick, openFx);
 		} else if (selKey) {
 			const k = selKey;
 			inspector.hidden = false;
@@ -146046,7 +146127,7 @@ function createEffectsPanel(app, root, engine) {
 		if (isDraggingItem) return;
 
 		const keysStr = (A.keys || []).map((k) => `${k.t}`).join(',');
-		const clipsStr = (A.clips || []).map((c) => `${c.id}:${c.layerId}:${c.start}:${c.dur}:${c.fadeIn}:${c.fadeOut}:${c.amount}:${c.shape}:${c.ease}:${c.off ? 1 : 0}`).join(',');
+		const clipsStr = (A.clips || []).map((c) => `${c.id}:${c.layerId}:${c.start}:${c.dur}:${c.fadeIn}:${c.fadeOut}:${c.amount}:${c.shape}:${c.ease}:${c.off ? 1 : 0}:${c.repeat || 1}:${c.rev ? 1 : 0}`).join(',');
 		const marksStr = (A.work ? `${A.work.a}-${A.work.b}` : '') + '|' + JSON.stringify(A.lanes || {});
 		const sig = `${durTotal}|${keysStr}|${clipsStr}|${marksStr}|${selKey ? A.keys.indexOf(selKey) : -1}|${[...selSet].join(',')}`;
 

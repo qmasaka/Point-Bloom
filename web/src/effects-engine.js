@@ -3304,6 +3304,7 @@ _animSort() {
 this.animKeys.sort((a, b) => a.t - b.t);
 }
 animAddKey(t = this.animT) {
+this._histFlush();
 const A = this.state.anim;
 if (!A.keys) A.keys = [];
 const snap = { t: Math.round(Math.min(A.dur, Math.max(0, t)) * 100) / 100, ...this.animCapture() };
@@ -3323,6 +3324,7 @@ this.emit();
 this.app.bus.emit('fxanim');
 }
 animRemoveKey(key) {
+this._histFlush();
 const A = this.state.anim;
 if (!A.keys) return;
 A.keys = A.keys.filter((k) => k !== key);
@@ -3337,6 +3339,7 @@ this.touch();
 this.app.bus.emit('fxanim');
 }
 animAddClip(layerId, opts = {}) {
+if (!this._batch) this._histFlush();
 const A = this.state.anim;
 if (!A.clips) A.clips = [];
 const durTotal = A.dur || 8;
@@ -3359,6 +3362,8 @@ amount: Math.round(amount * 100) / 100,
 shape: opts.shape || 'plateau',
 ease: opts.ease || 'smooth',
 off: !!opts.off,
+repeat: Math.max(1, Math.min(12, Math.round(opts.repeat || 1))),
+rev: !!opts.rev,
 };
 A.clips.push(clip);
 this.touch();
@@ -3398,6 +3403,8 @@ clip.amount = Math.max(0.05, Math.min(2.0, patch.amount));
 if (patch.shape !== undefined && ['plateau', 'ramp', 'fall', 'peak'].includes(patch.shape)) clip.shape = patch.shape;
 if (patch.ease !== undefined && ['smooth', 'linear', 'sharp'].includes(patch.ease)) clip.ease = patch.ease;
 if (patch.off !== undefined) clip.off = !!patch.off;
+if (patch.repeat !== undefined) clip.repeat = Math.max(1, Math.min(12, Math.round(patch.repeat)));
+if (patch.rev !== undefined) clip.rev = !!patch.rev;
 if (patch.layerId !== undefined && (this.state.layers[patch.layerId] || ['morph', 'rotate', 'bloom'].includes(patch.layerId))) {
 clip.layerId = patch.layerId;
 }
@@ -3438,6 +3445,7 @@ this.emit();
 this.app.bus.emit('fxanim');
 }
 animSetWork(a, b) {
+this._histFlush();
 const A = this.state.anim;
 if (a == null) A.work = null;
 else {
@@ -3450,6 +3458,7 @@ this.emit();
 this.app.bus.emit('fxanim');
 }
 animSetLane(layerId, patch = {}) {
+this._histFlush();
 const A = this.state.anim;
 const l = ((A.lanes ||= {})[layerId] ||= {});
 Object.assign(l, patch);
@@ -3460,14 +3469,24 @@ this.app.bus.emit('fxanim');
 }
 animPasteClips(list, t) {
 if (!list || !list.length) return [];
+this._histFlush();
+this._batch = true;
+try {
+return this._animPasteClips(list, t);
+} finally {
+this._batch = false;
+}
+}
+_animPasteClips(list, t) {
 const t0 = Math.min(...list.map((c) => c.start));
 const out = [];
 for (const c of list) {
-out.push(this.animAddClip(c.layerId, { start: t + (c.start - t0), dur: c.dur, fadeIn: c.fadeIn, fadeOut: c.fadeOut, amount: c.amount, shape: c.shape, ease: c.ease, off: c.off }));
+out.push(this.animAddClip(c.layerId, { start: t + (c.start - t0), dur: c.dur, fadeIn: c.fadeIn, fadeOut: c.fadeOut, amount: c.amount, shape: c.shape, ease: c.ease, off: c.off, repeat: c.repeat, rev: c.rev }));
 }
 return out;
 }
 animRemoveClip(clipId) {
+this._histFlush();
 const A = this.state.anim;
 if (!A.clips) return;
 A.clips = A.clips.filter((c) => c.id !== clipId);
@@ -3475,7 +3494,16 @@ this.touch();
 this.emit();
 this.app.bus.emit('fxanim');
 }
-animDuplicateClip(clipId) {
+animDuplicateClip(clipId, batch) {
+if (!batch) this._histFlush();
+this._batch = true;
+try {
+return this._animDuplicateClip(clipId);
+} finally {
+this._batch = false;
+}
+}
+_animDuplicateClip(clipId) {
 const A = this.state.anim;
 if (!A.clips) return null;
 const clip = A.clips.find((c) => c.id === clipId);
@@ -3492,9 +3520,12 @@ amount: clip.amount,
 shape: clip.shape,
 ease: clip.ease,
 off: clip.off,
+repeat: clip.repeat,
+rev: clip.rev,
 });
 }
 animSplitClip(clipId, t) {
+this._histFlush();
 const A = this.state.anim;
 const clip = (A.clips || []).find((c) => c.id === clipId);
 if (!clip || t <= clip.start + 0.3 || t >= clip.start + clip.dur - 0.3) return null;
@@ -3504,13 +3535,16 @@ const left = t - clip.start;
 clip.dur = Math.round(left * 100) / 100;
 clip.fadeIn = Math.min(clip.fadeIn, clip.dur * 0.45);
 clip.fadeOut = Math.min(0.15, clip.dur * 0.3);
-const right = this.animAddClip(clip.layerId, { start: t, dur: end - t, fadeIn: Math.min(0.15, (end - t) * 0.3), fadeOut: Math.min(outFade, (end - t) * 0.45), amount: clip.amount });
+this._batch = true;
+const right = this.animAddClip(clip.layerId, { start: t, dur: end - t, fadeIn: Math.min(0.15, (end - t) * 0.3), fadeOut: Math.min(outFade, (end - t) * 0.45), amount: clip.amount, shape: clip.shape, ease: clip.ease, repeat: clip.repeat, rev: clip.rev });
+this._batch = false;
 this.touch();
 this.emit();
 this.app.bus.emit('fxanim');
 return right;
 }
 animClear() {
+this._histFlush();
 const A = this.state.anim;
 A.keys = [];
 A.clips = [];
@@ -3625,6 +3659,16 @@ this.emit();
 this.app.bus.emit('fxanim');
 }
 _clipEnv(c, t) {
+const n = Math.max(1, c.repeat || 1);
+if (c.rev) t = c.start + c.dur - (t - c.start);
+if (n > 1) {
+const seg = c.dur / n;
+const k = Math.max(0, Math.min(n - 1, Math.floor((t - c.start) / seg)));
+return this._clipEnv1({ ...c, rev: false, repeat: 1, start: c.start + k * seg, dur: seg, fadeIn: Math.min(c.fadeIn, seg * 0.45), fadeOut: Math.min(c.fadeOut, seg * 0.45) }, t);
+}
+return this._clipEnv1(c, t);
+}
+_clipEnv1(c, t) {
 const curve = (f) => {
 f = Math.min(1, Math.max(0, f));
 return c.ease === 'linear' ? f : c.ease === 'sharp' ? Math.pow(f, 0.35) : f * f * (3 - 2 * f);
@@ -4384,7 +4428,12 @@ if (this._handFx?.has(id)) l.on = this._handFx.get(id);
 layers[id] = l;
 }
 const p = this.app.settings.point;
-return JSON.stringify({ source: st.source, count: st.count, layers, look: st.look, mask: st.mask, morphCfg: st.morphCfg, pt: { shape: p.shape, size: p.size, color: p.color, solidColor: p.solidColor, attenuate: p.attenuate } });
+return JSON.stringify({ anim: st.anim, source: st.source, count: st.count, layers, look: st.look, mask: st.mask, morphCfg: st.morphCfg, pt: { shape: p.shape, size: p.size, color: p.color, solidColor: p.solidColor, attenuate: p.attenuate } });
+}
+_histFlush() {
+if (!this.active || this._histBusy) return;
+clearTimeout(this._histT);
+this._histCommit();
 }
 _histSoon() {
 if (!this.active || this._histBusy) return;
@@ -4441,6 +4490,7 @@ const i = Math.floor(Math.random() * (t.length / 3)) * 3;
 _diffLabel(a, b) {
 try {
 const A = JSON.parse(a), B = JSON.parse(b);
+if (JSON.stringify(A.anim) !== JSON.stringify(B.anim)) return 'таймлайн';
 for (const id of Object.keys(B.layers)) {
 if (JSON.stringify(A.layers[id]) !== JSON.stringify(B.layers[id])) return 'эффект «' + (FX_LAYERS.find((l) => l.id === id)?.name || id) + '»';
 }
@@ -4470,6 +4520,12 @@ const d = JSON.parse(snap);
 const st = this.state;
 this._histBusy = true;
 try {
+if (d.anim) {
+for (const k of Object.keys(st.anim)) delete st.anim[k];
+Object.assign(st.anim, d.anim);
+this._animVer = (this._animVer || 0) + 1;
+this.app.bus.emit('fxanim');
+}
 for (const id of Object.keys(d.layers)) if (st.layers[id]) Object.assign(st.layers[id], d.layers[id]);
 Object.assign(st.look, d.look);
 Object.assign(st.mask, d.mask);
