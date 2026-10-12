@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { HAND_LINKS, TIPS } from './hand-tracker.js';
+import { tr } from './i18n.js';
 const rnd = (a, b) => a + Math.random() * (b - a);
 export class TrackerHud {
 constructor(host) {
@@ -302,7 +303,7 @@ ctx.fillRect(tx, yy - fs * 0.6, 64 * ls * v, fs * 0.45);
 return;
 }
 ctx.fillStyle = rgba(c2, (i ? 0.78 : 1) * Math.min(1, alpha));
-ctx.fillText(t, tx, yy);
+ctx.fillText(tr(t), tx, yy);
 });
 }
 }
@@ -400,7 +401,7 @@ const lvls = [
 lvls.forEach(([name, val], i) => {
 const y = ry + i * 16;
 ctx.fillStyle = rgba(c2, 0.75 * alpha);
-ctx.fillText(name, rx, y);
+ctx.fillText(tr(name), rx, y);
 ctx.fillStyle = rgba(c0, 0.18 * alpha);
 ctx.fillRect(rx + 38, y - 3, rw, 6);
 ctx.fillStyle = rgba(c0, 0.9 * alpha);

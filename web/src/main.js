@@ -7,6 +7,8 @@ import { makeDemoFiles } from './demo.js';
 import { exportForWeb } from './web-export.js';
 import { runBenchmark } from './capabilities.js';
 import { guardDevice } from './device-guard.js';
+import { initI18n } from './i18n.js';
+initI18n();
 function revealApp() {
 let revealed = false;
 const done = (animate = true) => {

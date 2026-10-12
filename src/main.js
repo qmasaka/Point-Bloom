@@ -7,6 +7,10 @@ import { makeDemoFiles } from './demo.js';
 import { exportForWeb } from './web-export.js';
 import { runBenchmark } from './capabilities.js';
 import { guardDevice } from './device-guard.js';
+import { initI18n } from './i18n.js';
+
+// перевод включается до сборки интерфейса: всё, что он создаст, переведётся сразу
+initI18n();
 
 /** Плавное открытие: пока всё строится, виден экран загрузки, потом он гаснет, а панели выезжают на места */
 function revealApp() {

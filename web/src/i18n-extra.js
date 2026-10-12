@@ -1,0 +1,15 @@
+export default {
+'Окклюзия': 'Occlusion',
+'Клик': 'Click',
+'клик': 'click',
+'текстура': 'texture',
+'протяжка': 'drag',
+'колесо': 'wheel',
+'перемещение': 'move',
+'вращение': 'rotate',
+'масштаб': 'scale',
+'БАС': 'BASS',
+'СРЕД': 'MID',
+'ВЕРХ': 'TOP',
+'Режим: {}. Тяните стрелки на модели.': 'Mode: {}. Drag the arrows on the model.',
+};

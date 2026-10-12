@@ -1,3 +1,4 @@
+import { tr } from './i18n.js';
 const VISION = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21';
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 export const HAND_LINKS = [
@@ -258,7 +259,7 @@ const wr = P(0);
 c.font = '600 11px Geist, system-ui, sans-serif';
 const GN = { palm: 'Ладонь', fist: 'Кулак', pinch: 'Щипок', point: 'Палец', peace: 'Два пальца', rock: 'Рога', thumb: 'Класс', none: 'Рука' };
 const act = this.names[hd.gesture];
-const text = GN[hd.gesture] + (act ? ' \u2192 ' + act : '');
+const text = tr(GN[hd.gesture]) + (act ? ' \u2192 ' + tr(act) : '');
 const tw = c.measureText(text).width;
 c.fillStyle = 'rgba(20,23,27,0.75)';
 c.fillRect(wr[0] - tw / 2 - 5, wr[1] + 8, tw + 10, 17);

@@ -6255,3 +6255,10 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .kd-wide { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); column-gap: 28px; }
 .kd-wide h3 { grid-column: 1 / -1; }
 .kd-wide .kd-row, .kd-wide h3 + .kd-row { border-top: 1px solid rgba(255, 255, 255, 0.05); }
+
+/* переключатель языка */
+.lang-switch { display: inline-flex; padding: 2px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); }
+.lang-switch button { height: 28px; min-width: 32px; padding: 0 9px; border: 0; border-radius: 999px; background: transparent; color: var(--text-dim); font: 600 11.5px var(--font); letter-spacing: 0.04em; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.lang-switch button:hover { color: var(--text); }
+.lang-switch button.is-on { background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--accent-line); }
+@media (max-width: 700px) { .lang-switch button { min-width: 28px; padding: 0 6px; } }

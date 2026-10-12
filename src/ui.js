@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { h, $, $$, extOf, formatInt, downloadBlob, placeAbove } from './util.js';
 import { icon, hydrateIcons, iconsReady } from './icons.js';
+import { setLang, lang as curLang } from './i18n.js';
 import { initFloatingPanels } from './fx-float.js';
 import { segmented, switchRow, button } from './ui-kit.js';
 import { AxisGizmo } from './gizmo.js';
@@ -102,6 +103,13 @@ export class UI {
 		$('#btnUndo').addEventListener('click', () => this.undo());
 		$('#btnRedo').addEventListener('click', () => this.redo());
 		$('#btnHelp').addEventListener('click', () => this.showHelp());
+		// переключатель языка RU / EN
+		{
+			const sw = $('#langSwitch');
+			const mark = () => sw.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.lang === window.__i18n.lang));
+			sw.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { setLang(b.dataset.lang); mark(); }));
+			mark();
+		}
 		// «Поддержать автора»: плашка под кнопкой в шапке, закрывается кликом снаружи и Esc
 		{
 			const btn = $('#btnSupport');
