@@ -146478,9 +146478,11 @@ class UI {
 				pop.hidden = !pop.hidden;
 				btn.setAttribute('aria-expanded', String(!pop.hidden));
 				if (!pop.hidden) {
-					const r = btn.getBoundingClientRect();
-					pop.style.top = Math.round(r.bottom + 10) + 'px';
-					pop.style.right = Math.max(12, Math.round(window.innerWidth - r.right - 8)) + 'px';
+					// отступ от шапки такой же, как у боковых панелей, и тот же правый край
+					const hb = document.querySelector('header.topbar, .topbar');
+					const bottom = hb ? hb.getBoundingClientRect().bottom : btn.getBoundingClientRect().bottom;
+					pop.style.top = Math.round(bottom + 12) + 'px';
+					pop.style.right = '12px';
 				}
 			});
 			document.addEventListener('pointerdown', (e) => {
@@ -147205,33 +147207,79 @@ class UI {
 	}
 
 	showHelp() {
-		const k = (...keys) => h('span', { class: 'help-keys' }, ...keys.map((x) => h('kbd', {}, x)));
-		const row = (label, ...keys) => h('div', { class: 'help-row' }, h('span', {}, label), k(...keys));
-		const group = (title, ...rows) => h('div', { class: 'help-group' }, h('h3', {}, title), ...rows);
+		// клавиши рисуются отдельными «кнопками»: «Ctrl+Shift+Z» это три клавиши; несколько вариантов через «/»
+		const combo = (s) => h('span', { class: 'kd-combo' }, ...s.split(/\+(?=.)/).flatMap((k, i) => (i ? [h('i', {}, '+'), h('kbd', {}, k)] : [h('kbd', {}, k)])));
+		const row = (label, ...variants) => h('div', { class: 'kd-row' }, h('span', { class: 'kd-label' }, label), h('span', { class: 'kd-keys' }, ...variants.flatMap((v, i) => (i ? [h('em', {}, 'или'), combo(v)] : [combo(v)]))));
+		const group = (title, icn, ...rows) => h('section', { class: 'kd-group' }, h('h3', {}, h('span', { class: 'kd-ic', html: icon(icn, 15) }), title), ...rows);
 		const dlg = this.dialog;
 		dlg.textContent = '';
-		const close = button({ label: 'Закрыть', variant: 'secondary', onClick: () => dlg.close() });
-		const xBtn = h('button', { type: 'button', class: 'dlg-x btn btn-icon', 'aria-label': 'Закрыть', 'data-tip': 'Закрыть (Esc)', onclick: () => dlg.close(), html: icon('x', 18) });
+		const xBtn = h('button', { type: 'button', class: 'kd-x btn btn-icon', 'aria-label': 'Закрыть', 'data-tip': 'Закрыть (Esc)', onclick: () => dlg.close(), html: icon('x', 18) });
 		dlg.onclick = (e) => {
 			if (e.target === dlg) dlg.close();
 		};
 		dlg.append(
-			h(
-				'div',
-				{ class: 'dlg-inner' },
-				xBtn,
-				h('h2', {}, 'Горячие клавиши'),
-				h('p', {}, 'Перетащите модель в окно (вместе с .mtl и текстурами или всей папкой), при необходимости добавьте текстуру, затем нажмите «Скачать GLB».'),
-				h(
-					'div',
-					{ class: 'help-grid' },
-					group('Навигация', row('Вращение', 'СКМ'), row('Вращение (трекпад)', 'Alt', 'ЛКМ'), row('Сдвиг', 'Shift', 'СКМ'), row('Масштаб', 'Колесо'), row('Центр на точке', 'Двойной клик'), row('Показать всё', 'Home'), row('Показать выбранное', 'F')),
-					group('Виды', row('Спереди / сзади', 'Num 1'), row('Справа / слева', 'Num 3'), row('Сверху / снизу', 'Num 7'), row('Без Numpad', 'Alt', '1 3 7'), row('Ортогональная', 'Num 5', 'P'), row('Шаг вращения', 'Num 4 6 8 2')),
-					group('Правка', row('Выбор', 'Q'), row('Переместить', 'G'), row('Вращать', 'R'), row('Масштаб', 'S'), row('Привязка к шагу', 'N'), row('Оси: мир / локальные', 'L'), row('Дублировать', 'Shift', 'D'), row('Удалить', 'X'), row('Скрыть / показать', 'H', 'Alt+H')),
-					group('Общее', row('Режимы отображения', '1', '…', '6'), row('Следующий режим', 'Z'), row('Каркас поверх', 'Shift', 'Z'), row('Отменить / повторить', 'Ctrl+Z', 'Ctrl+Shift+Z'), row('Открыть', 'O'), row('Вставить файл', 'Ctrl+V'), row('Экспорт', 'Ctrl+E'), row('Режим эффектов', 'E'), row('Пуск / пауза: звук, видео, таймлайн', 'Пробел'), row('Масштаб интерфейса', 'Ctrl + / -', 'Ctrl 0')),
-					group('Таймлайн анимации', row('Играть или пауза', 'Пробел'), row('Сдвинуть курсор', '←', '→'), row('Курсор на секунду', 'Shift', '← →'), row('К краю соседнего блока', ',', '.'), row('В начало / в конец', 'Home', 'End'), row('Записать ракурс камеры', 'C'), row('Разрезать блок по курсору', 'S'), row('Дублировать блоки', 'Ctrl', 'D'), row('Копировать / вставить', 'Ctrl+C', 'Ctrl+V'), row('Выбрать все блоки', 'Ctrl', 'A'), row('Добавить к выбору', 'Shift', 'клик'), row('Выбрать рамкой', 'Shift', 'протяжка'), row('Сдвинуть блок на 0.1 с', 'Alt', '← →'), row('Начало / конец области, снять', 'I', 'O', 'X'), row('Удалить выбранное', 'Delete'), row('Без прилипания', 'Alt', 'протяжка'), row('Масштаб шкалы', 'Ctrl', 'колесо'), row('Меню блока, дорожки, линейки', 'ПКМ'))
-				),
-				h('div', { class: 'dlg-actions' }, close)
+			h('div', { class: 'dlg-inner kd-inner' },
+				h('header', { class: 'kd-head' }, h('h2', {}, 'Горячие клавиши'), xBtn),
+				h('div', { class: 'kd-grid' },
+					group('Просмотр', 'cube',
+						row('Вращать', 'ЛКМ', 'СКМ'),
+						row('Сдвинуть', 'ПКМ'),
+						row('Приблизить', 'Колесо'),
+						row('Центр на точке', 'Двойной клик'),
+						row('Показать всё', 'Home'),
+						row('Показать выбранное', 'F'),
+						row('Проекция', 'P', 'Num 5'),
+						row('Спереди, сзади', 'Num 1'),
+						row('Справа, слева', 'Num 3'),
+						row('Сверху, снизу', 'Num 7'),
+						row('Виды без Numpad', 'Alt+1 3 7')
+					),
+					group('Правка', 'arrows-out-cardinal',
+						row('Выбор', 'Q'),
+						row('Переместить', 'G'),
+						row('Вращение', 'R'),
+						row('Масштаб', 'S'),
+						row('Привязка к шагу', 'N'),
+						row('Оси: мир / локальные', 'L'),
+						row('Дублировать', 'Shift+D'),
+						row('Удалить', 'X', 'Delete'),
+						row('Скрыть / показать', 'H'),
+						row('Отменить', 'Ctrl+Z'),
+						row('Повторить', 'Ctrl+Shift+Z')
+					),
+					group('Общее', 'sliders-horizontal',
+						row('Открыть файл', 'O'),
+						row('Экспорт', 'Ctrl+E'),
+						row('Вставить файл', 'Ctrl+V'),
+						row('Режим «Эффекты»', 'E'),
+						row('Режимы отображения', '1 … 6'),
+						row('Следующий режим', 'Z'),
+						row('Каркас поверх', 'Shift+Z'),
+						row('Масштаб интерфейса', 'Ctrl++', 'Ctrl+−'),
+						row('Сбросить масштаб', 'Ctrl+0'),
+						row('Пуск / пауза', 'Пробел')
+					),
+					group('Таймлайн анимации', 'film-strip',
+						row('Играть, пауза', 'Пробел'),
+						row('Сдвинуть курсор', '←', '→'),
+						row('Курсор на секунду', 'Shift+← →'),
+						row('К краю соседнего блока', ',', '.'),
+						row('В начало, в конец', 'Home', 'End'),
+						row('Записать ракурс камеры', 'C'),
+						row('Разрезать блок', 'S'),
+						row('Дублировать блок', 'Ctrl+D'),
+						row('Копировать, вставить', 'Ctrl+C', 'Ctrl+V'),
+						row('Выбрать все блоки', 'Ctrl+A'),
+						row('Добавить к выбору', 'Shift+клик'),
+						row('Выбрать рамкой', 'Shift+протяжка'),
+						row('Сдвинуть блок на 0,1 с', 'Alt+← →'),
+						row('Рабочая область', 'I', 'O', 'X'),
+						row('Удалить блок', 'Delete'),
+						row('Без прилипания', 'Alt+протяжка'),
+						row('Масштаб шкалы', 'Ctrl+колесо'),
+						row('Меню блока и дорожки', 'ПКМ')
+					)
+				)
 			)
 		);
 		dlg.onclose = () => {
