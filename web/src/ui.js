@@ -463,6 +463,7 @@ if (ws.classList.contains('sidebar-hidden')) this.toggleSidebar(false);
 }
 async setWorkspace(ws) {
 if (ws === this.workspace) return;
+if (ws !== 'edit') this.app.pointEdit && this.app.pointEdit.setActive(false);
 const fxPanel = $('#panel-effects');
 const vpEl = $('#viewport');
 vpEl.classList.add('ws-out');

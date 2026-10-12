@@ -97,6 +97,10 @@ g2.add(pts);
 for (const p of keep) {
 p.updateWorldMatrix(true, false);
 const c = p.clone();
+if (p.geometry.attributes.aSel) {
+c.geometry = p.geometry.clone();
+c.geometry.deleteAttribute('aSel');
+}
 c.matrix.copy(p.matrixWorld);
 c.matrix.decompose(c.position, c.quaternion, c.scale);
 g2.add(c);

@@ -525,6 +525,7 @@ export class UI {
 	/** Рабочее пространство: «edit» (редактор) или «fx» (эффекты для облака точек) */
 	async setWorkspace(ws) {
 		if (ws === this.workspace) return;
+		if (ws !== 'edit') this.app.pointEdit && this.app.pointEdit.setActive(false);
 		const fxPanel = $('#panel-effects');
 		const vpEl = $('#viewport');
 		vpEl.classList.add('ws-out'); // сцена плавно гаснет на время переключения

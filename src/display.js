@@ -15,6 +15,7 @@ uniform float uMode;
 uniform vec3 uColor;
 uniform vec2 uYRange;
 attribute float aHide;
+attribute float aSel;
 varying vec3 vColor;
 
 vec3 ramp(float t) {
@@ -54,6 +55,11 @@ void main() {
 	} else {
 		float wy = (modelMatrix * vec4(position, 1.0)).y;
 		vColor = ramp(clamp((wy - uYRange.x) / max(uYRange.y - uYRange.x, 1e-9), 0.0, 1.0));
+	}
+	// точки, выбранные при правке, светятся оранжевым и чуть крупнее
+	if (aSel > 0.5) {
+		vColor = vec3(1.0, 0.42, 0.08);
+		gl_PointSize = max(gl_PointSize, 3.0) + 1.5;
 	}
 }`;
 

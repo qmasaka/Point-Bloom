@@ -6277,3 +6277,15 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .export-pop { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(6, 8, 11, 0.66); }
 .export-card, .ui-float .export-card, .dlg, .support-pop { transform: translateZ(0); backface-visibility: hidden; isolation: isolate; }
 .export-card .export-body, #panel-export.export-body, .dlg-inner { overscroll-behavior: contain; }
+
+/* правка точек: курсор кисти, рамка, элементы раздела */
+.pe-cursor { position: absolute; z-index: 30; border-radius: 50%; border: 1.5px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); pointer-events: none; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
+.pe-cursor[hidden], .pe-rect[hidden] { display: none; }
+.pe-rect { position: absolute; z-index: 30; border: 1.5px dashed var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); pointer-events: none; }
+.pe-rect.is-sub { border-color: #ff6b6b; background: rgba(255, 107, 107, 0.12); }
+.viewport.pe-active .stage { cursor: crosshair; }
+.pe-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.pe-count { font-size: 12.5px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.pe-toggle.is-active { background: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
+.pe-del:not(:disabled):hover { color: var(--danger); }
+.pe-keys { margin-top: 2px; }

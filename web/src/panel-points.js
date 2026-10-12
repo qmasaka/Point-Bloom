@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { sampleSurface, verticesToCloud, cloudToPoints, overrideMats } from './pointcloud.js';
 import { getDevice, hintForCount } from './device-card.js';
 import { createTextSection } from './text-points.js';
+import { createPointEditSection } from './panel-point-edit.js';
 const compact = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k' : String(n));
 export const SHAPES = [
 { value: 'circle', label: 'Круг' },
@@ -216,7 +217,8 @@ secLook.body ? secLook.body.append(texRow, texName) : secLook.el.append(texRow, 
 const textSec = createTextSection(app);
 const mediaNote = h('div', { class: 'fx-morph-note' }, h('b', {}, 'Фото или видео в точках'), h('span', {}, 'Количество точек, рельеф и запись настраиваются на вкладке «Медиа». Форма, размер и цвет точек общие и лежат ниже.'), button({ label: 'Открыть «Медиа»', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', onClick: () => app.ui.showTab('media') }));
 mediaNote.hidden = true;
-root.append(mediaNote, textSec.el, secCreate.el, secLook.el);
+const secEdit = createPointEditSection(app);
+root.append(mediaNote, textSec.el, secCreate.el, secEdit.el, secLook.el);
 function syncMedia() {
 const sel = model.selected;
 const isMedia = !!(sel && sel.userData && sel.userData.media);

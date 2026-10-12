@@ -6,9 +6,11 @@ import EXTRA from './i18n-extra.js';
 import UK from './i18n-uk.js';
 import ES from './i18n-es.js';
 import DE from './i18n-de.js';
+import MORE from './i18n-more.js';
 
 Object.assign(EN, EXTRA);
 const DICTS = { en: EN, uk: UK, es: ES, de: DE };
+for (const k of Object.keys(DICTS)) Object.assign(DICTS[k], MORE[k]);
 const SUPPORTED = ['ru', 'uk', 'es', 'de'];
 const CY = /[А-Яа-яЁё]/;
 const ATTRS = ['title', 'aria-label', 'placeholder', 'alt', 'data-tip'];
@@ -39,7 +41,7 @@ function build(code) {
 	for (const [ru, tx] of Object.entries(D)) {
 		if (ru.includes('{}')) {
 			const parts = norm(ru).split('{}').map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-			tpl.push({ re: new RegExp('^' + parts.join('(.*?)') + '$', 's'), en: norm(tx) });
+			tpl.push({ re: new RegExp('^' + parts.join('(.*?)') + '$', 's'), en: norm(tx), lit: norm(ru).replace(/\{\}/g, '').length });
 			// куски между подстановками тоже получают перевод: так они лежат в DOM отдельными узлами
 			const a = ru.split('{}');
 			const b = tx.split('{}');
@@ -52,6 +54,8 @@ function build(code) {
 			if (a.length === b.length) a.forEach((x, i) => x.trim() && CY.test(x) && !frag.has(x.trim()) && frag.set(x.trim(), b[i].trim()));
 		}
 	}
+	// сначала самые «длинные» шаблоны: общий вид «{}: {} точек{}» не должен перехватывать более точный
+	tpl.sort((x, y) => y.lit - x.lit);
 	const sub = Object.keys(D)
 		.filter((k) => !k.includes('{}') && !k.includes('<') && k.trim().length >= 2)
 		.sort((a, b) => b.length - a.length);

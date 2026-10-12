@@ -11,227 +11,6 @@ function __req(id) {
   fn(mod.exports, __req);
   return mod.exports;
 }
-__defs['src/util.js'] = function (__exports, __req) {
-'use strict';
-__def(__exports, '$', () => $);
-__def(__exports, '$$', () => $$);
-__def(__exports, 'h', () => h);
-__def(__exports, 'clamp', () => clamp);
-__def(__exports, 'lerp', () => lerp);
-__def(__exports, 'deg', () => deg);
-__def(__exports, 'rad', () => rad);
-__def(__exports, 'formatBytes', () => formatBytes);
-__def(__exports, 'formatInt', () => formatInt);
-__def(__exports, 'placeAbove', () => placeAbove);
-__def(__exports, 'fmt', () => fmt);
-__def(__exports, 'extOf', () => extOf);
-__def(__exports, 'stripExt', () => stripExt);
-__def(__exports, 'baseName', () => baseName);
-__def(__exports, 'downloadBlob', () => downloadBlob);
-__def(__exports, 'createEmitter', () => createEmitter);
-__def(__exports, 'nextFrame', () => nextFrame);
-__def(__exports, 'yieldUI', () => yieldUI);
-__def(__exports, 'debounce', () => debounce);
-__def(__exports, 'mergeDeep', () => mergeDeep);
-__def(__exports, 'loadJSON', () => loadJSON);
-__def(__exports, 'saveJSON', () => saveJSON);
-__def(__exports, 'safeName', () => safeName);
-// Мелкие утилиты, не зависящие от three.js
-
-const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-
-/** Мини-конструктор DOM: h('div', {class:'a', onclick: fn}, 'текст', childEl) */
-function h(tag, attrs, ...children) {
-	const el = document.createElement(tag);
-	for (const [k, v] of Object.entries(attrs || {})) {
-		if (v === undefined || v === null || v === false) continue;
-		if (k === 'class') el.className = v;
-		else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
-		else if (k === 'html') el.innerHTML = v;
-		else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
-		else if (k === 'dataset') Object.assign(el.dataset, v);
-		else el.setAttribute(k, v === true ? '' : v);
-	}
-	for (const c of children.flat()) {
-		if (c === null || c === undefined || c === false) continue;
-		el.append(c.nodeType ? c : document.createTextNode(String(c)));
-	}
-	return el;
-}
-
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-const lerp = (a, b, t) => a + (b - a) * t;
-const deg = (r) => (r * 180) / Math.PI;
-const rad = (d) => (d * Math.PI) / 180;
-
-function formatBytes(n) {
-	if (!isFinite(n)) return '-';
-	if (n < 1024) return n + ' Б';
-	if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' КБ';
-	if (n < 1024 * 1024 * 1024) return (n / 1024 / 1024).toFixed(2) + ' МБ';
-	return (n / 1024 / 1024 / 1024).toFixed(2) + ' ГБ';
-}
-
-function formatInt(n) {
-	return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
-
-/** Ставит всплывающее меню над кнопкой. Меню лежит прямо в сцене, а не внутри панели с размытием: вложенное размытие не видит сцену за собой. align: 'center' | 'right' */
-function placeAbove(pop, btn, host, align = 'center', gap = 14) {
-	const hr = host.getBoundingClientRect();
-	const br = btn.getBoundingClientRect();
-	pop.style.top = 'auto';
-	pop.style.bottom = Math.round(hr.bottom - br.top + gap) + 'px';
-	if (align === 'right') {
-		pop.style.left = 'auto';
-		pop.style.transform = 'none';
-		pop.style.right = Math.round(hr.right - br.right - 6) + 'px';
-	} else {
-		pop.style.right = 'auto';
-		pop.style.transform = 'translateX(-50%)';
-		pop.style.left = Math.round(br.left + br.width / 2 - hr.left) + 'px';
-	}
-}
-
-/** Число без хвоста нулей, до `digits` знаков */
-function fmt(n, digits = 3) {
-	if (!isFinite(n)) return '-';
-	const s = n.toFixed(digits);
-	return s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, '') : s;
-}
-
-const extOf = (name) => {
-	const m = /\.([^.\\/]+)$/.exec(name || '');
-	return m ? m[1].toLowerCase() : '';
-};
-const stripExt = (name) => (name || '').replace(/\.[^.\\/]+$/, '');
-const baseName = (p) => (p || '').replace(/\\/g, '/').split('/').pop();
-
-function downloadBlob(blob, filename) {
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement('a');
-	a.href = url;
-	a.download = filename;
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-	setTimeout(() => URL.revokeObjectURL(url), 30000);
-}
-
-function createEmitter() {
-	const map = new Map();
-	return {
-		on(evt, fn) {
-			if (!map.has(evt)) map.set(evt, new Set());
-			map.get(evt).add(fn);
-			return () => map.get(evt).delete(fn);
-		},
-		emit(evt, data) {
-			const set = map.get(evt);
-			if (set) for (const fn of [...set]) fn(data);
-		},
-	};
-}
-
-const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
-/** Отдаёт управление браузеру, чтобы успел перерисоваться индикатор загрузки */
-const yieldUI = () => new Promise((r) => setTimeout(r, 16));
-
-function debounce(fn, ms) {
-	let t;
-	return (...a) => {
-		clearTimeout(t);
-		t = setTimeout(() => fn(...a), ms);
-	};
-}
-
-/** Глубокое слияние простых объектов настроек */
-function mergeDeep(base, extra) {
-	const out = Array.isArray(base) ? [...base] : { ...base };
-	for (const k of Object.keys(extra || {})) {
-		const v = extra[k];
-		if (v && typeof v === 'object' && !Array.isArray(v) && base[k] && typeof base[k] === 'object') out[k] = mergeDeep(base[k], v);
-		else if (k in base) out[k] = v;
-	}
-	return out;
-}
-
-function loadJSON(key, fallback) {
-	try {
-		const s = localStorage.getItem(key);
-		return s ? JSON.parse(s) : fallback;
-	} catch (e) {
-		return fallback;
-	}
-}
-function saveJSON(key, value) {
-	try {
-		localStorage.setItem(key, JSON.stringify(value));
-	} catch (e) {
-		/* приватный режим / нет доступа — не страшно */
-	}
-}
-
-/** Безопасное имя файла */
-function safeName(s, fallback = 'model') {
-	const t = (s || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '_').trim();
-	return t || fallback;
-}
-
-};
-__defs['src/settings.js'] = function (__exports, __req) {
-'use strict';
-__def(__exports, 'DEFAULTS', () => DEFAULTS);
-__def(__exports, 'loadSettings', () => loadSettings);
-__def(__exports, 'saveSettings', () => saveSettings);
-const { loadJSON, saveJSON, mergeDeep } = __req('src/util.js');
-
-const KEY = 'objglb.settings.v1';
-
-const DEFAULTS = {
-	display: 'material', // material | solid | wire | points | normals | uv
-	flat: false,
-	overlays: { grid: true, axes: true, wire: false, faces: false, bbox: true },
-	media: { pts: 80000, relief: 'bright', depth: 0.5, recFps: 15, recSec: 10, cutDark: 0, cutLight: 1, key: '#00ff00', keyTol: 0, edges: 0, contrast: 1, sat: 1, post: 0, invert: false },
-	point: { shape: 'circle', size: 3, attenuate: true, color: 'texture', solidColor: '#ffd166', surfaceCount: 200000, source: 'surface' },
-	render: { bg: 'dark', exposure: 1, env: 1, tone: 'neutral', headlight: true, fov: 40, fps: false, autoQuality: true, fpsCap: 0 },
-	nav: { leftOrbit: true, trackpad: false, zoomToCursor: true, invertZoom: false, autoPersp: true, ortho: false },
-	snap: { on: false, move: 0.1, rotate: 15, scale: 0.1 },
-	space: 'world',
-	importOpts: { weld: true, centerOrigin: true },
-	exportOpts: {
-		format: 'glb',
-		name: '',
-		only: 'all',
-		scale: 1,
-		up: 'y',
-		place: 'keep',
-		weld: true,
-		texFormat: 'auto',
-		maxTex: 0,
-		cloud: 'mesh',
-		cloudCount: 500000,
-		plyBinary: true,
-		web: { title: '', bg: 'dark', autoRotate: false, ar: false, usdz: false, single: false, optimize: true },
-	},
-};
-
-function loadSettings() {
-	const s = mergeDeep(DEFAULTS, loadJSON(KEY, {}));
-	s.display = 'material'; // режим просмотра не запоминаем: новая сессия всегда начинается с материалов
-	s.overlays.wire = false;
-	s.overlays.faces = false;
-	return s;
-}
-
-let pending = null;
-function saveSettings(settings) {
-	clearTimeout(pending);
-	pending = setTimeout(() => saveJSON(KEY, settings), 200);
-}
-
-};
 __defs['vendor/three/build/three.core.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'ACESFilmicToneMapping', () => ACESFilmicToneMapping);
@@ -81434,6 +81213,628 @@ class WebGLRenderer {
 
 
 };
+__defs['src/util.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, '$', () => $);
+__def(__exports, '$$', () => $$);
+__def(__exports, 'h', () => h);
+__def(__exports, 'clamp', () => clamp);
+__def(__exports, 'lerp', () => lerp);
+__def(__exports, 'deg', () => deg);
+__def(__exports, 'rad', () => rad);
+__def(__exports, 'formatBytes', () => formatBytes);
+__def(__exports, 'formatInt', () => formatInt);
+__def(__exports, 'placeAbove', () => placeAbove);
+__def(__exports, 'fmt', () => fmt);
+__def(__exports, 'extOf', () => extOf);
+__def(__exports, 'stripExt', () => stripExt);
+__def(__exports, 'baseName', () => baseName);
+__def(__exports, 'downloadBlob', () => downloadBlob);
+__def(__exports, 'createEmitter', () => createEmitter);
+__def(__exports, 'nextFrame', () => nextFrame);
+__def(__exports, 'yieldUI', () => yieldUI);
+__def(__exports, 'debounce', () => debounce);
+__def(__exports, 'mergeDeep', () => mergeDeep);
+__def(__exports, 'loadJSON', () => loadJSON);
+__def(__exports, 'saveJSON', () => saveJSON);
+__def(__exports, 'safeName', () => safeName);
+// Мелкие утилиты, не зависящие от three.js
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+/** Мини-конструктор DOM: h('div', {class:'a', onclick: fn}, 'текст', childEl) */
+function h(tag, attrs, ...children) {
+	const el = document.createElement(tag);
+	for (const [k, v] of Object.entries(attrs || {})) {
+		if (v === undefined || v === null || v === false) continue;
+		if (k === 'class') el.className = v;
+		else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+		else if (k === 'html') el.innerHTML = v;
+		else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
+		else if (k === 'dataset') Object.assign(el.dataset, v);
+		else el.setAttribute(k, v === true ? '' : v);
+	}
+	for (const c of children.flat()) {
+		if (c === null || c === undefined || c === false) continue;
+		el.append(c.nodeType ? c : document.createTextNode(String(c)));
+	}
+	return el;
+}
+
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const deg = (r) => (r * 180) / Math.PI;
+const rad = (d) => (d * Math.PI) / 180;
+
+function formatBytes(n) {
+	if (!isFinite(n)) return '-';
+	if (n < 1024) return n + ' Б';
+	if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' КБ';
+	if (n < 1024 * 1024 * 1024) return (n / 1024 / 1024).toFixed(2) + ' МБ';
+	return (n / 1024 / 1024 / 1024).toFixed(2) + ' ГБ';
+}
+
+function formatInt(n) {
+	return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+/** Ставит всплывающее меню над кнопкой. Меню лежит прямо в сцене, а не внутри панели с размытием: вложенное размытие не видит сцену за собой. align: 'center' | 'right' */
+function placeAbove(pop, btn, host, align = 'center', gap = 14) {
+	const hr = host.getBoundingClientRect();
+	const br = btn.getBoundingClientRect();
+	pop.style.top = 'auto';
+	pop.style.bottom = Math.round(hr.bottom - br.top + gap) + 'px';
+	if (align === 'right') {
+		pop.style.left = 'auto';
+		pop.style.transform = 'none';
+		pop.style.right = Math.round(hr.right - br.right - 6) + 'px';
+	} else {
+		pop.style.right = 'auto';
+		pop.style.transform = 'translateX(-50%)';
+		pop.style.left = Math.round(br.left + br.width / 2 - hr.left) + 'px';
+	}
+}
+
+/** Число без хвоста нулей, до `digits` знаков */
+function fmt(n, digits = 3) {
+	if (!isFinite(n)) return '-';
+	const s = n.toFixed(digits);
+	return s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, '') : s;
+}
+
+const extOf = (name) => {
+	const m = /\.([^.\\/]+)$/.exec(name || '');
+	return m ? m[1].toLowerCase() : '';
+};
+const stripExt = (name) => (name || '').replace(/\.[^.\\/]+$/, '');
+const baseName = (p) => (p || '').replace(/\\/g, '/').split('/').pop();
+
+function downloadBlob(blob, filename) {
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = filename;
+	document.body.appendChild(a);
+	a.click();
+	a.remove();
+	setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+function createEmitter() {
+	const map = new Map();
+	return {
+		on(evt, fn) {
+			if (!map.has(evt)) map.set(evt, new Set());
+			map.get(evt).add(fn);
+			return () => map.get(evt).delete(fn);
+		},
+		emit(evt, data) {
+			const set = map.get(evt);
+			if (set) for (const fn of [...set]) fn(data);
+		},
+	};
+}
+
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+/** Отдаёт управление браузеру, чтобы успел перерисоваться индикатор загрузки */
+const yieldUI = () => new Promise((r) => setTimeout(r, 16));
+
+function debounce(fn, ms) {
+	let t;
+	return (...a) => {
+		clearTimeout(t);
+		t = setTimeout(() => fn(...a), ms);
+	};
+}
+
+/** Глубокое слияние простых объектов настроек */
+function mergeDeep(base, extra) {
+	const out = Array.isArray(base) ? [...base] : { ...base };
+	for (const k of Object.keys(extra || {})) {
+		const v = extra[k];
+		if (v && typeof v === 'object' && !Array.isArray(v) && base[k] && typeof base[k] === 'object') out[k] = mergeDeep(base[k], v);
+		else if (k in base) out[k] = v;
+	}
+	return out;
+}
+
+function loadJSON(key, fallback) {
+	try {
+		const s = localStorage.getItem(key);
+		return s ? JSON.parse(s) : fallback;
+	} catch (e) {
+		return fallback;
+	}
+}
+function saveJSON(key, value) {
+	try {
+		localStorage.setItem(key, JSON.stringify(value));
+	} catch (e) {
+		/* приватный режим / нет доступа — не страшно */
+	}
+}
+
+/** Безопасное имя файла */
+function safeName(s, fallback = 'model') {
+	const t = (s || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '_').trim();
+	return t || fallback;
+}
+
+};
+__defs['src/point-edit.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'PointEditor', () => PointEditor);
+// Правка точек: выделение кистью или рамкой, удаление и перекраска выбранных точек у облака точек.
+const THREE = __req('vendor/three/build/three.module.js');
+const { h } = __req('src/util.js');
+
+class PointEditor {
+	constructor(app) {
+		this.app = app;
+		this.active = false;
+		this.tool = 'brush'; // brush | rect
+		this.mode = 'add'; // add | sub
+		this.radius = 36;
+		this.through = false; // выделять и точки за поверхностью
+		this.obj = null;
+		this.sel = null;
+		this.count = 0;
+		this._proj = null;
+		this._drag = null;
+		this._raf = 0;
+		this._cursor = h('div', { class: 'pe-cursor', hidden: true });
+		this._rect = h('div', { class: 'pe-rect', hidden: true });
+		document.getElementById('viewport').append(this._cursor, this._rect);
+		const el = app.viewport.canvas;
+		el.addEventListener('pointerdown', (e) => this._down(e));
+		el.addEventListener('pointermove', (e) => this._move(e));
+		el.addEventListener('pointerup', (e) => this._up(e));
+		el.addEventListener('pointercancel', (e) => this._up(e));
+		el.addEventListener('pointerleave', () => (this._cursor.hidden = true));
+		// клавиши правки перехватываются раньше общих: Delete и X здесь удаляют точки, а не весь объект
+		window.addEventListener('keydown', (e) => this._key(e), true);
+		app.bus.on('selection', () => this.retarget());
+		app.bus.on('scene', () => this.retarget());
+	}
+
+	// ---------------------------------------------------------------- цель
+	target() {
+		const o = this.app.model.selected;
+		return o && o.isPoints && !o.userData.helper && o.geometry.attributes.position ? o : null;
+	}
+
+	retarget() {
+		const t = this.target();
+		const n = t ? t.geometry.attributes.position.count : 0;
+		if (t === this.obj && this.sel && this.sel.length === n) return;
+		this._clearOverlay();
+		this.obj = t;
+		this.sel = t ? new Uint8Array(n) : null;
+		this.count = 0;
+		this._proj = null;
+		this._emit();
+	}
+
+	setActive(on) {
+		on = !!on;
+		if (on === this.active) return;
+		this.active = on;
+		const nav = this.app.nav;
+		if (on) {
+			this.retarget();
+			this._prevTool = this.app.model.tool;
+			this.app.model.setTool('select'); // рамка преобразований мешает кисти
+			if (this.app.settings.display !== 'points') this.app.setDisplay('points');
+		} else {
+			this._cursor.hidden = true;
+			this._rect.hidden = true;
+			this._drag = null;
+		}
+		// пока включена правка, левая кнопка выделяет, а не вращает сцену (Alt вращает)
+		nav.paintLock = on;
+		this.app.viewport.container.classList.toggle('pe-active', on);
+		this._emit();
+	}
+
+	_emit() {
+		this.app.bus.emit('pointedit');
+		this.app.viewport.invalidate();
+	}
+
+	// ---------------------------------------------------------------- проекция точек на экран
+	_project() {
+		const vp = this.app.viewport;
+		const o = this.obj;
+		const cam = vp.camera;
+		cam.updateMatrixWorld();
+		o.updateWorldMatrix(true, false);
+		const m = new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse).multiply(o.matrixWorld);
+		const e = m.elements;
+		const r = vp.canvas.getBoundingClientRect();
+		const W = r.width;
+		const H = r.height;
+		const pos = o.geometry.attributes.position;
+		const n = pos.count;
+		const a = pos.array;
+		const sx = new Float32Array(n);
+		const sy = new Float32Array(n);
+		const sd = new Float32Array(n);
+		const ok = new Uint8Array(n);
+		const ortho = cam.isOrthographicCamera;
+		const cell = 3;
+		const gw = Math.ceil(W / cell) + 1;
+		const gh = Math.ceil(H / cell) + 1;
+		const grid = new Float32Array(gw * gh).fill(Infinity);
+		let dmin = Infinity;
+		let dmax = -Infinity;
+		for (let i = 0; i < n; i++) {
+			const x = a[i * 3], y = a[i * 3 + 1], z = a[i * 3 + 2];
+			const w = e[3] * x + e[7] * y + e[11] * z + e[15];
+			if (w <= 1e-6) continue;
+			const px = ((e[0] * x + e[4] * y + e[8] * z + e[12]) / w * 0.5 + 0.5) * W;
+			const py = (1 - ((e[1] * x + e[5] * y + e[9] * z + e[13]) / w * 0.5 + 0.5)) * H;
+			const d = ortho ? e[2] * x + e[6] * y + e[10] * z + e[14] : w;
+			sx[i] = px;
+			sy[i] = py;
+			sd[i] = d;
+			if (px < -50 || py < -50 || px > W + 50 || py > H + 50) continue;
+			ok[i] = 1;
+			if (d < dmin) dmin = d;
+			if (d > dmax) dmax = d;
+			const gi = Math.max(0, Math.min(gh - 1, (py / cell) | 0)) * gw + Math.max(0, Math.min(gw - 1, (px / cell) | 0));
+			if (d < grid[gi]) grid[gi] = d;
+		}
+		// видимые: те, что не глубже самой ближней точки в своей ячейке (с небольшим запасом)
+		const vis = new Uint8Array(n);
+		const tol = (dmax - dmin) * 0.025 + 1e-6;
+		for (let i = 0; i < n; i++) {
+			if (!ok[i]) continue;
+			const gi = Math.max(0, Math.min(gh - 1, (sy[i] / cell) | 0)) * gw + Math.max(0, Math.min(gw - 1, (sx[i] / cell) | 0));
+			if (sd[i] <= grid[gi] + tol) vis[i] = 1;
+		}
+		this._proj = { sx, sy, ok, vis, left: r.left, top: r.top, n };
+	}
+
+	// ---------------------------------------------------------------- ввод
+	_down(e) {
+		if (!this.active || e.button !== 0 || e.altKey || !this.obj || this.app.ui.workspace !== 'edit') return;
+		e.preventDefault();
+		e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId);
+		this._project();
+		const remove = this.mode === 'sub' || e.ctrlKey || e.metaKey;
+		this._drag = { x0: e.clientX, y0: e.clientY, remove, id: e.pointerId };
+		if (this.tool === 'brush') this._brush(e.clientX, e.clientY, remove);
+	}
+
+	_move(e) {
+		if (!this.active) return;
+		const r = this.app.viewport.canvas.getBoundingClientRect();
+		const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+		if (this.tool === 'brush' && this.obj && !e.altKey) {
+			const d = this.radius * 2;
+			const s = this._cursor.style;
+			s.width = s.height = d + 'px';
+			s.left = e.clientX - d / 2 - this._vpLeft() + 'px';
+			s.top = e.clientY - d / 2 - this._vpTop() + 'px';
+			this._cursor.hidden = !inside;
+		} else this._cursor.hidden = true;
+		const d = this._drag;
+		if (!d) return;
+		if (this.tool === 'brush') this._brush(e.clientX, e.clientY, d.remove);
+		else {
+			const s = this._rect.style;
+			const l = Math.min(d.x0, e.clientX), t = Math.min(d.y0, e.clientY);
+			s.left = l - this._vpLeft() + 'px';
+			s.top = t - this._vpTop() + 'px';
+			s.width = Math.abs(e.clientX - d.x0) + 'px';
+			s.height = Math.abs(e.clientY - d.y0) + 'px';
+			this._rect.hidden = false;
+			this._rect.classList.toggle('is-sub', d.remove);
+		}
+	}
+
+	_up(e) {
+		const d = this._drag;
+		if (!d) return;
+		this._drag = null;
+		if (this.tool === 'rect') {
+			this._rect.hidden = true;
+			this._apply((x, y) => x >= Math.min(d.x0, e.clientX) && x <= Math.max(d.x0, e.clientX) && y >= Math.min(d.y0, e.clientY) && y <= Math.max(d.y0, e.clientY), d.remove);
+		}
+	}
+
+	_vpLeft() {
+		return document.getElementById('viewport').getBoundingClientRect().left;
+	}
+	_vpTop() {
+		return document.getElementById('viewport').getBoundingClientRect().top;
+	}
+
+	_brush(cx, cy, remove) {
+		const r2 = this.radius * this.radius;
+		this._apply((x, y) => (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r2, remove);
+	}
+
+	/** Меняет выделение у всех точек, попавших в область (в координатах окна браузера) */
+	_apply(inside, remove) {
+		const P = this._proj;
+		if (!P || !this.sel) return;
+		const sel = this.sel;
+		const flag = this.through ? P.ok : P.vis;
+		let c = this.count;
+		const v = remove ? 0 : 1;
+		for (let i = 0; i < P.n; i++) {
+			if (!flag[i] || sel[i] === v) continue;
+			if (inside(P.sx[i] + P.left, P.sy[i] + P.top)) {
+				sel[i] = v;
+				c += remove ? -1 : 1;
+			}
+		}
+		this.count = c;
+		this._dirty();
+	}
+
+	_key(e) {
+		if (!this.active || this.app.ui.workspace !== 'edit') return;
+		const t = e.target;
+		if (t && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return;
+		const mod = e.ctrlKey || e.metaKey;
+		const stop = () => {
+			e.preventDefault();
+			e.stopImmediatePropagation();
+		};
+		if (e.code === 'Escape') {
+			stop();
+			this.setActive(false);
+		} else if (e.code === 'Delete' || e.code === 'Backspace' || (e.code === 'KeyX' && !mod)) {
+			// пока правка включена, Delete и X работают только с точками: целый объект случайно не удалится
+			if (!this.obj) return;
+			stop();
+			if (this.count) this.deleteSelected();
+			else this.app.toast('Сначала выберите точки', 'info', 1600);
+		} else if (mod && e.code === 'KeyA') {
+			stop();
+			this.selectAll();
+		} else if (mod && e.code === 'KeyI') {
+			stop();
+			this.invert();
+		} else if (e.code === 'BracketLeft' || e.code === 'BracketRight') {
+			stop();
+			this.radius = Math.max(4, Math.min(200, Math.round(this.radius * (e.code === 'BracketRight' ? 1.15 : 0.87))));
+			this._emit();
+		}
+	}
+
+	// ---------------------------------------------------------------- выделение
+	selectAll() {
+		if (!this.sel) return;
+		this.sel.fill(1);
+		this.count = this.sel.length;
+		this._dirty();
+	}
+	clear() {
+		if (!this.sel) return;
+		this.sel.fill(0);
+		this.count = 0;
+		this._dirty();
+	}
+	invert() {
+		if (!this.sel) return;
+		for (let i = 0; i < this.sel.length; i++) this.sel[i] = this.sel[i] ? 0 : 1;
+		this.count = this.sel.length - this.count;
+		this._dirty();
+	}
+
+	_dirty() {
+		if (this._raf) return;
+		this._raf = requestAnimationFrame(() => {
+			this._raf = 0;
+			this._writeOverlay();
+			this._emit();
+		});
+	}
+
+	/** Выбранные точки подсвечиваются шейдером через атрибут aSel */
+	_writeOverlay() {
+		const o = this.obj;
+		if (!o || !this.sel) return;
+		const g = o.geometry;
+		let a = g.attributes.aSel;
+		if (!a || a.count !== this.sel.length) {
+			a = new THREE.BufferAttribute(new Float32Array(this.sel.length), 1);
+			a.setUsage(THREE.DynamicDrawUsage);
+			g.setAttribute('aSel', a);
+		}
+		const arr = a.array;
+		const s = this.sel;
+		for (let i = 0; i < s.length; i++) arr[i] = s[i];
+		a.needsUpdate = true;
+	}
+
+	_clearOverlay() {
+		const o = this.obj;
+		if (o && o.geometry.attributes.aSel) {
+			o.geometry.attributes.aSel.array.fill(0);
+			o.geometry.attributes.aSel.needsUpdate = true;
+		}
+	}
+
+	// ---------------------------------------------------------------- удаление и перекраска
+	deleteSelected() {
+		const o = this.obj;
+		if (!o || !this.count) return;
+		const app = this.app;
+		const n = this.sel.length;
+		const keep = new Uint32Array(n - this.count);
+		for (let i = 0, k = 0; i < n; i++) if (!this.sel[i]) keep[k++] = i;
+		const oldG = o.geometry;
+		const oldAnim = o.userData.animPts || null;
+		const newG = new THREE.BufferGeometry();
+		for (const [name, a] of Object.entries(oldG.attributes)) {
+			if (name === 'aSel') continue;
+			const sz = a.itemSize;
+			const out = new a.array.constructor(keep.length * sz);
+			for (let k = 0; k < keep.length; k++) for (let j = 0; j < sz; j++) out[k * sz + j] = a.array[keep[k] * sz + j];
+			newG.setAttribute(name, new THREE.BufferAttribute(out, sz, a.normalized));
+		}
+		// облако, посаженное на персонажа, хранит данные скиннинга по точкам: они сокращаются так же
+		let newAnim = oldAnim;
+		if (oldAnim) {
+			newAnim = { ...oldAnim };
+			for (const [k, v] of Object.entries(oldAnim)) {
+				if (k === 'parts' || !ArrayBuffer.isView(v) || v.length % n !== 0) continue;
+				const sz = v.length / n;
+				const out = new v.constructor(keep.length * sz);
+				for (let q = 0; q < keep.length; q++) for (let j = 0; j < sz; j++) out[q * sz + j] = v[keep[q] * sz + j];
+				newAnim[k] = out;
+			}
+		}
+		const removed = this.count;
+		const apply = (g, anim) => {
+			o.geometry = g;
+			o.userData.animPts = anim;
+			g.computeBoundingSphere();
+			if (g.attributes.aSel) {
+				g.attributes.aSel.array.fill(0);
+				g.attributes.aSel.needsUpdate = true;
+			}
+			this.sel = new Uint8Array(g.attributes.position.count);
+			this.count = 0;
+			this._proj = null;
+			app.model.changed({ display: false });
+			app.bus.emit('geometry');
+			this._emit();
+		};
+		app.history.push(
+			{
+				label: 'Удаление точек',
+				redo: () => apply(newG, newAnim),
+				undo: () => apply(oldG, oldAnim),
+			},
+			true
+		);
+		app.toast(`Удалено точек: ${removed.toLocaleString('ru')}`, 'ok', 1800);
+	}
+
+	paintSelected(hex, strength = 1) {
+		const o = this.obj;
+		if (!o || !this.count) return;
+		const app = this.app;
+		const g = o.geometry;
+		let col = g.attributes.color;
+		const n = this.sel.length;
+		if (!col) {
+			col = new THREE.BufferAttribute(new Float32Array(n * 3).fill(1), 3);
+			g.setAttribute('color', col);
+		}
+		const idx = [];
+		for (let i = 0; i < n; i++) if (this.sel[i]) idx.push(i);
+		const ids = Uint32Array.from(idx);
+		const before = new Float32Array(ids.length * 3);
+		const after = new Float32Array(ids.length * 3);
+		const c = new THREE.Color(hex);
+		const s = Math.max(0, Math.min(1, strength));
+		const arr = col.array;
+		for (let k = 0; k < ids.length; k++) {
+			const i = ids[k] * 3;
+			for (let j = 0; j < 3; j++) {
+				before[k * 3 + j] = arr[i + j];
+				const target = j === 0 ? c.r : j === 1 ? c.g : c.b;
+				after[k * 3 + j] = arr[i + j] * (1 - s) + target * s;
+			}
+		}
+		const write = (vals) => {
+			const a = o.geometry.attributes.color.array;
+			for (let k = 0; k < ids.length; k++) for (let j = 0; j < 3; j++) a[ids[k] * 3 + j] = vals[k * 3 + j];
+			o.geometry.attributes.color.needsUpdate = true;
+			this._emit();
+		};
+		app.history.push({ label: 'Перекраска точек', redo: () => write(after), undo: () => write(before) }, true);
+		// перекраска видна только в режиме «Текстура»: в других цвет точек задаёт сам режим
+		const pt = app.settings.point;
+		if (pt.color !== 'texture') {
+			pt.color = 'texture';
+			app.saveSettings();
+			app.bus.emit('pointsettings');
+			app.toast('Цвет точек переключён на «Текстура»: иначе перекраска не видна', 'info', 2600);
+		}
+	}
+}
+
+};
+__defs['src/settings.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'DEFAULTS', () => DEFAULTS);
+__def(__exports, 'loadSettings', () => loadSettings);
+__def(__exports, 'saveSettings', () => saveSettings);
+const { loadJSON, saveJSON, mergeDeep } = __req('src/util.js');
+
+const KEY = 'objglb.settings.v1';
+
+const DEFAULTS = {
+	display: 'material', // material | solid | wire | points | normals | uv
+	flat: false,
+	overlays: { grid: true, axes: true, wire: false, faces: false, bbox: true },
+	media: { pts: 80000, relief: 'bright', depth: 0.5, recFps: 15, recSec: 10, cutDark: 0, cutLight: 1, key: '#00ff00', keyTol: 0, edges: 0, contrast: 1, sat: 1, post: 0, invert: false },
+	point: { shape: 'circle', size: 3, attenuate: true, color: 'texture', solidColor: '#ffd166', surfaceCount: 200000, source: 'surface' },
+	render: { bg: 'dark', exposure: 1, env: 1, tone: 'neutral', headlight: true, fov: 40, fps: false, autoQuality: true, fpsCap: 0 },
+	nav: { leftOrbit: true, trackpad: false, zoomToCursor: true, invertZoom: false, autoPersp: true, ortho: false },
+	snap: { on: false, move: 0.1, rotate: 15, scale: 0.1 },
+	space: 'world',
+	importOpts: { weld: true, centerOrigin: true },
+	exportOpts: {
+		format: 'glb',
+		name: '',
+		only: 'all',
+		scale: 1,
+		up: 'y',
+		place: 'keep',
+		weld: true,
+		texFormat: 'auto',
+		maxTex: 0,
+		cloud: 'mesh',
+		cloudCount: 500000,
+		plyBinary: true,
+		web: { title: '', bg: 'dark', autoRotate: false, ar: false, usdz: false, single: false, optimize: true },
+	},
+};
+
+function loadSettings() {
+	const s = mergeDeep(DEFAULTS, loadJSON(KEY, {}));
+	s.display = 'material'; // режим просмотра не запоминаем: новая сессия всегда начинается с материалов
+	s.overlays.wire = false;
+	s.overlays.faces = false;
+	return s;
+}
+
+let pending = null;
+function saveSettings(settings) {
+	clearTimeout(pending);
+	pending = setTimeout(() => saveJSON(KEY, settings), 200);
+}
+
+};
 __defs['vendor/three/addons/controls/TransformControls.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'TransformControls', () => TransformControls);
@@ -86096,6 +86497,7 @@ uniform float uMode;
 uniform vec3 uColor;
 uniform vec2 uYRange;
 attribute float aHide;
+attribute float aSel;
 varying vec3 vColor;
 
 vec3 ramp(float t) {
@@ -86135,6 +86537,11 @@ void main() {
 	} else {
 		float wy = (modelMatrix * vec4(position, 1.0)).y;
 		vColor = ramp(clamp((wy - uYRange.x) / max(uYRange.y - uYRange.x, 1e-9), 0.0, 1.0));
+	}
+	// точки, выбранные при правке, светятся оранжевым и чуть крупнее
+	if (aSel > 0.5) {
+		vColor = vec3(1.0, 0.42, 0.08);
+		gl_PointSize = max(gl_PointSize, 3.0) + 1.5;
 	}
 }`;
 
@@ -131454,6 +131861,10 @@ async function buildExportScene(app, o, progress) {
 		for (const p of keep) {
 			p.updateWorldMatrix(true, false);
 			const c = p.clone();
+			if (p.geometry.attributes.aSel) {
+				c.geometry = p.geometry.clone();
+				c.geometry.deleteAttribute('aSel');
+			}
 			c.matrix.copy(p.matrixWorld);
 			c.matrix.decompose(c.position, c.quaternion, c.scale);
 			g2.add(c);
@@ -133448,6 +133859,83 @@ function createTextSection(app) {
 }
 
 };
+__defs['src/panel-point-edit.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'createPointEditSection', () => createPointEditSection);
+// Раздел «Правка точек» во вкладке «Точки»: выделение, удаление и перекраска точек облака.
+const { h, formatInt } = __req('src/util.js');
+const { section, field, fxSlider: slider, segmented, switchRow, colorField, button } = __req('src/ui-kit.js');
+
+function createPointEditSection(app) {
+	const pe = app.pointEdit;
+	let paintHex = '#ff7a2e';
+	let strength = 1;
+
+	const note = h('div', { class: 'field-hint hint pe-note' });
+	const toggle = button({ label: 'Выделять точки', icon: 'selection', variant: 'primary', cls: 'btn-block pe-toggle', onClick: () => pe.setActive(!pe.active) });
+	const tool = segmented({
+		options: [
+			{ value: 'brush', label: 'Кисть', title: 'Закрашивайте точки кистью: всё под кругом выбирается' },
+			{ value: 'rect', label: 'Прямоугольник', title: 'Протяните рамку: выберутся все точки внутри' },
+		],
+		value: pe.tool,
+		onChange: (v) => {
+			pe.tool = v;
+			sync();
+		},
+	});
+	const mode = segmented({
+		options: [
+			{ value: 'add', label: 'Добавлять', title: 'Выбирать точки' },
+			{ value: 'sub', label: 'Убирать', title: 'Снимать выбор с точек (то же с зажатым Ctrl)' },
+		],
+		value: pe.mode,
+		onChange: (v) => {
+			pe.mode = v;
+		},
+	});
+	const radius = slider({ noNorm: true, min: 4, max: 200, step: 1, value: pe.radius, format: (v) => v + ' px', onInput: (v) => (pe.radius = v) });
+	const rowRadius = field('Размер кисти', radius.el);
+	const through = switchRow('Сквозь модель', { value: pe.through, onChange: (v) => (pe.through = v) }, 'Выбирать и точки, которые закрыты другими: по умолчанию берутся только видимые');
+	const bAll = button({ label: 'Все', variant: 'secondary', cls: 'btn-sm', title: 'Выбрать все точки (Ctrl+A)', onClick: () => pe.selectAll() });
+	const bNone = button({ label: 'Снять', variant: 'secondary', cls: 'btn-sm', title: 'Снять выбор', onClick: () => pe.clear() });
+	const bInv = button({ label: 'Наоборот', variant: 'secondary', cls: 'btn-sm', title: 'Инвертировать выбор (Ctrl+I)', onClick: () => pe.invert() });
+	const rowSel = h('div', { class: 'pe-row' }, bAll, bNone, bInv);
+	const count = h('div', { class: 'pe-count' });
+	const bDel = button({ label: 'Удалить выбранные', icon: 'trash', variant: 'secondary', cls: 'btn-block pe-del', title: 'Удалить выбранные точки (Delete или X)', onClick: () => pe.deleteSelected() });
+	const color = colorField({ value: paintHex, onInput: (v) => (paintHex = v), onChange: (v) => (paintHex = v) });
+	const str = slider({ noNorm: true, min: 5, max: 100, step: 5, value: 100, format: (v) => v + '%', onInput: (v) => (strength = v / 100) });
+	const bPaint = button({ label: 'Закрасить выбранные', icon: 'paint-brush', variant: 'primary', cls: 'btn-block', title: 'Перекрасить выбранные точки в этот цвет', onClick: () => pe.paintSelected(paintHex, strength) });
+	const keys = h('div', { class: 'field-hint hint pe-keys' }, 'Alt + протяжка: вращать сцену. Колесо: приблизить. [ и ]: размер кисти. Esc: выйти.');
+
+	const sec = section('Правка точек', { key: 'p-edit' }, note, toggle, tool.el, mode.el, rowRadius, through.el, rowSel, count, bDel, field('Цвет', color.el), field('Сила', str.el), bPaint, keys);
+
+	function sync() {
+		const t = pe.target();
+		const n = t ? t.geometry.attributes.position.count : 0;
+		note.textContent = !t ? 'Выберите облако точек в сцене. Если у вас сетка, сначала создайте из неё облако точек выше.' : `Облако: ${formatInt(n)} точек. Выделите нужные и удалите или перекрасьте их.`;
+		toggle.disabled = !t;
+		toggle.querySelector('.btn-label').textContent = pe.active ? 'Готово' : 'Выделять точки';
+		toggle.classList.toggle('is-active', pe.active);
+		rowRadius.hidden = pe.tool !== 'brush';
+		tool.set(pe.tool);
+		mode.set(pe.mode);
+		radius.set(pe.radius);
+		count.textContent = t ? `Выбрано: ${formatInt(pe.count)} из ${formatInt(n)}` : '';
+		const has = !!t && pe.count > 0;
+		bDel.disabled = !has;
+		bPaint.disabled = !has;
+		keys.hidden = !pe.active;
+	}
+	app.bus.on('pointedit', sync);
+	app.bus.on('selection', sync);
+	app.bus.on('scene', sync);
+	app.bus.on('geometry', sync);
+	sync();
+	return sec;
+}
+
+};
 __defs['src/panel-points.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'SHAPES', () => SHAPES);
@@ -133459,6 +133947,7 @@ const THREE = __req('vendor/three/build/three.module.js');
 const { sampleSurface, verticesToCloud, cloudToPoints, overrideMats } = __req('src/pointcloud.js');
 const { getDevice, hintForCount } = __req('src/device-card.js');
 const { createTextSection } = __req('src/text-points.js');
+const { createPointEditSection } = __req('src/panel-point-edit.js');
 
 const compact = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k' : String(n));
 
@@ -133688,7 +134177,8 @@ function createPointsPanel(app, root) {
 	// фото и видео в точках настраиваются на вкладке «Медиа»: создание облака и текст для них не нужны
 	const mediaNote = h('div', { class: 'fx-morph-note' }, h('b', {}, 'Фото или видео в точках'), h('span', {}, 'Количество точек, рельеф и запись настраиваются на вкладке «Медиа». Форма, размер и цвет точек общие и лежат ниже.'), button({ label: 'Открыть «Медиа»', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', onClick: () => app.ui.showTab('media') }));
 	mediaNote.hidden = true;
-	root.append(mediaNote, textSec.el, secCreate.el, secLook.el);
+	const secEdit = createPointEditSection(app);
+	root.append(mediaNote, textSec.el, secCreate.el, secEdit.el, secLook.el);
 	function syncMedia() {
 		const sel = model.selected;
 		const isMedia = !!(sel && sel.userData && sel.userData.media);
@@ -140659,6 +141149,130 @@ const __default = {
 };
 
 };
+__defs['src/i18n-more.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'default', () => __default);
+// Новые строки интерфейса для всех языков (правка точек и другое). Ключ это русский текст, {} это подставляемое значение.
+const __default = {
+	en: {
+		'Снять': 'Clear',
+		'Сначала выберите точки': 'Select some points first',
+		'Правка точек': 'Edit points',
+		'Выделять точки': 'Select points',
+		'Закрашивайте точки кистью: всё под кругом выбирается': 'Paint over points with the brush: everything under the circle is selected',
+		'Прямоугольник': 'Rectangle',
+		'Протяните рамку: выберутся все точки внутри': 'Drag a box: all points inside are selected',
+		'Добавлять': 'Add',
+		'Выбирать точки': 'Select points',
+		'Убирать': 'Remove',
+		'Снимать выбор с точек (то же с зажатым Ctrl)': 'Deselect points (same with Ctrl held)',
+		'Сквозь модель': 'Through the model',
+		'Выбирать и точки, которые закрыты другими: по умолчанию берутся только видимые': 'Also select points hidden behind others: by default only visible ones are taken',
+		'Наоборот': 'Invert',
+		'Выбрать все точки (Ctrl+A)': 'Select all points (Ctrl+A)',
+		'Инвертировать выбор (Ctrl+I)': 'Invert selection (Ctrl+I)',
+		'Удалить выбранные точки (Delete или X)': 'Delete the selected points (Delete or X)',
+		'Закрасить выбранные': 'Paint selected',
+		'Перекрасить выбранные точки в этот цвет': 'Recolor the selected points with this color',
+		'Alt + протяжка: вращать сцену. Колесо: приблизить. [ и ]: размер кисти. Esc: выйти.': 'Alt + drag: rotate the scene. Wheel: zoom. [ and ]: brush size. Esc: exit.',
+		'Выберите облако точек в сцене. Если у вас сетка, сначала создайте из неё облако точек выше.': 'Select a point cloud in the scene. If you have a mesh, first create a point cloud from it above.',
+		'Облако: {} точек. Выделите нужные и удалите или перекрасьте их.': 'Cloud: {} points. Select the ones you need, then delete or recolor them.',
+		'Выбрано: {} из {}': 'Selected: {} of {}',
+		'Удаление точек': 'Point deletion',
+		'Перекраска точек': 'Point recoloring',
+		'Удалено точек: {}': 'Points deleted: {}',
+		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'Point color switched to “Texture”, otherwise the recoloring is not visible',
+	},
+	uk: {
+		'Снять': 'Зняти',
+		'Сначала выберите точки': 'Спершу виберіть точки',
+		'Правка точек': 'Правка точок',
+		'Выделять точки': 'Виділяти точки',
+		'Закрашивайте точки кистью: всё под кругом выбирается': 'Зафарбовуйте точки пензлем: усе під колом вибирається',
+		'Прямоугольник': 'Прямокутник',
+		'Протяните рамку: выберутся все точки внутри': 'Протягніть рамку: виберуться всі точки всередині',
+		'Добавлять': 'Додавати',
+		'Выбирать точки': 'Вибирати точки',
+		'Убирать': 'Прибирати',
+		'Снимать выбор с точек (то же с зажатым Ctrl)': 'Знімати вибір із точок (те саме із затиснутим Ctrl)',
+		'Сквозь модель': 'Крізь модель',
+		'Выбирать и точки, которые закрыты другими: по умолчанию берутся только видимые': 'Вибирати й точки, закриті іншими: за замовчуванням беруться лише видимі',
+		'Наоборот': 'Навпаки',
+		'Выбрать все точки (Ctrl+A)': 'Вибрати всі точки (Ctrl+A)',
+		'Инвертировать выбор (Ctrl+I)': 'Інвертувати вибір (Ctrl+I)',
+		'Удалить выбранные точки (Delete или X)': 'Видалити вибрані точки (Delete або X)',
+		'Закрасить выбранные': 'Зафарбувати вибрані',
+		'Перекрасить выбранные точки в этот цвет': 'Перефарбувати вибрані точки в цей колір',
+		'Alt + протяжка: вращать сцену. Колесо: приблизить. [ и ]: размер кисти. Esc: выйти.': 'Alt + протяжка: обертати сцену. Коліщатко: наблизити. [ і ]: розмір пензля. Esc: вийти.',
+		'Выберите облако точек в сцене. Если у вас сетка, сначала создайте из неё облако точек выше.': 'Виберіть хмару точок у сцені. Якщо у вас сітка, спершу створіть із неї хмару точок вище.',
+		'Облако: {} точек. Выделите нужные и удалите или перекрасьте их.': 'Хмара: {} точок. Виділіть потрібні й видаліть або перефарбуйте їх.',
+		'Выбрано: {} из {}': 'Вибрано: {} з {}',
+		'Удаление точек': 'Видалення точок',
+		'Перекраска точек': 'Перефарбування точок',
+		'Удалено точек: {}': 'Видалено точок: {}',
+		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'Колір точок перемкнено на «Текстура»: інакше перефарбування не видно',
+	},
+	es: {
+		'Снять': 'Quitar',
+		'Сначала выберите точки': 'Primero selecciona algunos puntos',
+		'Правка точек': 'Edición de puntos',
+		'Выделять точки': 'Seleccionar puntos',
+		'Закрашивайте точки кистью: всё под кругом выбирается': 'Pinta sobre los puntos con el pincel: se selecciona todo lo que queda bajo el círculo',
+		'Прямоугольник': 'Rectángulo',
+		'Протяните рамку: выберутся все точки внутри': 'Arrastra un recuadro: se seleccionan todos los puntos del interior',
+		'Добавлять': 'Añadir',
+		'Выбирать точки': 'Seleccionar puntos',
+		'Убирать': 'Quitar',
+		'Снимать выбор с точек (то же с зажатым Ctrl)': 'Quitar la selección de puntos (igual con Ctrl pulsado)',
+		'Сквозь модель': 'A través del modelo',
+		'Выбирать и точки, которые закрыты другими: по умолчанию берутся только видимые': 'Seleccionar también los puntos tapados por otros: por defecto solo se toman los visibles',
+		'Наоборот': 'Invertir',
+		'Выбрать все точки (Ctrl+A)': 'Seleccionar todos los puntos (Ctrl+A)',
+		'Инвертировать выбор (Ctrl+I)': 'Invertir selección (Ctrl+I)',
+		'Удалить выбранные точки (Delete или X)': 'Eliminar los puntos seleccionados (Supr o X)',
+		'Закрасить выбранные': 'Pintar seleccionados',
+		'Перекрасить выбранные точки в этот цвет': 'Recolorear los puntos seleccionados con este color',
+		'Alt + протяжка: вращать сцену. Колесо: приблизить. [ и ]: размер кисти. Esc: выйти.': 'Alt + arrastrar: girar la escena. Rueda: acercar. [ y ]: tamaño del pincel. Esc: salir.',
+		'Выберите облако точек в сцене. Если у вас сетка, сначала создайте из неё облако точек выше.': 'Selecciona una nube de puntos en la escena. Si tienes una malla, primero crea una nube de puntos a partir de ella arriba.',
+		'Облако: {} точек. Выделите нужные и удалите или перекрасьте их.': 'Nube: {} puntos. Selecciona los que quieras y elimínalos o recoloréalos.',
+		'Выбрано: {} из {}': 'Seleccionados: {} de {}',
+		'Удаление точек': 'Eliminación de puntos',
+		'Перекраска точек': 'Recoloración de puntos',
+		'Удалено точек: {}': 'Puntos eliminados: {}',
+		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'El color de los puntos cambió a «Textura»: si no, el recoloreado no se ve',
+	},
+	de: {
+		'Снять': 'Aufheben',
+		'Сначала выберите точки': 'Wähle zuerst Punkte aus',
+		'Правка точек': 'Punkte bearbeiten',
+		'Выделять точки': 'Punkte auswählen',
+		'Закрашивайте точки кистью: всё под кругом выбирается': 'Male mit dem Pinsel über Punkte: Alles unter dem Kreis wird ausgewählt',
+		'Прямоугольник': 'Rechteck',
+		'Протяните рамку: выберутся все точки внутри': 'Ziehe einen Rahmen auf: Alle Punkte darin werden ausgewählt',
+		'Добавлять': 'Hinzufügen',
+		'Выбирать точки': 'Punkte auswählen',
+		'Убирать': 'Entfernen',
+		'Снимать выбор с точек (то же с зажатым Ctrl)': 'Auswahl von Punkten entfernen (dasselbe mit gehaltener Strg-Taste)',
+		'Сквозь модель': 'Durch das Modell',
+		'Выбирать и точки, которые закрыты другими: по умолчанию берутся только видимые': 'Auch Punkte auswählen, die von anderen verdeckt sind: Standardmäßig werden nur sichtbare genommen',
+		'Наоборот': 'Umkehren',
+		'Выбрать все точки (Ctrl+A)': 'Alle Punkte auswählen (Strg+A)',
+		'Инвертировать выбор (Ctrl+I)': 'Auswahl umkehren (Strg+I)',
+		'Удалить выбранные точки (Delete или X)': 'Die ausgewählten Punkte löschen (Entf oder X)',
+		'Закрасить выбранные': 'Ausgewählte einfärben',
+		'Перекрасить выбранные точки в этот цвет': 'Die ausgewählten Punkte in dieser Farbe umfärben',
+		'Alt + протяжка: вращать сцену. Колесо: приблизить. [ и ]: размер кисти. Esc: выйти.': 'Alt + Ziehen: Szene drehen. Mausrad: zoomen. [ und ]: Pinselgröße. Esc: beenden.',
+		'Выберите облако точек в сцене. Если у вас сетка, сначала создайте из неё облако точек выше.': 'Wähle eine Punktwolke in der Szene aus. Wenn du ein Mesh hast, erstelle daraus zuerst oben eine Punktwolke.',
+		'Облако: {} точек. Выделите нужные и удалите или перекрасьте их.': 'Wolke: {} Punkte. Wähle die gewünschten aus und lösche oder färbe sie um.',
+		'Выбрано: {} из {}': 'Ausgewählt: {} von {}',
+		'Удаление точек': 'Punkte löschen',
+		'Перекраска точек': 'Punkte umfärben',
+		'Удалено точек: {}': 'Punkte gelöscht: {}',
+		'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'Die Punktfarbe wurde auf „Textur“ umgestellt, sonst ist das Umfärben nicht sichtbar',
+	},
+};
+
+};
 __defs['src/i18n.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'lang', () => lang);
@@ -140674,9 +141288,11 @@ const EXTRA = __req('src/i18n-extra.js').default;
 const UK = __req('src/i18n-uk.js').default;
 const ES = __req('src/i18n-es.js').default;
 const DE = __req('src/i18n-de.js').default;
+const MORE = __req('src/i18n-more.js').default;
 
 Object.assign(EN, EXTRA);
 const DICTS = { en: EN, uk: UK, es: ES, de: DE };
+for (const k of Object.keys(DICTS)) Object.assign(DICTS[k], MORE[k]);
 const SUPPORTED = ['ru', 'uk', 'es', 'de'];
 const CY = /[А-Яа-яЁё]/;
 const ATTRS = ['title', 'aria-label', 'placeholder', 'alt', 'data-tip'];
@@ -140707,7 +141323,7 @@ function build(code) {
 	for (const [ru, tx] of Object.entries(D)) {
 		if (ru.includes('{}')) {
 			const parts = norm(ru).split('{}').map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-			tpl.push({ re: new RegExp('^' + parts.join('(.*?)') + '$', 's'), en: norm(tx) });
+			tpl.push({ re: new RegExp('^' + parts.join('(.*?)') + '$', 's'), en: norm(tx), lit: norm(ru).replace(/\{\}/g, '').length });
 			// куски между подстановками тоже получают перевод: так они лежат в DOM отдельными узлами
 			const a = ru.split('{}');
 			const b = tx.split('{}');
@@ -140720,6 +141336,8 @@ function build(code) {
 			if (a.length === b.length) a.forEach((x, i) => x.trim() && CY.test(x) && !frag.has(x.trim()) && frag.set(x.trim(), b[i].trim()));
 		}
 	}
+	// сначала самые «длинные» шаблоны: общий вид «{}: {} точек{}» не должен перехватывать более точный
+	tpl.sort((x, y) => y.lit - x.lit);
 	const sub = Object.keys(D)
 		.filter((k) => !k.includes('{}') && !k.includes('<') && k.trim().length >= 2)
 		.sort((a, b) => b.length - a.length);
@@ -153865,6 +154483,7 @@ class UI {
 	/** Рабочее пространство: «edit» (редактор) или «fx» (эффекты для облака точек) */
 	async setWorkspace(ws) {
 		if (ws === this.workspace) return;
+		if (ws !== 'edit') this.app.pointEdit && this.app.pointEdit.setActive(false);
 		const fxPanel = $('#panel-effects');
 		const vpEl = $('#viewport');
 		vpEl.classList.add('ws-out'); // сцена плавно гаснет на время переключения
@@ -155707,6 +156326,7 @@ __defs['src/app.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'App', () => App);
 // Центральный объект приложения: связывает вьюпорт, модель, навигацию, историю и интерфейс.
+const { PointEditor } = __req('src/point-edit.js');
 const { $, createEmitter } = __req('src/util.js');
 const { loadSettings, saveSettings } = __req('src/settings.js');
 const { Viewport } = __req('src/viewport.js');
@@ -155741,6 +156361,7 @@ class App {
 		this.bus.on('material', () => this._recordMaterials());
 		this.bus.on('scene', () => this._recordMaterials(true));
 		this.ui = new UI(this);
+		this.pointEdit = new PointEditor(this);
 		this._setLast = this._settingsSnap();
 	}
 

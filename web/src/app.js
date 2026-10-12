@@ -1,3 +1,4 @@
+import { PointEditor } from './point-edit.js';
 import { $, createEmitter } from './util.js';
 import { loadSettings, saveSettings } from './settings.js';
 import { Viewport } from './viewport.js';
@@ -31,6 +32,7 @@ this._matSnaps = new WeakMap();
 this.bus.on('material', () => this._recordMaterials());
 this.bus.on('scene', () => this._recordMaterials(true));
 this.ui = new UI(this);
+this.pointEdit = new PointEditor(this);
 this._setLast = this._settingsSnap();
 }
 start() {
