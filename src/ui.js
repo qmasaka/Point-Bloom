@@ -896,7 +896,7 @@ export class UI {
 					),
 					group('Общее', 'sliders-horizontal',
 						row('Открыть файл', 'O'),
-						row('Экспорт', 'Ctrl+E'),
+						row('Экспорт', 'Ctrl+E / Ctrl+S'),
 						row('Вставить файл', 'Ctrl+V'),
 						row('Режим «Эффекты»', 'E'),
 						row('Режимы отображения', '1 … 6'),
@@ -1217,7 +1217,8 @@ export class UI {
 				this.redo();
 				return;
 			}
-			if (mod && code === 'KeyE') {
+			// Ctrl+S: вместо «Сохранить страницу» браузера открывается экспорт
+			if (mod && (code === 'KeyE' || code === 'KeyS')) {
 				e.preventDefault();
 				this.toggleExportPop();
 				return;

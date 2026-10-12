@@ -84252,20 +84252,30 @@ function gpuName() {
 const gpu = gpuName();
 const ua = (navigator.userAgent || '') + ' ' + (navigator.platform || '');
 const mobile = /Android|iPhone|iPad|Mobile/i.test(ua);
-const strong = /Apple M|Apple GPU|NVIDIA|GeForce|RTX|GTX|Quadro|Radeon RX|Radeon Pro|Radeon\(TM\) RX|Arc\(TM\) [AB]\d|RX \d{3,4}/i.test(gpu);
-// на Mac внешне всегда «Apple», на Windows с дискретной картой в названии NVIDIA или Radeon RX; всё остальное считаем встроенной графикой
-const tier = mobile ? 'low' : strong ? 'high' : 'low';
+const windows = /Windows|Win32|Win64/i.test(ua);
+// мощные видеокарты: Apple, NVIDIA, дискретные Radeon, встроенная графика AMD (Radeon 680M, 780M, «Radeon Graphics») и все Intel Arc, в том числе «Arc Graphics» у Core Ultra
+const strong = /Apple M|Apple GPU|NVIDIA|GeForce|RTX|GTX|Quadro|Radeon RX|Radeon Pro|Radeon\(TM\) RX|RX \d{3,4}|Arc(?:\(TM\))?(?: Pro)?(?: Graphics| [AB]\d)|Radeon.*(?:[6789]\d0M|\bGraphics\b)|Iris Xe/i.test(gpu);
+// программная отрисовка почти без видеокарты: единственный случай, когда настольному браузеру нужен совсем лёгкий режим
+const software = /SwiftShader|llvmpipe|Basic Render|Software/i.test(gpu);
+// high: мощная карта; mid: любая другая настольная (встроенная Intel UHD и подобные); low: телефоны и программная отрисовка
+const tier = mobile || software ? 'low' : strong ? 'high' : 'mid';
 
 const perf = {
 	gpu,
 	tier,
-	antialias: tier === 'high',
-	maxPR: tier === 'high' ? 2 : 1.5,
-	maxFps: tier === 'high' ? 0 : 60,
+	windows,
+	// сглаживание нужно на любом настольном браузере: MSAA 4x на современных ПК почти ничего не стоит
+	antialias: !mobile && !software,
+	// на экранах с масштабом 175–200% разрешение не занижается: картинка не мылится
+	maxPR: mobile || software ? 1.5 : 2,
+	// на настольных устройствах кадры не ограничиваются: браузер сам идёт в такт с монитором (120, 144, 165 Гц)
+	maxFps: mobile || software ? 60 : 0,
 };
 
 // лёгкое стекло интерфейса: на слабой видеокарте размытие под панелями считается каждый кадр и заметно тормозит
 if (tier !== 'high') document.documentElement.classList.add('perf-lite');
+// у Windows (Chrome через Direct3D 11) размытие под панелями дороже, чем на Mac: у крупных окон стекло чуть легче
+if (windows) document.documentElement.classList.add('os-win');
 
 };
 __defs['src/viewport.js'] = function (__exports, __req) {
@@ -84322,6 +84332,20 @@ class Viewport {
 		this.canvas.className = 'gl';
 		stage.appendChild(this.canvas);
 		this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: perf.antialias, alpha: true, powerPreference: 'high-performance' });
+		// потеря контекста WebGL (переключение видеокарты, сон, блокировка экрана, перезапуск драйвера): без этой обработки сцена чернеет навсегда
+		this.contextLost = false;
+		this.canvas.addEventListener('webglcontextlost', (e) => {
+			e.preventDefault();
+			this.contextLost = true;
+			app.toast && app.toast('Графика приостановлена. Восстанавливаю…', 'info', 2500);
+		});
+		this.canvas.addEventListener('webglcontextrestored', () => {
+			this.contextLost = false;
+			this.resize();
+			app.display && app.display.apply();
+			this.invalidate();
+			app.toast && app.toast('Графика восстановлена, сцена обновлена', 'ok', 2500);
+		});
 		this._basePR = Math.min(window.devicePixelRatio || 1, perf.maxPR);
 		this._qs = 1; // текущий масштаб разрешения (авто-качество)
 		this.renderer.setPixelRatio(this._basePR);
@@ -84571,6 +84595,7 @@ class Viewport {
 		let lastF = 0;
 		const loop = (now) => {
 			requestAnimationFrame(loop);
+			if (this.contextLost) return;
 			// лимит кадров (например, 30 в секунду) экономит заряд и нагрев
 			const cap = this.app.settings.render.fpsCap || perf.maxFps;
 			if (cap && now - lastF < 1000 / cap - 3) return;
@@ -125230,8 +125255,18 @@ function waitManager(manager, ms = 20000) {
 }
 
 // ----------------------------------------------------------- загрузчики
+/** Текст файла: сначала строго UTF-8, а если не получилось (однобайтовая Windows-1251 из русских 3ds Max, CAD), то windows-1251 */
+async function readTextSmart(file) {
+	const buf = await file.arrayBuffer();
+	try {
+		return new TextDecoder('utf-8', { fatal: true }).decode(buf).replace(/^\uFEFF/, '');
+	} catch (e) {
+		return new TextDecoder('windows-1251').decode(buf);
+	}
+}
+
 async function loadOBJ(file, res, ctx) {
-	const text = await file.text();
+	const text = await readTextSmart(file);
 	let materials = null;
 	const wanted = [...text.matchAll(/^mtllib\s+(.+)$/gm)].map((m) => m[1].trim());
 	let mtlFile = null;
@@ -125245,7 +125280,7 @@ async function loadOBJ(file, res, ctx) {
 		if (mtls.length === 1) mtlFile = mtls[0];
 	}
 	if (mtlFile) {
-		const creator = new MTLLoader().parse(await mtlFile.text(), '');
+		const creator = new MTLLoader().parse(await readTextSmart(mtlFile), '');
 		// Подставляем собственную загрузку текстур: так мы знаем исходные файлы и ловим ошибки
 		creator.loadTexture = (url) => {
 			const tex = new THREE.Texture();
@@ -125564,8 +125599,10 @@ async function expandZips(files, ctx) {
 		try {
 			const entries = unzipSync(new Uint8Array(await f.arrayBuffer()));
 			let n = 0;
-			for (const [path, bytes] of Object.entries(entries)) {
-				if (path.endsWith('/') || path.includes('__MACOSX') || baseName(path).startsWith('.')) continue;
+			for (const [rawPath, bytes] of Object.entries(entries)) {
+				// архивы, собранные на Windows, хранят пути с обратным слешем: «models\\textures\\»
+				const path = rawPath.replace(/\\/g, '/');
+				if (path.endsWith('/') || !baseName(path) || path.includes('__MACOSX') || baseName(path).startsWith('.')) continue;
 				out.push(new File([bytes], baseName(path), { type: '' }));
 				n++;
 			}
@@ -141318,6 +141355,8 @@ const __default = {
 		'Выйти из правки точек (Esc)': 'Leave point editing (Esc)',
 		'Снять': 'Clear',
 		'Сначала выберите точки': 'Select some points first',
+		'Графика приостановлена. Восстанавливаю…': 'Graphics paused. Restoring…',
+		'Графика восстановлена, сцена обновлена': 'Graphics restored, scene refreshed',
 		'Правка точек': 'Edit points',
 		'Выделять точки': 'Select points',
 		'Закрашивайте точки кистью: всё под кругом выбирается': 'Paint over points with the brush: everything under the circle is selected',
@@ -141369,6 +141408,8 @@ const __default = {
 		'Выйти из правки точек (Esc)': 'Вийти з правки точок (Esc)',
 		'Снять': 'Зняти',
 		'Сначала выберите точки': 'Спершу виберіть точки',
+		'Графика приостановлена. Восстанавливаю…': 'Графіку призупинено. Відновлюю…',
+		'Графика восстановлена, сцена обновлена': 'Графіку відновлено, сцену оновлено',
 		'Правка точек': 'Правка точок',
 		'Выделять точки': 'Виділяти точки',
 		'Закрашивайте точки кистью: всё под кругом выбирается': 'Зафарбовуйте точки пензлем: усе під колом вибирається',
@@ -141420,6 +141461,8 @@ const __default = {
 		'Выйти из правки точек (Esc)': 'Salir de la edición de puntos (Esc)',
 		'Снять': 'Quitar',
 		'Сначала выберите точки': 'Primero selecciona algunos puntos',
+		'Графика приостановлена. Восстанавливаю…': 'Gráficos en pausa. Restaurando…',
+		'Графика восстановлена, сцена обновлена': 'Gráficos restaurados, escena actualizada',
 		'Правка точек': 'Edición de puntos',
 		'Выделять точки': 'Seleccionar puntos',
 		'Закрашивайте точки кистью: всё под кругом выбирается': 'Pinta sobre los puntos con el pincel: se selecciona todo lo que queda bajo el círculo',
@@ -141471,6 +141514,8 @@ const __default = {
 		'Выйти из правки точек (Esc)': 'Punktbearbeitung verlassen (Esc)',
 		'Снять': 'Aufheben',
 		'Сначала выберите точки': 'Wähle zuerst Punkte aus',
+		'Графика приостановлена. Восстанавливаю…': 'Grafik pausiert. Wird wiederhergestellt…',
+		'Графика восстановлена, сцена обновлена': 'Grafik wiederhergestellt, Szene aktualisiert',
 		'Правка точек': 'Punkte bearbeiten',
 		'Выделять точки': 'Punkte auswählen',
 		'Закрашивайте точки кистью: всё под кругом выбирается': 'Male mit dem Pinsel über Punkte: Alles unter dem Kreis wird ausgewählt',
@@ -155081,7 +155126,7 @@ class UI {
 					),
 					group('Общее', 'sliders-horizontal',
 						row('Открыть файл', 'O'),
-						row('Экспорт', 'Ctrl+E'),
+						row('Экспорт', 'Ctrl+E / Ctrl+S'),
 						row('Вставить файл', 'Ctrl+V'),
 						row('Режим «Эффекты»', 'E'),
 						row('Режимы отображения', '1 … 6'),
@@ -155402,7 +155447,8 @@ class UI {
 				this.redo();
 				return;
 			}
-			if (mod && code === 'KeyE') {
+			// Ctrl+S: вместо «Сохранить страницу» браузера открывается экспорт
+			if (mod && (code === 'KeyE' || code === 'KeyS')) {
 				e.preventDefault();
 				this.toggleExportPop();
 				return;

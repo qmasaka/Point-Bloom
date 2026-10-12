@@ -15,6 +15,18 @@ import sys
 import time
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
+
+# на Windows консоль может быть не в UTF-8: русские сообщения сборщика не должны её ронять
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
+
+def rel(p):
+    """Путь модуля относительно корня с прямыми слешами (на Windows os.path.relpath даёт обратные, и модули не находились бы)"""
+    return os.path.relpath(p, ROOT).replace(os.sep, "/")
+
 ENTRY = os.path.join(ROOT, "src", "main.js")
 OUT = os.path.join(ROOT, "assets", "app.js")
 THREE = os.path.join(ROOT, "vendor", "three", "build", "three.module.js")
@@ -95,7 +107,7 @@ def transform(path, src):
             clause, spec = m.group(1), m.group(2)
             target = resolve(spec, path)
             deps.append(target)
-            tid = repr(os.path.relpath(target, ROOT))
+            tid = repr(rel(target))
             default_name = None
             ns_name = None
             named = []
@@ -150,7 +162,7 @@ def transform(path, src):
                     deps.append(target)
                     n_req += 1
                     var = "__re%d" % n_req
-                    head.append("const %s = __req(%r);" % (var, os.path.relpath(target, ROOT)))
+                    head.append("const %s = __req(%r);" % (var, rel(target)))
                     for a, b in names:
                         head.append("__def(__exports, %r, () => %s.%s);" % (b, var, a))
                 else:
@@ -248,9 +260,9 @@ def bundle():
         "}",
     ]
     for p, code in order:
-        rid = os.path.relpath(p, ROOT)
+        rid = rel(p)
         parts.append("__defs[%r] = function (__exports, __req) {\n'use strict';\n%s\n};" % (rid, code))
-    parts.append("__req(%r);" % os.path.relpath(ENTRY, ROOT))
+    parts.append("__req(%r);" % rel(ENTRY))
     parts.append("})();")
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:

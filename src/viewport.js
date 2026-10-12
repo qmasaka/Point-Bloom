@@ -47,6 +47,20 @@ export class Viewport {
 		this.canvas.className = 'gl';
 		stage.appendChild(this.canvas);
 		this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: perf.antialias, alpha: true, powerPreference: 'high-performance' });
+		// потеря контекста WebGL (переключение видеокарты, сон, блокировка экрана, перезапуск драйвера): без этой обработки сцена чернеет навсегда
+		this.contextLost = false;
+		this.canvas.addEventListener('webglcontextlost', (e) => {
+			e.preventDefault();
+			this.contextLost = true;
+			app.toast && app.toast('Графика приостановлена. Восстанавливаю…', 'info', 2500);
+		});
+		this.canvas.addEventListener('webglcontextrestored', () => {
+			this.contextLost = false;
+			this.resize();
+			app.display && app.display.apply();
+			this.invalidate();
+			app.toast && app.toast('Графика восстановлена, сцена обновлена', 'ok', 2500);
+		});
 		this._basePR = Math.min(window.devicePixelRatio || 1, perf.maxPR);
 		this._qs = 1; // текущий масштаб разрешения (авто-качество)
 		this.renderer.setPixelRatio(this._basePR);
@@ -296,6 +310,7 @@ export class Viewport {
 		let lastF = 0;
 		const loop = (now) => {
 			requestAnimationFrame(loop);
+			if (this.contextLost) return;
 			// лимит кадров (например, 30 в секунду) экономит заряд и нагрев
 			const cap = this.app.settings.render.fpsCap || perf.maxFps;
 			if (cap && now - lastF < 1000 / cap - 3) return;

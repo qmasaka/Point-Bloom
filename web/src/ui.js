@@ -802,7 +802,7 @@ row('Повторить', 'Ctrl+Shift+Z')
 ),
 group('Общее', 'sliders-horizontal',
 row('Открыть файл', 'O'),
-row('Экспорт', 'Ctrl+E'),
+row('Экспорт', 'Ctrl+E / Ctrl+S'),
 row('Вставить файл', 'Ctrl+V'),
 row('Режим «Эффекты»', 'E'),
 row('Режимы отображения', '1 … 6'),
@@ -1100,7 +1100,7 @@ e.preventDefault();
 this.redo();
 return;
 }
-if (mod && code === 'KeyE') {
+if (mod && (code === 'KeyE' || code === 'KeyS')) {
 e.preventDefault();
 this.toggleExportPop();
 return;

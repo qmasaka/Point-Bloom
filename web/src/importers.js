@@ -110,8 +110,16 @@ if (!started) finish();
 setTimeout(finish, ms);
 });
 }
+async function readTextSmart(file) {
+const buf = await file.arrayBuffer();
+try {
+return new TextDecoder('utf-8', { fatal: true }).decode(buf).replace(/^\uFEFF/, '');
+} catch (e) {
+return new TextDecoder('windows-1251').decode(buf);
+}
+}
 async function loadOBJ(file, res, ctx) {
-const text = await file.text();
+const text = await readTextSmart(file);
 let materials = null;
 const wanted = [...text.matchAll(/^mtllib\s+(.+)$/gm)].map((m) => m[1].trim());
 let mtlFile = null;
@@ -125,7 +133,7 @@ const mtls = res.files.filter((f) => extOf(f.name) === 'mtl');
 if (mtls.length === 1) mtlFile = mtls[0];
 }
 if (mtlFile) {
-const creator = new MTLLoader().parse(await mtlFile.text(), '');
+const creator = new MTLLoader().parse(await readTextSmart(mtlFile), '');
 creator.loadTexture = (url) => {
 const tex = new THREE.Texture();
 const f = res.find(url);
@@ -413,8 +421,9 @@ continue;
 try {
 const entries = unzipSync(new Uint8Array(await f.arrayBuffer()));
 let n = 0;
-for (const [path, bytes] of Object.entries(entries)) {
-if (path.endsWith('/') || path.includes('__MACOSX') || baseName(path).startsWith('.')) continue;
+for (const [rawPath, bytes] of Object.entries(entries)) {
+const path = rawPath.replace(/\\/g, '/');
+if (path.endsWith('/') || !baseName(path) || path.includes('__MACOSX') || baseName(path).startsWith('.')) continue;
 out.push(new File([bytes], baseName(path), { type: '' }));
 n++;
 }
