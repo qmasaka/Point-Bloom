@@ -6514,6 +6514,11 @@ export class EffectsEngine {
 		const tick = (now) => {
 			if (!this.active) return;
 			this._raf = requestAnimationFrame(tick);
+			// скрытая вкладка: сцену и анализ звука не считаем, время эффектов не копится (музыка при этом продолжает играть)
+			if (document.hidden) {
+				this._lastT = now;
+				return;
+			}
 			const capFps = this.app.settings.render.fpsCap;
 			if (capFps && now - this._lastT < 1000 / capFps - 3) return;
 			// пока открыто окно экспорта, время эффектов стоит на месте
@@ -6592,7 +6597,7 @@ export class EffectsEngine {
 				if (cam.isPerspectiveCamera) {
 					const pr = u.uPR.value;
 					const d = Math.max(0.5, cam.position.length());
-					const ppu = (this.app.viewport.canvas.clientHeight * pr) / (2 * d * Math.tan((cam.fov * Math.PI) / 360));
+					const ppu = (this.app.viewport.size.height * pr) / (2 * d * Math.tan((cam.fov * Math.PI) / 360));
 					const sPx = Math.min(95, (this.app.settings.point.size * pr * 3.8) / d);
 					const overlap = (n * sPx * sPx) / (Math.PI * (1.1 * ppu) ** 2);
 					fit = clamp(Math.sqrt(3.5 / Math.max(overlap, 1e-3)), 0.25, 1);
@@ -6991,8 +6996,9 @@ export class EffectsEngine {
 				u.uGravT.value.set(g.tilt + Math.sin(this._gPrec) * 0.18 * g.precess, this._gPrec * 0.6, g.spread, g.jet);
 				u.uGravP.value.set(this._gc.x, this._gc.y, this._gc.z, g.target === 'center' && !handG ? 4 : g.radius);
 			}
-			const cvs = this.app.viewport.canvas;
-			u.uRes.value.set(Math.max(1, cvs.clientWidth), Math.max(1, cvs.clientHeight));
+			// размер берём из кэша области просмотра: чтение clientHeight каждый кадр вызывало бы принудительный пересчёт вёрстки
+			const vsz = this.app.viewport.size;
+			u.uRes.value.set(Math.max(1, vsz.width), Math.max(1, vsz.height));
 			u.uLinkW.value = L.links.width;
 			// связи
 			const lk = this._eff(L.links);
@@ -7105,14 +7111,14 @@ export class EffectsEngine {
 				if (T.on) this.hud.drawTracking(T, (T.opacity ?? 1) * Math.min(1, tr * 10), { points: this.points, camera: this.app.viewport.camera, levels: this.levels, colors: T.color && T.color !== 'auto' ? [T.color, T.color] : cols });
 				if (look.hud) this.hud.drawTelemetry({ audioWave: look.hudSpectrum ? 'on' : 'off' }, 1, { levels: this.levels, spec: this.spec, colors: cols });
 				if (this.camTracker?.running) {
-					const cv = this.app.viewport.canvas;
+					const vpSize = this.app.viewport.size;
 					if (this._hands?.length && this._time - (this._handsT ?? -9) < 0.35) {
-						this.hud.drawHands(this._hands, cv.clientWidth, cv.clientHeight, cols[1], L.camTrack.skeleton === 'on');
+						this.hud.drawHands(this._hands, vpSize.width, vpSize.height, cols[1], L.camTrack.skeleton === 'on');
 					} else if (this.mouseOn && this._time - (this._camT ?? -9) < 0.7 && !(this.camTracker instanceof HandTracker)) {
 						const v = this.mouse.clone();
 						this.points.localToWorld(v);
 						v.project(this.app.viewport.camera);
-						this.hud.drawCursor((v.x * 0.5 + 0.5) * cv.clientWidth, (1 - (v.y * 0.5 + 0.5)) * cv.clientHeight, this._camActive ? 1 : 0.4, cols[1]);
+						this.hud.drawCursor((v.x * 0.5 + 0.5) * vpSize.width, (1 - (v.y * 0.5 + 0.5)) * vpSize.height, this._camActive ? 1 : 0.4, cols[1]);
 					}
 				}
 				const arr = u.uTrk.value;

@@ -236,6 +236,36 @@ o.material = this.pointMat;
 });
 this.syncCameraLayers();
 this.app.viewport.invalidate();
+this.scheduleWarmup();
+}
+scheduleWarmup() {
+const r = this.app.viewport.renderer;
+if (!r || !r.compileAsync) return;
+let mesh = null;
+this.app.viewport.root.traverse((o) => {
+if (!mesh && o.isMesh && !o.userData.helper && o.geometry) mesh = o;
+});
+if (!mesh) return;
+this._warmed = this._warmed || new WeakSet();
+if (this._warmed.has(mesh.geometry)) return;
+this._warmed.add(mesh.geometry);
+const run = async () => {
+try {
+const vp = this.app.viewport;
+if (vp.contextLost) return;
+const g = new THREE.Group();
+for (const m of [...Object.values(this.mats), this.wireOverlay, this.faceFront, this.faceBack]) g.add(new THREE.Mesh(mesh.geometry, m));
+const dummy = new THREE.BufferGeometry();
+dummy.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
+dummy.setAttribute('color', new THREE.BufferAttribute(new Float32Array(3), 3));
+g.add(new THREE.Points(dummy, this.pointMat));
+await r.compileAsync(g, vp.camera, vp.scene);
+dummy.dispose();
+} catch (e) {
+}
+};
+const idle = window.requestIdleCallback || ((f) => setTimeout(f, 300));
+idle(run, { timeout: 2500 });
 }
 syncOverlays(mesh) {
 const s = this.app.settings;

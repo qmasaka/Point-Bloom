@@ -310,7 +310,8 @@ export class Viewport {
 		let lastF = 0;
 		const loop = (now) => {
 			requestAnimationFrame(loop);
-			if (this.contextLost) return;
+			// скрытая вкладка: ни рендера, ни лишней работы (браузер и так почти останавливает кадры, но здесь мы не тратим ничего)
+			if (this.contextLost || document.hidden) return;
 			// лимит кадров (например, 30 в секунду) экономит заряд и нагрев
 			const cap = this.app.settings.render.fpsCap || perf.maxFps;
 			if (cap && now - lastF < 1000 / cap - 3) return;
@@ -318,6 +319,13 @@ export class Viewport {
 			this.frame(now);
 		};
 		requestAnimationFrame(loop);
+		// при возврате на вкладку сцена перерисовывается сразу, а счётчик кадров не делает скачка
+		document.addEventListener('visibilitychange', () => {
+			if (document.hidden) return;
+			lastF = 0;
+			this._animT = performance.now();
+			this.invalidate();
+		});
 	}
 
 	/** Скриншот окна просмотра (PNG). transparent=true — без фона. */

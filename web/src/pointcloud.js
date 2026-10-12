@@ -265,7 +265,7 @@ A_.bp[o] = lx; A_.bp[o + 1] = ly; A_.bp[o + 2] = lz;
 const fn = p.fns[p.triMat ? p.triMat[t] : 0] || p.fns[0];
 fn(u, v, vcol ? vc : null, tmpC, 0);
 colors[o] = tmpC[0]; colors[o + 1] = tmpC[1]; colors[o + 2] = tmpC[2];
-if ((w & 0x3ffff) === 0x3ffff) {
+if ((w & 0xffff) === 0xffff) {
 if (onProgress) onProgress(w / count);
 await yieldUI();
 }

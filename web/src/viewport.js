@@ -259,13 +259,19 @@ start() {
 let lastF = 0;
 const loop = (now) => {
 requestAnimationFrame(loop);
-if (this.contextLost) return;
+if (this.contextLost || document.hidden) return;
 const cap = this.app.settings.render.fpsCap || perf.maxFps;
 if (cap && now - lastF < 1000 / cap - 3) return;
 lastF = now;
 this.frame(now);
 };
 requestAnimationFrame(loop);
+document.addEventListener('visibilitychange', () => {
+if (document.hidden) return;
+lastF = 0;
+this._animT = performance.now();
+this.invalidate();
+});
 }
 async screenshot({ transparent = false } = {}) {
 this.render();

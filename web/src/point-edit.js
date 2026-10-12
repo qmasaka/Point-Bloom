@@ -80,6 +80,7 @@ this.retarget();
 if (this.app.settings.display !== 'points') this.app.setDisplay('points');
 } else {
 this.active = false;
+this._projPool = null;
 this._cursor.hidden = true;
 this._rect.hidden = true;
 this._lassoOff();
@@ -107,15 +108,25 @@ const H = r.height;
 const pos = o.geometry.attributes.position;
 const n = pos.count;
 const a = pos.array;
-const sx = new Float32Array(n);
-const sy = new Float32Array(n);
-const sd = new Float32Array(n);
-const ok = new Uint8Array(n);
+const pool = this._projPool || (this._projPool = { cap: 0 });
+if (pool.cap < n) {
+pool.cap = n;
+pool.sx = new Float32Array(n);
+pool.sy = new Float32Array(n);
+pool.sd = new Float32Array(n);
+pool.ok = new Uint8Array(n);
+pool.vis = new Uint8Array(n);
+}
+const { sx, sy, sd, ok, vis } = pool;
+ok.fill(0, 0, n);
+vis.fill(0, 0, n);
 const ortho = cam.isOrthographicCamera;
 const cell = 3;
 const gw = Math.ceil(W / cell) + 1;
 const gh = Math.ceil(H / cell) + 1;
-const grid = new Float32Array(gw * gh).fill(Infinity);
+if (!pool.grid || pool.grid.length < gw * gh) pool.grid = new Float32Array(gw * gh);
+const grid = pool.grid;
+grid.fill(Infinity, 0, gw * gh);
 let dmin = Infinity;
 let dmax = -Infinity;
 for (let i = 0; i < n; i++) {
@@ -135,7 +146,6 @@ if (d > dmax) dmax = d;
 const gi = Math.max(0, Math.min(gh - 1, (py / cell) | 0)) * gw + Math.max(0, Math.min(gw - 1, (px / cell) | 0));
 if (d < grid[gi]) grid[gi] = d;
 }
-const vis = new Uint8Array(n);
 const tol = (dmax - dmin) * 0.025 + 1e-6;
 for (let i = 0; i < n; i++) {
 if (!ok[i]) continue;

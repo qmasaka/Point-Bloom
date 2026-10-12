@@ -55,6 +55,33 @@ c.height = Math.max(1, Math.round(h * k));
 c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
 return { image: c, w: c.width, h: c.height, scaled: true };
 }
+const BITMAP_MIN_BYTES = 1.5 * 1024 * 1024;
+async function decodeBigImage(file) {
+if (typeof createImageBitmap !== 'function' || file.size < BITMAP_MIN_BYTES) return null;
+let bmp = null;
+try {
+bmp = await createImageBitmap(file);
+const m = Math.max(bmp.width, bmp.height);
+let scaled = false;
+if (m > maxTexSize) {
+const k = maxTexSize / m;
+const rw = Math.max(1, Math.round(bmp.width * k));
+const rh = Math.max(1, Math.round(bmp.height * k));
+bmp.close();
+bmp = await createImageBitmap(file, { resizeWidth: rw, resizeHeight: rh, resizeQuality: 'high' });
+scaled = true;
+}
+const c = document.createElement('canvas');
+c.width = bmp.width;
+c.height = bmp.height;
+c.getContext('2d').drawImage(bmp, 0, 0);
+return { image: c, w: c.width, h: c.height, scaled };
+} catch (e) {
+return null;
+} finally {
+if (bmp) bmp.close();
+}
+}
 export async function decodeImageFile(file) {
 const ext = extOf(file.name);
 let source;
@@ -67,6 +94,8 @@ c.height = t.height;
 c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(t.data.buffer, t.data.byteOffset, t.data.length), t.width, t.height), 0, 0);
 source = c;
 } else {
+const big = await decodeBigImage(file);
+if (big) return { image: big.image, width: big.w, height: big.h, mime: mimeOf(ext), scaled: big.scaled, ext };
 const url = URL.createObjectURL(file);
 try {
 source = await loadHTMLImage(url);
