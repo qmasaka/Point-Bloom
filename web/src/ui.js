@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { h, $, $$, extOf, formatInt, downloadBlob, placeAbove } from './util.js';
 import { icon, hydrateIcons, iconsReady } from './icons.js';
-import { setLang, lang as curLang } from './i18n.js';
 import { initFloatingPanels } from './fx-float.js';
 import { segmented, switchRow, button } from './ui-kit.js';
 import { AxisGizmo } from './gizmo.js';
@@ -92,12 +91,6 @@ $('#btnEmptyChar').addEventListener('click', () => app.loadDemoCharacter());
 $('#btnUndo').addEventListener('click', () => this.undo());
 $('#btnRedo').addEventListener('click', () => this.redo());
 $('#btnHelp').addEventListener('click', () => this.showHelp());
-{
-const sw = $('#langSwitch');
-const mark = () => sw.querySelectorAll('button').forEach((b) => b.classList.toggle('is-on', b.dataset.lang === window.__i18n.lang));
-sw.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { setLang(b.dataset.lang); mark(); }));
-mark();
-}
 {
 const btn = $('#btnSupport');
 const pop = $('#supportPop');

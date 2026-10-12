@@ -5,17 +5,18 @@ import EXTRA from './i18n-extra.js';
 
 Object.assign(EN, EXTRA);
 
-const KEY = 'objglb.lang';
 const CY = /[А-Яа-яЁё]/;
 const ATTRS = ['title', 'aria-label', 'placeholder', 'alt', 'data-tip'];
 
+const RU_TITLE = 'Point Bloom: облака точек, эффекты и конвертер OBJ в GLB';
+const RU_DESC = 'Point Bloom превращает 3D-модели, фото, видео и текст в живые облака точек. Эффекты под музыку и камеру, редактор сцены и конвертер OBJ, FBX, STL, PLY в GLB прямо в браузере.';
+
+/** Интерфейс всегда английский. Русский включается только когда страницу переводят Google Translate на русский: тогда берётся наш готовый перевод, а не машинный. */
 function detect() {
 	try {
-		const s = localStorage.getItem(KEY);
-		if (s === 'ru' || s === 'en') return s;
+		if (new URLSearchParams(location.search).get('_x_tr_tl') === 'ru') return 'ru';
 	} catch (_) {}
-	const l = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'ru']).map((x) => String(x).toLowerCase());
-	return l.some((x) => /^(ru|uk|be|kk)/.test(x)) ? 'ru' : 'en';
+	return 'en';
 }
 
 export let lang = 'ru';
@@ -164,18 +165,12 @@ function restore(root) {
 }
 
 function meta() {
-	const t = document.querySelector('title');
 	const d = document.querySelector('meta[name="description"]');
-	if (lang === 'en') {
-		if (t && !t.__ru) t.__ru = t.textContent;
-		if (d && !d.__ru) d.__ru = d.getAttribute('content');
-		if (t) document.title = tr(t.__ru || t.textContent);
-		if (d) d.setAttribute('content', tr(d.__ru || d.getAttribute('content')));
-	} else {
-		if (t && t.__ru) document.title = t.__ru;
-		if (d && d.__ru) d.setAttribute('content', d.__ru);
+	if (lang === 'ru') {
+		document.title = RU_TITLE;
+		if (d) d.setAttribute('content', RU_DESC);
 	}
-	document.documentElement.lang = lang;
+	if (!translatorOn()) document.documentElement.lang = lang;
 }
 
 function onMutations(list) {
@@ -193,12 +188,52 @@ function onMutations(list) {
 	}
 }
 
+const translatorOn = () => /\btranslated-(ltr|rtl)\b/.test(document.documentElement.className);
+
+/** Chrome и Google Translate после перевода страницы ставят на html класс translated-* и свой lang. Если выбран русский, возвращаем свой русский текст и просим переводчик больше не трогать страницу. */
+function forceRu() {
+	if (lang === 'ru' && document.documentElement.getAttribute('translate') === 'no') return;
+	lang = 'ru';
+	busy = true;
+	try {
+		const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+		let n = tw.currentNode;
+		while (n) {
+			if (n.nodeType === 3) {
+				if (n[ORIG] !== undefined) n.nodeValue = n[ORIG];
+				n[ORIG] = undefined;
+			} else if (n.__ruAttrs) {
+				for (const [a, v] of Object.entries(n.__ruAttrs)) n.setAttribute(a, v);
+				n.__ruAttrs = null;
+			}
+			n = tw.nextNode();
+		}
+	} finally {
+		observer && observer.takeRecords();
+		busy = false;
+	}
+	document.documentElement.setAttribute('translate', 'no');
+	if (!document.querySelector('meta[name="google"][content="notranslate"]')) {
+		const m = document.createElement('meta');
+		m.name = 'google';
+		m.content = 'notranslate';
+		document.head.append(m);
+	}
+	meta();
+	window.dispatchEvent(new CustomEvent('langchange', { detail: 'ru' }));
+}
+
+function watchTranslator() {
+	const check = () => {
+		if (translatorOn() && /^ru\b/i.test(document.documentElement.lang || '')) forceRu();
+	};
+	new MutationObserver(check).observe(document.documentElement, { attributes: true, attributeFilter: ['lang', 'class'] });
+	check();
+}
+
 export function setLang(next) {
 	if (next !== 'ru' && next !== 'en') return;
 	lang = next;
-	try {
-		localStorage.setItem(KEY, next);
-	} catch (_) {}
 	busy = true;
 	try {
 		if (next === 'en') walk(document.body);
@@ -222,5 +257,6 @@ export function initI18n() {
 		busy = false;
 	}
 	meta();
+	watchTranslator();
 	window.__i18n = { tr, missing, setLang, get lang() { return lang; } };
 }
