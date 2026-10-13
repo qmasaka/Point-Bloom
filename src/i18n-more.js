@@ -89,6 +89,7 @@ export default {
 		'Пауза между сбоями, с': 'Pause between glitches, s',
 		'Сколько держится сбой, с': 'How long a glitch lasts, s',
 		'Направление сноса, °': 'Drift direction, °',
+		'Рамки слежения': 'Tracking boxes',
 	},
 	uk: {
 		'Установить приложение': 'Встановити застосунок',
@@ -179,6 +180,7 @@ export default {
 		'Пауза между сбоями, с': 'Пауза між збоями, с',
 		'Сколько держится сбой, с': 'Скільки триває збій, с',
 		'Направление сноса, °': 'Напрямок зносу, °',
+		'Рамки слежения': 'Рамки стеження',
 	},
 	es: {
 		'Установить приложение': 'Instalar la aplicación',
@@ -269,6 +271,7 @@ export default {
 		'Пауза между сбоями, с': 'Pausa entre fallos, s',
 		'Сколько держится сбой, с': 'Cuánto dura un fallo, s',
 		'Направление сноса, °': 'Dirección de la deriva, °',
+		'Рамки слежения': 'Marcos de seguimiento',
 	},
 	de: {
 		'Установить приложение': 'App installieren',
@@ -359,5 +362,6 @@ export default {
 		'Пауза между сбоями, с': 'Pause zwischen Fehlern, s',
 		'Сколько держится сбой, с': 'Wie lange ein Fehler anhält, s',
 		'Направление сноса, °': 'Driftrichtung, °',
+		'Рамки слежения': 'Tracking-Rahmen',
 	},
 };
