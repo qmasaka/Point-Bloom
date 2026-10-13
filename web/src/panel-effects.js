@@ -428,7 +428,7 @@ rotate: { id: 'rotate', name: 'Вращение', icon: 'arrows-clockwise', hint
 bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 };
 const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-const ANIM_LAYERS = ['morph', 'curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail'];
+const ANIM_LAYERS = ['morph', 'curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail'];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
 const animQuickBtn = button({
@@ -588,6 +588,24 @@ if (ex.type === 'select') {
 const sl = select({ options: ex.options.map(([value, label]) => ({ value, label })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
 extraCtl[ex.key] = sl;
 put(field(ex.label, sl.el, { wide: true }), ex);
+} else if (ex.type === 'button') {
+const bt = button({
+label: ex.label,
+icon: ex.icon,
+variant: 'secondary',
+cls: ex.preset ? 'btn-sm' : 'btn-block',
+onClick: () => {
+if (ex.preset) {
+engine.moshPreset(L, ex.preset);
+for (const [k, ctl] of Object.entries(extraCtl)) ctl.set(L[k]);
+amount.set(L.amount);
+applyWhen();
+save();
+engine.emit();
+} else engine[ex.act]();
+},
+});
+put(bt, ex);
 } else if (ex.type === 'note') {
 put(h('div', { class: 'field-hint' }, ex.text), ex);
 } else if (ex.type === 'title') {
@@ -601,7 +619,7 @@ const sg = segmented({ cls: ex.options.length > 3 ? 'seg-tight' : undefined, opt
 extraCtl[ex.key] = sg;
 put(field(ex.label, sg.el, { wide: true }), ex);
 } else {
-const sl = slider({ noNorm: !!(ex.int && /сколько|число|копий|кадров|точек|узлов|слоёв|перьев|колонок|линий|рамок/i.test(ex.label)), min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : 2, unit: ex.unit, log: ex.log, format: ex.log ? (v) => formatInt(v) : undefined, onInput: (v) => { L[ex.key] = v; if (ex.relayout) engine.relayoutFrames(); }, onChange: after });
+const sl = slider({ noNorm: !!ex.noNorm || !!(ex.int && /сколько|число|копий|кадров|точек|узлов|слоёв|перьев|колонок|линий|рамок/i.test(ex.label)), min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : ex.noNorm ? 1 : 2, unit: ex.unit, log: ex.log, format: ex.log ? (v) => formatInt(v) : undefined, onInput: (v) => { L[ex.key] = v; if (ex.relayout) engine.relayoutFrames(); }, onChange: after });
 extraCtl[ex.key] = sl;
 put(field(ex.label, sl.el), ex);
 }

@@ -68,6 +68,34 @@ export const FX_LAYERS = [
 	{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются число узлов и дальность связи', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
 	{ id: 'slice', group: 'Графика', name: 'Срез', icon: 'scan', hint: 'По форме идёт срез. Виды: лазер (линии), рельеф (точки на линиях), развёртка (форма проявляется за плоскостью)', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'model' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
 	{ id: 'feedback', group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой световой хвост из прошлых кадров. Виды: выдержка, туннель', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
+	{ id: 'datamosh', group: 'Графика', name: 'Датамош', icon: 'selection-all', hint: 'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'bleed', trigger: 'timer', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, stale: 0.2, jit: 0.4 }, extras: [
+		{ type: 'title', label: 'Сбой' },
+		{ type: 'button', label: 'Сломать кадр сейчас', act: 'moshKick', icon: 'lightning' },
+		{ type: 'button', label: 'Вернуть чистый кадр', act: 'moshClear', icon: 'broom' },
+		{ key: 'style', label: 'Вид', type: 'select', options: [['bleed', 'Размазывание'], ['blocks', 'Блоки'], ['melt', 'Расплав']] },
+		{ key: 'trigger', label: 'Когда ломается', type: 'select', options: [['timer', 'Через равные паузы'], ['beat', 'По биту музыки'], ['manual', 'Только кнопкой'], ['always', 'Всё время']] },
+		{ key: 'period', label: 'Пауза между сбоями, с', min: 0.5, max: 12, step: 0.1, noNorm: true, when: ['trigger', ['timer']] },
+		{ key: 'recover', label: 'Сколько держится сбой, с', min: 0.2, max: 10, step: 0.1, noNorm: true, when: ['trigger', ['timer', 'beat', 'manual']] },
+		{ type: 'title', label: 'Движение' },
+		{ key: 'drift', label: 'Снос в одну сторону', min: 0, max: 1, step: 0.05 },
+		{ key: 'angle', label: 'Направление сноса, °', min: 0, max: 345, step: 15, int: true, noNorm: true, when: ['style', ['bleed', 'blocks', 'melt']] },
+		{ key: 'flow', label: 'Течение (вихревое)', min: 0, max: 1, step: 0.05 },
+		{ key: 'inertia', label: 'Инерция векторов', min: 0, max: 0.95, step: 0.05 },
+		{ key: 'leak', label: 'Возврат картинки', min: 0, max: 1, step: 0.05 },
+		{ type: 'title', label: 'Блоки и цвет' },
+		{ key: 'block', label: 'Размер блока', type: 'seg', options: [['8', 'Мелкий'], ['16', 'Средний'], ['32', 'Крупный'], ['64', 'Огромный']] },
+		{ key: 'smooth', label: 'Плавность границ блоков', min: 0, max: 1, step: 0.05 },
+		{ key: 'detail', label: 'Сохранять детали кадра', min: 0, max: 1, step: 0.05 },
+		{ key: 'chroma', label: 'Цветовое размазывание', min: 0, max: 1, step: 0.05 },
+		{ key: 'quant', label: 'Грубые цвета блоков', min: 0, max: 1, step: 0.05 },
+		{ key: 'stale', label: 'Доля залипших блоков', min: 0, max: 0.8, step: 0.05, when: ['style', ['blocks']] },
+		{ key: 'jit', label: 'Сдвиг залипших блоков', min: 0, max: 1.5, step: 0.05, when: ['style', ['blocks']] },
+		{ type: 'title', label: 'Готовые настройки' },
+		{ type: 'button', label: 'Классика', preset: 'classic' },
+		{ type: 'button', label: 'Расплав', preset: 'melt' },
+		{ type: 'button', label: 'Блоки', preset: 'blocks' },
+		{ type: 'button', label: 'По биту', preset: 'beat' },
+	] },
 	{ id: 'echo', group: 'Графика', name: 'Эхо', icon: 'ghost', hint: 'Призрачные копии формы. Виды: спираль, зеркала, ореол', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, mode: 'spiral', copies: 4, delay: 0.14, spread: 0.45, fade: 0.7 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['spiral', 'Спираль'], ['kaleido', 'Зеркала'], ['time', 'Ореол']] }, { key: 'copies', label: 'Копий', min: 1, max: 5, step: 1, int: true }, { key: 'spread', label: 'Угол между копиями', min: 0.05, max: 1.5, step: 0.05 }, { key: 'delay', label: 'Задержка, с', min: 0.02, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Затухание копий', min: 0.3, max: 0.95, step: 0.05 }] },
 	{ id: 'tracking', group: 'Взаимодействие', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки следят за точками формы и могут её касаться: подъём, вихрь, втягивание и другое', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, opacity: 1, speed: 1, shape: 'corners', fill: 'none', color: 'auto', thick: 1.5, labels: 'on', labelSize: 1, labelInfo: 'full', labelBg: 'off', lines: 'on', lineStyle: 'dashed', lineMode: 'nearest', lineWidth: 1, lineAlpha: 0.5, follow: 'wander', mark: 'none', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ type: 'title', label: 'Рамки' }, { key: 'count', label: 'Сколько рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 8, max: 160, step: 1, int: true }, { key: 'opacity', label: 'Прозрачность рамок', min: 0.05, max: 1, step: 0.05 }, { key: 'speed', label: 'Скорость перемещения рамок', min: 0.1, max: 3, step: 0.05 }, { key: 'shape', label: 'Вид рамки', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'fill', label: 'Заливка', type: 'seg', options: [['none', 'Нет'], ['tint', 'Тон'], ['hatch', 'Штрих']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'follow', label: 'Куда смотрят рамки', type: 'seg', options: [['wander', 'Бродят'], ['pointer', 'За руками']] }, { type: 'title', label: 'Подписи' }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'labelInfo', label: 'Что написано', type: 'select', options: [['full', 'Всё: номер, координаты, скорость'], ['id', 'Только номер'], ['conf', 'Номер и уверенность'], ['coords', 'Координаты X Y Z'], ['speed', 'Номер и скорость'], ['bars', 'Номер и шкалы'], ['dist', 'Расстояние до центра']], when: ['labels', ['on']] }, { key: 'labelSize', label: 'Масштаб текста', min: 0.5, max: 3, step: 0.1, when: ['labels', ['on']] }, { key: 'labelBg', label: 'Подложка под текст', type: 'seg', options: [['off', 'Нет'], ['on', 'Есть']], when: ['labels', ['on']] }, { type: 'title', label: 'Связи между рамками' }, { key: 'lines', label: 'Линии связи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lineMode', label: 'Кто с кем связан', type: 'select', options: [['nearest', 'Каждая с ближайшей'], ['chain', 'Цепочкой по порядку'], ['all', 'Все близкие друг с другом'], ['hub', 'Все к центру']], when: ['lines', ['on']] }, { key: 'lineStyle', label: 'Вид линии', type: 'select', options: [['dashed', 'Пунктир'], ['solid', 'Сплошная'], ['curve', 'Дуга'], ['elbow', 'Ломаная под прямым углом'], ['dots', 'Точки'], ['pulse', 'С бегущим огоньком']], when: ['lines', ['on']] }, { key: 'lineWidth', label: 'Толщина связей', min: 0.5, max: 4, step: 0.25, when: ['lines', ['on']] }, { key: 'lineAlpha', label: 'Яркость связей', min: 0.1, max: 1, step: 0.05, when: ['lines', ['on']] }, { type: 'title', label: 'Эффект в области рамок' }, { key: 'mark', label: 'Что происходит', type: 'select', options: [['none', 'Ничего'], ['invert', 'Негатив'], ['rainbow', 'Радуга'], ['hole', 'Дыра с пульсирующим краем'], ['lens', 'Лупа'], ['pixel', 'Пиксели'], ['glow', 'Свет']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'select', options: [['none', 'Нет'], ['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втягивание'], ['push', 'Отталкивание'], ['ripple', 'Рябь'], ['melt', 'Таяние вниз'], ['scatter', 'Разлёт искрами'], ['vanish', 'Исчезновение']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус области', min: 0.02, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
 	{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки. Настраиваются радиус и действие', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.05, max: 2, step: 0.01 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
@@ -84,7 +112,7 @@ const FX_GROUPS = {
 	'Движение': ['curl', 'flow', 'gravity'],
 	'Звук и ритм': ['spectrum', 'wave', 'blast', 'scope'],
 	'Превращения': ['twist', 'voxel', 'glitch', 'physics', 'dissolve', 'explode'],
-	'Графика': ['links', 'slice', 'feedback', 'echo'],
+	'Графика': ['links', 'slice', 'feedback', 'datamosh', 'echo'],
 	'Управление': ['cursor', 'brush', 'tracking', 'camTrack'],
 };
 export const FX_GROUP_NAMES = Object.keys(FX_GROUPS);
@@ -2488,15 +2516,8 @@ class PostPipeline {
 		this.targetType = canHalfFloat ? THREE.HalfFloatType : THREE.UnsignedByteType;
 		this._disabled = false;
 
-		const opt = {
-			minFilter: THREE.LinearFilter,
-			magFilter: THREE.LinearFilter,
-			format: THREE.RGBAFormat,
-			type: this.targetType,
-		};
-		this.rtScene = new THREE.WebGLRenderTarget(1, 1, opt);
-		this.rtPing = new THREE.WebGLRenderTarget(1, 1, opt);
-		this.rtPong = new THREE.WebGLRenderTarget(1, 1, opt);
+		this._buildTargets(this.targetType);
+		this._buildMosh();
 
 		this.fbMat = new THREE.ShaderMaterial({
 			uniforms: {
@@ -2620,6 +2641,313 @@ class PostPipeline {
 		this.hasHistory = false;
 	}
 
+	/** Цели рендера. Кадры сцены с мипами: датамош сравнивает размытые версии кадров, чтобы искать движение блоков */
+	_buildTargets(type) {
+		for (const k of ['rtScene', 'rtSceneB', 'rtPing', 'rtPong', 'rtMoshA', 'rtMoshB', 'rtMvA', 'rtMvB']) {
+			if (this[k]) this[k].dispose();
+			this[k] = null;
+		}
+		const w = this.width || 1;
+		const h = this.height || 1;
+		const flat = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type };
+		const mips = { ...flat, minFilter: THREE.LinearMipmapLinearFilter, generateMipmaps: true };
+		this.rtScene = new THREE.WebGLRenderTarget(w, h, mips);
+		this.rtSceneB = new THREE.WebGLRenderTarget(w, h, mips);
+		this.rtPing = new THREE.WebGLRenderTarget(w, h, flat);
+		this.rtPong = new THREE.WebGLRenderTarget(w, h, flat);
+		this.moshHist = false;
+		this.hasHistory = false;
+	}
+
+	/** Датамош: поле движения по блокам, затем «декодирование без опорного кадра» (см. шейдеры ниже) */
+	_buildMosh() {
+		const vert = /* glsl */ `
+			varying vec2 vUv;
+			void main() {
+				vUv = uv;
+				gl_Position = vec4(position.xy, 0.0, 1.0);
+			}
+		`;
+		// 1) для каждого блока кадра ищем, куда он сместился относительно прошлого кадра (сравнение размытых копий кадров, поиск по сетке и уточнение)
+		this.mvMat = new THREE.ShaderMaterial({
+			uniforms: {
+				uCur: { value: null },
+				uPrev: { value: null },
+				uPrevMV: { value: null },
+				uRes: { value: new THREE.Vector2(1, 1) },
+				uBlock: { value: 16 },
+				uRange: { value: 64 },
+				uGain: { value: 1 },
+				uInertia: { value: 0.5 },
+				uSceneMix: { value: 1 },
+				uHasPrev: { value: 0 },
+				uDrift: { value: new THREE.Vector2() },
+				uFlow: { value: 0 },
+				uTime: { value: 0 },
+			},
+			vertexShader: vert,
+			fragmentShader: /* glsl */ `
+				precision highp float;
+				uniform sampler2D uCur;
+				uniform sampler2D uPrev;
+				uniform sampler2D uPrevMV;
+				uniform vec2 uRes;
+				uniform vec2 uDrift;
+				uniform float uBlock, uRange, uGain, uInertia, uSceneMix, uHasPrev, uFlow, uTime;
+				varying vec2 vUv;
+				float cc[5];
+				vec2 oo[5];
+				vec2 cuv;
+				float lodL;
+				float feat(sampler2D t, vec2 uv) {
+					vec4 s = textureLod(t, uv, lodL);
+					return dot(s.rgb, vec3(0.299, 0.587, 0.114)) + 0.5 * s.a;
+				}
+				float sad(vec2 mv) {
+					float e = 0.0;
+					for (int i = 0; i < 5; i++) e += abs(cc[i] - feat(uPrev, cuv + (oo[i] - mv) / uRes));
+					return e;
+				}
+				void main() {
+					vec2 blockC = (floor(gl_FragCoord.xy) + 0.5) * uBlock;
+					cuv = blockC / uRes;
+					vec2 mv = vec2(0.0);
+					if (uSceneMix > 0.001 && uHasPrev > 0.5) {
+						lodL = log2(max(uBlock * 0.3, 1.0));
+						float q = uBlock * 0.28;
+						oo[0] = vec2(0.0); oo[1] = vec2(q, q); oo[2] = vec2(-q, q); oo[3] = vec2(q, -q); oo[4] = vec2(-q, -q);
+						for (int i = 0; i < 5; i++) cc[i] = feat(uCur, cuv + oo[i] / uRes);
+						float step0 = max(1.0, uBlock * 0.5);
+						float e0 = sad(vec2(0.0));
+						vec2 best = vec2(0.0);
+						float bestE = e0;
+						for (int j = -3; j <= 3; j++) {
+							for (int i = -3; i <= 3; i++) {
+								if (i == 0 && j == 0) continue;
+								vec2 c = vec2(float(i), float(j)) * step0;
+								float e = sad(c) + 0.004 * length(vec2(float(i), float(j)));
+								if (e < bestE) { bestE = e; best = c; }
+							}
+						}
+						vec2 ctr = best;
+						for (int j = -1; j <= 1; j++) {
+							for (int i = -1; i <= 1; i++) {
+								if (i == 0 && j == 0) continue;
+								vec2 c = ctr + vec2(float(i), float(j)) * step0 * 0.5;
+								float e = sad(c) + 0.004 * length(c) / step0;
+								if (e < bestE) { bestE = e; best = c; }
+							}
+						}
+						// слабое совпадение считаем шумом, а не движением
+						if (e0 - bestE < 0.02) best = vec2(0.0);
+						mv = best * uSceneMix * uGain;
+					}
+					// искусственное движение: ровный снос и течение, чтобы эффект жил и на неподвижной картинке
+					vec2 g = cuv * 6.2832;
+					vec2 fl = vec2(sin(g.y * 1.2 + uTime * 0.9) + sin(g.x * 0.5 - uTime * 0.6), cos(g.x * 1.2 - uTime * 0.7) + cos(g.y * 0.7 + uTime * 0.5)) * 0.5;
+					mv += (uDrift + fl * uFlow) * uGain;
+					if (uHasPrev > 0.5) {
+						vec2 pm = (texture2D(uPrevMV, vUv).xy * 2.0 - 1.0) * uRange;
+						mv = mix(mv, pm, uInertia);
+					}
+					mv = clamp(mv, vec2(-uRange * 0.98), vec2(uRange * 0.98));
+					gl_FragColor = vec4(mv / uRange * 0.5 + 0.5, 0.0, 1.0);
+				}
+			`,
+			depthTest: false,
+			depthWrite: false,
+		});
+		// 2) «декодер»: прошлая картинка сдвигается по векторам, свежий кадр (остаток) добавляется лишь частично, блоки возвращаются к чистой картинке не одновременно
+		this.moshMat = new THREE.ShaderMaterial({
+			uniforms: {
+				uCur: { value: null },
+				uPrevSrc: { value: null },
+				uMoshPrev: { value: null },
+				uMV: { value: null },
+				uRes: { value: new THREE.Vector2(1, 1) },
+				uMVSize: { value: new THREE.Vector2(1, 1) },
+				uBlock: { value: 16 },
+				uRange: { value: 64 },
+				uSmooth: { value: 0.6 },
+				uHold: { value: 0 },
+				uResid: { value: 0.2 },
+				uChroma: { value: 0 },
+				uQuant: { value: 0 },
+				uStyle: { value: 0 },
+				uStale: { value: 0 },
+				uJit: { value: 0 },
+				uTime: { value: 0 },
+				uHasHist: { value: 0 },
+				uLeak: { value: 0.03 },
+			},
+			vertexShader: vert,
+			fragmentShader: /* glsl */ `
+				precision highp float;
+				uniform sampler2D uCur;
+				uniform sampler2D uPrevSrc;
+				uniform sampler2D uMoshPrev;
+				uniform sampler2D uMV;
+				uniform vec2 uRes, uMVSize;
+				uniform float uBlock, uRange, uSmooth, uHold, uResid, uChroma, uQuant, uStyle, uStale, uJit, uTime, uHasHist, uLeak;
+				varying vec2 vUv;
+				float h11(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+				vec2 fetchMV(vec2 ij) {
+					ivec2 sz = ivec2(uMVSize);
+					ivec2 p = clamp(ivec2(ij), ivec2(0), sz - 1);
+					return (texelFetch(uMV, p, 0).xy * 2.0 - 1.0) * uRange;
+				}
+				vec2 mvAt(vec2 px) {
+					vec2 g = px / uBlock - 0.5;
+					vec2 i0 = floor(g);
+					vec2 f = fract(g);
+					f = mix(step(0.5, f), f, uSmooth);
+					vec2 a = fetchMV(i0);
+					vec2 b = fetchMV(i0 + vec2(1.0, 0.0));
+					vec2 c = fetchMV(i0 + vec2(0.0, 1.0));
+					vec2 d = fetchMV(i0 + vec2(1.0, 1.0));
+					return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+				}
+				void main() {
+					vec4 cur = texture2D(uCur, vUv);
+					float hold = uHold * uHasHist;
+					if (hold < 0.002) { gl_FragColor = cur; return; }
+					vec2 px = vUv * uRes;
+					vec2 bid = floor(px / uBlock);
+					float r = h11(bid);
+					vec2 mv = mvAt(px);
+					float stale = 0.0;
+					if (uStyle > 0.5 && uStyle < 1.5) {
+						// блоки: часть блоков залипает и сползает сама по себе
+						float slot = floor(uTime * 5.0);
+						float rs = h11(bid + slot * 7.13);
+						stale = step(1.0 - uStale, rs);
+						vec2 jit = (vec2(h11(bid + 3.1 + slot), h11(bid + 9.7 + slot)) - 0.5) * 2.0 * uJit * uBlock;
+						mv += jit * stale;
+					}
+					vec2 d = mv / uRes;
+					float cs = uChroma * 0.6;
+					vec4 pr = texture2D(uMoshPrev, vUv - d * (1.0 + cs));
+					vec4 pg = texture2D(uMoshPrev, vUv - d);
+					vec4 pb = texture2D(uMoshPrev, vUv - d * (1.0 - cs));
+					vec4 pred = vec4(pr.r, pg.g, pb.b, pg.a);
+					vec4 predSrc = texture2D(uPrevSrc, vUv - d);
+					vec4 dec = pred + (cur - predSrc) * uResid;
+					float m = clamp((1.0 - hold) * 1.6 - r * 0.6, 0.0, 1.0) * (1.0 - stale);
+					// понемногу картинка всегда возвращается, иначе сдвиг копится и кадр уезжает за край
+					m = max(m, uLeak * (1.0 - stale));
+					vec4 o = mix(dec, cur, m);
+					if (uQuant > 0.001) {
+						// грубое квантование цвета и сдвиг оттенка по блокам, как у перегруженного кодека
+						float q = mix(48.0, 5.0, uQuant);
+						vec3 qd = floor(o.rgb * q + 0.5) / q;
+						qd += (vec3(h11(bid + 1.7), h11(bid + 5.3), h11(bid + 8.9)) - 0.5) * 0.08 * uQuant;
+						o.rgb = mix(o.rgb, qd, uQuant * (1.0 - m));
+					}
+					gl_FragColor = clamp(o, 0.0, 6.0);
+				}
+			`,
+			depthTest: false,
+			depthWrite: false,
+		});
+		this.mvMesh = new THREE.Mesh(this.quadGeo, this.mvMat);
+		this.moshMesh = new THREE.Mesh(this.quadGeo, this.moshMat);
+		this.moshBlock = 0;
+		this.moshHist = false;
+	}
+
+	/** Цели датамоша создаются при первом включении и подгоняются под размер блока */
+	_ensureMosh(block) {
+		const w = this.width;
+		const h = this.height;
+		const mw = Math.max(1, Math.ceil(w / block));
+		const mh = Math.max(1, Math.ceil(h / block));
+		const type = this.targetType;
+		const flat = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type, depthBuffer: false };
+		const near = { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, type, depthBuffer: false };
+		if (!this.rtMoshA) {
+			this.rtMoshA = new THREE.WebGLRenderTarget(w, h, flat);
+			this.rtMoshB = new THREE.WebGLRenderTarget(w, h, flat);
+			this.moshHist = false;
+		}
+		if (!this.rtMvA) {
+			this.rtMvA = new THREE.WebGLRenderTarget(mw, mh, near);
+			this.rtMvB = new THREE.WebGLRenderTarget(mw, mh, near);
+			this.moshHist = false;
+		}
+		if (this.moshBlock !== block || this.rtMvA.width !== mw || this.rtMvA.height !== mh) {
+			this.rtMvA.setSize(mw, mh);
+			this.rtMvB.setSize(mw, mh);
+			this.moshBlock = block;
+			this.moshHist = false;
+		}
+		return [mw, mh];
+	}
+
+	/** Один шаг датамоша: возвращает текстуру кадра после «сбоя» */
+	_moshStep(m) {
+		const r = this.renderer;
+		const block = m.block;
+		const [mw, mh] = this._ensureMosh(block);
+		const hist = this.moshHist;
+		const k = this.height / 1080;
+		const range = 4 * block + 0.03 * this.height;
+		const mu = this.mvMat.uniforms;
+		mu.uCur.value = this.rtScene.texture;
+		mu.uPrev.value = this.rtSceneB.texture;
+		mu.uPrevMV.value = this.rtMvA.texture;
+		mu.uRes.value.set(this.width, this.height);
+		mu.uBlock.value = block;
+		mu.uRange.value = range;
+		mu.uGain.value = m.gain;
+		mu.uInertia.value = hist ? m.inertia : 0;
+		mu.uSceneMix.value = m.sceneMix;
+		mu.uHasPrev.value = hist ? 1 : 0;
+		mu.uDrift.value.set(Math.cos(m.angle) * m.drift * 6 * k, Math.sin(m.angle) * m.drift * 6 * k);
+		mu.uFlow.value = m.flow * 4 * k;
+		mu.uTime.value = m.time;
+		this.quadScene.clear();
+		this.quadScene.add(this.mvMesh);
+		r.setRenderTarget(this.rtMvB);
+		r.render(this.quadScene, this.quadCam);
+		let t = this.rtMvA;
+		this.rtMvA = this.rtMvB;
+		this.rtMvB = t;
+
+		const u = this.moshMat.uniforms;
+		u.uCur.value = this.rtScene.texture;
+		u.uPrevSrc.value = this.rtSceneB.texture;
+		u.uMoshPrev.value = this.rtMoshA.texture;
+		u.uMV.value = this.rtMvA.texture;
+		u.uRes.value.set(this.width, this.height);
+		u.uMVSize.value.set(mw, mh);
+		u.uBlock.value = block;
+		u.uRange.value = range;
+		u.uSmooth.value = m.smooth;
+		u.uHold.value = m.hold;
+		u.uResid.value = m.detail;
+		u.uChroma.value = m.chroma;
+		u.uQuant.value = m.quant;
+		u.uStyle.value = m.style;
+		u.uStale.value = m.stale;
+		u.uJit.value = m.jit;
+		u.uTime.value = m.time;
+		u.uHasHist.value = hist ? 1 : 0;
+		u.uLeak.value = m.leak;
+		this.quadScene.clear();
+		this.quadScene.add(this.moshMesh);
+		r.setRenderTarget(this.rtMoshB);
+		r.render(this.quadScene, this.quadCam);
+		t = this.rtMoshA;
+		this.rtMoshA = this.rtMoshB;
+		this.rtMoshB = t;
+		// текущий кадр становится «прошлым» для следующего шага
+		t = this.rtScene;
+		this.rtScene = this.rtSceneB;
+		this.rtSceneB = t;
+		this.moshHist = true;
+		return this.rtMoshA.texture;
+	}
+
 	setSize(w, h, dpr = 1) {
 		const rw = Math.max(1, Math.round(w * dpr));
 		const rh = Math.max(1, Math.round(h * dpr));
@@ -2627,13 +2955,19 @@ class PostPipeline {
 		this.width = rw;
 		this.height = rh;
 		this.rtScene.setSize(rw, rh);
+		this.rtSceneB.setSize(rw, rh);
 		this.rtPing.setSize(rw, rh);
 		this.rtPong.setSize(rw, rh);
+		if (this.rtMoshA) {
+			this.rtMoshA.setSize(rw, rh);
+			this.rtMoshB.setSize(rw, rh);
+		}
+		this.moshHist = false;
 		this.outMat.uniforms.uRes.value.set(rw, rh);
 		this.hasHistory = false;
 	}
 
-	render(scene, camera, feedbackCfg, bloomVal, abVal) {
+	render(scene, camera, feedbackCfg, bloomVal, abVal, mosh) {
 		const r = this.renderer;
 		const dom = r.domElement;
 		const dpr = r.getPixelRatio();
@@ -2642,8 +2976,9 @@ class PostPipeline {
 		const useFb = feedbackCfg && feedbackCfg.on && feedbackCfg.amount > 0.01;
 		const useBloom = bloomVal > 0.01;
 		const useAb = abVal > 0.01;
+		const useMosh = !!(mosh && mosh.on);
 
-		if ((!useFb && !useBloom && !useAb) || this._disabled) {
+		if ((!useFb && !useBloom && !useAb && !useMosh) || this._disabled) {
 			r.setRenderTarget(null);
 			r.render(scene, camera);
 			this.hasHistory = false;
@@ -2656,6 +2991,9 @@ class PostPipeline {
 			r.render(scene, camera);
 
 			let sourceTex = this.rtScene.texture;
+			if (useMosh) sourceTex = this._moshStep(mosh);
+			else this.moshHist = false;
+			const preFb = sourceTex;
 
 			if (useFb) {
 				const tun = feedbackCfg.mode === 'tunnel';
@@ -2665,7 +3003,7 @@ class PostPipeline {
 				this.fbMat.uniforms.uTint.value.copy(this.tint || new THREE.Color(1, 1, 1));
 				this.fbMat.uniforms.uTintK.value = feedbackCfg.tint ?? 0.5;
 
-				this.fbMat.uniforms.uScene.value = this.rtScene.texture;
+				this.fbMat.uniforms.uScene.value = preFb;
 				this.fbMat.uniforms.uPrev.value = this.rtPing.texture;
 				this.fbMat.uniforms.uDecay.value = decay;
 				this.fbMat.uniforms.uZoom.value = zoom;
@@ -2700,13 +3038,7 @@ class PostPipeline {
 			console.warn('PostPipeline fallback to direct render:', e);
 			if (this.targetType === THREE.HalfFloatType) {
 				this.targetType = THREE.UnsignedByteType;
-				this.rtScene.dispose();
-				this.rtPing.dispose();
-				this.rtPong.dispose();
-				const opt = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type: THREE.UnsignedByteType };
-				this.rtScene = new THREE.WebGLRenderTarget(this.width || 1, this.height || 1, opt);
-				this.rtPing = new THREE.WebGLRenderTarget(this.width || 1, this.height || 1, opt);
-				this.rtPong = new THREE.WebGLRenderTarget(this.width || 1, this.height || 1, opt);
+				this._buildTargets(THREE.UnsignedByteType);
 			} else {
 				this._disabled = true;
 			}
@@ -2716,9 +3048,9 @@ class PostPipeline {
 	}
 
 	dispose() {
-		this.rtScene.dispose();
-		this.rtPing.dispose();
-		this.rtPong.dispose();
+		for (const k of ['rtScene', 'rtSceneB', 'rtPing', 'rtPong', 'rtMoshA', 'rtMoshB', 'rtMvA', 'rtMvB']) if (this[k]) this[k].dispose();
+		this.mvMat.dispose();
+		this.moshMat.dispose();
 		this.fbMat.dispose();
 		this.outMat.dispose();
 		this.quadGeo.dispose();
@@ -3522,7 +3854,7 @@ export class EffectsEngine {
 	// ------------------------------------------------------------ анимация по ключам и блокам эффектов (секвенсор)
 	/** Слои, которыми можно анимировать: эффекты формы, звука и графики */
 	_animLayers() {
-		return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode'];
+		return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode'];
 	}
 
 	/** Снимок того, что можно анимировать: камера, размер, яркость, свечение и сила каждого эффекта (выключенный = 0) */
@@ -6378,7 +6710,8 @@ export class EffectsEngine {
 			const fb = this.state.layers.feedback;
 			const bloom = this.state.look.bloom || 0;
 			const ab = this.state.look.aberration || 0;
-			this.post.render(scene, camera, fb, bloom, ab);
+			const dm = this.state.layers.datamosh;
+			this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? this._moshParams(dm) : null);
 		};
 		// камера встаёт на место мгновенно, пока сцена скрыта переходом: плавный подъезд был виден как «разбухание» модели
 		app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 0);
@@ -6497,6 +6830,93 @@ export class EffectsEngine {
 	hzAt(x) {
 		const sr = this.ctx?.sampleRate || 44100;
 		return Math.round(x * x * 0.275 * sr);
+	}
+
+	/** Параметры датамоша на этот кадр: когда случился сбой, насколько кадр ещё «держится» и все числа для шейдеров */
+	_moshParams(L) {
+		const S = this._mosh || (this._mosh = { kickAt: -1e9, nextKick: 0, lastT: 0, lastBeat: -9, above: false, cleanUntil: -1, wasOn: false });
+		const t = this._time;
+		const eff = this._eff(L);
+		if (eff <= 0.001) {
+			S.wasOn = false;
+			return null;
+		}
+		const period = Math.max(0.3, +L.period || 4);
+		if (!S.wasOn || t < S.lastT - 0.4) {
+			// включили или таймлайн перемотали: первый сбой сразу, чтобы эффект был виден
+			S.wasOn = true;
+			S.kickAt = t;
+			S.nextKick = t + period;
+			S.cleanUntil = -1;
+		}
+		S.lastT = t;
+		const trig = L.trigger || 'timer';
+		if (trig === 'timer' && t >= S.nextKick) {
+			S.kickAt = t;
+			S.nextKick = t + period;
+		} else if (trig === 'beat') {
+			const lvl = L.band !== 'none' ? this._bandLevel(L) : this.levels?.beat || 0;
+			if (lvl > 0.55 && !S.above && t - S.lastBeat > 0.25) {
+				S.kickAt = t;
+				S.lastBeat = t;
+			}
+			S.above = lvl > 0.55;
+		}
+		let hold;
+		if (t < S.cleanUntil) hold = 0;
+		else if (trig === 'always') hold = 1;
+		else {
+			const x = (t - S.kickAt) / Math.max(0.1, +L.recover || 2.5);
+			hold = x >= 1 ? 0 : Math.pow(1 - Math.max(0, x), 0.7);
+		}
+		const style = { bleed: 0, blocks: 1, melt: 2 }[L.style] ?? 0;
+		return {
+			on: true,
+			hold,
+			gain: clamp(eff, 0, 2),
+			block: +L.block || 16,
+			style,
+			smooth: L.smooth,
+			detail: L.detail,
+			chroma: L.chroma,
+			quant: L.quant,
+			stale: L.stale,
+			jit: L.jit,
+			drift: L.drift,
+			angle: ((L.angle || 0) * Math.PI) / 180,
+			flow: style === 2 ? Math.max(L.flow, 0.4) : L.flow,
+			inertia: L.inertia,
+			leak: 0.003 + (L.leak ?? 0.3) * 0.09,
+			sceneMix: style === 2 ? 0.35 : 1,
+			time: t,
+		};
+	}
+
+	moshKick() {
+		const S = this._mosh || (this._mosh = { kickAt: -1e9, nextKick: 0, lastT: 0, lastBeat: -9, above: false, cleanUntil: -1, wasOn: false });
+		S.kickAt = this._time;
+		S.cleanUntil = -1;
+		this.app.viewport.invalidate();
+	}
+
+	moshClear() {
+		const S = this._mosh || (this._mosh = { kickAt: -1e9, nextKick: 0, lastT: 0, lastBeat: -9, above: false, cleanUntil: -1, wasOn: false });
+		S.kickAt = -1e9;
+		S.cleanUntil = this._time + 0.25;
+		this.app.viewport.invalidate();
+	}
+
+	/** Готовые наборы настроек датамоша */
+	moshPreset(L, name) {
+		const P = {
+			classic: { style: 'bleed', trigger: 'timer', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0 },
+			melt: { style: 'melt', trigger: 'always', block: '16', detail: 0.05, inertia: 0.8, leak: 0.12, smooth: 1, drift: 0.3, angle: 270, flow: 0.7, chroma: 0.35, quant: 0 },
+			blocks: { style: 'blocks', trigger: 'timer', period: 2.5, recover: 1.5, block: '32', detail: 0.35, inertia: 0.3, leak: 0.4, smooth: 0, drift: 0.2, angle: 0, flow: 0, chroma: 0.15, quant: 0.6, stale: 0.25, jit: 0.5 },
+			beat: { style: 'bleed', trigger: 'beat', recover: 0.9, block: '16', detail: 0.1, inertia: 0.4, leak: 0.3, smooth: 0.5, drift: 0.4, angle: 270, flow: 0, chroma: 0.3, quant: 0.1 },
+		}[name];
+		if (!P) return;
+		Object.assign(L, P, { on: true });
+		this.moshKick();
 	}
 
 	_eff(l) {
@@ -6852,7 +7272,7 @@ export class EffectsEngine {
 				u.uSlice.value.set(1, clamp((c + 1.2) / 2.4, 0, 1), Math.max(0.03, sl.width), axVal + nLines * 10);
 				u.uSliceM.value.set(2, sl.lift, sl.color === 'model' ? 1 : 0, 0);
 			}
-			u.uSliceC.value.set(sl.color && sl.color !== 'auto' ? sl.color : pal.c[2]);
+			u.uSliceC.value.set(sl.color && sl.color !== 'auto' && sl.color !== 'model' ? sl.color : pal.c[2]);
 
 			// Look P2 & DoF
 			u.uLookP2.value.set(look.sizeNoise || 0, look.sizeAudio || 0, 0, 0);

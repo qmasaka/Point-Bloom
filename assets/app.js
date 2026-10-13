@@ -39745,6 +39745,7 @@ const ICON_PATHS = {
 'repeat': '<path d="M24,128A72.08,72.08,0,0,1,96,56H204.69L194.34,45.66a8,8,0,0,1,11.32-11.32l24,24a8,8,0,0,1,0,11.32l-24,24a8,8,0,0,1-11.32-11.32L204.69,72H96a56.06,56.06,0,0,0-56,56,8,8,0,0,1-16,0Zm200-8a8,8,0,0,0-8,8,56.06,56.06,0,0,1-56,56H51.31l10.35-10.34a8,8,0,0,0-11.32-11.32l-24,24a8,8,0,0,0,0,11.32l24,24a8,8,0,0,0,11.32-11.32L51.31,200H160a72.08,72.08,0,0,0,72-72A8,8,0,0,0,224,120Z"/>',
 'scan': '<path d="M224,40V80a8,8,0,0,1-16,0V48H176a8,8,0,0,1,0-16h40A8,8,0,0,1,224,40ZM80,208H48V176a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H80a8,8,0,0,0,0-16Zm136-40a8,8,0,0,0-8,8v32H176a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V176A8,8,0,0,0,216,168ZM40,88a8,8,0,0,0,8-8V48H80a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8V80A8,8,0,0,0,40,88ZM80,72h96a8,8,0,0,1,8,8v96a8,8,0,0,1-8,8H80a8,8,0,0,1-8-8V80A8,8,0,0,1,80,72Zm8,96h80V88H88Z"/>',
 'scissors': '<path d="M157.73,113.13A8,8,0,0,1,159.82,102L227.48,55.7a8,8,0,0,1,9,13.21l-67.67,46.3a7.92,7.92,0,0,1-4.51,1.4A8,8,0,0,1,157.73,113.13Zm80.87,85.09a8,8,0,0,1-11.12,2.08L136,137.7,93.49,166.78a36,36,0,1,1-9-13.19L121.83,128,84.44,102.41a35.86,35.86,0,1,1,9-13.19l143,97.87A8,8,0,0,1,238.6,198.22ZM80,180a20,20,0,1,0-5.86,14.14A19.85,19.85,0,0,0,80,180ZM74.14,90.13a20,20,0,1,0-28.28,0A19.85,19.85,0,0,0,74.14,90.13Z"/>',
+'selection-all': '<path d="M104,40a8,8,0,0,1,8-8h32a8,8,0,0,1,0,16H112A8,8,0,0,1,104,40Zm40,168H112a8,8,0,0,0,0,16h32a8,8,0,0,0,0-16ZM208,32H184a8,8,0,0,0,0,16h24V72a8,8,0,0,0,16,0V48A16,16,0,0,0,208,32Zm8,72a8,8,0,0,0-8,8v32a8,8,0,0,0,16,0V112A8,8,0,0,0,216,104Zm0,72a8,8,0,0,0-8,8v24H184a8,8,0,0,0,0,16h24a16,16,0,0,0,16-16V184A8,8,0,0,0,216,176ZM40,152a8,8,0,0,0,8-8V112a8,8,0,0,0-16,0v32A8,8,0,0,0,40,152Zm32,56H48V184a8,8,0,0,0-16,0v24a16,16,0,0,0,16,16H72a8,8,0,0,0,0-16ZM40,80a8,8,0,0,0,8-8V48H72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,48V72A8,8,0,0,0,40,80ZM176,184H80a8,8,0,0,1-8-8V80a8,8,0,0,1,8-8h96a8,8,0,0,1,8,8v96A8,8,0,0,1,176,184Zm-8-96H88v80h80Z"/>',
 'selection': '<path d="M152,40a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h32A8,8,0,0,1,152,40Zm-8,168H112a8,8,0,0,0,0,16h32a8,8,0,0,0,0-16ZM208,32H184a8,8,0,0,0,0,16h24V72a8,8,0,0,0,16,0V48A16,16,0,0,0,208,32Zm8,72a8,8,0,0,0-8,8v32a8,8,0,0,0,16,0V112A8,8,0,0,0,216,104Zm0,72a8,8,0,0,0-8,8v24H184a8,8,0,0,0,0,16h24a16,16,0,0,0,16-16V184A8,8,0,0,0,216,176ZM40,152a8,8,0,0,0,8-8V112a8,8,0,0,0-16,0v32A8,8,0,0,0,40,152Zm32,56H48V184a8,8,0,0,0-16,0v24a16,16,0,0,0,16,16H72a8,8,0,0,0,0-16ZM72,32H48A16,16,0,0,0,32,48V72a8,8,0,0,0,16,0V48H72a8,8,0,0,0,0-16Z"/>',
 'share-network': '<path d="M176,160a39.89,39.89,0,0,0-28.62,12.09l-46.1-29.63a39.8,39.8,0,0,0,0-28.92l46.1-29.63a40,40,0,1,0-8.66-13.45l-46.1,29.63a40,40,0,1,0,0,55.82l46.1,29.63A40,40,0,1,0,176,160Zm0-128a24,24,0,1,1-24,24A24,24,0,0,1,176,32ZM64,152a24,24,0,1,1,24-24A24,24,0,0,1,64,152Zm112,72a24,24,0,1,1,24-24A24,24,0,0,1,176,224Z"/>',
 'sliders-horizontal': '<path d="M40,88H73a32,32,0,0,0,62,0h81a8,8,0,0,0,0-16H135a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16Zm64-24A16,16,0,1,1,88,80,16,16,0,0,1,104,64ZM216,168H199a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16h97a32,32,0,0,0,62,0h17a8,8,0,0,0,0-16Zm-48,24a16,16,0,1,1,16-16A16,16,0,0,1,168,192Z"/>',
@@ -72860,6 +72861,42 @@ en: {
 'Удалено точек: {}': 'Points deleted: {}',
 'Закрашено точек: {}': 'Points painted: {}',
 'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'Point color switched to “Texture”, otherwise the recoloring is not visible',
+'Датамош': 'Datamosh',
+'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке': 'A video codec failure as a technique: the picture loses its reference frame, motion smears the old pixels and blocks crawl and fall apart. Works on any scene and on a still image',
+'Сбой': 'Glitch',
+'Сломать кадр сейчас': 'Break the frame now',
+'Вернуть чистый кадр': 'Restore a clean frame',
+'Размазывание': 'Smear',
+'Расплав': 'Melt',
+'Когда ломается': 'When it breaks',
+'Через равные паузы': 'At regular intervals',
+'По биту музыки': 'On the music beat',
+'Только кнопкой': 'Button only',
+'Всё время': 'All the time',
+'Пауза между сбоями': 'Pause between glitches',
+'Сколько держится сбой': 'How long a glitch lasts',
+'Снос в одну сторону': 'Drift in one direction',
+'Направление сноса': 'Drift direction',
+'Течение (вихревое)': 'Flow (swirling)',
+'Инерция векторов': 'Vector inertia',
+'Блоки и цвет': 'Blocks and color',
+'Размер блока': 'Block size',
+'Мелкий': 'Small',
+'Средний': 'Medium',
+'Крупный': 'Large',
+'Огромный': 'Huge',
+'Плавность границ блоков': 'Block edge softness',
+'Сохранять детали кадра': 'Keep frame detail',
+'Цветовое размазывание': 'Color smear',
+'Грубые цвета блоков': 'Coarse block colors',
+'Доля залипших блоков': 'Share of stuck blocks',
+'Сдвиг залипших блоков': 'Stuck block shift',
+'Готовые настройки': 'Presets',
+'Классика': 'Classic',
+'Возврат картинки': 'Picture return',
+'Пауза между сбоями, с': 'Pause between glitches, s',
+'Сколько держится сбой, с': 'How long a glitch lasts, s',
+'Направление сноса, °': 'Drift direction, °',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -72914,6 +72951,42 @@ uk: {
 'Удалено точек: {}': 'Видалено точок: {}',
 'Закрашено точек: {}': 'Зафарбовано точок: {}',
 'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'Колір точок перемкнено на «Текстура»: інакше перефарбування не видно',
+'Датамош': 'Датамош',
+'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке': 'Збій відеокодека як прийом: картинка «втрачає опорний кадр», і рух розмазує старі пікселі, а блоки повзуть і розсипаються. Працює на будь-якій сцені й на нерухомій картинці',
+'Сбой': 'Збій',
+'Сломать кадр сейчас': 'Зламати кадр зараз',
+'Вернуть чистый кадр': 'Повернути чистий кадр',
+'Размазывание': 'Розмазування',
+'Расплав': 'Розплав',
+'Когда ломается': 'Коли ламається',
+'Через равные паузы': 'Через рівні паузи',
+'По биту музыки': 'За бітом музики',
+'Только кнопкой': 'Лише кнопкою',
+'Всё время': 'Весь час',
+'Пауза между сбоями': 'Пауза між збоями',
+'Сколько держится сбой': 'Скільки триває збій',
+'Снос в одну сторону': 'Знос в один бік',
+'Направление сноса': 'Напрямок зносу',
+'Течение (вихревое)': 'Течія (вихрова)',
+'Инерция векторов': 'Інерція векторів',
+'Блоки и цвет': 'Блоки й колір',
+'Размер блока': 'Розмір блока',
+'Мелкий': 'Дрібний',
+'Средний': 'Середній',
+'Крупный': 'Великий',
+'Огромный': 'Величезний',
+'Плавность границ блоков': 'М’якість меж блоків',
+'Сохранять детали кадра': 'Зберігати деталі кадру',
+'Цветовое размазывание': 'Кольорове розмазування',
+'Грубые цвета блоков': 'Грубі кольори блоків',
+'Доля залипших блоков': 'Частка заплилих блоків',
+'Сдвиг залипших блоков': 'Зсув заплилих блоків',
+'Готовые настройки': 'Готові налаштування',
+'Классика': 'Класика',
+'Возврат картинки': 'Повернення картинки',
+'Пауза между сбоями, с': 'Пауза між збоями, с',
+'Сколько держится сбой, с': 'Скільки триває збій, с',
+'Направление сноса, °': 'Напрямок зносу, °',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -72968,6 +73041,42 @@ es: {
 'Удалено точек: {}': 'Puntos eliminados: {}',
 'Закрашено точек: {}': 'Puntos pintados: {}',
 'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'El color de los puntos cambió a «Textura»: si no, el recoloreado no se ve',
+'Датамош': 'Datamosh',
+'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке': 'Un fallo de códec de vídeo como técnica: la imagen pierde el fotograma de referencia, el movimiento arrastra los píxeles viejos y los bloques se deslizan y se deshacen. Funciona con cualquier escena y con una imagen fija',
+'Сбой': 'Fallo',
+'Сломать кадр сейчас': 'Romper el fotograma ahora',
+'Вернуть чистый кадр': 'Restaurar un fotograma limpio',
+'Размазывание': 'Arrastre',
+'Расплав': 'Derretido',
+'Когда ломается': 'Cuándo se rompe',
+'Через равные паузы': 'A intervalos regulares',
+'По биту музыки': 'Al ritmo de la música',
+'Только кнопкой': 'Solo con el botón',
+'Всё время': 'Todo el tiempo',
+'Пауза между сбоями': 'Pausa entre fallos',
+'Сколько держится сбой': 'Cuánto dura un fallo',
+'Снос в одну сторону': 'Deriva en una dirección',
+'Направление сноса': 'Dirección de la deriva',
+'Течение (вихревое)': 'Flujo (remolino)',
+'Инерция векторов': 'Inercia de los vectores',
+'Блоки и цвет': 'Bloques y color',
+'Размер блока': 'Tamaño del bloque',
+'Мелкий': 'Pequeño',
+'Средний': 'Medio',
+'Крупный': 'Grande',
+'Огромный': 'Enorme',
+'Плавность границ блоков': 'Suavidad de los bordes de bloque',
+'Сохранять детали кадра': 'Conservar el detalle del fotograma',
+'Цветовое размазывание': 'Arrastre de color',
+'Грубые цвета блоков': 'Colores toscos de bloque',
+'Доля залипших блоков': 'Proporción de bloques atascados',
+'Сдвиг залипших блоков': 'Desplazamiento de bloques atascados',
+'Готовые настройки': 'Ajustes preestablecidos',
+'Классика': 'Clásico',
+'Возврат картинки': 'Retorno de la imagen',
+'Пауза между сбоями, с': 'Pausa entre fallos, s',
+'Сколько держится сбой, с': 'Cuánto dura un fallo, s',
+'Направление сноса, °': 'Dirección de la deriva, °',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -73022,6 +73131,42 @@ de: {
 'Удалено точек: {}': 'Punkte gelöscht: {}',
 'Закрашено точек: {}': 'Punkte eingefärbt: {}',
 'Цвет точек переключён на «Текстура»: иначе перекраска не видна': 'Die Punktfarbe wurde auf „Textur“ umgestellt, sonst ist das Umfärben nicht sichtbar',
+'Датамош': 'Datamosh',
+'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке': 'Ein Videocodec-Fehler als Stilmittel: Das Bild verliert sein Referenzbild, Bewegung verschmiert die alten Pixel und Blöcke kriechen und zerfallen. Funktioniert mit jeder Szene und mit einem Standbild',
+'Сбой': 'Fehler',
+'Сломать кадр сейчас': 'Bild jetzt zerbrechen',
+'Вернуть чистый кадр': 'Sauberes Bild wiederherstellen',
+'Размазывание': 'Verschmieren',
+'Расплав': 'Schmelzen',
+'Когда ломается': 'Wann es bricht',
+'Через равные паузы': 'In gleichen Abständen',
+'По биту музыки': 'Im Takt der Musik',
+'Только кнопкой': 'Nur per Knopf',
+'Всё время': 'Die ganze Zeit',
+'Пауза между сбоями': 'Pause zwischen Fehlern',
+'Сколько держится сбой': 'Wie lange ein Fehler anhält',
+'Снос в одну сторону': 'Drift in eine Richtung',
+'Направление сноса': 'Driftrichtung',
+'Течение (вихревое)': 'Strömung (wirbelnd)',
+'Инерция векторов': 'Trägheit der Vektoren',
+'Блоки и цвет': 'Blöcke und Farbe',
+'Размер блока': 'Blockgröße',
+'Мелкий': 'Klein',
+'Средний': 'Mittel',
+'Крупный': 'Groß',
+'Огромный': 'Riesig',
+'Плавность границ блоков': 'Weichheit der Blockkanten',
+'Сохранять детали кадра': 'Bilddetails behalten',
+'Цветовое размазывание': 'Farbverschmierung',
+'Грубые цвета блоков': 'Grobe Blockfarben',
+'Доля залипших блоков': 'Anteil hängender Blöcke',
+'Сдвиг залипших блоков': 'Versatz hängender Blöcke',
+'Готовые настройки': 'Voreinstellungen',
+'Классика': 'Klassik',
+'Возврат картинки': 'Rückkehr des Bildes',
+'Пауза между сбоями, с': 'Pause zwischen Fehlern, s',
+'Сколько держится сбой, с': 'Wie lange ein Fehler anhält, s',
+'Направление сноса, °': 'Driftrichtung, °',
 },
 };
 };
@@ -74930,6 +75075,34 @@ const FX_LAYERS = [
 { id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются число узлов и дальность связи', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
 { id: 'slice', group: 'Графика', name: 'Срез', icon: 'scan', hint: 'По форме идёт срез. Виды: лазер (линии), рельеф (точки на линиях), развёртка (форма проявляется за плоскостью)', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'model' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
 { id: 'feedback', group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой световой хвост из прошлых кадров. Виды: выдержка, туннель', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
+{ id: 'datamosh', group: 'Графика', name: 'Датамош', icon: 'selection-all', hint: 'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'bleed', trigger: 'timer', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, stale: 0.2, jit: 0.4 }, extras: [
+{ type: 'title', label: 'Сбой' },
+{ type: 'button', label: 'Сломать кадр сейчас', act: 'moshKick', icon: 'lightning' },
+{ type: 'button', label: 'Вернуть чистый кадр', act: 'moshClear', icon: 'broom' },
+{ key: 'style', label: 'Вид', type: 'select', options: [['bleed', 'Размазывание'], ['blocks', 'Блоки'], ['melt', 'Расплав']] },
+{ key: 'trigger', label: 'Когда ломается', type: 'select', options: [['timer', 'Через равные паузы'], ['beat', 'По биту музыки'], ['manual', 'Только кнопкой'], ['always', 'Всё время']] },
+{ key: 'period', label: 'Пауза между сбоями, с', min: 0.5, max: 12, step: 0.1, noNorm: true, when: ['trigger', ['timer']] },
+{ key: 'recover', label: 'Сколько держится сбой, с', min: 0.2, max: 10, step: 0.1, noNorm: true, when: ['trigger', ['timer', 'beat', 'manual']] },
+{ type: 'title', label: 'Движение' },
+{ key: 'drift', label: 'Снос в одну сторону', min: 0, max: 1, step: 0.05 },
+{ key: 'angle', label: 'Направление сноса, °', min: 0, max: 345, step: 15, int: true, noNorm: true, when: ['style', ['bleed', 'blocks', 'melt']] },
+{ key: 'flow', label: 'Течение (вихревое)', min: 0, max: 1, step: 0.05 },
+{ key: 'inertia', label: 'Инерция векторов', min: 0, max: 0.95, step: 0.05 },
+{ key: 'leak', label: 'Возврат картинки', min: 0, max: 1, step: 0.05 },
+{ type: 'title', label: 'Блоки и цвет' },
+{ key: 'block', label: 'Размер блока', type: 'seg', options: [['8', 'Мелкий'], ['16', 'Средний'], ['32', 'Крупный'], ['64', 'Огромный']] },
+{ key: 'smooth', label: 'Плавность границ блоков', min: 0, max: 1, step: 0.05 },
+{ key: 'detail', label: 'Сохранять детали кадра', min: 0, max: 1, step: 0.05 },
+{ key: 'chroma', label: 'Цветовое размазывание', min: 0, max: 1, step: 0.05 },
+{ key: 'quant', label: 'Грубые цвета блоков', min: 0, max: 1, step: 0.05 },
+{ key: 'stale', label: 'Доля залипших блоков', min: 0, max: 0.8, step: 0.05, when: ['style', ['blocks']] },
+{ key: 'jit', label: 'Сдвиг залипших блоков', min: 0, max: 1.5, step: 0.05, when: ['style', ['blocks']] },
+{ type: 'title', label: 'Готовые настройки' },
+{ type: 'button', label: 'Классика', preset: 'classic' },
+{ type: 'button', label: 'Расплав', preset: 'melt' },
+{ type: 'button', label: 'Блоки', preset: 'blocks' },
+{ type: 'button', label: 'По биту', preset: 'beat' },
+] },
 { id: 'echo', group: 'Графика', name: 'Эхо', icon: 'ghost', hint: 'Призрачные копии формы. Виды: спираль, зеркала, ореол', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, mode: 'spiral', copies: 4, delay: 0.14, spread: 0.45, fade: 0.7 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['spiral', 'Спираль'], ['kaleido', 'Зеркала'], ['time', 'Ореол']] }, { key: 'copies', label: 'Копий', min: 1, max: 5, step: 1, int: true }, { key: 'spread', label: 'Угол между копиями', min: 0.05, max: 1.5, step: 0.05 }, { key: 'delay', label: 'Задержка, с', min: 0.02, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Затухание копий', min: 0.3, max: 0.95, step: 0.05 }] },
 { id: 'tracking', group: 'Взаимодействие', name: 'Трекинг', icon: 'bounding-box', hint: 'Рамки следят за точками формы и могут её касаться: подъём, вихрь, втягивание и другое', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, opacity: 1, speed: 1, shape: 'corners', fill: 'none', color: 'auto', thick: 1.5, labels: 'on', labelSize: 1, labelInfo: 'full', labelBg: 'off', lines: 'on', lineStyle: 'dashed', lineMode: 'nearest', lineWidth: 1, lineAlpha: 0.5, follow: 'wander', mark: 'none', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ type: 'title', label: 'Рамки' }, { key: 'count', label: 'Сколько рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 8, max: 160, step: 1, int: true }, { key: 'opacity', label: 'Прозрачность рамок', min: 0.05, max: 1, step: 0.05 }, { key: 'speed', label: 'Скорость перемещения рамок', min: 0.1, max: 3, step: 0.05 }, { key: 'shape', label: 'Вид рамки', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'fill', label: 'Заливка', type: 'seg', options: [['none', 'Нет'], ['tint', 'Тон'], ['hatch', 'Штрих']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'follow', label: 'Куда смотрят рамки', type: 'seg', options: [['wander', 'Бродят'], ['pointer', 'За руками']] }, { type: 'title', label: 'Подписи' }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'labelInfo', label: 'Что написано', type: 'select', options: [['full', 'Всё: номер, координаты, скорость'], ['id', 'Только номер'], ['conf', 'Номер и уверенность'], ['coords', 'Координаты X Y Z'], ['speed', 'Номер и скорость'], ['bars', 'Номер и шкалы'], ['dist', 'Расстояние до центра']], when: ['labels', ['on']] }, { key: 'labelSize', label: 'Масштаб текста', min: 0.5, max: 3, step: 0.1, when: ['labels', ['on']] }, { key: 'labelBg', label: 'Подложка под текст', type: 'seg', options: [['off', 'Нет'], ['on', 'Есть']], when: ['labels', ['on']] }, { type: 'title', label: 'Связи между рамками' }, { key: 'lines', label: 'Линии связи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lineMode', label: 'Кто с кем связан', type: 'select', options: [['nearest', 'Каждая с ближайшей'], ['chain', 'Цепочкой по порядку'], ['all', 'Все близкие друг с другом'], ['hub', 'Все к центру']], when: ['lines', ['on']] }, { key: 'lineStyle', label: 'Вид линии', type: 'select', options: [['dashed', 'Пунктир'], ['solid', 'Сплошная'], ['curve', 'Дуга'], ['elbow', 'Ломаная под прямым углом'], ['dots', 'Точки'], ['pulse', 'С бегущим огоньком']], when: ['lines', ['on']] }, { key: 'lineWidth', label: 'Толщина связей', min: 0.5, max: 4, step: 0.25, when: ['lines', ['on']] }, { key: 'lineAlpha', label: 'Яркость связей', min: 0.1, max: 1, step: 0.05, when: ['lines', ['on']] }, { type: 'title', label: 'Эффект в области рамок' }, { key: 'mark', label: 'Что происходит', type: 'select', options: [['none', 'Ничего'], ['invert', 'Негатив'], ['rainbow', 'Радуга'], ['hole', 'Дыра с пульсирующим краем'], ['lens', 'Лупа'], ['pixel', 'Пиксели'], ['glow', 'Свет']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'select', options: [['none', 'Нет'], ['bump', 'Подъём'], ['swirl', 'Вихрь'], ['pull', 'Втягивание'], ['push', 'Отталкивание'], ['ripple', 'Рябь'], ['melt', 'Таяние вниз'], ['scatter', 'Разлёт искрами'], ['vanish', 'Исчезновение']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус области', min: 0.02, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
 { id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки. Настраиваются радиус и действие', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.05, max: 2, step: 0.01 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
@@ -74944,7 +75117,7 @@ const FX_GROUPS = {
 'Движение': ['curl', 'flow', 'gravity'],
 'Звук и ритм': ['spectrum', 'wave', 'blast', 'scope'],
 'Превращения': ['twist', 'voxel', 'glitch', 'physics', 'dissolve', 'explode'],
-'Графика': ['links', 'slice', 'feedback', 'echo'],
+'Графика': ['links', 'slice', 'feedback', 'datamosh', 'echo'],
 'Управление': ['cursor', 'brush', 'tracking', 'camTrack'],
 };
 const FX_GROUP_NAMES = Object.keys(FX_GROUPS);
@@ -77268,15 +77441,8 @@ canHalfFloat = false;
 }
 this.targetType = canHalfFloat ? THREE.HalfFloatType : THREE.UnsignedByteType;
 this._disabled = false;
-const opt = {
-minFilter: THREE.LinearFilter,
-magFilter: THREE.LinearFilter,
-format: THREE.RGBAFormat,
-type: this.targetType,
-};
-this.rtScene = new THREE.WebGLRenderTarget(1, 1, opt);
-this.rtPing = new THREE.WebGLRenderTarget(1, 1, opt);
-this.rtPong = new THREE.WebGLRenderTarget(1, 1, opt);
+this._buildTargets(this.targetType);
+this._buildMosh();
 this.fbMat = new THREE.ShaderMaterial({
 uniforms: {
 uScene: { value: null },
@@ -77396,6 +77562,301 @@ this.outMesh = new THREE.Mesh(this.quadGeo, this.outMat);
 this.quadScene = new THREE.Scene();
 this.hasHistory = false;
 }
+_buildTargets(type) {
+for (const k of ['rtScene', 'rtSceneB', 'rtPing', 'rtPong', 'rtMoshA', 'rtMoshB', 'rtMvA', 'rtMvB']) {
+if (this[k]) this[k].dispose();
+this[k] = null;
+}
+const w = this.width || 1;
+const h = this.height || 1;
+const flat = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type };
+const mips = { ...flat, minFilter: THREE.LinearMipmapLinearFilter, generateMipmaps: true };
+this.rtScene = new THREE.WebGLRenderTarget(w, h, mips);
+this.rtSceneB = new THREE.WebGLRenderTarget(w, h, mips);
+this.rtPing = new THREE.WebGLRenderTarget(w, h, flat);
+this.rtPong = new THREE.WebGLRenderTarget(w, h, flat);
+this.moshHist = false;
+this.hasHistory = false;
+}
+_buildMosh() {
+const vert = `
+			varying vec2 vUv;
+			void main() {
+				vUv = uv;
+				gl_Position = vec4(position.xy, 0.0, 1.0);
+			}
+		`;
+this.mvMat = new THREE.ShaderMaterial({
+uniforms: {
+uCur: { value: null },
+uPrev: { value: null },
+uPrevMV: { value: null },
+uRes: { value: new THREE.Vector2(1, 1) },
+uBlock: { value: 16 },
+uRange: { value: 64 },
+uGain: { value: 1 },
+uInertia: { value: 0.5 },
+uSceneMix: { value: 1 },
+uHasPrev: { value: 0 },
+uDrift: { value: new THREE.Vector2() },
+uFlow: { value: 0 },
+uTime: { value: 0 },
+},
+vertexShader: vert,
+fragmentShader: `
+				precision highp float;
+				uniform sampler2D uCur;
+				uniform sampler2D uPrev;
+				uniform sampler2D uPrevMV;
+				uniform vec2 uRes;
+				uniform vec2 uDrift;
+				uniform float uBlock, uRange, uGain, uInertia, uSceneMix, uHasPrev, uFlow, uTime;
+				varying vec2 vUv;
+				float cc[5];
+				vec2 oo[5];
+				vec2 cuv;
+				float lodL;
+				float feat(sampler2D t, vec2 uv) {
+					vec4 s = textureLod(t, uv, lodL);
+					return dot(s.rgb, vec3(0.299, 0.587, 0.114)) + 0.5 * s.a;
+				}
+				float sad(vec2 mv) {
+					float e = 0.0;
+					for (int i = 0; i < 5; i++) e += abs(cc[i] - feat(uPrev, cuv + (oo[i] - mv) / uRes));
+					return e;
+				}
+				void main() {
+					vec2 blockC = (floor(gl_FragCoord.xy) + 0.5) * uBlock;
+					cuv = blockC / uRes;
+					vec2 mv = vec2(0.0);
+					if (uSceneMix > 0.001 && uHasPrev > 0.5) {
+						lodL = log2(max(uBlock * 0.3, 1.0));
+						float q = uBlock * 0.28;
+						oo[0] = vec2(0.0); oo[1] = vec2(q, q); oo[2] = vec2(-q, q); oo[3] = vec2(q, -q); oo[4] = vec2(-q, -q);
+						for (int i = 0; i < 5; i++) cc[i] = feat(uCur, cuv + oo[i] / uRes);
+						float step0 = max(1.0, uBlock * 0.5);
+						float e0 = sad(vec2(0.0));
+						vec2 best = vec2(0.0);
+						float bestE = e0;
+						for (int j = -3; j <= 3; j++) {
+							for (int i = -3; i <= 3; i++) {
+								if (i == 0 && j == 0) continue;
+								vec2 c = vec2(float(i), float(j)) * step0;
+								float e = sad(c) + 0.004 * length(vec2(float(i), float(j)));
+								if (e < bestE) { bestE = e; best = c; }
+							}
+						}
+						vec2 ctr = best;
+						for (int j = -1; j <= 1; j++) {
+							for (int i = -1; i <= 1; i++) {
+								if (i == 0 && j == 0) continue;
+								vec2 c = ctr + vec2(float(i), float(j)) * step0 * 0.5;
+								float e = sad(c) + 0.004 * length(c) / step0;
+								if (e < bestE) { bestE = e; best = c; }
+							}
+						}
+						// слабое совпадение считаем шумом, а не движением
+						if (e0 - bestE < 0.02) best = vec2(0.0);
+						mv = best * uSceneMix * uGain;
+					}
+					// искусственное движение: ровный снос и течение, чтобы эффект жил и на неподвижной картинке
+					vec2 g = cuv * 6.2832;
+					vec2 fl = vec2(sin(g.y * 1.2 + uTime * 0.9) + sin(g.x * 0.5 - uTime * 0.6), cos(g.x * 1.2 - uTime * 0.7) + cos(g.y * 0.7 + uTime * 0.5)) * 0.5;
+					mv += (uDrift + fl * uFlow) * uGain;
+					if (uHasPrev > 0.5) {
+						vec2 pm = (texture2D(uPrevMV, vUv).xy * 2.0 - 1.0) * uRange;
+						mv = mix(mv, pm, uInertia);
+					}
+					mv = clamp(mv, vec2(-uRange * 0.98), vec2(uRange * 0.98));
+					gl_FragColor = vec4(mv / uRange * 0.5 + 0.5, 0.0, 1.0);
+				}
+			`,
+depthTest: false,
+depthWrite: false,
+});
+this.moshMat = new THREE.ShaderMaterial({
+uniforms: {
+uCur: { value: null },
+uPrevSrc: { value: null },
+uMoshPrev: { value: null },
+uMV: { value: null },
+uRes: { value: new THREE.Vector2(1, 1) },
+uMVSize: { value: new THREE.Vector2(1, 1) },
+uBlock: { value: 16 },
+uRange: { value: 64 },
+uSmooth: { value: 0.6 },
+uHold: { value: 0 },
+uResid: { value: 0.2 },
+uChroma: { value: 0 },
+uQuant: { value: 0 },
+uStyle: { value: 0 },
+uStale: { value: 0 },
+uJit: { value: 0 },
+uTime: { value: 0 },
+uHasHist: { value: 0 },
+uLeak: { value: 0.03 },
+},
+vertexShader: vert,
+fragmentShader: `
+				precision highp float;
+				uniform sampler2D uCur;
+				uniform sampler2D uPrevSrc;
+				uniform sampler2D uMoshPrev;
+				uniform sampler2D uMV;
+				uniform vec2 uRes, uMVSize;
+				uniform float uBlock, uRange, uSmooth, uHold, uResid, uChroma, uQuant, uStyle, uStale, uJit, uTime, uHasHist, uLeak;
+				varying vec2 vUv;
+				float h11(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+				vec2 fetchMV(vec2 ij) {
+					ivec2 sz = ivec2(uMVSize);
+					ivec2 p = clamp(ivec2(ij), ivec2(0), sz - 1);
+					return (texelFetch(uMV, p, 0).xy * 2.0 - 1.0) * uRange;
+				}
+				vec2 mvAt(vec2 px) {
+					vec2 g = px / uBlock - 0.5;
+					vec2 i0 = floor(g);
+					vec2 f = fract(g);
+					f = mix(step(0.5, f), f, uSmooth);
+					vec2 a = fetchMV(i0);
+					vec2 b = fetchMV(i0 + vec2(1.0, 0.0));
+					vec2 c = fetchMV(i0 + vec2(0.0, 1.0));
+					vec2 d = fetchMV(i0 + vec2(1.0, 1.0));
+					return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+				}
+				void main() {
+					vec4 cur = texture2D(uCur, vUv);
+					float hold = uHold * uHasHist;
+					if (hold < 0.002) { gl_FragColor = cur; return; }
+					vec2 px = vUv * uRes;
+					vec2 bid = floor(px / uBlock);
+					float r = h11(bid);
+					vec2 mv = mvAt(px);
+					float stale = 0.0;
+					if (uStyle > 0.5 && uStyle < 1.5) {
+						// блоки: часть блоков залипает и сползает сама по себе
+						float slot = floor(uTime * 5.0);
+						float rs = h11(bid + slot * 7.13);
+						stale = step(1.0 - uStale, rs);
+						vec2 jit = (vec2(h11(bid + 3.1 + slot), h11(bid + 9.7 + slot)) - 0.5) * 2.0 * uJit * uBlock;
+						mv += jit * stale;
+					}
+					vec2 d = mv / uRes;
+					float cs = uChroma * 0.6;
+					vec4 pr = texture2D(uMoshPrev, vUv - d * (1.0 + cs));
+					vec4 pg = texture2D(uMoshPrev, vUv - d);
+					vec4 pb = texture2D(uMoshPrev, vUv - d * (1.0 - cs));
+					vec4 pred = vec4(pr.r, pg.g, pb.b, pg.a);
+					vec4 predSrc = texture2D(uPrevSrc, vUv - d);
+					vec4 dec = pred + (cur - predSrc) * uResid;
+					float m = clamp((1.0 - hold) * 1.6 - r * 0.6, 0.0, 1.0) * (1.0 - stale);
+					// понемногу картинка всегда возвращается, иначе сдвиг копится и кадр уезжает за край
+					m = max(m, uLeak * (1.0 - stale));
+					vec4 o = mix(dec, cur, m);
+					if (uQuant > 0.001) {
+						// грубое квантование цвета и сдвиг оттенка по блокам, как у перегруженного кодека
+						float q = mix(48.0, 5.0, uQuant);
+						vec3 qd = floor(o.rgb * q + 0.5) / q;
+						qd += (vec3(h11(bid + 1.7), h11(bid + 5.3), h11(bid + 8.9)) - 0.5) * 0.08 * uQuant;
+						o.rgb = mix(o.rgb, qd, uQuant * (1.0 - m));
+					}
+					gl_FragColor = clamp(o, 0.0, 6.0);
+				}
+			`,
+depthTest: false,
+depthWrite: false,
+});
+this.mvMesh = new THREE.Mesh(this.quadGeo, this.mvMat);
+this.moshMesh = new THREE.Mesh(this.quadGeo, this.moshMat);
+this.moshBlock = 0;
+this.moshHist = false;
+}
+_ensureMosh(block) {
+const w = this.width;
+const h = this.height;
+const mw = Math.max(1, Math.ceil(w / block));
+const mh = Math.max(1, Math.ceil(h / block));
+const type = this.targetType;
+const flat = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type, depthBuffer: false };
+const near = { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, type, depthBuffer: false };
+if (!this.rtMoshA) {
+this.rtMoshA = new THREE.WebGLRenderTarget(w, h, flat);
+this.rtMoshB = new THREE.WebGLRenderTarget(w, h, flat);
+this.moshHist = false;
+}
+if (!this.rtMvA) {
+this.rtMvA = new THREE.WebGLRenderTarget(mw, mh, near);
+this.rtMvB = new THREE.WebGLRenderTarget(mw, mh, near);
+this.moshHist = false;
+}
+if (this.moshBlock !== block || this.rtMvA.width !== mw || this.rtMvA.height !== mh) {
+this.rtMvA.setSize(mw, mh);
+this.rtMvB.setSize(mw, mh);
+this.moshBlock = block;
+this.moshHist = false;
+}
+return [mw, mh];
+}
+_moshStep(m) {
+const r = this.renderer;
+const block = m.block;
+const [mw, mh] = this._ensureMosh(block);
+const hist = this.moshHist;
+const k = this.height / 1080;
+const range = 4 * block + 0.03 * this.height;
+const mu = this.mvMat.uniforms;
+mu.uCur.value = this.rtScene.texture;
+mu.uPrev.value = this.rtSceneB.texture;
+mu.uPrevMV.value = this.rtMvA.texture;
+mu.uRes.value.set(this.width, this.height);
+mu.uBlock.value = block;
+mu.uRange.value = range;
+mu.uGain.value = m.gain;
+mu.uInertia.value = hist ? m.inertia : 0;
+mu.uSceneMix.value = m.sceneMix;
+mu.uHasPrev.value = hist ? 1 : 0;
+mu.uDrift.value.set(Math.cos(m.angle) * m.drift * 6 * k, Math.sin(m.angle) * m.drift * 6 * k);
+mu.uFlow.value = m.flow * 4 * k;
+mu.uTime.value = m.time;
+this.quadScene.clear();
+this.quadScene.add(this.mvMesh);
+r.setRenderTarget(this.rtMvB);
+r.render(this.quadScene, this.quadCam);
+let t = this.rtMvA;
+this.rtMvA = this.rtMvB;
+this.rtMvB = t;
+const u = this.moshMat.uniforms;
+u.uCur.value = this.rtScene.texture;
+u.uPrevSrc.value = this.rtSceneB.texture;
+u.uMoshPrev.value = this.rtMoshA.texture;
+u.uMV.value = this.rtMvA.texture;
+u.uRes.value.set(this.width, this.height);
+u.uMVSize.value.set(mw, mh);
+u.uBlock.value = block;
+u.uRange.value = range;
+u.uSmooth.value = m.smooth;
+u.uHold.value = m.hold;
+u.uResid.value = m.detail;
+u.uChroma.value = m.chroma;
+u.uQuant.value = m.quant;
+u.uStyle.value = m.style;
+u.uStale.value = m.stale;
+u.uJit.value = m.jit;
+u.uTime.value = m.time;
+u.uHasHist.value = hist ? 1 : 0;
+u.uLeak.value = m.leak;
+this.quadScene.clear();
+this.quadScene.add(this.moshMesh);
+r.setRenderTarget(this.rtMoshB);
+r.render(this.quadScene, this.quadCam);
+t = this.rtMoshA;
+this.rtMoshA = this.rtMoshB;
+this.rtMoshB = t;
+t = this.rtScene;
+this.rtScene = this.rtSceneB;
+this.rtSceneB = t;
+this.moshHist = true;
+return this.rtMoshA.texture;
+}
 setSize(w, h, dpr = 1) {
 const rw = Math.max(1, Math.round(w * dpr));
 const rh = Math.max(1, Math.round(h * dpr));
@@ -77403,12 +77864,18 @@ if (rw === this.width && rh === this.height) return;
 this.width = rw;
 this.height = rh;
 this.rtScene.setSize(rw, rh);
+this.rtSceneB.setSize(rw, rh);
 this.rtPing.setSize(rw, rh);
 this.rtPong.setSize(rw, rh);
+if (this.rtMoshA) {
+this.rtMoshA.setSize(rw, rh);
+this.rtMoshB.setSize(rw, rh);
+}
+this.moshHist = false;
 this.outMat.uniforms.uRes.value.set(rw, rh);
 this.hasHistory = false;
 }
-render(scene, camera, feedbackCfg, bloomVal, abVal) {
+render(scene, camera, feedbackCfg, bloomVal, abVal, mosh) {
 const r = this.renderer;
 const dom = r.domElement;
 const dpr = r.getPixelRatio();
@@ -77416,7 +77883,8 @@ this.setSize(dom.clientWidth, dom.clientHeight, dpr);
 const useFb = feedbackCfg && feedbackCfg.on && feedbackCfg.amount > 0.01;
 const useBloom = bloomVal > 0.01;
 const useAb = abVal > 0.01;
-if ((!useFb && !useBloom && !useAb) || this._disabled) {
+const useMosh = !!(mosh && mosh.on);
+if ((!useFb && !useBloom && !useAb && !useMosh) || this._disabled) {
 r.setRenderTarget(null);
 r.render(scene, camera);
 this.hasHistory = false;
@@ -77427,6 +77895,9 @@ r.setRenderTarget(this.rtScene);
 r.clear();
 r.render(scene, camera);
 let sourceTex = this.rtScene.texture;
+if (useMosh) sourceTex = this._moshStep(mosh);
+else this.moshHist = false;
+const preFb = sourceTex;
 if (useFb) {
 const tun = feedbackCfg.mode === 'tunnel';
 const zoom = tun ? feedbackCfg.zoom || 1.0 : 1.0;
@@ -77434,7 +77905,7 @@ const twist = tun ? feedbackCfg.twist || 0.0 : 0.0;
 const decay = Math.min(0.99, feedbackCfg.amount || 0.92);
 this.fbMat.uniforms.uTint.value.copy(this.tint || new THREE.Color(1, 1, 1));
 this.fbMat.uniforms.uTintK.value = feedbackCfg.tint ?? 0.5;
-this.fbMat.uniforms.uScene.value = this.rtScene.texture;
+this.fbMat.uniforms.uScene.value = preFb;
 this.fbMat.uniforms.uPrev.value = this.rtPing.texture;
 this.fbMat.uniforms.uDecay.value = decay;
 this.fbMat.uniforms.uZoom.value = zoom;
@@ -77464,13 +77935,7 @@ r.render(this.quadScene, this.quadCam);
 console.warn('PostPipeline fallback to direct render:', e);
 if (this.targetType === THREE.HalfFloatType) {
 this.targetType = THREE.UnsignedByteType;
-this.rtScene.dispose();
-this.rtPing.dispose();
-this.rtPong.dispose();
-const opt = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type: THREE.UnsignedByteType };
-this.rtScene = new THREE.WebGLRenderTarget(this.width || 1, this.height || 1, opt);
-this.rtPing = new THREE.WebGLRenderTarget(this.width || 1, this.height || 1, opt);
-this.rtPong = new THREE.WebGLRenderTarget(this.width || 1, this.height || 1, opt);
+this._buildTargets(THREE.UnsignedByteType);
 } else {
 this._disabled = true;
 }
@@ -77479,9 +77944,9 @@ r.render(scene, camera);
 }
 }
 dispose() {
-this.rtScene.dispose();
-this.rtPing.dispose();
-this.rtPong.dispose();
+for (const k of ['rtScene', 'rtSceneB', 'rtPing', 'rtPong', 'rtMoshA', 'rtMoshB', 'rtMvA', 'rtMvB']) if (this[k]) this[k].dispose();
+this.mvMat.dispose();
+this.moshMat.dispose();
 this.fbMat.dispose();
 this.outMat.dispose();
 this.quadGeo.dispose();
@@ -78196,7 +78661,7 @@ fr.head++;
 this.shared.uFr5.value.x = fr.head % fr.n;
 }
 _animLayers() {
-return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode'];
+return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode'];
 }
 animCapture() {
 const nav = this.app.nav;
@@ -80791,7 +81256,8 @@ return;
 const fb = this.state.layers.feedback;
 const bloom = this.state.look.bloom || 0;
 const ab = this.state.look.aberration || 0;
-this.post.render(scene, camera, fb, bloom, ab);
+const dm = this.state.layers.datamosh;
+this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? this._moshParams(dm) : null);
 };
 app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 0);
 this.syncLookFromPoints();
@@ -80896,6 +81362,86 @@ return this.levels[l.band] || 0;
 hzAt(x) {
 const sr = this.ctx?.sampleRate || 44100;
 return Math.round(x * x * 0.275 * sr);
+}
+_moshParams(L) {
+const S = this._mosh || (this._mosh = { kickAt: -1e9, nextKick: 0, lastT: 0, lastBeat: -9, above: false, cleanUntil: -1, wasOn: false });
+const t = this._time;
+const eff = this._eff(L);
+if (eff <= 0.001) {
+S.wasOn = false;
+return null;
+}
+const period = Math.max(0.3, +L.period || 4);
+if (!S.wasOn || t < S.lastT - 0.4) {
+S.wasOn = true;
+S.kickAt = t;
+S.nextKick = t + period;
+S.cleanUntil = -1;
+}
+S.lastT = t;
+const trig = L.trigger || 'timer';
+if (trig === 'timer' && t >= S.nextKick) {
+S.kickAt = t;
+S.nextKick = t + period;
+} else if (trig === 'beat') {
+const lvl = L.band !== 'none' ? this._bandLevel(L) : this.levels?.beat || 0;
+if (lvl > 0.55 && !S.above && t - S.lastBeat > 0.25) {
+S.kickAt = t;
+S.lastBeat = t;
+}
+S.above = lvl > 0.55;
+}
+let hold;
+if (t < S.cleanUntil) hold = 0;
+else if (trig === 'always') hold = 1;
+else {
+const x = (t - S.kickAt) / Math.max(0.1, +L.recover || 2.5);
+hold = x >= 1 ? 0 : Math.pow(1 - Math.max(0, x), 0.7);
+}
+const style = { bleed: 0, blocks: 1, melt: 2 }[L.style] ?? 0;
+return {
+on: true,
+hold,
+gain: clamp(eff, 0, 2),
+block: +L.block || 16,
+style,
+smooth: L.smooth,
+detail: L.detail,
+chroma: L.chroma,
+quant: L.quant,
+stale: L.stale,
+jit: L.jit,
+drift: L.drift,
+angle: ((L.angle || 0) * Math.PI) / 180,
+flow: style === 2 ? Math.max(L.flow, 0.4) : L.flow,
+inertia: L.inertia,
+leak: 0.003 + (L.leak ?? 0.3) * 0.09,
+sceneMix: style === 2 ? 0.35 : 1,
+time: t,
+};
+}
+moshKick() {
+const S = this._mosh || (this._mosh = { kickAt: -1e9, nextKick: 0, lastT: 0, lastBeat: -9, above: false, cleanUntil: -1, wasOn: false });
+S.kickAt = this._time;
+S.cleanUntil = -1;
+this.app.viewport.invalidate();
+}
+moshClear() {
+const S = this._mosh || (this._mosh = { kickAt: -1e9, nextKick: 0, lastT: 0, lastBeat: -9, above: false, cleanUntil: -1, wasOn: false });
+S.kickAt = -1e9;
+S.cleanUntil = this._time + 0.25;
+this.app.viewport.invalidate();
+}
+moshPreset(L, name) {
+const P = {
+classic: { style: 'bleed', trigger: 'timer', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0 },
+melt: { style: 'melt', trigger: 'always', block: '16', detail: 0.05, inertia: 0.8, leak: 0.12, smooth: 1, drift: 0.3, angle: 270, flow: 0.7, chroma: 0.35, quant: 0 },
+blocks: { style: 'blocks', trigger: 'timer', period: 2.5, recover: 1.5, block: '32', detail: 0.35, inertia: 0.3, leak: 0.4, smooth: 0, drift: 0.2, angle: 0, flow: 0, chroma: 0.15, quant: 0.6, stale: 0.25, jit: 0.5 },
+beat: { style: 'bleed', trigger: 'beat', recover: 0.9, block: '16', detail: 0.1, inertia: 0.4, leak: 0.3, smooth: 0.5, drift: 0.4, angle: 270, flow: 0, chroma: 0.3, quant: 0.1 },
+}[name];
+if (!P) return;
+Object.assign(L, P, { on: true });
+this.moshKick();
 }
 _eff(l) {
 if (!l.on) return 0;
@@ -81220,7 +81766,7 @@ const c = { y: hs.y, x: hs.x, z: hs.z, diag: (hs.x + hs.y) * 0.707 }[sl.axis] ??
 u.uSlice.value.set(1, clamp((c + 1.2) / 2.4, 0, 1), Math.max(0.03, sl.width), axVal + nLines * 10);
 u.uSliceM.value.set(2, sl.lift, sl.color === 'model' ? 1 : 0, 0);
 }
-u.uSliceC.value.set(sl.color && sl.color !== 'auto' ? sl.color : pal.c[2]);
+u.uSliceC.value.set(sl.color && sl.color !== 'auto' && sl.color !== 'model' ? sl.color : pal.c[2]);
 u.uLookP2.value.set(look.sizeNoise || 0, look.sizeAudio || 0, 0, 0);
 u.uShade.value = look.shade || 0;
 const gm = GLYPH_SETS[look.glyph] ? look.glyph : 'off';
@@ -82500,7 +83046,7 @@ rotate: { id: 'rotate', name: 'Вращение', icon: 'arrows-clockwise', hint
 bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 };
 const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-const ANIM_LAYERS = ['morph', 'curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail'];
+const ANIM_LAYERS = ['morph', 'curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail'];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
 const animQuickBtn = button({
@@ -82660,6 +83206,24 @@ if (ex.type === 'select') {
 const sl = select({ options: ex.options.map(([value, label]) => ({ value, label })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
 extraCtl[ex.key] = sl;
 put(field(ex.label, sl.el, { wide: true }), ex);
+} else if (ex.type === 'button') {
+const bt = button({
+label: ex.label,
+icon: ex.icon,
+variant: 'secondary',
+cls: ex.preset ? 'btn-sm' : 'btn-block',
+onClick: () => {
+if (ex.preset) {
+engine.moshPreset(L, ex.preset);
+for (const [k, ctl] of Object.entries(extraCtl)) ctl.set(L[k]);
+amount.set(L.amount);
+applyWhen();
+save();
+engine.emit();
+} else engine[ex.act]();
+},
+});
+put(bt, ex);
 } else if (ex.type === 'note') {
 put(h('div', { class: 'field-hint' }, ex.text), ex);
 } else if (ex.type === 'title') {
@@ -82673,7 +83237,7 @@ const sg = segmented({ cls: ex.options.length > 3 ? 'seg-tight' : undefined, opt
 extraCtl[ex.key] = sg;
 put(field(ex.label, sg.el, { wide: true }), ex);
 } else {
-const sl = slider({ noNorm: !!(ex.int && /сколько|число|копий|кадров|точек|узлов|слоёв|перьев|колонок|линий|рамок/i.test(ex.label)), min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : 2, unit: ex.unit, log: ex.log, format: ex.log ? (v) => formatInt(v) : undefined, onInput: (v) => { L[ex.key] = v; if (ex.relayout) engine.relayoutFrames(); }, onChange: after });
+const sl = slider({ noNorm: !!ex.noNorm || !!(ex.int && /сколько|число|копий|кадров|точек|узлов|слоёв|перьев|колонок|линий|рамок/i.test(ex.label)), min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : ex.noNorm ? 1 : 2, unit: ex.unit, log: ex.log, format: ex.log ? (v) => formatInt(v) : undefined, onInput: (v) => { L[ex.key] = v; if (ex.relayout) engine.relayoutFrames(); }, onChange: after });
 extraCtl[ex.key] = sl;
 put(field(ex.label, sl.el), ex);
 }
