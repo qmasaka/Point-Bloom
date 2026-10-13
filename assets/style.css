@@ -6343,3 +6343,45 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 	/* нижняя плашка режимов: рамка 16px, поле 6px, линия 1px, значит у кнопок 9px */
 	.ui-float .vp-dock .dock-btn, .ui-float #modeBar .seg-btn { border-radius: 9px; }
 }
+
+/* ================================================================ телефоны и планшеты: тот же стеклянный язык, что на компьютере (плавающие карточки, мягкие скругления, лёгкие вкладки) */
+@media (max-width: 900px) {
+	#app.ui-float {
+		--fxg-line: rgba(255, 255, 255, 0.1);
+		--fxg-blur: blur(14px) saturate(1.2);
+		--fxg-bg: rgba(18, 20, 24, 0.7);
+		--fxg-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+		--m-gap: 8px;
+		--m-top: calc(var(--m-gap) + env(safe-area-inset-top, 0px));
+		grid-template-rows: 0 minmax(0, 1fr) 0;
+	}
+	/* верхняя панель: плавающая капсула над сценой */
+	.ui-float .topbar { position: absolute; top: var(--m-top); left: var(--m-gap); right: var(--m-gap); height: 46px; z-index: 40; padding: 0 6px; border: 1px solid var(--fxg-line); border-radius: 18px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); box-shadow: var(--fxg-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+	.ui-float .workspace, .ui-float .fx-mode .workspace { grid-row: 2; }
+	.ui-float .topbar .btn-icon { border-radius: 50%; }
+	.ui-float .topbar .split-btn { display: inline-flex; }
+	.ui-float .topbar #btnExport { border-radius: 999px; height: 36px; padding: 0 12px; }
+	.ui-float .topbar .split-chev { display: none; }
+	.ui-float .topbar .btn:not(.btn-icon):not(.split-chev) { border-radius: 999px; }
+	.ui-float .topbar .mode-switch { border-radius: 999px; }
+	/* левая колонка инструментов и оси ниже панели */
+	.ui-float .toolrail { top: calc(var(--m-top) + 54px); left: var(--m-gap); border-radius: 16px; padding: 4px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); box-shadow: var(--fxg-shadow); max-height: calc(var(--vh) - var(--m-top) - 54px - var(--sheet-h, 84px) - 24px); }
+	.ui-float .toolrail .btn-tool { border-radius: 12px; }
+	.ui-float .vp-top-right { top: calc(var(--m-top) + 54px); right: var(--m-gap); }
+	/* нижний лист: плавающая карточка с отступами и полным скруглением */
+	.ui-float .sidebar, .ui-float .workspace.sidebar-hidden .sidebar, .ui-float.fx-mode .fx-left, .ui-float.fx-mode .fx-left.fx-left-open { margin: 0 var(--m-gap) calc(var(--m-gap) + env(safe-area-inset-bottom, 0px)); border: 1px solid var(--fxg-line); border-radius: 22px; background: rgba(21, 23, 28, 0.94); box-shadow: var(--fxg-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+	.ui-float .sidebar, .ui-float .fx-left { padding-bottom: 0; }
+	.ui-float .sheet-grab { width: 36px; height: 4px; background: rgba(255, 255, 255, 0.22); }
+	/* вкладки листа: отдельные плитки с мягкими углами, как на компьютере */
+	.ui-float .tabs { padding: 2px 10px 10px; gap: 6px; background: transparent; border-bottom: 0; }
+	.ui-float .tabs .tab { border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; background: rgba(255, 255, 255, 0.05); }
+	.ui-float .tabs .tab[aria-selected='true'] { background: rgba(229, 138, 69, 0.14); border-color: rgba(229, 138, 69, 0.55); color: var(--accent-text); }
+	.ui-float .sheet-switch button { border-radius: 999px; }
+	/* нижние плашки режимов и эффектов: те же капсулы */
+	.ui-float .vp-dock, .ui-float .fx-bar, .ui-float .media-bar { background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 16px; box-shadow: var(--fxg-shadow); }
+	.ui-float .vp-dock .dock-btn, .ui-float #modeBar .seg-btn { border-radius: 9px; }
+	.ui-float .empty-card, .ui-float .popover, .ui-float .dlg { border-radius: 22px; }
+}
+@media (max-width: 900px) and (pointer: coarse) {
+	.ui-float .toolrail .btn-tool, .ui-float .topbar .btn-icon { min-width: 40px; min-height: 40px; }
+}
