@@ -82471,6 +82471,25 @@ const y = Math.sin(t * 2.2) * 8;
 for (const [x, yy] of ring(30, 9)) dot(c, x * 1.2, yy, Math.abs(yy - y) < 2 ? 2.6 : 1.4, Math.abs(yy - y) < 2 ? 1 : 0.35);
 for (let i = -6; i <= 6; i++) dot(c, i * 1.8, y, 1.6, 0.9);
 },
+datamosh: (c, t) => {
+const hash = (i, j, k) => {
+const v = Math.sin(i * 127.1 + j * 311.7 + k * 74.7) * 43758.5453;
+return v - Math.floor(v);
+};
+const slot = Math.floor(t * 1.6);
+const ph = (t * 1.6) % 1;
+for (const [, , gi, gj] of grid(7, 5, 3.6, 3.6)) {
+const r = Math.hypot(gi - 3, (gj - 2) * 1.2);
+const alive = r < 3.7 ? 1 : 0;
+if (!alive) continue;
+const x = (gi - 3) * 3.6;
+const y = (gj - 2) * 3.6;
+const stuck = hash(gi, gj, slot) > 0.55;
+const off = stuck ? (hash(gi, gj, slot + 9) - 0.2) * 9 * Math.min(1, ph * 2.2) : 0;
+if (stuck) for (let k = 4; k >= 1; k--) dot(c, x + off * (1 - k * 0.2), y, 2.6, 0.12 + (4 - k) * 0.06);
+dot(c, x + off, y, 2.8, stuck ? 0.9 : 0.55 + 0.3 * hash(gi, gj, 3));
+}
+},
 feedback: (c, t) => {
 for (let k = 16; k >= 0; k--) {
 const tt = t * 1.8 - k * 0.09;
