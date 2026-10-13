@@ -72897,6 +72897,13 @@ en: {
 'Сколько держится сбой, с': 'How long a glitch lasts, s',
 'Направление сноса, °': 'Drift direction, °',
 'Рамки слежения': 'Tracking boxes',
+'Вихри и течение': 'Swirls and flow',
+'Течение по форме': 'Flow along the shape',
+'Масштаб течений': 'Flow scale',
+'Поворот потока': 'Flow rotation',
+'Разрушение': 'Destruction',
+'Цифровые': 'Digital',
+'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)': 'Points drift. Modes: swirls (points break away from the shape), stream with return, rings (layers rotate in opposite directions), flow (points slide along the shape and the silhouette stays)',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -72988,6 +72995,13 @@ uk: {
 'Сколько держится сбой, с': 'Скільки триває збій, с',
 'Направление сноса, °': 'Напрямок зносу, °',
 'Рамки слежения': 'Рамки стеження',
+'Вихри и течение': 'Вихори й течія',
+'Течение по форме': 'Течія по формі',
+'Масштаб течений': 'Масштаб течій',
+'Поворот потока': 'Поворот потоку',
+'Разрушение': 'Руйнування',
+'Цифровые': 'Цифрові',
+'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)': 'Точки пливуть. Види: вихори (точки відриваються від форми), потік із поверненням, кільця (шари обертаються в різні боки), течія (точки ковзають уздовж форми, а силует не змінюється)',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -73079,6 +73093,13 @@ es: {
 'Сколько держится сбой, с': 'Cuánto dura un fallo, s',
 'Направление сноса, °': 'Dirección de la deriva, °',
 'Рамки слежения': 'Marcos de seguimiento',
+'Вихри и течение': 'Remolinos y flujo',
+'Течение по форме': 'Flujo sobre la forma',
+'Масштаб течений': 'Escala del flujo',
+'Поворот потока': 'Giro del flujo',
+'Разрушение': 'Destrucción',
+'Цифровые': 'Digitales',
+'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)': 'Los puntos fluyen. Modos: remolinos (los puntos se separan de la forma), corriente con retorno, anillos (las capas giran en sentidos opuestos), flujo (los puntos se deslizan sobre la forma y la silueta no cambia)',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -73170,6 +73191,13 @@ de: {
 'Сколько держится сбой, с': 'Wie lange ein Fehler anhält, s',
 'Направление сноса, °': 'Driftrichtung, °',
 'Рамки слежения': 'Tracking-Rahmen',
+'Вихри и течение': 'Wirbel und Strömung',
+'Течение по форме': 'Strömung entlang der Form',
+'Масштаб течений': 'Strömungsmaßstab',
+'Поворот потока': 'Strömung drehen',
+'Разрушение': 'Zerstörung',
+'Цифровые': 'Digital',
+'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)': 'Punkte treiben. Arten: Wirbel (Punkte lösen sich von der Form), Strom mit Rückkehr, Ringe (Schichten drehen gegenläufig), Strömung (Punkte gleiten an der Form entlang, die Silhouette bleibt)',
 },
 };
 };
@@ -75060,14 +75088,14 @@ const FREQ_QUICK = [['Бочка', 40, 130], ['Бас', 60, 300], ['Голос',
 const FX_ACTIONS = [['none', 'Ничего'], ['push', 'Отталкивать'], ['pull', 'Притягивать'], ['swirl', 'Вихрь'], ['rotate', 'Крутить форму'], ['sculpt', 'Лепить'], ['gravity', 'Гравитация у руки'], ['wave', 'Ударная волна'], ['break', 'Распад, пока держишь'], ['dissolve', 'Растворение, пока держишь'], ['brush', 'Светящийся след'], ['slicecut', 'Срез рукой: плоскость за ладонью'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:twist', 'Эффект: Деформация'], ['fx:blast', 'Эффект: Взрыв по биту'], ['fx:flow', 'Эффект: Течение'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
 const FX_LAYERS = [
 { id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Видео раскладывается на кадры из точек, кадры собираются в блок. Показ идёт за таймлайном', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, thin: 0, showMode: 'off', showLen: 0.12, hero: 150000, future: 'hide', gain: 1, sat: 0, bsize: 1.5, track: 'grow', tone: 'all', toneCut: 0.5, tail: 100, tailSoft: 0.6 }, extras: [{ type: 'title', label: 'Раскладка' }, { key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка вглубь'], ['wall', 'Стена кадров'], ['film', 'Плёнка: кадры в ряд, текущий в центре'], ['tunnel', 'Туннель: прошлые кадры уменьшаются вглубь']], relayout: true }, { key: 'track', label: 'Что в стопке', type: 'seg', options: [['grow', 'Пройденное'], ['full', 'Весь ряд']], when: ['layout', ['stack', 'tunnel']] }, { key: 'depth', label: 'Глубина', min: 0.2, max: 4, step: 0.1, relayout: true, when: ['layout', ['stack', 'tunnel']] }, { type: 'title', label: 'Показ' }, { key: 'showMode', label: 'Как показывать', type: 'select', options: [['off', 'Обычно: все кадры как есть'], ['peel', 'Листание: пройденные улетают к зрителю'], ['projector', 'Луч: светлый участок идёт по ряду'], ['trail', 'Шлейф: за кадром тянется цветной след']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Редкие'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { key: 'thin', label: 'Прореживать остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { type: 'title', label: 'Хвост' }, { key: 'tail', label: 'Длина хвоста, доля видео', min: 5, max: 100, step: 1, int: true, unit: '%' }, { key: 'tailSoft', label: 'Как гаснет хвост: резко ... плавно', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Цвет остальных кадров' }, { key: 'sat', label: 'Насыщенность (0 это цвета видео)', min: -1, max: 1, step: 0.05 }, { key: 'gain', label: 'Яркость', min: 0.4, max: 3, step: 0.05 }, { key: 'tone', label: 'Какие тона оставить', type: 'seg', options: [['all', 'Все'], ['light', 'Светлые'], ['dark', 'Тёмные']] }, { key: 'toneCut', label: 'Граница светлого и тёмного', min: 0.05, max: 0.95, step: 0.01, when: ['tone', ['light', 'dark']] }, { key: 'bsize', label: 'Размер точек', min: 0.5, max: 4, step: 0.1 }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
-{ id: 'curl', group: 'Движение', name: 'Вихри', icon: 'tornado', hint: 'Точки отрываются от формы и плывут. Виды: вихри, поток с возвратом, кольца (слои вращаются в разные стороны)', max: 2, def: { on: false, amount: 1, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['noise', 'Вихри'], ['stream', 'Поток и возврат'], ['orbit', 'Кольца: слои вращаются']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }] },
+{ id: 'curl', group: 'Движение', name: 'Вихри и течение', icon: 'tornado', hint: 'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)', max: 2, def: { on: false, amount: 1, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8, fscale: 1.6, fdir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['noise', 'Вихри'], ['stream', 'Поток и возврат'], ['orbit', 'Кольца: слои вращаются'], ['surface', 'Течение по форме']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1, when: ['mode', ['noise', 'stream', 'orbit']] }, { key: 'fscale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1, when: ['mode', ['surface']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }, { key: 'fdir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['surface']] }] },
 { id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается, осколки падают на пол с отскоками и собираются обратно', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
 { id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма отзывается на звук. Виды: колонки эквалайзера, горный рельеф, шерсть по кругу, шерсть по высоте', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, mode: 'bars', bars: 24 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['bars', 'Колонки эквалайзера'], ['terrain', 'Горный рельеф'], ['wool', 'Шерсть по кругу'], ['height', 'Шерсть по высоте']] }, { key: 'bars', label: 'Число колонок', min: 8, max: 64, step: 1, int: true, when: ['mode', ['bars']] }] },
 { id: 'wave', group: 'Движение', name: 'Волны', icon: 'waves', hint: 'Волны бегут по форме. Виды: капли, кольца, плоская волна, спираль вокруг формы, гребни вверх', max: 2, def: { on: false, amount: 0.7, band: 'none', react: 0.8, freq: 5, speed: 1, period: 1.4, mode: 'rings', origin: 'center', decay: 1.2, dir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['drops', 'Капли по биту'], ['rings', 'Кольца непрерывно'], ['plane', 'Плоская волна'], ['spiral', 'Спираль вокруг формы'], ['rise', 'Гребни поднимаются вверх']] }, { key: 'freq', label: 'Масштаб (частота)', min: 1, max: 14, step: 0.5 }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }, { key: 'origin', label: 'Откуда', type: 'seg', options: [['center', 'Центр'], ['cursor', 'Курсор, рука']], when: ['mode', ['rings']] }, { key: 'period', label: 'Капля раз в, с', min: 0.3, max: 4, step: 0.1, when: ['mode', ['drops']] }, { key: 'decay', label: 'Затухание', min: 0.2, max: 4, step: 0.1, when: ['mode', ['drops']] }, { key: 'dir', label: 'Направление', min: 0, max: 6.28, step: 0.1, when: ['mode', ['plane']] }] },
 { id: 'twist', group: 'Движение', name: 'Деформация', icon: 'wind', hint: 'Форма меняет очертания. Виды: скрутка, изгиб, конус, змейка, дыхание, желе', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'twist', speed: 0, jmode: 'auto', jperiod: 1.8, jfreq: 8, jdamp: 1.6, jsquash: 0.5 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['twist', 'Скрутка'], ['bend', 'Изгиб'], ['taper', 'Конус'], ['snake', 'Змейка'], ['breathe', 'Дыхание'], ['jelly', 'Желе: упругая дрожь']] }, { key: 'speed', label: 'Покачивание', min: 0, max: 3, step: 0.05, when: ['mode', ['twist', 'bend', 'taper', 'snake', 'breathe']] }, { key: 'jmode', label: 'Что вызывает дрожь', type: 'seg', options: [['auto', 'Сама по таймеру'], ['motion', 'Движение модели']], when: ['mode', ['jelly']] }, { key: 'jperiod', label: 'Толчок раз в, с', min: 0.4, max: 5, step: 0.1, when: ['mode', ['jelly']] }, { key: 'jfreq', label: 'Частота дрожи', min: 3, max: 16, step: 0.5, when: ['mode', ['jelly']] }, { key: 'jdamp', label: 'Затухание', min: 0.5, max: 5, step: 0.1, when: ['mode', ['jelly']] }, { key: 'jsquash', label: 'Сплющивание', min: 0, max: 1, step: 0.05, when: ['mode', ['jelly']] }] },
 { id: 'blast', group: 'Движение', name: 'Взрыв', icon: 'asterisk', hint: 'Точки отлетают и пружинят обратно, или форма бьётся, как сердце. Виды: взрыв, пульс оболочкой, сжатием, всей формой сразу', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'burst', decay: 2.2, random: 0.6, period: 1.6, delay: 0.35, pspeed: 1 }, extras: [{ key: 'style', label: 'Вид', type: 'select', options: [['burst', 'Взрыв: точки отлетают и пружинят'], ['shell', 'Пульс: бегущая оболочка'], ['squash', 'Пульс: сжатие и растяжение'], ['flat', 'Пульс: вся форма сразу']] }, { key: 'period', label: 'Бьёт сам раз в, с', min: 0.4, max: 5, step: 0.1 }, { key: 'decay', label: 'Возврат (пружина)', min: 0.8, max: 6, step: 0.1, when: ['style', ['burst']] }, { key: 'random', label: 'Разброс направлений', min: 0, max: 1, step: 0.05, when: ['style', ['burst']] }, { key: 'delay', label: 'Задержка к краю', min: 0, max: 1, step: 0.02, when: ['style', ['shell', 'squash']] }, { key: 'pspeed', label: 'Скорость затухания', min: 0.3, max: 3, step: 0.05, when: ['style', ['shell', 'squash', 'flat']] }] },
-{ id: 'flow', group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, а силуэт не меняется. Настраиваются масштаб, скорость и поворот потока', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
-{ id: 'explode', group: 'Превращения', name: 'Разбор на части', icon: 'cube', hint: 'Форма разъезжается на жёсткие куски, они поворачиваются и возвращаются на место. Настраиваются число кусков, дальность и вращение', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', speed: 0.8, pieces: 40, dist: 1, spin: 0.5, stagger: 0.5 }, extras: [{ key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['hold', 'Всегда разобрана']] }, { key: 'pieces', label: 'Число кусков', min: 6, max: 256, step: 1, int: true }, { key: 'dist', label: 'Как далеко расходятся', min: 0.2, max: 3, step: 0.05 }, { key: 'spin', label: 'Вращение кусков', min: 0, max: 1, step: 0.05 }, { key: 'stagger', label: 'Разброс по времени', min: 0, max: 0.9, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1, when: ['mode', ['loop']] }] },
+{ id: 'flow', hidden: true, group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, а силуэт не меняется. Настраиваются масштаб, скорость и поворот потока', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
+{ id: 'explode', group: 'Разрушение', name: 'Разбор на части', icon: 'cube', hint: 'Форма разъезжается на жёсткие куски, они поворачиваются и возвращаются на место. Настраиваются число кусков, дальность и вращение', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', speed: 0.8, pieces: 40, dist: 1, spin: 0.5, stagger: 0.5 }, extras: [{ key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['hold', 'Всегда разобрана']] }, { key: 'pieces', label: 'Число кусков', min: 6, max: 256, step: 1, int: true }, { key: 'dist', label: 'Как далеко расходятся', min: 0.2, max: 3, step: 0.05 }, { key: 'spin', label: 'Вращение кусков', min: 0, max: 1, step: 0.05 }, { key: 'stagger', label: 'Разброс по времени', min: 0, max: 0.9, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1, when: ['mode', ['loop']] }] },
 { id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Форма исчезает и собирается обратно. Виды: лазерный срез, слои, блоки, песок, воронка, взрыв, горение, ветер, росток', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', dir: 'both', order: 'top', style: 'laser', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.35, scatter: 1, edge: 0.32, glow: 0.35, shrink: 0.85, seed: 'bottom', tendril: 0.6, bud: 0.7 }, extras: [{ type: 'title', label: 'Как растворяется' }, { key: 'style', label: 'Вид', type: 'select', options: [['laser', 'Лазерный срез: линия проходит сквозь форму'], ['layers', 'Слои: полосы съезжают в стороны'], ['chunks', 'Блоки: рассыпается кусками'], ['sand', 'Песок: осыпается на пол'], ['vortex', 'Воронка: закручивает в центр'], ['shock', 'Взрыв: волна от центра'], ['burn', 'Горение: пепел поднимается'], ['wind', 'Ветер: уносит потоком'], ['sprout', 'Росток: прорастает и увядает']] }, { key: 'seed', label: 'Откуда растёт', type: 'select', options: [['bottom', 'Снизу вверх, как стебель'], ['point', 'Из случайной точки'], ['center', 'Из центра наружу']], when: ['style', ['sprout']] }, { key: 'order', label: 'Откуда начинается', type: 'select', when: ['style', ['laser', 'layers', 'chunks', 'sand', 'vortex', 'shock', 'burn', 'wind']], options: [['top', 'Сверху вниз'], ['bottom', 'Снизу вверх'], ['side', 'Слева направо'], ['center', 'Из центра наружу'], ['edges', 'С краёв к центру'], ['noise', 'Пятнами']] }, { type: 'title', label: 'Запуск' }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'dir', label: 'Что дольше', type: 'seg', options: [['both', 'Поровну'], ['out', 'Распад'], ['in', 'Сборка']], when: ['mode', ['loop']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01, when: ['mode', ['slider']] }, { type: 'title', label: 'Движение частиц' }, { key: 'scatter', label: 'Размах движения', min: 0.2, max: 2.5, step: 0.05 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер и закрутка', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Лёгкая турбулентность', min: 0, max: 2, step: 0.05 }, { type: 'title', label: 'Кромка и частицы' }, { key: 'edge', label: 'Ширина кромки распада', min: 0.1, max: 0.7, step: 0.02 }, { key: 'glow', label: 'Свечение кромки', min: 0, max: 1.5, step: 0.05 }, { key: 'shrink', label: 'Мельчание частиц', min: 0, max: 1, step: 0.05 }, { key: 'tendril', label: 'Усики (неровный фронт)', min: 0, max: 1, step: 0.05, when: ['style', ['sprout']] }, { key: 'bud', label: 'Почки на кромке', min: 0, max: 1.5, step: 0.05, when: ['style', ['sprout']] }] },
 { id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки превращаются в кубики. Виды: сетка, лего, дыхание, волна, ступени, разлёт. Настраиваются размер и высота', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 1, mode: 'grid', speed: 1, size: 1, height: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['grid', 'Сетка'], ['lego', 'Лего: столбики разной высоты'], ['breathe', 'Дыхание: сетка пульсирует'], ['wave', 'Волна: кубы поднимаются волной'], ['stairs', 'Ступени: террасы по высоте'], ['scatter', 'Разлёт: кубы дрожат на месте']] }, { key: 'size', label: 'Размер кубиков', min: 0.4, max: 2.5, step: 0.05 }, { key: 'height', label: 'Высота и размах', min: 0, max: 2, step: 0.05, when: ['mode', ['lego', 'wave', 'stairs', 'scatter']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe', 'wave', 'scatter']] }] },
 { id: 'scope', group: 'Звук и ритм', name: 'Осциллограф', icon: 'heartbeat', hint: 'Перо самописца бежит от точки к точке по координатам модели и вычерчивает форму линией. Ещё не пройденные точки скрыты', max: 1, def: { on: false, amount: 0.7, band: 'none', react: 0.6, mode: 'draw', order: 'walk', dir: 'fwd', loop: 'loop', speed: 1, pens: 2, chaos: 0.6, trail: 0.5, detail: 6000, dim: 1, line: 1, width: 2.4, color: '#3dff7a', tint: 0.35, thick: 0.6, glow: 1, spark: 0 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивает: нарисованное остаётся'], ['comet', 'Комета: за пером тянется гаснущий след']] }, { key: 'order', label: 'Порядок обхода', type: 'select', options: [['walk', 'От точки к точке (ближайшая)'], ['up', 'Развёртка снизу вверх'], ['spin', 'Развёртка по кругу']] }, { key: 'dir', label: 'Направление', type: 'seg', options: [['fwd', 'Вперёд'], ['back', 'Назад']] }, { key: 'loop', label: 'В конце круга', type: 'seg', options: [['loop', 'Стирает и заново'], ['once', 'Остаётся']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'pens', label: 'Число перьев', min: 1, max: 8, step: 1, int: true }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true, when: ['order', ['walk']] }, { key: 'chaos', label: 'Хаотичность пути', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'dim', label: 'Прятать ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'color', label: 'Цвет осциллографа', type: 'color' }, { key: 'line', label: 'Яркость линии', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'width', label: 'Толщина линии', min: 0.5, max: 8, step: 0.1, when: ['order', ['walk']] }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }, { key: 'spark', label: 'Искры у пера', min: 0, max: 2, step: 0.05 }] },
@@ -75117,10 +75145,11 @@ const FX_GROUPS = {
 'Видео': ['frames'],
 'Фото и видео': ['depth'],
 'Анимация': ['trail'],
-'Движение': ['curl', 'flow', 'gravity'],
-'Звук и ритм': ['spectrum', 'wave', 'blast', 'scope'],
-'Превращения': ['twist', 'voxel', 'glitch', 'physics', 'dissolve', 'explode'],
-'Графика': ['links', 'slice', 'feedback', 'datamosh', 'echo', 'tracking'],
+'Движение': ['curl', 'gravity', 'wave', 'twist'],
+'Звук и ритм': ['spectrum', 'blast', 'scope'],
+'Разрушение': ['physics', 'explode', 'dissolve'],
+'Цифровые': ['voxel', 'glitch', 'datamosh'],
+'Графика': ['links', 'slice', 'feedback', 'echo', 'tracking'],
 'Управление': ['cursor', 'brush', 'camTrack'],
 };
 const FX_GROUP_NAMES = Object.keys(FX_GROUPS);
@@ -78081,6 +78110,15 @@ this.state = mergeDeep(defaultState(), loadJSON(KEY, {}));
 if (!this.state.audio.idleSet) this.state.audio.idle = false;
 this.state.mask = { ...defaultState().mask };
 for (const l of FX_LAYERS) this.state.layers[l.id] = { ...AUDIO_DEF, ...l.def, ...this.state.layers[l.id] };
+{
+const fl = this.state.layers.flow;
+const cl = this.state.layers.curl;
+if (fl && cl && fl.on && !cl.on && !this.state._m6) {
+Object.assign(cl, { on: true, mode: 'surface', amount: fl.amount, fscale: fl.scale, fdir: fl.dir, speed: fl.speed, band: fl.band, react: fl.react });
+fl.on = false;
+}
+this.state._m6 = true;
+}
 this.state.look = { ...defaultState().look, ...this.state.look };
 if (this.state.layers.brush && this.state.layers.brush.radius > 0.3 && !this.state._m5) {
 this.state.layers.brush.radius = 0.14;
@@ -81599,7 +81637,8 @@ m.needsUpdate = true;
 }
 if (this._tb === undefined) this._tb = -9;
 if (!this.playing && this._time - this._tb > (L.blast.period || 1.6)) this._markBeat();
-u.uCurl.value.set(this._eff(L.curl), L.curl.scale, 0, 0);
+const curlSurf = L.curl.mode === 'surface';
+u.uCurl.value.set(curlSurf ? 0 : this._eff(L.curl), L.curl.scale, 0, 0);
 u.uCurlP.value.set(L.curl.speed, L.curl.flow, { stream: 1, orbit: 2 }[L.curl.mode] ?? 0, 0);
 u.uSpec.value.set(this._eff(L.spectrum), { wool: 0, height: 1, bars: 2, terrain: 3 }[L.spectrum.mode] ?? 0, 0, 0);
 u.uSpecP.value.set(0, L.spectrum.bars, 0, 0);
@@ -81634,7 +81673,8 @@ u.uPulse.value.set(pm === 0 ? (bs === 'burst' ? this._eff(P) : this._eff(B)) : P
 u.uPulseP.value.set(pm, P.delay, this._tb, P.speed);
 }
 u.uBlast.value.set(L.blast.on && (L.blast.style || 'burst') === 'burst' ? this._eff(L.blast) : 0, L.blast.decay, L.blast.random, this._tb);
-u.uFlow.value.set(this._eff(L.flow), L.flow.scale, L.flow.speed, L.flow.dir);
+if (curlSurf) u.uFlow.value.set(this._eff(L.curl), L.curl.fscale, L.curl.speed, L.curl.fdir);
+else u.uFlow.value.set(this._eff(L.flow), L.flow.scale, L.flow.speed, L.flow.dir);
 u.uVoxel.value.set(clamp(this._eff(L.voxel), 0, 1), 0, 0, 0);
 u.uVoxelP.value.set({ grid: 0, lego: 1, breathe: 2, wave: 3, stairs: 4, scatter: 5 }[L.voxel.mode] ?? 0, L.voxel.speed, L.voxel.size ?? 1, L.voxel.height ?? 1);
 u.uJitter.value.set(this._eff(L.jitter), 0, 0, 0);
@@ -83068,7 +83108,7 @@ rotate: { id: 'rotate', name: 'Вращение', icon: 'arrows-clockwise', hint
 bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 };
 const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-const ANIM_LAYERS = ['morph', 'curl', 'flow', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail'];
+const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail'];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
 const animQuickBtn = button({
