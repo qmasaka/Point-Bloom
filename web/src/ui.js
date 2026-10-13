@@ -242,24 +242,34 @@ const pop = this.exportPop;
 const open = force !== undefined ? force : pop.hidden;
 const wasOpen = !pop.hidden;
 pop.hidden = !open;
+if (open && !wasOpen) this.holdPlayback('export');
+else if (!open && wasOpen) this.releasePlayback('export');
+$('#btnExport').setAttribute('aria-expanded', String(open));
+}
+holdPlayback(reason) {
+const holds = this._holds || (this._holds = new Set());
+if (holds.has(reason)) return;
+const first = holds.size === 0;
+holds.add(reason);
+if (!first) return;
 const app = this.app;
 const eng = this.effectsEngine;
-if (open && !wasOpen) {
 const pm = app.media.pm;
 this._expPaused = { anim: app.anim.playing, fx: !!eng.animPlaying && !eng.animRec, media: !!pm.playing && !pm.recording };
 if (this._expPaused.anim) app.anim.pause();
 if (this._expPaused.fx) eng.animPause();
 if (this._expPaused.media) pm.pause();
 eng.setFrozen(true);
-} else if (!open && wasOpen && this._expPaused) {
+}
+releasePlayback(reason) {
+const holds = this._holds;
+if (!holds || !holds.delete(reason) || holds.size > 0 || !this._expPaused) return;
 const was = this._expPaused;
 this._expPaused = null;
-eng.setFrozen(false);
-if (was.anim) app.anim.play();
-if (was.fx) eng.animPlay();
-if (was.media) app.media.pm.play();
-}
-$('#btnExport').setAttribute('aria-expanded', String(open));
+this.effectsEngine.setFrozen(false);
+if (was.anim) this.app.anim.play();
+if (was.fx) this.effectsEngine.animPlay();
+if (was.media) this.app.media.pm.play();
 }
 exportNow() {
 if (!this.app.viewport.root.children.some((c) => !c.userData.helper)) {
@@ -756,6 +766,7 @@ resolve(v);
 };
 const actions = h('div', { class: 'dlg-actions' }, ...buttons.map((b) => button({ label: b.label, variant: b.variant || 'secondary', icon: b.icon, onClick: () => done(b.value) })));
 dlg.append(h('div', { class: 'dlg-inner' }, h('h2', {}, title), h('p', {}, text), actions));
+this.releasePlayback('help');
 dlg.onclose = () => resolve(null);
 dlg.showModal();
 });
@@ -835,8 +846,10 @@ row('Меню блока и дорожки', 'ПКМ')
 )
 )
 );
+this.holdPlayback('help');
 dlg.onclose = () => {
 dlg.onclick = null;
+this.releasePlayback('help');
 };
 dlg.showModal();
 }

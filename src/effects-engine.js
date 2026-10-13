@@ -109,8 +109,8 @@ const FX_GROUPS = {
 	'Видео': ['frames'],
 	'Фото и видео': ['depth'],
 	'Анимация': ['trail'],
-	'Движение': ['curl', 'gravity', 'wave', 'twist'],
-	'Звук и ритм': ['spectrum', 'blast', 'scope'],
+	'Движение': ['curl', 'gravity', 'twist'],
+	'Звук и ритм': ['spectrum', 'wave', 'blast', 'scope'],
 	'Разрушение': ['physics', 'explode', 'dissolve'],
 	'Цифровые': ['voxel', 'glitch', 'datamosh'],
 	'Графика': ['links', 'slice', 'feedback', 'echo', 'tracking'],
@@ -6956,7 +6956,7 @@ export class EffectsEngine {
 		return l.amount * (1 - l.react + l.react * b * 2) * g;
 	}
 
-	/** Заморозка: время эффектов и звук стоят, пока открыто окно экспорта; после него всё продолжается с того же места */
+	/** Заморозка: время эффектов и звук стоят, пока открыто окно экспорта или справка; после них всё продолжается с того же места */
 	setFrozen(v) {
 		v = !!v;
 		if (v === !!this.frozen) return;
