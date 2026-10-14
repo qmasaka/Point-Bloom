@@ -683,8 +683,9 @@ picker.draw();
 band.el.addEventListener('click', () => requestAnimationFrame(syncAudioHead));
 body.append(audioHead, audioWrap);
 syncAudioHead();
-const iconEl = h('span', { class: 'fx-layer-icon ic-wrap', html: icon(def.icon || 'sparkle', 18) });
-const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, iconEl, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
+audioUiFull();
+const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
+const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
 const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right', 'data-tip-delay': '1300' }, row);
 const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, body);
 insp.classList.toggle('is-off', !L.on);
@@ -701,6 +702,7 @@ fxTabHook();
 }
 });
 fbody.append(card);
+attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
 inspBox.append(insp);
 cards.push({ folder, def, L, sw, amount, react, band, reactRow, modeSeg, thr, atk, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
 }
@@ -949,7 +951,7 @@ localStorage.setItem('objglb.fx.tab', curTab);
 } catch (_) {}
 };
 for (const [k, label, ic] of FX_TABS) {
-const b = h('button', { type: 'button', class: 'tab', role: 'tab', 'aria-selected': 'false' }, h('span', { class: 'ic', html: icon(ic, 17) }), h('span', { class: 'tab-label' }, label));
+const b = h('button', { type: 'button', class: 'tab', role: 'tab', 'aria-selected': 'false' }, h('span', { class: 'ic', html: icon(ic, 15) }), h('span', { class: 'tab-label' }, label));
 b.addEventListener('click', () => showFxTab(k));
 tabBtns.set(k, b);
 tabBar.append(b);
@@ -2515,7 +2517,7 @@ clampAnimH();
 app.bus.on('fxanim', animSync);
 app.bus.on('fx', animSync);
 const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#ffffff', 'Белый']];
-const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false', html: icon('palette', 20) });
+const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));
 const bgPop = h('div', { class: 'fx-bg-pop popover', hidden: true });
 const bgWrap = bgBtn;
 const bgSw = h('div', { class: 'fx-bg-sw' });
@@ -2539,7 +2541,7 @@ syncBg();
 save();
 }
 function syncBg() {
-bgBtn.classList.toggle('is-active', !!st.look.bg && st.look.bg !== '#14161b');
+bgBtn.querySelector('.fx-bg-dot').style.background = st.look.bg || 'var(--bg-sunken)';
 bgSwBtns.forEach(([c, b]) => b.classList.toggle('is-active', c === st.look.bg));
 bgVig.set(st.look.vignette);
 bgGrid.set(!!st.look.grid);

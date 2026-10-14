@@ -5154,14 +5154,13 @@ body.is-resizing-h * {
 	}
 }
 
-/* выбранный эффект в списке: без постоянного навязчивого выделения */
+/* выбранный эффект в списке: рамка и фон мягкого оранжевого */
 .fx-layer.is-selected {
-	background: transparent;
-	border-color: transparent;
+	background: var(--accent-soft);
+	border-color: var(--accent-line);
 }
 .fx-layer.is-selected.is-on {
-	background: transparent;
-	border-color: transparent;
+	border-color: var(--accent);
 }
 
 /* переключатель режимов: подсветка скользит от кнопки к кнопке */
@@ -5421,303 +5420,44 @@ body.is-resizing-h * {
 	.ui-float .fx-left, .ui-float .sidebar { bottom: 156px; }
 }
 
-/* ================================================================ единый язык интерфейса .ui-float: капсулы, стекло, мягкие скругления (для десктопа, планшета и мобильных) */
-/* выключатели: капсула и белый кружок */
-.ui-float .switch { width: 30px; height: 17px; border-radius: 999px; border: 0; background: rgba(255, 255, 255, 0.16); transition: background 0.18s var(--ease); cursor: pointer; flex: none; }
-.ui-float .switch-knob { top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); transition: transform 0.18s var(--ease); }
-.ui-float .switch[aria-checked='true'] { background: var(--accent); }
-.ui-float .switch[aria-checked='true'] .switch-knob { transform: translateX(13px); background: #fff; }
-
-/* ползунки: тонкая линия, белая точка с оранжевым ореолом на всех экранах */
-.ui-float .range { height: 18px; }
-.ui-float .range::-webkit-slider-runnable-track { height: 18px; border-radius: 0; background: linear-gradient(90deg, var(--accent) var(--p), rgba(255, 255, 255, 0.16) var(--p)) 0 50% / 100% 3px no-repeat; }
-.ui-float .range::-webkit-slider-thumb { width: 12px; height: 12px; margin-top: 3px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0 0 3px rgba(229, 138, 69, 0.35); transition: box-shadow 0.15s; }
-.ui-float .range:hover::-webkit-slider-thumb, .ui-float .range:active::-webkit-slider-thumb { background: #fff; box-shadow: 0 0 0 4px rgba(229, 138, 69, 0.5); }
-.ui-float .range::-moz-range-track { height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.16); }
-.ui-float .range::-moz-range-progress { height: 3px; border-radius: 2px; background: var(--accent); }
-.ui-float .range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; border: 0; background: #fff; box-shadow: 0 0 0 3px rgba(229, 138, 69, 0.35); }
-
-/* сегменты, поля, выпадающие списки: мягкие скругления, единые для редактора и эффектов */
-.ui-float .sidebar .seg, .ui-float .seg { border-radius: 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--fxg-line); padding: 3px; }
-.ui-float .sidebar .seg-btn, .ui-float .seg-btn { border-radius: 8px; border-color: transparent; }
-.ui-float .sidebar .seg-btn[aria-checked='true'], .ui-float .seg-btn[aria-checked='true'] { background: var(--accent-soft); color: var(--accent-text); border-color: transparent; font-weight: 500; }
-.ui-float .sidebar .select, .ui-float .sidebar .num-out, .ui-float .sidebar .num-in, .ui-float .select, .ui-float .num-out, .ui-float .num-in, .ui-float .field input[type='text'], .ui-float .field input[type='number'] { border-radius: var(--r-ctl, 8px); background: rgba(255, 255, 255, 0.05); border: 1px solid var(--fxg-line); padding-inline: 12px; }
-.ui-float .sidebar .btn, .ui-float .btn-capsule { border-radius: var(--r-ctl, 8px); }
-.ui-float .topbar .btn-icon, .ui-float .media-bar .btn-icon { border-radius: 50%; }
-.ui-float .topbar .btn:not(.btn-icon):not(.split-chev) { border-radius: 999px; }
-.ui-float .mode-switch, .ui-float .mode-btn, .ui-float .scale-widget, .ui-float .scale-pct { border-radius: 999px; }
-.ui-float .split-btn { border-radius: 999px; overflow: hidden; }
-.ui-float .split-btn .btn { border-radius: 0; }
-
-/* вкладки Эффект / Форма / Звук / Вид: идентичные вкладкам в редакторе */
-.ui-float .fx-tabs,
-.ui-float .fx-tabs.tabs {
-	display: grid;
-	grid-auto-flow: column;
-	grid-auto-columns: minmax(0, 1fr);
-	gap: 6px;
-	padding: 4px 10px 10px;
-	background: transparent;
-	border-bottom: 0;
-	position: sticky;
-	top: 0;
-	z-index: 5;
-}
-.ui-float .fx-tabs .tab {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	height: 34px;
-	padding: 0 10px;
-	border: 1px solid rgba(255, 255, 255, 0.08);
-	border-radius: 8px;
-	background: rgba(255, 255, 255, 0.05);
-	color: var(--text-dim);
-	font: 500 12px var(--font);
-	gap: 6px;
-	transition: all 0.18s var(--ease);
-}
-.ui-float .fx-tabs .tab:hover {
-	background: rgba(255, 255, 255, 0.08);
-	color: var(--text);
-}
-.ui-float .fx-tabs .tab[aria-selected='true'] {
-	background: rgba(229, 138, 69, 0.14);
-	border-color: rgba(229, 138, 69, 0.55);
-	color: var(--accent-text);
-	font-weight: 600;
-}
-.ui-float .fx-tabs .tab .ic {
-	display: inline-flex;
-}
-
-/* список слоёв эффектов: папки и карточки эффектов */
-.ui-float .fx-left-list {
-	padding: 4px 10px 24px;
-	gap: 6px;
-	background: transparent;
-}
-.ui-float .fx-folder {
-	margin-bottom: 6px;
-}
-.ui-float .fx-folder-head {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	width: 100%;
-	height: 34px;
-	padding: 0 10px;
-	border: 0;
-	border-radius: 10px;
-	background: transparent;
-	color: var(--text-dim);
-	font-size: 11px;
-	font-weight: 600;
-	letter-spacing: 0.06em;
-	text-transform: uppercase;
-	text-align: left;
-	cursor: pointer;
-	transition: all 0.16s var(--ease);
-}
-.ui-float .fx-folder-head:hover {
-	background: rgba(255, 255, 255, 0.05);
-	color: var(--text);
-}
-.ui-float .fx-folder-n:not(:empty) {
-	background: rgba(229, 138, 69, 0.2);
-	color: var(--accent-text);
-	border-radius: 999px;
-	padding: 2px 7px;
-	font-size: 11px;
-	font-weight: 600;
-}
-.ui-float .fx-folder-body {
-	display: grid;
-	gap: 4px;
-	margin-top: 2px;
-}
-.ui-float .fx-layer {
-	border-radius: 8px;
-	border: 1px solid transparent;
-	background: transparent;
-	transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
-	margin-bottom: 2px;
-	overflow: hidden;
-}
-.ui-float .fx-layer:hover {
-	background: rgba(255, 255, 255, 0.05);
-}
-.ui-float .fx-layer.is-on {
-	background: transparent;
-}
-.ui-float .fx-layer.is-on:hover {
-	background: rgba(255, 255, 255, 0.06);
-}
-.ui-float .fx-layer.is-selected {
-	background: rgba(255, 255, 255, 0.05);
-}
-.ui-float .fx-layer.is-selected:hover {
-	background: rgba(255, 255, 255, 0.08);
-}
-.ui-float .fx-layer-head {
-	display: grid;
-	grid-template-columns: 28px minmax(0, 1fr) 36px;
-	align-items: center;
-	gap: 8px;
-	height: 36px;
-	padding: 0 8px;
-	cursor: pointer;
-}
-.ui-float .fx-layer-icon {
-	width: 28px;
-	height: 28px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	color: var(--text-dim);
-	flex-shrink: 0;
-}
-.ui-float .fx-layer.is-on .fx-layer-icon,
-.ui-float .fx-layer.is-selected .fx-layer-icon {
-	color: var(--accent);
-}
-.ui-float .fx-prev {
-	width: 28px;
-	height: 28px;
-	border-radius: 6px;
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	background: rgba(0, 0, 0, 0.35);
-	display: block;
-}
-.ui-float .fx-layer-title {
-	font-size: 13px;
-	font-weight: 500;
-	color: var(--text-dim);
-	letter-spacing: -0.01em;
-}
-.ui-float .fx-layer.is-on .fx-layer-title,
-.ui-float .fx-layer.is-selected .fx-layer-title {
-	color: var(--text);
-	font-weight: 600;
-}
-
-/* карточка параметров инспектора */
-.ui-float .fx-insp-head {
-	border-radius: 16px;
-	background: rgba(255, 255, 255, 0.045);
-	border: 1px solid rgba(255, 255, 255, 0.08);
-	padding: 12px 14px;
-	gap: 12px;
-}
-.ui-float .fx-insp-head b {
-	font-size: 14px;
-	font-weight: 600;
-	color: var(--text);
-}
-.ui-float .fx-insp-head span:not(.fx-ic) {
-	font-size: 12px;
-	color: var(--text-dim);
-}
-.ui-float .fx-insp-head .fx-ic {
-	color: var(--accent-text);
-}
-
-/* плитки форм, палитры и переходы */
-.ui-float .shape-tile {
-	border-radius: 12px;
-	border: 1px solid rgba(255, 255, 255, 0.07);
-	background: rgba(255, 255, 255, 0.04);
-	transition: all 0.16s var(--ease);
-}
-.ui-float .shape-tile:hover {
-	background: rgba(255, 255, 255, 0.08);
-	border-color: rgba(255, 255, 255, 0.14);
-}
-.ui-float .shape-tile[aria-checked='true'],
-.ui-float .shape-tile.is-active {
-	background: color-mix(in srgb, var(--accent) 18%, transparent);
-	border-color: var(--accent-line);
-	color: var(--text);
-}
-.ui-float .fx-pal {
-	border-radius: 8px;
-	border: 1px solid rgba(255, 255, 255, 0.14);
-	height: 28px;
-	transition: transform 0.15s var(--ease);
-}
-.ui-float .fx-pal:hover {
-	transform: translateY(-1px);
-}
-.ui-float .fx-pal[aria-checked='true'] {
-	outline: 2px solid var(--accent);
-	outline-offset: 2px;
-}
-.ui-float .fx-anim-quick-btn {
-	border-radius: 8px;
-	height: 34px;
-}
-
-/* панель управления эффектами в сцене: идентична нижней панели vp-dock редактора */
-.ui-float .fx-bar {
-	height: 48px;
-	padding: 6px 8px;
-	gap: 4px;
-	border-radius: 16px;
-	background: var(--fxg-bg);
-	backdrop-filter: var(--fxg-blur);
-	-webkit-backdrop-filter: var(--fxg-blur);
-	border: 1px solid var(--fxg-line);
-	box-shadow: var(--fxg-shadow);
-	display: flex;
-	align-items: center;
-	position: relative;
-}
-.ui-float .fx-bar .btn-icon {
-	width: 38px;
-	height: 36px;
-	min-width: 38px;
-	min-height: 36px;
-	border-radius: 9px;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	background: transparent;
-	border: 0;
-	color: var(--text-dim);
-	transition: all 0.15s var(--ease);
-	position: relative;
-}
-.ui-float .fx-bar .btn-icon:hover {
-	background: rgba(255, 255, 255, 0.08);
-	color: var(--text);
-}
-.ui-float .fx-bar .btn-icon:active {
-	background: rgba(255, 255, 255, 0.14);
-}
-.ui-float .fx-bar .btn-icon.is-active {
-	background: rgba(229, 138, 69, 0.18);
-	color: var(--accent-text);
-	border: 0;
-}
-.ui-float .fx-bar .btn-icon svg {
-	width: 20px;
-	height: 20px;
-}
-.ui-float .fx-bar-sep {
-	width: 1px;
-	height: 20px;
-	background: var(--fxg-line);
-	margin: 0 2px;
-	flex: none;
-}
-.ui-float .fx-left-btn {
-	display: none !important;
-}
-
+/* ================================================================ режим «Эффекты»: мелкие элементы как в макете А */
 @container app (min-width: 901px) {
 	/* место под полосу прокрутки занимает только настоящая полоса: нет прокрутки, значит содержимое идёт до самого края */
 	.ui-float .fx-left-list, .ui-float .panel { scrollbar-gutter: auto; }
 	.ui-float .fx-left-list { padding: 0 8px 16px 8px; }
+
+	/* выключатели: капсула и белый кружок */
+	.ui-float .switch { width: 30px; height: 17px; border-radius: 999px; border: 0; background: rgba(255, 255, 255, 0.16); }
+	.ui-float .switch-knob { top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; }
+	.ui-float .switch[aria-checked='true'] { background: var(--accent); }
+	.ui-float .switch[aria-checked='true'] .switch-knob { transform: translateX(13px); background: #fff; }
+
+	/* ползунки: тонкая линия, белая точка с оранжевым ореолом */
+	.ui-float .range { height: 18px; }
+	.ui-float .range::-webkit-slider-runnable-track { height: 18px; border-radius: 0; background: linear-gradient(90deg, var(--accent) var(--p), rgba(255, 255, 255, 0.16) var(--p)) 0 50% / 100% 3px no-repeat; }
+	.ui-float .range::-webkit-slider-thumb { width: 12px; height: 12px; margin-top: 3px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0 0 3px rgba(229, 138, 69, 0.35); }
+	.ui-float .range:hover::-webkit-slider-thumb, .ui-float .range:active::-webkit-slider-thumb { background: #fff; box-shadow: 0 0 0 4px rgba(229, 138, 69, 0.5); }
+	.ui-float .range::-moz-range-track { height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.16); }
+	.ui-float .range::-moz-range-progress { height: 3px; border-radius: 2px; background: var(--accent); }
+	.ui-float .range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; border: 0; background: #fff; box-shadow: 0 0 0 3px rgba(229, 138, 69, 0.35); }
+
+	/* сегменты, поля, выпадающие списки, мелкие кнопки: капсулы */
+	.fx-mode .sidebar .seg { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border-color: transparent; }
+	.fx-mode .sidebar .seg-btn { border-radius: 999px; border-color: transparent; }
+	.fx-mode .sidebar .seg-btn[aria-checked='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 500; }
+	.fx-mode .sidebar .select, .fx-mode .sidebar .num-out, .fx-mode .sidebar .num-in { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border-color: transparent; padding-inline: 12px; }
+	.fx-mode .sidebar .btn { border-radius: 999px; }
+	.ui-float .topbar .btn-icon, .ui-float .fx-bar .btn-icon, .ui-float .media-bar .btn-icon { border-radius: 50%; }
+	.ui-float .topbar .btn:not(.btn-icon):not(.split-chev) { border-radius: 999px; }
+	.ui-float .mode-switch, .ui-float .mode-btn, .ui-float .scale-widget, .ui-float .scale-pct { border-radius: 999px; }
+	.ui-float .split-btn { border-radius: 999px; overflow: hidden; }
+	.ui-float .split-btn .btn { border-radius: 0; }
+	.fx-mode .fx-prev { border-radius: 9px; }
+
+	/* вкладки Эффект / Форма / Звук / Вид: те же, рамка ровная у всех */
+	.ui-float .fx-tabs, .ui-float .fx-tabs.tabs { gap: 6px; padding-inline: 14px; }
+	.ui-float .fx-tabs .tab { border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; }
+	.ui-float .fx-tabs .tab[aria-selected='true'] { border-color: rgba(229, 138, 69, 0.55); }
 }
 
 /* общие правила для редактора и эффектов */
@@ -6392,7 +6132,8 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-bg-chip { border-color: rgba(255, 255, 255, 0.16); }
 
 .fx-rec-pop {
-	width: 290px;
+	width: 330px;
+	max-width: calc(100% - 16px);
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
@@ -6838,8 +6579,8 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 @container app (min-width: 901px) {
 	.ui-float .seg { --seg-r: 10px; border-radius: var(--seg-r); }
 }
-.fx-mode .sidebar .seg { --seg-r: 10px; }
-.fx-mode .sidebar .seg-btn { border-radius: 8px; }
+.fx-mode .sidebar .seg { --seg-r: 999px; }
+.fx-mode .sidebar .seg-btn { border-radius: 999px; }
 #modeBar.seg { --seg-pad: 3px; }
 .pe-panel > * { flex-shrink: 0; }
 @container app (min-width: 901px) {
