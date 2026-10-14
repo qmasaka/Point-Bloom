@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Прототип WebGPU: сравнение с WebGL</title>
+<script type="importmap">{"imports":{"three":"/vendor/three/build/three.module.js"}}</script>
+<style>
+	body { margin: 0; padding: 16px; background: #15171b; color: #dfe3ea; font: 14px/1.4 system-ui, sans-serif; }
+	h1 { font-size: 18px; margin: 0 0 12px; }
+	.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+	figure { margin: 0; }
+	figcaption { margin: 4px 0; color: #9aa3b2; }
+	canvas { background: #000; width: 320px; height: 320px; image-rendering: auto; }
+	button, select { font: inherit; padding: 4px 10px; background: #2a2f38; color: inherit; border: 1px solid #3a4150; border-radius: 6px; cursor: pointer; }
+	pre { background: #0d0f12; padding: 10px; border-radius: 8px; max-width: 980px; white-space: pre-wrap; }
+	.ctl { display: flex; gap: 8px; margin: 8px 0 12px; flex-wrap: wrap; align-items: center; }
+</style>
+</head>
+<body>
+<h1>Прототип WebGPU: сравнение с боевым WebGL-шейдером (эффекты «Деформация» и «Волны»)</h1>
+<div class="ctl">
+	Точек:
+	<select id="n"><option>50000</option><option selected>200000</option><option>1000000</option><option>2000000</option></select>
+	Режим:
+	<select id="mode"><option value="add">со свечением (Additive)</option><option value="normal">обычный (непрозрачный)</option></select>
+	<button id="bCompare">Сравнить картинки</button>
+	<button id="bBench">Замерить скорость</button>
+	<button id="bCold">Холодная сборка</button>
+</div>
+<div class="row">
+	<figure><canvas id="gl" width="640" height="640"></canvas><figcaption>WebGL (боевой шейдер)</figcaption></figure>
+	<figure><canvas id="gpu" width="640" height="640"></canvas><figcaption>WebGPU (прототип)</figcaption></figure>
+	<figure><canvas id="diff" width="640" height="640"></canvas><figcaption>Разница (усилена ×4)</figcaption></figure>
+</div>
+<pre id="log">Готов. Нажмите кнопку.</pre>
+<script type="module" src="./webgpu-proto.js"></script>
+</body>
+</html>

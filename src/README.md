@@ -64,6 +64,7 @@ effects/
   frames/                 блок кадров раскадровки
   ui/                     панель эффектов, превью, HUD
   shaders/glsl/           шейдеры GLSL, по файлу на шейдер
+  shaders/wgsl/           шейдеры WGSL для WebGPU (прототип): общий код, вычислительные проходы эффектов, рисование точек
   render/                 всё, что связано с отрисовкой
     backend.js            контракт рендер-движка (RenderBackend)
     select.js             выбор движка: WebGL сейчас, WebGPU потом
@@ -73,6 +74,10 @@ effects/
       scene-build.js      объекты сцены: точки, призраки, линии
       shader-cache.js     урезание шейдера под включённые эффекты, фоновая сборка
       specialize.js post-pipeline.js programs.js textures.js
+    webgpu/               прототип на WebGPU (пока не подключён к приложению, см. docs/webgpu-prototype-report.md)
+      device.js           подключение к видеокарте
+      frame-layout.js     раскладка значений кадра в буфере
+      webgpu-points.js    рисование точек и проходы эффектов
 ```
 
 ### Как устроен класс `EffectsEngine`

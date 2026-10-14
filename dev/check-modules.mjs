@@ -32,7 +32,7 @@ const GLOBALS = new Set(
 		'Object Array String Number Boolean Symbol BigInt Math JSON Date RegExp Error TypeError RangeError SyntaxError ReferenceError EvalError URIError Promise Proxy Reflect Map Set WeakMap WeakSet WeakRef ' +
 		'ArrayBuffer SharedArrayBuffer DataView Int8Array Uint8Array Uint8ClampedArray Int16Array Uint16Array Int32Array Uint32Array Float32Array Float64Array BigInt64Array BigUint64Array ' +
 		'parseInt parseFloat isNaN isFinite encodeURIComponent decodeURIComponent encodeURI decodeURI escape unescape atob btoa structuredClone Intl TextEncoder TextDecoder ' +
-		'NodeFilter TreeWalker Range Selection HTMLElement HTMLCanvasElement HTMLVideoElement HTMLImageElement HTMLInputElement HTMLAudioElement HTMLMediaElement Element Node NodeList Image ImageData ImageBitmap OffscreenCanvas Path2D DOMParser XMLSerializer DOMMatrix DOMRect DOMException ' +
+		'GPUBufferUsage GPUShaderStage GPUTextureUsage GPUColorWrite GPUMapMode GPUDevice NodeFilter TreeWalker Range Selection HTMLElement HTMLCanvasElement HTMLVideoElement HTMLImageElement HTMLInputElement HTMLAudioElement HTMLMediaElement Element Node NodeList Image ImageData ImageBitmap OffscreenCanvas Path2D DOMParser XMLSerializer DOMMatrix DOMRect DOMException ' +
 		'MutationObserver ResizeObserver IntersectionObserver PerformanceObserver PointerEvent MouseEvent KeyboardEvent TouchEvent WheelEvent DragEvent ClipboardEvent DataTransfer ' +
 		'createImageBitmap matchMedia getComputedStyle alert confirm prompt open close focus blur ' +
 		'WebGLRenderingContext WebGL2RenderingContext WebGLTexture WebGLProgram AudioContext webkitAudioContext OfflineAudioContext AudioBuffer AudioNode GainNode AnalyserNode MediaStream MediaStreamTrack MediaRecorder MediaDevices Audio ' +
