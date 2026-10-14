@@ -1012,10 +1012,11 @@ button {
 .custom-select-pop {
 	position: fixed;
 	z-index: var(--z-tip, 9999);
-	background: var(--fxg-bg, rgba(18, 20, 24, 0.75));
-	backdrop-filter: var(--fxg-blur, blur(22px) saturate(1.25));
-	-webkit-backdrop-filter: var(--fxg-blur, blur(22px) saturate(1.25));
-	border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.1));
+	/* окно вне #app, поэтому значения стекла заданы прямо здесь: матовое и полупрозрачное, как остальные панели */
+	background: linear-gradient(180deg, rgba(34, 37, 44, 0.58), rgba(20, 22, 27, 0.62));
+	backdrop-filter: blur(24px) saturate(1.35);
+	-webkit-backdrop-filter: blur(24px) saturate(1.35);
+	border: 1px solid rgba(255, 255, 255, 0.12);
 	border-radius: 14px;
 	box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45), 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 	padding: 5px;
@@ -6728,3 +6729,6 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 .drop-card { padding: 22px 30px; border-radius: 20px; background: var(--glass-bg); border: 1px solid var(--glass-line); box-shadow: var(--glass-shadow); }
 html.perf-lite .busy-card, html.perf-lite .toast, html.perf-lite .dlg { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 html.perf-flat .busy-card, html.perf-flat .toast, html.perf-flat .dlg { -webkit-backdrop-filter: none; backdrop-filter: none; background: #15181d; }
+
+html.perf-lite .custom-select-pop { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); background: rgba(20, 22, 27, 0.8); }
+html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filter: none; background: #15181d; }
