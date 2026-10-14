@@ -69456,6 +69456,23 @@ out[r * cols + c] = a * (1 - ty) + b * ty;
 }
 }
 };
+__defs['src/effects/render/backend.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'RenderBackend', () => RenderBackend);
+class RenderBackend {
+constructor(engine) {
+this.engine = engine;
+}
+get kind() {
+throw new Error('RenderBackend.kind не реализован');
+}
+create() {}
+async prepare(kinds) {}
+install() {}
+setTint(color) {}
+dispose() {}
+}
+};
 __defs['src/effects/render/webgl/programs.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'waitPrograms', () => waitPrograms);
@@ -69463,6 +69480,10 @@ function waitPrograms(renderer, mats) {
 return new Promise((resolve) => {
 const t0 = performance.now();
 const check = () => {
+if (renderer.getContext().isContextLost()) {
+resolve();
+return;
+}
 let busy = false;
 try {
 for (const m of mats) {
@@ -70048,6 +70069,72 @@ this.fbMat.dispose();
 this.outMat.dispose();
 this.quadGeo.dispose();
 }
+}
+};
+__defs['src/effects/render/webgl/webgl-backend.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'WebGLBackend', () => WebGLBackend);
+const { RenderBackend } = __req('src/effects/render/backend.js');
+const { PostPipeline } = __req('src/effects/render/webgl/post-pipeline.js');
+class WebGLBackend extends RenderBackend {
+get kind() {
+return 'webgl';
+}
+create() {
+this.post = new PostPipeline(this.engine.app.viewport.renderer);
+}
+async prepare(kinds) {
+const e = this.engine;
+const vp = e.app.viewport;
+await Promise.all([e._warmScene(vp.scene, vp.camera), this.post.warm(), ...kinds.map((k) => e._warmKind(k, e._fxCur))]);
+e._tgtWarm[e._tgtRT ? 'r' : 's'] = 2;
+}
+install() {
+const e = this.engine;
+e.app.viewport.renderHook = (renderer, scene, camera) => {
+if (!e.active) {
+renderer.render(scene, camera);
+return;
+}
+const fb = e.state.layers.feedback;
+const bloom = e.state.look.bloom || 0;
+const ab = e.state.look.aberration || 0;
+const dm = e.state.layers.datamosh;
+e._tgtSync();
+if (!e._tgtRT) {
+renderer.setRenderTarget(null);
+renderer.render(scene, camera);
+this.post.hasHistory = false;
+return;
+}
+this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true);
+};
+}
+setTint(color) {
+this.post.tint = color;
+}
+dispose() {
+this.engine.app.viewport.renderHook = null;
+this.post?.dispose();
+this.post = null;
+}
+}
+};
+__defs['src/effects/render/select.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'webgpuAvailable', () => webgpuAvailable);
+__def(__exports, 'pickBackendKind', () => pickBackendKind);
+__def(__exports, 'createBackend', () => createBackend);
+const { WebGLBackend } = __req('src/effects/render/webgl/webgl-backend.js');
+function webgpuAvailable() {
+return typeof navigator !== 'undefined' && !!navigator.gpu;
+}
+function pickBackendKind() {
+return 'webgl';
+}
+function createBackend(kind, engine) {
+if (kind === 'webgl') return new WebGLBackend(engine);
+throw new Error('Неизвестный рендер-движок эффектов: ' + kind);
 }
 };
 __defs['src/effects/state/layers.js'] = function (__exports, __req) {
@@ -81494,6 +81581,29 @@ tex.userData = { n };
 return tex;
 }
 };
+__defs['src/effects/render/shared/frame-uniforms.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'createFrameUniforms', () => createFrameUniforms);
+const THREE = __req('vendor/three/build/three.module.js');
+const { frDummy2D, frDummyTex, glyphAtlas } = __req('src/effects/render/webgl/textures.js');
+function createFrameUniforms({ count, specTex, pieceTex }) {
+const U = (v) => ({ value: v });
+return {
+uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSettle: U(-1), uFr: U(new THREE.Vector4()), uFr2: U(new THREE.Vector4(1, 1, 2.2, 1.2)), uFr3: U(new THREE.Vector4(1.6, 0, 0, 0)), uFr4: U(new THREE.Vector4(0, 0, 0.12, 0.7)), uFr5: U(new THREE.Vector4(0, 0.7, 1, 1)), uHero: U(new THREE.Vector4()), uFr6: U(new THREE.Vector4(1.5, 0, 0, 0.5)), uFr7: U(new THREE.Vector4(1, 0, 0.6, 0)), uHeroTex: U(frDummy2D()), uFrTex: U(frDummyTex()), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
+uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()), uYR: U(new THREE.Vector2(-1, 1)),
+uShade: U(0), uGlyph: U(new THREE.Vector3(0, 1, 8)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(specTex),
+uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
+uPulse: U(new THREE.Vector4()), uVoxel: U(new THREE.Vector4()), uJitter: U(new THREE.Vector4()), uCursor: U(new THREE.Vector4()),
+uGlitch: U(new THREE.Vector4()), uSlice: U(new THREE.Vector4()), uSliceM: U(new THREE.Vector4()), uSliceC: U(new THREE.Color()), uMark: U(new THREE.Vector4()), uMarkC: U(new THREE.Color()), uLink: U(new THREE.Vector4()), uLinkP: U(new THREE.Vector4()), uContact: U(new THREE.Vector4()), uShockP: U(new THREE.Vector4()),
+uTrk: U(Array.from({ length: 16 }, () => new THREE.Vector4())), uImp: U(Array.from({ length: 32 }, () => new THREE.Vector4())), uShock: U(Array.from({ length: 4 }, () => new THREE.Vector4(0, 0, 0, -1))),
+uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
+uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
+uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()), uPaintP: U(new THREE.Vector4()),
+uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
+uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uAnimN: U(0), uCen: U(new THREE.Vector3()), uExp: U(new THREE.Vector4()), uExpP: U(new THREE.Vector4()), uPieceTex: U(pieceTex), uGrow: U(new THREE.Vector4()), uGrowP: U(new THREE.Vector4()), uGrowSeed: U(new THREE.Vector3()), uJel: U(Array.from({ length: 3 }, () => new THREE.Vector4(0, 0, 0, -99))), uJelO: U(Array.from({ length: 3 }, () => new THREE.Vector4())), uJelP: U(new THREE.Vector4()), uDisQ: U(new THREE.Vector4(0.32, 1, 0.35, 0.85)), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
+};
+}
+};
 __defs['src/effects/shaders/glsl/frag.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'frag', () => frag);
@@ -81626,11 +81736,11 @@ void main() {
 }
 `;
 };
-__defs['src/effects/engine/build.js'] = function (__exports, __req) {
+__defs['src/effects/render/webgl/scene-build.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'BuildPart', () => BuildPart);
 const THREE = __req('vendor/three/build/three.module.js');
-const { frDummy2D, frDummyTex, glyphAtlas } = __req('src/effects/render/webgl/textures.js');
+const { createFrameUniforms } = __req('src/effects/render/shared/frame-uniforms.js');
 const { frag } = __req('src/effects/shaders/glsl/frag.js');
 const { lineFrag } = __req('src/effects/shaders/glsl/line-frag.js');
 class BuildPart {
@@ -81678,20 +81788,7 @@ this.pieceTex.needsUpdate = true;
 this._pieceKey = '';
 }
 const U = (v) => ({ value: v });
-const shared = {
-uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSettle: U(-1), uFr: U(new THREE.Vector4()), uFr2: U(new THREE.Vector4(1, 1, 2.2, 1.2)), uFr3: U(new THREE.Vector4(1.6, 0, 0, 0)), uFr4: U(new THREE.Vector4(0, 0, 0.12, 0.7)), uFr5: U(new THREE.Vector4(0, 0.7, 1, 1)), uHero: U(new THREE.Vector4()), uFr6: U(new THREE.Vector4(1.5, 0, 0, 0.5)), uFr7: U(new THREE.Vector4(1, 0, 0.6, 0)), uHeroTex: U(frDummy2D()), uFrTex: U(frDummyTex()), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
-uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()), uYR: U(new THREE.Vector2(-1, 1)),
-uShade: U(0), uGlyph: U(new THREE.Vector3(0, 1, 8)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
-uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
-uPulse: U(new THREE.Vector4()), uVoxel: U(new THREE.Vector4()), uJitter: U(new THREE.Vector4()), uCursor: U(new THREE.Vector4()),
-uGlitch: U(new THREE.Vector4()), uSlice: U(new THREE.Vector4()), uSliceM: U(new THREE.Vector4()), uSliceC: U(new THREE.Color()), uMark: U(new THREE.Vector4()), uMarkC: U(new THREE.Color()), uLink: U(new THREE.Vector4()), uLinkP: U(new THREE.Vector4()), uContact: U(new THREE.Vector4()), uShockP: U(new THREE.Vector4()),
-uTrk: U(Array.from({ length: 16 }, () => new THREE.Vector4())), uImp: U(Array.from({ length: 32 }, () => new THREE.Vector4())), uShock: U(Array.from({ length: 4 }, () => new THREE.Vector4(0, 0, 0, -1))),
-uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
-uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
-uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()), uPaintP: U(new THREE.Vector4()),
-uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
-uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uAnimN: U(0), uCen: U(new THREE.Vector3()), uExp: U(new THREE.Vector4()), uExpP: U(new THREE.Vector4()), uPieceTex: U(this.pieceTex), uGrow: U(new THREE.Vector4()), uGrowP: U(new THREE.Vector4()), uGrowSeed: U(new THREE.Vector3()), uJel: U(Array.from({ length: 3 }, () => new THREE.Vector4(0, 0, 0, -99))), uJelO: U(Array.from({ length: 3 }, () => new THREE.Vector4())), uJelP: U(new THREE.Vector4()), uDisQ: U(new THREE.Vector4(0.32, 1, 0.35, 0.85)), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
-};
+const shared = createFrameUniforms({ count, specTex: this.specTex, pieceTex: this.pieceTex });
 const addBlend = this.state.look.blend === 'add';
 const mk = (extra) =>
 new THREE.ShaderMaterial({
@@ -84796,7 +84893,7 @@ return keys;
 }
 const FX_GUARDS = fxGuardKeys(vert, lineVert, scopeVert, common);
 };
-__defs['src/effects/engine/shader-cache.js'] = function (__exports, __req) {
+__defs['src/effects/render/webgl/shader-cache.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'ShaderCachePart', () => ShaderCachePart);
 const THREE = __req('vendor/three/build/three.module.js');
@@ -86361,7 +86458,7 @@ const u = this.shared;
 const L = st.layers;
 const look = st.look;
 const pal = FX_PALETTES.find((p) => p.id === look.palette) || FX_PALETTES[0];
-if (this.post) this.post.tint = new THREE.Color(pal.c[0]);
+if (this.backend) this.backend.setTint(new THREE.Color(pal.c[0]));
 u.uTime.value = this._time;
 {
 const m = this.morphing ? this.morph : 1;
@@ -87270,7 +87367,7 @@ const THREE = __req('vendor/three/build/three.module.js');
 const { perf } = __req('src/core/perf.js');
 const { loadJSON, mergeDeep, saveJSON } = __req('src/core/util.js');
 const { DepthAI } = __req('src/effects/input/depth-ai.js');
-const { PostPipeline } = __req('src/effects/render/webgl/post-pipeline.js');
+const { createBackend, pickBackendKind } = __req('src/effects/render/select.js');
 const { defaultState, KEY } = __req('src/effects/state/defaults.js');
 const { FX_LAYERS } = __req('src/effects/state/layers.js');
 const { AUDIO_DEF } = __req('src/effects/state/options.js');
@@ -87278,13 +87375,13 @@ const { TrackerHud } = __req('src/effects/ui/fx-hud.js');
 const { FramesPart } = __req('src/effects/engine/frames.js');
 const { KeyframesPart } = __req('src/effects/engine/keyframes.js');
 const { SourcePart } = __req('src/effects/engine/source.js');
-const { BuildPart } = __req('src/effects/engine/build.js');
+const { BuildPart } = __req('src/effects/render/webgl/scene-build.js');
 const { LinksPart } = __req('src/effects/engine/links.js');
 const { ToolsPart } = __req('src/effects/engine/tools.js');
 const { TrackingPart } = __req('src/effects/engine/tracking.js');
 const { HistoryPart } = __req('src/effects/engine/history.js');
 const { ScopeTrailPart } = __req('src/effects/engine/scope-trail.js');
-const { ShaderCachePart } = __req('src/effects/engine/shader-cache.js');
+const { ShaderCachePart } = __req('src/effects/render/webgl/shader-cache.js');
 const { DepthPart } = __req('src/effects/engine/depth.js');
 const { AudioPart } = __req('src/effects/engine/audio.js');
 const { InteractionPart } = __req('src/effects/engine/interaction.js');
@@ -87397,7 +87494,7 @@ this.animT = 0;
 this.animPlaying = false;
 this.animRec = false;
 this.brushHits = [];
-this.post = null;
+this.backend = null;
 this.camTracker = null;
 this._pointerDown = false;
 }
@@ -87472,14 +87569,14 @@ vp.fxHide = false;
 document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 throw e;
 }
-this.post = new PostPipeline(vp.renderer);
+this.backend = createBackend(pickBackendKind(), this);
+this.backend.create();
 const buildPts = this.points;
 if (buildPts) buildPts.visible = false;
 try {
 const kinds = [this._vertKind()];
 if (this.linkObj && this.state.layers.links.on) kinds.push('line');
-await Promise.all([this._warmScene(app.viewport.scene, app.viewport.camera), this.post.warm(), ...kinds.map((k) => this._warmKind(k, this._fxCur))]);
-this._tgtWarm[this._tgtRT ? 'r' : 's'] = 2;
+await this.backend.prepare(kinds);
 } catch (e) {
 }
 if (buildPts && this.points === buildPts) buildPts.visible = true;
@@ -87494,24 +87591,7 @@ this._offScene = app.bus.on('scene', () => this._onScene());
 this.hud = new TrackerHud(document.getElementById('viewport'));
 this.app.viewport.fxGrid = !!this.state.look.grid;
 this.applyBg();
-vp.renderHook = (renderer, scene, camera) => {
-if (!this.active) {
-renderer.render(scene, camera);
-return;
-}
-const fb = this.state.layers.feedback;
-const bloom = this.state.look.bloom || 0;
-const ab = this.state.look.aberration || 0;
-const dm = this.state.layers.datamosh;
-this._tgtSync();
-if (!this._tgtRT) {
-renderer.setRenderTarget(null);
-renderer.render(scene, camera);
-this.post.hasHistory = false;
-return;
-}
-this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? this._moshParams(dm) : null, true);
-};
+this.backend.install();
 app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 0);
 this.syncLookFromPoints();
 if (this.pm.ready) {
@@ -87540,9 +87620,8 @@ clearTimeout(this._sceneT);
 this._offScene && this._offScene();
 this.hud?.dispose();
 this.hud = null;
-this.app.viewport.renderHook = null;
-this.post?.dispose();
-this.post = null;
+this.backend?.dispose();
+this.backend = null;
 if (this.camTracker) {
 this._stopCam();
 this.camTracker = null;

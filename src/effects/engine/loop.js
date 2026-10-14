@@ -86,7 +86,7 @@ export class LoopPart {
 			const L = st.layers;
 			const look = st.look;
 			const pal = FX_PALETTES.find((p) => p.id === look.palette) || FX_PALETTES[0];
-			if (this.post) this.post.tint = new THREE.Color(pal.c[0]);
+			if (this.backend) this.backend.setTint(new THREE.Color(pal.c[0]));
 			u.uTime.value = this._time;
 			// во время перехода эффекты плавно гаснут и после сборки так же плавно возвращаются: форма собирается чисто, но эффекты остаются на обеих моделях
 			{

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { perf } from '../../core/perf.js';
 import { loadJSON, mergeDeep, saveJSON } from '../../core/util.js';
 import { DepthAI } from '../input/depth-ai.js';
-import { PostPipeline } from '../render/webgl/post-pipeline.js';
+import { createBackend, pickBackendKind } from '../render/select.js';
 import { defaultState, KEY } from '../state/defaults.js';
 import { FX_LAYERS } from '../state/layers.js';
 import { AUDIO_DEF } from '../state/options.js';
@@ -10,13 +10,13 @@ import { TrackerHud } from '../ui/fx-hud.js';
 import { FramesPart } from './frames.js';
 import { KeyframesPart } from './keyframes.js';
 import { SourcePart } from './source.js';
-import { BuildPart } from './build.js';
+import { BuildPart } from '../render/webgl/scene-build.js';
 import { LinksPart } from './links.js';
 import { ToolsPart } from './tools.js';
 import { TrackingPart } from './tracking.js';
 import { HistoryPart } from './history.js';
 import { ScopeTrailPart } from './scope-trail.js';
-import { ShaderCachePart } from './shader-cache.js';
+import { ShaderCachePart } from '../render/webgl/shader-cache.js';
 import { DepthPart } from './depth.js';
 import { AudioPart } from './audio.js';
 import { InteractionPart } from './interaction.js';
@@ -129,7 +129,7 @@ this.animT = 0;
 this.animPlaying = false;
 this.animRec = false;
 this.brushHits = [];
-this.post = null;
+this.backend = null;
 this.camTracker = null;
 this._pointerDown = false;
 }
@@ -204,14 +204,14 @@ vp.fxHide = false;
 document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 throw e;
 }
-this.post = new PostPipeline(vp.renderer);
+this.backend = createBackend(pickBackendKind(), this);
+this.backend.create();
 const buildPts = this.points;
 if (buildPts) buildPts.visible = false;
 try {
 const kinds = [this._vertKind()];
 if (this.linkObj && this.state.layers.links.on) kinds.push('line');
-await Promise.all([this._warmScene(app.viewport.scene, app.viewport.camera), this.post.warm(), ...kinds.map((k) => this._warmKind(k, this._fxCur))]);
-this._tgtWarm[this._tgtRT ? 'r' : 's'] = 2;
+await this.backend.prepare(kinds);
 } catch (e) {
 }
 if (buildPts && this.points === buildPts) buildPts.visible = true;
@@ -226,24 +226,7 @@ this._offScene = app.bus.on('scene', () => this._onScene());
 this.hud = new TrackerHud(document.getElementById('viewport'));
 this.app.viewport.fxGrid = !!this.state.look.grid;
 this.applyBg();
-vp.renderHook = (renderer, scene, camera) => {
-if (!this.active) {
-renderer.render(scene, camera);
-return;
-}
-const fb = this.state.layers.feedback;
-const bloom = this.state.look.bloom || 0;
-const ab = this.state.look.aberration || 0;
-const dm = this.state.layers.datamosh;
-this._tgtSync();
-if (!this._tgtRT) {
-renderer.setRenderTarget(null);
-renderer.render(scene, camera);
-this.post.hasHistory = false;
-return;
-}
-this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? this._moshParams(dm) : null, true);
-};
+this.backend.install();
 app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 0);
 this.syncLookFromPoints();
 if (this.pm.ready) {
@@ -272,9 +255,8 @@ clearTimeout(this._sceneT);
 this._offScene && this._offScene();
 this.hud?.dispose();
 this.hud = null;
-this.app.viewport.renderHook = null;
-this.post?.dispose();
-this.post = null;
+this.backend?.dispose();
+this.backend = null;
 if (this.camTracker) {
 this._stopCam();
 this.camTracker = null;

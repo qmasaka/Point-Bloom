@@ -1,13 +1,10 @@
 {
-  "note": "Эталон до рефакторинга (этап 0). Chrome 150+, Windows 11, NVIDIA RTX 5070 Ti, тёплый кеш шейдеров. Тест: dev/smoke-effects.js.",
-  "commit": "9945eb6 + исправление роста набора эффектов в шейдере",
-  "checkModules": "Проверено модулей: 61. Проблем нет.",
+  "note": "Эталон дымового теста (dev/smoke-effects.js) после этапов 0-2 рефакторинга. Chrome, Windows 11, NVIDIA RTX 5070 Ti, тёплый кеш шейдеров.",
+  "checkModules": "Проверено модулей: 99. Проблем нет.",
   "smoke": {
-    "steps": 52,
+    "steps": 55,
     "problems": [],
-    "slowSteps": [
-      { "name": "в редактор", "longTasks": [125], "glStalls": ["95мс (вершинный шейдер 19421 симв.)"] }
-    ],
-    "worstFrame": 1001
+    "slowSteps": [],
+    "worstFrame": 167
   }
 }

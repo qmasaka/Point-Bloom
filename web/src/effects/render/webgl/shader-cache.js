@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { waitPrograms } from '../render/webgl/programs.js';
-import { FX_GUARDS, specializeFx } from '../render/webgl/specialize.js';
-import { frag } from '../shaders/glsl/frag.js';
-import { lineFrag } from '../shaders/glsl/line-frag.js';
-import { lineVert } from '../shaders/glsl/line-vert.js';
-import { scopeFrag } from '../shaders/glsl/scope-frag.js';
-import { scopeVert } from '../shaders/glsl/scope-vert.js';
-import { vert } from '../shaders/glsl/vert.js';
+import { waitPrograms } from './programs.js';
+import { FX_GUARDS, specializeFx } from './specialize.js';
+import { frag } from '../../shaders/glsl/frag.js';
+import { lineFrag } from '../../shaders/glsl/line-frag.js';
+import { lineVert } from '../../shaders/glsl/line-vert.js';
+import { scopeFrag } from '../../shaders/glsl/scope-frag.js';
+import { scopeVert } from '../../shaders/glsl/scope-vert.js';
+import { vert } from '../../shaders/glsl/vert.js';
 export class ShaderCachePart {
 _fxSource(kind, on) {
 const cache = this._fxCache || (this._fxCache = new Map());

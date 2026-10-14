@@ -8,6 +8,11 @@ export function waitPrograms(renderer, mats) {
 	return new Promise((resolve) => {
 		const t0 = performance.now();
 		const check = () => {
+			// контекст потерян (сброс видеопроцесса): программы уже не соберутся, ждать бессмысленно. После восстановления three.js соберёт всё заново
+			if (renderer.getContext().isContextLost()) {
+				resolve();
+				return;
+			}
 			let busy = false;
 			try {
 				for (const m of mats) {

@@ -25,6 +25,17 @@
 		oErr.apply(console, a);
 	};
 
+	// потеря контекста WebGL (сброс видеопроцесса): записывается с названием шага, на котором случилась
+	let currentStep = 'до начала';
+	const hookCanvas = () => {
+		const cv = document.querySelector('canvas.gl');
+		if (!cv || cv.__smokeHooked) return;
+		cv.__smokeHooked = true;
+		cv.addEventListener('webglcontextlost', () => S.errors.push('потерян контекст WebGL на шаге: ' + currentStep));
+		cv.addEventListener('webglcontextrestored', () => S.errors.push('контекст WebGL восстановлен (шаг: ' + currentStep + ')'));
+	};
+	hookCanvas();
+
 	// долгие задачи, кадры, паузы WebGL
 	const lt = [];
 	try {
@@ -68,6 +79,8 @@
 	}
 
 	async function step(name, fn, wait = 1200) {
+		currentStep = name;
+		hookCanvas();
 		lt.length = 0;
 		glStall.length = 0;
 		ft.length = 0;
@@ -129,6 +142,19 @@
 				const st = S.steps[S.steps.length - 2];
 				st.note = 'эффектов включено: ' + before + ' → ' + mid;
 			}
+			// вывод через пост-обработку (буфер) и обратно на экран
+			await step('свечение: включить', () => {
+				fx.state.look.bloom = 0.8;
+			}, 2500);
+			await step('обратная связь: включить', () => {
+				fx.state.layers.feedback.on = true;
+				fx.state.layers.feedback.amount = 0.9;
+				return 'вывод в буфер: ' + (fx._tgtRT ? 'да' : 'ещё нет');
+			}, 2500);
+			await step('свечение и обратная связь: выключить', () => {
+				fx.state.look.bloom = 0;
+				fx.state.layers.feedback.on = false;
+			}, 2500);
 			await step('в редактор', () => clickText('[role=tab], button, div', 'Editor'), 2000);
 			await step(
 				'снова в «Эффекты»',

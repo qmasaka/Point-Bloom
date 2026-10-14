@@ -91,7 +91,9 @@
 ```
 index.html        страница (открывать её)
 assets/           app.js (готовая сборка), style.css, fonts.css, шрифты Geist
-src/              исходный код на ES-модулях
+src/              исходный код на ES-модулях, разложен по папкам (подробно: src/README.md)
+dev/              инструменты разработчика: проверка модулей, дымовой тест эффектов (dev/README.md)
+docs/             справочные документы (инвентарь эффектов)
 vendor/           three.js (MIT), иконки Phosphor (MIT)
 samples/          пример: demo.obj + demo.mtl + demo_texture.png
 web/              лёгкая версия для публикации в интернете (создаётся командой build.py --web)

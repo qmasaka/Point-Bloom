@@ -2,6 +2,10 @@ export function waitPrograms(renderer, mats) {
 return new Promise((resolve) => {
 const t0 = performance.now();
 const check = () => {
+if (renderer.getContext().isContextLost()) {
+resolve();
+return;
+}
 let busy = false;
 try {
 for (const m of mats) {
