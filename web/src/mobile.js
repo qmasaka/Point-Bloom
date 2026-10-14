@@ -18,7 +18,8 @@ setTimeout(() => app.viewport.resize(), 320);
 function makeHandle() {
 const hd = document.createElement('div');
 hd.className = 'sheet-handle';
-hd.innerHTML = '<span class="sheet-grab"></span><div class="sheet-switch"><button type="button" data-ms="list">Эффекты</button><button type="button" data-ms="settings">Настройки</button></div>';
+const tr = (k) => (window.__i18n && window.__i18n.tr ? window.__i18n.tr(k) : k);
+hd.innerHTML = `<span class="sheet-grab" aria-hidden="true"></span><div class="sheet-switch" role="tablist"><button type="button" role="tab" data-ms="list" aria-selected="true">${tr('Эффекты')}</button><button type="button" role="tab" data-ms="settings" aria-selected="false">${tr('Настройки')}</button></div>`;
 let sy = 0, sh = 0, moved = false, drag = false;
 hd.addEventListener('pointerdown', (e) => {
 if (e.target.closest('.sheet-switch')) return;
@@ -59,9 +60,19 @@ const hS = makeHandle();
 const hF = makeHandle();
 sidebar.insertBefore(hS, sidebar.querySelector('.tabs'));
 fxLeft.insertBefore(hF, fxLeft.firstChild);
+function updateHandleLabels() {
+const tr = (k) => (window.__i18n && window.__i18n.tr ? window.__i18n.tr(k) : k);
+document.querySelectorAll('.sheet-switch button[data-ms="list"]').forEach((b) => (b.textContent = tr('Эффекты')));
+document.querySelectorAll('.sheet-switch button[data-ms="settings"]').forEach((b) => (b.textContent = tr('Настройки')));
+}
+window.addEventListener('langchange', updateHandleLabels);
 function setMsheet(v) {
 root.dataset.msheet = v;
-document.querySelectorAll('.sheet-switch button').forEach((b) => b.classList.toggle('is-on', b.dataset.ms === v));
+document.querySelectorAll('.sheet-switch button').forEach((b) => {
+const on = b.dataset.ms === v;
+b.classList.toggle('is-on', on);
+b.setAttribute('aria-selected', String(on));
+});
 }
 setMsheet('list');
 sidebar.addEventListener('click', (e) => {

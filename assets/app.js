@@ -40943,7 +40943,8 @@ setTimeout(() => app.viewport.resize(), 320);
 function makeHandle() {
 const hd = document.createElement('div');
 hd.className = 'sheet-handle';
-hd.innerHTML = '<span class="sheet-grab"></span><div class="sheet-switch"><button type="button" data-ms="list">Эффекты</button><button type="button" data-ms="settings">Настройки</button></div>';
+const tr = (k) => (window.__i18n && window.__i18n.tr ? window.__i18n.tr(k) : k);
+hd.innerHTML = `<span class="sheet-grab" aria-hidden="true"></span><div class="sheet-switch" role="tablist"><button type="button" role="tab" data-ms="list" aria-selected="true">${tr('Эффекты')}</button><button type="button" role="tab" data-ms="settings" aria-selected="false">${tr('Настройки')}</button></div>`;
 let sy = 0, sh = 0, moved = false, drag = false;
 hd.addEventListener('pointerdown', (e) => {
 if (e.target.closest('.sheet-switch')) return;
@@ -40984,9 +40985,19 @@ const hS = makeHandle();
 const hF = makeHandle();
 sidebar.insertBefore(hS, sidebar.querySelector('.tabs'));
 fxLeft.insertBefore(hF, fxLeft.firstChild);
+function updateHandleLabels() {
+const tr = (k) => (window.__i18n && window.__i18n.tr ? window.__i18n.tr(k) : k);
+document.querySelectorAll('.sheet-switch button[data-ms="list"]').forEach((b) => (b.textContent = tr('Эффекты')));
+document.querySelectorAll('.sheet-switch button[data-ms="settings"]').forEach((b) => (b.textContent = tr('Настройки')));
+}
+window.addEventListener('langchange', updateHandleLabels);
 function setMsheet(v) {
 root.dataset.msheet = v;
-document.querySelectorAll('.sheet-switch button').forEach((b) => b.classList.toggle('is-on', b.dataset.ms === v));
+document.querySelectorAll('.sheet-switch button').forEach((b) => {
+const on = b.dataset.ms === v;
+b.classList.toggle('is-on', on);
+b.setAttribute('aria-selected', String(on));
+});
 }
 setMsheet('list');
 sidebar.addEventListener('click', (e) => {
@@ -65603,9 +65614,17 @@ const scale = panel.currentCSSZoom || parseFloat(document.documentElement.style.
 const ws = panel.parentElement.getBoundingClientRect();
 const rail = document.querySelector('.toolrail');
 const side = document.getElementById('sidebar');
-const rr = rail.getBoundingClientRect();
+const rr = rail ? rail.getBoundingClientRect() : { right: 52, top: 50, width: 44, height: 200 };
 const sr = side ? side.getBoundingClientRect() : null;
 const gap = 8;
+const isMobile = window.matchMedia('(max-width: 900px)').matches;
+if (isMobile) {
+panel.style.width = Math.min(340, Math.max(220, (ws.width - (rr.right - ws.left) - gap * 2) / scale)) + 'px';
+panel.style.left = (rr.right - ws.left + gap) / scale + 'px';
+panel.style.top = (rr.top - ws.top) / scale + 'px';
+const sheetH = parseFloat(getComputedStyle(document.getElementById('app')).getPropertyValue('--sheet-h')) || 84;
+panel.style.maxHeight = Math.max(160, (ws.height - (rr.top - ws.top) - sheetH - 24 * scale) / scale) + 'px';
+} else {
 const sideW = sr && sr.width ? sr.width : 300 * scale;
 panel.style.width = Math.max(220, (sideW - rr.width - gap) / scale) + 'px';
 panel.style.left = (rr.right - ws.left + gap) / scale + 'px';
@@ -65614,6 +65633,7 @@ const collapsed = side && side.classList.contains('fxf-collapsed');
 const maxH = sr && sr.height && !collapsed ? sr.height : ws.height - top - 20 * scale;
 panel.style.top = (top / scale) + 'px';
 panel.style.maxHeight = (maxH / scale) + 'px';
+}
 }
 window.addEventListener('resize', place);
 if (window.ResizeObserver) {

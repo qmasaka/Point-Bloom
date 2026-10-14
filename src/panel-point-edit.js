@@ -74,18 +74,28 @@ export function createPointEditSection(app) {
 		const ws = panel.parentElement.getBoundingClientRect();
 		const rail = document.querySelector('.toolrail');
 		const side = document.getElementById('sidebar');
-		const rr = rail.getBoundingClientRect();
+		const rr = rail ? rail.getBoundingClientRect() : { right: 52, top: 50, width: 44, height: 200 };
 		const sr = side ? side.getBoundingClientRect() : null;
 		const gap = 8;
-		// колонка кнопок и панель вместе по ширине равны блоку настроек, по высоте панель стоит между теми же верхним и нижним краями
-		const sideW = sr && sr.width ? sr.width : 300 * scale;
-		panel.style.width = Math.max(220, (sideW - rr.width - gap) / scale) + 'px';
-		panel.style.left = (rr.right - ws.left + gap) / scale + 'px';
-		const top = sr && sr.height ? sr.top - ws.top : rr.top - ws.top;
-		const collapsed = side && side.classList.contains('fxf-collapsed');
-		const maxH = sr && sr.height && !collapsed ? sr.height : ws.height - top - 20 * scale;
-		panel.style.top = (top / scale) + 'px';
-		panel.style.maxHeight = (maxH / scale) + 'px';
+		const isMobile = window.matchMedia('(max-width: 900px)').matches;
+
+		if (isMobile) {
+			panel.style.width = Math.min(340, Math.max(220, (ws.width - (rr.right - ws.left) - gap * 2) / scale)) + 'px';
+			panel.style.left = (rr.right - ws.left + gap) / scale + 'px';
+			panel.style.top = (rr.top - ws.top) / scale + 'px';
+			const sheetH = parseFloat(getComputedStyle(document.getElementById('app')).getPropertyValue('--sheet-h')) || 84;
+			panel.style.maxHeight = Math.max(160, (ws.height - (rr.top - ws.top) - sheetH - 24 * scale) / scale) + 'px';
+		} else {
+			// колонка кнопок и панель вместе по ширине равны блоку настроек, по высоте панель стоит между теми же верхним и нижним краями
+			const sideW = sr && sr.width ? sr.width : 300 * scale;
+			panel.style.width = Math.max(220, (sideW - rr.width - gap) / scale) + 'px';
+			panel.style.left = (rr.right - ws.left + gap) / scale + 'px';
+			const top = sr && sr.height ? sr.top - ws.top : rr.top - ws.top;
+			const collapsed = side && side.classList.contains('fxf-collapsed');
+			const maxH = sr && sr.height && !collapsed ? sr.height : ws.height - top - 20 * scale;
+			panel.style.top = (top / scale) + 'px';
+			panel.style.maxHeight = (maxH / scale) + 'px';
+		}
 	}
 	window.addEventListener('resize', place);
 	if (window.ResizeObserver) {
