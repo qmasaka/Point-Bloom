@@ -2589,6 +2589,71 @@ const SYNTH_PARAMS = {
 
 // ───────────────────────────────────────────────────────────── пост-обработка (Feedback TOP, Bloom, Chromatic Aberration)
 
+
+// ── Специализация шейдеров эффектов ───────────────────────────────────────────
+// Основной шейдер точек содержит код всех эффектов сразу (около полутора тысяч строк), и на Windows (ANGLE, Direct3D 11) его компиляция
+// идёт десятки секунд и может зависнуть браузер. Но каждый эффект в нём обёрнут в условие «if (uЭффект.x > 0.001)»: пока эффект выключен,
+// этот блок не выполняется. Поэтому для компиляции из текста вырезаются блоки выключенных эффектов, а при включении эффекта в фоне
+// собирается и подставляется шейдер побольше. Результат на экране не меняется: убирается только код, который и так не выполнялся.
+const FX_GUARD_RE = /^\s*if \((u[A-Za-z0-9]+)\.([xyzw]) > (\d+(?:\.\d+)?)( && [^{;]*?)?\) (\{\s*(?:\/\/.*)?|[^{]*;)\s*(?:\/\/.*)?$/;
+// эти униформы шейдер получает не из общего набора (у материалов свои копии), поэтому их условия не трогаем
+const FX_GUARD_SKIP = new Set(['uHero', 'uScopeP']);
+
+function specializeFx(src, isOn) {
+	const lines = src.split('\n');
+	const out = [];
+	for (let i = 0; i < lines.length; i++) {
+		const m = FX_GUARD_RE.exec(lines[i]);
+		if (!m || FX_GUARD_SKIP.has(m[1]) || isOn(m[1], m[2], m[3]) !== false) {
+			out.push(lines[i]);
+			continue;
+		}
+		if (m[5][0] !== '{') {
+			// условие в одну строку: «if (uЭффект.x > 0.001) действие;»
+			if (/^\s*else\b/.test(lines[i + 1] || '')) out.push(lines[i]);
+			continue;
+		}
+		// ищем парную закрывающую скобку блока
+		let depth = 1;
+		let j = i;
+		let ok = true;
+		let pp = 0;
+		while (depth > 0 && ++j < lines.length) {
+			const code = lines[j].replace(/\/\/.*$/, '');
+			if (/^\s*#\s*if/.test(code)) pp++;
+			else if (/^\s*#\s*endif/.test(code)) pp--;
+			for (let k = 0; k < code.length; k++) {
+				const ch = code[k];
+				if (ch === '{') depth++;
+				else if (ch === '}') {
+					depth--;
+					if (depth === 0 && /\belse\b/.test(code.slice(k + 1))) ok = false;
+				}
+			}
+		}
+		if (depth !== 0 || pp !== 0 || !ok || /^\s*else\b/.test(lines[j + 1] || '')) {
+			out.push(lines[i]);
+			continue;
+		}
+		i = j;
+	}
+	return out.join('\n');
+}
+
+/** Все условия «включён ли эффект», найденные в тексте шейдеров: ключ → [униформа, компонента, порог] */
+function fxGuardKeys(...srcs) {
+	const keys = new Map();
+	for (const src of srcs) {
+		for (const line of src.split('\n')) {
+			const m = FX_GUARD_RE.exec(line);
+			if (m && !FX_GUARD_SKIP.has(m[1])) keys.set(m[1] + '.' + m[2] + '>' + m[3], [m[1], m[2], parseFloat(m[3])]);
+		}
+	}
+	return keys;
+}
+
+const FX_GUARDS = fxGuardKeys(vert, lineVert, scopeVert, common);
+
 class PostPipeline {
 	constructor(renderer) {
 		this.renderer = renderer;
@@ -3890,6 +3955,7 @@ export class EffectsEngine {
 				depthWrite: false,
 				blending: this.material.blending,
 				defines: { HERO: 1 },
+				userData: { fxKind: 'vert' },
 				uniforms: { ...this.shared, uTOff: { value: 0 }, uGhost: { value: 1 } },
 			});
 			const h = new THREE.Points(g, m);
@@ -5603,7 +5669,7 @@ export class EffectsEngine {
 		lg.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
 		lg.setAttribute('aSeg', new THREE.BufferAttribute(seg, 1));
 		lg.setIndex(new THREE.BufferAttribute(index, 1));
-		const mat = new THREE.ShaderMaterial({ vertexShader: scopeVert, fragmentShader: scopeFrag, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, uniforms: { ...this.shared, uTOff: { value: 0 } } });
+		const mat = new THREE.ShaderMaterial({ vertexShader: this._fxSource('scope', this._fxCur || (this._fxCur = new Set())), userData: { fxKind: 'scope' }, fragmentShader: scopeFrag, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, uniforms: { ...this.shared, uTOff: { value: 0 } } });
 		const line = new THREE.Mesh(lg, mat);
 		line.frustumCulled = false;
 		line.userData.helper = true;
@@ -5810,6 +5876,77 @@ export class EffectsEngine {
 		});
 	}
 
+	// ------------------------------------------------------------ специализация шейдеров (см. specializeFx)
+	_fxSource(kind, on) {
+		const cache = this._fxCache || (this._fxCache = new Map());
+		const sig = [...on].sort().join(',');
+		const ck = kind + '|' + sig;
+		let v = cache.get(ck);
+		if (!v) {
+			const base = kind === 'line' ? lineVert : kind === 'scope' ? scopeVert : vert;
+			v = specializeFx(base, (name, comp, thr) => (FX_GUARDS.has(name + '.' + comp + '>' + thr) ? on.has(name + '.' + comp + '>' + thr) : undefined));
+			cache.set(ck, v);
+		}
+		return v;
+	}
+
+	/** Каждый кадр: если включился эффект, которого нет в текущем шейдере, в фоне собирается шейдер побольше и подставляется, когда готов */
+	_fxCheck() {
+		if (!this.shared || !this.points || this._fxBusy) return;
+		const cur = this._fxCur || (this._fxCur = new Set());
+		let add = null;
+		for (const [key, [name, comp, thr]] of FX_GUARDS) {
+			if (cur.has(key)) continue;
+			const v = this.shared[name]?.value?.[comp];
+			if (v > thr * 0.5) (add || (add = new Set())).add(key);
+		}
+		if (add) this._fxApply(add);
+	}
+
+	async _fxApply(add) {
+		this._fxBusy = true;
+		const next = new Set([...(this._fxCur || []), ...add]);
+		const temps = [];
+		try {
+			const vp = this.app.viewport;
+			const r = vp.renderer;
+			if (r.compileAsync) {
+				const sc = new THREE.Scene();
+				const g = new THREE.BufferGeometry();
+				g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
+				const add1 = (obj) => {
+					temps.push(obj.material);
+					sc.add(obj);
+				};
+				const base = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} };
+				add1(new THREE.Points(g, new THREE.ShaderMaterial({ ...base, vertexShader: this._fxSource('vert', next), fragmentShader: frag })));
+				if (this.hero) add1(new THREE.Points(g, new THREE.ShaderMaterial({ ...base, vertexShader: this._fxSource('vert', next), fragmentShader: frag, defines: { HERO: 1 } })));
+				if (this.linkObj && this.linkObj.visible) add1(new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('line', next), fragmentShader: lineFrag })));
+				if (this._scopeLine) add1(new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('scope', next), fragmentShader: scopeFrag })));
+				await r.compileAsync(sc, vp.camera);
+			}
+		} catch (e) {
+			/* если фоновая сборка не удалась, шейдер соберётся при подстановке */
+		}
+		this._fxCur = next;
+		this._fxSwap();
+		this._fxBusy = false;
+		setTimeout(() => temps.forEach((m) => m.dispose && m.dispose()), 1500);
+	}
+
+	_fxSwap() {
+		if (!this.points) return;
+		this.points.traverse((o) => {
+			const m = o.material;
+			const k = m && m.userData && m.userData.fxKind;
+			if (k) {
+				m.vertexShader = this._fxSource(k, this._fxCur);
+				m.needsUpdate = true;
+			}
+		});
+		this.app.viewport.invalidate();
+	}
+
 	/** Заранее собирает шейдер эффектов, пока вы работаете в редакторе: первый вход в «Эффекты» не подвисает на компиляции (на Windows она идёт секунды) */
 	async prewarm() {
 		if (this.active) return;
@@ -5833,7 +5970,7 @@ export class EffectsEngine {
 		if (this._warmMat) return;
 		try {
 			const vp = this.app.viewport;
-			const m = new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: frag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} });
+			const m = new THREE.ShaderMaterial({ vertexShader: this._fxSource('vert', this._fxCur || new Set()), fragmentShader: frag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} });
 			const g = new THREE.BufferGeometry();
 			g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
 			const sc = new THREE.Scene();
@@ -6436,12 +6573,13 @@ export class EffectsEngine {
 		};
 		const mk = (extra) =>
 			new THREE.ShaderMaterial({
-				vertexShader: vert,
+				vertexShader: this._fxSource('vert', this._fxCur || (this._fxCur = new Set())),
 				fragmentShader: frag,
 				transparent: true,
 				depthWrite: false,
 				blending: THREE.AdditiveBlending,
 				uniforms: { ...shared, uTOff: U(0), uGhost: U(1), ...extra },
+				userData: { fxKind: 'vert' },
 			});
 		const mat = mk();
 		const pts = new THREE.Points(g, mat);
@@ -6470,7 +6608,7 @@ export class EffectsEngine {
 		});
 		// связи: линии между узлами
 		const lg = new THREE.BufferGeometry();
-		const lm = new THREE.ShaderMaterial({ vertexShader: lineVert, fragmentShader: lineFrag, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, uniforms: { ...shared, uTOff: U(0) } });
+		const lm = new THREE.ShaderMaterial({ vertexShader: this._fxSource('line', this._fxCur || (this._fxCur = new Set())), userData: { fxKind: 'line' }, fragmentShader: lineFrag, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, uniforms: { ...shared, uTOff: U(0) } });
 		this.linkObj = new THREE.Mesh(lg, lm);
 		this.linkObj.frustumCulled = false;
 		this.linkObj.userData.helper = true;
@@ -6871,9 +7009,11 @@ export class EffectsEngine {
 		this.active = true;
 		this.state.look.autoRotate = false; // при входе форма не крутится сама, включается в «Вид»
 		this.state.layers.frames.on = false; // раскадровка включается вручную и только пока открыто видео
+		this._fxCur = new Set(); // начинаем с самого лёгкого шейдера: код эффектов добавляется, когда эффект включается
+		this._fxBusy = false;
 		this._framesOn = false;
 		// число частиц: на Mac с единой памятью тянет до 2 млн; на Windows для защиты от перегрева и зависания драйвера ставим комфортный потолок (до 450 тыс. на мощных GPU, до 250 тыс. на встроенных)
-		const maxFxCount = perf.isApple ? 2000000 : perf.windows ? (perf.tier === 'high' ? 450000 : 250000) : 1000000;
+		const maxFxCount = perf.isApple ? 2000000 : perf.windows ? (perf.tier === 'high' ? 450000 : perf.tier === 'mid' ? 160000 : 100000) : perf.tier === 'high' ? 1000000 : 250000;
 		this.state.count = Math.max(20000, Math.min(maxFxCount, app.settings.point.surfaceCount));
 		const vp = app.viewport;
 		this._saved = { rootVisible: vp.root.visible, ortho: app.nav.ortho };
@@ -6901,7 +7041,8 @@ export class EffectsEngine {
 			if (app.viewport.renderer.compileAsync) {
 				const wasLinkVis = this.linkObj ? this.linkObj.visible : false;
 				const wasGhostsVis = this.ghosts.map((g) => g.visible);
-				if (this.linkObj) this.linkObj.visible = true;
+				// шейдер связей собирается только если эффект «Связи» включён: это вторая большая программа, и без неё вход быстрее
+				if (this.linkObj && this.state.layers.links.on) this.linkObj.visible = true;
 				this.ghosts.forEach((g) => (g.visible = true));
 				await app.viewport.renderer.compileAsync(app.viewport.scene, app.viewport.camera);
 				if (this.linkObj) this.linkObj.visible = wasLinkVis;
@@ -7844,6 +7985,7 @@ export class EffectsEngine {
 			}
 			u.uShockP.value.set(shE, 1.2, u.uShockP.value.z, 0);
 			this.onFrame && this.onFrame(this.levels);
+			this._fxCheck();
 			this.app.viewport.invalidate();
 		};
 		this._raf = requestAnimationFrame(tick);

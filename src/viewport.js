@@ -46,7 +46,27 @@ export class Viewport {
 		this.canvas = document.createElement('canvas');
 		this.canvas.className = 'gl';
 		stage.appendChild(this.canvas);
-		this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: perf.antialias, alpha: true, powerPreference: 'high-performance' });
+		// если браузер не смог создать контекст с желаемыми параметрами (после сбоя видеодрайвера, на старых или перегруженных видеокартах), пробуем проще: без сглаживания и без выбора мощной видеокарты
+		const tries = [
+			{ antialias: perf.antialias, alpha: true, powerPreference: 'high-performance' },
+			{ antialias: false, alpha: true, powerPreference: 'default' },
+			{ antialias: false, alpha: true, powerPreference: 'low-power', depth: true, stencil: false },
+		];
+		let lastErr = null;
+		for (const opt of tries) {
+			try {
+				this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, ...opt });
+				break;
+			} catch (e) {
+				lastErr = e;
+				// у холста, на котором контекст не создался, можно запросить другой; на всякий случай берём чистый
+				this.canvas.remove();
+				this.canvas = document.createElement('canvas');
+				this.canvas.className = 'gl';
+				stage.appendChild(this.canvas);
+			}
+		}
+		if (!this.renderer) throw lastErr;
 		// потеря контекста WebGL (переключение видеокарты, сон, блокировка экрана, перезапуск драйвера): без этой обработки сцена чернеет навсегда
 		this.contextLost = false;
 		this.canvas.addEventListener('webglcontextlost', (e) => {
@@ -263,7 +283,12 @@ export class Viewport {
 			if (this._qs !== 1) this.setScale(1);
 			return;
 		}
-		if (dt > 150 || fx?.recording || fx?.animBusy) return; // паузы между редкими кадрами и запись не считаем
+		if (fx?.recording || fx?.animBusy) return;
+		// в режиме «Эффекты» кадры идут непрерывно, поэтому подряд идущие долгие кадры это не пауза, а нехватка мощности (раньше такие кадры вообще не считались)
+		const sustained = !!fx?.active && dt > 150 && (this._prevDt || 0) > 150;
+		this._prevDt = dt;
+		if (dt > 150 && !sustained) return; // паузы между редкими кадрами не считаем
+		if (sustained) dt = Math.min(dt, 600);
 		this._qEma = (this._qEma || 16.7) * 0.9 + dt * 0.1;
 		if (now - (this._qT || 0) < 1500) return;
 		this._qT = now;
