@@ -2654,6 +2654,37 @@ function fxGuardKeys(...srcs) {
 
 const FX_GUARDS = fxGuardKeys(vert, lineVert, scopeVert, common);
 
+/**
+ * Ждёт, пока видеодрайвер соберёт ВСЕ программы указанных материалов (в экран и в буфер), не блокируя интерфейс.
+ * Встроенный compileAsync у three.js следит только за последней собранной программой материала, а остальные варианты при первом кадре ждут синхронно.
+ */
+function waitPrograms(renderer, mats) {
+	return new Promise((resolve) => {
+		const t0 = performance.now();
+		const check = () => {
+			let busy = false;
+			try {
+				for (const m of mats) {
+					const progs = renderer.properties.get(m).programs;
+					if (!progs) continue;
+					for (const p of progs.values()) {
+						if (!p.isReady()) {
+							busy = true;
+							break;
+						}
+					}
+					if (busy) break;
+				}
+			} catch (e) {
+				busy = false;
+			}
+			if (!busy || performance.now() - t0 > 180000) resolve();
+			else setTimeout(check, 16);
+		};
+		check();
+	});
+}
+
 class PostPipeline {
 	constructor(renderer) {
 		this.renderer = renderer;
@@ -2801,6 +2832,26 @@ class PostPipeline {
 
 		this.quadScene = new THREE.Scene();
 		this.hasHistory = false;
+	}
+
+	/** Собирает шейдеры вывода и обратной связи заранее: включение свечения или обратной связи не замирает на компиляции (у three.js разные программы для вывода в экран и в буфер) */
+	warm() {
+		const r = this.renderer;
+		const prev = r.getRenderTarget();
+		const mats = new Set();
+		try {
+			for (const [mat, rt] of [[this.fbMat, this.rtPong], [this.outMat, null]]) {
+				const sc = new THREE.Scene();
+				sc.add(new THREE.Mesh(this.quadGeo, mat));
+				r.setRenderTarget(rt);
+				r.compile(sc, this.quadCam).forEach((m) => mats.add(m));
+			}
+		} catch (e) {
+			return Promise.resolve();
+		} finally {
+			r.setRenderTarget(prev);
+		}
+		return waitPrograms(r, mats);
 	}
 
 	/** Цели рендера. Мипы подключаются динамически только когда датамош ищет движение блоков */
@@ -3128,7 +3179,7 @@ class PostPipeline {
 		this.hasHistory = false;
 	}
 
-	render(scene, camera, feedbackCfg, bloomVal, abVal, mosh) {
+	render(scene, camera, feedbackCfg, bloomVal, abVal, mosh, forceBuffer) {
 		const r = this.renderer;
 		const dom = r.domElement;
 		const dpr = r.getPixelRatio();
@@ -3139,7 +3190,7 @@ class PostPipeline {
 		const useAb = abVal > 0.01;
 		const useMosh = !!(mosh && mosh.on);
 
-		if ((!useFb && !useBloom && !useAb && !useMosh) || this._disabled) {
+		if ((!forceBuffer && !useFb && !useBloom && !useAb && !useMosh) || this._disabled) {
 			r.setRenderTarget(null);
 			r.render(scene, camera);
 			this.hasHistory = false;
@@ -3951,8 +4002,8 @@ export class EffectsEngine {
 			const m = new THREE.ShaderMaterial({
 				vertexShader: this.material.vertexShader,
 				fragmentShader: this.material.fragmentShader,
-				transparent: true,
-				depthWrite: false,
+				transparent: this.material.transparent,
+				depthWrite: this.material.depthWrite,
 				blending: this.material.blending,
 				defines: { HERO: 1 },
 				userData: { fxKind: 'vert' },
@@ -5789,7 +5840,7 @@ export class EffectsEngine {
 		u.uScopeW.value = S.width;
 		u.uScopeLB.value = S.line;
 		const L = this._scopeLine;
-		if (L) L.visible = order === 'walk' && S.line > 0.01 && !(u.uFr.value.x > 0.5);
+		if (L) L.visible = this._gate('scope', order === 'walk' && S.line > 0.01 && !(u.uFr.value.x > 0.5));
 	}
 
 	get animReady() {
@@ -5900,38 +5951,181 @@ export class EffectsEngine {
 			const v = this.shared[name]?.value?.[comp];
 			if (v > thr * 0.5) (add || (add = new Set())).add(key);
 		}
-		if (add) this._fxApply(add);
+		if (!add) {
+			this._fxDeb = 0;
+			return;
+		}
+		// несколько эффектов, включённых подряд, собираются одним шейдером: каждая сборка это короткое подвисание драйвера, и лучше пережить его один раз
+		const now = performance.now();
+		if (!this._fxDeb) this._fxDeb = now;
+		if (now - this._fxDeb < 250) return;
+		this._fxDeb = 0;
+		this._fxApply(add);
 	}
 
 	async _fxApply(add) {
 		this._fxBusy = true;
 		const next = new Set([...(this._fxCur || []), ...add]);
-		const temps = [];
 		try {
-			const vp = this.app.viewport;
-			const r = vp.renderer;
-			if (r.compileAsync) {
-				const sc = new THREE.Scene();
-				const g = new THREE.BufferGeometry();
-				g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
-				const add1 = (obj) => {
-					temps.push(obj.material);
-					sc.add(obj);
-				};
-				const base = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} };
-				add1(new THREE.Points(g, new THREE.ShaderMaterial({ ...base, vertexShader: this._fxSource('vert', next), fragmentShader: frag })));
-				if (this.hero) add1(new THREE.Points(g, new THREE.ShaderMaterial({ ...base, vertexShader: this._fxSource('vert', next), fragmentShader: frag, defines: { HERO: 1 } })));
-				if (this.linkObj && this.linkObj.visible) add1(new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('line', next), fragmentShader: lineFrag })));
-				if (this._scopeLine) add1(new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('scope', next), fragmentShader: scopeFrag })));
-				await r.compileAsync(sc, vp.camera);
-			}
+			await Promise.all(this._warmKinds().map((k) => this._warmKind(k, next)));
 		} catch (e) {
 			/* если фоновая сборка не удалась, шейдер соберётся при подстановке */
 		}
 		this._fxCur = next;
 		this._fxSwap();
 		this._fxBusy = false;
-		setTimeout(() => temps.forEach((m) => m.dispose && m.dispose()), 1500);
+	}
+
+	// ------------------------------------------------------------ фоновая сборка шейдеров
+	// На Windows (ANGLE и Direct3D 11) компиляция большого шейдера идёт секунды, и если она случается в кадре, браузер замирает целиком.
+	// Поэтому каждая программа собирается заранее и в фоне, под тот вариант вывода, который сейчас используется (в экран или в буфер для свечения и обратной связи):
+	// у three.js это две разные программы, и сборка «не того» варианта при первом кадре случалась бы прямо в потоке интерфейса.
+	// Второй вариант собирается только когда он понадобится (включилось свечение или выключилось), а вывод переключается, когда он готов: так на каждый новый эффект собирается одна программа, а не две, и подвисание вдвое короче.
+
+	/** Включена ли пост-обработка: тогда сцена рисуется не на экран, а в промежуточный буфер */
+	_postOn() {
+		const L = this.state.layers;
+		const fb = L.feedback;
+		const dm = L.datamosh;
+		return (this.state.look.bloom || 0) > 0.01 || (this.state.look.aberration || 0) > 0.01 || !!(fb && fb.on && fb.amount > 0.01) || !!(dm && dm.on);
+	}
+
+	/** Подпись набора включённых эффектов: от неё зависит текст шейдеров */
+	_fxSig(set) {
+		return [...(set || this._fxCur || [])].sort().join(',');
+	}
+
+	/** Вид главного шейдера точек: режим смешивания входит в ключ программы (у three.js прозрачный и непрозрачный материал это разные программы) */
+	_vertKind() {
+		const add = this.material ? this.material.blending === THREE.AdditiveBlending : this.state.look.blend === 'add';
+		return add ? 'vert|add' : 'vert|norm';
+	}
+
+	/** Виды шейдеров, которые сейчас в сцене и должны быть готовы до подстановки нового текста */
+	_warmKinds() {
+		const kinds = [this._vertKind()];
+		const now = performance.now();
+		const wanted = (k) => now - ((this._wantT && this._wantT[k]) || -1e9) < 800;
+		if (this.hero) kinds.push('hero');
+		if (this.linkObj && (this.linkObj.visible || wanted('line'))) kinds.push('line');
+		if (this._scopeLine && (this._scopeLine.visible || wanted('scope'))) kinds.push('scope');
+		return kinds;
+	}
+
+	/** Куда рисует сцена сейчас: в промежуточный буфер (true) или прямо на экран (false) */
+	_curTgt() {
+		return this.active ? !!this._tgtRT : this._postOn();
+	}
+
+	/** Собирает программы объектов сцены под один вариант вывода и ждёт их готовности, не блокируя поток */
+	async _warmScene(scene, camera, rt = this._curTgt()) {
+		const r = this.app.viewport.renderer;
+		const prev = r.getRenderTarget();
+		const mats = new Set();
+		try {
+			// у three.js для вывода в буфер своя программа; буфер для сборки берётся любой, важно только, что это не экран
+			const target = rt ? this._warmRT || (this._warmRT = new THREE.WebGLRenderTarget(4, 4)) : null;
+			// свет берётся из настоящей сцены: число источников света входит в ключ программы, и без «фонаря» камеры программа получалась бы другой, чем в кадре
+			r.setRenderTarget(target);
+			r.compile(scene, camera, this.app.viewport.scene).forEach((m) => mats.add(m));
+		} catch (e) {
+			return;
+		} finally {
+			r.setRenderTarget(prev);
+		}
+		await waitPrograms(r, mats);
+	}
+
+	_warmObj(kind, set) {
+		const g = this._warmGeo || (this._warmGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3)));
+		const base = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} };
+		if (kind === 'line') return new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('line', set), fragmentShader: lineFrag }));
+		if (kind === 'scope') return new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('scope', set), fragmentShader: scopeFrag }));
+		// точки: параметры материала такие же, как у настоящего (смешивание, прозрачность, запись глубины), иначе ключ программы другой и прогрев не помогает
+		const hero = kind === 'hero';
+		const add = hero ? !this.hero || this.hero.material.blending === THREE.AdditiveBlending : kind !== 'vert|norm';
+		const par = { transparent: add, depthWrite: !add, blending: add ? THREE.AdditiveBlending : THREE.NormalBlending, uniforms: {}, vertexShader: this._fxSource('vert', set), fragmentShader: frag };
+		if (hero) par.defines = { HERO: 1 };
+		return new THREE.Points(g, new THREE.ShaderMaterial(par));
+	}
+
+	/** Собирает шейдер одного вида под набор эффектов и держит программу живой: иначе three.js выбросит её вместе с временным материалом, и первый кадр соберёт её заново */
+	async _warmKind(kind, set, rt = this._curTgt()) {
+		set = set || this._fxCur || new Set();
+		const sig = this._fxSig(set);
+		const keep = this._keep || (this._keep = new Map());
+		const warm = this._warm || (this._warm = new Map());
+		const id = kind + (rt ? '@r' : '@s');
+		const prev = keep.get(id);
+		if (prev && prev.sig === sig) {
+			// уже собран или собирается: ждём тот же результат
+			if (prev.job) await prev.job;
+			else warm.set(id, sig);
+			return;
+		}
+		const obj = this._warmObj(kind, set);
+		const sc = new THREE.Scene();
+		sc.add(obj);
+		const rec = { sig, mat: obj.material, job: null };
+		keep.set(id, rec);
+		rec.job = (async () => {
+			await null; // сборка начинается после текущего кадра, а не посреди него
+			try {
+				await this._warmScene(sc, this.app.viewport.camera, rt);
+			} catch (e) {
+				/* не обязательно: при первом показе программа соберётся как раньше */
+			}
+			if (keep.get(id) === rec) warm.set(id, sig);
+			if (prev) setTimeout(() => prev.mat.dispose(), 1500);
+			rec.job = null;
+			this.app.viewport.invalidate();
+		})();
+		await rec.job;
+	}
+
+	/**
+	 * Объект с тяжёлым собственным шейдером (связи, осциллограф) показывается только когда его программа уже собрана: пока она собирается в фоне, он скрыт, а интерфейс не замирает.
+	 * Раньше такой объект появлялся сразу, и первый кадр с ним ждал драйвер секундами.
+	 */
+	_gate(kind, want) {
+		if (!want) return false;
+		(this._wantT || (this._wantT = {}))[kind] = performance.now();
+		const sig = this._fxSig();
+		const id = kind + (this._curTgt() ? '@r' : '@s');
+		if (!this._warm || this._warm.get(id) !== sig) {
+			const k = this._keep && this._keep.get(id);
+			if (!(k && k.sig === sig && k.job)) this._warmKind(kind, this._fxCur);
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Переход между выводом на экран и в буфер (включили или выключили свечение, обратную связь и т. п.): сцена продолжает рисоваться по-старому,
+	 * пока в фоне собираются программы нового варианта, и переключается, когда они готовы.
+	 */
+	_tgtSync() {
+		const want = this._postOn();
+		if (want === !!this._tgtRT) return;
+		const sig = this._fxSig();
+		let ready = true;
+		// остальные объекты сцены (сетка, оси и т. п.) тоже имеют свою программу под каждый вариант вывода
+		const tw = this._tgtWarm || (this._tgtWarm = {});
+		const sk = want ? 'r' : 's';
+		if (tw[sk] !== 2) {
+			ready = false;
+			if (!tw[sk]) {
+				tw[sk] = 1;
+				this._warmScene(this.app.viewport.scene, this.app.viewport.camera, want).then(() => (tw[sk] = 2));
+			}
+		}
+		for (const k of this._warmKinds()) {
+			if (!this._warm || this._warm.get(k + (want ? '@r' : '@s')) !== sig) {
+				ready = false;
+				this._warmKind(k, this._fxCur, want);
+			}
+		}
+		if (ready) this._tgtRT = want;
 	}
 
 	_fxSwap() {
@@ -5967,17 +6161,9 @@ export class EffectsEngine {
 		} catch (e) {
 			/* не обязательно */
 		}
-		if (this._warmMat) return;
 		try {
-			const vp = this.app.viewport;
-			const m = new THREE.ShaderMaterial({ vertexShader: this._fxSource('vert', this._fxCur || new Set()), fragmentShader: frag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} });
-			const g = new THREE.BufferGeometry();
-			g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
-			const sc = new THREE.Scene();
-			sc.add(new THREE.Points(g, m));
-			this._warmMat = m; // материал держим живым: программа остаётся в кеше и настоящий материал берёт её готовой
-			if (vp.renderer.compileAsync) await vp.renderer.compileAsync(sc, vp.camera);
-			else vp.renderer.compile(sc, vp.camera);
+			// материал остаётся в списке удерживаемых: программа не выбрасывается из кеша, и настоящий материал берёт её готовой (в экран и в буфер)
+			await this._warmKind(this._vertKind(), this._fxCur || new Set(), this._postOn());
 		} catch (e) {
 			/* подготовка не обязательна */
 		}
@@ -6571,13 +6757,15 @@ export class EffectsEngine {
 			uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
 			uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uAnimN: U(0), uCen: U(new THREE.Vector3()), uExp: U(new THREE.Vector4()), uExpP: U(new THREE.Vector4()), uPieceTex: U(this.pieceTex), uGrow: U(new THREE.Vector4()), uGrowP: U(new THREE.Vector4()), uGrowSeed: U(new THREE.Vector3()), uJel: U(Array.from({ length: 3 }, () => new THREE.Vector4(0, 0, 0, -99))), uJelO: U(Array.from({ length: 3 }, () => new THREE.Vector4())), uJelP: U(new THREE.Vector4()),  uDisQ: U(new THREE.Vector4(0.32, 1, 0.35, 0.85)), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 		};
+		// режим смешивания сразу такой, как в настройках: у three.js непрозрачный и прозрачный материал — разные программы, и переключение на первом кадре заставляло драйвер собирать шейдер ещё раз прямо в кадре
+		const addBlend = this.state.look.blend === 'add';
 		const mk = (extra) =>
 			new THREE.ShaderMaterial({
 				vertexShader: this._fxSource('vert', this._fxCur || (this._fxCur = new Set())),
 				fragmentShader: frag,
-				transparent: true,
-				depthWrite: false,
-				blending: THREE.AdditiveBlending,
+				transparent: addBlend,
+				depthWrite: !addBlend,
+				blending: addBlend ? THREE.AdditiveBlending : THREE.NormalBlending,
 				uniforms: { ...shared, uTOff: U(0), uGhost: U(1), ...extra },
 				userData: { fxKind: 'vert' },
 			});
@@ -7011,6 +7199,9 @@ export class EffectsEngine {
 		this.state.layers.frames.on = false; // раскадровка включается вручную и только пока открыто видео
 		this._fxCur = new Set(); // начинаем с самого лёгкого шейдера: код эффектов добавляется, когда эффект включается
 		this._fxBusy = false;
+		this._warm = new Map(); // какие шейдеры уже собраны: у новой сцены новые материалы, готовность проверяется заново
+		this._tgtWarm = {}; // готовность прочих объектов сцены под каждый вариант вывода
+		this._tgtRT = this._postOn(); // сначала собирается тот вариант вывода (в экран или в буфер), который нужен сейчас
 		this._framesOn = false;
 		// число частиц: на Mac с единой памятью тянет до 2 млн; на Windows для защиты от перегрева и зависания драйвера ставим комфортный потолок (до 450 тыс. на мощных GPU, до 250 тыс. на встроенных)
 		const maxFxCount = perf.isApple ? 2000000 : perf.windows ? (perf.tier === 'high' ? 450000 : perf.tier === 'mid' ? 160000 : 100000) : perf.tier === 'high' ? 1000000 : 250000;
@@ -7037,20 +7228,22 @@ export class EffectsEngine {
 			throw e;
 		}
 		// шейдеры эффектов большие: на Windows (ANGLE и D3D11) их компиляция идёт секунды, поэтому готовим их заранее, пока виден экран загрузки, а не на первом кадре
+		this.post = new PostPipeline(vp.renderer);
+		// пока шейдеры собираются, облако скрыто: редактор продолжает рисовать сцену, и первый же кадр с облаком упёрся бы в ещё не собранную программу
+		const buildPts = this.points;
+		if (buildPts) buildPts.visible = false;
 		try {
-			if (app.viewport.renderer.compileAsync) {
-				const wasLinkVis = this.linkObj ? this.linkObj.visible : false;
-				const wasGhostsVis = this.ghosts.map((g) => g.visible);
-				// шейдер связей собирается только если эффект «Связи» включён: это вторая большая программа, и без неё вход быстрее
-				if (this.linkObj && this.state.layers.links.on) this.linkObj.visible = true;
-				this.ghosts.forEach((g) => (g.visible = true));
-				await app.viewport.renderer.compileAsync(app.viewport.scene, app.viewport.camera);
-				if (this.linkObj) this.linkObj.visible = wasLinkVis;
-				this.ghosts.forEach((g, i) => (g.visible = wasGhostsVis[i]));
-			}
+			// главный шейдер точек (он же у призраков шлейфа), связи, шейдеры вывода и обратной связи: каждый под оба варианта вывода (в экран и в буфер), в фоне, без замирания.
+			// Программы остаются «на удержании»: облако при смене модели создаётся заново, старый материал удаляется, и без удержания three.js выбросил бы программу вместе с ним
+			const kinds = [this._vertKind()];
+			// шейдер связей собирается только если эффект «Связи» включён: это вторая большая программа, и без неё вход быстрее
+			if (this.linkObj && this.state.layers.links.on) kinds.push('line');
+			await Promise.all([this._warmScene(app.viewport.scene, app.viewport.camera), this.post.warm(), ...kinds.map((k) => this._warmKind(k, this._fxCur))]);
+			this._tgtWarm[this._tgtRT ? 'r' : 's'] = 2;
 		} catch (e) {
 			/* подготовка не обязательна */
 		}
+		if (buildPts && this.points === buildPts) buildPts.visible = true;
 		app.ui.idle();
 		// облака выбранных для морфинга моделей считаем заранее, пока вы смотрите на сцену
 		setTimeout(() => this._prefetch(this.playlist), 400);
@@ -7063,7 +7256,6 @@ export class EffectsEngine {
 		this.hud = new TrackerHud(document.getElementById('viewport'));
 		this.app.viewport.fxGrid = !!this.state.look.grid;
 		this.applyBg();
-		this.post = new PostPipeline(vp.renderer);
 		vp.renderHook = (renderer, scene, camera) => {
 			if (!this.active) {
 				renderer.render(scene, camera);
@@ -7073,7 +7265,15 @@ export class EffectsEngine {
 			const bloom = this.state.look.bloom || 0;
 			const ab = this.state.look.aberration || 0;
 			const dm = this.state.layers.datamosh;
-			this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? this._moshParams(dm) : null);
+			// вывод в экран или в буфер меняется, когда готовы программы нового варианта (см. _tgtSync)
+			this._tgtSync();
+			if (!this._tgtRT) {
+				renderer.setRenderTarget(null);
+				renderer.render(scene, camera);
+				this.post.hasHistory = false;
+				return;
+			}
+			this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? this._moshParams(dm) : null, true);
 		};
 		// камера встаёт на место мгновенно, пока сцена скрыта переходом: плавный подъезд был виден как «разбухание» модели
 		app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 0);
@@ -7437,7 +7637,8 @@ export class EffectsEngine {
 			const add = look.blend === 'add';
 			u.uAdd.value = add ? 1 : 0;
 			const bl = add ? THREE.AdditiveBlending : THREE.NormalBlending;
-			if (this.material.blending !== bl) {
+			// смена режима смешивания даёт другую программу шейдера: переключаемся, когда она собрана в фоне (иначе кадр ждёт драйвер секундами)
+			if (this.material.blending !== bl && this._gate(add ? 'vert|add' : 'vert|norm', true)) {
 				for (const m of [this.material, ...this.ghosts.map((g) => g.material), ...(this.hero ? [this.hero.material] : [])]) {
 					m.blending = bl;
 					m.transparent = add;
@@ -7829,7 +8030,7 @@ export class EffectsEngine {
 			// связи
 			const lk = this._eff(L.links);
 			if (this.linkObj) {
-				this.linkObj.visible = lk > 0.01;
+				this.linkObj.visible = this._gate('line', lk > 0.01);
 				const pulseOn = L.links.pulses === 'on' ? 1 : 0;
 				const pSpeed = L.links.pulseSpeed || 1.6;
 				u.uLink.value.set(lk * 1.1, L.links.range * (1 + this.levels.beat * 0.4), pSpeed, pulseOn);
