@@ -5534,25 +5534,30 @@ return v;
 _fxCheck() {
 if (!this.shared || !this.points || this._fxBusy) return;
 const cur = this._fxCur || (this._fxCur = new Set());
+const now = performance.now();
+const seen = this._fxSeen || (this._fxSeen = new Map());
 let add = null;
 for (const [key, [name, comp, thr]] of FX_GUARDS) {
-if (cur.has(key)) continue;
 const v = this.shared[name]?.value?.[comp];
-if (v > thr * 0.5) (add || (add = new Set())).add(key);
+const on = v > thr * 0.5;
+if (on) seen.set(key, now);
+if (on && !cur.has(key)) (add || (add = new Set())).add(key);
 }
-if (!add) {
+let stale = null;
+for (const key of cur) if (now - (seen.get(key) || 0) > 20000) (stale || (stale = new Set())).add(key);
+if (!add && !(stale && stale.size >= 2)) {
 this._fxDeb = 0;
 return;
 }
-const now = performance.now();
 if (!this._fxDeb) this._fxDeb = now;
 if (now - this._fxDeb < 250) return;
 this._fxDeb = 0;
-this._fxApply(add);
+this._fxApply(add || new Set(), add ? null : stale);
 }
-async _fxApply(add) {
+async _fxApply(add, drop) {
 this._fxBusy = true;
-const next = new Set([...(this._fxCur || []), ...add]);
+const next = new Set([...(this._fxCur || [])].filter((k) => !(drop && drop.has(k))));
+for (const k of add) next.add(k);
 try {
 await Promise.all(this._warmKinds().map((k) => this._warmKind(k, next)));
 } catch (e) {
@@ -5618,25 +5623,35 @@ const sig = this._fxSig(set);
 const keep = this._keep || (this._keep = new Map());
 const warm = this._warm || (this._warm = new Map());
 const id = kind + (rt ? '@r' : '@s');
-const prev = keep.get(id);
-if (prev && prev.sig === sig) {
+const kid = id + '#' + sig;
+const want = this._warmWant || (this._warmWant = {});
+want[id] = sig;
+const prev = keep.get(kid);
+if (prev) {
+keep.delete(kid);
+keep.set(kid, prev);
 if (prev.job) await prev.job;
-else warm.set(id, sig);
+if (want[id] === sig) warm.set(id, sig);
 return;
 }
 const obj = this._warmObj(kind, set);
 const sc = new THREE.Scene();
 sc.add(obj);
 const rec = { sig, mat: obj.material, job: null };
-keep.set(id, rec);
+keep.set(kid, rec);
+for (const [k, r] of keep) {
+if (keep.size <= 10) break;
+if (r.job || k === kid) continue;
+keep.delete(k);
+setTimeout(() => r.mat.dispose(), 1500);
+}
 rec.job = (async () => {
 await null;
 try {
 await this._warmScene(sc, this.app.viewport.camera, rt);
 } catch (e) {
 }
-if (keep.get(id) === rec) warm.set(id, sig);
-if (prev) setTimeout(() => prev.mat.dispose(), 1500);
+if (want[id] === sig) warm.set(id, sig);
 rec.job = null;
 this.app.viewport.invalidate();
 })();
@@ -5648,8 +5663,8 @@ if (!want) return false;
 const sig = this._fxSig();
 const id = kind + (this._curTgt() ? '@r' : '@s');
 if (!this._warm || this._warm.get(id) !== sig) {
-const k = this._keep && this._keep.get(id);
-if (!(k && k.sig === sig && k.job)) this._warmKind(kind, this._fxCur);
+const k = this._keep && this._keep.get(id + '#' + sig);
+if (!(k && k.job)) this._warmKind(kind, this._fxCur);
 return false;
 }
 return true;
@@ -6657,6 +6672,7 @@ this.active = true;
 this.state.look.autoRotate = false;
 this.state.layers.frames.on = false;
 this._fxCur = new Set();
+this._fxSeen = new Map();
 this._fxBusy = false;
 this._warm = new Map();
 this._tgtWarm = {};
