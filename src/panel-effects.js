@@ -2829,7 +2829,7 @@ export function createEffectsPanel(app, root, engine) {
 	const recSoundSw = switchRow('Записывать звук', {
 		value: recOpts.sound,
 		onChange: (v) => { recOpts.sound = v; saveRecOpts(); }
-	}, 'Музыка и звуковые реакции эффектов');
+	});
 
 	const recDurSeg = segmented({
 		cls: 'seg-tight',
