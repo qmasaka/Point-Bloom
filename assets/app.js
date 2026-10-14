@@ -33189,7 +33189,7 @@ gl.unpackColorSpace = ColorManagement._getUnpackColorSpace();
 }
 }
 };
-__defs['src/util.js'] = function (__exports, __req) {
+__defs['src/core/util.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, '$', () => $);
 __def(__exports, '$$', () => $$);
@@ -33334,11 +33334,11 @@ const t = (s || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '_').trim();
 return t || fallback;
 }
 };
-__defs['src/point-edit.js'] = function (__exports, __req) {
+__defs['src/points/point-edit.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'PointEditor', () => PointEditor);
 const THREE = __req('vendor/three/build/three.module.js');
-const { h } = __req('src/util.js');
+const { h } = __req('src/core/util.js');
 class PointEditor {
 constructor(app) {
 this.app = app;
@@ -33797,12 +33797,12 @@ app.toast('Цвет точек переключён на «Текстура»: �
 }
 }
 };
-__defs['src/settings.js'] = function (__exports, __req) {
+__defs['src/core/settings.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'DEFAULTS', () => DEFAULTS);
 __def(__exports, 'loadSettings', () => loadSettings);
 __def(__exports, 'saveSettings', () => saveSettings);
-const { loadJSON, saveJSON, mergeDeep } = __req('src/util.js');
+const { loadJSON, saveJSON, mergeDeep } = __req('src/core/util.js');
 const KEY = 'objglb.settings.v1';
 const DEFAULTS = {
 display: 'material',
@@ -34988,7 +34988,7 @@ emissiveIntensity: intensity
 return material;
 }
 };
-__defs['src/grid.js'] = function (__exports, __req) {
+__defs['src/scene/grid.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'Grid', () => Grid);
 const THREE = __req('vendor/three/build/three.module.js');
@@ -35119,7 +35119,7 @@ this.material.uniforms.uColor.value.set(light ? 0x2a2e36 : 0xcfd4dc);
 }
 }
 };
-__defs['src/perf.js'] = function (__exports, __req) {
+__defs['src/core/perf.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'perf', () => perf);
 function gpuName() {
@@ -35155,7 +35155,7 @@ maxFps: mobile || software ? 60 : 0,
 if (tier !== 'high') document.documentElement.classList.add('perf-lite');
 if (windows) document.documentElement.classList.add('os-win');
 };
-__defs['src/viewport.js'] = function (__exports, __req) {
+__defs['src/scene/viewport.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'LAYER', () => LAYER);
 __def(__exports, 'BACKGROUNDS', () => BACKGROUNDS);
@@ -35163,8 +35163,8 @@ __def(__exports, 'Viewport', () => Viewport);
 const THREE = __req('vendor/three/build/three.module.js');
 const { TransformControls } = __req('vendor/three/addons/controls/TransformControls.js');
 const { RoomEnvironment } = __req('vendor/three/addons/environments/RoomEnvironment.js');
-const { Grid } = __req('src/grid.js');
-const { perf } = __req('src/perf.js');
+const { Grid } = __req('src/scene/grid.js');
+const { perf } = __req('src/core/perf.js');
 const LAYER = { MESH: 1, POINTS: 2, WIRE: 3, FACES: 4 };
 const BACKGROUNDS = {
 dark: { label: 'Тёмный градиент', css: 'radial-gradient(ellipse at 50% 25%, #3d4149 0%, #24272d 62%, #1b1d22 100%)', solid: '#2a2d33', light: false },
@@ -35474,7 +35474,7 @@ return new Promise((res) => out.toBlob(res, 'image/png'));
 }
 }
 };
-__defs['src/geom.js'] = function (__exports, __req) {
+__defs['src/core/geom.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'weldExact', () => weldExact);
 __def(__exports, 'flipWinding', () => flipWinding);
@@ -36054,7 +36054,7 @@ minFilter: LinearMipmapLinearFilter,
 }
 }
 };
-__defs['src/materials.js'] = function (__exports, __req) {
+__defs['src/scene/materials.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'SLOTS', () => SLOTS);
 __def(__exports, 'slotByKey', () => slotByKey);
@@ -36080,7 +36080,7 @@ __def(__exports, 'uniqueMaterials', () => uniqueMaterials);
 __def(__exports, 'drawUVLayout', () => drawUVLayout);
 const THREE = __req('vendor/three/build/three.module.js');
 const { TGALoader } = __req('vendor/three/addons/loaders/TGALoader.js');
-const { extOf, baseName, stripExt, clamp } = __req('src/util.js');
+const { extOf, baseName, stripExt, clamp } = __req('src/core/util.js');
 const SLOTS = [
 { key: 'map', label: 'Цвет (Base Color)', short: 'Цвет', srgb: true, tokens: ['diffuse', 'diff', 'albedo', 'basecolor', 'base', 'color', 'colour', 'col', 'bc', 'd', 'kd'] },
 { key: 'normalMap', label: 'Нормали (Normal)', short: 'Нормали', srgb: false, tokens: ['normal', 'normalgl', 'normaldx', 'norm', 'nrm', 'nor', 'nml', 'n'] },
@@ -36508,12 +36508,12 @@ ctx.stroke();
 return true;
 }
 };
-__defs['src/model.js'] = function (__exports, __req) {
+__defs['src/scene/model.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'Model', () => Model);
 const THREE = __req('vendor/three/build/three.module.js');
-const { triangleCount } = __req('src/geom.js');
-const { uniqueMaterials, materialTextures } = __req('src/materials.js');
+const { triangleCount } = __req('src/core/geom.js');
+const { uniqueMaterials, materialTextures } = __req('src/scene/materials.js');
 class Model {
 constructor(app) {
 this.app = app;
@@ -36697,7 +36697,7 @@ return { verts, tris, points, objects, materials: mats.length, textures: texs.si
 }
 }
 };
-__defs['src/pointcloud.js'] = function (__exports, __req) {
+__defs['src/points/pointcloud.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'makeTextureSampler', () => makeTextureSampler);
 __def(__exports, 'bakeVertexColors', () => bakeVertexColors);
@@ -36707,8 +36707,8 @@ __def(__exports, 'verticesToCloud', () => verticesToCloud);
 __def(__exports, 'cloudToPoints', () => cloudToPoints);
 __def(__exports, 'overrideMats', () => overrideMats);
 const THREE = __req('vendor/three/build/three.module.js');
-const { yieldUI } = __req('src/util.js');
-const { weldExact } = __req('src/geom.js');
+const { yieldUI } = __req('src/core/util.js');
+const { weldExact } = __req('src/core/geom.js');
 const SRGB_LUT = (() => {
 const a = new Float32Array(256);
 for (let i = 0; i < 256; i++) {
@@ -37088,14 +37088,14 @@ const m = new THREE.MeshBasicMaterial({ map: tex });
 return m;
 }
 };
-__defs['src/display.js'] = function (__exports, __req) {
+__defs['src/scene/display.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'POINT_SHAPES', () => POINT_SHAPES);
 __def(__exports, 'Display', () => Display);
 const THREE = __req('vendor/three/build/three.module.js');
-const { LAYER, BACKGROUNDS } = __req('src/viewport.js');
-const { pointsGeometryFrom } = __req('src/geom.js');
-const { bakeVertexColors, colorSignature } = __req('src/pointcloud.js');
+const { LAYER, BACKGROUNDS } = __req('src/scene/viewport.js');
+const { pointsGeometryFrom } = __req('src/core/geom.js');
+const { bakeVertexColors, colorSignature } = __req('src/points/pointcloud.js');
 const pointVert = `
 uniform float uSize;
 uniform float uAttenuate;
@@ -37435,7 +37435,7 @@ if (box && !box.isEmpty()) u.uYRange.value.set(box.min.y, box.max.y);
 }
 }
 };
-__defs['src/history.js'] = function (__exports, __req) {
+__defs['src/core/history.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'History', () => History);
 class History {
@@ -37491,12 +37491,12 @@ this.app.viewport.invalidate();
 }
 }
 };
-__defs['src/nav.js'] = function (__exports, __req) {
+__defs['src/scene/nav.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'VIEWS', () => VIEWS);
 __def(__exports, 'Nav', () => Nav);
 const THREE = __req('vendor/three/build/three.module.js');
-const { clamp } = __req('src/util.js');
+const { clamp } = __req('src/core/util.js');
 const HALF_PI = Math.PI / 2;
 const VIEWS = {
 front: { yaw: 0, pitch: 0, label: 'Спереди' },
@@ -39294,15 +39294,15 @@ return simplifiedGeometry;
 }
 }
 };
-__defs['src/ops.js'] = function (__exports, __req) {
+__defs['src/scene/ops.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'Ops', () => Ops);
 __def(__exports, 'snapOf', () => snapOf);
 __def(__exports, 'restoreSnap', () => restoreSnap);
 const THREE = __req('vendor/three/build/three.module.js');
-const G = __req('src/geom.js');
-const { triangleCount } = __req('src/geom.js');
-const { Display } = __req('src/display.js');
+const G = __req('src/core/geom.js');
+const { triangleCount } = __req('src/core/geom.js');
+const { Display } = __req('src/scene/display.js');
 const { SimplifyModifier } = __req('vendor/three/addons/modifiers/SimplifyModifier.js');
 const snapOf = (o) => ({ p: o.position.clone(), q: o.quaternion.clone(), s: o.scale.clone() });
 const restoreSnap = (o, s) => {
@@ -39686,7 +39686,7 @@ true
 }
 }
 };
-__defs['src/icons.generated.js'] = function (__exports, __req) {
+__defs['src/ui/icons.generated.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'ICON_PATHS', () => ICON_PATHS);
 __def(__exports, 'loadIcons', () => loadIcons);
@@ -39802,12 +39802,12 @@ const ICON_PATHS = {
 };
 const loadIcons = () => Promise.resolve();
 };
-__defs['src/icons.js'] = function (__exports, __req) {
+__defs['src/ui/icons.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'iconsReady', () => iconsReady);
 __def(__exports, 'icon', () => icon);
 __def(__exports, 'hydrateIcons', () => hydrateIcons);
-const { ICON_PATHS, loadIcons } = __req('src/icons.generated.js');
+const { ICON_PATHS, loadIcons } = __req('src/ui/icons.generated.js');
 const iconsReady = loadIcons();
 function icon(name, size = 18) {
 const p = ICON_PATHS[name];
@@ -39826,10 +39826,10 @@ el.dataset.iconDone = '1';
 });
 }
 };
-__defs['src/fx-float.js'] = function (__exports, __req) {
+__defs['src/effects/ui/fx-float.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'initFloatingPanels', () => initFloatingPanels);
-const { icon } = __req('src/icons.js');
+const { icon } = __req('src/ui/icons.js');
 const KEY = 'objglb.fxfloat.v1';
 function initFloatingPanels() {
 let st = {};
@@ -39888,7 +39888,7 @@ save();
 }
 }
 };
-__defs['src/ui-kit.js'] = function (__exports, __req) {
+__defs['src/ui/ui-kit.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'iconButton', () => iconButton);
 __def(__exports, 'button', () => button);
@@ -39904,8 +39904,8 @@ __def(__exports, 'fxSlider', () => fxSlider);
 __def(__exports, 'numberField', () => numberField);
 __def(__exports, 'colorField', () => colorField);
 __def(__exports, 'empty', () => empty);
-const { h, clamp, fmt } = __req('src/util.js');
-const { icon } = __req('src/icons.js');
+const { h, clamp, fmt } = __req('src/core/util.js');
+const { icon } = __req('src/ui/icons.js');
 const svg = (name, size = 16) => {
 const t = document.createElement('span');
 t.className = 'ic-wrap';
@@ -40583,7 +40583,7 @@ function empty(text, sub) {
 return h('div', { class: 'empty-note' }, h('strong', {}, text), sub ? h('span', {}, sub) : null);
 }
 };
-__defs['src/gizmo.js'] = function (__exports, __req) {
+__defs['src/scene/gizmo.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'AxisGizmo', () => AxisGizmo);
 const THREE = __req('vendor/three/build/three.module.js');
@@ -40751,7 +40751,7 @@ this.draw();
 }
 }
 };
-__defs['src/splat-tools.js'] = function (__exports, __req) {
+__defs['src/points/splat-tools.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'initSplat', () => initSplat);
 __def(__exports, 'applySplat', () => applySplat);
@@ -40791,15 +40791,15 @@ S.shown = m;
 S.available = keep.length;
 }
 };
-__defs['src/panel-scene.js'] = function (__exports, __req) {
+__defs['src/ui/panels/scene.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'createScenePanel', () => createScenePanel);
 const THREE = __req('vendor/three/build/three.module.js');
-const { h, fmt, formatInt, deg } = __req('src/util.js');
-const { icon } = __req('src/icons.js');
-const { section, field, numberField, fxSlider: slider, button, iconButton, empty, switchRow } = __req('src/ui-kit.js');
-const { triangleCount } = __req('src/geom.js');
-const { applySplat } = __req('src/splat-tools.js');
+const { h, fmt, formatInt, deg } = __req('src/core/util.js');
+const { icon } = __req('src/ui/icons.js');
+const { section, field, numberField, fxSlider: slider, button, iconButton, empty, switchRow } = __req('src/ui/ui-kit.js');
+const { triangleCount } = __req('src/core/geom.js');
+const { applySplat } = __req('src/points/splat-tools.js');
 const compact = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k' : String(n));
 function createScenePanel(app, root) {
 const model = app.model;
@@ -41102,13 +41102,13 @@ refreshAll();
 return { refresh: refreshAll };
 }
 };
-__defs['src/panel-anim.js'] = function (__exports, __req) {
+__defs['src/ui/panels/anim.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'createAnimSettings', () => createAnimSettings);
 __def(__exports, 'createAnimBar', () => createAnimBar);
-const { h } = __req('src/util.js');
-const { icon } = __req('src/icons.js');
-const { select, iconButton } = __req('src/ui-kit.js');
+const { h } = __req('src/core/util.js');
+const { icon } = __req('src/ui/icons.js');
+const { select, iconButton } = __req('src/ui/ui-kit.js');
 const fmt = (t) => {
 t = Math.max(0, t || 0);
 const m = Math.floor(t / 60);
@@ -41183,7 +41183,7 @@ sync();
 return { el, sync };
 }
 };
-__defs['src/mobile.js'] = function (__exports, __req) {
+__defs['src/ui/mobile.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'initMobile', () => initMobile);
 const MIN = 84;
@@ -62393,7 +62393,7 @@ err(14, 'unknown compression type ' + c_2);
 return files;
 }
 };
-__defs['src/importers.js'] = function (__exports, __req) {
+__defs['src/io/importers.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'MODEL_FORMATS', () => MODEL_FORMATS);
 __def(__exports, 'IMAGE_EXT', () => IMAGE_EXT);
@@ -62417,10 +62417,10 @@ const { USDZLoader } = __req('vendor/three/addons/loaders/USDZLoader.js');
 const { TGALoader } = __req('vendor/three/addons/loaders/TGALoader.js');
 const { MeshoptDecoder } = __req('vendor/three/addons/libs/meshopt_decoder.module.js');
 const { unzipSync } = __req('vendor/three/addons/libs/fflate.module.js');
-const { extOf, baseName, stripExt, yieldUI } = __req('src/util.js');
-const { initSplat } = __req('src/splat-tools.js');
-const { weldExact } = __req('src/geom.js');
-const { toStandard, finalizeMaterial, fillTextureFromFile, loadTextureFile, detectSlot, assignTexture, slotByKey, SLOTS } = __req('src/materials.js');
+const { extOf, baseName, stripExt, yieldUI } = __req('src/core/util.js');
+const { initSplat } = __req('src/points/splat-tools.js');
+const { weldExact } = __req('src/core/geom.js');
+const { toStandard, finalizeMaterial, fillTextureFromFile, loadTextureFile, detectSlot, assignTexture, slotByKey, SLOTS } = __req('src/scene/materials.js');
 const MODEL_FORMATS = {
 obj: 'Wavefront OBJ',
 glb: 'glTF Binary',
@@ -62960,16 +62960,16 @@ app.ui.idle();
 return assigned;
 }
 };
-__defs['src/panel-material.js'] = function (__exports, __req) {
+__defs['src/ui/panels/material.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'createMaterialPanel', () => createMaterialPanel);
 const THREE = __req('vendor/three/build/three.module.js');
-const { h, formatBytes } = __req('src/util.js');
-const { icon } = __req('src/icons.js');
-const { section, field, select, fxSlider: slider, segmented, colorField, numberField, switchRow, iconButton, empty } = __req('src/ui-kit.js');
-const { SLOTS, thumbnail, drawUVLayout, getAlphaMode, setAlphaMode, slotByKey } = __req('src/materials.js');
-const { assignTextureFiles, IMAGE_EXT } = __req('src/importers.js');
-const { extOf } = __req('src/util.js');
+const { h, formatBytes } = __req('src/core/util.js');
+const { icon } = __req('src/ui/icons.js');
+const { section, field, select, fxSlider: slider, segmented, colorField, numberField, switchRow, iconButton, empty } = __req('src/ui/ui-kit.js');
+const { SLOTS, thumbnail, drawUVLayout, getAlphaMode, setAlphaMode, slotByKey } = __req('src/scene/materials.js');
+const { assignTextureFiles, IMAGE_EXT } = __req('src/io/importers.js');
+const { extOf } = __req('src/core/util.js');
 function createMaterialPanel(app, root) {
 const model = app.model;
 const st = { slot: 'map' };
@@ -63226,13 +63226,13 @@ refresh();
 return { refresh };
 }
 };
-__defs['src/panel-view.js'] = function (__exports, __req) {
+__defs['src/ui/panels/view.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'DISPLAY_MODES', () => DISPLAY_MODES);
 __def(__exports, 'createViewPanel', () => createViewPanel);
-const { h } = __req('src/util.js');
-const { section, field, slider, fxSlider, segmented, select, switchRow, numberField } = __req('src/ui-kit.js');
-const { BACKGROUNDS } = __req('src/viewport.js');
+const { h } = __req('src/core/util.js');
+const { section, field, slider, fxSlider, segmented, select, switchRow, numberField } = __req('src/ui/ui-kit.js');
+const { BACKGROUNDS } = __req('src/scene/viewport.js');
 const DISPLAY_MODES = [
 { value: 'material', label: 'Материал', icon: 'palette', title: 'Текстуры и материалы (1)' },
 { value: 'solid', label: 'Сплошной', icon: 'sphere', title: 'Серая глина без текстур (2)' },
@@ -66487,7 +66487,7 @@ node.addProperty( `float focusDistance = ${focusDistance}` );
 return node;
 }
 };
-__defs['src/frame-block.js'] = function (__exports, __req) {
+__defs['src/effects/frames/frame-block.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'FRAME_LAYOUTS', () => FRAME_LAYOUTS);
 __def(__exports, 'frameGrid', () => frameGrid);
@@ -66602,7 +66602,7 @@ target[o++] = LUT[f[p + 2]] * w;
 }
 }
 };
-__defs['src/exporters.js'] = function (__exports, __req) {
+__defs['src/io/exporters.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'EXPORT_FORMATS', () => EXPORT_FORMATS);
 __def(__exports, 'pointWorldSize', () => pointWorldSize);
@@ -66620,12 +66620,12 @@ const { GLTFLoader } = __req('vendor/three/addons/loaders/GLTFLoader.js');
 const { STLExporter } = __req('vendor/three/addons/exporters/STLExporter.js');
 const { USDZExporter } = __req('vendor/three/addons/exporters/USDZExporter.js');
 const { MeshoptDecoder } = __req('vendor/three/addons/libs/meshopt_decoder.module.js');
-const { weldExact, triangleCount } = __req('src/geom.js');
-const { materialTextures, hasAlphaChannel } = __req('src/materials.js');
-const { bakeVertexColors, sampleSurface, verticesToCloud, cloudToPoints } = __req('src/pointcloud.js');
-const { safeName, yieldUI, stripExt } = __req('src/util.js');
-const { Display } = __req('src/display.js');
-const { frameGrid } = __req('src/frame-block.js');
+const { weldExact, triangleCount } = __req('src/core/geom.js');
+const { materialTextures, hasAlphaChannel } = __req('src/scene/materials.js');
+const { bakeVertexColors, sampleSurface, verticesToCloud, cloudToPoints } = __req('src/points/pointcloud.js');
+const { safeName, yieldUI, stripExt } = __req('src/core/util.js');
+const { Display } = __req('src/scene/display.js');
+const { frameGrid } = __req('src/effects/frames/frame-block.js');
 const EXPORT_FORMATS = [
 { id: 'glb', label: 'GLB', ext: 'glb', title: 'glTF Binary', hint: 'Один файл с геометрией и текстурами. Лучший выбор для веба, AR и игровых движков. Персонаж с анимацией сохраняется вместе со скелетом и клипами.' },
 { id: 'gltf', label: 'glTF', ext: 'gltf', title: 'glTF (JSON)', hint: 'Текстовый glTF, ресурсы встроены внутрь. Удобно читать и править. Скелет и анимация сохраняются.' },
@@ -67486,13 +67486,13 @@ bytes += src * k;
 return Math.round(bytes);
 }
 };
-__defs['src/web-export.js'] = function (__exports, __req) {
+__defs['src/io/web-export.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'MODEL_VIEWER_URL', () => MODEL_VIEWER_URL);
 __def(__exports, 'embedSnippet', () => embedSnippet);
 __def(__exports, 'exportForWeb', () => exportForWeb);
-const { exportModel, makeZip, defaultExportName } = __req('src/exporters.js');
-const { safeName } = __req('src/util.js');
+const { exportModel, makeZip, defaultExportName } = __req('src/io/exporters.js');
+const { safeName } = __req('src/core/util.js');
 const MODEL_VIEWER_URL = 'https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js';
 const BG = { dark: '#16181d', light: '#f1f2f4', transparent: 'transparent' };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -67757,7 +67757,7 @@ info.ms = Math.round(performance.now() - t0);
 return { blob, filename, info, extra: { snippet, files, warnings, single: !!w.single } };
 }
 };
-__defs['src/capabilities.js'] = function (__exports, __req) {
+__defs['src/core/capabilities.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'BYTES_PER_POINT', () => BYTES_PER_POINT);
 __def(__exports, 'deviceInfo', () => deviceInfo);
@@ -67769,8 +67769,8 @@ __def(__exports, 'roundNice', () => roundNice);
 __def(__exports, 'formatCount', () => formatCount);
 __def(__exports, 'pointMemoryMB', () => pointMemoryMB);
 const THREE = __req('vendor/three/build/three.module.js');
-const { loadJSON, saveJSON, yieldUI } = __req('src/util.js');
-const { sampleSurface } = __req('src/pointcloud.js');
+const { loadJSON, saveJSON, yieldUI } = __req('src/core/util.js');
+const { sampleSurface } = __req('src/points/pointcloud.js');
 const CACHE_KEY = 'objglb.bench.v1';
 const BYTES_PER_POINT = { cpu: 36, gpu: 36, export: 56 };
 const PEAK_BYTES = BYTES_PER_POINT.cpu + BYTES_PER_POINT.gpu + BYTES_PER_POINT.export;
@@ -67894,15 +67894,15 @@ function pointMemoryMB(n) {
 return (n * PEAK_BYTES) / 1048576;
 }
 };
-__defs['src/device-card.js'] = function (__exports, __req) {
+__defs['src/ui/device-card.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'getDevice', () => getDevice);
 __def(__exports, 'hintForCount', () => hintForCount);
 __def(__exports, 'createDeviceCard', () => createDeviceCard);
-const { h } = __req('src/util.js');
-const { icon } = __req('src/icons.js');
-const { button } = __req('src/ui-kit.js');
-const { deviceInfo, guessLimits, loadCachedBench, runBenchmark, formatCount, pointMemoryMB } = __req('src/capabilities.js');
+const { h } = __req('src/core/util.js');
+const { icon } = __req('src/ui/icons.js');
+const { button } = __req('src/ui/ui-kit.js');
+const { deviceInfo, guessLimits, loadCachedBench, runBenchmark, formatCount, pointMemoryMB } = __req('src/core/capabilities.js');
 function getDevice(app) {
 if (!app.device) {
 const info = deviceInfo(app);
@@ -67985,15 +67985,15 @@ app.bus.on('device', render);
 return el;
 }
 };
-__defs['src/panel-export.js'] = function (__exports, __req) {
+__defs['src/ui/panels/export.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'createExportPanel', () => createExportPanel);
-const { h, formatBytes, formatInt, downloadBlob } = __req('src/util.js');
-const { icon } = __req('src/icons.js');
-const { section, field, segmented, select, slider, switchRow, numberField, button } = __req('src/ui-kit.js');
-const { EXPORT_FORMATS, exportModel, defaultExportName, estimateExportSize } = __req('src/exporters.js');
-const { exportForWeb, embedSnippet } = __req('src/web-export.js');
-const { getDevice, hintForCount } = __req('src/device-card.js');
+const { h, formatBytes, formatInt, downloadBlob } = __req('src/core/util.js');
+const { icon } = __req('src/ui/icons.js');
+const { section, field, segmented, select, slider, switchRow, numberField, button } = __req('src/ui/ui-kit.js');
+const { EXPORT_FORMATS, exportModel, defaultExportName, estimateExportSize } = __req('src/io/exporters.js');
+const { exportForWeb, embedSnippet } = __req('src/io/web-export.js');
+const { getDevice, hintForCount } = __req('src/ui/device-card.js');
 const SCALE_PRESETS = [
 { label: 'Как есть', v: 1, tip: 'Масштаб 1' },
 { label: 'мм в м', v: 0.001, tip: 'Миллиметры в метры (×0,001)' },
@@ -68295,14 +68295,14 @@ app.ui.idle();
 return { run };
 }
 };
-__defs['src/text-points.js'] = function (__exports, __req) {
+__defs['src/points/text-points.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'buildTextCloud', () => buildTextCloud);
 __def(__exports, 'createTextSection', () => createTextSection);
-const { h } = __req('src/util.js');
-const { section, field, slider, segmented, switchRow, button, colorField } = __req('src/ui-kit.js');
-const { cloudToPoints } = __req('src/pointcloud.js');
-const { icon } = __req('src/icons.js');
+const { h } = __req('src/core/util.js');
+const { section, field, slider, segmented, switchRow, button, colorField } = __req('src/ui/ui-kit.js');
+const { cloudToPoints } = __req('src/points/pointcloud.js');
+const { icon } = __req('src/ui/icons.js');
 const LUT = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
 const hexToLin = (hx) => {
 const n = parseInt(hx.slice(1), 16);
@@ -68549,12 +68549,12 @@ const sec = section('Текст в точки', { key: 'p-text', open: false }, 
 return sec;
 }
 };
-__defs['src/panel-point-edit.js'] = function (__exports, __req) {
+__defs['src/ui/panels/point-edit.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'createPointEditSection', () => createPointEditSection);
-const { h, formatInt } = __req('src/util.js');
-const { icon } = __req('src/icons.js');
-const { section, field, fxSlider: slider, segmented, switchRow, colorField, button, iconButton } = __req('src/ui-kit.js');
+const { h, formatInt } = __req('src/core/util.js');
+const { icon } = __req('src/ui/icons.js');
+const { section, field, fxSlider: slider, segmented, switchRow, colorField, button, iconButton } = __req('src/ui/ui-kit.js');
 function createPointEditSection(app) {
 const pe = app.pointEdit;
 let paintHex = '#3fc8e4';
@@ -68680,17 +68680,17 @@ sync();
 return sec;
 }
 };
-__defs['src/panel-points.js'] = function (__exports, __req) {
+__defs['src/ui/panels/points.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'SHAPES', () => SHAPES);
 __def(__exports, 'createPointsPanel', () => createPointsPanel);
-const { h, formatInt } = __req('src/util.js');
-const { section, field, fxSlider: slider, segmented, switchRow, colorField, button } = __req('src/ui-kit.js');
+const { h, formatInt } = __req('src/core/util.js');
+const { section, field, fxSlider: slider, segmented, switchRow, colorField, button } = __req('src/ui/ui-kit.js');
 const THREE = __req('vendor/three/build/three.module.js');
-const { sampleSurface, verticesToCloud, cloudToPoints, overrideMats } = __req('src/pointcloud.js');
-const { getDevice, hintForCount } = __req('src/device-card.js');
-const { createTextSection } = __req('src/text-points.js');
-const { createPointEditSection } = __req('src/panel-point-edit.js');
+const { sampleSurface, verticesToCloud, cloudToPoints, overrideMats } = __req('src/points/pointcloud.js');
+const { getDevice, hintForCount } = __req('src/ui/device-card.js');
+const { createTextSection } = __req('src/points/text-points.js');
+const { createPointEditSection } = __req('src/ui/panels/point-edit.js');
 const compact = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k' : String(n));
 const SHAPES = [
 { value: 'circle', label: 'Круг' },
@@ -68953,11 +68953,11 @@ syncMedia();
 return { refresh: sync };
 }
 };
-__defs['src/panel-media.js'] = function (__exports, __req) {
+__defs['src/ui/panels/media.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'createMediaPanel', () => createMediaPanel);
-const { h, formatInt } = __req('src/util.js');
-const { section, field, fxSlider: slider, segmented, switchRow, button, colorField } = __req('src/ui-kit.js');
+const { h, formatInt } = __req('src/core/util.js');
+const { section, field, fxSlider: slider, segmented, switchRow, button, colorField } = __req('src/ui/ui-kit.js');
 function createMediaPanel(app, root, { fx = false } = {}) {
 const mc = app.media;
 const pm = mc.pm;
@@ -69039,12 +69039,12 @@ sync();
 return { section: sec, sync };
 }
 };
-__defs['src/media-bar.js'] = function (__exports, __req) {
+__defs['src/ui/media-bar.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'createMediaBar', () => createMediaBar);
-const { h } = __req('src/util.js');
-const { iconButton } = __req('src/ui-kit.js');
-const { icon } = __req('src/icons.js');
+const { h } = __req('src/core/util.js');
+const { iconButton } = __req('src/ui/ui-kit.js');
+const { icon } = __req('src/ui/icons.js');
 const fmt = (t) => {
 t = Math.max(0, t || 0);
 const m = Math.floor(t / 60);
@@ -69151,7 +69151,7 @@ watch();
 return { sync, el, toggle };
 }
 };
-__defs['src/fx-cam-float.js'] = function (__exports, __req) {
+__defs['src/effects/ui/fx-cam-float.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'makeCamMovable', () => makeCamMovable);
 const KEY = 'objglb.fxcam.v1';
@@ -69259,7 +69259,7 @@ window.addEventListener('resize', clamp);
 box._camCleanup = () => mo.disconnect();
 }
 };
-__defs['src/i18n-en.js'] = function (__exports, __req) {
+__defs['src/i18n/en.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'default', () => __default);
 const __default = {
@@ -70893,7 +70893,7 @@ const __default = {
 "эффект «": "effect “"
 };
 };
-__defs['src/i18n-extra.js'] = function (__exports, __req) {
+__defs['src/i18n/extra.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'default', () => __default);
 const __default = {
@@ -70912,7 +70912,7 @@ const __default = {
 'Режим: {}. Тяните стрелки на модели.': 'Mode: {}. Drag the arrows on the model.',
 };
 };
-__defs['src/i18n-uk.js'] = function (__exports, __req) {
+__defs['src/i18n/uk.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'default', () => __default);
 const __default = {
@@ -72553,7 +72553,7 @@ const __default = {
 "Режим: {}. Тяните стрелки на модели.": "Режим: {}. Тягніть стрілки на моделі."
 };
 };
-__defs['src/i18n-es.js'] = function (__exports, __req) {
+__defs['src/i18n/es.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'default', () => __default);
 const __default = {
@@ -74194,7 +74194,7 @@ const __default = {
 "Режим: {}. Тяните стрелки на модели.": "Modo: {}. Arrastra las flechas del modelo."
 };
 };
-__defs['src/i18n-de.js'] = function (__exports, __req) {
+__defs['src/i18n/de.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'default', () => __default);
 const __default = {
@@ -75835,7 +75835,7 @@ const __default = {
 "Режим: {}. Тяните стрелки на модели.": "Modus: {}. Ziehe die Pfeile am Modell."
 };
 };
-__defs['src/i18n-more.js'] = function (__exports, __req) {
+__defs['src/i18n/more.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'default', () => __default);
 const __default = {
@@ -77733,19 +77733,19 @@ de: {
 },
 };
 };
-__defs['src/i18n.js'] = function (__exports, __req) {
+__defs['src/i18n/index.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'lang', () => lang);
 __def(__exports, 'missing', () => missing);
 __def(__exports, 'tr', () => tr);
 __def(__exports, 'setLang', () => setLang);
 __def(__exports, 'initI18n', () => initI18n);
-const EN = __req('src/i18n-en.js').default;
-const EXTRA = __req('src/i18n-extra.js').default;
-const UK = __req('src/i18n-uk.js').default;
-const ES = __req('src/i18n-es.js').default;
-const DE = __req('src/i18n-de.js').default;
-const MORE = __req('src/i18n-more.js').default;
+const EN = __req('src/i18n/en.js').default;
+const EXTRA = __req('src/i18n/extra.js').default;
+const UK = __req('src/i18n/uk.js').default;
+const ES = __req('src/i18n/es.js').default;
+const DE = __req('src/i18n/de.js').default;
+const MORE = __req('src/i18n/more.js').default;
 Object.assign(EN, EXTRA);
 const DICTS = { en: EN, uk: UK, es: ES, de: DE };
 for (const k of Object.keys(DICTS)) Object.assign(DICTS[k], MORE[k]);
@@ -77999,12 +77999,12 @@ watchTranslator();
 window.__i18n = { tr, missing, setLang, get lang() { return lang; } };
 }
 };
-__defs['src/hand-tracker.js'] = function (__exports, __req) {
+__defs['src/effects/input/hand-tracker.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'HAND_LINKS', () => HAND_LINKS);
 __def(__exports, 'TIPS', () => TIPS);
 __def(__exports, 'HandTracker', () => HandTracker);
-const { tr } = __req('src/i18n.js');
+const { tr } = __req('src/i18n/index.js');
 const VISION = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21';
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 const HAND_LINKS = [
@@ -78367,12 +78367,12 @@ const open = 1 - curl.reduce((a, b) => a + b, 0) / 4;
 return { id: t.id, pts, tips: TIPS.map((i) => pts[i]), palm, size, pinch: rawGesture === 'pinch' ? 1 : 0, open, ext: ex, rawGesture, curl };
 }
 };
-__defs['src/fx-hud.js'] = function (__exports, __req) {
+__defs['src/effects/ui/fx-hud.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'TrackerHud', () => TrackerHud);
 const THREE = __req('vendor/three/build/three.module.js');
-const { HAND_LINKS, TIPS } = __req('src/hand-tracker.js');
-const { tr } = __req('src/i18n.js');
+const { HAND_LINKS, TIPS } = __req('src/effects/input/hand-tracker.js');
+const { tr } = __req('src/i18n/index.js');
 const rnd = (a, b) => a + Math.random() * (b - a);
 class TrackerHud {
 constructor(host) {
@@ -78799,7 +78799,7 @@ const n = parseInt(hex.slice(1), 16);
 return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${Math.max(0, Math.min(1, a))})`;
 }
 };
-__defs['src/anim-controller.js'] = function (__exports, __req) {
+__defs['src/animation/anim-controller.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'AnimController', () => AnimController);
 __def(__exports, 'evalAnimPoints', () => evalAnimPoints);
@@ -79122,7 +79122,7 @@ outN[i * 3 + 2] = gz / gl;
 }
 }
 };
-__defs['src/depth-ai.js'] = function (__exports, __req) {
+__defs['src/effects/input/depth-ai.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'DepthAI', () => DepthAI);
 __def(__exports, 'grabFrame', () => grabFrame);
@@ -79427,7 +79427,7 @@ out[r * cols + c] = a * (1 - ty) + b * ty;
 }
 }
 };
-__defs['src/gif-encoder.js'] = function (__exports, __req) {
+__defs['src/io/gif-encoder.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'encodeGIF', () => encodeGIF);
 function buildPalette(samples) {
@@ -79584,7 +79584,7 @@ bytes.push(0x3b);
 return new Blob([Uint8Array.from(bytes)], { type: 'image/gif' });
 }
 };
-__defs['src/effects-engine.js'] = function (__exports, __req) {
+__defs['src/effects/engine.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'FX_SHAPES', () => FX_SHAPES);
 __def(__exports, 'BANDS', () => BANDS);
@@ -79605,15 +79605,15 @@ __def(__exports, 'SYNTH_STYLES', () => SYNTH_STYLES);
 __def(__exports, 'generateShapePoints', () => generateShapePoints);
 __def(__exports, 'EffectsEngine', () => EffectsEngine);
 const THREE = __req('vendor/three/build/three.module.js');
-const { makeCamMovable } = __req('src/fx-cam-float.js');
-const { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } = __req('src/util.js');
-const { buildFrameBlock, writeFrameColors, writeOneFrame, frameGrid } = __req('src/frame-block.js');
-const { TrackerHud } = __req('src/fx-hud.js');
-const { HandTracker } = __req('src/hand-tracker.js');
-const { evalAnimPoints } = __req('src/anim-controller.js');
-const { perf } = __req('src/perf.js');
-const { DepthAI, grabFrame, grabRGB: grabRGB4, normalizeDepth, lumaDepth, depthToGrid, adjustDepth } = __req('src/depth-ai.js');
-const { encodeGIF } = __req('src/gif-encoder.js');
+const { makeCamMovable } = __req('src/effects/ui/fx-cam-float.js');
+const { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } = __req('src/core/util.js');
+const { buildFrameBlock, writeFrameColors, writeOneFrame, frameGrid } = __req('src/effects/frames/frame-block.js');
+const { TrackerHud } = __req('src/effects/ui/fx-hud.js');
+const { HandTracker } = __req('src/effects/input/hand-tracker.js');
+const { evalAnimPoints } = __req('src/animation/anim-controller.js');
+const { perf } = __req('src/core/perf.js');
+const { DepthAI, grabFrame, grabRGB: grabRGB4, normalizeDepth, lumaDepth, depthToGrid, adjustDepth } = __req('src/effects/input/depth-ai.js');
+const { encodeGIF } = __req('src/io/gif-encoder.js');
 const FX_SHAPES = [
 { id: 'model', name: 'Модель', icon: 'cube' },
 { id: 'media', name: 'Фото', icon: 'image' },
@@ -87344,7 +87344,7 @@ this.emit();
 }
 }
 };
-__defs['src/anim-activity.js'] = function (__exports, __req) {
+__defs['src/animation/anim-activity.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'clipActivity', () => clipActivity);
 const THREE = __req('vendor/three/build/three.module.js');
@@ -87408,7 +87408,7 @@ cache.set(clip, res);
 return res;
 }
 };
-__defs['src/fx-previews.js'] = function (__exports, __req) {
+__defs['src/effects/ui/fx-previews.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'drawPreview', () => drawPreview);
 __def(__exports, 'attachPreview', () => attachPreview);
@@ -87795,23 +87795,23 @@ paint(0.9);
 return { refresh: () => !raf && paint(0.9) };
 }
 };
-__defs['src/panel-effects.js'] = function (__exports, __req) {
+__defs['src/effects/ui/panel-effects.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'makeModelProvider', () => makeModelProvider);
 __def(__exports, 'createEffectsPanel', () => createEffectsPanel);
-const { h, formatInt, placeAbove } = __req('src/util.js');
-const { icon } = __req('src/icons.js');
-const { section, field, fxSlider: slider, segmented, switchRow, toggle, button, iconButton, select, colorField } = __req('src/ui-kit.js');
+const { h, formatInt, placeAbove } = __req('src/core/util.js');
+const { icon } = __req('src/ui/icons.js');
+const { section, field, fxSlider: slider, segmented, switchRow, toggle, button, iconButton, select, colorField } = __req('src/ui/ui-kit.js');
 const THREE = __req('vendor/three/build/three.module.js');
-const { sampleSurface, overrideMats } = __req('src/pointcloud.js');
-const { getDevice } = __req('src/device-card.js');
-const { formatCount } = __req('src/capabilities.js');
-const { createMediaPanel } = __req('src/panel-media.js');
-const { createAnimSettings } = __req('src/panel-anim.js');
-const { clipActivity } = __req('src/anim-activity.js');
-const { attachPreview } = __req('src/fx-previews.js');
-const { SHAPES: POINT_SHAPE_LIST } = __req('src/panel-points.js');
-const { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, BANDS, BAND_RANGE, FREQ_QUICK, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } = __req('src/effects-engine.js');
+const { sampleSurface, overrideMats } = __req('src/points/pointcloud.js');
+const { getDevice } = __req('src/ui/device-card.js');
+const { formatCount } = __req('src/core/capabilities.js');
+const { createMediaPanel } = __req('src/ui/panels/media.js');
+const { createAnimSettings } = __req('src/ui/panels/anim.js');
+const { clipActivity } = __req('src/animation/anim-activity.js');
+const { attachPreview } = __req('src/effects/ui/fx-previews.js');
+const { SHAPES: POINT_SHAPE_LIST } = __req('src/ui/panels/points.js');
+const { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, BANDS, BAND_RANGE, FREQ_QUICK, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } = __req('src/effects/engine.js');
 function makeModelProvider(app) {
 const root = app.viewport.root;
 const shown = (o) => {
@@ -90610,28 +90610,28 @@ for (const k in bars) bars[k].style.transform = `scaleY(${Math.max(0.03, Math.mi
 };
 }
 };
-__defs['src/ui.js'] = function (__exports, __req) {
+__defs['src/ui/ui.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'UI', () => UI);
 const THREE = __req('vendor/three/build/three.module.js');
-const { h, $, $$, extOf, formatInt, downloadBlob, placeAbove } = __req('src/util.js');
-const { icon, hydrateIcons, iconsReady } = __req('src/icons.js');
-const { initFloatingPanels } = __req('src/fx-float.js');
-const { segmented, switchRow, button } = __req('src/ui-kit.js');
-const { AxisGizmo } = __req('src/gizmo.js');
-const { createScenePanel } = __req('src/panel-scene.js');
-const { createAnimBar } = __req('src/panel-anim.js');
-const { initMobile } = __req('src/mobile.js');
-const { createMaterialPanel } = __req('src/panel-material.js');
-const { createViewPanel, DISPLAY_MODES } = __req('src/panel-view.js');
-const { createExportPanel } = __req('src/panel-export.js');
-const { createPointsPanel } = __req('src/panel-points.js');
-const { createMediaPanel } = __req('src/panel-media.js');
-const { createMediaBar } = __req('src/media-bar.js');
-const { EffectsEngine } = __req('src/effects-engine.js');
-const { createEffectsPanel, makeModelProvider } = __req('src/panel-effects.js');
-const { importFiles, assignTextureFiles, ACCEPT_ALL, MODEL_FORMATS, IMAGE_EXT } = __req('src/importers.js');
-const { BACKGROUNDS } = __req('src/viewport.js');
+const { h, $, $$, extOf, formatInt, downloadBlob, placeAbove } = __req('src/core/util.js');
+const { icon, hydrateIcons, iconsReady } = __req('src/ui/icons.js');
+const { initFloatingPanels } = __req('src/effects/ui/fx-float.js');
+const { segmented, switchRow, button } = __req('src/ui/ui-kit.js');
+const { AxisGizmo } = __req('src/scene/gizmo.js');
+const { createScenePanel } = __req('src/ui/panels/scene.js');
+const { createAnimBar } = __req('src/ui/panels/anim.js');
+const { initMobile } = __req('src/ui/mobile.js');
+const { createMaterialPanel } = __req('src/ui/panels/material.js');
+const { createViewPanel, DISPLAY_MODES } = __req('src/ui/panels/view.js');
+const { createExportPanel } = __req('src/ui/panels/export.js');
+const { createPointsPanel } = __req('src/ui/panels/points.js');
+const { createMediaPanel } = __req('src/ui/panels/media.js');
+const { createMediaBar } = __req('src/ui/media-bar.js');
+const { EffectsEngine } = __req('src/effects/engine.js');
+const { createEffectsPanel, makeModelProvider } = __req('src/effects/ui/panel-effects.js');
+const { importFiles, assignTextureFiles, ACCEPT_ALL, MODEL_FORMATS, IMAGE_EXT } = __req('src/io/importers.js');
+const { BACKGROUNDS } = __req('src/scene/viewport.js');
 const TOAST_ICON = { ok: 'check-circle', warn: 'warning', error: 'warning-circle', info: 'info' };
 const uiZoom = () => parseFloat(document.documentElement.style.zoom) || 1;
 class UI {
@@ -91913,7 +91913,7 @@ return out.filter((f) => !f.name.startsWith('.'));
 return [...dt.files];
 }
 };
-__defs['src/point-media.js'] = function (__exports, __req) {
+__defs['src/points/point-media.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'PointMedia', () => PointMedia);
 const { zlibSync, unzlibSync, zipSync } = __req('vendor/three/addons/libs/fflate.module.js');
@@ -92442,12 +92442,12 @@ for (let i = 0; i < head.frames; i++) frames.push(raw.slice(8 + hl + i * size, 8
 return { cols: head.cols, rows: head.rows, aspect: head.aspect, fps: head.fps, frames };
 }
 };
-__defs['src/media-controller.js'] = function (__exports, __req) {
+__defs['src/points/media-controller.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'MediaController', () => MediaController);
-const { PointMedia } = __req('src/point-media.js');
-const { cloudToPoints } = __req('src/pointcloud.js');
-const { downloadBlob } = __req('src/util.js');
+const { PointMedia } = __req('src/points/point-media.js');
+const { cloudToPoints } = __req('src/points/pointcloud.js');
+const { downloadBlob } = __req('src/core/util.js');
 const baseName = (n, d) => (n || '').replace(/\.[^.]+$/, '') || d;
 class MediaController {
 constructor(app) {
@@ -92615,7 +92615,7 @@ this.app.toast(r.step > 1 ? `Сохранено кадров: ${r.frames} (ка�
 }
 }
 };
-__defs['src/demo.js'] = function (__exports, __req) {
+__defs['src/app/demo.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'makeDemoFiles', () => makeDemoFiles);
 __def(__exports, 'makeDemoCharacterFile', () => makeDemoCharacterFile);
@@ -92781,23 +92781,23 @@ const buf = await new GLTFExporter().parseAsync(scene, { binary: true, animation
 return new File([buf], 'demo-ball.glb', { type: 'model/gltf-binary' });
 }
 };
-__defs['src/app.js'] = function (__exports, __req) {
+__defs['src/app/app.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'App', () => App);
-const { PointEditor } = __req('src/point-edit.js');
-const { $, createEmitter } = __req('src/util.js');
-const { loadSettings, saveSettings } = __req('src/settings.js');
-const { Viewport } = __req('src/viewport.js');
-const { Model } = __req('src/model.js');
-const { Display } = __req('src/display.js');
-const { History } = __req('src/history.js');
-const { Nav } = __req('src/nav.js');
-const { Ops, snapOf } = __req('src/ops.js');
-const { UI } = __req('src/ui.js');
-const { MediaController } = __req('src/media-controller.js');
-const { AnimController } = __req('src/anim-controller.js');
-const { setTextureLimits } = __req('src/materials.js');
-const { makeDemoFiles, makeDemoCharacterFile } = __req('src/demo.js');
+const { PointEditor } = __req('src/points/point-edit.js');
+const { $, createEmitter } = __req('src/core/util.js');
+const { loadSettings, saveSettings } = __req('src/core/settings.js');
+const { Viewport } = __req('src/scene/viewport.js');
+const { Model } = __req('src/scene/model.js');
+const { Display } = __req('src/scene/display.js');
+const { History } = __req('src/core/history.js');
+const { Nav } = __req('src/scene/nav.js');
+const { Ops, snapOf } = __req('src/scene/ops.js');
+const { UI } = __req('src/ui/ui.js');
+const { MediaController } = __req('src/points/media-controller.js');
+const { AnimController } = __req('src/animation/anim-controller.js');
+const { setTextureLimits } = __req('src/scene/materials.js');
+const { makeDemoFiles, makeDemoCharacterFile } = __req('src/app/demo.js');
 const THREE = __req('vendor/three/build/three.module.js');
 class App {
 constructor() {
@@ -93070,7 +93070,7 @@ await this.ui.handleFiles(files, { mode: 'replace' });
 }
 }
 };
-__defs['src/device-guard.js'] = function (__exports, __req) {
+__defs['src/app/device-guard.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'guardDevice', () => guardDevice);
 const FP_KEY = 'objglb.device';
@@ -93110,16 +93110,16 @@ localStorage.setItem(FP_KEY, fp);
 };
 __defs['src/main.js'] = function (__exports, __req) {
 'use strict';
-const { App } = __req('src/app.js');
+const { App } = __req('src/app/app.js');
 const THREE = __req('vendor/three/build/three.module.js');
 const { GLTFLoader } = __req('vendor/three/addons/loaders/GLTFLoader.js');
-const { exportModel, verifyGLB } = __req('src/exporters.js');
-const { makeTextureSampler } = __req('src/pointcloud.js');
-const { makeDemoFiles } = __req('src/demo.js');
-const { exportForWeb } = __req('src/web-export.js');
-const { runBenchmark } = __req('src/capabilities.js');
-const { guardDevice } = __req('src/device-guard.js');
-const { initI18n } = __req('src/i18n.js');
+const { exportModel, verifyGLB } = __req('src/io/exporters.js');
+const { makeTextureSampler } = __req('src/points/pointcloud.js');
+const { makeDemoFiles } = __req('src/app/demo.js');
+const { exportForWeb } = __req('src/io/web-export.js');
+const { runBenchmark } = __req('src/core/capabilities.js');
+const { guardDevice } = __req('src/app/device-guard.js');
+const { initI18n } = __req('src/i18n/index.js');
 initI18n();
 function revealApp() {
 let revealed = false;
@@ -93160,7 +93160,7 @@ box.innerHTML =
 '</p><code></code></div>';
 box.querySelector('code').textContent = String(e && e.message ? e.message : e);
 }
-const { iconsReady } = __req('src/icons.js');
+const { iconsReady } = __req('src/ui/icons.js');
 if ('serviceWorker' in navigator) {
 navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
 }

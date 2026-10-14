@@ -1,13 +1,13 @@
-import { App } from './app.js';
+import { App } from './app/app.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { exportModel, verifyGLB } from './exporters.js';
-import { makeTextureSampler } from './pointcloud.js';
-import { makeDemoFiles } from './demo.js';
-import { exportForWeb } from './web-export.js';
-import { runBenchmark } from './capabilities.js';
-import { guardDevice } from './device-guard.js';
-import { initI18n } from './i18n.js';
+import { exportModel, verifyGLB } from './io/exporters.js';
+import { makeTextureSampler } from './points/pointcloud.js';
+import { makeDemoFiles } from './app/demo.js';
+import { exportForWeb } from './io/web-export.js';
+import { runBenchmark } from './core/capabilities.js';
+import { guardDevice } from './app/device-guard.js';
+import { initI18n } from './i18n/index.js';
 initI18n();
 function revealApp() {
 let revealed = false;
@@ -48,7 +48,7 @@ box.innerHTML =
 '</p><code></code></div>';
 box.querySelector('code').textContent = String(e && e.message ? e.message : e);
 }
-import { iconsReady } from './icons.js';
+import { iconsReady } from './ui/icons.js';
 if ('serviceWorker' in navigator) {
 navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
 }

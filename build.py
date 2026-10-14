@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Мини-сборщик: превращает ES-модули (src/*.js + vendor/three/**) в ОДИН обычный
+Мини-сборщик: превращает ES-модули (src/**/*.js + vendor/three/**) в ОДИН обычный
 скрипт assets/app.js, который открывается двойным кликом по index.html
 (без локального сервера и без Node.js).
 
@@ -29,6 +29,7 @@ def rel(p):
     return os.path.relpath(p, ROOT).replace(os.sep, "/")
 
 ENTRY = os.path.join(ROOT, "src", "main.js")
+ICONS_GENERATED = os.path.join(ROOT, "src", "ui", "icons.generated.js")
 OUT = os.path.join(ROOT, "assets", "app.js")
 THREE = os.path.join(ROOT, "vendor", "three", "build", "three.module.js")
 ADDONS = os.path.join(ROOT, "vendor", "three", "addons")
@@ -179,7 +180,7 @@ def transform(path, src):
 
 
 def gen_icons():
-    """Собирает иконки Phosphor (vendor/phosphor/regular/*.svg) в src/icons.generated.js"""
+    """Собирает иконки Phosphor (vendor/phosphor/regular/*.svg) в src/ui/icons.generated.js"""
     d = os.path.join(ROOT, "vendor", "phosphor", "regular")
     items = {}
     for f in sorted(os.listdir(d)):
@@ -202,7 +203,7 @@ def gen_icons():
         out.append("\t%r: %r," % (k, v))
     out.append("};")
     out.append("export const loadIcons = () => Promise.resolve();")
-    with open(os.path.join(ROOT, "src", "icons.generated.js"), "w", encoding="utf-8") as fh:
+    with open(ICONS_GENERATED, "w", encoding="utf-8") as fh:
         fh.write("\n".join(out) + "\n")
     return sorted(items.keys())
 
@@ -507,25 +508,30 @@ def write_vercel_json():
 def build_web():
     """Лёгкая версия для публикации: свой код (минифицированный) + three.js с CDN. Папка web/."""
     import shutil
-    names = gen_icons()
+    icon_names = gen_icons()
     out = os.path.join(ROOT, "web")
     if os.path.isdir(out):
         shutil.rmtree(out)
     os.makedirs(os.path.join(out, "src"))
     os.makedirs(os.path.join(out, "assets"))
     total = 0
-    for name in sorted(os.listdir(os.path.join(ROOT, "src"))):
-        if not name.endswith(".js"):
-            continue
-        with open(os.path.join(ROOT, "src", name), encoding="utf-8") as fh:
-            code = fh.read()
-        if name == "icons.generated.js":
-            # в веб-версии иконки Phosphor подгружаются с CDN при старте (меньше файлов и данных)
-            code = WEB_ICONS.replace("__NAMES__", repr(names).replace("'", '"'))
-        code = minify_js(code)
-        with open(os.path.join(out, "src", name), "w", encoding="utf-8") as fh:
-            fh.write(code)
-        total += len(code.encode("utf-8"))
+    for base, dirs, names in os.walk(os.path.join(ROOT, "src")):
+        dirs.sort()
+        for name in sorted(names):
+            if not name.endswith(".js"):
+                continue
+            path = os.path.join(base, name)
+            with open(path, encoding="utf-8") as fh:
+                code = fh.read()
+            if path == ICONS_GENERATED:
+                # в веб-версии иконки Phosphor подгружаются с CDN при старте (меньше файлов и данных)
+                code = WEB_ICONS.replace("__NAMES__", repr(icon_names).replace("'", '"'))
+            code = minify_js(code)
+            dest = os.path.join(out, os.path.relpath(path, ROOT))
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            with open(dest, "w", encoding="utf-8") as fh:
+                fh.write(code)
+            total += len(code.encode("utf-8"))
     # распознавание рук: модель и WASM лежат на самом сайте
     mp_src = os.path.join(ROOT, "vendor", "mediapipe")
     if os.path.isdir(mp_src):
