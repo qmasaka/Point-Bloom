@@ -69151,113 +69151,1134 @@ watch();
 return { sync, el, toggle };
 }
 };
-__defs['src/effects/ui/fx-cam-float.js'] = function (__exports, __req) {
+__defs['src/effects/input/depth-ai.js'] = function (__exports, __req) {
 'use strict';
-__def(__exports, 'makeCamMovable', () => makeCamMovable);
-const KEY = 'objglb.fxcam.v1';
-function makeCamMovable(box, appEl, viewport) {
-let st = {};
-try {
-st = JSON.parse(localStorage.getItem(KEY)) || {};
-} catch {
-st = {};
+__def(__exports, 'DepthAI', () => DepthAI);
+__def(__exports, 'grabFrame', () => grabFrame);
+__def(__exports, 'grabRGB', () => grabRGB);
+__def(__exports, 'normalizeDepth', () => normalizeDepth);
+__def(__exports, 'lumaDepth', () => lumaDepth);
+__def(__exports, 'adjustDepth', () => adjustDepth);
+__def(__exports, 'depthToGrid', () => depthToGrid);
+const LIB = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
+const MODEL = 'onnx-community/depth-anything-v2-small';
+const WORKER_SRC = `
+const LIBURL = '${LIB}';
+const libP = import(LIBURL);
+let depther = null;
+let T = null;
+const post = (m, tr) => self.postMessage(m, tr || []);
+async function make(dev) {
+	if (dev === 'wasm') T.env.backends.onnx.wasm.numThreads = 1;
+	return T.pipeline('depth-estimation', '${MODEL}', { device: dev, dtype: dev === 'webgpu' ? 'fp16' : 'q8', progress_callback: (p) => post({ type: 'progress', p }) });
 }
-const save = () => {
+async function run(img) {
+	const out = await depther(new T.RawImage(img.data, img.w, img.h, 4));
+	const t = out.predicted_depth;
+	const d = t.dims;
+	return { w: d[d.length - 1], h: d[d.length - 2], data: new Float32Array(t.data) };
+}
+self.onmessage = async (e) => {
+	const m = e.data;
+	try {
+		if (!T) {
+			T = await libP;
+			T.env.allowLocalModels = false;
+		}
+		if (m.type === 'init') {
+			const order = typeof navigator !== 'undefined' && navigator.gpu && !m.noGpu ? ['webgpu', 'wasm'] : ['wasm'];
+			let last = null;
+			for (const dev of order) {
+				try {
+					depther = await make(dev);
+					// пробный прогон: на некоторых видеокартах сессия создаётся, но считает мусор
+					const probe = new Uint8ClampedArray(56 * 56 * 4);
+					for (let i = 0; i < probe.length; i += 4) probe[i] = probe[i + 1] = probe[i + 2] = (i / 4) % 56 * 4, probe[i + 3] = 255;
+					const r = await run({ data: probe, w: 56, h: 56 });
+					for (let i = 0; i < r.data.length; i++) if (!Number.isFinite(r.data[i])) throw new Error('Нейросеть вернула некорректный результат');
+					post({ type: 'ready', device: dev });
+					return;
+				} catch (err) {
+					last = err;
+					depther = null;
+				}
+			}
+			throw last || new Error('Не удалось запустить нейросеть');
+		} else if (m.type === 'run') {
+			const r = await run(m);
+			post({ type: 'depth', id: m.id, w: r.w, h: r.h, data: r.data }, [r.data.buffer]);
+		}
+	} catch (err) {
+		post({ type: 'error', id: m.id, message: String((err && err.message) || err) });
+	}
+};
+`;
+class DepthAI {
+constructor() {
+this.worker = null;
+this.phase = 'idle';
+this.prog = 0;
+this.device = '';
+this.error = '';
+this.onChange = null;
+this._files = new Map();
+this._jobs = new Map();
+this._seq = 0;
+this._ready = null;
+}
+get ready() {
+return this.phase === 'ready';
+}
+get busy() {
+return this._jobs.size > 0;
+}
+_emit() {
+if (this.onChange) this.onChange();
+}
+init() {
+if (this._ready) return this._ready;
+this.phase = 'loading';
+this.prog = 0;
+this.error = '';
+this._files.clear();
+this._emit();
+this._ready = new Promise((resolve, reject) => {
+let url = '';
 try {
-localStorage.setItem(KEY, JSON.stringify(st));
-} catch {
+url = URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' }));
+this.worker = new Worker(url, { type: 'module' });
+} catch (e) {
+this._fail(e, reject);
+return;
+}
+this.worker.onerror = (e) => this._fail(new Error(e.message || 'Не удалось запустить нейросеть. Проверьте интернет'), reject);
+this.worker.onmessage = (e) => {
+const m = e.data;
+if (m.type === 'progress') {
+const p = m.p || {};
+if (p.file && p.total && /\.onnx/.test(p.file)) {
+this._files.set(p.file, { loaded: p.loaded || 0, total: p.total });
+let l = 0, t = 0;
+for (const f of this._files.values()) {
+l += f.loaded;
+t += f.total;
+}
+this.prog = t ? Math.min(0.98, l / t) : 0;
+this._emit();
+}
+} else if (m.type === 'ready') {
+this.phase = 'ready';
+this.prog = 1;
+this.device = m.device;
+this._emit();
+resolve();
+} else if (m.type === 'depth') {
+const job = this._jobs.get(m.id);
+this._jobs.delete(m.id);
+if (job) job.resolve({ w: m.w, h: m.h, data: m.data });
+this._emit();
+} else if (m.type === 'error') {
+const job = this._jobs.get(m.id);
+if (job) {
+this._jobs.delete(m.id);
+job.reject(new Error(m.message));
+} else this._fail(new Error(m.message), reject);
 }
 };
-const mode = () => (appEl.classList.contains('fx-focus') ? 'focus' : 'normal');
-const grip = document.createElement('div');
-grip.className = 'fx-cam-grip';
-grip.title = 'Потяните, чтобы изменить размер';
-box.append(grip);
-const clamp = () => {
-if (box.style.left === '') return;
-const v = viewport.getBoundingClientRect();
-const r = box.getBoundingClientRect();
-let x = r.left - v.left;
-let y = r.top - v.top;
-x = Math.max(8, Math.min(v.width - r.width - 8, x));
-y = Math.max(8, Math.min(v.height - r.height - 8, y));
-box.style.left = x + 'px';
-box.style.top = y + 'px';
+this.worker.postMessage({ type: 'init' });
+});
+return this._ready;
+}
+_fail(err, reject) {
+this.phase = 'error';
+this.error = err.message || String(err);
+for (const j of this._jobs.values()) j.reject(err);
+this._jobs.clear();
+try {
+this.worker?.terminate();
+} catch (e) {
+}
+this.worker = null;
+this._ready = null;
+this._emit();
+if (reject) reject(err);
+}
+async estimate(img) {
+await this.init();
+const id = ++this._seq;
+const p = new Promise((resolve, reject) => this._jobs.set(id, { resolve, reject }));
+this.worker.postMessage({ type: 'run', id, data: img.data, w: img.w, h: img.h }, [img.data.buffer]);
+this._emit();
+return p;
+}
+dispose() {
+try {
+this.worker?.terminate();
+} catch (e) {
+}
+this.worker = null;
+this._ready = null;
+this.phase = 'idle';
+}
+}
+let grabCanvas = null;
+function grabFrame(el, maxSide = 518) {
+const sw = el.videoWidth || el.naturalWidth || el.width;
+const sh = el.videoHeight || el.naturalHeight || el.height;
+if (!sw || !sh) return null;
+const k = Math.min(1, maxSide / Math.max(sw, sh));
+const w = Math.max(14, Math.round(sw * k));
+const h = Math.max(14, Math.round(sh * k));
+grabCanvas ||= document.createElement('canvas');
+grabCanvas.width = w;
+grabCanvas.height = h;
+const g = grabCanvas.getContext('2d', { willReadFrequently: true });
+g.drawImage(el, 0, 0, w, h);
+return { data: g.getImageData(0, 0, w, h).data, w, h };
+}
+function grabRGB(rgb, cols, rows) {
+const data = new Uint8ClampedArray(cols * rows * 4);
+for (let i = 0, j = 0, k = 0; i < cols * rows; i++, j += 3, k += 4) {
+data[k] = rgb[j];
+data[k + 1] = rgb[j + 1];
+data[k + 2] = rgb[j + 2];
+data[k + 3] = 255;
+}
+return { data, w: cols, h: rows };
+}
+function normalizeDepth(raw, st, smooth = 0) {
+const n = raw.length;
+let mn = Infinity, mx = -Infinity;
+for (let i = 0; i < n; i++) {
+const v = raw[i];
+if (v < mn) mn = v;
+if (v > mx) mx = v;
+}
+const span = Math.max(mx - mn, 1e-6);
+const hist = new Uint32Array(256);
+for (let i = 0; i < n; i++) hist[Math.min(255, ((raw[i] - mn) / span) * 255.999 | 0)]++;
+let acc = 0, lo = mn, hi = mx;
+for (let b = 0; b < 256; b++) {
+acc += hist[b];
+if (acc >= n * 0.01) {
+lo = mn + (b / 255) * span;
+break;
+}
+}
+acc = 0;
+for (let b = 255; b >= 0; b--) {
+acc += hist[b];
+if (acc >= n * 0.01) {
+hi = mn + ((b + 1) / 255) * span;
+break;
+}
+}
+if (hi - lo < 1e-6) hi = lo + 1e-6;
+if (st.init && smooth > 0) {
+lo = st.lo + (lo - st.lo) * smooth;
+hi = st.hi + (hi - st.hi) * smooth;
+}
+st.lo = lo;
+st.hi = hi;
+st.init = true;
+const out = new Float32Array(n);
+const inv = 1 / (hi - lo);
+for (let i = 0; i < n; i++) {
+const v = (raw[i] - lo) * inv;
+out[i] = v < 0 ? 0 : v > 1 ? 1 : v;
+}
+return out;
+}
+function lumaDepth(rgb, w, h) {
+const l = new Float32Array(w * h);
+for (let i = 0, k = 0; i < l.length; i++, k += 3) l[i] = (0.299 * rgb[k] + 0.587 * rgb[k + 1] + 0.114 * rgb[k + 2]) / 255;
+const t = new Float32Array(w * h);
+for (let y = 0; y < h; y++) {
+for (let x = 0; x < w; x++) {
+const i = y * w + x;
+t[i] = (l[x > 0 ? i - 1 : i] + l[i] * 2 + l[x < w - 1 ? i + 1 : i]) * 0.25;
+}
+}
+const o = new Float32Array(w * h);
+for (let y = 0; y < h; y++) {
+for (let x = 0; x < w; x++) {
+const i = y * w + x;
+o[i] = (t[y > 0 ? i - w : i] + t[i] * 2 + t[y < h - 1 ? i + w : i]) * 0.25;
+}
+}
+return { w, h, data: o };
+}
+function adjustDepth(map, o) {
+const { w, h } = map;
+const n = w * h;
+let d = map.data;
+const r = Math.round(o.blur || 0);
+if (r > 0) {
+const box = (src, horiz) => {
+const out = new Float32Array(n);
+const len = horiz ? w : h;
+const lines = horiz ? h : w;
+const step = horiz ? 1 : w;
+for (let l = 0; l < lines; l++) {
+const base = horiz ? l * w : l;
+let acc = 0;
+for (let k = -r; k <= r; k++) acc += src[base + Math.min(len - 1, Math.max(0, k)) * step];
+for (let k = 0; k < len; k++) {
+out[base + k * step] = acc / (2 * r + 1);
+acc += src[base + Math.min(len - 1, k + r + 1) * step] - src[base + Math.max(0, k - r) * step];
+}
+}
+return out;
 };
-const apply = () => {
-const p = st[mode()];
-if (p && p.x != null) {
-box.style.left = p.x + 'px';
-box.style.top = p.y + 'px';
-box.style.bottom = 'auto';
+d = box(box(box(box(d, true), false), true), false);
+}
+const c = o.contrast ?? 1, b = o.bright || 0, g = o.gamma ?? 1;
+const out = new Float32Array(n);
+for (let i = 0; i < n; i++) {
+let v = (d[i] - 0.5) * c + 0.5 + b;
+v = v < 0 ? 0 : v > 1 ? 1 : v;
+out[i] = g === 1 ? v : Math.pow(v, g);
+}
+return { w, h, data: out };
+}
+function depthToGrid(map, cols, rows, out) {
+const { w, h, data } = map;
+for (let r = 0; r < rows; r++) {
+const fy = Math.min(h - 1, Math.max(0, ((r + 0.5) / rows) * h - 0.5));
+const y0 = fy | 0, y1 = Math.min(h - 1, y0 + 1), ty = fy - y0;
+for (let c = 0; c < cols; c++) {
+const fx = Math.min(w - 1, Math.max(0, ((c + 0.5) / cols) * w - 0.5));
+const x0 = fx | 0, x1 = Math.min(w - 1, x0 + 1), tx = fx - x0;
+const a = data[y0 * w + x0] * (1 - tx) + data[y0 * w + x1] * tx;
+const b = data[y1 * w + x0] * (1 - tx) + data[y1 * w + x1] * tx;
+out[r * cols + c] = a * (1 - ty) + b * ty;
+}
+}
+}
+};
+__defs['src/effects/render/webgl/programs.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'waitPrograms', () => waitPrograms);
+function waitPrograms(renderer, mats) {
+return new Promise((resolve) => {
+const t0 = performance.now();
+const check = () => {
+let busy = false;
+try {
+for (const m of mats) {
+const progs = renderer.properties.get(m).programs;
+if (!progs) continue;
+for (const p of progs.values()) {
+if (!p.isReady()) {
+busy = true;
+break;
+}
+}
+if (busy) break;
+}
+} catch (e) {
+busy = false;
+}
+if (!busy || performance.now() - t0 > 180000) resolve();
+else setTimeout(check, 16);
+};
+check();
+});
+}
+};
+__defs['src/effects/render/webgl/post-pipeline.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'PostPipeline', () => PostPipeline);
+const THREE = __req('vendor/three/build/three.module.js');
+const { waitPrograms } = __req('src/effects/render/webgl/programs.js');
+class PostPipeline {
+constructor(renderer) {
+this.renderer = renderer;
+this.quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+this.quadGeo = new THREE.PlaneGeometry(2, 2);
+this.width = 0;
+this.height = 0;
+const gl = renderer.getContext();
+let canHalfFloat = false;
+try {
+const isWebGL2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
+if (isWebGL2) {
+canHalfFloat = !!(gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float'));
 } else {
-box.style.left = box.style.top = box.style.bottom = '';
+canHalfFloat = !!(gl.getExtension('EXT_color_buffer_half_float') && gl.getExtension('OES_texture_half_float'));
 }
-box.style.width = mode() === 'focus' && st.focusW ? st.focusW + 'px' : '';
-clamp();
-};
-apply();
-box.addEventListener('pointerdown', (e) => {
-if (e.button !== 0 || e.target === grip) return;
-e.preventDefault();
-const v = viewport.getBoundingClientRect();
-const r = box.getBoundingClientRect();
-const dx = e.clientX - r.left;
-const dy = e.clientY - r.top;
-box.setPointerCapture(e.pointerId);
-box.classList.add('is-dragging');
-const move = (ev) => {
-box.style.left = ev.clientX - dx - v.left + 'px';
-box.style.top = ev.clientY - dy - v.top + 'px';
-box.style.bottom = 'auto';
-clamp();
-};
-const up = () => {
-box.removeEventListener('pointermove', move);
-box.removeEventListener('pointerup', up);
-box.removeEventListener('pointercancel', up);
-box.classList.remove('is-dragging');
-st[mode()] = { x: parseFloat(box.style.left), y: parseFloat(box.style.top) };
-save();
-};
-box.addEventListener('pointermove', move);
-box.addEventListener('pointerup', up);
-box.addEventListener('pointercancel', up);
+} catch (e) {
+canHalfFloat = false;
+}
+this.targetType = canHalfFloat ? THREE.HalfFloatType : THREE.UnsignedByteType;
+this._disabled = false;
+this._buildTargets(this.targetType);
+this._buildMosh();
+this.fbMat = new THREE.ShaderMaterial({
+uniforms: {
+uScene: { value: null },
+uPrev: { value: null },
+uDecay: { value: 0.92 },
+uZoom: { value: 1.0 },
+uTwist: { value: 0.0 },
+uHasPrev: { value: 0.0 },
+uTint: { value: new THREE.Color(1, 1, 1) },
+uTintK: { value: 0.0 },
+},
+vertexShader: `
+				varying vec2 vUv;
+				void main() {
+					vUv = uv;
+					gl_Position = vec4(position.xy, 0.0, 1.0);
+				}
+			`,
+fragmentShader: `
+				precision highp float;
+				uniform sampler2D uScene;
+				uniform sampler2D uPrev;
+				uniform float uDecay;
+				uniform float uZoom;
+				uniform float uTwist;
+				uniform float uHasPrev;
+				uniform vec3 uTint;
+				uniform float uTintK;
+				varying vec2 vUv;
+				void main() {
+					vec4 curr = texture2D(uScene, vUv);
+					vec4 prev = vec4(0.0);
+					if (uHasPrev > 0.5) {
+						vec2 c = vec2(0.5);
+						vec2 p = vUv - c;
+						float a = uTwist;
+						mat2 rot = mat2(cos(a), -sin(a), sin(a), cos(a));
+						vec2 pUv = (rot * p) / max(0.001, uZoom) + c;
+						if (pUv.x >= 0.0 && pUv.x <= 1.0 && pUv.y >= 0.0 && pUv.y <= 1.0) {
+							prev = texture2D(uPrev, pUv) * uDecay;
+							// хвост постепенно уходит в цвет палитры
+							prev.rgb = mix(prev.rgb, prev.rgb * uTint * 1.7, uTintK * 0.07);
+						}
+					}
+					vec3 col = max(curr.rgb, prev.rgb);
+					float a = max(curr.a, prev.a * uDecay);
+					gl_FragColor = vec4(col, a);
+				}
+			`,
+depthTest: false,
+depthWrite: false,
 });
-grip.addEventListener('pointerdown', (e) => {
-if (e.button !== 0) return;
-e.preventDefault();
-e.stopPropagation();
-const v = viewport.getBoundingClientRect();
-const startW = box.getBoundingClientRect().width;
-const sx = e.clientX;
-grip.setPointerCapture(e.pointerId);
-const move = (ev) => {
-const w = Math.max(160, Math.min(720, v.width - 40, startW + (ev.clientX - sx)));
-box.style.width = w + 'px';
-clamp();
-};
-const up = () => {
-grip.removeEventListener('pointermove', move);
-grip.removeEventListener('pointerup', up);
-grip.removeEventListener('pointercancel', up);
-st.focusW = box.getBoundingClientRect().width;
-const p = st[mode()];
-if (p) {
-p.x = parseFloat(box.style.left);
-p.y = parseFloat(box.style.top);
-}
-save();
-};
-grip.addEventListener('pointermove', move);
-grip.addEventListener('pointerup', up);
-grip.addEventListener('pointercancel', up);
+this.fbMesh = new THREE.Mesh(this.quadGeo, this.fbMat);
+this.outMat = new THREE.ShaderMaterial({
+uniforms: {
+uTex: { value: null },
+uBloom: { value: 0.0 },
+uAberration: { value: 0.0 },
+uRes: { value: new THREE.Vector2(1, 1) },
+},
+vertexShader: `
+				varying vec2 vUv;
+				void main() {
+					vUv = uv;
+					gl_Position = vec4(position.xy, 0.0, 1.0);
+				}
+			`,
+fragmentShader: `
+				precision highp float;
+				uniform sampler2D uTex;
+				uniform float uBloom;
+				uniform float uAberration;
+				uniform vec2 uRes;
+				varying vec2 vUv;
+				void main() {
+					vec2 dir = vUv - vec2(0.5);
+					float distSq = dot(dir, dir);
+					vec2 shift = dir * distSq * uAberration * 0.04;
+
+					vec4 baseCol;
+					if (uAberration > 0.001) {
+						float r = texture2D(uTex, vUv + shift).r;
+						float g = texture2D(uTex, vUv).g;
+						float b = texture2D(uTex, vUv - shift).b;
+						float a = texture2D(uTex, vUv).a;
+						baseCol = vec4(r, g, b, a);
+					} else {
+						baseCol = texture2D(uTex, vUv);
+					}
+
+					if (uBloom > 0.01) {
+						vec2 texel = 1.0 / uRes;
+						vec4 bloom = vec4(0.0);
+						float rad = 3.2;
+						bloom += texture2D(uTex, vUv + vec2(-rad, -rad) * texel);
+						bloom += texture2D(uTex, vUv + vec2( rad, -rad) * texel);
+						bloom += texture2D(uTex, vUv + vec2(-rad,  rad) * texel);
+						bloom += texture2D(uTex, vUv + vec2( rad,  rad) * texel);
+						bloom += texture2D(uTex, vUv + vec2( 0.0, -rad * 1.4) * texel);
+						bloom += texture2D(uTex, vUv + vec2( 0.0,  rad * 1.4) * texel);
+						bloom += texture2D(uTex, vUv + vec2(-rad * 1.4, 0.0) * texel);
+						bloom += texture2D(uTex, vUv + vec2( rad * 1.4, 0.0) * texel);
+						bloom *= 0.125;
+						baseCol.rgb += bloom.rgb * uBloom * 0.85;
+					}
+
+					gl_FragColor = baseCol;
+					#include <tonemapping_fragment>
+					#include <colorspace_fragment>
+				}
+			`,
+depthTest: false,
+depthWrite: false,
+transparent: true,
 });
-const mo = new MutationObserver(apply);
-mo.observe(appEl, { attributes: true, attributeFilter: ['class'] });
-window.addEventListener('resize', clamp);
-box._camCleanup = () => mo.disconnect();
+this.outMesh = new THREE.Mesh(this.quadGeo, this.outMat);
+this.quadScene = new THREE.Scene();
+this.hasHistory = false;
 }
+warm() {
+const r = this.renderer;
+const prev = r.getRenderTarget();
+const mats = new Set();
+try {
+for (const [mat, rt] of [[this.fbMat, this.rtPong], [this.outMat, null]]) {
+const sc = new THREE.Scene();
+sc.add(new THREE.Mesh(this.quadGeo, mat));
+r.setRenderTarget(rt);
+r.compile(sc, this.quadCam).forEach((m) => mats.add(m));
+}
+} catch (e) {
+return Promise.resolve();
+} finally {
+r.setRenderTarget(prev);
+}
+return waitPrograms(r, mats);
+}
+_buildTargets(type) {
+for (const k of ['rtScene', 'rtSceneB', 'rtPing', 'rtPong', 'rtMoshA', 'rtMoshB', 'rtMvA', 'rtMvB']) {
+if (this[k]) this[k].dispose();
+this[k] = null;
+}
+const w = this.width || 1;
+const h = this.height || 1;
+const flat = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type };
+this.rtScene = new THREE.WebGLRenderTarget(w, h, flat);
+this.rtSceneB = new THREE.WebGLRenderTarget(w, h, flat);
+this.rtPing = new THREE.WebGLRenderTarget(w, h, flat);
+this.rtPong = new THREE.WebGLRenderTarget(w, h, flat);
+this.moshHist = false;
+this.hasHistory = false;
+}
+_buildMosh() {
+const vert = `
+			varying vec2 vUv;
+			void main() {
+				vUv = uv;
+				gl_Position = vec4(position.xy, 0.0, 1.0);
+			}
+		`;
+this.mvMat = new THREE.ShaderMaterial({
+uniforms: {
+uCur: { value: null },
+uPrev: { value: null },
+uPrevMV: { value: null },
+uRes: { value: new THREE.Vector2(1, 1) },
+uBlock: { value: 16 },
+uRange: { value: 64 },
+uGain: { value: 1 },
+uInertia: { value: 0.5 },
+uSceneMix: { value: 1 },
+uHasPrev: { value: 0 },
+uDrift: { value: new THREE.Vector2() },
+uFlow: { value: 0 },
+uTime: { value: 0 },
+},
+vertexShader: vert,
+fragmentShader: `
+				precision highp float;
+				uniform sampler2D uCur;
+				uniform sampler2D uPrev;
+				uniform sampler2D uPrevMV;
+				uniform vec2 uRes;
+				uniform vec2 uDrift;
+				uniform float uBlock, uRange, uGain, uInertia, uSceneMix, uHasPrev, uFlow, uTime;
+				varying vec2 vUv;
+				float cc[5];
+				vec2 oo[5];
+				vec2 cuv;
+				float lodL;
+				float feat(sampler2D t, vec2 uv) {
+					vec4 s = textureLod(t, uv, lodL);
+					return dot(s.rgb, vec3(0.299, 0.587, 0.114)) + 0.5 * s.a;
+				}
+				float sad(vec2 mv) {
+					float e = 0.0;
+					for (int i = 0; i < 5; i++) e += abs(cc[i] - feat(uPrev, cuv + (oo[i] - mv) / uRes));
+					return e;
+				}
+				void main() {
+					vec2 blockC = (floor(gl_FragCoord.xy) + 0.5) * uBlock;
+					cuv = blockC / uRes;
+					vec2 mv = vec2(0.0);
+					if (uSceneMix > 0.001 && uHasPrev > 0.5) {
+						lodL = log2(max(uBlock * 0.3, 1.0));
+						float q = uBlock * 0.28;
+						oo[0] = vec2(0.0); oo[1] = vec2(q, q); oo[2] = vec2(-q, q); oo[3] = vec2(q, -q); oo[4] = vec2(-q, -q);
+						for (int i = 0; i < 5; i++) cc[i] = feat(uCur, cuv + oo[i] / uRes);
+						float step0 = max(1.0, uBlock * 0.5);
+						float e0 = sad(vec2(0.0));
+						vec2 best = vec2(0.0);
+						float bestE = e0;
+						for (int j = -3; j <= 3; j++) {
+							for (int i = -3; i <= 3; i++) {
+								if (i == 0 && j == 0) continue;
+								vec2 c = vec2(float(i), float(j)) * step0;
+								float e = sad(c) + 0.004 * length(vec2(float(i), float(j)));
+								if (e < bestE) { bestE = e; best = c; }
+							}
+						}
+						vec2 ctr = best;
+						for (int j = -1; j <= 1; j++) {
+							for (int i = -1; i <= 1; i++) {
+								if (i == 0 && j == 0) continue;
+								vec2 c = ctr + vec2(float(i), float(j)) * step0 * 0.5;
+								float e = sad(c) + 0.004 * length(c) / step0;
+								if (e < bestE) { bestE = e; best = c; }
+							}
+						}
+						// слабое совпадение считаем шумом, а не движением
+						if (e0 - bestE < 0.02) best = vec2(0.0);
+						mv = best * uSceneMix * uGain;
+					}
+					// искусственное движение: ровный снос и течение, чтобы эффект жил и на неподвижной картинке
+					vec2 g = cuv * 6.2832;
+					vec2 fl = vec2(sin(g.y * 1.2 + uTime * 0.9) + sin(g.x * 0.5 - uTime * 0.6), cos(g.x * 1.2 - uTime * 0.7) + cos(g.y * 0.7 + uTime * 0.5)) * 0.5;
+					mv += (uDrift + fl * uFlow) * uGain;
+					if (uHasPrev > 0.5) {
+						vec2 pm = (texture2D(uPrevMV, vUv).xy * 2.0 - 1.0) * uRange;
+						mv = mix(mv, pm, uInertia);
+					}
+					mv = clamp(mv, vec2(-uRange * 0.98), vec2(uRange * 0.98));
+					gl_FragColor = vec4(mv / uRange * 0.5 + 0.5, 0.0, 1.0);
+				}
+			`,
+depthTest: false,
+depthWrite: false,
+});
+this.moshMat = new THREE.ShaderMaterial({
+uniforms: {
+uCur: { value: null },
+uPrevSrc: { value: null },
+uMoshPrev: { value: null },
+uMV: { value: null },
+uRes: { value: new THREE.Vector2(1, 1) },
+uMVSize: { value: new THREE.Vector2(1, 1) },
+uBlock: { value: 16 },
+uRange: { value: 64 },
+uSmooth: { value: 0.6 },
+uHold: { value: 0 },
+uResid: { value: 0.2 },
+uChroma: { value: 0 },
+uQuant: { value: 0 },
+uStyle: { value: 0 },
+uStale: { value: 0 },
+uJit: { value: 0 },
+uTime: { value: 0 },
+uHasHist: { value: 0 },
+uLeak: { value: 0.03 },
+},
+vertexShader: vert,
+fragmentShader: `
+				precision highp float;
+				uniform sampler2D uCur;
+				uniform sampler2D uPrevSrc;
+				uniform sampler2D uMoshPrev;
+				uniform sampler2D uMV;
+				uniform vec2 uRes, uMVSize;
+				uniform float uBlock, uRange, uSmooth, uHold, uResid, uChroma, uQuant, uStyle, uStale, uJit, uTime, uHasHist, uLeak;
+				varying vec2 vUv;
+				float h11(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+				vec2 fetchMV(vec2 ij) {
+					ivec2 sz = ivec2(uMVSize);
+					ivec2 p = clamp(ivec2(ij), ivec2(0), sz - 1);
+					return (texelFetch(uMV, p, 0).xy * 2.0 - 1.0) * uRange;
+				}
+				vec2 mvAt(vec2 px) {
+					vec2 g = px / uBlock - 0.5;
+					vec2 i0 = floor(g);
+					vec2 f = fract(g);
+					f = mix(step(0.5, f), f, uSmooth);
+					vec2 a = fetchMV(i0);
+					vec2 b = fetchMV(i0 + vec2(1.0, 0.0));
+					vec2 c = fetchMV(i0 + vec2(0.0, 1.0));
+					vec2 d = fetchMV(i0 + vec2(1.0, 1.0));
+					return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+				}
+				void main() {
+					vec4 cur = texture2D(uCur, vUv);
+					float hold = uHold * uHasHist;
+					if (hold < 0.002) { gl_FragColor = cur; return; }
+					vec2 px = vUv * uRes;
+					vec2 bid = floor(px / uBlock);
+					float r = h11(bid);
+					vec2 mv = mvAt(px);
+					float stale = 0.0;
+					if (uStyle > 0.5 && uStyle < 1.5) {
+						// блоки: часть блоков залипает и сползает сама по себе
+						float slot = floor(uTime * 5.0);
+						float rs = h11(bid + slot * 7.13);
+						stale = step(1.0 - uStale, rs);
+						vec2 jit = (vec2(h11(bid + 3.1 + slot), h11(bid + 9.7 + slot)) - 0.5) * 2.0 * uJit * uBlock;
+						mv += jit * stale;
+					}
+					vec2 d = mv / uRes;
+					float cs = uChroma * 0.6;
+					vec4 pr = texture2D(uMoshPrev, vUv - d * (1.0 + cs));
+					vec4 pg = texture2D(uMoshPrev, vUv - d);
+					vec4 pb = texture2D(uMoshPrev, vUv - d * (1.0 - cs));
+					vec4 pred = vec4(pr.r, pg.g, pb.b, pg.a);
+					vec4 predSrc = texture2D(uPrevSrc, vUv - d);
+					vec4 dec = pred + (cur - predSrc) * uResid;
+					float m = clamp((1.0 - hold) * 1.6 - r * 0.6, 0.0, 1.0) * (1.0 - stale);
+					// понемногу картинка всегда возвращается, иначе сдвиг копится и кадр уезжает за край
+					m = max(m, uLeak * (1.0 - stale));
+					vec4 o = mix(dec, cur, m);
+					if (uQuant > 0.001) {
+						// грубое квантование цвета и сдвиг оттенка по блокам, как у перегруженного кодека
+						float q = mix(48.0, 5.0, uQuant);
+						vec3 qd = floor(o.rgb * q + 0.5) / q;
+						qd += (vec3(h11(bid + 1.7), h11(bid + 5.3), h11(bid + 8.9)) - 0.5) * 0.08 * uQuant;
+						o.rgb = mix(o.rgb, qd, uQuant * (1.0 - m));
+					}
+					gl_FragColor = clamp(o, 0.0, 6.0);
+				}
+			`,
+depthTest: false,
+depthWrite: false,
+});
+this.mvMesh = new THREE.Mesh(this.quadGeo, this.mvMat);
+this.moshMesh = new THREE.Mesh(this.quadGeo, this.moshMat);
+this.moshBlock = 0;
+this.moshHist = false;
+}
+_ensureMosh(block) {
+const w = this.width;
+const h = this.height;
+const mw = Math.max(1, Math.ceil(w / block));
+const mh = Math.max(1, Math.ceil(h / block));
+const type = this.targetType;
+const flat = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type, depthBuffer: false };
+const near = { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, type, depthBuffer: false };
+if (!this.rtMoshA) {
+this.rtMoshA = new THREE.WebGLRenderTarget(w, h, flat);
+this.rtMoshB = new THREE.WebGLRenderTarget(w, h, flat);
+this.moshHist = false;
+}
+if (!this.rtMvA) {
+this.rtMvA = new THREE.WebGLRenderTarget(mw, mh, near);
+this.rtMvB = new THREE.WebGLRenderTarget(mw, mh, near);
+this.moshHist = false;
+}
+if (this.moshBlock !== block || this.rtMvA.width !== mw || this.rtMvA.height !== mh) {
+this.rtMvA.setSize(mw, mh);
+this.rtMvB.setSize(mw, mh);
+this.moshBlock = block;
+this.moshHist = false;
+}
+return [mw, mh];
+}
+_moshStep(m) {
+const r = this.renderer;
+const block = m.block;
+const [mw, mh] = this._ensureMosh(block);
+const hist = this.moshHist;
+const k = this.height / 1080;
+const range = 4 * block + 0.03 * this.height;
+const mu = this.mvMat.uniforms;
+mu.uCur.value = this.rtScene.texture;
+mu.uPrev.value = this.rtSceneB.texture;
+mu.uPrevMV.value = this.rtMvA.texture;
+mu.uRes.value.set(this.width, this.height);
+mu.uBlock.value = block;
+mu.uRange.value = range;
+mu.uGain.value = m.gain;
+mu.uInertia.value = hist ? m.inertia : 0;
+mu.uSceneMix.value = m.sceneMix;
+mu.uHasPrev.value = hist ? 1 : 0;
+mu.uDrift.value.set(Math.cos(m.angle) * m.drift * 6 * k, Math.sin(m.angle) * m.drift * 6 * k);
+mu.uFlow.value = m.flow * 4 * k;
+mu.uTime.value = m.time;
+this.quadScene.clear();
+this.quadScene.add(this.mvMesh);
+r.setRenderTarget(this.rtMvB);
+r.render(this.quadScene, this.quadCam);
+let t = this.rtMvA;
+this.rtMvA = this.rtMvB;
+this.rtMvB = t;
+const u = this.moshMat.uniforms;
+u.uCur.value = this.rtScene.texture;
+u.uPrevSrc.value = this.rtSceneB.texture;
+u.uMoshPrev.value = this.rtMoshA.texture;
+u.uMV.value = this.rtMvA.texture;
+u.uRes.value.set(this.width, this.height);
+u.uMVSize.value.set(mw, mh);
+u.uBlock.value = block;
+u.uRange.value = range;
+u.uSmooth.value = m.smooth;
+u.uHold.value = m.hold;
+u.uResid.value = m.detail;
+u.uChroma.value = m.chroma;
+u.uQuant.value = m.quant;
+u.uStyle.value = m.style;
+u.uStale.value = m.stale;
+u.uJit.value = m.jit;
+u.uTime.value = m.time;
+u.uHasHist.value = hist ? 1 : 0;
+u.uLeak.value = m.leak;
+this.quadScene.clear();
+this.quadScene.add(this.moshMesh);
+r.setRenderTarget(this.rtMoshB);
+r.render(this.quadScene, this.quadCam);
+t = this.rtMoshA;
+this.rtMoshA = this.rtMoshB;
+this.rtMoshB = t;
+t = this.rtScene;
+this.rtScene = this.rtSceneB;
+this.rtSceneB = t;
+this.moshHist = true;
+return this.rtMoshA.texture;
+}
+setSize(w, h, dpr = 1) {
+const rw = Math.max(1, Math.round(w * dpr));
+const rh = Math.max(1, Math.round(h * dpr));
+if (rw === this.width && rh === this.height) return;
+this.width = rw;
+this.height = rh;
+this.rtScene.setSize(rw, rh);
+this.rtSceneB.setSize(rw, rh);
+this.rtPing.setSize(rw, rh);
+this.rtPong.setSize(rw, rh);
+if (this.rtMoshA) {
+this.rtMoshA.setSize(rw, rh);
+this.rtMoshB.setSize(rw, rh);
+}
+this.moshHist = false;
+this.outMat.uniforms.uRes.value.set(rw, rh);
+this.hasHistory = false;
+}
+render(scene, camera, feedbackCfg, bloomVal, abVal, mosh, forceBuffer) {
+const r = this.renderer;
+const dom = r.domElement;
+const dpr = r.getPixelRatio();
+this.setSize(dom.clientWidth, dom.clientHeight, dpr);
+const useFb = feedbackCfg && feedbackCfg.on && feedbackCfg.amount > 0.01;
+const useBloom = bloomVal > 0.01;
+const useAb = abVal > 0.01;
+const useMosh = !!(mosh && mosh.on);
+if ((!forceBuffer && !useFb && !useBloom && !useAb && !useMosh) || this._disabled) {
+r.setRenderTarget(null);
+r.render(scene, camera);
+this.hasHistory = false;
+return;
+}
+try {
+const needMips = useMosh;
+if (this.rtScene && this.rtScene.texture.generateMipmaps !== needMips) {
+this.rtScene.texture.generateMipmaps = needMips;
+this.rtScene.texture.minFilter = needMips ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
+}
+if (this.rtSceneB && this.rtSceneB.texture.generateMipmaps !== needMips) {
+this.rtSceneB.texture.generateMipmaps = needMips;
+this.rtSceneB.texture.minFilter = needMips ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
+}
+r.setRenderTarget(this.rtScene);
+r.clear();
+r.render(scene, camera);
+let sourceTex = this.rtScene.texture;
+if (useMosh) sourceTex = this._moshStep(mosh);
+else this.moshHist = false;
+const preFb = sourceTex;
+if (useFb) {
+const tun = feedbackCfg.mode === 'tunnel';
+const zoom = tun ? feedbackCfg.zoom || 1.0 : 1.0;
+const twist = tun ? feedbackCfg.twist || 0.0 : 0.0;
+const decay = Math.min(0.99, feedbackCfg.amount || 0.92);
+this.fbMat.uniforms.uTint.value.copy(this.tint || new THREE.Color(1, 1, 1));
+this.fbMat.uniforms.uTintK.value = feedbackCfg.tint ?? 0.5;
+this.fbMat.uniforms.uScene.value = preFb;
+this.fbMat.uniforms.uPrev.value = this.rtPing.texture;
+this.fbMat.uniforms.uDecay.value = decay;
+this.fbMat.uniforms.uZoom.value = zoom;
+this.fbMat.uniforms.uTwist.value = twist;
+this.fbMat.uniforms.uHasPrev.value = this.hasHistory ? 1.0 : 0.0;
+this.quadScene.clear();
+this.quadScene.add(this.fbMesh);
+r.setRenderTarget(this.rtPong);
+r.clear();
+r.render(this.quadScene, this.quadCam);
+const tmp = this.rtPing;
+this.rtPing = this.rtPong;
+this.rtPong = tmp;
+this.hasHistory = true;
+sourceTex = this.rtPing.texture;
+} else {
+this.hasHistory = false;
+}
+this.outMat.uniforms.uTex.value = sourceTex;
+this.outMat.uniforms.uBloom.value = bloomVal;
+this.outMat.uniforms.uAberration.value = abVal;
+this.quadScene.clear();
+this.quadScene.add(this.outMesh);
+r.setRenderTarget(null);
+r.render(this.quadScene, this.quadCam);
+} catch (e) {
+console.warn('PostPipeline fallback to direct render:', e);
+if (this.targetType === THREE.HalfFloatType) {
+this.targetType = THREE.UnsignedByteType;
+this._buildTargets(THREE.UnsignedByteType);
+} else {
+this._disabled = true;
+}
+r.setRenderTarget(null);
+r.render(scene, camera);
+}
+}
+dispose() {
+for (const k of ['rtScene', 'rtSceneB', 'rtPing', 'rtPong', 'rtMoshA', 'rtMoshB', 'rtMvA', 'rtMvB']) if (this[k]) this[k].dispose();
+this.mvMat.dispose();
+this.moshMat.dispose();
+this.fbMat.dispose();
+this.outMat.dispose();
+this.quadGeo.dispose();
+}
+}
+};
+__defs['src/effects/state/layers.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'FX_ACTIONS', () => FX_ACTIONS);
+__def(__exports, 'FX_LAYERS', () => FX_LAYERS);
+__def(__exports, 'FX_GROUPS', () => FX_GROUPS);
+__def(__exports, 'FX_GROUP_NAMES', () => FX_GROUP_NAMES);
+const { perf } = __req('src/core/perf.js');
+const FX_ACTIONS = [['none', 'Без действия'], ['push', 'Отталкивание: от ладони'], ['pull', 'Притягивание: к ладони'], ['swirl', 'Вихрь: вращение пальцами'], ['rotate', 'Вращение: поворот модели'], ['sculpt', 'Лепка: изменение формы'], ['gravity', 'Гравитация: притяжение к руке'], ['wave', 'Ударная волна: фронт от руки'], ['break', 'Распад: пока держишь жест'], ['dissolve', 'Растворение: пока держишь жест'], ['brush', 'Световой штрих: след в воздухе'], ['slicecut', 'Срез рукой: секущая плоскость'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:twist', 'Эффект: Деформация'], ['fx:blast', 'Эффект: Взрыв по биту'], ['fx:flow', 'Эффект: Течение'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
+const FX_LAYERS = [
+{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Видео раскладывается на кадры из точек, кадры собираются в блок. Показ идёт за таймлайном', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, thin: 0, showMode: 'off', showLen: 0.12, hero: 150000, future: 'hide', gain: 1, sat: 0, bsize: 1.5, track: 'grow', tone: 'all', toneCut: 0.5, tail: 100, tailSoft: 0.6 }, extras: [{ type: 'title', label: 'Раскладка' }, { key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: слои вглубь'], ['wall', 'Стена: плоская сетка'], ['film', 'Киноплёнка: кадры в ряд'], ['tunnel', 'Туннель: перспектива вглубь']], relayout: true }, { key: 'track', label: 'Что в стопке', type: 'seg', options: [['grow', 'Пройденное'], ['full', 'Весь ряд']], when: ['layout', ['stack', 'tunnel']] }, { key: 'depth', label: 'Глубина', min: 0.2, max: 4, step: 0.1, relayout: true, when: ['layout', ['stack', 'tunnel']] }, { type: 'title', label: 'Показ' }, { key: 'showMode', label: 'Как показывать', type: 'select', options: [['off', 'Статично: все кадры как есть'], ['peel', 'Листание: слёт пройденных'], ['projector', 'Проектор: бегущий луч'], ['trail', 'Шлейф: затухающий след']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Редкие'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { key: 'thin', label: 'Прореживать остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { type: 'title', label: 'Хвост' }, { key: 'tail', label: 'Длина хвоста, доля видео', min: 5, max: 100, step: 1, int: true, unit: '%' }, { key: 'tailSoft', label: 'Как гаснет хвост: резко ... плавно', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Цвет остальных кадров' }, { key: 'sat', label: 'Насыщенность (0 это цвета видео)', min: -1, max: 1, step: 0.05 }, { key: 'gain', label: 'Яркость', min: 0.4, max: 3, step: 0.05 }, { key: 'tone', label: 'Какие тона оставить', type: 'seg', options: [['all', 'Все'], ['light', 'Светлые'], ['dark', 'Тёмные']] }, { key: 'toneCut', label: 'Граница светлого и тёмного', min: 0.05, max: 0.95, step: 0.01, when: ['tone', ['light', 'dark']] }, { key: 'bsize', label: 'Размер точек', min: 0.5, max: 4, step: 0.1 }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
+{ id: 'curl', group: 'Движение', name: 'Вихри и течение', icon: 'tornado', hint: 'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)', max: 2, def: { on: false, amount: 1, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8, fscale: 1.6, fdir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['noise', 'Вихри: хаотичное движение'], ['stream', 'Поток: движение с возвратом'], ['orbit', 'Кольца: вращение слоёв'], ['surface', 'Течение: скольжение по форме']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1, when: ['mode', ['noise', 'stream', 'orbit']] }, { key: 'fscale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1, when: ['mode', ['surface']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }, { key: 'fdir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['surface']] }] },
+{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается, осколки падают на пол с отскоками и собираются обратно', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
+{ id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма отзывается на звук. Виды: колонки эквалайзера, горный рельеф, шерсть по кругу, шерсть по высоте', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, mode: 'bars', bars: 24 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['bars', 'Колонки: полосы эквалайзера'], ['terrain', 'Рельеф: звуковой ландшафт'], ['wool', 'Радиальные иглы: по кругу'], ['height', 'Вертикальные иглы: по высоте']] }, { key: 'bars', label: 'Число колонок', min: 8, max: 64, step: 1, int: true, when: ['mode', ['bars']] }] },
+{ id: 'wave', group: 'Движение', name: 'Волны', icon: 'waves', hint: 'Волны бегут по форме. Виды: капли, кольца, плоская волна, спираль вокруг формы, гребни вверх', max: 2, def: { on: false, amount: 0.7, band: 'none', react: 0.8, freq: 5, speed: 1, period: 1.4, mode: 'rings', origin: 'center', decay: 1.2, dir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['drops', 'Капли: импульсы по ритму'], ['rings', 'Кольца: круговой фронт'], ['plane', 'Плоская волна: направленный фронт'], ['spiral', 'Спираль: закрутка вокруг формы'], ['rise', 'Гребни: вертикальный подъём']] }, { key: 'freq', label: 'Масштаб (частота)', min: 1, max: 14, step: 0.5 }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }, { key: 'origin', label: 'Откуда', type: 'seg', options: [['center', 'Центр'], ['cursor', 'Курсор, рука']], when: ['mode', ['rings']] }, { key: 'period', label: 'Капля раз в, с', min: 0.3, max: 4, step: 0.1, when: ['mode', ['drops']] }, { key: 'decay', label: 'Затухание', min: 0.2, max: 4, step: 0.1, when: ['mode', ['drops']] }, { key: 'dir', label: 'Направление', min: 0, max: 6.28, step: 0.1, when: ['mode', ['plane']] }] },
+{ id: 'twist', group: 'Движение', name: 'Деформация', icon: 'wind', hint: 'Форма меняет очертания. Виды: скрутка, изгиб, конус, змейка, дыхание, желе', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'twist', speed: 0, jmode: 'auto', jperiod: 1.8, jfreq: 8, jdamp: 1.6, jsquash: 0.5 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['twist', 'Скрутка: осевое вращение'], ['bend', 'Изгиб: боковое отклонение'], ['taper', 'Конус: сужение к вершине'], ['snake', 'Змейка: волновой изгиб'], ['breathe', 'Дыхание: радиальная пульсация'], ['jelly', 'Желе: упругая вибрация']] }, { key: 'speed', label: 'Покачивание', min: 0, max: 3, step: 0.05, when: ['mode', ['twist', 'bend', 'taper', 'snake', 'breathe']] }, { key: 'jmode', label: 'Что вызывает дрожь', type: 'seg', options: [['auto', 'Сама по таймеру'], ['motion', 'Движение модели']], when: ['mode', ['jelly']] }, { key: 'jperiod', label: 'Толчок раз в, с', min: 0.4, max: 5, step: 0.1, when: ['mode', ['jelly']] }, { key: 'jfreq', label: 'Частота дрожи', min: 3, max: 16, step: 0.5, when: ['mode', ['jelly']] }, { key: 'jdamp', label: 'Затухание', min: 0.5, max: 5, step: 0.1, when: ['mode', ['jelly']] }, { key: 'jsquash', label: 'Сплющивание', min: 0, max: 1, step: 0.05, when: ['mode', ['jelly']] }] },
+{ id: 'blast', group: 'Движение', name: 'Взрыв', icon: 'asterisk', hint: 'Точки отлетают и пружинят обратно, или форма бьётся, как сердце. Виды: взрыв, пульс оболочкой, сжатием, всей формой сразу', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'burst', decay: 2.2, random: 0.6, period: 1.6, delay: 0.35, pspeed: 1 }, extras: [{ key: 'style', label: 'Вид', type: 'select', options: [['burst', 'Взрыв: разлёт с возвратом'], ['shell', 'Пульс: сферическая оболочка'], ['squash', 'Пульс: сжатие и растяжение'], ['flat', 'Пульс: синхронно всей формой']] }, { key: 'period', label: 'Бьёт сам раз в, с', min: 0.4, max: 5, step: 0.1 }, { key: 'decay', label: 'Возврат (пружина)', min: 0.8, max: 6, step: 0.1, when: ['style', ['burst']] }, { key: 'random', label: 'Разброс направлений', min: 0, max: 1, step: 0.05, when: ['style', ['burst']] }, { key: 'delay', label: 'Задержка к краю', min: 0, max: 1, step: 0.02, when: ['style', ['shell', 'squash']] }, { key: 'pspeed', label: 'Скорость затухания', min: 0.3, max: 3, step: 0.05, when: ['style', ['shell', 'squash', 'flat']] }] },
+{ id: 'flow', hidden: true, group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, а силуэт не меняется. Настраиваются масштаб, скорость и поворот потока', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
+{ id: 'explode', group: 'Разрушение', name: 'Разбор на части', icon: 'cube', hint: 'Форма разъезжается на жёсткие куски, они поворачиваются и возвращаются на место. Настраиваются число кусков, дальность и вращение', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', speed: 0.8, pieces: 40, dist: 1, spin: 0.5, stagger: 0.5 }, extras: [{ key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['hold', 'Всегда разобрана']] }, { key: 'pieces', label: 'Число кусков', min: 6, max: 256, step: 1, int: true }, { key: 'dist', label: 'Как далеко расходятся', min: 0.2, max: 3, step: 0.05 }, { key: 'spin', label: 'Вращение кусков', min: 0, max: 1, step: 0.05 }, { key: 'stagger', label: 'Разброс по времени', min: 0, max: 0.9, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1, when: ['mode', ['loop']] }] },
+{ id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Форма исчезает и собирается обратно. Виды: лазерный срез, слои, блоки, песок, воронка, взрыв, горение, ветер, росток', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', dir: 'both', order: 'top', style: 'laser', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.35, scatter: 1, edge: 0.32, glow: 0.35, shrink: 0.85, seed: 'bottom', tendril: 0.6, bud: 0.7 }, extras: [{ type: 'title', label: 'Как растворяется' }, { key: 'style', label: 'Вид', type: 'select', options: [['laser', 'Лазерный срез: сканирующая плоскость'], ['layers', 'Сдвиг слоёв: полосы в стороны'], ['chunks', 'Блочный распад: объёмные кубы'], ['sand', 'Осыпание: частицы на пол'], ['vortex', 'Воронка: закручивание к центру'], ['shock', 'Ударная волна: импульс от центра'], ['burn', 'Испепеление: частицы вверх'], ['wind', 'Сдувание: боковой поток ветра'], ['sprout', 'Прорастание: ветвление формы']] }, { key: 'seed', label: 'Откуда растёт', type: 'select', options: [['bottom', 'Снизу вверх: от основания'], ['point', 'Из точки: случайный фокус'], ['center', 'Из центра: радиально наружу']], when: ['style', ['sprout']] }, { key: 'order', label: 'Откуда начинается', type: 'select', when: ['style', ['laser', 'layers', 'chunks', 'sand', 'vortex', 'shock', 'burn', 'wind']], options: [['top', 'Сверху вниз'], ['bottom', 'Снизу вверх'], ['side', 'Слева направо'], ['center', 'Из центра наружу'], ['edges', 'С краёв к центру'], ['noise', 'Случайные зоны']] }, { type: 'title', label: 'Запуск' }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'dir', label: 'Что дольше', type: 'seg', options: [['both', 'Поровну'], ['out', 'Распад'], ['in', 'Сборка']], when: ['mode', ['loop']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01, when: ['mode', ['slider']] }, { type: 'title', label: 'Движение частиц' }, { key: 'scatter', label: 'Размах движения', min: 0.2, max: 2.5, step: 0.05 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер и закрутка', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Лёгкая турбулентность', min: 0, max: 2, step: 0.05 }, { type: 'title', label: 'Кромка и частицы' }, { key: 'edge', label: 'Ширина кромки распада', min: 0.1, max: 0.7, step: 0.02 }, { key: 'glow', label: 'Свечение кромки', min: 0, max: 1.5, step: 0.05 }, { key: 'shrink', label: 'Мельчание частиц', min: 0, max: 1, step: 0.05 }, { key: 'tendril', label: 'Усики (неровный фронт)', min: 0, max: 1, step: 0.05, when: ['style', ['sprout']] }, { key: 'bud', label: 'Почки на кромке', min: 0, max: 1.5, step: 0.05, when: ['style', ['sprout']] }] },
+{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки превращаются в кубики. Виды: сетка, лего, дыхание, волна, ступени, разлёт. Настраиваются размер и высота', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 1, mode: 'grid', speed: 1, size: 1, height: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['grid', 'Кубическая сетка: равномерные блоки'], ['lego', 'Столбцы: рельеф разной высоты'], ['breathe', 'Дыхание: пульсирующая сетка'], ['wave', 'Волна: бегущий подъём кубов'], ['stairs', 'Террасы: ступенчатые уровни'], ['scatter', 'Дрожание: вибрация на месте']] }, { key: 'size', label: 'Размер кубиков', min: 0.4, max: 2.5, step: 0.05 }, { key: 'height', label: 'Высота и размах', min: 0, max: 2, step: 0.05, when: ['mode', ['lego', 'wave', 'stairs', 'scatter']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe', 'wave', 'scatter']] }] },
+{ id: 'scope', group: 'Звук и ритм', name: 'Осциллограф', icon: 'heartbeat', hint: 'Перо самописца бежит от точки к точке по координатам модели и вычерчивает форму линией. Ещё не пройденные точки скрыты', max: 1, def: { on: false, amount: 0.7, band: 'none', react: 0.6, mode: 'draw', order: 'walk', dir: 'fwd', loop: 'loop', speed: 1, pens: 2, chaos: 0.6, trail: 0.5, detail: 6000, dim: 1, line: 1, width: 2.4, color: '#3dff7a', tint: 0.35, thick: 0.6, glow: 1, spark: 0 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивание: контур остаётся'], ['comet', 'Комета: гаснущий световой след']] }, { key: 'order', label: 'Порядок обхода', type: 'select', options: [['walk', 'По ближайшим: связный контур'], ['up', 'Снизу вверх: вертикальная развёртка'], ['spin', 'По кругу: радиальная развёртка']] }, { key: 'dir', label: 'Направление', type: 'seg', options: [['fwd', 'Вперёд'], ['back', 'Назад']] }, { key: 'loop', label: 'В конце круга', type: 'seg', options: [['loop', 'Стирает и заново'], ['once', 'Остаётся']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'pens', label: 'Число перьев', min: 1, max: 8, step: 1, int: true }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true, when: ['order', ['walk']] }, { key: 'chaos', label: 'Хаотичность пути', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'dim', label: 'Прятать ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'color', label: 'Цвет осциллографа', type: 'color' }, { key: 'line', label: 'Яркость линии', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'width', label: 'Толщина линии', min: 0.5, max: 8, step: 0.1, when: ['order', ['walk']] }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }, { key: 'spark', label: 'Искры у пера', min: 0, max: 2, step: 0.05 }] },
+{ id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Фото или видео выдавливается объёмом по карте глубины. Виды: рельеф, ступени, дыхание, волна, рябь, карусель, разлёт слоёв', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.5, zone: 0.12, bright: 0, contrast: 1, gamma: 1, blur: 0, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Барельеф: плавное выдавливание'], ['layers', 'Ступени: чёткие плоские срезы'], ['breath', 'Дыхание: пульсация глубины'], ['wave', 'Волна: бегущий рельеф'], ['ripple', 'Рябь: концентрические круги'], ['twist', 'Карусель: сдвиг плоскостей'], ['burst', 'Выброс: разлёт слоёв к зрителю']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Глубина, что остаётся на месте', min: 0, max: 1, step: 0.01 }, { key: 'zone', label: 'Ширина зоны на месте', min: 0, max: 0.6, step: 0.01 }, { type: 'title', label: 'Правка карты глубины' }, { key: 'bright', label: 'Яркость карты', min: -0.5, max: 0.5, step: 0.01 }, { key: 'contrast', label: 'Контраст карты', min: 0.2, max: 3, step: 0.02 }, { key: 'gamma', label: 'Тени (гамма)', min: 0.3, max: 3, step: 0.02 }, { key: 'blur', label: 'Размытие карты', min: 0, max: 12, step: 1, int: true }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
+{ id: 'trail', group: 'Анимация', name: 'Шлейф', icon: 'stack', hint: 'За движущейся анимированной моделью остаются полупрозрачные копии прошлых поз. Настраиваются число копий и шаг между ними', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 0.5, count: 8, step: 0.1, fade: 0.8, pts: 25000, size: 0.6, tint: 0, shrink: 0.35 }, extras: [{ key: 'count', label: 'Сколько копий в шлейфе', min: 2, max: 24, step: 1, int: true }, { key: 'step', label: 'Время между копиями, с', min: 0.03, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Как быстро гаснут копии', min: 0.4, max: 0.97, step: 0.01 }, { key: 'shrink', label: 'Как мельчают копии', min: 0, max: 0.9, step: 0.02 }, { key: 'pts', label: 'Точек в копии', min: 5000, max: 80000, step: 1000, int: true }, { key: 'size', label: 'Размер точек', min: 0.3, max: 2.5, step: 0.05 }, { key: 'tint', label: 'Окраска цветом палитры', min: 0, max: 1, step: 0.02 }] },
+{ id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
+{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Цифровой сбой. Виды: полосы, блоки, развёртка. Цвета расходятся, на всплесках часть точек выпадает', max: 2, def: { on: false, amount: 0.8, band: 'none', react: 1, mode: 'bands', slices: 16, rgb: 'on', speed: 1, burst: 0.7, drop: 0.5 }, extras: [{ key: 'mode', label: 'Вид сбоя', type: 'select', options: [['bands', 'Полосы: горизонтальный сдвиг строк'], ['blocks', 'Блоки: объёмное смещение кубами'], ['scan', 'Развёртка: строчный разрыв']] }, { key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1, int: true }, { key: 'burst', label: 'Резкость всплесков', min: 0, max: 1, step: 0.05 }, { key: 'drop', label: 'Выпадение точек', min: 0, max: 1, step: 0.05 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
+{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются стиль, цвет, маяки, число узлов и дальность связи', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: perf.isApple || perf.tier === 'high' ? 3500 : 2000, pulses: 'on', pulseSpeed: 1.6, mode: 'classic', colorMode: 'palette', beacons: 'on' }, extras: [
+{ key: 'mode', label: 'Стиль связей', type: 'select', options: [['classic', 'Классика: равномерная паутина'], ['neural', 'Нейросеть: синапсы с импульсами'], ['constellation', 'Созвездия: тонкие нити звёзд'], ['cyber', 'Киберпанк: лазерный стробоскоп'], ['elastic', 'Натяжение: свечение от длины']] },
+{ key: 'colorMode', label: 'Цвет нитей', type: 'seg', options: [['palette', 'Палитра'], ['tension', 'Натяг'], ['neon', 'Неон'], ['rainbow', 'Радуга']] },
+{ key: 'beacons', label: 'Огоньки на узлах', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] },
+{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' },
+{ key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 },
+{ key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true },
+{ key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] },
+{ key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }
+] },
+{ id: 'slice', group: 'Графика', name: 'Срез', icon: 'scan', hint: 'По форме идёт срез. Виды: лазер (линии), рельеф (точки на линиях), развёртка (форма проявляется за плоскостью)', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'model' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
+{ id: 'feedback', group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой световой хвост из прошлых кадров. Виды: выдержка, туннель', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
+{ id: 'datamosh', group: 'Графика', name: 'Датамош', icon: 'checkerboard', hint: 'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'bleed', trigger: 'timer', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, stale: 0.2, jit: 0.4 }, extras: [
+{ type: 'title', label: 'Сбой' },
+{ type: 'button', label: 'Сломать кадр сейчас', act: 'moshKick', icon: 'lightning' },
+{ type: 'button', label: 'Вернуть чистый кадр', act: 'moshClear', icon: 'broom' },
+{ key: 'style', label: 'Вид', type: 'select', options: [['bleed', 'Размазывание: след движения'], ['blocks', 'Блоки: артефакты макроблоков'], ['melt', 'Расплав: пластичное стекание']] },
+{ key: 'trigger', label: 'Когда ломается', type: 'select', options: [['timer', 'По таймеру: равные паузы'], ['beat', 'По биту: синхронно с ритмом'], ['manual', 'Кнопкой: ручной сбой'], ['always', 'Непрерывно: постоянный сбой']] },
+{ key: 'period', label: 'Пауза между сбоями, с', min: 0.5, max: 12, step: 0.1, noNorm: true, when: ['trigger', ['timer']] },
+{ key: 'recover', label: 'Сколько держится сбой, с', min: 0.2, max: 10, step: 0.1, noNorm: true, when: ['trigger', ['timer', 'beat', 'manual']] },
+{ type: 'title', label: 'Движение' },
+{ key: 'drift', label: 'Снос в одну сторону', min: 0, max: 1, step: 0.05 },
+{ key: 'angle', label: 'Направление сноса, °', min: 0, max: 345, step: 15, int: true, noNorm: true, when: ['style', ['bleed', 'blocks', 'melt']] },
+{ key: 'flow', label: 'Течение (вихревое)', min: 0, max: 1, step: 0.05 },
+{ key: 'inertia', label: 'Инерция векторов', min: 0, max: 0.95, step: 0.05 },
+{ key: 'leak', label: 'Возврат картинки', min: 0, max: 1, step: 0.05 },
+{ type: 'title', label: 'Блоки и цвет' },
+{ key: 'block', label: 'Размер блока', type: 'seg', options: [['8', 'Мелкий'], ['16', 'Средний'], ['32', 'Крупный'], ['64', 'Огромный']] },
+{ key: 'smooth', label: 'Плавность границ блоков', min: 0, max: 1, step: 0.05 },
+{ key: 'detail', label: 'Сохранять детали кадра', min: 0, max: 1, step: 0.05 },
+{ key: 'chroma', label: 'Цветовое размазывание', min: 0, max: 1, step: 0.05 },
+{ key: 'quant', label: 'Грубые цвета блоков', min: 0, max: 1, step: 0.05 },
+{ key: 'stale', label: 'Доля залипших блоков', min: 0, max: 0.8, step: 0.05, when: ['style', ['blocks']] },
+{ key: 'jit', label: 'Сдвиг залипших блоков', min: 0, max: 1.5, step: 0.05, when: ['style', ['blocks']] },
+{ type: 'title', label: 'Готовые настройки' },
+{ type: 'button', label: 'Классика', preset: 'classic' },
+{ type: 'button', label: 'Расплав', preset: 'melt' },
+{ type: 'button', label: 'Блоки', preset: 'blocks' },
+{ type: 'button', label: 'По биту', preset: 'beat' },
+] },
+{ id: 'echo', group: 'Графика', name: 'Эхо', icon: 'ghost', hint: 'Призрачные копии формы. Виды: спираль, зеркала, ореол', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, mode: 'spiral', copies: 4, delay: 0.14, spread: 0.45, fade: 0.7 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['spiral', 'Спираль'], ['kaleido', 'Зеркала'], ['time', 'Ореол']] }, { key: 'copies', label: 'Копий', min: 1, max: 5, step: 1, int: true }, { key: 'spread', label: 'Угол между копиями', min: 0.05, max: 1.5, step: 0.05 }, { key: 'delay', label: 'Задержка, с', min: 0.02, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Затухание копий', min: 0.3, max: 0.95, step: 0.05 }] },
+{ id: 'tracking', group: 'Взаимодействие', name: 'Рамки слежения', icon: 'bounding-box', hint: 'Рамки следят за точками формы и могут её касаться: подъём, вихрь, втягивание и другое', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, opacity: 1, speed: 1, shape: 'corners', fill: 'none', color: 'auto', thick: 1.5, labels: 'on', labelSize: 1, labelInfo: 'full', labelBg: 'off', lines: 'on', lineStyle: 'dashed', lineMode: 'nearest', lineWidth: 1, lineAlpha: 0.5, follow: 'wander', mark: 'none', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ type: 'title', label: 'Рамки' }, { key: 'count', label: 'Сколько рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 8, max: 160, step: 1, int: true }, { key: 'opacity', label: 'Прозрачность рамок', min: 0.05, max: 1, step: 0.05 }, { key: 'speed', label: 'Скорость перемещения рамок', min: 0.1, max: 3, step: 0.05 }, { key: 'shape', label: 'Вид рамки', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'fill', label: 'Заливка', type: 'seg', options: [['none', 'Нет'], ['tint', 'Тон'], ['hatch', 'Штрих']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'follow', label: 'Куда смотрят рамки', type: 'seg', options: [['wander', 'Бродят'], ['pointer', 'За руками']] }, { type: 'title', label: 'Подписи' }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'labelInfo', label: 'Что написано', type: 'select', options: [['full', 'Полная телеметрия: ID, XYZ, скорость'], ['id', 'Только ID: номер объекта'], ['conf', 'ID и точность: степень уверенности'], ['coords', 'Координаты: положение X Y Z'], ['speed', 'ID и скорость: вектор движения'], ['bars', 'ID и шкалы: полосы параметров'], ['dist', 'Дистанция: расстояние до центра']], when: ['labels', ['on']] }, { key: 'labelSize', label: 'Масштаб текста', min: 0.5, max: 3, step: 0.1, when: ['labels', ['on']] }, { key: 'labelBg', label: 'Подложка под текст', type: 'seg', options: [['off', 'Нет'], ['on', 'Есть']], when: ['labels', ['on']] }, { type: 'title', label: 'Связи между рамками' }, { key: 'lines', label: 'Линии связи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lineMode', label: 'Кто с кем связан', type: 'select', options: [['nearest', 'Ближайшие пары: связь с соседом'], ['chain', 'Цепочка: последовательный контур'], ['all', 'Полная сетка: связи всех близких'], ['hub', 'Звезда: лучи к центральной рамке']], when: ['lines', ['on']] }, { key: 'lineStyle', label: 'Вид линии', type: 'select', options: [['dashed', 'Штриховая: пунктирные линии'], ['solid', 'Сплошная: непрерывные линии'], ['curve', 'Дуга: плавные кривые'], ['elbow', 'Ломаная: прямоугольные углы'], ['dots', 'Точки: точечный пунктир'], ['pulse', 'Импульс: бегущие световые огни']], when: ['lines', ['on']] }, { key: 'lineWidth', label: 'Толщина связей', min: 0.5, max: 4, step: 0.25, when: ['lines', ['on']] }, { key: 'lineAlpha', label: 'Яркость связей', min: 0.1, max: 1, step: 0.05, when: ['lines', ['on']] }, { type: 'title', label: 'Эффект в области рамок' }, { key: 'mark', label: 'Что происходит', type: 'select', options: [['none', 'Без эффекта: прозрачная область'], ['invert', 'Инверсия: негатив цветов'], ['rainbow', 'Спектр: радужный градиент'], ['hole', 'Отверстие: пульсирующая пустота'], ['lens', 'Линза: оптическое увеличение'], ['pixel', 'Пиксели: блочная мозаика'], ['glow', 'Свечение: яркий световой ореол']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'select', options: [['none', 'Без касания: только визуальная рамка'], ['bump', 'Подъём: выталкивание вперёд'], ['swirl', 'Вихрь: закручивание точек'], ['pull', 'Втягивание: притяжение к центру'], ['push', 'Отталкивание: выталкивание наружу'], ['ripple', 'Рябь: волны от рамки'], ['melt', 'Таяние: стекание точек вниз'], ['scatter', 'Разлёт: распад на искры'], ['vanish', 'Растворение: исчезновение точек']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус области', min: 0.02, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
+{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки. Настраиваются радиус и действие', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.05, max: 2, step: 0.01 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
+{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Акварель по форме: рисуйте курсором или щипком, краска смешивается как настоящая, растекается и подсыхает с тёмным краем. Есть ластик и «смыть всё»', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, tool: 'paint', color: 'auto', lock: 'on', radius: 0.14, pigment: 0.6, water: 0.5, dry: 3, edge: 0.5, grain: 0.5, mode: 'paper' }, extras: [{ type: 'title', label: 'Мазок' }, { key: 'tool', label: 'Инструмент', type: 'seg', options: [['paint', 'Краска'], ['lift', 'Ластик']] }, { key: 'lock', label: 'Камера при рисовании', type: 'seg', options: [['on', 'Стоит'], ['off', 'Крутится']] }, { key: 'color', label: 'Цвет краски', type: 'color' }, { key: 'radius', label: 'Размер кисти', min: 0.03, max: 0.6, step: 0.01 }, { key: 'pigment', label: 'Густота краски', min: 0.1, max: 1, step: 0.05, when: ['tool', ['paint']] }, { type: 'title', label: 'Растекание' }, { key: 'water', label: 'Вода: насколько растекается', min: 0, max: 1, step: 0.05 }, { key: 'dry', label: 'Время растекания, с', min: 0.5, max: 8, step: 0.5 }, { key: 'edge', label: 'Тёмный край у мазка', min: 0, max: 1, step: 0.05, when: ['tool', ['paint']] }, { type: 'title', label: 'Бумага' }, { key: 'mode', label: 'Краска ложится', type: 'seg', options: [['paper', 'На бумагу'], ['glaze', 'Прозрачно на цвет']] }, { key: 'grain', label: 'Зернистость бумаги', min: 0, max: 1, step: 0.05 }] },
+{ id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки, у каждого жеста своё действие: ладонь, кулак, щипок, указательный палец', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush', g_peace: 'wave', g_rock: 'fx:glitch', g_thumb: 'gravity', power: 0.35, radius: 0.35, depth: 0.85, spin: 5, inertia: 0.6, axis: 'y', clay: 0.5, elastic: 0.6, stretch: 'off', keep: 'on', smooth: 0.5, sens: 0.6, hold: 0.12, handsN: '2', skeleton: 'on', preview: 'on' }, extras: [{ type: 'title', label: 'Что делает жест' }, { key: 'g_palm', label: 'Ладонь (пальцы раскрыты)', type: 'select', options: FX_ACTIONS }, { key: 'g_fist', label: 'Кулак', type: 'select', options: FX_ACTIONS }, { key: 'g_pinch', label: 'Щипок (большой + указательный)', type: 'select', options: FX_ACTIONS }, { key: 'g_point', label: 'Указательный палец', type: 'select', options: FX_ACTIONS }, { key: 'g_peace', label: 'Два пальца (знак мира)', type: 'select', options: FX_ACTIONS }, { key: 'g_rock', label: 'Рога (указательный и мизинец)', type: 'select', options: FX_ACTIONS }, { key: 'g_thumb', label: 'Большой палец вверх', type: 'select', options: FX_ACTIONS }, { type: 'title', label: 'Касание пальцами' }, { key: 'power', label: 'Мощность', min: 0.05, max: 1.5, step: 0.05 }, { key: 'radius', label: 'Радиус', min: 0.02, max: 0.9, step: 0.01 }, { key: 'depth', label: 'Глубина касания', min: 0.1, max: 1.5, step: 0.05 }, { type: 'title', label: 'Вращение' }, { key: 'spin', label: 'Скорость', min: 1, max: 14, step: 0.5 }, { key: 'inertia', label: 'Инерция', min: 0, max: 0.98, step: 0.02 }, { key: 'axis', label: 'Оси', type: 'seg', options: [['y', 'Вокруг'], ['xy', 'Свободно']] }, { type: 'title', label: 'Лепка' }, { key: 'clay', label: 'Размер куска глины', min: 0.05, max: 1.2, step: 0.01 }, { key: 'elastic', label: 'Упругость (возврат формы)', min: 0, max: 3, step: 0.1 }, { type: 'title', label: 'Две руки' }, { key: 'stretch', label: 'Меняют размер формы', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']] }, { key: 'keep', label: 'Запоминать размер', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }, { type: 'title', label: 'Распознавание и показ' }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'hold', label: 'Задержка жеста, с', min: 0, max: 0.5, step: 0.02 }, { key: 'handsN', label: 'Сколько рук ищет', type: 'seg', options: [['2', 'Две'], ['1', 'Одна, быстрее']] }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
+{ id: 'gravity', group: 'Взаимодействие', name: 'Гравитация', icon: 'planet', hint: 'Точки кружат вокруг центра. Виды: галактика, кольца, квазар (падение в центр и струи), рой, невесомость', max: 1, def: { on: false, amount: 0.8, band: 'none', react: 0.4, mode: 'orbit', target: 'center', radius: 2.4, speed: 1, tilt: 0.5, precess: 0.15, flatten: 0.6, jet: 1.4, spread: 0.5 }, extras: [{ key: 'mode', label: 'Вид поля', type: 'select', options: [['orbit', 'Спиральная галактика: вращающийся диск'], ['rings', 'Планетарные кольца: встречные орбиты'], ['hole', 'Квазар: воронка и осевые джеты'], ['swarm', 'Сферический рой: свободные орбиты'], ['float', 'Невесомость: свободный дрейф']] }, { type: 'note', when: ['mode', ['orbit']], text: 'Форма раскручивается диском: у центра быстрее, на краю медленнее.' }, { type: 'note', when: ['mode', ['rings']], text: 'Форма раскладывается на круглые кольца, соседние вращаются в разные стороны, как у планеты с кольцами.' }, { type: 'note', when: ['mode', ['hole']], text: 'Точки по спирали падают в центр, а затем вылетают двумя струями вдоль оси.' }, { type: 'note', when: ['mode', ['swarm']], text: 'Каждая точка летает по своей наклонной орбите, получается шар из орбит, как у атома.' }, { type: 'note', when: ['mode', ['float']], text: 'Точки плавно покачиваются и расходятся, как в невесомости.' }, { type: 'title', label: 'Где центр' }, { key: 'target', label: 'Центр поля', type: 'seg', options: [['cursor', 'Курсор, рука'], ['center', 'Центр формы']] }, { key: 'radius', label: 'Радиус действия', min: 0.1, max: 3.5, step: 0.05 }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.1 }, { key: 'spread', label: 'Размах', min: 0, max: 1, step: 0.05, when: ['mode', ['swarm', 'float']] }, { key: 'flatten', label: 'Сплющивание в диск', min: 0, max: 0.95, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'tilt', label: 'Наклон диска', min: 0, max: 1.5, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'precess', label: 'Покачивание оси', min: 0, max: 1, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'jet', label: 'Длина струй', min: 0, max: 3, step: 0.1, when: ['mode', ['hole']] }] },
+];
+const FX_GROUPS = {
+'Видео': ['frames'],
+'Фото и видео': ['depth'],
+'Анимация': ['trail'],
+'Движение': ['curl', 'gravity', 'twist'],
+'Звук и ритм': ['spectrum', 'wave', 'blast', 'scope'],
+'Разрушение': ['physics', 'explode', 'dissolve'],
+'Цифровые': ['voxel', 'glitch', 'datamosh'],
+'Графика': ['links', 'slice', 'feedback', 'echo', 'tracking'],
+'Управление': ['cursor', 'brush', 'camTrack'],
+};
+const FX_GROUP_NAMES = Object.keys(FX_GROUPS);
+{
+const rank = (l) => {
+for (const [gi, g] of FX_GROUP_NAMES.entries()) {
+const k = FX_GROUPS[g].indexOf(l.id);
+if (k >= 0) {
+l.group = g;
+return gi * 100 + k;
+}
+}
+return 999;
+};
+FX_LAYERS.sort((a, b) => rank(a) - rank(b));
+}
+};
+__defs['src/effects/state/options.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'FX_SHAPES', () => FX_SHAPES);
+__def(__exports, 'BANDS', () => BANDS);
+__def(__exports, 'AUDIO_DEF', () => AUDIO_DEF);
+__def(__exports, 'BAND_RANGE', () => BAND_RANGE);
+__def(__exports, 'FREQ_QUICK', () => FREQ_QUICK);
+__def(__exports, 'FX_PALETTES', () => FX_PALETTES);
+__def(__exports, 'COLOR_BY', () => COLOR_BY);
+__def(__exports, 'COLOR_BY_UI', () => COLOR_BY_UI);
+__def(__exports, 'MASK_MODES', () => MASK_MODES);
+__def(__exports, 'MORPH_STYLES', () => MORPH_STYLES);
+__def(__exports, 'MORPH_SORTS', () => MORPH_SORTS);
+__def(__exports, 'MORPH_EASES', () => MORPH_EASES);
+__def(__exports, 'SYNTH_STYLES', () => SYNTH_STYLES);
+const FX_SHAPES = [
+{ id: 'model', name: 'Модель', icon: 'cube' },
+{ id: 'media', name: 'Фото', icon: 'image' },
+{ id: 'sphere', name: 'Сфера', icon: 'sphere' },
+{ id: 'torus', name: 'Тор', icon: 'target' },
+{ id: 'cube', name: 'Куб', icon: 'cube-transparent' },
+{ id: 'helix', name: 'ДНК', icon: 'dna' },
+{ id: 'saturn', name: 'Сатурн', icon: 'planet' },
+{ id: 'galaxy', name: 'Галактика', icon: 'spiral' },
+{ id: 'plane', name: 'Плоскость', icon: 'grid-four' },
+];
+const BANDS = [
+{ id: 'none', label: '—', title: 'Без реакции на звук' },
+{ id: 'bass', label: 'Бас', title: 'Низкие частоты: барабан, бас' },
+{ id: 'mid', label: 'Сер.', title: 'Средние частоты: голос, синтезатор' },
+{ id: 'high', label: 'Верх', title: 'Высокие частоты: тарелки, шипение' },
+{ id: 'beat', label: 'Бит', title: 'Удар: вспышка на каждый такт' },
+{ id: 'custom', label: 'Своя', title: 'Свой диапазон частот: выберите его на полоске спектра' },
+];
+const AUDIO_DEF = { amode: 'amp', lo: 0.05, hi: 0.3, thr: 0.5, atk: 0.03, rel: 0.35 };
+const BAND_RANGE = { bass: [0, 0.3], mid: [0.3, 0.67], high: [0.67, 1] };
+const FREQ_QUICK = [['Бочка', 40, 130], ['Бас', 60, 300], ['Голос', 300, 3400], ['Тарелки', 5000, 14000]];
+const FX_PALETTES = [
+{ id: 'brand', name: 'Янтарь', c: ['#e58a45', '#f4b27a', '#fff0dc'] },
+{ id: 'cyber', name: 'Неон', c: ['#00f0ff', '#ff1fcb', '#ffd90f'] },
+{ id: 'plasma', name: 'Плазма', c: ['#1a2bff', '#ff4010', '#fff2cc'] },
+{ id: 'aurora', name: 'Аврора', c: ['#00f2a0', '#6d2bff', '#2bb3ff'] },
+{ id: 'ice', name: 'Лёд', c: ['#8fe3ff', '#3f7dff', '#ffffff'] },
+{ id: 'sunset', name: 'Закат', c: ['#ff3d6e', '#ff9a3d', '#ffe29a'] },
+{ id: 'mono', name: 'Моно', c: ['#6b7482', '#c9d0da', '#ffffff'] },
+];
+const COLOR_BY = [
+{ id: 'disp', label: 'Палитра', title: 'Градиент выбранной палитры' },
+{ id: 'height', label: 'Высота', title: 'Градиент снизу вверх' },
+{ id: 'index', label: 'Разброс', title: 'Случайное распределение' },
+{ id: 'model', label: 'Текстура', title: 'Цвета из текстуры модели' },
+{ id: 'solid', label: 'Один цвет', title: 'Сплошная заливка цветом' },
+{ id: 'normal', label: 'Нормали', title: 'Цвет по вектору нормали' },
+];
+const COLOR_BY_UI = COLOR_BY.filter((c) => ['disp', 'model', 'solid', 'normal'].includes(c.id));
+const MASK_MODES = [
+{ id: 'none', label: 'Везде', title: 'Эффекты действуют на всю форму' },
+{ id: 'height', label: 'Высота', title: 'Живёт верхняя часть, нижняя стоит' },
+{ id: 'sphere', label: 'Сфера', title: 'Живёт область внутри шара' },
+{ id: 'noise', label: 'Пятна', title: 'Живут плавающие пятна' },
+{ id: 'scan', label: 'Скан', title: 'Живёт полоса, которая пробегает по форме' },
+];
+const MORPH_STYLES = [
+{ id: 'flow', name: 'Течение', icon: 'waves', hint: 'Точки перетекают из одной модели в другую плавными дугами', v: { scatter: 0.8, stagger: 0.35, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 } },
+{ id: 'swirl', name: 'Вихрь', icon: 'tornado', hint: 'Модель закручивается вихрем и раскручивается уже в новую форму', v: { scatter: 0.7, stagger: 0.3, turns: 1.2, sort: 'out', ease: 'soft', glow: 0.5 } },
+{ id: 'burst', name: 'Взрыв', icon: 'asterisk', hint: 'Модель взрывается на частицы, они падают на пол и лежат, потом собираются в новую модель', v: { scatter: 1.2, stagger: 0.25, turns: 1, sort: 'out', ease: 'smooth', glow: 0.7 } },
+{ id: 'scan', name: 'Сканер', icon: 'scan', hint: 'Линия сканера идёт по модели сверху вниз и на ходу собирает за собой новую форму', v: { scatter: 0.12, stagger: 2.2, turns: 1, sort: 'down', ease: 'smooth', glow: 1.0 } },
+{ id: 'dust', name: 'Пыль', icon: 'wind', hint: 'Старая форма поднимается облаком пыли, новая оседает из него', v: { scatter: 0.9, stagger: 0.55, turns: 1, sort: 'random', ease: 'soft', glow: 0.3 } },
+{ id: 'sand', name: 'Осыпание', icon: 'drop', hint: 'Точки осыпаются вниз, как песок, и снизу вырастает новая форма', v: { scatter: 0.9, stagger: 0.5, turns: 1, sort: 'down', ease: 'smooth', glow: 0.2 } },
+];
+const MORPH_SORTS = [
+['random', 'Случайно: хаотичный порядок'],
+['up', 'Снизу вверх: вертикальный подъём'],
+['down', 'Сверху вниз: оседание точек'],
+['out', 'От центра: радиальный разлёт'],
+['side', 'Слева направо: боковой сдвиг'],
+];
+const MORPH_EASES = [['smooth', 'Плавно'], ['soft', 'Очень мягко'], ['spring', 'С перелётом']];
+const SYNTH_STYLES = [
+{ id: 'deep', name: 'Спокойный: тёплые пады и арпеджио' },
+{ id: 'ambient', name: 'Эмбиент: атмосферный дрейф' },
+{ id: 'jungle', name: 'Джангл: ритмичный бит 150 BPM' },
+];
+};
+__defs['src/effects/state/defaults.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'defaultState', () => defaultState);
+__def(__exports, 'KEY', () => KEY);
+const { FX_LAYERS } = __req('src/effects/state/layers.js');
+const { AUDIO_DEF } = __req('src/effects/state/options.js');
+function defaultState() {
+const layers = {};
+for (const l of FX_LAYERS) layers[l.id] = { ...AUDIO_DEF, ...l.def };
+return {
+source: 'sphere',
+count: 150000,
+layers,
+media: { pts: 80000, relief: 'bright', depth: 0.5 },
+morphCfg: { mode: 'manual', interval: 4, time: 2.6, order: 'seq', weight: 'auto', style: 'flow', scatter: 0.8, stagger: 0.35, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 },
+mask: { mode: 'none', size: 0.5, soft: 0.4, speed: 0.5, invert: false, show: false },
+look: {
+bg: '',
+grid: false,
+vignette: true,
+palette: 'brand',
+colorBy: 'disp',
+size: 3.5,
+glow: 0.8,
+bright: 1,
+blend: 'normal',
+hud: false,
+hudSpectrum: true,
+autoRotate: false,
+rotSpeed: 0.25,
+sizeNoise: 0.0,
+sizeAudio: 0.0,
+brightAudio: 0.0,
+audioBand: 'bass',
+glyph: 'off',
+shade: 0,
+bloom: 0.0,
+aberration: 0.0,
+dofOn: false,
+dofDist: 5.2,
+dofRange: 1.4,
+},
+audio: { style: 'deep', gain: 1.3, idle: false, idleSet: false, volume: 0.8 },
+anim: { dur: 8, loop: true, keys: [], clips: [], markers: [], work: null, speed: 1, lanes: {} },
+};
+}
+const KEY = 'objglb.fx.v9';
 };
 __defs['src/i18n/en.js'] = function (__exports, __req) {
 'use strict';
@@ -78799,1056 +79820,1285 @@ const n = parseInt(hex.slice(1), 16);
 return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${Math.max(0, Math.min(1, a))})`;
 }
 };
-__defs['src/animation/anim-controller.js'] = function (__exports, __req) {
+__defs['src/effects/engine/frames.js'] = function (__exports, __req) {
 'use strict';
-__def(__exports, 'AnimController', () => AnimController);
-__def(__exports, 'evalAnimPoints', () => evalAnimPoints);
+__def(__exports, 'FramesPart', () => FramesPart);
 const THREE = __req('vendor/three/build/three.module.js');
-class AnimController {
-constructor(app) {
-this.app = app;
-this.models = [];
-this.playing = false;
-this.speed = 1;
-this.loop = true;
-this.clipIndex = 0;
-this.time = 0;
-this.skeletonOn = false;
-this.version = 0;
-this._listeners = new Set();
+const { clamp } = __req('src/core/util.js');
+const { buildFrameBlock, frameGrid, writeFrameColors } = __req('src/effects/frames/frame-block.js');
+class FramesPart {
+get videoLoaded() {
+const pm = this.pm;
+return !!(pm && pm.ready && pm.kind === 'video' && pm.el);
 }
-onChange(fn) {
-this._listeners.add(fn);
-return () => this._listeners.delete(fn);
+get videoReady() {
+return this.videoLoaded && this.pm.el.readyState >= 2;
 }
-_emit() {
-for (const f of this._listeners) f();
+_layoutId(name) {
+return Math.max(0, ['stack', 'wall', 'film', 'tunnel'].indexOf(name));
 }
-get has() {
-return this.models.length > 0;
-}
-get clips() {
-return this.models.length ? this.models[0].clips : [];
-}
-get duration() {
-const c = this.clips[this.clipIndex];
-return c ? Math.max(c.duration, 0.01) : 1;
-}
-scan() {
-const root = this.app.viewport.root;
-const found = [];
-for (const o of root.children) {
-if (o.userData.helper) continue;
-if (o.userData.clips && o.userData.clips.length) found.push(o);
-}
-const keep = [];
-for (const m of this.models) {
-if (found.includes(m.obj) && m.obj.parent === root) keep.push(m);
-else this._dispose(m);
-}
-for (const obj of found) {
-if (keep.some((m) => m.obj === obj)) continue;
-obj.traverse((o) => {
-if (o.isSkinnedMesh) o.frustumCulled = false;
-});
-const mixer = new THREE.AnimationMixer(obj);
-const m = { obj, mixer, clips: obj.userData.clips, helper: null, action: null };
-keep.push(m);
-}
-const had = this.models.length;
-this.models = keep;
-if (this.clipIndex >= this.clips.length) this.clipIndex = 0;
-if (this.models.length && !had) {
-this.playing = true;
-this.time = 0;
-}
-if (!this.models.length) this.playing = false;
-this._setClip();
-this._helpers();
-this.apply();
-this._emit();
-}
-_dispose(m) {
-try {
-m.mixer.stopAllAction();
-m.mixer.uncacheRoot(m.obj);
-} catch (e) {
-}
-if (m.helper) {
-m.helper.removeFromParent();
-m.helper.dispose();
-m.helper = null;
-}
-if (m.joints) {
-m.joints.removeFromParent();
-m.joints.geometry.dispose();
-m.joints = null;
-}
-}
-_setClip() {
-for (const m of this.models) {
-if (m.action) m.action.stop();
-const clip = m.clips[Math.min(this.clipIndex, m.clips.length - 1)];
-m.action = clip ? m.mixer.clipAction(clip) : null;
-if (m.action) {
-m.action.setLoop(THREE.LoopRepeat, Infinity);
-m.action.play();
-}
-}
-}
-_helpers() {
-for (const m of this.models) {
-let hasBones = false;
-m.obj.traverse((o) => {
-if (o.isBone || o.isSkinnedMesh) hasBones = true;
-});
-if (this.skeletonOn && hasBones && !m.helper) {
-m.helper = new THREE.SkeletonHelper(m.obj);
-m.helper.userData.helper = true;
-m.helper.material.depthTest = false;
-m.helper.material.transparent = true;
-m.helper.renderOrder = 999;
-m.helper.frustumCulled = false;
-m.helper.material.toneMapped = false;
-m.helper.material.vertexColors = false;
-m.helper.material.color.set('#ffd27a');
-m.bones = [];
-m.obj.traverse((o) => o.isBone && m.bones.push(o));
-const jg = new THREE.BufferGeometry();
-jg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(m.bones.length * 3), 3));
-m.joints = new THREE.Points(jg, new THREE.PointsMaterial({ size: 8, sizeAttenuation: false, color: '#ff9a3c', depthTest: false, depthWrite: false, transparent: true, toneMapped: false }));
-m.joints.userData.helper = true;
-m.joints.frustumCulled = false;
-m.joints.renderOrder = 1000;
-m.joints.matrixAutoUpdate = false;
-this.app.viewport.root.add(m.joints);
-this.app.viewport.root.add(m.helper);
-}
-if (m.helper) m.helper.visible = this.skeletonOn;
-if (m.joints) m.joints.visible = this.skeletonOn;
-}
-}
-setClip(i) {
-this.clipIndex = Math.max(0, Math.min(this.clips.length - 1, i | 0));
-this.time = 0;
-this._setClip();
-this.apply();
-this._emit();
-}
-play() {
-if (!this.has) return;
-this.playing = true;
-this.app.viewport.invalidate();
-this._emit();
-}
-pause() {
-this.playing = false;
-this._emit();
-}
-toggle() {
-if (this.playing) this.pause();
-else this.play();
-}
-seek(t) {
-this.time = Math.max(0, Math.min(this.duration, t));
-this.apply();
-this._emit();
-}
-setSpeed(v) {
-this.speed = v;
-this._emit();
-}
-setLoop(v) {
-this.loop = v;
-this._emit();
-}
-setSkeleton(v) {
-this.skeletonOn = v;
-this._helpers();
-this.app.viewport.invalidate();
-this._emit();
-}
-syncTime(t) {
-if (!this.has) return;
-const d = this.duration;
-this.time = this.loop ? (t * this.speed) % d : Math.min(d, t * this.speed);
-this.apply();
-}
-animatedBounds(samples = 14) {
-const box = new THREE.Box3();
-const saved = this.time;
-for (let i = 0; i <= samples; i++) {
-this.time = (i / samples) * this.duration;
-this.apply();
-for (const m of this.models) {
-m.obj.updateWorldMatrix(true, true);
-m.obj.traverse((o) => o.isSkinnedMesh && o.computeBoundingBox());
-box.union(new THREE.Box3().setFromObject(m.obj));
-}
-}
-this.time = saved;
-this.apply();
-return box;
-}
-tick(dt) {
-if (!this.has || !this.playing) return false;
-this.time += dt * this.speed;
-const d = this.duration;
-if (this.time >= d) {
-if (this.loop) this.time %= d;
-else {
-this.time = d;
-this.playing = false;
-this._emit();
-}
-} else if (this.time < 0) this.time = this.loop ? d + (this.time % d) : 0;
-this.apply();
-this.app.viewport.invalidate();
-return true;
-}
-_movePoints() {
-for (const o of this.app.viewport.root.children) {
-const a = o.userData.animPts;
-if (!a || !o.isPoints) continue;
-const pos = o.geometry.attributes.position;
-if (pos.count !== a.part.length) continue;
-evalAnimPoints(a, null, pos.array);
-pos.needsUpdate = true;
-o.geometry.boundingSphere = null;
-o.geometry.boundingBox = null;
-}
-}
-apply() {
-for (const m of this.models) {
-if (!m.action) continue;
-const clip = m.action.getClip();
-m.mixer.setTime(clip.duration > 0 ? Math.min(this.time, clip.duration - 1e-4) : 0);
-m.obj.updateMatrixWorld(true);
-m.obj.traverse((o) => {
-if (o.isSkinnedMesh && o.skeleton) o.skeleton.update();
-});
-if (m.joints && m.bones) {
-const a = m.joints.geometry.attributes.position.array;
-const v = new THREE.Vector3();
-m.bones.forEach((b, i) => {
-b.getWorldPosition(v);
-a[i * 3] = v.x;
-a[i * 3 + 1] = v.y;
-a[i * 3 + 2] = v.z;
-});
-m.joints.geometry.attributes.position.needsUpdate = true;
-}
-}
-this._movePoints();
-if (this.app.model?.selection?.length) this.app.viewport.updateSelectionBox();
-else this.app.viewport.invalidate();
-this.version++;
-this.app.bus.emit('animpose');
-}
-}
-function evalAnimPoints(anim, norm, out, outN = null) {
-const { parts, part, bp, bi, bw, bn } = anim;
-const n = part.length;
-const post = parts.map((p) => {
-const mw = p.mesh.matrixWorld;
-if (p.skinned) {
-const inv = p.mesh.bindMatrixInverse;
-p.mesh.updateWorldMatrix(true, false);
-return { m: new THREE.Matrix4().multiplyMatrices(p.mesh.matrixWorld, inv).elements, bones: p.mesh.skeleton.boneMatrices };
-}
-return { m: mw.elements, bones: null };
-});
-const cx = norm ? norm.cx : 0, cy = norm ? norm.cy : 0, cz = norm ? norm.cz : 0, k = norm ? norm.k : 1;
-for (let i = 0; i < n; i++) {
-const P = post[part[i]];
-const x = bp[i * 3], y = bp[i * 3 + 1], z = bp[i * 3 + 2];
-let sx = x, sy = y, sz = z;
-if (P.bones) {
-sx = sy = sz = 0;
-let wsum = 0;
-const B = P.bones;
-for (let j = 0; j < 4; j++) {
-const w = bw[i * 4 + j];
-if (w <= 0) continue;
-const o = bi[i * 4 + j] * 16;
-sx += w * (B[o] * x + B[o + 4] * y + B[o + 8] * z + B[o + 12]);
-sy += w * (B[o + 1] * x + B[o + 5] * y + B[o + 9] * z + B[o + 13]);
-sz += w * (B[o + 2] * x + B[o + 6] * y + B[o + 10] * z + B[o + 14]);
-wsum += w;
-}
-if (wsum < 1e-6) {
-sx = x;
-sy = y;
-sz = z;
-}
-}
-const e = P.m;
-const wx = e[0] * sx + e[4] * sy + e[8] * sz + e[12];
-const wy = e[1] * sx + e[5] * sy + e[9] * sz + e[13];
-const wz = e[2] * sx + e[6] * sy + e[10] * sz + e[14];
-out[i * 3] = (wx - cx) * k;
-out[i * 3 + 1] = (wy - cy) * k;
-out[i * 3 + 2] = (wz - cz) * k;
-if (outN && bn) {
-const nx = bn[i * 3], ny = bn[i * 3 + 1], nz = bn[i * 3 + 2];
-let tx = nx, ty = ny, tz = nz;
-if (P.bones && (nx || ny || nz)) {
-tx = ty = tz = 0;
-const B = P.bones;
-let ws = 0;
-for (let j = 0; j < 4; j++) {
-const w = bw[i * 4 + j];
-if (w <= 0) continue;
-const o = bi[i * 4 + j] * 16;
-tx += w * (B[o] * nx + B[o + 4] * ny + B[o + 8] * nz);
-ty += w * (B[o + 1] * nx + B[o + 5] * ny + B[o + 9] * nz);
-tz += w * (B[o + 2] * nx + B[o + 6] * ny + B[o + 10] * nz);
-ws += w;
-}
-if (ws < 1e-6) {
-tx = nx;
-ty = ny;
-tz = nz;
-}
-}
-const gx = e[0] * tx + e[4] * ty + e[8] * tz;
-const gy = e[1] * tx + e[5] * ty + e[9] * tz;
-const gz = e[2] * tx + e[6] * ty + e[10] * tz;
-const gl = Math.hypot(gx, gy, gz) || 1;
-outN[i * 3] = gx / gl;
-outN[i * 3 + 1] = gy / gl;
-outN[i * 3 + 2] = gz / gl;
-}
-}
-}
+_frameTaker(cols, rows, el) {
+const cv = document.createElement('canvas');
+cv.width = cols;
+cv.height = rows;
+const ctx = cv.getContext('2d', { willReadFrequently: true });
+return (out) => {
+ctx.drawImage(el || this.pm.el, 0, 0, cols, rows);
+out.set(ctx.getImageData(0, 0, cols, rows).data);
+return out;
 };
-__defs['src/effects/input/depth-ai.js'] = function (__exports, __req) {
-'use strict';
-__def(__exports, 'DepthAI', () => DepthAI);
-__def(__exports, 'grabFrame', () => grabFrame);
-__def(__exports, 'grabRGB', () => grabRGB);
-__def(__exports, 'normalizeDepth', () => normalizeDepth);
-__def(__exports, 'lumaDepth', () => lumaDepth);
-__def(__exports, 'adjustDepth', () => adjustDepth);
-__def(__exports, 'depthToGrid', () => depthToGrid);
-const LIB = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
-const MODEL = 'onnx-community/depth-anything-v2-small';
-const WORKER_SRC = `
-const LIBURL = '${LIB}';
-const libP = import(LIBURL);
-let depther = null;
-let T = null;
-const post = (m, tr) => self.postMessage(m, tr || []);
-async function make(dev) {
-	if (dev === 'wasm') T.env.backends.onnx.wasm.numThreads = 1;
-	return T.pipeline('depth-estimation', '${MODEL}', { device: dev, dtype: dev === 'webgpu' ? 'fp16' : 'q8', progress_callback: (p) => post({ type: 'progress', p }) });
 }
-async function run(img) {
-	const out = await depther(new T.RawImage(img.data, img.w, img.h, 4));
-	const t = out.predicted_depth;
-	const d = t.dims;
-	return { w: d[d.length - 1], h: d[d.length - 2], data: new Float32Array(t.data) };
+async _capVideo() {
+const src = this.pm.el.currentSrc || this.pm.el.src;
+const v = document.createElement('video');
+v.muted = true;
+v.playsInline = true;
+v.preload = 'auto';
+v.src = src;
+await new Promise((res, rej) => {
+v.onloadeddata = res;
+v.onerror = () => rej(new Error('не удалось открыть видео для съёмки кадров'));
+setTimeout(res, 8000);
+});
+return v;
 }
-self.onmessage = async (e) => {
-	const m = e.data;
-	try {
-		if (!T) {
-			T = await libP;
-			T.env.allowLocalModels = false;
-		}
-		if (m.type === 'init') {
-			const order = typeof navigator !== 'undefined' && navigator.gpu && !m.noGpu ? ['webgpu', 'wasm'] : ['wasm'];
-			let last = null;
-			for (const dev of order) {
-				try {
-					depther = await make(dev);
-					// пробный прогон: на некоторых видеокартах сессия создаётся, но считает мусор
-					const probe = new Uint8ClampedArray(56 * 56 * 4);
-					for (let i = 0; i < probe.length; i += 4) probe[i] = probe[i + 1] = probe[i + 2] = (i / 4) % 56 * 4, probe[i + 3] = 255;
-					const r = await run({ data: probe, w: 56, h: 56 });
-					for (let i = 0; i < r.data.length; i++) if (!Number.isFinite(r.data[i])) throw new Error('Нейросеть вернула некорректный результат');
-					post({ type: 'ready', device: dev });
-					return;
-				} catch (err) {
-					last = err;
-					depther = null;
-				}
-			}
-			throw last || new Error('Не удалось запустить нейросеть');
-		} else if (m.type === 'run') {
-			const r = await run(m);
-			post({ type: 'depth', id: m.id, w: r.w, h: r.h, data: r.data }, [r.data.buffer]);
-		}
-	} catch (err) {
-		post({ type: 'error', id: m.id, message: String((err && err.message) || err) });
-	}
+_seekTo(el, t) {
+return new Promise((res) => {
+if (Math.abs(el.currentTime - t) < 0.02 && el.readyState >= 2) return res();
+const done = () => {
+el.removeEventListener('seeked', done);
+clearTimeout(to);
+res();
 };
-`;
-class DepthAI {
-constructor() {
-this.worker = null;
-this.phase = 'idle';
-this.prog = 0;
-this.device = '';
-this.error = '';
-this.onChange = null;
-this._files = new Map();
-this._jobs = new Map();
-this._seq = 0;
-this._ready = null;
+const to = setTimeout(done, 900);
+el.addEventListener('seeked', done);
+el.currentTime = t;
+});
 }
-get ready() {
-return this.phase === 'ready';
-}
-get busy() {
-return this._jobs.size > 0;
-}
-_emit() {
-if (this.onChange) this.onChange();
-}
-init() {
-if (this._ready) return this._ready;
-this.phase = 'loading';
-this.prog = 0;
-this.error = '';
-this._files.clear();
-this._emit();
-this._ready = new Promise((resolve, reject) => {
-let url = '';
+async captureFramesForExport(n, cols, rows, onProgress) {
+const cap = await this._capVideo();
 try {
-url = URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' }));
-this.worker = new Worker(url, { type: 'module' });
-} catch (e) {
-this._fail(e, reject);
+const take = this._frameTaker(cols, rows, cap);
+const dur = cap.duration || this.pm.el.duration || 1;
+const out = [];
+for (let k = 0; k < n; k++) {
+await this._seekTo(cap, Math.min(Math.max(0.05, dur - 0.04), (k / Math.max(1, n - 1)) * dur));
+out.push(take(new Uint8Array(cols * rows * 4)));
+onProgress && onProgress((k + 1) / n);
+}
+return out;
+} finally {
+cap.removeAttribute('src');
+cap.load();
+}
+}
+_capStatus(text) {
+if (!text) {
+this._capEl?.remove();
+this._capEl = null;
 return;
 }
-this.worker.onerror = (e) => this._fail(new Error(e.message || 'Не удалось запустить нейросеть. Проверьте интернет'), reject);
-this.worker.onmessage = (e) => {
-const m = e.data;
-if (m.type === 'progress') {
-const p = m.p || {};
-if (p.file && p.total && /\.onnx/.test(p.file)) {
-this._files.set(p.file, { loaded: p.loaded || 0, total: p.total });
-let l = 0, t = 0;
-for (const f of this._files.values()) {
-l += f.loaded;
-t += f.total;
+if (!this._capEl) {
+this._capEl = document.createElement('div');
+this._capEl.className = 'fx-cap';
+document.getElementById('viewport')?.append(this._capEl);
 }
-this.prog = t ? Math.min(0.98, l / t) : 0;
-this._emit();
+this._capEl.textContent = text;
 }
-} else if (m.type === 'ready') {
-this.phase = 'ready';
-this.prog = 1;
-this.device = m.device;
-this._emit();
-resolve();
-} else if (m.type === 'depth') {
-const job = this._jobs.get(m.id);
-this._jobs.delete(m.id);
-if (job) job.resolve({ w: m.w, h: m.h, data: m.data });
-this._emit();
-} else if (m.type === 'error') {
-const job = this._jobs.get(m.id);
-if (job) {
-this._jobs.delete(m.id);
-job.reject(new Error(m.message));
-} else this._fail(new Error(m.message), reject);
+async _captureList(fr, list, onEach) {
+const take = (fr.take ||= this._frameTaker(fr.cols, fr.rows, fr.cap));
+for (const k of list) {
+if (fr.dead) return false;
+await this._seekTo(fr.cap, fr.times[k]);
+if (fr.dead) return false;
+take(fr.frames[k]);
+fr.done[k] = 1;
+onEach && onEach(k);
 }
+return true;
+}
+_fillGaps(fr) {
+const have = [];
+for (let k = 0; k < fr.n; k++) if (fr.done[k]) have.push(k);
+if (!have.length) return;
+for (let k = 0; k < fr.n; k++) {
+if (fr.done[k]) continue;
+let best = have[0];
+for (const j of have) if (Math.abs(j - k) < Math.abs(best - k)) best = j;
+fr.frames[k].set(fr.frames[best]);
+}
+}
+async _refineFrames(fr, order) {
+const tex = this._frameTex;
+let count = fr.done.reduce((a, b) => a + b, 0);
+let batch = 0;
+const flush = () => {
+if (!batch || fr.dead || this._frameTex !== tex) return;
+tex.needsUpdate = true;
+batch = 0;
 };
-this.worker.postMessage({ type: 'init' });
+const ok = await this._captureList(fr, order, (k) => {
+count++;
+tex.addLayerUpdate && tex.addLayerUpdate(k);
+if (++batch >= 6) flush();
+if (count % 4 === 0) this._capStatus(`Снимаю кадры: ${Math.round((count / fr.n) * 100)}%`);
 });
-return this._ready;
+flush();
+if (!fr.dead) this._capStatus('');
+this._closeCap(fr);
 }
-_fail(err, reject) {
-this.phase = 'error';
-this.error = err.message || String(err);
-for (const j of this._jobs.values()) j.reject(err);
-this._jobs.clear();
-try {
-this.worker?.terminate();
-} catch (e) {
+_closeCap(fr) {
+if (!fr?.cap) return;
+fr.cap.removeAttribute('src');
+fr.cap.load();
+fr.cap = null;
+fr.take = null;
 }
-this.worker = null;
-this._ready = null;
-this._emit();
-if (reject) reject(err);
-}
-async estimate(img) {
-await this.init();
-const id = ++this._seq;
-const p = new Promise((resolve, reject) => this._jobs.set(id, { resolve, reject }));
-this.worker.postMessage({ type: 'run', id, data: img.data, w: img.w, h: img.h }, [img.data.buffer]);
-this._emit();
-return p;
-}
-dispose() {
-try {
-this.worker?.terminate();
-} catch (e) {
-}
-this.worker = null;
-this._ready = null;
-this.phase = 'idle';
-}
-}
-let grabCanvas = null;
-function grabFrame(el, maxSide = 518) {
-const sw = el.videoWidth || el.naturalWidth || el.width;
-const sh = el.videoHeight || el.naturalHeight || el.height;
-if (!sw || !sh) return null;
-const k = Math.min(1, maxSide / Math.max(sw, sh));
-const w = Math.max(14, Math.round(sw * k));
-const h = Math.max(14, Math.round(sh * k));
-grabCanvas ||= document.createElement('canvas');
-grabCanvas.width = w;
-grabCanvas.height = h;
-const g = grabCanvas.getContext('2d', { willReadFrequently: true });
-g.drawImage(el, 0, 0, w, h);
-return { data: g.getImageData(0, 0, w, h).data, w, h };
-}
-function grabRGB(rgb, cols, rows) {
-const data = new Uint8ClampedArray(cols * rows * 4);
-for (let i = 0, j = 0, k = 0; i < cols * rows; i++, j += 3, k += 4) {
-data[k] = rgb[j];
-data[k + 1] = rgb[j + 1];
-data[k + 2] = rgb[j + 2];
-data[k + 3] = 255;
-}
-return { data, w: cols, h: rows };
-}
-function normalizeDepth(raw, st, smooth = 0) {
-const n = raw.length;
-let mn = Infinity, mx = -Infinity;
-for (let i = 0; i < n; i++) {
-const v = raw[i];
-if (v < mn) mn = v;
-if (v > mx) mx = v;
-}
-const span = Math.max(mx - mn, 1e-6);
-const hist = new Uint32Array(256);
-for (let i = 0; i < n; i++) hist[Math.min(255, ((raw[i] - mn) / span) * 255.999 | 0)]++;
-let acc = 0, lo = mn, hi = mx;
-for (let b = 0; b < 256; b++) {
-acc += hist[b];
-if (acc >= n * 0.01) {
-lo = mn + (b / 255) * span;
-break;
-}
-}
-acc = 0;
-for (let b = 255; b >= 0; b--) {
-acc += hist[b];
-if (acc >= n * 0.01) {
-hi = mn + ((b + 1) / 255) * span;
-break;
-}
-}
-if (hi - lo < 1e-6) hi = lo + 1e-6;
-if (st.init && smooth > 0) {
-lo = st.lo + (lo - st.lo) * smooth;
-hi = st.hi + (hi - st.hi) * smooth;
-}
-st.lo = lo;
-st.hi = hi;
-st.init = true;
-const out = new Float32Array(n);
-const inv = 1 / (hi - lo);
-for (let i = 0; i < n; i++) {
-const v = (raw[i] - lo) * inv;
-out[i] = v < 0 ? 0 : v > 1 ? 1 : v;
-}
-return out;
-}
-function lumaDepth(rgb, w, h) {
-const l = new Float32Array(w * h);
-for (let i = 0, k = 0; i < l.length; i++, k += 3) l[i] = (0.299 * rgb[k] + 0.587 * rgb[k + 1] + 0.114 * rgb[k + 2]) / 255;
-const t = new Float32Array(w * h);
-for (let y = 0; y < h; y++) {
-for (let x = 0; x < w; x++) {
-const i = y * w + x;
-t[i] = (l[x > 0 ? i - 1 : i] + l[i] * 2 + l[x < w - 1 ? i + 1 : i]) * 0.25;
-}
-}
-const o = new Float32Array(w * h);
-for (let y = 0; y < h; y++) {
-for (let x = 0; x < w; x++) {
-const i = y * w + x;
-o[i] = (t[y > 0 ? i - w : i] + t[i] * 2 + t[y < h - 1 ? i + w : i]) * 0.25;
-}
-}
-return { w, h, data: o };
-}
-function adjustDepth(map, o) {
-const { w, h } = map;
-const n = w * h;
-let d = map.data;
-const r = Math.round(o.blur || 0);
-if (r > 0) {
-const box = (src, horiz) => {
-const out = new Float32Array(n);
-const len = horiz ? w : h;
-const lines = horiz ? h : w;
-const step = horiz ? 1 : w;
-for (let l = 0; l < lines; l++) {
-const base = horiz ? l * w : l;
-let acc = 0;
-for (let k = -r; k <= r; k++) acc += src[base + Math.min(len - 1, Math.max(0, k)) * step];
-for (let k = 0; k < len; k++) {
-out[base + k * step] = acc / (2 * r + 1);
-acc += src[base + Math.min(len - 1, k + r + 1) * step] - src[base + Math.max(0, k - r) * step];
-}
-}
-return out;
-};
-d = box(box(box(box(d, true), false), true), false);
-}
-const c = o.contrast ?? 1, b = o.bright || 0, g = o.gamma ?? 1;
-const out = new Float32Array(n);
-for (let i = 0; i < n; i++) {
-let v = (d[i] - 0.5) * c + 0.5 + b;
-v = v < 0 ? 0 : v > 1 ? 1 : v;
-out[i] = g === 1 ? v : Math.pow(v, g);
-}
-return { w, h, data: out };
-}
-function depthToGrid(map, cols, rows, out) {
-const { w, h, data } = map;
-for (let r = 0; r < rows; r++) {
-const fy = Math.min(h - 1, Math.max(0, ((r + 0.5) / rows) * h - 0.5));
-const y0 = fy | 0, y1 = Math.min(h - 1, y0 + 1), ty = fy - y0;
-for (let c = 0; c < cols; c++) {
-const fx = Math.min(w - 1, Math.max(0, ((c + 0.5) / cols) * w - 0.5));
-const x0 = fx | 0, x1 = Math.min(w - 1, x0 + 1), tx = fx - x0;
-const a = data[y0 * w + x0] * (1 - tx) + data[y0 * w + x1] * tx;
-const b = data[y1 * w + x0] * (1 - tx) + data[y1 * w + x1] * tx;
-out[r * cols + c] = a * (1 - ty) + b * ty;
-}
-}
-}
-};
-__defs['src/io/gif-encoder.js'] = function (__exports, __req) {
-'use strict';
-__def(__exports, 'encodeGIF', () => encodeGIF);
-function buildPalette(samples) {
-const px = [];
-for (let i = 0; i < samples.length; i += 4) px.push((samples[i] << 16) | (samples[i + 1] << 8) | samples[i + 2]);
-let boxes = [px];
-const chan = (v, c) => (v >> (16 - c * 8)) & 255;
-while (boxes.length < 256) {
-let bi = -1;
-let bestRange = 0;
-let bestC = 0;
-boxes.forEach((b, i) => {
-if (b.length < 2) return;
-for (let c = 0; c < 3; c++) {
-let mn = 255;
-let mx = 0;
-for (const v of b) {
-const x = chan(v, c);
-if (x < mn) mn = x;
-if (x > mx) mx = x;
-}
-if (mx - mn > bestRange) {
-bestRange = mx - mn;
-bi = i;
-bestC = c;
-}
-}
-});
-if (bi < 0 || bestRange < 1) break;
-const b = boxes[bi].sort((p, q) => chan(p, bestC) - chan(q, bestC));
-const mid = b.length >> 1;
-boxes.splice(bi, 1, b.slice(0, mid), b.slice(mid));
-}
-const pal = new Uint8Array(256 * 3);
-boxes.forEach((b, i) => {
-let r = 0, g = 0, bl = 0;
-for (const v of b) {
-r += (v >> 16) & 255;
-g += (v >> 8) & 255;
-bl += v & 255;
-}
-const n = b.length || 1;
-pal[i * 3] = r / n;
-pal[i * 3 + 1] = g / n;
-pal[i * 3 + 2] = bl / n;
-});
-return { pal, size: boxes.length };
-}
-function lzw(indices) {
-const minCode = 8;
-const clear = 1 << minCode;
-const eoi = clear + 1;
-let size = minCode + 1;
-let next = eoi + 1;
-const dict = new Map();
-const out = [];
-let cur = 0;
-let bits = 0;
-const emit = (code) => {
-cur |= code << bits;
-bits += size;
-while (bits >= 8) {
-out.push(cur & 255);
-cur >>>= 8;
-bits -= 8;
-}
-};
-emit(clear);
-let prefix = indices[0];
-for (let i = 1; i < indices.length; i++) {
-const k = indices[i];
-const key = (prefix << 8) | k;
-const found = dict.get(key);
-if (found !== undefined) {
-prefix = found;
-continue;
-}
-emit(prefix);
-if (next > (1 << size) - 1 && size < 12) size++;
-if (next < 4096) dict.set(key, next++);
-else {
-emit(clear);
-dict.clear();
-next = eoi + 1;
-size = minCode + 1;
-}
-prefix = k;
-}
-emit(prefix);
-emit(eoi);
-if (bits > 0) out.push(cur & 255);
-return out;
-}
-async function encodeGIF(frames, w, h, delay, onProgress) {
-const step = Math.max(1, Math.floor(frames.length / 8));
-const sample = [];
-for (let f = 0; f < frames.length; f += step) {
-const d = frames[f].data;
-for (let i = 0; i < d.length; i += 4 * 37) sample.push(d[i], d[i + 1], d[i + 2], 255);
-}
-const { pal, size } = buildPalette(Uint8Array.from(sample));
-const cache = new Map();
-const nearest = (r, g, b) => {
-const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
-let v = cache.get(key);
-if (v !== undefined) return v;
-let best = 0;
-let bd = 1e9;
-for (let i = 0; i < size; i++) {
-const dr = pal[i * 3] - r, dg = pal[i * 3 + 1] - g, db = pal[i * 3 + 2] - b;
-const d = dr * dr * 3 + dg * dg * 4 + db * db * 2;
-if (d < bd) {
-bd = d;
-best = i;
-}
-}
-cache.set(key, best);
-return best;
-};
-const bytes = [];
-const w16 = (v) => bytes.push(v & 255, (v >> 8) & 255);
-for (const c of 'GIF89a') bytes.push(c.charCodeAt(0));
-w16(w);
-w16(h);
-bytes.push(0xf7, 0, 0);
-for (let i = 0; i < 768; i++) bytes.push(pal[i]);
-bytes.push(0x21, 0xff, 0x0b);
-for (const c of 'NETSCAPE2.0') bytes.push(c.charCodeAt(0));
-bytes.push(3, 1, 0, 0, 0);
-for (let f = 0; f < frames.length; f++) {
-const d = frames[f].data;
-const idx = new Uint8Array(w * h);
-for (let i = 0, p = 0; p < idx.length; i += 4, p++) idx[p] = nearest(d[i], d[i + 1], d[i + 2]);
-bytes.push(0x21, 0xf9, 4, 0x04);
-w16(delay);
-bytes.push(0, 0);
-bytes.push(0x2c);
-w16(0);
-w16(0);
-w16(w);
-w16(h);
-bytes.push(0, 8);
-const data = lzw(idx);
-for (let i = 0; i < data.length; i += 255) {
-const n = Math.min(255, data.length - i);
-bytes.push(n);
-for (let k = 0; k < n; k++) bytes.push(data[i + k]);
-}
-bytes.push(0);
-onProgress && onProgress((f + 1) / frames.length);
-await new Promise((r) => setTimeout(r));
-}
-bytes.push(0x3b);
-return new Blob([Uint8Array.from(bytes)], { type: 'image/gif' });
-}
-};
-__defs['src/effects/engine.js'] = function (__exports, __req) {
-'use strict';
-__def(__exports, 'FX_SHAPES', () => FX_SHAPES);
-__def(__exports, 'BANDS', () => BANDS);
-__def(__exports, 'AUDIO_DEF', () => AUDIO_DEF);
-__def(__exports, 'BAND_RANGE', () => BAND_RANGE);
-__def(__exports, 'FREQ_QUICK', () => FREQ_QUICK);
-__def(__exports, 'FX_ACTIONS', () => FX_ACTIONS);
-__def(__exports, 'FX_LAYERS', () => FX_LAYERS);
-__def(__exports, 'FX_GROUP_NAMES', () => FX_GROUP_NAMES);
-__def(__exports, 'FX_PALETTES', () => FX_PALETTES);
-__def(__exports, 'COLOR_BY', () => COLOR_BY);
-__def(__exports, 'COLOR_BY_UI', () => COLOR_BY_UI);
-__def(__exports, 'MASK_MODES', () => MASK_MODES);
-__def(__exports, 'MORPH_STYLES', () => MORPH_STYLES);
-__def(__exports, 'MORPH_SORTS', () => MORPH_SORTS);
-__def(__exports, 'MORPH_EASES', () => MORPH_EASES);
-__def(__exports, 'SYNTH_STYLES', () => SYNTH_STYLES);
-__def(__exports, 'generateShapePoints', () => generateShapePoints);
-__def(__exports, 'EffectsEngine', () => EffectsEngine);
-const THREE = __req('vendor/three/build/three.module.js');
-const { makeCamMovable } = __req('src/effects/ui/fx-cam-float.js');
-const { loadJSON, saveJSON, mergeDeep, downloadBlob, clamp } = __req('src/core/util.js');
-const { buildFrameBlock, writeFrameColors, writeOneFrame, frameGrid } = __req('src/effects/frames/frame-block.js');
-const { TrackerHud } = __req('src/effects/ui/fx-hud.js');
-const { HandTracker } = __req('src/effects/input/hand-tracker.js');
-const { evalAnimPoints } = __req('src/animation/anim-controller.js');
-const { perf } = __req('src/core/perf.js');
-const { DepthAI, grabFrame, grabRGB: grabRGB4, normalizeDepth, lumaDepth, depthToGrid, adjustDepth } = __req('src/effects/input/depth-ai.js');
-const { encodeGIF } = __req('src/io/gif-encoder.js');
-const FX_SHAPES = [
-{ id: 'model', name: 'Модель', icon: 'cube' },
-{ id: 'media', name: 'Фото', icon: 'image' },
-{ id: 'sphere', name: 'Сфера', icon: 'sphere' },
-{ id: 'torus', name: 'Тор', icon: 'target' },
-{ id: 'cube', name: 'Куб', icon: 'cube-transparent' },
-{ id: 'helix', name: 'ДНК', icon: 'dna' },
-{ id: 'saturn', name: 'Сатурн', icon: 'planet' },
-{ id: 'galaxy', name: 'Галактика', icon: 'spiral' },
-{ id: 'plane', name: 'Плоскость', icon: 'grid-four' },
-];
-const BANDS = [
-{ id: 'none', label: '—', title: 'Без реакции на звук' },
-{ id: 'bass', label: 'Бас', title: 'Низкие частоты: барабан, бас' },
-{ id: 'mid', label: 'Сер.', title: 'Средние частоты: голос, синтезатор' },
-{ id: 'high', label: 'Верх', title: 'Высокие частоты: тарелки, шипение' },
-{ id: 'beat', label: 'Бит', title: 'Удар: вспышка на каждый такт' },
-{ id: 'custom', label: 'Своя', title: 'Свой диапазон частот: выберите его на полоске спектра' },
-];
-const AUDIO_DEF = { amode: 'amp', lo: 0.05, hi: 0.3, thr: 0.5, atk: 0.03, rel: 0.35 };
-const BAND_RANGE = { bass: [0, 0.3], mid: [0.3, 0.67], high: [0.67, 1] };
-const FREQ_QUICK = [['Бочка', 40, 130], ['Бас', 60, 300], ['Голос', 300, 3400], ['Тарелки', 5000, 14000]];
-const FX_ACTIONS = [['none', 'Без действия'], ['push', 'Отталкивание: от ладони'], ['pull', 'Притягивание: к ладони'], ['swirl', 'Вихрь: вращение пальцами'], ['rotate', 'Вращение: поворот модели'], ['sculpt', 'Лепка: изменение формы'], ['gravity', 'Гравитация: притяжение к руке'], ['wave', 'Ударная волна: фронт от руки'], ['break', 'Распад: пока держишь жест'], ['dissolve', 'Растворение: пока держишь жест'], ['brush', 'Световой штрих: след в воздухе'], ['slicecut', 'Срез рукой: секущая плоскость'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:twist', 'Эффект: Деформация'], ['fx:blast', 'Эффект: Взрыв по биту'], ['fx:flow', 'Эффект: Течение'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
-const FX_LAYERS = [
-{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Видео раскладывается на кадры из точек, кадры собираются в блок. Показ идёт за таймлайном', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, thin: 0, showMode: 'off', showLen: 0.12, hero: 150000, future: 'hide', gain: 1, sat: 0, bsize: 1.5, track: 'grow', tone: 'all', toneCut: 0.5, tail: 100, tailSoft: 0.6 }, extras: [{ type: 'title', label: 'Раскладка' }, { key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: слои вглубь'], ['wall', 'Стена: плоская сетка'], ['film', 'Киноплёнка: кадры в ряд'], ['tunnel', 'Туннель: перспектива вглубь']], relayout: true }, { key: 'track', label: 'Что в стопке', type: 'seg', options: [['grow', 'Пройденное'], ['full', 'Весь ряд']], when: ['layout', ['stack', 'tunnel']] }, { key: 'depth', label: 'Глубина', min: 0.2, max: 4, step: 0.1, relayout: true, when: ['layout', ['stack', 'tunnel']] }, { type: 'title', label: 'Показ' }, { key: 'showMode', label: 'Как показывать', type: 'select', options: [['off', 'Статично: все кадры как есть'], ['peel', 'Листание: слёт пройденных'], ['projector', 'Проектор: бегущий луч'], ['trail', 'Шлейф: затухающий след']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Редкие'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { key: 'thin', label: 'Прореживать остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { type: 'title', label: 'Хвост' }, { key: 'tail', label: 'Длина хвоста, доля видео', min: 5, max: 100, step: 1, int: true, unit: '%' }, { key: 'tailSoft', label: 'Как гаснет хвост: резко ... плавно', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Цвет остальных кадров' }, { key: 'sat', label: 'Насыщенность (0 это цвета видео)', min: -1, max: 1, step: 0.05 }, { key: 'gain', label: 'Яркость', min: 0.4, max: 3, step: 0.05 }, { key: 'tone', label: 'Какие тона оставить', type: 'seg', options: [['all', 'Все'], ['light', 'Светлые'], ['dark', 'Тёмные']] }, { key: 'toneCut', label: 'Граница светлого и тёмного', min: 0.05, max: 0.95, step: 0.01, when: ['tone', ['light', 'dark']] }, { key: 'bsize', label: 'Размер точек', min: 0.5, max: 4, step: 0.1 }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
-{ id: 'curl', group: 'Движение', name: 'Вихри и течение', icon: 'tornado', hint: 'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)', max: 2, def: { on: false, amount: 1, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8, fscale: 1.6, fdir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['noise', 'Вихри: хаотичное движение'], ['stream', 'Поток: движение с возвратом'], ['orbit', 'Кольца: вращение слоёв'], ['surface', 'Течение: скольжение по форме']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1, when: ['mode', ['noise', 'stream', 'orbit']] }, { key: 'fscale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1, when: ['mode', ['surface']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }, { key: 'fdir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['surface']] }] },
-{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается, осколки падают на пол с отскоками и собираются обратно', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
-{ id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма отзывается на звук. Виды: колонки эквалайзера, горный рельеф, шерсть по кругу, шерсть по высоте', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, mode: 'bars', bars: 24 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['bars', 'Колонки: полосы эквалайзера'], ['terrain', 'Рельеф: звуковой ландшафт'], ['wool', 'Радиальные иглы: по кругу'], ['height', 'Вертикальные иглы: по высоте']] }, { key: 'bars', label: 'Число колонок', min: 8, max: 64, step: 1, int: true, when: ['mode', ['bars']] }] },
-{ id: 'wave', group: 'Движение', name: 'Волны', icon: 'waves', hint: 'Волны бегут по форме. Виды: капли, кольца, плоская волна, спираль вокруг формы, гребни вверх', max: 2, def: { on: false, amount: 0.7, band: 'none', react: 0.8, freq: 5, speed: 1, period: 1.4, mode: 'rings', origin: 'center', decay: 1.2, dir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['drops', 'Капли: импульсы по ритму'], ['rings', 'Кольца: круговой фронт'], ['plane', 'Плоская волна: направленный фронт'], ['spiral', 'Спираль: закрутка вокруг формы'], ['rise', 'Гребни: вертикальный подъём']] }, { key: 'freq', label: 'Масштаб (частота)', min: 1, max: 14, step: 0.5 }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }, { key: 'origin', label: 'Откуда', type: 'seg', options: [['center', 'Центр'], ['cursor', 'Курсор, рука']], when: ['mode', ['rings']] }, { key: 'period', label: 'Капля раз в, с', min: 0.3, max: 4, step: 0.1, when: ['mode', ['drops']] }, { key: 'decay', label: 'Затухание', min: 0.2, max: 4, step: 0.1, when: ['mode', ['drops']] }, { key: 'dir', label: 'Направление', min: 0, max: 6.28, step: 0.1, when: ['mode', ['plane']] }] },
-{ id: 'twist', group: 'Движение', name: 'Деформация', icon: 'wind', hint: 'Форма меняет очертания. Виды: скрутка, изгиб, конус, змейка, дыхание, желе', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'twist', speed: 0, jmode: 'auto', jperiod: 1.8, jfreq: 8, jdamp: 1.6, jsquash: 0.5 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['twist', 'Скрутка: осевое вращение'], ['bend', 'Изгиб: боковое отклонение'], ['taper', 'Конус: сужение к вершине'], ['snake', 'Змейка: волновой изгиб'], ['breathe', 'Дыхание: радиальная пульсация'], ['jelly', 'Желе: упругая вибрация']] }, { key: 'speed', label: 'Покачивание', min: 0, max: 3, step: 0.05, when: ['mode', ['twist', 'bend', 'taper', 'snake', 'breathe']] }, { key: 'jmode', label: 'Что вызывает дрожь', type: 'seg', options: [['auto', 'Сама по таймеру'], ['motion', 'Движение модели']], when: ['mode', ['jelly']] }, { key: 'jperiod', label: 'Толчок раз в, с', min: 0.4, max: 5, step: 0.1, when: ['mode', ['jelly']] }, { key: 'jfreq', label: 'Частота дрожи', min: 3, max: 16, step: 0.5, when: ['mode', ['jelly']] }, { key: 'jdamp', label: 'Затухание', min: 0.5, max: 5, step: 0.1, when: ['mode', ['jelly']] }, { key: 'jsquash', label: 'Сплющивание', min: 0, max: 1, step: 0.05, when: ['mode', ['jelly']] }] },
-{ id: 'blast', group: 'Движение', name: 'Взрыв', icon: 'asterisk', hint: 'Точки отлетают и пружинят обратно, или форма бьётся, как сердце. Виды: взрыв, пульс оболочкой, сжатием, всей формой сразу', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'burst', decay: 2.2, random: 0.6, period: 1.6, delay: 0.35, pspeed: 1 }, extras: [{ key: 'style', label: 'Вид', type: 'select', options: [['burst', 'Взрыв: разлёт с возвратом'], ['shell', 'Пульс: сферическая оболочка'], ['squash', 'Пульс: сжатие и растяжение'], ['flat', 'Пульс: синхронно всей формой']] }, { key: 'period', label: 'Бьёт сам раз в, с', min: 0.4, max: 5, step: 0.1 }, { key: 'decay', label: 'Возврат (пружина)', min: 0.8, max: 6, step: 0.1, when: ['style', ['burst']] }, { key: 'random', label: 'Разброс направлений', min: 0, max: 1, step: 0.05, when: ['style', ['burst']] }, { key: 'delay', label: 'Задержка к краю', min: 0, max: 1, step: 0.02, when: ['style', ['shell', 'squash']] }, { key: 'pspeed', label: 'Скорость затухания', min: 0.3, max: 3, step: 0.05, when: ['style', ['shell', 'squash', 'flat']] }] },
-{ id: 'flow', hidden: true, group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, а силуэт не меняется. Настраиваются масштаб, скорость и поворот потока', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
-{ id: 'explode', group: 'Разрушение', name: 'Разбор на части', icon: 'cube', hint: 'Форма разъезжается на жёсткие куски, они поворачиваются и возвращаются на место. Настраиваются число кусков, дальность и вращение', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', speed: 0.8, pieces: 40, dist: 1, spin: 0.5, stagger: 0.5 }, extras: [{ key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['hold', 'Всегда разобрана']] }, { key: 'pieces', label: 'Число кусков', min: 6, max: 256, step: 1, int: true }, { key: 'dist', label: 'Как далеко расходятся', min: 0.2, max: 3, step: 0.05 }, { key: 'spin', label: 'Вращение кусков', min: 0, max: 1, step: 0.05 }, { key: 'stagger', label: 'Разброс по времени', min: 0, max: 0.9, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1, when: ['mode', ['loop']] }] },
-{ id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Форма исчезает и собирается обратно. Виды: лазерный срез, слои, блоки, песок, воронка, взрыв, горение, ветер, росток', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', dir: 'both', order: 'top', style: 'laser', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.35, scatter: 1, edge: 0.32, glow: 0.35, shrink: 0.85, seed: 'bottom', tendril: 0.6, bud: 0.7 }, extras: [{ type: 'title', label: 'Как растворяется' }, { key: 'style', label: 'Вид', type: 'select', options: [['laser', 'Лазерный срез: сканирующая плоскость'], ['layers', 'Сдвиг слоёв: полосы в стороны'], ['chunks', 'Блочный распад: объёмные кубы'], ['sand', 'Осыпание: частицы на пол'], ['vortex', 'Воронка: закручивание к центру'], ['shock', 'Ударная волна: импульс от центра'], ['burn', 'Испепеление: частицы вверх'], ['wind', 'Сдувание: боковой поток ветра'], ['sprout', 'Прорастание: ветвление формы']] }, { key: 'seed', label: 'Откуда растёт', type: 'select', options: [['bottom', 'Снизу вверх: от основания'], ['point', 'Из точки: случайный фокус'], ['center', 'Из центра: радиально наружу']], when: ['style', ['sprout']] }, { key: 'order', label: 'Откуда начинается', type: 'select', when: ['style', ['laser', 'layers', 'chunks', 'sand', 'vortex', 'shock', 'burn', 'wind']], options: [['top', 'Сверху вниз'], ['bottom', 'Снизу вверх'], ['side', 'Слева направо'], ['center', 'Из центра наружу'], ['edges', 'С краёв к центру'], ['noise', 'Случайные зоны']] }, { type: 'title', label: 'Запуск' }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'dir', label: 'Что дольше', type: 'seg', options: [['both', 'Поровну'], ['out', 'Распад'], ['in', 'Сборка']], when: ['mode', ['loop']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01, when: ['mode', ['slider']] }, { type: 'title', label: 'Движение частиц' }, { key: 'scatter', label: 'Размах движения', min: 0.2, max: 2.5, step: 0.05 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер и закрутка', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Лёгкая турбулентность', min: 0, max: 2, step: 0.05 }, { type: 'title', label: 'Кромка и частицы' }, { key: 'edge', label: 'Ширина кромки распада', min: 0.1, max: 0.7, step: 0.02 }, { key: 'glow', label: 'Свечение кромки', min: 0, max: 1.5, step: 0.05 }, { key: 'shrink', label: 'Мельчание частиц', min: 0, max: 1, step: 0.05 }, { key: 'tendril', label: 'Усики (неровный фронт)', min: 0, max: 1, step: 0.05, when: ['style', ['sprout']] }, { key: 'bud', label: 'Почки на кромке', min: 0, max: 1.5, step: 0.05, when: ['style', ['sprout']] }] },
-{ id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки превращаются в кубики. Виды: сетка, лего, дыхание, волна, ступени, разлёт. Настраиваются размер и высота', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 1, mode: 'grid', speed: 1, size: 1, height: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['grid', 'Кубическая сетка: равномерные блоки'], ['lego', 'Столбцы: рельеф разной высоты'], ['breathe', 'Дыхание: пульсирующая сетка'], ['wave', 'Волна: бегущий подъём кубов'], ['stairs', 'Террасы: ступенчатые уровни'], ['scatter', 'Дрожание: вибрация на месте']] }, { key: 'size', label: 'Размер кубиков', min: 0.4, max: 2.5, step: 0.05 }, { key: 'height', label: 'Высота и размах', min: 0, max: 2, step: 0.05, when: ['mode', ['lego', 'wave', 'stairs', 'scatter']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe', 'wave', 'scatter']] }] },
-{ id: 'scope', group: 'Звук и ритм', name: 'Осциллограф', icon: 'heartbeat', hint: 'Перо самописца бежит от точки к точке по координатам модели и вычерчивает форму линией. Ещё не пройденные точки скрыты', max: 1, def: { on: false, amount: 0.7, band: 'none', react: 0.6, mode: 'draw', order: 'walk', dir: 'fwd', loop: 'loop', speed: 1, pens: 2, chaos: 0.6, trail: 0.5, detail: 6000, dim: 1, line: 1, width: 2.4, color: '#3dff7a', tint: 0.35, thick: 0.6, glow: 1, spark: 0 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивание: контур остаётся'], ['comet', 'Комета: гаснущий световой след']] }, { key: 'order', label: 'Порядок обхода', type: 'select', options: [['walk', 'По ближайшим: связный контур'], ['up', 'Снизу вверх: вертикальная развёртка'], ['spin', 'По кругу: радиальная развёртка']] }, { key: 'dir', label: 'Направление', type: 'seg', options: [['fwd', 'Вперёд'], ['back', 'Назад']] }, { key: 'loop', label: 'В конце круга', type: 'seg', options: [['loop', 'Стирает и заново'], ['once', 'Остаётся']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'pens', label: 'Число перьев', min: 1, max: 8, step: 1, int: true }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true, when: ['order', ['walk']] }, { key: 'chaos', label: 'Хаотичность пути', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'dim', label: 'Прятать ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'color', label: 'Цвет осциллографа', type: 'color' }, { key: 'line', label: 'Яркость линии', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'width', label: 'Толщина линии', min: 0.5, max: 8, step: 0.1, when: ['order', ['walk']] }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }, { key: 'spark', label: 'Искры у пера', min: 0, max: 2, step: 0.05 }] },
-{ id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Фото или видео выдавливается объёмом по карте глубины. Виды: рельеф, ступени, дыхание, волна, рябь, карусель, разлёт слоёв', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.5, zone: 0.12, bright: 0, contrast: 1, gamma: 1, blur: 0, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Барельеф: плавное выдавливание'], ['layers', 'Ступени: чёткие плоские срезы'], ['breath', 'Дыхание: пульсация глубины'], ['wave', 'Волна: бегущий рельеф'], ['ripple', 'Рябь: концентрические круги'], ['twist', 'Карусель: сдвиг плоскостей'], ['burst', 'Выброс: разлёт слоёв к зрителю']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Глубина, что остаётся на месте', min: 0, max: 1, step: 0.01 }, { key: 'zone', label: 'Ширина зоны на месте', min: 0, max: 0.6, step: 0.01 }, { type: 'title', label: 'Правка карты глубины' }, { key: 'bright', label: 'Яркость карты', min: -0.5, max: 0.5, step: 0.01 }, { key: 'contrast', label: 'Контраст карты', min: 0.2, max: 3, step: 0.02 }, { key: 'gamma', label: 'Тени (гамма)', min: 0.3, max: 3, step: 0.02 }, { key: 'blur', label: 'Размытие карты', min: 0, max: 12, step: 1, int: true }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
-{ id: 'trail', group: 'Анимация', name: 'Шлейф', icon: 'stack', hint: 'За движущейся анимированной моделью остаются полупрозрачные копии прошлых поз. Настраиваются число копий и шаг между ними', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 0.5, count: 8, step: 0.1, fade: 0.8, pts: 25000, size: 0.6, tint: 0, shrink: 0.35 }, extras: [{ key: 'count', label: 'Сколько копий в шлейфе', min: 2, max: 24, step: 1, int: true }, { key: 'step', label: 'Время между копиями, с', min: 0.03, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Как быстро гаснут копии', min: 0.4, max: 0.97, step: 0.01 }, { key: 'shrink', label: 'Как мельчают копии', min: 0, max: 0.9, step: 0.02 }, { key: 'pts', label: 'Точек в копии', min: 5000, max: 80000, step: 1000, int: true }, { key: 'size', label: 'Размер точек', min: 0.3, max: 2.5, step: 0.05 }, { key: 'tint', label: 'Окраска цветом палитры', min: 0, max: 1, step: 0.02 }] },
-{ id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
-{ id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Цифровой сбой. Виды: полосы, блоки, развёртка. Цвета расходятся, на всплесках часть точек выпадает', max: 2, def: { on: false, amount: 0.8, band: 'none', react: 1, mode: 'bands', slices: 16, rgb: 'on', speed: 1, burst: 0.7, drop: 0.5 }, extras: [{ key: 'mode', label: 'Вид сбоя', type: 'select', options: [['bands', 'Полосы: горизонтальный сдвиг строк'], ['blocks', 'Блоки: объёмное смещение кубами'], ['scan', 'Развёртка: строчный разрыв']] }, { key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1, int: true }, { key: 'burst', label: 'Резкость всплесков', min: 0, max: 1, step: 0.05 }, { key: 'drop', label: 'Выпадение точек', min: 0, max: 1, step: 0.05 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
-{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются стиль, цвет, маяки, число узлов и дальность связи', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: perf.isApple || perf.tier === 'high' ? 3500 : 2000, pulses: 'on', pulseSpeed: 1.6, mode: 'classic', colorMode: 'palette', beacons: 'on' }, extras: [
-{ key: 'mode', label: 'Стиль связей', type: 'select', options: [['classic', 'Классика: равномерная паутина'], ['neural', 'Нейросеть: синапсы с импульсами'], ['constellation', 'Созвездия: тонкие нити звёзд'], ['cyber', 'Киберпанк: лазерный стробоскоп'], ['elastic', 'Натяжение: свечение от длины']] },
-{ key: 'colorMode', label: 'Цвет нитей', type: 'seg', options: [['palette', 'Палитра'], ['tension', 'Натяг'], ['neon', 'Неон'], ['rainbow', 'Радуга']] },
-{ key: 'beacons', label: 'Огоньки на узлах', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] },
-{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' },
-{ key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 },
-{ key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true },
-{ key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] },
-{ key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }
-] },
-{ id: 'slice', group: 'Графика', name: 'Срез', icon: 'scan', hint: 'По форме идёт срез. Виды: лазер (линии), рельеф (точки на линиях), развёртка (форма проявляется за плоскостью)', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'model' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
-{ id: 'feedback', group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой световой хвост из прошлых кадров. Виды: выдержка, туннель', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
-{ id: 'datamosh', group: 'Графика', name: 'Датамош', icon: 'checkerboard', hint: 'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'bleed', trigger: 'timer', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, stale: 0.2, jit: 0.4 }, extras: [
-{ type: 'title', label: 'Сбой' },
-{ type: 'button', label: 'Сломать кадр сейчас', act: 'moshKick', icon: 'lightning' },
-{ type: 'button', label: 'Вернуть чистый кадр', act: 'moshClear', icon: 'broom' },
-{ key: 'style', label: 'Вид', type: 'select', options: [['bleed', 'Размазывание: след движения'], ['blocks', 'Блоки: артефакты макроблоков'], ['melt', 'Расплав: пластичное стекание']] },
-{ key: 'trigger', label: 'Когда ломается', type: 'select', options: [['timer', 'По таймеру: равные паузы'], ['beat', 'По биту: синхронно с ритмом'], ['manual', 'Кнопкой: ручной сбой'], ['always', 'Непрерывно: постоянный сбой']] },
-{ key: 'period', label: 'Пауза между сбоями, с', min: 0.5, max: 12, step: 0.1, noNorm: true, when: ['trigger', ['timer']] },
-{ key: 'recover', label: 'Сколько держится сбой, с', min: 0.2, max: 10, step: 0.1, noNorm: true, when: ['trigger', ['timer', 'beat', 'manual']] },
-{ type: 'title', label: 'Движение' },
-{ key: 'drift', label: 'Снос в одну сторону', min: 0, max: 1, step: 0.05 },
-{ key: 'angle', label: 'Направление сноса, °', min: 0, max: 345, step: 15, int: true, noNorm: true, when: ['style', ['bleed', 'blocks', 'melt']] },
-{ key: 'flow', label: 'Течение (вихревое)', min: 0, max: 1, step: 0.05 },
-{ key: 'inertia', label: 'Инерция векторов', min: 0, max: 0.95, step: 0.05 },
-{ key: 'leak', label: 'Возврат картинки', min: 0, max: 1, step: 0.05 },
-{ type: 'title', label: 'Блоки и цвет' },
-{ key: 'block', label: 'Размер блока', type: 'seg', options: [['8', 'Мелкий'], ['16', 'Средний'], ['32', 'Крупный'], ['64', 'Огромный']] },
-{ key: 'smooth', label: 'Плавность границ блоков', min: 0, max: 1, step: 0.05 },
-{ key: 'detail', label: 'Сохранять детали кадра', min: 0, max: 1, step: 0.05 },
-{ key: 'chroma', label: 'Цветовое размазывание', min: 0, max: 1, step: 0.05 },
-{ key: 'quant', label: 'Грубые цвета блоков', min: 0, max: 1, step: 0.05 },
-{ key: 'stale', label: 'Доля залипших блоков', min: 0, max: 0.8, step: 0.05, when: ['style', ['blocks']] },
-{ key: 'jit', label: 'Сдвиг залипших блоков', min: 0, max: 1.5, step: 0.05, when: ['style', ['blocks']] },
-{ type: 'title', label: 'Готовые настройки' },
-{ type: 'button', label: 'Классика', preset: 'classic' },
-{ type: 'button', label: 'Расплав', preset: 'melt' },
-{ type: 'button', label: 'Блоки', preset: 'blocks' },
-{ type: 'button', label: 'По биту', preset: 'beat' },
-] },
-{ id: 'echo', group: 'Графика', name: 'Эхо', icon: 'ghost', hint: 'Призрачные копии формы. Виды: спираль, зеркала, ореол', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, mode: 'spiral', copies: 4, delay: 0.14, spread: 0.45, fade: 0.7 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['spiral', 'Спираль'], ['kaleido', 'Зеркала'], ['time', 'Ореол']] }, { key: 'copies', label: 'Копий', min: 1, max: 5, step: 1, int: true }, { key: 'spread', label: 'Угол между копиями', min: 0.05, max: 1.5, step: 0.05 }, { key: 'delay', label: 'Задержка, с', min: 0.02, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Затухание копий', min: 0.3, max: 0.95, step: 0.05 }] },
-{ id: 'tracking', group: 'Взаимодействие', name: 'Рамки слежения', icon: 'bounding-box', hint: 'Рамки следят за точками формы и могут её касаться: подъём, вихрь, втягивание и другое', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, opacity: 1, speed: 1, shape: 'corners', fill: 'none', color: 'auto', thick: 1.5, labels: 'on', labelSize: 1, labelInfo: 'full', labelBg: 'off', lines: 'on', lineStyle: 'dashed', lineMode: 'nearest', lineWidth: 1, lineAlpha: 0.5, follow: 'wander', mark: 'none', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ type: 'title', label: 'Рамки' }, { key: 'count', label: 'Сколько рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 8, max: 160, step: 1, int: true }, { key: 'opacity', label: 'Прозрачность рамок', min: 0.05, max: 1, step: 0.05 }, { key: 'speed', label: 'Скорость перемещения рамок', min: 0.1, max: 3, step: 0.05 }, { key: 'shape', label: 'Вид рамки', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'fill', label: 'Заливка', type: 'seg', options: [['none', 'Нет'], ['tint', 'Тон'], ['hatch', 'Штрих']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'follow', label: 'Куда смотрят рамки', type: 'seg', options: [['wander', 'Бродят'], ['pointer', 'За руками']] }, { type: 'title', label: 'Подписи' }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'labelInfo', label: 'Что написано', type: 'select', options: [['full', 'Полная телеметрия: ID, XYZ, скорость'], ['id', 'Только ID: номер объекта'], ['conf', 'ID и точность: степень уверенности'], ['coords', 'Координаты: положение X Y Z'], ['speed', 'ID и скорость: вектор движения'], ['bars', 'ID и шкалы: полосы параметров'], ['dist', 'Дистанция: расстояние до центра']], when: ['labels', ['on']] }, { key: 'labelSize', label: 'Масштаб текста', min: 0.5, max: 3, step: 0.1, when: ['labels', ['on']] }, { key: 'labelBg', label: 'Подложка под текст', type: 'seg', options: [['off', 'Нет'], ['on', 'Есть']], when: ['labels', ['on']] }, { type: 'title', label: 'Связи между рамками' }, { key: 'lines', label: 'Линии связи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lineMode', label: 'Кто с кем связан', type: 'select', options: [['nearest', 'Ближайшие пары: связь с соседом'], ['chain', 'Цепочка: последовательный контур'], ['all', 'Полная сетка: связи всех близких'], ['hub', 'Звезда: лучи к центральной рамке']], when: ['lines', ['on']] }, { key: 'lineStyle', label: 'Вид линии', type: 'select', options: [['dashed', 'Штриховая: пунктирные линии'], ['solid', 'Сплошная: непрерывные линии'], ['curve', 'Дуга: плавные кривые'], ['elbow', 'Ломаная: прямоугольные углы'], ['dots', 'Точки: точечный пунктир'], ['pulse', 'Импульс: бегущие световые огни']], when: ['lines', ['on']] }, { key: 'lineWidth', label: 'Толщина связей', min: 0.5, max: 4, step: 0.25, when: ['lines', ['on']] }, { key: 'lineAlpha', label: 'Яркость связей', min: 0.1, max: 1, step: 0.05, when: ['lines', ['on']] }, { type: 'title', label: 'Эффект в области рамок' }, { key: 'mark', label: 'Что происходит', type: 'select', options: [['none', 'Без эффекта: прозрачная область'], ['invert', 'Инверсия: негатив цветов'], ['rainbow', 'Спектр: радужный градиент'], ['hole', 'Отверстие: пульсирующая пустота'], ['lens', 'Линза: оптическое увеличение'], ['pixel', 'Пиксели: блочная мозаика'], ['glow', 'Свечение: яркий световой ореол']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'select', options: [['none', 'Без касания: только визуальная рамка'], ['bump', 'Подъём: выталкивание вперёд'], ['swirl', 'Вихрь: закручивание точек'], ['pull', 'Втягивание: притяжение к центру'], ['push', 'Отталкивание: выталкивание наружу'], ['ripple', 'Рябь: волны от рамки'], ['melt', 'Таяние: стекание точек вниз'], ['scatter', 'Разлёт: распад на искры'], ['vanish', 'Растворение: исчезновение точек']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус области', min: 0.02, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
-{ id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки. Настраиваются радиус и действие', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.05, max: 2, step: 0.01 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
-{ id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Акварель по форме: рисуйте курсором или щипком, краска смешивается как настоящая, растекается и подсыхает с тёмным краем. Есть ластик и «смыть всё»', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, tool: 'paint', color: 'auto', lock: 'on', radius: 0.14, pigment: 0.6, water: 0.5, dry: 3, edge: 0.5, grain: 0.5, mode: 'paper' }, extras: [{ type: 'title', label: 'Мазок' }, { key: 'tool', label: 'Инструмент', type: 'seg', options: [['paint', 'Краска'], ['lift', 'Ластик']] }, { key: 'lock', label: 'Камера при рисовании', type: 'seg', options: [['on', 'Стоит'], ['off', 'Крутится']] }, { key: 'color', label: 'Цвет краски', type: 'color' }, { key: 'radius', label: 'Размер кисти', min: 0.03, max: 0.6, step: 0.01 }, { key: 'pigment', label: 'Густота краски', min: 0.1, max: 1, step: 0.05, when: ['tool', ['paint']] }, { type: 'title', label: 'Растекание' }, { key: 'water', label: 'Вода: насколько растекается', min: 0, max: 1, step: 0.05 }, { key: 'dry', label: 'Время растекания, с', min: 0.5, max: 8, step: 0.5 }, { key: 'edge', label: 'Тёмный край у мазка', min: 0, max: 1, step: 0.05, when: ['tool', ['paint']] }, { type: 'title', label: 'Бумага' }, { key: 'mode', label: 'Краска ложится', type: 'seg', options: [['paper', 'На бумагу'], ['glaze', 'Прозрачно на цвет']] }, { key: 'grain', label: 'Зернистость бумаги', min: 0, max: 1, step: 0.05 }] },
-{ id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки, у каждого жеста своё действие: ладонь, кулак, щипок, указательный палец', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush', g_peace: 'wave', g_rock: 'fx:glitch', g_thumb: 'gravity', power: 0.35, radius: 0.35, depth: 0.85, spin: 5, inertia: 0.6, axis: 'y', clay: 0.5, elastic: 0.6, stretch: 'off', keep: 'on', smooth: 0.5, sens: 0.6, hold: 0.12, handsN: '2', skeleton: 'on', preview: 'on' }, extras: [{ type: 'title', label: 'Что делает жест' }, { key: 'g_palm', label: 'Ладонь (пальцы раскрыты)', type: 'select', options: FX_ACTIONS }, { key: 'g_fist', label: 'Кулак', type: 'select', options: FX_ACTIONS }, { key: 'g_pinch', label: 'Щипок (большой + указательный)', type: 'select', options: FX_ACTIONS }, { key: 'g_point', label: 'Указательный палец', type: 'select', options: FX_ACTIONS }, { key: 'g_peace', label: 'Два пальца (знак мира)', type: 'select', options: FX_ACTIONS }, { key: 'g_rock', label: 'Рога (указательный и мизинец)', type: 'select', options: FX_ACTIONS }, { key: 'g_thumb', label: 'Большой палец вверх', type: 'select', options: FX_ACTIONS }, { type: 'title', label: 'Касание пальцами' }, { key: 'power', label: 'Мощность', min: 0.05, max: 1.5, step: 0.05 }, { key: 'radius', label: 'Радиус', min: 0.02, max: 0.9, step: 0.01 }, { key: 'depth', label: 'Глубина касания', min: 0.1, max: 1.5, step: 0.05 }, { type: 'title', label: 'Вращение' }, { key: 'spin', label: 'Скорость', min: 1, max: 14, step: 0.5 }, { key: 'inertia', label: 'Инерция', min: 0, max: 0.98, step: 0.02 }, { key: 'axis', label: 'Оси', type: 'seg', options: [['y', 'Вокруг'], ['xy', 'Свободно']] }, { type: 'title', label: 'Лепка' }, { key: 'clay', label: 'Размер куска глины', min: 0.05, max: 1.2, step: 0.01 }, { key: 'elastic', label: 'Упругость (возврат формы)', min: 0, max: 3, step: 0.1 }, { type: 'title', label: 'Две руки' }, { key: 'stretch', label: 'Меняют размер формы', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']] }, { key: 'keep', label: 'Запоминать размер', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }, { type: 'title', label: 'Распознавание и показ' }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'hold', label: 'Задержка жеста, с', min: 0, max: 0.5, step: 0.02 }, { key: 'handsN', label: 'Сколько рук ищет', type: 'seg', options: [['2', 'Две'], ['1', 'Одна, быстрее']] }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
-{ id: 'gravity', group: 'Взаимодействие', name: 'Гравитация', icon: 'planet', hint: 'Точки кружат вокруг центра. Виды: галактика, кольца, квазар (падение в центр и струи), рой, невесомость', max: 1, def: { on: false, amount: 0.8, band: 'none', react: 0.4, mode: 'orbit', target: 'center', radius: 2.4, speed: 1, tilt: 0.5, precess: 0.15, flatten: 0.6, jet: 1.4, spread: 0.5 }, extras: [{ key: 'mode', label: 'Вид поля', type: 'select', options: [['orbit', 'Спиральная галактика: вращающийся диск'], ['rings', 'Планетарные кольца: встречные орбиты'], ['hole', 'Квазар: воронка и осевые джеты'], ['swarm', 'Сферический рой: свободные орбиты'], ['float', 'Невесомость: свободный дрейф']] }, { type: 'note', when: ['mode', ['orbit']], text: 'Форма раскручивается диском: у центра быстрее, на краю медленнее.' }, { type: 'note', when: ['mode', ['rings']], text: 'Форма раскладывается на круглые кольца, соседние вращаются в разные стороны, как у планеты с кольцами.' }, { type: 'note', when: ['mode', ['hole']], text: 'Точки по спирали падают в центр, а затем вылетают двумя струями вдоль оси.' }, { type: 'note', when: ['mode', ['swarm']], text: 'Каждая точка летает по своей наклонной орбите, получается шар из орбит, как у атома.' }, { type: 'note', when: ['mode', ['float']], text: 'Точки плавно покачиваются и расходятся, как в невесомости.' }, { type: 'title', label: 'Где центр' }, { key: 'target', label: 'Центр поля', type: 'seg', options: [['cursor', 'Курсор, рука'], ['center', 'Центр формы']] }, { key: 'radius', label: 'Радиус действия', min: 0.1, max: 3.5, step: 0.05 }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.1 }, { key: 'spread', label: 'Размах', min: 0, max: 1, step: 0.05, when: ['mode', ['swarm', 'float']] }, { key: 'flatten', label: 'Сплющивание в диск', min: 0, max: 0.95, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'tilt', label: 'Наклон диска', min: 0, max: 1.5, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'precess', label: 'Покачивание оси', min: 0, max: 1, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'jet', label: 'Длина струй', min: 0, max: 3, step: 0.1, when: ['mode', ['hole']] }] },
-];
-const FX_GROUPS = {
-'Видео': ['frames'],
-'Фото и видео': ['depth'],
-'Анимация': ['trail'],
-'Движение': ['curl', 'gravity', 'twist'],
-'Звук и ритм': ['spectrum', 'wave', 'blast', 'scope'],
-'Разрушение': ['physics', 'explode', 'dissolve'],
-'Цифровые': ['voxel', 'glitch', 'datamosh'],
-'Графика': ['links', 'slice', 'feedback', 'echo', 'tracking'],
-'Управление': ['cursor', 'brush', 'camTrack'],
-};
-const FX_GROUP_NAMES = Object.keys(FX_GROUPS);
-{
-const rank = (l) => {
-for (const [gi, g] of FX_GROUP_NAMES.entries()) {
-const k = FX_GROUPS[g].indexOf(l.id);
-if (k >= 0) {
-l.group = g;
-return gi * 100 + k;
-}
-}
-return 999;
-};
-FX_LAYERS.sort((a, b) => rank(a) - rank(b));
-}
-const FX_PALETTES = [
-{ id: 'brand', name: 'Янтарь', c: ['#e58a45', '#f4b27a', '#fff0dc'] },
-{ id: 'cyber', name: 'Неон', c: ['#00f0ff', '#ff1fcb', '#ffd90f'] },
-{ id: 'plasma', name: 'Плазма', c: ['#1a2bff', '#ff4010', '#fff2cc'] },
-{ id: 'aurora', name: 'Аврора', c: ['#00f2a0', '#6d2bff', '#2bb3ff'] },
-{ id: 'ice', name: 'Лёд', c: ['#8fe3ff', '#3f7dff', '#ffffff'] },
-{ id: 'sunset', name: 'Закат', c: ['#ff3d6e', '#ff9a3d', '#ffe29a'] },
-{ id: 'mono', name: 'Моно', c: ['#6b7482', '#c9d0da', '#ffffff'] },
-];
-const COLOR_BY = [
-{ id: 'disp', label: 'Палитра', title: 'Градиент выбранной палитры' },
-{ id: 'height', label: 'Высота', title: 'Градиент снизу вверх' },
-{ id: 'index', label: 'Разброс', title: 'Случайное распределение' },
-{ id: 'model', label: 'Текстура', title: 'Цвета из текстуры модели' },
-{ id: 'solid', label: 'Один цвет', title: 'Сплошная заливка цветом' },
-{ id: 'normal', label: 'Нормали', title: 'Цвет по вектору нормали' },
-];
-const COLOR_BY_UI = COLOR_BY.filter((c) => ['disp', 'model', 'solid', 'normal'].includes(c.id));
-const MASK_MODES = [
-{ id: 'none', label: 'Везде', title: 'Эффекты действуют на всю форму' },
-{ id: 'height', label: 'Высота', title: 'Живёт верхняя часть, нижняя стоит' },
-{ id: 'sphere', label: 'Сфера', title: 'Живёт область внутри шара' },
-{ id: 'noise', label: 'Пятна', title: 'Живут плавающие пятна' },
-{ id: 'scan', label: 'Скан', title: 'Живёт полоса, которая пробегает по форме' },
-];
-const MORPH_STYLES = [
-{ id: 'flow', name: 'Течение', icon: 'waves', hint: 'Точки перетекают из одной модели в другую плавными дугами', v: { scatter: 0.8, stagger: 0.35, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 } },
-{ id: 'swirl', name: 'Вихрь', icon: 'tornado', hint: 'Модель закручивается вихрем и раскручивается уже в новую форму', v: { scatter: 0.7, stagger: 0.3, turns: 1.2, sort: 'out', ease: 'soft', glow: 0.5 } },
-{ id: 'burst', name: 'Взрыв', icon: 'asterisk', hint: 'Модель взрывается на частицы, они падают на пол и лежат, потом собираются в новую модель', v: { scatter: 1.2, stagger: 0.25, turns: 1, sort: 'out', ease: 'smooth', glow: 0.7 } },
-{ id: 'scan', name: 'Сканер', icon: 'scan', hint: 'Линия сканера идёт по модели сверху вниз и на ходу собирает за собой новую форму', v: { scatter: 0.12, stagger: 2.2, turns: 1, sort: 'down', ease: 'smooth', glow: 1.0 } },
-{ id: 'dust', name: 'Пыль', icon: 'wind', hint: 'Старая форма поднимается облаком пыли, новая оседает из него', v: { scatter: 0.9, stagger: 0.55, turns: 1, sort: 'random', ease: 'soft', glow: 0.3 } },
-{ id: 'sand', name: 'Осыпание', icon: 'drop', hint: 'Точки осыпаются вниз, как песок, и снизу вырастает новая форма', v: { scatter: 0.9, stagger: 0.5, turns: 1, sort: 'down', ease: 'smooth', glow: 0.2 } },
-];
-const MORPH_SORTS = [
-['random', 'Случайно: хаотичный порядок'],
-['up', 'Снизу вверх: вертикальный подъём'],
-['down', 'Сверху вниз: оседание точек'],
-['out', 'От центра: радиальный разлёт'],
-['side', 'Слева направо: боковой сдвиг'],
-];
-const MORPH_EASES = [['smooth', 'Плавно'], ['soft', 'Очень мягко'], ['spring', 'С перелётом']];
-const SYNTH_STYLES = [
-{ id: 'deep', name: 'Спокойный: тёплые пады и арпеджио' },
-{ id: 'ambient', name: 'Эмбиент: атмосферный дрейф' },
-{ id: 'jungle', name: 'Джангл: ритмичный бит 150 BPM' },
-];
-function defaultState() {
-const layers = {};
-for (const l of FX_LAYERS) layers[l.id] = { ...AUDIO_DEF, ...l.def };
-return {
-source: 'sphere',
-count: 150000,
-layers,
-media: { pts: 80000, relief: 'bright', depth: 0.5 },
-morphCfg: { mode: 'manual', interval: 4, time: 2.6, order: 'seq', weight: 'auto', style: 'flow', scatter: 0.8, stagger: 0.35, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 },
-mask: { mode: 'none', size: 0.5, soft: 0.4, speed: 0.5, invert: false, show: false },
-look: {
-bg: '',
-grid: false,
-vignette: true,
-palette: 'brand',
-colorBy: 'disp',
-size: 3.5,
-glow: 0.8,
-bright: 1,
-blend: 'normal',
-hud: false,
-hudSpectrum: true,
-autoRotate: false,
-rotSpeed: 0.25,
-sizeNoise: 0.0,
-sizeAudio: 0.0,
-brightAudio: 0.0,
-audioBand: 'bass',
-glyph: 'off',
-shade: 0,
-bloom: 0.0,
-aberration: 0.0,
-dofOn: false,
-dofDist: 5.2,
-dofRange: 1.4,
-},
-audio: { style: 'deep', gain: 1.3, idle: false, idleSet: false, volume: 0.8 },
-anim: { dur: 8, loop: true, keys: [], clips: [], markers: [], work: null, speed: 1, lanes: {} },
-};
-}
-const KEY = 'objglb.fx.v9';
-function frDummy2D() {
-const t = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
-t.needsUpdate = true;
-return t;
-}
-function frDummyTex() {
-const t = new THREE.DataArrayTexture(new Uint8Array(4), 1, 1, 1);
-t.format = THREE.RGBAFormat;
-t.type = THREE.UnsignedByteType;
-t.needsUpdate = true;
-return t;
-}
-const GLYPH_SETS = {
-ascii: ['.', '`', "'", ',', ':', ';', '-', '~', '"', '^', '_', '+', '=', '<', '>', 'i', '!', 'l', 'I', '?', '/', '\\', '|', '(', ')', '{', '}', '[', ']', '1', 't', 'f', 'j', 'r', 'x', 'n', 'u', 'v', 'c', 'z', 'X', 'Y', 'U', 'J', 'C', 'L', 'Q', '0', 'O', 'Z', 'm', 'w', 'q', 'p', 'd', 'b', 'k', 'h', 'a', 'o', '*', '#', 'M', 'W', '&', '8', '%', 'B', '@', '$'],
-digits: ['1', '7', '4', '2', '5', '3', '6', '9', '8', '0'],
-letters: ['i', 'l', 'j', 't', 'f', 'r', 'c', 's', 'v', 'x', 'z', 'n', 'u', 'e', 'a', 'o', 'y', 'k', 'h', 'd', 'b', 'p', 'q', 'g', 'm', 'w', 'I', 'L', 'T', 'J', 'V', 'A', 'X', 'Y', 'K', 'H', 'N', 'R', 'E', 'F', 'P', 'S', 'U', 'Z', 'B', 'D', 'G', 'O', 'Q', 'C', 'M', 'W'],
-blocks: ['·', '▫', '▪', '▘', '▝', '▖', '▗', '▁', '░', '▏', '▎', '▂', '▍', '▀', '▄', '▌', '▐', '▃', '▞', '▚', '▒', '▅', '▋', '▆', '▓', '▊', '▇', '▉', '■', '█'],
-};
-function glyphAtlas(mode) {
-const set = GLYPH_SETS[mode] || GLYPH_SETS.ascii;
-const n = set.length;
-const cv = document.createElement('canvas');
-cv.width = n * 64;
-cv.height = 64;
-const c = cv.getContext('2d');
-c.fillStyle = '#fff';
-c.textAlign = 'center';
-c.textBaseline = 'middle';
-c.font = mode === 'digits' ? '700 54px Geist, system-ui, sans-serif' : '700 54px "Geist Mono", ui-monospace, Menlo, "Apple Symbols", monospace';
-set.forEach((g, i) => c.fillText(g, i * 64 + 32, 34));
-const tex = new THREE.CanvasTexture(cv);
-tex.minFilter = tex.magFilter = THREE.LinearFilter;
+_makeFrameTexture(data, cols, rows, n) {
+const tex = new THREE.DataArrayTexture(data, cols, rows, n);
+tex.format = THREE.RGBAFormat;
+tex.type = THREE.UnsignedByteType;
+tex.colorSpace = THREE.SRGBColorSpace;
+tex.minFilter = tex.magFilter = THREE.NearestFilter;
 tex.generateMipmaps = false;
-tex.userData = { n };
+tex.unpackAlignment = 1;
+tex.needsUpdate = true;
 return tex;
 }
+_frameUniforms() {
+const fr = this._frames;
+const F = this.state.layers.frames;
+const u = this.shared;
+if (!fr) return;
+if (this._frameTex && u.uFrTex.value !== this._frameTex) u.uFrTex.value = this._frameTex;
+const W = fr.aspect >= 1 ? 2.2 : 2.2 * fr.aspect;
+u.uFr.value.set(1, fr.n, fr.cols * fr.rows, fr.cols * fr.rows * fr.n);
+u.uFr2.value.set(fr.cols, fr.rows, W, W / fr.aspect);
+u.uFr3.value.x = F.depth;
+if (!this._layoutAnim) u.uFr3.value.set(F.depth, this._layoutCur ?? 0, this._layoutCur ?? 0, 0);
+}
+async enableFrames() {
+if (this._framesBusy || !this.videoReady || !this.active) return;
+this._framesBusy = true;
+const F = this.state.layers.frames;
+try {
+this.app.ui.busy('Раскладываю видео на кадры', 0.05);
+const pm = this.pm;
+const aspect = (pm.el.videoWidth || 16) / (pm.el.videoHeight || 9);
+const dur = pm.el.duration || pm.duration || 1;
+const n = F.source === 'whole' && F.all === 'on' ? Math.max(4, Math.min(240, Math.round(dur * 24))) : Math.round(F.frames);
+const { cols, rows } = frameGrid(Math.max(300, F.budget / n), aspect);
+if (this._frames) {
+this._frames.dead = true;
+this._closeCap(this._frames);
+}
+const per = cols * rows * 4;
+const data = new Uint8Array(per * n);
+const frames = Array.from({ length: n }, (_, k) => data.subarray(k * per, (k + 1) * per));
+const fr = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, gain: 1, ts: null, done: new Uint8Array(n), times: null, cap: null, take: null, dead: false };
+let refine = null;
+if (F.source === 'whole') {
+fr.times = Array.from({ length: n }, (_, k) => Math.min(Math.max(0.05, dur - 0.04), (k / Math.max(1, n - 1)) * dur));
+fr.cap = await this._capVideo();
+let step = 1;
+while (step * 2 <= Math.max(1, n / 12)) step *= 2;
+const first = [];
+const rest = [];
+const seen = new Set();
+const add = (k, arr) => {
+if (!seen.has(k)) {
+seen.add(k);
+arr.push(k);
+}
+};
+for (let k = 0; k < n; k += step) add(k, first);
+add(n - 1, first);
+for (let st = Math.floor(step / 2); st >= 1; st = Math.floor(st / 2)) for (let k = 0; k < n; k += st) add(k, rest);
+let got = 0;
+const ok = await this._captureList(fr, first, () => this.app.ui.busy('Раскладываю видео на кадры', 0.1 + 0.8 * (++got / first.length)));
+if (!ok || !F.on || !this.active) {
+fr.dead = true;
+this._closeCap(fr);
+return;
+}
+this._fillGaps(fr);
+refine = rest;
+} else {
+this._frameTaker(cols, rows)(frames[n - 1]);
+fr.done[n - 1] = 1;
+}
+if (!F.on || !this.active) {
+fr.dead = true;
+this._closeCap(fr);
+return;
+}
+fr.gain = 1;
+this._frameTex?.dispose();
+this._frameTex = this._makeFrameTexture(data, cols, rows, n);
+this.shared.uFrTex.value = this._frameTex;
+this._frames = fr;
+if (F.source === 'live') {
+fr.ts = new Float32Array(n).fill(-1);
+fr.ts[n - 1] = pm.el.currentTime || 0;
+fr.tNew = pm.el.currentTime || 0;
+}
+this._frameCloud = buildFrameBlock(frames.map(() => this._blankFrame(cols, rows)), cols, rows, aspect, F.layout, F.depth, true);
+this._framesOn = true;
+this._layoutCur = this._layoutId(F.layout);
+this.shared.uFr3.value.set(F.depth, this._layoutCur, this._layoutCur, 0);
+this.cache.clear();
+this.state.look.colorBy = 'model';
+await this.setSource('frames');
+this._frameUniforms();
+this.shared.uFr5.value.x = 0;
+this._framesFit();
+if (refine) this._refineFrames(fr, refine);
+} catch (e) {
+console.error(e);
+this.app.toast('Не удалось разложить видео на кадры: ' + (e.message || e), 'error');
+F.on = false;
+this.shared.uFr.value.x = 0;
+} finally {
+this.app.ui.idle();
+this._framesBusy = false;
+this.emit();
+}
+}
+_blankFrame(cols, rows) {
+return (this._blank ||= new Uint8Array(cols * rows * 4));
+}
+async disableFrames() {
+if (!this._framesOn || this._framesBusy) return;
+const fr = this._frames;
+if (fr) {
+fr.dead = true;
+this._closeCap(fr);
+}
+this._capStatus('');
+const g = this.geometry;
+if (fr && g && g.attributes.aColor && g.attributes.aColor.count === fr.cols * fr.rows * fr.n) {
+writeFrameColors(fr.frames, fr.cols, fr.rows, g.attributes.aColor.array, null, 4);
+g.attributes.aColorB.array.set(g.attributes.aColor.array);
+g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
+}
+this._framesOn = false;
+this.shared.uFr.value.x = 0;
+this.shared.uHero.value.w = 0;
+if (this.hero) this.hero.visible = false;
+this._frames = null;
+this._frameCloud = null;
+this._frameTex?.dispose();
+this._frameTex = null;
+await this.setSource(this.pm.ready ? 'media' : this.hasModel ? 'model' : 'sphere');
+this.emit();
+}
+rebuildFramesSoon() {
+clearTimeout(this._framesT);
+this._framesT = setTimeout(async () => {
+if (!this._framesOn || this._framesBusy) return;
+this._framesOn = false;
+this.shared.uFr.value.x = 0;
+await this.enableFrames();
+}, 450);
+}
+_framesFit() {
+const F = this.state.layers.frames;
+const fr = this._frames;
+const nav = this.app.nav;
+if (!fr || !nav) return;
+const W = fr.aspect >= 1 ? 2.2 : 2.2 * fr.aspect;
+const H = W / fr.aspect;
+const R = { stack: Math.hypot(W / 2, H / 2, F.depth / 2), tunnel: Math.hypot(W / 2, H / 2, F.depth / 2), wall: 1.45, film: W * 1.35 }[F.layout] ?? 2;
+nav.animateTo({ distance: nav.fitDistance(R * 0.85), target: new THREE.Vector3(0, 0, 0) }, 450);
+}
+relayoutFrames() {
+const F = this.state.layers.frames;
+const fr = this._frames;
+if (!this._framesOn || !fr) return;
+const target = this._layoutId(F.layout);
+this.shared.uFr3.value.x = F.depth;
+if (target !== this._layoutCur && !this._layoutAnim) {
+this._framesFit();
+this.shared.uFr3.value.z = target;
+this._layoutAnim = { t0: this._time, target };
+}
+clearTimeout(this._relayT);
+this._relayT = setTimeout(() => {
+if (!this._framesOn || !this._frames) return;
+this._frameCloud = buildFrameBlock(fr.frames.map(() => this._blankFrame(fr.cols, fr.rows)), fr.cols, fr.rows, fr.aspect, F.layout, F.depth, true);
+const g = this.geometry;
+if (g && g.attributes.aOrigin && g.attributes.aOrigin.count === this._frameCloud.count && !this.morphing) {
+g.attributes.aOrigin.array.set(this._frameCloud.positions);
+g.attributes.aTarget.array.set(this._frameCloud.positions);
+g.attributes.aNormal.array.set(this._frameCloud.normals);
+g.attributes.aNormalB.array.set(this._frameCloud.normals);
+g.attributes.aOrigin.needsUpdate = g.attributes.aTarget.needsUpdate = g.attributes.aNormal.needsUpdate = g.attributes.aNormalB.needsUpdate = true;
+}
+}, 350);
+}
+_framesTick() {
+const F = this.state.layers.frames;
+if (!['stack', 'wall', 'film', 'tunnel'].includes(F.layout)) F.layout = 'stack';
+if (!['off', 'peel', 'projector', 'trail'].includes(F.showMode)) F.showMode = 'off';
+F.follow = 'off';
+const wantOn = F.on && this.videoReady && this.state.source !== 'sphere';
+if (wantOn && !this._framesOn && !this._framesBusy) {
+this.enableFrames();
+return;
+}
+if (this._framesOn && !this._framesBusy && (!F.on || !this.videoLoaded)) {
+F.on = false;
+this.disableFrames();
+return;
+}
+const fr = this._frames;
+const u = this.shared;
+if (!this._framesOn || !fr) {
+u.uFr.value.x = 0;
+return;
+}
+u.uFr.value.x = this.state.source === 'frames' ? 1 : 0;
+this._frameUniforms();
+const an = this._layoutAnim;
+if (an) {
+const k = Math.min(1, (this._time - an.t0) / 0.7);
+u.uFr3.value.w = k;
+if (k >= 1) {
+this._layoutCur = an.target;
+u.uFr3.value.set(F.depth, an.target, an.target, 0);
+this._layoutAnim = null;
+}
+}
+const idx = F.source === 'live' ? this._liveIdx(fr) : Math.max(0, Math.min(1, (this.pm.el.currentTime || 0) / Math.max(0.1, fr.dur))) * (fr.n - 1);
+fr.cur = Math.round(idx);
+const modeId = { off: 0, peel: 1, projector: 4, trail: 5 }[F.showMode] ?? 0;
+u.uFr4.value.set(idx, modeId, F.showLen, F.thin ?? 0);
+u.uFr6.value.set(F.bsize ?? 1.5, F.track === 'full' && F.source === 'whole' ? 1 : 0, { all: 0, light: 1, dark: 2 }[F.tone] ?? 0, F.toneCut ?? 0.5);
+u.uFr7.value.set(Math.max(0.05, (F.tail ?? 100) / 100), F.sat ?? 0, F.tailSoft ?? 0.6, 0);
+u.uFr5.value.y = 0;
+u.uFr5.value.z = { show: 0, dim: 1, hide: 2 }[F.future] ?? 1;
+u.uFr5.value.w = (fr.gain || 1) * (F.gain ?? 1);
+this._ensureHero(F, fr);
+this._framesFollow(F, fr);
+if (F.source === 'live') this._framesLive(F, fr);
+}
+_liveIdx(fr) {
+const t = this.pm.el.currentTime || 0;
+if (!fr.ts || t >= fr.tNew) return fr.n - 1;
+let first = -1;
+let prev = -1;
+let tp = 0;
+for (let k = 0; k < fr.n; k++) {
+const tk = fr.ts[(k + fr.head) % fr.n];
+if (tk < 0) continue;
+if (first < 0) {
+first = k;
+if (t <= tk) return k;
+} else if (t <= tk) {
+return prev + (tk > tp ? (t - tp) / (tk - tp) : 0);
+}
+prev = k;
+tp = tk;
+}
+return fr.n - 1;
+}
+_ensureHero(F, fr) {
+const u = this.shared;
+const want = this.state.source === 'frames' && F.hero >= 5000 && this.points && !this.morphing;
+const has = this.hero && this.hero.parent === this.points;
+if (!want) {
+if (this.hero) this.hero.visible = false;
+u.uHero.value.w = 0;
+return;
+}
+const cols = Math.max(8, Math.round(Math.sqrt(F.hero * fr.aspect)));
+const rows = Math.max(8, Math.round(cols / fr.aspect));
+const count = cols * rows;
+if (!has || this._heroCount !== count) {
+if (this.hero) {
+this.hero.parent?.remove(this.hero);
+this.hero.geometry.dispose();
+this.hero.material.dispose();
+this.hero = null;
+}
+const g = new THREE.BufferGeometry();
+const z3 = () => new THREE.BufferAttribute(new Float32Array(count * 3), 3);
+const idxA = new Float32Array(count);
+for (let i = 0; i < count; i++) idxA[i] = i / count;
+g.setAttribute('position', z3());
+g.setAttribute('aOrigin', z3());
+g.setAttribute('aTarget', z3());
+g.setAttribute('aColor', z3());
+g.setAttribute('aColorB', z3());
+g.setAttribute('aSculpt', z3());
+const nrm = new Float32Array(count * 3);
+for (let i = 2; i < nrm.length; i += 3) nrm[i] = 1;
+g.setAttribute('aNormal', new THREE.BufferAttribute(nrm, 3));
+g.setAttribute('aNormalB', new THREE.BufferAttribute(nrm.slice(), 3));
+g.setAttribute('aPaint', new THREE.BufferAttribute(new Float32Array(count * 4), 4));
+g.setAttribute('aIdx', new THREE.BufferAttribute(idxA, 1));
+g.setAttribute('aHide', new THREE.BufferAttribute(new Float32Array(count), 1));
+g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(count).fill(0.5), 1));
+g.setAttribute('aPath', new THREE.BufferAttribute(new Float32Array(count), 1));
+g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
+const m = new THREE.ShaderMaterial({
+vertexShader: this.material.vertexShader,
+fragmentShader: this.material.fragmentShader,
+transparent: this.material.transparent,
+depthWrite: this.material.depthWrite,
+blending: this.material.blending,
+defines: { HERO: 1 },
+userData: { fxKind: 'vert' },
+uniforms: { ...this.shared, uTOff: { value: 0 }, uGhost: { value: 1 } },
+});
+const h = new THREE.Points(g, m);
+h.frustumCulled = false;
+h.userData.helper = true;
+this.points.add(h);
+this.hero = h;
+this._heroCount = count;
+}
+if (!this._heroTex || this._heroTex.image !== this.pm.el) {
+this._heroTex?.dispose();
+this._heroTex = new THREE.VideoTexture(this.pm.el);
+this._heroTex.colorSpace = THREE.SRGBColorSpace;
+this._heroTex.minFilter = this._heroTex.magFilter = THREE.LinearFilter;
+this._heroTex.generateMipmaps = false;
+}
+u.uHeroTex.value = this._heroTex;
+u.uHero.value.set(cols, rows, count, 1);
+this.hero.visible = true;
+this.hero.material.blending = this.material.blending;
+}
+_framesFollow(F, fr) {
+const pts = this.points;
+if (!pts || this.morphing || this.state.source !== 'frames') return;
+if (F.follow === 'on' && F.source === 'whole') {
+const idx = fr.cur;
+const t = fr.n > 1 ? idx / (fr.n - 1) : 0.5;
+const ease = 0.16;
+if (F.layout === 'stack') pts.position.z += ((0.5 - t) * F.depth - pts.position.z) * ease;
+else if (F.layout === 'spiral') pts.position.y += ((0.5 - t) * F.depth * 1.4 - pts.position.y) * ease;
+if ((F.layout === 'carousel' || F.layout === 'spiral') && !this.state.look.autoRotate) {
+let d = -((idx / fr.n) * Math.PI * 2) - pts.rotation.y;
+d = Math.atan2(Math.sin(d), Math.cos(d));
+pts.rotation.y += d * ease;
+}
+this._followed = true;
+pts.updateMatrixWorld();
+} else if (this._followed) {
+pts.position.set(0, 0, 0);
+this._followed = false;
+pts.updateMatrixWorld();
+}
+}
+_framesLive(F, fr) {
+const tv = this.pm.el.currentTime || 0;
+const lastTv = this._liveTv ?? tv;
+this._liveTv = tv;
+if (fr.ts && this.pm.playing) {
+let oldest = Infinity;
+for (const t of fr.ts) if (t >= 0 && t < oldest) oldest = t;
+if (tv < lastTv - 1 && tv < 1.5 || tv < oldest - 0.3) {
+fr.ts.fill(-1);
+fr.tNew = tv - 0.05;
+}
+}
+if (this._time - fr.last < F.step || !this.pm.playing || this.morphing || tv <= fr.tNew + 0.02 || !fr.ts) return;
+fr.last = this._time;
+const take = (fr.take ||= this._frameTaker(fr.cols, fr.rows));
+const layer = fr.head % fr.n;
+const tex = this._frameTex;
+take(fr.frames[layer]);
+tex.addLayerUpdate && tex.addLayerUpdate(layer);
+tex.needsUpdate = true;
+fr.ts[layer] = tv;
+fr.tNew = tv;
+fr.head++;
+this.shared.uFr5.value.x = fr.head % fr.n;
+}
+_frameSample() {
+const u = this.shared;
+const n = u.uFr.value.y;
+const W = u.uFr2.value.z, H = u.uFr2.value.w;
+const idx = u.uFr4.value.x;
+const k = clamp(Math.round(idx), 0, Math.max(0, n - 1));
+const depth = u.uFr3.value.x;
+const uu = (Math.random() - 0.5) * 0.9, vv = (Math.random() - 0.5) * 0.9;
+const dz = u.uFr4.value.y > 0.5 && u.uFr4.value.y < 1.5 ? -1 : 1;
+const cen = u.uFr6.value.y > 0.5 ? (n - 1) * 0.5 : idx;
+const place = (lay) => {
+if (lay > 0.5 && lay < 1.5) {
+const gx = Math.ceil(Math.sqrt(n * (W / H)));
+const gy = Math.ceil(n / gx);
+const s = Math.min(2.4 / (gx * W), 2.4 / (gy * H));
+return new THREE.Vector3((k % gx - (gx - 1) * 0.5) * W * s * 1.04 + uu * W * s, ((gy - 1) * 0.5 - Math.floor(k / gx)) * H * s * 1.04 + vv * H * s, 0);
+}
+if (lay > 1.5 && lay < 2.5) return new THREE.Vector3(uu * W, vv * H, 0);
+return new THREE.Vector3(uu * W, vv * H, ((idx - cen) * depth) / Math.max(n - 1, 1) * dz);
+};
+const a = place(u.uFr3.value.y);
+const w = u.uFr3.value.w;
+if (w > 0.0001) {
+const m = w * w * (3 - 2 * w);
+a.lerp(place(u.uFr3.value.z), m);
+}
+return a;
+}
+}
+};
+__defs['src/effects/engine/keyframes.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'KeyframesPart', () => KeyframesPart);
+const { saveJSON } = __req('src/core/util.js');
+const { KEY } = __req('src/effects/state/defaults.js');
+class KeyframesPart {
+_animLayers() {
+return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode'];
+}
+animCapture() {
+const nav = this.app.nav;
+const L = this.state.layers;
+const layers = {};
+for (const id of this._animLayers()) layers[id] = L[id]?.on ? L[id].amount : 0;
+return { cam: { yaw: nav.yaw, pitch: nav.pitch, dist: nav.distance, tx: nav.target.x, ty: nav.target.y, tz: nav.target.z }, size: this.app.settings.point.size, bright: this.state.look.bright, glow: this.state.look.glow, layers };
+}
+get animKeys() {
+return this.state.anim.keys || (this.state.anim.keys = []);
+}
+get animClips() {
+return this.state.anim.clips || (this.state.anim.clips = []);
+}
+_animSort() {
+this.animKeys.sort((a, b) => a.t - b.t);
+}
+animAddKey(t = this.animT) {
+this._histFlush();
+const A = this.state.anim;
+if (!A.keys) A.keys = [];
+const snap = { t: Math.round(Math.min(A.dur, Math.max(0, t)) * 100) / 100, ...this.animCapture() };
+const near = A.keys.find((k) => Math.abs(k.t - snap.t) < 0.06);
+if (near) Object.assign(near, snap, { t: near.t });
+else A.keys.push(snap);
+this._animSort();
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+return near || snap;
+}
+animUpdateKey(key) {
+Object.assign(key, this.animCapture(), { t: key.t });
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+}
+animRemoveKey(key) {
+this._histFlush();
+const A = this.state.anim;
+if (!A.keys) return;
+A.keys = A.keys.filter((k) => k !== key);
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+}
+animMoveKey(key, t) {
+key.t = Math.round(Math.min(this.state.anim.dur, Math.max(0, t)) * 100) / 100;
+this._animSort();
+this.touch();
+this.app.bus.emit('fxanim');
+}
+animAddClip(layerId, opts = {}) {
+if (!this._batch) this._histFlush();
+const A = this.state.anim;
+if (!A.clips) A.clips = [];
+const durTotal = A.dur || 8;
+const dur = Math.max(0.3, Math.min(durTotal, opts.dur ?? 2.5));
+const defaultStart = Math.min(Math.max(0, this.animT), Math.max(0, durTotal - dur));
+const start = Math.max(0, Math.min(durTotal - 0.2, opts.start ?? defaultStart));
+const actualDur = Math.min(dur, Math.max(0.2, durTotal - start));
+const fadeIn = Math.max(0, Math.min(actualDur * 0.45, opts.fadeIn ?? 0.4));
+const fadeOut = Math.max(0, Math.min(actualDur * 0.45, opts.fadeOut ?? 0.5));
+const defAmt = this.state.layers[layerId]?.amount ?? 1.0;
+const amount = Math.max(0.05, Math.min(2.0, opts.amount ?? (defAmt > 0 ? defAmt : 1.0)));
+const clip = {
+id: 'c_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+layerId,
+start: Math.round(start * 100) / 100,
+dur: Math.round(actualDur * 100) / 100,
+fadeIn: Math.round(fadeIn * 100) / 100,
+fadeOut: Math.round(fadeOut * 100) / 100,
+amount: Math.round(amount * 100) / 100,
+shape: opts.shape || 'plateau',
+ease: opts.ease || 'smooth',
+off: !!opts.off,
+repeat: Math.max(1, Math.min(12, Math.round(opts.repeat || 1))),
+rev: !!opts.rev,
+};
+A.clips.push(clip);
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+return clip;
+}
+animUpdateClip(clipId, patch = {}) {
+const A = this.state.anim;
+if (!A.clips) return null;
+const clip = A.clips.find((c) => c.id === clipId);
+if (!clip) return null;
+const durTotal = A.dur || 8;
+if (patch.start !== undefined) {
+clip.start = Math.max(0, Math.min(durTotal - 0.2, patch.start));
+if (clip.start + clip.dur > durTotal) {
+clip.dur = Math.max(0.2, durTotal - clip.start);
+}
+}
+if (patch.dur !== undefined) {
+clip.dur = Math.max(0.2, Math.min(durTotal - clip.start, patch.dur));
+}
+if (patch.fadeIn !== undefined) {
+clip.fadeIn = Math.max(0, Math.min(clip.dur, patch.fadeIn));
+}
+if (patch.fadeOut !== undefined) {
+clip.fadeOut = Math.max(0, Math.min(clip.dur, patch.fadeOut));
+}
+if (clip.fadeIn + clip.fadeOut > clip.dur) {
+const ratio = clip.dur / (clip.fadeIn + clip.fadeOut);
+clip.fadeIn *= ratio;
+clip.fadeOut *= ratio;
+}
+if (patch.amount !== undefined) {
+clip.amount = Math.max(0.05, Math.min(2.0, patch.amount));
+}
+if (patch.shape !== undefined && ['plateau', 'ramp', 'fall', 'peak'].includes(patch.shape)) clip.shape = patch.shape;
+if (patch.ease !== undefined && ['smooth', 'linear', 'sharp'].includes(patch.ease)) clip.ease = patch.ease;
+if (patch.off !== undefined) clip.off = !!patch.off;
+if (patch.repeat !== undefined) clip.repeat = Math.max(1, Math.min(12, Math.round(patch.repeat)));
+if (patch.rev !== undefined) clip.rev = !!patch.rev;
+if (patch.layerId !== undefined && (this.state.layers[patch.layerId] || ['morph', 'rotate', 'bloom'].includes(patch.layerId))) {
+clip.layerId = patch.layerId;
+}
+clip.start = Math.round(clip.start * 100) / 100;
+clip.dur = Math.round(clip.dur * 100) / 100;
+clip.fadeIn = Math.round(clip.fadeIn * 100) / 100;
+clip.fadeOut = Math.round(clip.fadeOut * 100) / 100;
+clip.amount = Math.round(clip.amount * 100) / 100;
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+return clip;
+}
+animAddMarker(t, name = '') {
+const A = this.state.anim;
+(A.markers ||= []).push({ t: Math.round(Math.max(0, Math.min(A.dur, t)) * 100) / 100, name });
+A.markers.sort((a, b) => a.t - b.t);
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+return A.markers.find((m) => m.t === Math.round(Math.max(0, Math.min(A.dur, t)) * 100) / 100 && m.name === name);
+}
+animUpdateMarker(m, patch = {}) {
+const A = this.state.anim;
+if (!A.markers || !A.markers.includes(m)) return;
+if (patch.t !== undefined) m.t = Math.round(Math.max(0, Math.min(A.dur, patch.t)) * 100) / 100;
+if (patch.name !== undefined) m.name = String(patch.name).slice(0, 24);
+A.markers.sort((a, b) => a.t - b.t);
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+}
+animRemoveMarker(m) {
+const A = this.state.anim;
+A.markers = (A.markers || []).filter((x) => x !== m);
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+}
+animSetWork(a, b) {
+this._histFlush();
+const A = this.state.anim;
+if (a == null) A.work = null;
+else {
+const lo = Math.max(0, Math.min(a, b));
+const hi = Math.min(A.dur, Math.max(a, b));
+A.work = hi - lo >= 0.2 ? { a: Math.round(lo * 100) / 100, b: Math.round(hi * 100) / 100 } : null;
+}
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+}
+animSetLane(layerId, patch = {}) {
+this._histFlush();
+const A = this.state.anim;
+const l = ((A.lanes ||= {})[layerId] ||= {});
+Object.assign(l, patch);
+if (!l.mute && !l.solo && !l.lock) delete A.lanes[layerId];
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+}
+animPasteClips(list, t) {
+if (!list || !list.length) return [];
+this._histFlush();
+this._batch = true;
+try {
+return this._animPasteClips(list, t);
+} finally {
+this._batch = false;
+}
+}
+_animPasteClips(list, t) {
+const t0 = Math.min(...list.map((c) => c.start));
+const out = [];
+for (const c of list) {
+out.push(this.animAddClip(c.layerId, { start: t + (c.start - t0), dur: c.dur, fadeIn: c.fadeIn, fadeOut: c.fadeOut, amount: c.amount, shape: c.shape, ease: c.ease, off: c.off, repeat: c.repeat, rev: c.rev }));
+}
+return out;
+}
+animRemoveClip(clipId) {
+this._histFlush();
+const A = this.state.anim;
+if (!A.clips) return;
+A.clips = A.clips.filter((c) => c.id !== clipId);
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+}
+animDuplicateClip(clipId, batch) {
+if (!batch) this._histFlush();
+this._batch = true;
+try {
+return this._animDuplicateClip(clipId);
+} finally {
+this._batch = false;
+}
+}
+_animDuplicateClip(clipId) {
+const A = this.state.anim;
+if (!A.clips) return null;
+const clip = A.clips.find((c) => c.id === clipId);
+if (!clip) return null;
+const durTotal = A.dur || 8;
+let newStart = clip.start + 0.5;
+if (newStart + clip.dur > durTotal) newStart = Math.max(0, durTotal - clip.dur);
+return this.animAddClip(clip.layerId, {
+start: newStart,
+dur: clip.dur,
+fadeIn: clip.fadeIn,
+fadeOut: clip.fadeOut,
+amount: clip.amount,
+shape: clip.shape,
+ease: clip.ease,
+off: clip.off,
+repeat: clip.repeat,
+rev: clip.rev,
+});
+}
+animSplitClip(clipId, t) {
+this._histFlush();
+const A = this.state.anim;
+const clip = (A.clips || []).find((c) => c.id === clipId);
+if (!clip || t <= clip.start + 0.3 || t >= clip.start + clip.dur - 0.3) return null;
+const end = clip.start + clip.dur;
+const outFade = clip.fadeOut;
+const left = t - clip.start;
+clip.dur = Math.round(left * 100) / 100;
+clip.fadeIn = Math.min(clip.fadeIn, clip.dur * 0.45);
+clip.fadeOut = Math.min(0.15, clip.dur * 0.3);
+this._batch = true;
+const right = this.animAddClip(clip.layerId, { start: t, dur: end - t, fadeIn: Math.min(0.15, (end - t) * 0.3), fadeOut: Math.min(outFade, (end - t) * 0.45), amount: clip.amount, shape: clip.shape, ease: clip.ease, repeat: clip.repeat, rev: clip.rev });
+this._batch = false;
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+return right;
+}
+animClear() {
+this._histFlush();
+const A = this.state.anim;
+A.keys = [];
+A.clips = [];
+A.markers = [];
+A.work = null;
+A.lanes = {};
+this.animT = 0;
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+}
+async _prepareMorphTrack() {
+if (!this.geometry || this._morphTrackReady || this._morphTrackLoading) return;
+this._morphTrackLoading = true;
+try {
+const forms = this.forms();
+let targetKey = null;
+if (forms.length >= 2) {
+targetKey = forms.find((f) => f.key !== (this.curKey || this.state.source))?.key || forms[1].key;
+} else {
+targetKey = this.state.source === 'sphere' ? 'torus' : 'sphere';
+}
+const target = await this._cloudFor(targetKey);
+if (target && this.geometry) {
+const g = this.geometry;
+const t = g.attributes.aTarget;
+if (t && target.positions && target.positions.length === t.array.length) {
+t.array.set(target.positions);
+t.needsUpdate = true;
+this._morphTrackReady = true;
+}
+}
+} catch (e) {
+} finally {
+this._morphTrackLoading = false;
+}
+}
+animLoadPreset(id) {
+const nav = this.app?.nav;
+const baseDist = nav?.distance || 5.2;
+const tx = nav?.target?.x || 0;
+const ty = nav?.target?.y || 0;
+const tz = nav?.target?.z || 0;
+if (id === 'dust_rebirth') {
+this.animSetDuration(9);
+const A = this.state.anim;
+A.keys = [
+{ t: 0.0, cam: { yaw: 0.2, pitch: 0.25, dist: baseDist * 0.75, tx, ty, tz }, size: 2.2, bright: 0.9, glow: 0.6, layers: {} },
+{ t: 4.5, cam: { yaw: 2.1, pitch: 0.15, dist: baseDist * 1.15, tx, ty, tz }, size: 3.8, bright: 1.2, glow: 1.0, layers: {} },
+{ t: 9.0, cam: { yaw: 4.0, pitch: 0.28, dist: baseDist * 0.85, tx, ty, tz }, size: 3.0, bright: 1.0, glow: 0.8, layers: {} },
+];
+A.clips = [
+{ id: 'c_pr_1', layerId: 'dissolve', start: 0.0, dur: 3.8, fadeIn: 0.2, fadeOut: 1.0, amount: 1.0 },
+{ id: 'c_pr_2', layerId: 'curl', start: 2.2, dur: 4.5, fadeIn: 0.8, fadeOut: 1.2, amount: 0.9 },
+{ id: 'c_pr_3', layerId: 'blast', start: 5.2, dur: 3.2, fadeIn: 0.6, fadeOut: 0.8, amount: 0.75 },
+{ id: 'c_pr_4', layerId: 'wave', start: 6.2, dur: 2.8, fadeIn: 0.5, fadeOut: 0.8, amount: 0.65 },
+];
+} else if (id === 'scan_collapse') {
+this.animSetDuration(10);
+const A = this.state.anim;
+A.keys = [
+{ t: 0.0, cam: { yaw: -0.6, pitch: 0.45, dist: baseDist * 0.8, tx, ty: ty - 0.2, tz }, size: 2.8, bright: 1.0, glow: 0.7, layers: {} },
+{ t: 5.0, cam: { yaw: 1.2, pitch: 0.1, dist: baseDist * 1.2, tx, ty: ty + 0.1, tz }, size: 3.4, bright: 1.3, glow: 1.1, layers: {} },
+{ t: 10.0, cam: { yaw: 3.2, pitch: 0.35, dist: baseDist * 0.9, tx, ty, tz }, size: 3.0, bright: 1.0, glow: 0.8, layers: {} },
+];
+A.clips = [
+{ id: 'c_pr_5', layerId: 'slice', start: 0.0, dur: 4.0, fadeIn: 0.2, fadeOut: 0.8, amount: 1.0 },
+{ id: 'c_pr_6', layerId: 'links', start: 3.0, dur: 4.5, fadeIn: 0.8, fadeOut: 1.0, amount: 0.95 },
+{ id: 'c_pr_7', layerId: 'glitch', start: 5.5, dur: 3.5, fadeIn: 0.4, fadeOut: 0.8, amount: 0.85 },
+{ id: 'c_pr_8', layerId: 'bloom', start: 6.5, dur: 3.0, fadeIn: 0.5, fadeOut: 0.8, amount: 0.9 },
+];
+} else if (id === 'glitch_morph') {
+this.animSetDuration(8);
+const A = this.state.anim;
+A.keys = [
+{ t: 0.0, cam: { yaw: 0.0, pitch: 0.2, dist: baseDist, tx, ty, tz }, size: 3.2, bright: 1.0, glow: 0.8, layers: {} },
+{ t: 3.5, cam: { yaw: 1.8, pitch: -0.1, dist: baseDist * 0.75, tx, ty, tz }, size: 4.2, bright: 1.4, glow: 1.2, layers: {} },
+{ t: 8.0, cam: { yaw: 3.6, pitch: 0.2, dist: baseDist, tx, ty, tz }, size: 3.2, bright: 1.0, glow: 0.8, layers: {} },
+];
+A.clips = [
+{ id: 'c_pr_9', layerId: 'glitch', start: 0.3, dur: 3.0, fadeIn: 0.2, fadeOut: 0.6, amount: 0.95 },
+{ id: 'c_pr_10', layerId: 'morph', start: 1.5, dur: 4.5, fadeIn: 0.4, fadeOut: 0.6, amount: 1.0 },
+{ id: 'c_pr_11', layerId: 'blast', start: 2.2, dur: 3.8, fadeIn: 0.3, fadeOut: 0.9, amount: 1.0 },
+{ id: 'c_pr_12', layerId: 'bloom', start: 3.5, dur: 3.0, fadeIn: 0.4, fadeOut: 0.8, amount: 0.9 },
+{ id: 'c_pr_13', layerId: 'twist', start: 4.0, dur: 3.5, fadeIn: 0.6, fadeOut: 0.8, amount: 0.85 },
+];
+}
+this.animSeek(0);
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+}
+animSetDuration(d) {
+const A = this.state.anim;
+A.dur = Math.max(1, Math.min(120, d));
+if (A.keys) {
+for (const k of A.keys) k.t = Math.min(k.t, A.dur);
+}
+if (A.clips) {
+for (const c of A.clips) {
+c.start = Math.min(c.start, Math.max(0, A.dur - 0.2));
+c.dur = Math.min(c.dur, A.dur - c.start);
+if (c.fadeIn + c.fadeOut > c.dur) {
+c.fadeIn = Math.min(c.fadeIn, c.dur * 0.5);
+c.fadeOut = Math.min(c.fadeOut, c.dur * 0.5);
+}
+}
+}
+this.animT = Math.min(this.animT, A.dur);
+this.touch();
+this.emit();
+this.app.bus.emit('fxanim');
+}
+_clipEnv(c, t) {
+const n = Math.max(1, c.repeat || 1);
+if (c.rev) t = c.start + c.dur - (t - c.start);
+if (n > 1) {
+const seg = c.dur / n;
+const k = Math.max(0, Math.min(n - 1, Math.floor((t - c.start) / seg)));
+return this._clipEnv1({ ...c, rev: false, repeat: 1, start: c.start + k * seg, dur: seg, fadeIn: Math.min(c.fadeIn, seg * 0.45), fadeOut: Math.min(c.fadeOut, seg * 0.45) }, t);
+}
+return this._clipEnv1(c, t);
+}
+_clipEnv1(c, t) {
+const curve = (f) => {
+f = Math.min(1, Math.max(0, f));
+return c.ease === 'linear' ? f : c.ease === 'sharp' ? Math.pow(f, 0.35) : f * f * (3 - 2 * f);
+};
+const elapsed = t - c.start;
+const remaining = c.start + c.dur - t;
+let env = 1;
+if (c.fadeIn > 0.001 && elapsed < c.fadeIn) env = Math.min(env, curve(elapsed / c.fadeIn));
+if (c.fadeOut > 0.001 && remaining < c.fadeOut) env = Math.min(env, curve(remaining / c.fadeOut));
+const u = c.dur > 0 ? Math.min(1, Math.max(0, elapsed / c.dur)) : 0;
+const shape = c.shape || 'plateau';
+const k = shape === 'ramp' ? curve(u) : shape === 'fall' ? curve(1 - u) : shape === 'peak' ? curve(1 - Math.abs(2 * u - 1)) : 1;
+return env * k;
+}
+_animGate(t) {
+const clips = this.timelineOpen ? this.state.anim.clips || [] : [];
+const L = this.state.layers;
+const clipLayerIds = new Set(clips.map((c) => c.layerId));
+const S = (this.state.anim.saved ||= {});
+let changed = false;
+for (const id of clipLayerIds) {
+if (!L[id] || S[id]) continue;
+S[id] = { on: !!L[id].on, amount: L[id].amount };
+L[id].on = false;
+L[id].amount = 0;
+changed = true;
+}
+for (const id of Object.keys(S)) {
+if (clipLayerIds.has(id)) continue;
+if (L[id]) {
+L[id].on = S[id].on;
+L[id].amount = S[id].amount;
+}
+delete S[id];
+changed = true;
+}
+if (changed) {
+this.touch();
+this.emit();
+}
+for (const layerId of clipLayerIds) {
+if (!L[layerId]) continue;
+let maxVal = 0;
+const lanes = this.state.anim.lanes || {};
+const anySolo = Object.values(lanes).some((x) => x && x.solo);
+const laneOff = !!(lanes[layerId] && lanes[layerId].mute) || (anySolo && !(lanes[layerId] && lanes[layerId].solo));
+for (const c of clips) {
+if (c.layerId !== layerId || c.off || laneOff) continue;
+if (t < c.start || t > c.start + c.dur) continue;
+const val = (c.amount ?? 1.0) * this._clipEnv(c, t);
+if (val > maxVal) maxVal = val;
+}
+if (maxVal > 0.003) {
+L[layerId].on = true;
+L[layerId].amount = maxVal;
+} else {
+L[layerId].on = false;
+}
+}
+}
+animApply(t) {
+const A = this.state.anim;
+const keys = A.keys || [];
+const clips = A.clips || [];
+if (!keys.length && !clips.length) return;
+if (keys.length > 0) {
+let a = keys[0];
+let b = keys[keys.length - 1];
+let u = 0;
+if (t <= keys[0].t) b = a;
+else if (t >= b.t) a = b;
+else {
+for (let i = 0; i < keys.length - 1; i++) {
+if (t >= keys[i].t && t <= keys[i + 1].t) {
+a = keys[i];
+b = keys[i + 1];
+break;
+}
+}
+const span = Math.max(1e-6, b.t - a.t);
+u = (t - a.t) / span;
+u = u * u * (3 - 2 * u);
+}
+const mix = (x, y) => x + (y - x) * u;
+const nav = this.app.nav;
+nav.cancelTween?.();
+nav.yaw = mix(a.cam.yaw, b.cam.yaw);
+nav.pitch = mix(a.cam.pitch, b.cam.pitch);
+nav.distance = Math.exp(mix(Math.log(a.cam.dist), Math.log(b.cam.dist)));
+nav.target.set(mix(a.cam.tx, b.cam.tx), mix(a.cam.ty, b.cam.ty), mix(a.cam.tz, b.cam.tz));
+nav.applyCamera();
+if (a.size !== undefined && b.size !== undefined) {
+this.app.settings.point.size = mix(a.size, b.size);
+}
+if (a.bright !== undefined && b.bright !== undefined) {
+this.state.look.bright = mix(a.bright, b.bright);
+}
+if (a.glow !== undefined && b.glow !== undefined) {
+this.state.look.glow = mix(a.glow, b.glow);
+}
+if (clips.length === 0 && a.layers && b.layers) {
+const L = this.state.layers;
+for (const id of this._animLayers()) {
+if (!L[id]) continue;
+const v = mix(a.layers[id] ?? 0, b.layers[id] ?? 0);
+if (v > 0.003) {
+L[id].on = true;
+L[id].amount = v;
+} else {
+L[id].on = false;
+}
+}
+}
+}
+if (clips.length > 0) {
+const L = this.state.layers;
+const clipLayerIds = new Set(clips.map((c) => c.layerId));
+this._animGate(t);
+if (clipLayerIds.has('morph')) {
+if (!this._morphTrackReady && !this._morphTrackLoading) {
+this._prepareMorphTrack();
+}
+let mVal = 0;
+for (const c of clips) {
+if (c.layerId !== 'morph') continue;
+if (t <= c.start) continue;
+if (t >= c.start + c.dur) {
+mVal = 1.0;
+continue;
+}
+const p = (t - c.start) / Math.max(0.01, c.dur);
+mVal = Math.max(mVal, p * (c.amount ?? 1.0));
+}
+this.morph = Math.max(0, Math.min(1, mVal));
+if (this.shared?.uMorph) this.shared.uMorph.value = this.morph;
+}
+if (clipLayerIds.has('rotate')) {
+let rotVal = 0;
+for (const c of clips) {
+if (c.layerId !== 'rotate') continue;
+if (t < c.start || t > c.start + c.dur) continue;
+const elapsed = t - c.start;
+const remaining = c.start + c.dur - t;
+let env = 1.0;
+if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
+const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
+env = Math.min(env, f * f * (3 - 2 * f));
+}
+if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
+const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
+env = Math.min(env, f * f * (3 - 2 * f));
+}
+rotVal = Math.max(rotVal, (c.amount ?? 1.0) * env);
+}
+if (rotVal > 0.001 && this.points) {
+this.points.rotation.y = t * 1.6 * rotVal;
+this.points.updateMatrixWorld();
+}
+}
+if (clipLayerIds.has('bloom')) {
+let bVal = 0;
+for (const c of clips) {
+if (c.layerId !== 'bloom') continue;
+if (t < c.start || t > c.start + c.dur) continue;
+const elapsed = t - c.start;
+const remaining = c.start + c.dur - t;
+let env = 1.0;
+if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
+const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
+env = Math.min(env, f * f * (3 - 2 * f));
+}
+if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
+const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
+env = Math.min(env, f * f * (3 - 2 * f));
+}
+bVal = Math.max(bVal, (c.amount ?? 1.0) * env);
+}
+if (bVal > 0.001) {
+this.state.look.glow = 0.8 + bVal * 1.5;
+this.state.look.bright = 1.0 + bVal * 0.8;
+if (this.shared?.uGlow) this.shared.uGlow.value = this.state.look.glow;
+if (this.shared?.uBright) this.shared.uBright.value = this.state.look.bright;
+}
+}
+}
+clearTimeout(this._saveT);
+this._saveT = setTimeout(() => saveJSON(KEY, this.state), 500);
+}
+animSeek(t) {
+this.animT = Math.max(0, Math.min(this.state.anim.dur, t));
+this.animApply(this.animT);
+this.app.bus.emit('fxanim');
+}
+animPlay() {
+const hasKeys = this.state.anim.keys && this.state.anim.keys.length >= 2;
+const hasClips = this.state.anim.clips && this.state.anim.clips.length >= 1;
+if (!hasKeys && !hasClips) return false;
+const [ra, rb] = this._animRange();
+if (this.animT >= rb - 0.01 || this.animT < ra - 0.001) this.animT = ra;
+this.animPlaying = true;
+this.app.bus.emit('fxanim');
+return true;
+}
+animPause() {
+if (!this.animPlaying) return;
+this.animPlaying = false;
+this.emit();
+this.app.bus.emit('fxanim');
+}
+animRecord() {
+const hasKeys = this.state.anim.keys && this.state.anim.keys.length >= 2;
+const hasClips = this.state.anim.clips && this.state.anim.clips.length >= 1;
+if ((!hasKeys && !hasClips) || this.recording) return false;
+this.animT = this._animRange()[0];
+this.animApply(this.animT);
+this.animRec = true;
+this.startRecording();
+this.animPlaying = true;
+this.app.bus.emit('fxanim');
+return true;
+}
+_animRange() {
+const A = this.state.anim;
+const w = A.work;
+if (w && w.b - w.a >= 0.2) return [Math.max(0, w.a), Math.min(A.dur, w.b)];
+return [0, A.dur];
+}
+_animStep(dt) {
+const A = this.state.anim;
+const [ra, rb] = this._animRange();
+this.animT += dt * (A.speed || 1);
+if (this.animT >= rb) {
+if (this.animRec) {
+this.animT = rb;
+this.animApply(rb);
+this.animRec = false;
+this.animPlaying = false;
+this.stopRecording();
+this.emit();
+} else if (A.loop) this.animT = ra + ((this.animT - ra) % Math.max(0.05, rb - ra));
+else {
+this.animT = rb;
+this.animPlaying = false;
+this.emit();
+}
+} else if (this.animT < ra && A.work) this.animT = ra;
+this.animApply(this.animT);
+this._animEmitT = (this._animEmitT || 0) + dt;
+if (this._animEmitT > 0.05) {
+this._animEmitT = 0;
+this.app.bus.emit('fxanim');
+}
+}
+}
+};
+__defs['src/effects/shapes/cloud-utils.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'reorderAnim', () => reorderAnim);
+__def(__exports, 'fitCount', () => fitCount);
+__def(__exports, 'normalizeCloud', () => normalizeCloud);
+__def(__exports, 'mortonSort', () => mortonSort);
+function reorderAnim(a, src) {
+if (!a) return null;
+const n = src.length;
+const out = { parts: a.parts, part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4), bn: a.bn ? new Float32Array(n * 3) : null };
+for (let i = 0; i < n; i++) {
+const j = src[i];
+out.part[i] = a.part[j];
+for (let k = 0; k < 3; k++) {
+out.bp[i * 3 + k] = a.bp[j * 3 + k];
+if (out.bn) out.bn[i * 3 + k] = a.bn[j * 3 + k];
+}
+for (let k = 0; k < 4; k++) {
+out.bi[i * 4 + k] = a.bi[j * 4 + k];
+out.bw[i * 4 + k] = a.bw[j * 4 + k];
+}
+}
+return out;
+}
+function fitCount(c, n) {
+if (c.count === n) return c;
+const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+const src = new Int32Array(n);
+for (let i = 0; i < n; i++) {
+const j = Math.min(c.count - 1, Math.floor((i * c.count) / n));
+src[i] = j;
+for (let k = 0; k < 3; k++) {
+pos[i * 3 + k] = c.positions[j * 3 + k];
+nor[i * 3 + k] = c.normals[j * 3 + k];
+col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
+}
+}
+return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm };
+}
+function normalizeCloud(c) {
+const p = c.positions;
+let minx = Infinity, miny = Infinity, minz = Infinity, maxx = -Infinity, maxy = -Infinity, maxz = -Infinity;
+for (let i = 0; i < p.length; i += 3) {
+if (p[i] < minx) minx = p[i]; if (p[i] > maxx) maxx = p[i];
+if (p[i + 1] < miny) miny = p[i + 1]; if (p[i + 1] > maxy) maxy = p[i + 1];
+if (p[i + 2] < minz) minz = p[i + 2]; if (p[i + 2] > maxz) maxz = p[i + 2];
+}
+if (c.animBox && !c.animBox.isEmpty()) {
+const B = c.animBox;
+minx = B.min.x; miny = B.min.y; minz = B.min.z; maxx = B.max.x; maxy = B.max.y; maxz = B.max.z;
+}
+const cx = (minx + maxx) / 2, cy = (miny + maxy) / 2, cz = (minz + maxz) / 2;
+const k = 2.2 / Math.max(maxx - minx, maxy - miny, maxz - minz, 1e-9);
+const out = new Float32Array(p.length);
+for (let i = 0; i < p.length; i += 3) {
+out[i] = (p[i] - cx) * k;
+out[i + 1] = (p[i + 1] - cy) * k;
+out[i + 2] = (p[i + 2] - cz) * k;
+}
+return { positions: out, normals: c.normals, colors: c.colors, count: c.count, anim: c.anim, norm: { cx, cy, cz, k, floorY: (miny - cy) * k } };
+}
+function mortonSort(c) {
+const n = c.count;
+const P = c.positions;
+let mnx = Infinity, mny = Infinity, mnz = Infinity, mxx = -Infinity, mxy = -Infinity, mxz = -Infinity;
+for (let i = 0; i < n; i++) {
+const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2];
+if (x < mnx) mnx = x; if (x > mxx) mxx = x;
+if (y < mny) mny = y; if (y > mxy) mxy = y;
+if (z < mnz) mnz = z; if (z > mxz) mxz = z;
+}
+const sx = 1023 / Math.max(1e-9, mxx - mnx), sy = 1023 / Math.max(1e-9, mxy - mny), sz = 1023 / Math.max(1e-9, mxz - mnz);
+const spread = (v) => {
+v &= 0x3ff;
+v = (v | (v << 16)) & 0x030000ff;
+v = (v | (v << 8)) & 0x0300f00f;
+v = (v | (v << 4)) & 0x030c30c3;
+v = (v | (v << 2)) & 0x09249249;
+return v;
+};
+const M = 4194304;
+const keys = new Float64Array(n);
+for (let i = 0; i < n; i++) {
+const code = ((spread(((P[i * 3] - mnx) * sx) | 0) << 2) | (spread(((P[i * 3 + 1] - mny) * sy) | 0) << 1) | spread(((P[i * 3 + 2] - mnz) * sz) | 0)) >>> 0;
+keys[i] = code * M + i;
+}
+keys.sort();
+const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+const src = new Int32Array(n);
+for (let i = 0; i < n; i++) {
+const j = keys[i] % M;
+src[i] = j;
+for (let k = 0; k < 3; k++) {
+pos[i * 3 + k] = P[j * 3 + k];
+nor[i * 3 + k] = c.normals[j * 3 + k];
+col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
+}
+}
+return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm };
+}
+};
+__defs['src/effects/shapes/shapes.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'baseShape', () => baseShape);
+__def(__exports, 'extraShape', () => extraShape);
+__def(__exports, 'generateShapePoints', () => generateShapePoints);
 function baseShape(type, count = 100000) {
 const pos = new Float32Array(count * 3);
 const nor = new Float32Array(count * 3);
@@ -79961,100 +81211,1957 @@ return { positions: pos, normals: nor, colors: col, count };
 function generateShapePoints(type, count = 100000) {
 return type === 'galaxy' || type === 'plane' ? extraShape(type, count) : baseShape(type, count);
 }
-function reorderAnim(a, src) {
-if (!a) return null;
-const n = src.length;
-const out = { parts: a.parts, part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4), bn: a.bn ? new Float32Array(n * 3) : null };
-for (let i = 0; i < n; i++) {
-const j = src[i];
-out.part[i] = a.part[j];
-for (let k = 0; k < 3; k++) {
-out.bp[i * 3 + k] = a.bp[j * 3 + k];
-if (out.bn) out.bn[i * 3 + k] = a.bn[j * 3 + k];
+};
+__defs['src/effects/engine/source.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'SourcePart', () => SourcePart);
+const THREE = __req('vendor/three/build/three.module.js');
+const { fitCount, mortonSort, normalizeCloud } = __req('src/effects/shapes/cloud-utils.js');
+const { generateShapePoints } = __req('src/effects/shapes/shapes.js');
+class SourcePart {
+async useMedia() {
+this.state.look.colorBy = 'model';
+for (const id of ['curl', 'blast']) this.state.layers[id].on = false;
+if (this.state.source === 'media') {
+this.cache.clear();
+await this._build();
+} else await this.setSource('media');
+this.state.look.autoRotate = false;
+if (this.points) this.points.rotation.set(0, 0, 0);
+this.emit();
 }
-for (let k = 0; k < 4; k++) {
-out.bi[i * 4 + k] = a.bi[j * 4 + k];
-out.bw[i * 4 + k] = a.bw[j * 4 + k];
+async setMediaPts(n) {
+this.app.settings.media.pts = n;
+this.app.saveSettings();
+if (this.state.source === 'media' && this.active && !this.pm.isRec) {
+this.cache.clear();
+await this._build();
 }
+this.emit();
 }
+forms() {
+const out = [];
+for (const o of this.modelProvider?.objects() || []) out.push({ key: 'obj:' + o.id, name: o.name, icon: 'cube' });
 return out;
 }
-function fitCount(c, n) {
-if (c.count === n) return c;
-const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
-const src = new Int32Array(n);
-for (let i = 0; i < n; i++) {
-const j = Math.min(c.count - 1, Math.floor((i * c.count) / n));
-src[i] = j;
-for (let k = 0; k < 3; k++) {
-pos[i * 3 + k] = c.positions[j * 3 + k];
-nor[i * 3 + k] = c.normals[j * 3 + k];
-col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
-}
-}
-return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm };
-}
-function normalizeCloud(c) {
-const p = c.positions;
-let minx = Infinity, miny = Infinity, minz = Infinity, maxx = -Infinity, maxy = -Infinity, maxz = -Infinity;
-for (let i = 0; i < p.length; i += 3) {
-if (p[i] < minx) minx = p[i]; if (p[i] > maxx) maxx = p[i];
-if (p[i + 1] < miny) miny = p[i + 1]; if (p[i + 1] > maxy) maxy = p[i + 1];
-if (p[i + 2] < minz) minz = p[i + 2]; if (p[i + 2] > maxz) maxz = p[i + 2];
-}
-if (c.animBox && !c.animBox.isEmpty()) {
-const B = c.animBox;
-minx = B.min.x; miny = B.min.y; minz = B.min.z; maxx = B.max.x; maxy = B.max.y; maxz = B.max.z;
-}
-const cx = (minx + maxx) / 2, cy = (miny + maxy) / 2, cz = (minz + maxz) / 2;
-const k = 2.2 / Math.max(maxx - minx, maxy - miny, maxz - minz, 1e-9);
-const out = new Float32Array(p.length);
-for (let i = 0; i < p.length; i += 3) {
-out[i] = (p[i] - cx) * k;
-out[i + 1] = (p[i + 1] - cy) * k;
-out[i + 2] = (p[i + 2] - cz) * k;
-}
-return { positions: out, normals: c.normals, colors: c.colors, count: c.count, anim: c.anim, norm: { cx, cy, cz, k, floorY: (miny - cy) * k } };
-}
-function mortonSort(c) {
-const n = c.count;
-const P = c.positions;
-let mnx = Infinity, mny = Infinity, mnz = Infinity, mxx = -Infinity, mxy = -Infinity, mxz = -Infinity;
-for (let i = 0; i < n; i++) {
-const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2];
-if (x < mnx) mnx = x; if (x > mxx) mxx = x;
-if (y < mny) mny = y; if (y > mxy) mxy = y;
-if (z < mnz) mnz = z; if (z > mxz) mxz = z;
-}
-const sx = 1023 / Math.max(1e-9, mxx - mnx), sy = 1023 / Math.max(1e-9, mxy - mny), sz = 1023 / Math.max(1e-9, mxz - mnz);
-const spread = (v) => {
-v &= 0x3ff;
-v = (v | (v << 16)) & 0x030000ff;
-v = (v | (v << 8)) & 0x0300f00f;
-v = (v | (v << 4)) & 0x030c30c3;
-v = (v | (v << 2)) & 0x09249249;
-return v;
+_fracFor(key) {
+if (!key.startsWith('obj:') || this.state.morphCfg.weight === 'equal') return 1;
+const mp = this.modelProvider;
+const sizeOf = (k) => {
+const o = mp?.objects().find((x) => 'obj:' + x.id === k);
+return o && mp.sizeOf ? mp.sizeOf(o.obj) : 0;
 };
-const M = 4194304;
-const keys = new Float64Array(n);
+const keys = new Set([...(this.playlist || []), key]);
+let mx = 0;
+for (const k of keys) if (k.startsWith('obj:')) mx = Math.max(mx, sizeOf(k));
+const mine = sizeOf(key);
+return mx > 0 && mine > 0 ? Math.max(0.08, Math.min(1, mine / mx)) : 1;
+}
+setPlaylist(keys) {
+this.playlist = keys;
+this._pi = Math.max(-1, keys.indexOf(this.curKey || this.state.source));
+this.emit();
+this._prefetch(keys);
+}
+morphNext() {
+const list = this.playlist || [];
+if (list.length < 2 || !this.active || this.morphing) return;
+let i;
+if (this.state.morphCfg.order === 'random') {
+do i = Math.floor(Math.random() * list.length);
+while (i === this._pi && list.length > 1);
+} else i = ((this._pi ?? -1) + 1) % list.length;
+this._pi = i;
+this._lastMorph = this._time;
+this.setSource(list[i]).catch(() => {});
+}
+toggleDissolve() {
+this._disTarget = !this._disTarget;
+this.state.layers.dissolve.on = true;
+if (this.state.layers.dissolve.mode !== 'button') this.state.layers.dissolve.mode = 'button';
+this.emit();
+}
+get hasModel() {
+return !!(this.modelProvider && this.modelProvider.available());
+}
+async _cloudFor(key) {
+if (key === 'frames') return this._frameCloud || null;
+if (key === 'media') {
+const pm = this.pm;
+if (!pm.ready) return null;
+pm.setGrid(this.app.settings.media.pts);
+const m = this.app.settings.media;
+pm.dirty = true;
+return pm.buildCloud(pm.sample(), m.relief, m.depth);
+}
+const n = this._n();
+const ck = key + ':' + n;
+if (this.cache.has(ck)) return this.cache.get(ck);
+const pend = (this._pend ||= new Map());
+if (pend.has(ck)) return pend.get(ck);
+const job = (async () => {
+let c;
+if (key === 'model') {
+c = this.modelProvider ? await this.modelProvider.get(n) : null;
+if (!c) return null;
+c = mortonSort(fitCount(normalizeCloud(c), n));
+} else if (key.startsWith('obj:')) {
+const o = this.modelProvider?.objects().find((x) => x.id === key.slice(4));
+c = o ? await this.modelProvider.getOf(o.obj, n) : null;
+if (!c || !c.count) return null;
+c = mortonSort(fitCount(normalizeCloud(c), n));
+} else {
+c = generateShapePoints(key, n);
+}
+this.cache.set(ck, c);
+return c;
+})();
+pend.set(ck, job);
+try {
+return await job;
+} finally {
+pend.delete(ck);
+}
+}
+async _prefetch(keys) {
+const token = (this._pfT = (this._pfT || 0) + 1);
+for (const k of keys || []) {
+if (token !== this._pfT || !this.active) return;
+this._quiet = true;
+try {
+await this._cloudFor(k);
+} catch (e) {
+} finally {
+this._quiet = false;
+}
+await new Promise((r) => setTimeout(r, 30));
+}
+}
+async setSource(key) {
+const st = this.state;
+if (key === 'media' && !this.pm.ready) {
+this.app.toast('Сначала загрузите фото или видео в разделе «Фото и видео»', 'info');
+return;
+}
+if (key === 'model' && !this.hasModel) {
+this.app.toast('Нет модели: добавьте её кнопкой «Добавить модель» или откройте в редакторе', 'info');
+return;
+}
+const real = !key.startsWith('obj:');
+if (real) st.source = key;
+this.touch();
+if (!this.active || !this.geometry) return this.emit();
+let target;
+try {
+target = await this._cloudFor(key);
+} finally {
+this.app.ui.idle();
+}
+if (!target) return this.emit();
+this.curKey = key;
+if (!target || target.count !== this.geometry.attributes.position.count) {
+await this._build();
+return this.emit();
+}
+const g = this.geometry;
+const o = g.attributes.aOrigin;
+const t = g.attributes.aTarget;
+const k = this.morphing ? 1 : this.morph * this.morph * (3 - 2 * this.morph);
+for (let i = 0; i < o.array.length; i++) {
+o.array[i] = o.array[i] * (1 - k) + t.array[i] * k;
+t.array[i] = target.positions[i];
+}
+g.attributes.aNormal.array.set(g.attributes.aNormalB.array);
+g.attributes.aNormalB.array.set(target.normals);
+{
+let my = Infinity;
+const tp = target.positions;
+for (let i = 1; i < tp.length; i += 3) if (tp[i] < my) my = tp[i];
+this.app.viewport.fxFloorY = target.norm && target.norm.floorY !== undefined ? target.norm.floorY : my;
+}
+g.attributes.aNormal.needsUpdate = g.attributes.aNormalB.needsUpdate = true;
+if (target.colors && target.colors.length === g.attributes.aColor.array.length) {
+g.attributes.aColor.array.set(g.attributes.aColorB.array);
+g.attributes.aColorB.array.set(target.colors);
+g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
+}
+const vis = g.attributes.aVis;
+if (vis) {
+const frac = this._fracFor(key);
+const n = vis.count;
 for (let i = 0; i < n; i++) {
-const code = ((spread(((P[i * 3] - mnx) * sx) | 0) << 2) | (spread(((P[i * 3 + 1] - mny) * sy) | 0) << 1) | spread(((P[i * 3 + 2] - mnz) * sz) | 0)) >>> 0;
-keys[i] = code * M + i;
+const cur = vis.array[i * 2] * (1 - k) + vis.array[i * 2 + 1] * k;
+const rnd = (Math.imul(i + 1, 2654435761) >>> 0) / 4294967296;
+vis.array[i * 2] = cur;
+vis.array[i * 2 + 1] = rnd < frac ? 1 : 0;
 }
-keys.sort();
-const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
-const src = new Int32Array(n);
+vis.needsUpdate = true;
+}
+o.needsUpdate = t.needsUpdate = true;
+this.cloudKey = key;
+this.morph = 0;
+this.morphing = true;
+this._settleOn = false;
+this.shared.uSettle.value = -1;
+this.shared.uMorph.value = 0;
+this._computeLinks();
+this.emit();
+}
+async setCount(n) {
+this.state.count = n;
+this.app.settings.point.surfaceCount = n;
+this.app.saveSettings();
+this.app.bus.emit('pointsettings');
+this.cache.clear();
+this.touch();
+if (this.active) {
+this.app.ui.busy('Пересобираю частицы', 0.3);
+try {
+await this._build();
+} finally {
+this.app.ui.idle();
+}
+}
+this._prefetch(this.playlist);
+this.emit();
+}
+_onScene() {
+if (!this.active || this._muteScene) return;
+clearTimeout(this._sceneT);
+this._sceneT = setTimeout(async () => {
+if (!this.active) return;
+this.cache.clear();
+if (this.hasModel && !(this.pm.ready && this.state.source === 'media')) {
+this.state.source = 'model';
+this.syncLookFromPoints();
+}
+this.app.ui.busy('Готовлю частицы', 0.2);
+try {
+if (this.geometry && this.hasModel && this.state.source === 'model') await this.setSource('model');
+else await this._build();
+} catch (e) {
+console.error(e);
+} finally {
+this.app.ui.idle();
+}
+this.app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 300);
+this.emit();
+}, 700);
+}
+}
+};
+__defs['src/effects/render/webgl/textures.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'frDummy2D', () => frDummy2D);
+__def(__exports, 'frDummyTex', () => frDummyTex);
+__def(__exports, 'GLYPH_SETS', () => GLYPH_SETS);
+__def(__exports, 'glyphAtlas', () => glyphAtlas);
+const THREE = __req('vendor/three/build/three.module.js');
+function frDummy2D() {
+const t = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+t.needsUpdate = true;
+return t;
+}
+function frDummyTex() {
+const t = new THREE.DataArrayTexture(new Uint8Array(4), 1, 1, 1);
+t.format = THREE.RGBAFormat;
+t.type = THREE.UnsignedByteType;
+t.needsUpdate = true;
+return t;
+}
+const GLYPH_SETS = {
+ascii: ['.', '`', "'", ',', ':', ';', '-', '~', '"', '^', '_', '+', '=', '<', '>', 'i', '!', 'l', 'I', '?', '/', '\\', '|', '(', ')', '{', '}', '[', ']', '1', 't', 'f', 'j', 'r', 'x', 'n', 'u', 'v', 'c', 'z', 'X', 'Y', 'U', 'J', 'C', 'L', 'Q', '0', 'O', 'Z', 'm', 'w', 'q', 'p', 'd', 'b', 'k', 'h', 'a', 'o', '*', '#', 'M', 'W', '&', '8', '%', 'B', '@', '$'],
+digits: ['1', '7', '4', '2', '5', '3', '6', '9', '8', '0'],
+letters: ['i', 'l', 'j', 't', 'f', 'r', 'c', 's', 'v', 'x', 'z', 'n', 'u', 'e', 'a', 'o', 'y', 'k', 'h', 'd', 'b', 'p', 'q', 'g', 'm', 'w', 'I', 'L', 'T', 'J', 'V', 'A', 'X', 'Y', 'K', 'H', 'N', 'R', 'E', 'F', 'P', 'S', 'U', 'Z', 'B', 'D', 'G', 'O', 'Q', 'C', 'M', 'W'],
+blocks: ['·', '▫', '▪', '▘', '▝', '▖', '▗', '▁', '░', '▏', '▎', '▂', '▍', '▀', '▄', '▌', '▐', '▃', '▞', '▚', '▒', '▅', '▋', '▆', '▓', '▊', '▇', '▉', '■', '█'],
+};
+function glyphAtlas(mode) {
+const set = GLYPH_SETS[mode] || GLYPH_SETS.ascii;
+const n = set.length;
+const cv = document.createElement('canvas');
+cv.width = n * 64;
+cv.height = 64;
+const c = cv.getContext('2d');
+c.fillStyle = '#fff';
+c.textAlign = 'center';
+c.textBaseline = 'middle';
+c.font = mode === 'digits' ? '700 54px Geist, system-ui, sans-serif' : '700 54px "Geist Mono", ui-monospace, Menlo, "Apple Symbols", monospace';
+set.forEach((g, i) => c.fillText(g, i * 64 + 32, 34));
+const tex = new THREE.CanvasTexture(cv);
+tex.minFilter = tex.magFilter = THREE.LinearFilter;
+tex.generateMipmaps = false;
+tex.userData = { n };
+return tex;
+}
+};
+__defs['src/effects/shaders/glsl/frag.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'frag', () => frag);
+const frag = `
+precision highp float;
+uniform float uGlow;
+uniform float uAdd;
+uniform vec4 uFr;
+uniform float uDens;
+uniform float uGhost;
+uniform float uShape;
+uniform vec3 uGlyph;
+uniform sampler2D uAtlas;
+varying vec3 vColor;
+varying float vD;
+varying float vDk;
+varying float vCoc;
+varying float vGl;
+void main() {
+	vec2 c = gl_PointCoord - 0.5;
+	// форма точки как на вкладке «Точки»: 0 квадрат, 1 круг, 2 шар, 3 кольцо, 4 ромб, 5 плюс
+	float dm = length(c);
+	float gA = 1.0;
+	if (uGlyph.x > 0.5) {
+		vec2 guv = vec2((floor(vGl * (uGlyph.z - 0.001)) + gl_PointCoord.x) / uGlyph.z, 1.0 - gl_PointCoord.y);
+		gA = texture2D(uAtlas, guv).a;
+		if (gA < 0.3) discard;
+		dm = 0.0;
+	}
+	if (uShape < 0.5) dm = max(abs(c.x), abs(c.y));
+	else if (uShape > 3.5 && uShape < 4.5) dm = abs(c.x) + abs(c.y);
+	if (dm > 0.5) discard;
+	if (uShape > 2.5 && uShape < 3.5 && dm < 0.29) discard;
+	if (uShape > 4.5 && min(abs(c.x), abs(c.y)) > 0.16) discard;
+	float r2 = dm * dm;
+	float core = uGlyph.x > 0.5 ? gA : 1.0 - smoothstep(0.0, 0.25, r2);
+	if (uShape > 2.5 && uShape < 3.5) core = 1.0 - smoothstep(0.0, 0.1, abs(dm - 0.4));
+	float sph = 1.0;
+	if (uShape > 1.5 && uShape < 2.5) {
+		vec3 n = vec3(c.x * 2.0, -c.y * 2.0, sqrt(max(0.0, 1.0 - 4.0 * r2)));
+		sph = 0.4 + 0.75 * max(dot(n, normalize(vec3(-0.4, 0.6, 0.7))), 0.0);
+	}
+	if (vCoc > 0.01) {
+		float bokeh = 1.0 - smoothstep(0.16, 0.25, r2);
+		core = mix(core, bokeh, vCoc * 0.8);
+	}
+	float dofAlpha = 1.0 / (1.0 + vCoc * 1.8);
+	if (uAdd > 0.5) {
+		float aura = pow(core, mix(1.8, 0.7, uGlow));
+		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha * sph * (1.0 - vDk);
+		float ga = core * uGhost * dofAlpha * (1.0 - vDk);
+		// тёмные места видео должны быть прозрачными, а не чёрными: яркость точки определяет и её непрозрачность
+		if (uFr.x > 0.5) ga *= clamp(dot(vColor, vec3(0.3, 0.59, 0.11)) * 5.0, 0.0, 1.0);
+		gl_FragColor = vec4(col, ga);
+	} else {
+		// у кадров видео точка плоская, без затемнения к краю: цвет остаётся точным
+		gl_FragColor = vec4(vColor * (uFr.x > 0.5 ? 1.0 : 0.55 + 0.45 * core) * sph, dofAlpha * (1.0 - vDk));
+	}
+	#include <tonemapping_fragment>
+	#include <colorspace_fragment>
+}
+`;
+};
+__defs['src/effects/shaders/glsl/line-frag.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'lineFrag', () => lineFrag);
+const lineFrag = `
+precision highp float;
+uniform vec4 uLink;
+uniform vec4 uLinkP;
+uniform float uTime;
+varying vec3 vC;
+varying float vA;
+varying float vEnd;
+varying float vIdx;
+varying float vSide;
+varying float vStrain;
+void main() {
+	float edge = 1.0 - smoothstep(0.35, 1.0, abs(vSide));
+	vec3 col = vC;
+	float pulseA = 1.0;
+	int mode = int(uLinkP.x + 0.5);
+	if (uLink.w > 0.5) {
+		float spd = uLink.z;
+		if (mode == 0) {
+			// Классика: синусоидальный импульс с искрами
+			float p = sin(vEnd * 16.0 - uTime * spd * 3.5 + vIdx * 24.0);
+			float spark = smoothstep(0.45, 0.98, p) * 2.8;
+			pulseA = 0.5 + spark;
+			col += col * spark * 1.5;
+		} else if (mode == 1) {
+			// Нейросеть (синапсы): асимметричные спайки действия с резким фронтом в обоих направлениях
+			float t1 = fract(vEnd * 2.0 - uTime * spd * 0.95 + vIdx * 13.37);
+			float spike1 = exp(-t1 * 16.0) * 4.0;
+			float t2 = fract((1.0 - vEnd) * 2.0 - uTime * spd * 0.75 + vIdx * 29.11);
+			float spike2 = exp(-t2 * 16.0) * 3.0;
+			float syn = spike1 + spike2;
+			pulseA = 0.35 + syn;
+			col = mix(col, vec3(1.0), clamp(syn * 0.55, 0.0, 0.85)) + col * syn * 1.8;
+		} else if (mode == 2) {
+			// Созвездия: мягкое мерцание звездного скопления
+			float shimmer = 0.65 + 0.35 * sin(uTime * 3.2 + vIdx * 43.0 + vEnd * 6.28);
+			pulseA = shimmer;
+			col = mix(col, vec3(0.9, 0.96, 1.0), 0.35 * shimmer);
+		} else if (mode == 3) {
+			// Киберпанк / Лазер: резкий луч с цифровыми пакетами данных
+			float core = 1.0 - smoothstep(0.0, 0.32, abs(vSide));
+			float bits = step(0.46, fract(vEnd * 10.0 - uTime * spd * 3.2 + vIdx * 19.3));
+			pulseA = 0.55 + bits * 2.2;
+			col = col * pulseA + vec3(1.0) * core * 1.6;
+		} else if (mode == 4) {
+			// Натяжение: волна накала с усилением от растяжения нити
+			float wave = 0.5 + 0.5 * sin(vEnd * 12.0 - uTime * spd * 2.6 + vStrain * 6.0);
+			pulseA = 0.5 + wave * (1.0 + vStrain * 2.2);
+			col += vec3(1.0, 0.45, 0.18) * vStrain * 2.0 * wave;
+		}
+	}
+	// Огоньки на узлах (сияющие бусины/маяки на стыках)
+	if (uLinkP.z > 0.5) {
+		float endDist = min(vEnd, 1.0 - vEnd);
+		float dNode = length(vec2(endDist * 7.5, vSide * 0.72));
+		float beacon = exp(-dNode * 3.8) * 2.6;
+		col += (vec3(1.0) + vC * 0.6) * beacon;
+		pulseA = max(pulseA, beacon * 1.3);
+	}
+	float alpha = clamp(vA * pulseA * edge, 0.0, 1.0);
+	gl_FragColor = vec4(col * alpha, alpha);
+	#include <tonemapping_fragment>
+	#include <colorspace_fragment>
+}
+`;
+};
+__defs['src/effects/engine/build.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'BuildPart', () => BuildPart);
+const THREE = __req('vendor/three/build/three.module.js');
+const { frDummy2D, frDummyTex, glyphAtlas } = __req('src/effects/render/webgl/textures.js');
+const { frag } = __req('src/effects/shaders/glsl/frag.js');
+const { lineFrag } = __req('src/effects/shaders/glsl/line-frag.js');
+class BuildPart {
+async _build() {
+const st = this.state;
+if (st.source === 'model' && !this.hasModel) st.source = 'sphere';
+let c = await this._cloudFor(st.source);
+if (!c) {
+st.source = 'sphere';
+c = await this._cloudFor('sphere');
+}
+const count = c.count;
+const g = new THREE.BufferGeometry();
+const idx = new Float32Array(count);
+for (let i = 0; i < count; i++) idx[i] = i / count;
+const model = st.source === 'model' || st.source === 'media' || st.source === 'frames' ? c : this.hasModel ? (await this._cloudFor('model').catch(() => null)) || c : c;
+g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
+g.setAttribute('aOrigin', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
+g.setAttribute('aTarget', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
+g.setAttribute('aNormal', new THREE.BufferAttribute(new Float32Array(c.normals), 3));
+g.setAttribute('aNormalB', new THREE.BufferAttribute(new Float32Array(c.normals), 3));
+g.setAttribute('aPaint', new THREE.BufferAttribute(new Float32Array(count * 4), 4));
+this._dabs = [];
+this._painted = false;
+g.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(model.colors.length === c.colors.length ? model.colors : c.colors), 3));
+g.setAttribute('aColorB', new THREE.BufferAttribute(new Float32Array(g.attributes.aColor.array), 3));
+g.setAttribute('aHide', new THREE.BufferAttribute(c.hide && c.hide.length === count ? new Float32Array(c.hide) : new Float32Array(count), 1));
+g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(count).fill(0.5), 1));
+g.setAttribute('aPath', new THREE.BufferAttribute(new Float32Array(count), 1));
+g.setAttribute('aIdx', new THREE.BufferAttribute(idx, 1));
+g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
+this._grabs = new Map();
+this._animCloud = st.source === 'model' && c.anim && c.norm ? c : null;
+this._animVer = -1;
+if (!this.specTex) {
+this.specTex = new THREE.DataTexture(new Uint8Array(64), 64, 1, THREE.RedFormat, THREE.UnsignedByteType);
+this.specTex.minFilter = this.specTex.magFilter = THREE.LinearFilter;
+this.specTex.needsUpdate = true;
+}
+if (!this.pieceTex) {
+this.pieceTex = new THREE.DataTexture(new Float32Array(256 * 4), 256, 1, THREE.RGBAFormat, THREE.FloatType);
+this.pieceTex.minFilter = this.pieceTex.magFilter = THREE.NearestFilter;
+this.pieceTex.needsUpdate = true;
+this._pieceKey = '';
+}
+const U = (v) => ({ value: v });
+const shared = {
+uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSettle: U(-1), uFr: U(new THREE.Vector4()), uFr2: U(new THREE.Vector4(1, 1, 2.2, 1.2)), uFr3: U(new THREE.Vector4(1.6, 0, 0, 0)), uFr4: U(new THREE.Vector4(0, 0, 0.12, 0.7)), uFr5: U(new THREE.Vector4(0, 0.7, 1, 1)), uHero: U(new THREE.Vector4()), uFr6: U(new THREE.Vector4(1.5, 0, 0, 0.5)), uFr7: U(new THREE.Vector4(1, 0, 0.6, 0)), uHeroTex: U(frDummy2D()), uFrTex: U(frDummyTex()), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
+uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()), uYR: U(new THREE.Vector2(-1, 1)),
+uShade: U(0), uGlyph: U(new THREE.Vector3(0, 1, 8)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
+uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
+uPulse: U(new THREE.Vector4()), uVoxel: U(new THREE.Vector4()), uJitter: U(new THREE.Vector4()), uCursor: U(new THREE.Vector4()),
+uGlitch: U(new THREE.Vector4()), uSlice: U(new THREE.Vector4()), uSliceM: U(new THREE.Vector4()), uSliceC: U(new THREE.Color()), uMark: U(new THREE.Vector4()), uMarkC: U(new THREE.Color()), uLink: U(new THREE.Vector4()), uLinkP: U(new THREE.Vector4()), uContact: U(new THREE.Vector4()), uShockP: U(new THREE.Vector4()),
+uTrk: U(Array.from({ length: 16 }, () => new THREE.Vector4())), uImp: U(Array.from({ length: 32 }, () => new THREE.Vector4())), uShock: U(Array.from({ length: 4 }, () => new THREE.Vector4(0, 0, 0, -1))),
+uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
+uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
+uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()), uPaintP: U(new THREE.Vector4()),
+uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
+uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uAnimN: U(0), uCen: U(new THREE.Vector3()), uExp: U(new THREE.Vector4()), uExpP: U(new THREE.Vector4()), uPieceTex: U(this.pieceTex), uGrow: U(new THREE.Vector4()), uGrowP: U(new THREE.Vector4()), uGrowSeed: U(new THREE.Vector3()), uJel: U(Array.from({ length: 3 }, () => new THREE.Vector4(0, 0, 0, -99))), uJelO: U(Array.from({ length: 3 }, () => new THREE.Vector4())), uJelP: U(new THREE.Vector4()), uDisQ: U(new THREE.Vector4(0.32, 1, 0.35, 0.85)), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
+};
+const addBlend = this.state.look.blend === 'add';
+const mk = (extra) =>
+new THREE.ShaderMaterial({
+vertexShader: this._fxSource('vert', this._fxCur || (this._fxCur = new Set())),
+fragmentShader: frag,
+transparent: addBlend,
+depthWrite: !addBlend,
+blending: addBlend ? THREE.AdditiveBlending : THREE.NormalBlending,
+uniforms: { ...shared, uTOff: U(0), uGhost: U(1), ...extra },
+userData: { fxKind: 'vert' },
+});
+const mat = mk();
+const pts = new THREE.Points(g, mat);
+pts.frustumCulled = false;
+pts.name = '__fx';
+pts.userData.helper = true;
+g.computeBoundingBox();
+const bb = g.boundingBox;
+shared.uYR.value.set(bb.min.y, bb.max.y);
+shared.uCen.value.set((bb.min.x + bb.max.x) / 2, (bb.min.y + bb.max.y) / 2, (bb.min.z + bb.max.z) / 2);
+this._yrBase = [bb.min.y, bb.max.y];
+this.app.viewport.fxFloorY = c.norm && c.norm.floorY !== undefined ? c.norm.floorY : bb.min.y;
+const old = this.points;
+const rot = old ? old.rotation.clone() : null;
+if (old) this._disposePoints();
+this.ghosts = [1, 2, 3, 4, 5].map((k) => {
+const gm = mk({ uTOff: U(0), uGhost: U(0), uHero: U(new THREE.Vector4()) });
+const gp = new THREE.Points(g, gm);
+gp.frustumCulled = false;
+gp.userData.helper = true;
+gp.visible = false;
+pts.add(gp);
+return gp;
+});
+const lg = new THREE.BufferGeometry();
+const lm = new THREE.ShaderMaterial({ vertexShader: this._fxSource('line', this._fxCur || (this._fxCur = new Set())), userData: { fxKind: 'line' }, fragmentShader: lineFrag, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, uniforms: { ...shared, uTOff: U(0) } });
+this.linkObj = new THREE.Mesh(lg, lm);
+this.linkObj.frustumCulled = false;
+this.linkObj.userData.helper = true;
+this.linkObj.visible = false;
+pts.add(this.linkObj);
+this.geometry = g;
+this.material = mat;
+this.shared = shared;
+this.points = pts;
+if (rot) pts.rotation.copy(rot);
+this.cloudKey = st.source;
+this.morph = 1;
+this.morphing = false;
+this.app.viewport.scene.add(pts);
+this._computeLinks();
+}
+_disposePoints() {
+if (!this.points) return;
+this.app.viewport.scene.remove(this.points);
+this.points.traverse((o) => {
+if (o.geometry && o !== this.points) o.geometry.dispose();
+if (o.material) o.material.dispose();
+});
+this.geometry?.dispose();
+this.points = this.geometry = this.material = this.linkObj = null;
+this.ghosts = [];
+}
+applyBg() {
+const stage = document.querySelector('.stage');
+const { bg, vignette } = this.state.look;
+if (!this.active || !bg) {
+this.app.viewport.applyRenderSettings();
+return;
+}
+const c = new THREE.Color(bg);
+const hi = c.clone().lerp(new THREE.Color(1, 1, 1), 0.025);
+stage.style.background = vignette ? `radial-gradient(ellipse at 50% 42%, #${hi.getHexString(THREE.SRGBColorSpace)} 0%, ${bg} 78%)` : bg;
+}
+}
+};
+__defs['src/effects/engine/links.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'LinksPart', () => LinksPart);
+const THREE = __req('vendor/three/build/three.module.js');
+const { perf } = __req('src/core/perf.js');
+class LinksPart {
+_computeLinks() {
+if (!this.geometry || !this.linkObj) return;
+if (!this.state.layers.links.on) {
+this._linksStale = true;
+return;
+}
+this._linksStale = false;
+const g = this.geometry;
+const N = g.attributes.position.count;
+const maxNodes = perf.isApple ? 8000 : perf.windows ? (perf.tier === 'high' ? 4500 : 2500) : 5000;
+const S = Math.min(N, Math.min(maxNodes, Math.round(this.state.layers.links.count)));
+if (S <= 1) return;
+const step = N / S;
+const O = g.attributes.aOrigin.array;
+const T = g.attributes.aTarget.array;
+const ids = new Int32Array(S);
+for (let i = 0; i < S; i++) ids[i] = Math.floor(i * step);
+const R = 0.35;
+const R2 = R * R;
+const cell = R;
+const key = (x, y, z) => (x * 73856093) ^ (y * 19349663) ^ (z * 83492791);
+const grid = new Map();
+for (let i = 0; i < S; i++) {
+const p = ids[i] * 3;
+const k = key(Math.floor(T[p] / cell), Math.floor(T[p + 1] / cell), Math.floor(T[p + 2] / cell));
+let a = grid.get(k);
+if (!a) grid.set(k, (a = []));
+a.push(i);
+}
+const pairs = [];
+const seen = new Set();
+for (let i = 0; i < S; i++) {
+const p = ids[i] * 3;
+const px = T[p], py = T[p + 1], pz = T[p + 2];
+const cx = Math.floor(px / cell), cy = Math.floor(py / cell), cz = Math.floor(pz / cell);
+let b0_d = R2, b0_j = -1;
+let b1_d = R2, b1_j = -1;
+let b2_d = R2, b2_j = -1;
+for (let dx = -1; dx <= 1; dx++) {
+for (let dy = -1; dy <= 1; dy++) {
+for (let dz = -1; dz <= 1; dz++) {
+const a = grid.get(key(cx + dx, cy + dy, cz + dz));
+if (!a) continue;
+for (let ai = 0; ai < a.length; ai++) {
+const j = a[ai];
+if (j === i) continue;
+const q = ids[j] * 3;
+const ddx = px - T[q], ddy = py - T[q + 1], ddz = pz - T[q + 2];
+const d = ddx * ddx + ddy * ddy + ddz * ddz;
+if (d < b2_d) {
+if (d < b0_d) {
+b2_d = b1_d; b2_j = b1_j;
+b1_d = b0_d; b1_j = b0_j;
+b0_d = d; b0_j = j;
+} else if (d < b1_d) {
+b2_d = b1_d; b2_j = b1_j;
+b1_d = d; b1_j = j;
+} else {
+b2_d = d; b2_j = j;
+}
+}
+}
+}
+}
+}
+if (b0_j >= 0) {
+const id = i < b0_j ? i * S + b0_j : b0_j * S + i;
+if (!seen.has(id)) { seen.add(id); pairs.push(i, b0_j); }
+}
+if (b1_j >= 0) {
+const id = i < b1_j ? i * S + b1_j : b1_j * S + i;
+if (!seen.has(id)) { seen.add(id); pairs.push(i, b1_j); }
+}
+if (b2_j >= 0) {
+const id = i < b2_j ? i * S + b2_j : b2_j * S + i;
+if (!seen.has(id)) { seen.add(id); pairs.push(i, b2_j); }
+}
+}
+const L = pairs.length / 2;
+const V = L * 4;
+const DP = g.attributes.aDepth ? g.attributes.aDepth.array : null;
+const lg = this.linkObj.geometry;
+const currV = lg.attributes.position ? lg.attributes.position.count : 0;
+let A, TA, B, TB, ia, ib, end, side, da, db, index;
+if (currV >= V && V > 0 && lg.attributes.aOrigin) {
+A = lg.attributes.aOrigin.array;
+TA = lg.attributes.aTarget.array;
+B = lg.attributes.aOriginB.array;
+TB = lg.attributes.aTargetB.array;
+ia = lg.attributes.aIdx.array;
+ib = lg.attributes.aIdxB.array;
+da = lg.attributes.aDepth.array;
+db = lg.attributes.aDepthB.array;
+end = lg.attributes.aEnd.array;
+side = lg.attributes.aSide.array;
+index = lg.index ? lg.index.array : null;
+}
+if (!A || !index || index.length < L * 6) {
+const capV = Math.max(V, Math.round(V * 1.25));
+const capL = Math.floor(capV / 4);
+A = new Float32Array(capV * 3);
+TA = new Float32Array(capV * 3);
+B = new Float32Array(capV * 3);
+TB = new Float32Array(capV * 3);
+ia = new Float32Array(capV);
+ib = new Float32Array(capV);
+da = new Float32Array(capV);
+db = new Float32Array(capV);
+end = new Float32Array(capV);
+side = new Float32Array(capV);
+index = new Uint32Array(capL * 6);
+lg.setAttribute('position', new THREE.BufferAttribute(A, 3));
+lg.setAttribute('aOrigin', new THREE.BufferAttribute(A, 3));
+lg.setAttribute('aTarget', new THREE.BufferAttribute(TA, 3));
+lg.setAttribute('aOriginB', new THREE.BufferAttribute(B, 3));
+lg.setAttribute('aTargetB', new THREE.BufferAttribute(TB, 3));
+lg.setAttribute('aIdx', new THREE.BufferAttribute(ia, 1));
+lg.setAttribute('aIdxB', new THREE.BufferAttribute(ib, 1));
+lg.setAttribute('aDepth', new THREE.BufferAttribute(da, 1));
+lg.setAttribute('aDepthB', new THREE.BufferAttribute(db, 1));
+lg.setAttribute('aEnd', new THREE.BufferAttribute(end, 1));
+lg.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
+lg.setIndex(new THREE.BufferAttribute(index, 1));
+}
+for (let l = 0; l < L; l++) {
+const a = ids[pairs[l * 2]], b = ids[pairs[l * 2 + 1]];
+const q = l * 4;
+const idx6 = l * 6;
+index[idx6] = q;
+index[idx6 + 1] = q + 1;
+index[idx6 + 2] = q + 2;
+index[idx6 + 3] = q + 2;
+index[idx6 + 4] = q + 1;
+index[idx6 + 5] = q + 3;
+const a3 = a * 3, b3 = b * 3;
+const oa0 = O[a3], oa1 = O[a3 + 1], oa2 = O[a3 + 2];
+const ta0 = T[a3], ta1 = T[a3 + 1], ta2 = T[a3 + 2];
+const ob0 = O[b3], ob1 = O[b3 + 1], ob2 = O[b3 + 2];
+const tb0 = T[b3], tb1 = T[b3 + 1], tb2 = T[b3 + 2];
+const dpA = DP ? DP[a] : 0.5;
+const dpB = DP ? DP[b] : 0.5;
+const iaVal = a / N;
+const ibVal = b / N;
+for (let v = 0; v < 4; v++) {
+const o = (q + v) * 3;
+A[o] = oa0; A[o + 1] = oa1; A[o + 2] = oa2;
+TA[o] = ta0; TA[o + 1] = ta1; TA[o + 2] = ta2;
+B[o] = ob0; B[o + 1] = ob1; B[o + 2] = ob2;
+TB[o] = tb0; TB[o + 1] = tb1; TB[o + 2] = tb2;
+const qv = q + v;
+ia[qv] = iaVal;
+ib[qv] = ibVal;
+da[qv] = dpA;
+db[qv] = dpB;
+end[qv] = v >> 1;
+side[qv] = v & 1 ? 1 : -1;
+}
+}
+lg.setDrawRange(0, L * 6);
+lg.attributes.position.needsUpdate = true;
+lg.attributes.aOrigin.needsUpdate = true;
+lg.attributes.aTarget.needsUpdate = true;
+lg.attributes.aOriginB.needsUpdate = true;
+lg.attributes.aTargetB.needsUpdate = true;
+lg.attributes.aIdx.needsUpdate = true;
+lg.attributes.aIdxB.needsUpdate = true;
+lg.attributes.aDepth.needsUpdate = true;
+lg.attributes.aDepthB.needsUpdate = true;
+lg.attributes.aEnd.needsUpdate = true;
+lg.attributes.aSide.needsUpdate = true;
+if (lg.index) lg.index.needsUpdate = true;
+lg.computeBoundingSphere();
+this._pairs = { ids, list: pairs, N, L };
+}
+_syncLinks() {
+if (!this._pairs || !this.linkObj) return;
+const { ids, list, L } = this._pairs;
+if (!L) return;
+const O = this.geometry.attributes.aOrigin.array;
+const T = this.geometry.attributes.aTarget.array;
+const lg = this.linkObj.geometry;
+if (!lg.attributes.aOrigin) return;
+const arrA = lg.attributes.aOrigin.array;
+const arrTA = lg.attributes.aTarget.array;
+const arrB = lg.attributes.aOriginB.array;
+const arrTB = lg.attributes.aTargetB.array;
+for (let l = 0; l < L; l++) {
+const a = ids[list[l * 2]], b = ids[list[l * 2 + 1]];
+const a3 = a * 3, b3 = b * 3;
+const oa0 = O[a3], oa1 = O[a3 + 1], oa2 = O[a3 + 2];
+const ta0 = T[a3], ta1 = T[a3 + 1], ta2 = T[a3 + 2];
+const ob0 = O[b3], ob1 = O[b3 + 1], ob2 = O[b3 + 2];
+const tb0 = T[b3], tb1 = T[b3 + 1], tb2 = T[b3 + 2];
+for (let v = 0; v < 4; v++) {
+const o = (l * 4 + v) * 3;
+arrA[o] = oa0; arrA[o + 1] = oa1; arrA[o + 2] = oa2;
+arrTA[o] = ta0; arrTA[o + 1] = ta1; arrTA[o + 2] = ta2;
+arrB[o] = ob0; arrB[o + 1] = ob1; arrB[o + 2] = ob2;
+arrTB[o] = tb0; arrTB[o + 1] = tb1; arrTB[o + 2] = tb2;
+}
+}
+lg.attributes.aOrigin.needsUpdate = true;
+lg.attributes.aTarget.needsUpdate = true;
+lg.attributes.aOriginB.needsUpdate = true;
+lg.attributes.aTargetB.needsUpdate = true;
+const DP = this.geometry.attributes.aDepth?.array;
+if (DP && lg.attributes.aDepth) {
+const da = lg.attributes.aDepth.array, db = lg.attributes.aDepthB.array;
+for (let l = 0; l < L; l++) {
+const a = DP[ids[list[l * 2]]], b = DP[ids[list[l * 2 + 1]]];
+const q = l * 4;
+for (let v = 0; v < 4; v++) {
+da[q + v] = a;
+db[q + v] = b;
+}
+}
+lg.attributes.aDepth.needsUpdate = lg.attributes.aDepthB.needsUpdate = true;
+}
+}
+relink() {
+clearTimeout(this._relT);
+this._relT = setTimeout(() => this._computeLinks(), 180);
+}
+}
+};
+__defs['src/effects/engine/tools.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'ToolsPart', () => ToolsPart);
+const THREE = __req('vendor/three/build/three.module.js');
+const { FX_PALETTES } = __req('src/effects/state/options.js');
+class ToolsPart {
+_startGrab(loc, R) {
+const T = this.geometry.attributes.aTarget.array;
+const n = T.length / 3;
+const idx = [];
+const w = [];
+const r2 = R * R;
 for (let i = 0; i < n; i++) {
-const j = keys[i] % M;
-src[i] = j;
-for (let k = 0; k < 3; k++) {
-pos[i * 3 + k] = P[j * 3 + k];
-nor[i * 3 + k] = c.normals[j * 3 + k];
-col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
+const dx = T[i * 3] - loc.x, dy = T[i * 3 + 1] - loc.y, dz = T[i * 3 + 2] - loc.z;
+const d2 = dx * dx + dy * dy + dz * dz;
+if (d2 < r2) {
+const f = 1 - Math.sqrt(d2) / R;
+idx.push(i);
+w.push(f * f * (3 - 2 * f));
 }
 }
-return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm };
+return { idx: Int32Array.from(idx), w: Float32Array.from(w), last: loc.clone() };
 }
+_sculptMove(gr, loc) {
+const a = this.geometry.attributes.aSculpt;
+const arr = a.array;
+const dx = loc.x - gr.last.x, dy = loc.y - gr.last.y, dz = loc.z - gr.last.z;
+for (let k = 0; k < gr.idx.length; k++) {
+const i = gr.idx[k] * 3;
+const w = gr.w[k];
+arr[i] += dx * w;
+arr[i + 1] += dy * w;
+arr[i + 2] += dz * w;
+}
+gr.last.copy(loc);
+a.needsUpdate = true;
+this._sculptLive = true;
+}
+clearSculpt() {
+const a = this.geometry?.attributes.aSculpt;
+if (!a) return;
+a.array.fill(0);
+a.needsUpdate = true;
+this._sculptLive = false;
+}
+clearBrush() {
+this.brushHits = [];
+this._dabs = [];
+this._painted = false;
+const a = this.geometry?.attributes.aPaint;
+if (a) {
+a.array.fill(0);
+a.needsUpdate = true;
+}
+this.emit();
+}
+addBrushHit(pos) {
+if (!pos || !this.geometry || !this.geometry.attributes.aPaint) return;
+const B = this.state.layers.brush;
+const sp = Math.max(0.015, B.radius * 0.28);
+const T0 = this._lastDabT ?? -9;
+if (this._lastDab && this._lastDab.distanceTo(pos) < sp && this._time - T0 < 0.4) return;
+const newStroke = this._time - T0 > 0.3;
+(this._lastDab ||= new THREE.Vector3()).copy(pos);
+this._lastDabT = this._time;
+if (newStroke) this._strokeN = (this._strokeN || 0) + 1;
+this._makeDab(pos);
+}
+_paintColor() {
+const B = this.state.layers.brush;
+let hex = B.color;
+if (!hex || hex === 'auto' || hex === 'model') {
+const pal = FX_PALETTES.find((x) => x.id === this.state.look.palette) || FX_PALETTES[0];
+hex = pal.c[(this._strokeN || 0) % 3];
+}
+return new THREE.Color(hex);
+}
+_makeDab(pos) {
+const g = this.geometry;
+const B = this.state.layers.brush;
+const n = g.attributes.position.count;
+const T = g.attributes.aTarget.array;
+const cam = this.app.viewport.camera;
+const pts = this.points;
+const o = new THREE.Vector3();
+const d = new THREE.Vector3();
+if (cam.isOrthographicCamera) {
+cam.getWorldDirection(d);
+d.transformDirection(pts.matrixWorld.clone().invert());
+o.copy(pos).addScaledVector(d, -10);
+} else {
+pts.worldToLocal(cam.getWorldPosition(o));
+d.copy(pos).sub(o).normalize();
+}
+const rMax = B.radius * (1 + B.water * 1.4);
+const r2 = rMax * rMax;
+if (!this._pIdx || this._pIdx.length < n) {
+this._pIdx = new Int32Array(n);
+this._pD2 = new Float32Array(n);
+this._pDep = new Float32Array(n);
+this._pOut = new Int32Array(n);
+this._pOutD = new Float32Array(n);
+}
+const idx = this._pIdx, d2a = this._pD2, dep = this._pDep;
+let m = 0;
+let tmin = Infinity;
+const ox = o.x, oy = o.y, oz = o.z, dx = d.x, dy = d.y, dz = d.z;
+for (let i = 0; i < n; i++) {
+const vx = T[i * 3] - ox, vy = T[i * 3 + 1] - oy, vz = T[i * 3 + 2] - oz;
+const cx = vy * dz - vz * dy, cy = vz * dx - vx * dz, cz = vx * dy - vy * dx;
+const dd = cx * cx + cy * cy + cz * cz;
+if (dd < r2) {
+const t = vx * dx + vy * dy + vz * dz;
+idx[m] = i;
+d2a[m] = dd;
+dep[m] = t;
+if (t < tmin) tmin = t;
+m++;
+}
+}
+if (!m) return;
+const tlim = tmin + rMax * 0.9;
+const NB = 64;
+const cnt = new Int32Array(NB + 1);
+let k = 0;
+for (let a = 0; a < m; a++) {
+if (dep[a] > tlim) continue;
+idx[k] = idx[a];
+const b = Math.min(NB - 1, Math.floor((Math.sqrt(d2a[a]) / rMax) * NB));
+d2a[k] = b;
+cnt[b + 1]++;
+k++;
+}
+for (let b = 0; b < NB; b++) cnt[b + 1] += cnt[b];
+const out = new Int32Array(k), outD = new Float32Array(k);
+const pos2 = cnt.slice();
+for (let a = 0; a < k; a++) {
+const b = d2a[a];
+const q = pos2[b]++;
+out[q] = idx[a];
+outD[q] = ((b + 0.5) / NB) * rMax;
+}
+const col = this._paintColor();
+this._dabs.push({ idx: out, dist: outD, n: k, ptr: 0, t0: this._time, r0: B.radius, rMax, wetT: Math.max(0.3, B.dry), lr: Math.log(Math.max(1e-3, col.r)), lg: Math.log(Math.max(1e-3, col.g)), lb: Math.log(Math.max(1e-3, col.b)), tool: B.tool, pig: B.pigment * 0.75 * Math.min(1.5, Math.max(0.3, B.amount)), edge: B.edge });
+if (this._dabs.length > 40) this._dabs.shift();
+}
+_paintTick() {
+const ds = this._dabs;
+const attr = this.geometry?.attributes.aPaint;
+if (!ds || !ds.length || !attr) return;
+const arr = attr.array;
+let dirty = false;
+for (let q = ds.length - 1; q >= 0; q--) {
+const dab = ds[q];
+const age = this._time - dab.t0;
+const f = 1 - Math.exp((-4 * age) / dab.wetT);
+const radius = dab.r0 + (dab.rMax - dab.r0) * f;
+while (dab.ptr < dab.n && dab.dist[dab.ptr] <= radius) {
+const dn = dab.dist[dab.ptr] / dab.rMax;
+const i = dab.idx[dab.ptr];
+const fall = Math.pow(Math.max(0, 1 - dn * dn), 1.1);
+const edgeK = dn <= 0.55 ? 0 : Math.min(1, (dn - 0.55) / 0.45);
+const o = i * 4;
+const a0 = arr[o + 3];
+if (dab.tool === 'lift') {
+arr[o + 3] = Math.max(0, a0 - dab.pig * 3 * fall);
+} else {
+const da = dab.pig * fall * (1 + dab.edge * 2.4 * f * f * edgeK);
+const a1 = Math.min(1.6, a0 + da);
+if (a0 < 1e-4) {
+arr[o] = Math.exp(dab.lr);
+arr[o + 1] = Math.exp(dab.lg);
+arr[o + 2] = Math.exp(dab.lb);
+} else {
+const wt = da / (a0 + da);
+arr[o] = Math.exp((1 - wt) * Math.log(Math.max(arr[o], 1e-3)) + wt * dab.lr);
+arr[o + 1] = Math.exp((1 - wt) * Math.log(Math.max(arr[o + 1], 1e-3)) + wt * dab.lg);
+arr[o + 2] = Math.exp((1 - wt) * Math.log(Math.max(arr[o + 2], 1e-3)) + wt * dab.lb);
+}
+arr[o + 3] = a1;
+this._painted = true;
+}
+dab.ptr++;
+dirty = true;
+}
+if (dab.ptr >= dab.n || age > dab.wetT * 1.25) ds.splice(q, 1);
+}
+if (dirty) attr.needsUpdate = true;
+}
+}
+};
+__defs['src/effects/input/motion-cam-tracker.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'MotionCamTracker', () => MotionCamTracker);
+class MotionCamTracker {
+constructor(onFrame) {
+this.onFrame = onFrame;
+this.video = document.createElement('video');
+this.video.autoplay = true;
+this.video.playsInline = true;
+this.video.muted = true;
+this.W = 64;
+this.H = 48;
+this.canvas = document.createElement('canvas');
+this.canvas.width = this.W;
+this.canvas.height = this.H;
+this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+this.preview = document.createElement('canvas');
+this.preview.width = 176;
+this.preview.height = 132;
+this.pctx = this.preview.getContext('2d');
+this.bg = null;
+this.sens = 0.6;
+this.running = false;
+this.stream = null;
+this._timer = null;
+}
+async start() {
+if (this.running) return;
+try {
+this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 320 }, height: { ideal: 240 }, facingMode: 'user' } });
+this.video.srcObject = this.stream;
+await this.video.play();
+this.running = true;
+this.bg = null;
+this._tick();
+} catch (err) {
+this.stop();
+throw err;
+}
+}
+_tick() {
+if (!this.running) return;
+if (this.video.readyState >= 2) {
+const { W, H } = this;
+const ctx = this.ctx;
+ctx.save();
+ctx.scale(-1, 1);
+ctx.drawImage(this.video, -W, 0, W, H);
+ctx.restore();
+const frame = ctx.getImageData(0, 0, W, H).data;
+const n = W * H;
+if (!this.bg) {
+this.bg = new Float32Array(n);
+for (let i = 0; i < n; i++) this.bg[i] = frame[i * 4] * 0.3 + frame[i * 4 + 1] * 0.59 + frame[i * 4 + 2] * 0.11;
+}
+const thr = 46 - this.sens * 36;
+const hits = new Uint8Array(n);
+let sx = 0, sy = 0, sw = 0, cnt = 0;
+for (let i = 0; i < n; i++) {
+const l = frame[i * 4] * 0.3 + frame[i * 4 + 1] * 0.59 + frame[i * 4 + 2] * 0.11;
+const d = Math.abs(l - this.bg[i]);
+this.bg[i] += (l - this.bg[i]) * 0.2;
+if (d > thr) {
+hits[i] = 1;
+const x = i % W;
+const y = (i / W) | 0;
+sx += x * d;
+sy += y * d;
+sw += d;
+cnt++;
+}
+}
+const energy = cnt / n;
+const active = cnt >= Math.max(8, n * 0.004);
+const cx = active ? (sx / sw / W) * 2 - 1 : 0;
+const cy = active ? -((sy / sw / H) * 2 - 1) : 0;
+this._draw(frame, hits, active, active ? sx / sw : 0, active ? sy / sw : 0);
+this.onFrame({ x: cx, y: cy, energy, active });
+}
+this._timer = setTimeout(() => this._tick(), 40);
+}
+_draw(frame, hits, active, px, py) {
+const { W, H } = this;
+const c = this.pctx;
+const pw = this.preview.width;
+const ph = this.preview.height;
+c.save();
+c.scale(-1, 1);
+c.drawImage(this.video, -pw, 0, pw, ph);
+c.restore();
+c.fillStyle = 'rgba(11,13,17,0.45)';
+c.fillRect(0, 0, pw, ph);
+const cw = pw / W;
+const ch = ph / H;
+c.fillStyle = 'rgba(229,138,69,0.78)';
+for (let i = 0; i < hits.length; i++) if (hits[i]) c.fillRect((i % W) * cw, ((i / W) | 0) * ch, cw + 0.5, ch + 0.5);
+if (active) {
+const x = (px + 0.5) * cw;
+const y = (py + 0.5) * ch;
+c.strokeStyle = '#fff0dc';
+c.lineWidth = 1.5;
+c.beginPath();
+c.arc(x, y, 9, 0, Math.PI * 2);
+c.moveTo(x - 14, y);
+c.lineTo(x + 14, y);
+c.moveTo(x, y - 14);
+c.lineTo(x, y + 14);
+c.stroke();
+}
+}
+stop() {
+this.running = false;
+clearTimeout(this._timer);
+if (this.stream) {
+this.stream.getTracks().forEach((t) => t.stop());
+this.stream = null;
+}
+this.video.srcObject = null;
+this.bg = null;
+}
+}
+};
+__defs['src/effects/ui/fx-cam-float.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'makeCamMovable', () => makeCamMovable);
+const KEY = 'objglb.fxcam.v1';
+function makeCamMovable(box, appEl, viewport) {
+let st = {};
+try {
+st = JSON.parse(localStorage.getItem(KEY)) || {};
+} catch {
+st = {};
+}
+const save = () => {
+try {
+localStorage.setItem(KEY, JSON.stringify(st));
+} catch {
+}
+};
+const mode = () => (appEl.classList.contains('fx-focus') ? 'focus' : 'normal');
+const grip = document.createElement('div');
+grip.className = 'fx-cam-grip';
+grip.title = 'Потяните, чтобы изменить размер';
+box.append(grip);
+const clamp = () => {
+if (box.style.left === '') return;
+const v = viewport.getBoundingClientRect();
+const r = box.getBoundingClientRect();
+let x = r.left - v.left;
+let y = r.top - v.top;
+x = Math.max(8, Math.min(v.width - r.width - 8, x));
+y = Math.max(8, Math.min(v.height - r.height - 8, y));
+box.style.left = x + 'px';
+box.style.top = y + 'px';
+};
+const apply = () => {
+const p = st[mode()];
+if (p && p.x != null) {
+box.style.left = p.x + 'px';
+box.style.top = p.y + 'px';
+box.style.bottom = 'auto';
+} else {
+box.style.left = box.style.top = box.style.bottom = '';
+}
+box.style.width = mode() === 'focus' && st.focusW ? st.focusW + 'px' : '';
+clamp();
+};
+apply();
+box.addEventListener('pointerdown', (e) => {
+if (e.button !== 0 || e.target === grip) return;
+e.preventDefault();
+const v = viewport.getBoundingClientRect();
+const r = box.getBoundingClientRect();
+const dx = e.clientX - r.left;
+const dy = e.clientY - r.top;
+box.setPointerCapture(e.pointerId);
+box.classList.add('is-dragging');
+const move = (ev) => {
+box.style.left = ev.clientX - dx - v.left + 'px';
+box.style.top = ev.clientY - dy - v.top + 'px';
+box.style.bottom = 'auto';
+clamp();
+};
+const up = () => {
+box.removeEventListener('pointermove', move);
+box.removeEventListener('pointerup', up);
+box.removeEventListener('pointercancel', up);
+box.classList.remove('is-dragging');
+st[mode()] = { x: parseFloat(box.style.left), y: parseFloat(box.style.top) };
+save();
+};
+box.addEventListener('pointermove', move);
+box.addEventListener('pointerup', up);
+box.addEventListener('pointercancel', up);
+});
+grip.addEventListener('pointerdown', (e) => {
+if (e.button !== 0) return;
+e.preventDefault();
+e.stopPropagation();
+const v = viewport.getBoundingClientRect();
+const startW = box.getBoundingClientRect().width;
+const sx = e.clientX;
+grip.setPointerCapture(e.pointerId);
+const move = (ev) => {
+const w = Math.max(160, Math.min(720, v.width - 40, startW + (ev.clientX - sx)));
+box.style.width = w + 'px';
+clamp();
+};
+const up = () => {
+grip.removeEventListener('pointermove', move);
+grip.removeEventListener('pointerup', up);
+grip.removeEventListener('pointercancel', up);
+st.focusW = box.getBoundingClientRect().width;
+const p = st[mode()];
+if (p) {
+p.x = parseFloat(box.style.left);
+p.y = parseFloat(box.style.top);
+}
+save();
+};
+grip.addEventListener('pointermove', move);
+grip.addEventListener('pointerup', up);
+grip.addEventListener('pointercancel', up);
+});
+const mo = new MutationObserver(apply);
+mo.observe(appEl, { attributes: true, attributeFilter: ['class'] });
+window.addEventListener('resize', clamp);
+box._camCleanup = () => mo.disconnect();
+}
+};
+__defs['src/effects/engine/tracking.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'TrackingPart', () => TrackingPart);
+const THREE = __req('vendor/three/build/three.module.js');
+const { clamp } = __req('src/core/util.js');
+const { HandTracker } = __req('src/effects/input/hand-tracker.js');
+const { MotionCamTracker } = __req('src/effects/input/motion-cam-tracker.js');
+const { FX_ACTIONS } = __req('src/effects/state/layers.js');
+const { makeCamMovable } = __req('src/effects/ui/fx-cam-float.js');
+class TrackingPart {
+async toggleMotionCam() {
+if (this.camTracker && this.camTracker.running) {
+this._stopCam();
+this.app.toast('Камера выключена');
+this.emit();
+return;
+}
+this._camBusy = true;
+this._mountCam(null, 'Включаю камеру…');
+try {
+let t = new HandTracker((f) => this._onCamFrame(f), (txt) => this._camStatus(txt));
+this.camTracker = t;
+t.fpsHint = () => this.app.viewport.fps || 60;
+this.state.layers.camTrack.on = true;
+this._mountCam(t);
+try {
+await t.start();
+this.app.toast('Камера включена: покажите ладонь', 'ok');
+} catch (err) {
+if (!err.handsLoadFailed) throw err;
+t.stop();
+t = new MotionCamTracker((f) => this._onCamFrame(f));
+this.camTracker = t;
+this._mountCam(t);
+await t.start();
+this.app.toast('Не удалось загрузить распознавание рук. Работает по движению в кадре', 'warn');
+}
+this._camPos = null;
+} catch (err) {
+this._stopCam();
+this.app.toast('Нет доступа к веб-камере: разрешите её в браузере', 'error');
+}
+this._camBusy = false;
+this.emit();
+}
+_stopCam() {
+if (this.camTracker) this.camTracker.stop();
+this.state.layers.camTrack.on = false;
+this.camBox?.remove();
+this.camBox = null;
+this._camActive = false;
+this._handPtrs = [];
+this._hands = [];
+this._stretchTarget = 1;
+this._stretchBase = null;
+this._spin = null;
+this._handGrav = null;
+this._handDis = false;
+for (const [id, was] of this._handFx || []) this.state.layers[id].on = was;
+this._handFx = null;
+if (this._handBreak) {
+this._handBreak = false;
+this.setCollapse(false);
+}
+if (this.points) this.points.scale.setScalar(1);
+}
+_camStatus(txt) {
+if (this.camHint && txt) this.camHint.textContent = txt;
+}
+_mountCam(tracker, status) {
+this.camBox?.remove();
+this.camHint = document.createElement('div');
+this.camHint.className = 'fx-cam-text';
+this.camHint.textContent = status || 'Покажите ладонь перед камерой';
+this.camBox = document.createElement('div');
+this.camBox.className = 'fx-cam';
+if (tracker) this.camBox.append(tracker.preview);
+this.camBox.append(this.camHint);
+this.camBox.hidden = this.state.layers.camTrack.preview !== 'on';
+document.getElementById('viewport').append(this.camBox);
+makeCamMovable(this.camBox, document.getElementById('app'), document.getElementById('viewport'));
+}
+_ndcToLocal(x, y, out, depth = 0) {
+const vp = this.app.viewport;
+this._ray.setFromCamera(new THREE.Vector2(x, y), vp.camera);
+const toCam = vp.camera.getWorldDirection(new THREE.Vector3()).negate();
+this._plane.setFromNormalAndCoplanarPoint(toCam, toCam.clone().multiplyScalar(depth));
+const hit = new THREE.Vector3();
+if (!this._ray.ray.intersectPlane(this._plane, hit)) return null;
+return out.copy(this.points.worldToLocal(hit));
+}
+_onCamFrame(f) {
+if (!this.active || !this.points) return;
+const cfg = this.state.layers.camTrack;
+const t = this.camTracker;
+t.sens = cfg.sens;
+t.smooth = cfg.smooth;
+if (this.camBox) this.camBox.hidden = cfg.preview !== 'on';
+if (f.kind === 'hands') return this._onHands(f, cfg);
+const txt = f.active ? 'Движение найдено' : 'Помашите рукой перед камерой';
+if (this.camHint && this.camHint.textContent !== txt) this.camHint.textContent = txt;
+this._camActive = f.active;
+if (!f.active) return;
+const k = 1 - Math.min(0.92, cfg.smooth) * 0.9;
+this._camPos = this._camPos ? { x: this._camPos.x + (f.x - this._camPos.x) * k, y: this._camPos.y + (f.y - this._camPos.y) * k } : { x: f.x, y: f.y };
+const loc = this._ndcToLocal(this._camPos.x, this._camPos.y, new THREE.Vector3(), 0.85);
+if (!loc) return;
+this.mouse.copy(loc);
+this.mouseOn = true;
+this._camT = this._time;
+this._handsT = this._time;
+this._handPtrs = [{ local: loc.clone(), s: cfg.g_palm === 'pull' ? -1 : cfg.g_palm === 'swirl' ? 3 : 1, ndc: [this._camPos.x, this._camPos.y] }];
+if (cfg.g_palm === 'brush' || this.state.layers.brush.on) this.addBrushHit(loc);
+if (cfg.g_palm === 'wave' && f.energy > 0.16 && this._time - (this._camShockT || 0) > 0.8) {
+this._camShockT = this._time;
+this.addShock(loc);
+this._waveT = this._time;
+}
+}
+_onHands(f, cfg) {
+const bx = (v) => clamp((v - 0.15) / 0.7, 0, 1);
+const mapP = (p) => [bx(p[0]), bx(p[1])];
+const hands = f.hands.map((h) => ({ ...h, pts: h.pts.map(mapP), tips: h.tips.map(mapP), palm: mapP(h.palm) }));
+this._hands = hands;
+this._camActive = hands.length > 0;
+const actLabel = (a) => (FX_ACTIONS.find((x) => x[0] === a) || [0, ''])[1];
+const t = this.camTracker;
+t.hold = cfg.hold;
+t.names = { palm: actLabel(cfg.g_palm), fist: actLabel(cfg.g_fist), pinch: actLabel(cfg.g_pinch), point: actLabel(cfg.g_point), peace: actLabel(cfg.g_peace), rock: actLabel(cfg.g_rock), thumb: actLabel(cfg.g_thumb) };
+const txt = hands.length ? (hands.length > 1 ? 'Вижу две руки' : 'Вижу руку: покажите жест') : 'Покажите руку перед камерой';
+if (this.camHint && this.camHint.textContent !== txt) this.camHint.textContent = txt;
+const ptrs = [];
+const aspect = f.aspect || 4 / 3;
+const st = this._handState || (this._handState = new Map());
+const grabs = this._grabs || (this._grabs = new Map());
+const now = this._time;
+const loc2 = (p) => this._ndcToLocal(p[0] * 2 - 1, -(p[1] * 2 - 1), new THREE.Vector3(), cfg.depth);
+let wantBreak = false, wantDis = false, grav = null, brushNow = false, sliceHand = null;
+const wantFx = new Set();
+this.camTracker.setNumHands && this.camTracker.setNumHands(cfg.handsN === '1' ? 1 : 2);
+for (const hd of hands) {
+let g = hd.gesture;
+if (hd.pinch) g = 'pinch';
+else if (g === 'pinch') g = hd.rawGesture && hd.rawGesture !== 'pinch' ? hd.rawGesture : 'none';
+const a = g === 'none' ? 'none' : cfg['g_' + g];
+const prev = st.get(hd.id) || { palmX: hd.palm[0], palmY: hd.palm[1], a: 'none', g: 'none', t: now };
+const dtH = Math.max(0.016, Math.min(0.2, now - prev.t));
+const entered = prev.a !== a;
+const mid = [(hd.tips[0][0] + hd.tips[1][0]) / 2, (hd.tips[0][1] + hd.tips[1][1]) / 2];
+const focus = g === 'pinch' ? mid : g === 'point' ? hd.tips[1] : hd.palm;
+const fl = loc2(focus);
+if (hands[0] === hd && fl) {
+this.mouse.copy(fl);
+this.mouseOn = true;
+this._camT = now;
+}
+if (a === 'push' || a === 'pull' || a === 'swirl') {
+const sv = a === 'push' ? 1 : a === 'pull' ? -1 : 3;
+const pts = g === 'palm' ? [...hd.tips, hd.palm] : [focus];
+for (const p of pts) {
+const l = loc2(p);
+if (l) ptrs.push({ local: l, s: sv, ndc: [p[0] * 2 - 1, -(p[1] * 2 - 1)] });
+}
+} else if (a === 'rotate') {
+if (!entered) {
+const sp = this._spin || (this._spin = { x: 0, y: 0 });
+sp.y += (((hd.palm[0] - prev.palmX) * cfg.spin) / dtH - sp.y) * 0.5;
+if (cfg.axis === 'xy') sp.x += (((hd.palm[1] - prev.palmY) * cfg.spin) / dtH - sp.x) * 0.5;
+this._grabbing = now;
+}
+} else if (a === 'sculpt' && this.geometry) {
+const gr = grabs.get(hd.id);
+if (fl) {
+if (!gr || entered) grabs.set(hd.id, this._startGrab(fl, cfg.clay));
+else this._sculptMove(gr, fl);
+}
+} else if (a === 'wave') {
+if (entered && fl && now - (this._camShockT || 0) > 0.5) {
+this._camShockT = now;
+this.addShock(fl);
+this._waveT = now;
+}
+} else if (a === 'slicecut') {
+sliceHand = this._ndcToLocal(focus[0] * 2 - 1, -(focus[1] * 2 - 1), new THREE.Vector3(), 0);
+} else if (a === 'gravity') {
+if (fl) grav = fl;
+} else if (a.startsWith('fx:')) wantFx.add(a.slice(3));
+else if (a === 'break') wantBreak = true;
+else if (a === 'dissolve') wantDis = true;
+else if (a === 'brush') {
+brushNow = true;
+const pts = g === 'palm' ? hd.tips : [focus];
+for (const p of pts) {
+const q = loc2(p);
+if (q) this.addBrushHit(q);
+}
+}
+if (a !== 'sculpt') grabs.delete(hd.id);
+st.set(hd.id, { palmX: hd.palm[0], palmY: hd.palm[1], a, g, t: now });
+}
+for (const key of [...st.keys()]) if (!hands.some((h) => h.id === key)) {
+st.delete(key);
+grabs.delete(key);
+}
+if (brushNow) this._brushHand = now;
+this._handGrav = grav;
+this._handSlice = sliceHand;
+this._handDis = wantDis;
+const hf = this._handFx || (this._handFx = new Map());
+for (const id of wantFx) {
+if (!hf.has(id) && this.state.layers[id]) {
+hf.set(id, this.state.layers[id].on);
+this.state.layers[id].on = true;
+this.emit();
+}
+}
+for (const [id, was] of [...hf]) {
+if (!wantFx.has(id)) {
+this.state.layers[id].on = was;
+hf.delete(id);
+this.emit();
+}
+}
+if (wantBreak !== !!this._handBreak) {
+this._handBreak = wantBreak;
+this.setCollapse(wantBreak);
+}
+if (cfg.stretch === 'on' && hands.length === 2) {
+const d = Math.hypot((hands[0].palm[0] - hands[1].palm[0]) * aspect, hands[0].palm[1] - hands[1].palm[1]);
+if (!this._stretchBase) this._stretchBase = { d, s: this._stretchTarget || 1 };
+this._stretchTarget = clamp(this._stretchBase.s * (d / Math.max(0.05, this._stretchBase.d)), 0.4, 3);
+} else {
+this._stretchBase = null;
+if (cfg.keep === 'off' || cfg.stretch !== 'on') this._stretchTarget = 1;
+}
+this._handPtrs = ptrs;
+if (hands.length) this._handsT = now;
+}
+}
+};
+__defs['src/effects/engine/history.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'HistoryPart', () => HistoryPart);
+const { FX_LAYERS } = __req('src/effects/state/layers.js');
+class HistoryPart {
+_snap() {
+const st = this.state;
+const layers = {};
+for (const id of Object.keys(st.layers)) {
+const l = { ...st.layers[id] };
+if (this._handFx?.has(id)) l.on = this._handFx.get(id);
+layers[id] = l;
+}
+const p = this.app.settings.point;
+return JSON.stringify({ anim: st.anim, source: st.source, count: st.count, layers, look: st.look, mask: st.mask, morphCfg: st.morphCfg, pt: { shape: p.shape, size: p.size, color: p.color, solidColor: p.solidColor, attenuate: p.attenuate } });
+}
+_histFlush() {
+if (!this.active || this._histBusy) return;
+clearTimeout(this._histT);
+this._histCommit();
+}
+_histSoon() {
+if (!this.active || this._histBusy) return;
+clearTimeout(this._histT);
+this._histT = setTimeout(() => this._histCommit(), 350);
+}
+_histCommit() {
+const h = this._hist || (this._hist = { undo: [], redo: [], last: null });
+const snap = this._snap();
+if (h.last === null) h.last = snap;
+else if (snap !== h.last) {
+h.undo.push({ snap: h.last, label: this._diffLabel(h.last, snap) });
+if (h.undo.length > 100) h.undo.shift();
+h.redo.length = 0;
+h.last = snap;
+}
+this.emit();
+}
+_diffLabel(a, b) {
+try {
+const A = JSON.parse(a), B = JSON.parse(b);
+if (JSON.stringify(A.anim) !== JSON.stringify(B.anim)) return 'таймлайн';
+for (const id of Object.keys(B.layers)) {
+if (JSON.stringify(A.layers[id]) !== JSON.stringify(B.layers[id])) return 'эффект «' + (FX_LAYERS.find((l) => l.id === id)?.name || id) + '»';
+}
+if (A.source !== B.source) return 'форма';
+if (A.count !== B.count) return 'число частиц';
+if (JSON.stringify(A.mask) !== JSON.stringify(B.mask)) return 'зона действия';
+if (JSON.stringify(A.morphCfg) !== JSON.stringify(B.morphCfg)) return 'морфинг';
+if (JSON.stringify(A.look) !== JSON.stringify(B.look) || JSON.stringify(A.pt) !== JSON.stringify(B.pt)) return 'вид';
+} catch (e) {
+}
+return 'настройки';
+}
+get canUndo() {
+return !!this._hist?.undo.length;
+}
+get canRedo() {
+return !!this._hist?.redo.length;
+}
+get undoLabel() {
+return this._hist?.undo.at(-1)?.label || '';
+}
+get redoLabel() {
+return this._hist?.redo.at(-1)?.label || '';
+}
+async _histApply(snap) {
+const d = JSON.parse(snap);
+const st = this.state;
+this._histBusy = true;
+try {
+if (d.anim) {
+for (const k of Object.keys(st.anim)) delete st.anim[k];
+Object.assign(st.anim, d.anim);
+this._animVer = (this._animVer || 0) + 1;
+this.app.bus.emit('fxanim');
+}
+for (const id of Object.keys(d.layers)) if (st.layers[id]) Object.assign(st.layers[id], d.layers[id]);
+Object.assign(st.look, d.look);
+Object.assign(st.mask, d.mask);
+Object.assign(st.morphCfg, d.morphCfg);
+Object.assign(this.app.settings.point, d.pt);
+this.app.saveSettings();
+this.touch();
+if (d.count !== st.count) await this.setCount(d.count);
+if (d.source !== st.source) await this.setSource(d.source);
+} finally {
+this._hist.last = snap;
+this._histBusy = false;
+}
+this.emit();
+}
+async undo() {
+const h = this._hist;
+if (!h || !h.undo.length) return null;
+const e = h.undo.pop();
+h.redo.push({ snap: h.last, label: e.label });
+await this._histApply(e.snap);
+return e.label;
+}
+async redo() {
+const h = this._hist;
+if (!h || !h.redo.length) return null;
+const e = h.redo.pop();
+h.undo.push({ snap: h.last, label: e.label });
+await this._histApply(e.snap);
+return e.label;
+}
+}
+};
+__defs['src/effects/shaders/glsl/scope-frag.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'scopeFrag', () => scopeFrag);
+const scopeFrag = `
+precision highp float;
+varying vec3 vC;
+varying float vA;
+varying float vSide;
+void main() {
+	float edge = 1.0 - smoothstep(0.35, 1.0, abs(vSide));
+	gl_FragColor = vec4(vC * (vA * edge), vA * edge);
+	#include <tonemapping_fragment>
+	#include <colorspace_fragment>
+}
+`;
+};
+__defs['src/effects/engine/scope-trail.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'ScopeTrailPart', () => ScopeTrailPart);
+const THREE = __req('vendor/three/build/three.module.js');
+const { clamp } = __req('src/core/util.js');
+const { scopeFrag } = __req('src/effects/shaders/glsl/scope-frag.js');
+class ScopeTrailPart {
+_scopeBuild(S, order, chaosV = 0.5) {
+const g = this.geometry;
+const T = g.attributes.aTarget.array;
+const N = g.attributes.position.count;
+const path = g.attributes.aPath;
+this._scopeDropLine();
+if (order !== 'walk') {
+let mn = Infinity, mx = -Infinity;
+for (let i = 0; i < N; i++) {
+const v = order === 'up' ? T[i * 3 + 1] : Math.atan2(T[i * 3 + 2], T[i * 3]);
+if (v < mn) mn = v;
+if (v > mx) mx = v;
+}
+const span = Math.max(mx - mn, 1e-6);
+for (let i = 0; i < N; i++) path.array[i] = ((order === 'up' ? T[i * 3 + 1] : Math.atan2(T[i * 3 + 2], T[i * 3])) - mn) / span;
+path.needsUpdate = true;
+return;
+}
+const sc = Math.max(8, Math.min(S, N));
+const ids = new Int32Array(sc);
+for (let i = 0; i < sc; i++) ids[i] = Math.floor((i * N) / sc);
+const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+for (let i = 0; i < sc; i++) for (let c = 0; c < 3; c++) {
+const v = T[ids[i] * 3 + c];
+if (v < mn[c]) mn[c] = v;
+if (v > mx[c]) mx[c] = v;
+}
+const ext = [0, 1, 2].map((c) => Math.max(mx[c] - mn[c], 0.03));
+const cell = Math.cbrt((ext[0] * ext[1] * ext[2]) / sc) * 1.7;
+const key = (x, y, z) => ((x + 512) * 1024 + (y + 512)) * 1024 + (z + 512);
+const cx = (v, c) => Math.floor((v - mn[c]) / cell);
+const grid = new Map();
+for (let i = 0; i < sc; i++) {
+const p = ids[i] * 3;
+const k = key(cx(T[p], 0), cx(T[p + 1], 1), cx(T[p + 2], 2));
+const a = grid.get(k);
+if (a) a.push(i);
+else grid.set(k, [i]);
+}
+const full = new Map();
+for (const [k, v] of grid) full.set(k, v.slice());
+const used = new Uint8Array(sc);
+const ord = new Int32Array(sc);
+const d2 = (i, p) => (T[ids[i] * 3] - p[0]) ** 2 + (T[ids[i] * 3 + 1] - p[1]) ** 2 + (T[ids[i] * 3 + 2] - p[2]) ** 2;
+let seed = 1234567;
+const rnd = () => {
+seed = (seed + 0x6d2b79f5) | 0;
+let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+const chaos = Math.max(0, Math.min(1, chaosV));
+const strokes = 1 + Math.round(chaos * chaos * 120);
+const strokeLen = Math.max(6, Math.ceil(sc / strokes));
+const rem = new Int32Array(sc);
+const posIn = new Int32Array(sc);
+for (let i = 0; i < sc; i++) rem[i] = posIn[i] = i;
+let remN = sc;
+const take = (j) => {
+const pj = posIn[j];
+const last = rem[--remN];
+rem[pj] = last;
+posIn[last] = pj;
+used[j] = 1;
+};
+const brk = new Uint8Array(sc + 1);
+let n = 0;
+while (n < sc) {
+if (n > 0) brk[n] = 1;
+let cur = 0;
+if (n === 0 && strokes === 1) {
+for (let i = 1; i < sc; i++) if (T[ids[i] * 3 + 1] < T[ids[cur] * 3 + 1]) cur = i;
+} else cur = rem[Math.floor(rnd() * remN)];
+take(cur);
+ord[n++] = cur;
+let prev = null;
+let left = strokeLen - 1;
+while (left > 0 && n < sc) {
+const p = [T[ids[cur] * 3], T[ids[cur] * 3 + 1], T[ids[cur] * 3 + 2]];
+const bx = cx(p[0], 0), by = cx(p[1], 1), bz = cx(p[2], 2);
+const cand = [];
+for (let r = 0; r <= 5 && cand.length < 3; r++) {
+for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) for (let dz = -r; dz <= r; dz++) {
+if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue;
+const a = grid.get(key(bx + dx, by + dy, bz + dz));
+if (!a) continue;
+for (let q = a.length - 1; q >= 0; q--) {
+const j = a[q];
+if (used[j]) {
+a[q] = a[a.length - 1];
+a.pop();
+continue;
+}
+let d = d2(j, p);
+if (prev) d *= 1.25 - 0.25 * Math.max(-1, Math.min(1, ((T[ids[j] * 3] - p[0]) * prev[0] + (T[ids[j] * 3 + 1] - p[1]) * prev[1] + (T[ids[j] * 3 + 2] - p[2]) * prev[2]) / (Math.sqrt(d2(j, p)) * prev[3] + 1e-9)));
+cand.push([d, j]);
+}
+}
+}
+if (!cand.length) break;
+cand.sort((x, y) => x[0] - y[0]);
+let pick = 0;
+if (cand.length > 1 && rnd() < chaos * 0.75) pick = 1 + (cand.length > 2 && rnd() < 0.4 ? 1 : 0);
+const best = cand[pick][1];
+prev = [T[ids[best] * 3] - p[0], T[ids[best] * 3 + 1] - p[1], T[ids[best] * 3 + 2] - p[2], 0];
+prev[3] = Math.hypot(prev[0], prev[1], prev[2]);
+take(best);
+ord[n++] = best;
+cur = best;
+left--;
+}
+}
+const rank = new Int32Array(sc);
+for (let n = 0; n < sc; n++) rank[ord[n]] = n;
+const cut2 = (cell * 1.4) ** 2;
+for (let i = 0; i < N; i++) {
+const x = T[i * 3], y = T[i * 3 + 1], z = T[i * 3 + 2];
+const bx = cx(x, 0), by = cx(y, 1), bz = cx(z, 2);
+let best = -1, bd = Infinity;
+for (let r = 0; r <= 3 && best < 0; r++) {
+for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) for (let dz = -r; dz <= r; dz++) {
+if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue;
+const a = full.get(key(bx + dx, by + dy, bz + dz));
+if (!a) continue;
+for (const j of a) {
+const d = (T[ids[j] * 3] - x) ** 2 + (T[ids[j] * 3 + 1] - y) ** 2 + (T[ids[j] * 3 + 2] - z) ** 2;
+if (d < bd) {
+bd = d;
+best = j;
+}
+}
+}
+}
+if (best < 0) {
+path.array[i] = 0;
+continue;
+}
+const rk = rank[best];
+const P = (j) => ids[ord[j]] * 3;
+let bt = 0, bj = -1;
+for (const nj of [rk - 1, rk + 1]) {
+if (nj < 0 || nj >= sc || brk[Math.max(rk, nj)]) continue;
+const p0 = ids[best] * 3, p1 = P(nj);
+const ex = T[p1] - T[p0], ey = T[p1 + 1] - T[p0 + 1], ez = T[p1 + 2] - T[p0 + 2];
+const l2 = ex * ex + ey * ey + ez * ez;
+if (l2 < 1e-12 || l2 > cut2) continue;
+const t = ((x - T[p0]) * ex + (y - T[p0 + 1]) * ey + (z - T[p0 + 2]) * ez) / l2;
+if (t > bt) {
+bt = Math.min(t, 1);
+bj = nj;
+}
+}
+path.array[i] = (rk + (bj < 0 ? 0 : (bj - rk) * bt)) / (sc - 1);
+}
+path.needsUpdate = true;
+const L = sc - 1;
+const V = L * 4;
+const O = g.attributes.aOrigin.array;
+const D = g.attributes.aDepth.array;
+const A = new Float32Array(V * 3), TA = new Float32Array(V * 3), B = new Float32Array(V * 3), TB = new Float32Array(V * 3);
+const ia = new Float32Array(V), ib = new Float32Array(V), da = new Float32Array(V), db = new Float32Array(V), end = new Float32Array(V), side = new Float32Array(V), seg = new Float32Array(V);
+const index = new Uint32Array(L * 6);
+const cut = cell * 1.4;
+for (let l = 0; l < L; l++) {
+const a = ids[ord[l]], b = ids[ord[l + 1]];
+const far = brk[l + 1] === 1 || Math.hypot(T[a * 3] - T[b * 3], T[a * 3 + 1] - T[b * 3 + 1], T[a * 3 + 2] - T[b * 3 + 2]) > cut;
+index.set([l * 4, l * 4 + 1, l * 4 + 2, l * 4 + 2, l * 4 + 1, l * 4 + 3], l * 6);
+for (let v = 0; v < 4; v++) {
+const q = l * 4 + v;
+for (let c = 0; c < 3; c++) {
+A[q * 3 + c] = O[a * 3 + c];
+TA[q * 3 + c] = T[a * 3 + c];
+B[q * 3 + c] = O[b * 3 + c];
+TB[q * 3 + c] = T[b * 3 + c];
+}
+ia[q] = a / N;
+ib[q] = b / N;
+da[q] = D[a];
+db[q] = D[b];
+end[q] = v >> 1;
+side[q] = v & 1 ? 1 : -1;
+seg[q] = far ? -1 : l / L;
+}
+}
+const lg = new THREE.BufferGeometry();
+lg.setAttribute('position', new THREE.BufferAttribute(A.slice(), 3));
+lg.setAttribute('aOrigin', new THREE.BufferAttribute(A, 3));
+lg.setAttribute('aTarget', new THREE.BufferAttribute(TA, 3));
+lg.setAttribute('aOriginB', new THREE.BufferAttribute(B, 3));
+lg.setAttribute('aTargetB', new THREE.BufferAttribute(TB, 3));
+lg.setAttribute('aIdx', new THREE.BufferAttribute(ia, 1));
+lg.setAttribute('aIdxB', new THREE.BufferAttribute(ib, 1));
+lg.setAttribute('aDepth', new THREE.BufferAttribute(da, 1));
+lg.setAttribute('aDepthB', new THREE.BufferAttribute(db, 1));
+lg.setAttribute('aEnd', new THREE.BufferAttribute(end, 1));
+lg.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
+lg.setAttribute('aSeg', new THREE.BufferAttribute(seg, 1));
+lg.setIndex(new THREE.BufferAttribute(index, 1));
+const mat = new THREE.ShaderMaterial({ vertexShader: this._fxSource('scope', this._fxCur || (this._fxCur = new Set())), userData: { fxKind: 'scope' }, fragmentShader: scopeFrag, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, uniforms: { ...this.shared, uTOff: { value: 0 } } });
+const line = new THREE.Mesh(lg, mat);
+line.frustumCulled = false;
+line.userData.helper = true;
+this.points.add(line);
+this._scopeLine = line;
+this._scopePath = { ids, ord, L };
+}
+_scopeSyncLine() {
+const sp = this._scopePath;
+const lg = this._scopeLine?.geometry;
+if (!sp || !lg || !this.geometry || !lg.attributes.aOrigin) return;
+const T = this.geometry.attributes.aTarget.array;
+const { ids, ord, L } = sp;
+const a0 = lg.attributes.aOrigin.array;
+const a1 = lg.attributes.aTarget.array;
+const a2 = lg.attributes.aOriginB.array;
+const a3 = lg.attributes.aTargetB.array;
+for (let l = 0; l < L; l++) {
+const a = ids[ord[l]] * 3, b = ids[ord[l + 1]] * 3;
+const ta0 = T[a], ta1 = T[a + 1], ta2 = T[a + 2];
+const tb0 = T[b], tb1 = T[b + 1], tb2 = T[b + 2];
+for (let v = 0; v < 4; v++) {
+const q = (l * 4 + v) * 3;
+a0[q] = a1[q] = ta0;
+a0[q + 1] = a1[q + 1] = ta1;
+a0[q + 2] = a1[q + 2] = ta2;
+a2[q] = a3[q] = tb0;
+a2[q + 1] = a3[q + 1] = tb1;
+a2[q + 2] = a3[q + 2] = tb2;
+}
+}
+lg.attributes.aOrigin.needsUpdate = true;
+lg.attributes.aTarget.needsUpdate = true;
+lg.attributes.aOriginB.needsUpdate = true;
+lg.attributes.aTargetB.needsUpdate = true;
+}
+_scopeDropLine() {
+const l = this._scopeLine;
+if (!l) return;
+l.parent?.remove(l);
+l.geometry.dispose();
+l.material.dispose();
+this._scopeLine = null;
+}
+_scopeTick(dt, S, u) {
+const amount = clamp(this._eff(S), 0, 1);
+if (amount <= 0.001 || !this.geometry || !this.points || !this.geometry.attributes.aPath) {
+u.uScope.value.set(0, 0, 0, 1);
+if (this._scopeLine) this._scopeLine.visible = false;
+this._scopeT = 0;
+return;
+}
+const order = S.order || 'walk';
+const gk = this.geometry.uuid + ':' + order + ':' + (order === 'walk' ? Math.round(S.detail) + '/' + Math.round(S.chaos * 20) : 0);
+const lost = this._scopeLine && this._scopeLine.parent !== this.points;
+if (this._scopeKey !== gk || lost) {
+const sameGeo = this._scopeKey && this._scopeKey.split(':')[0] === this.geometry.uuid;
+if (!sameGeo || lost || !this._scopeWait || performance.now() - this._scopeWait > 250) {
+this._scopeKey = gk;
+this._scopeWait = performance.now();
+if (lost) this._scopeLine = null;
+this._scopeBuild(Math.round(S.detail), order, S.chaos);
+}
+}
+if (this._animCloud && this._scopeLine && this._scopeAnimVer !== this._animVer) {
+this._scopeAnimVer = this._animVer;
+this._scopeSyncLine();
+}
+this._scopeT = (this._scopeT || 0) + dt * S.speed * 0.07;
+const once = S.loop === 'once';
+const c = once ? Math.min(this._scopeT, 0.55) : this._scopeT % 1;
+const head = Math.min(c / 0.5, 1.05);
+const env = Math.min(1, c / 0.03);
+const out = once ? 0 : Math.max(0, (c - 0.6) / 0.4) * 1.02;
+const comet = S.mode === 'comet';
+u.uScope.value.set(amount, (comet ? 1 : 0) + (S.dir === 'back' ? 2 : 0), head, S.trail);
+u.uScopeP.value.set(S.dim, env, out, S.pens);
+u.uScopeQ.value.set(S.tint, S.thick, S.glow, S.spark);
+if (S.color === 'auto' || !S.color) u.uScopeC.value.copy(u.uP2.value);
+else u.uScopeC.value.set(S.color);
+u.uScopeW.value = S.width;
+u.uScopeLB.value = S.line;
+const L = this._scopeLine;
+if (L) L.visible = this._gate('scope', order === 'walk' && S.line > 0.01 && !(u.uFr.value.x > 0.5));
+}
+get animReady() {
+return !!this._animCloud;
+}
+_trailTick(T) {
+const ac = this._animCloud;
+const tr0 = this._trail;
+const hide = () => {
+if (tr0) tr0.group.visible = false;
+};
+if (!T.on || !ac || !this.geometry || !this.points || !this._animBuf || this.state.source !== 'model') return hide();
+const amount = clamp(this._eff(T), 0, 1);
+if (amount < 0.005) return hide();
+const m0 = Math.max(1000, Math.min(Math.round(T.pts), ac.count));
+const stride = Math.max(1, Math.floor(ac.count / m0));
+const mm = Math.floor(ac.count / stride);
+const n = Math.max(2, Math.round(T.count));
+let tr = this._trail;
+if (!tr || tr.group.parent !== this.points || tr.mm !== mm || tr.n !== n || tr.geo !== this.geometry) {
+if (tr) {
+tr.group.removeFromParent();
+tr.group.traverse((o) => {
+if (o.material) o.material.dispose();
+if (o.geometry) o.geometry.dispose();
+});
+}
+const col = new Float32Array(mm * 3);
+const ca = this.geometry.attributes.aColor.array;
+for (let i = 0; i < mm; i++) for (let c = 0; c < 3; c++) col[i * 3 + c] = ca[i * stride * 3 + c];
+const colAttr = new THREE.BufferAttribute(col, 3);
+const group = new THREE.Group();
+group.userData.helper = true;
+const snaps = [];
+const ghosts = [];
+const cur = new Float32Array(mm * 3);
+for (let i = 0; i < mm; i++) for (let c = 0; c < 3; c++) cur[i * 3 + c] = this._animBuf[i * stride * 3 + c];
+for (let k = 0; k <= n; k++) snaps.push(cur.slice());
+for (let k = 0; k < n; k++) {
+const g = new THREE.BufferGeometry();
+g.setAttribute('position', new THREE.BufferAttribute(snaps[k + 1], 3));
+g.setAttribute('color', colAttr);
+const mat = new THREE.ShaderMaterial({
+uniforms: { uSize: { value: 1 }, uAlpha: { value: 0 }, uTint: { value: 0 }, uTintC: { value: new THREE.Color() } },
+vertexShader: 'attribute vec3 color; uniform float uSize; uniform float uTint; uniform vec3 uTintC; varying vec3 vC; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = clamp(uSize * 3.8 / max(-mv.z, 0.4), 1.0, 60.0); vC = mix(color, uTintC, uTint); }',
+fragmentShader: 'precision highp float; uniform float uAlpha; varying vec3 vC; void main() {\n if (length(gl_PointCoord - 0.5) > 0.5) discard;\n  gl_FragColor = vec4(vC, uAlpha);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}',
+transparent: true,
+depthWrite: false,
+blending: THREE.NormalBlending,
+});
+const p = new THREE.Points(g, mat);
+p.renderOrder = -1;
+p.frustumCulled = false;
+p.userData.helper = true;
+group.add(p);
+ghosts.push(p);
+}
+this.points.add(group);
+tr = this._trail = { group, snaps, ghosts, mm, n, stride, last: this._time, geo: this.geometry };
+}
+tr.group.visible = true;
+if (this.app.anim.playing && this._time - tr.last >= T.step) {
+tr.last = this._time;
+const old = tr.snaps.pop();
+for (let i = 0; i < mm; i++) for (let c = 0; c < 3; c++) old[i * 3 + c] = this._animBuf[i * tr.stride * 3 + c];
+tr.snaps.unshift(old);
+tr.ghosts.forEach((p, k) => {
+const a = p.geometry.attributes.position;
+a.array = tr.snaps[k + 1];
+a.needsUpdate = true;
+});
+}
+const u = this.shared;
+const base = u.uSize.value * u.uPR.value * T.size;
+tr.ghosts.forEach((p, k) => {
+const mt = p.material.uniforms;
+mt.uAlpha.value = amount * Math.pow(T.fade, k + 1) * 0.75;
+mt.uSize.value = base * (1 - T.shrink * (k / Math.max(1, n - 1)));
+mt.uTint.value = T.tint;
+mt.uTintC.value.copy(u.uP2.value);
+});
+}
+}
+};
+__defs['src/effects/shaders/glsl/common.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'common', () => common);
 const common = `
 precision highp float;
 uniform float uTime;
@@ -81126,6 +84233,162 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	return pos;
 }
 `;
+};
+__defs['src/effects/shaders/glsl/line-vert.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'lineVert', () => lineVert);
+const { common } = __req('src/effects/shaders/glsl/common.js');
+const lineVert = `
+attribute vec3 aOrigin;
+attribute vec3 aTarget;
+attribute float aIdx;
+attribute vec3 aOriginB;
+attribute vec3 aTargetB;
+attribute float aIdxB;
+attribute float aDepth;
+attribute float aDepthB;
+attribute float aEnd;
+attribute float aSide;
+uniform vec3 uP0;
+uniform vec3 uP1;
+uniform vec3 uP2;
+uniform float uBright;
+uniform vec4 uLink;
+uniform vec4 uLinkP;
+uniform vec2 uRes;
+uniform float uLinkW;
+varying vec3 vC;
+varying float vA;
+varying float vEnd;
+varying float vIdx;
+varying float vSide;
+varying float vStrain;
+` + common + `
+void main() {
+	vec3 bA, bB;
+	float mA, mB;
+	gDepth = aDepth;
+	gNormal = vec3(0.0);
+	vec3 pA = fxDisplace(aOrigin, aTarget, aIdx, bA, mA);
+	gDepth = aDepthB;
+	vec3 pB = fxDisplace(aOriginB, aTargetB, aIdxB, bB, mB);
+	float maxLen = uLink.y * 1.9;
+	float len = distance(pA, pB);
+	if (len > maxLen) {
+		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+		return;
+	}
+	float strain = clamp((len - uLink.y * 0.4) / max(uLink.y * 1.3, 0.01), 0.0, 1.0);
+	vStrain = strain;
+	vec3 col = mix(uP0, uP2, 0.35 + uBeat * 0.4) * uBright;
+	if (uLinkP.y > 0.5 && uLinkP.y < 1.5) {
+		// Натяжение (tension): бирюзовый -> золотой -> раскаленный оранжево-рубиновый
+		vec3 cyan = vec3(0.12, 0.88, 0.9);
+		vec3 gold = vec3(1.0, 0.76, 0.18);
+		vec3 ruby = vec3(1.0, 0.22, 0.28);
+		col = strain < 0.5 ? mix(cyan, gold, strain * 2.0) : mix(gold, ruby, (strain - 0.5) * 2.0);
+		col *= uBright * (1.1 + uBeat * 0.35);
+	} else if (uLinkP.y > 1.5 && uLinkP.y < 2.5) {
+		// Неон (neon): электрический кибер-градиент
+		col = mix(vec3(0.08, 0.72, 1.0), vec3(1.0, 0.08, 0.76), fract(aIdx * 7.13 + aEnd * 0.5));
+		col *= uBright * 1.35;
+	} else if (uLinkP.y > 2.5) {
+		// Радуга (rainbow): спектральная волна
+		col = (0.5 + 0.5 * cos(6.2831853 * (aIdx + aEnd * 0.35 + uTime * 0.18 + vec3(0.0, 0.33, 0.67)))) * uBright * 1.25;
+	}
+	vC = col;
+	vA = uLink.x * (1.0 - smoothstep(uLink.y * 0.8, maxLen, len));
+	vEnd = aEnd;
+	vIdx = aIdx;
+	vSide = aSide;
+	mat4 mvp = projectionMatrix * modelViewMatrix;
+	vec4 cA = mvp * vec4(pA, 1.0);
+	vec4 cB = mvp * vec4(pB, 1.0);
+	if (cA.w < 0.02 || cB.w < 0.02) {
+		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+		return;
+	}
+	vec2 sA = cA.xy / cA.w;
+	vec2 sB = cB.xy / cB.w;
+	vec2 dir = (sB - sA) * vec2(uRes.x / uRes.y, 1.0);
+	float dl = length(dir);
+	dir = dl > 1e-5 ? dir / dl : vec2(1.0, 0.0);
+	vec2 nrm = vec2(-dir.y, dir.x) * vec2(uRes.y / uRes.x, 1.0);
+	vec4 c = mix(cA, cB, aEnd);
+	float flare = 1.0;
+	if (uLinkP.z > 0.5) {
+		float endDist = min(aEnd, 1.0 - aEnd);
+		flare += (1.0 - smoothstep(0.0, 0.18, endDist)) * 1.9;
+	}
+	float baseW = uLinkW;
+	if (uLinkP.x > 1.5 && uLinkP.x < 2.5) baseW = max(0.65, uLinkW * 0.6); // созвездия — тонкие нити
+	c.xy += nrm * aSide * (baseW * flare + 1.0) / uRes.y * c.w;
+	gl_Position = c;
+}
+`;
+};
+__defs['src/effects/shaders/glsl/scope-vert.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'scopeVert', () => scopeVert);
+const { common } = __req('src/effects/shaders/glsl/common.js');
+const scopeVert = `
+attribute vec3 aOrigin;
+attribute vec3 aTarget;
+attribute float aIdx;
+attribute vec3 aOriginB;
+attribute vec3 aTargetB;
+attribute float aIdxB;
+attribute float aDepth;
+attribute float aDepthB;
+attribute float aEnd;
+attribute float aSide;
+attribute float aSeg;
+uniform vec3 uP0;
+uniform vec3 uP1;
+uniform vec3 uP2;
+uniform vec2 uRes;
+uniform float uScopeW;
+uniform float uScopeLB;
+varying vec3 vC;
+varying float vA;
+varying float vSide;
+` + common + `
+void main() {
+	vec3 bA, bB;
+	float mA, mB;
+	gDepth = aDepth;
+	gNormal = vec3(0.0);
+	vec3 pA = fxDisplace(aOrigin, aTarget, aIdx, bA, mA);
+	gDepth = aDepthB;
+	vec3 pB = fxDisplace(aOriginB, aTargetB, aIdxB, bB, mB);
+	bool rv = uScope.y > 1.5;
+	float cm = rv ? uScope.y - 2.0 : uScope.y;
+	float sp = rv ? 1.0 - aSeg : aSeg;
+	if (uScopeP.w > 1.5) sp = fract(sp * uScopeP.w);
+	float age = uScope.z - sp;
+	float lit = age < 0.0 || aSeg < 0.0 ? 0.0 : (cm < 0.5 ? 1.0 : exp(-age * 4.0 / max(uScope.w, 0.02))) * uScopeP.y;
+	vA = lit * step(uScopeP.z, sp) * uScope.x * min(1.0, uScope.x * 2.0) * uScopeLB;
+	vC = uScopeC * (1.0 + exp(-max(age, 0.0) * 45.0) * uScopeQ.z * 2.0);
+	vSide = aSide;
+	mat4 mvp = projectionMatrix * modelViewMatrix;
+	vec4 cA = mvp * vec4(pA, 1.0);
+	vec4 cB = mvp * vec4(pB, 1.0);
+	vec2 sA = cA.xy / cA.w;
+	vec2 sB = cB.xy / cB.w;
+	vec2 dir = (sB - sA) * vec2(uRes.x / uRes.y, 1.0);
+	float dl = length(dir);
+	dir = dl > 1e-5 ? dir / dl : vec2(1.0, 0.0);
+	vec2 nrm = vec2(-dir.y, dir.x) * vec2(uRes.y / uRes.x, 1.0);
+	vec4 c = mix(cA, cB, aEnd);
+	c.xy += nrm * aSide * (uScopeW + 1.0) / uRes.y * c.w;
+	gl_Position = c;
+}
+`;
+};
+__defs['src/effects/shaders/glsl/vert.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'vert', () => vert);
+const { common } = __req('src/effects/shaders/glsl/common.js');
 const vert = `
 attribute vec3 aOrigin;
 attribute vec3 aTarget;
@@ -81469,283 +84732,470 @@ void main() {
 	}
 }
 `;
-const frag = `
-precision highp float;
-uniform float uGlow;
-uniform float uAdd;
-uniform vec4 uFr;
-uniform float uDens;
-uniform float uGhost;
-uniform float uShape;
-uniform vec3 uGlyph;
-uniform sampler2D uAtlas;
-varying vec3 vColor;
-varying float vD;
-varying float vDk;
-varying float vCoc;
-varying float vGl;
-void main() {
-	vec2 c = gl_PointCoord - 0.5;
-	// форма точки как на вкладке «Точки»: 0 квадрат, 1 круг, 2 шар, 3 кольцо, 4 ромб, 5 плюс
-	float dm = length(c);
-	float gA = 1.0;
-	if (uGlyph.x > 0.5) {
-		vec2 guv = vec2((floor(vGl * (uGlyph.z - 0.001)) + gl_PointCoord.x) / uGlyph.z, 1.0 - gl_PointCoord.y);
-		gA = texture2D(uAtlas, guv).a;
-		if (gA < 0.3) discard;
-		dm = 0.0;
-	}
-	if (uShape < 0.5) dm = max(abs(c.x), abs(c.y));
-	else if (uShape > 3.5 && uShape < 4.5) dm = abs(c.x) + abs(c.y);
-	if (dm > 0.5) discard;
-	if (uShape > 2.5 && uShape < 3.5 && dm < 0.29) discard;
-	if (uShape > 4.5 && min(abs(c.x), abs(c.y)) > 0.16) discard;
-	float r2 = dm * dm;
-	float core = uGlyph.x > 0.5 ? gA : 1.0 - smoothstep(0.0, 0.25, r2);
-	if (uShape > 2.5 && uShape < 3.5) core = 1.0 - smoothstep(0.0, 0.1, abs(dm - 0.4));
-	float sph = 1.0;
-	if (uShape > 1.5 && uShape < 2.5) {
-		vec3 n = vec3(c.x * 2.0, -c.y * 2.0, sqrt(max(0.0, 1.0 - 4.0 * r2)));
-		sph = 0.4 + 0.75 * max(dot(n, normalize(vec3(-0.4, 0.6, 0.7))), 0.0);
-	}
-	if (vCoc > 0.01) {
-		float bokeh = 1.0 - smoothstep(0.16, 0.25, r2);
-		core = mix(core, bokeh, vCoc * 0.8);
-	}
-	float dofAlpha = 1.0 / (1.0 + vCoc * 1.8);
-	if (uAdd > 0.5) {
-		float aura = pow(core, mix(1.8, 0.7, uGlow));
-		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha * sph * (1.0 - vDk);
-		float ga = core * uGhost * dofAlpha * (1.0 - vDk);
-		// тёмные места видео должны быть прозрачными, а не чёрными: яркость точки определяет и её непрозрачность
-		if (uFr.x > 0.5) ga *= clamp(dot(vColor, vec3(0.3, 0.59, 0.11)) * 5.0, 0.0, 1.0);
-		gl_FragColor = vec4(col, ga);
-	} else {
-		// у кадров видео точка плоская, без затемнения к краю: цвет остаётся точным
-		gl_FragColor = vec4(vColor * (uFr.x > 0.5 ? 1.0 : 0.55 + 0.45 * core) * sph, dofAlpha * (1.0 - vDk));
-	}
-	#include <tonemapping_fragment>
-	#include <colorspace_fragment>
+};
+__defs['src/effects/render/webgl/specialize.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'FX_GUARD_RE', () => FX_GUARD_RE);
+__def(__exports, 'FX_GUARD_SKIP', () => FX_GUARD_SKIP);
+__def(__exports, 'specializeFx', () => specializeFx);
+__def(__exports, 'fxGuardKeys', () => fxGuardKeys);
+__def(__exports, 'FX_GUARDS', () => FX_GUARDS);
+const { common } = __req('src/effects/shaders/glsl/common.js');
+const { lineVert } = __req('src/effects/shaders/glsl/line-vert.js');
+const { scopeVert } = __req('src/effects/shaders/glsl/scope-vert.js');
+const { vert } = __req('src/effects/shaders/glsl/vert.js');
+const FX_GUARD_RE = /^\s*if \((u[A-Za-z0-9]+)\.([xyzw]) > (\d+(?:\.\d+)?)( && [^{;]*?)?\) (\{\s*(?:\/\/.*)?|[^{]*;)\s*(?:\/\/.*)?$/;
+const FX_GUARD_SKIP = new Set(['uHero', 'uScopeP']);
+function specializeFx(src, isOn) {
+const lines = src.split('\n');
+const out = [];
+for (let i = 0; i < lines.length; i++) {
+const m = FX_GUARD_RE.exec(lines[i]);
+if (!m || FX_GUARD_SKIP.has(m[1]) || isOn(m[1], m[2], m[3]) !== false) {
+out.push(lines[i]);
+continue;
 }
-`;
-const lineVert = `
-attribute vec3 aOrigin;
-attribute vec3 aTarget;
-attribute float aIdx;
-attribute vec3 aOriginB;
-attribute vec3 aTargetB;
-attribute float aIdxB;
-attribute float aDepth;
-attribute float aDepthB;
-attribute float aEnd;
-attribute float aSide;
-uniform vec3 uP0;
-uniform vec3 uP1;
-uniform vec3 uP2;
-uniform float uBright;
-uniform vec4 uLink;
-uniform vec4 uLinkP;
-uniform vec2 uRes;
-uniform float uLinkW;
-varying vec3 vC;
-varying float vA;
-varying float vEnd;
-varying float vIdx;
-varying float vSide;
-varying float vStrain;
-` + common + `
-void main() {
-	vec3 bA, bB;
-	float mA, mB;
-	gDepth = aDepth;
-	gNormal = vec3(0.0);
-	vec3 pA = fxDisplace(aOrigin, aTarget, aIdx, bA, mA);
-	gDepth = aDepthB;
-	vec3 pB = fxDisplace(aOriginB, aTargetB, aIdxB, bB, mB);
-	float maxLen = uLink.y * 1.9;
-	float len = distance(pA, pB);
-	if (len > maxLen) {
-		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-		return;
-	}
-	float strain = clamp((len - uLink.y * 0.4) / max(uLink.y * 1.3, 0.01), 0.0, 1.0);
-	vStrain = strain;
-	vec3 col = mix(uP0, uP2, 0.35 + uBeat * 0.4) * uBright;
-	if (uLinkP.y > 0.5 && uLinkP.y < 1.5) {
-		// Натяжение (tension): бирюзовый -> золотой -> раскаленный оранжево-рубиновый
-		vec3 cyan = vec3(0.12, 0.88, 0.9);
-		vec3 gold = vec3(1.0, 0.76, 0.18);
-		vec3 ruby = vec3(1.0, 0.22, 0.28);
-		col = strain < 0.5 ? mix(cyan, gold, strain * 2.0) : mix(gold, ruby, (strain - 0.5) * 2.0);
-		col *= uBright * (1.1 + uBeat * 0.35);
-	} else if (uLinkP.y > 1.5 && uLinkP.y < 2.5) {
-		// Неон (neon): электрический кибер-градиент
-		col = mix(vec3(0.08, 0.72, 1.0), vec3(1.0, 0.08, 0.76), fract(aIdx * 7.13 + aEnd * 0.5));
-		col *= uBright * 1.35;
-	} else if (uLinkP.y > 2.5) {
-		// Радуга (rainbow): спектральная волна
-		col = (0.5 + 0.5 * cos(6.2831853 * (aIdx + aEnd * 0.35 + uTime * 0.18 + vec3(0.0, 0.33, 0.67)))) * uBright * 1.25;
-	}
-	vC = col;
-	vA = uLink.x * (1.0 - smoothstep(uLink.y * 0.8, maxLen, len));
-	vEnd = aEnd;
-	vIdx = aIdx;
-	vSide = aSide;
-	mat4 mvp = projectionMatrix * modelViewMatrix;
-	vec4 cA = mvp * vec4(pA, 1.0);
-	vec4 cB = mvp * vec4(pB, 1.0);
-	if (cA.w < 0.02 || cB.w < 0.02) {
-		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-		return;
-	}
-	vec2 sA = cA.xy / cA.w;
-	vec2 sB = cB.xy / cB.w;
-	vec2 dir = (sB - sA) * vec2(uRes.x / uRes.y, 1.0);
-	float dl = length(dir);
-	dir = dl > 1e-5 ? dir / dl : vec2(1.0, 0.0);
-	vec2 nrm = vec2(-dir.y, dir.x) * vec2(uRes.y / uRes.x, 1.0);
-	vec4 c = mix(cA, cB, aEnd);
-	float flare = 1.0;
-	if (uLinkP.z > 0.5) {
-		float endDist = min(aEnd, 1.0 - aEnd);
-		flare += (1.0 - smoothstep(0.0, 0.18, endDist)) * 1.9;
-	}
-	float baseW = uLinkW;
-	if (uLinkP.x > 1.5 && uLinkP.x < 2.5) baseW = max(0.65, uLinkW * 0.6); // созвездия — тонкие нити
-	c.xy += nrm * aSide * (baseW * flare + 1.0) / uRes.y * c.w;
-	gl_Position = c;
+if (m[5][0] !== '{') {
+if (/^\s*else\b/.test(lines[i + 1] || '')) out.push(lines[i]);
+continue;
 }
-`;
-const scopeVert = `
-attribute vec3 aOrigin;
-attribute vec3 aTarget;
-attribute float aIdx;
-attribute vec3 aOriginB;
-attribute vec3 aTargetB;
-attribute float aIdxB;
-attribute float aDepth;
-attribute float aDepthB;
-attribute float aEnd;
-attribute float aSide;
-attribute float aSeg;
-uniform vec3 uP0;
-uniform vec3 uP1;
-uniform vec3 uP2;
-uniform vec2 uRes;
-uniform float uScopeW;
-uniform float uScopeLB;
-varying vec3 vC;
-varying float vA;
-varying float vSide;
-` + common + `
-void main() {
-	vec3 bA, bB;
-	float mA, mB;
-	gDepth = aDepth;
-	gNormal = vec3(0.0);
-	vec3 pA = fxDisplace(aOrigin, aTarget, aIdx, bA, mA);
-	gDepth = aDepthB;
-	vec3 pB = fxDisplace(aOriginB, aTargetB, aIdxB, bB, mB);
-	bool rv = uScope.y > 1.5;
-	float cm = rv ? uScope.y - 2.0 : uScope.y;
-	float sp = rv ? 1.0 - aSeg : aSeg;
-	if (uScopeP.w > 1.5) sp = fract(sp * uScopeP.w);
-	float age = uScope.z - sp;
-	float lit = age < 0.0 || aSeg < 0.0 ? 0.0 : (cm < 0.5 ? 1.0 : exp(-age * 4.0 / max(uScope.w, 0.02))) * uScopeP.y;
-	vA = lit * step(uScopeP.z, sp) * uScope.x * min(1.0, uScope.x * 2.0) * uScopeLB;
-	vC = uScopeC * (1.0 + exp(-max(age, 0.0) * 45.0) * uScopeQ.z * 2.0);
-	vSide = aSide;
-	mat4 mvp = projectionMatrix * modelViewMatrix;
-	vec4 cA = mvp * vec4(pA, 1.0);
-	vec4 cB = mvp * vec4(pB, 1.0);
-	vec2 sA = cA.xy / cA.w;
-	vec2 sB = cB.xy / cB.w;
-	vec2 dir = (sB - sA) * vec2(uRes.x / uRes.y, 1.0);
-	float dl = length(dir);
-	dir = dl > 1e-5 ? dir / dl : vec2(1.0, 0.0);
-	vec2 nrm = vec2(-dir.y, dir.x) * vec2(uRes.y / uRes.x, 1.0);
-	vec4 c = mix(cA, cB, aEnd);
-	c.xy += nrm * aSide * (uScopeW + 1.0) / uRes.y * c.w;
-	gl_Position = c;
+let depth = 1;
+let j = i;
+let ok = true;
+let pp = 0;
+while (depth > 0 && ++j < lines.length) {
+const code = lines[j].replace(/\/\/.*$/, '');
+if (/^\s*#\s*if/.test(code)) pp++;
+else if (/^\s*#\s*endif/.test(code)) pp--;
+for (let k = 0; k < code.length; k++) {
+const ch = code[k];
+if (ch === '{') depth++;
+else if (ch === '}') {
+depth--;
+if (depth === 0 && /\belse\b/.test(code.slice(k + 1))) ok = false;
 }
-`;
-const scopeFrag = `
-precision highp float;
-varying vec3 vC;
-varying float vA;
-varying float vSide;
-void main() {
-	float edge = 1.0 - smoothstep(0.35, 1.0, abs(vSide));
-	gl_FragColor = vec4(vC * (vA * edge), vA * edge);
-	#include <tonemapping_fragment>
-	#include <colorspace_fragment>
 }
-`;
-const lineFrag = `
-precision highp float;
-uniform vec4 uLink;
-uniform vec4 uLinkP;
-uniform float uTime;
-varying vec3 vC;
-varying float vA;
-varying float vEnd;
-varying float vIdx;
-varying float vSide;
-varying float vStrain;
-void main() {
-	float edge = 1.0 - smoothstep(0.35, 1.0, abs(vSide));
-	vec3 col = vC;
-	float pulseA = 1.0;
-	int mode = int(uLinkP.x + 0.5);
-	if (uLink.w > 0.5) {
-		float spd = uLink.z;
-		if (mode == 0) {
-			// Классика: синусоидальный импульс с искрами
-			float p = sin(vEnd * 16.0 - uTime * spd * 3.5 + vIdx * 24.0);
-			float spark = smoothstep(0.45, 0.98, p) * 2.8;
-			pulseA = 0.5 + spark;
-			col += col * spark * 1.5;
-		} else if (mode == 1) {
-			// Нейросеть (синапсы): асимметричные спайки действия с резким фронтом в обоих направлениях
-			float t1 = fract(vEnd * 2.0 - uTime * spd * 0.95 + vIdx * 13.37);
-			float spike1 = exp(-t1 * 16.0) * 4.0;
-			float t2 = fract((1.0 - vEnd) * 2.0 - uTime * spd * 0.75 + vIdx * 29.11);
-			float spike2 = exp(-t2 * 16.0) * 3.0;
-			float syn = spike1 + spike2;
-			pulseA = 0.35 + syn;
-			col = mix(col, vec3(1.0), clamp(syn * 0.55, 0.0, 0.85)) + col * syn * 1.8;
-		} else if (mode == 2) {
-			// Созвездия: мягкое мерцание звездного скопления
-			float shimmer = 0.65 + 0.35 * sin(uTime * 3.2 + vIdx * 43.0 + vEnd * 6.28);
-			pulseA = shimmer;
-			col = mix(col, vec3(0.9, 0.96, 1.0), 0.35 * shimmer);
-		} else if (mode == 3) {
-			// Киберпанк / Лазер: резкий луч с цифровыми пакетами данных
-			float core = 1.0 - smoothstep(0.0, 0.32, abs(vSide));
-			float bits = step(0.46, fract(vEnd * 10.0 - uTime * spd * 3.2 + vIdx * 19.3));
-			pulseA = 0.55 + bits * 2.2;
-			col = col * pulseA + vec3(1.0) * core * 1.6;
-		} else if (mode == 4) {
-			// Натяжение: волна накала с усилением от растяжения нити
-			float wave = 0.5 + 0.5 * sin(vEnd * 12.0 - uTime * spd * 2.6 + vStrain * 6.0);
-			pulseA = 0.5 + wave * (1.0 + vStrain * 2.2);
-			col += vec3(1.0, 0.45, 0.18) * vStrain * 2.0 * wave;
-		}
-	}
-	// Огоньки на узлах (сияющие бусины/маяки на стыках)
-	if (uLinkP.z > 0.5) {
-		float endDist = min(vEnd, 1.0 - vEnd);
-		float dNode = length(vec2(endDist * 7.5, vSide * 0.72));
-		float beacon = exp(-dNode * 3.8) * 2.6;
-		col += (vec3(1.0) + vC * 0.6) * beacon;
-		pulseA = max(pulseA, beacon * 1.3);
-	}
-	float alpha = clamp(vA * pulseA * edge, 0.0, 1.0);
-	gl_FragColor = vec4(col * alpha, alpha);
-	#include <tonemapping_fragment>
-	#include <colorspace_fragment>
 }
-`;
+if (depth !== 0 || pp !== 0 || !ok || /^\s*else\b/.test(lines[j + 1] || '')) {
+out.push(lines[i]);
+continue;
+}
+i = j;
+}
+return out.join('\n');
+}
+function fxGuardKeys(...srcs) {
+const keys = new Map();
+for (const src of srcs) {
+for (const line of src.split('\n')) {
+const m = FX_GUARD_RE.exec(line);
+if (m && !FX_GUARD_SKIP.has(m[1])) keys.set(m[1] + '.' + m[2] + '>' + m[3], [m[1], m[2], parseFloat(m[3])]);
+}
+}
+return keys;
+}
+const FX_GUARDS = fxGuardKeys(vert, lineVert, scopeVert, common);
+};
+__defs['src/effects/engine/shader-cache.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'ShaderCachePart', () => ShaderCachePart);
+const THREE = __req('vendor/three/build/three.module.js');
+const { waitPrograms } = __req('src/effects/render/webgl/programs.js');
+const { FX_GUARDS, specializeFx } = __req('src/effects/render/webgl/specialize.js');
+const { frag } = __req('src/effects/shaders/glsl/frag.js');
+const { lineFrag } = __req('src/effects/shaders/glsl/line-frag.js');
+const { lineVert } = __req('src/effects/shaders/glsl/line-vert.js');
+const { scopeFrag } = __req('src/effects/shaders/glsl/scope-frag.js');
+const { scopeVert } = __req('src/effects/shaders/glsl/scope-vert.js');
+const { vert } = __req('src/effects/shaders/glsl/vert.js');
+class ShaderCachePart {
+_fxSource(kind, on) {
+const cache = this._fxCache || (this._fxCache = new Map());
+const sig = [...on].sort().join(',');
+const ck = kind + '|' + sig;
+let v = cache.get(ck);
+if (!v) {
+const base = kind === 'line' ? lineVert : kind === 'scope' ? scopeVert : vert;
+v = specializeFx(base, (name, comp, thr) => (FX_GUARDS.has(name + '.' + comp + '>' + thr) ? on.has(name + '.' + comp + '>' + thr) : undefined));
+cache.set(ck, v);
+}
+return v;
+}
+_fxCheck() {
+if (!this.shared || !this.points || this._fxBusy) return;
+const cur = this._fxCur || (this._fxCur = new Set());
+const now = performance.now();
+const seen = this._fxSeen || (this._fxSeen = new Map());
+let add = null;
+for (const [key, [name, comp, thr]] of FX_GUARDS) {
+const v = this.shared[name]?.value?.[comp];
+const on = v > thr * 0.5;
+if (on) seen.set(key, now);
+if (on && !cur.has(key)) (add || (add = new Set())).add(key);
+}
+let stale = null;
+for (const key of cur) if (now - (seen.get(key) || 0) > 20000) (stale || (stale = new Set())).add(key);
+if (!add && !(stale && stale.size >= 2)) {
+this._fxDeb = 0;
+return;
+}
+if (!this._fxDeb) this._fxDeb = now;
+if (now - this._fxDeb < 250) return;
+this._fxDeb = 0;
+this._fxApply(add || new Set(), add ? null : stale);
+}
+async _fxApply(add, drop) {
+this._fxBusy = true;
+const next = new Set([...(this._fxCur || [])].filter((k) => !(drop && drop.has(k))));
+for (const k of add) next.add(k);
+try {
+await Promise.all(this._warmKinds().map((k) => this._warmKind(k, next)));
+} catch (e) {
+}
+this._fxCur = next;
+this._fxSwap();
+this._fxBusy = false;
+}
+_postOn() {
+const L = this.state.layers;
+const fb = L.feedback;
+const dm = L.datamosh;
+return (this.state.look.bloom || 0) > 0.01 || (this.state.look.aberration || 0) > 0.01 || !!(fb && fb.on && fb.amount > 0.01) || !!(dm && dm.on);
+}
+_fxSig(set) {
+return [...(set || this._fxCur || [])].sort().join(',');
+}
+_vertKind() {
+const add = this.material ? this.material.blending === THREE.AdditiveBlending : this.state.look.blend === 'add';
+return add ? 'vert|add' : 'vert|norm';
+}
+_warmKinds() {
+const kinds = [this._vertKind()];
+const now = performance.now();
+const wanted = (k) => now - ((this._wantT && this._wantT[k]) || -1e9) < 800;
+if (this.hero) kinds.push('hero');
+if (this.linkObj && (this.linkObj.visible || wanted('line'))) kinds.push('line');
+if (this._scopeLine && (this._scopeLine.visible || wanted('scope'))) kinds.push('scope');
+return kinds;
+}
+_curTgt() {
+return this.active ? !!this._tgtRT : this._postOn();
+}
+async _warmScene(scene, camera, rt = this._curTgt()) {
+const r = this.app.viewport.renderer;
+const prev = r.getRenderTarget();
+const mats = new Set();
+try {
+const target = rt ? this._warmRT || (this._warmRT = new THREE.WebGLRenderTarget(4, 4)) : null;
+r.setRenderTarget(target);
+r.compile(scene, camera, this.app.viewport.scene).forEach((m) => mats.add(m));
+} catch (e) {
+return;
+} finally {
+r.setRenderTarget(prev);
+}
+await waitPrograms(r, mats);
+}
+_warmObj(kind, set) {
+const g = this._warmGeo || (this._warmGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3)));
+const base = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} };
+if (kind === 'line') return new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('line', set), fragmentShader: lineFrag }));
+if (kind === 'scope') return new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('scope', set), fragmentShader: scopeFrag }));
+const hero = kind === 'hero';
+const add = hero ? !this.hero || this.hero.material.blending === THREE.AdditiveBlending : kind !== 'vert|norm';
+const par = { transparent: add, depthWrite: !add, blending: add ? THREE.AdditiveBlending : THREE.NormalBlending, uniforms: {}, vertexShader: this._fxSource('vert', set), fragmentShader: frag };
+if (hero) par.defines = { HERO: 1 };
+return new THREE.Points(g, new THREE.ShaderMaterial(par));
+}
+async _warmKind(kind, set, rt = this._curTgt()) {
+set = set || this._fxCur || new Set();
+const sig = this._fxSig(set);
+const keep = this._keep || (this._keep = new Map());
+const warm = this._warm || (this._warm = new Map());
+const id = kind + (rt ? '@r' : '@s');
+const kid = id + '#' + sig;
+const want = this._warmWant || (this._warmWant = {});
+want[id] = sig;
+const prev = keep.get(kid);
+if (prev) {
+keep.delete(kid);
+keep.set(kid, prev);
+if (prev.job) await prev.job;
+if (want[id] === sig) warm.set(id, sig);
+return;
+}
+const obj = this._warmObj(kind, set);
+const sc = new THREE.Scene();
+sc.add(obj);
+const rec = { sig, mat: obj.material, job: null };
+keep.set(kid, rec);
+for (const [k, r] of keep) {
+if (keep.size <= 10) break;
+if (r.job || k === kid) continue;
+keep.delete(k);
+setTimeout(() => r.mat.dispose(), 1500);
+}
+rec.job = (async () => {
+await null;
+try {
+await this._warmScene(sc, this.app.viewport.camera, rt);
+} catch (e) {
+}
+if (want[id] === sig) warm.set(id, sig);
+rec.job = null;
+this.app.viewport.invalidate();
+})();
+await rec.job;
+}
+_gate(kind, want) {
+if (!want) return false;
+(this._wantT || (this._wantT = {}))[kind] = performance.now();
+const sig = this._fxSig();
+const id = kind + (this._curTgt() ? '@r' : '@s');
+if (!this._warm || this._warm.get(id) !== sig) {
+const k = this._keep && this._keep.get(id + '#' + sig);
+if (!(k && k.job)) this._warmKind(kind, this._fxCur);
+return false;
+}
+return true;
+}
+_tgtSync() {
+const want = this._postOn();
+if (want === !!this._tgtRT) return;
+const sig = this._fxSig();
+let ready = true;
+const tw = this._tgtWarm || (this._tgtWarm = {});
+const sk = want ? 'r' : 's';
+if (tw[sk] !== 2) {
+ready = false;
+if (!tw[sk]) {
+tw[sk] = 1;
+this._warmScene(this.app.viewport.scene, this.app.viewport.camera, want).then(() => (tw[sk] = 2));
+}
+}
+for (const k of this._warmKinds()) {
+if (!this._warm || this._warm.get(k + (want ? '@r' : '@s')) !== sig) {
+ready = false;
+this._warmKind(k, this._fxCur, want);
+}
+}
+if (ready) this._tgtRT = want;
+}
+_fxSwap() {
+if (!this.points) return;
+this.points.traverse((o) => {
+const m = o.material;
+const k = m && m.userData && m.userData.fxKind;
+if (k) {
+m.vertexShader = this._fxSource(k, this._fxCur);
+m.needsUpdate = true;
+}
+});
+this.app.viewport.invalidate();
+}
+async prewarm() {
+if (this.active) return;
+try {
+if (this.hasModel && !this.pm.ready) {
+const saved = this.state.count;
+this.state.count = Math.max(20000, Math.min(2000000, this.app.settings.point.surfaceCount));
+this._quiet = true;
+try {
+await this._cloudFor('model');
+} finally {
+this.state.count = saved;
+this._quiet = false;
+}
+}
+} catch (e) {
+}
+try {
+await this._warmKind(this._vertKind(), this._fxCur || new Set(), this._postOn());
+} catch (e) {
+}
+}
+}
+};
+__defs['src/effects/engine/depth.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'DepthPart', () => DepthPart);
+const { downloadBlob } = __req('src/core/util.js');
+const { adjustDepth, depthToGrid, grabFrame, grabRGB: grabRGB4, lumaDepth, normalizeDepth } = __req('src/effects/input/depth-ai.js');
+class DepthPart {
+onDepthChange(fn) {
+this._dListeners.add(fn);
+return () => this._dListeners.delete(fn);
+}
+_depthEmit() {
+for (const f of this._dListeners) f();
+}
+depthInfo() {
+const ai = this.depthAI;
+const D = this._D;
+const L = this.state.layers.depth;
+return { media: !!this.pm.ready, video: this.pm.kind === 'video', src: L.src, phase: ai.phase, prog: ai.prog, device: ai.device, error: ai.error || D.err, hasMap: !!D.map, aiMap: !!D.map && D.mapSrc === 'ai', busy: D.busy };
+}
+drawDepthMap(cv, plain = false) {
+const m = this._D.proc || this._D.map;
+if (!m) return;
+if (cv.width !== m.w || cv.height !== m.h) {
+cv.width = m.w;
+cv.height = m.h;
+}
+const g = cv.getContext('2d');
+const id = g.createImageData(m.w, m.h);
+for (let i = 0; i < m.data.length; i++) {
+const v = Math.round(m.data[i] * 255);
+id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = v;
+id.data[i * 4 + 3] = 255;
+}
+const L = this.state.layers.depth;
+const fc = L.focus ?? 0.5, zw = L.zone ?? 0.12;
+for (let i = 0; i < m.data.length && !plain; i++) {
+if (Math.abs(m.data[i] - fc) <= zw) {
+id.data[i * 4] = Math.min(255, id.data[i * 4] * 0.5 + 130);
+id.data[i * 4 + 1] = id.data[i * 4 + 1] * 0.55 + 55;
+id.data[i * 4 + 2] = id.data[i * 4 + 2] * 0.3;
+}
+}
+g.putImageData(id, 0, 0);
+}
+buildDepth() {
+const D = this._D;
+D.force = true;
+D.err = '';
+if (this.depthAI.phase === 'error') this.depthAI.dispose();
+this.depthAI.init().catch(() => {});
+this._depthEmit();
+}
+saveDepthMap() {
+const m = this._D.map;
+if (!m) return;
+const cv = document.createElement('canvas');
+this.drawDepthMap(cv, true);
+cv.toBlob((b) => b && downloadBlob(b, 'depth-map.png'), 'image/png');
+}
+_depthTick(dt, rgb) {
+const L = this.state.layers.depth;
+const D = this._D;
+const pm = this.pm;
+const g = this.geometry;
+const n = pm.count;
+const key = pm.rec || pm.el;
+if (D.key !== key) {
+Object.assign(D, { key, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, err: '' });
+this._depthEmit();
+}
+if (rgb) {
+D.rgb = rgb;
+D.rgbN++;
+}
+if (!L.on) return;
+const ai = L.src === 'ai';
+if (D.rgb && D.lumaN !== D.rgbN && (!ai || !D.aiHas)) {
+D.lumaN = D.rgbN;
+D.map = lumaDepth(D.rgb, pm.cols, pm.rows);
+D.mapSrc = 'luma';
+D.dirty = true;
+this._depthEmit();
+}
+if (!ai && D.aiHas) {
+D.aiHas = false;
+D.lumaN = -1;
+}
+if (ai && !D.busy && this.depthAI.phase !== 'error') {
+const el = pm.isRec ? null : pm.el;
+const vt = pm.isRec ? pm.t : el.currentTime || 0;
+const ready = pm.isRec ? !!D.rgb : el && (pm.kind === 'image' || el.readyState >= 2);
+const need = D.force || !D.aiHas || (pm.kind === 'video' && Math.abs(vt - D.reqT) > 0.03);
+if (ready && need) {
+D.busy = true;
+D.force = false;
+D.reqT = vt;
+const cpu = this.depthAI.device === 'wasm';
+const side = pm.kind === 'video' ? (cpu ? 280 : 448) : cpu ? 420 : 640;
+const frame = pm.isRec ? grabRGB4(D.rgb, pm.cols, pm.rows) : grabFrame(el, side);
+if (!frame) D.busy = false;
+else {
+this.depthAI
+.estimate(frame)
+.then((r) => {
+if (D.key !== key) return;
+D.map = { w: r.w, h: r.h, data: normalizeDepth(r.data, D.st, pm.kind === 'video' ? 0.35 : 0) };
+D.mapSrc = 'ai';
+D.aiHas = true;
+D.dirty = true;
+D.err = '';
+})
+.catch((e) => {
+D.err = e.message || String(e);
+})
+.finally(() => {
+D.busy = false;
+this._depthEmit();
+});
+this._depthEmit();
+}
+}
+}
+const P = [L.bright ?? 0, L.contrast ?? 1, L.gamma ?? 1, L.blur ?? 0].join('|');
+if (D.map && (D.dirty || D.pSig !== P || !D.proc)) {
+D.proc = adjustDepth(D.map, { bright: L.bright, contrast: L.contrast, gamma: L.gamma, blur: L.blur });
+D.pSig = P;
+D.dirty = true;
+this._depthEmit();
+}
+const TS = (L.focus ?? 0.5) + '|' + (L.zone ?? 0.12);
+if (D.tSig !== TS) {
+D.tSig = TS;
+this._depthEmit();
+}
+if (D.proc && (D.dirty || !D.tgt || D.tgt.length !== n)) {
+if (!D.tgt || D.tgt.length !== n) {
+D.tgt = new Float32Array(n);
+D.snap = true;
+}
+depthToGrid(D.proc, pm.cols, pm.rows, D.tgt);
+D.dirty = false;
+D.moving = true;
+}
+const attr = g.attributes.aDepth;
+if (!D.tgt || !attr || attr.array.length !== n) return;
+const arr = attr.array;
+if (D.geo !== g) {
+D.geo = g;
+D.snap = true;
+}
+let changed = false;
+if (D.snap) {
+arr.set(D.tgt);
+D.snap = false;
+D.moving = false;
+changed = true;
+} else if (D.moving) {
+const rate = 1 - Math.exp(-dt * (2.5 + (1 - L.smooth) * 18));
+const tg = D.tgt;
+let mx = 0;
+for (let i = 0; i < n; i++) {
+const d = tg[i] - arr[i];
+arr[i] += d * rate;
+const a = d < 0 ? -d : d;
+if (a > mx) mx = a;
+}
+if (mx < 0.002) D.moving = false;
+changed = true;
+}
+if (changed) {
+attr.needsUpdate = true;
+if (this.state.layers.links.on && (D._lk = ((D._lk || 0) + 1) % 5) === 0) this._syncLinks();
+}
+}
+}
+};
+__defs['src/effects/audio/touch-synth.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'TouchSynth', () => TouchSynth);
+__def(__exports, 'SYNTH_PARAMS', () => SYNTH_PARAMS);
 class TouchSynth {
 constructor(ctx, dest) {
 this.ctx = ctx;
@@ -82099,2553 +85549,15 @@ deep: { bpm: 48, master: 0.95, fb: 0.6, wet: 0.6 },
 ambient: { bpm: 66, master: 0.85, fb: 0.5, wet: 0.5 },
 jungle: { bpm: 150, master: 0.55, fb: 0.4, wet: 0.35 },
 };
-const FX_GUARD_RE = /^\s*if \((u[A-Za-z0-9]+)\.([xyzw]) > (\d+(?:\.\d+)?)( && [^{;]*?)?\) (\{\s*(?:\/\/.*)?|[^{]*;)\s*(?:\/\/.*)?$/;
-const FX_GUARD_SKIP = new Set(['uHero', 'uScopeP']);
-function specializeFx(src, isOn) {
-const lines = src.split('\n');
-const out = [];
-for (let i = 0; i < lines.length; i++) {
-const m = FX_GUARD_RE.exec(lines[i]);
-if (!m || FX_GUARD_SKIP.has(m[1]) || isOn(m[1], m[2], m[3]) !== false) {
-out.push(lines[i]);
-continue;
-}
-if (m[5][0] !== '{') {
-if (/^\s*else\b/.test(lines[i + 1] || '')) out.push(lines[i]);
-continue;
-}
-let depth = 1;
-let j = i;
-let ok = true;
-let pp = 0;
-while (depth > 0 && ++j < lines.length) {
-const code = lines[j].replace(/\/\/.*$/, '');
-if (/^\s*#\s*if/.test(code)) pp++;
-else if (/^\s*#\s*endif/.test(code)) pp--;
-for (let k = 0; k < code.length; k++) {
-const ch = code[k];
-if (ch === '{') depth++;
-else if (ch === '}') {
-depth--;
-if (depth === 0 && /\belse\b/.test(code.slice(k + 1))) ok = false;
-}
-}
-}
-if (depth !== 0 || pp !== 0 || !ok || /^\s*else\b/.test(lines[j + 1] || '')) {
-out.push(lines[i]);
-continue;
-}
-i = j;
-}
-return out.join('\n');
-}
-function fxGuardKeys(...srcs) {
-const keys = new Map();
-for (const src of srcs) {
-for (const line of src.split('\n')) {
-const m = FX_GUARD_RE.exec(line);
-if (m && !FX_GUARD_SKIP.has(m[1])) keys.set(m[1] + '.' + m[2] + '>' + m[3], [m[1], m[2], parseFloat(m[3])]);
-}
-}
-return keys;
-}
-const FX_GUARDS = fxGuardKeys(vert, lineVert, scopeVert, common);
-function waitPrograms(renderer, mats) {
-return new Promise((resolve) => {
-const t0 = performance.now();
-const check = () => {
-let busy = false;
-try {
-for (const m of mats) {
-const progs = renderer.properties.get(m).programs;
-if (!progs) continue;
-for (const p of progs.values()) {
-if (!p.isReady()) {
-busy = true;
-break;
-}
-}
-if (busy) break;
-}
-} catch (e) {
-busy = false;
-}
-if (!busy || performance.now() - t0 > 180000) resolve();
-else setTimeout(check, 16);
 };
-check();
-});
-}
-class PostPipeline {
-constructor(renderer) {
-this.renderer = renderer;
-this.quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-this.quadGeo = new THREE.PlaneGeometry(2, 2);
-this.width = 0;
-this.height = 0;
-const gl = renderer.getContext();
-let canHalfFloat = false;
-try {
-const isWebGL2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
-if (isWebGL2) {
-canHalfFloat = !!(gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float'));
-} else {
-canHalfFloat = !!(gl.getExtension('EXT_color_buffer_half_float') && gl.getExtension('OES_texture_half_float'));
-}
-} catch (e) {
-canHalfFloat = false;
-}
-this.targetType = canHalfFloat ? THREE.HalfFloatType : THREE.UnsignedByteType;
-this._disabled = false;
-this._buildTargets(this.targetType);
-this._buildMosh();
-this.fbMat = new THREE.ShaderMaterial({
-uniforms: {
-uScene: { value: null },
-uPrev: { value: null },
-uDecay: { value: 0.92 },
-uZoom: { value: 1.0 },
-uTwist: { value: 0.0 },
-uHasPrev: { value: 0.0 },
-uTint: { value: new THREE.Color(1, 1, 1) },
-uTintK: { value: 0.0 },
-},
-vertexShader: `
-				varying vec2 vUv;
-				void main() {
-					vUv = uv;
-					gl_Position = vec4(position.xy, 0.0, 1.0);
-				}
-			`,
-fragmentShader: `
-				precision highp float;
-				uniform sampler2D uScene;
-				uniform sampler2D uPrev;
-				uniform float uDecay;
-				uniform float uZoom;
-				uniform float uTwist;
-				uniform float uHasPrev;
-				uniform vec3 uTint;
-				uniform float uTintK;
-				varying vec2 vUv;
-				void main() {
-					vec4 curr = texture2D(uScene, vUv);
-					vec4 prev = vec4(0.0);
-					if (uHasPrev > 0.5) {
-						vec2 c = vec2(0.5);
-						vec2 p = vUv - c;
-						float a = uTwist;
-						mat2 rot = mat2(cos(a), -sin(a), sin(a), cos(a));
-						vec2 pUv = (rot * p) / max(0.001, uZoom) + c;
-						if (pUv.x >= 0.0 && pUv.x <= 1.0 && pUv.y >= 0.0 && pUv.y <= 1.0) {
-							prev = texture2D(uPrev, pUv) * uDecay;
-							// хвост постепенно уходит в цвет палитры
-							prev.rgb = mix(prev.rgb, prev.rgb * uTint * 1.7, uTintK * 0.07);
-						}
-					}
-					vec3 col = max(curr.rgb, prev.rgb);
-					float a = max(curr.a, prev.a * uDecay);
-					gl_FragColor = vec4(col, a);
-				}
-			`,
-depthTest: false,
-depthWrite: false,
-});
-this.fbMesh = new THREE.Mesh(this.quadGeo, this.fbMat);
-this.outMat = new THREE.ShaderMaterial({
-uniforms: {
-uTex: { value: null },
-uBloom: { value: 0.0 },
-uAberration: { value: 0.0 },
-uRes: { value: new THREE.Vector2(1, 1) },
-},
-vertexShader: `
-				varying vec2 vUv;
-				void main() {
-					vUv = uv;
-					gl_Position = vec4(position.xy, 0.0, 1.0);
-				}
-			`,
-fragmentShader: `
-				precision highp float;
-				uniform sampler2D uTex;
-				uniform float uBloom;
-				uniform float uAberration;
-				uniform vec2 uRes;
-				varying vec2 vUv;
-				void main() {
-					vec2 dir = vUv - vec2(0.5);
-					float distSq = dot(dir, dir);
-					vec2 shift = dir * distSq * uAberration * 0.04;
-
-					vec4 baseCol;
-					if (uAberration > 0.001) {
-						float r = texture2D(uTex, vUv + shift).r;
-						float g = texture2D(uTex, vUv).g;
-						float b = texture2D(uTex, vUv - shift).b;
-						float a = texture2D(uTex, vUv).a;
-						baseCol = vec4(r, g, b, a);
-					} else {
-						baseCol = texture2D(uTex, vUv);
-					}
-
-					if (uBloom > 0.01) {
-						vec2 texel = 1.0 / uRes;
-						vec4 bloom = vec4(0.0);
-						float rad = 3.2;
-						bloom += texture2D(uTex, vUv + vec2(-rad, -rad) * texel);
-						bloom += texture2D(uTex, vUv + vec2( rad, -rad) * texel);
-						bloom += texture2D(uTex, vUv + vec2(-rad,  rad) * texel);
-						bloom += texture2D(uTex, vUv + vec2( rad,  rad) * texel);
-						bloom += texture2D(uTex, vUv + vec2( 0.0, -rad * 1.4) * texel);
-						bloom += texture2D(uTex, vUv + vec2( 0.0,  rad * 1.4) * texel);
-						bloom += texture2D(uTex, vUv + vec2(-rad * 1.4, 0.0) * texel);
-						bloom += texture2D(uTex, vUv + vec2( rad * 1.4, 0.0) * texel);
-						bloom *= 0.125;
-						baseCol.rgb += bloom.rgb * uBloom * 0.85;
-					}
-
-					gl_FragColor = baseCol;
-					#include <tonemapping_fragment>
-					#include <colorspace_fragment>
-				}
-			`,
-depthTest: false,
-depthWrite: false,
-transparent: true,
-});
-this.outMesh = new THREE.Mesh(this.quadGeo, this.outMat);
-this.quadScene = new THREE.Scene();
-this.hasHistory = false;
-}
-warm() {
-const r = this.renderer;
-const prev = r.getRenderTarget();
-const mats = new Set();
-try {
-for (const [mat, rt] of [[this.fbMat, this.rtPong], [this.outMat, null]]) {
-const sc = new THREE.Scene();
-sc.add(new THREE.Mesh(this.quadGeo, mat));
-r.setRenderTarget(rt);
-r.compile(sc, this.quadCam).forEach((m) => mats.add(m));
-}
-} catch (e) {
-return Promise.resolve();
-} finally {
-r.setRenderTarget(prev);
-}
-return waitPrograms(r, mats);
-}
-_buildTargets(type) {
-for (const k of ['rtScene', 'rtSceneB', 'rtPing', 'rtPong', 'rtMoshA', 'rtMoshB', 'rtMvA', 'rtMvB']) {
-if (this[k]) this[k].dispose();
-this[k] = null;
-}
-const w = this.width || 1;
-const h = this.height || 1;
-const flat = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type };
-this.rtScene = new THREE.WebGLRenderTarget(w, h, flat);
-this.rtSceneB = new THREE.WebGLRenderTarget(w, h, flat);
-this.rtPing = new THREE.WebGLRenderTarget(w, h, flat);
-this.rtPong = new THREE.WebGLRenderTarget(w, h, flat);
-this.moshHist = false;
-this.hasHistory = false;
-}
-_buildMosh() {
-const vert = `
-			varying vec2 vUv;
-			void main() {
-				vUv = uv;
-				gl_Position = vec4(position.xy, 0.0, 1.0);
-			}
-		`;
-this.mvMat = new THREE.ShaderMaterial({
-uniforms: {
-uCur: { value: null },
-uPrev: { value: null },
-uPrevMV: { value: null },
-uRes: { value: new THREE.Vector2(1, 1) },
-uBlock: { value: 16 },
-uRange: { value: 64 },
-uGain: { value: 1 },
-uInertia: { value: 0.5 },
-uSceneMix: { value: 1 },
-uHasPrev: { value: 0 },
-uDrift: { value: new THREE.Vector2() },
-uFlow: { value: 0 },
-uTime: { value: 0 },
-},
-vertexShader: vert,
-fragmentShader: `
-				precision highp float;
-				uniform sampler2D uCur;
-				uniform sampler2D uPrev;
-				uniform sampler2D uPrevMV;
-				uniform vec2 uRes;
-				uniform vec2 uDrift;
-				uniform float uBlock, uRange, uGain, uInertia, uSceneMix, uHasPrev, uFlow, uTime;
-				varying vec2 vUv;
-				float cc[5];
-				vec2 oo[5];
-				vec2 cuv;
-				float lodL;
-				float feat(sampler2D t, vec2 uv) {
-					vec4 s = textureLod(t, uv, lodL);
-					return dot(s.rgb, vec3(0.299, 0.587, 0.114)) + 0.5 * s.a;
-				}
-				float sad(vec2 mv) {
-					float e = 0.0;
-					for (int i = 0; i < 5; i++) e += abs(cc[i] - feat(uPrev, cuv + (oo[i] - mv) / uRes));
-					return e;
-				}
-				void main() {
-					vec2 blockC = (floor(gl_FragCoord.xy) + 0.5) * uBlock;
-					cuv = blockC / uRes;
-					vec2 mv = vec2(0.0);
-					if (uSceneMix > 0.001 && uHasPrev > 0.5) {
-						lodL = log2(max(uBlock * 0.3, 1.0));
-						float q = uBlock * 0.28;
-						oo[0] = vec2(0.0); oo[1] = vec2(q, q); oo[2] = vec2(-q, q); oo[3] = vec2(q, -q); oo[4] = vec2(-q, -q);
-						for (int i = 0; i < 5; i++) cc[i] = feat(uCur, cuv + oo[i] / uRes);
-						float step0 = max(1.0, uBlock * 0.5);
-						float e0 = sad(vec2(0.0));
-						vec2 best = vec2(0.0);
-						float bestE = e0;
-						for (int j = -3; j <= 3; j++) {
-							for (int i = -3; i <= 3; i++) {
-								if (i == 0 && j == 0) continue;
-								vec2 c = vec2(float(i), float(j)) * step0;
-								float e = sad(c) + 0.004 * length(vec2(float(i), float(j)));
-								if (e < bestE) { bestE = e; best = c; }
-							}
-						}
-						vec2 ctr = best;
-						for (int j = -1; j <= 1; j++) {
-							for (int i = -1; i <= 1; i++) {
-								if (i == 0 && j == 0) continue;
-								vec2 c = ctr + vec2(float(i), float(j)) * step0 * 0.5;
-								float e = sad(c) + 0.004 * length(c) / step0;
-								if (e < bestE) { bestE = e; best = c; }
-							}
-						}
-						// слабое совпадение считаем шумом, а не движением
-						if (e0 - bestE < 0.02) best = vec2(0.0);
-						mv = best * uSceneMix * uGain;
-					}
-					// искусственное движение: ровный снос и течение, чтобы эффект жил и на неподвижной картинке
-					vec2 g = cuv * 6.2832;
-					vec2 fl = vec2(sin(g.y * 1.2 + uTime * 0.9) + sin(g.x * 0.5 - uTime * 0.6), cos(g.x * 1.2 - uTime * 0.7) + cos(g.y * 0.7 + uTime * 0.5)) * 0.5;
-					mv += (uDrift + fl * uFlow) * uGain;
-					if (uHasPrev > 0.5) {
-						vec2 pm = (texture2D(uPrevMV, vUv).xy * 2.0 - 1.0) * uRange;
-						mv = mix(mv, pm, uInertia);
-					}
-					mv = clamp(mv, vec2(-uRange * 0.98), vec2(uRange * 0.98));
-					gl_FragColor = vec4(mv / uRange * 0.5 + 0.5, 0.0, 1.0);
-				}
-			`,
-depthTest: false,
-depthWrite: false,
-});
-this.moshMat = new THREE.ShaderMaterial({
-uniforms: {
-uCur: { value: null },
-uPrevSrc: { value: null },
-uMoshPrev: { value: null },
-uMV: { value: null },
-uRes: { value: new THREE.Vector2(1, 1) },
-uMVSize: { value: new THREE.Vector2(1, 1) },
-uBlock: { value: 16 },
-uRange: { value: 64 },
-uSmooth: { value: 0.6 },
-uHold: { value: 0 },
-uResid: { value: 0.2 },
-uChroma: { value: 0 },
-uQuant: { value: 0 },
-uStyle: { value: 0 },
-uStale: { value: 0 },
-uJit: { value: 0 },
-uTime: { value: 0 },
-uHasHist: { value: 0 },
-uLeak: { value: 0.03 },
-},
-vertexShader: vert,
-fragmentShader: `
-				precision highp float;
-				uniform sampler2D uCur;
-				uniform sampler2D uPrevSrc;
-				uniform sampler2D uMoshPrev;
-				uniform sampler2D uMV;
-				uniform vec2 uRes, uMVSize;
-				uniform float uBlock, uRange, uSmooth, uHold, uResid, uChroma, uQuant, uStyle, uStale, uJit, uTime, uHasHist, uLeak;
-				varying vec2 vUv;
-				float h11(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-				vec2 fetchMV(vec2 ij) {
-					ivec2 sz = ivec2(uMVSize);
-					ivec2 p = clamp(ivec2(ij), ivec2(0), sz - 1);
-					return (texelFetch(uMV, p, 0).xy * 2.0 - 1.0) * uRange;
-				}
-				vec2 mvAt(vec2 px) {
-					vec2 g = px / uBlock - 0.5;
-					vec2 i0 = floor(g);
-					vec2 f = fract(g);
-					f = mix(step(0.5, f), f, uSmooth);
-					vec2 a = fetchMV(i0);
-					vec2 b = fetchMV(i0 + vec2(1.0, 0.0));
-					vec2 c = fetchMV(i0 + vec2(0.0, 1.0));
-					vec2 d = fetchMV(i0 + vec2(1.0, 1.0));
-					return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-				}
-				void main() {
-					vec4 cur = texture2D(uCur, vUv);
-					float hold = uHold * uHasHist;
-					if (hold < 0.002) { gl_FragColor = cur; return; }
-					vec2 px = vUv * uRes;
-					vec2 bid = floor(px / uBlock);
-					float r = h11(bid);
-					vec2 mv = mvAt(px);
-					float stale = 0.0;
-					if (uStyle > 0.5 && uStyle < 1.5) {
-						// блоки: часть блоков залипает и сползает сама по себе
-						float slot = floor(uTime * 5.0);
-						float rs = h11(bid + slot * 7.13);
-						stale = step(1.0 - uStale, rs);
-						vec2 jit = (vec2(h11(bid + 3.1 + slot), h11(bid + 9.7 + slot)) - 0.5) * 2.0 * uJit * uBlock;
-						mv += jit * stale;
-					}
-					vec2 d = mv / uRes;
-					float cs = uChroma * 0.6;
-					vec4 pr = texture2D(uMoshPrev, vUv - d * (1.0 + cs));
-					vec4 pg = texture2D(uMoshPrev, vUv - d);
-					vec4 pb = texture2D(uMoshPrev, vUv - d * (1.0 - cs));
-					vec4 pred = vec4(pr.r, pg.g, pb.b, pg.a);
-					vec4 predSrc = texture2D(uPrevSrc, vUv - d);
-					vec4 dec = pred + (cur - predSrc) * uResid;
-					float m = clamp((1.0 - hold) * 1.6 - r * 0.6, 0.0, 1.0) * (1.0 - stale);
-					// понемногу картинка всегда возвращается, иначе сдвиг копится и кадр уезжает за край
-					m = max(m, uLeak * (1.0 - stale));
-					vec4 o = mix(dec, cur, m);
-					if (uQuant > 0.001) {
-						// грубое квантование цвета и сдвиг оттенка по блокам, как у перегруженного кодека
-						float q = mix(48.0, 5.0, uQuant);
-						vec3 qd = floor(o.rgb * q + 0.5) / q;
-						qd += (vec3(h11(bid + 1.7), h11(bid + 5.3), h11(bid + 8.9)) - 0.5) * 0.08 * uQuant;
-						o.rgb = mix(o.rgb, qd, uQuant * (1.0 - m));
-					}
-					gl_FragColor = clamp(o, 0.0, 6.0);
-				}
-			`,
-depthTest: false,
-depthWrite: false,
-});
-this.mvMesh = new THREE.Mesh(this.quadGeo, this.mvMat);
-this.moshMesh = new THREE.Mesh(this.quadGeo, this.moshMat);
-this.moshBlock = 0;
-this.moshHist = false;
-}
-_ensureMosh(block) {
-const w = this.width;
-const h = this.height;
-const mw = Math.max(1, Math.ceil(w / block));
-const mh = Math.max(1, Math.ceil(h / block));
-const type = this.targetType;
-const flat = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type, depthBuffer: false };
-const near = { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, type, depthBuffer: false };
-if (!this.rtMoshA) {
-this.rtMoshA = new THREE.WebGLRenderTarget(w, h, flat);
-this.rtMoshB = new THREE.WebGLRenderTarget(w, h, flat);
-this.moshHist = false;
-}
-if (!this.rtMvA) {
-this.rtMvA = new THREE.WebGLRenderTarget(mw, mh, near);
-this.rtMvB = new THREE.WebGLRenderTarget(mw, mh, near);
-this.moshHist = false;
-}
-if (this.moshBlock !== block || this.rtMvA.width !== mw || this.rtMvA.height !== mh) {
-this.rtMvA.setSize(mw, mh);
-this.rtMvB.setSize(mw, mh);
-this.moshBlock = block;
-this.moshHist = false;
-}
-return [mw, mh];
-}
-_moshStep(m) {
-const r = this.renderer;
-const block = m.block;
-const [mw, mh] = this._ensureMosh(block);
-const hist = this.moshHist;
-const k = this.height / 1080;
-const range = 4 * block + 0.03 * this.height;
-const mu = this.mvMat.uniforms;
-mu.uCur.value = this.rtScene.texture;
-mu.uPrev.value = this.rtSceneB.texture;
-mu.uPrevMV.value = this.rtMvA.texture;
-mu.uRes.value.set(this.width, this.height);
-mu.uBlock.value = block;
-mu.uRange.value = range;
-mu.uGain.value = m.gain;
-mu.uInertia.value = hist ? m.inertia : 0;
-mu.uSceneMix.value = m.sceneMix;
-mu.uHasPrev.value = hist ? 1 : 0;
-mu.uDrift.value.set(Math.cos(m.angle) * m.drift * 6 * k, Math.sin(m.angle) * m.drift * 6 * k);
-mu.uFlow.value = m.flow * 4 * k;
-mu.uTime.value = m.time;
-this.quadScene.clear();
-this.quadScene.add(this.mvMesh);
-r.setRenderTarget(this.rtMvB);
-r.render(this.quadScene, this.quadCam);
-let t = this.rtMvA;
-this.rtMvA = this.rtMvB;
-this.rtMvB = t;
-const u = this.moshMat.uniforms;
-u.uCur.value = this.rtScene.texture;
-u.uPrevSrc.value = this.rtSceneB.texture;
-u.uMoshPrev.value = this.rtMoshA.texture;
-u.uMV.value = this.rtMvA.texture;
-u.uRes.value.set(this.width, this.height);
-u.uMVSize.value.set(mw, mh);
-u.uBlock.value = block;
-u.uRange.value = range;
-u.uSmooth.value = m.smooth;
-u.uHold.value = m.hold;
-u.uResid.value = m.detail;
-u.uChroma.value = m.chroma;
-u.uQuant.value = m.quant;
-u.uStyle.value = m.style;
-u.uStale.value = m.stale;
-u.uJit.value = m.jit;
-u.uTime.value = m.time;
-u.uHasHist.value = hist ? 1 : 0;
-u.uLeak.value = m.leak;
-this.quadScene.clear();
-this.quadScene.add(this.moshMesh);
-r.setRenderTarget(this.rtMoshB);
-r.render(this.quadScene, this.quadCam);
-t = this.rtMoshA;
-this.rtMoshA = this.rtMoshB;
-this.rtMoshB = t;
-t = this.rtScene;
-this.rtScene = this.rtSceneB;
-this.rtSceneB = t;
-this.moshHist = true;
-return this.rtMoshA.texture;
-}
-setSize(w, h, dpr = 1) {
-const rw = Math.max(1, Math.round(w * dpr));
-const rh = Math.max(1, Math.round(h * dpr));
-if (rw === this.width && rh === this.height) return;
-this.width = rw;
-this.height = rh;
-this.rtScene.setSize(rw, rh);
-this.rtSceneB.setSize(rw, rh);
-this.rtPing.setSize(rw, rh);
-this.rtPong.setSize(rw, rh);
-if (this.rtMoshA) {
-this.rtMoshA.setSize(rw, rh);
-this.rtMoshB.setSize(rw, rh);
-}
-this.moshHist = false;
-this.outMat.uniforms.uRes.value.set(rw, rh);
-this.hasHistory = false;
-}
-render(scene, camera, feedbackCfg, bloomVal, abVal, mosh, forceBuffer) {
-const r = this.renderer;
-const dom = r.domElement;
-const dpr = r.getPixelRatio();
-this.setSize(dom.clientWidth, dom.clientHeight, dpr);
-const useFb = feedbackCfg && feedbackCfg.on && feedbackCfg.amount > 0.01;
-const useBloom = bloomVal > 0.01;
-const useAb = abVal > 0.01;
-const useMosh = !!(mosh && mosh.on);
-if ((!forceBuffer && !useFb && !useBloom && !useAb && !useMosh) || this._disabled) {
-r.setRenderTarget(null);
-r.render(scene, camera);
-this.hasHistory = false;
-return;
-}
-try {
-const needMips = useMosh;
-if (this.rtScene && this.rtScene.texture.generateMipmaps !== needMips) {
-this.rtScene.texture.generateMipmaps = needMips;
-this.rtScene.texture.minFilter = needMips ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
-}
-if (this.rtSceneB && this.rtSceneB.texture.generateMipmaps !== needMips) {
-this.rtSceneB.texture.generateMipmaps = needMips;
-this.rtSceneB.texture.minFilter = needMips ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
-}
-r.setRenderTarget(this.rtScene);
-r.clear();
-r.render(scene, camera);
-let sourceTex = this.rtScene.texture;
-if (useMosh) sourceTex = this._moshStep(mosh);
-else this.moshHist = false;
-const preFb = sourceTex;
-if (useFb) {
-const tun = feedbackCfg.mode === 'tunnel';
-const zoom = tun ? feedbackCfg.zoom || 1.0 : 1.0;
-const twist = tun ? feedbackCfg.twist || 0.0 : 0.0;
-const decay = Math.min(0.99, feedbackCfg.amount || 0.92);
-this.fbMat.uniforms.uTint.value.copy(this.tint || new THREE.Color(1, 1, 1));
-this.fbMat.uniforms.uTintK.value = feedbackCfg.tint ?? 0.5;
-this.fbMat.uniforms.uScene.value = preFb;
-this.fbMat.uniforms.uPrev.value = this.rtPing.texture;
-this.fbMat.uniforms.uDecay.value = decay;
-this.fbMat.uniforms.uZoom.value = zoom;
-this.fbMat.uniforms.uTwist.value = twist;
-this.fbMat.uniforms.uHasPrev.value = this.hasHistory ? 1.0 : 0.0;
-this.quadScene.clear();
-this.quadScene.add(this.fbMesh);
-r.setRenderTarget(this.rtPong);
-r.clear();
-r.render(this.quadScene, this.quadCam);
-const tmp = this.rtPing;
-this.rtPing = this.rtPong;
-this.rtPong = tmp;
-this.hasHistory = true;
-sourceTex = this.rtPing.texture;
-} else {
-this.hasHistory = false;
-}
-this.outMat.uniforms.uTex.value = sourceTex;
-this.outMat.uniforms.uBloom.value = bloomVal;
-this.outMat.uniforms.uAberration.value = abVal;
-this.quadScene.clear();
-this.quadScene.add(this.outMesh);
-r.setRenderTarget(null);
-r.render(this.quadScene, this.quadCam);
-} catch (e) {
-console.warn('PostPipeline fallback to direct render:', e);
-if (this.targetType === THREE.HalfFloatType) {
-this.targetType = THREE.UnsignedByteType;
-this._buildTargets(THREE.UnsignedByteType);
-} else {
-this._disabled = true;
-}
-r.setRenderTarget(null);
-r.render(scene, camera);
-}
-}
-dispose() {
-for (const k of ['rtScene', 'rtSceneB', 'rtPing', 'rtPong', 'rtMoshA', 'rtMoshB', 'rtMvA', 'rtMvB']) if (this[k]) this[k].dispose();
-this.mvMat.dispose();
-this.moshMat.dispose();
-this.fbMat.dispose();
-this.outMat.dispose();
-this.quadGeo.dispose();
-}
-}
-class MotionCamTracker {
-constructor(onFrame) {
-this.onFrame = onFrame;
-this.video = document.createElement('video');
-this.video.autoplay = true;
-this.video.playsInline = true;
-this.video.muted = true;
-this.W = 64;
-this.H = 48;
-this.canvas = document.createElement('canvas');
-this.canvas.width = this.W;
-this.canvas.height = this.H;
-this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
-this.preview = document.createElement('canvas');
-this.preview.width = 176;
-this.preview.height = 132;
-this.pctx = this.preview.getContext('2d');
-this.bg = null;
-this.sens = 0.6;
-this.running = false;
-this.stream = null;
-this._timer = null;
-}
-async start() {
-if (this.running) return;
-try {
-this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 320 }, height: { ideal: 240 }, facingMode: 'user' } });
-this.video.srcObject = this.stream;
-await this.video.play();
-this.running = true;
-this.bg = null;
-this._tick();
-} catch (err) {
-this.stop();
-throw err;
-}
-}
-_tick() {
-if (!this.running) return;
-if (this.video.readyState >= 2) {
-const { W, H } = this;
-const ctx = this.ctx;
-ctx.save();
-ctx.scale(-1, 1);
-ctx.drawImage(this.video, -W, 0, W, H);
-ctx.restore();
-const frame = ctx.getImageData(0, 0, W, H).data;
-const n = W * H;
-if (!this.bg) {
-this.bg = new Float32Array(n);
-for (let i = 0; i < n; i++) this.bg[i] = frame[i * 4] * 0.3 + frame[i * 4 + 1] * 0.59 + frame[i * 4 + 2] * 0.11;
-}
-const thr = 46 - this.sens * 36;
-const hits = new Uint8Array(n);
-let sx = 0, sy = 0, sw = 0, cnt = 0;
-for (let i = 0; i < n; i++) {
-const l = frame[i * 4] * 0.3 + frame[i * 4 + 1] * 0.59 + frame[i * 4 + 2] * 0.11;
-const d = Math.abs(l - this.bg[i]);
-this.bg[i] += (l - this.bg[i]) * 0.2;
-if (d > thr) {
-hits[i] = 1;
-const x = i % W;
-const y = (i / W) | 0;
-sx += x * d;
-sy += y * d;
-sw += d;
-cnt++;
-}
-}
-const energy = cnt / n;
-const active = cnt >= Math.max(8, n * 0.004);
-const cx = active ? (sx / sw / W) * 2 - 1 : 0;
-const cy = active ? -((sy / sw / H) * 2 - 1) : 0;
-this._draw(frame, hits, active, active ? sx / sw : 0, active ? sy / sw : 0);
-this.onFrame({ x: cx, y: cy, energy, active });
-}
-this._timer = setTimeout(() => this._tick(), 40);
-}
-_draw(frame, hits, active, px, py) {
-const { W, H } = this;
-const c = this.pctx;
-const pw = this.preview.width;
-const ph = this.preview.height;
-c.save();
-c.scale(-1, 1);
-c.drawImage(this.video, -pw, 0, pw, ph);
-c.restore();
-c.fillStyle = 'rgba(11,13,17,0.45)';
-c.fillRect(0, 0, pw, ph);
-const cw = pw / W;
-const ch = ph / H;
-c.fillStyle = 'rgba(229,138,69,0.78)';
-for (let i = 0; i < hits.length; i++) if (hits[i]) c.fillRect((i % W) * cw, ((i / W) | 0) * ch, cw + 0.5, ch + 0.5);
-if (active) {
-const x = (px + 0.5) * cw;
-const y = (py + 0.5) * ch;
-c.strokeStyle = '#fff0dc';
-c.lineWidth = 1.5;
-c.beginPath();
-c.arc(x, y, 9, 0, Math.PI * 2);
-c.moveTo(x - 14, y);
-c.lineTo(x + 14, y);
-c.moveTo(x, y - 14);
-c.lineTo(x, y + 14);
-c.stroke();
-}
-}
-stop() {
-this.running = false;
-clearTimeout(this._timer);
-if (this.stream) {
-this.stream.getTracks().forEach((t) => t.stop());
-this.stream = null;
-}
-this.video.srcObject = null;
-this.bg = null;
-}
-}
-class EffectsEngine {
-constructor(app) {
-this.app = app;
-this.active = false;
-this.state = mergeDeep(defaultState(), loadJSON(KEY, {}));
-if (!this.state.audio.idleSet) this.state.audio.idle = false;
-this.state.mask = { ...defaultState().mask };
-for (const l of FX_LAYERS) this.state.layers[l.id] = { ...AUDIO_DEF, ...l.def, ...this.state.layers[l.id] };
-{
-const fl = this.state.layers.flow;
-const cl = this.state.layers.curl;
-if (fl && cl && fl.on && !cl.on && !this.state._m6) {
-Object.assign(cl, { on: true, mode: 'surface', amount: fl.amount, fscale: fl.scale, fdir: fl.dir, speed: fl.speed, band: fl.band, react: fl.react });
-fl.on = false;
-}
-this.state._m6 = true;
-}
-this.state.look = { ...defaultState().look, ...this.state.look };
-if (this.state.layers.brush && this.state.layers.brush.radius > 0.3 && !this.state._m5) {
-this.state.layers.brush.radius = 0.14;
-this.state.layers.brush.dry = 3;
-}
-this.state._m5 = 1;
-if (!this.state._m4) {
-if (this.state.layers.slice) this.state.layers.slice.color = 'model';
-this.state._m4 = 1;
-}
-if (this.state.look.colorBy === 'height' || this.state.look.colorBy === 'index') this.state.look.colorBy = 'disp';
-this.ctx = null;
-this.analyser = null;
-this.bus = null;
-this.out = null;
-this.recDest = null;
-this.freqData = null;
-this.synth = null;
-this.source = null;
-this.micStream = null;
-this.audioBuffer = null;
-this.playing = false;
-this.sourceType = 'synth';
-this.audioName = '';
-this.levels = { bass: 0, mid: 0, high: 0, beat: 0 };
-this.spec = new Float32Array(64);
-this._beatHist = new Float32Array(24);
-this._beatIdx = 0;
-this._lastBeat = 0;
-this.points = null;
-this.geometry = null;
-this.material = null;
-this.specTex = null;
-this.cache = new Map();
-this.cloudKey = null;
-this.morph = 1;
-this.morphing = false;
-this.mouse = new THREE.Vector3();
-this.mouseOn = false;
-this._time = 0;
-this._raf = null;
-this._lastT = 0;
-this.recording = false;
-this.modelProvider = null;
-this.pm = app.media.pm;
-this.depthAI = new DepthAI();
-this._dListeners = new Set();
-this.depthAI.onChange = () => this._depthEmit();
-this._D = { key: null, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, geo: null, dirty: false, snap: false, moving: false, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, force: false, err: '', n: 0 };
-app.bus.on('settings', () => this._histSoon());
-app.bus.on('scene', () => {
-clearTimeout(this._warmT);
-if (!this.active) this.cache.clear();
-this._warmT = setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(() => this.prewarm()), 1200);
-});
-const stale = () => {
-if (this.active) return;
-this.cache.clear();
-clearTimeout(this._warmT);
-this._warmT = setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(() => this.prewarm()), 900);
-};
-app.bus.on('material', stale);
-app.bus.on('geometry', stale);
-app.bus.on('pointtex', stale);
-app.bus.on('pointtex', () => {
-if (this.active) {
-this.cache.clear();
-this._onScene();
-}
-});
-this.mediaProgress = null;
-this.ghosts = [];
-this.linkObj = null;
-this.shocks = [];
-this.onFrame = null;
-this._ray = new THREE.Raycaster();
-this._plane = new THREE.Plane();
-this._move = (e) => this._onMove(e);
-this._leave = () => (this.mouseOn = false);
-this._dn = (e) => this._onDown(e);
-this._up = (e) => this._onUp(e);
-this.isCollapsed = false;
-this.collapseProgress = 0;
-this.asm = 0;
-this.collapseTime = 0;
-this.animT = 0;
-this.animPlaying = false;
-this.animRec = false;
-this.brushHits = [];
-this.post = null;
-this.camTracker = null;
-this._pointerDown = false;
-}
-get videoLoaded() {
-const pm = this.pm;
-return !!(pm && pm.ready && pm.kind === 'video' && pm.el);
-}
-get videoReady() {
-return this.videoLoaded && this.pm.el.readyState >= 2;
-}
-_layoutId(name) {
-return Math.max(0, ['stack', 'wall', 'film', 'tunnel'].indexOf(name));
-}
-_frameTaker(cols, rows, el) {
-const cv = document.createElement('canvas');
-cv.width = cols;
-cv.height = rows;
-const ctx = cv.getContext('2d', { willReadFrequently: true });
-return (out) => {
-ctx.drawImage(el || this.pm.el, 0, 0, cols, rows);
-out.set(ctx.getImageData(0, 0, cols, rows).data);
-return out;
-};
-}
-async _capVideo() {
-const src = this.pm.el.currentSrc || this.pm.el.src;
-const v = document.createElement('video');
-v.muted = true;
-v.playsInline = true;
-v.preload = 'auto';
-v.src = src;
-await new Promise((res, rej) => {
-v.onloadeddata = res;
-v.onerror = () => rej(new Error('не удалось открыть видео для съёмки кадров'));
-setTimeout(res, 8000);
-});
-return v;
-}
-_seekTo(el, t) {
-return new Promise((res) => {
-if (Math.abs(el.currentTime - t) < 0.02 && el.readyState >= 2) return res();
-const done = () => {
-el.removeEventListener('seeked', done);
-clearTimeout(to);
-res();
-};
-const to = setTimeout(done, 900);
-el.addEventListener('seeked', done);
-el.currentTime = t;
-});
-}
-async captureFramesForExport(n, cols, rows, onProgress) {
-const cap = await this._capVideo();
-try {
-const take = this._frameTaker(cols, rows, cap);
-const dur = cap.duration || this.pm.el.duration || 1;
-const out = [];
-for (let k = 0; k < n; k++) {
-await this._seekTo(cap, Math.min(Math.max(0.05, dur - 0.04), (k / Math.max(1, n - 1)) * dur));
-out.push(take(new Uint8Array(cols * rows * 4)));
-onProgress && onProgress((k + 1) / n);
-}
-return out;
-} finally {
-cap.removeAttribute('src');
-cap.load();
-}
-}
-_capStatus(text) {
-if (!text) {
-this._capEl?.remove();
-this._capEl = null;
-return;
-}
-if (!this._capEl) {
-this._capEl = document.createElement('div');
-this._capEl.className = 'fx-cap';
-document.getElementById('viewport')?.append(this._capEl);
-}
-this._capEl.textContent = text;
-}
-async _captureList(fr, list, onEach) {
-const take = (fr.take ||= this._frameTaker(fr.cols, fr.rows, fr.cap));
-for (const k of list) {
-if (fr.dead) return false;
-await this._seekTo(fr.cap, fr.times[k]);
-if (fr.dead) return false;
-take(fr.frames[k]);
-fr.done[k] = 1;
-onEach && onEach(k);
-}
-return true;
-}
-_fillGaps(fr) {
-const have = [];
-for (let k = 0; k < fr.n; k++) if (fr.done[k]) have.push(k);
-if (!have.length) return;
-for (let k = 0; k < fr.n; k++) {
-if (fr.done[k]) continue;
-let best = have[0];
-for (const j of have) if (Math.abs(j - k) < Math.abs(best - k)) best = j;
-fr.frames[k].set(fr.frames[best]);
-}
-}
-async _refineFrames(fr, order) {
-const tex = this._frameTex;
-let count = fr.done.reduce((a, b) => a + b, 0);
-let batch = 0;
-const flush = () => {
-if (!batch || fr.dead || this._frameTex !== tex) return;
-tex.needsUpdate = true;
-batch = 0;
-};
-const ok = await this._captureList(fr, order, (k) => {
-count++;
-tex.addLayerUpdate && tex.addLayerUpdate(k);
-if (++batch >= 6) flush();
-if (count % 4 === 0) this._capStatus(`Снимаю кадры: ${Math.round((count / fr.n) * 100)}%`);
-});
-flush();
-if (!fr.dead) this._capStatus('');
-this._closeCap(fr);
-}
-_closeCap(fr) {
-if (!fr?.cap) return;
-fr.cap.removeAttribute('src');
-fr.cap.load();
-fr.cap = null;
-fr.take = null;
-}
-_makeFrameTexture(data, cols, rows, n) {
-const tex = new THREE.DataArrayTexture(data, cols, rows, n);
-tex.format = THREE.RGBAFormat;
-tex.type = THREE.UnsignedByteType;
-tex.colorSpace = THREE.SRGBColorSpace;
-tex.minFilter = tex.magFilter = THREE.NearestFilter;
-tex.generateMipmaps = false;
-tex.unpackAlignment = 1;
-tex.needsUpdate = true;
-return tex;
-}
-_frameUniforms() {
-const fr = this._frames;
-const F = this.state.layers.frames;
-const u = this.shared;
-if (!fr) return;
-if (this._frameTex && u.uFrTex.value !== this._frameTex) u.uFrTex.value = this._frameTex;
-const W = fr.aspect >= 1 ? 2.2 : 2.2 * fr.aspect;
-u.uFr.value.set(1, fr.n, fr.cols * fr.rows, fr.cols * fr.rows * fr.n);
-u.uFr2.value.set(fr.cols, fr.rows, W, W / fr.aspect);
-u.uFr3.value.x = F.depth;
-if (!this._layoutAnim) u.uFr3.value.set(F.depth, this._layoutCur ?? 0, this._layoutCur ?? 0, 0);
-}
-async enableFrames() {
-if (this._framesBusy || !this.videoReady || !this.active) return;
-this._framesBusy = true;
-const F = this.state.layers.frames;
-try {
-this.app.ui.busy('Раскладываю видео на кадры', 0.05);
-const pm = this.pm;
-const aspect = (pm.el.videoWidth || 16) / (pm.el.videoHeight || 9);
-const dur = pm.el.duration || pm.duration || 1;
-const n = F.source === 'whole' && F.all === 'on' ? Math.max(4, Math.min(240, Math.round(dur * 24))) : Math.round(F.frames);
-const { cols, rows } = frameGrid(Math.max(300, F.budget / n), aspect);
-if (this._frames) {
-this._frames.dead = true;
-this._closeCap(this._frames);
-}
-const per = cols * rows * 4;
-const data = new Uint8Array(per * n);
-const frames = Array.from({ length: n }, (_, k) => data.subarray(k * per, (k + 1) * per));
-const fr = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, gain: 1, ts: null, done: new Uint8Array(n), times: null, cap: null, take: null, dead: false };
-let refine = null;
-if (F.source === 'whole') {
-fr.times = Array.from({ length: n }, (_, k) => Math.min(Math.max(0.05, dur - 0.04), (k / Math.max(1, n - 1)) * dur));
-fr.cap = await this._capVideo();
-let step = 1;
-while (step * 2 <= Math.max(1, n / 12)) step *= 2;
-const first = [];
-const rest = [];
-const seen = new Set();
-const add = (k, arr) => {
-if (!seen.has(k)) {
-seen.add(k);
-arr.push(k);
-}
-};
-for (let k = 0; k < n; k += step) add(k, first);
-add(n - 1, first);
-for (let st = Math.floor(step / 2); st >= 1; st = Math.floor(st / 2)) for (let k = 0; k < n; k += st) add(k, rest);
-let got = 0;
-const ok = await this._captureList(fr, first, () => this.app.ui.busy('Раскладываю видео на кадры', 0.1 + 0.8 * (++got / first.length)));
-if (!ok || !F.on || !this.active) {
-fr.dead = true;
-this._closeCap(fr);
-return;
-}
-this._fillGaps(fr);
-refine = rest;
-} else {
-this._frameTaker(cols, rows)(frames[n - 1]);
-fr.done[n - 1] = 1;
-}
-if (!F.on || !this.active) {
-fr.dead = true;
-this._closeCap(fr);
-return;
-}
-fr.gain = 1;
-this._frameTex?.dispose();
-this._frameTex = this._makeFrameTexture(data, cols, rows, n);
-this.shared.uFrTex.value = this._frameTex;
-this._frames = fr;
-if (F.source === 'live') {
-fr.ts = new Float32Array(n).fill(-1);
-fr.ts[n - 1] = pm.el.currentTime || 0;
-fr.tNew = pm.el.currentTime || 0;
-}
-this._frameCloud = buildFrameBlock(frames.map(() => this._blankFrame(cols, rows)), cols, rows, aspect, F.layout, F.depth, true);
-this._framesOn = true;
-this._layoutCur = this._layoutId(F.layout);
-this.shared.uFr3.value.set(F.depth, this._layoutCur, this._layoutCur, 0);
-this.cache.clear();
-this.state.look.colorBy = 'model';
-await this.setSource('frames');
-this._frameUniforms();
-this.shared.uFr5.value.x = 0;
-this._framesFit();
-if (refine) this._refineFrames(fr, refine);
-} catch (e) {
-console.error(e);
-this.app.toast('Не удалось разложить видео на кадры: ' + (e.message || e), 'error');
-F.on = false;
-this.shared.uFr.value.x = 0;
-} finally {
-this.app.ui.idle();
-this._framesBusy = false;
-this.emit();
-}
-}
-_blankFrame(cols, rows) {
-return (this._blank ||= new Uint8Array(cols * rows * 4));
-}
-async disableFrames() {
-if (!this._framesOn || this._framesBusy) return;
-const fr = this._frames;
-if (fr) {
-fr.dead = true;
-this._closeCap(fr);
-}
-this._capStatus('');
-const g = this.geometry;
-if (fr && g && g.attributes.aColor && g.attributes.aColor.count === fr.cols * fr.rows * fr.n) {
-writeFrameColors(fr.frames, fr.cols, fr.rows, g.attributes.aColor.array, null, 4);
-g.attributes.aColorB.array.set(g.attributes.aColor.array);
-g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
-}
-this._framesOn = false;
-this.shared.uFr.value.x = 0;
-this.shared.uHero.value.w = 0;
-if (this.hero) this.hero.visible = false;
-this._frames = null;
-this._frameCloud = null;
-this._frameTex?.dispose();
-this._frameTex = null;
-await this.setSource(this.pm.ready ? 'media' : this.hasModel ? 'model' : 'sphere');
-this.emit();
-}
-rebuildFramesSoon() {
-clearTimeout(this._framesT);
-this._framesT = setTimeout(async () => {
-if (!this._framesOn || this._framesBusy) return;
-this._framesOn = false;
-this.shared.uFr.value.x = 0;
-await this.enableFrames();
-}, 450);
-}
-_framesFit() {
-const F = this.state.layers.frames;
-const fr = this._frames;
-const nav = this.app.nav;
-if (!fr || !nav) return;
-const W = fr.aspect >= 1 ? 2.2 : 2.2 * fr.aspect;
-const H = W / fr.aspect;
-const R = { stack: Math.hypot(W / 2, H / 2, F.depth / 2), tunnel: Math.hypot(W / 2, H / 2, F.depth / 2), wall: 1.45, film: W * 1.35 }[F.layout] ?? 2;
-nav.animateTo({ distance: nav.fitDistance(R * 0.85), target: new THREE.Vector3(0, 0, 0) }, 450);
-}
-relayoutFrames() {
-const F = this.state.layers.frames;
-const fr = this._frames;
-if (!this._framesOn || !fr) return;
-const target = this._layoutId(F.layout);
-this.shared.uFr3.value.x = F.depth;
-if (target !== this._layoutCur && !this._layoutAnim) {
-this._framesFit();
-this.shared.uFr3.value.z = target;
-this._layoutAnim = { t0: this._time, target };
-}
-clearTimeout(this._relayT);
-this._relayT = setTimeout(() => {
-if (!this._framesOn || !this._frames) return;
-this._frameCloud = buildFrameBlock(fr.frames.map(() => this._blankFrame(fr.cols, fr.rows)), fr.cols, fr.rows, fr.aspect, F.layout, F.depth, true);
-const g = this.geometry;
-if (g && g.attributes.aOrigin && g.attributes.aOrigin.count === this._frameCloud.count && !this.morphing) {
-g.attributes.aOrigin.array.set(this._frameCloud.positions);
-g.attributes.aTarget.array.set(this._frameCloud.positions);
-g.attributes.aNormal.array.set(this._frameCloud.normals);
-g.attributes.aNormalB.array.set(this._frameCloud.normals);
-g.attributes.aOrigin.needsUpdate = g.attributes.aTarget.needsUpdate = g.attributes.aNormal.needsUpdate = g.attributes.aNormalB.needsUpdate = true;
-}
-}, 350);
-}
-_framesTick() {
-const F = this.state.layers.frames;
-if (!['stack', 'wall', 'film', 'tunnel'].includes(F.layout)) F.layout = 'stack';
-if (!['off', 'peel', 'projector', 'trail'].includes(F.showMode)) F.showMode = 'off';
-F.follow = 'off';
-const wantOn = F.on && this.videoReady && this.state.source !== 'sphere';
-if (wantOn && !this._framesOn && !this._framesBusy) {
-this.enableFrames();
-return;
-}
-if (this._framesOn && !this._framesBusy && (!F.on || !this.videoLoaded)) {
-F.on = false;
-this.disableFrames();
-return;
-}
-const fr = this._frames;
-const u = this.shared;
-if (!this._framesOn || !fr) {
-u.uFr.value.x = 0;
-return;
-}
-u.uFr.value.x = this.state.source === 'frames' ? 1 : 0;
-this._frameUniforms();
-const an = this._layoutAnim;
-if (an) {
-const k = Math.min(1, (this._time - an.t0) / 0.7);
-u.uFr3.value.w = k;
-if (k >= 1) {
-this._layoutCur = an.target;
-u.uFr3.value.set(F.depth, an.target, an.target, 0);
-this._layoutAnim = null;
-}
-}
-const idx = F.source === 'live' ? this._liveIdx(fr) : Math.max(0, Math.min(1, (this.pm.el.currentTime || 0) / Math.max(0.1, fr.dur))) * (fr.n - 1);
-fr.cur = Math.round(idx);
-const modeId = { off: 0, peel: 1, projector: 4, trail: 5 }[F.showMode] ?? 0;
-u.uFr4.value.set(idx, modeId, F.showLen, F.thin ?? 0);
-u.uFr6.value.set(F.bsize ?? 1.5, F.track === 'full' && F.source === 'whole' ? 1 : 0, { all: 0, light: 1, dark: 2 }[F.tone] ?? 0, F.toneCut ?? 0.5);
-u.uFr7.value.set(Math.max(0.05, (F.tail ?? 100) / 100), F.sat ?? 0, F.tailSoft ?? 0.6, 0);
-u.uFr5.value.y = 0;
-u.uFr5.value.z = { show: 0, dim: 1, hide: 2 }[F.future] ?? 1;
-u.uFr5.value.w = (fr.gain || 1) * (F.gain ?? 1);
-this._ensureHero(F, fr);
-this._framesFollow(F, fr);
-if (F.source === 'live') this._framesLive(F, fr);
-}
-_liveIdx(fr) {
-const t = this.pm.el.currentTime || 0;
-if (!fr.ts || t >= fr.tNew) return fr.n - 1;
-let first = -1;
-let prev = -1;
-let tp = 0;
-for (let k = 0; k < fr.n; k++) {
-const tk = fr.ts[(k + fr.head) % fr.n];
-if (tk < 0) continue;
-if (first < 0) {
-first = k;
-if (t <= tk) return k;
-} else if (t <= tk) {
-return prev + (tk > tp ? (t - tp) / (tk - tp) : 0);
-}
-prev = k;
-tp = tk;
-}
-return fr.n - 1;
-}
-_ensureHero(F, fr) {
-const u = this.shared;
-const want = this.state.source === 'frames' && F.hero >= 5000 && this.points && !this.morphing;
-const has = this.hero && this.hero.parent === this.points;
-if (!want) {
-if (this.hero) this.hero.visible = false;
-u.uHero.value.w = 0;
-return;
-}
-const cols = Math.max(8, Math.round(Math.sqrt(F.hero * fr.aspect)));
-const rows = Math.max(8, Math.round(cols / fr.aspect));
-const count = cols * rows;
-if (!has || this._heroCount !== count) {
-if (this.hero) {
-this.hero.parent?.remove(this.hero);
-this.hero.geometry.dispose();
-this.hero.material.dispose();
-this.hero = null;
-}
-const g = new THREE.BufferGeometry();
-const z3 = () => new THREE.BufferAttribute(new Float32Array(count * 3), 3);
-const idxA = new Float32Array(count);
-for (let i = 0; i < count; i++) idxA[i] = i / count;
-g.setAttribute('position', z3());
-g.setAttribute('aOrigin', z3());
-g.setAttribute('aTarget', z3());
-g.setAttribute('aColor', z3());
-g.setAttribute('aColorB', z3());
-g.setAttribute('aSculpt', z3());
-const nrm = new Float32Array(count * 3);
-for (let i = 2; i < nrm.length; i += 3) nrm[i] = 1;
-g.setAttribute('aNormal', new THREE.BufferAttribute(nrm, 3));
-g.setAttribute('aNormalB', new THREE.BufferAttribute(nrm.slice(), 3));
-g.setAttribute('aPaint', new THREE.BufferAttribute(new Float32Array(count * 4), 4));
-g.setAttribute('aIdx', new THREE.BufferAttribute(idxA, 1));
-g.setAttribute('aHide', new THREE.BufferAttribute(new Float32Array(count), 1));
-g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(count).fill(0.5), 1));
-g.setAttribute('aPath', new THREE.BufferAttribute(new Float32Array(count), 1));
-g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
-const m = new THREE.ShaderMaterial({
-vertexShader: this.material.vertexShader,
-fragmentShader: this.material.fragmentShader,
-transparent: this.material.transparent,
-depthWrite: this.material.depthWrite,
-blending: this.material.blending,
-defines: { HERO: 1 },
-userData: { fxKind: 'vert' },
-uniforms: { ...this.shared, uTOff: { value: 0 }, uGhost: { value: 1 } },
-});
-const h = new THREE.Points(g, m);
-h.frustumCulled = false;
-h.userData.helper = true;
-this.points.add(h);
-this.hero = h;
-this._heroCount = count;
-}
-if (!this._heroTex || this._heroTex.image !== this.pm.el) {
-this._heroTex?.dispose();
-this._heroTex = new THREE.VideoTexture(this.pm.el);
-this._heroTex.colorSpace = THREE.SRGBColorSpace;
-this._heroTex.minFilter = this._heroTex.magFilter = THREE.LinearFilter;
-this._heroTex.generateMipmaps = false;
-}
-u.uHeroTex.value = this._heroTex;
-u.uHero.value.set(cols, rows, count, 1);
-this.hero.visible = true;
-this.hero.material.blending = this.material.blending;
-}
-_framesFollow(F, fr) {
-const pts = this.points;
-if (!pts || this.morphing || this.state.source !== 'frames') return;
-if (F.follow === 'on' && F.source === 'whole') {
-const idx = fr.cur;
-const t = fr.n > 1 ? idx / (fr.n - 1) : 0.5;
-const ease = 0.16;
-if (F.layout === 'stack') pts.position.z += ((0.5 - t) * F.depth - pts.position.z) * ease;
-else if (F.layout === 'spiral') pts.position.y += ((0.5 - t) * F.depth * 1.4 - pts.position.y) * ease;
-if ((F.layout === 'carousel' || F.layout === 'spiral') && !this.state.look.autoRotate) {
-let d = -((idx / fr.n) * Math.PI * 2) - pts.rotation.y;
-d = Math.atan2(Math.sin(d), Math.cos(d));
-pts.rotation.y += d * ease;
-}
-this._followed = true;
-pts.updateMatrixWorld();
-} else if (this._followed) {
-pts.position.set(0, 0, 0);
-this._followed = false;
-pts.updateMatrixWorld();
-}
-}
-_framesLive(F, fr) {
-const tv = this.pm.el.currentTime || 0;
-const lastTv = this._liveTv ?? tv;
-this._liveTv = tv;
-if (fr.ts && this.pm.playing) {
-let oldest = Infinity;
-for (const t of fr.ts) if (t >= 0 && t < oldest) oldest = t;
-if (tv < lastTv - 1 && tv < 1.5 || tv < oldest - 0.3) {
-fr.ts.fill(-1);
-fr.tNew = tv - 0.05;
-}
-}
-if (this._time - fr.last < F.step || !this.pm.playing || this.morphing || tv <= fr.tNew + 0.02 || !fr.ts) return;
-fr.last = this._time;
-const take = (fr.take ||= this._frameTaker(fr.cols, fr.rows));
-const layer = fr.head % fr.n;
-const tex = this._frameTex;
-take(fr.frames[layer]);
-tex.addLayerUpdate && tex.addLayerUpdate(layer);
-tex.needsUpdate = true;
-fr.ts[layer] = tv;
-fr.tNew = tv;
-fr.head++;
-this.shared.uFr5.value.x = fr.head % fr.n;
-}
-_animLayers() {
-return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode'];
-}
-animCapture() {
-const nav = this.app.nav;
-const L = this.state.layers;
-const layers = {};
-for (const id of this._animLayers()) layers[id] = L[id]?.on ? L[id].amount : 0;
-return { cam: { yaw: nav.yaw, pitch: nav.pitch, dist: nav.distance, tx: nav.target.x, ty: nav.target.y, tz: nav.target.z }, size: this.app.settings.point.size, bright: this.state.look.bright, glow: this.state.look.glow, layers };
-}
-get animKeys() {
-return this.state.anim.keys || (this.state.anim.keys = []);
-}
-get animClips() {
-return this.state.anim.clips || (this.state.anim.clips = []);
-}
-_animSort() {
-this.animKeys.sort((a, b) => a.t - b.t);
-}
-animAddKey(t = this.animT) {
-this._histFlush();
-const A = this.state.anim;
-if (!A.keys) A.keys = [];
-const snap = { t: Math.round(Math.min(A.dur, Math.max(0, t)) * 100) / 100, ...this.animCapture() };
-const near = A.keys.find((k) => Math.abs(k.t - snap.t) < 0.06);
-if (near) Object.assign(near, snap, { t: near.t });
-else A.keys.push(snap);
-this._animSort();
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-return near || snap;
-}
-animUpdateKey(key) {
-Object.assign(key, this.animCapture(), { t: key.t });
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-}
-animRemoveKey(key) {
-this._histFlush();
-const A = this.state.anim;
-if (!A.keys) return;
-A.keys = A.keys.filter((k) => k !== key);
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-}
-animMoveKey(key, t) {
-key.t = Math.round(Math.min(this.state.anim.dur, Math.max(0, t)) * 100) / 100;
-this._animSort();
-this.touch();
-this.app.bus.emit('fxanim');
-}
-animAddClip(layerId, opts = {}) {
-if (!this._batch) this._histFlush();
-const A = this.state.anim;
-if (!A.clips) A.clips = [];
-const durTotal = A.dur || 8;
-const dur = Math.max(0.3, Math.min(durTotal, opts.dur ?? 2.5));
-const defaultStart = Math.min(Math.max(0, this.animT), Math.max(0, durTotal - dur));
-const start = Math.max(0, Math.min(durTotal - 0.2, opts.start ?? defaultStart));
-const actualDur = Math.min(dur, Math.max(0.2, durTotal - start));
-const fadeIn = Math.max(0, Math.min(actualDur * 0.45, opts.fadeIn ?? 0.4));
-const fadeOut = Math.max(0, Math.min(actualDur * 0.45, opts.fadeOut ?? 0.5));
-const defAmt = this.state.layers[layerId]?.amount ?? 1.0;
-const amount = Math.max(0.05, Math.min(2.0, opts.amount ?? (defAmt > 0 ? defAmt : 1.0)));
-const clip = {
-id: 'c_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
-layerId,
-start: Math.round(start * 100) / 100,
-dur: Math.round(actualDur * 100) / 100,
-fadeIn: Math.round(fadeIn * 100) / 100,
-fadeOut: Math.round(fadeOut * 100) / 100,
-amount: Math.round(amount * 100) / 100,
-shape: opts.shape || 'plateau',
-ease: opts.ease || 'smooth',
-off: !!opts.off,
-repeat: Math.max(1, Math.min(12, Math.round(opts.repeat || 1))),
-rev: !!opts.rev,
-};
-A.clips.push(clip);
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-return clip;
-}
-animUpdateClip(clipId, patch = {}) {
-const A = this.state.anim;
-if (!A.clips) return null;
-const clip = A.clips.find((c) => c.id === clipId);
-if (!clip) return null;
-const durTotal = A.dur || 8;
-if (patch.start !== undefined) {
-clip.start = Math.max(0, Math.min(durTotal - 0.2, patch.start));
-if (clip.start + clip.dur > durTotal) {
-clip.dur = Math.max(0.2, durTotal - clip.start);
-}
-}
-if (patch.dur !== undefined) {
-clip.dur = Math.max(0.2, Math.min(durTotal - clip.start, patch.dur));
-}
-if (patch.fadeIn !== undefined) {
-clip.fadeIn = Math.max(0, Math.min(clip.dur, patch.fadeIn));
-}
-if (patch.fadeOut !== undefined) {
-clip.fadeOut = Math.max(0, Math.min(clip.dur, patch.fadeOut));
-}
-if (clip.fadeIn + clip.fadeOut > clip.dur) {
-const ratio = clip.dur / (clip.fadeIn + clip.fadeOut);
-clip.fadeIn *= ratio;
-clip.fadeOut *= ratio;
-}
-if (patch.amount !== undefined) {
-clip.amount = Math.max(0.05, Math.min(2.0, patch.amount));
-}
-if (patch.shape !== undefined && ['plateau', 'ramp', 'fall', 'peak'].includes(patch.shape)) clip.shape = patch.shape;
-if (patch.ease !== undefined && ['smooth', 'linear', 'sharp'].includes(patch.ease)) clip.ease = patch.ease;
-if (patch.off !== undefined) clip.off = !!patch.off;
-if (patch.repeat !== undefined) clip.repeat = Math.max(1, Math.min(12, Math.round(patch.repeat)));
-if (patch.rev !== undefined) clip.rev = !!patch.rev;
-if (patch.layerId !== undefined && (this.state.layers[patch.layerId] || ['morph', 'rotate', 'bloom'].includes(patch.layerId))) {
-clip.layerId = patch.layerId;
-}
-clip.start = Math.round(clip.start * 100) / 100;
-clip.dur = Math.round(clip.dur * 100) / 100;
-clip.fadeIn = Math.round(clip.fadeIn * 100) / 100;
-clip.fadeOut = Math.round(clip.fadeOut * 100) / 100;
-clip.amount = Math.round(clip.amount * 100) / 100;
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-return clip;
-}
-animAddMarker(t, name = '') {
-const A = this.state.anim;
-(A.markers ||= []).push({ t: Math.round(Math.max(0, Math.min(A.dur, t)) * 100) / 100, name });
-A.markers.sort((a, b) => a.t - b.t);
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-return A.markers.find((m) => m.t === Math.round(Math.max(0, Math.min(A.dur, t)) * 100) / 100 && m.name === name);
-}
-animUpdateMarker(m, patch = {}) {
-const A = this.state.anim;
-if (!A.markers || !A.markers.includes(m)) return;
-if (patch.t !== undefined) m.t = Math.round(Math.max(0, Math.min(A.dur, patch.t)) * 100) / 100;
-if (patch.name !== undefined) m.name = String(patch.name).slice(0, 24);
-A.markers.sort((a, b) => a.t - b.t);
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-}
-animRemoveMarker(m) {
-const A = this.state.anim;
-A.markers = (A.markers || []).filter((x) => x !== m);
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-}
-animSetWork(a, b) {
-this._histFlush();
-const A = this.state.anim;
-if (a == null) A.work = null;
-else {
-const lo = Math.max(0, Math.min(a, b));
-const hi = Math.min(A.dur, Math.max(a, b));
-A.work = hi - lo >= 0.2 ? { a: Math.round(lo * 100) / 100, b: Math.round(hi * 100) / 100 } : null;
-}
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-}
-animSetLane(layerId, patch = {}) {
-this._histFlush();
-const A = this.state.anim;
-const l = ((A.lanes ||= {})[layerId] ||= {});
-Object.assign(l, patch);
-if (!l.mute && !l.solo && !l.lock) delete A.lanes[layerId];
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-}
-animPasteClips(list, t) {
-if (!list || !list.length) return [];
-this._histFlush();
-this._batch = true;
-try {
-return this._animPasteClips(list, t);
-} finally {
-this._batch = false;
-}
-}
-_animPasteClips(list, t) {
-const t0 = Math.min(...list.map((c) => c.start));
-const out = [];
-for (const c of list) {
-out.push(this.animAddClip(c.layerId, { start: t + (c.start - t0), dur: c.dur, fadeIn: c.fadeIn, fadeOut: c.fadeOut, amount: c.amount, shape: c.shape, ease: c.ease, off: c.off, repeat: c.repeat, rev: c.rev }));
-}
-return out;
-}
-animRemoveClip(clipId) {
-this._histFlush();
-const A = this.state.anim;
-if (!A.clips) return;
-A.clips = A.clips.filter((c) => c.id !== clipId);
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-}
-animDuplicateClip(clipId, batch) {
-if (!batch) this._histFlush();
-this._batch = true;
-try {
-return this._animDuplicateClip(clipId);
-} finally {
-this._batch = false;
-}
-}
-_animDuplicateClip(clipId) {
-const A = this.state.anim;
-if (!A.clips) return null;
-const clip = A.clips.find((c) => c.id === clipId);
-if (!clip) return null;
-const durTotal = A.dur || 8;
-let newStart = clip.start + 0.5;
-if (newStart + clip.dur > durTotal) newStart = Math.max(0, durTotal - clip.dur);
-return this.animAddClip(clip.layerId, {
-start: newStart,
-dur: clip.dur,
-fadeIn: clip.fadeIn,
-fadeOut: clip.fadeOut,
-amount: clip.amount,
-shape: clip.shape,
-ease: clip.ease,
-off: clip.off,
-repeat: clip.repeat,
-rev: clip.rev,
-});
-}
-animSplitClip(clipId, t) {
-this._histFlush();
-const A = this.state.anim;
-const clip = (A.clips || []).find((c) => c.id === clipId);
-if (!clip || t <= clip.start + 0.3 || t >= clip.start + clip.dur - 0.3) return null;
-const end = clip.start + clip.dur;
-const outFade = clip.fadeOut;
-const left = t - clip.start;
-clip.dur = Math.round(left * 100) / 100;
-clip.fadeIn = Math.min(clip.fadeIn, clip.dur * 0.45);
-clip.fadeOut = Math.min(0.15, clip.dur * 0.3);
-this._batch = true;
-const right = this.animAddClip(clip.layerId, { start: t, dur: end - t, fadeIn: Math.min(0.15, (end - t) * 0.3), fadeOut: Math.min(outFade, (end - t) * 0.45), amount: clip.amount, shape: clip.shape, ease: clip.ease, repeat: clip.repeat, rev: clip.rev });
-this._batch = false;
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-return right;
-}
-animClear() {
-this._histFlush();
-const A = this.state.anim;
-A.keys = [];
-A.clips = [];
-A.markers = [];
-A.work = null;
-A.lanes = {};
-this.animT = 0;
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-}
-async _prepareMorphTrack() {
-if (!this.geometry || this._morphTrackReady || this._morphTrackLoading) return;
-this._morphTrackLoading = true;
-try {
-const forms = this.forms();
-let targetKey = null;
-if (forms.length >= 2) {
-targetKey = forms.find((f) => f.key !== (this.curKey || this.state.source))?.key || forms[1].key;
-} else {
-targetKey = this.state.source === 'sphere' ? 'torus' : 'sphere';
-}
-const target = await this._cloudFor(targetKey);
-if (target && this.geometry) {
-const g = this.geometry;
-const t = g.attributes.aTarget;
-if (t && target.positions && target.positions.length === t.array.length) {
-t.array.set(target.positions);
-t.needsUpdate = true;
-this._morphTrackReady = true;
-}
-}
-} catch (e) {
-} finally {
-this._morphTrackLoading = false;
-}
-}
-animLoadPreset(id) {
-const nav = this.app?.nav;
-const baseDist = nav?.distance || 5.2;
-const tx = nav?.target?.x || 0;
-const ty = nav?.target?.y || 0;
-const tz = nav?.target?.z || 0;
-if (id === 'dust_rebirth') {
-this.animSetDuration(9);
-const A = this.state.anim;
-A.keys = [
-{ t: 0.0, cam: { yaw: 0.2, pitch: 0.25, dist: baseDist * 0.75, tx, ty, tz }, size: 2.2, bright: 0.9, glow: 0.6, layers: {} },
-{ t: 4.5, cam: { yaw: 2.1, pitch: 0.15, dist: baseDist * 1.15, tx, ty, tz }, size: 3.8, bright: 1.2, glow: 1.0, layers: {} },
-{ t: 9.0, cam: { yaw: 4.0, pitch: 0.28, dist: baseDist * 0.85, tx, ty, tz }, size: 3.0, bright: 1.0, glow: 0.8, layers: {} },
-];
-A.clips = [
-{ id: 'c_pr_1', layerId: 'dissolve', start: 0.0, dur: 3.8, fadeIn: 0.2, fadeOut: 1.0, amount: 1.0 },
-{ id: 'c_pr_2', layerId: 'curl', start: 2.2, dur: 4.5, fadeIn: 0.8, fadeOut: 1.2, amount: 0.9 },
-{ id: 'c_pr_3', layerId: 'blast', start: 5.2, dur: 3.2, fadeIn: 0.6, fadeOut: 0.8, amount: 0.75 },
-{ id: 'c_pr_4', layerId: 'wave', start: 6.2, dur: 2.8, fadeIn: 0.5, fadeOut: 0.8, amount: 0.65 },
-];
-} else if (id === 'scan_collapse') {
-this.animSetDuration(10);
-const A = this.state.anim;
-A.keys = [
-{ t: 0.0, cam: { yaw: -0.6, pitch: 0.45, dist: baseDist * 0.8, tx, ty: ty - 0.2, tz }, size: 2.8, bright: 1.0, glow: 0.7, layers: {} },
-{ t: 5.0, cam: { yaw: 1.2, pitch: 0.1, dist: baseDist * 1.2, tx, ty: ty + 0.1, tz }, size: 3.4, bright: 1.3, glow: 1.1, layers: {} },
-{ t: 10.0, cam: { yaw: 3.2, pitch: 0.35, dist: baseDist * 0.9, tx, ty, tz }, size: 3.0, bright: 1.0, glow: 0.8, layers: {} },
-];
-A.clips = [
-{ id: 'c_pr_5', layerId: 'slice', start: 0.0, dur: 4.0, fadeIn: 0.2, fadeOut: 0.8, amount: 1.0 },
-{ id: 'c_pr_6', layerId: 'links', start: 3.0, dur: 4.5, fadeIn: 0.8, fadeOut: 1.0, amount: 0.95 },
-{ id: 'c_pr_7', layerId: 'glitch', start: 5.5, dur: 3.5, fadeIn: 0.4, fadeOut: 0.8, amount: 0.85 },
-{ id: 'c_pr_8', layerId: 'bloom', start: 6.5, dur: 3.0, fadeIn: 0.5, fadeOut: 0.8, amount: 0.9 },
-];
-} else if (id === 'glitch_morph') {
-this.animSetDuration(8);
-const A = this.state.anim;
-A.keys = [
-{ t: 0.0, cam: { yaw: 0.0, pitch: 0.2, dist: baseDist, tx, ty, tz }, size: 3.2, bright: 1.0, glow: 0.8, layers: {} },
-{ t: 3.5, cam: { yaw: 1.8, pitch: -0.1, dist: baseDist * 0.75, tx, ty, tz }, size: 4.2, bright: 1.4, glow: 1.2, layers: {} },
-{ t: 8.0, cam: { yaw: 3.6, pitch: 0.2, dist: baseDist, tx, ty, tz }, size: 3.2, bright: 1.0, glow: 0.8, layers: {} },
-];
-A.clips = [
-{ id: 'c_pr_9', layerId: 'glitch', start: 0.3, dur: 3.0, fadeIn: 0.2, fadeOut: 0.6, amount: 0.95 },
-{ id: 'c_pr_10', layerId: 'morph', start: 1.5, dur: 4.5, fadeIn: 0.4, fadeOut: 0.6, amount: 1.0 },
-{ id: 'c_pr_11', layerId: 'blast', start: 2.2, dur: 3.8, fadeIn: 0.3, fadeOut: 0.9, amount: 1.0 },
-{ id: 'c_pr_12', layerId: 'bloom', start: 3.5, dur: 3.0, fadeIn: 0.4, fadeOut: 0.8, amount: 0.9 },
-{ id: 'c_pr_13', layerId: 'twist', start: 4.0, dur: 3.5, fadeIn: 0.6, fadeOut: 0.8, amount: 0.85 },
-];
-}
-this.animSeek(0);
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-}
-animSetDuration(d) {
-const A = this.state.anim;
-A.dur = Math.max(1, Math.min(120, d));
-if (A.keys) {
-for (const k of A.keys) k.t = Math.min(k.t, A.dur);
-}
-if (A.clips) {
-for (const c of A.clips) {
-c.start = Math.min(c.start, Math.max(0, A.dur - 0.2));
-c.dur = Math.min(c.dur, A.dur - c.start);
-if (c.fadeIn + c.fadeOut > c.dur) {
-c.fadeIn = Math.min(c.fadeIn, c.dur * 0.5);
-c.fadeOut = Math.min(c.fadeOut, c.dur * 0.5);
-}
-}
-}
-this.animT = Math.min(this.animT, A.dur);
-this.touch();
-this.emit();
-this.app.bus.emit('fxanim');
-}
-_clipEnv(c, t) {
-const n = Math.max(1, c.repeat || 1);
-if (c.rev) t = c.start + c.dur - (t - c.start);
-if (n > 1) {
-const seg = c.dur / n;
-const k = Math.max(0, Math.min(n - 1, Math.floor((t - c.start) / seg)));
-return this._clipEnv1({ ...c, rev: false, repeat: 1, start: c.start + k * seg, dur: seg, fadeIn: Math.min(c.fadeIn, seg * 0.45), fadeOut: Math.min(c.fadeOut, seg * 0.45) }, t);
-}
-return this._clipEnv1(c, t);
-}
-_clipEnv1(c, t) {
-const curve = (f) => {
-f = Math.min(1, Math.max(0, f));
-return c.ease === 'linear' ? f : c.ease === 'sharp' ? Math.pow(f, 0.35) : f * f * (3 - 2 * f);
-};
-const elapsed = t - c.start;
-const remaining = c.start + c.dur - t;
-let env = 1;
-if (c.fadeIn > 0.001 && elapsed < c.fadeIn) env = Math.min(env, curve(elapsed / c.fadeIn));
-if (c.fadeOut > 0.001 && remaining < c.fadeOut) env = Math.min(env, curve(remaining / c.fadeOut));
-const u = c.dur > 0 ? Math.min(1, Math.max(0, elapsed / c.dur)) : 0;
-const shape = c.shape || 'plateau';
-const k = shape === 'ramp' ? curve(u) : shape === 'fall' ? curve(1 - u) : shape === 'peak' ? curve(1 - Math.abs(2 * u - 1)) : 1;
-return env * k;
-}
-_animGate(t) {
-const clips = this.timelineOpen ? this.state.anim.clips || [] : [];
-const L = this.state.layers;
-const clipLayerIds = new Set(clips.map((c) => c.layerId));
-const S = (this.state.anim.saved ||= {});
-let changed = false;
-for (const id of clipLayerIds) {
-if (!L[id] || S[id]) continue;
-S[id] = { on: !!L[id].on, amount: L[id].amount };
-L[id].on = false;
-L[id].amount = 0;
-changed = true;
-}
-for (const id of Object.keys(S)) {
-if (clipLayerIds.has(id)) continue;
-if (L[id]) {
-L[id].on = S[id].on;
-L[id].amount = S[id].amount;
-}
-delete S[id];
-changed = true;
-}
-if (changed) {
-this.touch();
-this.emit();
-}
-for (const layerId of clipLayerIds) {
-if (!L[layerId]) continue;
-let maxVal = 0;
-const lanes = this.state.anim.lanes || {};
-const anySolo = Object.values(lanes).some((x) => x && x.solo);
-const laneOff = !!(lanes[layerId] && lanes[layerId].mute) || (anySolo && !(lanes[layerId] && lanes[layerId].solo));
-for (const c of clips) {
-if (c.layerId !== layerId || c.off || laneOff) continue;
-if (t < c.start || t > c.start + c.dur) continue;
-const val = (c.amount ?? 1.0) * this._clipEnv(c, t);
-if (val > maxVal) maxVal = val;
-}
-if (maxVal > 0.003) {
-L[layerId].on = true;
-L[layerId].amount = maxVal;
-} else {
-L[layerId].on = false;
-}
-}
-}
-animApply(t) {
-const A = this.state.anim;
-const keys = A.keys || [];
-const clips = A.clips || [];
-if (!keys.length && !clips.length) return;
-if (keys.length > 0) {
-let a = keys[0];
-let b = keys[keys.length - 1];
-let u = 0;
-if (t <= keys[0].t) b = a;
-else if (t >= b.t) a = b;
-else {
-for (let i = 0; i < keys.length - 1; i++) {
-if (t >= keys[i].t && t <= keys[i + 1].t) {
-a = keys[i];
-b = keys[i + 1];
-break;
-}
-}
-const span = Math.max(1e-6, b.t - a.t);
-u = (t - a.t) / span;
-u = u * u * (3 - 2 * u);
-}
-const mix = (x, y) => x + (y - x) * u;
-const nav = this.app.nav;
-nav.cancelTween?.();
-nav.yaw = mix(a.cam.yaw, b.cam.yaw);
-nav.pitch = mix(a.cam.pitch, b.cam.pitch);
-nav.distance = Math.exp(mix(Math.log(a.cam.dist), Math.log(b.cam.dist)));
-nav.target.set(mix(a.cam.tx, b.cam.tx), mix(a.cam.ty, b.cam.ty), mix(a.cam.tz, b.cam.tz));
-nav.applyCamera();
-if (a.size !== undefined && b.size !== undefined) {
-this.app.settings.point.size = mix(a.size, b.size);
-}
-if (a.bright !== undefined && b.bright !== undefined) {
-this.state.look.bright = mix(a.bright, b.bright);
-}
-if (a.glow !== undefined && b.glow !== undefined) {
-this.state.look.glow = mix(a.glow, b.glow);
-}
-if (clips.length === 0 && a.layers && b.layers) {
-const L = this.state.layers;
-for (const id of this._animLayers()) {
-if (!L[id]) continue;
-const v = mix(a.layers[id] ?? 0, b.layers[id] ?? 0);
-if (v > 0.003) {
-L[id].on = true;
-L[id].amount = v;
-} else {
-L[id].on = false;
-}
-}
-}
-}
-if (clips.length > 0) {
-const L = this.state.layers;
-const clipLayerIds = new Set(clips.map((c) => c.layerId));
-this._animGate(t);
-if (clipLayerIds.has('morph')) {
-if (!this._morphTrackReady && !this._morphTrackLoading) {
-this._prepareMorphTrack();
-}
-let mVal = 0;
-for (const c of clips) {
-if (c.layerId !== 'morph') continue;
-if (t <= c.start) continue;
-if (t >= c.start + c.dur) {
-mVal = 1.0;
-continue;
-}
-const p = (t - c.start) / Math.max(0.01, c.dur);
-mVal = Math.max(mVal, p * (c.amount ?? 1.0));
-}
-this.morph = Math.max(0, Math.min(1, mVal));
-if (this.shared?.uMorph) this.shared.uMorph.value = this.morph;
-}
-if (clipLayerIds.has('rotate')) {
-let rotVal = 0;
-for (const c of clips) {
-if (c.layerId !== 'rotate') continue;
-if (t < c.start || t > c.start + c.dur) continue;
-const elapsed = t - c.start;
-const remaining = c.start + c.dur - t;
-let env = 1.0;
-if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
-const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
-env = Math.min(env, f * f * (3 - 2 * f));
-}
-if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
-const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
-env = Math.min(env, f * f * (3 - 2 * f));
-}
-rotVal = Math.max(rotVal, (c.amount ?? 1.0) * env);
-}
-if (rotVal > 0.001 && this.points) {
-this.points.rotation.y = t * 1.6 * rotVal;
-this.points.updateMatrixWorld();
-}
-}
-if (clipLayerIds.has('bloom')) {
-let bVal = 0;
-for (const c of clips) {
-if (c.layerId !== 'bloom') continue;
-if (t < c.start || t > c.start + c.dur) continue;
-const elapsed = t - c.start;
-const remaining = c.start + c.dur - t;
-let env = 1.0;
-if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
-const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
-env = Math.min(env, f * f * (3 - 2 * f));
-}
-if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
-const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
-env = Math.min(env, f * f * (3 - 2 * f));
-}
-bVal = Math.max(bVal, (c.amount ?? 1.0) * env);
-}
-if (bVal > 0.001) {
-this.state.look.glow = 0.8 + bVal * 1.5;
-this.state.look.bright = 1.0 + bVal * 0.8;
-if (this.shared?.uGlow) this.shared.uGlow.value = this.state.look.glow;
-if (this.shared?.uBright) this.shared.uBright.value = this.state.look.bright;
-}
-}
-}
-clearTimeout(this._saveT);
-this._saveT = setTimeout(() => saveJSON(KEY, this.state), 500);
-}
-animSeek(t) {
-this.animT = Math.max(0, Math.min(this.state.anim.dur, t));
-this.animApply(this.animT);
-this.app.bus.emit('fxanim');
-}
-animPlay() {
-const hasKeys = this.state.anim.keys && this.state.anim.keys.length >= 2;
-const hasClips = this.state.anim.clips && this.state.anim.clips.length >= 1;
-if (!hasKeys && !hasClips) return false;
-const [ra, rb] = this._animRange();
-if (this.animT >= rb - 0.01 || this.animT < ra - 0.001) this.animT = ra;
-this.animPlaying = true;
-this.app.bus.emit('fxanim');
-return true;
-}
-animPause() {
-if (!this.animPlaying) return;
-this.animPlaying = false;
-this.emit();
-this.app.bus.emit('fxanim');
-}
-animRecord() {
-const hasKeys = this.state.anim.keys && this.state.anim.keys.length >= 2;
-const hasClips = this.state.anim.clips && this.state.anim.clips.length >= 1;
-if ((!hasKeys && !hasClips) || this.recording) return false;
-this.animT = this._animRange()[0];
-this.animApply(this.animT);
-this.animRec = true;
-this.startRecording();
-this.animPlaying = true;
-this.app.bus.emit('fxanim');
-return true;
-}
-_animRange() {
-const A = this.state.anim;
-const w = A.work;
-if (w && w.b - w.a >= 0.2) return [Math.max(0, w.a), Math.min(A.dur, w.b)];
-return [0, A.dur];
-}
-_animStep(dt) {
-const A = this.state.anim;
-const [ra, rb] = this._animRange();
-this.animT += dt * (A.speed || 1);
-if (this.animT >= rb) {
-if (this.animRec) {
-this.animT = rb;
-this.animApply(rb);
-this.animRec = false;
-this.animPlaying = false;
-this.stopRecording();
-this.emit();
-} else if (A.loop) this.animT = ra + ((this.animT - ra) % Math.max(0.05, rb - ra));
-else {
-this.animT = rb;
-this.animPlaying = false;
-this.emit();
-}
-} else if (this.animT < ra && A.work) this.animT = ra;
-this.animApply(this.animT);
-this._animEmitT = (this._animEmitT || 0) + dt;
-if (this._animEmitT > 0.05) {
-this._animEmitT = 0;
-this.app.bus.emit('fxanim');
-}
-}
-toggleCollapse() {
-this.setCollapse(!this.isCollapsed);
-}
-setCollapse(v) {
-if (this.isCollapsed === v) return;
-this.isCollapsed = v;
-if (v) this.state.layers.physics.on = true;
-this.emit();
-}
-setColorBy(v) {
-const pt = this.app.settings.point;
-this._userColor = true;
-this.state.look.colorBy = v;
-const m = { model: 'texture', solid: 'solid', normal: 'normal' }[v];
-if (m) pt.color = m;
-this.app.saveSettings();
-this.touch();
-this.emit();
-}
-syncLookFromPoints() {
-const m = { texture: 'model', solid: 'solid', normal: 'normal' }[this.app.settings.point.color];
-const cur = this.state.look.colorBy;
-if (m && ((this.state.source === 'model' && !this._userColor) || (cur !== 'disp' && cur !== 'index'))) this.state.look.colorBy = m;
-}
-async useMedia() {
-this.state.look.colorBy = 'model';
-for (const id of ['curl', 'blast']) this.state.layers[id].on = false;
-if (this.state.source === 'media') {
-this.cache.clear();
-await this._build();
-} else await this.setSource('media');
-this.state.look.autoRotate = false;
-if (this.points) this.points.rotation.set(0, 0, 0);
-this.emit();
-}
-async setMediaPts(n) {
-this.app.settings.media.pts = n;
-this.app.saveSettings();
-if (this.state.source === 'media' && this.active && !this.pm.isRec) {
-this.cache.clear();
-await this._build();
-}
-this.emit();
-}
-forms() {
-const out = [];
-for (const o of this.modelProvider?.objects() || []) out.push({ key: 'obj:' + o.id, name: o.name, icon: 'cube' });
-return out;
-}
-_fracFor(key) {
-if (!key.startsWith('obj:') || this.state.morphCfg.weight === 'equal') return 1;
-const mp = this.modelProvider;
-const sizeOf = (k) => {
-const o = mp?.objects().find((x) => 'obj:' + x.id === k);
-return o && mp.sizeOf ? mp.sizeOf(o.obj) : 0;
-};
-const keys = new Set([...(this.playlist || []), key]);
-let mx = 0;
-for (const k of keys) if (k.startsWith('obj:')) mx = Math.max(mx, sizeOf(k));
-const mine = sizeOf(key);
-return mx > 0 && mine > 0 ? Math.max(0.08, Math.min(1, mine / mx)) : 1;
-}
-setPlaylist(keys) {
-this.playlist = keys;
-this._pi = Math.max(-1, keys.indexOf(this.curKey || this.state.source));
-this.emit();
-this._prefetch(keys);
-}
-morphNext() {
-const list = this.playlist || [];
-if (list.length < 2 || !this.active || this.morphing) return;
-let i;
-if (this.state.morphCfg.order === 'random') {
-do i = Math.floor(Math.random() * list.length);
-while (i === this._pi && list.length > 1);
-} else i = ((this._pi ?? -1) + 1) % list.length;
-this._pi = i;
-this._lastMorph = this._time;
-this.setSource(list[i]).catch(() => {});
-}
-toggleDissolve() {
-this._disTarget = !this._disTarget;
-this.state.layers.dissolve.on = true;
-if (this.state.layers.dissolve.mode !== 'button') this.state.layers.dissolve.mode = 'button';
-this.emit();
-}
-_startGrab(loc, R) {
-const T = this.geometry.attributes.aTarget.array;
-const n = T.length / 3;
-const idx = [];
-const w = [];
-const r2 = R * R;
-for (let i = 0; i < n; i++) {
-const dx = T[i * 3] - loc.x, dy = T[i * 3 + 1] - loc.y, dz = T[i * 3 + 2] - loc.z;
-const d2 = dx * dx + dy * dy + dz * dz;
-if (d2 < r2) {
-const f = 1 - Math.sqrt(d2) / R;
-idx.push(i);
-w.push(f * f * (3 - 2 * f));
-}
-}
-return { idx: Int32Array.from(idx), w: Float32Array.from(w), last: loc.clone() };
-}
-_sculptMove(gr, loc) {
-const a = this.geometry.attributes.aSculpt;
-const arr = a.array;
-const dx = loc.x - gr.last.x, dy = loc.y - gr.last.y, dz = loc.z - gr.last.z;
-for (let k = 0; k < gr.idx.length; k++) {
-const i = gr.idx[k] * 3;
-const w = gr.w[k];
-arr[i] += dx * w;
-arr[i + 1] += dy * w;
-arr[i + 2] += dz * w;
-}
-gr.last.copy(loc);
-a.needsUpdate = true;
-this._sculptLive = true;
-}
-clearSculpt() {
-const a = this.geometry?.attributes.aSculpt;
-if (!a) return;
-a.array.fill(0);
-a.needsUpdate = true;
-this._sculptLive = false;
-}
-clearBrush() {
-this.brushHits = [];
-this._dabs = [];
-this._painted = false;
-const a = this.geometry?.attributes.aPaint;
-if (a) {
-a.array.fill(0);
-a.needsUpdate = true;
-}
-this.emit();
-}
-addBrushHit(pos) {
-if (!pos || !this.geometry || !this.geometry.attributes.aPaint) return;
-const B = this.state.layers.brush;
-const sp = Math.max(0.015, B.radius * 0.28);
-const T0 = this._lastDabT ?? -9;
-if (this._lastDab && this._lastDab.distanceTo(pos) < sp && this._time - T0 < 0.4) return;
-const newStroke = this._time - T0 > 0.3;
-(this._lastDab ||= new THREE.Vector3()).copy(pos);
-this._lastDabT = this._time;
-if (newStroke) this._strokeN = (this._strokeN || 0) + 1;
-this._makeDab(pos);
-}
-_paintColor() {
-const B = this.state.layers.brush;
-let hex = B.color;
-if (!hex || hex === 'auto' || hex === 'model') {
-const pal = FX_PALETTES.find((x) => x.id === this.state.look.palette) || FX_PALETTES[0];
-hex = pal.c[(this._strokeN || 0) % 3];
-}
-return new THREE.Color(hex);
-}
-_makeDab(pos) {
-const g = this.geometry;
-const B = this.state.layers.brush;
-const n = g.attributes.position.count;
-const T = g.attributes.aTarget.array;
-const cam = this.app.viewport.camera;
-const pts = this.points;
-const o = new THREE.Vector3();
-const d = new THREE.Vector3();
-if (cam.isOrthographicCamera) {
-cam.getWorldDirection(d);
-d.transformDirection(pts.matrixWorld.clone().invert());
-o.copy(pos).addScaledVector(d, -10);
-} else {
-pts.worldToLocal(cam.getWorldPosition(o));
-d.copy(pos).sub(o).normalize();
-}
-const rMax = B.radius * (1 + B.water * 1.4);
-const r2 = rMax * rMax;
-if (!this._pIdx || this._pIdx.length < n) {
-this._pIdx = new Int32Array(n);
-this._pD2 = new Float32Array(n);
-this._pDep = new Float32Array(n);
-this._pOut = new Int32Array(n);
-this._pOutD = new Float32Array(n);
-}
-const idx = this._pIdx, d2a = this._pD2, dep = this._pDep;
-let m = 0;
-let tmin = Infinity;
-const ox = o.x, oy = o.y, oz = o.z, dx = d.x, dy = d.y, dz = d.z;
-for (let i = 0; i < n; i++) {
-const vx = T[i * 3] - ox, vy = T[i * 3 + 1] - oy, vz = T[i * 3 + 2] - oz;
-const cx = vy * dz - vz * dy, cy = vz * dx - vx * dz, cz = vx * dy - vy * dx;
-const dd = cx * cx + cy * cy + cz * cz;
-if (dd < r2) {
-const t = vx * dx + vy * dy + vz * dz;
-idx[m] = i;
-d2a[m] = dd;
-dep[m] = t;
-if (t < tmin) tmin = t;
-m++;
-}
-}
-if (!m) return;
-const tlim = tmin + rMax * 0.9;
-const NB = 64;
-const cnt = new Int32Array(NB + 1);
-let k = 0;
-for (let a = 0; a < m; a++) {
-if (dep[a] > tlim) continue;
-idx[k] = idx[a];
-const b = Math.min(NB - 1, Math.floor((Math.sqrt(d2a[a]) / rMax) * NB));
-d2a[k] = b;
-cnt[b + 1]++;
-k++;
-}
-for (let b = 0; b < NB; b++) cnt[b + 1] += cnt[b];
-const out = new Int32Array(k), outD = new Float32Array(k);
-const pos2 = cnt.slice();
-for (let a = 0; a < k; a++) {
-const b = d2a[a];
-const q = pos2[b]++;
-out[q] = idx[a];
-outD[q] = ((b + 0.5) / NB) * rMax;
-}
-const col = this._paintColor();
-this._dabs.push({ idx: out, dist: outD, n: k, ptr: 0, t0: this._time, r0: B.radius, rMax, wetT: Math.max(0.3, B.dry), lr: Math.log(Math.max(1e-3, col.r)), lg: Math.log(Math.max(1e-3, col.g)), lb: Math.log(Math.max(1e-3, col.b)), tool: B.tool, pig: B.pigment * 0.75 * Math.min(1.5, Math.max(0.3, B.amount)), edge: B.edge });
-if (this._dabs.length > 40) this._dabs.shift();
-}
-_paintTick() {
-const ds = this._dabs;
-const attr = this.geometry?.attributes.aPaint;
-if (!ds || !ds.length || !attr) return;
-const arr = attr.array;
-let dirty = false;
-for (let q = ds.length - 1; q >= 0; q--) {
-const dab = ds[q];
-const age = this._time - dab.t0;
-const f = 1 - Math.exp((-4 * age) / dab.wetT);
-const radius = dab.r0 + (dab.rMax - dab.r0) * f;
-while (dab.ptr < dab.n && dab.dist[dab.ptr] <= radius) {
-const dn = dab.dist[dab.ptr] / dab.rMax;
-const i = dab.idx[dab.ptr];
-const fall = Math.pow(Math.max(0, 1 - dn * dn), 1.1);
-const edgeK = dn <= 0.55 ? 0 : Math.min(1, (dn - 0.55) / 0.45);
-const o = i * 4;
-const a0 = arr[o + 3];
-if (dab.tool === 'lift') {
-arr[o + 3] = Math.max(0, a0 - dab.pig * 3 * fall);
-} else {
-const da = dab.pig * fall * (1 + dab.edge * 2.4 * f * f * edgeK);
-const a1 = Math.min(1.6, a0 + da);
-if (a0 < 1e-4) {
-arr[o] = Math.exp(dab.lr);
-arr[o + 1] = Math.exp(dab.lg);
-arr[o + 2] = Math.exp(dab.lb);
-} else {
-const wt = da / (a0 + da);
-arr[o] = Math.exp((1 - wt) * Math.log(Math.max(arr[o], 1e-3)) + wt * dab.lr);
-arr[o + 1] = Math.exp((1 - wt) * Math.log(Math.max(arr[o + 1], 1e-3)) + wt * dab.lg);
-arr[o + 2] = Math.exp((1 - wt) * Math.log(Math.max(arr[o + 2], 1e-3)) + wt * dab.lb);
-}
-arr[o + 3] = a1;
-this._painted = true;
-}
-dab.ptr++;
-dirty = true;
-}
-if (dab.ptr >= dab.n || age > dab.wetT * 1.25) ds.splice(q, 1);
-}
-if (dirty) attr.needsUpdate = true;
-}
-async toggleMotionCam() {
-if (this.camTracker && this.camTracker.running) {
-this._stopCam();
-this.app.toast('Камера выключена');
-this.emit();
-return;
-}
-this._camBusy = true;
-this._mountCam(null, 'Включаю камеру…');
-try {
-let t = new HandTracker((f) => this._onCamFrame(f), (txt) => this._camStatus(txt));
-this.camTracker = t;
-t.fpsHint = () => this.app.viewport.fps || 60;
-this.state.layers.camTrack.on = true;
-this._mountCam(t);
-try {
-await t.start();
-this.app.toast('Камера включена: покажите ладонь', 'ok');
-} catch (err) {
-if (!err.handsLoadFailed) throw err;
-t.stop();
-t = new MotionCamTracker((f) => this._onCamFrame(f));
-this.camTracker = t;
-this._mountCam(t);
-await t.start();
-this.app.toast('Не удалось загрузить распознавание рук. Работает по движению в кадре', 'warn');
-}
-this._camPos = null;
-} catch (err) {
-this._stopCam();
-this.app.toast('Нет доступа к веб-камере: разрешите её в браузере', 'error');
-}
-this._camBusy = false;
-this.emit();
-}
-_stopCam() {
-if (this.camTracker) this.camTracker.stop();
-this.state.layers.camTrack.on = false;
-this.camBox?.remove();
-this.camBox = null;
-this._camActive = false;
-this._handPtrs = [];
-this._hands = [];
-this._stretchTarget = 1;
-this._stretchBase = null;
-this._spin = null;
-this._handGrav = null;
-this._handDis = false;
-for (const [id, was] of this._handFx || []) this.state.layers[id].on = was;
-this._handFx = null;
-if (this._handBreak) {
-this._handBreak = false;
-this.setCollapse(false);
-}
-if (this.points) this.points.scale.setScalar(1);
-}
-_camStatus(txt) {
-if (this.camHint && txt) this.camHint.textContent = txt;
-}
-_mountCam(tracker, status) {
-this.camBox?.remove();
-this.camHint = document.createElement('div');
-this.camHint.className = 'fx-cam-text';
-this.camHint.textContent = status || 'Покажите ладонь перед камерой';
-this.camBox = document.createElement('div');
-this.camBox.className = 'fx-cam';
-if (tracker) this.camBox.append(tracker.preview);
-this.camBox.append(this.camHint);
-this.camBox.hidden = this.state.layers.camTrack.preview !== 'on';
-document.getElementById('viewport').append(this.camBox);
-makeCamMovable(this.camBox, document.getElementById('app'), document.getElementById('viewport'));
-}
-_ndcToLocal(x, y, out, depth = 0) {
-const vp = this.app.viewport;
-this._ray.setFromCamera(new THREE.Vector2(x, y), vp.camera);
-const toCam = vp.camera.getWorldDirection(new THREE.Vector3()).negate();
-this._plane.setFromNormalAndCoplanarPoint(toCam, toCam.clone().multiplyScalar(depth));
-const hit = new THREE.Vector3();
-if (!this._ray.ray.intersectPlane(this._plane, hit)) return null;
-return out.copy(this.points.worldToLocal(hit));
-}
-_onCamFrame(f) {
-if (!this.active || !this.points) return;
-const cfg = this.state.layers.camTrack;
-const t = this.camTracker;
-t.sens = cfg.sens;
-t.smooth = cfg.smooth;
-if (this.camBox) this.camBox.hidden = cfg.preview !== 'on';
-if (f.kind === 'hands') return this._onHands(f, cfg);
-const txt = f.active ? 'Движение найдено' : 'Помашите рукой перед камерой';
-if (this.camHint && this.camHint.textContent !== txt) this.camHint.textContent = txt;
-this._camActive = f.active;
-if (!f.active) return;
-const k = 1 - Math.min(0.92, cfg.smooth) * 0.9;
-this._camPos = this._camPos ? { x: this._camPos.x + (f.x - this._camPos.x) * k, y: this._camPos.y + (f.y - this._camPos.y) * k } : { x: f.x, y: f.y };
-const loc = this._ndcToLocal(this._camPos.x, this._camPos.y, new THREE.Vector3(), 0.85);
-if (!loc) return;
-this.mouse.copy(loc);
-this.mouseOn = true;
-this._camT = this._time;
-this._handsT = this._time;
-this._handPtrs = [{ local: loc.clone(), s: cfg.g_palm === 'pull' ? -1 : cfg.g_palm === 'swirl' ? 3 : 1, ndc: [this._camPos.x, this._camPos.y] }];
-if (cfg.g_palm === 'brush' || this.state.layers.brush.on) this.addBrushHit(loc);
-if (cfg.g_palm === 'wave' && f.energy > 0.16 && this._time - (this._camShockT || 0) > 0.8) {
-this._camShockT = this._time;
-this.addShock(loc);
-this._waveT = this._time;
-}
-}
-_onHands(f, cfg) {
-const bx = (v) => clamp((v - 0.15) / 0.7, 0, 1);
-const mapP = (p) => [bx(p[0]), bx(p[1])];
-const hands = f.hands.map((h) => ({ ...h, pts: h.pts.map(mapP), tips: h.tips.map(mapP), palm: mapP(h.palm) }));
-this._hands = hands;
-this._camActive = hands.length > 0;
-const actLabel = (a) => (FX_ACTIONS.find((x) => x[0] === a) || [0, ''])[1];
-const t = this.camTracker;
-t.hold = cfg.hold;
-t.names = { palm: actLabel(cfg.g_palm), fist: actLabel(cfg.g_fist), pinch: actLabel(cfg.g_pinch), point: actLabel(cfg.g_point), peace: actLabel(cfg.g_peace), rock: actLabel(cfg.g_rock), thumb: actLabel(cfg.g_thumb) };
-const txt = hands.length ? (hands.length > 1 ? 'Вижу две руки' : 'Вижу руку: покажите жест') : 'Покажите руку перед камерой';
-if (this.camHint && this.camHint.textContent !== txt) this.camHint.textContent = txt;
-const ptrs = [];
-const aspect = f.aspect || 4 / 3;
-const st = this._handState || (this._handState = new Map());
-const grabs = this._grabs || (this._grabs = new Map());
-const now = this._time;
-const loc2 = (p) => this._ndcToLocal(p[0] * 2 - 1, -(p[1] * 2 - 1), new THREE.Vector3(), cfg.depth);
-let wantBreak = false, wantDis = false, grav = null, brushNow = false, sliceHand = null;
-const wantFx = new Set();
-this.camTracker.setNumHands && this.camTracker.setNumHands(cfg.handsN === '1' ? 1 : 2);
-for (const hd of hands) {
-let g = hd.gesture;
-if (hd.pinch) g = 'pinch';
-else if (g === 'pinch') g = hd.rawGesture && hd.rawGesture !== 'pinch' ? hd.rawGesture : 'none';
-const a = g === 'none' ? 'none' : cfg['g_' + g];
-const prev = st.get(hd.id) || { palmX: hd.palm[0], palmY: hd.palm[1], a: 'none', g: 'none', t: now };
-const dtH = Math.max(0.016, Math.min(0.2, now - prev.t));
-const entered = prev.a !== a;
-const mid = [(hd.tips[0][0] + hd.tips[1][0]) / 2, (hd.tips[0][1] + hd.tips[1][1]) / 2];
-const focus = g === 'pinch' ? mid : g === 'point' ? hd.tips[1] : hd.palm;
-const fl = loc2(focus);
-if (hands[0] === hd && fl) {
-this.mouse.copy(fl);
-this.mouseOn = true;
-this._camT = now;
-}
-if (a === 'push' || a === 'pull' || a === 'swirl') {
-const sv = a === 'push' ? 1 : a === 'pull' ? -1 : 3;
-const pts = g === 'palm' ? [...hd.tips, hd.palm] : [focus];
-for (const p of pts) {
-const l = loc2(p);
-if (l) ptrs.push({ local: l, s: sv, ndc: [p[0] * 2 - 1, -(p[1] * 2 - 1)] });
-}
-} else if (a === 'rotate') {
-if (!entered) {
-const sp = this._spin || (this._spin = { x: 0, y: 0 });
-sp.y += (((hd.palm[0] - prev.palmX) * cfg.spin) / dtH - sp.y) * 0.5;
-if (cfg.axis === 'xy') sp.x += (((hd.palm[1] - prev.palmY) * cfg.spin) / dtH - sp.x) * 0.5;
-this._grabbing = now;
-}
-} else if (a === 'sculpt' && this.geometry) {
-const gr = grabs.get(hd.id);
-if (fl) {
-if (!gr || entered) grabs.set(hd.id, this._startGrab(fl, cfg.clay));
-else this._sculptMove(gr, fl);
-}
-} else if (a === 'wave') {
-if (entered && fl && now - (this._camShockT || 0) > 0.5) {
-this._camShockT = now;
-this.addShock(fl);
-this._waveT = now;
-}
-} else if (a === 'slicecut') {
-sliceHand = this._ndcToLocal(focus[0] * 2 - 1, -(focus[1] * 2 - 1), new THREE.Vector3(), 0);
-} else if (a === 'gravity') {
-if (fl) grav = fl;
-} else if (a.startsWith('fx:')) wantFx.add(a.slice(3));
-else if (a === 'break') wantBreak = true;
-else if (a === 'dissolve') wantDis = true;
-else if (a === 'brush') {
-brushNow = true;
-const pts = g === 'palm' ? hd.tips : [focus];
-for (const p of pts) {
-const q = loc2(p);
-if (q) this.addBrushHit(q);
-}
-}
-if (a !== 'sculpt') grabs.delete(hd.id);
-st.set(hd.id, { palmX: hd.palm[0], palmY: hd.palm[1], a, g, t: now });
-}
-for (const key of [...st.keys()]) if (!hands.some((h) => h.id === key)) {
-st.delete(key);
-grabs.delete(key);
-}
-if (brushNow) this._brushHand = now;
-this._handGrav = grav;
-this._handSlice = sliceHand;
-this._handDis = wantDis;
-const hf = this._handFx || (this._handFx = new Map());
-for (const id of wantFx) {
-if (!hf.has(id) && this.state.layers[id]) {
-hf.set(id, this.state.layers[id].on);
-this.state.layers[id].on = true;
-this.emit();
-}
-}
-for (const [id, was] of [...hf]) {
-if (!wantFx.has(id)) {
-this.state.layers[id].on = was;
-hf.delete(id);
-this.emit();
-}
-}
-if (wantBreak !== !!this._handBreak) {
-this._handBreak = wantBreak;
-this.setCollapse(wantBreak);
-}
-if (cfg.stretch === 'on' && hands.length === 2) {
-const d = Math.hypot((hands[0].palm[0] - hands[1].palm[0]) * aspect, hands[0].palm[1] - hands[1].palm[1]);
-if (!this._stretchBase) this._stretchBase = { d, s: this._stretchTarget || 1 };
-this._stretchTarget = clamp(this._stretchBase.s * (d / Math.max(0.05, this._stretchBase.d)), 0.4, 3);
-} else {
-this._stretchBase = null;
-if (cfg.keep === 'off' || cfg.stretch !== 'on') this._stretchTarget = 1;
-}
-this._handPtrs = ptrs;
-if (hands.length) this._handsT = now;
-}
-_snap() {
-const st = this.state;
-const layers = {};
-for (const id of Object.keys(st.layers)) {
-const l = { ...st.layers[id] };
-if (this._handFx?.has(id)) l.on = this._handFx.get(id);
-layers[id] = l;
-}
-const p = this.app.settings.point;
-return JSON.stringify({ anim: st.anim, source: st.source, count: st.count, layers, look: st.look, mask: st.mask, morphCfg: st.morphCfg, pt: { shape: p.shape, size: p.size, color: p.color, solidColor: p.solidColor, attenuate: p.attenuate } });
-}
-_histFlush() {
-if (!this.active || this._histBusy) return;
-clearTimeout(this._histT);
-this._histCommit();
-}
-_histSoon() {
-if (!this.active || this._histBusy) return;
-clearTimeout(this._histT);
-this._histT = setTimeout(() => this._histCommit(), 350);
-}
-_histCommit() {
-const h = this._hist || (this._hist = { undo: [], redo: [], last: null });
-const snap = this._snap();
-if (h.last === null) h.last = snap;
-else if (snap !== h.last) {
-h.undo.push({ snap: h.last, label: this._diffLabel(h.last, snap) });
-if (h.undo.length > 100) h.undo.shift();
-h.redo.length = 0;
-h.last = snap;
-}
-this.emit();
-}
-_pieceUpdate(P) {
-const g = this.geometry;
-if (!g || !this.pieceTex) return;
-P = Math.max(2, Math.min(256, Math.round(P)));
-const key = P + ':' + g.attributes.position.count + ':' + this._animVer + ':' + this.cloudKey + ':' + (this.morphing ? this._time.toFixed(1) : 0);
-if (key === this._pieceKey) return;
-this._pieceKey = key;
-const a = g.attributes.aTarget.array;
-const n = g.attributes.position.count;
-const d = this.pieceTex.image.data;
-for (let p = 0; p < P; p++) {
-const s0 = Math.floor((p * n) / P), e0 = Math.max(s0 + 1, Math.floor(((p + 1) * n) / P));
-let x = 0, y = 0, z = 0;
-for (let i = s0; i < e0; i++) {
-x += a[i * 3];
-y += a[i * 3 + 1];
-z += a[i * 3 + 2];
-}
-const c = e0 - s0;
-d[p * 4] = x / c;
-d[p * 4 + 1] = y / c;
-d[p * 4 + 2] = z / c;
-d[p * 4 + 3] = 1;
-}
-this.pieceTex.needsUpdate = true;
-}
+__defs['src/effects/engine/audio.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'AudioPart', () => AudioPart);
+const THREE = __req('vendor/three/build/three.module.js');
+const { clamp } = __req('src/core/util.js');
+const { TouchSynth } = __req('src/effects/audio/touch-synth.js');
+const { SYNTH_STYLES } = __req('src/effects/state/options.js');
+class AudioPart {
 _markBeat() {
 this._tb = this._time;
 const g = this.geometry;
@@ -84654,852 +85566,6 @@ const t = g.attributes.aTarget.array;
 const i = Math.floor(Math.random() * (t.length / 3)) * 3;
 (this._waveSrc ||= new THREE.Vector3()).set(t[i], t[i + 1], t[i + 2]);
 }
-}
-_diffLabel(a, b) {
-try {
-const A = JSON.parse(a), B = JSON.parse(b);
-if (JSON.stringify(A.anim) !== JSON.stringify(B.anim)) return 'таймлайн';
-for (const id of Object.keys(B.layers)) {
-if (JSON.stringify(A.layers[id]) !== JSON.stringify(B.layers[id])) return 'эффект «' + (FX_LAYERS.find((l) => l.id === id)?.name || id) + '»';
-}
-if (A.source !== B.source) return 'форма';
-if (A.count !== B.count) return 'число частиц';
-if (JSON.stringify(A.mask) !== JSON.stringify(B.mask)) return 'зона действия';
-if (JSON.stringify(A.morphCfg) !== JSON.stringify(B.morphCfg)) return 'морфинг';
-if (JSON.stringify(A.look) !== JSON.stringify(B.look) || JSON.stringify(A.pt) !== JSON.stringify(B.pt)) return 'вид';
-} catch (e) {
-}
-return 'настройки';
-}
-get canUndo() {
-return !!this._hist?.undo.length;
-}
-get canRedo() {
-return !!this._hist?.redo.length;
-}
-get undoLabel() {
-return this._hist?.undo.at(-1)?.label || '';
-}
-get redoLabel() {
-return this._hist?.redo.at(-1)?.label || '';
-}
-async _histApply(snap) {
-const d = JSON.parse(snap);
-const st = this.state;
-this._histBusy = true;
-try {
-if (d.anim) {
-for (const k of Object.keys(st.anim)) delete st.anim[k];
-Object.assign(st.anim, d.anim);
-this._animVer = (this._animVer || 0) + 1;
-this.app.bus.emit('fxanim');
-}
-for (const id of Object.keys(d.layers)) if (st.layers[id]) Object.assign(st.layers[id], d.layers[id]);
-Object.assign(st.look, d.look);
-Object.assign(st.mask, d.mask);
-Object.assign(st.morphCfg, d.morphCfg);
-Object.assign(this.app.settings.point, d.pt);
-this.app.saveSettings();
-this.touch();
-if (d.count !== st.count) await this.setCount(d.count);
-if (d.source !== st.source) await this.setSource(d.source);
-} finally {
-this._hist.last = snap;
-this._histBusy = false;
-}
-this.emit();
-}
-async undo() {
-const h = this._hist;
-if (!h || !h.undo.length) return null;
-const e = h.undo.pop();
-h.redo.push({ snap: h.last, label: e.label });
-await this._histApply(e.snap);
-return e.label;
-}
-async redo() {
-const h = this._hist;
-if (!h || !h.redo.length) return null;
-const e = h.redo.pop();
-h.undo.push({ snap: h.last, label: e.label });
-await this._histApply(e.snap);
-return e.label;
-}
-touch() {
-this._histSoon();
-clearTimeout(this._saveT);
-this._saveT = setTimeout(() => saveJSON(KEY, this.state), 250);
-}
-emit() {
-this.app.bus.emit('fx');
-}
-_scopeBuild(S, order, chaosV = 0.5) {
-const g = this.geometry;
-const T = g.attributes.aTarget.array;
-const N = g.attributes.position.count;
-const path = g.attributes.aPath;
-this._scopeDropLine();
-if (order !== 'walk') {
-let mn = Infinity, mx = -Infinity;
-for (let i = 0; i < N; i++) {
-const v = order === 'up' ? T[i * 3 + 1] : Math.atan2(T[i * 3 + 2], T[i * 3]);
-if (v < mn) mn = v;
-if (v > mx) mx = v;
-}
-const span = Math.max(mx - mn, 1e-6);
-for (let i = 0; i < N; i++) path.array[i] = ((order === 'up' ? T[i * 3 + 1] : Math.atan2(T[i * 3 + 2], T[i * 3])) - mn) / span;
-path.needsUpdate = true;
-return;
-}
-const sc = Math.max(8, Math.min(S, N));
-const ids = new Int32Array(sc);
-for (let i = 0; i < sc; i++) ids[i] = Math.floor((i * N) / sc);
-const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
-for (let i = 0; i < sc; i++) for (let c = 0; c < 3; c++) {
-const v = T[ids[i] * 3 + c];
-if (v < mn[c]) mn[c] = v;
-if (v > mx[c]) mx[c] = v;
-}
-const ext = [0, 1, 2].map((c) => Math.max(mx[c] - mn[c], 0.03));
-const cell = Math.cbrt((ext[0] * ext[1] * ext[2]) / sc) * 1.7;
-const key = (x, y, z) => ((x + 512) * 1024 + (y + 512)) * 1024 + (z + 512);
-const cx = (v, c) => Math.floor((v - mn[c]) / cell);
-const grid = new Map();
-for (let i = 0; i < sc; i++) {
-const p = ids[i] * 3;
-const k = key(cx(T[p], 0), cx(T[p + 1], 1), cx(T[p + 2], 2));
-const a = grid.get(k);
-if (a) a.push(i);
-else grid.set(k, [i]);
-}
-const full = new Map();
-for (const [k, v] of grid) full.set(k, v.slice());
-const used = new Uint8Array(sc);
-const ord = new Int32Array(sc);
-const d2 = (i, p) => (T[ids[i] * 3] - p[0]) ** 2 + (T[ids[i] * 3 + 1] - p[1]) ** 2 + (T[ids[i] * 3 + 2] - p[2]) ** 2;
-let seed = 1234567;
-const rnd = () => {
-seed = (seed + 0x6d2b79f5) | 0;
-let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-};
-const chaos = Math.max(0, Math.min(1, chaosV));
-const strokes = 1 + Math.round(chaos * chaos * 120);
-const strokeLen = Math.max(6, Math.ceil(sc / strokes));
-const rem = new Int32Array(sc);
-const posIn = new Int32Array(sc);
-for (let i = 0; i < sc; i++) rem[i] = posIn[i] = i;
-let remN = sc;
-const take = (j) => {
-const pj = posIn[j];
-const last = rem[--remN];
-rem[pj] = last;
-posIn[last] = pj;
-used[j] = 1;
-};
-const brk = new Uint8Array(sc + 1);
-let n = 0;
-while (n < sc) {
-if (n > 0) brk[n] = 1;
-let cur = 0;
-if (n === 0 && strokes === 1) {
-for (let i = 1; i < sc; i++) if (T[ids[i] * 3 + 1] < T[ids[cur] * 3 + 1]) cur = i;
-} else cur = rem[Math.floor(rnd() * remN)];
-take(cur);
-ord[n++] = cur;
-let prev = null;
-let left = strokeLen - 1;
-while (left > 0 && n < sc) {
-const p = [T[ids[cur] * 3], T[ids[cur] * 3 + 1], T[ids[cur] * 3 + 2]];
-const bx = cx(p[0], 0), by = cx(p[1], 1), bz = cx(p[2], 2);
-const cand = [];
-for (let r = 0; r <= 5 && cand.length < 3; r++) {
-for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) for (let dz = -r; dz <= r; dz++) {
-if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue;
-const a = grid.get(key(bx + dx, by + dy, bz + dz));
-if (!a) continue;
-for (let q = a.length - 1; q >= 0; q--) {
-const j = a[q];
-if (used[j]) {
-a[q] = a[a.length - 1];
-a.pop();
-continue;
-}
-let d = d2(j, p);
-if (prev) d *= 1.25 - 0.25 * Math.max(-1, Math.min(1, ((T[ids[j] * 3] - p[0]) * prev[0] + (T[ids[j] * 3 + 1] - p[1]) * prev[1] + (T[ids[j] * 3 + 2] - p[2]) * prev[2]) / (Math.sqrt(d2(j, p)) * prev[3] + 1e-9)));
-cand.push([d, j]);
-}
-}
-}
-if (!cand.length) break;
-cand.sort((x, y) => x[0] - y[0]);
-let pick = 0;
-if (cand.length > 1 && rnd() < chaos * 0.75) pick = 1 + (cand.length > 2 && rnd() < 0.4 ? 1 : 0);
-const best = cand[pick][1];
-prev = [T[ids[best] * 3] - p[0], T[ids[best] * 3 + 1] - p[1], T[ids[best] * 3 + 2] - p[2], 0];
-prev[3] = Math.hypot(prev[0], prev[1], prev[2]);
-take(best);
-ord[n++] = best;
-cur = best;
-left--;
-}
-}
-const rank = new Int32Array(sc);
-for (let n = 0; n < sc; n++) rank[ord[n]] = n;
-const cut2 = (cell * 1.4) ** 2;
-for (let i = 0; i < N; i++) {
-const x = T[i * 3], y = T[i * 3 + 1], z = T[i * 3 + 2];
-const bx = cx(x, 0), by = cx(y, 1), bz = cx(z, 2);
-let best = -1, bd = Infinity;
-for (let r = 0; r <= 3 && best < 0; r++) {
-for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) for (let dz = -r; dz <= r; dz++) {
-if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue;
-const a = full.get(key(bx + dx, by + dy, bz + dz));
-if (!a) continue;
-for (const j of a) {
-const d = (T[ids[j] * 3] - x) ** 2 + (T[ids[j] * 3 + 1] - y) ** 2 + (T[ids[j] * 3 + 2] - z) ** 2;
-if (d < bd) {
-bd = d;
-best = j;
-}
-}
-}
-}
-if (best < 0) {
-path.array[i] = 0;
-continue;
-}
-const rk = rank[best];
-const P = (j) => ids[ord[j]] * 3;
-let bt = 0, bj = -1;
-for (const nj of [rk - 1, rk + 1]) {
-if (nj < 0 || nj >= sc || brk[Math.max(rk, nj)]) continue;
-const p0 = ids[best] * 3, p1 = P(nj);
-const ex = T[p1] - T[p0], ey = T[p1 + 1] - T[p0 + 1], ez = T[p1 + 2] - T[p0 + 2];
-const l2 = ex * ex + ey * ey + ez * ez;
-if (l2 < 1e-12 || l2 > cut2) continue;
-const t = ((x - T[p0]) * ex + (y - T[p0 + 1]) * ey + (z - T[p0 + 2]) * ez) / l2;
-if (t > bt) {
-bt = Math.min(t, 1);
-bj = nj;
-}
-}
-path.array[i] = (rk + (bj < 0 ? 0 : (bj - rk) * bt)) / (sc - 1);
-}
-path.needsUpdate = true;
-const L = sc - 1;
-const V = L * 4;
-const O = g.attributes.aOrigin.array;
-const D = g.attributes.aDepth.array;
-const A = new Float32Array(V * 3), TA = new Float32Array(V * 3), B = new Float32Array(V * 3), TB = new Float32Array(V * 3);
-const ia = new Float32Array(V), ib = new Float32Array(V), da = new Float32Array(V), db = new Float32Array(V), end = new Float32Array(V), side = new Float32Array(V), seg = new Float32Array(V);
-const index = new Uint32Array(L * 6);
-const cut = cell * 1.4;
-for (let l = 0; l < L; l++) {
-const a = ids[ord[l]], b = ids[ord[l + 1]];
-const far = brk[l + 1] === 1 || Math.hypot(T[a * 3] - T[b * 3], T[a * 3 + 1] - T[b * 3 + 1], T[a * 3 + 2] - T[b * 3 + 2]) > cut;
-index.set([l * 4, l * 4 + 1, l * 4 + 2, l * 4 + 2, l * 4 + 1, l * 4 + 3], l * 6);
-for (let v = 0; v < 4; v++) {
-const q = l * 4 + v;
-for (let c = 0; c < 3; c++) {
-A[q * 3 + c] = O[a * 3 + c];
-TA[q * 3 + c] = T[a * 3 + c];
-B[q * 3 + c] = O[b * 3 + c];
-TB[q * 3 + c] = T[b * 3 + c];
-}
-ia[q] = a / N;
-ib[q] = b / N;
-da[q] = D[a];
-db[q] = D[b];
-end[q] = v >> 1;
-side[q] = v & 1 ? 1 : -1;
-seg[q] = far ? -1 : l / L;
-}
-}
-const lg = new THREE.BufferGeometry();
-lg.setAttribute('position', new THREE.BufferAttribute(A.slice(), 3));
-lg.setAttribute('aOrigin', new THREE.BufferAttribute(A, 3));
-lg.setAttribute('aTarget', new THREE.BufferAttribute(TA, 3));
-lg.setAttribute('aOriginB', new THREE.BufferAttribute(B, 3));
-lg.setAttribute('aTargetB', new THREE.BufferAttribute(TB, 3));
-lg.setAttribute('aIdx', new THREE.BufferAttribute(ia, 1));
-lg.setAttribute('aIdxB', new THREE.BufferAttribute(ib, 1));
-lg.setAttribute('aDepth', new THREE.BufferAttribute(da, 1));
-lg.setAttribute('aDepthB', new THREE.BufferAttribute(db, 1));
-lg.setAttribute('aEnd', new THREE.BufferAttribute(end, 1));
-lg.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
-lg.setAttribute('aSeg', new THREE.BufferAttribute(seg, 1));
-lg.setIndex(new THREE.BufferAttribute(index, 1));
-const mat = new THREE.ShaderMaterial({ vertexShader: this._fxSource('scope', this._fxCur || (this._fxCur = new Set())), userData: { fxKind: 'scope' }, fragmentShader: scopeFrag, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, uniforms: { ...this.shared, uTOff: { value: 0 } } });
-const line = new THREE.Mesh(lg, mat);
-line.frustumCulled = false;
-line.userData.helper = true;
-this.points.add(line);
-this._scopeLine = line;
-this._scopePath = { ids, ord, L };
-}
-_frameSample() {
-const u = this.shared;
-const n = u.uFr.value.y;
-const W = u.uFr2.value.z, H = u.uFr2.value.w;
-const idx = u.uFr4.value.x;
-const k = clamp(Math.round(idx), 0, Math.max(0, n - 1));
-const depth = u.uFr3.value.x;
-const uu = (Math.random() - 0.5) * 0.9, vv = (Math.random() - 0.5) * 0.9;
-const dz = u.uFr4.value.y > 0.5 && u.uFr4.value.y < 1.5 ? -1 : 1;
-const cen = u.uFr6.value.y > 0.5 ? (n - 1) * 0.5 : idx;
-const place = (lay) => {
-if (lay > 0.5 && lay < 1.5) {
-const gx = Math.ceil(Math.sqrt(n * (W / H)));
-const gy = Math.ceil(n / gx);
-const s = Math.min(2.4 / (gx * W), 2.4 / (gy * H));
-return new THREE.Vector3((k % gx - (gx - 1) * 0.5) * W * s * 1.04 + uu * W * s, ((gy - 1) * 0.5 - Math.floor(k / gx)) * H * s * 1.04 + vv * H * s, 0);
-}
-if (lay > 1.5 && lay < 2.5) return new THREE.Vector3(uu * W, vv * H, 0);
-return new THREE.Vector3(uu * W, vv * H, ((idx - cen) * depth) / Math.max(n - 1, 1) * dz);
-};
-const a = place(u.uFr3.value.y);
-const w = u.uFr3.value.w;
-if (w > 0.0001) {
-const m = w * w * (3 - 2 * w);
-a.lerp(place(u.uFr3.value.z), m);
-}
-return a;
-}
-_scopeSyncLine() {
-const sp = this._scopePath;
-const lg = this._scopeLine?.geometry;
-if (!sp || !lg || !this.geometry || !lg.attributes.aOrigin) return;
-const T = this.geometry.attributes.aTarget.array;
-const { ids, ord, L } = sp;
-const a0 = lg.attributes.aOrigin.array;
-const a1 = lg.attributes.aTarget.array;
-const a2 = lg.attributes.aOriginB.array;
-const a3 = lg.attributes.aTargetB.array;
-for (let l = 0; l < L; l++) {
-const a = ids[ord[l]] * 3, b = ids[ord[l + 1]] * 3;
-const ta0 = T[a], ta1 = T[a + 1], ta2 = T[a + 2];
-const tb0 = T[b], tb1 = T[b + 1], tb2 = T[b + 2];
-for (let v = 0; v < 4; v++) {
-const q = (l * 4 + v) * 3;
-a0[q] = a1[q] = ta0;
-a0[q + 1] = a1[q + 1] = ta1;
-a0[q + 2] = a1[q + 2] = ta2;
-a2[q] = a3[q] = tb0;
-a2[q + 1] = a3[q + 1] = tb1;
-a2[q + 2] = a3[q + 2] = tb2;
-}
-}
-lg.attributes.aOrigin.needsUpdate = true;
-lg.attributes.aTarget.needsUpdate = true;
-lg.attributes.aOriginB.needsUpdate = true;
-lg.attributes.aTargetB.needsUpdate = true;
-}
-_scopeDropLine() {
-const l = this._scopeLine;
-if (!l) return;
-l.parent?.remove(l);
-l.geometry.dispose();
-l.material.dispose();
-this._scopeLine = null;
-}
-_scopeTick(dt, S, u) {
-const amount = clamp(this._eff(S), 0, 1);
-if (amount <= 0.001 || !this.geometry || !this.points || !this.geometry.attributes.aPath) {
-u.uScope.value.set(0, 0, 0, 1);
-if (this._scopeLine) this._scopeLine.visible = false;
-this._scopeT = 0;
-return;
-}
-const order = S.order || 'walk';
-const gk = this.geometry.uuid + ':' + order + ':' + (order === 'walk' ? Math.round(S.detail) + '/' + Math.round(S.chaos * 20) : 0);
-const lost = this._scopeLine && this._scopeLine.parent !== this.points;
-if (this._scopeKey !== gk || lost) {
-const sameGeo = this._scopeKey && this._scopeKey.split(':')[0] === this.geometry.uuid;
-if (!sameGeo || lost || !this._scopeWait || performance.now() - this._scopeWait > 250) {
-this._scopeKey = gk;
-this._scopeWait = performance.now();
-if (lost) this._scopeLine = null;
-this._scopeBuild(Math.round(S.detail), order, S.chaos);
-}
-}
-if (this._animCloud && this._scopeLine && this._scopeAnimVer !== this._animVer) {
-this._scopeAnimVer = this._animVer;
-this._scopeSyncLine();
-}
-this._scopeT = (this._scopeT || 0) + dt * S.speed * 0.07;
-const once = S.loop === 'once';
-const c = once ? Math.min(this._scopeT, 0.55) : this._scopeT % 1;
-const head = Math.min(c / 0.5, 1.05);
-const env = Math.min(1, c / 0.03);
-const out = once ? 0 : Math.max(0, (c - 0.6) / 0.4) * 1.02;
-const comet = S.mode === 'comet';
-u.uScope.value.set(amount, (comet ? 1 : 0) + (S.dir === 'back' ? 2 : 0), head, S.trail);
-u.uScopeP.value.set(S.dim, env, out, S.pens);
-u.uScopeQ.value.set(S.tint, S.thick, S.glow, S.spark);
-if (S.color === 'auto' || !S.color) u.uScopeC.value.copy(u.uP2.value);
-else u.uScopeC.value.set(S.color);
-u.uScopeW.value = S.width;
-u.uScopeLB.value = S.line;
-const L = this._scopeLine;
-if (L) L.visible = this._gate('scope', order === 'walk' && S.line > 0.01 && !(u.uFr.value.x > 0.5));
-}
-get animReady() {
-return !!this._animCloud;
-}
-_trailTick(T) {
-const ac = this._animCloud;
-const tr0 = this._trail;
-const hide = () => {
-if (tr0) tr0.group.visible = false;
-};
-if (!T.on || !ac || !this.geometry || !this.points || !this._animBuf || this.state.source !== 'model') return hide();
-const amount = clamp(this._eff(T), 0, 1);
-if (amount < 0.005) return hide();
-const m0 = Math.max(1000, Math.min(Math.round(T.pts), ac.count));
-const stride = Math.max(1, Math.floor(ac.count / m0));
-const mm = Math.floor(ac.count / stride);
-const n = Math.max(2, Math.round(T.count));
-let tr = this._trail;
-if (!tr || tr.group.parent !== this.points || tr.mm !== mm || tr.n !== n || tr.geo !== this.geometry) {
-if (tr) {
-tr.group.removeFromParent();
-tr.group.traverse((o) => {
-if (o.material) o.material.dispose();
-if (o.geometry) o.geometry.dispose();
-});
-}
-const col = new Float32Array(mm * 3);
-const ca = this.geometry.attributes.aColor.array;
-for (let i = 0; i < mm; i++) for (let c = 0; c < 3; c++) col[i * 3 + c] = ca[i * stride * 3 + c];
-const colAttr = new THREE.BufferAttribute(col, 3);
-const group = new THREE.Group();
-group.userData.helper = true;
-const snaps = [];
-const ghosts = [];
-const cur = new Float32Array(mm * 3);
-for (let i = 0; i < mm; i++) for (let c = 0; c < 3; c++) cur[i * 3 + c] = this._animBuf[i * stride * 3 + c];
-for (let k = 0; k <= n; k++) snaps.push(cur.slice());
-for (let k = 0; k < n; k++) {
-const g = new THREE.BufferGeometry();
-g.setAttribute('position', new THREE.BufferAttribute(snaps[k + 1], 3));
-g.setAttribute('color', colAttr);
-const mat = new THREE.ShaderMaterial({
-uniforms: { uSize: { value: 1 }, uAlpha: { value: 0 }, uTint: { value: 0 }, uTintC: { value: new THREE.Color() } },
-vertexShader: 'attribute vec3 color; uniform float uSize; uniform float uTint; uniform vec3 uTintC; varying vec3 vC; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = clamp(uSize * 3.8 / max(-mv.z, 0.4), 1.0, 60.0); vC = mix(color, uTintC, uTint); }',
-fragmentShader: 'precision highp float; uniform float uAlpha; varying vec3 vC; void main() {\n if (length(gl_PointCoord - 0.5) > 0.5) discard;\n  gl_FragColor = vec4(vC, uAlpha);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}',
-transparent: true,
-depthWrite: false,
-blending: THREE.NormalBlending,
-});
-const p = new THREE.Points(g, mat);
-p.renderOrder = -1;
-p.frustumCulled = false;
-p.userData.helper = true;
-group.add(p);
-ghosts.push(p);
-}
-this.points.add(group);
-tr = this._trail = { group, snaps, ghosts, mm, n, stride, last: this._time, geo: this.geometry };
-}
-tr.group.visible = true;
-if (this.app.anim.playing && this._time - tr.last >= T.step) {
-tr.last = this._time;
-const old = tr.snaps.pop();
-for (let i = 0; i < mm; i++) for (let c = 0; c < 3; c++) old[i * 3 + c] = this._animBuf[i * tr.stride * 3 + c];
-tr.snaps.unshift(old);
-tr.ghosts.forEach((p, k) => {
-const a = p.geometry.attributes.position;
-a.array = tr.snaps[k + 1];
-a.needsUpdate = true;
-});
-}
-const u = this.shared;
-const base = u.uSize.value * u.uPR.value * T.size;
-tr.ghosts.forEach((p, k) => {
-const mt = p.material.uniforms;
-mt.uAlpha.value = amount * Math.pow(T.fade, k + 1) * 0.75;
-mt.uSize.value = base * (1 - T.shrink * (k / Math.max(1, n - 1)));
-mt.uTint.value = T.tint;
-mt.uTintC.value.copy(u.uP2.value);
-});
-}
-_fxSource(kind, on) {
-const cache = this._fxCache || (this._fxCache = new Map());
-const sig = [...on].sort().join(',');
-const ck = kind + '|' + sig;
-let v = cache.get(ck);
-if (!v) {
-const base = kind === 'line' ? lineVert : kind === 'scope' ? scopeVert : vert;
-v = specializeFx(base, (name, comp, thr) => (FX_GUARDS.has(name + '.' + comp + '>' + thr) ? on.has(name + '.' + comp + '>' + thr) : undefined));
-cache.set(ck, v);
-}
-return v;
-}
-_fxCheck() {
-if (!this.shared || !this.points || this._fxBusy) return;
-const cur = this._fxCur || (this._fxCur = new Set());
-const now = performance.now();
-const seen = this._fxSeen || (this._fxSeen = new Map());
-let add = null;
-for (const [key, [name, comp, thr]] of FX_GUARDS) {
-const v = this.shared[name]?.value?.[comp];
-const on = v > thr * 0.5;
-if (on) seen.set(key, now);
-if (on && !cur.has(key)) (add || (add = new Set())).add(key);
-}
-let stale = null;
-for (const key of cur) if (now - (seen.get(key) || 0) > 20000) (stale || (stale = new Set())).add(key);
-if (!add && !(stale && stale.size >= 2)) {
-this._fxDeb = 0;
-return;
-}
-if (!this._fxDeb) this._fxDeb = now;
-if (now - this._fxDeb < 250) return;
-this._fxDeb = 0;
-this._fxApply(add || new Set(), add ? null : stale);
-}
-async _fxApply(add, drop) {
-this._fxBusy = true;
-const next = new Set([...(this._fxCur || [])].filter((k) => !(drop && drop.has(k))));
-for (const k of add) next.add(k);
-try {
-await Promise.all(this._warmKinds().map((k) => this._warmKind(k, next)));
-} catch (e) {
-}
-this._fxCur = next;
-this._fxSwap();
-this._fxBusy = false;
-}
-_postOn() {
-const L = this.state.layers;
-const fb = L.feedback;
-const dm = L.datamosh;
-return (this.state.look.bloom || 0) > 0.01 || (this.state.look.aberration || 0) > 0.01 || !!(fb && fb.on && fb.amount > 0.01) || !!(dm && dm.on);
-}
-_fxSig(set) {
-return [...(set || this._fxCur || [])].sort().join(',');
-}
-_vertKind() {
-const add = this.material ? this.material.blending === THREE.AdditiveBlending : this.state.look.blend === 'add';
-return add ? 'vert|add' : 'vert|norm';
-}
-_warmKinds() {
-const kinds = [this._vertKind()];
-const now = performance.now();
-const wanted = (k) => now - ((this._wantT && this._wantT[k]) || -1e9) < 800;
-if (this.hero) kinds.push('hero');
-if (this.linkObj && (this.linkObj.visible || wanted('line'))) kinds.push('line');
-if (this._scopeLine && (this._scopeLine.visible || wanted('scope'))) kinds.push('scope');
-return kinds;
-}
-_curTgt() {
-return this.active ? !!this._tgtRT : this._postOn();
-}
-async _warmScene(scene, camera, rt = this._curTgt()) {
-const r = this.app.viewport.renderer;
-const prev = r.getRenderTarget();
-const mats = new Set();
-try {
-const target = rt ? this._warmRT || (this._warmRT = new THREE.WebGLRenderTarget(4, 4)) : null;
-r.setRenderTarget(target);
-r.compile(scene, camera, this.app.viewport.scene).forEach((m) => mats.add(m));
-} catch (e) {
-return;
-} finally {
-r.setRenderTarget(prev);
-}
-await waitPrograms(r, mats);
-}
-_warmObj(kind, set) {
-const g = this._warmGeo || (this._warmGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3)));
-const base = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} };
-if (kind === 'line') return new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('line', set), fragmentShader: lineFrag }));
-if (kind === 'scope') return new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('scope', set), fragmentShader: scopeFrag }));
-const hero = kind === 'hero';
-const add = hero ? !this.hero || this.hero.material.blending === THREE.AdditiveBlending : kind !== 'vert|norm';
-const par = { transparent: add, depthWrite: !add, blending: add ? THREE.AdditiveBlending : THREE.NormalBlending, uniforms: {}, vertexShader: this._fxSource('vert', set), fragmentShader: frag };
-if (hero) par.defines = { HERO: 1 };
-return new THREE.Points(g, new THREE.ShaderMaterial(par));
-}
-async _warmKind(kind, set, rt = this._curTgt()) {
-set = set || this._fxCur || new Set();
-const sig = this._fxSig(set);
-const keep = this._keep || (this._keep = new Map());
-const warm = this._warm || (this._warm = new Map());
-const id = kind + (rt ? '@r' : '@s');
-const kid = id + '#' + sig;
-const want = this._warmWant || (this._warmWant = {});
-want[id] = sig;
-const prev = keep.get(kid);
-if (prev) {
-keep.delete(kid);
-keep.set(kid, prev);
-if (prev.job) await prev.job;
-if (want[id] === sig) warm.set(id, sig);
-return;
-}
-const obj = this._warmObj(kind, set);
-const sc = new THREE.Scene();
-sc.add(obj);
-const rec = { sig, mat: obj.material, job: null };
-keep.set(kid, rec);
-for (const [k, r] of keep) {
-if (keep.size <= 10) break;
-if (r.job || k === kid) continue;
-keep.delete(k);
-setTimeout(() => r.mat.dispose(), 1500);
-}
-rec.job = (async () => {
-await null;
-try {
-await this._warmScene(sc, this.app.viewport.camera, rt);
-} catch (e) {
-}
-if (want[id] === sig) warm.set(id, sig);
-rec.job = null;
-this.app.viewport.invalidate();
-})();
-await rec.job;
-}
-_gate(kind, want) {
-if (!want) return false;
-(this._wantT || (this._wantT = {}))[kind] = performance.now();
-const sig = this._fxSig();
-const id = kind + (this._curTgt() ? '@r' : '@s');
-if (!this._warm || this._warm.get(id) !== sig) {
-const k = this._keep && this._keep.get(id + '#' + sig);
-if (!(k && k.job)) this._warmKind(kind, this._fxCur);
-return false;
-}
-return true;
-}
-_tgtSync() {
-const want = this._postOn();
-if (want === !!this._tgtRT) return;
-const sig = this._fxSig();
-let ready = true;
-const tw = this._tgtWarm || (this._tgtWarm = {});
-const sk = want ? 'r' : 's';
-if (tw[sk] !== 2) {
-ready = false;
-if (!tw[sk]) {
-tw[sk] = 1;
-this._warmScene(this.app.viewport.scene, this.app.viewport.camera, want).then(() => (tw[sk] = 2));
-}
-}
-for (const k of this._warmKinds()) {
-if (!this._warm || this._warm.get(k + (want ? '@r' : '@s')) !== sig) {
-ready = false;
-this._warmKind(k, this._fxCur, want);
-}
-}
-if (ready) this._tgtRT = want;
-}
-_fxSwap() {
-if (!this.points) return;
-this.points.traverse((o) => {
-const m = o.material;
-const k = m && m.userData && m.userData.fxKind;
-if (k) {
-m.vertexShader = this._fxSource(k, this._fxCur);
-m.needsUpdate = true;
-}
-});
-this.app.viewport.invalidate();
-}
-async prewarm() {
-if (this.active) return;
-try {
-if (this.hasModel && !this.pm.ready) {
-const saved = this.state.count;
-this.state.count = Math.max(20000, Math.min(2000000, this.app.settings.point.surfaceCount));
-this._quiet = true;
-try {
-await this._cloudFor('model');
-} finally {
-this.state.count = saved;
-this._quiet = false;
-}
-}
-} catch (e) {
-}
-try {
-await this._warmKind(this._vertKind(), this._fxCur || new Set(), this._postOn());
-} catch (e) {
-}
-}
-onDepthChange(fn) {
-this._dListeners.add(fn);
-return () => this._dListeners.delete(fn);
-}
-_depthEmit() {
-for (const f of this._dListeners) f();
-}
-depthInfo() {
-const ai = this.depthAI;
-const D = this._D;
-const L = this.state.layers.depth;
-return { media: !!this.pm.ready, video: this.pm.kind === 'video', src: L.src, phase: ai.phase, prog: ai.prog, device: ai.device, error: ai.error || D.err, hasMap: !!D.map, aiMap: !!D.map && D.mapSrc === 'ai', busy: D.busy };
-}
-drawDepthMap(cv, plain = false) {
-const m = this._D.proc || this._D.map;
-if (!m) return;
-if (cv.width !== m.w || cv.height !== m.h) {
-cv.width = m.w;
-cv.height = m.h;
-}
-const g = cv.getContext('2d');
-const id = g.createImageData(m.w, m.h);
-for (let i = 0; i < m.data.length; i++) {
-const v = Math.round(m.data[i] * 255);
-id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = v;
-id.data[i * 4 + 3] = 255;
-}
-const L = this.state.layers.depth;
-const fc = L.focus ?? 0.5, zw = L.zone ?? 0.12;
-for (let i = 0; i < m.data.length && !plain; i++) {
-if (Math.abs(m.data[i] - fc) <= zw) {
-id.data[i * 4] = Math.min(255, id.data[i * 4] * 0.5 + 130);
-id.data[i * 4 + 1] = id.data[i * 4 + 1] * 0.55 + 55;
-id.data[i * 4 + 2] = id.data[i * 4 + 2] * 0.3;
-}
-}
-g.putImageData(id, 0, 0);
-}
-buildDepth() {
-const D = this._D;
-D.force = true;
-D.err = '';
-if (this.depthAI.phase === 'error') this.depthAI.dispose();
-this.depthAI.init().catch(() => {});
-this._depthEmit();
-}
-saveDepthMap() {
-const m = this._D.map;
-if (!m) return;
-const cv = document.createElement('canvas');
-this.drawDepthMap(cv, true);
-cv.toBlob((b) => b && downloadBlob(b, 'depth-map.png'), 'image/png');
-}
-_depthTick(dt, rgb) {
-const L = this.state.layers.depth;
-const D = this._D;
-const pm = this.pm;
-const g = this.geometry;
-const n = pm.count;
-const key = pm.rec || pm.el;
-if (D.key !== key) {
-Object.assign(D, { key, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, err: '' });
-this._depthEmit();
-}
-if (rgb) {
-D.rgb = rgb;
-D.rgbN++;
-}
-if (!L.on) return;
-const ai = L.src === 'ai';
-if (D.rgb && D.lumaN !== D.rgbN && (!ai || !D.aiHas)) {
-D.lumaN = D.rgbN;
-D.map = lumaDepth(D.rgb, pm.cols, pm.rows);
-D.mapSrc = 'luma';
-D.dirty = true;
-this._depthEmit();
-}
-if (!ai && D.aiHas) {
-D.aiHas = false;
-D.lumaN = -1;
-}
-if (ai && !D.busy && this.depthAI.phase !== 'error') {
-const el = pm.isRec ? null : pm.el;
-const vt = pm.isRec ? pm.t : el.currentTime || 0;
-const ready = pm.isRec ? !!D.rgb : el && (pm.kind === 'image' || el.readyState >= 2);
-const need = D.force || !D.aiHas || (pm.kind === 'video' && Math.abs(vt - D.reqT) > 0.03);
-if (ready && need) {
-D.busy = true;
-D.force = false;
-D.reqT = vt;
-const cpu = this.depthAI.device === 'wasm';
-const side = pm.kind === 'video' ? (cpu ? 280 : 448) : cpu ? 420 : 640;
-const frame = pm.isRec ? grabRGB4(D.rgb, pm.cols, pm.rows) : grabFrame(el, side);
-if (!frame) D.busy = false;
-else {
-this.depthAI
-.estimate(frame)
-.then((r) => {
-if (D.key !== key) return;
-D.map = { w: r.w, h: r.h, data: normalizeDepth(r.data, D.st, pm.kind === 'video' ? 0.35 : 0) };
-D.mapSrc = 'ai';
-D.aiHas = true;
-D.dirty = true;
-D.err = '';
-})
-.catch((e) => {
-D.err = e.message || String(e);
-})
-.finally(() => {
-D.busy = false;
-this._depthEmit();
-});
-this._depthEmit();
-}
-}
-}
-const P = [L.bright ?? 0, L.contrast ?? 1, L.gamma ?? 1, L.blur ?? 0].join('|');
-if (D.map && (D.dirty || D.pSig !== P || !D.proc)) {
-D.proc = adjustDepth(D.map, { bright: L.bright, contrast: L.contrast, gamma: L.gamma, blur: L.blur });
-D.pSig = P;
-D.dirty = true;
-this._depthEmit();
-}
-const TS = (L.focus ?? 0.5) + '|' + (L.zone ?? 0.12);
-if (D.tSig !== TS) {
-D.tSig = TS;
-this._depthEmit();
-}
-if (D.proc && (D.dirty || !D.tgt || D.tgt.length !== n)) {
-if (!D.tgt || D.tgt.length !== n) {
-D.tgt = new Float32Array(n);
-D.snap = true;
-}
-depthToGrid(D.proc, pm.cols, pm.rows, D.tgt);
-D.dirty = false;
-D.moving = true;
-}
-const attr = g.attributes.aDepth;
-if (!D.tgt || !attr || attr.array.length !== n) return;
-const arr = attr.array;
-if (D.geo !== g) {
-D.geo = g;
-D.snap = true;
-}
-let changed = false;
-if (D.snap) {
-arr.set(D.tgt);
-D.snap = false;
-D.moving = false;
-changed = true;
-} else if (D.moving) {
-const rate = 1 - Math.exp(-dt * (2.5 + (1 - L.smooth) * 18));
-const tg = D.tgt;
-let mx = 0;
-for (let i = 0; i < n; i++) {
-const d = tg[i] - arr[i];
-arr[i] += d * rate;
-const a = d < 0 ? -d : d;
-if (a > mx) mx = a;
-}
-if (mx < 0.002) D.moving = false;
-changed = true;
-}
-if (changed) {
-attr.needsUpdate = true;
-if (this.state.layers.links.on && (D._lk = ((D._lk || 0) + 1) % 5) === 0) this._syncLinks();
-}
-}
-get hasModel() {
-return !!(this.modelProvider && this.modelProvider.available());
 }
 _ensureCtx() {
 if (this.ctx) return;
@@ -85747,655 +85813,28 @@ const d = this.specTex.image.data;
 for (let i = 0; i < 64; i++) d[i] = Math.round(clamp(this.spec[i], 0, 1) * 255);
 this.specTex.needsUpdate = true;
 }
-_n() {
-const mp = this.modelProvider;
-if (mp && mp.kind() === 'cloud') return Math.max(1000, Math.min(this.state.count, mp.total()));
-return this.state.count;
+_bandLevel(l) {
+if (l.band === 'custom') {
+const i0 = Math.max(0, Math.floor(l.lo * 64));
+const i1 = Math.min(64, Math.max(i0 + 1, Math.ceil(l.hi * 64)));
+let s = 0;
+for (let i = i0; i < i1; i++) s += this.spec[i];
+return Math.min(1, (s / (i1 - i0)) * 1.5);
 }
-async _cloudFor(key) {
-if (key === 'frames') return this._frameCloud || null;
-if (key === 'media') {
-const pm = this.pm;
-if (!pm.ready) return null;
-pm.setGrid(this.app.settings.media.pts);
-const m = this.app.settings.media;
-pm.dirty = true;
-return pm.buildCloud(pm.sample(), m.relief, m.depth);
+return this.levels[l.band] || 0;
 }
-const n = this._n();
-const ck = key + ':' + n;
-if (this.cache.has(ck)) return this.cache.get(ck);
-const pend = (this._pend ||= new Map());
-if (pend.has(ck)) return pend.get(ck);
-const job = (async () => {
-let c;
-if (key === 'model') {
-c = this.modelProvider ? await this.modelProvider.get(n) : null;
-if (!c) return null;
-c = mortonSort(fitCount(normalizeCloud(c), n));
-} else if (key.startsWith('obj:')) {
-const o = this.modelProvider?.objects().find((x) => x.id === key.slice(4));
-c = o ? await this.modelProvider.getOf(o.obj, n) : null;
-if (!c || !c.count) return null;
-c = mortonSort(fitCount(normalizeCloud(c), n));
-} else {
-c = generateShapePoints(key, n);
-}
-this.cache.set(ck, c);
-return c;
-})();
-pend.set(ck, job);
-try {
-return await job;
-} finally {
-pend.delete(ck);
+hzAt(x) {
+const sr = this.ctx?.sampleRate || 44100;
+return Math.round(x * x * 0.275 * sr);
 }
 }
-async _prefetch(keys) {
-const token = (this._pfT = (this._pfT || 0) + 1);
-for (const k of keys || []) {
-if (token !== this._pfT || !this.active) return;
-this._quiet = true;
-try {
-await this._cloudFor(k);
-} catch (e) {
-} finally {
-this._quiet = false;
-}
-await new Promise((r) => setTimeout(r, 30));
-}
-}
-async _build() {
-const st = this.state;
-if (st.source === 'model' && !this.hasModel) st.source = 'sphere';
-let c = await this._cloudFor(st.source);
-if (!c) {
-st.source = 'sphere';
-c = await this._cloudFor('sphere');
-}
-const count = c.count;
-const g = new THREE.BufferGeometry();
-const idx = new Float32Array(count);
-for (let i = 0; i < count; i++) idx[i] = i / count;
-const model = st.source === 'model' || st.source === 'media' || st.source === 'frames' ? c : this.hasModel ? (await this._cloudFor('model').catch(() => null)) || c : c;
-g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
-g.setAttribute('aOrigin', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
-g.setAttribute('aTarget', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
-g.setAttribute('aNormal', new THREE.BufferAttribute(new Float32Array(c.normals), 3));
-g.setAttribute('aNormalB', new THREE.BufferAttribute(new Float32Array(c.normals), 3));
-g.setAttribute('aPaint', new THREE.BufferAttribute(new Float32Array(count * 4), 4));
-this._dabs = [];
-this._painted = false;
-g.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(model.colors.length === c.colors.length ? model.colors : c.colors), 3));
-g.setAttribute('aColorB', new THREE.BufferAttribute(new Float32Array(g.attributes.aColor.array), 3));
-g.setAttribute('aHide', new THREE.BufferAttribute(c.hide && c.hide.length === count ? new Float32Array(c.hide) : new Float32Array(count), 1));
-g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(count).fill(0.5), 1));
-g.setAttribute('aPath', new THREE.BufferAttribute(new Float32Array(count), 1));
-g.setAttribute('aIdx', new THREE.BufferAttribute(idx, 1));
-g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
-g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
-this._grabs = new Map();
-this._animCloud = st.source === 'model' && c.anim && c.norm ? c : null;
-this._animVer = -1;
-if (!this.specTex) {
-this.specTex = new THREE.DataTexture(new Uint8Array(64), 64, 1, THREE.RedFormat, THREE.UnsignedByteType);
-this.specTex.minFilter = this.specTex.magFilter = THREE.LinearFilter;
-this.specTex.needsUpdate = true;
-}
-if (!this.pieceTex) {
-this.pieceTex = new THREE.DataTexture(new Float32Array(256 * 4), 256, 1, THREE.RGBAFormat, THREE.FloatType);
-this.pieceTex.minFilter = this.pieceTex.magFilter = THREE.NearestFilter;
-this.pieceTex.needsUpdate = true;
-this._pieceKey = '';
-}
-const U = (v) => ({ value: v });
-const shared = {
-uTime: U(0), uMorph: U(1), uMorphS: U(new THREE.Vector4(0, 0.8, 0.35, 1)), uMorphO: U(new THREE.Vector4(0, 0, 0.4, 0)), uSettle: U(-1), uFr: U(new THREE.Vector4()), uFr2: U(new THREE.Vector4(1, 1, 2.2, 1.2)), uFr3: U(new THREE.Vector4(1.6, 0, 0, 0)), uFr4: U(new THREE.Vector4(0, 0, 0.12, 0.7)), uFr5: U(new THREE.Vector4(0, 0.7, 1, 1)), uHero: U(new THREE.Vector4()), uFr6: U(new THREE.Vector4(1.5, 0, 0, 0.5)), uFr7: U(new THREE.Vector4(1, 0, 0.6, 0)), uHeroTex: U(frDummy2D()), uFrTex: U(frDummyTex()), uSize: U(3), uPR: U(1), uBeat: U(0), uColorBy: U(0), uBright: U(1), uGlow: U(0.8), uAdd: U(1), uDens: U(Math.min(1.6, Math.sqrt(150000 / count))),
-uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()), uYR: U(new THREE.Vector2(-1, 1)),
-uShade: U(0), uGlyph: U(new THREE.Vector3(0, 1, 8)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
-uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
-uPulse: U(new THREE.Vector4()), uVoxel: U(new THREE.Vector4()), uJitter: U(new THREE.Vector4()), uCursor: U(new THREE.Vector4()),
-uGlitch: U(new THREE.Vector4()), uSlice: U(new THREE.Vector4()), uSliceM: U(new THREE.Vector4()), uSliceC: U(new THREE.Color()), uMark: U(new THREE.Vector4()), uMarkC: U(new THREE.Color()), uLink: U(new THREE.Vector4()), uLinkP: U(new THREE.Vector4()), uContact: U(new THREE.Vector4()), uShockP: U(new THREE.Vector4()),
-uTrk: U(Array.from({ length: 16 }, () => new THREE.Vector4())), uImp: U(Array.from({ length: 32 }, () => new THREE.Vector4())), uShock: U(Array.from({ length: 4 }, () => new THREE.Vector4(0, 0, 0, -1))),
-uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
-uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
-uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()), uPaintP: U(new THREE.Vector4()),
-uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
-uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uAnimN: U(0), uCen: U(new THREE.Vector3()), uExp: U(new THREE.Vector4()), uExpP: U(new THREE.Vector4()), uPieceTex: U(this.pieceTex), uGrow: U(new THREE.Vector4()), uGrowP: U(new THREE.Vector4()), uGrowSeed: U(new THREE.Vector3()), uJel: U(Array.from({ length: 3 }, () => new THREE.Vector4(0, 0, 0, -99))), uJelO: U(Array.from({ length: 3 }, () => new THREE.Vector4())), uJelP: U(new THREE.Vector4()), uDisQ: U(new THREE.Vector4(0.32, 1, 0.35, 0.85)), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 };
-const addBlend = this.state.look.blend === 'add';
-const mk = (extra) =>
-new THREE.ShaderMaterial({
-vertexShader: this._fxSource('vert', this._fxCur || (this._fxCur = new Set())),
-fragmentShader: frag,
-transparent: addBlend,
-depthWrite: !addBlend,
-blending: addBlend ? THREE.AdditiveBlending : THREE.NormalBlending,
-uniforms: { ...shared, uTOff: U(0), uGhost: U(1), ...extra },
-userData: { fxKind: 'vert' },
-});
-const mat = mk();
-const pts = new THREE.Points(g, mat);
-pts.frustumCulled = false;
-pts.name = '__fx';
-pts.userData.helper = true;
-g.computeBoundingBox();
-const bb = g.boundingBox;
-shared.uYR.value.set(bb.min.y, bb.max.y);
-shared.uCen.value.set((bb.min.x + bb.max.x) / 2, (bb.min.y + bb.max.y) / 2, (bb.min.z + bb.max.z) / 2);
-this._yrBase = [bb.min.y, bb.max.y];
-this.app.viewport.fxFloorY = c.norm && c.norm.floorY !== undefined ? c.norm.floorY : bb.min.y;
-const old = this.points;
-const rot = old ? old.rotation.clone() : null;
-if (old) this._disposePoints();
-this.ghosts = [1, 2, 3, 4, 5].map((k) => {
-const gm = mk({ uTOff: U(0), uGhost: U(0), uHero: U(new THREE.Vector4()) });
-const gp = new THREE.Points(g, gm);
-gp.frustumCulled = false;
-gp.userData.helper = true;
-gp.visible = false;
-pts.add(gp);
-return gp;
-});
-const lg = new THREE.BufferGeometry();
-const lm = new THREE.ShaderMaterial({ vertexShader: this._fxSource('line', this._fxCur || (this._fxCur = new Set())), userData: { fxKind: 'line' }, fragmentShader: lineFrag, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, uniforms: { ...shared, uTOff: U(0) } });
-this.linkObj = new THREE.Mesh(lg, lm);
-this.linkObj.frustumCulled = false;
-this.linkObj.userData.helper = true;
-this.linkObj.visible = false;
-pts.add(this.linkObj);
-this.geometry = g;
-this.material = mat;
-this.shared = shared;
-this.points = pts;
-if (rot) pts.rotation.copy(rot);
-this.cloudKey = st.source;
-this.morph = 1;
-this.morphing = false;
-this.app.viewport.scene.add(pts);
-this._computeLinks();
-}
-_disposePoints() {
-if (!this.points) return;
-this.app.viewport.scene.remove(this.points);
-this.points.traverse((o) => {
-if (o.geometry && o !== this.points) o.geometry.dispose();
-if (o.material) o.material.dispose();
-});
-this.geometry?.dispose();
-this.points = this.geometry = this.material = this.linkObj = null;
-this.ghosts = [];
-}
-_computeLinks() {
-if (!this.geometry || !this.linkObj) return;
-if (!this.state.layers.links.on) {
-this._linksStale = true;
-return;
-}
-this._linksStale = false;
-const g = this.geometry;
-const N = g.attributes.position.count;
-const maxNodes = perf.isApple ? 8000 : perf.windows ? (perf.tier === 'high' ? 4500 : 2500) : 5000;
-const S = Math.min(N, Math.min(maxNodes, Math.round(this.state.layers.links.count)));
-if (S <= 1) return;
-const step = N / S;
-const O = g.attributes.aOrigin.array;
-const T = g.attributes.aTarget.array;
-const ids = new Int32Array(S);
-for (let i = 0; i < S; i++) ids[i] = Math.floor(i * step);
-const R = 0.35;
-const R2 = R * R;
-const cell = R;
-const key = (x, y, z) => (x * 73856093) ^ (y * 19349663) ^ (z * 83492791);
-const grid = new Map();
-for (let i = 0; i < S; i++) {
-const p = ids[i] * 3;
-const k = key(Math.floor(T[p] / cell), Math.floor(T[p + 1] / cell), Math.floor(T[p + 2] / cell));
-let a = grid.get(k);
-if (!a) grid.set(k, (a = []));
-a.push(i);
-}
-const pairs = [];
-const seen = new Set();
-for (let i = 0; i < S; i++) {
-const p = ids[i] * 3;
-const px = T[p], py = T[p + 1], pz = T[p + 2];
-const cx = Math.floor(px / cell), cy = Math.floor(py / cell), cz = Math.floor(pz / cell);
-let b0_d = R2, b0_j = -1;
-let b1_d = R2, b1_j = -1;
-let b2_d = R2, b2_j = -1;
-for (let dx = -1; dx <= 1; dx++) {
-for (let dy = -1; dy <= 1; dy++) {
-for (let dz = -1; dz <= 1; dz++) {
-const a = grid.get(key(cx + dx, cy + dy, cz + dz));
-if (!a) continue;
-for (let ai = 0; ai < a.length; ai++) {
-const j = a[ai];
-if (j === i) continue;
-const q = ids[j] * 3;
-const ddx = px - T[q], ddy = py - T[q + 1], ddz = pz - T[q + 2];
-const d = ddx * ddx + ddy * ddy + ddz * ddz;
-if (d < b2_d) {
-if (d < b0_d) {
-b2_d = b1_d; b2_j = b1_j;
-b1_d = b0_d; b1_j = b0_j;
-b0_d = d; b0_j = j;
-} else if (d < b1_d) {
-b2_d = b1_d; b2_j = b1_j;
-b1_d = d; b1_j = j;
-} else {
-b2_d = d; b2_j = j;
-}
-}
-}
-}
-}
-}
-if (b0_j >= 0) {
-const id = i < b0_j ? i * S + b0_j : b0_j * S + i;
-if (!seen.has(id)) { seen.add(id); pairs.push(i, b0_j); }
-}
-if (b1_j >= 0) {
-const id = i < b1_j ? i * S + b1_j : b1_j * S + i;
-if (!seen.has(id)) { seen.add(id); pairs.push(i, b1_j); }
-}
-if (b2_j >= 0) {
-const id = i < b2_j ? i * S + b2_j : b2_j * S + i;
-if (!seen.has(id)) { seen.add(id); pairs.push(i, b2_j); }
-}
-}
-const L = pairs.length / 2;
-const V = L * 4;
-const DP = g.attributes.aDepth ? g.attributes.aDepth.array : null;
-const lg = this.linkObj.geometry;
-const currV = lg.attributes.position ? lg.attributes.position.count : 0;
-let A, TA, B, TB, ia, ib, end, side, da, db, index;
-if (currV >= V && V > 0 && lg.attributes.aOrigin) {
-A = lg.attributes.aOrigin.array;
-TA = lg.attributes.aTarget.array;
-B = lg.attributes.aOriginB.array;
-TB = lg.attributes.aTargetB.array;
-ia = lg.attributes.aIdx.array;
-ib = lg.attributes.aIdxB.array;
-da = lg.attributes.aDepth.array;
-db = lg.attributes.aDepthB.array;
-end = lg.attributes.aEnd.array;
-side = lg.attributes.aSide.array;
-index = lg.index ? lg.index.array : null;
-}
-if (!A || !index || index.length < L * 6) {
-const capV = Math.max(V, Math.round(V * 1.25));
-const capL = Math.floor(capV / 4);
-A = new Float32Array(capV * 3);
-TA = new Float32Array(capV * 3);
-B = new Float32Array(capV * 3);
-TB = new Float32Array(capV * 3);
-ia = new Float32Array(capV);
-ib = new Float32Array(capV);
-da = new Float32Array(capV);
-db = new Float32Array(capV);
-end = new Float32Array(capV);
-side = new Float32Array(capV);
-index = new Uint32Array(capL * 6);
-lg.setAttribute('position', new THREE.BufferAttribute(A, 3));
-lg.setAttribute('aOrigin', new THREE.BufferAttribute(A, 3));
-lg.setAttribute('aTarget', new THREE.BufferAttribute(TA, 3));
-lg.setAttribute('aOriginB', new THREE.BufferAttribute(B, 3));
-lg.setAttribute('aTargetB', new THREE.BufferAttribute(TB, 3));
-lg.setAttribute('aIdx', new THREE.BufferAttribute(ia, 1));
-lg.setAttribute('aIdxB', new THREE.BufferAttribute(ib, 1));
-lg.setAttribute('aDepth', new THREE.BufferAttribute(da, 1));
-lg.setAttribute('aDepthB', new THREE.BufferAttribute(db, 1));
-lg.setAttribute('aEnd', new THREE.BufferAttribute(end, 1));
-lg.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
-lg.setIndex(new THREE.BufferAttribute(index, 1));
-}
-for (let l = 0; l < L; l++) {
-const a = ids[pairs[l * 2]], b = ids[pairs[l * 2 + 1]];
-const q = l * 4;
-const idx6 = l * 6;
-index[idx6] = q;
-index[idx6 + 1] = q + 1;
-index[idx6 + 2] = q + 2;
-index[idx6 + 3] = q + 2;
-index[idx6 + 4] = q + 1;
-index[idx6 + 5] = q + 3;
-const a3 = a * 3, b3 = b * 3;
-const oa0 = O[a3], oa1 = O[a3 + 1], oa2 = O[a3 + 2];
-const ta0 = T[a3], ta1 = T[a3 + 1], ta2 = T[a3 + 2];
-const ob0 = O[b3], ob1 = O[b3 + 1], ob2 = O[b3 + 2];
-const tb0 = T[b3], tb1 = T[b3 + 1], tb2 = T[b3 + 2];
-const dpA = DP ? DP[a] : 0.5;
-const dpB = DP ? DP[b] : 0.5;
-const iaVal = a / N;
-const ibVal = b / N;
-for (let v = 0; v < 4; v++) {
-const o = (q + v) * 3;
-A[o] = oa0; A[o + 1] = oa1; A[o + 2] = oa2;
-TA[o] = ta0; TA[o + 1] = ta1; TA[o + 2] = ta2;
-B[o] = ob0; B[o + 1] = ob1; B[o + 2] = ob2;
-TB[o] = tb0; TB[o + 1] = tb1; TB[o + 2] = tb2;
-const qv = q + v;
-ia[qv] = iaVal;
-ib[qv] = ibVal;
-da[qv] = dpA;
-db[qv] = dpB;
-end[qv] = v >> 1;
-side[qv] = v & 1 ? 1 : -1;
-}
-}
-lg.setDrawRange(0, L * 6);
-lg.attributes.position.needsUpdate = true;
-lg.attributes.aOrigin.needsUpdate = true;
-lg.attributes.aTarget.needsUpdate = true;
-lg.attributes.aOriginB.needsUpdate = true;
-lg.attributes.aTargetB.needsUpdate = true;
-lg.attributes.aIdx.needsUpdate = true;
-lg.attributes.aIdxB.needsUpdate = true;
-lg.attributes.aDepth.needsUpdate = true;
-lg.attributes.aDepthB.needsUpdate = true;
-lg.attributes.aEnd.needsUpdate = true;
-lg.attributes.aSide.needsUpdate = true;
-if (lg.index) lg.index.needsUpdate = true;
-lg.computeBoundingSphere();
-this._pairs = { ids, list: pairs, N, L };
-}
-_syncLinks() {
-if (!this._pairs || !this.linkObj) return;
-const { ids, list, L } = this._pairs;
-if (!L) return;
-const O = this.geometry.attributes.aOrigin.array;
-const T = this.geometry.attributes.aTarget.array;
-const lg = this.linkObj.geometry;
-if (!lg.attributes.aOrigin) return;
-const arrA = lg.attributes.aOrigin.array;
-const arrTA = lg.attributes.aTarget.array;
-const arrB = lg.attributes.aOriginB.array;
-const arrTB = lg.attributes.aTargetB.array;
-for (let l = 0; l < L; l++) {
-const a = ids[list[l * 2]], b = ids[list[l * 2 + 1]];
-const a3 = a * 3, b3 = b * 3;
-const oa0 = O[a3], oa1 = O[a3 + 1], oa2 = O[a3 + 2];
-const ta0 = T[a3], ta1 = T[a3 + 1], ta2 = T[a3 + 2];
-const ob0 = O[b3], ob1 = O[b3 + 1], ob2 = O[b3 + 2];
-const tb0 = T[b3], tb1 = T[b3 + 1], tb2 = T[b3 + 2];
-for (let v = 0; v < 4; v++) {
-const o = (l * 4 + v) * 3;
-arrA[o] = oa0; arrA[o + 1] = oa1; arrA[o + 2] = oa2;
-arrTA[o] = ta0; arrTA[o + 1] = ta1; arrTA[o + 2] = ta2;
-arrB[o] = ob0; arrB[o + 1] = ob1; arrB[o + 2] = ob2;
-arrTB[o] = tb0; arrTB[o + 1] = tb1; arrTB[o + 2] = tb2;
-}
-}
-lg.attributes.aOrigin.needsUpdate = true;
-lg.attributes.aTarget.needsUpdate = true;
-lg.attributes.aOriginB.needsUpdate = true;
-lg.attributes.aTargetB.needsUpdate = true;
-const DP = this.geometry.attributes.aDepth?.array;
-if (DP && lg.attributes.aDepth) {
-const da = lg.attributes.aDepth.array, db = lg.attributes.aDepthB.array;
-for (let l = 0; l < L; l++) {
-const a = DP[ids[list[l * 2]]], b = DP[ids[list[l * 2 + 1]]];
-const q = l * 4;
-for (let v = 0; v < 4; v++) {
-da[q + v] = a;
-db[q + v] = b;
-}
-}
-lg.attributes.aDepth.needsUpdate = lg.attributes.aDepthB.needsUpdate = true;
-}
-}
-relink() {
-clearTimeout(this._relT);
-this._relT = setTimeout(() => this._computeLinks(), 180);
-}
-applyBg() {
-const stage = document.querySelector('.stage');
-const { bg, vignette } = this.state.look;
-if (!this.active || !bg) {
-this.app.viewport.applyRenderSettings();
-return;
-}
-const c = new THREE.Color(bg);
-const hi = c.clone().lerp(new THREE.Color(1, 1, 1), 0.025);
-stage.style.background = vignette ? `radial-gradient(ellipse at 50% 42%, #${hi.getHexString(THREE.SRGBColorSpace)} 0%, ${bg} 78%)` : bg;
-}
-async setSource(key) {
-const st = this.state;
-if (key === 'media' && !this.pm.ready) {
-this.app.toast('Сначала загрузите фото или видео в разделе «Фото и видео»', 'info');
-return;
-}
-if (key === 'model' && !this.hasModel) {
-this.app.toast('Нет модели: добавьте её кнопкой «Добавить модель» или откройте в редакторе', 'info');
-return;
-}
-const real = !key.startsWith('obj:');
-if (real) st.source = key;
-this.touch();
-if (!this.active || !this.geometry) return this.emit();
-let target;
-try {
-target = await this._cloudFor(key);
-} finally {
-this.app.ui.idle();
-}
-if (!target) return this.emit();
-this.curKey = key;
-if (!target || target.count !== this.geometry.attributes.position.count) {
-await this._build();
-return this.emit();
-}
-const g = this.geometry;
-const o = g.attributes.aOrigin;
-const t = g.attributes.aTarget;
-const k = this.morphing ? 1 : this.morph * this.morph * (3 - 2 * this.morph);
-for (let i = 0; i < o.array.length; i++) {
-o.array[i] = o.array[i] * (1 - k) + t.array[i] * k;
-t.array[i] = target.positions[i];
-}
-g.attributes.aNormal.array.set(g.attributes.aNormalB.array);
-g.attributes.aNormalB.array.set(target.normals);
-{
-let my = Infinity;
-const tp = target.positions;
-for (let i = 1; i < tp.length; i += 3) if (tp[i] < my) my = tp[i];
-this.app.viewport.fxFloorY = target.norm && target.norm.floorY !== undefined ? target.norm.floorY : my;
-}
-g.attributes.aNormal.needsUpdate = g.attributes.aNormalB.needsUpdate = true;
-if (target.colors && target.colors.length === g.attributes.aColor.array.length) {
-g.attributes.aColor.array.set(g.attributes.aColorB.array);
-g.attributes.aColorB.array.set(target.colors);
-g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
-}
-const vis = g.attributes.aVis;
-if (vis) {
-const frac = this._fracFor(key);
-const n = vis.count;
-for (let i = 0; i < n; i++) {
-const cur = vis.array[i * 2] * (1 - k) + vis.array[i * 2 + 1] * k;
-const rnd = (Math.imul(i + 1, 2654435761) >>> 0) / 4294967296;
-vis.array[i * 2] = cur;
-vis.array[i * 2 + 1] = rnd < frac ? 1 : 0;
-}
-vis.needsUpdate = true;
-}
-o.needsUpdate = t.needsUpdate = true;
-this.cloudKey = key;
-this.morph = 0;
-this.morphing = true;
-this._settleOn = false;
-this.shared.uSettle.value = -1;
-this.shared.uMorph.value = 0;
-this._computeLinks();
-this.emit();
-}
-async setCount(n) {
-this.state.count = n;
-this.app.settings.point.surfaceCount = n;
-this.app.saveSettings();
-this.app.bus.emit('pointsettings');
-this.cache.clear();
-this.touch();
-if (this.active) {
-this.app.ui.busy('Пересобираю частицы', 0.3);
-try {
-await this._build();
-} finally {
-this.app.ui.idle();
-}
-}
-this._prefetch(this.playlist);
-this.emit();
-}
-_onScene() {
-if (!this.active || this._muteScene) return;
-clearTimeout(this._sceneT);
-this._sceneT = setTimeout(async () => {
-if (!this.active) return;
-this.cache.clear();
-if (this.hasModel && !(this.pm.ready && this.state.source === 'media')) {
-this.state.source = 'model';
-this.syncLookFromPoints();
-}
-this.app.ui.busy('Готовлю частицы', 0.2);
-try {
-if (this.geometry && this.hasModel && this.state.source === 'model') await this.setSource('model');
-else await this._build();
-} catch (e) {
-console.error(e);
-} finally {
-this.app.ui.idle();
-}
-this.app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 300);
-this.emit();
-}, 700);
-}
-async enter() {
-if (this.active) return;
-const app = this.app;
-this.active = true;
-this.state.look.autoRotate = false;
-this.state.layers.frames.on = false;
-this._fxCur = new Set();
-this._fxSeen = new Map();
-this._fxBusy = false;
-this._warm = new Map();
-this._tgtWarm = {};
-this._tgtRT = this._postOn();
-this._framesOn = false;
-const maxFxCount = perf.isApple ? 2000000 : perf.windows ? (perf.tier === 'high' ? 450000 : perf.tier === 'mid' ? 160000 : 100000) : perf.tier === 'high' ? 1000000 : 250000;
-this.state.count = Math.max(20000, Math.min(maxFxCount, app.settings.point.surfaceCount));
-const vp = app.viewport;
-this._saved = { rootVisible: vp.root.visible, ortho: app.nav.ortho };
-app.model.select(null);
-vp.root.visible = false;
-vp.fxHide = true;
-if (app.nav.ortho) app.nav.setOrtho(false);
-document.getElementById('app').classList.add('fx-mode');
-this.state.source = this.pm.ready ? 'media' : this.hasModel ? 'model' : this.state.source === 'model' ? 'sphere' : this.state.source;
-try {
-await this._build();
-} catch (e) {
-console.error(e);
-app.ui.idle();
-this.active = false;
-vp.root.visible = this._saved.rootVisible;
-vp.fxHide = false;
-document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
-throw e;
-}
-this.post = new PostPipeline(vp.renderer);
-const buildPts = this.points;
-if (buildPts) buildPts.visible = false;
-try {
-const kinds = [this._vertKind()];
-if (this.linkObj && this.state.layers.links.on) kinds.push('line');
-await Promise.all([this._warmScene(app.viewport.scene, app.viewport.camera), this.post.warm(), ...kinds.map((k) => this._warmKind(k, this._fxCur))]);
-this._tgtWarm[this._tgtRT ? 'r' : 's'] = 2;
-} catch (e) {
-}
-if (buildPts && this.points === buildPts) buildPts.visible = true;
-app.ui.idle();
-setTimeout(() => this._prefetch(this.playlist), 400);
-const stage = document.querySelector('.stage');
-stage.addEventListener('pointermove', this._move);
-stage.addEventListener('pointerleave', this._leave);
-stage.addEventListener('pointerdown', this._dn);
-stage.addEventListener('pointerup', this._up);
-this._offScene = app.bus.on('scene', () => this._onScene());
-this.hud = new TrackerHud(document.getElementById('viewport'));
-this.app.viewport.fxGrid = !!this.state.look.grid;
-this.applyBg();
-vp.renderHook = (renderer, scene, camera) => {
-if (!this.active) {
-renderer.render(scene, camera);
-return;
-}
-const fb = this.state.layers.feedback;
-const bloom = this.state.look.bloom || 0;
-const ab = this.state.look.aberration || 0;
-const dm = this.state.layers.datamosh;
-this._tgtSync();
-if (!this._tgtRT) {
-renderer.setRenderTarget(null);
-renderer.render(scene, camera);
-this.post.hasHistory = false;
-return;
-}
-this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? this._moshParams(dm) : null, true);
-};
-app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 0);
-this.syncLookFromPoints();
-if (this.pm.ready) {
-this.state.look.colorBy = 'model';
-this.pm.play();
-if (this.pm.kind === 'video') this.useVideoAudio().catch(() => {});
-}
-this._hist = { undo: [], redo: [], last: null };
-this._histT = setTimeout(() => this._histCommit(), 600);
-if (this.pm.playing && this.state.source === 'media') this.pm.play();
-this._lastT = performance.now();
-this._loop();
-this.emit();
-}
-exit() {
-if (!this.active) return;
-this.active = false;
-this.animPlaying = false;
-this.animRec = false;
-this.stopRecording();
-this.pause();
-this._videoToEditor();
-cancelAnimationFrame(this._raf);
-this._syncPaintLock(true);
-clearTimeout(this._sceneT);
-this._offScene && this._offScene();
-this.hud?.dispose();
-this.hud = null;
-this.app.viewport.renderHook = null;
-this.post?.dispose();
-this.post = null;
-if (this.camTracker) {
-this._stopCam();
-this.camTracker = null;
-}
-this.app.viewport.applyRenderSettings();
-const vp = this.app.viewport;
-this._disposePoints();
-vp.root.visible = this._saved?.rootVisible !== false;
-vp.fxHide = false;
-const stage = document.querySelector('.stage');
-stage.removeEventListener('pointermove', this._move);
-stage.removeEventListener('pointerleave', this._leave);
-stage.removeEventListener('pointerdown', this._dn);
-stage.removeEventListener('pointerup', this._up);
-document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
-this.app.display.apply();
-this.app.nav.frameAll(false);
-vp.invalidate();
-this.emit();
-}
+__defs['src/effects/engine/interaction.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'InteractionPart', () => InteractionPart);
+const THREE = __req('vendor/three/build/three.module.js');
+const { clamp } = __req('src/core/util.js');
+class InteractionPart {
 addShock(pos) {
 if (!pos) return;
 this.shocks.unshift({ pos: pos.clone(), t0: this._time });
@@ -86434,20 +85873,6 @@ if (this.state.layers.brush.on && (e.buttons === 1 || this._pointerDown)) {
 this.addBrushHit(this.mouse);
 }
 }
-}
-_bandLevel(l) {
-if (l.band === 'custom') {
-const i0 = Math.max(0, Math.floor(l.lo * 64));
-const i1 = Math.min(64, Math.max(i0 + 1, Math.ceil(l.hi * 64)));
-let s = 0;
-for (let i = i0; i < i1; i++) s += this.spec[i];
-return Math.min(1, (s / (i1 - i0)) * 1.5);
-}
-return this.levels[l.band] || 0;
-}
-hzAt(x) {
-const sr = this.ctx?.sampleRate || 44100;
-return Math.round(x * x * 0.275 * sr);
 }
 _moshParams(L) {
 const S = this._mosh || (this._mosh = { kickAt: -1e9, nextKick: 0, lastT: 0, lastBeat: -9, above: false, cleanUntil: -1, wasOn: false });
@@ -86529,51 +85954,367 @@ if (!P) return;
 Object.assign(L, P, { on: true });
 this.moshKick();
 }
-_eff(l) {
-if (!l.on) return 0;
-const g = this._fxGate ?? 1;
-if (l.band === 'none') return l.amount * g;
-const b = this._bandLevel(l);
-if (l.amode === 'gate') {
-const envs = (this._envs ||= new WeakMap());
-let e = envs.get(l);
-if (!e) {
-e = { v: 0, t: this._time, open: false };
-envs.set(l, e);
 }
-if (e.t !== this._time) {
-const dt = Math.min(0.1, Math.max(0, this._time - e.t));
-e.t = this._time;
-e.open = b > l.thr ? true : b < l.thr * 0.8 ? false : e.open;
-const tc = Math.max(0.005, e.open ? l.atk : l.rel);
-e.v += ((e.open ? 1 : 0) - e.v) * (1 - Math.exp(-dt / tc));
+};
+__defs['src/animation/anim-controller.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'AnimController', () => AnimController);
+__def(__exports, 'evalAnimPoints', () => evalAnimPoints);
+const THREE = __req('vendor/three/build/three.module.js');
+class AnimController {
+constructor(app) {
+this.app = app;
+this.models = [];
+this.playing = false;
+this.speed = 1;
+this.loop = true;
+this.clipIndex = 0;
+this.time = 0;
+this.skeletonOn = false;
+this.version = 0;
+this._listeners = new Set();
 }
-return l.amount * e.v * g;
+onChange(fn) {
+this._listeners.add(fn);
+return () => this._listeners.delete(fn);
 }
-if (!l.react) return l.amount * g;
-return l.amount * (1 - l.react + l.react * b * 2) * g;
+_emit() {
+for (const f of this._listeners) f();
 }
-setFrozen(v) {
-v = !!v;
-if (v === !!this.frozen) return;
-this.frozen = v;
-const ctx = this.ctx;
-if (v) {
-this._ctxWasRunning = !!ctx && ctx.state === 'running';
-if (this._ctxWasRunning) ctx.suspend().catch(() => {});
-} else if (this._ctxWasRunning && ctx) {
-ctx.resume().catch(() => {});
-this._ctxWasRunning = false;
+get has() {
+return this.models.length > 0;
 }
+get clips() {
+return this.models.length ? this.models[0].clips : [];
+}
+get duration() {
+const c = this.clips[this.clipIndex];
+return c ? Math.max(c.duration, 0.01) : 1;
+}
+scan() {
+const root = this.app.viewport.root;
+const found = [];
+for (const o of root.children) {
+if (o.userData.helper) continue;
+if (o.userData.clips && o.userData.clips.length) found.push(o);
+}
+const keep = [];
+for (const m of this.models) {
+if (found.includes(m.obj) && m.obj.parent === root) keep.push(m);
+else this._dispose(m);
+}
+for (const obj of found) {
+if (keep.some((m) => m.obj === obj)) continue;
+obj.traverse((o) => {
+if (o.isSkinnedMesh) o.frustumCulled = false;
+});
+const mixer = new THREE.AnimationMixer(obj);
+const m = { obj, mixer, clips: obj.userData.clips, helper: null, action: null };
+keep.push(m);
+}
+const had = this.models.length;
+this.models = keep;
+if (this.clipIndex >= this.clips.length) this.clipIndex = 0;
+if (this.models.length && !had) {
+this.playing = true;
+this.time = 0;
+}
+if (!this.models.length) this.playing = false;
+this._setClip();
+this._helpers();
+this.apply();
+this._emit();
+}
+_dispose(m) {
+try {
+m.mixer.stopAllAction();
+m.mixer.uncacheRoot(m.obj);
+} catch (e) {
+}
+if (m.helper) {
+m.helper.removeFromParent();
+m.helper.dispose();
+m.helper = null;
+}
+if (m.joints) {
+m.joints.removeFromParent();
+m.joints.geometry.dispose();
+m.joints = null;
+}
+}
+_setClip() {
+for (const m of this.models) {
+if (m.action) m.action.stop();
+const clip = m.clips[Math.min(this.clipIndex, m.clips.length - 1)];
+m.action = clip ? m.mixer.clipAction(clip) : null;
+if (m.action) {
+m.action.setLoop(THREE.LoopRepeat, Infinity);
+m.action.play();
+}
+}
+}
+_helpers() {
+for (const m of this.models) {
+let hasBones = false;
+m.obj.traverse((o) => {
+if (o.isBone || o.isSkinnedMesh) hasBones = true;
+});
+if (this.skeletonOn && hasBones && !m.helper) {
+m.helper = new THREE.SkeletonHelper(m.obj);
+m.helper.userData.helper = true;
+m.helper.material.depthTest = false;
+m.helper.material.transparent = true;
+m.helper.renderOrder = 999;
+m.helper.frustumCulled = false;
+m.helper.material.toneMapped = false;
+m.helper.material.vertexColors = false;
+m.helper.material.color.set('#ffd27a');
+m.bones = [];
+m.obj.traverse((o) => o.isBone && m.bones.push(o));
+const jg = new THREE.BufferGeometry();
+jg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(m.bones.length * 3), 3));
+m.joints = new THREE.Points(jg, new THREE.PointsMaterial({ size: 8, sizeAttenuation: false, color: '#ff9a3c', depthTest: false, depthWrite: false, transparent: true, toneMapped: false }));
+m.joints.userData.helper = true;
+m.joints.frustumCulled = false;
+m.joints.renderOrder = 1000;
+m.joints.matrixAutoUpdate = false;
+this.app.viewport.root.add(m.joints);
+this.app.viewport.root.add(m.helper);
+}
+if (m.helper) m.helper.visible = this.skeletonOn;
+if (m.joints) m.joints.visible = this.skeletonOn;
+}
+}
+setClip(i) {
+this.clipIndex = Math.max(0, Math.min(this.clips.length - 1, i | 0));
+this.time = 0;
+this._setClip();
+this.apply();
+this._emit();
+}
+play() {
+if (!this.has) return;
+this.playing = true;
 this.app.viewport.invalidate();
+this._emit();
 }
-_syncPaintLock(off) {
-const B = this.state.layers.brush;
-const want = !off && this.active && !!B && B.on && B.lock !== 'off';
-const nav = this.app.nav;
-if (nav.paintLock === want) return;
-nav.paintLock = want;
-this.app.viewport.container.classList.toggle('paint-lock', want);
+pause() {
+this.playing = false;
+this._emit();
+}
+toggle() {
+if (this.playing) this.pause();
+else this.play();
+}
+seek(t) {
+this.time = Math.max(0, Math.min(this.duration, t));
+this.apply();
+this._emit();
+}
+setSpeed(v) {
+this.speed = v;
+this._emit();
+}
+setLoop(v) {
+this.loop = v;
+this._emit();
+}
+setSkeleton(v) {
+this.skeletonOn = v;
+this._helpers();
+this.app.viewport.invalidate();
+this._emit();
+}
+syncTime(t) {
+if (!this.has) return;
+const d = this.duration;
+this.time = this.loop ? (t * this.speed) % d : Math.min(d, t * this.speed);
+this.apply();
+}
+animatedBounds(samples = 14) {
+const box = new THREE.Box3();
+const saved = this.time;
+for (let i = 0; i <= samples; i++) {
+this.time = (i / samples) * this.duration;
+this.apply();
+for (const m of this.models) {
+m.obj.updateWorldMatrix(true, true);
+m.obj.traverse((o) => o.isSkinnedMesh && o.computeBoundingBox());
+box.union(new THREE.Box3().setFromObject(m.obj));
+}
+}
+this.time = saved;
+this.apply();
+return box;
+}
+tick(dt) {
+if (!this.has || !this.playing) return false;
+this.time += dt * this.speed;
+const d = this.duration;
+if (this.time >= d) {
+if (this.loop) this.time %= d;
+else {
+this.time = d;
+this.playing = false;
+this._emit();
+}
+} else if (this.time < 0) this.time = this.loop ? d + (this.time % d) : 0;
+this.apply();
+this.app.viewport.invalidate();
+return true;
+}
+_movePoints() {
+for (const o of this.app.viewport.root.children) {
+const a = o.userData.animPts;
+if (!a || !o.isPoints) continue;
+const pos = o.geometry.attributes.position;
+if (pos.count !== a.part.length) continue;
+evalAnimPoints(a, null, pos.array);
+pos.needsUpdate = true;
+o.geometry.boundingSphere = null;
+o.geometry.boundingBox = null;
+}
+}
+apply() {
+for (const m of this.models) {
+if (!m.action) continue;
+const clip = m.action.getClip();
+m.mixer.setTime(clip.duration > 0 ? Math.min(this.time, clip.duration - 1e-4) : 0);
+m.obj.updateMatrixWorld(true);
+m.obj.traverse((o) => {
+if (o.isSkinnedMesh && o.skeleton) o.skeleton.update();
+});
+if (m.joints && m.bones) {
+const a = m.joints.geometry.attributes.position.array;
+const v = new THREE.Vector3();
+m.bones.forEach((b, i) => {
+b.getWorldPosition(v);
+a[i * 3] = v.x;
+a[i * 3 + 1] = v.y;
+a[i * 3 + 2] = v.z;
+});
+m.joints.geometry.attributes.position.needsUpdate = true;
+}
+}
+this._movePoints();
+if (this.app.model?.selection?.length) this.app.viewport.updateSelectionBox();
+else this.app.viewport.invalidate();
+this.version++;
+this.app.bus.emit('animpose');
+}
+}
+function evalAnimPoints(anim, norm, out, outN = null) {
+const { parts, part, bp, bi, bw, bn } = anim;
+const n = part.length;
+const post = parts.map((p) => {
+const mw = p.mesh.matrixWorld;
+if (p.skinned) {
+const inv = p.mesh.bindMatrixInverse;
+p.mesh.updateWorldMatrix(true, false);
+return { m: new THREE.Matrix4().multiplyMatrices(p.mesh.matrixWorld, inv).elements, bones: p.mesh.skeleton.boneMatrices };
+}
+return { m: mw.elements, bones: null };
+});
+const cx = norm ? norm.cx : 0, cy = norm ? norm.cy : 0, cz = norm ? norm.cz : 0, k = norm ? norm.k : 1;
+for (let i = 0; i < n; i++) {
+const P = post[part[i]];
+const x = bp[i * 3], y = bp[i * 3 + 1], z = bp[i * 3 + 2];
+let sx = x, sy = y, sz = z;
+if (P.bones) {
+sx = sy = sz = 0;
+let wsum = 0;
+const B = P.bones;
+for (let j = 0; j < 4; j++) {
+const w = bw[i * 4 + j];
+if (w <= 0) continue;
+const o = bi[i * 4 + j] * 16;
+sx += w * (B[o] * x + B[o + 4] * y + B[o + 8] * z + B[o + 12]);
+sy += w * (B[o + 1] * x + B[o + 5] * y + B[o + 9] * z + B[o + 13]);
+sz += w * (B[o + 2] * x + B[o + 6] * y + B[o + 10] * z + B[o + 14]);
+wsum += w;
+}
+if (wsum < 1e-6) {
+sx = x;
+sy = y;
+sz = z;
+}
+}
+const e = P.m;
+const wx = e[0] * sx + e[4] * sy + e[8] * sz + e[12];
+const wy = e[1] * sx + e[5] * sy + e[9] * sz + e[13];
+const wz = e[2] * sx + e[6] * sy + e[10] * sz + e[14];
+out[i * 3] = (wx - cx) * k;
+out[i * 3 + 1] = (wy - cy) * k;
+out[i * 3 + 2] = (wz - cz) * k;
+if (outN && bn) {
+const nx = bn[i * 3], ny = bn[i * 3 + 1], nz = bn[i * 3 + 2];
+let tx = nx, ty = ny, tz = nz;
+if (P.bones && (nx || ny || nz)) {
+tx = ty = tz = 0;
+const B = P.bones;
+let ws = 0;
+for (let j = 0; j < 4; j++) {
+const w = bw[i * 4 + j];
+if (w <= 0) continue;
+const o = bi[i * 4 + j] * 16;
+tx += w * (B[o] * nx + B[o + 4] * ny + B[o + 8] * nz);
+ty += w * (B[o + 1] * nx + B[o + 5] * ny + B[o + 9] * nz);
+tz += w * (B[o + 2] * nx + B[o + 6] * ny + B[o + 10] * nz);
+ws += w;
+}
+if (ws < 1e-6) {
+tx = nx;
+ty = ny;
+tz = nz;
+}
+}
+const gx = e[0] * tx + e[4] * ty + e[8] * tz;
+const gy = e[1] * tx + e[5] * ty + e[9] * tz;
+const gz = e[2] * tx + e[6] * ty + e[10] * tz;
+const gl = Math.hypot(gx, gy, gz) || 1;
+outN[i * 3] = gx / gl;
+outN[i * 3 + 1] = gy / gl;
+outN[i * 3 + 2] = gz / gl;
+}
+}
+}
+};
+__defs['src/effects/engine/loop.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'LoopPart', () => LoopPart);
+const THREE = __req('vendor/three/build/three.module.js');
+const { evalAnimPoints } = __req('src/animation/anim-controller.js');
+const { perf } = __req('src/core/perf.js');
+const { clamp } = __req('src/core/util.js');
+const { HandTracker } = __req('src/effects/input/hand-tracker.js');
+const { GLYPH_SETS, glyphAtlas } = __req('src/effects/render/webgl/textures.js');
+const { COLOR_BY, FX_PALETTES, MASK_MODES, MORPH_EASES, MORPH_SORTS, MORPH_STYLES } = __req('src/effects/state/options.js');
+class LoopPart {
+_pieceUpdate(P) {
+const g = this.geometry;
+if (!g || !this.pieceTex) return;
+P = Math.max(2, Math.min(256, Math.round(P)));
+const key = P + ':' + g.attributes.position.count + ':' + this._animVer + ':' + this.cloudKey + ':' + (this.morphing ? this._time.toFixed(1) : 0);
+if (key === this._pieceKey) return;
+this._pieceKey = key;
+const a = g.attributes.aTarget.array;
+const n = g.attributes.position.count;
+const d = this.pieceTex.image.data;
+for (let p = 0; p < P; p++) {
+const s0 = Math.floor((p * n) / P), e0 = Math.max(s0 + 1, Math.floor(((p + 1) * n) / P));
+let x = 0, y = 0, z = 0;
+for (let i = s0; i < e0; i++) {
+x += a[i * 3];
+y += a[i * 3 + 1];
+z += a[i * 3 + 2];
+}
+const c = e0 - s0;
+d[p * 4] = x / c;
+d[p * 4 + 1] = y / c;
+d[p * 4 + 2] = z / c;
+d[p * 4 + 3] = 1;
+}
+this.pieceTex.needsUpdate = true;
 }
 _loop() {
 const tick = (now) => {
@@ -87177,6 +86918,171 @@ this.app.viewport.invalidate();
 };
 this._raf = requestAnimationFrame(tick);
 }
+}
+};
+__defs['src/io/gif-encoder.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'encodeGIF', () => encodeGIF);
+function buildPalette(samples) {
+const px = [];
+for (let i = 0; i < samples.length; i += 4) px.push((samples[i] << 16) | (samples[i + 1] << 8) | samples[i + 2]);
+let boxes = [px];
+const chan = (v, c) => (v >> (16 - c * 8)) & 255;
+while (boxes.length < 256) {
+let bi = -1;
+let bestRange = 0;
+let bestC = 0;
+boxes.forEach((b, i) => {
+if (b.length < 2) return;
+for (let c = 0; c < 3; c++) {
+let mn = 255;
+let mx = 0;
+for (const v of b) {
+const x = chan(v, c);
+if (x < mn) mn = x;
+if (x > mx) mx = x;
+}
+if (mx - mn > bestRange) {
+bestRange = mx - mn;
+bi = i;
+bestC = c;
+}
+}
+});
+if (bi < 0 || bestRange < 1) break;
+const b = boxes[bi].sort((p, q) => chan(p, bestC) - chan(q, bestC));
+const mid = b.length >> 1;
+boxes.splice(bi, 1, b.slice(0, mid), b.slice(mid));
+}
+const pal = new Uint8Array(256 * 3);
+boxes.forEach((b, i) => {
+let r = 0, g = 0, bl = 0;
+for (const v of b) {
+r += (v >> 16) & 255;
+g += (v >> 8) & 255;
+bl += v & 255;
+}
+const n = b.length || 1;
+pal[i * 3] = r / n;
+pal[i * 3 + 1] = g / n;
+pal[i * 3 + 2] = bl / n;
+});
+return { pal, size: boxes.length };
+}
+function lzw(indices) {
+const minCode = 8;
+const clear = 1 << minCode;
+const eoi = clear + 1;
+let size = minCode + 1;
+let next = eoi + 1;
+const dict = new Map();
+const out = [];
+let cur = 0;
+let bits = 0;
+const emit = (code) => {
+cur |= code << bits;
+bits += size;
+while (bits >= 8) {
+out.push(cur & 255);
+cur >>>= 8;
+bits -= 8;
+}
+};
+emit(clear);
+let prefix = indices[0];
+for (let i = 1; i < indices.length; i++) {
+const k = indices[i];
+const key = (prefix << 8) | k;
+const found = dict.get(key);
+if (found !== undefined) {
+prefix = found;
+continue;
+}
+emit(prefix);
+if (next > (1 << size) - 1 && size < 12) size++;
+if (next < 4096) dict.set(key, next++);
+else {
+emit(clear);
+dict.clear();
+next = eoi + 1;
+size = minCode + 1;
+}
+prefix = k;
+}
+emit(prefix);
+emit(eoi);
+if (bits > 0) out.push(cur & 255);
+return out;
+}
+async function encodeGIF(frames, w, h, delay, onProgress) {
+const step = Math.max(1, Math.floor(frames.length / 8));
+const sample = [];
+for (let f = 0; f < frames.length; f += step) {
+const d = frames[f].data;
+for (let i = 0; i < d.length; i += 4 * 37) sample.push(d[i], d[i + 1], d[i + 2], 255);
+}
+const { pal, size } = buildPalette(Uint8Array.from(sample));
+const cache = new Map();
+const nearest = (r, g, b) => {
+const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+let v = cache.get(key);
+if (v !== undefined) return v;
+let best = 0;
+let bd = 1e9;
+for (let i = 0; i < size; i++) {
+const dr = pal[i * 3] - r, dg = pal[i * 3 + 1] - g, db = pal[i * 3 + 2] - b;
+const d = dr * dr * 3 + dg * dg * 4 + db * db * 2;
+if (d < bd) {
+bd = d;
+best = i;
+}
+}
+cache.set(key, best);
+return best;
+};
+const bytes = [];
+const w16 = (v) => bytes.push(v & 255, (v >> 8) & 255);
+for (const c of 'GIF89a') bytes.push(c.charCodeAt(0));
+w16(w);
+w16(h);
+bytes.push(0xf7, 0, 0);
+for (let i = 0; i < 768; i++) bytes.push(pal[i]);
+bytes.push(0x21, 0xff, 0x0b);
+for (const c of 'NETSCAPE2.0') bytes.push(c.charCodeAt(0));
+bytes.push(3, 1, 0, 0, 0);
+for (let f = 0; f < frames.length; f++) {
+const d = frames[f].data;
+const idx = new Uint8Array(w * h);
+for (let i = 0, p = 0; p < idx.length; i += 4, p++) idx[p] = nearest(d[i], d[i + 1], d[i + 2]);
+bytes.push(0x21, 0xf9, 4, 0x04);
+w16(delay);
+bytes.push(0, 0);
+bytes.push(0x2c);
+w16(0);
+w16(0);
+w16(w);
+w16(h);
+bytes.push(0, 8);
+const data = lzw(idx);
+for (let i = 0; i < data.length; i += 255) {
+const n = Math.min(255, data.length - i);
+bytes.push(n);
+for (let k = 0; k < n; k++) bytes.push(data[i + k]);
+}
+bytes.push(0);
+onProgress && onProgress((f + 1) / frames.length);
+await new Promise((r) => setTimeout(r));
+}
+bytes.push(0x3b);
+return new Blob([Uint8Array.from(bytes)], { type: 'image/gif' });
+}
+};
+__defs['src/effects/engine/recording.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'RecordingPart', () => RecordingPart);
+const { downloadBlob } = __req('src/core/util.js');
+const { encodeGIF } = __req('src/io/gif-encoder.js');
+class RecordingPart {
 async saveAnimation({ format = 'gif', seconds = 4, fps = 15, maxW = 480 }) {
 if (this.animBusy) return;
 this.animBusy = true;
@@ -87343,6 +87249,368 @@ this.recOpts = null;
 this.emit();
 }
 }
+};
+__defs['src/effects/engine/mixin.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'mixin', () => mixin);
+function mixin(target, ...parts) {
+for (const Part of parts) {
+for (const key of Reflect.ownKeys(Part.prototype)) {
+if (key === 'constructor') continue;
+if (Object.prototype.hasOwnProperty.call(target.prototype, key)) throw new Error('mixin: метод ' + String(key) + ' объявлен дважды');
+Object.defineProperty(target.prototype, key, Object.getOwnPropertyDescriptor(Part.prototype, key));
+}
+}
+}
+};
+__defs['src/effects/engine/index.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'EffectsEngine', () => EffectsEngine);
+const THREE = __req('vendor/three/build/three.module.js');
+const { perf } = __req('src/core/perf.js');
+const { loadJSON, mergeDeep, saveJSON } = __req('src/core/util.js');
+const { DepthAI } = __req('src/effects/input/depth-ai.js');
+const { PostPipeline } = __req('src/effects/render/webgl/post-pipeline.js');
+const { defaultState, KEY } = __req('src/effects/state/defaults.js');
+const { FX_LAYERS } = __req('src/effects/state/layers.js');
+const { AUDIO_DEF } = __req('src/effects/state/options.js');
+const { TrackerHud } = __req('src/effects/ui/fx-hud.js');
+const { FramesPart } = __req('src/effects/engine/frames.js');
+const { KeyframesPart } = __req('src/effects/engine/keyframes.js');
+const { SourcePart } = __req('src/effects/engine/source.js');
+const { BuildPart } = __req('src/effects/engine/build.js');
+const { LinksPart } = __req('src/effects/engine/links.js');
+const { ToolsPart } = __req('src/effects/engine/tools.js');
+const { TrackingPart } = __req('src/effects/engine/tracking.js');
+const { HistoryPart } = __req('src/effects/engine/history.js');
+const { ScopeTrailPart } = __req('src/effects/engine/scope-trail.js');
+const { ShaderCachePart } = __req('src/effects/engine/shader-cache.js');
+const { DepthPart } = __req('src/effects/engine/depth.js');
+const { AudioPart } = __req('src/effects/engine/audio.js');
+const { InteractionPart } = __req('src/effects/engine/interaction.js');
+const { LoopPart } = __req('src/effects/engine/loop.js');
+const { RecordingPart } = __req('src/effects/engine/recording.js');
+const { mixin } = __req('src/effects/engine/mixin.js');
+class EffectsEngine {
+constructor(app) {
+this.app = app;
+this.active = false;
+this.state = mergeDeep(defaultState(), loadJSON(KEY, {}));
+if (!this.state.audio.idleSet) this.state.audio.idle = false;
+this.state.mask = { ...defaultState().mask };
+for (const l of FX_LAYERS) this.state.layers[l.id] = { ...AUDIO_DEF, ...l.def, ...this.state.layers[l.id] };
+{
+const fl = this.state.layers.flow;
+const cl = this.state.layers.curl;
+if (fl && cl && fl.on && !cl.on && !this.state._m6) {
+Object.assign(cl, { on: true, mode: 'surface', amount: fl.amount, fscale: fl.scale, fdir: fl.dir, speed: fl.speed, band: fl.band, react: fl.react });
+fl.on = false;
+}
+this.state._m6 = true;
+}
+this.state.look = { ...defaultState().look, ...this.state.look };
+if (this.state.layers.brush && this.state.layers.brush.radius > 0.3 && !this.state._m5) {
+this.state.layers.brush.radius = 0.14;
+this.state.layers.brush.dry = 3;
+}
+this.state._m5 = 1;
+if (!this.state._m4) {
+if (this.state.layers.slice) this.state.layers.slice.color = 'model';
+this.state._m4 = 1;
+}
+if (this.state.look.colorBy === 'height' || this.state.look.colorBy === 'index') this.state.look.colorBy = 'disp';
+this.ctx = null;
+this.analyser = null;
+this.bus = null;
+this.out = null;
+this.recDest = null;
+this.freqData = null;
+this.synth = null;
+this.source = null;
+this.micStream = null;
+this.audioBuffer = null;
+this.playing = false;
+this.sourceType = 'synth';
+this.audioName = '';
+this.levels = { bass: 0, mid: 0, high: 0, beat: 0 };
+this.spec = new Float32Array(64);
+this._beatHist = new Float32Array(24);
+this._beatIdx = 0;
+this._lastBeat = 0;
+this.points = null;
+this.geometry = null;
+this.material = null;
+this.specTex = null;
+this.cache = new Map();
+this.cloudKey = null;
+this.morph = 1;
+this.morphing = false;
+this.mouse = new THREE.Vector3();
+this.mouseOn = false;
+this._time = 0;
+this._raf = null;
+this._lastT = 0;
+this.recording = false;
+this.modelProvider = null;
+this.pm = app.media.pm;
+this.depthAI = new DepthAI();
+this._dListeners = new Set();
+this.depthAI.onChange = () => this._depthEmit();
+this._D = { key: null, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, geo: null, dirty: false, snap: false, moving: false, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, force: false, err: '', n: 0 };
+app.bus.on('settings', () => this._histSoon());
+app.bus.on('scene', () => {
+clearTimeout(this._warmT);
+if (!this.active) this.cache.clear();
+this._warmT = setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(() => this.prewarm()), 1200);
+});
+const stale = () => {
+if (this.active) return;
+this.cache.clear();
+clearTimeout(this._warmT);
+this._warmT = setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(() => this.prewarm()), 900);
+};
+app.bus.on('material', stale);
+app.bus.on('geometry', stale);
+app.bus.on('pointtex', stale);
+app.bus.on('pointtex', () => {
+if (this.active) {
+this.cache.clear();
+this._onScene();
+}
+});
+this.mediaProgress = null;
+this.ghosts = [];
+this.linkObj = null;
+this.shocks = [];
+this.onFrame = null;
+this._ray = new THREE.Raycaster();
+this._plane = new THREE.Plane();
+this._move = (e) => this._onMove(e);
+this._leave = () => (this.mouseOn = false);
+this._dn = (e) => this._onDown(e);
+this._up = (e) => this._onUp(e);
+this.isCollapsed = false;
+this.collapseProgress = 0;
+this.asm = 0;
+this.collapseTime = 0;
+this.animT = 0;
+this.animPlaying = false;
+this.animRec = false;
+this.brushHits = [];
+this.post = null;
+this.camTracker = null;
+this._pointerDown = false;
+}
+toggleCollapse() {
+this.setCollapse(!this.isCollapsed);
+}
+setCollapse(v) {
+if (this.isCollapsed === v) return;
+this.isCollapsed = v;
+if (v) this.state.layers.physics.on = true;
+this.emit();
+}
+setColorBy(v) {
+const pt = this.app.settings.point;
+this._userColor = true;
+this.state.look.colorBy = v;
+const m = { model: 'texture', solid: 'solid', normal: 'normal' }[v];
+if (m) pt.color = m;
+this.app.saveSettings();
+this.touch();
+this.emit();
+}
+syncLookFromPoints() {
+const m = { texture: 'model', solid: 'solid', normal: 'normal' }[this.app.settings.point.color];
+const cur = this.state.look.colorBy;
+if (m && ((this.state.source === 'model' && !this._userColor) || (cur !== 'disp' && cur !== 'index'))) this.state.look.colorBy = m;
+}
+touch() {
+this._histSoon();
+clearTimeout(this._saveT);
+this._saveT = setTimeout(() => saveJSON(KEY, this.state), 250);
+}
+emit() {
+this.app.bus.emit('fx');
+}
+_n() {
+const mp = this.modelProvider;
+if (mp && mp.kind() === 'cloud') return Math.max(1000, Math.min(this.state.count, mp.total()));
+return this.state.count;
+}
+async enter() {
+if (this.active) return;
+const app = this.app;
+this.active = true;
+this.state.look.autoRotate = false;
+this.state.layers.frames.on = false;
+this._fxCur = new Set();
+this._fxSeen = new Map();
+this._fxBusy = false;
+this._warm = new Map();
+this._tgtWarm = {};
+this._tgtRT = this._postOn();
+this._framesOn = false;
+const maxFxCount = perf.isApple ? 2000000 : perf.windows ? (perf.tier === 'high' ? 450000 : perf.tier === 'mid' ? 160000 : 100000) : perf.tier === 'high' ? 1000000 : 250000;
+this.state.count = Math.max(20000, Math.min(maxFxCount, app.settings.point.surfaceCount));
+const vp = app.viewport;
+this._saved = { rootVisible: vp.root.visible, ortho: app.nav.ortho };
+app.model.select(null);
+vp.root.visible = false;
+vp.fxHide = true;
+if (app.nav.ortho) app.nav.setOrtho(false);
+document.getElementById('app').classList.add('fx-mode');
+this.state.source = this.pm.ready ? 'media' : this.hasModel ? 'model' : this.state.source === 'model' ? 'sphere' : this.state.source;
+try {
+await this._build();
+} catch (e) {
+console.error(e);
+app.ui.idle();
+this.active = false;
+vp.root.visible = this._saved.rootVisible;
+vp.fxHide = false;
+document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
+throw e;
+}
+this.post = new PostPipeline(vp.renderer);
+const buildPts = this.points;
+if (buildPts) buildPts.visible = false;
+try {
+const kinds = [this._vertKind()];
+if (this.linkObj && this.state.layers.links.on) kinds.push('line');
+await Promise.all([this._warmScene(app.viewport.scene, app.viewport.camera), this.post.warm(), ...kinds.map((k) => this._warmKind(k, this._fxCur))]);
+this._tgtWarm[this._tgtRT ? 'r' : 's'] = 2;
+} catch (e) {
+}
+if (buildPts && this.points === buildPts) buildPts.visible = true;
+app.ui.idle();
+setTimeout(() => this._prefetch(this.playlist), 400);
+const stage = document.querySelector('.stage');
+stage.addEventListener('pointermove', this._move);
+stage.addEventListener('pointerleave', this._leave);
+stage.addEventListener('pointerdown', this._dn);
+stage.addEventListener('pointerup', this._up);
+this._offScene = app.bus.on('scene', () => this._onScene());
+this.hud = new TrackerHud(document.getElementById('viewport'));
+this.app.viewport.fxGrid = !!this.state.look.grid;
+this.applyBg();
+vp.renderHook = (renderer, scene, camera) => {
+if (!this.active) {
+renderer.render(scene, camera);
+return;
+}
+const fb = this.state.layers.feedback;
+const bloom = this.state.look.bloom || 0;
+const ab = this.state.look.aberration || 0;
+const dm = this.state.layers.datamosh;
+this._tgtSync();
+if (!this._tgtRT) {
+renderer.setRenderTarget(null);
+renderer.render(scene, camera);
+this.post.hasHistory = false;
+return;
+}
+this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? this._moshParams(dm) : null, true);
+};
+app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 0);
+this.syncLookFromPoints();
+if (this.pm.ready) {
+this.state.look.colorBy = 'model';
+this.pm.play();
+if (this.pm.kind === 'video') this.useVideoAudio().catch(() => {});
+}
+this._hist = { undo: [], redo: [], last: null };
+this._histT = setTimeout(() => this._histCommit(), 600);
+if (this.pm.playing && this.state.source === 'media') this.pm.play();
+this._lastT = performance.now();
+this._loop();
+this.emit();
+}
+exit() {
+if (!this.active) return;
+this.active = false;
+this.animPlaying = false;
+this.animRec = false;
+this.stopRecording();
+this.pause();
+this._videoToEditor();
+cancelAnimationFrame(this._raf);
+this._syncPaintLock(true);
+clearTimeout(this._sceneT);
+this._offScene && this._offScene();
+this.hud?.dispose();
+this.hud = null;
+this.app.viewport.renderHook = null;
+this.post?.dispose();
+this.post = null;
+if (this.camTracker) {
+this._stopCam();
+this.camTracker = null;
+}
+this.app.viewport.applyRenderSettings();
+const vp = this.app.viewport;
+this._disposePoints();
+vp.root.visible = this._saved?.rootVisible !== false;
+vp.fxHide = false;
+const stage = document.querySelector('.stage');
+stage.removeEventListener('pointermove', this._move);
+stage.removeEventListener('pointerleave', this._leave);
+stage.removeEventListener('pointerdown', this._dn);
+stage.removeEventListener('pointerup', this._up);
+document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
+this.app.display.apply();
+this.app.nav.frameAll(false);
+vp.invalidate();
+this.emit();
+}
+_eff(l) {
+if (!l.on) return 0;
+const g = this._fxGate ?? 1;
+if (l.band === 'none') return l.amount * g;
+const b = this._bandLevel(l);
+if (l.amode === 'gate') {
+const envs = (this._envs ||= new WeakMap());
+let e = envs.get(l);
+if (!e) {
+e = { v: 0, t: this._time, open: false };
+envs.set(l, e);
+}
+if (e.t !== this._time) {
+const dt = Math.min(0.1, Math.max(0, this._time - e.t));
+e.t = this._time;
+e.open = b > l.thr ? true : b < l.thr * 0.8 ? false : e.open;
+const tc = Math.max(0.005, e.open ? l.atk : l.rel);
+e.v += ((e.open ? 1 : 0) - e.v) * (1 - Math.exp(-dt / tc));
+}
+return l.amount * e.v * g;
+}
+if (!l.react) return l.amount * g;
+return l.amount * (1 - l.react + l.react * b * 2) * g;
+}
+setFrozen(v) {
+v = !!v;
+if (v === !!this.frozen) return;
+this.frozen = v;
+const ctx = this.ctx;
+if (v) {
+this._ctxWasRunning = !!ctx && ctx.state === 'running';
+if (this._ctxWasRunning) ctx.suspend().catch(() => {});
+} else if (this._ctxWasRunning && ctx) {
+ctx.resume().catch(() => {});
+this._ctxWasRunning = false;
+}
+this.app.viewport.invalidate();
+}
+_syncPaintLock(off) {
+const B = this.state.layers.brush;
+const want = !off && this.active && !!B && B.on && B.lock !== 'off';
+const nav = this.app.nav;
+if (nav.paintLock === want) return;
+nav.paintLock = want;
+this.app.viewport.container.classList.toggle('paint-lock', want);
+}
+}
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart);
 };
 __defs['src/animation/anim-activity.js'] = function (__exports, __req) {
 'use strict';
@@ -87811,7 +88079,8 @@ const { createAnimSettings } = __req('src/ui/panels/anim.js');
 const { clipActivity } = __req('src/animation/anim-activity.js');
 const { attachPreview } = __req('src/effects/ui/fx-previews.js');
 const { SHAPES: POINT_SHAPE_LIST } = __req('src/ui/panels/points.js');
-const { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, BANDS, BAND_RANGE, FREQ_QUICK, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } = __req('src/effects/engine.js');
+const { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS } = __req('src/effects/state/layers.js');
+const { FX_PALETTES, BANDS, BAND_RANGE, FREQ_QUICK, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } = __req('src/effects/state/options.js');
 function makeModelProvider(app) {
 const root = app.viewport.root;
 const shown = (o) => {
@@ -90628,7 +90897,7 @@ const { createExportPanel } = __req('src/ui/panels/export.js');
 const { createPointsPanel } = __req('src/ui/panels/points.js');
 const { createMediaPanel } = __req('src/ui/panels/media.js');
 const { createMediaBar } = __req('src/ui/media-bar.js');
-const { EffectsEngine } = __req('src/effects/engine.js');
+const { EffectsEngine } = __req('src/effects/engine/index.js');
 const { createEffectsPanel, makeModelProvider } = __req('src/effects/ui/panel-effects.js');
 const { importFiles, assignTextureFiles, ACCEPT_ALL, MODEL_FORMATS, IMAGE_EXT } = __req('src/io/importers.js');
 const { BACKGROUNDS } = __req('src/scene/viewport.js');

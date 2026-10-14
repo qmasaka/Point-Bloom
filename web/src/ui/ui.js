@@ -13,7 +13,7 @@ import { createExportPanel } from './panels/export.js';
 import { createPointsPanel } from './panels/points.js';
 import { createMediaPanel } from './panels/media.js';
 import { createMediaBar } from './media-bar.js';
-import { EffectsEngine } from '../effects/engine.js';
+import { EffectsEngine } from '../effects/engine/index.js';
 import { createEffectsPanel, makeModelProvider } from '../effects/ui/panel-effects.js';
 import { importFiles, assignTextureFiles, ACCEPT_ALL, MODEL_FORMATS, IMAGE_EXT } from '../io/importers.js';
 import { BACKGROUNDS } from '../scene/viewport.js';

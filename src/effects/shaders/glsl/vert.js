@@ -1,0 +1,346 @@
+// GLSL: вершинный шейдер точек.
+import { common } from './common.js';
+
+export const vert = /* glsl */ `
+attribute vec3 aOrigin;
+attribute vec3 aTarget;
+attribute vec3 aColor;
+attribute float aIdx;
+attribute vec3 aSculpt;
+attribute vec3 aNormal;
+attribute vec3 aNormalB;
+attribute vec4 aPaint; // акварель на точке: rgb цвет краски, w её количество
+attribute vec3 aColorB;
+attribute float aHide;
+attribute float aDepth;
+attribute float aPath;
+uniform float uAdd;
+uniform highp sampler2DArray uFrTex;
+uniform sampler2D uHeroTex;
+attribute vec2 aVis;
+uniform vec3 uSolid;
+uniform float uAtt;
+uniform float uSize;
+uniform float uPR;
+uniform vec3 uGlyph;
+uniform float uColorBy;
+uniform float uBright;
+uniform float uMaskShow;
+uniform vec3 uP0;
+uniform vec3 uP1;
+uniform vec3 uP2;
+uniform vec3 uSliceC;
+uniform vec3 uMarkC;
+varying vec3 vColor;
+varying float vD;
+varying float vDk;
+varying float vCoc;
+varying float vGl;
+` + common + `
+#ifdef HERO
+#define HEROSIZE clamp(sqrt(uFr.z / max(uHero.z, 1.0)), 0.4, 1.0)
+#else
+#define HEROSIZE uFr6.x
+#endif
+void main() {
+	if (aHide > 0.5) {
+		// точка скрыта фильтром «Медиа»
+		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+		gl_PointSize = 0.0;
+		vColor = vec3(0.0);
+		vD = 0.0;
+		vCoc = 0.0;
+		vGl = 0.0;
+		return;
+	}
+	// раскадровка: цвет берётся из текстуры кадров, невидимые кадры отсекаются сразу
+	vec3 frCol = vec3(1.0);
+	vec3 frNrm = vec3(0.0, 0.0, 1.0);
+	float frLift = 0.0;
+	float frAp = -1.0;
+	if (uFr.x > 0.5) {
+		float fk;
+		vec2 fcell;
+		vec3 fp = frBlockPos(aIdx, frNrm, fk, fcell);
+#ifdef HERO
+		frAp = (fcell.y + fcell.x / uHero.x) / uHero.y;
+#else
+		frAp = (fcell.y + fcell.x / uFr2.x) / uFr2.y;
+#endif
+		vec3 tcol;
+		vec4 sh = frShow(fk, tcol);
+#ifdef HERO
+		// главный кадр показывается как есть, без подсветки и затемнения
+		if (uFr4.y < 0.5) sh.x = 1.0;
+#endif
+		bool cull = sh.x < 0.02;
+		// без свечения затухание цветом дало бы чёрные точки: вместо этого точки гаснут рассыпаясь (часть выпадает), а цвет остаётся
+		if (uAdd < 0.5 && sh.x < 1.0) {
+			if (fract(sin(dot(fcell, vec2(39.346, 11.135)) + fk * 1.713) * 24634.6345) > sh.x) cull = true;
+		}
+		// без свечения цвет точек всегда как в видео: яркость кадров здесь меняется только числом точек
+		if (uAdd < 0.5) sh.x = 1.0;
+#ifndef HERO
+		// текущий кадр рисуется густым набором точек, поэтому в блоке его место пустое
+		if (uHero.w > 0.5 && abs(fk - floor(uFr4.x + 0.5)) < 0.1) cull = true;
+		// прошлые и будущие кадры редеют с расстоянием от текущего: рядом все точки, далеко только часть
+		float dl = abs(fk - uFr4.x);
+		float keep = mix(1.0, clamp(1.0 / (1.0 + dl * 0.45), 0.08, 1.0), uFr5.y);
+		float hs = fract(sin(dot(fcell, vec2(12.9898, 78.233)) + fk * 0.731) * 43758.5453);
+		if (dl > 0.5 && hs > keep) cull = true;
+		// длина хвоста: за ней кадры пропадают, а перед ней точки редеют тем плавнее, чем больше «плавность»
+		if (uFr7.x < 0.999) {
+			float tx = dl / max(uFr7.x * uFr.y, 1.0);
+			if (tx >= 1.0 || hs > 1.0 - smoothstep(min(1.0 - uFr7.z, 0.999), 1.0, tx)) cull = true;
+		}
+#endif
+		if (cull) {
+			gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+			gl_PointSize = 0.0;
+			vColor = vec3(0.0);
+			vD = 0.0;
+			vCoc = 0.0;
+			vGl = 0.0;
+			return;
+		}
+		int layer = int(mod(fk + uFr5.x, uFr.y));
+#ifdef HERO
+		vec3 fc = texture2D(uHeroTex, vec2((fcell.x + 0.5) / uHero.x, 1.0 - (fcell.y + 0.5) / uHero.y)).rgb;
+#else
+		vec3 fc = texelFetch(uFrTex, ivec3(int(fcell.x), int(fcell.y), layer), 0).rgb;
+#endif
+#ifndef HERO
+		fc = min(fc * uFr5.w, vec3(1.6));
+		// насыщенность: ноль это цвета видео, плюс сочнее, минус ближе к серому
+		if (abs(uFr7.y) > 0.001) fc = max(mix(vec3(dot(fc, vec3(0.3, 0.59, 0.11))), fc, 1.0 + uFr7.y * (uFr7.y > 0.0 ? 2.0 : 1.0)), 0.0);
+		// отбор по тону: остаются только светлые или только тёмные точки остальных кадров
+		if (uFr6.z > 0.5) {
+			float lt = pow(dot(fc, vec3(0.3, 0.59, 0.11)), 0.4545);
+			if (uFr6.z < 1.5 ? lt < uFr6.w : lt > uFr6.w) {
+				gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+				gl_PointSize = 0.0;
+				vColor = vec3(0.0);
+				vD = 0.0;
+				vCoc = 0.0;
+				vGl = 0.0;
+				return;
+			}
+		}
+#endif
+		float l = dot(fc, vec3(0.3, 0.59, 0.11));
+		frCol = (fc * (1.0 - sh.z) + tcol * (0.35 + l * 1.6) * sh.z) * sh.x;
+		frLift = sh.y;
+	}
+	vec3 base;
+	float maskV;
+	gDepth = aDepth;
+	gNormal = aNormal;
+	gLum = uFr.x > 0.5 ? dot(frCol, vec3(0.3, 0.59, 0.11)) : dot(aColor, vec3(0.3, 0.59, 0.11));
+	if (uScope.x > 0.001) {
+		// осциллограф: aPath это место точки на пути пера (0..1), uScope.z это положение пера, у ещё не нарисованных точек размер падает до нуля
+		bool rv = uScope.y > 1.5;
+		float cm = rv ? uScope.y - 2.0 : uScope.y;
+		// в раскадровке путь это строчная развёртка кадра (точки формы там не видны), иначе перо шло бы по невидимым точкам
+		float ap0 = frAp >= 0.0 ? frAp : aPath;
+		float ap = rv ? 1.0 - ap0 : ap0;
+		if (uScopeP.w > 1.5) ap = fract(ap * uScopeP.w);
+		float sAge = uScope.z - ap;
+		float hideAll = (ap < uScopeP.z ? 1.0 : 0.0) * min(1.0, uScopeP.x * 4.0);
+		if (sAge >= 0.0) {
+			gScopeT = (cm < 0.5 ? 1.0 : exp(-sAge * 4.0 / max(uScope.w, 0.02))) * uScopeP.y;
+			gScopeG = exp(-sAge * 45.0) * uScopeP.y;
+			// стирание: перо идёт по следу второй раз и съедает нарисованное, на кромке светится
+			if (uScopeP.z > 0.0 && ap >= uScopeP.z) gScopeG = max(gScopeG, exp(-(ap - uScopeP.z) * 45.0));
+			gScopeD = hideAll;
+		} else gScopeD = max(clamp(uScopeP.x * uScope.x * 1.6, 0.0, 1.0), hideAll);
+	}
+	vec3 pos = fxDisplace(aOrigin, aTarget, aIdx, base, maskV);
+	pos += aSculpt;
+	if (gScopeG > 0.01) pos += (vec3(hash11(aIdx * 13.1), hash11(aIdx * 7.7), hash11(aIdx * 3.3)) - 0.5) * gScopeG * uScopeQ.w * 0.4;
+	if (uFr.x > 0.5) pos += frNrm * frLift * 0.7;
+	float dkv = disK(base, aIdx);
+	vDk = max(max(dkv, gDrop), 1.0 - gGrow);
+	float t = uTime - uTOff;
+	float disp = clamp(length(pos - base) * 1.5, 0.0, 1.0);
+	float k;
+	if (uColorBy < 0.5) k = clamp(disp + uBeat * 0.12, 0.0, 1.0);
+	else if (uColorBy < 1.5) k = clamp((pos.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
+	else k = fract(aIdx * 3.0 + t * 0.03);
+	vec3 col = k < 0.5 ? mix(uP0, uP1, k * 2.0) : mix(uP1, uP2, (k - 0.5) * 2.0);
+	// цвет и нормаль плавно перетекают вместе с формой
+	float ltC = uMorph < 0.9999 ? morphLocal(aOrigin, aTarget, aIdx) : 1.0;
+	float eC = uMorph < 0.9999 ? (int(uMorphS.x + 0.5) == 2 ? smoothstep(0.5, 0.9, ltC) : morphEase(ltC)) : 1.0;
+	vec3 colM = mix(aColor, aColorB, eC);
+	if (uFr.x > 0.5) colM = frCol;
+	vec3 nrmM = mix(aNormal, aNormalB, eC);
+	if (uColorBy > 2.5 && uColorBy < 3.5) col = colM;
+	else if (uColorBy > 3.5 && uColorBy < 4.5) col = uSolid;
+	else if (uColorBy > 4.5) {
+		vec3 wn = mat3(modelMatrix) * nrmM;
+		wn = length(wn) > 0.0 ? normalize(wn) : vec3(0.0, 1.0, 0.0);
+		col = pow(wn * 0.5 + 0.5, vec3(2.2));
+	}
+	// видимость точки при морфинге между моделями с разным числом точек: лишние плавно гаснут, недостающие проявляются
+	float vm = uMorph * uMorph * (3.0 - 2.0 * uMorph);
+	float vis = mix(aVis.x, aVis.y, vm);
+	vColor = col * uBright * (1.0 + uBeat * 0.3) * vis;
+	// акварель: краска, нанесённая кистью, хранится на самой точке и остаётся после мазка
+	if (uPaintP.x > 0.5 && aPaint.w > 0.002) {
+		float pa = aPaint.w;
+		float cov = 1.0 - exp(-pa * 3.4);
+		cov *= mix(1.0, 0.8 + 0.4 * hash11(aIdx * 91.7), uPaintP.y);
+		vec3 pig = pow(max(aPaint.rgb, vec3(0.002)), vec3(0.7 + 0.5 * min(pa, 1.6)));
+		vColor = uPaintP.z > 0.5 ? vColor * mix(vec3(1.0), pig * 1.15, cov) : mix(vColor, pig * uBright, cov);
+	}
+	if (uMask.x > 0.5 && uMaskShow > 0.5) vColor = mix(vColor, uP2 * 1.4, maskV * 0.55);
+	// объём: свет сверху слева по нормалям, обратная сторона формы темнее
+	if (uShade > 0.001 && dot(nrmM, nrmM) > 0.01) {
+		vec3 nv = normalize(normalMatrix * nrmM);
+		float lit = dot(nv, normalize(vec3(-0.45, 0.65, 0.6)));
+		float f = 0.18 + 1.05 * pow(clamp(lit * 0.5 + 0.5, 0.0, 1.0), 1.6);
+		f *= nv.z < 0.0 ? mix(1.0, 0.55, clamp(-nv.z * 1.6, 0.0, 1.0)) : 1.0;
+		vColor *= mix(1.0, f, uShade);
+	}
+	vGl = clamp(sqrt(max(dot(vColor, vec3(0.3, 0.59, 0.11)), 0.0)) * 0.85 + (hash11(aIdx * 1.7) - 0.5) * 0.35, 0.0, 1.0);
+
+	// Кисть: свечение в следе мазка
+	if (uBrushParam.x > 0.001) {
+		float bGlow = 0.0;
+		for (int i = 0; i < 20; i++) {
+			float age = uBrushHits[i].w;
+			if (age < 0.0) continue;
+			float dist = distance(base, uBrushHits[i].xyz);
+			if (dist < uBrushParam.y) {
+				float life = 1.0 - age / uBrushParam.z;
+				bGlow = max(bGlow, (1.0 - dist / uBrushParam.y) * life);
+			}
+		}
+		if (bGlow > 0.001) vColor += uP2 * bGlow * 2.2 * uBrushParam.x;
+	}
+
+	// Руки: подсветка точек возле кончиков пальцев
+	if (uHandP.x > 0.001) {
+		float hg = 0.0;
+		for (int i = 0; i < 12; i++) {
+			if (float(i) >= uHandP.w) break;
+			float hdst = distance(pos, uHand[i].xyz);
+			if (hdst < uHandP.y) hg = max(hg, (1.0 - hdst / uHandP.y) * (uHand[i].w > 1.5 ? uHand[i].w - 2.0 : abs(uHand[i].w)));
+		}
+		vColor += uP2 * hg * hg * 1.6 * uHandP.x;
+	}
+
+	// Область трекинга: негатив, радуга, дыра, лупа, пиксели или свет вокруг рамок
+	float mkv = markK(base);
+	if (mkv > 0.0) {
+		if (uMark.x < 1.5) vColor = mix(vColor, (vec3(1.0) - min(vColor, vec3(1.0))) * 1.3, mkv);
+		else if (uMark.x < 2.5) vColor = mix(vColor, hueRot(vColor, uTime * 2.0 + length(base) * 6.0) * 1.15, mkv);
+		else if (uMark.x < 3.5) {
+			float edge = smoothstep(0.0, 0.35, mkv) * (1.0 - smoothstep(0.35, 0.9, mkv));
+			vColor = vColor * (1.0 - smoothstep(0.35, 0.9, mkv)) + uMarkC * edge * 2.0;
+		} else if (uMark.x < 4.5) vColor *= 1.0 + mkv * 0.8;
+		else if (uMark.x > 5.5) vColor += uMarkC * mkv * 1.8;
+	}
+	// Исчезновение точек в местах касания: плавно гаснут без подсветки края
+	float cvan = 0.0;
+	if (uContact.z > 6.5 && uContact.x > 0.001) {
+		cvan = contactK(base);
+		vColor *= 1.0 - smoothstep(0.1, 0.8, cvan);
+	}
+
+	// Срез / Изолинии: лазеры, рельеф на линиях или развёртка за бегущей плоскостью
+	float sl = 0.0;
+	if (uSlice.x > 0.001) {
+		float axCode = mod(uSlice.w, 10.0);
+		float nLines = max(1.0, floor(uSlice.w / 10.0));
+		float c = axCode < 0.5 ? base.y : (axCode < 1.5 ? base.x : (axCode < 2.5 ? base.z : (base.x + base.y) * 0.707));
+		float v = clamp((c + 1.2) / 2.4, 0.0, 1.0);
+		if (uSliceM.x > 1.5) {
+			float d = uSlice.y - v;
+			sl = (1.0 - smoothstep(0.0, uSlice.z * 0.3 + 0.012, abs(d))) * uSlice.x;
+			vColor *= mix(1.0, smoothstep(-0.012, 0.012, d), min(uSlice.x, 1.0));
+			vColor += (uSliceM.z > 0.5 ? vColor * 0.25 : uSliceC) * sl * 2.4;
+		} else {
+			float coord = mod(v * nLines - uSlice.y * nLines, 1.0);
+			sl = (1.0 - smoothstep(uSlice.z * 0.4, uSlice.z, abs(coord - 0.5))) * uSlice.x;
+			vColor += (uSliceM.z > 0.5 ? vColor * 0.25 : uSliceC) * sl * 2.2;
+		}
+	}
+	// глубина: показ карты или окраска по глубине, блики сканера и контуров
+	if (uDepth.x > 0.001) {
+		if (uDepthP.w > 1.5) {
+			// цвет глубины: от синего (далеко) через жёлтый к красному (близко), яркость берётся от кадра, чтобы не пропали детали
+			vec3 jet = clamp(vec3(1.5 - abs(4.0 * gDepth - 3.0), 1.5 - abs(4.0 * gDepth - 2.0), 1.5 - abs(4.0 * gDepth - 1.0)), 0.0, 1.0);
+			vColor = mix(vColor, jet * (0.4 + 0.95 * dot(vColor, vec3(0.3, 0.59, 0.11))), 0.88);
+		} else if (uDepthP.w > 0.5) vColor = vec3(gDepth);
+	}
+	// осциллограф: линия окрашивается, голова пера горит
+	if (uScope.x > 0.001) {
+		vColor = mix(vColor, uScopeC * 1.4, uScopeQ.x * gScopeT);
+		vColor += uScopeC * gScopeG * uScopeQ.z * 3.0;
+	}
+	// глитч: мерцание, строки-помехи и раздельные цветовые каналы
+	if (gGl > 0.0) {
+		vColor *= 0.55 + 0.45 * hash11(floor(uTime * 24.0) + floor(pos.y * 14.0));
+		vColor *= 1.0 - 0.45 * min(gGl, 1.0) * step(0.5, fract(pos.y * 38.0));
+		if (gCh > -0.5) vColor = mix(vColor, vColor * vec3(gCh < 0.5 ? 2.2 : 0.05, abs(gCh - 1.0) < 0.5 ? 2.2 : 0.05, gCh > 1.5 ? 2.2 : 0.05), min(1.0, gGl));
+		// в момент всплеска сбойные места вспыхивают
+		vColor += vec3(0.25, 0.3, 0.35) * gBurst * min(gGl, 1.0);
+	}
+	// росток: на фронте роста точки вспыхивают свежей зеленью в тон палитре
+	if (uGrowP.z > 0.5) vColor += mix(vec3(0.3, 0.95, 0.4), uP2, 0.3) * pow(gGrowE, 1.6) * 0.55;
+	// светящаяся кромка растворения: у горения огненная, у остальных цвета палитры, яркость задаёт настройка
+	if (dkv > 0.0) {
+		float edge = smoothstep(0.02, 0.25, dkv) * (1.0 - smoothstep(0.25, 0.75, dkv));
+		if (uDisP.x > 0.5 && uDisP.x < 1.5) vColor += vec3(1.0, 0.42, 0.08) * edge * 2.4;
+		else vColor += uP2 * edge * uDisQ.z * 2.0;
+	}
+	// вспышка в момент перехода: точки в пути ярче и крупнее
+	float mkm = 0.0;
+	if (uMorph < 0.9999 && uMorphO.z > 0.001) {
+		mkm = sin(morphLocal(aOrigin, aTarget, aIdx) * PI) * uMorphO.z;
+		vColor += vColor * mkm * 1.1 + uP2 * mkm * 0.25;
+	}
+	// после сборки по форме снизу вверх пробегает мягкая волна света и лёгкий «вздох», как будто модель села на место
+	if (uSettle >= 0.0 && uSettle < 1.0) {
+		float yS = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
+		float dd = (yS - (uSettle * 1.35 - 0.15)) / 0.14;
+		float band = exp(-dd * dd) * (1.0 - uSettle);
+		mkm += band * 1.0;
+		vColor += vColor * band * 0.9 + uP2 * band * 0.2;
+		pos += normalize(vec3(pos.x, 0.0, pos.z) + vec3(1e-4)) * band * 0.03;
+	}
+	vD = disp;
+	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+	gl_Position = projectionMatrix * mv;
+
+	// Масштаб по шуму и спектру (Scale POP)
+	float szNoise = 1.0;
+	if (uLookP2.x > 0.001) {
+		szNoise = 1.0 + uLookP2.x * (snoise(base * 2.2 + uTime * 0.4) * 0.75);
+	}
+	float szAudio = 1.0;
+	if (uLookP2.y > 0.001) {
+		float bandAudio = mix(uBeat, uSpec.x, step(0.0, base.y));
+		szAudio = 1.0 + uLookP2.y * (bandAudio * 1.2 * (0.6 + 0.4 * sin(aIdx * 62.8)));
+	}
+
+	// Глубина резкости (Depth of Field: CoC)
+	float coc = 0.0;
+	if (uDof.x > 0.5) {
+		float viewDist = -mv.z;
+		coc = clamp(abs(viewDist - uDof.y) / max(0.05, uDof.z), 0.0, 1.0);
+	}
+	vCoc = coc;
+
+	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
+	s *= max(0.15, szNoise * szAudio) * (1.0 - uDisQ.w * dkv) * mix(0.3, 1.0, gGrow) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
+	s *= (1.0 + coc * 2.4);
+	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD);
+	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
+	gl_PointSize = clamp(s, 1.0, 95.0);
+	if (gScopeD > 0.97 || dkv > 0.97 || gDrop > 0.5 || gGrow < 0.03) {
+		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+		gl_PointSize = 0.0;
+	}
+}
+`;

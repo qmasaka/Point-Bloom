@@ -11,7 +11,8 @@ import { createAnimSettings } from '../../ui/panels/anim.js';
 import { clipActivity } from '../../animation/anim-activity.js';
 import { attachPreview } from './fx-previews.js';
 import { SHAPES as POINT_SHAPE_LIST } from '../../ui/panels/points.js';
-import { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS, FX_PALETTES, BANDS, BAND_RANGE, FREQ_QUICK, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } from '../engine.js';
+import { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS } from '../state/layers.js';
+import { FX_PALETTES, BANDS, BAND_RANGE, FREQ_QUICK, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } from '../state/options.js';
 
 /**
  * Источник «Модель» для эффектов: если в сцене редактора есть облако точек (оно создаётся на вкладке «Точки»),
