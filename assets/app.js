@@ -33502,16 +33502,20 @@ const remove = this.mode === 'sub' || e.ctrlKey || e.metaKey;
 this._drag = { x0: e.clientX, y0: e.clientY, remove, id: e.pointerId, path: [[e.clientX, e.clientY]] };
 if (this.tool === 'brush') this._brush(e.clientX, e.clientY, remove);
 }
+_scale() {
+return this._cursor?.currentCSSZoom || parseFloat(document.documentElement.style.zoom) || parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+}
 _move(e) {
 if (!this.active) return;
 const r = this.app.viewport.canvas.getBoundingClientRect();
 const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+const scale = this._scale();
 if (this.tool === 'brush' && this.obj && !e.altKey) {
 const d = this.radius * 2;
 const s = this._cursor.style;
 s.width = s.height = d + 'px';
-s.left = e.clientX - d / 2 - this._vpLeft() + 'px';
-s.top = e.clientY - d / 2 - this._vpTop() + 'px';
+s.left = (e.clientX - this._vpLeft()) / scale - d / 2 + 'px';
+s.top = (e.clientY - this._vpTop()) / scale - d / 2 + 'px';
 this._cursor.hidden = !inside;
 } else this._cursor.hidden = true;
 const d = this._drag;
@@ -33524,10 +33528,10 @@ this._lassoDraw(d.path, d.remove);
 } else {
 const s = this._rect.style;
 const l = Math.min(d.x0, e.clientX), t = Math.min(d.y0, e.clientY);
-s.left = l - this._vpLeft() + 'px';
-s.top = t - this._vpTop() + 'px';
-s.width = Math.abs(e.clientX - d.x0) + 'px';
-s.height = Math.abs(e.clientY - d.y0) + 'px';
+s.left = (l - this._vpLeft()) / scale + 'px';
+s.top = (t - this._vpTop()) / scale + 'px';
+s.width = Math.abs(e.clientX - d.x0) / scale + 'px';
+s.height = Math.abs(e.clientY - d.y0) / scale + 'px';
 this._rect.hidden = false;
 this._rect.classList.toggle('is-sub', d.remove);
 }
@@ -33594,7 +33598,9 @@ _vpTop() {
 return document.getElementById('viewport').getBoundingClientRect().top;
 }
 _brush(cx, cy, remove) {
-const r2 = this.radius * this.radius;
+const scale = this._scale();
+const r = this.radius * scale;
+const r2 = r * r;
 this._apply((x, y) => (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r2, remove);
 }
 _apply(inside, remove) {
@@ -65593,20 +65599,21 @@ keys
 (document.querySelector('.workspace') || document.body).append(panel);
 function place() {
 if (panel.hidden) return;
+const scale = panel.currentCSSZoom || parseFloat(document.documentElement.style.zoom) || parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
 const ws = panel.parentElement.getBoundingClientRect();
 const rail = document.querySelector('.toolrail');
 const side = document.getElementById('sidebar');
 const rr = rail.getBoundingClientRect();
 const sr = side ? side.getBoundingClientRect() : null;
 const gap = 8;
-const sideW = sr && sr.width ? sr.width : 300;
-panel.style.width = Math.max(220, sideW - rr.width - gap) + 'px';
-panel.style.left = rr.right - ws.left + gap + 'px';
+const sideW = sr && sr.width ? sr.width : 300 * scale;
+panel.style.width = Math.max(220, (sideW - rr.width - gap) / scale) + 'px';
+panel.style.left = (rr.right - ws.left + gap) / scale + 'px';
 const top = sr && sr.height ? sr.top - ws.top : rr.top - ws.top;
 const collapsed = side && side.classList.contains('fxf-collapsed');
-const maxH = sr && sr.height && !collapsed ? sr.height : ws.height - top - 20;
-panel.style.top = top + 'px';
-panel.style.maxHeight = maxH + 'px';
+const maxH = sr && sr.height && !collapsed ? sr.height : ws.height - top - 20 * scale;
+panel.style.top = (top / scale) + 'px';
+panel.style.maxHeight = (maxH / scale) + 'px';
 }
 window.addEventListener('resize', place);
 if (window.ResizeObserver) {
@@ -75103,7 +75110,16 @@ const FX_LAYERS = [
 { id: 'trail', group: 'Анимация', name: 'Шлейф', icon: 'stack', hint: 'За движущейся анимированной моделью остаются полупрозрачные копии прошлых поз. Настраиваются число копий и шаг между ними', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 0.5, count: 8, step: 0.1, fade: 0.8, pts: 25000, size: 0.6, tint: 0, shrink: 0.35 }, extras: [{ key: 'count', label: 'Сколько копий в шлейфе', min: 2, max: 24, step: 1, int: true }, { key: 'step', label: 'Время между копиями, с', min: 0.03, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Как быстро гаснут копии', min: 0.4, max: 0.97, step: 0.01 }, { key: 'shrink', label: 'Как мельчают копии', min: 0, max: 0.9, step: 0.02 }, { key: 'pts', label: 'Точек в копии', min: 5000, max: 80000, step: 1000, int: true }, { key: 'size', label: 'Размер точек', min: 0.3, max: 2.5, step: 0.05 }, { key: 'tint', label: 'Окраска цветом палитры', min: 0, max: 1, step: 0.02 }] },
 { id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 { id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Цифровой сбой. Виды: полосы, блоки, развёртка. Цвета расходятся, на всплесках часть точек выпадает', max: 2, def: { on: false, amount: 0.8, band: 'none', react: 1, mode: 'bands', slices: 16, rgb: 'on', speed: 1, burst: 0.7, drop: 0.5 }, extras: [{ key: 'mode', label: 'Вид сбоя', type: 'select', options: [['bands', 'Полосы: строки съезжают в стороны'], ['blocks', 'Блоки: куски сдвигаются в объёме'], ['scan', 'Развёртка: тонкие строки рвутся']] }, { key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1, int: true }, { key: 'burst', label: 'Резкость всплесков', min: 0, max: 1, step: 0.05 }, { key: 'drop', label: 'Выпадение точек', min: 0, max: 1, step: 0.05 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
-{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются число узлов и дальность связи', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: perf.isApple || perf.tier === 'high' ? 3500 : 2000, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
+{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются стиль, цвет, маяки, число узлов и дальность связи', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: perf.isApple || perf.tier === 'high' ? 3500 : 2000, pulses: 'on', pulseSpeed: 1.6, mode: 'classic', colorMode: 'palette', beacons: 'on' }, extras: [
+{ key: 'mode', label: 'Стиль связей', type: 'select', options: [['classic', 'Классика (паутинка)'], ['neural', 'Нейросеть (синапсы со спайками)'], ['constellation', 'Созвездия (тонкие звёздные нити)'], ['cyber', 'Киберпанк (лазерный строб)'], ['elastic', 'Натяжение (накал при растяжении)']] },
+{ key: 'colorMode', label: 'Цвет нитей', type: 'seg', options: [['palette', 'Палитра'], ['tension', 'Натяг'], ['neon', 'Неон'], ['rainbow', 'Радуга']] },
+{ key: 'beacons', label: 'Огоньки на узлах', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] },
+{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' },
+{ key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 },
+{ key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true },
+{ key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] },
+{ key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }
+] },
 { id: 'slice', group: 'Графика', name: 'Срез', icon: 'scan', hint: 'По форме идёт срез. Виды: лазер (линии), рельеф (точки на линиях), развёртка (форма проявляется за плоскостью)', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'model' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
 { id: 'feedback', group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой световой хвост из прошлых кадров. Виды: выдержка, туннель', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
 { id: 'datamosh', group: 'Графика', name: 'Датамош', icon: 'checkerboard', hint: 'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'bleed', trigger: 'timer', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, stale: 0.2, jit: 0.4 }, extras: [
@@ -76978,6 +76994,7 @@ uniform vec3 uP1;
 uniform vec3 uP2;
 uniform float uBright;
 uniform vec4 uLink;
+uniform vec4 uLinkP;
 uniform vec2 uRes;
 uniform float uLinkW;
 varying vec3 vC;
@@ -76985,6 +77002,7 @@ varying float vA;
 varying float vEnd;
 varying float vIdx;
 varying float vSide;
+varying float vStrain;
 ` + common + `
 void main() {
 	vec3 bA, bB;
@@ -76994,15 +77012,42 @@ void main() {
 	vec3 pA = fxDisplace(aOrigin, aTarget, aIdx, bA, mA);
 	gDepth = aDepthB;
 	vec3 pB = fxDisplace(aOriginB, aTargetB, aIdxB, bB, mB);
+	float maxLen = uLink.y * 1.9;
 	float len = distance(pA, pB);
-	vA = uLink.x * (1.0 - smoothstep(uLink.y * 0.8, uLink.y * 1.9, len));
-	vC = mix(uP0, uP2, 0.35 + uBeat * 0.4) * uBright;
+	if (len > maxLen) {
+		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+		return;
+	}
+	float strain = clamp((len - uLink.y * 0.4) / max(uLink.y * 1.3, 0.01), 0.0, 1.0);
+	vStrain = strain;
+	vec3 col = mix(uP0, uP2, 0.35 + uBeat * 0.4) * uBright;
+	if (uLinkP.y > 0.5 && uLinkP.y < 1.5) {
+		// Натяжение (tension): бирюзовый -> золотой -> раскаленный оранжево-рубиновый
+		vec3 cyan = vec3(0.12, 0.88, 0.9);
+		vec3 gold = vec3(1.0, 0.76, 0.18);
+		vec3 ruby = vec3(1.0, 0.22, 0.28);
+		col = strain < 0.5 ? mix(cyan, gold, strain * 2.0) : mix(gold, ruby, (strain - 0.5) * 2.0);
+		col *= uBright * (1.1 + uBeat * 0.35);
+	} else if (uLinkP.y > 1.5 && uLinkP.y < 2.5) {
+		// Неон (neon): электрический кибер-градиент
+		col = mix(vec3(0.08, 0.72, 1.0), vec3(1.0, 0.08, 0.76), fract(aIdx * 7.13 + aEnd * 0.5));
+		col *= uBright * 1.35;
+	} else if (uLinkP.y > 2.5) {
+		// Радуга (rainbow): спектральная волна
+		col = (0.5 + 0.5 * cos(6.2831853 * (aIdx + aEnd * 0.35 + uTime * 0.18 + vec3(0.0, 0.33, 0.67)))) * uBright * 1.25;
+	}
+	vC = col;
+	vA = uLink.x * (1.0 - smoothstep(uLink.y * 0.8, maxLen, len));
 	vEnd = aEnd;
 	vIdx = aIdx;
 	vSide = aSide;
 	mat4 mvp = projectionMatrix * modelViewMatrix;
 	vec4 cA = mvp * vec4(pA, 1.0);
 	vec4 cB = mvp * vec4(pB, 1.0);
+	if (cA.w < 0.02 || cB.w < 0.02) {
+		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+		return;
+	}
 	vec2 sA = cA.xy / cA.w;
 	vec2 sB = cB.xy / cB.w;
 	vec2 dir = (sB - sA) * vec2(uRes.x / uRes.y, 1.0);
@@ -77010,7 +77055,14 @@ void main() {
 	dir = dl > 1e-5 ? dir / dl : vec2(1.0, 0.0);
 	vec2 nrm = vec2(-dir.y, dir.x) * vec2(uRes.y / uRes.x, 1.0);
 	vec4 c = mix(cA, cB, aEnd);
-	c.xy += nrm * aSide * (uLinkW + 1.0) / uRes.y * c.w;
+	float flare = 1.0;
+	if (uLinkP.z > 0.5) {
+		float endDist = min(aEnd, 1.0 - aEnd);
+		flare += (1.0 - smoothstep(0.0, 0.18, endDist)) * 1.9;
+	}
+	float baseW = uLinkW;
+	if (uLinkP.x > 1.5 && uLinkP.x < 2.5) baseW = max(0.65, uLinkW * 0.6); // созвездия — тонкие нити
+	c.xy += nrm * aSide * (baseW * flare + 1.0) / uRes.y * c.w;
 	gl_Position = c;
 }
 `;
@@ -77082,23 +77134,64 @@ void main() {
 const lineFrag = `
 precision highp float;
 uniform vec4 uLink;
+uniform vec4 uLinkP;
 uniform float uTime;
 varying vec3 vC;
 varying float vA;
 varying float vEnd;
 varying float vIdx;
 varying float vSide;
+varying float vStrain;
 void main() {
-	float pulseA = 1.0;
 	float edge = 1.0 - smoothstep(0.35, 1.0, abs(vSide));
 	vec3 col = vC;
+	float pulseA = 1.0;
+	int mode = int(uLinkP.x + 0.5);
 	if (uLink.w > 0.5) {
-		float p = sin(vEnd * 16.0 - uTime * uLink.z * 3.5 + vIdx * 24.0);
-		float spark = smoothstep(0.45, 0.98, p) * 2.8;
-		pulseA = 0.5 + spark;
-		col += col * spark * 1.5;
+		float spd = uLink.z;
+		if (mode == 0) {
+			// Классика: синусоидальный импульс с искрами
+			float p = sin(vEnd * 16.0 - uTime * spd * 3.5 + vIdx * 24.0);
+			float spark = smoothstep(0.45, 0.98, p) * 2.8;
+			pulseA = 0.5 + spark;
+			col += col * spark * 1.5;
+		} else if (mode == 1) {
+			// Нейросеть (синапсы): асимметричные спайки действия с резким фронтом в обоих направлениях
+			float t1 = fract(vEnd * 2.0 - uTime * spd * 0.95 + vIdx * 13.37);
+			float spike1 = exp(-t1 * 16.0) * 4.0;
+			float t2 = fract((1.0 - vEnd) * 2.0 - uTime * spd * 0.75 + vIdx * 29.11);
+			float spike2 = exp(-t2 * 16.0) * 3.0;
+			float syn = spike1 + spike2;
+			pulseA = 0.35 + syn;
+			col = mix(col, vec3(1.0), clamp(syn * 0.55, 0.0, 0.85)) + col * syn * 1.8;
+		} else if (mode == 2) {
+			// Созвездия: мягкое мерцание звездного скопления
+			float shimmer = 0.65 + 0.35 * sin(uTime * 3.2 + vIdx * 43.0 + vEnd * 6.28);
+			pulseA = shimmer;
+			col = mix(col, vec3(0.9, 0.96, 1.0), 0.35 * shimmer);
+		} else if (mode == 3) {
+			// Киберпанк / Лазер: резкий луч с цифровыми пакетами данных
+			float core = 1.0 - smoothstep(0.0, 0.32, abs(vSide));
+			float bits = step(0.46, fract(vEnd * 10.0 - uTime * spd * 3.2 + vIdx * 19.3));
+			pulseA = 0.55 + bits * 2.2;
+			col = col * pulseA + vec3(1.0) * core * 1.6;
+		} else if (mode == 4) {
+			// Натяжение: волна накала с усилением от растяжения нити
+			float wave = 0.5 + 0.5 * sin(vEnd * 12.0 - uTime * spd * 2.6 + vStrain * 6.0);
+			pulseA = 0.5 + wave * (1.0 + vStrain * 2.2);
+			col += vec3(1.0, 0.45, 0.18) * vStrain * 2.0 * wave;
+		}
 	}
-	gl_FragColor = vec4(col * (vA * pulseA * edge), vA * pulseA * edge);
+	// Огоньки на узлах (сияющие бусины/маяки на стыках)
+	if (uLinkP.z > 0.5) {
+		float endDist = min(vEnd, 1.0 - vEnd);
+		float dNode = length(vec2(endDist * 7.5, vSide * 0.72));
+		float beacon = exp(-dNode * 3.8) * 2.6;
+		col += (vec3(1.0) + vC * 0.6) * beacon;
+		pulseA = max(pulseA, beacon * 1.3);
+	}
+	float alpha = clamp(vA * pulseA * edge, 0.0, 1.0);
+	gl_FragColor = vec4(col * alpha, alpha);
 	#include <tonemapping_fragment>
 	#include <colorspace_fragment>
 }
@@ -80941,7 +81034,7 @@ uP0: U(new THREE.Color()), uP1: U(new THREE.Color()), uP2: U(new THREE.Color()),
 uShade: U(0), uGlyph: U(new THREE.Vector3(0, 1, 8)), uAtlas: U(glyphAtlas('ascii')), uMouse: U(new THREE.Vector3()), uMouseOn: U(0), uSpecTex: U(this.specTex),
 uCurl: U(new THREE.Vector4()), uSpec: U(new THREE.Vector4()), uWave: U(new THREE.Vector4()), uTwist: U(new THREE.Vector4()),
 uPulse: U(new THREE.Vector4()), uVoxel: U(new THREE.Vector4()), uJitter: U(new THREE.Vector4()), uCursor: U(new THREE.Vector4()),
-uGlitch: U(new THREE.Vector4()), uSlice: U(new THREE.Vector4()), uSliceM: U(new THREE.Vector4()), uSliceC: U(new THREE.Color()), uMark: U(new THREE.Vector4()), uMarkC: U(new THREE.Color()), uLink: U(new THREE.Vector4()), uContact: U(new THREE.Vector4()), uShockP: U(new THREE.Vector4()),
+uGlitch: U(new THREE.Vector4()), uSlice: U(new THREE.Vector4()), uSliceM: U(new THREE.Vector4()), uSliceC: U(new THREE.Color()), uMark: U(new THREE.Vector4()), uMarkC: U(new THREE.Color()), uLink: U(new THREE.Vector4()), uLinkP: U(new THREE.Vector4()), uContact: U(new THREE.Vector4()), uShockP: U(new THREE.Vector4()),
 uTrk: U(Array.from({ length: 16 }, () => new THREE.Vector4())), uImp: U(Array.from({ length: 32 }, () => new THREE.Vector4())), uShock: U(Array.from({ length: 4 }, () => new THREE.Vector4(0, 0, 0, -1))),
 uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
 uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
@@ -82103,6 +82196,10 @@ this.linkObj.visible = lk > 0.01;
 const pulseOn = L.links.pulses === 'on' ? 1 : 0;
 const pSpeed = L.links.pulseSpeed || 1.6;
 u.uLink.value.set(lk * 1.1, L.links.range * (1 + this.levels.beat * 0.4), pSpeed, pulseOn);
+const mMode = { classic: 0, neural: 1, constellation: 2, cyber: 3, elastic: 4 }[L.links.mode] ?? 0;
+const cMode = { palette: 0, tension: 1, neon: 2, rainbow: 3 }[L.links.colorMode] ?? 0;
+const beaconsOn = L.links.beacons === 'off' ? 0 : 1;
+if (u.uLinkP) u.uLinkP.value.set(mMode, cMode, beaconsOn, this.levels.beat);
 }
 const ec = this._eff(L.echo);
 const eo = L.echo;
@@ -85935,6 +86032,7 @@ localStorage.setItem('objglb.ui-scale', currentScale);
 }
 setTimeout(() => {
 if (this.app?.viewport) this.app.viewport.resize();
+window.dispatchEvent(new Event('resize'));
 }, 50);
 };
 applyScale(currentScale, false);

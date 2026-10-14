@@ -445,6 +445,7 @@ localStorage.setItem('objglb.ui-scale', currentScale);
 }
 setTimeout(() => {
 if (this.app?.viewport) this.app.viewport.resize();
+window.dispatchEvent(new Event('resize'));
 }, 50);
 };
 applyScale(currentScale, false);

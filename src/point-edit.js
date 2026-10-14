@@ -186,16 +186,21 @@ export class PointEditor {
 		if (this.tool === 'brush') this._brush(e.clientX, e.clientY, remove);
 	}
 
+	_scale() {
+		return this._cursor?.currentCSSZoom || parseFloat(document.documentElement.style.zoom) || parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
+	}
+
 	_move(e) {
 		if (!this.active) return;
 		const r = this.app.viewport.canvas.getBoundingClientRect();
 		const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+		const scale = this._scale();
 		if (this.tool === 'brush' && this.obj && !e.altKey) {
 			const d = this.radius * 2;
 			const s = this._cursor.style;
 			s.width = s.height = d + 'px';
-			s.left = e.clientX - d / 2 - this._vpLeft() + 'px';
-			s.top = e.clientY - d / 2 - this._vpTop() + 'px';
+			s.left = (e.clientX - this._vpLeft()) / scale - d / 2 + 'px';
+			s.top = (e.clientY - this._vpTop()) / scale - d / 2 + 'px';
 			this._cursor.hidden = !inside;
 		} else this._cursor.hidden = true;
 		const d = this._drag;
@@ -208,10 +213,10 @@ export class PointEditor {
 		} else {
 			const s = this._rect.style;
 			const l = Math.min(d.x0, e.clientX), t = Math.min(d.y0, e.clientY);
-			s.left = l - this._vpLeft() + 'px';
-			s.top = t - this._vpTop() + 'px';
-			s.width = Math.abs(e.clientX - d.x0) + 'px';
-			s.height = Math.abs(e.clientY - d.y0) + 'px';
+			s.left = (l - this._vpLeft()) / scale + 'px';
+			s.top = (t - this._vpTop()) / scale + 'px';
+			s.width = Math.abs(e.clientX - d.x0) / scale + 'px';
+			s.height = Math.abs(e.clientY - d.y0) / scale + 'px';
 			this._rect.hidden = false;
 			this._rect.classList.toggle('is-sub', d.remove);
 		}
@@ -283,7 +288,9 @@ export class PointEditor {
 	}
 
 	_brush(cx, cy, remove) {
-		const r2 = this.radius * this.radius;
+		const scale = this._scale();
+		const r = this.radius * scale;
+		const r2 = r * r;
 		this._apply((x, y) => (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r2, remove);
 	}
 

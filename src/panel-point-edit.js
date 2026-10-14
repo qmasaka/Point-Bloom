@@ -70,6 +70,7 @@ export function createPointEditSection(app) {
 	/** Панель стоит справа от кнопки инструмента и по ширине равна панели настроек */
 	function place() {
 		if (panel.hidden) return;
+		const scale = panel.currentCSSZoom || parseFloat(document.documentElement.style.zoom) || parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
 		const ws = panel.parentElement.getBoundingClientRect();
 		const rail = document.querySelector('.toolrail');
 		const side = document.getElementById('sidebar');
@@ -77,14 +78,14 @@ export function createPointEditSection(app) {
 		const sr = side ? side.getBoundingClientRect() : null;
 		const gap = 8;
 		// колонка кнопок и панель вместе по ширине равны блоку настроек, по высоте панель стоит между теми же верхним и нижним краями
-		const sideW = sr && sr.width ? sr.width : 300;
-		panel.style.width = Math.max(220, sideW - rr.width - gap) + 'px';
-		panel.style.left = rr.right - ws.left + gap + 'px';
+		const sideW = sr && sr.width ? sr.width : 300 * scale;
+		panel.style.width = Math.max(220, (sideW - rr.width - gap) / scale) + 'px';
+		panel.style.left = (rr.right - ws.left + gap) / scale + 'px';
 		const top = sr && sr.height ? sr.top - ws.top : rr.top - ws.top;
 		const collapsed = side && side.classList.contains('fxf-collapsed');
-		const maxH = sr && sr.height && !collapsed ? sr.height : ws.height - top - 20;
-		panel.style.top = top + 'px';
-		panel.style.maxHeight = maxH + 'px';
+		const maxH = sr && sr.height && !collapsed ? sr.height : ws.height - top - 20 * scale;
+		panel.style.top = (top / scale) + 'px';
+		panel.style.maxHeight = (maxH / scale) + 'px';
 	}
 	window.addEventListener('resize', place);
 	if (window.ResizeObserver) {

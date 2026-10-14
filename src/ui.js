@@ -503,6 +503,7 @@ export class UI {
 			}
 			setTimeout(() => {
 				if (this.app?.viewport) this.app.viewport.resize();
+				window.dispatchEvent(new Event('resize'));
 			}, 50);
 		};
 
