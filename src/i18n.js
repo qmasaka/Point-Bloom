@@ -73,8 +73,27 @@ export function tr(s) {
 	const trail = s.match(/\s*$/)[0];
 	const core = s.trim();
 	let out = null;
-	if (D[core] !== undefined) out = D[core];
-	else if (frag.has(core)) out = frag.get(core);
+	if (D[core] !== undefined) {
+		out = D[core];
+	} else if (frag.has(core)) {
+		out = frag.get(core);
+	} else {
+		const low = core.charAt(0).toLowerCase() + core.slice(1);
+		const up = core.charAt(0).toUpperCase() + core.slice(1);
+		if (D[low] !== undefined) {
+			const trLow = D[low];
+			out = trLow.charAt(0).toUpperCase() + trLow.slice(1);
+		} else if (D[up] !== undefined) {
+			const trUp = D[up];
+			out = trUp.charAt(0).toLowerCase() + trUp.slice(1);
+		} else if (frag.has(low)) {
+			const frLow = frag.get(low);
+			out = frLow.charAt(0).toUpperCase() + frLow.slice(1);
+		} else if (frag.has(up)) {
+			const frUp = frag.get(up);
+			out = frUp.charAt(0).toLowerCase() + frUp.slice(1);
+		}
+	}
 	if (out === null) {
 		for (const t of tpl) {
 			const m = core.match(t.re);

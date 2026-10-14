@@ -73317,6 +73317,38 @@ en: {
 'Пастельные приглушённые тона': 'Pastel muted tones',
 'Слушать аудио': 'Listen to audio',
 'Включить и связать': 'Enable and link',
+'Параметры записи': 'Recording settings',
+'Параметры записи видео': 'Video recording settings',
+'Разрешение': 'Resolution',
+'Как на экране': 'As on screen',
+'Текущий размер сцены': 'Current viewport size',
+'Частота кадров': 'Framerate',
+'к/с': 'fps',
+'60 к/с': '60 fps',
+'30 к/с': '30 fps',
+'24 к/с': '24 fps',
+'Записывать звук': 'Record sound',
+'Музыка и звуковые реакции эффектов': 'Music and reactive sound effects',
+'Длительность': 'Duration',
+'Вручную': 'Manual',
+'5 с': '5 s',
+'10 с': '10 s',
+'15 с': '15 s',
+'30 с': '30 s',
+'Начать запись': 'Start recording',
+'Остановить запись и сохранить': 'Stop recording and save',
+'Запись видео': 'Video recording',
+'Видео сохранено': 'Video saved',
+'Не удалось записать видео': 'Failed to record video',
+'Запись не поддерживается этим браузером': 'Recording is not supported in this browser',
+'1:1 Квадрат': '1:1 Square',
+'1080 × 1080 (посты)': '1080 × 1080 (posts)',
+'9:16 Вертикальное': '9:16 Vertical',
+'1080 × 1920 (Reels / Shorts)': '1080 × 1920 (Reels / Shorts)',
+'По кругу': 'Around circle',
+'По высоте': 'Along height',
+'Звуковой ландшафт': 'Sound landscape',
+'Полосы эквалайзера': 'Equalizer bars',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -73557,6 +73589,38 @@ uk: {
 'Пастельные приглушённые тона': 'Пастельні приглушені тони',
 'Слушать аудио': 'Слухати аудіо',
 'Включить и связать': 'Увімкнути й зв\'язати',
+'Параметры записи': 'Параметри запису',
+'Параметры записи видео': 'Параметри запису відео',
+'Разрешение': 'Роздільність',
+'Как на экране': 'Як на екрані',
+'Текущий размер сцены': 'Поточний розмір сцени',
+'Частота кадров': 'Частота кадрів',
+'к/с': 'к/с',
+'60 к/с': '60 к/с',
+'30 к/с': '30 к/с',
+'24 к/с': '24 к/с',
+'Записывать звук': 'Записувати звук',
+'Музыка и звуковые реакции эффектов': 'Музика та звукові реакції ефектів',
+'Длительность': 'Тривалість',
+'Вручную': 'Вручну',
+'5 с': '5 с',
+'10 с': '10 с',
+'15 с': '15 с',
+'30 с': '30 с',
+'Начать запись': 'Почати запис',
+'Остановить запись и сохранить': 'Зупинити запис і зберегти',
+'Запись видео': 'Запис відео',
+'Видео сохранено': 'Відео збережено',
+'Не удалось записать видео': 'Не вдалося записати відео',
+'Запись не поддерживается этим браузером': 'Запис не підтримується цим браузером',
+'1:1 Квадрат': '1:1 Квадрат',
+'1080 × 1080 (посты)': '1080 × 1080 (дописи)',
+'9:16 Вертикальное': '9:16 Вертикальне',
+'1080 × 1920 (Reels / Shorts)': '1080 × 1920 (Reels / Shorts)',
+'По кругу': 'По колу',
+'По высоте': 'За висотою',
+'Звуковой ландшафт': 'Звуковий ландшафт',
+'Полосы эквалайзера': 'Смуги еквалайзера',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -73797,6 +73861,38 @@ es: {
 'Пастельные приглушённые тона': 'Tonos pastel suaves',
 'Слушать аудио': 'Escuchar audio',
 'Включить и связать': 'Activar y vincular',
+'Параметры записи': 'Ajustes de grabación',
+'Параметры записи видео': 'Ajustes de grabación de vídeo',
+'Разрешение': 'Resolución',
+'Как на экране': 'Como en pantalla',
+'Текущий размер сцены': 'Tamaño actual del visor',
+'Частота кадров': 'Frecuencia de cuadros',
+'к/с': 'fps',
+'60 к/с': '60 fps',
+'30 к/с': '30 fps',
+'24 к/с': '24 fps',
+'Записывать звук': 'Grabar sonido',
+'Музыка и звуковые реакции эффектов': 'Música y reacciones sonoras de los efectos',
+'Длительность': 'Duración',
+'Вручную': 'Manual',
+'5 с': '5 s',
+'10 с': '10 s',
+'15 с': '15 s',
+'30 с': '30 s',
+'Начать запись': 'Iniciar grabación',
+'Остановить запись и сохранить': 'Detener grabación y guardar',
+'Запись видео': 'Grabación de vídeo',
+'Видео сохранено': 'Vídeo guardado',
+'Не удалось записать видео': 'No se pudo grabar el vídeo',
+'Запись не поддерживается этим браузером': 'Este navegador no admite grabación',
+'1:1 Квадрат': '1:1 Cuadrado',
+'1080 × 1080 (посты)': '1080 × 1080 (publicaciones)',
+'9:16 Вертикальное': '9:16 Vertical',
+'1080 × 1920 (Reels / Shorts)': '1080 × 1920 (Reels / Shorts)',
+'По кругу': 'En círculo',
+'По высоте': 'Por altura',
+'Звуковой ландшафт': 'Paisaje sonoro',
+'Полосы эквалайзера': 'Barras de ecualizador',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -74037,6 +74133,38 @@ de: {
 'Пастельные приглушённые тона': 'Pastellige gedämpfte Töne',
 'Слушать аудио': 'Audio abspielen',
 'Включить и связать': 'Aktivieren und verknüpfen',
+'Параметры записи': 'Aufnahme-Einstellungen',
+'Параметры записи видео': 'Videoaufnahme-Einstellungen',
+'Разрешение': 'Auflösung',
+'Как на экране': 'Wie auf dem Bildschirm',
+'Текущий размер сцены': 'Aktuelle Viewport-Größe',
+'Частота кадров': 'Bildrate',
+'к/с': 'fps',
+'60 к/с': '60 fps',
+'30 к/с': '30 fps',
+'24 к/с': '24 fps',
+'Записывать звук': 'Ton aufnehmen',
+'Музыка и звуковые реакции эффектов': 'Musik und reaktive Soundeffekte',
+'Длительность': 'Dauer',
+'Вручную': 'Manuell',
+'5 с': '5 s',
+'10 с': '10 s',
+'15 с': '15 s',
+'30 с': '30 s',
+'Начать запись': 'Aufnahme starten',
+'Остановить запись и сохранить': 'Aufnahme stoppen und speichern',
+'Запись видео': 'Videoaufnahme',
+'Видео сохранено': 'Video gespeichert',
+'Не удалось записать видео': 'Videoaufnahme fehlgeschlagen',
+'Запись не поддерживается этим браузером': 'Aufnahme wird von diesem Browser nicht unterstützt',
+'1:1 Квадрат': '1:1 Quadrat',
+'1080 × 1080 (посты)': '1080 × 1080 (Beiträge)',
+'9:16 Вертикальное': '9:16 Vertikal',
+'1080 × 1920 (Reels / Shorts)': '1080 × 1920 (Reels / Shorts)',
+'По кругу': 'Im Kreis',
+'По высоте': 'Über die Höhe',
+'Звуковой ландшафт': 'Klanglandschaft',
+'Полосы эквалайзера': 'Equalizer-Bänder',
 },
 };
 };
@@ -74109,8 +74237,27 @@ const lead = s.match(/^\s*/)[0];
 const trail = s.match(/\s*$/)[0];
 const core = s.trim();
 let out = null;
-if (D[core] !== undefined) out = D[core];
-else if (frag.has(core)) out = frag.get(core);
+if (D[core] !== undefined) {
+out = D[core];
+} else if (frag.has(core)) {
+out = frag.get(core);
+} else {
+const low = core.charAt(0).toLowerCase() + core.slice(1);
+const up = core.charAt(0).toUpperCase() + core.slice(1);
+if (D[low] !== undefined) {
+const trLow = D[low];
+out = trLow.charAt(0).toUpperCase() + trLow.slice(1);
+} else if (D[up] !== undefined) {
+const trUp = D[up];
+out = trUp.charAt(0).toLowerCase() + trUp.slice(1);
+} else if (frag.has(low)) {
+const frLow = frag.get(low);
+out = frLow.charAt(0).toUpperCase() + frLow.slice(1);
+} else if (frag.has(up)) {
+const frUp = frag.get(up);
+out = frUp.charAt(0).toLowerCase() + frUp.slice(1);
+}
+}
 if (out === null) {
 for (const t of tpl) {
 const m = core.match(t.re);
@@ -83240,37 +83387,109 @@ this.animProgress = null;
 this.emit();
 }
 }
-startRecording() {
+startRecording(opts = {}) {
 if (this.recording || !window.MediaRecorder) {
 if (!window.MediaRecorder) this.app.toast('Этот браузер не умеет записывать видео', 'warn');
 return;
 }
+const fps = typeof opts.fps === 'number' && opts.fps > 0 ? opts.fps : 60;
+const sound = opts.sound !== false;
+const format = opts.format || 'auto';
+const duration = typeof opts.duration === 'number' && opts.duration > 0 ? opts.duration : 0;
+const resolution = opts.resolution || 'viewport';
 this._ensureCtx();
-const stream = this.app.viewport.canvas.captureStream(60);
+const RES_MAP = {
+'1080p': { w: 1920, h: 1080 },
+'4k': { w: 3840, h: 2160 },
+'720p': { w: 1280, h: 720 },
+'square': { w: 1080, h: 1080 },
+'reels': { w: 1080, h: 1920 }
+};
+const target = RES_MAP[resolution];
+if (target) {
+this._recOriginalSize = { ...this.app.viewport.size };
+this.app.viewport.size = { width: target.w, height: target.h };
+this.app.viewport.renderer.setSize(target.w, target.h, false);
+this.app.nav?.applyCamera();
+this.app.viewport.invalidate();
+} else {
+this._recOriginalSize = null;
+}
+const stream = this.app.viewport.canvas.captureStream(fps);
+if (sound && this.recDest?.stream) {
 this.recDest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
-const mime = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find((m) => MediaRecorder.isTypeSupported(m));
+}
+let mime = '';
+if (format === 'mp4') {
+mime = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4'].find((m) => MediaRecorder.isTypeSupported(m));
+} else if (format === 'webm') {
+mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find((m) => MediaRecorder.isTypeSupported(m));
+}
+if (!mime) {
+mime = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find((m) => MediaRecorder.isTypeSupported(m));
+}
 const ext = mime && mime.startsWith('video/mp4') ? 'mp4' : 'webm';
-const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12e6 });
+const w = target ? target.w : (this.app.viewport.canvas.width || 1920);
+const h = target ? target.h : (this.app.viewport.canvas.height || 1080);
+const bitrate = Math.min(50e6, Math.max(8e6, Math.round(w * h * fps * 0.14)));
+let rec = null;
+try {
+rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: bitrate });
+} catch (err) {
+try {
+rec = new MediaRecorder(stream);
+} catch (e2) {
+this.app.toast('Не удалось начать запись видео: ' + (e2.message || err.message), 'error');
+if (this._recOriginalSize) {
+this.app.viewport.resize();
+this._recOriginalSize = null;
+}
+return;
+}
+}
 const chunks = [];
 rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
 rec.onstop = () => {
-downloadBlob(new Blob(chunks, { type: ext === 'mp4' ? 'video/mp4' : 'video/webm' }), 'effects.' + ext);
-this.app.toast(ext === 'mp4' ? 'Видео сохранено: effects.mp4' : 'Этот браузер не пишет MP4, видео сохранено как effects.webm', ext === 'mp4' ? 'ok' : 'warn');
+if (this._recOriginalSize) {
+this.app.viewport.resize();
+this._recOriginalSize = null;
+}
+const d = new Date();
+const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`;
+const filename = `pointbloom-${stamp}.${ext}`;
+downloadBlob(new Blob(chunks, { type: ext === 'mp4' ? 'video/mp4' : 'video/webm' }), filename);
+this.app.toast(ext === 'mp4' ? `Видео сохранено: ${filename}` : `Браузер сохранил видео как ${filename}`, ext === 'mp4' ? 'ok' : 'info');
 };
 rec.start(250);
 this._rec = rec;
 this.recording = true;
+this.recOpts = { ...opts, fps, duration, format, sound, resolution };
 this._recT0 = performance.now();
+if (duration > 0) {
+this._recTimer = setTimeout(() => {
+if (this.recording) this.stopRecording();
+}, duration * 1000);
+}
 this.emit();
+this.app.toast(duration > 0 ? `Запись началась (${duration} с, ${fps} к/с)` : `Запись началась (${fps} к/с). Нажмите стоп для сохранения`, 'info', 2200);
 }
 stopRecording() {
 if (!this.recording) return;
 this.recording = false;
+if (this._recTimer) {
+clearTimeout(this._recTimer);
+this._recTimer = null;
+}
 try {
-this._rec.stop();
+if (this._rec && this._rec.state !== 'inactive') this._rec.stop();
 } catch (e) {
 }
+if (this._recOriginalSize) {
+this.app.viewport.resize();
+this._recOriginalSize = null;
+}
 this._rec = null;
+this.recOpts = null;
 this.emit();
 }
 }
@@ -84415,9 +84634,8 @@ picker.draw();
 band.el.addEventListener('click', () => requestAnimationFrame(syncAudioHead));
 body.append(audioHead, audioWrap);
 syncAudioHead();
-audioUiFull();
-const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
-const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
+const iconEl = h('span', { class: 'fx-layer-icon ic-wrap', html: icon(def.icon || 'sparkle', 18) });
+const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, iconEl, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
 const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right', 'data-tip-delay': '1300' }, row);
 const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, body);
 insp.classList.toggle('is-off', !L.on);
@@ -84434,7 +84652,6 @@ fxTabHook();
 }
 });
 fbody.append(card);
-attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
 inspBox.append(insp);
 cards.push({ folder, def, L, sw, amount, react, band, reactRow, modeSeg, thr, atk, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
 }
@@ -84683,7 +84900,7 @@ localStorage.setItem('objglb.fx.tab', curTab);
 } catch (_) {}
 };
 for (const [k, label, ic] of FX_TABS) {
-const b = h('button', { type: 'button', class: 'tab', role: 'tab', 'aria-selected': 'false' }, h('span', { class: 'ic', html: icon(ic, 15) }), h('span', { class: 'tab-label' }, label));
+const b = h('button', { type: 'button', class: 'tab', role: 'tab', 'aria-selected': 'false' }, h('span', { class: 'ic', html: icon(ic, 17) }), h('span', { class: 'tab-label' }, label));
 b.addEventListener('click', () => showFxTab(k));
 tabBtns.set(k, b);
 tabBar.append(b);
@@ -84707,7 +84924,7 @@ const paintBtn = iconButton({ icon: 'paint-brush', title: '', cls: 'fx-paint-loc
 paintBtn.hidden = true;
 const camBtn = iconButton({ icon: 'video-camera', title: 'Камера: управление руками и пальцами', onClick: () => engine.toggleMotionCam().then(sync) });
 const barMeters = makeMeters(true);
-const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (MP4)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });
+const recBtn = iconButton({ icon: 'record', title: 'Параметры записи видео', cls: 'fx-rec' });
 const recTime = h('span', { class: 'fx-rec-time' });
 const animPanel = h('div', { class: 'fx-anim vp-pill', hidden: true, role: 'region', 'aria-label': 'Секвенсор анимации' });
 const resizeHandle = h('div', { class: 'fx-anim-resize-handle', title: 'Потяните для изменения высоты таймлайна (двойной клик сбросит)' });
@@ -86249,7 +86466,7 @@ clampAnimH();
 app.bus.on('fxanim', animSync);
 app.bus.on('fx', animSync);
 const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#ffffff', 'Белый']];
-const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));
+const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false', html: icon('palette', 20) });
 const bgPop = h('div', { class: 'fx-bg-pop popover', hidden: true });
 const bgWrap = bgBtn;
 const bgSw = h('div', { class: 'fx-bg-sw' });
@@ -86273,7 +86490,7 @@ syncBg();
 save();
 }
 function syncBg() {
-bgBtn.querySelector('.fx-bg-dot').style.background = st.look.bg || 'var(--bg-sunken)';
+bgBtn.classList.toggle('is-active', !!st.look.bg && st.look.bg !== '#14161b');
 bgSwBtns.forEach(([c, b]) => b.classList.toggle('is-active', c === st.look.bg));
 bgVig.set(st.look.vignette);
 bgGrid.set(!!st.look.grid);
@@ -86281,6 +86498,8 @@ app.viewport.fxGrid = !!st.look.grid;
 }
 bgBtn.addEventListener('click', (e) => {
 e.stopPropagation();
+recPop.hidden = true;
+recBtn.setAttribute('aria-expanded', 'false');
 bgPop.hidden = !bgPop.hidden;
 if (!bgPop.hidden) placeAbove(bgPop, bgBtn, document.getElementById('viewport'), 'center');
 bgBtn.setAttribute('aria-expanded', String(!bgPop.hidden));
@@ -86292,6 +86511,119 @@ bgBtn.setAttribute('aria-expanded', 'false');
 }
 });
 syncBg();
+const REC_RES = [
+{ value: 'viewport', label: 'Как на экране', sub: 'Текущий размер сцены' },
+{ value: '1080p', label: '1080p Full HD', sub: '1920 × 1080 (16:9)' },
+{ value: '4k', label: '4K Ultra HD', sub: '3840 × 2160 (16:9)' },
+{ value: '720p', label: '720p HD', sub: '1280 × 720 (16:9)' },
+{ value: 'square', label: '1:1 Квадрат', sub: '1080 × 1080 (посты)' },
+{ value: 'reels', label: '9:16 Вертикальное', sub: '1080 × 1920 (Reels / Shorts)' }
+];
+let recOpts = {
+res: 'viewport',
+fps: '60',
+format: 'auto',
+sound: true,
+dur: '0'
+};
+try {
+const saved = JSON.parse(localStorage.getItem('objglb.fx.rec') || '{}');
+if (saved && typeof saved === 'object') Object.assign(recOpts, saved);
+} catch (_) {}
+const saveRecOpts = () => {
+try { localStorage.setItem('objglb.fx.rec', JSON.stringify(recOpts)); } catch (_) {}
+};
+const recPop = h('div', { class: 'fx-rec-pop popover', hidden: true });
+document.getElementById('viewport').append(recPop);
+const recResSel = select({
+options: REC_RES,
+value: recOpts.res,
+onChange: (v) => { recOpts.res = v; saveRecOpts(); }
+});
+const recFpsSeg = segmented({
+cls: 'seg-tight',
+options: [
+{ value: '60', label: '60 к/с' },
+{ value: '30', label: '30 к/с' },
+{ value: '24', label: '24 к/с' }
+],
+value: String(recOpts.fps),
+onChange: (v) => { recOpts.fps = v; saveRecOpts(); }
+});
+const recFmtSeg = segmented({
+cls: 'seg-tight',
+options: [
+{ value: 'auto', label: 'Авто' },
+{ value: 'mp4', label: 'MP4' },
+{ value: 'webm', label: 'WebM' }
+],
+value: recOpts.format,
+onChange: (v) => { recOpts.format = v; saveRecOpts(); }
+});
+const recSoundSw = switchRow('Записывать звук', {
+value: recOpts.sound,
+onChange: (v) => { recOpts.sound = v; saveRecOpts(); }
+}, 'Музыка и звуковые реакции эффектов');
+const recDurSeg = segmented({
+cls: 'seg-tight',
+options: [
+{ value: '0', label: 'Вручную' },
+{ value: '5', label: '5 с' },
+{ value: '10', label: '10 с' },
+{ value: '15', label: '15 с' },
+{ value: '30', label: '30 с' }
+],
+value: String(recOpts.dur),
+onChange: (v) => { recOpts.dur = v; saveRecOpts(); }
+});
+const startRecBtn = button({
+label: 'Начать запись',
+icon: 'record',
+variant: 'primary',
+cls: 'btn-block fx-start-rec-btn',
+onClick: () => {
+recPop.hidden = true;
+recBtn.setAttribute('aria-expanded', 'false');
+engine.startRecording({
+resolution: recOpts.res,
+fps: parseInt(recOpts.fps, 10) || 60,
+format: recOpts.format,
+sound: !!recOpts.sound,
+duration: parseInt(recOpts.dur, 10) || 0
+});
+}
+});
+recPop.append(
+h('div', { class: 'fx-rec-head' },
+h('div', { class: 'fx-rec-title' }, h('span', { class: 'ic-wrap', html: icon('video-camera', 16) }), 'Параметры записи')
+),
+field('Разрешение', recResSel.el),
+field('Частота кадров', recFpsSeg.el),
+field('Формат', recFmtSeg.el),
+recSoundSw.el,
+field('Длительность', recDurSeg.el),
+startRecBtn
+);
+recBtn.addEventListener('click', (e) => {
+e.stopPropagation();
+if (engine.recording) {
+engine.stopRecording();
+return;
+}
+bgPop.hidden = true;
+bgBtn.setAttribute('aria-expanded', 'false');
+recPop.hidden = !recPop.hidden;
+if (!recPop.hidden) {
+placeAbove(recPop, recBtn, document.getElementById('viewport'), 'center');
+}
+recBtn.setAttribute('aria-expanded', String(!recPop.hidden));
+});
+document.addEventListener('pointerdown', (e) => {
+if (!recPop.hidden && !recPop.contains(e.target) && !recBtn.contains(e.target) && !e.target.closest('.custom-select-pop')) {
+recPop.hidden = true;
+recBtn.setAttribute('aria-expanded', 'false');
+}
+});
 const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
 bar.append(leftBtn, playBtn, camBtn, paintBtn, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgWrap, orthoBtn, focusBtn, h('span', { class: 'fx-bar-sep' }), recBtn, keyAnimBtn, recTime);
 function sync() {
@@ -86372,8 +86704,8 @@ if (hint) hint.textContent = B.on && locked ? 'Протяжка: рисоват�
 orthoBtn.classList.toggle('is-active', !!app.nav.ortho);
 orthoBtn.dataset.tip = app.nav.ortho ? 'Сейчас: ортогональная проекция. Включить перспективу' : 'Сейчас: перспектива. Включить ортогональную проекцию';
 recBtn.classList.toggle('is-rec', engine.recording);
-recBtn.dataset.tip = engine.recording ? 'Остановить запись и сохранить' : 'Записать видео со звуком (MP4)';
-recTime.textContent = '';
+recBtn.dataset.tip = engine.recording ? 'Остановить запись и сохранить' : 'Параметры записи видео';
+if (!engine.recording) recTime.textContent = '';
 }
 app.bus.on('fx', sync);
 app.bus.on('media', () => {
@@ -86395,7 +86727,12 @@ meters.set(lv);
 barMeters.set(lv);
 if (engine.recording && ++recTick % 15 === 0) {
 const s = Math.floor((performance.now() - engine._recT0) / 1000);
+const dur = engine.recOpts?.duration || 0;
+if (dur > 0) {
+recTime.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} / ${Math.floor(dur / 60)}:${String(dur % 60).padStart(2, '0')}`;
+} else {
 recTime.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
 }
 };
 sync();

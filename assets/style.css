@@ -5437,20 +5437,19 @@ body.is-resizing-h * {
 .ui-float .range::-moz-range-progress { height: 3px; border-radius: 2px; background: var(--accent); }
 .ui-float .range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; border: 0; background: #fff; box-shadow: 0 0 0 3px rgba(229, 138, 69, 0.35); }
 
-/* сегменты, поля, выпадающие списки, мелкие кнопки: капсулы */
-.ui-float .sidebar .seg, .ui-float .seg { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--fxg-line); padding: 3px; }
-.ui-float .sidebar .seg-btn, .ui-float .seg-btn { border-radius: 999px; border-color: transparent; }
-.ui-float .sidebar .seg-btn[aria-checked='true'], .ui-float .seg-btn[aria-checked='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 500; }
-.ui-float .sidebar .select, .ui-float .sidebar .num-out, .ui-float .sidebar .num-in, .ui-float .select, .ui-float .num-out, .ui-float .num-in, .ui-float .field input[type='text'], .ui-float .field input[type='number'] { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--fxg-line); padding-inline: 12px; }
-.ui-float .sidebar .btn, .ui-float .btn-capsule { border-radius: 999px; }
-.ui-float .topbar .btn-icon, .ui-float .fx-bar .btn-icon, .ui-float .media-bar .btn-icon { border-radius: 50%; }
+/* сегменты, поля, выпадающие списки: мягкие скругления, единые для редактора и эффектов */
+.ui-float .sidebar .seg, .ui-float .seg { border-radius: 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--fxg-line); padding: 3px; }
+.ui-float .sidebar .seg-btn, .ui-float .seg-btn { border-radius: 8px; border-color: transparent; }
+.ui-float .sidebar .seg-btn[aria-checked='true'], .ui-float .seg-btn[aria-checked='true'] { background: var(--accent-soft); color: var(--accent-text); border-color: transparent; font-weight: 500; }
+.ui-float .sidebar .select, .ui-float .sidebar .num-out, .ui-float .sidebar .num-in, .ui-float .select, .ui-float .num-out, .ui-float .num-in, .ui-float .field input[type='text'], .ui-float .field input[type='number'] { border-radius: var(--r-ctl, 8px); background: rgba(255, 255, 255, 0.05); border: 1px solid var(--fxg-line); padding-inline: 12px; }
+.ui-float .sidebar .btn, .ui-float .btn-capsule { border-radius: var(--r-ctl, 8px); }
+.ui-float .topbar .btn-icon, .ui-float .media-bar .btn-icon { border-radius: 50%; }
 .ui-float .topbar .btn:not(.btn-icon):not(.split-chev) { border-radius: 999px; }
 .ui-float .mode-switch, .ui-float .mode-btn, .ui-float .scale-widget, .ui-float .scale-pct { border-radius: 999px; }
 .ui-float .split-btn { border-radius: 999px; overflow: hidden; }
 .ui-float .split-btn .btn { border-radius: 0; }
-.ui-float .fx-prev { border-radius: 9px; }
 
-/* вкладки Эффект / Форма / Звук / Вид: стеклянные плашки с мягким акцентом */
+/* вкладки Эффект / Форма / Звук / Вид: идентичные вкладкам в редакторе */
 .ui-float .fx-tabs,
 .ui-float .fx-tabs.tabs {
 	display: grid;
@@ -5468,13 +5467,13 @@ body.is-resizing-h * {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	height: 38px;
-	padding: 0 8px;
+	height: 34px;
+	padding: 0 10px;
 	border: 1px solid rgba(255, 255, 255, 0.08);
-	border-radius: 12px;
+	border-radius: 8px;
 	background: rgba(255, 255, 255, 0.05);
 	color: var(--text-dim);
-	font: 600 12.5px var(--font);
+	font: 500 12px var(--font);
 	gap: 6px;
 	transition: all 0.18s var(--ease);
 }
@@ -5538,7 +5537,7 @@ body.is-resizing-h * {
 	margin-top: 2px;
 }
 .ui-float .fx-layer {
-	border-radius: 12px;
+	border-radius: 8px;
 	border: 1px solid transparent;
 	background: transparent;
 	transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
@@ -5547,53 +5546,51 @@ body.is-resizing-h * {
 }
 .ui-float .fx-layer:hover {
 	background: rgba(255, 255, 255, 0.05);
-	border-color: rgba(255, 255, 255, 0.08);
 }
 .ui-float .fx-layer.is-on {
 	background: transparent;
-	border-color: transparent;
 }
 .ui-float .fx-layer.is-on:hover {
 	background: rgba(255, 255, 255, 0.06);
-	border-color: rgba(255, 255, 255, 0.1);
 }
 .ui-float .fx-layer.is-selected {
-	background: transparent;
-	border-color: transparent;
-	box-shadow: none;
+	background: rgba(255, 255, 255, 0.05);
 }
 .ui-float .fx-layer.is-selected:hover {
-	background: rgba(255, 255, 255, 0.06);
-	border-color: rgba(255, 255, 255, 0.1);
-}
-.ui-float .fx-layer.is-selected.is-on {
-	background: transparent;
-	border-color: transparent;
-	box-shadow: none;
-}
-.ui-float .fx-layer.is-selected.is-on:hover {
-	background: rgba(255, 255, 255, 0.06);
-	border-color: rgba(255, 255, 255, 0.1);
+	background: rgba(255, 255, 255, 0.08);
 }
 .ui-float .fx-layer-head {
 	display: grid;
-	grid-template-columns: 32px minmax(0, 1fr) 36px;
+	grid-template-columns: 28px minmax(0, 1fr) 36px;
 	align-items: center;
-	gap: 10px;
-	height: 44px;
-	padding: 0 10px;
+	gap: 8px;
+	height: 36px;
+	padding: 0 8px;
 	cursor: pointer;
+}
+.ui-float .fx-layer-icon {
+	width: 28px;
+	height: 28px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-dim);
+	flex-shrink: 0;
+}
+.ui-float .fx-layer.is-on .fx-layer-icon,
+.ui-float .fx-layer.is-selected .fx-layer-icon {
+	color: var(--accent);
 }
 .ui-float .fx-prev {
 	width: 28px;
 	height: 28px;
-	border-radius: 8px;
+	border-radius: 6px;
 	border: 1px solid rgba(255, 255, 255, 0.12);
 	background: rgba(0, 0, 0, 0.35);
 	display: block;
 }
 .ui-float .fx-layer-title {
-	font-size: 13.5px;
+	font-size: 13px;
 	font-weight: 500;
 	color: var(--text-dim);
 	letter-spacing: -0.01em;
@@ -5656,53 +5653,59 @@ body.is-resizing-h * {
 	outline-offset: 2px;
 }
 .ui-float .fx-anim-quick-btn {
-	border-radius: 999px;
-	height: 38px;
+	border-radius: 8px;
+	height: 34px;
 }
 
-/* панель управления эффектами в сцене */
+/* панель управления эффектами в сцене: идентична нижней панели vp-dock редактора */
 .ui-float .fx-bar {
 	height: 48px;
-	padding: 5px 8px;
-	gap: 6px;
-	border-radius: 999px;
+	padding: 6px 8px;
+	gap: 4px;
+	border-radius: 16px;
 	background: var(--fxg-bg);
 	backdrop-filter: var(--fxg-blur);
 	-webkit-backdrop-filter: var(--fxg-blur);
 	border: 1px solid var(--fxg-line);
 	box-shadow: var(--fxg-shadow);
+	display: flex;
+	align-items: center;
+	position: relative;
 }
 .ui-float .fx-bar .btn-icon {
 	width: 38px;
-	height: 38px;
+	height: 36px;
 	min-width: 38px;
-	min-height: 38px;
-	border-radius: 50%;
+	min-height: 36px;
+	border-radius: 9px;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	background: rgba(255, 255, 255, 0.05);
-	border: 1px solid rgba(255, 255, 255, 0.08);
-	color: var(--text);
-	transition: all 0.16s var(--ease);
+	background: transparent;
+	border: 0;
+	color: var(--text-dim);
+	transition: all 0.15s var(--ease);
+	position: relative;
 }
 .ui-float .fx-bar .btn-icon:hover {
-	background: rgba(255, 255, 255, 0.1);
-	color: #fff;
+	background: rgba(255, 255, 255, 0.08);
+	color: var(--text);
+}
+.ui-float .fx-bar .btn-icon:active {
+	background: rgba(255, 255, 255, 0.14);
 }
 .ui-float .fx-bar .btn-icon.is-active {
-	background: var(--accent);
-	border-color: transparent;
-	color: var(--accent-ink);
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+	background: rgba(229, 138, 69, 0.18);
+	color: var(--accent-text);
+	border: 0;
 }
 .ui-float .fx-bar .btn-icon svg {
-	width: 18px;
-	height: 18px;
+	width: 20px;
+	height: 20px;
 }
 .ui-float .fx-bar-sep {
 	width: 1px;
-	height: 22px;
+	height: 20px;
 	background: var(--fxg-line);
 	margin: 0 2px;
 	flex: none;
@@ -6374,7 +6377,7 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .shape-grid.shape-six { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 
 /* меню над нижними панелями выглядят как остальные панели сайта: то же стекло, размытие, рамка, скругление и тень */
-.ui-float #overlayPop, .ui-float .fx-bg-pop {
+.ui-float #overlayPop, .ui-float .fx-bg-pop, .ui-float .fx-rec-pop {
 	z-index: 50;
 	background: var(--fxg-bg);
 	backdrop-filter: var(--fxg-blur);
@@ -6388,8 +6391,58 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-bg-title { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
 .fx-bg-chip { border-color: rgba(255, 255, 255, 0.16); }
 
+.fx-rec-pop {
+	width: 290px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+.fx-rec-pop[hidden] {
+	display: none !important;
+}
+.fx-rec-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-bottom: 2px;
+}
+.fx-rec-title {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--text-faint);
+}
+.fx-rec-title .ic-wrap {
+	color: var(--accent);
+}
+.fx-start-rec-btn {
+	margin-top: 4px;
+	height: 36px;
+	font-weight: 600;
+}
+.fx-rec.is-rec {
+	color: #fff !important;
+	background: var(--danger) !important;
+	animation: fx-pulse 1.2s ease-in-out infinite;
+}
+@keyframes fx-pulse {
+	0%, 100% { opacity: 1; transform: scale(1); }
+	50% { opacity: 0.75; transform: scale(0.96); }
+}
+.fx-rec-time {
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+	color: var(--text-dim);
+	padding: 0 4px;
+	min-width: 44px;
+}
+
 /* панели не выделяются случайно при перетаскивании ползунков и кликах по подписям: выделяется текст только в полях ввода */
-.sidebar, .fx-left, .fx-bar, .fx-anim, .topbar, .toolrail, .vp-dock, .media-bar, .anim-bar, #overlayPop, .fx-bg-pop {
+.sidebar, .fx-left, .fx-bar, .fx-anim, .topbar, .toolrail, .vp-dock, .media-bar, .anim-bar, #overlayPop, .fx-bg-pop, .fx-rec-pop {
 	-webkit-user-select: none;
 	user-select: none;
 	-webkit-tap-highlight-color: transparent;
@@ -6785,8 +6838,8 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 @container app (min-width: 901px) {
 	.ui-float .seg { --seg-r: 10px; border-radius: var(--seg-r); }
 }
-.fx-mode .sidebar .seg { --seg-r: 999px; }
-.fx-mode .sidebar .seg-btn { border-radius: 999px; }
+.fx-mode .sidebar .seg { --seg-r: 10px; }
+.fx-mode .sidebar .seg-btn { border-radius: 8px; }
 #modeBar.seg { --seg-pad: 3px; }
 .pe-panel > * { flex-shrink: 0; }
 @container app (min-width: 901px) {
@@ -6827,17 +6880,17 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 	.ui-float .tabs .tab { border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; background: rgba(255, 255, 255, 0.05); }
 	.ui-float .tabs .tab[aria-selected='true'] { background: rgba(229, 138, 69, 0.14); border-color: rgba(229, 138, 69, 0.55); color: var(--accent-text); }
 	.ui-float .fx-tabs { position: sticky; top: 0; z-index: 10; background: rgba(21, 23, 28, 0.95); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 4px 10px 10px; gap: 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
-	.ui-float .fx-tabs .tab { height: 38px; border-radius: 12px; font-size: 12px; }
+	.ui-float .fx-tabs .tab { height: 34px; border-radius: 8px; font-size: 12px; }
 	.ui-float .sheet-switch { max-width: 320px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--fxg-line); padding: 3px; gap: 4px; }
 	.ui-float .sheet-switch button { flex: 1; height: 32px; border: 0; border-radius: 999px; background: transparent; color: var(--text-dim); font: 600 13px var(--font); letter-spacing: -0.01em; cursor: pointer; transition: all 0.18s var(--ease); }
 	.ui-float .sheet-switch button:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
 	.ui-float .sheet-switch button.is-on { background: var(--accent); color: var(--accent-ink); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35); font-weight: 600; }
-	/* нижние плашки режимов и эффектов: те же капсулы */
-	.ui-float .vp-dock, .ui-float .fx-bar, .ui-float .media-bar { background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 999px; box-shadow: var(--fxg-shadow); }
+	/* нижние плашки режимов и эффектов: те же аккуратные скругления */
+	.ui-float .vp-dock, .ui-float .fx-bar, .ui-float .media-bar { background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 16px; box-shadow: var(--fxg-shadow); }
 	.ui-float .vp-dock .dock-btn, .ui-float #modeBar .seg-btn { border-radius: 9px; }
 	.ui-float .fx-bar { height: 48px; padding: 4px 8px; gap: 6px; bottom: 10px; }
 	.ui-float .fx-bar .fx-bar-anim-btn, .ui-float .fx-bar .fx-left-btn { display: none !important; }
-	.ui-float .fx-bg-pop { border-radius: 20px; background: rgba(21, 23, 28, 0.95); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); box-shadow: var(--fxg-shadow); padding: 14px; }
+	.ui-float .fx-bg-pop, .ui-float .fx-rec-pop { border-radius: 20px; background: rgba(21, 23, 28, 0.95); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); box-shadow: var(--fxg-shadow); padding: 14px; }
 	.ui-float .empty-card, .ui-float .popover, .ui-float .dlg { border-radius: 22px; }
 }
 @media (max-width: 900px) and (pointer: coarse) {

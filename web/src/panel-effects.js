@@ -683,9 +683,8 @@ picker.draw();
 band.el.addEventListener('click', () => requestAnimationFrame(syncAudioHead));
 body.append(audioHead, audioWrap);
 syncAudioHead();
-audioUiFull();
-const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
-const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
+const iconEl = h('span', { class: 'fx-layer-icon ic-wrap', html: icon(def.icon || 'sparkle', 18) });
+const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, iconEl, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
 const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right', 'data-tip-delay': '1300' }, row);
 const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, body);
 insp.classList.toggle('is-off', !L.on);
@@ -702,7 +701,6 @@ fxTabHook();
 }
 });
 fbody.append(card);
-attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
 inspBox.append(insp);
 cards.push({ folder, def, L, sw, amount, react, band, reactRow, modeSeg, thr, atk, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
 }
@@ -951,7 +949,7 @@ localStorage.setItem('objglb.fx.tab', curTab);
 } catch (_) {}
 };
 for (const [k, label, ic] of FX_TABS) {
-const b = h('button', { type: 'button', class: 'tab', role: 'tab', 'aria-selected': 'false' }, h('span', { class: 'ic', html: icon(ic, 15) }), h('span', { class: 'tab-label' }, label));
+const b = h('button', { type: 'button', class: 'tab', role: 'tab', 'aria-selected': 'false' }, h('span', { class: 'ic', html: icon(ic, 17) }), h('span', { class: 'tab-label' }, label));
 b.addEventListener('click', () => showFxTab(k));
 tabBtns.set(k, b);
 tabBar.append(b);
@@ -975,7 +973,7 @@ const paintBtn = iconButton({ icon: 'paint-brush', title: '', cls: 'fx-paint-loc
 paintBtn.hidden = true;
 const camBtn = iconButton({ icon: 'video-camera', title: 'Камера: управление руками и пальцами', onClick: () => engine.toggleMotionCam().then(sync) });
 const barMeters = makeMeters(true);
-const recBtn = iconButton({ icon: 'record', title: 'Записать видео со звуком (MP4)', cls: 'fx-rec', onClick: () => (engine.recording ? engine.stopRecording() : engine.startRecording()) });
+const recBtn = iconButton({ icon: 'record', title: 'Параметры записи видео', cls: 'fx-rec' });
 const recTime = h('span', { class: 'fx-rec-time' });
 const animPanel = h('div', { class: 'fx-anim vp-pill', hidden: true, role: 'region', 'aria-label': 'Секвенсор анимации' });
 const resizeHandle = h('div', { class: 'fx-anim-resize-handle', title: 'Потяните для изменения высоты таймлайна (двойной клик сбросит)' });
@@ -2517,7 +2515,7 @@ clampAnimH();
 app.bus.on('fxanim', animSync);
 app.bus.on('fx', animSync);
 const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#ffffff', 'Белый']];
-const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));
+const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false', html: icon('palette', 20) });
 const bgPop = h('div', { class: 'fx-bg-pop popover', hidden: true });
 const bgWrap = bgBtn;
 const bgSw = h('div', { class: 'fx-bg-sw' });
@@ -2541,7 +2539,7 @@ syncBg();
 save();
 }
 function syncBg() {
-bgBtn.querySelector('.fx-bg-dot').style.background = st.look.bg || 'var(--bg-sunken)';
+bgBtn.classList.toggle('is-active', !!st.look.bg && st.look.bg !== '#14161b');
 bgSwBtns.forEach(([c, b]) => b.classList.toggle('is-active', c === st.look.bg));
 bgVig.set(st.look.vignette);
 bgGrid.set(!!st.look.grid);
@@ -2549,6 +2547,8 @@ app.viewport.fxGrid = !!st.look.grid;
 }
 bgBtn.addEventListener('click', (e) => {
 e.stopPropagation();
+recPop.hidden = true;
+recBtn.setAttribute('aria-expanded', 'false');
 bgPop.hidden = !bgPop.hidden;
 if (!bgPop.hidden) placeAbove(bgPop, bgBtn, document.getElementById('viewport'), 'center');
 bgBtn.setAttribute('aria-expanded', String(!bgPop.hidden));
@@ -2560,6 +2560,119 @@ bgBtn.setAttribute('aria-expanded', 'false');
 }
 });
 syncBg();
+const REC_RES = [
+{ value: 'viewport', label: 'Как на экране', sub: 'Текущий размер сцены' },
+{ value: '1080p', label: '1080p Full HD', sub: '1920 × 1080 (16:9)' },
+{ value: '4k', label: '4K Ultra HD', sub: '3840 × 2160 (16:9)' },
+{ value: '720p', label: '720p HD', sub: '1280 × 720 (16:9)' },
+{ value: 'square', label: '1:1 Квадрат', sub: '1080 × 1080 (посты)' },
+{ value: 'reels', label: '9:16 Вертикальное', sub: '1080 × 1920 (Reels / Shorts)' }
+];
+let recOpts = {
+res: 'viewport',
+fps: '60',
+format: 'auto',
+sound: true,
+dur: '0'
+};
+try {
+const saved = JSON.parse(localStorage.getItem('objglb.fx.rec') || '{}');
+if (saved && typeof saved === 'object') Object.assign(recOpts, saved);
+} catch (_) {}
+const saveRecOpts = () => {
+try { localStorage.setItem('objglb.fx.rec', JSON.stringify(recOpts)); } catch (_) {}
+};
+const recPop = h('div', { class: 'fx-rec-pop popover', hidden: true });
+document.getElementById('viewport').append(recPop);
+const recResSel = select({
+options: REC_RES,
+value: recOpts.res,
+onChange: (v) => { recOpts.res = v; saveRecOpts(); }
+});
+const recFpsSeg = segmented({
+cls: 'seg-tight',
+options: [
+{ value: '60', label: '60 к/с' },
+{ value: '30', label: '30 к/с' },
+{ value: '24', label: '24 к/с' }
+],
+value: String(recOpts.fps),
+onChange: (v) => { recOpts.fps = v; saveRecOpts(); }
+});
+const recFmtSeg = segmented({
+cls: 'seg-tight',
+options: [
+{ value: 'auto', label: 'Авто' },
+{ value: 'mp4', label: 'MP4' },
+{ value: 'webm', label: 'WebM' }
+],
+value: recOpts.format,
+onChange: (v) => { recOpts.format = v; saveRecOpts(); }
+});
+const recSoundSw = switchRow('Записывать звук', {
+value: recOpts.sound,
+onChange: (v) => { recOpts.sound = v; saveRecOpts(); }
+}, 'Музыка и звуковые реакции эффектов');
+const recDurSeg = segmented({
+cls: 'seg-tight',
+options: [
+{ value: '0', label: 'Вручную' },
+{ value: '5', label: '5 с' },
+{ value: '10', label: '10 с' },
+{ value: '15', label: '15 с' },
+{ value: '30', label: '30 с' }
+],
+value: String(recOpts.dur),
+onChange: (v) => { recOpts.dur = v; saveRecOpts(); }
+});
+const startRecBtn = button({
+label: 'Начать запись',
+icon: 'record',
+variant: 'primary',
+cls: 'btn-block fx-start-rec-btn',
+onClick: () => {
+recPop.hidden = true;
+recBtn.setAttribute('aria-expanded', 'false');
+engine.startRecording({
+resolution: recOpts.res,
+fps: parseInt(recOpts.fps, 10) || 60,
+format: recOpts.format,
+sound: !!recOpts.sound,
+duration: parseInt(recOpts.dur, 10) || 0
+});
+}
+});
+recPop.append(
+h('div', { class: 'fx-rec-head' },
+h('div', { class: 'fx-rec-title' }, h('span', { class: 'ic-wrap', html: icon('video-camera', 16) }), 'Параметры записи')
+),
+field('Разрешение', recResSel.el),
+field('Частота кадров', recFpsSeg.el),
+field('Формат', recFmtSeg.el),
+recSoundSw.el,
+field('Длительность', recDurSeg.el),
+startRecBtn
+);
+recBtn.addEventListener('click', (e) => {
+e.stopPropagation();
+if (engine.recording) {
+engine.stopRecording();
+return;
+}
+bgPop.hidden = true;
+bgBtn.setAttribute('aria-expanded', 'false');
+recPop.hidden = !recPop.hidden;
+if (!recPop.hidden) {
+placeAbove(recPop, recBtn, document.getElementById('viewport'), 'center');
+}
+recBtn.setAttribute('aria-expanded', String(!recPop.hidden));
+});
+document.addEventListener('pointerdown', (e) => {
+if (!recPop.hidden && !recPop.contains(e.target) && !recBtn.contains(e.target) && !e.target.closest('.custom-select-pop')) {
+recPop.hidden = true;
+recBtn.setAttribute('aria-expanded', 'false');
+}
+});
 const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
 bar.append(leftBtn, playBtn, camBtn, paintBtn, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgWrap, orthoBtn, focusBtn, h('span', { class: 'fx-bar-sep' }), recBtn, keyAnimBtn, recTime);
 function sync() {
@@ -2640,8 +2753,8 @@ if (hint) hint.textContent = B.on && locked ? 'Протяжка: рисоват�
 orthoBtn.classList.toggle('is-active', !!app.nav.ortho);
 orthoBtn.dataset.tip = app.nav.ortho ? 'Сейчас: ортогональная проекция. Включить перспективу' : 'Сейчас: перспектива. Включить ортогональную проекцию';
 recBtn.classList.toggle('is-rec', engine.recording);
-recBtn.dataset.tip = engine.recording ? 'Остановить запись и сохранить' : 'Записать видео со звуком (MP4)';
-recTime.textContent = '';
+recBtn.dataset.tip = engine.recording ? 'Остановить запись и сохранить' : 'Параметры записи видео';
+if (!engine.recording) recTime.textContent = '';
 }
 app.bus.on('fx', sync);
 app.bus.on('media', () => {
@@ -2663,7 +2776,12 @@ meters.set(lv);
 barMeters.set(lv);
 if (engine.recording && ++recTick % 15 === 0) {
 const s = Math.floor((performance.now() - engine._recT0) / 1000);
+const dur = engine.recOpts?.duration || 0;
+if (dur > 0) {
+recTime.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} / ${Math.floor(dur / 60)}:${String(dur % 60).padStart(2, '0')}`;
+} else {
 recTime.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
 }
 };
 sync();
