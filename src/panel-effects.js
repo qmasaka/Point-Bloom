@@ -251,7 +251,7 @@ export function createEffectsPanel(app, root, engine) {
 	const morphStagger = slider({ min: 0, max: 3, step: 0.05, value: mc.stagger, digits: 2, onInput: (v) => { mc.stagger = v; }, onChange: save });
 	const morphTurns = slider({ min: 0, max: 3, step: 0.1, value: mc.turns, digits: 1, onInput: (v) => { mc.turns = v; }, onChange: save });
 	const morphGlow = slider({ min: 0, max: 1.5, step: 0.05, value: mc.glow, digits: 2, onInput: (v) => { mc.glow = v; }, onChange: save });
-	const morphSort = select({ options: MORPH_SORTS.map(([value, label]) => ({ value, label })), value: mc.sort, onChange: (v) => { mc.sort = v; save(); } });
+	const morphSort = select({ options: MORPH_SORTS.map(([value, label, sub]) => ({ value, label, sub })), value: mc.sort, onChange: (v) => { mc.sort = v; save(); } });
 	const morphEase = segmented({ cls: 'seg-tight', options: MORPH_EASES.map(([value, label]) => ({ value, label })), value: mc.ease, onChange: (v) => { mc.ease = v; save(); } });
 	const morphWeight = segmented({ options: [{ value: 'auto', label: 'Как в модели', title: 'У модели с меньшим числом точек лишние гаснут, при переходе к большей недостающие проявляются' }, { value: 'equal', label: 'Поровну', title: 'У всех моделей одинаковое число точек' }], value: mc.weight, onChange: (v) => { mc.weight = v; save(); } });
 	const morphGo = button({ label: 'Следующая модель', icon: 'arrow-right', variant: 'primary', cls: 'btn-block', title: 'Запустить переход к следующей модели из списка', onClick: () => engine.morphNext() });
@@ -620,7 +620,7 @@ export function createEffectsPanel(app, root, engine) {
 					if (ex.relayout) engine.relayoutFrames();
 				};
 				if (ex.type === 'select') {
-					const sl = select({ options: ex.options.map(([value, label]) => ({ value, label })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
+					const sl = select({ options: ex.options.map(([value, label, sub]) => ({ value, label, sub })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
 					extraCtl[ex.key] = sl;
 					put(field(ex.label, sl.el, { wide: true }), ex);
 				} else if (ex.type === 'button') {
@@ -794,7 +794,7 @@ export function createEffectsPanel(app, root, engine) {
 		sync();
 	});
 	document.body.append(fileInput);
-	const style = select({ options: SYNTH_STYLES.map((s) => ({ value: s.id, label: s.name })), value: st.audio.style, onChange: (v) => engine.useSynth(v).then(sync) });
+	const style = select({ options: SYNTH_STYLES.map((s) => ({ value: s.id, label: s.name, sub: s.sub || s.desc })), value: st.audio.style, onChange: (v) => engine.useSynth(v).then(sync) });
 	const styleRow = field('Стиль', style.el);
 	const gain = slider({ min: 0.3, max: 3, step: 0.05, value: st.audio.gain, digits: 2, onInput: (v) => { st.audio.gain = v; }, onChange: save });
 	const volume = slider({ min: 0, max: 1, step: 0.05, value: st.audio.volume, format: (v) => Math.round(v * 100) + '%', onInput: (v) => engine.setVolume(v) });
@@ -863,7 +863,7 @@ export function createEffectsPanel(app, root, engine) {
 		if (!act.length) reactList.append(h('div', { class: 'field-hint' }, 'Пока ни один эффект не слушает звук. Добавьте эффект ниже и выберите частоты: бас, середину, верх или удар.'));
 		if (idle_.length) {
 			const pick = select({
-				options: [{ value: '', label: 'Добавить эффект…' }, ...idle_.map((c) => ({ value: c.def.id, label: c.def.name + (c.L.on ? '' : ' (выключен)') }))],
+				options: [{ value: '', label: 'Добавить эффект…' }, ...idle_.map((c) => ({ value: c.def.id, label: c.def.name, sub: c.L.on ? 'Слушать аудио' : 'Включить и связать' }))],
 				value: '',
 				onChange: (v) => {
 					const c = cards.find((x) => x.def.id === v);
@@ -902,7 +902,7 @@ export function createEffectsPanel(app, root, engine) {
 		palettes.append(b);
 	}
 	// вид точек общий с вкладкой «Точки»: одни и те же настройки, без дублей
-	const colorBy = select({ options: COLOR_BY_UI.map((c) => ({ value: c.id, label: c.label })), value: st.look.colorBy, onChange: (v) => { engine.setColorBy(v); } });
+	const colorBy = select({ options: COLOR_BY_UI.map((c) => ({ value: c.id, label: c.label, sub: c.title })), value: st.look.colorBy, onChange: (v) => { engine.setColorBy(v); } });
 	const shapeTiles = h('div', { class: 'shape-grid shape-row', role: 'radiogroup', 'aria-label': 'Форма точек' });
 	const shapeBtns = new Map();
 	for (const sh of POINT_SHAPE_LIST) {
@@ -1849,17 +1849,18 @@ export function createEffectsPanel(app, root, engine) {
 	}
 
 	// клавиши секвенсора перехватываются раньше общих (O, X, S и другие значат в редакторе своё)
+	const isInputTarget = (t) => t && (t.closest ? !!t.closest('input, textarea, select, .custom-select-wrap, .custom-select-pop, .select') : false);
 	window.addEventListener(
 		'keydown',
 		(e) => {
-			if (animPanel.hidden || (e.target.matches && e.target.matches('input, textarea, select'))) return;
+			if (animPanel.hidden || isInputTarget(e.target)) return;
 			if (extraKeys(e)) e.stopImmediatePropagation();
 		},
 		true
 	);
 	window.addEventListener('keydown', (e) => {
 		if (animPanel.hidden) return;
-		if ((e.target.matches && e.target.matches('input, textarea, select'))) return;
+		if (isInputTarget(e.target)) return;
 		if (e.code === 'Space') {
 			e.preventDefault();
 			if (engine.animPlaying) engine.animPause();

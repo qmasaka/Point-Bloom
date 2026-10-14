@@ -88,25 +88,291 @@ export function segmented({ options, value, onChange, cls = '', label }) {
 	return { el, set };
 }
 
-export function select({ options, value, onChange }) {
-	const el = h('select', { class: 'select' });
-	const fill = (opts) => {
-		el.textContent = '';
-		for (const o of opts) el.append(h('option', { value: String(o.value) }, o.label));
+let activeSelectClose = null;
+
+export function select({ options = [], value, onChange, placeholder = 'Выбрать…' }) {
+	let currentVal = value !== undefined ? String(value) : '';
+	let currentOpts = [];
+	let open = false;
+	let pop = null;
+	let focusedIndex = -1;
+
+	// Скрытый нативный select для обратной совместимости, автотестов и форм
+	const nativeSel = h('select', { class: 'custom-select-native', tabindex: '-1', 'aria-hidden': 'true' });
+
+	const parseOpt = (o) => {
+		if (typeof o === 'string' || typeof o === 'number') {
+			let str = String(o);
+			let val = str;
+			let lbl = str;
+			let sub = '';
+			if (str.includes(': ')) {
+				const parts = str.split(': ');
+				val = parts[0].trim();
+				lbl = parts[0].trim();
+				sub = parts.slice(1).join(': ').trim();
+			}
+			return { value: val, label: lbl, sub };
+		}
+		if (Array.isArray(o)) {
+			let val = String(o[0] ?? '');
+			let lbl = String(o[1] ?? val);
+			let sub = (typeof o[2] === 'string' || typeof o[2] === 'number') ? String(o[2]) : '';
+			if (!sub && lbl.includes(': ')) {
+				const parts = lbl.split(': ');
+				lbl = parts[0].trim();
+				sub = parts.slice(1).join(': ').trim();
+			}
+			return { value: val, label: lbl, sub };
+		}
+		const val = String(o?.value ?? o?.id ?? '');
+		let lbl = String(o?.label ?? o?.name ?? val);
+		let sub = typeof o?.sub === 'string' ? o.sub : typeof o?.desc === 'string' ? o.desc : typeof o?.hint === 'string' ? o.hint : '';
+		if (!sub && lbl.includes(': ')) {
+			const parts = lbl.split(': ');
+			lbl = parts[0].trim();
+			sub = parts.slice(1).join(': ').trim();
+		}
+		return { value: val, label: lbl, sub };
 	};
+
+	const fill = (opts) => {
+		currentOpts = (opts || []).map(parseOpt);
+		nativeSel.textContent = '';
+		for (const o of currentOpts) {
+			nativeSel.append(h('option', { value: o.value }, o.label + (o.sub ? ` (${o.sub})` : '')));
+		}
+		updateTrigger();
+	};
+
+	const curLabel = h('span', { class: 'custom-select-cur-text' });
+	const caret = svg('caret-down', 14);
+	caret.classList.add('custom-select-caret');
+
+	const trigger = h('button', {
+		type: 'button',
+		class: 'select custom-select-btn',
+		'aria-haspopup': 'listbox',
+		'aria-expanded': 'false',
+	}, curLabel, caret);
+
+	const wrap = h('div', { class: 'select-wrap custom-select-wrap' }, trigger, nativeSel);
+
+	function updateTrigger() {
+		const found = currentOpts.find((o) => o.value === currentVal);
+		if (found) {
+			curLabel.textContent = found.label;
+			curLabel.classList.remove('is-empty');
+			trigger.title = found.label + (found.sub ? ` (${found.sub})` : '');
+		} else {
+			curLabel.textContent = placeholder;
+			curLabel.classList.add('is-empty');
+			trigger.title = '';
+		}
+		nativeSel.value = currentVal;
+	}
+
+	function closeMenu() {
+		if (!open) return;
+		open = false;
+		trigger.setAttribute('aria-expanded', 'false');
+		wrap.classList.remove('is-open');
+		if (pop) {
+			pop.remove();
+			pop = null;
+		}
+		focusedIndex = -1;
+		if (activeSelectClose === closeMenu) activeSelectClose = null;
+		document.removeEventListener('pointerdown', onPointerDown, true);
+		window.removeEventListener('scroll', onWindowScroll, true);
+		window.removeEventListener('resize', closeMenu);
+		document.removeEventListener('keydown', onKeyDown, true);
+	}
+
+	function placePop() {
+		if (!pop) return;
+		const z = parseFloat(document.documentElement.style.zoom) || 1;
+		const r = trigger.getBoundingClientRect();
+		const w = Math.max(r.width / z, 160);
+		pop.style.width = Math.min(w, (window.innerWidth / z) - 16) + 'px';
+
+		let left = r.left / z;
+		const maxLeft = (window.innerWidth / z) - w - 8;
+		if (left > maxLeft) left = Math.max(8, maxLeft);
+		if (left < 8) left = 8;
+		pop.style.left = left + 'px';
+
+		const spaceBelow = window.innerHeight / z - r.bottom / z - 8;
+		const spaceAbove = r.top / z - 8;
+		if (spaceBelow < 180 && spaceAbove > spaceBelow) {
+			pop.style.top = 'auto';
+			pop.style.bottom = (window.innerHeight / z - r.top / z + 4) + 'px';
+			pop.style.maxHeight = Math.min(280, Math.max(120, spaceAbove)) + 'px';
+		} else {
+			pop.style.bottom = 'auto';
+			pop.style.top = (r.bottom / z + 4) + 'px';
+			pop.style.maxHeight = Math.min(280, Math.max(120, spaceBelow)) + 'px';
+		}
+	}
+
+	function selectValue(v, fireChange = true) {
+		const changed = currentVal !== String(v);
+		currentVal = String(v);
+		updateTrigger();
+		if (changed && fireChange && onChange) {
+			onChange(currentVal);
+		}
+	}
+
+	function renderItems() {
+		if (!pop) return;
+		pop.textContent = '';
+		currentOpts.forEach((o, i) => {
+			const isSel = o.value === currentVal;
+			const titleEl = h('div', { class: 'custom-select-item-title' }, o.label);
+			const contentEl = h('div', { class: 'custom-select-item-content' }, titleEl);
+			if (o.sub) {
+				contentEl.append(h('div', { class: 'custom-select-item-desc' }, o.sub));
+			}
+			const checkEl = h('span', { class: 'custom-select-item-check' }, svg('check', 14));
+			const itemBtn = h('button', {
+				type: 'button',
+				class: 'custom-select-item' + (isSel ? ' is-selected' : ''),
+				role: 'option',
+				'aria-selected': String(isSel),
+				dataset: { value: o.value, index: String(i) },
+			}, contentEl, checkEl);
+
+			itemBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				selectValue(o.value, true);
+				closeMenu();
+				trigger.focus();
+			});
+			pop.append(itemBtn);
+		});
+	}
+
+	function openMenu() {
+		if (open) return;
+		if (activeSelectClose) activeSelectClose();
+		activeSelectClose = closeMenu;
+		open = true;
+		trigger.setAttribute('aria-expanded', 'true');
+		wrap.classList.add('is-open');
+
+		pop = h('div', { class: 'custom-select-pop', role: 'listbox' });
+		renderItems();
+		document.body.append(pop);
+		placePop();
+
+		const curItem = pop.querySelector('.is-selected');
+		if (curItem) {
+			curItem.scrollIntoView({ block: 'nearest' });
+			focusedIndex = parseInt(curItem.dataset.index, 10);
+		} else {
+			focusedIndex = -1;
+		}
+
+		document.addEventListener('pointerdown', onPointerDown, true);
+		window.addEventListener('scroll', onWindowScroll, true);
+		window.addEventListener('resize', closeMenu);
+		document.addEventListener('keydown', onKeyDown, true);
+	}
+
+	function onPointerDown(e) {
+		if (!open) return;
+		if (pop && (pop.contains(e.target) || trigger.contains(e.target))) return;
+		closeMenu();
+	}
+
+	function onWindowScroll(e) {
+		if (!open) return;
+		if (pop && pop.contains(e.target)) return;
+		closeMenu();
+	}
+
+	function onKeyDown(e) {
+		if (!open) {
+			if (document.activeElement === trigger && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ')) {
+				e.preventDefault();
+				openMenu();
+			}
+			return;
+		}
+		if (e.key === 'Escape') {
+			e.preventDefault();
+			e.stopPropagation();
+			closeMenu();
+			trigger.focus();
+			return;
+		}
+		if (e.key === 'Tab') {
+			closeMenu();
+			return;
+		}
+		const items = pop ? Array.from(pop.querySelectorAll('.custom-select-item')) : [];
+		if (!items.length) return;
+
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			focusedIndex = (focusedIndex + 1) % items.length;
+			updateFocus(items);
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			focusedIndex = (focusedIndex - 1 + items.length) % items.length;
+			updateFocus(items);
+		} else if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			if (focusedIndex >= 0 && items[focusedIndex]) {
+				const val = items[focusedIndex].dataset.value;
+				selectValue(val, true);
+				closeMenu();
+				trigger.focus();
+			}
+		}
+	}
+
+	function updateFocus(items) {
+		items.forEach((it, idx) => {
+			if (idx === focusedIndex) {
+				it.classList.add('is-focused');
+				it.scrollIntoView({ block: 'nearest' });
+			} else {
+				it.classList.remove('is-focused');
+			}
+		});
+	}
+
+	trigger.addEventListener('click', (e) => {
+		e.stopPropagation();
+		if (open) closeMenu();
+		else openMenu();
+	});
+
+	trigger.addEventListener('keydown', (e) => {
+		if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ')) {
+			e.preventDefault();
+			openMenu();
+		}
+	});
+
 	fill(options);
-	el.value = String(value);
-	el.addEventListener('change', () => onChange && onChange(el.value));
-	const wrap = h('div', { class: 'select-wrap' }, el, svg('caret-down', 14));
+	selectValue(value, false);
+
 	return {
 		el: wrap,
-		select: el,
+		select: nativeSel,
 		set(v) {
-			el.value = String(v);
+			selectValue(v, false);
 		},
 		setOptions(opts, v) {
 			fill(opts);
-			if (v !== undefined) el.value = String(v);
+			if (v !== undefined) selectValue(v, false);
+			else updateTrigger();
+		},
+		getValue() {
+			return currentVal;
 		},
 	};
 }

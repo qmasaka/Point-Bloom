@@ -216,7 +216,7 @@ export function createMaterialPanel(app, root) {
 		}
 		const idx = mats.indexOf(m);
 		matSelect.setOptions(
-			mats.map((x, i) => ({ value: i, label: `${x.name || 'Материал ' + (i + 1)} (${model.usersOf(x).length})` })),
+			mats.map((x, i) => ({ value: i, label: x.name || 'Материал ' + (i + 1), sub: `Объектов: ${model.usersOf(x).length}` })),
 			idx
 		);
 		usage.textContent = `Используется у объектов: ${model.usersOf(m).length}. Изменения затронут все они.`;

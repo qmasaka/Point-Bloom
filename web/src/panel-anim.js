@@ -24,7 +24,7 @@ if (!A.has) return;
 const k = A.clips.map((c) => c.name).join('|');
 if (k !== lastKey) {
 lastKey = k;
-clipSel.setOptions(A.clips.map((c, i) => ({ value: String(i), label: c.name || 'Анимация ' + (i + 1) })));
+clipSel.setOptions(A.clips.map((c, i) => ({ value: String(i), label: c.name || 'Анимация ' + (i + 1), sub: `${(c.duration || 0).toFixed(1)}с` })));
 }
 clipWrap.hidden = A.clips.length < 2;
 clipSel.set(String(A.clipIndex));

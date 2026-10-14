@@ -49,9 +49,9 @@ swatches.append(b);
 }
 const tone = select({
 options: [
-{ value: 'neutral', label: 'Нейтральная (точные цвета)' },
-{ value: 'aces', label: 'ACES (кинематографичная)' },
-{ value: 'agx', label: 'AgX (мягкая)' },
+{ value: 'neutral', label: 'Нейтральная: точные цвета' },
+{ value: 'aces', label: 'ACES: кинематографичная' },
+{ value: 'agx', label: 'AgX: мягкий контраст' },
 { value: 'none', label: 'Без обработки' },
 ],
 value: s.render.tone,

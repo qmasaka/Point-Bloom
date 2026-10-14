@@ -1066,14 +1066,14 @@ uniq.slice(0, 3).forEach((w, i) => setTimeout(() => this.toast(w, 'warn'), 400 +
 }
 buildShortcuts() {
 const app = this.app;
-const isTyping = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+const isTyping = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable || !!t.closest?.('.custom-select-wrap, .custom-select-pop, .select'));
 const modeKeys = DISPLAY_MODES.map((m) => m.value);
 window.addEventListener(
 'keydown',
 (e) => {
 if (e.code !== 'Space' || this.dialog.open || e.ctrlKey || e.metaKey || e.altKey) return;
 const t = e.target;
-const textual = t && (t.isContentEditable || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || (t.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button'].includes(t.type)));
+const textual = t && (t.isContentEditable || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || (t.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'button'].includes(t.type)) || !!t.closest?.('.custom-select-wrap, .custom-select-pop, .select'));
 if (textual) return;
 const fx = this.workspace === 'fx';
 const animOn = $('#app').classList.contains('fx-anim-active');
