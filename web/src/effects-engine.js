@@ -48,7 +48,7 @@ export const FX_LAYERS = [
 { id: 'trail', group: 'Анимация', name: 'Шлейф', icon: 'stack', hint: 'За движущейся анимированной моделью остаются полупрозрачные копии прошлых поз. Настраиваются число копий и шаг между ними', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 0.5, count: 8, step: 0.1, fade: 0.8, pts: 25000, size: 0.6, tint: 0, shrink: 0.35 }, extras: [{ key: 'count', label: 'Сколько копий в шлейфе', min: 2, max: 24, step: 1, int: true }, { key: 'step', label: 'Время между копиями, с', min: 0.03, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Как быстро гаснут копии', min: 0.4, max: 0.97, step: 0.01 }, { key: 'shrink', label: 'Как мельчают копии', min: 0, max: 0.9, step: 0.02 }, { key: 'pts', label: 'Точек в копии', min: 5000, max: 80000, step: 1000, int: true }, { key: 'size', label: 'Размер точек', min: 0.3, max: 2.5, step: 0.05 }, { key: 'tint', label: 'Окраска цветом палитры', min: 0, max: 1, step: 0.02 }] },
 { id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 { id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Цифровой сбой. Виды: полосы, блоки, развёртка. Цвета расходятся, на всплесках часть точек выпадает', max: 2, def: { on: false, amount: 0.8, band: 'none', react: 1, mode: 'bands', slices: 16, rgb: 'on', speed: 1, burst: 0.7, drop: 0.5 }, extras: [{ key: 'mode', label: 'Вид сбоя', type: 'select', options: [['bands', 'Полосы: строки съезжают в стороны'], ['blocks', 'Блоки: куски сдвигаются в объёме'], ['scan', 'Развёртка: тонкие строки рвутся']] }, { key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1, int: true }, { key: 'burst', label: 'Резкость всплесков', min: 0, max: 1, step: 0.05 }, { key: 'drop', label: 'Выпадение точек', min: 0, max: 1, step: 0.05 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
-{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются число узлов и дальность связи', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: 3500, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
+{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются число узлов и дальность связи', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: perf.isApple || perf.tier === 'high' ? 3500 : 2000, pulses: 'on', pulseSpeed: 1.6 }, extras: [{ key: 'width', label: 'Толщина нитей', min: 0.6, max: 6, step: 0.2, unit: ' px' }, { key: 'range', label: 'Длина связей', min: 0.02, max: 0.5, step: 0.01 }, { key: 'count', label: 'Узлов', min: 500, max: 8000, step: 250, relink: true, int: true }, { key: 'pulses', label: 'Импульсы света', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }] },
 { id: 'slice', group: 'Графика', name: 'Срез', icon: 'scan', hint: 'По форме идёт срез. Виды: лазер (линии), рельеф (точки на линиях), развёртка (форма проявляется за плоскостью)', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'model' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
 { id: 'feedback', group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой световой хвост из прошлых кадров. Виды: выдержка, туннель', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
 { id: 'datamosh', group: 'Графика', name: 'Датамош', icon: 'checkerboard', hint: 'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'bleed', trigger: 'timer', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, stale: 0.2, jit: 0.4 }, extras: [
@@ -2547,9 +2547,8 @@ this[k] = null;
 const w = this.width || 1;
 const h = this.height || 1;
 const flat = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type };
-const mips = { ...flat, minFilter: THREE.LinearMipmapLinearFilter, generateMipmaps: true };
-this.rtScene = new THREE.WebGLRenderTarget(w, h, mips);
-this.rtSceneB = new THREE.WebGLRenderTarget(w, h, mips);
+this.rtScene = new THREE.WebGLRenderTarget(w, h, flat);
+this.rtSceneB = new THREE.WebGLRenderTarget(w, h, flat);
 this.rtPing = new THREE.WebGLRenderTarget(w, h, flat);
 this.rtPong = new THREE.WebGLRenderTarget(w, h, flat);
 this.moshHist = false;
@@ -2868,6 +2867,15 @@ this.hasHistory = false;
 return;
 }
 try {
+const needMips = useMosh;
+if (this.rtScene && this.rtScene.texture.generateMipmaps !== needMips) {
+this.rtScene.texture.generateMipmaps = needMips;
+this.rtScene.texture.minFilter = needMips ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
+}
+if (this.rtSceneB && this.rtSceneB.texture.generateMipmaps !== needMips) {
+this.rtSceneB.texture.generateMipmaps = needMips;
+this.rtSceneB.texture.minFilter = needMips ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
+}
 r.setRenderTarget(this.rtScene);
 r.clear();
 r.render(scene, camera);
@@ -5164,22 +5172,31 @@ return a;
 _scopeSyncLine() {
 const sp = this._scopePath;
 const lg = this._scopeLine?.geometry;
-if (!sp || !lg || !this.geometry) return;
+if (!sp || !lg || !this.geometry || !lg.attributes.aOrigin) return;
 const T = this.geometry.attributes.aTarget.array;
 const { ids, ord, L } = sp;
-const names = ['aOrigin', 'aTarget', 'aOriginB', 'aTargetB'];
-const arrs = names.map((n) => lg.attributes[n].array);
+const a0 = lg.attributes.aOrigin.array;
+const a1 = lg.attributes.aTarget.array;
+const a2 = lg.attributes.aOriginB.array;
+const a3 = lg.attributes.aTargetB.array;
 for (let l = 0; l < L; l++) {
 const a = ids[ord[l]] * 3, b = ids[ord[l + 1]] * 3;
+const ta0 = T[a], ta1 = T[a + 1], ta2 = T[a + 2];
+const tb0 = T[b], tb1 = T[b + 1], tb2 = T[b + 2];
 for (let v = 0; v < 4; v++) {
 const q = (l * 4 + v) * 3;
-for (let c = 0; c < 3; c++) {
-arrs[0][q + c] = arrs[1][q + c] = T[a + c];
-arrs[2][q + c] = arrs[3][q + c] = T[b + c];
+a0[q] = a1[q] = ta0;
+a0[q + 1] = a1[q + 1] = ta1;
+a0[q + 2] = a1[q + 2] = ta2;
+a2[q] = a3[q] = tb0;
+a2[q + 1] = a3[q + 1] = tb1;
+a2[q + 2] = a3[q + 2] = tb2;
 }
 }
-}
-for (const n of names) lg.attributes[n].needsUpdate = true;
+lg.attributes.aOrigin.needsUpdate = true;
+lg.attributes.aTarget.needsUpdate = true;
+lg.attributes.aOriginB.needsUpdate = true;
+lg.attributes.aTargetB.needsUpdate = true;
 }
 _scopeDropLine() {
 const l = this._scopeLine;
@@ -5943,13 +5960,16 @@ return;
 this._linksStale = false;
 const g = this.geometry;
 const N = g.attributes.position.count;
-const S = Math.min(N, Math.round(this.state.layers.links.count));
+const maxNodes = perf.isApple ? 8000 : perf.windows ? (perf.tier === 'high' ? 4500 : 2500) : 5000;
+const S = Math.min(N, Math.min(maxNodes, Math.round(this.state.layers.links.count)));
+if (S <= 1) return;
 const step = N / S;
 const O = g.attributes.aOrigin.array;
 const T = g.attributes.aTarget.array;
 const ids = new Int32Array(S);
 for (let i = 0; i < S; i++) ids[i] = Math.floor(i * step);
 const R = 0.35;
+const R2 = R * R;
 const cell = R;
 const key = (x, y, z) => (x * 73856093) ^ (y * 19349663) ^ (z * 83492791);
 const grid = new Map();
@@ -5964,56 +5984,85 @@ const pairs = [];
 const seen = new Set();
 for (let i = 0; i < S; i++) {
 const p = ids[i] * 3;
-const cx = Math.floor(T[p] / cell), cy = Math.floor(T[p + 1] / cell), cz = Math.floor(T[p + 2] / cell);
-const cand = [];
-for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+const px = T[p], py = T[p + 1], pz = T[p + 2];
+const cx = Math.floor(px / cell), cy = Math.floor(py / cell), cz = Math.floor(pz / cell);
+let b0_d = R2, b0_j = -1;
+let b1_d = R2, b1_j = -1;
+let b2_d = R2, b2_j = -1;
+for (let dx = -1; dx <= 1; dx++) {
+for (let dy = -1; dy <= 1; dy++) {
+for (let dz = -1; dz <= 1; dz++) {
 const a = grid.get(key(cx + dx, cy + dy, cz + dz));
 if (!a) continue;
-for (const j of a) {
+for (let ai = 0; ai < a.length; ai++) {
+const j = a[ai];
 if (j === i) continue;
 const q = ids[j] * 3;
-const d = (T[p] - T[q]) ** 2 + (T[p + 1] - T[q + 1]) ** 2 + (T[p + 2] - T[q + 2]) ** 2;
-if (d < R * R) cand.push([d, j]);
+const ddx = px - T[q], ddy = py - T[q + 1], ddz = pz - T[q + 2];
+const d = ddx * ddx + ddy * ddy + ddz * ddz;
+if (d < b2_d) {
+if (d < b0_d) {
+b2_d = b1_d; b2_j = b1_j;
+b1_d = b0_d; b1_j = b0_j;
+b0_d = d; b0_j = j;
+} else if (d < b1_d) {
+b2_d = b1_d; b2_j = b1_j;
+b1_d = d; b1_j = j;
+} else {
+b2_d = d; b2_j = j;
 }
 }
-cand.sort((a, b) => a[0] - b[0]);
-for (let k = 0; k < Math.min(3, cand.length); k++) {
-const j = cand[k][1];
-const id = i < j ? i * S + j : j * S + i;
-if (seen.has(id)) continue;
-seen.add(id);
-pairs.push(i, j);
+}
+}
+}
+}
+if (b0_j >= 0) {
+const id = i < b0_j ? i * S + b0_j : b0_j * S + i;
+if (!seen.has(id)) { seen.add(id); pairs.push(i, b0_j); }
+}
+if (b1_j >= 0) {
+const id = i < b1_j ? i * S + b1_j : b1_j * S + i;
+if (!seen.has(id)) { seen.add(id); pairs.push(i, b1_j); }
+}
+if (b2_j >= 0) {
+const id = i < b2_j ? i * S + b2_j : b2_j * S + i;
+if (!seen.has(id)) { seen.add(id); pairs.push(i, b2_j); }
 }
 }
 const L = pairs.length / 2;
 const V = L * 4;
-const A = new Float32Array(V * 3), TA = new Float32Array(V * 3), B = new Float32Array(V * 3), TB = new Float32Array(V * 3);
-const ia = new Float32Array(V), ib = new Float32Array(V), end = new Float32Array(V), side = new Float32Array(V);
-const da = new Float32Array(V), db = new Float32Array(V);
 const DP = g.attributes.aDepth ? g.attributes.aDepth.array : null;
-const index = new Uint32Array(L * 6);
-for (let l = 0; l < L; l++) {
-const a = ids[pairs[l * 2]], b = ids[pairs[l * 2 + 1]];
-const q = l * 4;
-index.set([q, q + 1, q + 2, q + 2, q + 1, q + 3], l * 6);
-for (let v = 0; v < 4; v++) {
-const o = (l * 4 + v) * 3;
-for (let c = 0; c < 3; c++) {
-A[o + c] = O[a * 3 + c];
-TA[o + c] = T[a * 3 + c];
-B[o + c] = O[b * 3 + c];
-TB[o + c] = T[b * 3 + c];
-}
-ia[l * 4 + v] = a / N;
-ib[l * 4 + v] = b / N;
-da[l * 4 + v] = DP ? DP[a] : 0.5;
-db[l * 4 + v] = DP ? DP[b] : 0.5;
-end[l * 4 + v] = v >> 1;
-side[l * 4 + v] = v & 1 ? 1 : -1;
-}
-}
 const lg = this.linkObj.geometry;
-lg.setAttribute('position', new THREE.BufferAttribute(A.slice(), 3));
+const currV = lg.attributes.position ? lg.attributes.position.count : 0;
+let A, TA, B, TB, ia, ib, end, side, da, db, index;
+if (currV >= V && V > 0 && lg.attributes.aOrigin) {
+A = lg.attributes.aOrigin.array;
+TA = lg.attributes.aTarget.array;
+B = lg.attributes.aOriginB.array;
+TB = lg.attributes.aTargetB.array;
+ia = lg.attributes.aIdx.array;
+ib = lg.attributes.aIdxB.array;
+da = lg.attributes.aDepth.array;
+db = lg.attributes.aDepthB.array;
+end = lg.attributes.aEnd.array;
+side = lg.attributes.aSide.array;
+index = lg.index ? lg.index.array : null;
+}
+if (!A || !index || index.length < L * 6) {
+const capV = Math.max(V, Math.round(V * 1.25));
+const capL = Math.floor(capV / 4);
+A = new Float32Array(capV * 3);
+TA = new Float32Array(capV * 3);
+B = new Float32Array(capV * 3);
+TB = new Float32Array(capV * 3);
+ia = new Float32Array(capV);
+ib = new Float32Array(capV);
+da = new Float32Array(capV);
+db = new Float32Array(capV);
+end = new Float32Array(capV);
+side = new Float32Array(capV);
+index = new Uint32Array(capL * 6);
+lg.setAttribute('position', new THREE.BufferAttribute(A, 3));
 lg.setAttribute('aOrigin', new THREE.BufferAttribute(A, 3));
 lg.setAttribute('aTarget', new THREE.BufferAttribute(TA, 3));
 lg.setAttribute('aOriginB', new THREE.BufferAttribute(B, 3));
@@ -6025,40 +6074,97 @@ lg.setAttribute('aDepthB', new THREE.BufferAttribute(db, 1));
 lg.setAttribute('aEnd', new THREE.BufferAttribute(end, 1));
 lg.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
 lg.setIndex(new THREE.BufferAttribute(index, 1));
+}
+for (let l = 0; l < L; l++) {
+const a = ids[pairs[l * 2]], b = ids[pairs[l * 2 + 1]];
+const q = l * 4;
+const idx6 = l * 6;
+index[idx6] = q;
+index[idx6 + 1] = q + 1;
+index[idx6 + 2] = q + 2;
+index[idx6 + 3] = q + 2;
+index[idx6 + 4] = q + 1;
+index[idx6 + 5] = q + 3;
+const a3 = a * 3, b3 = b * 3;
+const oa0 = O[a3], oa1 = O[a3 + 1], oa2 = O[a3 + 2];
+const ta0 = T[a3], ta1 = T[a3 + 1], ta2 = T[a3 + 2];
+const ob0 = O[b3], ob1 = O[b3 + 1], ob2 = O[b3 + 2];
+const tb0 = T[b3], tb1 = T[b3 + 1], tb2 = T[b3 + 2];
+const dpA = DP ? DP[a] : 0.5;
+const dpB = DP ? DP[b] : 0.5;
+const iaVal = a / N;
+const ibVal = b / N;
+for (let v = 0; v < 4; v++) {
+const o = (q + v) * 3;
+A[o] = oa0; A[o + 1] = oa1; A[o + 2] = oa2;
+TA[o] = ta0; TA[o + 1] = ta1; TA[o + 2] = ta2;
+B[o] = ob0; B[o + 1] = ob1; B[o + 2] = ob2;
+TB[o] = tb0; TB[o + 1] = tb1; TB[o + 2] = tb2;
+const qv = q + v;
+ia[qv] = iaVal;
+ib[qv] = ibVal;
+da[qv] = dpA;
+db[qv] = dpB;
+end[qv] = v >> 1;
+side[qv] = v & 1 ? 1 : -1;
+}
+}
+lg.setDrawRange(0, L * 6);
+lg.attributes.position.needsUpdate = true;
+lg.attributes.aOrigin.needsUpdate = true;
+lg.attributes.aTarget.needsUpdate = true;
+lg.attributes.aOriginB.needsUpdate = true;
+lg.attributes.aTargetB.needsUpdate = true;
+lg.attributes.aIdx.needsUpdate = true;
+lg.attributes.aIdxB.needsUpdate = true;
+lg.attributes.aDepth.needsUpdate = true;
+lg.attributes.aDepthB.needsUpdate = true;
+lg.attributes.aEnd.needsUpdate = true;
+lg.attributes.aSide.needsUpdate = true;
+if (lg.index) lg.index.needsUpdate = true;
 lg.computeBoundingSphere();
-this._pairs = { ids, list: pairs, N };
+this._pairs = { ids, list: pairs, N, L };
 }
 _syncLinks() {
 if (!this._pairs || !this.linkObj) return;
-const { ids, list, N } = this._pairs;
+const { ids, list, L } = this._pairs;
+if (!L) return;
 const O = this.geometry.attributes.aOrigin.array;
 const T = this.geometry.attributes.aTarget.array;
 const lg = this.linkObj.geometry;
-const set = (name, src, which) => {
-const arr = lg.attributes[name].array;
-for (let l = 0; l < list.length / 2; l++) {
-const p = ids[list[l * 2 + which]] * 3;
+if (!lg.attributes.aOrigin) return;
+const arrA = lg.attributes.aOrigin.array;
+const arrTA = lg.attributes.aTarget.array;
+const arrB = lg.attributes.aOriginB.array;
+const arrTB = lg.attributes.aTargetB.array;
+for (let l = 0; l < L; l++) {
+const a = ids[list[l * 2]], b = ids[list[l * 2 + 1]];
+const a3 = a * 3, b3 = b * 3;
+const oa0 = O[a3], oa1 = O[a3 + 1], oa2 = O[a3 + 2];
+const ta0 = T[a3], ta1 = T[a3 + 1], ta2 = T[a3 + 2];
+const ob0 = O[b3], ob1 = O[b3 + 1], ob2 = O[b3 + 2];
+const tb0 = T[b3], tb1 = T[b3 + 1], tb2 = T[b3 + 2];
 for (let v = 0; v < 4; v++) {
 const o = (l * 4 + v) * 3;
-arr[o] = src[p];
-arr[o + 1] = src[p + 1];
-arr[o + 2] = src[p + 2];
+arrA[o] = oa0; arrA[o + 1] = oa1; arrA[o + 2] = oa2;
+arrTA[o] = ta0; arrTA[o + 1] = ta1; arrTA[o + 2] = ta2;
+arrB[o] = ob0; arrB[o + 1] = ob1; arrB[o + 2] = ob2;
+arrTB[o] = tb0; arrTB[o + 1] = tb1; arrTB[o + 2] = tb2;
 }
 }
-lg.attributes[name].needsUpdate = true;
-};
-set('aOrigin', O, 0);
-set('aTarget', T, 0);
-set('aOriginB', O, 1);
-set('aTargetB', T, 1);
+lg.attributes.aOrigin.needsUpdate = true;
+lg.attributes.aTarget.needsUpdate = true;
+lg.attributes.aOriginB.needsUpdate = true;
+lg.attributes.aTargetB.needsUpdate = true;
 const DP = this.geometry.attributes.aDepth?.array;
 if (DP && lg.attributes.aDepth) {
 const da = lg.attributes.aDepth.array, db = lg.attributes.aDepthB.array;
-for (let l = 0; l < list.length / 2; l++) {
+for (let l = 0; l < L; l++) {
 const a = DP[ids[list[l * 2]]], b = DP[ids[list[l * 2 + 1]]];
+const q = l * 4;
 for (let v = 0; v < 4; v++) {
-da[l * 4 + v] = a;
-db[l * 4 + v] = b;
+da[q + v] = a;
+db[q + v] = b;
 }
 }
 lg.attributes.aDepth.needsUpdate = lg.attributes.aDepthB.needsUpdate = true;
@@ -6219,7 +6325,15 @@ document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 throw e;
 }
 try {
-if (app.viewport.renderer.compileAsync) await app.viewport.renderer.compileAsync(app.viewport.scene, app.viewport.camera);
+if (app.viewport.renderer.compileAsync) {
+const wasLinkVis = this.linkObj ? this.linkObj.visible : false;
+const wasGhostsVis = this.ghosts.map((g) => g.visible);
+if (this.linkObj) this.linkObj.visible = true;
+this.ghosts.forEach((g) => (g.visible = true));
+await app.viewport.renderer.compileAsync(app.viewport.scene, app.viewport.camera);
+if (this.linkObj) this.linkObj.visible = wasLinkVis;
+this.ghosts.forEach((g, i) => (g.visible = wasGhostsVis[i]));
+}
 } catch (e) {
 }
 app.ui.idle();
@@ -6505,7 +6619,6 @@ this._analyse(dt);
 if (!this.material) return;
 if (this.morphing) {
 this.morph = Math.min(1, this.morph + dt / Math.max(0.3, st0.morphCfg.time));
-this._syncLinks();
 if (this.morph >= 1) {
 this.morphing = false;
 this._settleOn = true;
