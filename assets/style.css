@@ -942,9 +942,9 @@ button {
 	width: 100%;
 	height: 32px;
 	padding: 0 10px;
-	background: var(--bg-raised);
-	border: 1px solid var(--line-strong);
-	border-radius: var(--r-ctl);
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.09));
+	border-radius: var(--r-ctl, 8px);
 	color: var(--text);
 	font-family: var(--font);
 	font-size: 13px;
@@ -956,19 +956,21 @@ button {
 	cursor: pointer;
 	text-align: left;
 	outline: none;
-	transition: background 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+	transition: background 0.14s ease, border-color 0.14s ease;
 	user-select: none;
 	-webkit-user-select: none;
 	box-sizing: border-box;
 }
 .select:hover {
-	background: var(--bg-hover);
-	border-color: rgba(255, 255, 255, 0.18);
+	background: rgba(255, 255, 255, 0.07);
+	border-color: rgba(255, 255, 255, 0.16);
 }
-.select-wrap.is-open .select,
+.select-wrap.is-open .select {
+	border-color: var(--accent, #3dff7a);
+	background: rgba(255, 255, 255, 0.06);
+}
 .select:focus-visible {
-	border-color: var(--accent);
-	box-shadow: 0 0 0 2px var(--accent-soft);
+	outline: none;
 }
 .custom-select-cur-text {
 	flex: 1;
@@ -1006,16 +1008,16 @@ button {
 	clip: rect(0, 0, 0, 0) !important;
 }
 
-/* Glassmorphic custom select dropdown popover */
+/* Glassmorphic custom select dropdown popover: идентичная матовость и прозрачность с остальными плавающими панелями */
 .custom-select-pop {
 	position: fixed;
 	z-index: var(--z-tip, 9999);
-	background: rgba(20, 23, 28, 0.96);
-	backdrop-filter: blur(24px);
-	-webkit-backdrop-filter: blur(24px);
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	border-radius: 12px;
-	box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 4px 12px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+	background: var(--fxg-bg, rgba(18, 20, 24, 0.75));
+	backdrop-filter: var(--fxg-blur, blur(22px) saturate(1.25));
+	-webkit-backdrop-filter: var(--fxg-blur, blur(22px) saturate(1.25));
+	border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.1));
+	border-radius: 14px;
+	box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45), 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 	padding: 5px;
 	overflow-y: auto;
 	overflow-x: hidden;
@@ -1055,8 +1057,8 @@ button {
 	justify-content: space-between;
 	gap: 8px;
 	width: 100%;
-	padding: 6px 8px;
-	min-height: 34px;
+	padding: 7px 10px;
+	min-height: 36px;
 	background: transparent;
 	border: 0;
 	border-radius: 8px;
@@ -1064,19 +1066,19 @@ button {
 	text-align: left;
 	font-family: var(--font);
 	outline: none;
-	transition: background 0.12s ease, color 0.12s ease;
+	transition: background 0.12s ease;
 	box-sizing: border-box;
 }
 .custom-select-item:hover,
 .custom-select-item.is-focused {
-	background: rgba(255, 255, 255, 0.07);
+	background: rgba(255, 255, 255, 0.06);
 }
 .custom-select-item.is-selected {
-	background: var(--accent-soft, rgba(61, 255, 122, 0.14));
+	background: transparent;
 }
 .custom-select-item.is-selected:hover,
 .custom-select-item.is-selected.is-focused {
-	background: var(--accent-soft, rgba(61, 255, 122, 0.22));
+	background: rgba(255, 255, 255, 0.06);
 }
 
 .custom-select-item-content {
@@ -1084,7 +1086,7 @@ button {
 	min-width: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 1px;
+	gap: 2px;
 }
 .custom-select-item-title {
 	font-size: 12.5px;
@@ -1109,7 +1111,7 @@ button {
 	text-overflow: ellipsis;
 }
 .custom-select-item.is-selected .custom-select-item-desc {
-	color: rgba(61, 255, 122, 0.75);
+	color: rgba(61, 255, 122, 0.7);
 }
 .custom-select-item-check {
 	flex-shrink: 0;
@@ -5152,13 +5154,14 @@ body.is-resizing-h * {
 	}
 }
 
-/* выбранный эффект в списке: рамка и фон мягкого оранжевого */
+/* выбранный эффект в списке: без постоянного навязчивого выделения */
 .fx-layer.is-selected {
-	background: var(--accent-soft);
-	border-color: var(--accent-line);
+	background: transparent;
+	border-color: transparent;
 }
 .fx-layer.is-selected.is-on {
-	border-color: var(--accent);
+	background: transparent;
+	border-color: transparent;
 }
 
 /* переключатель режимов: подсветка скользит от кнопки к кнопке */
@@ -5535,30 +5538,42 @@ body.is-resizing-h * {
 	margin-top: 2px;
 }
 .ui-float .fx-layer {
-	border-radius: 14px;
-	border: 1px solid rgba(255, 255, 255, 0.06);
-	background: rgba(255, 255, 255, 0.035);
-	transition: background 0.18s var(--ease), border-color 0.18s var(--ease), box-shadow 0.18s var(--ease), transform 0.12s var(--ease);
+	border-radius: 12px;
+	border: 1px solid transparent;
+	background: transparent;
+	transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
 	margin-bottom: 2px;
 	overflow: hidden;
 }
 .ui-float .fx-layer:hover {
-	background: rgba(255, 255, 255, 0.07);
-	border-color: rgba(255, 255, 255, 0.12);
+	background: rgba(255, 255, 255, 0.05);
+	border-color: rgba(255, 255, 255, 0.08);
 }
 .ui-float .fx-layer.is-on {
-	background: rgba(255, 255, 255, 0.055);
+	background: transparent;
+	border-color: transparent;
+}
+.ui-float .fx-layer.is-on:hover {
+	background: rgba(255, 255, 255, 0.06);
 	border-color: rgba(255, 255, 255, 0.1);
 }
 .ui-float .fx-layer.is-selected {
-	background: rgba(255, 255, 255, 0.08);
-	border-color: rgba(255, 255, 255, 0.22);
-	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+	background: transparent;
+	border-color: transparent;
+	box-shadow: none;
+}
+.ui-float .fx-layer.is-selected:hover {
+	background: rgba(255, 255, 255, 0.06);
+	border-color: rgba(255, 255, 255, 0.1);
 }
 .ui-float .fx-layer.is-selected.is-on {
-	background: color-mix(in srgb, var(--accent) 12%, rgba(255, 255, 255, 0.055));
-	border-color: var(--accent-line);
-	box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 18%, transparent);
+	background: transparent;
+	border-color: transparent;
+	box-shadow: none;
+}
+.ui-float .fx-layer.is-selected.is-on:hover {
+	background: rgba(255, 255, 255, 0.06);
+	border-color: rgba(255, 255, 255, 0.1);
 }
 .ui-float .fx-layer-head {
 	display: grid;

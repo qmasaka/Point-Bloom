@@ -127,6 +127,7 @@ nativeSel.append(h('option', { value: o.value }, o.label + (o.sub ? ` (${o.sub})
 }
 updateTrigger();
 };
+const tr = (k) => (window.__i18n && window.__i18n.tr ? window.__i18n.tr(k) : k);
 const curLabel = h('span', { class: 'custom-select-cur-text' });
 const caret = svg('caret-down', 14);
 caret.classList.add('custom-select-caret');
@@ -140,11 +141,11 @@ const wrap = h('div', { class: 'select-wrap custom-select-wrap' }, trigger, nati
 function updateTrigger() {
 const found = currentOpts.find((o) => o.value === currentVal);
 if (found) {
-curLabel.textContent = found.label;
+curLabel.textContent = tr(found.label);
 curLabel.classList.remove('is-empty');
-trigger.title = found.label + (found.sub ? ` (${found.sub})` : '');
+trigger.title = tr(found.label) + (found.sub ? ` (${tr(found.sub)})` : '');
 } else {
-curLabel.textContent = placeholder;
+curLabel.textContent = tr(placeholder);
 curLabel.classList.add('is-empty');
 trigger.title = '';
 }
@@ -202,10 +203,10 @@ if (!pop) return;
 pop.textContent = '';
 currentOpts.forEach((o, i) => {
 const isSel = o.value === currentVal;
-const titleEl = h('div', { class: 'custom-select-item-title' }, o.label);
+const titleEl = h('div', { class: 'custom-select-item-title' }, tr(o.label));
 const contentEl = h('div', { class: 'custom-select-item-content' }, titleEl);
 if (o.sub) {
-contentEl.append(h('div', { class: 'custom-select-item-desc' }, o.sub));
+contentEl.append(h('div', { class: 'custom-select-item-desc' }, tr(o.sub)));
 }
 const checkEl = h('span', { class: 'custom-select-item-check' }, svg('check', 14));
 const itemBtn = h('button', {
@@ -219,7 +220,6 @@ itemBtn.addEventListener('click', (e) => {
 e.stopPropagation();
 selectValue(o.value, true);
 closeMenu();
-trigger.focus();
 });
 pop.append(itemBtn);
 });
@@ -316,6 +316,10 @@ if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' 
 e.preventDefault();
 openMenu();
 }
+});
+window.addEventListener('langchange', () => {
+updateTrigger();
+if (open) renderItems();
 });
 fill(options);
 selectValue(value, false);
