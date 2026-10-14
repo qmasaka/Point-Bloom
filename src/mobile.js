@@ -88,11 +88,14 @@ export function initMobile(app) {
 	// выбор вкладки раскрывает свёрнутый лист; выбор эффекта в списке переключает на его настройки
 	sidebar.addEventListener('click', (e) => {
 		if (!mq.matches) return;
-		if (e.target.closest('.tab, .fx-tab') && state === 'min') setState('mid');
+		if (e.target.closest('.tab, .fx-tab, .fx-tabs .tab') && state === 'min') setState('mid');
 	});
 	fxLeft.addEventListener('click', (e) => {
 		if (!mq.matches || e.target.closest('.sheet-handle')) return;
-		if (e.target.closest('.fx-layer-head') && !e.target.closest('.switch')) setMsheet('settings');
+		if (e.target.closest('.fx-layer-head') && !e.target.closest('.switch')) {
+			setMsheet('settings');
+			if (state === 'min') setState('mid');
+		}
 	});
 
 	// режим эффектов: список эффектов первым, редактор: лист свёрнут, пока не откроете вкладку

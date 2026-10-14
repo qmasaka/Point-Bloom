@@ -41002,11 +41002,14 @@ b.setAttribute('aria-selected', String(on));
 setMsheet('list');
 sidebar.addEventListener('click', (e) => {
 if (!mq.matches) return;
-if (e.target.closest('.tab, .fx-tab') && state === 'min') setState('mid');
+if (e.target.closest('.tab, .fx-tab, .fx-tabs .tab') && state === 'min') setState('mid');
 });
 fxLeft.addEventListener('click', (e) => {
 if (!mq.matches || e.target.closest('.sheet-handle')) return;
-if (e.target.closest('.fx-layer-head') && !e.target.closest('.switch')) setMsheet('settings');
+if (e.target.closest('.fx-layer-head') && !e.target.closest('.switch')) {
+setMsheet('settings');
+if (state === 'min') setState('mid');
+}
 });
 let wasFx = root.classList.contains('fx-mode');
 new MutationObserver(() => {
