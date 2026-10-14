@@ -75517,6 +75517,7 @@ uniform vec4 uScope, uScopeP, uScopeQ;
 uniform vec3 uScopeC;
 float gDepth = 0.5;
 float gDepthG = 0.0;
+vec3 gNormal = vec3(0.0);
 uniform vec4 uDepth, uDepthP, uDepthQ;
 uniform float uFlat;
 float gLum = 0.5;
@@ -76018,7 +76019,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	// у плоских источников (фото, видео, блок кадров) направление «наружу» это взгляд на кадр, иначе волны и импульсы лишь двигают картинку в её плоскости и почти не видны
 	rad = normalize(mix(rad, vec3(0.0, 0.0, 1.0), 0.8 * uFlat));
 	// движущаяся анимированная модель: «наружу» это нормаль её поверхности, а не направление от центра сцены (оно смотрит не туда, когда модель далеко от центра)
-	if (uAnimN > 0.5 && dot(aNormal, aNormal) > 0.01) rad = normalize(aNormal);
+	if (uAnimN > 0.5 && dot(gNormal, gNormal) > 0.01) rad = normalize(gNormal);
 	vec3 pos = base;
 
 	if (uTwist.x > 0.001) {
@@ -76692,6 +76693,7 @@ void main() {
 	vec3 base;
 	float maskV;
 	gDepth = aDepth;
+	gNormal = aNormal;
 	gLum = uFr.x > 0.5 ? dot(frCol, vec3(0.3, 0.59, 0.11)) : dot(aColor, vec3(0.3, 0.59, 0.11));
 	if (uScope.x > 0.001) {
 		// осциллограф: aPath это место точки на пути пера (0..1), uScope.z это положение пера, у ещё не нарисованных точек размер падает до нуля
@@ -76988,6 +76990,7 @@ void main() {
 	vec3 bA, bB;
 	float mA, mB;
 	gDepth = aDepth;
+	gNormal = vec3(0.0);
 	vec3 pA = fxDisplace(aOrigin, aTarget, aIdx, bA, mA);
 	gDepth = aDepthB;
 	vec3 pB = fxDisplace(aOriginB, aTargetB, aIdxB, bB, mB);
@@ -77037,6 +77040,7 @@ void main() {
 	vec3 bA, bB;
 	float mA, mB;
 	gDepth = aDepth;
+	gNormal = vec3(0.0);
 	vec3 pA = fxDisplace(aOrigin, aTarget, aIdx, bA, mA);
 	gDepth = aDepthB;
 	vec3 pB = fxDisplace(aOriginB, aTargetB, aIdxB, bB, mB);
