@@ -469,7 +469,7 @@ export class LoopPart {
 						this._disV = v + Math.sign(tg - v) * Math.min(Math.abs(tg - v), dt * D.speed * 0.3);
 						p = this._disV;
 					} else p = D.progress;
-					p = p * p * (3 - 2 * p) * Math.min(1, D.amount);
+					p = p * p * (3 - 2 * p) * Math.min(1, D.band && D.band !== 'none' ? this._eff(D) : D.amount);
 				}
 				const hand = this.camTracker?.running && this._handDis && this._time - (this._handsT ?? -9) < 0.4;
 				this._disH = (this._disH || 0) + ((hand ? 1 : 0) - (this._disH || 0)) * (1 - Math.exp(-dt * Math.max(0.5, D.speed) * 1.2));

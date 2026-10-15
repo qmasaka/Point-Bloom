@@ -22,7 +22,7 @@ export class AudioPart {
 		this.bus = this.ctx.createGain();
 		this.analyser = this.ctx.createAnalyser();
 		this.analyser.fftSize = 2048;
-		this.analyser.smoothingTimeConstant = 0.82;
+		this.analyser.smoothingTimeConstant = 0.6;
 		this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
 		this.out = this.ctx.createGain();
 		this.out.gain.value = this.state.audio.volume;
@@ -226,44 +226,75 @@ export class AudioPart {
 		this.emit();
 	}
 
+	/**
+	 * Анализ звука за кадр: уровни полос (бас, середина, верх), удар и спектр из 64 полос.
+	 * Уровни автоматически подстраиваются под громкость трека (см. _follow): тихая и громкая музыка дают одинаковый размах 0..1,
+	 * поэтому порог срабатывания не нужно подбирать заново под каждый трек.
+	 */
 	_analyse(dt) {
 		const a = this.state.audio;
-		let bass = 0, mid = 0, high = 0, beat = 0;
+		let bass = 0, mid = 0, high = 0;
 		if (this.analyser && this.playing) {
 			this.analyser.getByteFrequencyData(this.freqData);
 			const n = this.freqData.length;
-			const e1 = Math.floor(n * 0.05), e2 = Math.floor(n * 0.25), e3 = Math.floor(n * 0.7);
-			let b = 0, m = 0, h = 0;
-			for (let i = 0; i < e1; i++) b += this.freqData[i];
-			for (let i = e1; i < e2; i++) m += this.freqData[i];
-			for (let i = e2; i < e3; i++) h += this.freqData[i];
-			const g = a.gain * 1.15;
-			const bRaw = Math.min(1, (b / (e1 * 255)) * g);
-			const mRaw = Math.min(1, (m / ((e2 - e1) * 255)) * g * 1.2);
-			const hRaw = Math.min(1, (h / ((e3 - e2) * 255)) * g * 1.8);
-			this._beatHist[this._beatIdx++ % this._beatHist.length] = bRaw;
+			const sr = this.ctx.sampleRate;
+			const binHz = sr / this.analyser.fftSize;
+			const bin = (hz) => Math.min(n, Math.max(0, Math.round(hz / binHz)));
+			const mean = (i0, i1) => {
+				let s = 0;
+				for (let i = i0; i < i1; i++) s += this.freqData[i];
+				return s / (Math.max(1, i1 - i0) * 255);
+			};
+			// настоящие границы: бас 30-250 Гц, середина 250-4000 Гц, верх 4-12 кГц
+			const bRaw = mean(bin(30), Math.max(bin(30) + 1, bin(250)));
+			const mRaw = mean(bin(250), bin(4000));
+			const hRaw = mean(bin(4000), bin(12000));
+			const auto = a.auto !== false;
+			const g = a.gain;
+			const AG = (this._agc ||= {});
+			const norm = (key, raw) => (auto ? clamp(this._follow(AG, key, raw, dt, 0.1) * (g / 1.3), 0, 1) : clamp(raw * g * 1.15 * (key === 'mid' ? 1.2 : key === 'high' ? 1.8 : 1), 0, 1));
+			const bN = norm('bass', bRaw);
+			const mN = norm('mid', mRaw);
+			const hN = norm('high', hRaw);
+			// удар: всплеск энергии в басах (положительная разность спектра) выше скользящего порога
+			const b0 = bin(30), b1 = Math.max(b0 + 2, bin(220));
+			const prev = (this._prevBass ||= new Float32Array(n));
+			let flux = 0;
+			for (let i = b0; i < b1; i++) {
+				const d = this.freqData[i] - prev[i];
+				if (d > 0) flux += d;
+				prev[i] = this.freqData[i];
+			}
+			flux /= (b1 - b0) * 255;
+			const H = this._beatHist;
+			H[this._beatIdx++ % H.length] = flux;
 			let avg = 0;
-			for (const v of this._beatHist) avg += v;
-			avg /= this._beatHist.length;
+			for (let i = 0; i < H.length; i++) avg += H[i];
+			avg /= H.length;
+			let varr = 0;
+			for (let i = 0; i < H.length; i++) varr += (H[i] - avg) * (H[i] - avg);
+			const sd = Math.sqrt(varr / H.length);
+			const thr = avg + Math.max(0.012, sd * 1.35);
 			const now = performance.now();
-			if (bRaw > avg * 1.3 && bRaw > 0.3 && now - this._lastBeat > 190) {
+			if (flux > thr && bN > 0.12 && now - this._lastBeat > 160) {
 				this._lastBeat = now;
-				this.levels.beat = 1;
+				this.levels.beat = clamp(0.65 + (flux - thr) / Math.max(thr, 0.02), 0.65, 1);
 				this._markBeat();
 			}
-			const kA = 1 - Math.pow(0.001, dt * 6); // быстрая атака
-			const kR = 1 - Math.pow(0.001, dt * 2.2); // плавный спад
+			const kA = 1 - Math.pow(0.001, dt * 9); // быстрая атака
+			const kR = 1 - Math.pow(0.001, dt * 2.6); // плавный спад
 			const lag = (cur, raw) => cur + (raw - cur) * (raw > cur ? kA : kR);
-			bass = lag(this.levels.bass, bRaw);
-			mid = lag(this.levels.mid, mRaw);
-			high = lag(this.levels.high, hRaw);
-			// спектр: 64 полосы по логарифмической шкале
+			bass = lag(this.levels.bass, bN);
+			mid = lag(this.levels.mid, mN);
+			high = lag(this.levels.high, hN);
+			// спектр: 64 полосы по квадратичной шкале частот (та же ось, что у полоски выбора частот)
+			const gs = a.gain * 1.15;
 			for (let i = 0; i < 64; i++) {
 				const f0 = Math.floor(Math.pow(i / 64, 2) * n * 0.55);
 				const f1 = Math.max(f0 + 1, Math.floor(Math.pow((i + 1) / 64, 2) * n * 0.55));
 				let s = 0;
 				for (let j = f0; j < f1; j++) s += this.freqData[j];
-				const v = Math.min(1, (s / ((f1 - f0) * 255)) * g * (1 + i / 40));
+				const v = Math.min(1, (s / ((f1 - f0) * 255)) * gs * (1 + i / 40));
 				this.spec[i] += (v - this.spec[i]) * (v > this.spec[i] ? 0.6 : 0.15);
 			}
 		} else if (a.idle) {
@@ -280,24 +311,84 @@ export class AudioPart {
 			high = this.levels.high * (1 - k);
 			for (let i = 0; i < 64; i++) this.spec[i] *= 1 - k;
 		}
-		beat = this.levels.beat * Math.pow(0.0008, dt);
+		const beat = this.levels.beat * Math.pow(0.0008, dt);
 		this.levels = { bass, mid, high, beat };
 		const d = this.specTex.image.data;
 		for (let i = 0; i < 64; i++) d[i] = Math.round(clamp(this.spec[i], 0, 1) * 255);
 		this.specTex.needsUpdate = true;
 	}
 
-	/** Сила слоя с учётом реакции на звук: depth=0 даёт постоянное значение, depth=1 следует за полосой */
-	/** Текущий уровень звука в полосе эффекта 0..1: готовая полоса или свой диапазон спектра */
+	/**
+	 * Автоподстройка громкости: уровень делится на удвоенное скользящее среднее (около 5 секунд). Ровный звук даёт середину шкалы,
+	 * а удары и всплески, вдвое громче среднего, дотягиваются до единицы, на любой громкости трека.
+	 * Нижняя граница floor не даёт раздувать тишину и шипение до полной силы.
+	 * @param {object} store где хранятся средние, key: имя в нём
+	 */
+	_follow(store, key, raw, dt, floor) {
+		let m = store[key];
+		if (m === undefined || m === null) m = raw;
+		// первые секунды среднее подтягивается быстрее: иначе после начала музыки уровень долго зашкаливает
+		const age = (store[key + '#'] = (store[key + '#'] || 0) + dt);
+		m += (raw - m) * Math.min(1, dt / (age < 4 ? 0.7 : 5));
+		store[key] = m;
+		return raw / Math.max(floor, m * 1.8);
+	}
+
+	/**
+	 * Текущий уровень звука в полосе эффекта 0..1: готовая полоса или свой диапазон спектра.
+	 * Свой диапазон тоже автоподстраивается: узкая полоса в верхах даёт тот же размах, что и бас.
+	 * Считается раз за кадр (повторные вызовы возвращают то же значение) и копит историю для автопорога.
+	 */
 	_bandLevel(l) {
+		const envs = (this._bandEnvs ||= new WeakMap());
+		let e = envs.get(l);
+		if (!e) {
+			e = { t: -1, v: 0, pk: {}, hist: new Float32Array(180), hi: 0, n: 0 };
+			envs.set(l, e);
+		}
+		if (e.t === this._time && e.band === l.band && e.lo === l.lo && e.hi2 === l.hi) return e.v;
+		const dt = e.t < 0 ? 0.016 : Math.min(0.1, Math.max(0, this._time - e.t));
+		let v;
 		if (l.band === 'custom') {
 			const i0 = Math.max(0, Math.floor(l.lo * 64));
 			const i1 = Math.min(64, Math.max(i0 + 1, Math.ceil(l.hi * 64)));
 			let s = 0;
 			for (let i = i0; i < i1; i++) s += this.spec[i];
-			return Math.min(1, (s / (i1 - i0)) * 1.5);
+			const raw = s / (i1 - i0);
+			v = this.state.audio.auto !== false ? Math.min(1, this._follow(e.pk, 'c', raw, dt, 0.08)) : Math.min(1, raw * 1.5);
+		} else {
+			v = this.levels[l.band] || 0;
 		}
-		return this.levels[l.band] || 0;
+		e.t = this._time;
+		e.band = l.band;
+		e.lo = l.lo;
+		e.hi2 = l.hi;
+		e.v = v;
+		if (dt > 0) {
+			e.hist[e.hi++ % e.hist.length] = v;
+			e.n = Math.min(e.hist.length, e.n + 1);
+		}
+		return v;
+	}
+
+	/**
+	 * Порог «по порогу» из недавней истории уровня этого эффекта: между фоновым уровнем и пиками.
+	 * Возвращает null, если звука было мало (эффект не слушал или музыка не играла).
+	 */
+	autoThreshold(l) {
+		const e = this._bandEnvs?.get(l);
+		if (!e || e.n < 60) return null;
+		const arr = Array.from(e.hist.subarray(0, e.n)).sort((x, y) => x - y);
+		const q = (p) => arr[Math.min(arr.length - 1, Math.floor(arr.length * p))];
+		const lo = q(0.5);
+		const hi = q(0.95);
+		if (hi < 0.12) return null;
+		return clamp(lo + (hi - lo) * 0.6, 0.12, 0.9);
+	}
+
+	/** Идёт ли сейчас звук, который слышат эффекты (иначе реакция «не работает»: включите музыку или микрофон) */
+	get soundActive() {
+		return !!(this.playing && this.analyser) || !!this.state.audio.idle;
 	}
 
 	/** Частота (Гц) для положения на оси спектра 0..1 */

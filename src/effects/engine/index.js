@@ -77,7 +77,7 @@ export class EffectsEngine {
 		this.audioName = '';
 		this.levels = { bass: 0, mid: 0, high: 0, beat: 0 };
 		this.spec = new Float32Array(64);
-		this._beatHist = new Float32Array(24);
+		this._beatHist = new Float32Array(48);
 		this._beatIdx = 0;
 		this._lastBeat = 0;
 
@@ -343,7 +343,9 @@ export class EffectsEngine {
 			return l.amount * e.v * g;
 		}
 		if (!l.react) return l.amount * g;
-		return l.amount * (1 - l.react + l.react * b * 2) * g;
+		// пока звука нет, эффект держится на своей обычной силе (середина шкалы), а не затихает: иначе без музыки кажется, что он сломан
+		const lvl = this.soundActive ? b : 0.5;
+		return l.amount * (1 - l.react + l.react * lvl * 2) * g;
 	}
 
 	/** Заморозка: время эффектов и звук стоят, пока открыто окно экспорта или справка; после них всё продолжается с того же места */

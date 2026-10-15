@@ -66,7 +66,7 @@ this.sourceType = 'synth';
 this.audioName = '';
 this.levels = { bass: 0, mid: 0, high: 0, beat: 0 };
 this.spec = new Float32Array(64);
-this._beatHist = new Float32Array(24);
+this._beatHist = new Float32Array(48);
 this._beatIdx = 0;
 this._lastBeat = 0;
 this.points = null;
@@ -299,7 +299,8 @@ e.v += ((e.open ? 1 : 0) - e.v) * (1 - Math.exp(-dt / tc));
 return l.amount * e.v * g;
 }
 if (!l.react) return l.amount * g;
-return l.amount * (1 - l.react + l.react * b * 2) * g;
+const lvl = this.soundActive ? b : 0.5;
+return l.amount * (1 - l.react + l.react * lvl * 2) * g;
 }
 setFrozen(v) {
 v = !!v;

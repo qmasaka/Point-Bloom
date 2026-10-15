@@ -75375,9 +75375,9 @@ __def(__exports, 'FX_GROUP_NAMES', () => FX_GROUP_NAMES);
 const { perf } = __req('src/core/perf.js');
 const FX_ACTIONS = [['none', 'Без действия'], ['push', 'Отталкивание: от ладони'], ['pull', 'Притягивание: к ладони'], ['swirl', 'Вихрь: вращение пальцами'], ['rotate', 'Вращение: поворот модели'], ['sculpt', 'Лепка: изменение формы'], ['gravity', 'Гравитация: притяжение к руке'], ['wave', 'Ударная волна: фронт от руки'], ['break', 'Распад: пока держишь жест'], ['dissolve', 'Растворение: пока держишь жест'], ['brush', 'Световой штрих: след в воздухе'], ['slicecut', 'Срез рукой: секущая плоскость'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:twist', 'Эффект: Деформация'], ['fx:blast', 'Эффект: Взрыв по биту'], ['fx:flow', 'Эффект: Течение'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
 const FX_LAYERS = [
-{ id: 'frames', group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Видео раскладывается на кадры из точек, кадры собираются в блок. Показ идёт за таймлайном', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, thin: 0, showMode: 'off', showLen: 0.12, hero: 150000, future: 'hide', gain: 1, sat: 0, bsize: 1.5, track: 'grow', tone: 'all', toneCut: 0.5, tail: 100, tailSoft: 0.6 }, extras: [{ type: 'title', label: 'Раскладка' }, { key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: слои вглубь'], ['wall', 'Стена: плоская сетка'], ['film', 'Киноплёнка: кадры в ряд'], ['tunnel', 'Туннель: перспектива вглубь']], relayout: true }, { key: 'track', label: 'Что в стопке', type: 'seg', options: [['grow', 'Пройденное'], ['full', 'Весь ряд']], when: ['layout', ['stack', 'tunnel']] }, { key: 'depth', label: 'Глубина', min: 0.2, max: 4, step: 0.1, relayout: true, when: ['layout', ['stack', 'tunnel']] }, { type: 'title', label: 'Показ' }, { key: 'showMode', label: 'Как показывать', type: 'select', options: [['off', 'Статично: все кадры как есть'], ['peel', 'Листание: слёт пройденных'], ['projector', 'Проектор: бегущий луч'], ['trail', 'Шлейф: затухающий след']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Редкие'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { key: 'thin', label: 'Прореживать остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { type: 'title', label: 'Хвост' }, { key: 'tail', label: 'Длина хвоста, доля видео', min: 5, max: 100, step: 1, int: true, unit: '%' }, { key: 'tailSoft', label: 'Как гаснет хвост: резко ... плавно', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Цвет остальных кадров' }, { key: 'sat', label: 'Насыщенность (0 это цвета видео)', min: -1, max: 1, step: 0.05 }, { key: 'gain', label: 'Яркость', min: 0.4, max: 3, step: 0.05 }, { key: 'tone', label: 'Какие тона оставить', type: 'seg', options: [['all', 'Все'], ['light', 'Светлые'], ['dark', 'Тёмные']] }, { key: 'toneCut', label: 'Граница светлого и тёмного', min: 0.05, max: 0.95, step: 0.01, when: ['tone', ['light', 'dark']] }, { key: 'bsize', label: 'Размер точек', min: 0.5, max: 4, step: 0.1 }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
+{ id: 'frames', sound: false, group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Видео раскладывается на кадры из точек, кадры собираются в блок. Показ идёт за таймлайном', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, thin: 0, showMode: 'off', showLen: 0.12, hero: 150000, future: 'hide', gain: 1, sat: 0, bsize: 1.5, track: 'grow', tone: 'all', toneCut: 0.5, tail: 100, tailSoft: 0.6 }, extras: [{ type: 'title', label: 'Раскладка' }, { key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: слои вглубь'], ['wall', 'Стена: плоская сетка'], ['film', 'Киноплёнка: кадры в ряд'], ['tunnel', 'Туннель: перспектива вглубь']], relayout: true }, { key: 'track', label: 'Что в стопке', type: 'seg', options: [['grow', 'Пройденное'], ['full', 'Весь ряд']], when: ['layout', ['stack', 'tunnel']] }, { key: 'depth', label: 'Глубина', min: 0.2, max: 4, step: 0.1, relayout: true, when: ['layout', ['stack', 'tunnel']] }, { type: 'title', label: 'Показ' }, { key: 'showMode', label: 'Как показывать', type: 'select', options: [['off', 'Статично: все кадры как есть'], ['peel', 'Листание: слёт пройденных'], ['projector', 'Проектор: бегущий луч'], ['trail', 'Шлейф: затухающий след']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Редкие'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { key: 'thin', label: 'Прореживать остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { type: 'title', label: 'Хвост' }, { key: 'tail', label: 'Длина хвоста, доля видео', min: 5, max: 100, step: 1, int: true, unit: '%' }, { key: 'tailSoft', label: 'Как гаснет хвост: резко ... плавно', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Цвет остальных кадров' }, { key: 'sat', label: 'Насыщенность (0 это цвета видео)', min: -1, max: 1, step: 0.05 }, { key: 'gain', label: 'Яркость', min: 0.4, max: 3, step: 0.05 }, { key: 'tone', label: 'Какие тона оставить', type: 'seg', options: [['all', 'Все'], ['light', 'Светлые'], ['dark', 'Тёмные']] }, { key: 'toneCut', label: 'Граница светлого и тёмного', min: 0.05, max: 0.95, step: 0.01, when: ['tone', ['light', 'dark']] }, { key: 'bsize', label: 'Размер точек', min: 0.5, max: 4, step: 0.1 }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
 { id: 'curl', group: 'Движение', name: 'Вихри и течение', icon: 'tornado', hint: 'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)', max: 2, def: { on: false, amount: 1, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8, fscale: 1.6, fdir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['noise', 'Вихри: хаотичное движение'], ['stream', 'Поток: движение с возвратом'], ['orbit', 'Кольца: вращение слоёв'], ['surface', 'Течение: скольжение по форме']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1, when: ['mode', ['noise', 'stream', 'orbit']] }, { key: 'fscale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1, when: ['mode', ['surface']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }, { key: 'fdir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['surface']] }] },
-{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается, осколки падают на пол с отскоками и собираются обратно', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
+{ id: 'physics', sound: false, group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается, осколки падают на пол с отскоками и собираются обратно', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
 { id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма отзывается на звук. Виды: колонки эквалайзера, горный рельеф, шерсть по кругу, шерсть по высоте', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, mode: 'bars', bars: 24 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['bars', 'Колонки: полосы эквалайзера'], ['terrain', 'Рельеф: звуковой ландшафт'], ['wool', 'Радиальные иглы: по кругу'], ['height', 'Вертикальные иглы: по высоте']] }, { key: 'bars', label: 'Число колонок', min: 8, max: 64, step: 1, int: true, when: ['mode', ['bars']] }] },
 { id: 'wave', group: 'Движение', name: 'Волны', icon: 'waves', hint: 'Волны бегут по форме. Виды: капли, кольца, плоская волна, спираль вокруг формы, гребни вверх', max: 2, def: { on: false, amount: 0.7, band: 'none', react: 0.8, freq: 5, speed: 1, period: 1.4, mode: 'rings', origin: 'center', decay: 1.2, dir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['drops', 'Капли: импульсы по ритму'], ['rings', 'Кольца: круговой фронт'], ['plane', 'Плоская волна: направленный фронт'], ['spiral', 'Спираль: закрутка вокруг формы'], ['rise', 'Гребни: вертикальный подъём']] }, { key: 'freq', label: 'Масштаб (частота)', min: 1, max: 14, step: 0.5 }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }, { key: 'origin', label: 'Откуда', type: 'seg', options: [['center', 'Центр'], ['cursor', 'Курсор, рука']], when: ['mode', ['rings']] }, { key: 'period', label: 'Капля раз в, с', min: 0.3, max: 4, step: 0.1, when: ['mode', ['drops']] }, { key: 'decay', label: 'Затухание', min: 0.2, max: 4, step: 0.1, when: ['mode', ['drops']] }, { key: 'dir', label: 'Направление', min: 0, max: 6.28, step: 0.1, when: ['mode', ['plane']] }] },
 { id: 'twist', group: 'Движение', name: 'Деформация', icon: 'wind', hint: 'Форма меняет очертания. Виды: скрутка, изгиб, конус, змейка, дыхание, желе', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'twist', speed: 0, jmode: 'auto', jperiod: 1.8, jfreq: 8, jdamp: 1.6, jsquash: 0.5 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['twist', 'Скрутка: осевое вращение'], ['bend', 'Изгиб: боковое отклонение'], ['taper', 'Конус: сужение к вершине'], ['snake', 'Змейка: волновой изгиб'], ['breathe', 'Дыхание: радиальная пульсация'], ['jelly', 'Желе: упругая вибрация']] }, { key: 'speed', label: 'Покачивание', min: 0, max: 3, step: 0.05, when: ['mode', ['twist', 'bend', 'taper', 'snake', 'breathe']] }, { key: 'jmode', label: 'Что вызывает дрожь', type: 'seg', options: [['auto', 'Сама по таймеру'], ['motion', 'Движение модели']], when: ['mode', ['jelly']] }, { key: 'jperiod', label: 'Толчок раз в, с', min: 0.4, max: 5, step: 0.1, when: ['mode', ['jelly']] }, { key: 'jfreq', label: 'Частота дрожи', min: 3, max: 16, step: 0.5, when: ['mode', ['jelly']] }, { key: 'jdamp', label: 'Затухание', min: 0.5, max: 5, step: 0.1, when: ['mode', ['jelly']] }, { key: 'jsquash', label: 'Сплющивание', min: 0, max: 1, step: 0.05, when: ['mode', ['jelly']] }] },
@@ -75402,7 +75402,7 @@ const FX_LAYERS = [
 { key: 'pulseSpeed', label: 'Скорость импульсов', min: 0.5, max: 4.0, step: 0.2 }
 ] },
 { id: 'slice', group: 'Графика', name: 'Срез', icon: 'scan', hint: 'По форме идёт срез. Виды: лазер (линии), рельеф (точки на линиях), развёртка (форма проявляется за плоскостью)', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'model' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
-{ id: 'feedback', group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой световой хвост из прошлых кадров. Виды: выдержка, туннель', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
+{ id: 'feedback', sound: false, group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой световой хвост из прошлых кадров. Виды: выдержка, туннель', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
 { id: 'datamosh', group: 'Графика', name: 'Датамош', icon: 'checkerboard', hint: 'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'bleed', trigger: 'timer', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, stale: 0.2, jit: 0.4 }, extras: [
 { type: 'title', label: 'Сбой' },
 { type: 'button', label: 'Сломать кадр сейчас', act: 'moshKick', icon: 'lightning' },
@@ -75435,7 +75435,7 @@ const FX_LAYERS = [
 { id: 'tracking', group: 'Взаимодействие', name: 'Рамки слежения', icon: 'bounding-box', hint: 'Рамки следят за точками формы и могут её касаться: подъём, вихрь, втягивание и другое', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.4, count: 8, size: 70, opacity: 1, speed: 1, shape: 'corners', fill: 'none', color: 'auto', thick: 1.5, labels: 'on', labelSize: 1, labelInfo: 'full', labelBg: 'off', lines: 'on', lineStyle: 'dashed', lineMode: 'nearest', lineWidth: 1, lineAlpha: 0.5, follow: 'wander', mark: 'none', touch: 'bump', force: 1, radius: 0.35, memory: 1.5 }, extras: [{ type: 'title', label: 'Рамки' }, { key: 'count', label: 'Сколько рамок', min: 2, max: 16, step: 1, int: true }, { key: 'size', label: 'Размер рамки', min: 8, max: 160, step: 1, int: true }, { key: 'opacity', label: 'Прозрачность рамок', min: 0.05, max: 1, step: 0.05 }, { key: 'speed', label: 'Скорость перемещения рамок', min: 0.1, max: 3, step: 0.05 }, { key: 'shape', label: 'Вид рамки', type: 'seg', options: [['corners', 'Углы'], ['box', 'Рамка'], ['circle', 'Круг'], ['cross', 'Прицел']] }, { key: 'fill', label: 'Заливка', type: 'seg', options: [['none', 'Нет'], ['tint', 'Тон'], ['hatch', 'Штрих']] }, { key: 'color', label: 'Цвет', type: 'color' }, { key: 'thick', label: 'Толщина линий', min: 0.5, max: 4, step: 0.25 }, { key: 'follow', label: 'Куда смотрят рамки', type: 'seg', options: [['wander', 'Бродят'], ['pointer', 'За руками']] }, { type: 'title', label: 'Подписи' }, { key: 'labels', label: 'Подписи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'labelInfo', label: 'Что написано', type: 'select', options: [['full', 'Полная телеметрия: ID, XYZ, скорость'], ['id', 'Только ID: номер объекта'], ['conf', 'ID и точность: степень уверенности'], ['coords', 'Координаты: положение X Y Z'], ['speed', 'ID и скорость: вектор движения'], ['bars', 'ID и шкалы: полосы параметров'], ['dist', 'Дистанция: расстояние до центра']], when: ['labels', ['on']] }, { key: 'labelSize', label: 'Масштаб текста', min: 0.5, max: 3, step: 0.1, when: ['labels', ['on']] }, { key: 'labelBg', label: 'Подложка под текст', type: 'seg', options: [['off', 'Нет'], ['on', 'Есть']], when: ['labels', ['on']] }, { type: 'title', label: 'Связи между рамками' }, { key: 'lines', label: 'Линии связи', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'lineMode', label: 'Кто с кем связан', type: 'select', options: [['nearest', 'Ближайшие пары: связь с соседом'], ['chain', 'Цепочка: последовательный контур'], ['all', 'Полная сетка: связи всех близких'], ['hub', 'Звезда: лучи к центральной рамке']], when: ['lines', ['on']] }, { key: 'lineStyle', label: 'Вид линии', type: 'select', options: [['dashed', 'Штриховая: пунктирные линии'], ['solid', 'Сплошная: непрерывные линии'], ['curve', 'Дуга: плавные кривые'], ['elbow', 'Ломаная: прямоугольные углы'], ['dots', 'Точки: точечный пунктир'], ['pulse', 'Импульс: бегущие световые огни']], when: ['lines', ['on']] }, { key: 'lineWidth', label: 'Толщина связей', min: 0.5, max: 4, step: 0.25, when: ['lines', ['on']] }, { key: 'lineAlpha', label: 'Яркость связей', min: 0.1, max: 1, step: 0.05, when: ['lines', ['on']] }, { type: 'title', label: 'Эффект в области рамок' }, { key: 'mark', label: 'Что происходит', type: 'select', options: [['none', 'Без эффекта: прозрачная область'], ['invert', 'Инверсия: негатив цветов'], ['rainbow', 'Спектр: радужный градиент'], ['hole', 'Отверстие: пульсирующая пустота'], ['lens', 'Линза: оптическое увеличение'], ['pixel', 'Пиксели: блочная мозаика'], ['glow', 'Свечение: яркий световой ореол']] }, { type: 'title', label: 'Касание формы' }, { key: 'touch', label: 'Действие', type: 'select', options: [['none', 'Без касания: только визуальная рамка'], ['bump', 'Подъём: выталкивание вперёд'], ['swirl', 'Вихрь: закручивание точек'], ['pull', 'Втягивание: притяжение к центру'], ['push', 'Отталкивание: выталкивание наружу'], ['ripple', 'Рябь: волны от рамки'], ['melt', 'Таяние: стекание точек вниз'], ['scatter', 'Разлёт: распад на искры'], ['vanish', 'Растворение: исчезновение точек']] }, { key: 'force', label: 'Сила касания', min: 0.2, max: 2, step: 0.05 }, { key: 'radius', label: 'Радиус области', min: 0.02, max: 0.9, step: 0.01 }, { key: 'memory', label: 'Память следа, с', min: 0, max: 6, step: 0.1 }] },
 { id: 'cursor', group: 'Взаимодействие', name: 'Курсор', icon: 'cursor-click', hint: 'Мышь отталкивает или притягивает точки. Настраиваются радиус и действие', max: 2, def: { on: true, amount: 1, band: 'none', react: 0, radius: 0.9, mode: 'repel' }, extras: [{ key: 'radius', label: 'Радиус', min: 0.05, max: 2, step: 0.01 }, { key: 'mode', label: 'Действие', type: 'seg', options: [['repel', 'Отталкивать'], ['attract', 'Притягивать']] }] },
 { id: 'brush', group: 'Взаимодействие', name: 'Кисть', icon: 'paint-brush', hint: 'Акварель по форме: рисуйте курсором или щипком, краска смешивается как настоящая, растекается и подсыхает с тёмным краем. Есть ластик и «смыть всё»', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, tool: 'paint', color: 'auto', lock: 'on', radius: 0.14, pigment: 0.6, water: 0.5, dry: 3, edge: 0.5, grain: 0.5, mode: 'paper' }, extras: [{ type: 'title', label: 'Мазок' }, { key: 'tool', label: 'Инструмент', type: 'seg', options: [['paint', 'Краска'], ['lift', 'Ластик']] }, { key: 'lock', label: 'Камера при рисовании', type: 'seg', options: [['on', 'Стоит'], ['off', 'Крутится']] }, { key: 'color', label: 'Цвет краски', type: 'color' }, { key: 'radius', label: 'Размер кисти', min: 0.03, max: 0.6, step: 0.01 }, { key: 'pigment', label: 'Густота краски', min: 0.1, max: 1, step: 0.05, when: ['tool', ['paint']] }, { type: 'title', label: 'Растекание' }, { key: 'water', label: 'Вода: насколько растекается', min: 0, max: 1, step: 0.05 }, { key: 'dry', label: 'Время растекания, с', min: 0.5, max: 8, step: 0.5 }, { key: 'edge', label: 'Тёмный край у мазка', min: 0, max: 1, step: 0.05, when: ['tool', ['paint']] }, { type: 'title', label: 'Бумага' }, { key: 'mode', label: 'Краска ложится', type: 'seg', options: [['paper', 'На бумагу'], ['glaze', 'Прозрачно на цвет']] }, { key: 'grain', label: 'Зернистость бумаги', min: 0, max: 1, step: 0.05 }] },
-{ id: 'camTrack', group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки, у каждого жеста своё действие: ладонь, кулак, щипок, указательный палец', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush', g_peace: 'wave', g_rock: 'fx:glitch', g_thumb: 'gravity', power: 0.35, radius: 0.35, depth: 0.85, spin: 5, inertia: 0.6, axis: 'y', clay: 0.5, elastic: 0.6, stretch: 'off', keep: 'on', smooth: 0.5, sens: 0.6, hold: 0.12, handsN: '2', skeleton: 'on', preview: 'on' }, extras: [{ type: 'title', label: 'Что делает жест' }, { key: 'g_palm', label: 'Ладонь (пальцы раскрыты)', type: 'select', options: FX_ACTIONS }, { key: 'g_fist', label: 'Кулак', type: 'select', options: FX_ACTIONS }, { key: 'g_pinch', label: 'Щипок (большой + указательный)', type: 'select', options: FX_ACTIONS }, { key: 'g_point', label: 'Указательный палец', type: 'select', options: FX_ACTIONS }, { key: 'g_peace', label: 'Два пальца (знак мира)', type: 'select', options: FX_ACTIONS }, { key: 'g_rock', label: 'Рога (указательный и мизинец)', type: 'select', options: FX_ACTIONS }, { key: 'g_thumb', label: 'Большой палец вверх', type: 'select', options: FX_ACTIONS }, { type: 'title', label: 'Касание пальцами' }, { key: 'power', label: 'Мощность', min: 0.05, max: 1.5, step: 0.05 }, { key: 'radius', label: 'Радиус', min: 0.02, max: 0.9, step: 0.01 }, { key: 'depth', label: 'Глубина касания', min: 0.1, max: 1.5, step: 0.05 }, { type: 'title', label: 'Вращение' }, { key: 'spin', label: 'Скорость', min: 1, max: 14, step: 0.5 }, { key: 'inertia', label: 'Инерция', min: 0, max: 0.98, step: 0.02 }, { key: 'axis', label: 'Оси', type: 'seg', options: [['y', 'Вокруг'], ['xy', 'Свободно']] }, { type: 'title', label: 'Лепка' }, { key: 'clay', label: 'Размер куска глины', min: 0.05, max: 1.2, step: 0.01 }, { key: 'elastic', label: 'Упругость (возврат формы)', min: 0, max: 3, step: 0.1 }, { type: 'title', label: 'Две руки' }, { key: 'stretch', label: 'Меняют размер формы', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']] }, { key: 'keep', label: 'Запоминать размер', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }, { type: 'title', label: 'Распознавание и показ' }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'hold', label: 'Задержка жеста, с', min: 0, max: 0.5, step: 0.02 }, { key: 'handsN', label: 'Сколько рук ищет', type: 'seg', options: [['2', 'Две'], ['1', 'Одна, быстрее']] }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
+{ id: 'camTrack', sound: false, group: 'Взаимодействие', name: 'Руки (камера)', icon: 'hand', hint: 'Камера видит руки, у каждого жеста своё действие: ладонь, кулак, щипок, указательный палец', max: 1.5, def: { on: false, amount: 1.0, band: 'none', react: 0, g_palm: 'push', g_fist: 'break', g_pinch: 'rotate', g_point: 'brush', g_peace: 'wave', g_rock: 'fx:glitch', g_thumb: 'gravity', power: 0.35, radius: 0.35, depth: 0.85, spin: 5, inertia: 0.6, axis: 'y', clay: 0.5, elastic: 0.6, stretch: 'off', keep: 'on', smooth: 0.5, sens: 0.6, hold: 0.12, handsN: '2', skeleton: 'on', preview: 'on' }, extras: [{ type: 'title', label: 'Что делает жест' }, { key: 'g_palm', label: 'Ладонь (пальцы раскрыты)', type: 'select', options: FX_ACTIONS }, { key: 'g_fist', label: 'Кулак', type: 'select', options: FX_ACTIONS }, { key: 'g_pinch', label: 'Щипок (большой + указательный)', type: 'select', options: FX_ACTIONS }, { key: 'g_point', label: 'Указательный палец', type: 'select', options: FX_ACTIONS }, { key: 'g_peace', label: 'Два пальца (знак мира)', type: 'select', options: FX_ACTIONS }, { key: 'g_rock', label: 'Рога (указательный и мизинец)', type: 'select', options: FX_ACTIONS }, { key: 'g_thumb', label: 'Большой палец вверх', type: 'select', options: FX_ACTIONS }, { type: 'title', label: 'Касание пальцами' }, { key: 'power', label: 'Мощность', min: 0.05, max: 1.5, step: 0.05 }, { key: 'radius', label: 'Радиус', min: 0.02, max: 0.9, step: 0.01 }, { key: 'depth', label: 'Глубина касания', min: 0.1, max: 1.5, step: 0.05 }, { type: 'title', label: 'Вращение' }, { key: 'spin', label: 'Скорость', min: 1, max: 14, step: 0.5 }, { key: 'inertia', label: 'Инерция', min: 0, max: 0.98, step: 0.02 }, { key: 'axis', label: 'Оси', type: 'seg', options: [['y', 'Вокруг'], ['xy', 'Свободно']] }, { type: 'title', label: 'Лепка' }, { key: 'clay', label: 'Размер куска глины', min: 0.05, max: 1.2, step: 0.01 }, { key: 'elastic', label: 'Упругость (возврат формы)', min: 0, max: 3, step: 0.1 }, { type: 'title', label: 'Две руки' }, { key: 'stretch', label: 'Меняют размер формы', type: 'seg', options: [['off', 'Нет'], ['on', 'Да']] }, { key: 'keep', label: 'Запоминать размер', type: 'seg', options: [['on', 'Да'], ['off', 'Нет']] }, { type: 'title', label: 'Распознавание и показ' }, { key: 'smooth', label: 'Плавность', min: 0, max: 0.95, step: 0.05 }, { key: 'sens', label: 'Чувствительность', min: 0.1, max: 1, step: 0.05 }, { key: 'hold', label: 'Задержка жеста, с', min: 0, max: 0.5, step: 0.02 }, { key: 'handsN', label: 'Сколько рук ищет', type: 'seg', options: [['2', 'Две'], ['1', 'Одна, быстрее']] }, { key: 'skeleton', label: 'Руки на сцене', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'preview', label: 'Окно камеры', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }] },
 { id: 'gravity', group: 'Взаимодействие', name: 'Гравитация', icon: 'planet', hint: 'Точки кружат вокруг центра. Виды: галактика, кольца, квазар (падение в центр и струи), рой, невесомость', max: 1, def: { on: false, amount: 0.8, band: 'none', react: 0.4, mode: 'orbit', target: 'center', radius: 2.4, speed: 1, tilt: 0.5, precess: 0.15, flatten: 0.6, jet: 1.4, spread: 0.5 }, extras: [{ key: 'mode', label: 'Вид поля', type: 'select', options: [['orbit', 'Спиральная галактика: вращающийся диск'], ['rings', 'Планетарные кольца: встречные орбиты'], ['hole', 'Квазар: воронка и осевые джеты'], ['swarm', 'Сферический рой: свободные орбиты'], ['float', 'Невесомость: свободный дрейф']] }, { type: 'note', when: ['mode', ['orbit']], text: 'Форма раскручивается диском: у центра быстрее, на краю медленнее.' }, { type: 'note', when: ['mode', ['rings']], text: 'Форма раскладывается на круглые кольца, соседние вращаются в разные стороны, как у планеты с кольцами.' }, { type: 'note', when: ['mode', ['hole']], text: 'Точки по спирали падают в центр, а затем вылетают двумя струями вдоль оси.' }, { type: 'note', when: ['mode', ['swarm']], text: 'Каждая точка летает по своей наклонной орбите, получается шар из орбит, как у атома.' }, { type: 'note', when: ['mode', ['float']], text: 'Точки плавно покачиваются и расходятся, как в невесомости.' }, { type: 'title', label: 'Где центр' }, { key: 'target', label: 'Центр поля', type: 'seg', options: [['cursor', 'Курсор, рука'], ['center', 'Центр формы']] }, { key: 'radius', label: 'Радиус действия', min: 0.1, max: 3.5, step: 0.05 }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.1 }, { key: 'spread', label: 'Размах', min: 0, max: 1, step: 0.05, when: ['mode', ['swarm', 'float']] }, { key: 'flatten', label: 'Сплющивание в диск', min: 0, max: 0.95, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'tilt', label: 'Наклон диска', min: 0, max: 1.5, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'precess', label: 'Покачивание оси', min: 0, max: 1, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'jet', label: 'Длина струй', min: 0, max: 3, step: 0.1, when: ['mode', ['hole']] }] },
 ];
 const FX_GROUPS = {
@@ -75492,14 +75492,14 @@ const FX_SHAPES = [
 ];
 const BANDS = [
 { id: 'none', label: '—', title: 'Без реакции на звук' },
-{ id: 'bass', label: 'Бас', title: 'Низкие частоты: барабан, бас' },
-{ id: 'mid', label: 'Сер.', title: 'Средние частоты: голос, синтезатор' },
-{ id: 'high', label: 'Верх', title: 'Высокие частоты: тарелки, шипение' },
+{ id: 'bass', label: 'Бас', title: 'Низкие частоты (30–250 Гц): бочка, бас' },
+{ id: 'mid', label: 'Сер.', title: 'Средние частоты (250–4000 Гц): голос, синтезатор' },
+{ id: 'high', label: 'Верх', title: 'Высокие частоты (4–12 кГц): тарелки, шипение' },
 { id: 'beat', label: 'Бит', title: 'Удар: вспышка на каждый такт' },
 { id: 'custom', label: 'Своя', title: 'Свой диапазон частот: выберите его на полоске спектра' },
 ];
 const AUDIO_DEF = { amode: 'amp', lo: 0.05, hi: 0.3, thr: 0.5, atk: 0.03, rel: 0.35 };
-const BAND_RANGE = { bass: [0, 0.3], mid: [0.3, 0.67], high: [0.67, 1] };
+const BAND_RANGE = { bass: [0.05, 0.144], mid: [0.144, 0.574], high: [0.574, 1] };
 const FREQ_QUICK = [['Бочка', 40, 130], ['Бас', 60, 300], ['Голос', 300, 3400], ['Тарелки', 5000, 14000]];
 const FX_PALETTES = [
 { id: 'brand', name: 'Янтарь', c: ['#e58a45', '#f4b27a', '#fff0dc'] },
@@ -77234,6 +77234,22 @@ __defs['src/i18n/extra.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'default', () => __default);
 const __default = {
+'Быстрая настройка': 'Quick setup',
+'Удар': 'Hit',
+'Голос': 'Voice',
+'Вспышка на бас': 'Bass flash',
+'Каждый удар барабана даёт всплеск': 'Every drum hit gives a burst',
+'Следует за низкими частотами: бочка, бас': 'Follows low frequencies: kick, bass',
+'Следует за средними частотами: голос, синтезатор': 'Follows mid frequencies: voice, synthesizer',
+'Следует за высокими частотами: тарелки, шипение': 'Follows high frequencies: cymbals, hiss',
+'Эффект резко включается на каждом сильном ударе баса и плавно гаснет': 'The effect switches on sharply on every strong bass hit and fades smoothly',
+'Подобрать порог по музыке': 'Pick threshold from the music',
+'Порог ставится между фоновым уровнем и пиками выбранных частот за последние секунды': 'The threshold is set between the background level and the peaks of the chosen frequencies over the last seconds',
+'Включите музыку или микрофон и подождите пару секунд: порог подбирается по тому, что слышит эффект': 'Turn on music or the microphone and wait a couple of seconds: the threshold is picked from what the effect hears',
+'  ·  нет звука': '  ·  no sound',
+'Низкие частоты (30–250 Гц): бочка, бас': 'Low frequencies (30–250 Hz): kick, bass',
+'Средние частоты (250–4000 Гц): голос, синтезатор': 'Mid frequencies (250–4000 Hz): voice, synthesizer',
+'Высокие частоты (4–12 кГц): тарелки, шипение': 'High frequencies (4–12 kHz): cymbals, hiss',
 'Движок отрисовки': 'Rendering engine',
 'Применится при следующем входе в «Эффекты». «Авто» выбирает WebGPU там, где он быстрее (Windows), и сам возвращается на WebGL, если WebGPU не заработал.': 'Applies the next time you enter Effects. Auto picks WebGPU where it is faster (Windows) and falls back to WebGL by itself if WebGPU does not work.',
 'Движок сменится при следующем входе в «Эффекты»': 'The engine will change the next time you enter Effects',
@@ -77322,6 +77338,21 @@ const __default = {
 "Применится при следующем входе в «Эффекты». «Авто» выбирает WebGPU там, где он быстрее (Windows), и сам возвращается на WebGL, если WebGPU не заработал.": "Застосується під час наступного входу в «Ефекти». «Авто» вибирає WebGPU там, де він швидший (Windows), і сам повертається на WebGL, якщо WebGPU не запрацював.",
 "Современный движок: быстрее на Windows и без подвисаний при включении эффектов": "Сучасний рушій: швидший на Windows і без підвисань під час вмикання ефектів",
 "Проверенный движок: работает везде": "Перевірений рушій: працює скрізь",
+"Быстрая настройка": "Швидке налаштування",
+"Удар": "Удар",
+"Вспышка на бас": "Спалах на бас",
+"Каждый удар барабана даёт всплеск": "Кожен удар барабана дає сплеск",
+"Следует за низкими частотами: бочка, бас": "Слідує за низькими частотами: бочка, бас",
+"Следует за средними частотами: голос, синтезатор": "Слідує за середніми частотами: голос, синтезатор",
+"Следует за высокими частотами: тарелки, шипение": "Слідує за високими частотами: тарілки, шипіння",
+"Эффект резко включается на каждом сильном ударе баса и плавно гаснет": "Ефект різко вмикається на кожному сильному ударі баса й плавно згасає",
+"Подобрать порог по музыке": "Підібрати поріг за музикою",
+"Порог ставится между фоновым уровнем и пиками выбранных частот за последние секунды": "Поріг ставиться між фоновим рівнем і піками вибраних частот за останні секунди",
+"Включите музыку или микрофон и подождите пару секунд: порог подбирается по тому, что слышит эффект": "Увімкніть музику або мікрофон і зачекайте кілька секунд: поріг добирається за тим, що чує ефект",
+"  ·  нет звука": "  ·  немає звуку",
+"Низкие частоты (30–250 Гц): бочка, бас": "Низькі частоти (30–250 Гц): бочка, бас",
+"Средние частоты (250–4000 Гц): голос, синтезатор": "Середні частоти (250–4000 Гц): голос, синтезатор",
+"Высокие частоты (4–12 кГц): тарелки, шипение": "Високі частоти (4–12 кГц): тарілки, шипіння",
 "Авто-качество": "Авто-якість",
 "Авто-качество снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется. Эффекты и цвета не меняются.": "Авто-якість знижує чіткість, лише поки комп’ютеру не вистачає кадрів, і повертає її, коли запас з’являється. Ефекти й кольори не змінюються.",
 "Авто-перспектива": "Авто-перспектива",
@@ -78968,6 +78999,21 @@ const __default = {
 "Применится при следующем входе в «Эффекты». «Авто» выбирает WebGPU там, где он быстрее (Windows), и сам возвращается на WebGL, если WebGPU не заработал.": "Se aplica la próxima vez que entres en Efectos. «Auto» elige WebGPU donde es más rápido (Windows) y vuelve a WebGL por sí solo si WebGPU no funciona.",
 "Современный движок: быстрее на Windows и без подвисаний при включении эффектов": "Motor moderno: más rápido en Windows y sin tirones al activar efectos",
 "Проверенный движок: работает везде": "Motor probado: funciona en todas partes",
+"Быстрая настройка": "Ajuste rápido",
+"Удар": "Golpe",
+"Вспышка на бас": "Destello con el bajo",
+"Каждый удар барабана даёт всплеск": "Cada golpe de tambor da un estallido",
+"Следует за низкими частотами: бочка, бас": "Sigue las frecuencias bajas: bombo, bajo",
+"Следует за средними частотами: голос, синтезатор": "Sigue las frecuencias medias: voz, sintetizador",
+"Следует за высокими частотами: тарелки, шипение": "Sigue las frecuencias altas: platillos, siseo",
+"Эффект резко включается на каждом сильном ударе баса и плавно гаснет": "El efecto se activa de golpe en cada golpe fuerte de bajo y se apaga suavemente",
+"Подобрать порог по музыке": "Elegir el umbral según la música",
+"Порог ставится между фоновым уровнем и пиками выбранных частот за последние секунды": "El umbral se coloca entre el nivel de fondo y los picos de las frecuencias elegidas en los últimos segundos",
+"Включите музыку или микрофон и подождите пару секунд: порог подбирается по тому, что слышит эффект": "Activa música o el micrófono y espera un par de segundos: el umbral se elige según lo que oye el efecto",
+"  ·  нет звука": "  ·  sin sonido",
+"Низкие частоты (30–250 Гц): бочка, бас": "Frecuencias bajas (30–250 Hz): bombo, bajo",
+"Средние частоты (250–4000 Гц): голос, синтезатор": "Frecuencias medias (250–4000 Hz): voz, sintetizador",
+"Высокие частоты (4–12 кГц): тарелки, шипение": "Frecuencias altas (4–12 kHz): platillos, siseo",
 "Авто-качество": "Calidad automática",
 "Авто-качество снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется. Эффекты и цвета не меняются.": "La calidad automática reduce la nitidez solo mientras el ordenador no llega a los fotogramas y la devuelve cuando hay margen. Los efectos y los colores no cambian.",
 "Авто-перспектива": "Perspectiva automática",
@@ -80614,6 +80660,21 @@ const __default = {
 "Применится при следующем входе в «Эффекты». «Авто» выбирает WebGPU там, где он быстрее (Windows), и сам возвращается на WebGL, если WebGPU не заработал.": "Gilt beim nächsten Öffnen von Effekte. „Auto“ wählt WebGPU dort, wo es schneller ist (Windows), und fällt von selbst auf WebGL zurück, wenn WebGPU nicht funktioniert.",
 "Современный движок: быстрее на Windows и без подвисаний при включении эффектов": "Moderne Engine: schneller unter Windows, ohne Ruckler beim Einschalten von Effekten",
 "Проверенный движок: работает везде": "Bewährte Engine: läuft überall",
+"Быстрая настройка": "Schnelleinstellung",
+"Удар": "Schlag",
+"Вспышка на бас": "Blitz auf Bass",
+"Каждый удар барабана даёт всплеск": "Jeder Trommelschlag löst einen Impuls aus",
+"Следует за низкими частотами: бочка, бас": "Folgt den tiefen Frequenzen: Bassdrum, Bass",
+"Следует за средними частотами: голос, синтезатор": "Folgt den mittleren Frequenzen: Stimme, Synthesizer",
+"Следует за высокими частотами: тарелки, шипение": "Folgt den hohen Frequenzen: Becken, Zischen",
+"Эффект резко включается на каждом сильном ударе баса и плавно гаснет": "Der Effekt schaltet bei jedem starken Basschlag abrupt ein und klingt sanft aus",
+"Подобрать порог по музыке": "Schwelle nach der Musik wählen",
+"Порог ставится между фоновым уровнем и пиками выбранных частот за последние секунды": "Die Schwelle liegt zwischen dem Grundpegel und den Spitzen der gewählten Frequenzen der letzten Sekunden",
+"Включите музыку или микрофон и подождите пару секунд: порог подбирается по тому, что слышит эффект": "Schalte Musik oder Mikrofon ein und warte ein paar Sekunden: Die Schwelle richtet sich nach dem, was der Effekt hört",
+"  ·  нет звука": "  ·  kein Ton",
+"Низкие частоты (30–250 Гц): бочка, бас": "Tiefe Frequenzen (30–250 Hz): Bassdrum, Bass",
+"Средние частоты (250–4000 Гц): голос, синтезатор": "Mittlere Frequenzen (250–4000 Hz): Stimme, Synthesizer",
+"Высокие частоты (4–12 кГц): тарелки, шипение": "Hohe Frequenzen (4–12 kHz): Becken, Zischen",
 "Авто-качество": "Auto-Qualität",
 "Авто-качество снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется. Эффекты и цвета не меняются.": "Die Auto-Qualität senkt die Schärfe nur, solange der Computer die Bilder nicht schafft, und bringt sie zurück, wenn wieder Reserve da ist. Effekte und Farben bleiben gleich.",
 "Авто-перспектива": "Auto-Perspektive",
@@ -90935,7 +90996,7 @@ this.ctx = new A();
 this.bus = this.ctx.createGain();
 this.analyser = this.ctx.createAnalyser();
 this.analyser.fftSize = 2048;
-this.analyser.smoothingTimeConstant = 0.82;
+this.analyser.smoothingTimeConstant = 0.6;
 this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
 this.out = this.ctx.createGain();
 this.out.gain.value = this.state.audio.volume;
@@ -91117,41 +91178,65 @@ this.emit();
 }
 _analyse(dt) {
 const a = this.state.audio;
-let bass = 0, mid = 0, high = 0, beat = 0;
+let bass = 0, mid = 0, high = 0;
 if (this.analyser && this.playing) {
 this.analyser.getByteFrequencyData(this.freqData);
 const n = this.freqData.length;
-const e1 = Math.floor(n * 0.05), e2 = Math.floor(n * 0.25), e3 = Math.floor(n * 0.7);
-let b = 0, m = 0, h = 0;
-for (let i = 0; i < e1; i++) b += this.freqData[i];
-for (let i = e1; i < e2; i++) m += this.freqData[i];
-for (let i = e2; i < e3; i++) h += this.freqData[i];
-const g = a.gain * 1.15;
-const bRaw = Math.min(1, (b / (e1 * 255)) * g);
-const mRaw = Math.min(1, (m / ((e2 - e1) * 255)) * g * 1.2);
-const hRaw = Math.min(1, (h / ((e3 - e2) * 255)) * g * 1.8);
-this._beatHist[this._beatIdx++ % this._beatHist.length] = bRaw;
+const sr = this.ctx.sampleRate;
+const binHz = sr / this.analyser.fftSize;
+const bin = (hz) => Math.min(n, Math.max(0, Math.round(hz / binHz)));
+const mean = (i0, i1) => {
+let s = 0;
+for (let i = i0; i < i1; i++) s += this.freqData[i];
+return s / (Math.max(1, i1 - i0) * 255);
+};
+const bRaw = mean(bin(30), Math.max(bin(30) + 1, bin(250)));
+const mRaw = mean(bin(250), bin(4000));
+const hRaw = mean(bin(4000), bin(12000));
+const auto = a.auto !== false;
+const g = a.gain;
+const AG = (this._agc ||= {});
+const norm = (key, raw) => (auto ? clamp(this._follow(AG, key, raw, dt, 0.1) * (g / 1.3), 0, 1) : clamp(raw * g * 1.15 * (key === 'mid' ? 1.2 : key === 'high' ? 1.8 : 1), 0, 1));
+const bN = norm('bass', bRaw);
+const mN = norm('mid', mRaw);
+const hN = norm('high', hRaw);
+const b0 = bin(30), b1 = Math.max(b0 + 2, bin(220));
+const prev = (this._prevBass ||= new Float32Array(n));
+let flux = 0;
+for (let i = b0; i < b1; i++) {
+const d = this.freqData[i] - prev[i];
+if (d > 0) flux += d;
+prev[i] = this.freqData[i];
+}
+flux /= (b1 - b0) * 255;
+const H = this._beatHist;
+H[this._beatIdx++ % H.length] = flux;
 let avg = 0;
-for (const v of this._beatHist) avg += v;
-avg /= this._beatHist.length;
+for (let i = 0; i < H.length; i++) avg += H[i];
+avg /= H.length;
+let varr = 0;
+for (let i = 0; i < H.length; i++) varr += (H[i] - avg) * (H[i] - avg);
+const sd = Math.sqrt(varr / H.length);
+const thr = avg + Math.max(0.012, sd * 1.35);
 const now = performance.now();
-if (bRaw > avg * 1.3 && bRaw > 0.3 && now - this._lastBeat > 190) {
+if (flux > thr && bN > 0.12 && now - this._lastBeat > 160) {
 this._lastBeat = now;
-this.levels.beat = 1;
+this.levels.beat = clamp(0.65 + (flux - thr) / Math.max(thr, 0.02), 0.65, 1);
 this._markBeat();
 }
-const kA = 1 - Math.pow(0.001, dt * 6);
-const kR = 1 - Math.pow(0.001, dt * 2.2);
+const kA = 1 - Math.pow(0.001, dt * 9);
+const kR = 1 - Math.pow(0.001, dt * 2.6);
 const lag = (cur, raw) => cur + (raw - cur) * (raw > cur ? kA : kR);
-bass = lag(this.levels.bass, bRaw);
-mid = lag(this.levels.mid, mRaw);
-high = lag(this.levels.high, hRaw);
+bass = lag(this.levels.bass, bN);
+mid = lag(this.levels.mid, mN);
+high = lag(this.levels.high, hN);
+const gs = a.gain * 1.15;
 for (let i = 0; i < 64; i++) {
 const f0 = Math.floor(Math.pow(i / 64, 2) * n * 0.55);
 const f1 = Math.max(f0 + 1, Math.floor(Math.pow((i + 1) / 64, 2) * n * 0.55));
 let s = 0;
 for (let j = f0; j < f1; j++) s += this.freqData[j];
-const v = Math.min(1, (s / ((f1 - f0) * 255)) * g * (1 + i / 40));
+const v = Math.min(1, (s / ((f1 - f0) * 255)) * gs * (1 + i / 40));
 this.spec[i] += (v - this.spec[i]) * (v > this.spec[i] ? 0.6 : 0.15);
 }
 } else if (a.idle) {
@@ -91168,21 +91253,63 @@ mid = this.levels.mid * (1 - k);
 high = this.levels.high * (1 - k);
 for (let i = 0; i < 64; i++) this.spec[i] *= 1 - k;
 }
-beat = this.levels.beat * Math.pow(0.0008, dt);
+const beat = this.levels.beat * Math.pow(0.0008, dt);
 this.levels = { bass, mid, high, beat };
 const d = this.specTex.image.data;
 for (let i = 0; i < 64; i++) d[i] = Math.round(clamp(this.spec[i], 0, 1) * 255);
 this.specTex.needsUpdate = true;
 }
+_follow(store, key, raw, dt, floor) {
+let m = store[key];
+if (m === undefined || m === null) m = raw;
+const age = (store[key + '#'] = (store[key + '#'] || 0) + dt);
+m += (raw - m) * Math.min(1, dt / (age < 4 ? 0.7 : 5));
+store[key] = m;
+return raw / Math.max(floor, m * 1.8);
+}
 _bandLevel(l) {
+const envs = (this._bandEnvs ||= new WeakMap());
+let e = envs.get(l);
+if (!e) {
+e = { t: -1, v: 0, pk: {}, hist: new Float32Array(180), hi: 0, n: 0 };
+envs.set(l, e);
+}
+if (e.t === this._time && e.band === l.band && e.lo === l.lo && e.hi2 === l.hi) return e.v;
+const dt = e.t < 0 ? 0.016 : Math.min(0.1, Math.max(0, this._time - e.t));
+let v;
 if (l.band === 'custom') {
 const i0 = Math.max(0, Math.floor(l.lo * 64));
 const i1 = Math.min(64, Math.max(i0 + 1, Math.ceil(l.hi * 64)));
 let s = 0;
 for (let i = i0; i < i1; i++) s += this.spec[i];
-return Math.min(1, (s / (i1 - i0)) * 1.5);
+const raw = s / (i1 - i0);
+v = this.state.audio.auto !== false ? Math.min(1, this._follow(e.pk, 'c', raw, dt, 0.08)) : Math.min(1, raw * 1.5);
+} else {
+v = this.levels[l.band] || 0;
 }
-return this.levels[l.band] || 0;
+e.t = this._time;
+e.band = l.band;
+e.lo = l.lo;
+e.hi2 = l.hi;
+e.v = v;
+if (dt > 0) {
+e.hist[e.hi++ % e.hist.length] = v;
+e.n = Math.min(e.hist.length, e.n + 1);
+}
+return v;
+}
+autoThreshold(l) {
+const e = this._bandEnvs?.get(l);
+if (!e || e.n < 60) return null;
+const arr = Array.from(e.hist.subarray(0, e.n)).sort((x, y) => x - y);
+const q = (p) => arr[Math.min(arr.length - 1, Math.floor(arr.length * p))];
+const lo = q(0.5);
+const hi = q(0.95);
+if (hi < 0.12) return null;
+return clamp(lo + (hi - lo) * 0.6, 0.12, 0.9);
+}
+get soundActive() {
+return !!(this.playing && this.analyser) || !!this.state.audio.idle;
 }
 hzAt(x) {
 const sr = this.ctx?.sampleRate || 44100;
@@ -92070,7 +92197,7 @@ const v = this._disV || 0;
 this._disV = v + Math.sign(tg - v) * Math.min(Math.abs(tg - v), dt * D.speed * 0.3);
 p = this._disV;
 } else p = D.progress;
-p = p * p * (3 - 2 * p) * Math.min(1, D.amount);
+p = p * p * (3 - 2 * p) * Math.min(1, D.band && D.band !== 'none' ? this._eff(D) : D.amount);
 }
 const hand = this.camTracker?.running && this._handDis && this._time - (this._handsT ?? -9) < 0.4;
 this._disH = (this._disH || 0) + ((hand ? 1 : 0) - (this._disH || 0)) * (1 - Math.exp(-dt * Math.max(0.5, D.speed) * 1.2));
@@ -92695,7 +92822,7 @@ this.sourceType = 'synth';
 this.audioName = '';
 this.levels = { bass: 0, mid: 0, high: 0, beat: 0 };
 this.spec = new Float32Array(64);
-this._beatHist = new Float32Array(24);
+this._beatHist = new Float32Array(48);
 this._beatIdx = 0;
 this._lastBeat = 0;
 this.points = null;
@@ -92928,7 +93055,8 @@ e.v += ((e.open ? 1 : 0) - e.v) * (1 - Math.exp(-dt / tc));
 return l.amount * e.v * g;
 }
 if (!l.react) return l.amount * g;
-return l.amount * (1 - l.react + l.react * b * 2) * g;
+const lvl = this.soundActive ? b : 0.5;
+return l.amount * (1 - l.react + l.react * lvl * 2) * g;
 }
 setFrozen(v) {
 v = !!v;
@@ -93691,6 +93819,13 @@ syncMorph();
 const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
 const secMorph = section('Морфинг', { key: 'fx-morph' }, morphNote, morphBox);
 const pickers = new Set();
+const SOUND_PRESETS = [
+['Удар', 'Каждый удар барабана даёт всплеск', { band: 'beat', amode: 'amp', react: 1 }],
+['Бас', 'Следует за низкими частотами: бочка, бас', { band: 'bass', amode: 'amp', react: 0.8 }],
+['Голос', 'Следует за средними частотами: голос, синтезатор', { band: 'mid', amode: 'amp', react: 0.8 }],
+['Тарелки', 'Следует за высокими частотами: тарелки, шипение', { band: 'high', amode: 'amp', react: 0.8 }],
+['Вспышка на бас', 'Эффект резко включается на каждом сильном ударе баса и плавно гаснет', { band: 'bass', amode: 'gate', thr: 0.6, atk: 0.02, rel: 0.3, react: 0.8 }],
+];
 function freqPicker(L, onSave) {
 const cv = h('canvas', { class: 'fx-freq-cv' });
 const lab = h('div', { class: 'fx-freq-lab' });
@@ -93763,7 +93898,7 @@ ctx.fillRect(r1 * W - 1.5, 0, 3, H);
 }
 const lvl = engine._bandLevel(L);
 const open = L.amode === 'gate' && lvl > L.thr;
-lab.textContent = (L.band === 'custom' || BAND_RANGE[L.band] ? `${engine.hzAt(r0)}–${engine.hzAt(r1)} Гц` : 'Удары в басах') + `  ·  сейчас ${Math.round(lvl * 100)}%` + (L.amode === 'gate' ? (open ? '  ·  включён' : '  ·  ждёт') : '');
+lab.textContent = (L.band === 'custom' || BAND_RANGE[L.band] ? `${engine.hzAt(r0)}–${engine.hzAt(r1)} Гц` : 'Удары в басах') + `  ·  сейчас ${Math.round(lvl * 100)}%` + (L.amode === 'gate' ? (open ? '  ·  включён' : '  ·  ждёт') : '') + (engine.soundActive ? '' : '  ·  нет звука');
 }
 cv.addEventListener('pointerdown', (e) => {
 if (L.band === 'none') return;
@@ -94053,7 +94188,24 @@ save();
 const thr = slider({ min: 0.05, max: 0.95, step: 0.01, value: L.thr, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { L.thr = v; }, onChange: save });
 const atk = slider({ log: true, min: 0.005, max: 1, step: 0.005, value: L.atk, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), onInput: (v) => { L.atk = v; }, onChange: save });
 const rel = slider({ log: true, min: 0.03, max: 4, step: 0.01, value: L.rel, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), onInput: (v) => { L.rel = v; }, onChange: save });
-const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Порог', thr.el), field('Включается за', atk.el), field('Гаснет за', rel.el));
+const autoThr = button({
+label: 'Подобрать порог по музыке',
+icon: 'lightning',
+variant: 'secondary',
+cls: 'btn-block',
+title: 'Порог ставится между фоновым уровнем и пиками выбранных частот за последние секунды',
+onClick: () => {
+const t = engine.autoThreshold(L);
+if (t === null) {
+app.toast('Включите музыку или микрофон и подождите пару секунд: порог подбирается по тому, что слышит эффект', 'info');
+return;
+}
+L.thr = t;
+thr.set(t);
+save();
+},
+});
+const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Порог', thr.el), autoThr, field('Включается за', atk.el), field('Гаснет за', rel.el));
 const picker = freqPicker(L, save);
 const band = segmented({
 cls: 'seg-tight',
@@ -94069,6 +94221,32 @@ audioUiFull();
 save();
 },
 });
+const presetRow = h('div', { class: 'chip-row fx-freq-chips' });
+for (const [label, tip, p] of SOUND_PRESETS) {
+const b = h('button', { type: 'button', class: 'chip-btn', 'data-tip': tip }, label);
+b.addEventListener('click', () => {
+Object.assign(L, p);
+if (!L.on) {
+L.on = true;
+sw.set(true);
+card.classList.add('is-on');
+insp.classList.remove('is-off');
+countActive();
+}
+band.set(L.band);
+modeSeg.set(L.amode);
+react.set(L.react);
+thr.set(L.thr);
+atk.set(L.atk);
+rel.set(L.rel);
+audioUiFull();
+syncAudioHead();
+save();
+engine.emit();
+});
+presetRow.append(b);
+}
+const presetField = field('Быстрая настройка', presetRow, { wide: true });
 const modeRow = field('Как реагирует', modeSeg.el, { wide: true });
 const audioUiFull = () => {
 const on = L.band !== 'none';
@@ -94078,7 +94256,7 @@ reactRow.hidden = !on || L.amode === 'gate';
 gateBox.hidden = !on || L.amode !== 'gate';
 picker.draw();
 };
-const audioWrap = h('div', { class: 'fx-grp-body' }, field('Слушает частоты', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
+const audioWrap = h('div', { class: 'fx-grp-body' }, presetField, field('Слушает частоты', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
 let audioOpen = L.band !== 'none';
 const audioHead = h('button', { type: 'button', class: 'fx-sub fx-sub-toggle', 'aria-expanded': String(audioOpen) }, h('span', { class: 'ic-wrap', html: icon('caret-down', 12) }), 'Реакция на звук');
 const audioState = h('span', { class: 'fx-sub-state' });
@@ -94094,7 +94272,7 @@ syncAudioHead();
 picker.draw();
 });
 band.el.addEventListener('click', () => requestAnimationFrame(syncAudioHead));
-body.append(audioHead, audioWrap);
+if (def.sound !== false) body.append(audioHead, audioWrap);
 syncAudioHead();
 audioUiFull();
 const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
@@ -94185,7 +94363,7 @@ function renderReactList() {
 sceneBand.set(st.look.audioBand || 'bass');
 sceneBright.set(st.look.brightAudio || 0);
 const act = cards.filter((c) => c.L.on && c.L.band !== 'none');
-const idle_ = cards.filter((c) => !(c.L.on && c.L.band !== 'none') && c.L.band !== undefined);
+const idle_ = cards.filter((c) => !(c.L.on && c.L.band !== 'none') && c.L.band !== undefined && c.def.sound !== false);
 reactList.textContent = '';
 reactTitle.hidden = false;
 for (const c of act) {

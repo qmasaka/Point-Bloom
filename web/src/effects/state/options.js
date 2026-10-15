@@ -11,14 +11,14 @@ export const FX_SHAPES = [
 ];
 export const BANDS = [
 { id: 'none', label: '—', title: 'Без реакции на звук' },
-{ id: 'bass', label: 'Бас', title: 'Низкие частоты: барабан, бас' },
-{ id: 'mid', label: 'Сер.', title: 'Средние частоты: голос, синтезатор' },
-{ id: 'high', label: 'Верх', title: 'Высокие частоты: тарелки, шипение' },
+{ id: 'bass', label: 'Бас', title: 'Низкие частоты (30–250 Гц): бочка, бас' },
+{ id: 'mid', label: 'Сер.', title: 'Средние частоты (250–4000 Гц): голос, синтезатор' },
+{ id: 'high', label: 'Верх', title: 'Высокие частоты (4–12 кГц): тарелки, шипение' },
 { id: 'beat', label: 'Бит', title: 'Удар: вспышка на каждый такт' },
 { id: 'custom', label: 'Своя', title: 'Свой диапазон частот: выберите его на полоске спектра' },
 ];
 export const AUDIO_DEF = { amode: 'amp', lo: 0.05, hi: 0.3, thr: 0.5, atk: 0.03, rel: 0.35 };
-export const BAND_RANGE = { bass: [0, 0.3], mid: [0.3, 0.67], high: [0.67, 1] };
+export const BAND_RANGE = { bass: [0.05, 0.144], mid: [0.144, 0.574], high: [0.574, 1] };
 export const FREQ_QUICK = [['Бочка', 40, 130], ['Бас', 60, 300], ['Голос', 300, 3400], ['Тарелки', 5000, 14000]];
 export const FX_PALETTES = [
 { id: 'brand', name: 'Янтарь', c: ['#e58a45', '#f4b27a', '#fff0dc'] },

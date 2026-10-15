@@ -279,6 +279,13 @@ syncMorph();
 const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
 const secMorph = section('Морфинг', { key: 'fx-morph' }, morphNote, morphBox);
 const pickers = new Set();
+const SOUND_PRESETS = [
+['Удар', 'Каждый удар барабана даёт всплеск', { band: 'beat', amode: 'amp', react: 1 }],
+['Бас', 'Следует за низкими частотами: бочка, бас', { band: 'bass', amode: 'amp', react: 0.8 }],
+['Голос', 'Следует за средними частотами: голос, синтезатор', { band: 'mid', amode: 'amp', react: 0.8 }],
+['Тарелки', 'Следует за высокими частотами: тарелки, шипение', { band: 'high', amode: 'amp', react: 0.8 }],
+['Вспышка на бас', 'Эффект резко включается на каждом сильном ударе баса и плавно гаснет', { band: 'bass', amode: 'gate', thr: 0.6, atk: 0.02, rel: 0.3, react: 0.8 }],
+];
 function freqPicker(L, onSave) {
 const cv = h('canvas', { class: 'fx-freq-cv' });
 const lab = h('div', { class: 'fx-freq-lab' });
@@ -351,7 +358,7 @@ ctx.fillRect(r1 * W - 1.5, 0, 3, H);
 }
 const lvl = engine._bandLevel(L);
 const open = L.amode === 'gate' && lvl > L.thr;
-lab.textContent = (L.band === 'custom' || BAND_RANGE[L.band] ? `${engine.hzAt(r0)}–${engine.hzAt(r1)} Гц` : 'Удары в басах') + `  ·  сейчас ${Math.round(lvl * 100)}%` + (L.amode === 'gate' ? (open ? '  ·  включён' : '  ·  ждёт') : '');
+lab.textContent = (L.band === 'custom' || BAND_RANGE[L.band] ? `${engine.hzAt(r0)}–${engine.hzAt(r1)} Гц` : 'Удары в басах') + `  ·  сейчас ${Math.round(lvl * 100)}%` + (L.amode === 'gate' ? (open ? '  ·  включён' : '  ·  ждёт') : '') + (engine.soundActive ? '' : '  ·  нет звука');
 }
 cv.addEventListener('pointerdown', (e) => {
 if (L.band === 'none') return;
@@ -641,7 +648,24 @@ save();
 const thr = slider({ min: 0.05, max: 0.95, step: 0.01, value: L.thr, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { L.thr = v; }, onChange: save });
 const atk = slider({ log: true, min: 0.005, max: 1, step: 0.005, value: L.atk, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), onInput: (v) => { L.atk = v; }, onChange: save });
 const rel = slider({ log: true, min: 0.03, max: 4, step: 0.01, value: L.rel, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), onInput: (v) => { L.rel = v; }, onChange: save });
-const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Порог', thr.el), field('Включается за', atk.el), field('Гаснет за', rel.el));
+const autoThr = button({
+label: 'Подобрать порог по музыке',
+icon: 'lightning',
+variant: 'secondary',
+cls: 'btn-block',
+title: 'Порог ставится между фоновым уровнем и пиками выбранных частот за последние секунды',
+onClick: () => {
+const t = engine.autoThreshold(L);
+if (t === null) {
+app.toast('Включите музыку или микрофон и подождите пару секунд: порог подбирается по тому, что слышит эффект', 'info');
+return;
+}
+L.thr = t;
+thr.set(t);
+save();
+},
+});
+const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Порог', thr.el), autoThr, field('Включается за', atk.el), field('Гаснет за', rel.el));
 const picker = freqPicker(L, save);
 const band = segmented({
 cls: 'seg-tight',
@@ -657,6 +681,32 @@ audioUiFull();
 save();
 },
 });
+const presetRow = h('div', { class: 'chip-row fx-freq-chips' });
+for (const [label, tip, p] of SOUND_PRESETS) {
+const b = h('button', { type: 'button', class: 'chip-btn', 'data-tip': tip }, label);
+b.addEventListener('click', () => {
+Object.assign(L, p);
+if (!L.on) {
+L.on = true;
+sw.set(true);
+card.classList.add('is-on');
+insp.classList.remove('is-off');
+countActive();
+}
+band.set(L.band);
+modeSeg.set(L.amode);
+react.set(L.react);
+thr.set(L.thr);
+atk.set(L.atk);
+rel.set(L.rel);
+audioUiFull();
+syncAudioHead();
+save();
+engine.emit();
+});
+presetRow.append(b);
+}
+const presetField = field('Быстрая настройка', presetRow, { wide: true });
 const modeRow = field('Как реагирует', modeSeg.el, { wide: true });
 const audioUiFull = () => {
 const on = L.band !== 'none';
@@ -666,7 +716,7 @@ reactRow.hidden = !on || L.amode === 'gate';
 gateBox.hidden = !on || L.amode !== 'gate';
 picker.draw();
 };
-const audioWrap = h('div', { class: 'fx-grp-body' }, field('Слушает частоты', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
+const audioWrap = h('div', { class: 'fx-grp-body' }, presetField, field('Слушает частоты', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
 let audioOpen = L.band !== 'none';
 const audioHead = h('button', { type: 'button', class: 'fx-sub fx-sub-toggle', 'aria-expanded': String(audioOpen) }, h('span', { class: 'ic-wrap', html: icon('caret-down', 12) }), 'Реакция на звук');
 const audioState = h('span', { class: 'fx-sub-state' });
@@ -682,7 +732,7 @@ syncAudioHead();
 picker.draw();
 });
 band.el.addEventListener('click', () => requestAnimationFrame(syncAudioHead));
-body.append(audioHead, audioWrap);
+if (def.sound !== false) body.append(audioHead, audioWrap);
 syncAudioHead();
 audioUiFull();
 const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
@@ -773,7 +823,7 @@ function renderReactList() {
 sceneBand.set(st.look.audioBand || 'bass');
 sceneBright.set(st.look.brightAudio || 0);
 const act = cards.filter((c) => c.L.on && c.L.band !== 'none');
-const idle_ = cards.filter((c) => !(c.L.on && c.L.band !== 'none') && c.L.band !== undefined);
+const idle_ = cards.filter((c) => !(c.L.on && c.L.band !== 'none') && c.L.band !== undefined && c.def.sound !== false);
 reactList.textContent = '';
 reactTitle.hidden = false;
 for (const c of act) {
