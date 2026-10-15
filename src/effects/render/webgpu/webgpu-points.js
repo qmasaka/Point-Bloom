@@ -1,14 +1,81 @@
 import { FRAME_BYTES, packFrame } from './frame-layout.js';
-import { computeCopy, computeTwist, computeWave } from '../../shaders/wgsl/compute.js';
-import { pointsShader } from '../../shaders/wgsl/points.js';
+import { pointsComputeWGSL } from '../../shaders/wgsl/generated/points-compute.js';
+import { pointsRenderWGSL } from '../../shaders/wgsl/generated/points-render.js';
 
 /**
- * Прототип рендера точек на WebGPU (этап 3 переноса).
- *  - позиции и цвета лежат в буферах видеокарты;
- *  - эффекты это отдельные вычислительные проходы (сейчас два: деформация и волны), собираются один раз и в фоне;
- *  - рисование: по два треугольника на точку, смешивание и тональная компрессия как в WebGL.
- * Порядок кадра: сброс позиций → включённые эффекты → рисование.
+ * Рендер облака точек на WebGPU. Шейдеры не написаны руками: их генерирует dev/gen-wgsl.mjs из боевого GLSL.
+ * Кадр: проход расчёта (одна точка → положение на экране, размер, цвет; это весь вершинный шейдер GLSL) → рисование квадратов по этим данным.
  */
+
+// какие группы буферов зависят от каких атрибутов точек (имена как в GLSL)
+const ATTR_GROUPS = {
+	aOrigin: ['origin'],
+	aHide: ['origin'],
+	aTarget: ['target'],
+	aDepth: ['target'],
+	aColor: ['colorA'],
+	aPath: ['colorA'],
+	aColorB: ['colorB'],
+	aVis: ['colorB', 'normA'],
+	aNormal: ['normA'],
+	aNormalB: ['normB'],
+	aSculpt: ['sculpt'],
+	aIdx: ['sculpt'],
+	aPaint: ['paint'],
+};
+
+/** Собирает один буфер из исходных массивов: по 4 числа на точку */
+function packGroup(group, a, n) {
+	const out = new Float32Array(n * 4);
+	const v3 = (src, dst) => {
+		if (!src) return;
+		for (let i = 0; i < n; i++) {
+			out[i * 4] = src[i * 3];
+			out[i * 4 + 1] = src[i * 3 + 1];
+			out[i * 4 + 2] = src[i * 3 + 2];
+		}
+	};
+	const w1 = (src, k = 1, off = 0) => {
+		if (!src) return;
+		for (let i = 0; i < n; i++) out[i * 4 + 3] = src[i * k + off];
+	};
+	switch (group) {
+		case 'origin':
+			v3(a.aOrigin);
+			w1(a.aHide);
+			break;
+		case 'target':
+			v3(a.aTarget);
+			w1(a.aDepth);
+			break;
+		case 'colorA':
+			v3(a.aColor);
+			w1(a.aPath);
+			break;
+		case 'colorB':
+			v3(a.aColorB);
+			w1(a.aVis, 2, 0);
+			break;
+		case 'normA':
+			v3(a.aNormal);
+			w1(a.aVis, 2, 1);
+			break;
+		case 'normB':
+			v3(a.aNormalB);
+			break;
+		case 'sculpt':
+			v3(a.aSculpt);
+			w1(a.aIdx);
+			break;
+		case 'paint':
+			if (a.aPaint) out.set(a.aPaint.subarray ? a.aPaint.subarray(0, n * 4) : a.aPaint);
+			break;
+	}
+	return out;
+}
+
+const GROUPS = ['origin', 'target', 'colorA', 'colorB', 'normA', 'normB', 'sculpt', 'paint'];
+
 export class WebGPUPoints {
 	/** @param {{device: GPUDevice, format: string}} gpu результат requestGpu() @param {HTMLCanvasElement} canvas */
 	constructor(gpu, canvas) {
@@ -19,108 +86,157 @@ export class WebGPUPoints {
 		this.ctx.configure({ device: this.device, format: this.format, alphaMode: 'premultiplied' });
 		this.count = 0;
 		this.pipelines = {};
+		this.attrs = null;
+		this.bufs = {};
 		this.frameData = new Float32Array(FRAME_BYTES / 4);
-		this.frameBuf = this.device.createBuffer({ size: FRAME_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
 		const D = this.device;
+		this.frameBuf = D.createBuffer({ size: FRAME_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+		this.sampler = D.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
+		// служебные текстуры: спектр звука (для эффекта «Спектр»), центры кусков (для «Разбора на части»), кадры видео и атлас символов (заглушки)
+		this.specTex = D.createTexture({ size: [64, 1], format: 'r8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+		this.pieceTex = D.createTexture({ size: [256, 1], format: 'rgba32float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+		this.frTex = D.createTexture({ size: [1, 1, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+		this.heroTex = D.createTexture({ size: [1, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+		this.atlasTex = D.createTexture({ size: [1, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+
 		const C = GPUShaderStage.COMPUTE;
 		const V = GPUShaderStage.VERTEX;
 		const F = GPUShaderStage.FRAGMENT;
+		const ro = { type: 'read-only-storage' };
 		this.computeBGL = D.createBindGroupLayout({
 			entries: [
 				{ binding: 0, visibility: C, buffer: { type: 'uniform' } },
-				{ binding: 1, visibility: C, buffer: { type: 'read-only-storage' } },
-				{ binding: 2, visibility: C, buffer: { type: 'storage' } },
+				...[1, 2, 3, 4, 5, 6, 7, 8].map((binding) => ({ binding, visibility: C, buffer: ro })),
+				...[9, 10, 11].map((binding) => ({ binding, visibility: C, buffer: { type: 'storage' } })),
+				{ binding: 12, visibility: C, texture: { sampleType: 'float' } },
+				{ binding: 13, visibility: C, sampler: { type: 'filtering' } },
+				{ binding: 14, visibility: C, texture: { sampleType: 'unfilterable-float' } },
+				{ binding: 15, visibility: C, texture: { sampleType: 'unfilterable-float', viewDimension: '2d-array' } },
+				{ binding: 16, visibility: C, texture: { sampleType: 'float' } },
 			],
 		});
 		this.renderBGL = D.createBindGroupLayout({
 			entries: [
 				{ binding: 0, visibility: V | F, buffer: { type: 'uniform' } },
-				{ binding: 1, visibility: V, buffer: { type: 'read-only-storage' } },
-				{ binding: 2, visibility: V, buffer: { type: 'read-only-storage' } },
-				{ binding: 3, visibility: V, buffer: { type: 'read-only-storage' } },
+				{ binding: 1, visibility: V, buffer: ro },
+				{ binding: 2, visibility: V, buffer: ro },
+				{ binding: 3, visibility: V, buffer: ro },
+				{ binding: 4, visibility: F, texture: { sampleType: 'float' } },
+				{ binding: 5, visibility: F, sampler: { type: 'filtering' } },
 			],
 		});
-		this.computeLayout = D.createPipelineLayout({ bindGroupLayouts: [this.computeBGL] });
-		this.renderLayout = D.createPipelineLayout({ bindGroupLayouts: [this.renderBGL] });
 		this.depth = null;
 	}
 
 	/**
-	 * Загружает облако: positions и colors это Float32Array по 3 числа на точку.
-	 * Базовые позиции (base) не меняются, текущие (pos) каждый кадр пересчитываются проходами эффектов.
+	 * Загружает облако. attrs: массивы как в GLSL-атрибутах (aOrigin, aTarget, aNormal, aNormalB, aColor, aColorB, aPaint, aHide, aDepth, aPath, aSculpt, aVis).
+	 * Недостающие атрибуты считаются нулями; aVis по умолчанию 1, aIdx по умолчанию i / n.
 	 */
-	setCloud({ positions, colors }) {
+	setCloud(attrs, count) {
 		const D = this.device;
-		const n = positions.length / 3;
+		const n = count ?? attrs.aOrigin.length / 3;
 		this.count = n;
-		const base = new Float32Array(n * 4);
-		const col = new Float32Array(n * 4);
-		for (let i = 0; i < n; i++) {
-			base[i * 4] = positions[i * 3];
-			base[i * 4 + 1] = positions[i * 3 + 1];
-			base[i * 4 + 2] = positions[i * 3 + 2];
-			base[i * 4 + 3] = 1;
-			col[i * 4] = colors ? colors[i * 3] : 1;
-			col[i * 4 + 1] = colors ? colors[i * 3 + 1] : 1;
-			col[i * 4 + 2] = colors ? colors[i * 3 + 2] : 1;
-			col[i * 4 + 3] = 1; // видимость точки
+		this.attrs = attrs;
+		if (!attrs.aVis) attrs.aVis = new Float32Array(n * 2).fill(1);
+		if (!attrs.aIdx) {
+			attrs.aIdx = new Float32Array(n);
+			for (let i = 0; i < n; i++) attrs.aIdx[i] = i / n;
 		}
-		for (const k of ['baseBuf', 'posBuf', 'colBuf']) this[k]?.destroy();
-		const mk = (data, usage) => {
-			const b = D.createBuffer({ size: data.byteLength, usage: usage | GPUBufferUsage.COPY_DST });
-			D.queue.writeBuffer(b, 0, data);
-			return b;
-		};
-		this.baseBuf = mk(base, GPUBufferUsage.STORAGE);
-		this.posBuf = mk(base, GPUBufferUsage.STORAGE);
-		this.colBuf = mk(col, GPUBufferUsage.STORAGE);
+		for (const g of GROUPS) {
+			this.bufs[g]?.destroy();
+			this.bufs[g] = D.createBuffer({ size: n * 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+			D.queue.writeBuffer(this.bufs[g], 0, packGroup(g, attrs, n));
+		}
+		for (const k of ['outA', 'outB', 'outC']) {
+			this.bufs[k]?.destroy();
+			this.bufs[k] = D.createBuffer({ size: n * 16, usage: GPUBufferUsage.STORAGE });
+		}
+		this._groups();
+	}
+
+	_groups() {
+		const D = this.device;
+		const b = this.bufs;
+		const e = (binding, buf) => ({ binding, resource: { buffer: buf } });
 		this.computeGroup = D.createBindGroup({
 			layout: this.computeBGL,
 			entries: [
-				{ binding: 0, resource: { buffer: this.frameBuf } },
-				{ binding: 1, resource: { buffer: this.baseBuf } },
-				{ binding: 2, resource: { buffer: this.posBuf } },
+				e(0, this.frameBuf),
+				e(1, b.origin),
+				e(2, b.target),
+				e(3, b.colorA),
+				e(4, b.colorB),
+				e(5, b.normA),
+				e(6, b.normB),
+				e(7, b.sculpt),
+				e(8, b.paint),
+				e(9, b.outA),
+				e(10, b.outB),
+				e(11, b.outC),
+				{ binding: 12, resource: this.specTex.createView() },
+				{ binding: 13, resource: this.sampler },
+				{ binding: 14, resource: this.pieceTex.createView() },
+				{ binding: 15, resource: this.frTex.createView({ dimension: '2d-array' }) },
+				{ binding: 16, resource: this.heroTex.createView() },
 			],
 		});
 		this.renderGroup = D.createBindGroup({
 			layout: this.renderBGL,
-			entries: [
-				{ binding: 0, resource: { buffer: this.frameBuf } },
-				{ binding: 1, resource: { buffer: this.posBuf } },
-				{ binding: 2, resource: { buffer: this.baseBuf } },
-				{ binding: 3, resource: { buffer: this.colBuf } },
-			],
+			entries: [e(0, this.frameBuf), e(1, b.outA), e(2, b.outB), e(3, b.outC), { binding: 4, resource: this.atlasTex.createView() }, { binding: 5, resource: this.sampler }],
 		});
+	}
+
+	/** Перезаписывает данные точек, зависящие от изменившихся атрибутов (имена как в GLSL) */
+	updateAttributes(names) {
+		const groups = new Set();
+		for (const nm of names) for (const g of ATTR_GROUPS[nm] || []) groups.add(g);
+		for (const g of groups) this.device.queue.writeBuffer(this.bufs[g], 0, packGroup(g, this.attrs, this.count));
+	}
+
+	/** Спектр звука: 64 байта (значения 0..255) */
+	setSpectrum(bytes) {
+		this.device.queue.writeTexture({ texture: this.specTex }, bytes, { bytesPerRow: 64 }, [64, 1]);
+	}
+
+	/** Центры кусков для эффекта «Разбор на части»: 256 векторов по 4 числа */
+	setPieces(floats) {
+		this.device.queue.writeTexture({ texture: this.pieceTex }, floats, { bytesPerRow: 256 * 16 }, [256, 1]);
 	}
 
 	/**
 	 * Собирает конвейеры асинхронно: главный поток не ждёт видеодрайвер (в WebGL это самое дорогое место на Windows).
-	 * @param {{effects?: string[], salt?: number}} opts effects: какие вычислительные проходы нужны; salt: для проверки холодной сборки
+	 * @param {{salt?: number, mapShader?: (code: string) => string}} opts salt: для проверки холодной сборки (меняет число в шейдере, чтобы кеш не помог); mapShader: подмена текста шейдера (для проверок)
 	 * @returns {Promise<{blockedMs: number, readyMs: number}>} сколько главный поток был занят и за сколько всё стало готово
 	 */
-	async prepare({ effects = ['twist', 'wave'], salt = 0 } = {}) {
+	async prepare({ salt = 0, mapShader = null } = {}) {
 		const D = this.device;
 		const t0 = performance.now();
+		const salted = (code) => {
+			const c = salt ? code.replace('43758.5453', (43758.5453 + salt).toFixed(6)) : code;
+			return mapShader ? mapShader(c) : c;
+		};
 		const jobs = [];
-		const compute = (name, code) => {
-			if (this.pipelines[name]) return;
-			const module = D.createShaderModule({ code });
+		if (this._mapped !== mapShader) {
+			// другой вариант шейдера (только для проверок): пересобрать
+			delete this.pipelines.compute;
+			this._mapped = mapShader;
+		}
+		if (!this.pipelines.compute) {
+			const module = D.createShaderModule({ code: salted(pointsComputeWGSL) });
 			jobs.push(
-				D.createComputePipelineAsync({ layout: this.computeLayout, compute: { module, entryPoint: 'main' } }).then((p) => {
-					this.pipelines[name] = p;
+				D.createComputePipelineAsync({ layout: D.createPipelineLayout({ bindGroupLayouts: [this.computeBGL] }), compute: { module, entryPoint: 'main' } }).then((p) => {
+					this.pipelines.compute = p;
 				})
 			);
-		};
-		compute('copy', computeCopy());
-		if (effects.includes('twist')) compute('twist', computeTwist(salt));
-		if (effects.includes('wave')) compute('wave', computeWave(salt));
+		}
+		const renderLayout = D.createPipelineLayout({ bindGroupLayouts: [this.renderBGL] });
 		for (const mode of ['add', 'normal']) {
 			if (this.pipelines['points-' + mode]) continue;
-			const module = D.createShaderModule({ code: pointsShader(salt) });
+			const module = D.createShaderModule({ code: pointsRenderWGSL });
 			const add = mode === 'add';
 			jobs.push(
 				D.createRenderPipelineAsync({
-					layout: this.renderLayout,
+					layout: renderLayout,
 					vertex: { module, entryPoint: 'vs' },
 					fragment: {
 						module,
@@ -128,10 +244,8 @@ export class WebGPUPoints {
 						targets: [
 							{
 								format: this.format,
-								// как AdditiveBlending и «без смешивания» у three.js: SRC_ALPHA + ONE для цвета и альфы
-								blend: add
-									? { color: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' }, alpha: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' } }
-									: undefined,
+								// как AdditiveBlending у three.js: SRC_ALPHA + ONE для цвета и альфы; непрозрачный режим без смешивания
+								blend: add ? { color: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' }, alpha: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' } } : undefined,
 							},
 						],
 					},
@@ -147,7 +261,11 @@ export class WebGPUPoints {
 		return { blockedMs, readyMs: performance.now() - t0 };
 	}
 
-	/** Приводит размер холста и буфера глубины в порядок */
+	/** Готов ли конвейер расчёта и рисования для указанного режима */
+	ready(add = true) {
+		return !!(this.pipelines.compute && this.pipelines['points-' + (add ? 'add' : 'normal')]);
+	}
+
 	resize(w, h) {
 		if (this.canvas.width !== w) this.canvas.width = w;
 		if (this.canvas.height !== h) this.canvas.height = h;
@@ -160,27 +278,22 @@ export class WebGPUPoints {
 	/**
 	 * Один кадр.
 	 * @param {object} shared общие значения кадра (render/shared/frame-uniforms.js)
-	 * @param {{proj: ArrayLike<number>, modelView: ArrayLike<number>, exposure?: number}} cam камера
-	 * @param {{twist?: boolean, wave?: boolean}} on какие эффекты выполнять
+	 * @param {object} extra значения рендера: modelMatrix, modelViewMatrix, projectionMatrix, normalMatrix (матрицы three.js), uTOff, uGhost, uExposure
 	 */
-	frame(shared, cam, on = {}) {
+	frame(shared, extra) {
 		const D = this.device;
 		const w = this.canvas.width;
 		const h = this.canvas.height;
 		this.resize(w, h);
-		packFrame(shared, { uRes: [w, h], uExposure: cam.exposure ?? 1, proj: cam.proj, modelView: cam.modelView }, this.frameData);
+		const add = shared.uAdd.value > 0.5;
+		packFrame(shared, { uRes: [w, h], uExposure: 1, uTOff: 0, uGhost: 1, ...extra }, this.frameData);
 		D.queue.writeBuffer(this.frameBuf, 0, this.frameData);
 		const enc = D.createCommandEncoder();
-		const groups = Math.ceil(this.count / 64);
 		const cp = enc.beginComputePass();
+		cp.setPipeline(this.pipelines.compute);
 		cp.setBindGroup(0, this.computeGroup);
-		for (const name of ['copy', on.twist && 'twist', on.wave && 'wave']) {
-			if (!name || !this.pipelines[name]) continue;
-			cp.setPipeline(this.pipelines[name]);
-			cp.dispatchWorkgroups(groups);
-		}
+		cp.dispatchWorkgroups(Math.ceil(this.count / 64));
 		cp.end();
-		const add = shared.uAdd.value > 0.5;
 		const rp = enc.beginRenderPass({
 			colorAttachments: [{ view: this.ctx.getCurrentTexture().createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }],
 			depthStencilAttachment: { view: this.depth.createView(), depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' },
@@ -201,7 +314,9 @@ export class WebGPUPoints {
 	}
 
 	dispose() {
-		for (const k of ['baseBuf', 'posBuf', 'colBuf', 'frameBuf']) this[k]?.destroy();
+		for (const b of Object.values(this.bufs)) b.destroy();
+		this.frameBuf.destroy();
+		for (const t of [this.specTex, this.pieceTex, this.frTex, this.heroTex, this.atlasTex]) t.destroy();
 		this.depth?.destroy();
 		this.ctx.unconfigure();
 	}
