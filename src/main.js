@@ -57,10 +57,28 @@ function showFatal(e) {
 
 import { iconsReady } from './ui/icons.js';
 
-// установка как приложения отключена: сайт открывается только во вкладке, а ранее поставленные сервис-воркеры снимаются
-if ('serviceWorker' in navigator) {
-	navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
+// установка как приложения: сервис-воркер нужен браузеру, чтобы предложить установку; кнопка в окне поддержки появляется, когда установка доступна
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+	window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
+let installEvent = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+	e.preventDefault();
+	installEvent = e;
+	const b = document.getElementById('btnInstall');
+	if (b) b.hidden = false;
+});
+window.addEventListener('appinstalled', () => {
+	installEvent = null;
+	const b = document.getElementById('btnInstall');
+	if (b) b.hidden = true;
+});
+document.addEventListener('click', (e) => {
+	if (e.target.closest && e.target.closest('#btnInstall') && installEvent) {
+		installEvent.prompt();
+		installEvent = null;
+	}
+});
 
 iconsReady
 	.then(() => {
