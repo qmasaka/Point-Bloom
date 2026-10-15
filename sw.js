@@ -1,6 +1,6 @@
 // Сервис-воркер: делает сайт устанавливаемым и держит копию оболочки на случай обрыва сети.
 // Сеть всегда в приоритете, поэтому после обновления сайта открывается новая версия, а не старая из кэша.
-const CACHE = 'point-bloom-v1';
+const CACHE = 'point-bloom-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => {
