@@ -1,4 +1,11 @@
 export default {
+"Сред.": "Mid",
+"Порог срабатывания": "Trigger threshold",
+"Сработало": "Triggered",
+"Ждёт": "Waiting",
+"Нет звука: включите музыку или микрофон": "No sound: turn on music or the microphone",
+"Уровень звука": "Sound level",
+"Гаснет за": "Fades out in",
 'Быстрая настройка': 'Quick setup',
 'Удар': 'Hit',
 'Голос': 'Voice',

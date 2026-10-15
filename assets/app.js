@@ -75491,11 +75491,11 @@ const FX_SHAPES = [
 { id: 'plane', name: 'Плоскость', icon: 'grid-four' },
 ];
 const BANDS = [
-{ id: 'none', label: '—', title: 'Без реакции на звук' },
+{ id: 'none', label: 'Выкл', title: 'Без реакции на звук' },
 { id: 'bass', label: 'Бас', title: 'Низкие частоты (30–250 Гц): бочка, бас' },
-{ id: 'mid', label: 'Сер.', title: 'Средние частоты (250–4000 Гц): голос, синтезатор' },
+{ id: 'mid', label: 'Сред.', title: 'Средние частоты (250–4000 Гц): голос, синтезатор' },
 { id: 'high', label: 'Верх', title: 'Высокие частоты (4–12 кГц): тарелки, шипение' },
-{ id: 'beat', label: 'Бит', title: 'Удар: вспышка на каждый такт' },
+{ id: 'beat', label: 'Удар', title: 'Удар барабана: всплеск на каждый такт' },
 { id: 'custom', label: 'Своя', title: 'Свой диапазон частот: выберите его на полоске спектра' },
 ];
 const AUDIO_DEF = { amode: 'amp', lo: 0.05, hi: 0.3, thr: 0.5, atk: 0.03, rel: 0.35 };
@@ -77234,6 +77234,13 @@ __defs['src/i18n/extra.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'default', () => __default);
 const __default = {
+"Сред.": "Mid",
+"Порог срабатывания": "Trigger threshold",
+"Сработало": "Triggered",
+"Ждёт": "Waiting",
+"Нет звука: включите музыку или микрофон": "No sound: turn on music or the microphone",
+"Уровень звука": "Sound level",
+"Гаснет за": "Fades out in",
 'Быстрая настройка': 'Quick setup',
 'Удар': 'Hit',
 'Голос': 'Voice',
@@ -77353,6 +77360,12 @@ const __default = {
 "Низкие частоты (30–250 Гц): бочка, бас": "Низькі частоти (30–250 Гц): бочка, бас",
 "Средние частоты (250–4000 Гц): голос, синтезатор": "Середні частоти (250–4000 Гц): голос, синтезатор",
 "Высокие частоты (4–12 кГц): тарелки, шипение": "Високі частоти (4–12 кГц): тарілки, шипіння",
+"Сред.": "Серед.",
+"Порог срабатывания": "Поріг спрацювання",
+"Сработало": "Спрацювало",
+"Ждёт": "Чекає",
+"Нет звука: включите музыку или микрофон": "Немає звуку: увімкніть музику або мікрофон",
+"Уровень звука": "Рівень звуку",
 "Авто-качество": "Авто-якість",
 "Авто-качество снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется. Эффекты и цвета не меняются.": "Авто-якість знижує чіткість, лише поки комп’ютеру не вистачає кадрів, і повертає її, коли запас з’являється. Ефекти й кольори не змінюються.",
 "Авто-перспектива": "Авто-перспектива",
@@ -79014,6 +79027,12 @@ const __default = {
 "Низкие частоты (30–250 Гц): бочка, бас": "Frecuencias bajas (30–250 Hz): bombo, bajo",
 "Средние частоты (250–4000 Гц): голос, синтезатор": "Frecuencias medias (250–4000 Hz): voz, sintetizador",
 "Высокие частоты (4–12 кГц): тарелки, шипение": "Frecuencias altas (4–12 kHz): platillos, siseo",
+"Сред.": "Medio",
+"Порог срабатывания": "Umbral de activación",
+"Сработало": "Activado",
+"Ждёт": "Esperando",
+"Нет звука: включите музыку или микрофон": "Sin sonido: activa música o el micrófono",
+"Уровень звука": "Nivel de sonido",
 "Авто-качество": "Calidad automática",
 "Авто-качество снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется. Эффекты и цвета не меняются.": "La calidad automática reduce la nitidez solo mientras el ordenador no llega a los fotogramas y la devuelve cuando hay margen. Los efectos y los colores no cambian.",
 "Авто-перспектива": "Perspectiva automática",
@@ -80675,6 +80694,12 @@ const __default = {
 "Низкие частоты (30–250 Гц): бочка, бас": "Tiefe Frequenzen (30–250 Hz): Bassdrum, Bass",
 "Средние частоты (250–4000 Гц): голос, синтезатор": "Mittlere Frequenzen (250–4000 Hz): Stimme, Synthesizer",
 "Высокие частоты (4–12 кГц): тарелки, шипение": "Hohe Frequenzen (4–12 kHz): Becken, Zischen",
+"Сред.": "Mitte",
+"Порог срабатывания": "Auslöseschwelle",
+"Сработало": "Ausgelöst",
+"Ждёт": "Wartet",
+"Нет звука: включите музыку или микрофон": "Kein Ton: Musik oder Mikrofon einschalten",
+"Уровень звука": "Tonpegel",
 "Авто-качество": "Auto-Qualität",
 "Авто-качество снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется. Эффекты и цвета не меняются.": "Die Auto-Qualität senkt die Schärfe nur, solange der Computer die Bilder nicht schafft, und bringt sie zurück, wenn wieder Reserve da ist. Effekte und Farben bleiben gleich.",
 "Авто-перспектива": "Auto-Perspektive",
@@ -93551,7 +93576,7 @@ const { clipActivity } = __req('src/animation/anim-activity.js');
 const { attachPreview } = __req('src/effects/ui/fx-previews.js');
 const { SHAPES: POINT_SHAPE_LIST } = __req('src/ui/panels/points.js');
 const { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS } = __req('src/effects/state/layers.js');
-const { FX_PALETTES, BANDS, BAND_RANGE, FREQ_QUICK, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } = __req('src/effects/state/options.js');
+const { FX_PALETTES, BANDS, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } = __req('src/effects/state/options.js');
 function makeModelProvider(app) {
 const root = app.viewport.root;
 const shown = (o) => {
@@ -93819,129 +93844,44 @@ syncMorph();
 const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
 const secMorph = section('Морфинг', { key: 'fx-morph' }, morphNote, morphBox);
 const pickers = new Set();
-const SOUND_PRESETS = [
-['Удар', 'Каждый удар барабана даёт всплеск', { band: 'beat', amode: 'amp', react: 1 }],
-['Бас', 'Следует за низкими частотами: бочка, бас', { band: 'bass', amode: 'amp', react: 0.8 }],
-['Голос', 'Следует за средними частотами: голос, синтезатор', { band: 'mid', amode: 'amp', react: 0.8 }],
-['Тарелки', 'Следует за высокими частотами: тарелки, шипение', { band: 'high', amode: 'amp', react: 0.8 }],
-['Вспышка на бас', 'Эффект резко включается на каждом сильном ударе баса и плавно гаснет', { band: 'bass', amode: 'gate', thr: 0.6, atk: 0.02, rel: 0.3, react: 0.8 }],
-];
-function freqPicker(L, onSave) {
-const cv = h('canvas', { class: 'fx-freq-cv' });
-const lab = h('div', { class: 'fx-freq-lab' });
-const chips = h('div', { class: 'chip-row fx-freq-chips' });
-const el = h('div', { class: 'fx-freq' }, cv, lab, chips);
-const ctx = cv.getContext('2d');
-const range = () => (L.band === 'custom' ? [L.lo, L.hi] : BAND_RANGE[L.band] || (L.band === 'beat' ? [0, 0.3] : [0, 0]));
-for (const [name, f0, f1] of FREQ_QUICK) {
-const b = h('button', { type: 'button', class: 'chip-btn', 'data-tip': `${f0}–${f1} Гц` }, name);
-b.addEventListener('click', () => {
-const sr = engine.ctx?.sampleRate || 44100;
-const toX = (hz) => Math.sqrt(hz / (0.275 * sr));
-L.band = 'custom';
-L.lo = toX(f0);
-L.hi = toX(f1);
-if (!L.react) L.react = 0.7;
-onSave();
-engine.emit();
-});
-chips.append(b);
-}
+function levelMeter(L, onThr, onSave) {
+const fill = h('div', { class: 'fx-lvl-fill' });
+const mark = h('div', { class: 'fx-lvl-mark' });
+const bar = h('div', { class: 'fx-lvl-bar' }, fill, mark);
+const num = h('div', { class: 'fx-lvl-num' });
+const lab = h('div', { class: 'fx-lvl-lab' });
+const el = h('div', { class: 'fx-lvl' }, bar, h('div', { class: 'fx-lvl-row' }, lab, num));
 let vis = false;
-new IntersectionObserver((es) => { vis = es[es.length - 1].isIntersecting; }).observe(cv);
+new IntersectionObserver((es) => { vis = es[es.length - 1].isIntersecting; }).observe(el);
 function draw() {
 if (!vis || el.hidden) return;
-const dpr = Math.min(2, window.devicePixelRatio || 1);
-const W = cv.clientWidth;
-const H = 56;
-if (cv.width !== Math.round(W * dpr) || cv.height !== H * dpr) {
-cv.width = Math.round(W * dpr);
-cv.height = H * dpr;
+const v = engine._bandLevel(L);
+const gate = L.amode === 'gate';
+const hot = gate && v > L.thr;
+fill.style.transform = `scaleX(${Math.max(0, Math.min(1, v))})`;
+fill.classList.toggle('is-hot', hot);
+mark.hidden = !gate;
+if (gate) mark.style.left = L.thr * 100 + '%';
+num.textContent = String(Math.round(v * 100));
+lab.textContent = !engine.soundActive ? 'Нет звука: включите музыку или микрофон' : gate ? (hot ? 'Сработало' : 'Ждёт') : 'Уровень звука';
 }
-ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-ctx.clearRect(0, 0, W, H);
-const [r0, r1] = range();
-const bw = W / 64;
-const sp = engine.spec;
-const cs = getComputedStyle(cv);
-const acc = cs.getPropertyValue('--accent').trim() || '#e58a45';
-const dim = cs.getPropertyValue('--text-faint').trim() || '#747c89';
-ctx.globalAlpha = 0.16;
-ctx.fillStyle = acc;
-ctx.fillRect(r0 * W, 0, Math.max(2, (r1 - r0) * W), H);
-ctx.globalAlpha = 1;
-for (let i = 0; i < 64; i++) {
-const v = Math.min(1, sp[i] || 0);
-const inR = (i + 0.5) / 64 >= r0 && (i + 0.5) / 64 <= r1;
-ctx.fillStyle = inR ? acc : dim;
-ctx.globalAlpha = inR ? 0.95 : 0.45;
-const h2 = Math.max(1.5, v * (H - 8));
-ctx.fillRect(i * bw + 0.5, H - h2, Math.max(1, bw - 1.5), h2);
-}
-ctx.globalAlpha = 1;
-if (L.amode === 'gate') {
-const y = H - L.thr * (H - 8);
-ctx.strokeStyle = '#fff';
-ctx.globalAlpha = 0.8;
-ctx.setLineDash([4, 3]);
-ctx.beginPath();
-ctx.moveTo(r0 * W, y);
-ctx.lineTo(Math.max(r0 * W + 2, r1 * W), y);
-ctx.stroke();
-ctx.setLineDash([]);
-ctx.globalAlpha = 1;
-}
-if (L.band === 'custom') {
-ctx.fillStyle = acc;
-ctx.fillRect(r0 * W - 1.5, 0, 3, H);
-ctx.fillRect(r1 * W - 1.5, 0, 3, H);
-}
-const lvl = engine._bandLevel(L);
-const open = L.amode === 'gate' && lvl > L.thr;
-lab.textContent = (L.band === 'custom' || BAND_RANGE[L.band] ? `${engine.hzAt(r0)}–${engine.hzAt(r1)} Гц` : 'Удары в басах') + `  ·  сейчас ${Math.round(lvl * 100)}%` + (L.amode === 'gate' ? (open ? '  ·  включён' : '  ·  ждёт') : '') + (engine.soundActive ? '' : '  ·  нет звука');
-}
-cv.addEventListener('pointerdown', (e) => {
-if (L.band === 'none') return;
-const r = cv.getBoundingClientRect();
-const xAt = (ev) => Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
-const x = xAt(e);
-const [a, b] = range();
-const near = 9 / r.width;
-let mode = 'new';
-if (L.band === 'custom') {
-if (Math.abs(x - a) < near) mode = 'lo';
-else if (Math.abs(x - b) < near) mode = 'hi';
-else if (x > a && x < b) mode = 'move';
-}
-L.band = 'custom';
-if (!L.react) L.react = 0.7;
-if (mode === 'new') {
-L.lo = x;
-L.hi = Math.min(1, x + 0.03);
-mode = 'hi';
-}
-const off = x - L.lo;
-const wd = L.hi - L.lo;
-cv.setPointerCapture(e.pointerId);
-const mv = (ev) => {
-const xx = xAt(ev);
-if (mode === 'lo') L.lo = Math.min(xx, L.hi - 0.02);
-else if (mode === 'hi') L.hi = Math.max(xx, L.lo + 0.02);
-else {
-L.lo = Math.max(0, Math.min(1 - wd, xx - off));
-L.hi = L.lo + wd;
-}
+bar.addEventListener('pointerdown', (e) => {
+if (L.amode !== 'gate') return;
+const r = bar.getBoundingClientRect();
+const set = (ev) => {
+L.thr = Math.max(0.05, Math.min(0.95, (ev.clientX - r.left) / r.width));
+onThr(L.thr);
 draw();
 };
 const up = () => {
-cv.removeEventListener('pointermove', mv);
-cv.removeEventListener('pointerup', up);
+bar.removeEventListener('pointermove', set);
+bar.removeEventListener('pointerup', up);
 onSave();
-engine.emit();
 };
-cv.addEventListener('pointermove', mv);
-cv.addEventListener('pointerup', up);
-mv(e);
+bar.setPointerCapture(e.pointerId);
+bar.addEventListener('pointermove', set);
+bar.addEventListener('pointerup', up);
+set(e);
 });
 const api = { el, draw };
 pickers.add(api);
@@ -94177,7 +94117,7 @@ const react = slider({ min: 0, max: 1, step: 0.05, value: L.react, format: (v) =
 const reactRow = field('Сила реакции', react.el);
 const modeSeg = segmented({
 cls: 'seg-tight',
-options: [{ value: 'amp', label: 'Усиливать', title: 'Сила эффекта растёт и падает вместе с громкостью выбранных частот' }, { value: 'gate', label: 'По порогу', title: 'Эффект включается, когда выбранные частоты громче порога, и плавно гаснет' }],
+options: [{ value: 'gate', label: 'Резко', title: 'Эффект включается, когда число звука выше порога, и гаснет после' }, { value: 'amp', label: 'Плавно', title: 'Сила эффекта плавно следует за числом звука' }],
 value: L.amode,
 onChange: (v) => {
 L.amode = v;
@@ -94185,7 +94125,8 @@ audioUiFull();
 save();
 },
 });
-const thr = slider({ min: 0.05, max: 0.95, step: 0.01, value: L.thr, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { L.thr = v; }, onChange: save });
+const pct = (v) => Math.round(v * 100);
+const thr = slider({ noNorm: true, min: 0.05, max: 0.95, step: 0.01, value: L.thr, format: (v) => String(pct(v)), onInput: (v) => { L.thr = v; }, onChange: save });
 const atk = slider({ log: true, min: 0.005, max: 1, step: 0.005, value: L.atk, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), onInput: (v) => { L.atk = v; }, onChange: save });
 const rel = slider({ log: true, min: 0.03, max: 4, step: 0.01, value: L.rel, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), onInput: (v) => { L.rel = v; }, onChange: save });
 const autoThr = button({
@@ -94193,7 +94134,7 @@ label: 'Подобрать порог по музыке',
 icon: 'lightning',
 variant: 'secondary',
 cls: 'btn-block',
-title: 'Порог ставится между фоновым уровнем и пиками выбранных частот за последние секунды',
+title: 'Порог ставится между фоновым уровнем и пиками за последние секунды',
 onClick: () => {
 const t = engine.autoThreshold(L);
 if (t === null) {
@@ -94205,11 +94146,11 @@ thr.set(t);
 save();
 },
 });
-const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Порог', thr.el), autoThr, field('Включается за', atk.el), field('Гаснет за', rel.el));
-const picker = freqPicker(L, save);
+const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Порог срабатывания', thr.el), autoThr, field('Гаснет за', rel.el));
+const picker = levelMeter(L, (v) => thr.set(v), save);
 const band = segmented({
 cls: 'seg-tight',
-options: BANDS.map((b) => ({ value: b.id, label: b.label, title: b.title })),
+options: BANDS.filter((b) => b.id !== 'custom' || L.band === 'custom').map((b) => ({ value: b.id, label: b.label, title: b.title })),
 value: L.band,
 onChange: (v) => {
 L.band = v;
@@ -94221,32 +94162,6 @@ audioUiFull();
 save();
 },
 });
-const presetRow = h('div', { class: 'chip-row fx-freq-chips' });
-for (const [label, tip, p] of SOUND_PRESETS) {
-const b = h('button', { type: 'button', class: 'chip-btn', 'data-tip': tip }, label);
-b.addEventListener('click', () => {
-Object.assign(L, p);
-if (!L.on) {
-L.on = true;
-sw.set(true);
-card.classList.add('is-on');
-insp.classList.remove('is-off');
-countActive();
-}
-band.set(L.band);
-modeSeg.set(L.amode);
-react.set(L.react);
-thr.set(L.thr);
-atk.set(L.atk);
-rel.set(L.rel);
-audioUiFull();
-syncAudioHead();
-save();
-engine.emit();
-});
-presetRow.append(b);
-}
-const presetField = field('Быстрая настройка', presetRow, { wide: true });
 const modeRow = field('Как реагирует', modeSeg.el, { wide: true });
 const audioUiFull = () => {
 const on = L.band !== 'none';
@@ -94256,7 +94171,7 @@ reactRow.hidden = !on || L.amode === 'gate';
 gateBox.hidden = !on || L.amode !== 'gate';
 picker.draw();
 };
-const audioWrap = h('div', { class: 'fx-grp-body' }, presetField, field('Слушает частоты', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
+const audioWrap = h('div', { class: 'fx-grp-body' }, field('Слушает', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
 let audioOpen = L.band !== 'none';
 const audioHead = h('button', { type: 'button', class: 'fx-sub fx-sub-toggle', 'aria-expanded': String(audioOpen) }, h('span', { class: 'ic-wrap', html: icon('caret-down', 12) }), 'Реакция на звук');
 const audioState = h('span', { class: 'fx-sub-state' });

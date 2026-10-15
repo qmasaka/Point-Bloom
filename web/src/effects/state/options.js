@@ -10,11 +10,11 @@ export const FX_SHAPES = [
 { id: 'plane', name: 'Плоскость', icon: 'grid-four' },
 ];
 export const BANDS = [
-{ id: 'none', label: '—', title: 'Без реакции на звук' },
+{ id: 'none', label: 'Выкл', title: 'Без реакции на звук' },
 { id: 'bass', label: 'Бас', title: 'Низкие частоты (30–250 Гц): бочка, бас' },
-{ id: 'mid', label: 'Сер.', title: 'Средние частоты (250–4000 Гц): голос, синтезатор' },
+{ id: 'mid', label: 'Сред.', title: 'Средние частоты (250–4000 Гц): голос, синтезатор' },
 { id: 'high', label: 'Верх', title: 'Высокие частоты (4–12 кГц): тарелки, шипение' },
-{ id: 'beat', label: 'Бит', title: 'Удар: вспышка на каждый такт' },
+{ id: 'beat', label: 'Удар', title: 'Удар барабана: всплеск на каждый такт' },
 { id: 'custom', label: 'Своя', title: 'Свой диапазон частот: выберите его на полоске спектра' },
 ];
 export const AUDIO_DEF = { amode: 'amp', lo: 0.05, hi: 0.3, thr: 0.5, atk: 0.03, rel: 0.35 };

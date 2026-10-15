@@ -3327,7 +3327,8 @@ body {
 }
 .shape-row .shape-char {
 	width: auto;
-	font: 700 13px/15px var(--font-mono, ui-monospace, Menlo, monospace);
+	font: 700 13px/15px var(--mono);
+	font-feature-settings: 'tnum' 1, 'zero' 0;
 	text-align: center;
 	letter-spacing: -0.04em;
 }
@@ -4575,9 +4576,48 @@ body.is-resizing-h * {
 	cursor: ew-resize;
 	touch-action: none;
 }
-.fx-freq-lab {
-	font: 500 11px var(--font-mono, ui-monospace, monospace);
+.fx-lvl {
+	display: grid;
+	gap: 4px;
+	margin: 2px 0 6px;
+}
+.fx-lvl-bar {
+	position: relative;
+	height: 14px;
+	border-radius: 7px;
+	background: var(--bg-input, rgba(255, 255, 255, 0.06));
+	overflow: hidden;
+	cursor: pointer;
+	touch-action: none;
+}
+.fx-lvl-fill {
+	position: absolute;
+	inset: 0;
+	transform-origin: left center;
+	background: var(--accent);
+	opacity: 0.55;
+	transition: opacity 0.12s;
+}
+.fx-lvl-fill.is-hot { opacity: 1; }
+.fx-lvl-mark {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 2px;
+	margin-left: -1px;
+	background: #fff;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+.fx-lvl-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	font-size: 11px;
 	color: var(--text-dim);
+}
+.fx-lvl-num {
+	font: 600 13px var(--mono);
+	color: var(--text);
 }
 .fx-freq-chips .chip-btn {
 	font-size: 11px;
@@ -5294,7 +5334,7 @@ body.is-resizing-h * {
 .num-out,
 .num-in,
 .fx-anim-time,
-.fx-freq-lab,
+.fx-lvl-num,
 .chip-btn b {
 	font-variant-numeric: tabular-nums;
 	font-feature-settings: 'tnum' 1, 'zero' 0;
