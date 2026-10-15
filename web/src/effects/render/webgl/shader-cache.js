@@ -21,7 +21,7 @@ cache.set(ck, v);
 return v;
 }
 _fxCheck() {
-if (!this.shared || !this.points || this._fxBusy) return;
+if (!this.shared || !this.points || this._fxBusy || this._glDormant) return;
 const cur = this._fxCur || (this._fxCur = new Set());
 const now = performance.now();
 const seen = this._fxSeen || (this._fxSeen = new Map());
@@ -42,6 +42,15 @@ if (!this._fxDeb) this._fxDeb = now;
 if (now - this._fxDeb < 250) return;
 this._fxDeb = 0;
 this._fxApply(add || new Set(), add ? null : stale);
+}
+_fxCovered() {
+if (!this.shared || this._fxBusy) return false;
+const cur = this._fxCur;
+if (!cur) return false;
+for (const [key, [name, comp, thr]] of FX_GUARDS) {
+if (this.shared[name]?.value?.[comp] > thr * 0.5 && !cur.has(key)) return false;
+}
+return true;
 }
 async _fxApply(add, drop) {
 this._fxBusy = true;
@@ -148,6 +157,10 @@ await rec.job;
 }
 _gate(kind, want) {
 if (!want) return false;
+if (this._glDormant) {
+if (kind.startsWith('vert')) return true;
+this.backend?.wakeGl?.();
+}
 (this._wantT || (this._wantT = {}))[kind] = performance.now();
 const sig = this._fxSig();
 const id = kind + (this._curTgt() ? '@r' : '@s');

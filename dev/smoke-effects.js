@@ -117,7 +117,7 @@
 					clickText('[role=tab], button, div', 'Effects');
 					for (let i = 0; i < 400; i++) {
 						await sleep(50);
-						if (fx.active && fx.points && fx.points.visible) return 'готово за ' + i * 50 + ' мс';
+						if (fx.active && fx.points && (fx.points.visible || (fx.backend && fx.backend.kind === 'webgpu' && fx.backend.canvas && !fx.backend.useGl))) return 'готово за ' + i * 50 + ' мс';
 					}
 					throw new Error('облако точек так и не появилось');
 				},
@@ -162,7 +162,7 @@
 					clickText('[role=tab], button, div', 'Effects');
 					for (let i = 0; i < 400; i++) {
 						await sleep(50);
-						if (fx.active && fx.points && fx.points.visible) return 'готово за ' + i * 50 + ' мс';
+						if (fx.active && fx.points && (fx.points.visible || (fx.backend && fx.backend.kind === 'webgpu' && fx.backend.canvas && !fx.backend.useGl))) return 'готово за ' + i * 50 + ' мс';
 					}
 					throw new Error('облако точек так и не появилось');
 				},
@@ -178,6 +178,7 @@
 			problems: [...S.errors.filter((e) => !/WebGL.*context|GL_INVALID/i.test(e)), ...bad.map((s) => s.name + ': ' + (s.note || s.errors.join('; ')))],
 			slowSteps: slow.map((s) => ({ name: s.name, longTasks: s.longTasks, glStalls: s.glStalls })),
 			worstFrame: Math.max(...S.steps.map((s) => s.maxFrame)),
+			backend: window.__app.ui.effectsEngine.backend ? { kind: window.__app.ui.effectsEngine.backend.kind, frames: window.__app.ui.effectsEngine.backend.stats } : null,
 		};
 		S.done = true;
 	})();

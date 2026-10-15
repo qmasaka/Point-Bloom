@@ -26,26 +26,29 @@ export class WebGLBackend extends RenderBackend {
 	}
 
 	install() {
+		this.engine.app.viewport.renderHook = (renderer, scene, camera) => this.hook(renderer, scene, camera);
+	}
+
+	/** Рисует один кадр сцены (вызывается из цикла отрисовки области просмотра) */
+	hook(renderer, scene, camera) {
 		const e = this.engine;
-		e.app.viewport.renderHook = (renderer, scene, camera) => {
-			if (!e.active) {
-				renderer.render(scene, camera);
-				return;
-			}
-			const fb = e.state.layers.feedback;
-			const bloom = e.state.look.bloom || 0;
-			const ab = e.state.look.aberration || 0;
-			const dm = e.state.layers.datamosh;
-			// вывод в экран или в буфер меняется, когда готовы программы нового варианта (см. _tgtSync)
-			e._tgtSync();
-			if (!e._tgtRT) {
-				renderer.setRenderTarget(null);
-				renderer.render(scene, camera);
-				this.post.hasHistory = false;
-				return;
-			}
-			this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true);
-		};
+		if (!e.active) {
+			renderer.render(scene, camera);
+			return;
+		}
+		const fb = e.state.layers.feedback;
+		const bloom = e.state.look.bloom || 0;
+		const ab = e.state.look.aberration || 0;
+		const dm = e.state.layers.datamosh;
+		// вывод в экран или в буфер меняется, когда готовы программы нового варианта (см. _tgtSync)
+		e._tgtSync();
+		if (!e._tgtRT) {
+			renderer.setRenderTarget(null);
+			renderer.render(scene, camera);
+			this.post.hasHistory = false;
+			return;
+		}
+		this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true);
 	}
 
 	setTint(color) {

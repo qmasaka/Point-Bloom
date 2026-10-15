@@ -14,8 +14,10 @@ await Promise.all([e._warmScene(vp.scene, vp.camera), this.post.warm(), ...kinds
 e._tgtWarm[e._tgtRT ? 'r' : 's'] = 2;
 }
 install() {
+this.engine.app.viewport.renderHook = (renderer, scene, camera) => this.hook(renderer, scene, camera);
+}
+hook(renderer, scene, camera) {
 const e = this.engine;
-e.app.viewport.renderHook = (renderer, scene, camera) => {
 if (!e.active) {
 renderer.render(scene, camera);
 return;
@@ -32,7 +34,6 @@ this.post.hasHistory = false;
 return;
 }
 this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true);
-};
 }
 setTint(color) {
 this.post.tint = color;

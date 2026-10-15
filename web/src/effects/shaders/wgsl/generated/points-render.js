@@ -178,7 +178,7 @@ fn frag_main_() {
 }
 
 
-// Вывод как у three.js: нейтральная тональная компрессия (Khronos PBR Neutral), затем перевод линейного цвета в sRGB
+
 fn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {
 	let startCompression = 0.8 - 0.04;
 	let desaturation = 0.15;
@@ -227,15 +227,28 @@ fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VOut 
 	return o;
 }
 
-@fragment
-fn fs(in: VOut) -> @location(0) vec4f {
+fn setup_in(in: VOut) {
 	vColor = in.color;
 	vD = in.misc.x;
 	vDk = in.misc.y;
 	vCoc = in.misc.z;
 	vGl = in.gl;
 	gl_PointCoord = in.pc;
+}
+
+// на экран: с тональной компрессией и переводом в sRGB
+@fragment
+fn fs(in: VOut) -> @location(0) vec4f {
+	setup_in(in);
 	frag_main_();
 	return vec4f(linearToSrgb(toneNeutral(gl_FragColor.rgb, fr.uExposure)), gl_FragColor.a);
+}
+
+// в промежуточный буфер (дальше идёт пост-обработка): линейный цвет как есть
+@fragment
+fn fs_raw(in: VOut) -> @location(0) vec4f {
+	setup_in(in);
+	frag_main_();
+	return gl_FragColor;
 }
 `;

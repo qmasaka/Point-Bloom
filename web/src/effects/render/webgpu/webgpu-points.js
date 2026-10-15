@@ -1,4 +1,5 @@
 import { FRAME_BYTES, packFrame } from './frame-layout.js';
+import { RT_FORMAT } from './webgpu-post.js';
 import { pointsComputeWGSL } from '../../shaders/wgsl/generated/points-compute.js';
 import { pointsRenderWGSL } from '../../shaders/wgsl/generated/points-render.js';
 const ATTR_GROUPS = {
@@ -78,7 +79,7 @@ this.attrs = null;
 this.bufs = {};
 this.frameData = new Float32Array(FRAME_BYTES / 4);
 const D = this.device;
-this.frameBuf = D.createBuffer({ size: FRAME_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+this.insts = [];
 this.sampler = D.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
 this.specTex = D.createTexture({ size: [64, 1], format: 'r8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
 this.pieceTex = D.createTexture({ size: [256, 1], format: 'rgba32float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
@@ -132,16 +133,20 @@ for (const k of ['outA', 'outB', 'outC']) {
 this.bufs[k]?.destroy();
 this.bufs[k] = D.createBuffer({ size: n * 16, usage: GPUBufferUsage.STORAGE });
 }
-this._groups();
+for (const it of this.insts) it.buf.destroy();
+this.insts = [];
 }
-_groups() {
+_inst(i) {
+let it = this.insts[i];
+if (it) return it;
 const D = this.device;
 const b = this.bufs;
 const e = (binding, buf) => ({ binding, resource: { buffer: buf } });
-this.computeGroup = D.createBindGroup({
+const frameBuf = D.createBuffer({ size: FRAME_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+const computeGroup = D.createBindGroup({
 layout: this.computeBGL,
 entries: [
-e(0, this.frameBuf),
+e(0, frameBuf),
 e(1, b.origin),
 e(2, b.target),
 e(3, b.colorA),
@@ -160,10 +165,12 @@ e(11, b.outC),
 { binding: 16, resource: this.heroTex.createView() },
 ],
 });
-this.renderGroup = D.createBindGroup({
+const renderGroup = D.createBindGroup({
 layout: this.renderBGL,
-entries: [e(0, this.frameBuf), e(1, b.outA), e(2, b.outB), e(3, b.outC), { binding: 4, resource: this.atlasTex.createView() }, { binding: 5, resource: this.sampler }],
+entries: [e(0, frameBuf), e(1, b.outA), e(2, b.outB), e(3, b.outC), { binding: 4, resource: this.atlasTex.createView() }, { binding: 5, resource: this.sampler }],
 });
+it = this.insts[i] = { buf: frameBuf, computeGroup, renderGroup };
+return it;
 }
 updateAttributes(names) {
 const groups = new Set();
@@ -197,20 +204,23 @@ this.pipelines.compute = p;
 );
 }
 const renderLayout = D.createPipelineLayout({ bindGroupLayouts: [this.renderBGL] });
-for (const mode of ['add', 'normal']) {
+const renderModule = D.createShaderModule({ code: pointsRenderWGSL });
+for (const key of ['add', 'normal', 'add-rt', 'normal-rt']) {
+const mode = key;
 if (this.pipelines['points-' + mode]) continue;
-const module = D.createShaderModule({ code: pointsRenderWGSL });
-const add = mode === 'add';
+const module = renderModule;
+const add = key.startsWith('add');
+const rt = key.endsWith('-rt');
 jobs.push(
 D.createRenderPipelineAsync({
 layout: renderLayout,
 vertex: { module, entryPoint: 'vs' },
 fragment: {
 module,
-entryPoint: 'fs',
+entryPoint: rt ? 'fs_raw' : 'fs',
 targets: [
 {
-format: this.format,
+format: rt ? RT_FORMAT : this.format,
 blend: add ? { color: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' }, alpha: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' } } : undefined,
 },
 ],
@@ -226,50 +236,61 @@ const blockedMs = performance.now() - t0;
 await Promise.all(jobs);
 return { blockedMs, readyMs: performance.now() - t0 };
 }
-ready(add = true) {
-return !!(this.pipelines.compute && this.pipelines['points-' + (add ? 'add' : 'normal')]);
+ready(add = true, rt = false) {
+return !!(this.pipelines.compute && this.pipelines['points-' + (add ? 'add' : 'normal') + (rt ? '-rt' : '')]);
 }
 resize(w, h) {
 if (this.canvas.width !== w) this.canvas.width = w;
 if (this.canvas.height !== h) this.canvas.height = h;
+this._depthFor(w, h);
+}
+_depthFor(w, h) {
 if (!this.depth || this.depth.width !== w || this.depth.height !== h) {
 this.depth?.destroy();
 this.depth = this.device.createTexture({ size: [w, h], format: 'depth24plus', usage: GPUTextureUsage.RENDER_ATTACHMENT });
 }
+return this.depth;
 }
-frame(shared, extra) {
+frame(shared, extra, list = [{}], opts = {}) {
 const D = this.device;
-const w = this.canvas.width;
-const h = this.canvas.height;
-this.resize(w, h);
+const rt = !!opts.rt;
+const size = opts.size || [this.canvas.width, this.canvas.height];
+const [w, h] = size;
+if (!opts.view) this.resize(w, h);
+const depth = this._depthFor(w, h);
 const add = shared.uAdd.value > 0.5;
-packFrame(shared, { uRes: [w, h], uExposure: 1, uTOff: 0, uGhost: 1, ...extra }, this.frameData);
-D.queue.writeBuffer(this.frameBuf, 0, this.frameData);
-const enc = D.createCommandEncoder();
+const enc = opts.encoder || D.createCommandEncoder();
+const view = opts.view || this.ctx.getCurrentTexture().createView();
+const pipe = this.pipelines['points-' + (add ? 'add' : 'normal') + (rt ? '-rt' : '')];
+list.forEach((own, i) => {
+const it = this._inst(i);
+packFrame(shared, { uRes: [w, h], uExposure: 1, uTOff: 0, uGhost: 1, ...extra, ...own }, this.frameData);
+D.queue.writeBuffer(it.buf, 0, this.frameData);
 const cp = enc.beginComputePass();
 cp.setPipeline(this.pipelines.compute);
-cp.setBindGroup(0, this.computeGroup);
+cp.setBindGroup(0, it.computeGroup);
 cp.dispatchWorkgroups(Math.ceil(this.count / 64));
 cp.end();
+const first = i === 0;
 const rp = enc.beginRenderPass({
-colorAttachments: [{ view: this.ctx.getCurrentTexture().createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }],
-depthStencilAttachment: { view: this.depth.createView(), depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' },
+colorAttachments: [{ view, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: first ? 'clear' : 'load', storeOp: 'store' }],
+depthStencilAttachment: { view: depth.createView(), depthClearValue: 1, depthLoadOp: first ? 'clear' : 'load', depthStoreOp: 'store' },
 });
-const pipe = this.pipelines[add ? 'points-add' : 'points-normal'];
 if (pipe) {
 rp.setPipeline(pipe);
-rp.setBindGroup(0, this.renderGroup);
+rp.setBindGroup(0, it.renderGroup);
 rp.draw(4, this.count);
 }
 rp.end();
-D.queue.submit([enc.finish()]);
+});
+if (!opts.encoder) D.queue.submit([enc.finish()]);
 }
 idle() {
 return this.device.queue.onSubmittedWorkDone();
 }
 dispose() {
 for (const b of Object.values(this.bufs)) b.destroy();
-this.frameBuf.destroy();
+for (const it of this.insts) it.buf.destroy();
 for (const t of [this.specTex, this.pieceTex, this.frTex, this.heroTex, this.atlasTex]) t.destroy();
 this.depth?.destroy();
 this.ctx.unconfigure();
