@@ -4,6 +4,7 @@ import { WebGLBackend } from '../webgl/webgl-backend.js';
 import { WebGPUPoints } from './webgpu-points.js';
 import { WebGPUPost } from './webgpu-post.js';
 import { WebGPUMesh } from './webgpu-mesh.js';
+import { WebGPUTrail } from './webgpu-trail.js';
 
 // атрибуты облака (имена как в GLSL), которые движок эффектов хранит в геометрии three.js
 const ATTRS = ['aOrigin', 'aTarget', 'aNormal', 'aNormalB', 'aPaint', 'aColor', 'aColorB', 'aHide', 'aDepth', 'aPath', 'aSculpt', 'aVis', 'aIdx'];
@@ -51,6 +52,7 @@ export class WebGPUBackend extends RenderBackend {
 		vp.fxCompose = () => this.captureCanvas();
 		this.pts = new WebGPUPoints(this.gpu, cv);
 		this.post = new WebGPUPost(this.gpu.device, this.gpu.format);
+		this.trail = new WebGPUTrail(this.gpu.device, this.gpu.format);
 		this.meshes = { links: new WebGPUMesh(this.pts, 'links'), scope: new WebGPUMesh(this.pts, 'scope') };
 		this.hasHistory = false;
 		this.gpu.device.lost.then(() => {
@@ -101,11 +103,10 @@ export class WebGPUBackend extends RenderBackend {
 		return m.ready(false) && m.ready(true);
 	}
 
-	/** Рисует ли WebGPU этот объект сцены сам */
+	/** Умеет ли WebGPU рисовать этот объект сцены (пока его конвейер собирается, объект просто не виден: будить WebGL ради него не нужно) */
 	_gpuDraws(obj) {
 		const e = this.engine;
-		const m = obj === e.linkObj ? this.meshes.links : obj === e._scopeLine ? this.meshes.scope : null;
-		return !!(m && m.ready(false) && m.ready(true));
+		return obj === e.linkObj || obj === e._scopeLine || (!!e._trail && obj === e._trail.group);
 	}
 
 	/** Есть ли в сцене то, что умеет рисовать только WebGL */
@@ -246,12 +247,12 @@ export class WebGPUBackend extends RenderBackend {
 		if (!useFb && !useBloom && !useAb && !useMosh) {
 			this.hasHistory = false;
 			post.moshOff();
-			this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common);
+			this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common, camera);
 			D.queue.submit([enc.finish()]);
 			return;
 		}
 		if (!pts.ready(add, true) || (useFb && !post.ready('fb')) || (useMosh && !(post.ready('mv') && post.ready('mosh') && post.mipPipeline))) {
-			this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common);
+			this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common, camera);
 			D.queue.submit([enc.finish()]);
 			return;
 		}
@@ -260,7 +261,7 @@ export class WebGPUBackend extends RenderBackend {
 			this._size = w + 'x' + h;
 			this.hasHistory = false;
 		}
-		this._scene(enc, scene.createView({ baseMipLevel: 0, mipLevelCount: 1 }), size, true, list, common);
+		this._scene(enc, scene.createView({ baseMipLevel: 0, mipLevelCount: 1 }), size, true, list, common, camera);
 		let src = scene.createView();
 		if (useMosh) src = post.moshStep(enc, mosh, size);
 		else post.moshOff();
@@ -295,9 +296,20 @@ export class WebGPUBackend extends RenderBackend {
 	}
 
 	/** Облако (с призраками), затем линии (связи, осциллограф) в одну и ту же цель */
-	_scene(enc, view, size, rt, list, common) {
+	_scene(enc, view, size, rt, list, common, camera) {
 		const e = this.engine;
-		this.pts.frame(e.shared, common, list, { view, size, rt, encoder: enc });
+		// шлейф персонажа рисуется первым (renderOrder -1 в WebGL) и очищает цель
+		const tr = e._trail;
+		let noClear = false;
+		if (tr && tr.group.visible && tr.group.parent === e.points) {
+			this.trail.prepare();
+			if (this.trail.ready(rt) && this.trail.sync(tr)) {
+				this._mv ||= new THREE.Matrix4();
+				this.trail.draw(enc, view, this.pts._depthFor(size[0], size[1]).createView(), rt, tr, { mv: this._mv, proj: camera.projectionMatrix, camera, size, exposure: common.uExposure });
+				noClear = true;
+			}
+		}
+		this.pts.frame(e.shared, common, list, { view, size, rt, noClear, encoder: enc });
 		for (const [obj, m] of [[e.linkObj, this.meshes.links], [e._scopeLine, this.meshes.scope]]) {
 			if (!obj || !obj.visible || !m.ready(rt)) continue;
 			if (m.sync(obj.geometry)) m.draw(enc, view, rt);
@@ -312,6 +324,7 @@ export class WebGPUBackend extends RenderBackend {
 		e._glDormant = false;
 		if (e.points) e.points.visible = true;
 		for (const m of Object.values(this.meshes || {})) m.dispose();
+		this.trail?.dispose();
 		this.pts?.dispose();
 		this.post?.dispose();
 		this.canvas?.remove();

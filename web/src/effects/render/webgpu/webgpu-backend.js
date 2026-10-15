@@ -4,6 +4,7 @@ import { WebGLBackend } from '../webgl/webgl-backend.js';
 import { WebGPUPoints } from './webgpu-points.js';
 import { WebGPUPost } from './webgpu-post.js';
 import { WebGPUMesh } from './webgpu-mesh.js';
+import { WebGPUTrail } from './webgpu-trail.js';
 const ATTRS = ['aOrigin', 'aTarget', 'aNormal', 'aNormalB', 'aPaint', 'aColor', 'aColorB', 'aHide', 'aDepth', 'aPath', 'aSculpt', 'aVis', 'aIdx'];
 const _mv = new THREE.Matrix4();
 const _nm = new THREE.Matrix3();
@@ -36,6 +37,7 @@ vp.fxOverlay = cv;
 vp.fxCompose = () => this.captureCanvas();
 this.pts = new WebGPUPoints(this.gpu, cv);
 this.post = new WebGPUPost(this.gpu.device, this.gpu.format);
+this.trail = new WebGPUTrail(this.gpu.device, this.gpu.format);
 this.meshes = { links: new WebGPUMesh(this.pts, 'links'), scope: new WebGPUMesh(this.pts, 'scope') };
 this.hasHistory = false;
 this.gpu.device.lost.then(() => {
@@ -76,8 +78,7 @@ return m.ready(false) && m.ready(true);
 }
 _gpuDraws(obj) {
 const e = this.engine;
-const m = obj === e.linkObj ? this.meshes.links : obj === e._scopeLine ? this.meshes.scope : null;
-return !!(m && m.ready(false) && m.ready(true));
+return obj === e.linkObj || obj === e._scopeLine || (!!e._trail && obj === e._trail.group);
 }
 _glOnly() {
 const e = this.engine;
@@ -202,12 +203,12 @@ const size = [w, h];
 if (!useFb && !useBloom && !useAb && !useMosh) {
 this.hasHistory = false;
 post.moshOff();
-this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common);
+this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common, camera);
 D.queue.submit([enc.finish()]);
 return;
 }
 if (!pts.ready(add, true) || (useFb && !post.ready('fb')) || (useMosh && !(post.ready('mv') && post.ready('mosh') && post.mipPipeline))) {
-this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common);
+this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common, camera);
 D.queue.submit([enc.finish()]);
 return;
 }
@@ -216,7 +217,7 @@ if (this._size !== w + 'x' + h) {
 this._size = w + 'x' + h;
 this.hasHistory = false;
 }
-this._scene(enc, scene.createView({ baseMipLevel: 0, mipLevelCount: 1 }), size, true, list, common);
+this._scene(enc, scene.createView({ baseMipLevel: 0, mipLevelCount: 1 }), size, true, list, common, camera);
 let src = scene.createView();
 if (useMosh) src = post.moshStep(enc, mosh, size);
 else post.moshOff();
@@ -249,9 +250,19 @@ this.hasHistory = false;
 post.run(enc, 'out', pts.ctx.getCurrentTexture().createView(), size, { uBloom: bloom, uAberration: ab, uRes: size }, { uTex: src });
 D.queue.submit([enc.finish()]);
 }
-_scene(enc, view, size, rt, list, common) {
+_scene(enc, view, size, rt, list, common, camera) {
 const e = this.engine;
-this.pts.frame(e.shared, common, list, { view, size, rt, encoder: enc });
+const tr = e._trail;
+let noClear = false;
+if (tr && tr.group.visible && tr.group.parent === e.points) {
+this.trail.prepare();
+if (this.trail.ready(rt) && this.trail.sync(tr)) {
+this._mv ||= new THREE.Matrix4();
+this.trail.draw(enc, view, this.pts._depthFor(size[0], size[1]).createView(), rt, tr, { mv: this._mv, proj: camera.projectionMatrix, camera, size, exposure: common.uExposure });
+noClear = true;
+}
+}
+this.pts.frame(e.shared, common, list, { view, size, rt, noClear, encoder: enc });
 for (const [obj, m] of [[e.linkObj, this.meshes.links], [e._scopeLine, this.meshes.scope]]) {
 if (!obj || !obj.visible || !m.ready(rt)) continue;
 if (m.sync(obj.geometry)) m.draw(enc, view, rt);
@@ -265,6 +276,7 @@ vp.fxOverlay = vp.fxCompose = null;
 e._glDormant = false;
 if (e.points) e.points.visible = true;
 for (const m of Object.values(this.meshes || {})) m.dispose();
+this.trail?.dispose();
 this.pts?.dispose();
 this.post?.dispose();
 this.canvas?.remove();

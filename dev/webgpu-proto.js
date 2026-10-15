@@ -17,6 +17,7 @@ import { WebGPUPost, RT_FORMAT } from '../src/effects/render/webgpu/webgpu-post.
 import { fbFrag, outFrag } from '../src/effects/shaders/glsl/post.js';
 import { POST_PASSES } from '../src/effects/shaders/wgsl/generated/post-passes.js';
 import { PostPipeline } from '../src/effects/render/webgl/post-pipeline.js';
+import { WebGPUTrail } from '../src/effects/render/webgpu/webgpu-trail.js';
 
 const $ = (id) => document.getElementById(id);
 const log = (s) => {
@@ -577,6 +578,101 @@ async function moshCompare(opts = {}) {
 	return res;
 }
 
+/** Шлейф персонажа: те же точки рисует боевой материал WebGL (копия из engine/scope-trail.js) и WebGPUTrail */
+async function trailCompare(opts = {}) {
+	if (!gpu) gpu = await requestGpu();
+	if (!webgl) await setup(1000, true);
+	const mm = opts.mm ?? 3000;
+	const n = opts.n ?? 4;
+	const R = webgl.renderer;
+	const cam = webgl.camera;
+	const col = new Float32Array(mm * 3);
+	const snaps = [];
+	let seed = 7;
+	const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+	for (let i = 0; i < col.length; i++) col[i] = rnd();
+	for (let k = 0; k <= n; k++) {
+		const a = new Float32Array(mm * 3);
+		for (let i = 0; i < mm; i++) {
+			const t = rnd() * 6.283;
+			const r = 0.6 + 0.4 * rnd();
+			a[i * 3] = Math.cos(t) * r + k * 0.12;
+			a[i * 3 + 1] = (rnd() - 0.5) * 1.6;
+			a[i * 3 + 2] = Math.sin(t) * r;
+		}
+		snaps.push(a);
+	}
+	const colAttr = new THREE.BufferAttribute(col, 3);
+	const group = new THREE.Group();
+	const ghosts = [];
+	for (let k = 0; k < n; k++) {
+		const g = new THREE.BufferGeometry();
+		g.setAttribute('position', new THREE.BufferAttribute(snaps[k + 1], 3));
+		g.setAttribute('color', colAttr);
+		const mat = new THREE.ShaderMaterial({
+			uniforms: { uSize: { value: 1 }, uAlpha: { value: 0 }, uTint: { value: 0 }, uTintC: { value: new THREE.Color() } },
+			vertexShader: 'attribute vec3 color; uniform float uSize; uniform float uTint; uniform vec3 uTintC; varying vec3 vC; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = clamp(uSize * 3.8 / max(-mv.z, 0.4), 1.0, 60.0); vC = mix(color, uTintC, uTint); }',
+			fragmentShader: 'precision highp float; uniform float uAlpha; varying vec3 vC; void main() {\n if (length(gl_PointCoord - 0.5) > 0.5) discard;\n  gl_FragColor = vec4(vC, uAlpha);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}',
+			transparent: true,
+			depthWrite: false,
+			blending: THREE.NormalBlending,
+		});
+		const p = new THREE.Points(g, mat);
+		p.renderOrder = -1;
+		p.frustumCulled = false;
+		group.add(p);
+		ghosts.push(p);
+		const mt = mat.uniforms;
+		mt.uAlpha.value = 0.75 * Math.pow(0.7, k + 1);
+		mt.uSize.value = 40 * (1 - 0.3 * (k / Math.max(1, n - 1)));
+		mt.uTint.value = 0.4;
+		mt.uTintC.value.setRGB(1, 0.5, 0.2);
+	}
+	group.rotation.y = 0.4;
+	const scene = new THREE.Scene();
+	scene.add(group);
+	scene.updateMatrixWorld(true);
+	cam.updateMatrixWorld(true);
+	R.setRenderTarget(null);
+	R.setClearColor(0x000000, 0);
+	R.clear();
+	R.render(scene, cam);
+	// ---- WebGPU
+	const D = gpu.device;
+	const ctx = $('gpu').getContext('webgpu');
+	ctx.configure({ device: D, format: gpu.format, alphaMode: 'premultiplied' });
+	$('gpu').width = W;
+	$('gpu').height = H;
+	const tr = new WebGPUTrail(D, gpu.format);
+	await tr.prepare();
+	const trail = { group, ghosts };
+	tr.sync(trail);
+	const depth = D.createTexture({ size: [W, H], format: 'depth24plus', usage: GPUTextureUsage.RENDER_ATTACHMENT });
+	const enc = D.createCommandEncoder();
+	tr.draw(enc, ctx.getCurrentTexture().createView(), depth.createView(), false, trail, { mv: new THREE.Matrix4(), proj: cam.projectionMatrix, camera: cam, size: [W, H], exposure: R.toneMappingExposure });
+	D.queue.submit([enc.finish()]);
+	const a = snap($('gl'));
+	const b = snap($('gpu'));
+	await D.queue.onSubmittedWorkDone();
+	let sum = 0;
+	let big = 0;
+	let max = 0;
+	let lit = 0;
+	for (let i = 0; i < a.data.length; i += 4) {
+		let d = 0;
+		for (let k = 0; k < 4; k++) d = Math.max(d, Math.abs(a.data[i + k] - b.data[i + k]));
+		if (a.data[i + 3] > 8 || b.data[i + 3] > 8) lit++;
+		sum += d;
+		if (d > 8) big++;
+		max = Math.max(max, d);
+	}
+	const px = a.data.length / 4;
+	const res = { mm, n, lit, meanAbsDiff: +(sum / px).toFixed(3), pctOver8OfLit: lit ? +((big / lit) * 100).toFixed(2) : 0, maxDiff: max };
+	log('ШЛЕЙФ ' + JSON.stringify(res));
+	tr.dispose();
+	return res;
+}
+
 // ---------------------------------------------------------------- скорость
 async function bench() {
 	const rows = [];
@@ -687,6 +783,7 @@ window.__proto.cold = cold;
 window.__proto.fuzz = fuzz;
 window.__proto.postCompare = postCompare;
 window.__proto.moshCompare = moshCompare;
+window.__proto.trailCompare = trailCompare;
 window.__proto.dbg = { get webgl() { return webgl; }, get webgpu() { return webgpu; }, renderAndDiff, setup, resetShared };
 requestGpu().then((g) => {
 	gpu = g;

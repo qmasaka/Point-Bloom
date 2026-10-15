@@ -273,7 +273,7 @@ cp.setPipeline(this.pipelines.compute);
 cp.setBindGroup(0, it.computeGroup);
 cp.dispatchWorkgroups(Math.ceil(this.count / 64));
 cp.end();
-const first = i === 0;
+const first = i === 0 && !opts.noClear;
 const rp = enc.beginRenderPass({
 colorAttachments: [{ view, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: first ? 'clear' : 'load', storeOp: 'store' }],
 depthStencilAttachment: { view: depth.createView(), depthClearValue: 1, depthLoadOp: first ? 'clear' : 'load', depthStoreOp: 'store' },
