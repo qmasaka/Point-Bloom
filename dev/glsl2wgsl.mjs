@@ -358,7 +358,7 @@ export function parseGLSL(src, { defines = {} } = {}) {
 			p--; // вернуть имя: это глобальная переменная
 			const decls = parseDeclRest(type);
 			expect(';');
-			for (const d of decls) prog.globals.push({ type, name: d.name, init: d.init, isConst });
+			for (const d of decls) prog.globals.push({ type, name: d.name, init: d.init, isConst, len: d.arr ? Number(d.arr.v) : 0 });
 		}
 	}
 	return prog;
@@ -383,11 +383,12 @@ export function emitWGSL(prog, opts = {}) {
 		builtinTypes = {}, // имя → тип GLSL для встроенных имён вроде gl_Position
 		skipFuncs = new Set(), // функции, которые не нужно выводить
 		renameFuncs = {}, // переименование функций (например main → main_)
+		flipY = false, // у GLSL текстурные координаты идут снизу вверх, у WebGPU сверху вниз: при true координаты и gl_FragCoord отражаются, чтобы результат совпал с WebGL
 	} = opts;
 
 	const uniforms = new Map(prog.uniforms.map((u) => [u.name, u]));
 	const globalsInfo = new Map();
-	for (const g of prog.globals) globalsInfo.set(g.name, { type: g.type, kind: 'global' });
+	for (const g of prog.globals) globalsInfo.set(g.name, { type: g.type, kind: 'global', len: g.len });
 	for (const a of prog.attributes) globalsInfo.set(a.name, { type: a.type, kind: 'private' });
 	for (const v of prog.varyings) globalsInfo.set(v.name, { type: v.type, kind: 'private' });
 	for (const [n, t] of Object.entries(builtinTypes)) globalsInfo.set(n, { type: t, kind: 'private' });
@@ -442,6 +443,8 @@ export function emitWGSL(prog, opts = {}) {
 	const isVec = (t) => dimOf(t) > 1;
 	const splat = (x, targetT) => (dimOf(targetT) > 1 && dimOf(x.t) === 1 ? `${TYPE_WGSL[targetT]}(${x.s})` : x.s);
 	const widest = (...ts) => ts.reduce((a, b) => (dimOf(b) > dimOf(a) ? b : a));
+
+	const uvText = (c) => (flipY ? `vec2f((${c}).x, 1.0 - (${c}).y)` : c);
 
 	function emitCall(e, env) {
 		const name = e.n;
@@ -518,14 +521,20 @@ export function emitWGSL(prog, opts = {}) {
 			case 'texture': {
 				const tx = textures[e.args[0].n];
 				if (!tx) throw new Error('неизвестная текстура ' + e.args[0].n);
-				if (tx.mode === 'sample') return { s: `textureSampleLevel(${tx.name}, ${tx.sampler}, ${A(1)}, 0.0)`, t: 'vec4' };
+				if (tx.mode === 'sample') return { s: `textureSampleLevel(${tx.name}, ${tx.sampler}, ${uvText(A(1))}, 0.0)`, t: 'vec4' };
 				// загрузка по нормализованным координатам (ближайшая точка)
 				return { s: `textureLoad(${tx.name}, vec2i(${A(1)} * vec2f(textureDimensions(${tx.name}))), 0)`, t: 'vec4' };
+			}
+			case 'textureLod': {
+				const tx = textures[e.args[0].n];
+				if (!tx) throw new Error('неизвестная текстура ' + e.args[0].n);
+				return { s: `textureSampleLevel(${tx.name}, ${tx.sampler}, ${uvText(A(1))}, ${A(2)})`, t: 'vec4' };
 			}
 			case 'texelFetch': {
 				const tx = textures[e.args[0].n];
 				if (!tx) throw new Error('неизвестная текстура ' + e.args[0].n);
 				if (tx.array) return { s: `textureLoad(${tx.name}, ${A(1)}.xy, ${A(1)}.z, ${A(2)})`, t: 'vec4' };
+				if (flipY) return { s: `textureLoad(${tx.name}, vec2i((${A(1)}).x, i32(textureDimensions(${tx.name}).y) - 1 - (${A(1)}).y), ${A(2)})`, t: 'vec4' };
 				return { s: `textureLoad(${tx.name}, ${A(1)}, ${A(2)})`, t: 'vec4' };
 			}
 		}
@@ -637,8 +646,10 @@ export function emitWGSL(prog, opts = {}) {
 			else val = splat(rhs, sub.t);
 			const tmp = `_sw${tmpCounter++}`;
 			const comps = [];
+			// буквы цвета (rgba) и текстурные (stpq) означают те же компоненты, что и xyzw
+			const norm = [...lhs.m].map((ch) => 'xyzw'['rgba'.indexOf(ch) >= 0 ? 'rgba'.indexOf(ch) : 'stpq'.indexOf(ch) >= 0 ? 'stpq'.indexOf(ch) : 'xyzw'.indexOf(ch)]).join('');
 			for (let i = 0; i < n; i++) {
-				const j = lhs.m.indexOf(COMP[i]);
+				const j = norm.indexOf(COMP[i]);
 				comps.push(j >= 0 ? (lhs.m.length === 1 ? tmp : `${tmp}.${COMP[j]}`) : `${base.s}.${COMP[i]}`);
 			}
 			return `${ind}{ let ${tmp} = ${val}; ${base.s} = ${TYPE_WGSL[base.t]}(${comps.join(', ')}); }\n`;
@@ -741,7 +752,7 @@ export function emitWGSL(prog, opts = {}) {
 	// глобальные переменные и константы
 	for (const g of prog.globals) {
 		const env = new Env();
-		const w = TYPE_WGSL[g.type];
+		const w = g.len ? `array<${TYPE_WGSL[g.type]}, ${g.len}>` : TYPE_WGSL[g.type];
 		if (g.isConst) {
 			const r = emitExpr(g.init, env);
 			out.push(`const ${safe(g.name)}: ${w} = ${splat(r, g.type)};`);

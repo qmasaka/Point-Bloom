@@ -13,6 +13,8 @@ import { FX_PALETTES } from '../src/effects/state/options.js';
 import { requestGpu } from '../src/effects/render/webgpu/device.js';
 import { WebGPUPoints } from '../src/effects/render/webgpu/webgpu-points.js';
 import { missingFrameValues } from '../src/effects/render/webgpu/frame-layout.js';
+import { WebGPUPost, RT_FORMAT } from '../src/effects/render/webgpu/webgpu-post.js';
+import { fbFrag, outFrag } from '../src/effects/shaders/glsl/post.js';
 
 const $ = (id) => document.getElementById(id);
 const log = (s) => {
@@ -356,6 +358,121 @@ async function fuzz(opts = {}) {
 	return rows;
 }
 
+
+// ---------------------------------------------------------------- пост-обработка: сравнение проходов
+function makeInputCanvas(seedShift = 0) {
+	const c = document.createElement('canvas');
+	c.width = W;
+	c.height = H;
+	const x = c.getContext('2d');
+	x.fillStyle = '#05060a';
+	x.fillRect(0, 0, W, H);
+	const g = x.createLinearGradient(0, 0, W, H);
+	g.addColorStop(0, '#103060');
+	g.addColorStop(1, '#602010');
+	x.fillStyle = g;
+	x.fillRect(80 + seedShift, 120, 360, 220);
+	for (let i = 0; i < 60; i++) {
+		x.fillStyle = `hsl(${(i * 37 + seedShift) % 360} 90% ${40 + (i % 5) * 12}%)`;
+		x.beginPath();
+		x.arc(((i * 97 + seedShift * 3) % 600) + 20, ((i * 53) % 560) + 40, 3 + (i % 7), 0, 7);
+		x.fill();
+	}
+	x.fillStyle = '#fff';
+	x.font = 'bold 64px sans-serif';
+	x.fillText('Point', 150 + seedShift, 300);
+	return c;
+}
+
+/** Цепочка «обратная связь → вывод со свечением и аберрацией» в WebGL и WebGPU на одном и том же входе */
+async function postCompare(opts = {}) {
+	if (!gpu) gpu = await requestGpu();
+	if (!webgl) await setup(1000, true);
+	const bloom = opts.bloom ?? 0.6;
+	const ab = opts.ab ?? 0.5;
+	const fb = opts.fb === undefined ? { decay: 0.9, zoom: 1.02, twist: 0.05, tint: [1, 0.6, 0.3], tintK: 0.5, hasPrev: 1 } : opts.fb;
+	const cur = makeInputCanvas(0);
+	const prev = makeInputCanvas(40);
+	// ---- WebGL
+	const R = webgl.renderer;
+	const tex = (cv) => {
+		const t = new THREE.CanvasTexture(cv);
+		t.colorSpace = THREE.NoColorSpace;
+		t.minFilter = t.magFilter = THREE.LinearFilter;
+		t.generateMipmaps = false;
+		return t;
+	};
+	const tCur = tex(cur);
+	const tPrev = tex(prev);
+	const vertex = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+	const quad = (mat) => {
+		const sc = new THREE.Scene();
+		sc.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat));
+		return sc;
+	};
+	const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+	let src = tCur;
+	let rtFb = null;
+	if (fb) {
+		const fbMat = new THREE.ShaderMaterial({ uniforms: { uScene: { value: tCur }, uPrev: { value: tPrev }, uDecay: { value: fb.decay }, uZoom: { value: fb.zoom }, uTwist: { value: fb.twist }, uHasPrev: { value: fb.hasPrev }, uTint: { value: new THREE.Color(...fb.tint) }, uTintK: { value: fb.tintK } }, vertexShader: vertex, fragmentShader: fbFrag, depthTest: false, depthWrite: false });
+		rtFb = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+		R.setRenderTarget(rtFb);
+		R.clear();
+		R.render(quad(fbMat), cam);
+		R.setRenderTarget(null);
+		src = rtFb.texture;
+	}
+	const outMat = new THREE.ShaderMaterial({ uniforms: { uTex: { value: src }, uBloom: { value: bloom }, uAberration: { value: ab }, uRes: { value: new THREE.Vector2(W, H) } }, vertexShader: vertex, fragmentShader: outFrag, depthTest: false, depthWrite: false, transparent: true });
+	R.setRenderTarget(null);
+	R.setClearColor(0x000000, 0);
+	R.clear();
+	R.render(quad(outMat), cam);
+	// ---- WebGPU
+	const D = gpu.device;
+	const ctx = $('gpu').getContext('webgpu');
+	ctx.configure({ device: D, format: gpu.format, alphaMode: 'premultiplied' });
+	$('gpu').width = W;
+	$('gpu').height = H;
+	const post = new WebGPUPost(D, gpu.format);
+	await post.prepare();
+	const upload = (cv) => {
+		const t = D.createTexture({ size: [W, H], format: RT_FORMAT, usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST });
+		// копирование из холста в 16-битную текстуру идёт через 8-битную промежуточную
+		const t8 = D.createTexture({ size: [W, H], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST });
+		D.queue.copyExternalImageToTexture({ source: cv }, { texture: t8 }, [W, H]);
+		return t8;
+	};
+	const gCur = upload(cur);
+	const gPrev = upload(prev);
+	const enc = D.createCommandEncoder();
+	let source = gCur;
+	if (fb) {
+		const rt = post.rt('fbOut', W, H);
+		post.run(enc, 'fb', rt.createView(), [W, H], { uDecay: fb.decay, uZoom: fb.zoom, uTwist: fb.twist, uHasPrev: fb.hasPrev, uTint: fb.tint, uTintK: fb.tintK }, { uScene: gCur.createView(), uPrev: gPrev.createView() });
+		source = rt;
+	}
+	post.run(enc, 'out', ctx.getCurrentTexture().createView(), [W, H], { uBloom: bloom, uAberration: ab, uRes: [W, H] }, { uTex: source.createView() });
+	D.queue.submit([enc.finish()]);
+	const a = snap($('gl'));
+	const b = snap($('gpu'));
+	await D.queue.onSubmittedWorkDone();
+	let sum = 0;
+	let big = 0;
+	let max = 0;
+	for (let i = 0; i < a.data.length; i += 4) {
+		let d = 0;
+		for (let k = 0; k < 3; k++) d = Math.max(d, Math.abs(a.data[i + k] - b.data[i + k]));
+		sum += d;
+		if (d > 8) big++;
+		max = Math.max(max, d);
+	}
+	const px = a.data.length / 4;
+	const res = { bloom, ab, fb: !!fb, meanAbsDiff: +(sum / px).toFixed(3), pctOver8: +((big / px) * 100).toFixed(3), maxDiff: max };
+	log('ПОСТ ' + JSON.stringify(res));
+	post.dispose();
+	return res;
+}
+
 // ---------------------------------------------------------------- скорость
 async function bench() {
 	const rows = [];
@@ -464,6 +581,7 @@ window.__proto.compare = compare;
 window.__proto.bench = bench;
 window.__proto.cold = cold;
 window.__proto.fuzz = fuzz;
+window.__proto.postCompare = postCompare;
 window.__proto.dbg = { get webgl() { return webgl; }, get webgpu() { return webgpu; }, renderAndDiff, setup, resetShared };
 requestGpu().then((g) => {
 	gpu = g;

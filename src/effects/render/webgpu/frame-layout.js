@@ -1,24 +1,21 @@
-// Раскладка значений кадра в одном uniform-буфере WebGPU.
-// Список полей генерируется вместе с шейдерами (dev/gen-wgsl.mjs → shaders/wgsl/generated/frame-spec.js), поэтому структура в WGSL и упаковка байтов не могут разойтись.
+// Раскладка значений в uniform-буфере WebGPU.
+// Список полей генерируется вместе с шейдерами (dev/gen-wgsl.mjs → shaders/wgsl/generated/*), поэтому структура в WGSL и упаковка байтов не могут разойтись.
 import { FRAME_SPEC } from '../../shaders/wgsl/generated/frame-spec.js';
 
 // сколько байт занимает поле в структуре WGSL: скаляры и короткие векторы растянуты до 16 байт, матрицы и массивы как есть
 const sizeOf = (type, len) => (len ? 16 * len : type === 'mat4x4f' ? 64 : type === 'mat3x3f' ? 48 : 16);
+const COUNT = { f32: 1, vec2f: 2, vec3f: 3, vec4f: 4 };
 
-/** Поля с их смещениями в байтах */
-export const FRAME_LAYOUT = (() => {
+/** Строит раскладку по списку [имя, тип WGSL, длина массива] */
+export function makeLayout(spec) {
 	let o = 0;
-	return FRAME_SPEC.map(([name, type, len]) => {
+	const fields = spec.map(([name, type, len]) => {
 		const f = { name, type, len, offset: o };
 		o += sizeOf(type, len);
 		return f;
 	});
-})();
-
-/** Размер буфера в байтах */
-export const FRAME_BYTES = FRAME_LAYOUT.length ? FRAME_LAYOUT[FRAME_LAYOUT.length - 1].offset + sizeOf(FRAME_LAYOUT[FRAME_LAYOUT.length - 1].type, FRAME_LAYOUT[FRAME_LAYOUT.length - 1].len) : 0;
-
-const COUNT = { f32: 1, vec2f: 2, vec3f: 3, vec4f: 4 };
+	return { fields, bytes: o };
+}
 
 function writeVec(out, o, v, n) {
 	if (v === undefined || v === null) return;
@@ -46,16 +43,16 @@ function writeVec(out, o, v, n) {
 }
 
 /**
- * Упаковывает значения кадра в Float32Array.
- * @param {object} shared общие значения кадра: { имя: { value } }, value число, вектор или цвет three.js (render/shared/frame-uniforms.js)
- * @param {object} extra значения, которые задаёт рендер: матрицы, размер холста, экспозиция, uTOff, uGhost; они важнее общих
+ * Упаковывает значения в Float32Array по раскладке.
+ * @param {{fields: object[], bytes: number}} layout результат makeLayout
+ * @param {object} shared значения вида { имя: { value } } (value число, вектор или цвет three.js)
+ * @param {object} extra значения «как есть» ({ имя: число | вектор | массив }); они важнее shared
  * @param {Float32Array} [out] куда писать
- * @returns {Float32Array}
  */
-export function packFrame(shared, extra, out = new Float32Array(FRAME_BYTES / 4)) {
-	for (const f of FRAME_LAYOUT) {
+export function packLayout(layout, shared, extra, out = new Float32Array(layout.bytes / 4)) {
+	for (const f of layout.fields) {
 		const o = f.offset / 4;
-		const v = f.name in extra ? extra[f.name] : shared[f.name] && shared[f.name].value;
+		const v = f.name in extra ? extra[f.name] : shared && shared[f.name] && shared[f.name].value;
 		if (f.len) {
 			if (!v) continue;
 			for (let i = 0; i < f.len; i++) writeVec(out, o + i * 4, v[i], 4);
@@ -66,6 +63,17 @@ export function packFrame(shared, extra, out = new Float32Array(FRAME_BYTES / 4)
 		} else writeVec(out, o, v, COUNT[f.type]);
 	}
 	return out;
+}
+
+// ---- значения кадра точек
+export const FRAME_LAYOUT_FULL = makeLayout(FRAME_SPEC);
+/** Поля с их смещениями в байтах */
+export const FRAME_LAYOUT = FRAME_LAYOUT_FULL.fields;
+/** Размер буфера в байтах */
+export const FRAME_BYTES = FRAME_LAYOUT_FULL.bytes;
+
+export function packFrame(shared, extra, out) {
+	return packLayout(FRAME_LAYOUT_FULL, shared, extra, out);
 }
 
 /** Имена значений, которых нет ни в общих значениях кадра, ни в «extra» (помогает ловить забытые значения при отладке) */

@@ -71,6 +71,28 @@ const resF = emitWGSL(progF, {
 
 const privDecl = (list) => list.map((a) => `var<private> ${a.name}: ${TYPE_WGSL[a.type]};`).join('\n');
 
+// вывод как у three.js: нейтральная тональная компрессия (Khronos PBR Neutral), затем перевод линейного цвета в sRGB
+const TONE_FUNCS = `
+fn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {
+	let startCompression = 0.8 - 0.04;
+	let desaturation = 0.15;
+	var color = c0 * exposure;
+	let x = min(color.r, min(color.g, color.b));
+	let offset = select(0.04, x - 6.25 * x * x, x < 0.08);
+	color = color - offset;
+	let peak = max(color.r, max(color.g, color.b));
+	if (peak < startCompression) { return color; }
+	let d = 1.0 - startCompression;
+	let newPeak = 1.0 - d * d / (peak + d - startCompression);
+	color = color * (newPeak / peak);
+	let g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
+	return mix(color, vec3f(newPeak), g);
+}
+fn linearToSrgb(v: vec3f) -> vec3f {
+	return select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));
+}
+`;
+
 // ---------------------------------------------------------------- вычислительный проход
 const computeWGSL = `${frameStruct}
 @group(0) @binding(0) var<uniform> fr: Frame;
@@ -144,26 +166,7 @@ var<private> gl_PointCoord: vec2f;
 
 ${resF.wgsl}
 
-// Вывод как у three.js: нейтральная тональная компрессия (Khronos PBR Neutral), затем перевод линейного цвета в sRGB
-fn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {
-	let startCompression = 0.8 - 0.04;
-	let desaturation = 0.15;
-	var color = c0 * exposure;
-	let x = min(color.r, min(color.g, color.b));
-	let offset = select(0.04, x - 6.25 * x * x, x < 0.08);
-	color = color - offset;
-	let peak = max(color.r, max(color.g, color.b));
-	if (peak < startCompression) { return color; }
-	let d = 1.0 - startCompression;
-	let newPeak = 1.0 - d * d / (peak + d - startCompression);
-	color = color * (newPeak / peak);
-	let g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
-	return mix(color, vec3f(newPeak), g);
-}
-fn linearToSrgb(v: vec3f) -> vec3f {
-	return select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));
-}
-
+${TONE_FUNCS}
 struct VOut {
 	@builtin(position) clip: vec4f,
 	@location(0) color: vec3f,
@@ -193,18 +196,89 @@ fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VOut 
 	return o;
 }
 
-@fragment
-fn fs(in: VOut) -> @location(0) vec4f {
+fn setup_in(in: VOut) {
 	vColor = in.color;
 	vD = in.misc.x;
 	vDk = in.misc.y;
 	vCoc = in.misc.z;
 	vGl = in.gl;
 	gl_PointCoord = in.pc;
+}
+
+// на экран: с тональной компрессией и переводом в sRGB
+@fragment
+fn fs(in: VOut) -> @location(0) vec4f {
+	setup_in(in);
 	frag_main_();
 	return vec4f(linearToSrgb(toneNeutral(gl_FragColor.rgb, fr.uExposure)), gl_FragColor.a);
 }
+
+// в промежуточный буфер (дальше идёт пост-обработка): линейный цвет как есть
+@fragment
+fn fs_raw(in: VOut) -> @location(0) vec4f {
+	setup_in(in);
+	frag_main_();
+	return gl_FragColor;
+}
 `;
+
+// ---------------------------------------------------------------- пост-обработка: полноэкранные проходы
+const { fbFrag, outFrag, mvFrag, moshFrag } = await GLSL('post.js');
+const POST = { fb: fbFrag, out: outFrag, mv: mvFrag, mosh: moshFrag };
+const postOut = {};
+for (const [name, src] of Object.entries(POST)) {
+	const prog = parseGLSL(src, {});
+	prog.uniforms.push({ type: 'vec2', name: 'uTarget', len: 0 }); // размер цели в пикселях (для gl_FragCoord)
+	prog.uniforms.push({ type: 'float', name: 'uExposure', len: 0 });
+	const samplers = prog.uniforms.filter((u) => /^sampler/.test(u.type));
+	const textures = Object.fromEntries(samplers.map((u) => [u.name, { name: 't_' + u.name, mode: 'sample', sampler: 'samp' }]));
+	const res = emitWGSL(prog, {
+		uniformPrefix: 'u.',
+		textures,
+		flipY: true,
+		builtinTypes: { gl_FragColor: 'vec4', gl_FragCoord: 'vec4' },
+		renameFuncs: { main: 'main_' },
+	});
+	const uni = prog.uniforms.filter((u) => !/^sampler/.test(u.type));
+	const member = (u) => (['float', 'vec2', 'vec3'].includes(u.type) ? `\t@size(16) ${u.name}: ${TYPE_WGSL[u.type]},` : `\t${u.name}: ${TYPE_WGSL[u.type]},`);
+	const struct = `struct U {\n${uni.map(member).join('\n')}\n}`;
+	const texDecl = samplers.map((u, i) => `@group(0) @binding(${i + 1}) var t_${u.name}: texture_2d<f32>;`).join('\n');
+	const tonemap = name === 'out';
+	const wgsl = `${struct}
+@group(0) @binding(0) var<uniform> u: U;
+${texDecl}
+@group(0) @binding(${samplers.length + 1}) var samp: sampler;
+var<private> vUv: vec2f;
+var<private> gl_FragColor: vec4f;
+var<private> gl_FragCoord: vec4f;
+
+${res.wgsl}
+${tonemap ? TONE_FUNCS : ''}
+struct VOut {
+	@builtin(position) pos: vec4f,
+	@location(0) uv: vec2f,
+}
+
+// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL
+@vertex
+fn vs(@builtin(vertex_index) vi: u32) -> VOut {
+	var p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
+	var o: VOut;
+	o.pos = vec4f(p[vi], 0.0, 1.0);
+	o.uv = p[vi] * 0.5 + vec2f(0.5);
+	return o;
+}
+
+@fragment
+fn fs(in: VOut) -> @location(0) vec4f {
+	vUv = in.uv;
+	gl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);
+	main_();
+${tonemap ? '	return vec4f(linearToSrgb(toneNeutral(gl_FragColor.rgb, u.uExposure)), gl_FragColor.a);' : '	return gl_FragColor;'}
+}
+`;
+	postOut[name] = { wgsl, spec: uni.map((u) => [u.name, TYPE_WGSL[u.type], u.len || 0]), textures: samplers.map((u) => u.name) };
+}
 
 // ---------------------------------------------------------------- спецификация значений кадра
 const spec = frameUniforms.map((u) => ({ name: u.name, type: TYPE_WGSL[u.type], len: u.len || 0 }));
@@ -214,5 +288,7 @@ const banner = '// Сгенерировано dev/gen-wgsl.mjs из шейдер
 const esc = (s) => s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 fs.writeFileSync(path.join(OUT, 'points-compute.js'), `${banner}export const pointsComputeWGSL = /* wgsl */ \`\n${esc(computeWGSL)}\`;\n`);
 fs.writeFileSync(path.join(OUT, 'points-render.js'), `${banner}export const pointsRenderWGSL = /* wgsl */ \`\n${esc(renderWGSL)}\`;\n`);
+fs.writeFileSync(path.join(OUT, 'post-passes.js'), `${banner}export const POST_PASSES = ${JSON.stringify(postOut, null, 1)};
+`);
 fs.writeFileSync(path.join(OUT, 'frame-spec.js'), `${banner}// имя, тип в WGSL, длина массива (0: не массив)\nexport const FRAME_SPEC = ${JSON.stringify(spec.map((s) => [s.name, s.type, s.len]))};\n`);
 console.log(`готово: compute ${computeWGSL.split('\n').length} строк, render ${renderWGSL.split('\n').length} строк, значений кадра ${spec.length}`);
