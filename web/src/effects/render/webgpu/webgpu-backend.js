@@ -31,6 +31,8 @@ cv.className = 'gl fx-gpu';
 cv.style.cssText = 'position:absolute;inset:0;pointer-events:none';
 vp.canvas.after(cv);
 this.canvas = cv;
+vp.fxOverlay = cv;
+vp.fxCompose = () => this.captureCanvas();
 this.pts = new WebGPUPoints(this.gpu, cv);
 this.post = new WebGPUPost(this.gpu.device, this.gpu.format);
 this.hasHistory = false;
@@ -70,7 +72,6 @@ const pts = e.points;
 if (!pts) return false;
 for (const c of pts.children) if (c.visible && !e.ghosts.includes(c)) return true;
 if (e.shared.uFr.value.x > 0.5) return true;
-if (e.recording) return true;
 if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
 return false;
 }
@@ -103,7 +104,28 @@ _mv.multiplyMatrices(camera.matrixWorldInverse, obj.matrixWorld);
 _nm.getNormalMatrix(_mv);
 return { modelMatrix: obj.matrixWorld.clone(), modelViewMatrix: _mv.clone(), normalMatrix: _nm.clone(), ...extra };
 }
+captureCanvas() {
+if (!this.cap) {
+this.cap = document.createElement('canvas');
+this.capCtx = this.cap.getContext('2d');
+this._compose();
+}
+return this.cap;
+}
+_compose() {
+const vp = this.engine.app.viewport;
+const cap = this.cap;
+if (cap.width !== vp.canvas.width) cap.width = vp.canvas.width;
+if (cap.height !== vp.canvas.height) cap.height = vp.canvas.height;
+this.capCtx.clearRect(0, 0, cap.width, cap.height);
+this.capCtx.drawImage(vp.canvas, 0, 0);
+if (this.canvas.style.visibility !== 'hidden') this.capCtx.drawImage(this.canvas, 0, 0, cap.width, cap.height);
+}
 _frame(renderer, scene, camera) {
+this._draw(renderer, scene, camera);
+if (this.cap) this._compose();
+}
+_draw(renderer, scene, camera) {
 const e = this.engine;
 if (!e.active || !e.points) {
 renderer.render(scene, camera);
@@ -214,13 +236,15 @@ D.queue.submit([enc.finish()]);
 }
 dispose() {
 const e = this.engine;
-e.app.viewport.renderHook = null;
+const vp = e.app.viewport;
+vp.renderHook = null;
+vp.fxOverlay = vp.fxCompose = null;
 e._glDormant = false;
 if (e.points) e.points.visible = true;
 this.pts?.dispose();
 this.post?.dispose();
 this.canvas?.remove();
 this.gl.dispose();
-this.pts = this.post = this.canvas = null;
+this.pts = this.post = this.canvas = this.cap = this.capCtx = null;
 }
 }

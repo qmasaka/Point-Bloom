@@ -353,6 +353,14 @@ export class Viewport {
 		});
 	}
 
+	/**
+	 * Холст, в котором лежит вся картинка (для записи видео и GIF). Обычно это основной холст;
+	 * когда облако рисует WebGPU на втором холсте, рендер-движок отдаёт составной холст из обоих (fxCompose).
+	 */
+	captureCanvas() {
+		return this.fxCompose ? this.fxCompose() : this.canvas;
+	}
+
 	/** Скриншот окна просмотра (PNG). transparent=true — без фона. */
 	async screenshot({ transparent = false } = {}) {
 		this.render();
@@ -367,6 +375,8 @@ export class Viewport {
 			ctx.fillRect(0, 0, out.width, out.height);
 		}
 		ctx.drawImage(src, 0, 0);
+		// облако WebGPU лежит на втором холсте поверх основного (кадр ещё не ушёл на экран, поэтому читается сразу)
+		if (this.fxOverlay && this.fxOverlay.style.visibility !== 'hidden') ctx.drawImage(this.fxOverlay, 0, 0, out.width, out.height);
 		return new Promise((res) => out.toBlob(res, 'image/png'));
 	}
 }

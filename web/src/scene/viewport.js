@@ -295,6 +295,9 @@ this._animT = performance.now();
 this.invalidate();
 });
 }
+captureCanvas() {
+return this.fxCompose ? this.fxCompose() : this.canvas;
+}
 async screenshot({ transparent = false } = {}) {
 this.render();
 const src = this.canvas;
@@ -308,6 +311,7 @@ ctx.fillStyle = bg.solid || '#2a2d33';
 ctx.fillRect(0, 0, out.width, out.height);
 }
 ctx.drawImage(src, 0, 0);
+if (this.fxOverlay && this.fxOverlay.style.visibility !== 'hidden') ctx.drawImage(this.fxOverlay, 0, 0, out.width, out.height);
 return new Promise((res) => out.toBlob(res, 'image/png'));
 }
 }

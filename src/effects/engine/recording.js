@@ -22,7 +22,7 @@ export class RecordingPart {
 				this.stopRecording();
 				return;
 			}
-			const cv = this.app.viewport.canvas;
+			const cv = this.app.viewport.captureCanvas();
 			const W = Math.min(maxW, cv.width);
 			const H = Math.round((W / cv.width) * cv.height);
 			const tmp = document.createElement('canvas');
@@ -99,7 +99,7 @@ export class RecordingPart {
 			this._recOriginalSize = null;
 		}
 
-		const stream = this.app.viewport.canvas.captureStream(fps);
+		const stream = this.app.viewport.captureCanvas().captureStream(fps);
 		if (sound && this.recDest?.stream) {
 			this.recDest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
 		}
