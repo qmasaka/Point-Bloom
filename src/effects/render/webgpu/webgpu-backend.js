@@ -26,8 +26,7 @@ export class WebGPUBackend extends RenderBackend {
 		super(engine);
 		this.gpu = gpu;
 		this.gl = new WebGLBackend(engine);
-		this.cloudGeo = null;
-		this.versions = {};
+		this.sync = {}; // что уже загружено в WebGPU: слои облака (геометрия и версии атрибутов), служебные текстуры
 		this.glWarm = false;
 		this.glWaking = false;
 		this.useGl = false;
@@ -106,7 +105,7 @@ export class WebGPUBackend extends RenderBackend {
 	/** Умеет ли WebGPU рисовать этот объект сцены (пока его конвейер собирается, объект просто не виден: будить WebGL ради него не нужно) */
 	_gpuDraws(obj) {
 		const e = this.engine;
-		return obj === e.linkObj || obj === e._scopeLine || (!!e._trail && obj === e._trail.group);
+		return obj === e.linkObj || obj === e._scopeLine || obj === e.hero || (!!e._trail && obj === e._trail.group);
 	}
 
 	/** Есть ли в сцене то, что умеет рисовать только WebGL */
@@ -115,35 +114,69 @@ export class WebGPUBackend extends RenderBackend {
 		const pts = e.points;
 		if (!pts) return false;
 		for (const c of pts.children) if (c.visible && !e.ghosts.includes(c) && !this._gpuDraws(c)) return true;
-		if (e.shared.uFr.value.x > 0.5) return true;
 		if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
 		return false;
 	}
 
-	/** Облако в WebGPU совпадает с геометрией движка: при смене облака загружается заново, при правке атрибутов обновляются нужные буферы */
-	_syncCloud() {
-		const e = this.engine;
-		const g = e.geometry;
+	/** Облако слоя в WebGPU совпадает с геометрией движка: при смене облака загружается заново, при правке атрибутов обновляются нужные буферы */
+	_syncCloud(g = this.engine.geometry, layer = 'main') {
 		if (!g) return false;
-		if (g !== this.cloudGeo) {
+		const S = this.sync[layer] || (this.sync[layer] = { geo: null, versions: {} });
+		if (g !== S.geo) {
 			const attrs = {};
 			for (const k of ATTRS) attrs[k] = g.attributes[k].array;
-			this.pts.setCloud(attrs, g.attributes.aOrigin.count);
-			this.cloudGeo = g;
-			this.versions = {};
-			for (const k of ATTRS) this.versions[k] = g.attributes[k].version;
+			this.pts.setCloud(attrs, g.attributes.aOrigin.count, layer);
+			S.geo = g;
+			S.versions = {};
+			for (const k of ATTRS) S.versions[k] = g.attributes[k].version;
 			return true;
 		}
 		const changed = [];
 		for (const k of ATTRS) {
 			const v = g.attributes[k].version;
-			if (v !== this.versions[k]) {
-				this.versions[k] = v;
+			if (v !== S.versions[k]) {
+				S.versions[k] = v;
 				changed.push(k);
 			}
 		}
-		if (changed.length) this.pts.updateAttributes(changed);
+		if (changed.length) this.pts.updateAttributes(changed, layer);
 		return true;
+	}
+
+	/** Служебные текстуры: спектр звука, центры кусков, атлас символов, кадры раскадровки и кадр видео «героя» */
+	_syncTextures() {
+		const e = this.engine;
+		const pts = this.pts;
+		const sh = e.shared;
+		const S = this.sync;
+		const spec = e.specTex;
+		if (spec && S.spec !== spec.version) {
+			S.spec = spec.version;
+			pts.setSpectrum(spec.image.data);
+		}
+		const piece = e.pieceTex;
+		if (piece && S.piece !== piece.version) {
+			S.piece = piece.version;
+			pts.setPieces(piece.image.data);
+		}
+		const atlas = sh.uAtlas.value;
+		if (atlas && (S.atlas !== atlas || S.atlasVer !== atlas.version)) {
+			S.atlas = atlas;
+			S.atlasVer = atlas.version;
+			pts.setAtlas(atlas.image);
+		}
+		const fr = sh.uFrTex.value;
+		if (fr && fr.isDataArrayTexture && fr.image.data && (S.fr !== fr || S.frVer !== fr.version)) {
+			S.fr = fr;
+			S.frVer = fr.version;
+			pts.setFrames(fr.image.data, fr.image.width, fr.image.height, fr.image.depth);
+		}
+		const hero = e.hero;
+		if (hero && hero.visible) {
+			const ht = sh.uHeroTex.value;
+			const v = ht && ht.image;
+			if (v && v.videoWidth && v.readyState >= 2) pts.setHeroSource(v, v.videoWidth, v.videoHeight);
+		}
 	}
 
 	_inst(obj, camera, extra) {
@@ -211,6 +244,7 @@ export class WebGPUBackend extends RenderBackend {
 		this.canvas.style.visibility = '';
 		this.stats.gpu++;
 		if (!this._syncCloud()) return;
+		this._syncTextures();
 		this._drawCloud(renderer, camera);
 	}
 
@@ -226,6 +260,12 @@ export class WebGPUBackend extends RenderBackend {
 		for (const g of e.ghosts) {
 			if (!g.visible) continue;
 			list.push(this._inst(g, camera, { uTOff: g.material.uniforms.uTOff.value, uGhost: g.material.uniforms.uGhost.value, uHero: g.material.uniforms.uHero.value }));
+		}
+		// «герой» раскадровки (видео поверх блока кадров): второе облако со своим шейдером, собирается по первому требованию
+		const hero = e.hero;
+		if (hero && hero.visible) {
+			pts.prepareHero();
+			if (pts.heroReady() && this._syncCloud(hero.geometry, 'hero')) list.push(this._inst(hero, camera, { uTOff: hero.material.uniforms.uTOff.value, uGhost: hero.material.uniforms.uGhost.value, layer: 'hero' }));
 		}
 		const common = { projectionMatrix: camera.projectionMatrix, uExposure: renderer.toneMappingExposure };
 		const L = e.state.layers;

@@ -112,7 +112,7 @@ fn linearToSrgb(v: vec3f) -> vec3f {
 `;
 
 // ---------------------------------------------------------------- вычислительный проход
-const computeWGSL = `${frameStruct}
+const makeCompute = (progV, resV) => `${frameStruct}
 @group(0) @binding(0) var<uniform> fr: Frame;
 @group(0) @binding(1) var<storage, read> inOrigin: array<vec4f>;
 @group(0) @binding(2) var<storage, read> inTarget: array<vec4f>;
@@ -168,6 +168,16 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 	outC[i] = vec4f(vD, vDk, vCoc, vGl);
 }
 `;
+const computeWGSL = makeCompute(progV, resV);
+// «герой» раскадровки (видео поверх блока): тот же шейдер с #define HERO
+const progHero = build(vert, { HERO: 1 });
+for (const u of BUILTIN_UNIFORMS) if (!progHero.uniforms.find((x) => x.name === u.name)) progHero.uniforms.push(u);
+for (const u of progHero.uniforms) {
+	const o = seen.get(u.name);
+	if (!o && !/^sampler/.test(u.type)) throw new Error('в варианте HERO появился новый uniform ' + u.name);
+}
+const resHero = emitWGSL(progHero, { textures: TEXTURES_VERT, builtinTypes: { gl_Position: 'vec4', gl_PointSize: 'float' }, renameFuncs: { main: 'main_' } });
+const computeHeroWGSL = makeCompute(progHero, resHero);
 
 // ---------------------------------------------------------------- рисование
 const renderWGSL = `${frameStruct}
@@ -416,6 +426,7 @@ fs.mkdirSync(OUT, { recursive: true });
 const banner = '// Сгенерировано dev/gen-wgsl.mjs из шейдеров GLSL. Не править руками: правьте GLSL и запустите node dev/gen-wgsl.mjs.\n';
 const esc = (s) => s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 fs.writeFileSync(path.join(OUT, 'points-compute.js'), `${banner}export const pointsComputeWGSL = /* wgsl */ \`\n${esc(computeWGSL)}\`;\n`);
+fs.writeFileSync(path.join(OUT, 'points-compute-hero.js'), `${banner}export const pointsComputeHeroWGSL = /* wgsl */ \`\n${esc(computeHeroWGSL)}\`;\n`);
 fs.writeFileSync(path.join(OUT, 'points-render.js'), `${banner}export const pointsRenderWGSL = /* wgsl */ \`\n${esc(renderWGSL)}\`;\n`);
 fs.writeFileSync(path.join(OUT, 'mesh-programs.js'), `${banner}export const MESH_PROGRAMS = ${JSON.stringify(meshOut, null, 1)};
 `);
