@@ -70472,6 +70472,21 @@ __def(__exports, 'WebGPUPost', () => WebGPUPost);
 const { makeLayout, packLayout } = __req('src/effects/render/webgpu/frame-layout.js');
 const { POST_PASSES } = __req('src/effects/shaders/wgsl/generated/post-passes.js');
 const RT_FORMAT = 'rgba16float';
+const MIP_WGSL = `
+@group(0) @binding(0) var src: texture_2d<f32>;
+@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
+	let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));
+	return vec4f(p * 2.0 - 1.0, 0.0, 1.0);
+}
+@fragment fn fs(@builtin(position) pos: vec4f) -> @location(0) vec4f {
+	let d = vec2i(textureDimensions(src)) - 1;
+	let p = vec2i(pos.xy) * 2;
+	let a = textureLoad(src, min(p, d), 0);
+	let b = textureLoad(src, min(p + vec2i(1, 0), d), 0);
+	let c = textureLoad(src, min(p + vec2i(0, 1), d), 0);
+	let e = textureLoad(src, min(p + vec2i(1, 1), d), 0);
+	return (a + b + c + e) * 0.25;
+}`;
 class WebGPUPost {
 constructor(device, canvasFormat) {
 this.device = device;
@@ -70488,6 +70503,7 @@ this.data[name] = new Float32Array(Math.max(16, this.layouts[name].bytes) / 4);
 }
 this.rts = {};
 this.size = [0, 0];
+this.mipModule = device.createShaderModule({ code: MIP_WGSL });
 }
 async prepare() {
 const D = this.device;
@@ -70504,6 +70520,18 @@ fragment: { module, entryPoint: 'fs', targets: [{ format: name === 'out' ? this.
 primitive: { topology: 'triangle-list' },
 }).then((pl) => {
 this.pipelines[name] = pl;
+})
+);
+}
+if (!this.mipPipeline) {
+jobs.push(
+D.createRenderPipelineAsync({
+layout: 'auto',
+vertex: { module: this.mipModule, entryPoint: 'vs' },
+fragment: { module: this.mipModule, entryPoint: 'fs', targets: [{ format: RT_FORMAT }] },
+primitive: { topology: 'triangle-list' },
+}).then((pl) => {
+this.mipPipeline = pl;
 })
 );
 }
@@ -70528,6 +70556,21 @@ usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPU
 this.rts[key] = t;
 return t;
 }
+generateMips(enc, tex) {
+if (!this.mipPipeline) return false;
+for (let l = 1; l < tex.mipLevelCount; l++) {
+const group = this.device.createBindGroup({
+layout: this.mipPipeline.getBindGroupLayout(0),
+entries: [{ binding: 0, resource: tex.createView({ baseMipLevel: l - 1, mipLevelCount: 1 }) }],
+});
+const rp = enc.beginRenderPass({ colorAttachments: [{ view: tex.createView({ baseMipLevel: l, mipLevelCount: 1 }), loadOp: 'clear', storeOp: 'store' }] });
+rp.setPipeline(this.mipPipeline);
+rp.setBindGroup(0, group);
+rp.draw(3);
+rp.end();
+}
+return true;
+}
 run(enc, name, target, targetSize, values, textures, clear = true) {
 const pass = POST_PASSES[name];
 const pipeline = this.pipelines[name];
@@ -70547,6 +70590,87 @@ rp.setBindGroup(0, group);
 rp.draw(3);
 rp.end();
 return true;
+}
+moshStep(enc, m, size) {
+const post = this;
+const [w, h] = size;
+const block = m.block;
+const mw = Math.max(1, Math.ceil(w / block));
+const mh = Math.max(1, Math.ceil(h / block));
+const key = block + '/' + w + 'x' + h;
+if (this.moshKey !== key) {
+this.moshKey = key;
+this.moshHist = false;
+}
+const hist = this.moshHist;
+const k = h / 1080;
+const range = 4 * block + 0.03 * h;
+const scene = post.rts.scene;
+const sceneB = post.rt('sceneB', w, h, { mips: true });
+const mvA = post.rt('mvA', mw, mh);
+const mvB = post.rt('mvB', mw, mh);
+const moshA = post.rt('moshA', w, h);
+const moshB = post.rt('moshB', w, h);
+post.generateMips(enc, scene);
+post.run(
+enc,
+'mv',
+mvB.createView(),
+[mw, mh],
+{
+uRes: size,
+uBlock: block,
+uRange: range,
+uGain: m.gain,
+uInertia: hist ? m.inertia : 0,
+uSceneMix: m.sceneMix,
+uHasPrev: hist ? 1 : 0,
+uDrift: [Math.cos(m.angle) * m.drift * 6 * k, Math.sin(m.angle) * m.drift * 6 * k],
+uFlow: m.flow * 4 * k,
+uTime: m.time,
+},
+{ uCur: scene.createView(), uPrev: sceneB.createView(), uPrevMV: mvA.createView() }
+);
+post.rts.mvA = mvB;
+post.rts.mvB = mvA;
+post.run(
+enc,
+'mosh',
+moshB.createView(),
+size,
+{
+uRes: size,
+uMVSize: [mw, mh],
+uBlock: block,
+uRange: range,
+uSmooth: m.smooth,
+uHold: m.hold,
+uResid: m.detail,
+uChroma: m.chroma,
+uQuant: m.quant,
+uStyle: m.style,
+uStale: m.stale,
+uJit: m.jit,
+uTime: m.time,
+uHasHist: hist ? 1 : 0,
+uLeak: m.leak,
+},
+{ uCur: scene.createView(), uPrevSrc: sceneB.createView(), uMoshPrev: moshA.createView(), uMV: mvB.createView() }
+);
+post.rts.moshA = moshB;
+post.rts.moshB = moshA;
+post.rts.scene = sceneB;
+post.rts.sceneB = scene;
+this.moshHist = true;
+return moshB.createView();
+}
+moshOff() {
+if (!this.moshHist && !this.rts.sceneB) return;
+this.moshHist = false;
+for (const k of ['sceneB', 'mvA', 'mvB', 'moshA', 'moshB']) {
+this.rts[k]?.destroy();
+delete this.rts[k];
+}
 }
 dispose() {
 for (const t of Object.values(this.rts)) t.destroy();
@@ -72737,8 +72861,6 @@ if (!pts) return false;
 for (const c of pts.children) if (c.visible && !e.ghosts.includes(c)) return true;
 if (e.shared.uFr.value.x > 0.5) return true;
 if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
-const dm = e.state.layers.datamosh;
-if (dm && dm.on) return true;
 return false;
 }
 _syncCloud() {
@@ -72822,14 +72944,18 @@ const ab = e.state.look.aberration || 0;
 const useFb = !!(fb && fb.on && fb.amount > 0.01);
 const useBloom = bloom > 0.01;
 const useAb = ab > 0.01;
+const dm = L.datamosh;
+const mosh = dm && dm.on ? e._moshParams(dm) : null;
+const useMosh = !!(mosh && mosh.on);
 if (this.canvas.width !== w) this.canvas.width = w;
 if (this.canvas.height !== h) this.canvas.height = h;
-if (!useFb && !useBloom && !useAb) {
+if (!useFb && !useBloom && !useAb && !useMosh) {
 this.hasHistory = false;
+this.post.moshOff();
 pts.frame(shared, common, list, { size: [w, h] });
 return;
 }
-if (!pts.ready(add, true) || (useFb && !this.post.ready('fb'))) {
+if (!pts.ready(add, true) || (useFb && !this.post.ready('fb')) || (useMosh && !(this.post.ready('mv') && this.post.ready('mosh') && this.post.mipPipeline))) {
 pts.frame(shared, common, list, { size: [w, h] });
 return;
 }
@@ -72837,13 +72963,15 @@ const D = this.gpu.device;
 const post = this.post;
 const enc = D.createCommandEncoder();
 const size = [w, h];
-const scene = post.rt('scene', w, h);
+const scene = post.rt('scene', w, h, { mips: useMosh });
 if (this._size !== w + 'x' + h) {
 this._size = w + 'x' + h;
 this.hasHistory = false;
 }
-pts.frame(shared, common, list, { view: scene.createView(), size, rt: true, encoder: enc });
+pts.frame(shared, common, list, { view: scene.createView({ baseMipLevel: 0, mipLevelCount: 1 }), size, rt: true, encoder: enc });
 let src = scene.createView();
+if (useMosh) src = post.moshStep(enc, mosh, size);
+else post.moshOff();
 if (useFb) {
 const tun = fb.mode === 'tunnel';
 const ping = post.rt('ping', w, h);

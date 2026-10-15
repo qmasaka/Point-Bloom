@@ -7,7 +7,8 @@
 | `check-modules.mjs` | Проверяет все модули в `src/`: нет ли забытых `import`, несуществующих экспортов и циклических зависимостей. Запускать после любого переноса кода по файлам. |
 | `smoke-effects.js` | Дымовой тест режима «Эффекты» в браузере: входит в режим, включает и выключает каждый эффект, выходит в редактор и возвращается. Собирает ошибки, долгие задачи, блокировки WebGL и самые долгие кадры. |
 | `effects-inventory.mjs` | Собирает `docs/effects-inventory.md`: таблицу эффектов, значений кадра и размеров шейдеров (`node dev/effects-inventory.mjs > docs/effects-inventory.md`). |
-| `webgpu-proto.html` / `.js` | Стенд сравнения WebGL и WebGPU (этап 3): сравнение картинок попиксельно, скорость, холодная сборка шейдеров. Запуск и результаты: `docs/webgpu-prototype-report.md`. |
+| `webgpu-proto.html` / `.js` | Стенд сравнения WebGL и WebGPU: сравнение картинок попиксельно (`__proto.compare`, `fuzz`, `postCompare` для пост-обработки, `moshCompare` для датамоша), скорость, холодная сборка шейдеров. Запуск и результаты: `docs/webgpu-prototype-report.md`. |
+| `gen-wgsl.mjs`, `glsl2wgsl.mjs` | Переводчик GLSL → WGSL и генератор `src/effects/shaders/wgsl/generated/*` из боевых GLSL-шейдеров. После любой правки GLSL: `node dev/gen-wgsl.mjs`. |
 | `baseline.json` | Эталонные результаты дымового теста (с чем сравнивать после правок). |
 
 ## Сборка и запуск
@@ -37,6 +38,7 @@ node dev/check-modules.mjs
    ```js
    const s = document.createElement('script'); s.src = '/dev/smoke-effects.js'; document.head.appendChild(s);
    ```
+   Для проверки WebGPU-пути открыть приложение с `?gpu=1`: в отчёте появится `backend: {kind: 'webgpu', frames: {gpu, gl}}`.
 3. Подождать около 1,5 минуты. Пока `window.__smoke.done` равно `false`, тест идёт.
 4. Посмотреть `window.__smoke.report`:
    - `problems` должен быть пустым;

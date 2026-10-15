@@ -15,6 +15,8 @@ import { WebGPUPoints } from '../src/effects/render/webgpu/webgpu-points.js';
 import { missingFrameValues } from '../src/effects/render/webgpu/frame-layout.js';
 import { WebGPUPost, RT_FORMAT } from '../src/effects/render/webgpu/webgpu-post.js';
 import { fbFrag, outFrag } from '../src/effects/shaders/glsl/post.js';
+import { POST_PASSES } from '../src/effects/shaders/wgsl/generated/post-passes.js';
+import { PostPipeline } from '../src/effects/render/webgl/post-pipeline.js';
 
 const $ = (id) => document.getElementById(id);
 const log = (s) => {
@@ -473,6 +475,108 @@ async function postCompare(opts = {}) {
 	return res;
 }
 
+
+/** Датамош: несколько кадров с историей в WebGL (боевой PostPipeline) и в WebGPU (WebGPUPost.moshStep) на одном и том же движущемся входе */
+async function moshCompare(opts = {}) {
+	if (!gpu) gpu = await requestGpu();
+	if (!webgl) await setup(1000, true);
+	const frames = opts.frames ?? 5;
+	const m = { on: true, hold: 1, gain: 1, block: 16, style: 0, smooth: 0.6, detail: 0.2, chroma: 0.25, quant: 0, stale: 0.2, jit: 0.4, drift: 0.3, angle: 4.7, flow: 0.2, inertia: 0.5, leak: 0.03, sceneMix: 1, time: 3.3, ...opts.m };
+	const hashGl = 'fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453)';
+	const hashGlStable = 'fract(dot(p, vec2(0.7548776662, 0.569840291)) + 0.5)';
+	const hashWg = 'fract((sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453))';
+	// ---- WebGL
+	const R = webgl.renderer;
+	const pp = new PostPipeline(R);
+	pp.setSize(W, H, 1);
+	if (!pp.moshMat.fragmentShader.includes(hashGl)) throw new Error('не нашёл хеш в шейдере датамоша (WebGL)');
+	pp.moshMat.fragmentShader = pp.moshMat.fragmentShader.replace(hashGl, hashGlStable);
+	pp.moshMat.needsUpdate = true;
+	for (const k of ['rtScene', 'rtSceneB']) {
+		pp[k].texture.generateMipmaps = true;
+		pp[k].texture.minFilter = THREE.LinearMipmapLinearFilter;
+	}
+	const vertex = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+	const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+	const quadOf = (mat) => {
+		const sc = new THREE.Scene();
+		sc.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat));
+		return sc;
+	};
+	const copyMat = new THREE.ShaderMaterial({ uniforms: { uTex: { value: null } }, vertexShader: vertex, fragmentShader: 'varying vec2 vUv; uniform sampler2D uTex; void main() { gl_FragColor = texture2D(uTex, vUv); }', depthTest: false, depthWrite: false });
+	const inputs = [];
+	for (let f = 0; f < frames; f++) inputs.push(makeInputCanvas(f * 14));
+	let src = null;
+	for (let f = 0; f < frames; f++) {
+		const t = new THREE.CanvasTexture(inputs[f]);
+		t.colorSpace = THREE.NoColorSpace;
+		t.minFilter = t.magFilter = THREE.LinearFilter;
+		t.generateMipmaps = false;
+		copyMat.uniforms.uTex.value = t;
+		R.setRenderTarget(pp.rtScene);
+		R.clear();
+		R.render(quadOf(copyMat), cam);
+		src = pp._moshStep(m);
+	}
+	const outMat = new THREE.ShaderMaterial({ uniforms: { uTex: { value: src }, uBloom: { value: 0 }, uAberration: { value: 0 }, uRes: { value: new THREE.Vector2(W, H) } }, vertexShader: vertex, fragmentShader: outFrag, depthTest: false, depthWrite: false, transparent: true });
+	R.setRenderTarget(null);
+	R.setClearColor(0x000000, 0);
+	R.clear();
+	R.render(quadOf(outMat), cam);
+	// ---- WebGPU
+	const D = gpu.device;
+	const ctx = $('gpu').getContext('webgpu');
+	ctx.configure({ device: D, format: gpu.format, alphaMode: 'premultiplied' });
+	$('gpu').width = W;
+	$('gpu').height = H;
+	if (!POST_PASSES.mosh.wgsl.includes(hashWg)) throw new Error('не нашёл хеш в шейдере датамоша (WGSL)');
+	const wgslOrig = POST_PASSES.mosh.wgsl;
+	POST_PASSES.mosh.wgsl = wgslOrig.replace(hashWg, 'fract(((dot(p, vec2f(0.7548776662, 0.569840291))) + 0.5))');
+	const post = new WebGPUPost(D, gpu.format);
+	await post.prepare();
+	POST_PASSES.mosh.wgsl = wgslOrig;
+	const copyMod = D.createShaderModule({
+		code: `@group(0) @binding(0) var src: texture_2d<f32>;
+@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f { let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u)); return vec4f(p * 2.0 - 1.0, 0.0, 1.0); }
+@fragment fn fs(@builtin(position) pos: vec4f) -> @location(0) vec4f { return textureLoad(src, vec2i(pos.xy), 0); }`,
+	});
+	const copyPipe = await D.createRenderPipelineAsync({ layout: 'auto', vertex: { module: copyMod, entryPoint: 'vs' }, fragment: { module: copyMod, entryPoint: 'fs', targets: [{ format: RT_FORMAT }] }, primitive: { topology: 'triangle-list' } });
+	let srcView = null;
+	for (let f = 0; f < frames; f++) {
+		const t8 = D.createTexture({ size: [W, H], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST });
+		D.queue.copyExternalImageToTexture({ source: inputs[f] }, { texture: t8 }, [W, H]);
+		const enc = D.createCommandEncoder();
+		const scene = post.rt('scene', W, H, { mips: true });
+		const rp = enc.beginRenderPass({ colorAttachments: [{ view: scene.createView({ baseMipLevel: 0, mipLevelCount: 1 }), loadOp: 'clear', storeOp: 'store' }] });
+		rp.setPipeline(copyPipe);
+		rp.setBindGroup(0, D.createBindGroup({ layout: copyPipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: t8.createView() }] }));
+		rp.draw(3);
+		rp.end();
+		srcView = post.moshStep(enc, m, [W, H]);
+		if (f === frames - 1) post.run(enc, 'out', ctx.getCurrentTexture().createView(), [W, H], { uBloom: 0, uAberration: 0, uRes: [W, H] }, { uTex: srcView });
+		D.queue.submit([enc.finish()]);
+	}
+	const a = snap($('gl'));
+	const b = snap($('gpu'));
+	await D.queue.onSubmittedWorkDone();
+	let sum = 0;
+	let big = 0;
+	let max = 0;
+	for (let i = 0; i < a.data.length; i += 4) {
+		let d = 0;
+		for (let k = 0; k < 3; k++) d = Math.max(d, Math.abs(a.data[i + k] - b.data[i + k]));
+		sum += d;
+		if (d > 8) big++;
+		max = Math.max(max, d);
+	}
+	const px = a.data.length / 4;
+	const res = { frames, style: m.style, meanAbsDiff: +(sum / px).toFixed(3), pctOver8: +((big / px) * 100).toFixed(3), maxDiff: max };
+	log('ДАТАМОШ ' + JSON.stringify(res));
+	post.dispose();
+	pp.dispose();
+	return res;
+}
+
 // ---------------------------------------------------------------- скорость
 async function bench() {
 	const rows = [];
@@ -582,6 +686,7 @@ window.__proto.bench = bench;
 window.__proto.cold = cold;
 window.__proto.fuzz = fuzz;
 window.__proto.postCompare = postCompare;
+window.__proto.moshCompare = moshCompare;
 window.__proto.dbg = { get webgl() { return webgl; }, get webgpu() { return webgpu; }, renderAndDiff, setup, resetShared };
 requestGpu().then((g) => {
 	gpu = g;

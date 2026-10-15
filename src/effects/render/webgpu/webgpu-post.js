@@ -10,6 +10,23 @@ import { POST_PASSES } from '../../shaders/wgsl/generated/post-passes.js';
 /** Формат промежуточных текстур: с запасом по яркости (свечение складывается выше единицы) */
 export const RT_FORMAT = 'rgba16float';
 
+// следующий уровень мип-цепочки: каждый пиксель берёт среднее четырёх пикселей предыдущего уровня (границы нечётных размеров прижимаются к краю)
+const MIP_WGSL = /* wgsl */ `
+@group(0) @binding(0) var src: texture_2d<f32>;
+@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
+	let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));
+	return vec4f(p * 2.0 - 1.0, 0.0, 1.0);
+}
+@fragment fn fs(@builtin(position) pos: vec4f) -> @location(0) vec4f {
+	let d = vec2i(textureDimensions(src)) - 1;
+	let p = vec2i(pos.xy) * 2;
+	let a = textureLoad(src, min(p, d), 0);
+	let b = textureLoad(src, min(p + vec2i(1, 0), d), 0);
+	let c = textureLoad(src, min(p + vec2i(0, 1), d), 0);
+	let e = textureLoad(src, min(p + vec2i(1, 1), d), 0);
+	return (a + b + c + e) * 0.25;
+}`;
+
 export class WebGPUPost {
 	/** @param {GPUDevice} device @param {string} canvasFormat формат холста: в него пишет последний проход */
 	constructor(device, canvasFormat) {
@@ -27,6 +44,7 @@ export class WebGPUPost {
 		}
 		this.rts = {};
 		this.size = [0, 0];
+		this.mipModule = device.createShaderModule({ code: MIP_WGSL });
 	}
 
 	/** Собирает конвейеры асинхронно (главный поток не ждёт драйвер) */
@@ -45,6 +63,18 @@ export class WebGPUPost {
 					primitive: { topology: 'triangle-list' },
 				}).then((pl) => {
 					this.pipelines[name] = pl;
+				})
+			);
+		}
+		if (!this.mipPipeline) {
+			jobs.push(
+				D.createRenderPipelineAsync({
+					layout: 'auto',
+					vertex: { module: this.mipModule, entryPoint: 'vs' },
+					fragment: { module: this.mipModule, entryPoint: 'fs', targets: [{ format: RT_FORMAT }] },
+					primitive: { topology: 'triangle-list' },
+				}).then((pl) => {
+					this.mipPipeline = pl;
 				})
 			);
 		}
@@ -71,6 +101,23 @@ export class WebGPUPost {
 		});
 		this.rts[key] = t;
 		return t;
+	}
+
+	/** Дозаполняет мип-уровни текстуры (нужны датамошу: он ищет движение по уменьшенным копиям кадра) */
+	generateMips(enc, tex) {
+		if (!this.mipPipeline) return false;
+		for (let l = 1; l < tex.mipLevelCount; l++) {
+			const group = this.device.createBindGroup({
+				layout: this.mipPipeline.getBindGroupLayout(0),
+				entries: [{ binding: 0, resource: tex.createView({ baseMipLevel: l - 1, mipLevelCount: 1 }) }],
+			});
+			const rp = enc.beginRenderPass({ colorAttachments: [{ view: tex.createView({ baseMipLevel: l, mipLevelCount: 1 }), loadOp: 'clear', storeOp: 'store' }] });
+			rp.setPipeline(this.mipPipeline);
+			rp.setBindGroup(0, group);
+			rp.draw(3);
+			rp.end();
+		}
+		return true;
 	}
 
 	/**
@@ -102,6 +149,95 @@ export class WebGPUPost {
 		rp.draw(3);
 		rp.end();
 		return true;
+	}
+
+	/**
+	 * Один шаг датамоша: поле движения по блокам, затем «декодирование без опорного кадра» (те же шейдеры, что в WebGL, см. PostPipeline._moshStep).
+	 * Ждёт, что сцена уже нарисована в this.rts.scene (с мип-уровнями, см. rt(..., { mips: true })). Возвращает вид текстуры кадра после «сбоя».
+	 */
+	moshStep(enc, m, size) {
+		const post = this;
+		const [w, h] = size;
+		const block = m.block;
+		const mw = Math.max(1, Math.ceil(w / block));
+		const mh = Math.max(1, Math.ceil(h / block));
+		const key = block + '/' + w + 'x' + h;
+		if (this.moshKey !== key) {
+			this.moshKey = key;
+			this.moshHist = false;
+		}
+		const hist = this.moshHist;
+		const k = h / 1080;
+		const range = 4 * block + 0.03 * h;
+		const scene = post.rts.scene;
+		const sceneB = post.rt('sceneB', w, h, { mips: true });
+		const mvA = post.rt('mvA', mw, mh);
+		const mvB = post.rt('mvB', mw, mh);
+		const moshA = post.rt('moshA', w, h);
+		const moshB = post.rt('moshB', w, h);
+		post.generateMips(enc, scene);
+		post.run(
+			enc,
+			'mv',
+			mvB.createView(),
+			[mw, mh],
+			{
+				uRes: size,
+				uBlock: block,
+				uRange: range,
+				uGain: m.gain,
+				uInertia: hist ? m.inertia : 0,
+				uSceneMix: m.sceneMix,
+				uHasPrev: hist ? 1 : 0,
+				uDrift: [Math.cos(m.angle) * m.drift * 6 * k, Math.sin(m.angle) * m.drift * 6 * k],
+				uFlow: m.flow * 4 * k,
+				uTime: m.time,
+			},
+			{ uCur: scene.createView(), uPrev: sceneB.createView(), uPrevMV: mvA.createView() }
+		);
+		post.rts.mvA = mvB;
+		post.rts.mvB = mvA;
+		post.run(
+			enc,
+			'mosh',
+			moshB.createView(),
+			size,
+			{
+				uRes: size,
+				uMVSize: [mw, mh],
+				uBlock: block,
+				uRange: range,
+				uSmooth: m.smooth,
+				uHold: m.hold,
+				uResid: m.detail,
+				uChroma: m.chroma,
+				uQuant: m.quant,
+				uStyle: m.style,
+				uStale: m.stale,
+				uJit: m.jit,
+				uTime: m.time,
+				uHasHist: hist ? 1 : 0,
+				uLeak: m.leak,
+			},
+			{ uCur: scene.createView(), uPrevSrc: sceneB.createView(), uMoshPrev: moshA.createView(), uMV: mvB.createView() }
+		);
+		post.rts.moshA = moshB;
+		post.rts.moshB = moshA;
+		// текущий кадр становится «прошлым» для следующего шага
+		post.rts.scene = sceneB;
+		post.rts.sceneB = scene;
+		this.moshHist = true;
+		return moshB.createView();
+	}
+
+	/** Датамош выключен: его буферы не нужны, история сбрасывается */
+	moshOff() {
+		if (!this.moshHist && !this.rts.sceneB) return;
+		this.moshHist = false;
+		for (const k of ['sceneB', 'mvA', 'mvB', 'moshA', 'moshB']) {
+			this.rts[k]?.destroy();
+			delete this.rts[k];
+		}
 	}
 
 	dispose() {

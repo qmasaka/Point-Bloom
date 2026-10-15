@@ -71,8 +71,6 @@ if (!pts) return false;
 for (const c of pts.children) if (c.visible && !e.ghosts.includes(c)) return true;
 if (e.shared.uFr.value.x > 0.5) return true;
 if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
-const dm = e.state.layers.datamosh;
-if (dm && dm.on) return true;
 return false;
 }
 _syncCloud() {
@@ -156,14 +154,18 @@ const ab = e.state.look.aberration || 0;
 const useFb = !!(fb && fb.on && fb.amount > 0.01);
 const useBloom = bloom > 0.01;
 const useAb = ab > 0.01;
+const dm = L.datamosh;
+const mosh = dm && dm.on ? e._moshParams(dm) : null;
+const useMosh = !!(mosh && mosh.on);
 if (this.canvas.width !== w) this.canvas.width = w;
 if (this.canvas.height !== h) this.canvas.height = h;
-if (!useFb && !useBloom && !useAb) {
+if (!useFb && !useBloom && !useAb && !useMosh) {
 this.hasHistory = false;
+this.post.moshOff();
 pts.frame(shared, common, list, { size: [w, h] });
 return;
 }
-if (!pts.ready(add, true) || (useFb && !this.post.ready('fb'))) {
+if (!pts.ready(add, true) || (useFb && !this.post.ready('fb')) || (useMosh && !(this.post.ready('mv') && this.post.ready('mosh') && this.post.mipPipeline))) {
 pts.frame(shared, common, list, { size: [w, h] });
 return;
 }
@@ -171,13 +173,15 @@ const D = this.gpu.device;
 const post = this.post;
 const enc = D.createCommandEncoder();
 const size = [w, h];
-const scene = post.rt('scene', w, h);
+const scene = post.rt('scene', w, h, { mips: useMosh });
 if (this._size !== w + 'x' + h) {
 this._size = w + 'x' + h;
 this.hasHistory = false;
 }
-pts.frame(shared, common, list, { view: scene.createView(), size, rt: true, encoder: enc });
+pts.frame(shared, common, list, { view: scene.createView({ baseMipLevel: 0, mipLevelCount: 1 }), size, rt: true, encoder: enc });
 let src = scene.createView();
+if (useMosh) src = post.moshStep(enc, mosh, size);
+else post.moshOff();
 if (useFb) {
 const tun = fb.mode === 'tunnel';
 const ping = post.rt('ping', w, h);
