@@ -3,6 +3,7 @@ import { RenderBackend } from '../backend.js';
 import { WebGLBackend } from '../webgl/webgl-backend.js';
 import { WebGPUPoints } from './webgpu-points.js';
 import { WebGPUPost } from './webgpu-post.js';
+import { WebGPUMesh } from './webgpu-mesh.js';
 
 // атрибуты облака (имена как в GLSL), которые движок эффектов хранит в геометрии three.js
 const ATTRS = ['aOrigin', 'aTarget', 'aNormal', 'aNormalB', 'aPaint', 'aColor', 'aColorB', 'aHide', 'aDepth', 'aPath', 'aSculpt', 'aVis', 'aIdx'];
@@ -50,6 +51,7 @@ export class WebGPUBackend extends RenderBackend {
 		vp.fxCompose = () => this.captureCanvas();
 		this.pts = new WebGPUPoints(this.gpu, cv);
 		this.post = new WebGPUPost(this.gpu.device, this.gpu.format);
+		this.meshes = { links: new WebGPUMesh(this.pts, 'links'), scope: new WebGPUMesh(this.pts, 'scope') };
 		this.hasHistory = false;
 		this.gpu.device.lost.then(() => {
 			this.lost = true;
@@ -88,12 +90,30 @@ export class WebGPUBackend extends RenderBackend {
 			});
 	}
 
+	/**
+	 * Движок спрашивает, умеет ли WebGPU показать объект со своим шейдером (kind как в _gate: 'line', 'scope').
+	 * true: можно показывать; false: ещё собирается; undefined: WebGPU такое не рисует.
+	 */
+	gpuMesh(kind) {
+		const m = this.meshes?.[{ line: 'links', scope: 'scope' }[kind]];
+		if (!m || this.lost) return undefined;
+		m.prepare();
+		return m.ready(false) && m.ready(true);
+	}
+
+	/** Рисует ли WebGPU этот объект сцены сам */
+	_gpuDraws(obj) {
+		const e = this.engine;
+		const m = obj === e.linkObj ? this.meshes.links : obj === e._scopeLine ? this.meshes.scope : null;
+		return !!(m && m.ready(false) && m.ready(true));
+	}
+
 	/** Есть ли в сцене то, что умеет рисовать только WebGL */
 	_glOnly() {
 		const e = this.engine;
 		const pts = e.points;
 		if (!pts) return false;
-		for (const c of pts.children) if (c.visible && !e.ghosts.includes(c)) return true;
+		for (const c of pts.children) if (c.visible && !e.ghosts.includes(c) && !this._gpuDraws(c)) return true;
 		if (e.shared.uFr.value.x > 0.5) return true;
 		if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
 		return false;
@@ -219,26 +239,28 @@ export class WebGPUBackend extends RenderBackend {
 		const useMosh = !!(mosh && mosh.on);
 		if (this.canvas.width !== w) this.canvas.width = w;
 		if (this.canvas.height !== h) this.canvas.height = h;
-		if (!useFb && !useBloom && !useAb && !useMosh) {
-			this.hasHistory = false;
-			this.post.moshOff();
-			pts.frame(shared, common, list, { size: [w, h] });
-			return;
-		}
-		if (!pts.ready(add, true) || (useFb && !this.post.ready('fb')) || (useMosh && !(this.post.ready('mv') && this.post.ready('mosh') && this.post.mipPipeline))) {
-			pts.frame(shared, common, list, { size: [w, h] });
-			return;
-		}
 		const D = this.gpu.device;
 		const post = this.post;
 		const enc = D.createCommandEncoder();
 		const size = [w, h];
+		if (!useFb && !useBloom && !useAb && !useMosh) {
+			this.hasHistory = false;
+			post.moshOff();
+			this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common);
+			D.queue.submit([enc.finish()]);
+			return;
+		}
+		if (!pts.ready(add, true) || (useFb && !post.ready('fb')) || (useMosh && !(post.ready('mv') && post.ready('mosh') && post.mipPipeline))) {
+			this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common);
+			D.queue.submit([enc.finish()]);
+			return;
+		}
 		const scene = post.rt('scene', w, h, { mips: useMosh });
 		if (this._size !== w + 'x' + h) {
 			this._size = w + 'x' + h;
 			this.hasHistory = false;
 		}
-		pts.frame(shared, common, list, { view: scene.createView({ baseMipLevel: 0, mipLevelCount: 1 }), size, rt: true, encoder: enc });
+		this._scene(enc, scene.createView({ baseMipLevel: 0, mipLevelCount: 1 }), size, true, list, common);
 		let src = scene.createView();
 		if (useMosh) src = post.moshStep(enc, mosh, size);
 		else post.moshOff();
@@ -272,6 +294,16 @@ export class WebGPUBackend extends RenderBackend {
 		D.queue.submit([enc.finish()]);
 	}
 
+	/** Облако (с призраками), затем линии (связи, осциллограф) в одну и ту же цель */
+	_scene(enc, view, size, rt, list, common) {
+		const e = this.engine;
+		this.pts.frame(e.shared, common, list, { view, size, rt, encoder: enc });
+		for (const [obj, m] of [[e.linkObj, this.meshes.links], [e._scopeLine, this.meshes.scope]]) {
+			if (!obj || !obj.visible || !m.ready(rt)) continue;
+			if (m.sync(obj.geometry)) m.draw(enc, view, rt);
+		}
+	}
+
 	dispose() {
 		const e = this.engine;
 		const vp = e.app.viewport;
@@ -279,6 +311,7 @@ export class WebGPUBackend extends RenderBackend {
 		vp.fxOverlay = vp.fxCompose = null;
 		e._glDormant = false;
 		if (e.points) e.points.visible = true;
+		for (const m of Object.values(this.meshes || {})) m.dispose();
 		this.pts?.dispose();
 		this.post?.dispose();
 		this.canvas?.remove();

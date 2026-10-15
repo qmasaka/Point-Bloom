@@ -210,6 +210,8 @@ export class ShaderCachePart {
 		if (this._glDormant) {
 			// пока облако рисует WebGPU, шейдер точек WebGL не нужен; всё остальное будит WebGL
 			if (kind.startsWith('vert')) return true;
+			const g = this.backend?.gpuMesh?.(kind);
+			if (g !== undefined) return g;
 			this.backend?.wakeGl?.();
 		}
 		(this._wantT || (this._wantT = {}))[kind] = performance.now();

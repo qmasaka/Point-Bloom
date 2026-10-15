@@ -108,6 +108,11 @@ struct Frame {
 	@size(16) uDens: f32,
 	@size(16) uGhost: f32,
 	@size(16) uShape: f32,
+	uLink: vec4f,
+	uLinkP: vec4f,
+	@size(16) uLinkW: f32,
+	@size(16) uScopeW: f32,
+	@size(16) uScopeLB: f32,
 }
 @group(0) @binding(0) var<uniform> fr: Frame;
 @group(0) @binding(1) var<storage, read> outA: array<vec4f>;

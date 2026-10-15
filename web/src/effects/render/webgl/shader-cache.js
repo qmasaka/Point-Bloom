@@ -159,6 +159,8 @@ _gate(kind, want) {
 if (!want) return false;
 if (this._glDormant) {
 if (kind.startsWith('vert')) return true;
+const g = this.backend?.gpuMesh?.(kind);
+if (g !== undefined) return g;
 this.backend?.wakeGl?.();
 }
 (this._wantT || (this._wantT = {}))[kind] = performance.now();

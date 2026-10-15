@@ -91,6 +91,7 @@ export class WebGPUPoints {
 		this.bufs = {};
 		this.frameData = new Float32Array(FRAME_BYTES / 4);
 		const D = this.device;
+		this.texVersion = 0; // растёт, когда служебные текстуры заменяются (привязки у линий пересоздаются)
 		this.insts = []; // по набору значений на каждый рисуемый экземпляр (облако и призраки шлейфа)
 		this.sampler = D.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
 		// служебные текстуры: спектр звука (для эффекта «Спектр»), центры кусков (для «Разбора на части»), кадры видео и атлас символов (заглушки)
@@ -126,6 +127,7 @@ export class WebGPUPoints {
 				{ binding: 5, visibility: F, sampler: { type: 'filtering' } },
 			],
 		});
+		this.dummyBuf = D.createBuffer({ size: 16, usage: GPUBufferUsage.STORAGE }); // заглушка для неиспользуемых привязок
 		this.depth = null;
 	}
 

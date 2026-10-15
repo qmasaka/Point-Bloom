@@ -79,6 +79,7 @@ this.attrs = null;
 this.bufs = {};
 this.frameData = new Float32Array(FRAME_BYTES / 4);
 const D = this.device;
+this.texVersion = 0;
 this.insts = [];
 this.sampler = D.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
 this.specTex = D.createTexture({ size: [64, 1], format: 'r8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
@@ -112,6 +113,7 @@ entries: [
 { binding: 5, visibility: F, sampler: { type: 'filtering' } },
 ],
 });
+this.dummyBuf = D.createBuffer({ size: 16, usage: GPUBufferUsage.STORAGE });
 this.depth = null;
 }
 setCloud(attrs, count) {

@@ -16,6 +16,10 @@ const OUT = path.join(ROOT, 'src/effects/shaders/wgsl/generated');
 
 const { vert } = await GLSL('vert.js');
 const { frag } = await GLSL('frag.js');
+const { lineVert } = await GLSL('line-vert.js');
+const { lineFrag } = await GLSL('line-frag.js');
+const { scopeVert } = await GLSL('scope-vert.js');
+const { scopeFrag } = await GLSL('scope-frag.js');
 
 // встроенные матрицы three.js, которых нет в тексте шейдера
 const BUILTIN_UNIFORMS = [
@@ -43,13 +47,27 @@ function build(src, defines) {
 const progV = build(vert, {});
 for (const u of BUILTIN_UNIFORMS) if (!progV.uniforms.find((x) => x.name === u.name)) progV.uniforms.push(u);
 const progF = build(frag, {});
+const MESHES = {
+	links: { vert: lineVert, frag: lineFrag },
+	scope: { vert: scopeVert, frag: scopeFrag },
+};
+for (const m of Object.values(MESHES)) {
+	m.pv = build(m.vert, {});
+	m.pf = build(m.frag, {});
+	for (const u of BUILTIN_UNIFORMS) if (!m.pv.uniforms.find((x) => x.name === u.name)) m.pv.uniforms.push(u);
+}
 
-// значения кадра: объединение uniform'ов обоих шейдеров
+// значения кадра: объединение uniform'ов всех шейдеров (точки, связи, осциллограф)
 const frameUniforms = [];
-const seen = new Set();
-for (const u of [...progV.uniforms, ...progF.uniforms]) {
-	if (/^sampler/.test(u.type) || seen.has(u.name)) continue;
-	seen.add(u.name);
+const seen = new Map();
+for (const u of [...progV.uniforms, ...progF.uniforms, ...Object.values(MESHES).flatMap((m) => [...m.pv.uniforms, ...m.pf.uniforms])]) {
+	if (/^sampler/.test(u.type)) continue;
+	if (seen.has(u.name)) {
+		const o = seen.get(u.name);
+		if (o.type !== u.type || (o.len || 0) !== (u.len || 0)) throw new Error(`uniform ${u.name} объявлен по-разному: ${o.type}[${o.len || 0}] и ${u.type}[${u.len || 0}]`);
+		continue;
+	}
+	seen.set(u.name, u);
 	frameUniforms.push(u);
 }
 const memberType = (u) => {
@@ -222,6 +240,117 @@ fn fs_raw(in: VOut) -> @location(0) vec4f {
 }
 `;
 
+// ---------------------------------------------------------------- линии (связи, осциллограф): по вершине на поток
+const COMP = { float: 1, vec2: 2, vec3: 3, vec4: 4 };
+/** Раскладывает значения (атрибуты или переменные между шейдерами) по слотам vec4: [имя, слот, смещение, число компонент] */
+function packSlots(list) {
+	const slots = [];
+	const out = [];
+	for (const a of list) {
+		const n = COMP[a.type];
+		if (!n) throw new Error('тип не поддержан для упаковки: ' + a.type);
+		let s = slots.findIndex((used) => used + n <= 4);
+		if (s < 0) s = slots.push(0) - 1;
+		out.push([a.name, s, slots[s], n]);
+		slots[s] += n;
+	}
+	return { slots: slots.length, items: out };
+}
+const sw = (off, n) => 'xyzw'.slice(off, off + n);
+const meshOut = {};
+for (const [name, m] of Object.entries(MESHES)) {
+	const ain = packSlots(m.pv.attributes);
+	const vout = packSlots(m.pv.varyings);
+	if (ain.slots > 8 || vout.slots > 2) throw new Error(`${name}: слишком много данных (${ain.slots} слотов атрибутов, ${vout.slots} слотов переменных)`);
+	const rv = emitWGSL(m.pv, { textures: TEXTURES_VERT, builtinTypes: { gl_Position: 'vec4' }, renameFuncs: { main: 'main_' } });
+	const rf = emitWGSL(m.pf, { textures: TEXTURES_FRAG, builtinTypes: { gl_FragColor: 'vec4' }, renameFuncs: { main: 'frag_main_' } });
+	const inDecl = Array.from({ length: ain.slots }, (_, s) => `@group(0) @binding(${s + 1}) var<storage, read> inS${s}: array<vec4f>;`).join('\n');
+	const load = Array.from({ length: ain.slots }, (_, s) => `	let s${s} = inS${s}[i];`).join('\n');
+	const assign = ain.items.map(([n, s, off, c]) => `	${n} = s${s}.${sw(off, c)};`).join('\n');
+	const pack = Array.from({ length: vout.slots }, (_, s) => {
+		const parts = vout.items.filter((x) => x[1] === s).map(([n]) => n);
+		const used = vout.items.filter((x) => x[1] === s).reduce((a, x) => a + x[3], 0);
+		return `	outV${s}[i] = vec4f(${parts.join(', ')}${used < 4 ? ', ' + Array(4 - used).fill('0.0').join(', ') : ''});`;
+	}).join('\n');
+	const outDecl = ['@group(0) @binding(9) var<storage, read_write> outClip: array<vec4f>;', ...Array.from({ length: vout.slots }, (_, s) => `@group(0) @binding(${10 + s}) var<storage, read_write> outV${s}: array<vec4f>;`)].join('\n');
+	const compute = `${frameStruct}
+@group(0) @binding(0) var<uniform> fr: Frame;
+${inDecl}
+${outDecl}
+@group(0) @binding(12) var specTex: texture_2d<f32>;
+@group(0) @binding(13) var linSamp: sampler;
+@group(0) @binding(14) var pieceTex: texture_2d<f32>;
+@group(0) @binding(15) var frTex: texture_2d_array<f32>;
+@group(0) @binding(16) var heroTex: texture_2d<f32>;
+
+${privDecl(m.pv.attributes)}
+${privDecl(m.pv.varyings)}
+var<private> gl_Position: vec4f;
+
+${rv.wgsl}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+	let i = gid.x;
+	let count = arrayLength(&inS0);
+	if (i >= count) { return; }
+${load}
+${assign}
+	main_();
+	outClip[i] = gl_Position;
+${pack}
+}
+`;
+	const unpack = vout.items.map(([n, s, off, c]) => `	${n} = in.v${s}.${sw(off, c)};`).join('\n');
+	const render = `${frameStruct}
+@group(0) @binding(0) var<uniform> fr: Frame;
+@group(0) @binding(1) var<storage, read> outClip: array<vec4f>;
+${Array.from({ length: vout.slots }, (_, s) => `@group(0) @binding(${2 + s}) var<storage, read> outV${s}: array<vec4f>;`).join('\n')}
+@group(0) @binding(4) var atlasTex: texture_2d<f32>;
+@group(0) @binding(5) var linSamp: sampler;
+
+${privDecl(m.pf.varyings)}
+var<private> gl_FragColor: vec4f;
+
+${rf.wgsl}
+
+${TONE_FUNCS}
+struct VOut {
+	@builtin(position) clip: vec4f,
+${Array.from({ length: vout.slots }, (_, s) => `	@location(${s}) v${s}: vec4f,`).join('\n')}
+}
+
+@vertex
+fn vs(@builtin(vertex_index) vi: u32) -> VOut {
+	var clip = outClip[vi];
+	clip.z = (clip.z + clip.w) * 0.5;
+	var o: VOut;
+	o.clip = clip;
+${Array.from({ length: vout.slots }, (_, s) => `	o.v${s} = outV${s}[vi];`).join('\n')}
+	return o;
+}
+
+fn setup_in(in: VOut) {
+${unpack}
+}
+
+@fragment
+fn fs(in: VOut) -> @location(0) vec4f {
+	setup_in(in);
+	frag_main_();
+	return vec4f(linearToSrgb(toneNeutral(gl_FragColor.rgb, fr.uExposure)), gl_FragColor.a);
+}
+
+@fragment
+fn fs_raw(in: VOut) -> @location(0) vec4f {
+	setup_in(in);
+	frag_main_();
+	return gl_FragColor;
+}
+`;
+	meshOut[name] = { compute, render, attrs: ain.items, slots: ain.slots };
+}
+
 // ---------------------------------------------------------------- пост-обработка: полноэкранные проходы
 const { fbFrag, outFrag, mvFrag, moshFrag } = await GLSL('post.js');
 const POST = { fb: fbFrag, out: outFrag, mv: mvFrag, mosh: moshFrag };
@@ -288,6 +417,8 @@ const banner = '// Сгенерировано dev/gen-wgsl.mjs из шейдер
 const esc = (s) => s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 fs.writeFileSync(path.join(OUT, 'points-compute.js'), `${banner}export const pointsComputeWGSL = /* wgsl */ \`\n${esc(computeWGSL)}\`;\n`);
 fs.writeFileSync(path.join(OUT, 'points-render.js'), `${banner}export const pointsRenderWGSL = /* wgsl */ \`\n${esc(renderWGSL)}\`;\n`);
+fs.writeFileSync(path.join(OUT, 'mesh-programs.js'), `${banner}export const MESH_PROGRAMS = ${JSON.stringify(meshOut, null, 1)};
+`);
 fs.writeFileSync(path.join(OUT, 'post-passes.js'), `${banner}export const POST_PASSES = ${JSON.stringify(postOut, null, 1)};
 `);
 fs.writeFileSync(path.join(OUT, 'frame-spec.js'), `${banner}// имя, тип в WGSL, длина массива (0: не массив)\nexport const FRAME_SPEC = ${JSON.stringify(spec.map((s) => [s.name, s.type, s.len]))};\n`);
