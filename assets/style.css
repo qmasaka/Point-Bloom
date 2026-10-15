@@ -5340,6 +5340,17 @@ body.is-resizing-h * {
 	font-feature-settings: 'tnum' 1, 'zero' 0;
 }
 
+/* пока нет модели, фото или видео: интерфейс заблокирован, доступна только стартовая карточка */
+#app.no-model :is(.toolrail, .fx-left, .sidebar, .vp-dock, .fx-bar, .fx-hint, .vp-top-right, .mode-switch, #btnExport, #btnUndo, #btnRedo) {
+	opacity: 0.35;
+	filter: saturate(0.4);
+	pointer-events: none;
+	user-select: none;
+}
+.toolrail, .fx-left, .sidebar, .vp-dock, .fx-bar, .fx-hint, .vp-top-right, .mode-switch, #btnExport, #btnUndo, #btnRedo {
+	transition: opacity 0.3s var(--ease), filter 0.3s var(--ease);
+}
+
 /* строка состояния съёмки кадров в сцене */
 .fx-cap { position: absolute; left: 14px; bottom: 74px; z-index: 5; padding: 5px 10px; border-radius: 999px; background: rgba(20, 21, 24, 0.72); border: 1px solid var(--line, rgba(255, 255, 255, 0.1)); color: var(--text-dim, #a0a4ab); font-size: 12px; pointer-events: none; backdrop-filter: blur(6px); }
 

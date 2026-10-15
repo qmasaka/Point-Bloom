@@ -538,6 +538,7 @@ export class UI {
 
 	/** Рабочее пространство: «edit» (редактор) или «fx» (эффекты для облака точек) */
 	async setWorkspace(ws) {
+		if (this._locked && ws !== 'edit') return;
 		if (ws === this.workspace) return;
 		if (ws !== 'edit') this.app.pointEdit && this.app.pointEdit.setActive(false);
 		const fxPanel = $('#panel-effects');
@@ -698,12 +699,22 @@ export class UI {
 		el.innerHTML = parts.map((p) => `<span>${p}</span>`).join('');
 	}
 
+	/** Блокирует всё, кроме стартовой карточки, верхних кнопок и справки, пока в сцене нет ничего */
+	_setLocked(locked) {
+		if (this._locked === locked) return;
+		this._locked = locked;
+		document.getElementById('app').classList.toggle('no-model', locked);
+		for (const el of document.querySelectorAll('.toolrail, .fx-left, .sidebar, .vp-dock, .fx-bar, .fx-hint, .vp-top-right, .mode-switch, #btnExport, #btnUndo, #btnRedo')) el.inert = locked;
+	}
+
 	refreshScene() {
 		const app = this.app;
 		const top = app.viewport.root.children.filter((c) => !c.userData.helper);
 		const es = $('#emptyState');
 		// стартовая карточка уходит плавно и только когда модель начала проявляться: раньше она пропадала сразу, а модель ещё готовилась, и экран на миг оставался пустым
 		const gone = top.length > 0 && !this._importing;
+		// пока ничего не загружено, интерфейс заблокирован: сначала нужна модель, фото или видео (демо-модель, файл или перетаскивание)
+		this._setLocked(!gone);
 		if (!gone) {
 			clearTimeout(this._esT);
 			es.hidden = false;

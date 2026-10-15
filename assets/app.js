@@ -96795,6 +96795,7 @@ const ws = $('.workspace');
 if (ws.classList.contains('sidebar-hidden')) this.toggleSidebar(false);
 }
 async setWorkspace(ws) {
+if (this._locked && ws !== 'edit') return;
 if (ws === this.workspace) return;
 if (ws !== 'edit') this.app.pointEdit && this.app.pointEdit.setActive(false);
 const fxPanel = $('#panel-effects');
@@ -96938,11 +96939,18 @@ if (st.points) parts.push(`Точек <b>${formatInt(st.points)}</b>`);
 parts.push(`Материалов <b>${st.materials}</b>`, `Текстур <b>${st.textures}</b>`);
 el.innerHTML = parts.map((p) => `<span>${p}</span>`).join('');
 }
+_setLocked(locked) {
+if (this._locked === locked) return;
+this._locked = locked;
+document.getElementById('app').classList.toggle('no-model', locked);
+for (const el of document.querySelectorAll('.toolrail, .fx-left, .sidebar, .vp-dock, .fx-bar, .fx-hint, .vp-top-right, .mode-switch, #btnExport, #btnUndo, #btnRedo')) el.inert = locked;
+}
 refreshScene() {
 const app = this.app;
 const top = app.viewport.root.children.filter((c) => !c.userData.helper);
 const es = $('#emptyState');
 const gone = top.length > 0 && !this._importing;
+this._setLocked(!gone);
 if (!gone) {
 clearTimeout(this._esT);
 es.hidden = false;
