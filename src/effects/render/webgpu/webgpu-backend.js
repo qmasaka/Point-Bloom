@@ -14,7 +14,7 @@ const _nm = new THREE.Matrix3();
  * Рендер-движок эффектов на WebGPU. Сцена редактора (сетка, фон) по-прежнему рисуется WebGL на основном холсте, а облако точек
  * и пост-обработка (обратная связь, свечение, аберрация) рисуются WebGPU на втором холсте поверх него.
  *
- * То, что на WebGPU ещё не перенесено (связи, осциллограф, шлейф-копии, раскадровка, нестандартная тон-карта), рисует прежний WebGL:
+ * То, что на WebGPU ещё не перенесено (связи, осциллограф, шлейф-линии, раскадровка, нестандартная тон-карта, запись видео), рисует прежний WebGL:
  * пока такой объект виден, кадр целиком идёт старым путём. Шейдеры WebGL при этом собираются лениво (см. wakeGl), поэтому у тех, кому они не нужны,
  * видеодрайвер не получает ни одной большой программы.
  */
@@ -93,6 +93,8 @@ export class WebGPUBackend extends RenderBackend {
 		if (!pts) return false;
 		for (const c of pts.children) if (c.visible && !e.ghosts.includes(c)) return true;
 		if (e.shared.uFr.value.x > 0.5) return true;
+		// запись видео читает основной холст, а облако WebGPU лежит на втором
+		if (e.recording) return true;
 		if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
 		return false;
 	}

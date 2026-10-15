@@ -72860,6 +72860,7 @@ const pts = e.points;
 if (!pts) return false;
 for (const c of pts.children) if (c.visible && !e.ghosts.includes(c)) return true;
 if (e.shared.uFr.value.x > 0.5) return true;
+if (e.recording) return true;
 if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
 return false;
 }
