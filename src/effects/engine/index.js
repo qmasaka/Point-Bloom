@@ -238,7 +238,7 @@ export class EffectsEngine {
 			throw e;
 		}
 		// шейдеры эффектов большие: на Windows (ANGLE и D3D11) их компиляция идёт секунды, поэтому готовим их заранее, пока виден экран загрузки, а не на первом кадре
-		this.backend = await createBackend(pickBackendKind(), this);
+		this.backend = await createBackend(pickBackendKind(app.settings.render.backend), this);
 		this.backend.create();
 		// пока шейдеры собираются, облако скрыто: редактор продолжает рисовать сцену, и первый же кадр с облаком упёрся бы в ещё не собранную программу
 		const buildPts = this.points;

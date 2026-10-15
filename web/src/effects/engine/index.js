@@ -204,7 +204,7 @@ vp.fxHide = false;
 document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 throw e;
 }
-this.backend = await createBackend(pickBackendKind(), this);
+this.backend = await createBackend(pickBackendKind(app.settings.render.backend), this);
 this.backend.create();
 const buildPts = this.points;
 if (buildPts) buildPts.visible = false;

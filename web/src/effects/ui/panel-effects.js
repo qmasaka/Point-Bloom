@@ -895,6 +895,8 @@ const animInfo = h('div', { class: 'field-hint' }, 'Запишется то, ч�
 const rset = app.settings.render;
 const autoQ = switchRow('Авто-качество', { value: rset.autoQuality, onChange: (v) => { rset.autoQuality = v; app.saveSettings(); } });
 const capSeg = segmented({ cls: 'seg-tight', options: [{ value: 0, label: 'Без лимита' }, { value: 30, label: '30 к/с', title: 'Вдвое меньше нагрузка на видеокарту и нагрев' }], value: rset.fpsCap, onChange: (v) => { rset.fpsCap = Number(v); app.saveSettings(); } });
+const backendSeg = segmented({ cls: 'seg-tight', options: [{ value: 'auto', label: 'Авто' }, { value: 'webgpu', label: 'WebGPU', title: 'Современный движок: быстрее на Windows и без подвисаний при включении эффектов' }, { value: 'webgl', label: 'WebGL', title: 'Проверенный движок: работает везде' }], value: rset.backend || 'auto', onChange: (v) => { rset.backend = v; app.saveSettings(); app.toast('Движок сменится при следующем входе в «Эффекты»', 'info'); } });
+const backendHint = h('div', { class: 'field-hint' }, 'Применится при следующем входе в «Эффекты». «Авто» выбирает WebGPU там, где он быстрее (Windows), и сам возвращается на WebGL, если WebGPU не заработал.');
 const perfHint = h('div', { class: 'field-hint' }, 'Авто-качество снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется. Эффекты и цвета не меняются.');
 const hudSw = switchRow('Индикаторы уровней звука', { value: st.look.hud, onChange: (v) => { st.look.hud = v; save(); } });
 const hudSpec = switchRow('Спектр внизу', { value: st.look.hudSpectrum, onChange: (v) => { st.look.hudSpectrum = v; save(); } });
@@ -931,7 +933,7 @@ const secLookPts = section('Цвет и форма точек', { key: 'fx-look-
 const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el));
 const secLookCam = section('Камера', { key: 'fx-look-cam' }, field('Поле зрения', fovFx.el), dofOn.el, dofBody, rotate.el, rotSpeedRow);
 const secLookShow = section('Отображение', { key: 'fx-look-show' }, hudSw.el, hudSpec.el);
-const secLookPerf = section('Производительность', { key: 'fx-look-perf', open: false }, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), fpsFx.el, perfHint);
+const secLookPerf = section('Производительность', { key: 'fx-look-perf', open: false }, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), field('Движок отрисовки', backendSeg.el, { wide: true }), backendHint, fpsFx.el, perfHint);
 const secLookRec = section('Запись анимации', { key: 'fx-look-rec', open: false }, animTimelineOpenBtn, field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 const secMedia = createMediaPanel(app, null, { fx: true }).section;
 const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookPts, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec]]];

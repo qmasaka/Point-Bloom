@@ -33810,7 +33810,7 @@ flat: false,
 overlays: { grid: true, axes: true, wire: false, faces: false, bbox: true },
 media: { pts: 80000, relief: 'bright', depth: 0.5, recFps: 15, recSec: 10, cutDark: 0, cutLight: 1, key: '#00ff00', keyTol: 0, edges: 0, contrast: 1, sat: 1, post: 0, invert: false },
 point: { shape: 'circle', size: 3, attenuate: true, color: 'texture', solidColor: '#ffd166', surfaceCount: 200000, source: 'surface' },
-render: { bg: 'dark', exposure: 1, env: 1, tone: 'neutral', headlight: true, fov: 40, fps: false, autoQuality: true, fpsCap: 0 },
+render: { bg: 'dark', exposure: 1, env: 1, tone: 'neutral', headlight: true, fov: 40, fps: false, autoQuality: true, fpsCap: 0, backend: 'auto' },
 nav: { leftOrbit: true, trackpad: false, zoomToCursor: true, invertZoom: false, autoPersp: true, ortho: false },
 snap: { on: false, move: 0.1, rotate: 15, scale: 0.1 },
 space: 'world',
@@ -35148,6 +35148,7 @@ gpu,
 tier,
 windows,
 isApple,
+software,
 antialias: !mobile && !software,
 maxPR: mobile || software ? 1.5 : 2,
 maxFps: mobile || software ? 60 : 0,
@@ -74311,8 +74312,13 @@ prepareHero() {
 if (this.heroJob) return this.heroJob;
 const D = this.device;
 const module = D.createShaderModule({ code: pointsComputeHeroWGSL });
-this.heroJob = D.createComputePipelineAsync({ layout: D.createPipelineLayout({ bindGroupLayouts: [this.computeBGL] }), compute: { module, entryPoint: 'main' } }).then((p) => {
+this.heroJob = D.createComputePipelineAsync({ layout: D.createPipelineLayout({ bindGroupLayouts: [this.computeBGL] }), compute: { module, entryPoint: 'main' } })
+.then((p) => {
 this.pipelines.computeHero = p;
+})
+.catch((e) => {
+this.heroFailed = true;
+console.warn('WebGPU: не собрался шейдер «героя» раскадровки, его рисует WebGL:', e && e.message ? e.message : e);
 });
 return this.heroJob;
 }
@@ -74589,7 +74595,10 @@ this.pipelines[rt ? 'rt' : 'screen'] = p;
 })
 );
 }
-this.job = Promise.all(jobs);
+this.job = Promise.all(jobs).catch((e) => {
+this.failed = true;
+console.warn('WebGPU: не собралась программа «' + this.name + '», объект рисует WebGL:', e && e.message ? e.message : e);
+});
 return this.job;
 }
 ready(rt = false) {
@@ -74826,6 +74835,10 @@ this.pipelines[rt ? 'rt' : 'screen'] = p;
 })
 )
 );
+this.job = this.job.catch((e) => {
+this.failed = true;
+console.warn('WebGPU: не собрался шлейф, его рисует WebGL:', e && e.message ? e.message : e);
+});
 return this.job;
 }
 ready(rt = false) {
@@ -74905,6 +74918,62 @@ this._free();
 }
 }
 };
+__defs['src/effects/render/webgpu/device.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'NEED_STORAGE_BUFFERS', () => NEED_STORAGE_BUFFERS);
+__def(__exports, 'markGpuBad', () => markGpuBad);
+__def(__exports, 'gpuMarkedBad', () => gpuMarkedBad);
+__def(__exports, 'webgpuSupported', () => webgpuSupported);
+__def(__exports, 'requestGpu', () => requestGpu);
+const NEED_STORAGE_BUFFERS = 11;
+const BAD_KEY = 'pointbloom.gpu.bad';
+function markGpuBad(reason) {
+console.warn('WebGPU отключён для режима «Авто»:', reason);
+try {
+localStorage.setItem(BAD_KEY, String(reason || '1').slice(0, 200));
+} catch (e) {
+}
+}
+function gpuMarkedBad() {
+try {
+return !!localStorage.getItem(BAD_KEY);
+} catch (e) {
+return false;
+}
+}
+function webgpuSupported() {
+return typeof navigator !== 'undefined' && !!navigator.gpu;
+}
+async function requestGpu({ allowFallback = false } = {}) {
+if (!webgpuSupported()) return null;
+let adapter;
+try {
+adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+} catch (e) {
+return null;
+}
+if (!adapter) return null;
+if (adapter.isFallbackAdapter && !allowFallback) return null;
+const lim = adapter.limits;
+if (lim.maxStorageBuffersPerShaderStage < NEED_STORAGE_BUFFERS) return null;
+const wanted = ['timestamp-query'].filter((f) => adapter.features.has(f));
+let device;
+try {
+device = await adapter.requestDevice({
+requiredFeatures: wanted,
+requiredLimits: {
+maxStorageBuffersPerShaderStage: NEED_STORAGE_BUFFERS,
+maxStorageBufferBindingSize: Math.min(lim.maxStorageBufferBindingSize, 1 << 30),
+maxBufferSize: Math.min(lim.maxBufferSize, 1 << 30),
+},
+});
+} catch (e) {
+return null;
+}
+device.addEventListener('uncapturederror', (e) => console.error('WebGPU:', e.error && e.error.message));
+return { adapter, device, format: navigator.gpu.getPreferredCanvasFormat(), features: [...device.features] };
+}
+};
 __defs['src/effects/render/webgpu/webgpu-backend.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'WebGPUBackend', () => WebGPUBackend);
@@ -74915,6 +74984,7 @@ const { WebGPUPoints } = __req('src/effects/render/webgpu/webgpu-points.js');
 const { WebGPUPost } = __req('src/effects/render/webgpu/webgpu-post.js');
 const { WebGPUMesh } = __req('src/effects/render/webgpu/webgpu-mesh.js');
 const { WebGPUTrail } = __req('src/effects/render/webgpu/webgpu-trail.js');
+const { markGpuBad } = __req('src/effects/render/webgpu/device.js');
 const ATTRS = ['aOrigin', 'aTarget', 'aNormal', 'aNormalB', 'aPaint', 'aColor', 'aColorB', 'aHide', 'aDepth', 'aPath', 'aSculpt', 'aVis', 'aIdx'];
 const _mv = new THREE.Matrix4();
 const _nm = new THREE.Matrix3();
@@ -74949,13 +75019,20 @@ this.post = new WebGPUPost(this.gpu.device, this.gpu.format);
 this.trail = new WebGPUTrail(this.gpu.device, this.gpu.format);
 this.meshes = { links: new WebGPUMesh(this.pts, 'links'), scope: new WebGPUMesh(this.pts, 'scope') };
 this.hasHistory = false;
-this.gpu.device.lost.then(() => {
+this.gpu.device.lost.then((info) => {
 this.lost = true;
+if (info && info.reason !== 'destroyed') markGpuBad('устройство потеряно: ' + (info.message || info.reason));
 });
 e._glDormant = true;
 }
 async prepare() {
+try {
 await Promise.all([this.pts.prepare(), this.post.prepare()]);
+} catch (e) {
+this.lost = true;
+markGpuBad('не собрались шейдеры: ' + (e && e.message ? e.message : e));
+return;
+}
 this._syncCloud();
 }
 install() {
@@ -74981,13 +75058,17 @@ this.glWarm = true;
 }
 gpuMesh(kind) {
 const m = this.meshes?.[{ line: 'links', scope: 'scope' }[kind]];
-if (!m || this.lost) return undefined;
+if (!m || this.lost || m.failed) return undefined;
 m.prepare();
 return m.ready(false) && m.ready(true);
 }
 _gpuDraws(obj) {
 const e = this.engine;
-return obj === e.linkObj || obj === e._scopeLine || obj === e.hero || (!!e._trail && obj === e._trail.group);
+if (this.lost) return false;
+if (obj === e.linkObj) return !this.meshes.links.failed;
+if (obj === e._scopeLine) return !this.meshes.scope.failed;
+if (obj === e.hero) return !this.pts.heroFailed;
+return !!e._trail && obj === e._trail.group && !this.trail.failed;
 }
 _glOnly() {
 const e = this.engine;
@@ -75232,44 +75313,6 @@ this.pts = this.post = this.canvas = this.cap = this.capCtx = null;
 }
 }
 };
-__defs['src/effects/render/webgpu/device.js'] = function (__exports, __req) {
-'use strict';
-__def(__exports, 'NEED_STORAGE_BUFFERS', () => NEED_STORAGE_BUFFERS);
-__def(__exports, 'webgpuSupported', () => webgpuSupported);
-__def(__exports, 'requestGpu', () => requestGpu);
-const NEED_STORAGE_BUFFERS = 11;
-function webgpuSupported() {
-return typeof navigator !== 'undefined' && !!navigator.gpu;
-}
-async function requestGpu() {
-if (!webgpuSupported()) return null;
-let adapter;
-try {
-adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
-} catch (e) {
-return null;
-}
-if (!adapter) return null;
-const lim = adapter.limits;
-if (lim.maxStorageBuffersPerShaderStage < NEED_STORAGE_BUFFERS) return null;
-const wanted = ['timestamp-query'].filter((f) => adapter.features.has(f));
-let device;
-try {
-device = await adapter.requestDevice({
-requiredFeatures: wanted,
-requiredLimits: {
-maxStorageBuffersPerShaderStage: NEED_STORAGE_BUFFERS,
-maxStorageBufferBindingSize: Math.min(lim.maxStorageBufferBindingSize, 1 << 30),
-maxBufferSize: Math.min(lim.maxBufferSize, 1 << 30),
-},
-});
-} catch (e) {
-return null;
-}
-device.addEventListener('uncapturederror', (e) => console.error('WebGPU:', e.error && e.error.message));
-return { adapter, device, format: navigator.gpu.getPreferredCanvasFormat(), features: [...device.features] };
-}
-};
 __defs['src/effects/render/select.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'webgpuAvailable', () => webgpuAvailable);
@@ -75277,23 +75320,36 @@ __def(__exports, 'pickBackendKind', () => pickBackendKind);
 __def(__exports, 'createBackend', () => createBackend);
 const { WebGLBackend } = __req('src/effects/render/webgl/webgl-backend.js');
 const { WebGPUBackend } = __req('src/effects/render/webgpu/webgpu-backend.js');
-const { requestGpu } = __req('src/effects/render/webgpu/device.js');
+const { requestGpu, markGpuBad, gpuMarkedBad } = __req('src/effects/render/webgpu/device.js');
+const { perf } = __req('src/core/perf.js');
 function webgpuAvailable() {
 return typeof navigator !== 'undefined' && !!navigator.gpu;
 }
-function pickBackendKind() {
+function forcedOn() {
 try {
-const on = new URLSearchParams(location.search).get('gpu') === '1' || localStorage.getItem('pointbloom.gpu') === '1';
-if (on && webgpuAvailable()) return 'webgpu';
+return (new URLSearchParams(location.search).get('gpu') ?? localStorage.getItem('pointbloom.gpu')) === '1';
+} catch (e) {
+return false;
+}
+}
+function pickBackendKind(setting = 'auto') {
+if (!webgpuAvailable()) return 'webgl';
+try {
+const q = new URLSearchParams(location.search).get('gpu') ?? localStorage.getItem('pointbloom.gpu');
+if (q === '1') return 'webgpu';
+if (q === '0') return 'webgl';
 } catch (e) {
 }
-return 'webgl';
+if (setting === 'webgpu') return 'webgpu';
+if (setting === 'webgl') return 'webgl';
+return !gpuMarkedBad() && !perf.isApple && !perf.software ? 'webgpu' : 'webgl';
 }
 let gpuPromise = null;
 async function createBackend(kind, engine) {
 if (kind === 'webgpu') {
-gpuPromise ||= requestGpu().catch(() => null);
+gpuPromise ||= requestGpu({ allowFallback: forcedOn() }).catch(() => null);
 const gpu = await gpuPromise;
+if (!gpu) markGpuBad('нет адаптера или не хватает лимитов видеокарты');
 if (gpu) {
 if (!gpu.watched) {
 gpu.watched = true;
@@ -77178,6 +77234,11 @@ __defs['src/i18n/extra.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'default', () => __default);
 const __default = {
+'Движок отрисовки': 'Rendering engine',
+'Применится при следующем входе в «Эффекты». «Авто» выбирает WebGPU там, где он быстрее (Windows), и сам возвращается на WebGL, если WebGPU не заработал.': 'Applies the next time you enter Effects. Auto picks WebGPU where it is faster (Windows) and falls back to WebGL by itself if WebGPU does not work.',
+'Движок сменится при следующем входе в «Эффекты»': 'The engine will change the next time you enter Effects',
+'Современный движок: быстрее на Windows и без подвисаний при включении эффектов': 'Modern engine: faster on Windows, no stalls when turning effects on',
+'Проверенный движок: работает везде': 'Proven engine: works everywhere',
 'Окклюзия': 'Occlusion',
 'Клик': 'Click',
 'клик': 'click',
@@ -77256,6 +77317,11 @@ const __default = {
 "·  ждёт": "·  очікує",
 "·  сейчас {}%": "·  зараз {}%",
 "Аврора": "Аврора",
+"Движок отрисовки": "Рушій відтворення",
+"Движок сменится при следующем входе в «Эффекты»": "Рушій зміниться під час наступного входу в «Ефекти»",
+"Применится при следующем входе в «Эффекты». «Авто» выбирает WebGPU там, где он быстрее (Windows), и сам возвращается на WebGL, если WebGPU не заработал.": "Застосується під час наступного входу в «Ефекти». «Авто» вибирає WebGPU там, де він швидший (Windows), і сам повертається на WebGL, якщо WebGPU не запрацював.",
+"Современный движок: быстрее на Windows и без подвисаний при включении эффектов": "Сучасний рушій: швидший на Windows і без підвисань під час вмикання ефектів",
+"Проверенный движок: работает везде": "Перевірений рушій: працює скрізь",
 "Авто-качество": "Авто-якість",
 "Авто-качество снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется. Эффекты и цвета не меняются.": "Авто-якість знижує чіткість, лише поки комп’ютеру не вистачає кадрів, і повертає її, коли запас з’являється. Ефекти й кольори не змінюються.",
 "Авто-перспектива": "Авто-перспектива",
@@ -78897,6 +78963,11 @@ const __default = {
 "·  ждёт": "·  en espera",
 "·  сейчас {}%": "·  ahora {}%",
 "Аврора": "Aurora",
+"Движок отрисовки": "Motor de renderizado",
+"Движок сменится при следующем входе в «Эффекты»": "El motor cambiará la próxima vez que entres en Efectos",
+"Применится при следующем входе в «Эффекты». «Авто» выбирает WebGPU там, где он быстрее (Windows), и сам возвращается на WebGL, если WebGPU не заработал.": "Se aplica la próxima vez que entres en Efectos. «Auto» elige WebGPU donde es más rápido (Windows) y vuelve a WebGL por sí solo si WebGPU no funciona.",
+"Современный движок: быстрее на Windows и без подвисаний при включении эффектов": "Motor moderno: más rápido en Windows y sin tirones al activar efectos",
+"Проверенный движок: работает везде": "Motor probado: funciona en todas partes",
 "Авто-качество": "Calidad automática",
 "Авто-качество снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется. Эффекты и цвета не меняются.": "La calidad automática reduce la nitidez solo mientras el ordenador no llega a los fotogramas y la devuelve cuando hay margen. Los efectos y los colores no cambian.",
 "Авто-перспектива": "Perspectiva automática",
@@ -80538,6 +80609,11 @@ const __default = {
 "·  ждёт": "·  wartet",
 "·  сейчас {}%": "·  jetzt {}%",
 "Аврора": "Aurora",
+"Движок отрисовки": "Rendering-Engine",
+"Движок сменится при следующем входе в «Эффекты»": "Die Engine wechselt beim nächsten Öffnen von Effekte",
+"Применится при следующем входе в «Эффекты». «Авто» выбирает WebGPU там, где он быстрее (Windows), и сам возвращается на WebGL, если WebGPU не заработал.": "Gilt beim nächsten Öffnen von Effekte. „Auto“ wählt WebGPU dort, wo es schneller ist (Windows), und fällt von selbst auf WebGL zurück, wenn WebGPU nicht funktioniert.",
+"Современный движок: быстрее на Windows и без подвисаний при включении эффектов": "Moderne Engine: schneller unter Windows, ohne Ruckler beim Einschalten von Effekten",
+"Проверенный движок: работает везде": "Bewährte Engine: läuft überall",
 "Авто-качество": "Auto-Qualität",
 "Авто-качество снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется. Эффекты и цвета не меняются.": "Die Auto-Qualität senkt die Schärfe nur, solange der Computer die Bilder nicht schafft, und bringt sie zurück, wenn wieder Reserve da ist. Effekte und Farben bleiben gleich.",
 "Авто-перспектива": "Auto-Perspektive",
@@ -92757,7 +92833,7 @@ vp.fxHide = false;
 document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 throw e;
 }
-this.backend = await createBackend(pickBackendKind(), this);
+this.backend = await createBackend(pickBackendKind(app.settings.render.backend), this);
 this.backend.create();
 const buildPts = this.points;
 if (buildPts) buildPts.visible = false;
@@ -94231,6 +94307,8 @@ const animInfo = h('div', { class: 'field-hint' }, 'Запишется то, ч�
 const rset = app.settings.render;
 const autoQ = switchRow('Авто-качество', { value: rset.autoQuality, onChange: (v) => { rset.autoQuality = v; app.saveSettings(); } });
 const capSeg = segmented({ cls: 'seg-tight', options: [{ value: 0, label: 'Без лимита' }, { value: 30, label: '30 к/с', title: 'Вдвое меньше нагрузка на видеокарту и нагрев' }], value: rset.fpsCap, onChange: (v) => { rset.fpsCap = Number(v); app.saveSettings(); } });
+const backendSeg = segmented({ cls: 'seg-tight', options: [{ value: 'auto', label: 'Авто' }, { value: 'webgpu', label: 'WebGPU', title: 'Современный движок: быстрее на Windows и без подвисаний при включении эффектов' }, { value: 'webgl', label: 'WebGL', title: 'Проверенный движок: работает везде' }], value: rset.backend || 'auto', onChange: (v) => { rset.backend = v; app.saveSettings(); app.toast('Движок сменится при следующем входе в «Эффекты»', 'info'); } });
+const backendHint = h('div', { class: 'field-hint' }, 'Применится при следующем входе в «Эффекты». «Авто» выбирает WebGPU там, где он быстрее (Windows), и сам возвращается на WebGL, если WebGPU не заработал.');
 const perfHint = h('div', { class: 'field-hint' }, 'Авто-качество снижает чёткость, только пока компьютеру не хватает кадров, и возвращает её, когда запас появляется. Эффекты и цвета не меняются.');
 const hudSw = switchRow('Индикаторы уровней звука', { value: st.look.hud, onChange: (v) => { st.look.hud = v; save(); } });
 const hudSpec = switchRow('Спектр внизу', { value: st.look.hudSpectrum, onChange: (v) => { st.look.hudSpectrum = v; save(); } });
@@ -94267,7 +94345,7 @@ const secLookPts = section('Цвет и форма точек', { key: 'fx-look-
 const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el));
 const secLookCam = section('Камера', { key: 'fx-look-cam' }, field('Поле зрения', fovFx.el), dofOn.el, dofBody, rotate.el, rotSpeedRow);
 const secLookShow = section('Отображение', { key: 'fx-look-show' }, hudSw.el, hudSpec.el);
-const secLookPerf = section('Производительность', { key: 'fx-look-perf', open: false }, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), fpsFx.el, perfHint);
+const secLookPerf = section('Производительность', { key: 'fx-look-perf', open: false }, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), field('Движок отрисовки', backendSeg.el, { wide: true }), backendHint, fpsFx.el, perfHint);
 const secLookRec = section('Запись анимации', { key: 'fx-look-rec', open: false }, animTimelineOpenBtn, field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 const secMedia = createMediaPanel(app, null, { fx: true }).section;
 const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookPts, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec]]];

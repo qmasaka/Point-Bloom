@@ -342,9 +342,14 @@ export class WebGPUPoints {
 		if (this.heroJob) return this.heroJob;
 		const D = this.device;
 		const module = D.createShaderModule({ code: pointsComputeHeroWGSL });
-		this.heroJob = D.createComputePipelineAsync({ layout: D.createPipelineLayout({ bindGroupLayouts: [this.computeBGL] }), compute: { module, entryPoint: 'main' } }).then((p) => {
-			this.pipelines.computeHero = p;
-		});
+		this.heroJob = D.createComputePipelineAsync({ layout: D.createPipelineLayout({ bindGroupLayouts: [this.computeBGL] }), compute: { module, entryPoint: 'main' } })
+			.then((p) => {
+				this.pipelines.computeHero = p;
+			})
+			.catch((e) => {
+				this.heroFailed = true;
+				console.warn('WebGPU: не собрался шейдер «героя» раскадровки, его рисует WebGL:', e && e.message ? e.message : e);
+			});
 		return this.heroJob;
 	}
 

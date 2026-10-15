@@ -1,8 +1,23 @@
 export const NEED_STORAGE_BUFFERS = 11;
+const BAD_KEY = 'pointbloom.gpu.bad';
+export function markGpuBad(reason) {
+console.warn('WebGPU отключён для режима «Авто»:', reason);
+try {
+localStorage.setItem(BAD_KEY, String(reason || '1').slice(0, 200));
+} catch (e) {
+}
+}
+export function gpuMarkedBad() {
+try {
+return !!localStorage.getItem(BAD_KEY);
+} catch (e) {
+return false;
+}
+}
 export function webgpuSupported() {
 return typeof navigator !== 'undefined' && !!navigator.gpu;
 }
-export async function requestGpu() {
+export async function requestGpu({ allowFallback = false } = {}) {
 if (!webgpuSupported()) return null;
 let adapter;
 try {
@@ -11,6 +26,7 @@ adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performanc
 return null;
 }
 if (!adapter) return null;
+if (adapter.isFallbackAdapter && !allowFallback) return null;
 const lim = adapter.limits;
 if (lim.maxStorageBuffersPerShaderStage < NEED_STORAGE_BUFFERS) return null;
 const wanted = ['timestamp-query'].filter((f) => adapter.features.has(f));

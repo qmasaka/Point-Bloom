@@ -5,6 +5,7 @@ import { WebGPUPoints } from './webgpu-points.js';
 import { WebGPUPost } from './webgpu-post.js';
 import { WebGPUMesh } from './webgpu-mesh.js';
 import { WebGPUTrail } from './webgpu-trail.js';
+import { markGpuBad } from './device.js';
 const ATTRS = ['aOrigin', 'aTarget', 'aNormal', 'aNormalB', 'aPaint', 'aColor', 'aColorB', 'aHide', 'aDepth', 'aPath', 'aSculpt', 'aVis', 'aIdx'];
 const _mv = new THREE.Matrix4();
 const _nm = new THREE.Matrix3();
@@ -13,8 +14,7 @@ constructor(engine, gpu) {
 super(engine);
 this.gpu = gpu;
 this.gl = new WebGLBackend(engine);
-this.cloudGeo = null;
-this.versions = {};
+this.sync = {};
 this.glWarm = false;
 this.glWaking = false;
 this.useGl = false;
@@ -40,13 +40,20 @@ this.post = new WebGPUPost(this.gpu.device, this.gpu.format);
 this.trail = new WebGPUTrail(this.gpu.device, this.gpu.format);
 this.meshes = { links: new WebGPUMesh(this.pts, 'links'), scope: new WebGPUMesh(this.pts, 'scope') };
 this.hasHistory = false;
-this.gpu.device.lost.then(() => {
+this.gpu.device.lost.then((info) => {
 this.lost = true;
+if (info && info.reason !== 'destroyed') markGpuBad('устройство потеряно: ' + (info.message || info.reason));
 });
 e._glDormant = true;
 }
 async prepare() {
+try {
 await Promise.all([this.pts.prepare(), this.post.prepare()]);
+} catch (e) {
+this.lost = true;
+markGpuBad('не собрались шейдеры: ' + (e && e.message ? e.message : e));
+return;
+}
 this._syncCloud();
 }
 install() {
@@ -72,46 +79,82 @@ this.glWarm = true;
 }
 gpuMesh(kind) {
 const m = this.meshes?.[{ line: 'links', scope: 'scope' }[kind]];
-if (!m || this.lost) return undefined;
+if (!m || this.lost || m.failed) return undefined;
 m.prepare();
 return m.ready(false) && m.ready(true);
 }
 _gpuDraws(obj) {
 const e = this.engine;
-return obj === e.linkObj || obj === e._scopeLine || (!!e._trail && obj === e._trail.group);
+if (this.lost) return false;
+if (obj === e.linkObj) return !this.meshes.links.failed;
+if (obj === e._scopeLine) return !this.meshes.scope.failed;
+if (obj === e.hero) return !this.pts.heroFailed;
+return !!e._trail && obj === e._trail.group && !this.trail.failed;
 }
 _glOnly() {
 const e = this.engine;
 const pts = e.points;
 if (!pts) return false;
 for (const c of pts.children) if (c.visible && !e.ghosts.includes(c) && !this._gpuDraws(c)) return true;
-if (e.shared.uFr.value.x > 0.5) return true;
 if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
 return false;
 }
-_syncCloud() {
-const e = this.engine;
-const g = e.geometry;
+_syncCloud(g = this.engine.geometry, layer = 'main') {
 if (!g) return false;
-if (g !== this.cloudGeo) {
+const S = this.sync[layer] || (this.sync[layer] = { geo: null, versions: {} });
+if (g !== S.geo) {
 const attrs = {};
 for (const k of ATTRS) attrs[k] = g.attributes[k].array;
-this.pts.setCloud(attrs, g.attributes.aOrigin.count);
-this.cloudGeo = g;
-this.versions = {};
-for (const k of ATTRS) this.versions[k] = g.attributes[k].version;
+this.pts.setCloud(attrs, g.attributes.aOrigin.count, layer);
+S.geo = g;
+S.versions = {};
+for (const k of ATTRS) S.versions[k] = g.attributes[k].version;
 return true;
 }
 const changed = [];
 for (const k of ATTRS) {
 const v = g.attributes[k].version;
-if (v !== this.versions[k]) {
-this.versions[k] = v;
+if (v !== S.versions[k]) {
+S.versions[k] = v;
 changed.push(k);
 }
 }
-if (changed.length) this.pts.updateAttributes(changed);
+if (changed.length) this.pts.updateAttributes(changed, layer);
 return true;
+}
+_syncTextures() {
+const e = this.engine;
+const pts = this.pts;
+const sh = e.shared;
+const S = this.sync;
+const spec = e.specTex;
+if (spec && S.spec !== spec.version) {
+S.spec = spec.version;
+pts.setSpectrum(spec.image.data);
+}
+const piece = e.pieceTex;
+if (piece && S.piece !== piece.version) {
+S.piece = piece.version;
+pts.setPieces(piece.image.data);
+}
+const atlas = sh.uAtlas.value;
+if (atlas && (S.atlas !== atlas || S.atlasVer !== atlas.version)) {
+S.atlas = atlas;
+S.atlasVer = atlas.version;
+pts.setAtlas(atlas.image);
+}
+const fr = sh.uFrTex.value;
+if (fr && fr.isDataArrayTexture && fr.image.data && (S.fr !== fr || S.frVer !== fr.version)) {
+S.fr = fr;
+S.frVer = fr.version;
+pts.setFrames(fr.image.data, fr.image.width, fr.image.height, fr.image.depth);
+}
+const hero = e.hero;
+if (hero && hero.visible) {
+const ht = sh.uHeroTex.value;
+const v = ht && ht.image;
+if (v && v.videoWidth && v.readyState >= 2) pts.setHeroSource(v, v.videoWidth, v.videoHeight);
+}
 }
 _inst(obj, camera, extra) {
 _mv.multiplyMatrices(camera.matrixWorldInverse, obj.matrixWorld);
@@ -168,6 +211,7 @@ renderer.render(scene, camera);
 this.canvas.style.visibility = '';
 this.stats.gpu++;
 if (!this._syncCloud()) return;
+this._syncTextures();
 this._drawCloud(renderer, camera);
 }
 _drawCloud(renderer, camera) {
@@ -182,6 +226,11 @@ const list = [this._inst(e.points, camera, { uTOff: e.material.uniforms.uTOff.va
 for (const g of e.ghosts) {
 if (!g.visible) continue;
 list.push(this._inst(g, camera, { uTOff: g.material.uniforms.uTOff.value, uGhost: g.material.uniforms.uGhost.value, uHero: g.material.uniforms.uHero.value }));
+}
+const hero = e.hero;
+if (hero && hero.visible) {
+pts.prepareHero();
+if (pts.heroReady() && this._syncCloud(hero.geometry, 'hero')) list.push(this._inst(hero, camera, { uTOff: hero.material.uniforms.uTOff.value, uGhost: hero.material.uniforms.uGhost.value, layer: 'hero' }));
 }
 const common = { projectionMatrix: camera.projectionMatrix, uExposure: renderer.toneMappingExposure };
 const L = e.state.layers;

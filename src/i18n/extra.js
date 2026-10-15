@@ -1,5 +1,10 @@
 // Дополнения к английскому словарю: слова и куски, которые интерфейс собирает из частей.
 export default {
+	'Движок отрисовки': 'Rendering engine',
+	'Применится при следующем входе в «Эффекты». «Авто» выбирает WebGPU там, где он быстрее (Windows), и сам возвращается на WebGL, если WebGPU не заработал.': 'Applies the next time you enter Effects. Auto picks WebGPU where it is faster (Windows) and falls back to WebGL by itself if WebGPU does not work.',
+	'Движок сменится при следующем входе в «Эффекты»': 'The engine will change the next time you enter Effects',
+	'Современный движок: быстрее на Windows и без подвисаний при включении эффектов': 'Modern engine: faster on Windows, no stalls when turning effects on',
+	'Проверенный движок: работает везде': 'Proven engine: works everywhere',
 	'Окклюзия': 'Occlusion',
 	'Клик': 'Click',
 	'клик': 'click',

@@ -43,7 +43,10 @@ this.pipelines[rt ? 'rt' : 'screen'] = p;
 })
 );
 }
-this.job = Promise.all(jobs);
+this.job = Promise.all(jobs).catch((e) => {
+this.failed = true;
+console.warn('WebGPU: не собралась программа «' + this.name + '», объект рисует WebGL:', e && e.message ? e.message : e);
+});
 return this.job;
 }
 ready(rt = false) {

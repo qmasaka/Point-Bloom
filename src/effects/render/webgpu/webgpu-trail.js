@@ -119,6 +119,10 @@ export class WebGPUTrail {
 				})
 			)
 		);
+		this.job = this.job.catch((e) => {
+			this.failed = true;
+			console.warn('WebGPU: не собрался шлейф, его рисует WebGL:', e && e.message ? e.message : e);
+		});
 		return this.job;
 	}
 

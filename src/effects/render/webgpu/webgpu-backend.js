@@ -5,6 +5,7 @@ import { WebGPUPoints } from './webgpu-points.js';
 import { WebGPUPost } from './webgpu-post.js';
 import { WebGPUMesh } from './webgpu-mesh.js';
 import { WebGPUTrail } from './webgpu-trail.js';
+import { markGpuBad } from './device.js';
 
 // атрибуты облака (имена как в GLSL), которые движок эффектов хранит в геометрии three.js
 const ATTRS = ['aOrigin', 'aTarget', 'aNormal', 'aNormalB', 'aPaint', 'aColor', 'aColorB', 'aHide', 'aDepth', 'aPath', 'aSculpt', 'aVis', 'aIdx'];
@@ -54,15 +55,23 @@ export class WebGPUBackend extends RenderBackend {
 		this.trail = new WebGPUTrail(this.gpu.device, this.gpu.format);
 		this.meshes = { links: new WebGPUMesh(this.pts, 'links'), scope: new WebGPUMesh(this.pts, 'scope') };
 		this.hasHistory = false;
-		this.gpu.device.lost.then(() => {
+		this.gpu.device.lost.then((info) => {
 			this.lost = true;
+			if (info && info.reason !== 'destroyed') markGpuBad('устройство потеряно: ' + (info.message || info.reason));
 		});
 		// WebGL-шейдеры эффектов не собираются, пока облако рисует WebGPU
 		e._glDormant = true;
 	}
 
 	async prepare() {
-		await Promise.all([this.pts.prepare(), this.post.prepare()]);
+		try {
+			await Promise.all([this.pts.prepare(), this.post.prepare()]);
+		} catch (e) {
+			// шейдер не собрался: кадры пойдут через WebGL (gpuReady ниже), а режим «Авто» больше не будет пробовать WebGPU
+			this.lost = true;
+			markGpuBad('не собрались шейдеры: ' + (e && e.message ? e.message : e));
+			return;
+		}
 		this._syncCloud();
 	}
 
@@ -97,7 +106,7 @@ export class WebGPUBackend extends RenderBackend {
 	 */
 	gpuMesh(kind) {
 		const m = this.meshes?.[{ line: 'links', scope: 'scope' }[kind]];
-		if (!m || this.lost) return undefined;
+		if (!m || this.lost || m.failed) return undefined;
 		m.prepare();
 		return m.ready(false) && m.ready(true);
 	}
@@ -105,7 +114,11 @@ export class WebGPUBackend extends RenderBackend {
 	/** Умеет ли WebGPU рисовать этот объект сцены (пока его конвейер собирается, объект просто не виден: будить WebGL ради него не нужно) */
 	_gpuDraws(obj) {
 		const e = this.engine;
-		return obj === e.linkObj || obj === e._scopeLine || obj === e.hero || (!!e._trail && obj === e._trail.group);
+		if (this.lost) return false;
+		if (obj === e.linkObj) return !this.meshes.links.failed;
+		if (obj === e._scopeLine) return !this.meshes.scope.failed;
+		if (obj === e.hero) return !this.pts.heroFailed;
+		return !!e._trail && obj === e._trail.group && !this.trail.failed;
 	}
 
 	/** Есть ли в сцене то, что умеет рисовать только WebGL */
