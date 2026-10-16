@@ -57,6 +57,7 @@ export class ScreenPart {
 				this._scrFile = { el: { videoWidth: img.naturalWidth, videoHeight: img.naturalHeight }, tex, dispose: () => { tex.dispose(); URL.revokeObjectURL(url); } };
 				this._scrName = file.name;
 				this.state.layers.vscreen.source = 'file';
+				this.app.toast('Для «Экрана» выбрано: ' + file.name, 'ok', 2200);
 				this.app.viewport.invalidate();
 				this.emit();
 			};
@@ -75,6 +76,7 @@ export class ScreenPart {
 			this._scrName = file.name;
 			this.state.layers.vscreen.source = 'file';
 			v.play().catch(() => {});
+			this.app.toast('Для «Экрана» выбрано: ' + file.name, 'ok', 2200);
 			this.app.viewport.invalidate();
 			this.emit();
 		});

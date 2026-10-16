@@ -492,6 +492,9 @@ export default {
 		'Видео поверх цвета формы': 'Video over the shape\'s color',
 		'Яркость видео': 'Video brightness',
 		'Сила рельефа': 'Relief strength',
+		'Масштаб кадра, ×': 'Frame scale, ×',
+		'Яркость видео, ×': 'Video brightness, ×',
+		'Для «Экрана» выбрано: {}': 'Chosen for Screen: {}',
 	},
 	uk: {
 		'Установить приложение': 'Встановити застосунок',
@@ -985,6 +988,9 @@ export default {
 		'Видео поверх цвета формы': 'Відео поверх кольору форми',
 		'Яркость видео': 'Яскравість відео',
 		'Сила рельефа': 'Сила рельєфу',
+		'Масштаб кадра, ×': 'Масштаб кадру, ×',
+		'Яркость видео, ×': 'Яскравість відео, ×',
+		'Для «Экрана» выбрано: {}': 'Для «Екрана» вибрано: {}',
 	},
 	es: {
 		'Установить приложение': 'Instalar la aplicación',
@@ -1478,6 +1484,9 @@ export default {
 		'Видео поверх цвета формы': 'Vídeo sobre el color de la forma',
 		'Яркость видео': 'Brillo del vídeo',
 		'Сила рельефа': 'Fuerza del relieve',
+		'Масштаб кадра, ×': 'Escala del fotograma, ×',
+		'Яркость видео, ×': 'Brillo del vídeo, ×',
+		'Для «Экрана» выбрано: {}': 'Elegido para Pantalla: {}',
 	},
 	de: {
 		'Установить приложение': 'App installieren',
@@ -1971,5 +1980,8 @@ export default {
 		'Видео поверх цвета формы': 'Video über der Formfarbe',
 		'Яркость видео': 'Videohelligkeit',
 		'Сила рельефа': 'Reliefstärke',
+		'Масштаб кадра, ×': 'Bildmaßstab, ×',
+		'Яркость видео, ×': 'Videohelligkeit, ×',
+		'Для «Экрана» выбрано: {}': 'Für Bildschirm gewählt: {}',
 	},
 };

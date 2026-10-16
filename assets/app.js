@@ -72638,15 +72638,15 @@ const { perf } = __req('src/core/perf.js');
 const FX_ACTIONS = [['none', 'Без действия'], ['push', 'Отталкивание: от ладони'], ['pull', 'Притягивание: к ладони'], ['swirl', 'Вихрь: вращение пальцами'], ['rotate', 'Вращение: поворот модели'], ['sculpt', 'Лепка: изменение формы'], ['gravity', 'Гравитация: притяжение к руке'], ['wave', 'Ударная волна: фронт от руки'], ['break', 'Распад: пока держишь жест'], ['dissolve', 'Растворение: пока держишь жест'], ['brush', 'Световой штрих: след в воздухе'], ['slicecut', 'Срез рукой: секущая плоскость'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:twist', 'Эффект: Деформация'], ['fx:blast', 'Эффект: Взрыв по биту'], ['fx:flow', 'Эффект: Течение'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
 const FX_LAYERS = [
 { id: 'frames', sound: false, group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Видео раскладывается на кадры из точек, кадры собираются в блок. Показ идёт за таймлайном', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, thin: 0, showMode: 'off', showLen: 0.12, hero: 150000, future: 'hide', gain: 1, sat: 0, bsize: 1.5, track: 'grow', tone: 'all', toneCut: 0.5, tail: 100, tailSoft: 0.6 }, extras: [{ type: 'title', label: 'Раскладка' }, { key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: слои вглубь'], ['wall', 'Стена: плоская сетка'], ['film', 'Киноплёнка: кадры в ряд'], ['tunnel', 'Туннель: перспектива вглубь']], relayout: true }, { key: 'track', label: 'Что в стопке', type: 'seg', options: [['grow', 'Пройденное'], ['full', 'Весь ряд']], when: ['layout', ['stack', 'tunnel']] }, { key: 'depth', label: 'Глубина', min: 0.2, max: 4, step: 0.1, relayout: true, when: ['layout', ['stack', 'tunnel']] }, { type: 'title', label: 'Показ' }, { key: 'showMode', label: 'Как показывать', type: 'select', options: [['off', 'Статично: все кадры как есть'], ['peel', 'Листание: слёт пройденных'], ['projector', 'Проектор: бегущий луч'], ['trail', 'Шлейф: затухающий след']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Редкие'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { key: 'thin', label: 'Прореживать остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { type: 'title', label: 'Хвост' }, { key: 'tail', label: 'Длина хвоста, доля видео', min: 5, max: 100, step: 1, int: true, unit: '%' }, { key: 'tailSoft', label: 'Как гаснет хвост: резко ... плавно', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Цвет остальных кадров' }, { key: 'sat', label: 'Насыщенность (0 это цвета видео)', min: -1, max: 1, step: 0.05 }, { key: 'gain', label: 'Яркость', min: 0.4, max: 3, step: 0.05 }, { key: 'tone', label: 'Какие тона оставить', type: 'seg', options: [['all', 'Все'], ['light', 'Светлые'], ['dark', 'Тёмные']] }, { key: 'toneCut', label: 'Граница светлого и тёмного', min: 0.05, max: 0.95, step: 0.01, when: ['tone', ['light', 'dark']] }, { key: 'bsize', label: 'Размер точек', min: 0.5, max: 4, step: 0.1 }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
-{ id: 'vscreen', sound: false, group: 'Видео', name: 'Экран', icon: 'monitor', hint: 'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него), рельеф (яркое выдавливается). Видео из «Медиа» или отдельный файл', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, source: 'current', mode: 'stick', scale: 1, rotate: 0, bright: 1, mix: 1, depth: 0.5 }, extras: [
+{ id: 'vscreen', sound: false, group: 'Графика', name: 'Экран', icon: 'monitor', hint: 'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него), рельеф (яркое выдавливается). Видео из «Медиа» или отдельный файл', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, source: 'current', mode: 'stick', scale: 1, rotate: 0, bright: 1, mix: 1, depth: 0.5 }, extras: [
 { type: 'note', text: 'Откройте видео или фото в «Медиа» или выберите свой файл ниже: оно сразу появится на форме.' },
 { key: 'source', label: 'Источник', type: 'seg', options: [['current', 'Из «Медиа»'], ['file', 'Свой файл']] },
 { type: 'button', label: 'Выбрать видео или фото…', act: 'screenPick', icon: 'folder-open', when: ['source', ['file']] },
 { key: 'mode', label: 'Вид', type: 'select', options: [['stick', 'Приклеено', 'кадр на лице формы'], ['wrap', 'Обёртка', 'кадр вокруг формы'], ['project', 'Проектор', 'кадр на экране, форма скользит'], ['relief', 'Рельеф', 'яркое выдавливается']] },
-{ key: 'scale', label: 'Масштаб кадра', min: 0.3, max: 3, step: 0.05 },
+{ key: 'scale', label: 'Масштаб кадра, ×', min: 0.3, max: 3, step: 0.05, noNorm: true },
 { key: 'rotate', label: 'Поворот кадра, °', min: -180, max: 180, step: 5, int: true, noNorm: true, when: ['mode', ['stick', 'project', 'relief']] },
 { key: 'mix', label: 'Видео поверх цвета формы', min: 0, max: 1, step: 0.05 },
-{ key: 'bright', label: 'Яркость видео', min: 0.3, max: 2, step: 0.05 },
+{ key: 'bright', label: 'Яркость видео, ×', min: 0.3, max: 2, step: 0.05, noNorm: true },
 { key: 'depth', label: 'Сила рельефа', min: 0, max: 1, step: 0.05, when: ['mode', ['relief']] },
 ] },
 { id: 'curl', group: 'Движение', name: 'Вихри и течение', icon: 'tornado', hint: 'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)', max: 2, def: { on: false, amount: 1, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8, fscale: 1.6, fdir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['noise', 'Вихри: хаотичное движение'], ['stream', 'Поток: движение с возвратом'], ['orbit', 'Кольца: вращение слоёв'], ['surface', 'Течение: скольжение по форме']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1, when: ['mode', ['noise', 'stream', 'orbit']] }, { key: 'fscale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1, when: ['mode', ['surface']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }, { key: 'fdir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['surface']] }] },
@@ -72712,14 +72712,14 @@ const FX_LAYERS = [
 { id: 'gravity', group: 'Взаимодействие', name: 'Гравитация', icon: 'planet', hint: 'Точки кружат вокруг центра. Виды: галактика, кольца, квазар (падение в центр и струи), рой, невесомость', max: 1, def: { on: false, amount: 0.8, band: 'none', react: 0.4, mode: 'orbit', target: 'center', radius: 2.4, speed: 1, tilt: 0.5, precess: 0.15, flatten: 0.6, jet: 1.4, spread: 0.5 }, extras: [{ key: 'mode', label: 'Вид поля', type: 'select', options: [['orbit', 'Спиральная галактика: вращающийся диск'], ['rings', 'Планетарные кольца: встречные орбиты'], ['hole', 'Квазар: воронка и осевые джеты'], ['swarm', 'Сферический рой: свободные орбиты'], ['float', 'Невесомость: свободный дрейф']] }, { type: 'note', when: ['mode', ['orbit']], text: 'Форма раскручивается диском: у центра быстрее, на краю медленнее.' }, { type: 'note', when: ['mode', ['rings']], text: 'Форма раскладывается на круглые кольца, соседние вращаются в разные стороны, как у планеты с кольцами.' }, { type: 'note', when: ['mode', ['hole']], text: 'Точки по спирали падают в центр, а затем вылетают двумя струями вдоль оси.' }, { type: 'note', when: ['mode', ['swarm']], text: 'Каждая точка летает по своей наклонной орбите, получается шар из орбит, как у атома.' }, { type: 'note', when: ['mode', ['float']], text: 'Точки плавно покачиваются и расходятся, как в невесомости.' }, { type: 'title', label: 'Где центр' }, { key: 'target', label: 'Центр поля', type: 'seg', options: [['cursor', 'Курсор, рука'], ['center', 'Центр формы']] }, { key: 'radius', label: 'Радиус действия', min: 0.1, max: 3.5, step: 0.05 }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.1 }, { key: 'spread', label: 'Размах', min: 0, max: 1, step: 0.05, when: ['mode', ['swarm', 'float']] }, { key: 'flatten', label: 'Сплющивание в диск', min: 0, max: 0.95, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'tilt', label: 'Наклон диска', min: 0, max: 1.5, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'precess', label: 'Покачивание оси', min: 0, max: 1, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'jet', label: 'Длина струй', min: 0, max: 3, step: 0.1, when: ['mode', ['hole']] }] },
 ];
 const FX_GROUPS = {
-'Видео': ['frames', 'vscreen'],
+'Видео': ['frames'],
 'Фото и видео': ['depth'],
 'Анимация': ['trail'],
 'Движение': ['curl', 'gravity', 'twist'],
 'Звук и ритм': ['spectrum', 'wave', 'blast', 'scope'],
 'Разрушение': ['physics', 'explode', 'dissolve'],
 'Цифровые': ['voxel', 'glitch', 'datamosh'],
-'Графика': ['links', 'slice', 'feedback', 'echo', 'tracking'],
+'Графика': ['vscreen', 'links', 'slice', 'feedback', 'echo', 'tracking'],
 'Управление': ['cursor', 'brush', 'camTrack'],
 };
 const FX_GROUP_NAMES = Object.keys(FX_GROUPS);
@@ -80046,6 +80046,9 @@ en: {
 'Видео поверх цвета формы': 'Video over the shape\'s color',
 'Яркость видео': 'Video brightness',
 'Сила рельефа': 'Relief strength',
+'Масштаб кадра, ×': 'Frame scale, ×',
+'Яркость видео, ×': 'Video brightness, ×',
+'Для «Экрана» выбрано: {}': 'Chosen for Screen: {}',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -80538,6 +80541,9 @@ uk: {
 'Видео поверх цвета формы': 'Відео поверх кольору форми',
 'Яркость видео': 'Яскравість відео',
 'Сила рельефа': 'Сила рельєфу',
+'Масштаб кадра, ×': 'Масштаб кадру, ×',
+'Яркость видео, ×': 'Яскравість відео, ×',
+'Для «Экрана» выбрано: {}': 'Для «Екрана» вибрано: {}',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -81030,6 +81036,9 @@ es: {
 'Видео поверх цвета формы': 'Vídeo sobre el color de la forma',
 'Яркость видео': 'Brillo del vídeo',
 'Сила рельефа': 'Fuerza del relieve',
+'Масштаб кадра, ×': 'Escala del fotograma, ×',
+'Яркость видео, ×': 'Brillo del vídeo, ×',
+'Для «Экрана» выбрано: {}': 'Elegido para Pantalla: {}',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -81522,6 +81531,9 @@ de: {
 'Видео поверх цвета формы': 'Video über der Formfarbe',
 'Яркость видео': 'Videohelligkeit',
 'Сила рельефа': 'Reliefstärke',
+'Масштаб кадра, ×': 'Bildmaßstab, ×',
+'Яркость видео, ×': 'Videohelligkeit, ×',
+'Для «Экрана» выбрано: {}': 'Für Bildschirm gewählt: {}',
 },
 };
 };
@@ -90222,6 +90234,7 @@ const tex = this._screenTex(img, false);
 this._scrFile = { el: { videoWidth: img.naturalWidth, videoHeight: img.naturalHeight }, tex, dispose: () => { tex.dispose(); URL.revokeObjectURL(url); } };
 this._scrName = file.name;
 this.state.layers.vscreen.source = 'file';
+this.app.toast('Для «Экрана» выбрано: ' + file.name, 'ok', 2200);
 this.app.viewport.invalidate();
 this.emit();
 };
@@ -90240,6 +90253,7 @@ this._scrFile = { el: v, tex, dispose: () => { v.pause(); tex.dispose(); URL.rev
 this._scrName = file.name;
 this.state.layers.vscreen.source = 'file';
 v.play().catch(() => {});
+this.app.toast('Для «Экрана» выбрано: ' + file.name, 'ok', 2200);
 this.app.viewport.invalidate();
 this.emit();
 });
