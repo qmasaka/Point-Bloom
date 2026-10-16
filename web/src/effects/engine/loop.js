@@ -257,6 +257,7 @@ u.uDepth.value.set(on ? clamp(this._eff(Dp), 0, 1.5) : 0, { relief: 0, layers: 1
 u.uDepthQ.value.set(Dp.zone ?? 0.12, 0, 0, 0);
 u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, map: 1, heat: 2 }[Dp.view] ?? 0);
 }
+this._screenTick(u);
 u.uGlitch.value.set(this._eff(L.glitch), L.glitch.slices, L.glitch.drop ?? 0.5, 0);
 u.uGlitchP.value.set(L.glitch.rgb === 'on' ? 1 : 0, L.glitch.speed, { bands: 0, blocks: 1, scan: 2 }[L.glitch.mode] ?? 0, L.glitch.burst ?? 0.7);
 u.uDisP.value.set({ wind: 0, burn: 1, laser: 2, layers: 3, chunks: 4, sand: 5, vortex: 6, shock: 7 }[L.dissolve.style] ?? 0, 0, 0, 0);

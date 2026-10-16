@@ -128,6 +128,8 @@ export class WebGPUBackend extends RenderBackend {
 		if (!pts) return false;
 		for (const c of pts.children) if (c.visible && !e.ghosts.includes(c) && !this._gpuDraws(c)) return true;
 		if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
+		// «Экран» (видео на форме) есть только в WebGL
+		if (e.shared && e.shared.uScr && e.shared.uScr.value.x > 0.001) return true;
 		return false;
 	}
 

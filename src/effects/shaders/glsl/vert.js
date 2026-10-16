@@ -37,6 +37,12 @@ varying float vDk;
 varying float vCoc;
 varying float vGl;
 ` + common + `
+#ifdef VSCREEN
+// «Экран»: видео играет на форме. Объявления только здесь: переводчик в WGSL этот блок не видит (этот эффект только в WebGL)
+uniform vec4 uScr;
+uniform vec4 uScrP;
+uniform sampler2D uScrTex;
+#endif
 #ifdef HERO
 #define HEROSIZE clamp(sqrt(uFr.z / max(uHero.z, 1.0)), 0.4, 1.0)
 #else
@@ -309,6 +315,47 @@ void main() {
 		vColor += vColor * band * 0.9 + uP2 * band * 0.2;
 		pos += normalize(vec3(pos.x, 0.0, pos.z) + vec3(1e-4)) * band * 0.03;
 	}
+#ifdef VSCREEN
+	// «Экран»: uScr = (сила, вид, масштаб, яркость), uScrP = (поворот, сила рельефа, смешивание с цветом формы, соотношение сторон кадра)
+	// виды: 0 обёртка вокруг формы, 1 приклеено (кадр на лице формы, вращается с ней), 2 проектор (кадр на экране, форма скользит сквозь него), 3 рельеф (как «приклеено», яркое выдавливается)
+	if (uScr.x > 0.001) {
+		vec3 bsx = base - uCen;
+		float hyx = max(uYR.y - uYR.x, 1e-4);
+		float arx = max(uScrP.w, 0.05);
+		vec2 suv;
+		float smask = 1.0;
+		if (uScr.y < 0.5) {
+			// обёртка: угол вокруг оси это горизонталь кадра, высота формы это вертикаль
+			suv = vec2(atan(bsx.z, bsx.x) / 6.2831853 + 0.5, clamp((base.y - uYR.x) / hyx, 0.0, 1.0));
+			suv.x = fract((suv.x - 0.5) / uScr.z + 0.5);
+		} else if (uScr.y < 1.5 || uScr.y > 2.5) {
+			// приклеено и рельеф: кадр лежит на форме спереди, высота формы это высота кадра
+			suv = vec2(0.5 + bsx.x / (hyx * arx), 0.5 + (base.y - (uYR.x + uYR.y) * 0.5) / hyx);
+			suv = (suv - 0.5) / uScr.z + 0.5;
+			float cr = cos(uScrP.x), sr = sin(uScrP.x);
+			suv = vec2(cr * (suv.x - 0.5) - sr * (suv.y - 0.5), sr * (suv.x - 0.5) + cr * (suv.y - 0.5)) + 0.5;
+			smask = step(0.0, suv.x) * step(suv.x, 1.0) * step(0.0, suv.y) * step(suv.y, 1.0);
+			if (dot(nrmM, nrmM) > 0.01) smask *= smoothstep(-0.35, 0.25, nrmM.z);
+		} else {
+			// проектор: кадр неподвижен на экране, точки получают цвет того места кадра, над которым оказались
+			vec4 cpx = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+			vec2 nd = cpx.xy / max(cpx.w, 1e-4);
+			float scrAsp = projectionMatrix[1][1] / projectionMatrix[0][0];
+			suv = vec2(0.5 + nd.x * 0.5 * scrAsp / arx, 0.5 + nd.y * 0.5);
+			suv = (suv - 0.5) / uScr.z + 0.5;
+			float cr = cos(uScrP.x), sr = sin(uScrP.x);
+			suv = vec2(cr * (suv.x - 0.5) - sr * (suv.y - 0.5), sr * (suv.x - 0.5) + cr * (suv.y - 0.5)) + 0.5;
+			smask = step(0.0, suv.x) * step(suv.x, 1.0) * step(0.0, suv.y) * step(suv.y, 1.0);
+		}
+		vec3 scr = texture2D(uScrTex, clamp(suv, 0.0, 1.0)).rgb * uScr.w;
+		float slum = dot(scr, vec3(0.3, 0.59, 0.11));
+		vColor = mix(vColor, mix(vColor * 0.35, scr, uScrP.z), smask * uScr.x);
+		if (uScr.y > 2.5 && uScr.y < 3.5) {
+			vec3 dirn = dot(nrmM, nrmM) > 0.01 ? normalize(nrmM) : normalize(bsx + vec3(1e-4));
+			pos += dirn * slum * uScrP.y * 0.4 * smask * uScr.x;
+		}
+	}
+#endif
 	vD = disp;
 	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
 	gl_Position = projectionMatrix * mv;

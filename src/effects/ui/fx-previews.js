@@ -235,6 +235,17 @@ const DRAW = {
 		for (const [x, yy] of ring(30, 9)) dot(c, x * 1.2, yy, Math.abs(yy - y) < 2 ? 2.6 : 1.4, Math.abs(yy - y) < 2 ? 1 : 0.35);
 		for (let i = -6; i <= 6; i++) dot(c, i * 1.8, y, 1.6, 0.9);
 	},
+	vscreen: (c, t) => {
+		// шар из точек, по которому бежит полоса кадра: видео играет на форме
+		for (let j = -5; j <= 5; j++) for (let i = -6; i <= 6; i++) {
+			const x = i * 2.1, y = j * 2.1;
+			const r = Math.hypot(x / 12, y / 10);
+			if (r > 1) continue;
+			const band = 0.5 + 0.5 * Math.sin((x * 0.22 + y * 0.12) - t * 3.2);
+			const lit = band * band;
+			dot(c, x, y, 1.5 + lit * 1.4, 0.25 + 0.75 * lit * (1 - r * 0.35));
+		}
+	},
 	datamosh: (c, t) => {
 		// сетка блоков: часть блоков залипает и сползает шагами, за ними тянется смазанный хвост
 		const hash = (i, j, k) => {

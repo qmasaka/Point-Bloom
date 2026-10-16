@@ -72337,6 +72337,7 @@ const pts = e.points;
 if (!pts) return false;
 for (const c of pts.children) if (c.visible && !e.ghosts.includes(c) && !this._gpuDraws(c)) return true;
 if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
+if (e.shared && e.shared.uScr && e.shared.uScr.value.x > 0.001) return true;
 return false;
 }
 _syncCloud(g = this.engine.geometry, layer = 'main') {
@@ -72637,6 +72638,17 @@ const { perf } = __req('src/core/perf.js');
 const FX_ACTIONS = [['none', 'Без действия'], ['push', 'Отталкивание: от ладони'], ['pull', 'Притягивание: к ладони'], ['swirl', 'Вихрь: вращение пальцами'], ['rotate', 'Вращение: поворот модели'], ['sculpt', 'Лепка: изменение формы'], ['gravity', 'Гравитация: притяжение к руке'], ['wave', 'Ударная волна: фронт от руки'], ['break', 'Распад: пока держишь жест'], ['dissolve', 'Растворение: пока держишь жест'], ['brush', 'Световой штрих: след в воздухе'], ['slicecut', 'Срез рукой: секущая плоскость'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:twist', 'Эффект: Деформация'], ['fx:blast', 'Эффект: Взрыв по биту'], ['fx:flow', 'Эффект: Течение'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф']];
 const FX_LAYERS = [
 { id: 'frames', sound: false, group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Видео раскладывается на кадры из точек, кадры собираются в блок. Показ идёт за таймлайном', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, thin: 0, showMode: 'off', showLen: 0.12, hero: 150000, future: 'hide', gain: 1, sat: 0, bsize: 1.5, track: 'grow', tone: 'all', toneCut: 0.5, tail: 100, tailSoft: 0.6 }, extras: [{ type: 'title', label: 'Раскладка' }, { key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: слои вглубь'], ['wall', 'Стена: плоская сетка'], ['film', 'Киноплёнка: кадры в ряд'], ['tunnel', 'Туннель: перспектива вглубь']], relayout: true }, { key: 'track', label: 'Что в стопке', type: 'seg', options: [['grow', 'Пройденное'], ['full', 'Весь ряд']], when: ['layout', ['stack', 'tunnel']] }, { key: 'depth', label: 'Глубина', min: 0.2, max: 4, step: 0.1, relayout: true, when: ['layout', ['stack', 'tunnel']] }, { type: 'title', label: 'Показ' }, { key: 'showMode', label: 'Как показывать', type: 'select', options: [['off', 'Статично: все кадры как есть'], ['peel', 'Листание: слёт пройденных'], ['projector', 'Проектор: бегущий луч'], ['trail', 'Шлейф: затухающий след']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Редкие'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { key: 'thin', label: 'Прореживать остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { type: 'title', label: 'Хвост' }, { key: 'tail', label: 'Длина хвоста, доля видео', min: 5, max: 100, step: 1, int: true, unit: '%' }, { key: 'tailSoft', label: 'Как гаснет хвост: резко ... плавно', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Цвет остальных кадров' }, { key: 'sat', label: 'Насыщенность (0 это цвета видео)', min: -1, max: 1, step: 0.05 }, { key: 'gain', label: 'Яркость', min: 0.4, max: 3, step: 0.05 }, { key: 'tone', label: 'Какие тона оставить', type: 'seg', options: [['all', 'Все'], ['light', 'Светлые'], ['dark', 'Тёмные']] }, { key: 'toneCut', label: 'Граница светлого и тёмного', min: 0.05, max: 0.95, step: 0.01, when: ['tone', ['light', 'dark']] }, { key: 'bsize', label: 'Размер точек', min: 0.5, max: 4, step: 0.1 }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
+{ id: 'vscreen', sound: false, group: 'Видео', name: 'Экран', icon: 'monitor', hint: 'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него), рельеф (яркое выдавливается). Видео из «Медиа» или отдельный файл', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, source: 'current', mode: 'stick', scale: 1, rotate: 0, bright: 1, mix: 1, depth: 0.5 }, extras: [
+{ type: 'note', text: 'Откройте видео или фото в «Медиа» или выберите свой файл ниже: оно сразу появится на форме.' },
+{ key: 'source', label: 'Источник', type: 'seg', options: [['current', 'Из «Медиа»'], ['file', 'Свой файл']] },
+{ type: 'button', label: 'Выбрать видео или фото…', act: 'screenPick', icon: 'folder-open', when: ['source', ['file']] },
+{ key: 'mode', label: 'Вид', type: 'select', options: [['stick', 'Приклеено', 'кадр на лице формы'], ['wrap', 'Обёртка', 'кадр вокруг формы'], ['project', 'Проектор', 'кадр на экране, форма скользит'], ['relief', 'Рельеф', 'яркое выдавливается']] },
+{ key: 'scale', label: 'Масштаб кадра', min: 0.3, max: 3, step: 0.05 },
+{ key: 'rotate', label: 'Поворот кадра, °', min: -180, max: 180, step: 5, int: true, noNorm: true, when: ['mode', ['stick', 'project', 'relief']] },
+{ key: 'mix', label: 'Видео поверх цвета формы', min: 0, max: 1, step: 0.05 },
+{ key: 'bright', label: 'Яркость видео', min: 0.3, max: 2, step: 0.05 },
+{ key: 'depth', label: 'Сила рельефа', min: 0, max: 1, step: 0.05, when: ['mode', ['relief']] },
+] },
 { id: 'curl', group: 'Движение', name: 'Вихри и течение', icon: 'tornado', hint: 'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)', max: 2, def: { on: false, amount: 1, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8, fscale: 1.6, fdir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['noise', 'Вихри: хаотичное движение'], ['stream', 'Поток: движение с возвратом'], ['orbit', 'Кольца: вращение слоёв'], ['surface', 'Течение: скольжение по форме']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1, when: ['mode', ['noise', 'stream', 'orbit']] }, { key: 'fscale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1, when: ['mode', ['surface']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }, { key: 'fdir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['surface']] }] },
 { id: 'physics', sound: false, group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается, осколки падают на пол с отскоками и собираются обратно', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
 { id: 'spectrum', group: 'Движение', name: 'Спектр', icon: 'equalizer', hint: 'Форма отзывается на звук. Виды: колонки эквалайзера, горный рельеф, шерсть по кругу, шерсть по высоте', max: 2, def: { on: false, amount: 0.9, band: 'none', react: 0, mode: 'bars', bars: 24 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['bars', 'Колонки: полосы эквалайзера'], ['terrain', 'Рельеф: звуковой ландшафт'], ['wool', 'Радиальные иглы: по кругу'], ['height', 'Вертикальные иглы: по высоте']] }, { key: 'bars', label: 'Число колонок', min: 8, max: 64, step: 1, int: true, when: ['mode', ['bars']] }] },
@@ -72700,7 +72712,7 @@ const FX_LAYERS = [
 { id: 'gravity', group: 'Взаимодействие', name: 'Гравитация', icon: 'planet', hint: 'Точки кружат вокруг центра. Виды: галактика, кольца, квазар (падение в центр и струи), рой, невесомость', max: 1, def: { on: false, amount: 0.8, band: 'none', react: 0.4, mode: 'orbit', target: 'center', radius: 2.4, speed: 1, tilt: 0.5, precess: 0.15, flatten: 0.6, jet: 1.4, spread: 0.5 }, extras: [{ key: 'mode', label: 'Вид поля', type: 'select', options: [['orbit', 'Спиральная галактика: вращающийся диск'], ['rings', 'Планетарные кольца: встречные орбиты'], ['hole', 'Квазар: воронка и осевые джеты'], ['swarm', 'Сферический рой: свободные орбиты'], ['float', 'Невесомость: свободный дрейф']] }, { type: 'note', when: ['mode', ['orbit']], text: 'Форма раскручивается диском: у центра быстрее, на краю медленнее.' }, { type: 'note', when: ['mode', ['rings']], text: 'Форма раскладывается на круглые кольца, соседние вращаются в разные стороны, как у планеты с кольцами.' }, { type: 'note', when: ['mode', ['hole']], text: 'Точки по спирали падают в центр, а затем вылетают двумя струями вдоль оси.' }, { type: 'note', when: ['mode', ['swarm']], text: 'Каждая точка летает по своей наклонной орбите, получается шар из орбит, как у атома.' }, { type: 'note', when: ['mode', ['float']], text: 'Точки плавно покачиваются и расходятся, как в невесомости.' }, { type: 'title', label: 'Где центр' }, { key: 'target', label: 'Центр поля', type: 'seg', options: [['cursor', 'Курсор, рука'], ['center', 'Центр формы']] }, { key: 'radius', label: 'Радиус действия', min: 0.1, max: 3.5, step: 0.05 }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.1 }, { key: 'spread', label: 'Размах', min: 0, max: 1, step: 0.05, when: ['mode', ['swarm', 'float']] }, { key: 'flatten', label: 'Сплющивание в диск', min: 0, max: 0.95, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'tilt', label: 'Наклон диска', min: 0, max: 1.5, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'precess', label: 'Покачивание оси', min: 0, max: 1, step: 0.05, when: ['mode', ['orbit', 'hole', 'rings']] }, { key: 'jet', label: 'Длина струй', min: 0, max: 3, step: 0.1, when: ['mode', ['hole']] }] },
 ];
 const FX_GROUPS = {
-'Видео': ['frames'],
+'Видео': ['frames', 'vscreen'],
 'Фото и видео': ['depth'],
 'Анимация': ['trail'],
 'Движение': ['curl', 'gravity', 'twist'],
@@ -80015,6 +80027,25 @@ en: {
 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются стиль, цвет, маяки, число узлов и дальность связи': 'Glowing threads between neighboring points with running lights. Style, color, beacons, node count and link range are adjustable',
 'расстояние до центра': 'distance from the center',
 'радиальный разлёт': 'radial spread',
+'Экран': 'Screen',
+'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него), рельеф (яркое выдавливается). Видео из «Медиа» или отдельный файл': 'Video plays right on the shape, like a film on a sculpture. Modes: wrap around the shape, stuck to its front, projector (the frame stays on screen, the shape slides through it), relief (bright areas push out). Video from Media or a separate file',
+'Откройте видео или фото в «Медиа» или выберите свой файл ниже: оно сразу появится на форме.': 'Open a video or photo in Media or pick your own file below: it appears on the shape right away.',
+'Источник': 'Source',
+'Из «Медиа»': 'From Media',
+'Свой файл': 'Own file',
+'Выбрать видео или фото…': 'Choose video or photo…',
+'Приклеено': 'Stuck on',
+'кадр на лице формы': 'frame on the front of the shape',
+'Обёртка': 'Wrap',
+'кадр вокруг формы': 'frame around the shape',
+'кадр на экране, форма скользит': 'frame stays on screen, the shape slides',
+'Рельеф': 'Relief',
+'яркое выдавливается': 'bright areas push out',
+'Масштаб кадра': 'Frame scale',
+'Поворот кадра, °': 'Frame rotation, °',
+'Видео поверх цвета формы': 'Video over the shape\'s color',
+'Яркость видео': 'Video brightness',
+'Сила рельефа': 'Relief strength',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -80488,6 +80519,25 @@ uk: {
 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются стиль, цвет, маяки, число узлов и дальность связи': 'Світні нитки між сусідніми точками з вогниками, що біжать. Налаштовуються стиль, колір, маяки, кількість вузлів і дальність зв’язку',
 'расстояние до центра': 'відстань до центру',
 'радиальный разлёт': 'радіальний розліт',
+'Экран': 'Екран',
+'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него), рельеф (яркое выдавливается). Видео из «Медиа» или отдельный файл': 'Відео грає прямо на формі, як кіно на скульптурі. Види: обгортка навколо форми, приклеєно до обличчя форми, проєктор (кадр на екрані, форма ковзає крізь нього), рельєф (яскраве видавлюється). Відео з «Медіа» або окремий файл',
+'Откройте видео или фото в «Медиа» или выберите свой файл ниже: оно сразу появится на форме.': 'Відкрийте відео або фото в «Медіа» або виберіть свій файл нижче: воно одразу з’явиться на формі.',
+'Источник': 'Джерело',
+'Из «Медиа»': 'З «Медіа»',
+'Свой файл': 'Свій файл',
+'Выбрать видео или фото…': 'Вибрати відео або фото…',
+'Приклеено': 'Приклеєно',
+'кадр на лице формы': 'кадр на обличчі форми',
+'Обёртка': 'Обгортка',
+'кадр вокруг формы': 'кадр навколо форми',
+'кадр на экране, форма скользит': 'кадр на екрані, форма ковзає',
+'Рельеф': 'Рельєф',
+'яркое выдавливается': 'яскраве видавлюється',
+'Масштаб кадра': 'Масштаб кадру',
+'Поворот кадра, °': 'Поворот кадру, °',
+'Видео поверх цвета формы': 'Відео поверх кольору форми',
+'Яркость видео': 'Яскравість відео',
+'Сила рельефа': 'Сила рельєфу',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -80961,6 +81011,25 @@ es: {
 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются стиль, цвет, маяки, число узлов и дальность связи': 'Hilos luminosos entre puntos vecinos con luces corredoras. Se ajustan el estilo, el color, las balizas, el número de nodos y el alcance',
 'расстояние до центра': 'distancia al centro',
 'радиальный разлёт': 'dispersión radial',
+'Экран': 'Pantalla',
+'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него), рельеф (яркое выдавливается). Видео из «Медиа» или отдельный файл': 'El vídeo se reproduce sobre la forma, como una película sobre una escultura. Modos: envolver la forma, pegado a su frente, proyector (el fotograma queda en pantalla y la forma lo atraviesa), relieve (lo brillante sobresale). Vídeo de Medios o un archivo aparte',
+'Откройте видео или фото в «Медиа» или выберите свой файл ниже: оно сразу появится на форме.': 'Abre un vídeo o una foto en Medios o elige tu archivo abajo: aparecerá enseguida sobre la forma.',
+'Источник': 'Origen',
+'Из «Медиа»': 'De Medios',
+'Свой файл': 'Archivo propio',
+'Выбрать видео или фото…': 'Elegir vídeo o foto…',
+'Приклеено': 'Pegado',
+'кадр на лице формы': 'fotograma en el frente de la forma',
+'Обёртка': 'Envoltura',
+'кадр вокруг формы': 'fotograma alrededor de la forma',
+'кадр на экране, форма скользит': 'el fotograma queda en pantalla, la forma se desliza',
+'Рельеф': 'Relieve',
+'яркое выдавливается': 'lo brillante sobresale',
+'Масштаб кадра': 'Escala del fotograma',
+'Поворот кадра, °': 'Giro del fotograma, °',
+'Видео поверх цвета формы': 'Vídeo sobre el color de la forma',
+'Яркость видео': 'Brillo del vídeo',
+'Сила рельефа': 'Fuerza del relieve',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -81434,6 +81503,25 @@ de: {
 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются стиль, цвет, маяки, число узлов и дальность связи': 'Leuchtende Fäden zwischen benachbarten Punkten mit Lauflichtern. Stil, Farbe, Leuchtfeuer, Knotenzahl und Reichweite sind einstellbar',
 'расстояние до центра': 'Abstand zur Mitte',
 'радиальный разлёт': 'radiales Ausbreiten',
+'Экран': 'Bildschirm',
+'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него), рельеф (яркое выдавливается). Видео из «Медиа» или отдельный файл': 'Das Video läuft direkt auf der Form, wie ein Film auf einer Skulptur. Arten: um die Form gewickelt, an der Vorderseite haftend, Projektor (das Bild bleibt auf dem Schirm, die Form gleitet hindurch), Relief (Helles drückt heraus). Video aus Medien oder eine eigene Datei',
+'Откройте видео или фото в «Медиа» или выберите свой файл ниже: оно сразу появится на форме.': 'Öffne ein Video oder Foto in Medien oder wähle unten deine Datei: es erscheint sofort auf der Form.',
+'Источник': 'Quelle',
+'Из «Медиа»': 'Aus Medien',
+'Свой файл': 'Eigene Datei',
+'Выбрать видео или фото…': 'Video oder Foto wählen…',
+'Приклеено': 'Aufgeklebt',
+'кадр на лице формы': 'Bild auf der Vorderseite der Form',
+'Обёртка': 'Umwickeln',
+'кадр вокруг формы': 'Bild rund um die Form',
+'кадр на экране, форма скользит': 'Bild bleibt auf dem Schirm, die Form gleitet',
+'Рельеф': 'Relief',
+'яркое выдавливается': 'Helles drückt heraus',
+'Масштаб кадра': 'Bildmaßstab',
+'Поворот кадра, °': 'Bilddrehung, °',
+'Видео поверх цвета формы': 'Video über der Formfarbe',
+'Яркость видео': 'Videohelligkeit',
+'Сила рельефа': 'Reliefstärke',
 },
 };
 };
@@ -83037,7 +83125,7 @@ const { saveJSON } = __req('src/core/util.js');
 const { KEY } = __req('src/effects/state/defaults.js');
 class KeyframesPart {
 _animLayers() {
-return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode'];
+return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen'];
 }
 animCapture() {
 const nav = this.app.nav;
@@ -84181,6 +84269,11 @@ __defs['src/effects/render/shared/frame-uniforms.js'] = function (__exports, __r
 'use strict';
 __def(__exports, 'createFrameUniforms', () => createFrameUniforms);
 const THREE = __req('vendor/three/build/three.module.js');
+function scrDummy() {
+const t = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+t.needsUpdate = true;
+return t;
+}
 const { frDummy2D, frDummyTex, glyphAtlas } = __req('src/effects/render/webgl/textures.js');
 function createFrameUniforms({ count, specTex, pieceTex }) {
 const U = (v) => ({ value: v });
@@ -84196,6 +84289,7 @@ uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
 uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()), uPaintP: U(new THREE.Vector4()),
 uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
+uScr: U(new THREE.Vector4()), uScrP: U(new THREE.Vector4(0, 0.4, 1, 1.78)), uScrTex: U(scrDummy()),
 uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uAnimN: U(0), uCen: U(new THREE.Vector3()), uExp: U(new THREE.Vector4()), uExpP: U(new THREE.Vector4()), uPieceTex: U(pieceTex), uGrow: U(new THREE.Vector4()), uGrowP: U(new THREE.Vector4()), uGrowSeed: U(new THREE.Vector3()), uJel: U(Array.from({ length: 3 }, () => new THREE.Vector4(0, 0, 0, -99))), uJelO: U(Array.from({ length: 3 }, () => new THREE.Vector4())), uJelP: U(new THREE.Vector4()), uDisQ: U(new THREE.Vector4(0.32, 1, 0.35, 0.85)), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 };
 }
@@ -87118,6 +87212,12 @@ varying float vDk;
 varying float vCoc;
 varying float vGl;
 ` + common + `
+#ifdef VSCREEN
+// «Экран»: видео играет на форме. Объявления только здесь: переводчик в WGSL этот блок не видит (этот эффект только в WebGL)
+uniform vec4 uScr;
+uniform vec4 uScrP;
+uniform sampler2D uScrTex;
+#endif
 #ifdef HERO
 #define HEROSIZE clamp(sqrt(uFr.z / max(uHero.z, 1.0)), 0.4, 1.0)
 #else
@@ -87390,6 +87490,47 @@ void main() {
 		vColor += vColor * band * 0.9 + uP2 * band * 0.2;
 		pos += normalize(vec3(pos.x, 0.0, pos.z) + vec3(1e-4)) * band * 0.03;
 	}
+#ifdef VSCREEN
+	// «Экран»: uScr = (сила, вид, масштаб, яркость), uScrP = (поворот, сила рельефа, смешивание с цветом формы, соотношение сторон кадра)
+	// виды: 0 обёртка вокруг формы, 1 приклеено (кадр на лице формы, вращается с ней), 2 проектор (кадр на экране, форма скользит сквозь него), 3 рельеф (как «приклеено», яркое выдавливается)
+	if (uScr.x > 0.001) {
+		vec3 bsx = base - uCen;
+		float hyx = max(uYR.y - uYR.x, 1e-4);
+		float arx = max(uScrP.w, 0.05);
+		vec2 suv;
+		float smask = 1.0;
+		if (uScr.y < 0.5) {
+			// обёртка: угол вокруг оси это горизонталь кадра, высота формы это вертикаль
+			suv = vec2(atan(bsx.z, bsx.x) / 6.2831853 + 0.5, clamp((base.y - uYR.x) / hyx, 0.0, 1.0));
+			suv.x = fract((suv.x - 0.5) / uScr.z + 0.5);
+		} else if (uScr.y < 1.5 || uScr.y > 2.5) {
+			// приклеено и рельеф: кадр лежит на форме спереди, высота формы это высота кадра
+			suv = vec2(0.5 + bsx.x / (hyx * arx), 0.5 + (base.y - (uYR.x + uYR.y) * 0.5) / hyx);
+			suv = (suv - 0.5) / uScr.z + 0.5;
+			float cr = cos(uScrP.x), sr = sin(uScrP.x);
+			suv = vec2(cr * (suv.x - 0.5) - sr * (suv.y - 0.5), sr * (suv.x - 0.5) + cr * (suv.y - 0.5)) + 0.5;
+			smask = step(0.0, suv.x) * step(suv.x, 1.0) * step(0.0, suv.y) * step(suv.y, 1.0);
+			if (dot(nrmM, nrmM) > 0.01) smask *= smoothstep(-0.35, 0.25, nrmM.z);
+		} else {
+			// проектор: кадр неподвижен на экране, точки получают цвет того места кадра, над которым оказались
+			vec4 cpx = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+			vec2 nd = cpx.xy / max(cpx.w, 1e-4);
+			float scrAsp = projectionMatrix[1][1] / projectionMatrix[0][0];
+			suv = vec2(0.5 + nd.x * 0.5 * scrAsp / arx, 0.5 + nd.y * 0.5);
+			suv = (suv - 0.5) / uScr.z + 0.5;
+			float cr = cos(uScrP.x), sr = sin(uScrP.x);
+			suv = vec2(cr * (suv.x - 0.5) - sr * (suv.y - 0.5), sr * (suv.x - 0.5) + cr * (suv.y - 0.5)) + 0.5;
+			smask = step(0.0, suv.x) * step(suv.x, 1.0) * step(0.0, suv.y) * step(suv.y, 1.0);
+		}
+		vec3 scr = texture2D(uScrTex, clamp(suv, 0.0, 1.0)).rgb * uScr.w;
+		float slum = dot(scr, vec3(0.3, 0.59, 0.11));
+		vColor = mix(vColor, mix(vColor * 0.35, scr, uScrP.z), smask * uScr.x);
+		if (uScr.y > 2.5 && uScr.y < 3.5) {
+			vec3 dirn = dot(nrmM, nrmM) > 0.01 ? normalize(nrmM) : normalize(bsx + vec3(1e-4));
+			pos += dirn * slum * uScrP.y * 0.4 * smask * uScr.x;
+		}
+	}
+#endif
 	vD = disp;
 	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
 	gl_Position = projectionMatrix * mv;
@@ -87510,6 +87651,7 @@ let v = cache.get(ck);
 if (!v) {
 const base = kind === 'line' ? lineVert : kind === 'scope' ? scopeVert : vert;
 v = specializeFx(base, (name, comp, thr) => (FX_GUARDS.has(name + '.' + comp + '>' + thr) ? on.has(name + '.' + comp + '>' + thr) : undefined));
+if (kind === 'vert') v = '#define VSCREEN 1\n' + v;
 cache.set(ck, v);
 }
 return v;
@@ -89315,6 +89457,7 @@ u.uDepth.value.set(on ? clamp(this._eff(Dp), 0, 1.5) : 0, { relief: 0, layers: 1
 u.uDepthQ.value.set(Dp.zone ?? 0.12, 0, 0, 0);
 u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, map: 1, heat: 2 }[Dp.view] ?? 0);
 }
+this._screenTick(u);
 u.uGlitch.value.set(this._eff(L.glitch), L.glitch.slices, L.glitch.drop ?? 0.5, 0);
 u.uGlitchP.value.set(L.glitch.rgb === 'on' ? 1 : 0, L.glitch.speed, { bands: 0, blocks: 1, scan: 2 }[L.glitch.mode] ?? 0, L.glitch.burst ?? 0.7);
 u.uDisP.value.set({ wind: 0, burn: 1, laser: 2, layers: 3, chunks: 4, sand: 5, vortex: 6, shock: 7 }[L.dissolve.style] ?? 0, 0, 0, 0);
@@ -90024,6 +90167,99 @@ this.emit();
 }
 }
 };
+__defs['src/effects/engine/screen.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'ScreenPart', () => ScreenPart);
+const THREE = __req('vendor/three/build/three.module.js');
+const { clamp } = __req('src/core/util.js');
+class ScreenPart {
+_screenSource() {
+const L = this.state.layers.vscreen;
+if (L.source === 'file') {
+const f = this._scrFile;
+if (!f || !f.el.videoWidth) return null;
+return { tex: f.tex, ar: f.el.videoWidth / f.el.videoHeight };
+}
+const pm = this.pm;
+if (!pm || !pm.ready || !pm.el) return null;
+const el = pm.el;
+const isVideo = el.tagName === 'VIDEO';
+const w = isVideo ? el.videoWidth : el.naturalWidth || el.width;
+const h = isVideo ? el.videoHeight : el.naturalHeight || el.height;
+if (!w || !h) return null;
+if (!this._scrCur || this._scrCur.el !== el) {
+this._scrCur?.tex.dispose();
+this._scrCur = { el, tex: this._screenTex(el, isVideo) };
+}
+return { tex: this._scrCur.tex, ar: w / h };
+}
+_screenTex(el, isVideo) {
+const t = isVideo ? new THREE.VideoTexture(el) : new THREE.Texture(el);
+t.colorSpace = THREE.SRGBColorSpace;
+t.minFilter = t.magFilter = THREE.LinearFilter;
+t.generateMipmaps = false;
+t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+if (!isVideo) t.needsUpdate = true;
+return t;
+}
+screenPick() {
+const inp = document.createElement('input');
+inp.type = 'file';
+inp.accept = 'video/*,image/*';
+inp.addEventListener('change', () => {
+const f = inp.files && inp.files[0];
+if (f) this.screenLoad(f);
+});
+inp.click();
+}
+screenLoad(file) {
+const url = URL.createObjectURL(file);
+this._scrFile?.dispose();
+if (file.type.startsWith('image/')) {
+const img = new Image();
+img.onload = () => {
+const tex = this._screenTex(img, false);
+this._scrFile = { el: { videoWidth: img.naturalWidth, videoHeight: img.naturalHeight }, tex, dispose: () => { tex.dispose(); URL.revokeObjectURL(url); } };
+this._scrName = file.name;
+this.state.layers.vscreen.source = 'file';
+this.app.viewport.invalidate();
+this.emit();
+};
+img.src = url;
+return;
+}
+const v = document.createElement('video');
+v.muted = true;
+v.loop = true;
+v.playsInline = true;
+v.preload = 'auto';
+v.src = url;
+v.addEventListener('loadeddata', () => {
+const tex = this._screenTex(v, true);
+this._scrFile = { el: v, tex, dispose: () => { v.pause(); tex.dispose(); URL.revokeObjectURL(url); } };
+this._scrName = file.name;
+this.state.layers.vscreen.source = 'file';
+v.play().catch(() => {});
+this.app.viewport.invalidate();
+this.emit();
+});
+}
+_screenTick(u) {
+const L = this.state.layers.vscreen;
+const eff = L.on ? clamp(this._eff(L), 0, 2) : 0;
+const src = eff > 0.001 ? this._screenSource() : null;
+if (!src) {
+u.uScr.value.x = 0;
+return;
+}
+if (u.uScrTex.value !== src.tex) u.uScrTex.value = src.tex;
+const mode = { wrap: 0, stick: 1, project: 2, relief: 3 }[L.mode] ?? 1;
+u.uScr.value.set(Math.min(eff, 1), mode, Math.max(0.1, L.scale), L.bright);
+u.uScrP.value.set((L.rotate * Math.PI) / 180, L.depth, L.mix, src.ar);
+if (this._scrFile && L.source === 'file' && this._scrFile.el.paused && this._scrFile.el.play) this._scrFile.el.play().catch(() => {});
+}
+}
+};
 __defs['src/effects/engine/mixin.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'mixin', () => mixin);
@@ -90064,6 +90300,7 @@ const { AudioPart } = __req('src/effects/engine/audio.js');
 const { InteractionPart } = __req('src/effects/engine/interaction.js');
 const { LoopPart } = __req('src/effects/engine/loop.js');
 const { RecordingPart } = __req('src/effects/engine/recording.js');
+const { ScreenPart } = __req('src/effects/engine/screen.js');
 const { mixin } = __req('src/effects/engine/mixin.js');
 class EffectsEngine {
 constructor(app) {
@@ -90367,7 +90604,7 @@ nav.paintLock = want;
 this.app.viewport.container.classList.toggle('paint-lock', want);
 }
 }
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart);
 };
 __defs['src/animation/anim-activity.js'] = function (__exports, __req) {
 'use strict';
@@ -90656,6 +90893,16 @@ slice: (c, t) => {
 const y = Math.sin(t * 2.2) * 8;
 for (const [x, yy] of ring(30, 9)) dot(c, x * 1.2, yy, Math.abs(yy - y) < 2 ? 2.6 : 1.4, Math.abs(yy - y) < 2 ? 1 : 0.35);
 for (let i = -6; i <= 6; i++) dot(c, i * 1.8, y, 1.6, 0.9);
+},
+vscreen: (c, t) => {
+for (let j = -5; j <= 5; j++) for (let i = -6; i <= 6; i++) {
+const x = i * 2.1, y = j * 2.1;
+const r = Math.hypot(x / 12, y / 10);
+if (r > 1) continue;
+const band = 0.5 + 0.5 * Math.sin((x * 0.22 + y * 0.12) - t * 3.2);
+const lit = band * band;
+dot(c, x, y, 1.5 + lit * 1.4, 0.25 + 0.75 * lit * (1 - r * 0.35));
+}
 },
 datamosh: (c, t) => {
 const hash = (i, j, k) => {
@@ -91177,7 +91424,7 @@ rotate: { id: 'rotate', name: 'Вращение', icon: 'arrows-clockwise', hint
 bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 };
 const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail'];
+const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen'];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
 const animQuickBtn = button({
