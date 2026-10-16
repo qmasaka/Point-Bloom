@@ -5341,7 +5341,7 @@ body.is-resizing-h * {
 }
 
 /* пока нет модели, фото или видео: интерфейс заблокирован, доступна только стартовая карточка */
-#app.no-model :is(.toolrail, .fx-left, .sidebar, .vp-dock, .fx-bar, .fx-hint, .vp-top-right, .mode-switch, #btnExport, #btnUndo, #btnRedo) {
+#app.no-model *:is(.toolrail, .fx-left, .sidebar, .vp-dock, .fx-bar, .fx-hint, .vp-top-right, .mode-switch, #btnExport, #btnUndo, #btnRedo) {
 	opacity: 0.42;
 	filter: grayscale(0.9) brightness(0.92);
 	pointer-events: none;
