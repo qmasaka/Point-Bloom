@@ -5342,11 +5342,16 @@ body.is-resizing-h * {
 
 /* пока нет модели, фото или видео: интерфейс заблокирован, доступна только стартовая карточка */
 #app.no-model :is(.toolrail, .fx-left, .sidebar, .vp-dock, .fx-bar, .fx-hint, .vp-top-right, .mode-switch, #btnExport, #btnUndo, #btnRedo) {
-	opacity: 0.35;
-	filter: saturate(0.4);
+	opacity: 0.42;
+	filter: grayscale(0.9) brightness(0.92);
 	pointer-events: none;
 	user-select: none;
 }
+/* сцена за стартовой карточкой размыта сильнее, а сама карточка матовее: пока нет модели, внимание только на ней */
+#app.no-model .stage canvas.gl { filter: blur(9px) saturate(0.75) brightness(0.85); transform: scale(1.04); transition: filter 0.4s var(--ease), transform 0.4s var(--ease); }
+#app.no-model .empty-card { backdrop-filter: blur(30px) saturate(1.1); -webkit-backdrop-filter: blur(30px) saturate(1.1); }
+.stage canvas.gl { transition: filter 0.4s var(--ease), transform 0.4s var(--ease); }
+html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transform: none; }
 .toolrail, .fx-left, .sidebar, .vp-dock, .fx-bar, .fx-hint, .vp-top-right, .mode-switch, #btnExport, #btnUndo, #btnRedo {
 	transition: opacity 0.3s var(--ease), filter 0.3s var(--ease);
 }
