@@ -6,7 +6,7 @@ export class KeyframesPart {
 	// ------------------------------------------------------------ анимация по ключам и блокам эффектов (секвенсор)
 	/** Слои, которыми можно анимировать: эффекты формы, звука и графики */
 	_animLayers() {
-		return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen'];
+		return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'hyper'];
 	}
 
 	/** Снимок того, что можно анимировать: камера, размер, яркость, свечение и сила каждого эффекта (выключенный = 0) */
@@ -485,34 +485,58 @@ export class KeyframesPart {
 			this.touch();
 			this.emit();
 		}
-			for (const layerId of clipLayerIds) {
-				if (!L[layerId]) continue;
-				let maxVal = 0;
-				// дорожка заглушена, или включено соло у другой дорожки: её блоки не работают
-				const lanes = this.state.anim.lanes || {};
-				const anySolo = Object.values(lanes).some((x) => x && x.solo);
-				const laneOff = !!(lanes[layerId] && lanes[layerId].mute) || (anySolo && !(lanes[layerId] && lanes[layerId].solo));
-				for (const c of clips) {
-					if (c.layerId !== layerId || c.off || laneOff) continue;
-					if (t < c.start || t > c.start + c.dur) continue;
-					const val = (c.amount ?? 1.0) * this._clipEnv(c, t);
-					if (val > maxVal) maxVal = val;
-				}
-
-				if (maxVal > 0.003) {
-					L[layerId].on = true;
-					L[layerId].amount = maxVal;
-				} else {
-					L[layerId].on = false;
-				}
+		for (const layerId of clipLayerIds) {
+			if (!L[layerId]) continue;
+			const maxVal = this._trackVal(clips, layerId, t);
+			if (maxVal > 0.003) {
+				L[layerId].on = true;
+				L[layerId].amount = maxVal;
+			} else {
+				L[layerId].on = false;
 			}
+		}
+	}
+
+	/** Дорожка заглушена, или включено соло у другой дорожки: её блоки не работают */
+	_laneOff(layerId) {
+		const lanes = this.state.anim.lanes || {};
+		const anySolo = Object.values(lanes).some((x) => x && x.solo);
+		return !!(lanes[layerId] && lanes[layerId].mute) || (anySolo && !(lanes[layerId] && lanes[layerId].solo));
+	}
+
+	/** Сила дорожки в момент t: самый сильный из блоков под курсором (огибающая, форма, повтор, реверс) */
+	_trackVal(clips, layerId, t) {
+		if (this._laneOff(layerId)) return 0;
+		let v = 0;
+		for (const c of clips) {
+			if (c.layerId !== layerId || c.off || t < c.start || t > c.start + c.dur) continue;
+			v = Math.max(v, (c.amount ?? 1.0) * this._clipEnv(c, t));
+		}
+		return v;
+	}
+
+	/** Накопленная сила дорожки от начала до t (интеграл огибающих): угол вращения растёт плавно и не откатывается назад на затухании */
+	_trackArea(clips, layerId, t) {
+		if (this._laneOff(layerId)) return 0;
+		let s = 0;
+		for (const c of clips) {
+			if (c.layerId !== layerId || c.off || t <= c.start) continue;
+			const b = Math.min(t, c.start + c.dur);
+			const n = Math.max(8, Math.ceil((b - c.start) * 30));
+			const h = (b - c.start) / n;
+			for (let i = 0; i < n; i++) s += (c.amount ?? 1.0) * this._clipEnv(c, c.start + (i + 0.5) * h) * h;
+		}
+		return s;
 	}
 
 	animApply(t) {
 		const A = this.state.anim;
 		const keys = A.keys || [];
 		const clips = A.clips || [];
-		if (!keys.length && !clips.length) return;
+		if (!keys.length && !clips.length) {
+			this._animBloom = 0;
+			return;
+		}
 
 		// 1. Плавная интерполяция камеры и вида из ключей
 		if (keys.length > 0) {
@@ -580,8 +604,9 @@ export class KeyframesPart {
 					this._prepareMorphTrack();
 				}
 				let mVal = 0;
+				const mOff = this._laneOff('morph');
 				for (const c of clips) {
-					if (c.layerId !== 'morph') continue;
+					if (c.layerId !== 'morph' || c.off || mOff) continue;
 					if (t <= c.start) continue;
 					if (t >= c.start + c.dur) {
 						mVal = 1.0;
@@ -594,58 +619,21 @@ export class KeyframesPart {
 				if (this.shared?.uMorph) this.shared.uMorph.value = this.morph;
 			}
 
-			// Дорожка вращения
-			if (clipLayerIds.has('rotate')) {
-				let rotVal = 0;
-				for (const c of clips) {
-					if (c.layerId !== 'rotate') continue;
-					if (t < c.start || t > c.start + c.dur) continue;
-					const elapsed = t - c.start;
-					const remaining = c.start + c.dur - t;
-					let env = 1.0;
-					if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
-						const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
-						env = Math.min(env, f * f * (3 - 2 * f));
-					}
-					if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
-						const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
-						env = Math.min(env, f * f * (3 - 2 * f));
-					}
-					rotVal = Math.max(rotVal, (c.amount ?? 1.0) * env);
-				}
-				if (rotVal > 0.001 && this.points) {
-					this.points.rotation.y = t * 1.6 * rotVal;
+			// Дорожка вращения: угол копится по огибающим блоков, поэтому на входе и выходе форма плавно разгоняется и тормозит, а не крутится назад
+			// поворот добавляется к текущему (а не ставится заново), поэтому автовращение и вращение руками продолжают работать
+			if (clipLayerIds.has('rotate') && this.points) {
+				const area = this._trackArea(clips, 'rotate', t);
+				const d = area - (this._rotArea ?? area);
+				this._rotArea = area;
+				if (Math.abs(d) > 1e-6) {
+					this.points.rotation.y += 1.6 * d;
 					this.points.updateMatrixWorld();
 				}
-			}
+			} else this._rotArea = undefined;
 
-			// Дорожка блума и вспышки
-			if (clipLayerIds.has('bloom')) {
-				let bVal = 0;
-				for (const c of clips) {
-					if (c.layerId !== 'bloom') continue;
-					if (t < c.start || t > c.start + c.dur) continue;
-					const elapsed = t - c.start;
-					const remaining = c.start + c.dur - t;
-					let env = 1.0;
-					if (c.fadeIn > 0.001 && elapsed < c.fadeIn) {
-						const f = Math.min(1, Math.max(0, elapsed / c.fadeIn));
-						env = Math.min(env, f * f * (3 - 2 * f));
-					}
-					if (c.fadeOut > 0.001 && remaining < c.fadeOut) {
-						const f = Math.min(1, Math.max(0, remaining / c.fadeOut));
-						env = Math.min(env, f * f * (3 - 2 * f));
-					}
-					bVal = Math.max(bVal, (c.amount ?? 1.0) * env);
-				}
-				if (bVal > 0.001) {
-					this.state.look.glow = 0.8 + bVal * 1.5;
-					this.state.look.bright = 1.0 + bVal * 0.8;
-					if (this.shared?.uGlow) this.shared.uGlow.value = this.state.look.glow;
-					if (this.shared?.uBright) this.shared.uBright.value = this.state.look.bright;
-				}
-			}
-		}
+			// Дорожка блума и вспышки: добавка к свечению и яркости поверх ваших настроек (сами настройки не меняются)
+			this._animBloom = clipLayerIds.has('bloom') ? this._trackVal(clips, 'bloom', t) : 0;
+		} else this._animBloom = 0;
 
 		clearTimeout(this._saveT);
 		this._saveT = setTimeout(() => saveJSON(KEY, this.state), 500);

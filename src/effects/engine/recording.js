@@ -34,6 +34,11 @@ export class RecordingPart {
 			const total = Math.max(2, Math.round(seconds * fps));
 			let last = -1e9;
 			await new Promise((resolve) => {
+				// вкладку свернули, и кадры перестали рисоваться: не ждём вечно, кодируем то, что успели снять
+				const guard = setTimeout(() => {
+					off && off();
+					resolve();
+				}, (seconds * 3 + 6) * 1000);
 				const off = this.app.bus.on('rendered', () => {
 					const now = performance.now();
 					if (now - last < 1000 / fps - 4) return;
@@ -44,11 +49,13 @@ export class RecordingPart {
 					frames.push(ctx.getImageData(0, 0, W, H));
 					this.animProgress = { stage: 'Запись', v: frames.length / total };
 					if (frames.length >= total) {
+						clearTimeout(guard);
 						off && off();
 						resolve();
 					}
 				});
 			});
+			if (frames.length < 2) throw new Error('кадры не рисовались (вкладка была скрыта)');
 			this.animProgress = { stage: 'Кодирую GIF', v: 0 };
 			this.emit();
 			const blob = await encodeGIF(frames, W, H, Math.round(100 / fps), (v) => {

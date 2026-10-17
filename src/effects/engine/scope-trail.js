@@ -364,7 +364,9 @@ export class ScopeTrailPart {
 		}
 		tr.group.visible = true;
 		// новый снимок раз в «шаг» времени, пока идёт анимация; остановили анимацию, шлейф замирает
-		if (this.app.anim.playing && this._time - tr.last >= T.step) {
+		// пока играет таймлайн, персонаж идёт по его времени (сам плеер анимации стоит), и шлейф тоже должен копиться
+		const moving = this.app.anim.playing || (this._charSync && this.animPlaying);
+		if (moving && this._time - tr.last >= T.step) {
 			tr.last = this._time;
 			const old = tr.snaps.pop();
 			for (let i = 0; i < mm; i++) for (let c = 0; c < 3; c++) old[i * 3 + c] = this._animBuf[i * tr.stride * 3 + c];

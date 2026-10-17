@@ -179,7 +179,13 @@ this._disconnectVideo();
 this.synth.stop();
 this._stopFile();
 this._stopMic();
+try {
 this.audioBuffer = await this.ctx.decodeAudioData(await file.arrayBuffer());
+} catch (e) {
+this.playing = false;
+this.emit();
+throw e;
+}
 this.sourceType = 'file';
 this.audioName = file.name.replace(/\.[^.]+$/, '');
 await this.play();
@@ -190,7 +196,13 @@ this._disconnectVideo();
 this.synth.stop();
 this._stopFile();
 this._stopMic();
+try {
 this.micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
+} catch (e) {
+this.playing = false;
+this.emit();
+throw e;
+}
 this.micNode = this.ctx.createMediaStreamSource(this.micStream);
 this.micNode.connect(this.bus);
 this.out.gain.value = 0;

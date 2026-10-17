@@ -273,6 +273,29 @@ const DRAW = {
 			dot(c, Math.cos(tt) * 10, Math.sin(tt * 1.3) * 6, k === 0 ? 3.4 : 2.6 - k * 0.12, k === 0 ? 1 : 0.7 - k * 0.04);
 		}
 	},
+	hyper: (c, t) => {
+		// тессеракт: шестнадцать вершин четырёхмерного куба вращаются в плоскостях XW и YZ и проецируются с перспективой; по рёбрам бегут точки
+		const a = t * 0.9;
+		const b = t * 0.55;
+		const P = [];
+		for (let i = 0; i < 16; i++) {
+			let x = i & 1 ? 1 : -1, y = i & 2 ? 1 : -1, z = i & 4 ? 1 : -1, w = i & 8 ? 1 : -1;
+			[x, w] = [x * Math.cos(a) - w * Math.sin(a), x * Math.sin(a) + w * Math.cos(a)];
+			[y, z] = [y * Math.cos(b) - z * Math.sin(b), y * Math.sin(b) + z * Math.cos(b)];
+			const k = 1 / (2.6 - w);
+			const k3 = 1 / (3.2 - z * k * 1.6);
+			P.push([x * k * k3 * 30, y * k * k3 * 30, w]);
+		}
+		for (let i = 0; i < 16; i++) for (let bit = 1; bit < 16; bit <<= 1) {
+			const j = i ^ bit;
+			if (j < i) continue;
+			for (let s = 1; s < 5; s++) {
+				const u = s / 5;
+				dot(c, P[i][0] + (P[j][0] - P[i][0]) * u, P[i][1] + (P[j][1] - P[i][1]) * u, 0.9, 0.3);
+			}
+		}
+		for (const [x, y, w] of P) dot(c, x, y, 1.6 + (w + 1.5) * 0.4, 0.55 + (w + 1.4) * 0.17);
+	},
 	echo: (c, t) => {
 		for (let k = 3; k >= 0; k--) for (const [x, y] of ring(14, 5.5)) dot(c, x * 1.15 + (k - 1.5) * 4 * Math.cos(t * 1.4), y * 0.9 + Math.sin(t * 1.4 + k) * 0.8, 1.5, 0.95 - k * 0.22);
 	},

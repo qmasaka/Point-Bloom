@@ -263,7 +263,7 @@ function syncMorph() {
 const cur = MORPH_STYLES.find((x) => x.id === mc.style) || MORPH_STYLES[0];
 styleBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === cur.id)));
 styleHint.textContent = cur.hint;
-turnsRow.hidden = cur.id !== 'swirl';
+turnsRow.hidden = cur.id !== 'swirl' && cur.id !== 'hyper';
 intRow.hidden = mc.mode === 'manual';
 morphMode.set(mc.mode);
 morphTime.set(mc.time);
@@ -351,7 +351,7 @@ rotate: { id: 'rotate', name: 'Вращение', icon: 'arrows-clockwise', hint
 bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 };
 const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen'];
+const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'hyper'];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
 const animQuickBtn = button({
@@ -405,7 +405,7 @@ collapseBtn.querySelector('.btn-label').textContent = engine.isCollapsed ? 'Со
 });
 body.append(collapseBtn);
 } else if (def.id === 'frames') {
-body.append(h('div', { class: 'field-hint' }, 'Видео раскладывается на кадры, кадры собираются в блок из точек. Текущий кадр рисуется густо, остальные реже. Что сейчас показано, задаёт таймлайн внизу: играйте и перематывайте видео, блок следует за ним. Остальные эффекты работают поверх блока.'), button({ label: 'Снять кадры заново', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Снять кадры с видео заново с текущими настройками', onClick: () => engine.rebuildFramesSoon() }));
+body.append(h('div', { class: 'field-hint' }, 'Видео раскладывается на кадры, кадры собираются в блок из точек. Текущий кадр рисуется густо, остальные реже. Что сейчас показано, задаёт таймлайн внизу: играйте и перематывайте видео, блок следует за ним. Остальные эффекты работают поверх блока, «Объём по глубине» выдавливает каждый кадр по его карте глубины.'), button({ label: 'Снять кадры заново', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Снять кадры с видео заново с текущими настройками', onClick: () => engine.rebuildFramesSoon() }));
 } else if (def.id === 'brush') {
 const clearBtn = button({
 label: 'Смыть всю краску',
@@ -427,6 +427,8 @@ const depthUpd = () => {
 const I = engine.depthInfo();
 let t;
 if (!I.media) t = 'Откройте фото или видео: эффект работает с ними.';
+else if (I.frames && I.src === 'luma') t = 'Раскадровка: у каждого кадра своя карта по яркости, светлое ближе. Для настоящей глубины выберите «Нейросеть».';
+else if (I.frames && I.phase === 'ready') t = I.fOk >= I.fAll ? 'Раскадровка: нейросеть посчитала глубину всех кадров (' + I.fAll + ').' : 'Раскадровка: нейросеть считает глубину кадров, ' + I.fOk + ' из ' + I.fAll + '. Остальные пока по яркости.';
 else if (I.src === 'luma') t = 'Быстрая карта по яркости: светлое считается ближе. Для настоящей глубины выберите «Нейросеть».';
 else if (I.phase === 'error') t = 'Нейросеть не запустилась: ' + (I.error || 'нет связи') + '. Пока работает быстрая карта по яркости. Нажмите кнопку, чтобы повторить.';
 else if (I.phase === 'loading') t = 'Загрузка нейросети: ' + Math.round(I.prog * 100) + '%. Это один раз, потом модель берётся из кеша браузера. Пока видна быстрая карта по яркости.';

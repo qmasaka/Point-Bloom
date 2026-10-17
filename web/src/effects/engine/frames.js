@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { clamp } from '../../core/util.js';
 import { buildFrameBlock, frameGrid, writeFrameColors } from '../frames/frame-block.js';
+import { adjustDepth, depthToGrid, grabFrame, lumaDepth, normalizeDepth } from '../input/depth-ai.js';
 export class FramesPart {
 get videoLoaded() {
 const pm = this.pm;
@@ -87,6 +88,9 @@ if (fr.dead) return false;
 await this._seekTo(fr.cap, fr.times[k]);
 if (fr.dead) return false;
 take(fr.frames[k]);
+fr.dOk[k] = 0;
+fr.dIdle = false;
+this._frDepthOne(fr, k);
 fr.done[k] = 1;
 onEach && onEach(k);
 }
@@ -170,7 +174,7 @@ this._closeCap(this._frames);
 const per = cols * rows * 4;
 const data = new Uint8Array(per * n);
 const frames = Array.from({ length: n }, (_, k) => data.subarray(k * per, (k + 1) * per));
-const fr = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, gain: 1, ts: null, done: new Uint8Array(n), times: null, cap: null, take: null, dead: false };
+const fr = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, gain: 1, ts: null, done: new Uint8Array(n), times: null, cap: null, take: null, dead: false, dAi: null, dOk: new Uint8Array(n), dSig: this._frDepthSig(), dJob: false };
 let refine = null;
 if (F.source === 'whole') {
 fr.times = Array.from({ length: n }, (_, k) => Math.min(Math.max(0.05, dur - 0.04), (k / Math.max(1, n - 1)) * dur));
@@ -200,6 +204,7 @@ this._fillGaps(fr);
 refine = rest;
 } else {
 this._frameTaker(cols, rows)(frames[n - 1]);
+this._frDepthOne(fr, n - 1);
 fr.done[n - 1] = 1;
 }
 if (!F.on || !this.active) {
@@ -353,9 +358,138 @@ u.uFr7.value.set(Math.max(0.05, (F.tail ?? 100) / 100), F.sat ?? 0, F.tailSoft ?
 u.uFr5.value.y = 0;
 u.uFr5.value.z = { show: 0, dim: 1, hide: 2 }[F.future] ?? 1;
 u.uFr5.value.w = (fr.gain || 1) * (F.gain ?? 1);
+u.uFr7.value.w = F.dkeep ?? 0.5;
 this._ensureHero(F, fr);
 this._framesFollow(F, fr);
 if (F.source === 'live') this._framesLive(F, fr);
+this._framesDepthTick(fr);
+}
+_frDepthSig() {
+const Dp = this.state.layers.depth;
+return Dp.src + '|' + Math.round(Dp.blur || 0);
+}
+_frDepthOne(fr, k) {
+const Dp = this.state.layers.depth;
+const { cols, rows } = fr;
+const per = cols * rows;
+const f = fr.frames[k];
+let map = Dp.src === 'ai' && fr.dOk[k] && fr.dAi ? { w: cols, h: rows, data: fr.dAi.subarray(k * per, (k + 1) * per) } : lumaDepth(f, cols, rows, 4);
+const r = Math.round((Dp.blur || 0) * 0.4);
+if (r > 0) map = adjustDepth(map, { blur: r });
+const d = map.data;
+for (let i = 0; i < per; i++) f[i * 4 + 3] = (d[i] * 255 + 0.5) | 0;
+}
+_frDepthAll(fr) {
+const tex = this._frameTex;
+for (let k = 0; k < fr.n; k++) {
+this._frDepthOne(fr, k);
+tex?.addLayerUpdate?.(k);
+}
+if (tex) tex.needsUpdate = true;
+}
+_framesDepthTick(fr) {
+const Dp = this.state.layers.depth;
+if (!Dp.on) return;
+const sig = this._frDepthSig();
+if (fr.dSig !== sig) {
+fr.dSig = sig;
+this._frDepthAll(fr);
+this._depthEmit();
+}
+if (fr.dShown !== fr.cur) {
+fr.dShown = fr.cur;
+this._depthEmit();
+}
+if (Dp.src === 'ai' && !fr.dJob && !fr.dIdle && this.depthAI.phase !== 'error' && this._time > (fr.dRetry || 0)) this._frDepthAI(fr);
+}
+_frLayerTime(fr, k) {
+return fr.ts ? fr.ts[k] : fr.times ? fr.times[k] : -1;
+}
+async _frDepthAI(fr) {
+fr.dJob = true;
+const per = fr.cols * fr.rows;
+const st = {};
+let cap = null;
+try {
+await this.depthAI.init();
+cap = await this._capVideo();
+fr.dAi ||= new Float32Array(fr.n * per);
+const alive = () => !fr.dead && this._frames === fr && this.active && this.state.layers.depth.on && this.state.layers.depth.src === 'ai';
+while (alive()) {
+const now = this.pm.el?.currentTime || 0;
+let best = -1;
+let bd = Infinity;
+for (let k = 0; k < fr.n; k++) {
+const t = this._frLayerTime(fr, k);
+if (fr.dOk[k] || t < 0 || (fr.done && !fr.done[k] && !fr.ts)) continue;
+const d = Math.abs(t - now);
+if (d < bd) {
+bd = d;
+best = k;
+}
+}
+if (best < 0) {
+if (!fr.ts && fr.done.every((x) => x)) {
+fr.dIdle = true;
+break;
+}
+await new Promise((r) => setTimeout(r, 300));
+continue;
+}
+const t = this._frLayerTime(fr, best);
+await this._seekTo(cap, t);
+if (!alive()) break;
+const side = this.depthAI.device === 'wasm' ? 280 : 448;
+const img = grabFrame(cap, side);
+if (!img) break;
+const r = await this.depthAI.estimate(img);
+if (!alive() || this._frLayerTime(fr, best) !== t) continue;
+const map = { w: r.w, h: r.h, data: normalizeDepth(r.data, st, st.init ? 0.35 : 0) };
+depthToGrid(map, fr.cols, fr.rows, fr.dAi.subarray(best * per, (best + 1) * per));
+fr.dOk[best] = 1;
+this._frDepthOne(fr, best);
+const tex = this._frameTex;
+if (tex) {
+tex.addLayerUpdate?.(best);
+tex.needsUpdate = true;
+}
+this._depthEmit();
+}
+} catch (e) {
+this._D.err = e.message || String(e);
+fr.dRetry = this._time + 5;
+this._depthEmit();
+} finally {
+if (cap) {
+cap.removeAttribute('src');
+cap.load();
+}
+fr.dJob = false;
+}
+}
+_frDepthCount() {
+const fr = this._frames;
+if (!fr) return [0, 0];
+let ok = 0;
+let all = 0;
+for (let k = 0; k < fr.n; k++) {
+if (this._frLayerTime(fr, k) < 0) continue;
+all++;
+if (fr.dOk[k]) ok++;
+}
+return [ok, all];
+}
+_frDepthMap() {
+const fr = this._frames;
+if (!fr || !this._framesOn) return null;
+const k = clamp(fr.cur ?? 0, 0, fr.n - 1);
+const layer = (k + (fr.ts ? fr.head : 0)) % fr.n;
+const f = fr.frames[layer];
+const per = fr.cols * fr.rows;
+const data = new Float32Array(per);
+for (let i = 0; i < per; i++) data[i] = f[i * 4 + 3] / 255;
+const Dp = this.state.layers.depth;
+return adjustDepth({ w: fr.cols, h: fr.rows, data }, { bright: Dp.bright, contrast: Dp.contrast, gamma: Dp.gamma });
 }
 _liveIdx(fr) {
 const t = this.pm.el.currentTime || 0;
@@ -485,6 +619,8 @@ const take = (fr.take ||= this._frameTaker(fr.cols, fr.rows));
 const layer = fr.head % fr.n;
 const tex = this._frameTex;
 take(fr.frames[layer]);
+fr.dOk[layer] = 0;
+this._frDepthOne(fr, layer);
 tex.addLayerUpdate && tex.addLayerUpdate(layer);
 tex.needsUpdate = true;
 fr.ts[layer] = tv;

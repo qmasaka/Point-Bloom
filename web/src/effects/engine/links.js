@@ -18,9 +18,19 @@ const O = g.attributes.aOrigin.array;
 const T = g.attributes.aTarget.array;
 const ids = new Int32Array(S);
 for (let i = 0; i < S; i++) ids[i] = Math.floor(i * step);
-const R = 0.35;
+const R = Math.min(0.75, Math.max(0.2, this.state.layers.links.range * 1.9));
 const R2 = R * R;
-const cell = R;
+let x0 = Infinity, y0 = Infinity, z0 = Infinity, x1 = -Infinity, y1 = -Infinity, z1 = -Infinity;
+for (let i = 0; i < S; i++) {
+const p = ids[i] * 3;
+x0 = Math.min(x0, T[p]); x1 = Math.max(x1, T[p]);
+y0 = Math.min(y0, T[p + 1]); y1 = Math.max(y1, T[p + 1]);
+z0 = Math.min(z0, T[p + 2]); z1 = Math.max(z1, T[p + 2]);
+}
+const ex = Math.max(x1 - x0, 0.01), ey = Math.max(y1 - y0, 0.01), ez = Math.max(z1 - z0, 0.01);
+const spacing = Math.sqrt((2 * (ex * ey + ey * ez + ex * ez)) / S);
+const cell = Math.min(R, Math.max(0.03, spacing * 1.5));
+const rings = Math.ceil(R / cell);
 const key = (x, y, z) => (x * 73856093) ^ (y * 19349663) ^ (z * 83492791);
 const grid = new Map();
 for (let i = 0; i < S; i++) {
@@ -39,9 +49,12 @@ const cx = Math.floor(px / cell), cy = Math.floor(py / cell), cz = Math.floor(pz
 let b0_d = R2, b0_j = -1;
 let b1_d = R2, b1_j = -1;
 let b2_d = R2, b2_j = -1;
-for (let dx = -1; dx <= 1; dx++) {
-for (let dy = -1; dy <= 1; dy++) {
-for (let dz = -1; dz <= 1; dz++) {
+for (let r = 0; r <= rings; r++) {
+if (r > 1 && b2_j >= 0 && b2_d < ((r - 1) * cell) ** 2) break;
+for (let dx = -r; dx <= r; dx++) {
+for (let dy = -r; dy <= r; dy++) {
+for (let dz = -r; dz <= r; dz++) {
+if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue;
 const a = grid.get(key(cx + dx, cy + dy, cz + dz));
 if (!a) continue;
 for (let ai = 0; ai < a.length; ai++) {
@@ -60,6 +73,7 @@ b2_d = b1_d; b2_j = b1_j;
 b1_d = d; b1_j = j;
 } else {
 b2_d = d; b2_j = j;
+}
 }
 }
 }

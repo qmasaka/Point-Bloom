@@ -90,6 +90,8 @@ struct Frame {
 	uBrushParam: vec4f,
 	uLookP2: vec4f,
 	uDof: vec4f,
+	uHyp: vec4f,
+	uHypP: vec4f,
 	uFr: vec4f,
 	uFr2: vec4f,
 	uFr3: vec4f,
@@ -168,6 +170,8 @@ var<private> gDepth: f32 = 0.5;
 var<private> gDepthG: f32 = 0.0;
 var<private> gNormal: vec3f = vec3f(0.0);
 var<private> gLum: f32 = 0.5;
+var<private> gHypW: f32 = 0.0;
+var<private> gHypF: f32 = 0.0;
 
 fn mod289_vec3(x_in: vec3f) -> vec3f {
 	var x: vec3f = x_in;
@@ -617,6 +621,40 @@ fn depthShape(b_in: vec3f) -> vec3f {
 	return b;
 }
 
+fn hyperWarp(p_in: vec3f, c_in: vec3f, R_in: f32, md_in: f32, a_in: f32, w4: ptr<function, f32>) -> vec3f {
+	var p: vec3f = p_in;
+	var c: vec3f = c_in;
+	var R: f32 = R_in;
+	var md: f32 = md_in;
+	var a: f32 = a_in;
+	var q: vec3f = (((p - c)) / R);
+	var r2: f32 = dot(q, q);
+	var h: vec4f = (vec4f((2.0 * q), (r2 - 1.0)) / ((r2 + 1.0)));
+	var ca: f32 = cos(a);
+	var sa: f32 = sin(a);
+	if ((md < 0.5)) {
+		{ let _sw4 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw4.x, _sw4.y); }
+	} else if ((md < 1.5)) {
+		{ let _sw5 = vec2f(((h.x * ca) - (h.y * sa)), ((h.x * sa) + (h.y * ca))); h = vec4f(_sw5.x, _sw5.y, h.z, h.w); }
+		{ let _sw6 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw6.x, _sw6.y); }
+	} else if ((md < 2.5)) {
+		{ let _sw7 = vec2f(((h.x * ca) - (h.w * sa)), ((h.x * sa) + (h.w * ca))); h = vec4f(_sw7.x, h.y, h.z, _sw7.y); }
+		var cb: f32 = cos((a * 0.618));
+		var sb: f32 = sin((a * 0.618));
+		{ let _sw8 = vec2f(((h.y * cb) - (h.z * sb)), ((h.y * sb) + (h.z * cb))); h = vec4f(h.x, _sw8.x, _sw8.y, h.w); }
+	} else {
+		var b: f32 = (2.4 * sin(a));
+		var cb: f32 = cos(b);
+		var sb: f32 = sin(b);
+		{ let _sw9 = vec2f(((h.z * cb) - (h.w * sb)), ((h.z * sb) + (h.w * cb))); h = vec4f(h.x, h.y, _sw9.x, _sw9.y); }
+	}
+	(*w4) = h.w;
+	var o: vec3f = ((h.xyz / max((1.0 - h.w), 0.03)) * R);
+	var ol: f32 = length(o);
+	var oc: f32 = select((1.8 + ((1.0 - exp(-((ol - 1.8)))))), ol, (ol < 1.8));
+	return (c + (o * ((oc / max(ol, 1e-4)))));
+}
+
 fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<function, vec3f>, maskV: ptr<function, f32>) -> vec3f {
 	var aOrigin: vec3f = aOrigin_in;
 	var aTarget: vec3f = aTarget_in;
@@ -663,10 +701,10 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var te: f32 = clamp((lt / 0.45), 0.0, 1.0);
 			var tau: f32 = (te * 1.6);
 			var pl: vec3f = aOrigin;
-			{ let _sw4 = (pl.xz + (((dx.xz * spd) * ((1.0 - exp(-3.52)))) * 1.4)); pl = vec3f(_sw4.x, pl.y, _sw4.y); }
+			{ let _sw10 = (pl.xz + (((dx.xz * spd) * ((1.0 - exp(-3.52)))) * 1.4)); pl = vec3f(_sw10.x, pl.y, _sw10.y); }
 			pl.y = (fl + (h1 * 0.03));
 			var pf: vec3f = aOrigin;
-			{ let _sw5 = (pf.xz + (((dx.xz * spd) * ((1.0 - exp((-2.2 * tau))))) * 1.4)); pf = vec3f(_sw5.x, pf.y, _sw5.y); }
+			{ let _sw11 = (pf.xz + (((dx.xz * spd) * ((1.0 - exp((-2.2 * tau))))) * 1.4)); pf = vec3f(_sw11.x, pf.y, _sw11.y); }
 			var yf: f32 = max((fl + (h1 * 0.03)), ((aOrigin.y + (vy0 * tau)) - ((2.1 * tau) * tau)));
 			pf.y = mix(yf, pl.y, smoothstep(0.85, 1.0, te));
 			var tg: f32 = clamp((((lt - 0.58)) / 0.42), 0.0, 1.0);
@@ -676,11 +714,18 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var pg: vec3f = ((((og * og) * pl) + (((2.0 * og) * eg) * c2)) + ((eg * eg) * aTarget));
 			(*base) = select((select(pg, pl, (lt < 0.58))), pf, (lt < 0.45));
 		}
+		if ((sty == 6)) {
+			var hw4: f32;
+			var q4: vec3f = mix(aOrigin, aTarget, smoothstep(0.38, 0.62, e));
+			(*base) = hyperWarp(q4, fr.uCen, (1.3 * max(sc, 0.15)), select(0.0, 1.0, (fr.uMorphS.w > 1.05)), ((2.4 * sin((e * 3.1415926535))) * ((0.85 + (0.15 * hash11((aIdx * 2.7)))))), &hw4);
+			gHypW = hw4;
+			gHypF = max(gHypF, smoothstep(0.55, 0.97, hw4));
+		}
 		if ((sty == 1)) {
 			var ang: f32 = (((sin((e * 3.1415926535)) * fr.uMorphS.w) * 6.2831853) * ((0.6 + (0.4 * hash11((aIdx * 1.3))))));
 			var cs: f32 = cos(ang);
 			var sn: f32 = sin(ang);
-			{ let _sw6 = vec2f((((*base).x * cs) - ((*base).z * sn)), (((*base).x * sn) + ((*base).z * cs))); (*base) = vec3f(_sw6.x, (*base).y, _sw6.y); }
+			{ let _sw12 = vec2f((((*base).x * cs) - ((*base).z * sn)), (((*base).x * sn) + ((*base).z * cs))); (*base) = vec3f(_sw12.x, (*base).y, _sw12.y); }
 		}
 	}
 	if ((fr.uDepth.x > 0.001)) {
@@ -699,18 +744,18 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var a: f32 = ((pos.y * tw) * 1.6);
 			var c: f32 = cos(a);
 			var s: f32 = sin(a);
-			{ let _sw7 = (mat2x2f(c, -s, s, c) * pos.xz); pos = vec3f(_sw7.x, pos.y, _sw7.y); }
+			{ let _sw13 = (mat2x2f(c, -s, s, c) * pos.xz); pos = vec3f(_sw13.x, pos.y, _sw13.y); }
 		} else if ((fr.uTwist.y < 1.5)) {
 			pos.x += (((y01t * y01t) * tw) * 0.9);
 			pos.y -= ((((y01t * y01t) * y01t) * tw) * 0.16);
 		} else if ((fr.uTwist.y < 2.5)) {
-			{ let _sw8 = (pos.xz * vec2f((1.0 + (((tw * 0.6) * ((0.5 - y01t))) * 2.0)))); pos = vec3f(_sw8.x, pos.y, _sw8.y); }
+			{ let _sw14 = (pos.xz * vec2f((1.0 + (((tw * 0.6) * ((0.5 - y01t))) * 2.0)))); pos = vec3f(_sw14.x, pos.y, _sw14.y); }
 		} else if ((fr.uTwist.y < 3.5)) {
 			var sw: f32 = sin(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z)))));
 			pos.x += ((sw * tw) * 0.2);
 			pos.z += ((cos(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z))))) * tw) * 0.12);
 		} else {
-			{ let _sw9 = (pos.xz * vec2f((1.0 + ((tw * 0.3) * sin(((y01t * 6.2831) - (t * ((1.2 + fr.uTwist.z))))))))); pos = vec3f(_sw9.x, pos.y, _sw9.y); }
+			{ let _sw15 = (pos.xz * vec2f((1.0 + ((tw * 0.3) * sin(((y01t * 6.2831) - (t * ((1.2 + fr.uTwist.z))))))))); pos = vec3f(_sw15.x, pos.y, _sw15.y); }
 		}
 	}
 	if ((fr.uWave.x > 0.001)) {
@@ -758,7 +803,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		pe = ((fr.uPulse.x * env) * 1.6);
 		if ((fr.uPulseP.x > 1.5)) {
 			pos.y *= (1.0 + (pe * 0.2));
-			{ let _sw10 = (pos.xz * vec2f((1.0 - (pe * 0.11)))); pos = vec3f(_sw10.x, pos.y, _sw10.y); }
+			{ let _sw16 = (pos.xz * vec2f((1.0 - (pe * 0.11)))); pos = vec3f(_sw16.x, pos.y, _sw16.y); }
 			pe = 0.0;
 		}
 	}
@@ -809,7 +854,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			pos += (((((wv * dk) * dk) * 1.5) * sp) * sc);
 		} else if ((ds < 1.5)) {
 			pos.y += (((dk * dk) * ((0.7 + (0.5 * ch)))) * sc);
-			{ let _sw11 = (pos.xz + ((((vec2f(sin(((t * 1.5) + (ch * 6.0))), cos(((t * 1.3) + (ch * 5.0)))) * dk) * 0.1) * sc) + ((vec2f((fr.uDis.w * 0.5), 0.0) * dk) * sc))); pos = vec3f(_sw11.x, pos.y, _sw11.y); }
+			{ let _sw17 = (pos.xz + ((((vec2f(sin(((t * 1.5) + (ch * 6.0))), cos(((t * 1.3) + (ch * 5.0)))) * dk) * 0.1) * sc) + ((vec2f((fr.uDis.w * 0.5), 0.0) * dk) * sc))); pos = vec3f(_sw17.x, pos.y, _sw17.y); }
 		} else if ((ds < 2.5)) {
 			pos += ((((outd * dk) * 0.12) * sc) + vec3f(0.0, ((dk * 0.05) * sc), 0.0));
 		} else if ((ds < 3.5)) {
@@ -829,7 +874,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var ang: f32 = (((dk * dk) * ((3.2 + (fr.uDis.w * 1.2)))) * sc);
 			var cs: f32 = cos(ang);
 			var sn: f32 = sin(ang);
-			{ let _sw12 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw12.x, q.y, _sw12.y); }
+			{ let _sw18 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw18.x, q.y, _sw18.y); }
 			q *= vec3f((1.0 - ((0.9 * dk) * dk)));
 			pos = ((fr.uCen + q) + vec3f(0.0, (((dk * dk) * 0.45) * sc), 0.0));
 		} else {
@@ -858,7 +903,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		gGrowE = ((gGrow * ((1.0 - gGrow))) * 4.0);
 		pos += (((rad * gGrowE) * fr.uGrowP.x) * 0.12);
 		var yG: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
-		{ let _sw13 = (pos.xz + ((((vec2f(sin(((t * 1.2) + (yG * 5.0))), cos(((t * 0.9) + (yG * 4.0)))) * 0.018) * fr.uGrowP.y) * gGrow) * ((0.3 + yG)))); pos = vec3f(_sw13.x, pos.y, _sw13.y); }
+		{ let _sw19 = (pos.xz + ((((vec2f(sin(((t * 1.2) + (yG * 5.0))), cos(((t * 0.9) + (yG * 4.0)))) * 0.018) * fr.uGrowP.y) * gGrow) * ((0.3 + yG)))); pos = vec3f(_sw19.x, pos.y, _sw19.y); }
 	}
 	{
 		for (var ji: i32 = 0; (ji < 3); ji++) {
@@ -975,7 +1020,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var q: vec3f = (pos - fr.uCen);
 			var cs: f32 = cos(ang);
 			var sn: f32 = sin(ang);
-			{ let _sw14 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw14.x, q.y, _sw14.y); }
+			{ let _sw20 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw20.x, q.y, _sw20.y); }
 			pos = (fr.uCen + q);
 			cn = vec3f(0.0);
 		} else if ((fr.uCurlP.z > 0.5)) {
@@ -1057,6 +1102,14 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 	}
 	if ((fr.uJitter.x > 0.001)) {
 		pos += ((vec3f(sin(((t * 17.0) + (aIdx * 91.0))), sin(((t * 13.0) + (aIdx * 57.0))), sin(((t * 11.0) + (aIdx * 33.0)))) * fr.uJitter.x) * 0.03);
+	}
+	if ((fr.uHyp.x > 0.001)) {
+		var hw: f32;
+		var hp: vec3f = hyperWarp(pos, fr.uCen, (1.25 / max(fr.uHyp.w, 0.05)), fr.uHyp.z, (fr.uHyp.y - (fr.uTOff * fr.uHypP.w)), &hw);
+		var hk: f32 = min(fr.uHyp.x, 1.0);
+		pos = mix(pos, hp, hk);
+		gHypW = hw;
+		gHypF = (smoothstep(mix(0.99, 0.6, fr.uHypP.z), 0.997, hw) * hk);
 	}
 	(*maskV) = 1.0;
 	if ((fr.uMask.x > 0.5)) {
@@ -1162,7 +1215,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		var sq: vec2f = pPhys.xz;
 		var cs: f32 = cos(spinA);
 		var sn: f32 = sin(spinA);
-		{ let _sw15 = vec2f(((sq.x * cs) - (sq.y * sn)), ((sq.x * sn) + (sq.y * cs))); pPhys = vec3f(_sw15.x, pPhys.y, _sw15.y); }
+		{ let _sw21 = vec2f(((sq.x * cs) - (sq.y * sn)), ((sq.x * sn) + (sq.y * cs))); pPhys = vec3f(_sw21.x, pPhys.y, _sw21.y); }
 		var strength: f32 = min(1.0, fr.uPhysics.x);
 		var target_: vec3f = mix(pos, pPhys, strength);
 		if ((fr.uAsm > 0.0)) {
@@ -1194,7 +1247,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 					var ca: f32 = cos(a);
 					var sa: f32 = sin(a);
 					var q: vec2f = (pos.xz - fr.uHand[i].xz);
-					{ let _sw16 = (fr.uHand[i].xz + vec2f(((q.x * ca) - (q.y * sa)), ((q.x * sa) + (q.y * ca)))); pos = vec3f(_sw16.x, pos.y, _sw16.y); }
+					{ let _sw22 = (fr.uHand[i].xz + vec2f(((q.x * ca) - (q.y * sa)), ((q.x * sa) + (q.y * ca)))); pos = vec3f(_sw22.x, pos.y, _sw22.y); }
 					pos.y += (((f * hs) * fr.uHandP.x) * 0.12);
 				} else {
 					pos += ((((normalize((hd + vec3f(1e-3))) * f) * hs) * fr.uHandP.x) * 0.75);
@@ -1208,7 +1261,15 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		var d2: f32 = dot(tm, tm);
 		if ((d2 < r2)) {
 			var f: f32 = (1.0 - (d2 / r2));
-			pos += (((((normalize((tm + vec3f(1e-3))) * f) * f) * fr.uCursor.x) * 0.6) * fr.uCursor.z);
+			if ((fr.uCursor.z > 1.5)) {
+				var vax: vec3f = normalize((vec3f(fr.modelViewMatrix[0][2], fr.modelViewMatrix[1][2], fr.modelViewMatrix[2][2]) + vec3f(1e-5)));
+				var ca: f32 = (((f * f) * fr.uCursor.x) * 2.2);
+				var cc: f32 = cos(ca);
+				var cs: f32 = sin(ca);
+				pos = (((fr.uMouse + (tm * cc)) + (cross(vax, tm) * cs)) + ((vax * dot(vax, tm)) * ((1.0 - cc))));
+			} else {
+				pos += (((((normalize((tm + vec3f(1e-3))) * f) * f) * fr.uCursor.x) * 0.6) * fr.uCursor.z);
+			}
 		}
 	}
 	return pos;
@@ -1228,6 +1289,7 @@ fn main_() {
 	var frNrm: vec3f = vec3f(0.0, 0.0, 1.0);
 	var frLift: f32 = 0.0;
 	var frAp: f32 = -1.0;
+	var frDep: f32 = 0.5;
 	if ((fr.uFr.x > 0.5)) {
 		var fk: f32;
 		var fcell: vec2f;
@@ -1289,10 +1351,16 @@ fn main_() {
 		var l: f32 = dot(fc, vec3f(0.3, 0.59, 0.11));
 		frCol = ((((fc * ((1.0 - sh.z))) + ((tcol * ((0.35 + (l * 1.6)))) * sh.z))) * sh.x);
 		frLift = sh.y;
+		if ((fr.uDepth.x > 0.001)) {
+			frDep = textureLoad(frTex, vec3i(i32(fcell.x), i32(fcell.y), layer).xy, vec3i(i32(fcell.x), i32(fcell.y), layer).z, 0).a;
+			frDep = pow(max(clamp((((((frDep - 0.5)) * fr.uDepthQ.z) + 0.5) + fr.uDepthQ.y), 0.0, 1.0), 1e-4), fr.uDepthQ.w);
+			var dkeep: f32 = mix(fr.uFr7.w, 1.0, (1.0 - clamp(abs((fk - fr.uFr4.x)), 0.0, 1.0)));
+			frDep = mix(fr.uDepth.w, frDep, dkeep);
+		}
 	}
 	var base: vec3f;
 	var maskV: f32;
-	gDepth = aDepth;
+	gDepth = select(aDepth, frDep, (fr.uFr.x > 0.5));
 	gNormal = aNormal;
 	gLum = select(dot(aColor, vec3f(0.3, 0.59, 0.11)), dot(frCol, vec3f(0.3, 0.59, 0.11)), (fr.uFr.x > 0.5));
 	if ((fr.uScope.x > 0.001)) {
@@ -1366,6 +1434,12 @@ fn main_() {
 	if (((fr.uMask.x > 0.5) && (fr.uMaskShow > 0.5))) {
 		vColor = mix(vColor, (fr.uP2 * 1.4), (maskV * 0.55));
 	}
+	if ((fr.uHyp.x > 0.001)) {
+		var hk4: f32 = clamp((((gHypW + 1.0)) * 0.5), 0.0, 1.0);
+		var hc: vec3f = select(mix(fr.uP1, fr.uP2, (((hk4 - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (hk4 * 2.0)), (hk4 < 0.5));
+		vColor = mix(vColor, ((hc * fr.uBright) * ((0.55 + (0.9 * dot(vColor, vec3f(0.3, 0.59, 0.11)))))), (fr.uHypP.y * min(fr.uHyp.x, 1.0)));
+	}
+	vColor *= vec3f((1.0 - (0.6 * gHypF)));
 	if (((fr.uShade > 0.001) && (dot(nrmM, nrmM) > 0.01))) {
 		var nv: vec3f = normalize((fr.normalMatrix * nrmM));
 		var lit: f32 = dot(nv, normalize(vec3f(-0.45, 0.65, 0.6)));
@@ -1506,10 +1580,11 @@ fn main_() {
 	var s: f32 = ((((fr.uSize * fr.uPR) * (((((1.0 + (disp * 0.5)) + (fr.uBeat * 0.2)) + (sl * 1.2)) + (mkm * 0.7)))) * fr.uGlyph.y) * fr.uFr6.x);
 	s *= ((((((max(0.15, (szNoise * szAudio)) * ((1.0 - (fr.uDisQ.w * dkv)))) * mix(0.3, 1.0, gGrow)) * ((1.0 + (select(0.0, (mkv * 0.9), ((fr.uMark.x > 3.5) && (fr.uMark.x < 4.5))))))) * ((1.0 - (0.6 * (select(0.0, smoothstep(0.35, 0.9, mkv), ((fr.uMark.x > 2.5) && (fr.uMark.x < 3.5)))))))) * ((1.0 - (0.7 * smoothstep(0.3, 0.8, cvan))))) * ((0.25 + (0.75 * vis))));
 	s *= ((1.0 + (coc * 2.4)));
+	s *= (1.0 - (0.85 * gHypF));
 	s *= (((((1.0 + (gScopeT * fr.uScopeQ.y)) + ((gScopeG * fr.uScopeQ.z) * 2.5)) + (gDepthG * 0.8))) * ((1.0 - gScopeD)));
 	s *= select(0.73, (3.8 / max(-mv.z, 0.4)), (fr.uAtt > 0.5));
 	gl_PointSize = clamp(s, 1.0, 95.0);
-	if (((((gScopeD > 0.97) || (dkv > 0.97)) || (gDrop > 0.5)) || (gGrow < 0.03))) {
+	if ((((((gScopeD > 0.97) || (dkv > 0.97)) || (gDrop > 0.5)) || (gGrow < 0.03)) || (gHypF > 0.97))) {
 		gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;
 	}

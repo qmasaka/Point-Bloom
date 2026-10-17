@@ -69,6 +69,7 @@ export const MORPH_STYLES = [
 	{ id: 'scan', name: 'Сканер', icon: 'scan', hint: 'Линия сканера идёт по модели сверху вниз и на ходу собирает за собой новую форму', v: { scatter: 0.12, stagger: 2.2, turns: 1, sort: 'down', ease: 'smooth', glow: 1.0 } },
 	{ id: 'dust', name: 'Пыль', icon: 'wind', hint: 'Старая форма поднимается облаком пыли, новая оседает из него', v: { scatter: 0.9, stagger: 0.55, turns: 1, sort: 'random', ease: 'soft', glow: 0.3 } },
 	{ id: 'sand', name: 'Осыпание', icon: 'drop', hint: 'Точки осыпаются вниз, как песок, и снизу вырастает новая форма', v: { scatter: 0.9, stagger: 0.5, turns: 1, sort: 'down', ease: 'smooth', glow: 0.2 } },
+	{ id: 'hyper', name: 'Через 4D', icon: 'intersect', hint: 'Модель выворачивается через четвёртое измерение и бесконечность, на изнанке подменяется новой и возвращается уже ею. Больше одного оборота: путь по расслоению Хопфа', v: { scatter: 1, stagger: 0.3, turns: 1, sort: 'out', ease: 'smooth', glow: 0.6 } },
 ];
 
 export const MORPH_SORTS = [

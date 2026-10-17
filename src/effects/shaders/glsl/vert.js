@@ -45,6 +45,20 @@ uniform sampler2D uScrTex;
 #endif
 #ifdef HERO
 #define HEROSIZE clamp(sqrt(uFr.z / max(uHero.z, 1.0)), 0.4, 1.0)
+// глубина кадра k (альфа-канал текстуры кадров) в точке g сетки кадра, билинейно: главный кадр гуще сетки кадров, и без сглаживания рельеф шёл бы ступеньками
+float frLayerDepth(float k, vec2 g) {
+	int layer = int(mod(k + uFr5.x, uFr.y));
+	vec2 m = vec2(uFr2.x - 1.0, uFr2.y - 1.0);
+	vec2 p = clamp(g, vec2(0.0), m);
+	vec2 p0 = floor(p);
+	vec2 f = p - p0;
+	vec2 p1 = min(p0 + vec2(1.0), m);
+	float d00 = texelFetch(uFrTex, ivec3(int(p0.x), int(p0.y), layer), 0).a;
+	float d10 = texelFetch(uFrTex, ivec3(int(p1.x), int(p0.y), layer), 0).a;
+	float d01 = texelFetch(uFrTex, ivec3(int(p0.x), int(p1.y), layer), 0).a;
+	float d11 = texelFetch(uFrTex, ivec3(int(p1.x), int(p1.y), layer), 0).a;
+	return mix(mix(d00, d10, f.x), mix(d01, d11, f.x), f.y);
+}
 #else
 #define HEROSIZE uFr6.x
 #endif
@@ -64,6 +78,7 @@ void main() {
 	vec3 frNrm = vec3(0.0, 0.0, 1.0);
 	float frLift = 0.0;
 	float frAp = -1.0;
+	float frDep = 0.5;
 	if (uFr.x > 0.5) {
 		float fk;
 		vec2 fcell;
@@ -136,10 +151,29 @@ void main() {
 		float l = dot(fc, vec3(0.3, 0.59, 0.11));
 		frCol = (fc * (1.0 - sh.z) + tcol * (0.35 + l * 1.6) * sh.z) * sh.x;
 		frLift = sh.y;
+		// «Объём по глубине» на раскадровке: у каждого кадра своя карта глубины в альфа-канале текстуры кадров
+		if (uDepth.x > 0.001) {
+#ifdef HERO
+			// главный кадр идёт за видео: глубина плавно перетекает между соседними снятыми кадрами
+			vec2 hg = (fcell + 0.5) / uHero.xy * uFr2.xy - 0.5;
+			float hk0 = clamp(floor(uFr4.x), 0.0, uFr.y - 1.0);
+			float hk1 = min(hk0 + 1.0, uFr.y - 1.0);
+			frDep = mix(frLayerDepth(hk0, hg), frLayerDepth(hk1, hg), clamp(uFr4.x - hk0, 0.0, 1.0));
+#else
+			frDep = texelFetch(uFrTex, ivec3(int(fcell.x), int(fcell.y), layer), 0).a;
+#endif
+			// правка карты (яркость, контраст, тени) считается здесь, для каждого кадра
+			frDep = pow(max(clamp((frDep - 0.5) * uDepthQ.z + 0.5 + uDepthQ.y, 0.0, 1.0), 1e-4), uDepthQ.w);
+#ifndef HERO
+			// остальные кадры выдавливаются слабее (настройка раскадровки), иначе в стопке они врезаются друг в друга
+			float dkeep = mix(uFr7.w, 1.0, 1.0 - clamp(abs(fk - uFr4.x), 0.0, 1.0));
+			frDep = mix(uDepth.w, frDep, dkeep);
+#endif
+		}
 	}
 	vec3 base;
 	float maskV;
-	gDepth = aDepth;
+	gDepth = uFr.x > 0.5 ? frDep : aDepth;
 	gNormal = aNormal;
 	gLum = uFr.x > 0.5 ? dot(frCol, vec3(0.3, 0.59, 0.11)) : dot(aColor, vec3(0.3, 0.59, 0.11));
 	if (uScope.x > 0.001) {
@@ -199,6 +233,14 @@ void main() {
 		vColor = uPaintP.z > 0.5 ? vColor * mix(vec3(1.0), pig * 1.15, cov) : mix(vColor, pig * uBright, cov);
 	}
 	if (uMask.x > 0.5 && uMaskShow > 0.5) vColor = mix(vColor, uP2 * 1.4, maskV * 0.55);
+	// гиперпространство: цвет по четвёртой оси (у центра 3-сферы первый цвет палитры, у бесконечности последний), детали кадра сохраняются по яркости
+	if (uHyp.x > 0.001) {
+		float hk4 = clamp((gHypW + 1.0) * 0.5, 0.0, 1.0);
+		vec3 hc = hk4 < 0.5 ? mix(uP0, uP1, hk4 * 2.0) : mix(uP1, uP2, (hk4 - 0.5) * 2.0);
+		vColor = mix(vColor, hc * uBright * (0.55 + 0.9 * dot(vColor, vec3(0.3, 0.59, 0.11))), uHypP.y * min(uHyp.x, 1.0));
+	}
+	// точки, улетевшие в бесконечность (гиперпространство, переход «Через 4D»), тускнеют
+	vColor *= 1.0 - 0.6 * gHypF;
 	// объём: свет сверху слева по нормалям, обратная сторона формы темнее
 	if (uShade > 0.001 && dot(nrmM, nrmM) > 0.01) {
 		vec3 nv = normalize(normalMatrix * nrmM);
@@ -382,10 +424,11 @@ void main() {
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
 	s *= max(0.15, szNoise * szAudio) * (1.0 - uDisQ.w * dkv) * mix(0.3, 1.0, gGrow) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
+	s *= 1.0 - 0.85 * gHypF;
 	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
 	gl_PointSize = clamp(s, 1.0, 95.0);
-	if (gScopeD > 0.97 || dkv > 0.97 || gDrop > 0.5 || gGrow < 0.03) {
+	if (gScopeD > 0.97 || dkv > 0.97 || gDrop > 0.5 || gGrow < 0.03 || gHypF > 0.97) {
 		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;
 	}

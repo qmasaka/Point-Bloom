@@ -204,7 +204,13 @@ export class AudioPart {
 		this.synth.stop();
 		this._stopFile();
 		this._stopMic();
-		this.audioBuffer = await this.ctx.decodeAudioData(await file.arrayBuffer());
+		try {
+			this.audioBuffer = await this.ctx.decodeAudioData(await file.arrayBuffer());
+		} catch (e) {
+			this.playing = false;
+			this.emit();
+			throw e;
+		}
 		this.sourceType = 'file';
 		this.audioName = file.name.replace(/\.[^.]+$/, '');
 		await this.play();
@@ -216,7 +222,14 @@ export class AudioPart {
 		this.synth.stop();
 		this._stopFile();
 		this._stopMic();
-		this.micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
+		try {
+			this.micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
+		} catch (e) {
+			// доступа нет: прежний звук уже остановлен, поэтому сцена не должна считать, что что-то играет
+			this.playing = false;
+			this.emit();
+			throw e;
+		}
 		this.micNode = this.ctx.createMediaStreamSource(this.micStream);
 		this.micNode.connect(this.bus);
 		this.out.gain.value = 0; // не выводим микрофон в колонки: будет свист

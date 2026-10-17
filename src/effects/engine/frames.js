@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { clamp } from '../../core/util.js';
 import { buildFrameBlock, frameGrid, writeFrameColors } from '../frames/frame-block.js';
+import { adjustDepth, depthToGrid, grabFrame, lumaDepth, normalizeDepth } from '../input/depth-ai.js';
 
 /** Раскадровка: кадры видео как пластины в облаке точек. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class FramesPart {
@@ -107,6 +108,9 @@ export class FramesPart {
 			await this._seekTo(fr.cap, fr.times[k]);
 			if (fr.dead) return false;
 			take(fr.frames[k]);
+			fr.dOk[k] = 0;
+			fr.dIdle = false;
+			this._frDepthOne(fr, k);
 			fr.done[k] = 1;
 			onEach && onEach(k);
 		}
@@ -205,7 +209,8 @@ export class FramesPart {
 			// все кадры лежат в одном массиве (он же уходит в текстуру), у каждого кадра только ссылка на свой кусок
 			const data = new Uint8Array(per * n);
 			const frames = Array.from({ length: n }, (_, k) => data.subarray(k * per, (k + 1) * per));
-			const fr = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, gain: 1, ts: null, done: new Uint8Array(n), times: null, cap: null, take: null, dead: false };
+			// dAi, dOk: глубина кадров от нейросети и отметки «посчитано» (по слою текстуры); dSig: с какими настройками записан альфа-канал
+			const fr = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, gain: 1, ts: null, done: new Uint8Array(n), times: null, cap: null, take: null, dead: false, dAi: null, dOk: new Uint8Array(n), dSig: this._frDepthSig(), dJob: false };
 			let refine = null;
 			if (F.source === 'whole') {
 				fr.times = Array.from({ length: n }, (_, k) => Math.min(Math.max(0.05, dur - 0.04), (k / Math.max(1, n - 1)) * dur));
@@ -237,6 +242,7 @@ export class FramesPart {
 			} else {
 				// бегущая лента начинается пустой и заполняется по ходу видео
 				this._frameTaker(cols, rows)(frames[n - 1]);
+				this._frDepthOne(fr, n - 1);
 				fr.done[n - 1] = 1;
 			}
 			if (!F.on || !this.active) {
@@ -409,9 +415,164 @@ export class FramesPart {
 		u.uFr5.value.y = 0;
 		u.uFr5.value.z = { show: 0, dim: 1, hide: 2 }[F.future] ?? 1;
 		u.uFr5.value.w = (fr.gain || 1) * (F.gain ?? 1);
+		u.uFr7.value.w = F.dkeep ?? 0.5;
 		this._ensureHero(F, fr);
 		this._framesFollow(F, fr);
 		if (F.source === 'live') this._framesLive(F, fr);
+		this._framesDepthTick(fr);
+	}
+
+	// ------------------------------------------------------------ глубина кадров («Объём по глубине» поверх раскадровки)
+	// Карта глубины каждого кадра лежит в альфа-канале его слоя текстуры (0 далеко, 255 близко): шейдер берёт её вместе с цветом.
+	// По яркости она пишется сразу при съёмке кадра, нейросеть уточняет кадры в фоне, начиная с ближайших к текущему.
+
+	/** С какими настройками записан альфа-канал: при их смене кадры переписываются */
+	_frDepthSig() {
+		const Dp = this.state.layers.depth;
+		return Dp.src + '|' + Math.round(Dp.blur || 0);
+	}
+
+	/** Записывает глубину одного кадра (слоя) в альфа-канал: от нейросети, если она уже посчитала этот кадр, иначе по яркости */
+	_frDepthOne(fr, k) {
+		const Dp = this.state.layers.depth;
+		const { cols, rows } = fr;
+		const per = cols * rows;
+		const f = fr.frames[k];
+		let map = Dp.src === 'ai' && fr.dOk[k] && fr.dAi ? { w: cols, h: rows, data: fr.dAi.subarray(k * per, (k + 1) * per) } : lumaDepth(f, cols, rows, 4);
+		// размытие задано в пикселях большой карты, сетка кадра в несколько раз мельче
+		const r = Math.round((Dp.blur || 0) * 0.4);
+		if (r > 0) map = adjustDepth(map, { blur: r });
+		const d = map.data;
+		for (let i = 0; i < per; i++) f[i * 4 + 3] = (d[i] * 255 + 0.5) | 0;
+	}
+
+	/** Переписывает глубину всех кадров и отправляет текстуру целиком */
+	_frDepthAll(fr) {
+		const tex = this._frameTex;
+		for (let k = 0; k < fr.n; k++) {
+			this._frDepthOne(fr, k);
+			tex?.addLayerUpdate?.(k);
+		}
+		if (tex) tex.needsUpdate = true;
+	}
+
+	/** Каждый кадр: смена источника глубины или размытия переписывает кадры, нейросеть доснимает глубину в фоне */
+	_framesDepthTick(fr) {
+		const Dp = this.state.layers.depth;
+		if (!Dp.on) return;
+		const sig = this._frDepthSig();
+		if (fr.dSig !== sig) {
+			fr.dSig = sig;
+			this._frDepthAll(fr);
+			this._depthEmit();
+		}
+		// превью карты в панели идёт за текущим кадром
+		if (fr.dShown !== fr.cur) {
+			fr.dShown = fr.cur;
+			this._depthEmit();
+		}
+		// dIdle: все кадры уже посчитаны (новые сбросят отметку), dRetry: после сбоя пауза, а не новая попытка на каждом кадре
+		if (Dp.src === 'ai' && !fr.dJob && !fr.dIdle && this.depthAI.phase !== 'error' && this._time > (fr.dRetry || 0)) this._frDepthAI(fr);
+	}
+
+	/** Время видео, с которого снят слой (у бегущей ленты слой может быть ещё пустым: тогда -1) */
+	_frLayerTime(fr, k) {
+		return fr.ts ? fr.ts[k] : fr.times ? fr.times[k] : -1;
+	}
+
+	/** Фоновый расчёт глубины кадров нейросетью: кадр снимается со скрытой копии видео в хорошем разрешении, ближайшие к текущему первыми */
+	async _frDepthAI(fr) {
+		fr.dJob = true;
+		const per = fr.cols * fr.rows;
+		const st = {};
+		let cap = null;
+		try {
+			await this.depthAI.init();
+			cap = await this._capVideo();
+			fr.dAi ||= new Float32Array(fr.n * per);
+			const alive = () => !fr.dead && this._frames === fr && this.active && this.state.layers.depth.on && this.state.layers.depth.src === 'ai';
+			while (alive()) {
+				const now = this.pm.el?.currentTime || 0;
+				let best = -1;
+				let bd = Infinity;
+				for (let k = 0; k < fr.n; k++) {
+					const t = this._frLayerTime(fr, k);
+					if (fr.dOk[k] || t < 0 || (fr.done && !fr.done[k] && !fr.ts)) continue;
+					const d = Math.abs(t - now);
+					if (d < bd) {
+						bd = d;
+						best = k;
+					}
+				}
+				if (best < 0) {
+					// всё видео посчитано (пока кадры доснимаются, ждём их); бегущая лента ждёт новых кадров
+					if (!fr.ts && fr.done.every((x) => x)) {
+						fr.dIdle = true;
+						break;
+					}
+					await new Promise((r) => setTimeout(r, 300));
+					continue;
+				}
+				const t = this._frLayerTime(fr, best);
+				await this._seekTo(cap, t);
+				if (!alive()) break;
+				const side = this.depthAI.device === 'wasm' ? 280 : 448;
+				const img = grabFrame(cap, side);
+				if (!img) break;
+				const r = await this.depthAI.estimate(img);
+				// у бегущей ленты слой мог за это время перезаписаться новым кадром: тогда результат уже не про него
+				if (!alive() || this._frLayerTime(fr, best) !== t) continue;
+				const map = { w: r.w, h: r.h, data: normalizeDepth(r.data, st, st.init ? 0.35 : 0) };
+				depthToGrid(map, fr.cols, fr.rows, fr.dAi.subarray(best * per, (best + 1) * per));
+				fr.dOk[best] = 1;
+				this._frDepthOne(fr, best);
+				const tex = this._frameTex;
+				if (tex) {
+					tex.addLayerUpdate?.(best);
+					tex.needsUpdate = true;
+				}
+				this._depthEmit();
+			}
+		} catch (e) {
+			this._D.err = e.message || String(e);
+			fr.dRetry = this._time + 5;
+			this._depthEmit();
+		} finally {
+			if (cap) {
+				cap.removeAttribute('src');
+				cap.load();
+			}
+			fr.dJob = false;
+		}
+	}
+
+	/** Сколько кадров раскадровки уже с глубиной от нейросети */
+	_frDepthCount() {
+		const fr = this._frames;
+		if (!fr) return [0, 0];
+		let ok = 0;
+		let all = 0;
+		for (let k = 0; k < fr.n; k++) {
+			if (this._frLayerTime(fr, k) < 0) continue;
+			all++;
+			if (fr.dOk[k]) ok++;
+		}
+		return [ok, all];
+	}
+
+	/** Карта глубины текущего кадра раскадровки (для превью в панели) */
+	_frDepthMap() {
+		const fr = this._frames;
+		if (!fr || !this._framesOn) return null;
+		const k = clamp(fr.cur ?? 0, 0, fr.n - 1);
+		const layer = (k + (fr.ts ? fr.head : 0)) % fr.n;
+		const f = fr.frames[layer];
+		const per = fr.cols * fr.rows;
+		const data = new Float32Array(per);
+		for (let i = 0; i < per; i++) data[i] = f[i * 4 + 3] / 255;
+		// яркость, контраст и тени шейдер применяет сам: на превью то же, что на точках
+		const Dp = this.state.layers.depth;
+		return adjustDepth({ w: fr.cols, h: fr.rows, data }, { bright: Dp.bright, contrast: Dp.contrast, gamma: Dp.gamma });
 	}
 
 	/** Где на ленте текущее время видео: от начала ленты до её конца, дробное число между соседними кадрами */
@@ -552,6 +713,8 @@ export class FramesPart {
 		const layer = fr.head % fr.n;
 		const tex = this._frameTex;
 		take(fr.frames[layer]);
+		fr.dOk[layer] = 0;
+		this._frDepthOne(fr, layer);
 		tex.addLayerUpdate && tex.addLayerUpdate(layer);
 		tex.needsUpdate = true;
 		fr.ts[layer] = tv;

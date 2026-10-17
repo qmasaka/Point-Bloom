@@ -12,10 +12,12 @@ depthInfo() {
 const ai = this.depthAI;
 const D = this._D;
 const L = this.state.layers.depth;
-return { media: !!this.pm.ready, video: this.pm.kind === 'video', src: L.src, phase: ai.phase, prog: ai.prog, device: ai.device, error: ai.error || D.err, hasMap: !!D.map, aiMap: !!D.map && D.mapSrc === 'ai', busy: D.busy };
+const frames = !!(this._framesOn && this._frames);
+const [fOk, fAll] = frames ? this._frDepthCount() : [0, 0];
+return { media: !!this.pm.ready, video: this.pm.kind === 'video', src: L.src, phase: ai.phase, prog: ai.prog, device: ai.device, error: ai.error || D.err, hasMap: frames || !!D.map, aiMap: !!D.map && D.mapSrc === 'ai', busy: D.busy, frames, fOk, fAll };
 }
 drawDepthMap(cv, plain = false) {
-const m = this._D.proc || this._D.map;
+const m = this._frDepthMap() || this._D.proc || this._D.map;
 if (!m) return;
 if (cv.width !== m.w || cv.height !== m.h) {
 cv.width = m.w;
@@ -44,6 +46,12 @@ const D = this._D;
 D.force = true;
 D.err = '';
 if (this.depthAI.phase === 'error') this.depthAI.dispose();
+const fr = this._framesOn && this._frames;
+if (fr) {
+fr.dOk.fill(0);
+fr.dIdle = false;
+fr.dRetry = 0;
+}
 this.depthAI.init().catch(() => {});
 this._depthEmit();
 }

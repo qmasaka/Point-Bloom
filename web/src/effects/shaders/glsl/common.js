@@ -63,6 +63,10 @@ uniform vec4 uPaintP; // акварель: x включена, y зернист�
 uniform vec4 uBrushParam;
 uniform vec4 uLookP2;
 uniform vec4 uDof;
+uniform vec4 uHyp; // гиперпространство: x сила, y угол поворота в 4D, z вид, w кривизна (1 / радиус 3-сферы)
+uniform vec4 uHypP; // y окраска по 4-й оси, z как гаснут улетевшие в бесконечность, w угловая скорость (для копий «Эха»)
+float gHypW = 0.0; // где точка на 3-сфере: -1 у центра, +1 на бесконечности
+float gHypF = 0.0; // насколько точка ушла в бесконечность (гаснет и мельчает)
 #define PI 3.1415926535
 
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -463,6 +467,40 @@ vec3 depthShape(vec3 b) {
 	return b;
 }
 
+// Гиперпространство: точка поднимается на 3-сферу в четырёхмерном пространстве (обратная стереографическая проекция),
+// там поворачивается и проецируется обратно. Повороты, задевающие четвёртую ось, выворачивают форму через бесконечность.
+// md: 0 выворот (плоскость ZW), 1 расслоение Хопфа (XY и ZW вместе: точки текут по сцепленным окружностям), 2 кувырок (XW и YZ с разной скоростью), 3 дыхание (ZW туда и обратно)
+vec3 hyperWarp(vec3 p, vec3 c, float R, float md, float a, out float w4) {
+	vec3 q = (p - c) / R;
+	float r2 = dot(q, q);
+	vec4 h = vec4(2.0 * q, r2 - 1.0) / (r2 + 1.0);
+	float ca = cos(a);
+	float sa = sin(a);
+	if (md < 0.5) {
+		h.zw = vec2(h.z * ca - h.w * sa, h.z * sa + h.w * ca);
+	} else if (md < 1.5) {
+		h.xy = vec2(h.x * ca - h.y * sa, h.x * sa + h.y * ca);
+		h.zw = vec2(h.z * ca - h.w * sa, h.z * sa + h.w * ca);
+	} else if (md < 2.5) {
+		h.xw = vec2(h.x * ca - h.w * sa, h.x * sa + h.w * ca);
+		float cb = cos(a * 0.618);
+		float sb = sin(a * 0.618);
+		h.yz = vec2(h.y * cb - h.z * sb, h.y * sb + h.z * cb);
+	} else {
+		float b = 2.4 * sin(a);
+		float cb = cos(b);
+		float sb = sin(b);
+		h.zw = vec2(h.z * cb - h.w * sb, h.z * sb + h.w * cb);
+	}
+	w4 = h.w;
+	// у полюса проекция уходит в бесконечность: даль мягко сжимается к «небесной сфере» вокруг формы, иначе точки влетали бы в камеру
+	vec3 o = h.xyz / max(1.0 - h.w, 0.03) * R;
+	float ol = length(o);
+	// до радиуса 1.8 форма как есть, дальше расстояние плавно упирается в 2.8
+	float oc = ol < 1.8 ? ol : 1.8 + (1.0 - exp(-(ol - 1.8)));
+	return c + o * (oc / max(ol, 1e-4));
+}
+
 // Положение одной точки после всех эффектов. base: форма без эффектов, maskV: доля эффектов в этой точке (зона)
 vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float maskV) {
 	float t = uTime - uTOff;
@@ -515,6 +553,14 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			float og = 1.0 - eg;
 			vec3 pg = og * og * pl + 2.0 * og * eg * c2 + eg * eg * aTarget;
 			base = lt < 0.45 ? pf : (lt < 0.58 ? pl : pg);
+		}
+		if (sty == 6) {
+			// через 4D: старая форма выворачивается через бесконечность, на изнанке подменяется новой и возвращается уже ею
+			float hw4;
+			vec3 q4 = mix(aOrigin, aTarget, smoothstep(0.38, 0.62, e));
+			base = hyperWarp(q4, uCen, 1.3 * max(sc, 0.15), uMorphS.w > 1.05 ? 1.0 : 0.0, 2.4 * sin(e * PI) * (0.85 + 0.15 * hash11(aIdx * 2.7)), hw4);
+			gHypW = hw4;
+			gHypF = max(gHypF, smoothstep(0.55, 0.97, hw4));
 		}
 		if (sty == 1) {
 			float ang = sin(e * PI) * uMorphS.w * 6.2831853 * (0.6 + 0.4 * hash11(aIdx * 1.3));
@@ -922,6 +968,14 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	if (uJitter.x > 0.001) {
 		pos += vec3(sin(t * 17.0 + aIdx * 91.0), sin(t * 13.0 + aIdx * 57.0), sin(t * 11.0 + aIdx * 33.0)) * uJitter.x * 0.03;
 	}
+	if (uHyp.x > 0.001) {
+		float hw;
+		vec3 hp = hyperWarp(pos, uCen, 1.25 / max(uHyp.w, 0.05), uHyp.z, uHyp.y - uTOff * uHypP.w, hw);
+		float hk = min(uHyp.x, 1.0);
+		pos = mix(pos, hp, hk);
+		gHypW = hw;
+		gHypF = smoothstep(mix(0.99, 0.6, uHypP.z), 0.997, hw) * hk;
+	}
 	maskV = 1.0;
 	if (uMask.x > 0.5) {
 		float y01 = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
@@ -1063,7 +1117,14 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		float d2 = dot(tm, tm);
 		if (d2 < r2) {
 			float f = 1.0 - d2 / r2;
-			pos += normalize(tm + vec3(1e-3)) * f * f * uCursor.x * 0.6 * uCursor.z;
+			if (uCursor.z > 1.5) {
+				// вихрь: точки под курсором закручиваются вокруг оси взгляда (ось взгляда в координатах облака это третья строка modelView)
+				vec3 vax = normalize(vec3(modelViewMatrix[0][2], modelViewMatrix[1][2], modelViewMatrix[2][2]) + vec3(1e-5));
+				float ca = f * f * uCursor.x * 2.2;
+				float cc = cos(ca);
+				float cs = sin(ca);
+				pos = uMouse + tm * cc + cross(vax, tm) * cs + vax * dot(vax, tm) * (1.0 - cc);
+			} else pos += normalize(tm + vec3(1e-3)) * f * f * uCursor.x * 0.6 * uCursor.z;
 		}
 	}
 	return pos;

@@ -89,6 +89,8 @@ struct Frame {
 	uBrushParam: vec4f,
 	uLookP2: vec4f,
 	uDof: vec4f,
+	uHyp: vec4f,
+	uHypP: vec4f,
 	uFr: vec4f,
 	uFr2: vec4f,
 	uFr3: vec4f,

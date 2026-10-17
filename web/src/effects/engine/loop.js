@@ -119,8 +119,11 @@ fit = clamp(Math.sqrt(3.5 / Math.max(overlap, 1e-3)), 0.25, 1);
 }
 u.uDens.value = Math.min(1.6, Math.sqrt(150000 / Math.max(1, n))) * fit;
 }
-u.uBright.value = look.bright * (1 + (look.brightAudio || 0) * this._bandLevel({ band: look.audioBand || 'bass' }) * 1.8);
-u.uGlow.value = look.glow;
+const sb = (this._sceneBand ||= { band: 'bass' });
+sb.band = look.audioBand || 'bass';
+const bloomK = this._animBloom || 0;
+u.uBright.value = look.bright * (1 + (look.brightAudio || 0) * this._bandLevel(sb) * 1.8) * (1 + bloomK * 0.8);
+u.uGlow.value = look.glow + bloomK * 1.5;
 u.uColorBy.value = Math.max(0, COLOR_BY.findIndex((c) => c.id === look.colorBy));
 u.uP0.value.set(pal.c[0]);
 u.uP1.value.set(pal.c[1]);
@@ -252,16 +255,29 @@ u.uYR.value.set(-hh, hh);
 }
 {
 const Dp = L.depth;
-const on = Dp.on && st.source === 'media' && this.pm.ready;
+const onFr = st.source === 'frames' && this._framesOn && u.uFr.value.x > 0.5;
+const on = Dp.on && ((st.source === 'media' && this.pm.ready) || onFr);
 u.uDepth.value.set(on ? clamp(this._eff(Dp), 0, 1.5) : 0, { relief: 0, layers: 1, breath: 2, wave: 3, ripple: 4, twist: 5, burst: 6 }[Dp.mode] ?? 0, Dp.speed, Dp.focus);
-u.uDepthQ.value.set(Dp.zone ?? 0.12, 0, 0, 0);
+if (onFr) u.uDepthQ.value.set(Dp.zone ?? 0.12, Dp.bright ?? 0, Dp.contrast ?? 1, Dp.gamma ?? 1);
+else u.uDepthQ.value.set(Dp.zone ?? 0.12, 0, 1, 1);
 u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, map: 1, heat: 2 }[Dp.view] ?? 0);
 }
 this._screenTick(u);
+{
+const H = L.hyper;
+const he0 = this._eff(H);
+this._hypK = (this._hypK || 0) + (he0 - (this._hypK || 0)) * (1 - Math.exp(-dt * 4));
+const he = this._hypK > 0.002 || he0 > 0 ? this._hypK : 0;
+const w = (H.speed ?? 0.6) * 0.9;
+if (he > 0.001) this._hypA = ((this._hypA || 0) + dt * (w + (H.kick || 0) * this.levels.beat * 3)) % (Math.PI * 2000);
+else this._hypA = 0;
+u.uHyp.value.set(he, (this._hypA || 0) + ((H.phase || 0) * Math.PI) / 180, { evert: 0, hopf: 1, tumble: 2, breathe: 3 }[H.mode] ?? 1, H.curv ?? 1);
+u.uHypP.value.set(0, H.tint ?? 0.35, H.fade ?? 0.6, w);
+}
 u.uGlitch.value.set(this._eff(L.glitch), L.glitch.slices, L.glitch.drop ?? 0.5, 0);
 u.uGlitchP.value.set(L.glitch.rgb === 'on' ? 1 : 0, L.glitch.speed, { bands: 0, blocks: 1, scan: 2 }[L.glitch.mode] ?? 0, L.glitch.burst ?? 0.7);
 u.uDisP.value.set({ wind: 0, burn: 1, laser: 2, layers: 3, chunks: 4, sand: 5, vortex: 6, shock: 7 }[L.dissolve.style] ?? 0, 0, 0, 0);
-u.uCursor.value.set(this._eff(L.cursor), L.cursor.radius, L.cursor.mode === 'attract' ? -1 : 1, 0);
+u.uCursor.value.set(this._eff(L.cursor), L.cursor.radius, { attract: -1, swirl: 2 }[L.cursor.mode] ?? 1, 0);
 {
 const P = L.physics;
 if (this.isCollapsed && P.on) {

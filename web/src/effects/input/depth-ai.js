@@ -227,9 +227,9 @@ out[i] = v < 0 ? 0 : v > 1 ? 1 : v;
 }
 return out;
 }
-export function lumaDepth(rgb, w, h) {
+export function lumaDepth(rgb, w, h, stride = 3) {
 const l = new Float32Array(w * h);
-for (let i = 0, k = 0; i < l.length; i++, k += 3) l[i] = (0.299 * rgb[k] + 0.587 * rgb[k + 1] + 0.114 * rgb[k + 2]) / 255;
+for (let i = 0, k = 0; i < l.length; i++, k += stride) l[i] = (0.299 * rgb[k] + 0.587 * rgb[k + 1] + 0.114 * rgb[k + 2]) / 255;
 const t = new Float32Array(w * h);
 for (let y = 0; y < h; y++) {
 for (let x = 0; x < w; x++) {

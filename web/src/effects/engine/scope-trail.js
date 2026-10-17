@@ -345,7 +345,8 @@ this.points.add(group);
 tr = this._trail = { group, snaps, ghosts, mm, n, stride, last: this._time, geo: this.geometry };
 }
 tr.group.visible = true;
-if (this.app.anim.playing && this._time - tr.last >= T.step) {
+const moving = this.app.anim.playing || (this._charSync && this.animPlaying);
+if (moving && this._time - tr.last >= T.step) {
 tr.last = this._time;
 const old = tr.snaps.pop();
 for (let i = 0; i < mm; i++) for (let c = 0; c < 3; c++) old[i * 3 + c] = this._animBuf[i * tr.stride * 3 + c];
