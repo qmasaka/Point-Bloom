@@ -40,6 +40,9 @@ varying float vGl;
 uniform vec4 uScr;
 uniform vec4 uScrP;
 uniform sampler2D uScrTex;
+uniform vec4 uScrD; // объём по глубине: x источник (0 нет, 1 яркость, 2 карта), y сила, z знак (-1 выступает дальнее), w контраст
+uniform vec4 uScrQ; // x: показывать карту глубины вместо видео
+uniform sampler2D uScrDep;
 #endif
 #ifdef HERO
 #define HEROSIZE clamp(sqrt(uFr.z / max(uHero.z, 1.0)), 0.4, 1.0)
@@ -389,10 +392,18 @@ void main() {
 		}
 		vec3 scr = texture2D(uScrTex, clamp(suv, 0.0, 1.0)).rgb * uScr.w;
 		float slum = dot(scr, vec3(0.3, 0.59, 0.11));
+		// объём по глубине: яркость кадра или карта глубины (нейросеть, своя картинка) выдавливают форму вдоль нормали
+		float sdv = 0.0;
+		if (uScrD.x > 0.5) {
+			sdv = uScrD.x < 1.5 ? clamp(slum / max(uScr.w, 0.05), 0.0, 1.0) : texture2D(uScrDep, clamp(suv, 0.0, 1.0)).r;
+			sdv = clamp((sdv - 0.5) * uScrD.w + 0.5, 0.0, 1.0);
+			if (uScrD.z < 0.0) sdv = 1.0 - sdv;
+			if (uScrQ.x > 0.5) scr = vec3(sdv);
+		}
 		vColor = mix(vColor, mix(vColor * 0.35, scr, uScrP.z), smask * uScr.x);
-		if (uScr.y > 2.5 && uScr.y < 3.5) {
+		if (uScrD.x > 0.5) {
 			vec3 dirn = dot(nrmM, nrmM) > 0.01 ? normalize(nrmM) : normalize(bsx + vec3(1e-4));
-			pos += dirn * slum * uScrP.y * 0.4 * smask * uScr.x;
+			pos += dirn * sdv * uScrD.y * 0.45 * smask * uScr.x;
 		}
 	}
 #endif

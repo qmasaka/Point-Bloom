@@ -194,6 +194,34 @@ export function grabFrame(el, maxSide = 518) {
 	return { data: g.getImageData(0, 0, w, h).data, w, h };
 }
 
+/** Своя карта глубины из картинки (светлое ближе): {w, h, data} со значениями 0..1, длинная сторона не больше maxSide */
+export async function loadDepthImage(file, maxSide = 640) {
+	const url = URL.createObjectURL(file);
+	try {
+		const img = new Image();
+		img.src = url;
+		await img.decode();
+		const f = grabFrame(img, maxSide);
+		if (!f) throw new Error('не удалось прочитать картинку');
+		const data = new Float32Array(f.w * f.h);
+		for (let i = 0, k = 0; i < data.length; i++, k += 4) data[i] = (0.299 * f.data[k] + 0.587 * f.data[k + 1] + 0.114 * f.data[k + 2]) / 255;
+		return { w: f.w, h: f.h, data };
+	} finally {
+		URL.revokeObjectURL(url);
+	}
+}
+
+/** Выбор файла картинки; возвращает File или null */
+export function pickImageFile() {
+	return new Promise((resolve) => {
+		const inp = document.createElement('input');
+		inp.type = 'file';
+		inp.accept = 'image/*';
+		inp.addEventListener('change', () => resolve((inp.files && inp.files[0]) || null));
+		inp.click();
+	});
+}
+
 /** Кадр из массива RGB (запись видео) в RGBA нужного размера */
 export function grabRGB(rgb, cols, rows) {
 	const data = new Uint8ClampedArray(cols * rows * 4);

@@ -1,5 +1,5 @@
 import { downloadBlob } from '../../core/util.js';
-import { adjustDepth, depthToGrid, grabFrame, grabRGB as grabRGB4, lumaDepth, normalizeDepth } from '../input/depth-ai.js';
+import { adjustDepth, depthToGrid, grabFrame, grabRGB as grabRGB4, loadDepthImage, lumaDepth, normalizeDepth, pickImageFile } from '../input/depth-ai.js';
 
 /** Глубина для фото и видео: карта, рельеф, сохранение. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class DepthPart {
@@ -20,7 +20,7 @@ export class DepthPart {
 		// на раскадровке у каждого кадра своя карта: показываем, сколько кадров уже посчитала нейросеть
 		const frames = !!(this._framesOn && this._frames);
 		const [fOk, fAll] = frames ? this._frDepthCount() : [0, 0];
-		return { media: !!this.pm.ready, video: this.pm.kind === 'video', src: L.src, phase: ai.phase, prog: ai.prog, device: ai.device, error: ai.error || D.err, hasMap: frames || !!D.map, aiMap: !!D.map && D.mapSrc === 'ai', busy: D.busy, frames, fOk, fAll };
+		return { file: this._depthFile?.name || '', media: !!this.pm.ready, video: this.pm.kind === 'video', src: L.src, phase: ai.phase, prog: ai.prog, device: ai.device, error: ai.error || D.err, hasMap: frames || !!D.map, aiMap: !!D.map && D.mapSrc === 'ai', busy: D.busy, frames, fOk, fAll };
 	}
 
 	/** Рисует текущую карту глубины серой картинкой в холст */
@@ -68,6 +68,26 @@ export class DepthPart {
 		this._depthEmit();
 	}
 
+	/** Кнопка «Загрузить карту глубины»: своя картинка вместо нейросети и яркости */
+	async depthPick() {
+		const f = await pickImageFile();
+		if (f) await this.depthLoad(f);
+	}
+
+	/** Своя карта глубины: светлое ближе, тёмное дальше. Ложится на фото, видео и на все кадры раскадровки */
+	async depthLoad(file) {
+		try {
+			const m = await loadDepthImage(file);
+			this._depthFile = { ...m, name: file.name, id: (this._depthFile?.id || 0) + 1 };
+			this.state.layers.depth.src = 'file';
+			this.app.toast('Карта глубины: ' + file.name, 'ok', 2200);
+		} catch (e) {
+			this.app.toast('Не удалось открыть карту глубины: ' + (e.message || e), 'error');
+		}
+		this._depthEmit();
+		this.emit();
+	}
+
 	saveDepthMap() {
 		const m = this._D.map;
 		if (!m) return;
@@ -85,7 +105,7 @@ export class DepthPart {
 		const n = pm.count;
 		const key = pm.rec || pm.el;
 		if (D.key !== key) {
-			Object.assign(D, { key, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, err: '' });
+			Object.assign(D, { key, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, err: '', fileId: 0 });
 			this._depthEmit();
 		}
 		if (rgb) {
@@ -94,8 +114,23 @@ export class DepthPart {
 		}
 		if (!L.on) return;
 		const ai = L.src === 'ai';
+		// своя карта глубины: заменяет и яркость, и нейросеть
+		const file = L.src === 'file' ? this._depthFile : null;
+		if (file && D.fileId !== file.id) {
+			D.fileId = file.id;
+			D.map = file;
+			D.mapSrc = 'file';
+			D.dirty = true;
+			this._depthEmit();
+		}
+		if (!file && D.fileId) {
+			// ушли со своей карты: карта по яркости и нейросеть считаются заново
+			D.fileId = 0;
+			D.lumaN = -1;
+			D.aiHas = false;
+		}
 		// быстрая карта по яркости: основная при выборе «По яркости» и временная, пока нейросеть думает
-		if (D.rgb && D.lumaN !== D.rgbN && (!ai || !D.aiHas)) {
+		if (!file && D.rgb && D.lumaN !== D.rgbN && (!ai || !D.aiHas)) {
 			D.lumaN = D.rgbN;
 			D.map = lumaDepth(D.rgb, pm.cols, pm.rows);
 			D.mapSrc = 'luma';

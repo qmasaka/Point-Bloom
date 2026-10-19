@@ -66423,6 +66423,8 @@ __defs['src/effects/input/depth-ai.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'DepthAI', () => DepthAI);
 __def(__exports, 'grabFrame', () => grabFrame);
+__def(__exports, 'loadDepthImage', () => loadDepthImage);
+__def(__exports, 'pickImageFile', () => pickImageFile);
 __def(__exports, 'grabRGB', () => grabRGB);
 __def(__exports, 'normalizeDepth', () => normalizeDepth);
 __def(__exports, 'lumaDepth', () => lumaDepth);
@@ -66603,6 +66605,30 @@ grabCanvas.height = h;
 const g = grabCanvas.getContext('2d', { willReadFrequently: true });
 g.drawImage(el, 0, 0, w, h);
 return { data: g.getImageData(0, 0, w, h).data, w, h };
+}
+async function loadDepthImage(file, maxSide = 640) {
+const url = URL.createObjectURL(file);
+try {
+const img = new Image();
+img.src = url;
+await img.decode();
+const f = grabFrame(img, maxSide);
+if (!f) throw new Error('не удалось прочитать картинку');
+const data = new Float32Array(f.w * f.h);
+for (let i = 0, k = 0; i < data.length; i++, k += 4) data[i] = (0.299 * f.data[k] + 0.587 * f.data[k + 1] + 0.114 * f.data[k + 2]) / 255;
+return { w: f.w, h: f.h, data };
+} finally {
+URL.revokeObjectURL(url);
+}
+}
+function pickImageFile() {
+return new Promise((resolve) => {
+const inp = document.createElement('input');
+inp.type = 'file';
+inp.accept = 'image/*';
+inp.addEventListener('change', () => resolve((inp.files && inp.files[0]) || null));
+inp.click();
+});
 }
 function grabRGB(rgb, cols, rows) {
 const data = new Uint8ClampedArray(cols * rows * 4);
@@ -72809,16 +72835,22 @@ const { perf } = __req('src/core/perf.js');
 const FX_ACTIONS = [['none', 'Без действия'], ['push', 'Отталкивание: от ладони'], ['pull', 'Притягивание: к ладони'], ['swirl', 'Вихрь: вращение пальцами'], ['rotate', 'Вращение: поворот модели'], ['sculpt', 'Лепка: изменение формы'], ['gravity', 'Гравитация: притяжение к руке'], ['wave', 'Ударная волна: фронт от руки'], ['break', 'Распад: пока держишь жест'], ['dissolve', 'Растворение: пока держишь жест'], ['brush', 'Световой штрих: след в воздухе'], ['slicecut', 'Срез рукой: секущая плоскость'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:twist', 'Эффект: Деформация'], ['fx:blast', 'Эффект: Взрыв по биту'], ['fx:flow', 'Эффект: Течение'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф'], ['fx:hyper', 'Эффект: Гиперпространство']];
 const FX_LAYERS = [
 { id: 'frames', sound: false, group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Видео раскладывается на кадры из точек, кадры собираются в блок. Показ идёт за таймлайном', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, thin: 0, showMode: 'off', showLen: 0.12, hero: 150000, future: 'hide', gain: 1, sat: 0, bsize: 1.5, track: 'grow', tone: 'all', toneCut: 0.5, tail: 100, tailSoft: 0.6, dkeep: 0.5 }, extras: [{ type: 'title', label: 'Раскладка' }, { key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: слои вглубь'], ['wall', 'Стена: плоская сетка'], ['film', 'Киноплёнка: кадры в ряд'], ['tunnel', 'Туннель: перспектива вглубь']], relayout: true }, { key: 'track', label: 'Что в стопке', type: 'seg', options: [['grow', 'Пройденное'], ['full', 'Весь ряд']], when: ['layout', ['stack', 'tunnel']] }, { key: 'depth', label: 'Глубина', min: 0.2, max: 4, step: 0.1, relayout: true, when: ['layout', ['stack', 'tunnel']] }, { type: 'title', label: 'Показ' }, { key: 'showMode', label: 'Как показывать', type: 'select', options: [['off', 'Статично: все кадры как есть'], ['peel', 'Листание: слёт пройденных'], ['projector', 'Проектор: бегущий луч'], ['trail', 'Шлейф: затухающий след']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Редкие'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { key: 'thin', label: 'Прореживать остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { type: 'title', label: 'Объём' }, { type: 'note', text: 'Включите «Объём по глубине» в разделе «Фото и видео»: каждый кадр выдавится по своей карте глубины.' }, { key: 'dkeep', label: 'Объём остальных кадров', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Хвост' }, { key: 'tail', label: 'Длина хвоста, доля видео', min: 5, max: 100, step: 1, int: true, unit: '%' }, { key: 'tailSoft', label: 'Как гаснет хвост: резко ... плавно', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Цвет остальных кадров' }, { key: 'sat', label: 'Насыщенность (0 это цвета видео)', min: -1, max: 1, step: 0.05 }, { key: 'gain', label: 'Яркость', min: 0.4, max: 3, step: 0.05 }, { key: 'tone', label: 'Какие тона оставить', type: 'seg', options: [['all', 'Все'], ['light', 'Светлые'], ['dark', 'Тёмные']] }, { key: 'toneCut', label: 'Граница светлого и тёмного', min: 0.05, max: 0.95, step: 0.01, when: ['tone', ['light', 'dark']] }, { key: 'bsize', label: 'Размер точек', min: 0.5, max: 4, step: 0.1 }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
-{ id: 'vscreen', sound: false, group: 'Графика', name: 'Экран', icon: 'monitor', hint: 'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него), рельеф (яркое выдавливается). Видео из «Медиа» или отдельный файл', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, source: 'current', mode: 'stick', scale: 1, rotate: 0, bright: 1, mix: 1, depth: 0.5 }, extras: [
+{ id: 'vscreen', sound: false, group: 'Графика', name: 'Экран', icon: 'monitor', hint: 'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него). Форму можно выдавить по глубине кадра: по яркости, нейросетью или своей картой. Видео из «Медиа» или отдельный файл', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, source: 'current', mode: 'stick', scale: 1, rotate: 0, bright: 1, mix: 1, depth: 0.5, dsrc: 'off', dinv: 'near', dcon: 1, dshow: 'video' }, extras: [
 { type: 'note', text: 'Откройте видео или фото в «Медиа» или выберите свой файл ниже: оно сразу появится на форме.' },
 { key: 'source', label: 'Источник', type: 'seg', options: [['current', 'Из «Медиа»'], ['file', 'Свой файл']] },
 { type: 'button', label: 'Выбрать видео или фото…', act: 'screenPick', icon: 'folder-open', when: ['source', ['file']] },
-{ key: 'mode', label: 'Вид', type: 'select', options: [['stick', 'Приклеено', 'кадр на лице формы'], ['wrap', 'Обёртка', 'кадр вокруг формы'], ['project', 'Проектор', 'кадр на экране, форма скользит'], ['relief', 'Рельеф', 'яркое выдавливается']] },
+{ key: 'mode', label: 'Вид', type: 'select', options: [['stick', 'Приклеено', 'кадр на лице формы'], ['wrap', 'Обёртка', 'кадр вокруг формы'], ['project', 'Проектор', 'кадр на экране, форма скользит']] },
 { key: 'scale', label: 'Масштаб кадра, ×', min: 0.3, max: 3, step: 0.05, noNorm: true },
-{ key: 'rotate', label: 'Поворот кадра, °', min: -180, max: 180, step: 5, int: true, noNorm: true, when: ['mode', ['stick', 'project', 'relief']] },
+{ key: 'rotate', label: 'Поворот кадра, °', min: -180, max: 180, step: 5, int: true, noNorm: true, when: ['mode', ['stick', 'project']] },
 { key: 'mix', label: 'Видео поверх цвета формы', min: 0, max: 1, step: 0.05 },
 { key: 'bright', label: 'Яркость видео, ×', min: 0.3, max: 2, step: 0.05, noNorm: true },
-{ key: 'depth', label: 'Сила рельефа', min: 0, max: 1, step: 0.05, when: ['mode', ['relief']] },
+{ type: 'title', label: 'Объём по глубине' },
+{ key: 'dsrc', label: 'Откуда глубина', type: 'select', options: [['off', 'Нет', 'форма не выдавливается'], ['bright', 'По яркости', 'светлое выступает'], ['ai', 'Нейросеть', 'настоящая глубина кадра'], ['file', 'Своя карта', 'картинка: светлое ближе']] },
+{ type: 'button', label: 'Загрузить карту глубины…', act: 'screenDepthPick', icon: 'folder-open', when: ['dsrc', ['file']] },
+{ key: 'depth', label: 'Сила рельефа', min: 0, max: 1.5, step: 0.05, when: ['dsrc', ['bright', 'ai', 'file']] },
+{ key: 'dinv', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']], when: ['dsrc', ['bright', 'ai', 'file']] },
+{ key: 'dcon', label: 'Контраст глубины', min: 0.2, max: 3, step: 0.05, noNorm: true, when: ['dsrc', ['bright', 'ai', 'file']] },
+{ key: 'dshow', label: 'Что видно на форме', type: 'seg', options: [['video', 'Видео'], ['map', 'Карта глубины']], when: ['dsrc', ['bright', 'ai', 'file']] },
 ] },
 { id: 'curl', group: 'Движение', name: 'Вихри и течение', icon: 'tornado', hint: 'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)', max: 2, def: { on: false, amount: 1, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8, fscale: 1.6, fdir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['noise', 'Вихри: хаотичное движение'], ['stream', 'Поток: движение с возвратом'], ['orbit', 'Кольца: вращение слоёв'], ['surface', 'Течение: скольжение по форме']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1, when: ['mode', ['noise', 'stream', 'orbit']] }, { key: 'fscale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1, when: ['mode', ['surface']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }, { key: 'fdir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['surface']] }] },
 { id: 'physics', sound: false, group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается, осколки падают на пол с отскоками и собираются обратно', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2 }, extras: [{ key: 'burst', label: 'Сила взрыва', min: 0.2, max: 2.5, step: 0.05 }, { key: 'peel', label: 'Расслоение (сверху вниз)', min: 0, max: 1, step: 0.05 }, { key: 'swirl', label: 'Закрутка осколков', min: 0, max: 2, step: 0.05 }, { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 }, { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 }, { key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1 }] },
@@ -72831,7 +72863,7 @@ const FX_LAYERS = [
 { id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Форма исчезает и собирается обратно. Виды: лазерный срез, слои, блоки, песок, воронка, взрыв, горение, ветер, росток', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', dir: 'both', order: 'top', style: 'laser', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.35, scatter: 1, edge: 0.32, glow: 0.35, shrink: 0.85, seed: 'bottom', tendril: 0.6, bud: 0.7 }, extras: [{ type: 'title', label: 'Как растворяется' }, { key: 'style', label: 'Вид', type: 'select', options: [['laser', 'Лазерный срез: сканирующая плоскость'], ['layers', 'Сдвиг слоёв: полосы в стороны'], ['chunks', 'Блочный распад: объёмные кубы'], ['sand', 'Осыпание: частицы на пол'], ['vortex', 'Воронка: закручивание к центру'], ['shock', 'Ударная волна: импульс от центра'], ['burn', 'Испепеление: частицы вверх'], ['wind', 'Сдувание: боковой поток ветра'], ['sprout', 'Прорастание: ветвление формы']] }, { key: 'seed', label: 'Откуда растёт', type: 'select', options: [['bottom', 'Снизу вверх: от основания'], ['point', 'Из точки: случайный фокус'], ['center', 'Из центра: радиально наружу']], when: ['style', ['sprout']] }, { key: 'order', label: 'Откуда начинается', type: 'select', when: ['style', ['laser', 'layers', 'chunks', 'sand', 'vortex', 'shock', 'burn', 'wind']], options: [['top', 'Сверху вниз'], ['bottom', 'Снизу вверх'], ['side', 'Слева направо'], ['center', 'Из центра наружу'], ['edges', 'С краёв к центру'], ['noise', 'Случайные зоны']] }, { type: 'title', label: 'Запуск' }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'dir', label: 'Что дольше', type: 'seg', options: [['both', 'Поровну'], ['out', 'Распад'], ['in', 'Сборка']], when: ['mode', ['loop']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01, when: ['mode', ['slider']] }, { type: 'title', label: 'Движение частиц' }, { key: 'scatter', label: 'Размах движения', min: 0.2, max: 2.5, step: 0.05 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер и закрутка', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Лёгкая турбулентность', min: 0, max: 2, step: 0.05 }, { type: 'title', label: 'Кромка и частицы' }, { key: 'edge', label: 'Ширина кромки распада', min: 0.1, max: 0.7, step: 0.02 }, { key: 'glow', label: 'Свечение кромки', min: 0, max: 1.5, step: 0.05 }, { key: 'shrink', label: 'Мельчание частиц', min: 0, max: 1, step: 0.05 }, { key: 'tendril', label: 'Усики (неровный фронт)', min: 0, max: 1, step: 0.05, when: ['style', ['sprout']] }, { key: 'bud', label: 'Почки на кромке', min: 0, max: 1.5, step: 0.05, when: ['style', ['sprout']] }] },
 { id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки превращаются в кубики. Виды: сетка, лего, дыхание, волна, ступени, разлёт. Настраиваются размер и высота', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 1, mode: 'grid', speed: 1, size: 1, height: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['grid', 'Кубическая сетка: равномерные блоки'], ['lego', 'Столбцы: рельеф разной высоты'], ['breathe', 'Дыхание: пульсирующая сетка'], ['wave', 'Волна: бегущий подъём кубов'], ['stairs', 'Террасы: ступенчатые уровни'], ['scatter', 'Дрожание: вибрация на месте']] }, { key: 'size', label: 'Размер кубиков', min: 0.4, max: 2.5, step: 0.05 }, { key: 'height', label: 'Высота и размах', min: 0, max: 2, step: 0.05, when: ['mode', ['lego', 'wave', 'stairs', 'scatter']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe', 'wave', 'scatter']] }] },
 { id: 'scope', group: 'Звук и ритм', name: 'Осциллограф', icon: 'heartbeat', hint: 'Перо самописца бежит от точки к точке по координатам модели и вычерчивает форму линией. Ещё не пройденные точки скрыты', max: 1, def: { on: false, amount: 0.7, band: 'none', react: 0.6, mode: 'draw', order: 'walk', dir: 'fwd', loop: 'loop', speed: 1, pens: 2, chaos: 0.6, trail: 0.5, detail: 6000, dim: 1, line: 1, width: 2.4, color: '#3dff7a', tint: 0.35, thick: 0.6, glow: 1, spark: 0 }, extras: [{ key: 'mode', label: 'Как рисует', type: 'select', options: [['draw', 'Вычерчивание: контур остаётся'], ['comet', 'Комета: гаснущий световой след']] }, { key: 'order', label: 'Порядок обхода', type: 'select', options: [['walk', 'По ближайшим: связный контур'], ['up', 'Снизу вверх: вертикальная развёртка'], ['spin', 'По кругу: радиальная развёртка']] }, { key: 'dir', label: 'Направление', type: 'seg', options: [['fwd', 'Вперёд'], ['back', 'Назад']] }, { key: 'loop', label: 'В конце круга', type: 'seg', options: [['loop', 'Стирает и заново'], ['once', 'Остаётся']] }, { key: 'speed', label: 'Скорость пера', min: 0.1, max: 6, step: 0.05 }, { key: 'pens', label: 'Число перьев', min: 1, max: 8, step: 1, int: true }, { key: 'trail', label: 'Длина следа', min: 0.05, max: 1, step: 0.01, when: ['mode', ['comet']] }, { key: 'detail', label: 'Точек на пути', min: 300, max: 12000, step: 100, int: true, when: ['order', ['walk']] }, { key: 'chaos', label: 'Хаотичность пути', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'dim', label: 'Прятать ненарисованное', min: 0, max: 1, step: 0.02 }, { key: 'color', label: 'Цвет осциллографа', type: 'color' }, { key: 'line', label: 'Яркость линии', min: 0, max: 1, step: 0.02, when: ['order', ['walk']] }, { key: 'width', label: 'Толщина линии', min: 0.5, max: 8, step: 0.1, when: ['order', ['walk']] }, { key: 'tint', label: 'Окраска нарисованного', min: 0, max: 1, step: 0.02 }, { key: 'thick', label: 'Крупнее нарисованные точки', min: 0, max: 2, step: 0.05 }, { key: 'glow', label: 'Свечение пера', min: 0, max: 2, step: 0.05 }, { key: 'spark', label: 'Искры у пера', min: 0, max: 2, step: 0.05 }] },
-{ id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Фото или видео выдавливается объёмом по карте глубины. Виды: рельеф, ступени, дыхание, волна, рябь, карусель, разлёт слоёв', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.5, zone: 0.12, bright: 0, contrast: 1, gamma: 1, blur: 0, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Барельеф: плавное выдавливание'], ['layers', 'Ступени: чёткие плоские срезы'], ['breath', 'Дыхание: пульсация глубины'], ['wave', 'Волна: бегущий рельеф'], ['ripple', 'Рябь: концентрические круги'], ['twist', 'Карусель: сдвиг плоскостей'], ['burst', 'Выброс: разлёт слоёв к зрителю']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Глубина, что остаётся на месте', min: 0, max: 1, step: 0.01 }, { key: 'zone', label: 'Ширина зоны на месте', min: 0, max: 0.6, step: 0.01 }, { type: 'title', label: 'Правка карты глубины' }, { key: 'bright', label: 'Яркость карты', min: -0.5, max: 0.5, step: 0.01 }, { key: 'contrast', label: 'Контраст карты', min: 0.2, max: 3, step: 0.02 }, { key: 'gamma', label: 'Тени (гамма)', min: 0.3, max: 3, step: 0.02 }, { key: 'blur', label: 'Размытие карты', min: 0, max: 12, step: 1, int: true }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
+{ id: 'depth', group: 'Фото и видео', name: 'Объём по глубине', icon: 'mountains', hint: 'Фото или видео выдавливается объёмом по карте глубины. Виды: рельеф, ступени, дыхание, волна, рябь, карусель, разлёт слоёв', max: 1.5, def: { on: false, amount: 0.8, band: 'none', react: 0.6, mode: 'relief', src: 'ai', dir: 'near', focus: 0.5, zone: 0.12, bright: 0, contrast: 1, gamma: 1, blur: 0, speed: 1, layers: 6, sway: 0.35, view: 'photo', smooth: 0.5 }, extras: [{ key: 'mode', label: 'Как выдавливать', type: 'select', options: [['relief', 'Барельеф: плавное выдавливание'], ['layers', 'Ступени: чёткие плоские срезы'], ['breath', 'Дыхание: пульсация глубины'], ['wave', 'Волна: бегущий рельеф'], ['ripple', 'Рябь: концентрические круги'], ['twist', 'Карусель: сдвиг плоскостей'], ['burst', 'Выброс: разлёт слоёв к зрителю']] }, { key: 'src', label: 'Откуда глубина', type: 'seg', options: [['ai', 'Нейросеть'], ['luma', 'По яркости'], ['file', 'Своя карта']] }, { type: 'button', label: 'Загрузить карту глубины…', act: 'depthPick', icon: 'folder-open', when: ['src', ['file']] }, { key: 'dir', label: 'Что выступает', type: 'seg', options: [['near', 'Ближнее'], ['far', 'Дальнее']] }, { key: 'focus', label: 'Глубина, что остаётся на месте', min: 0, max: 1, step: 0.01 }, { key: 'zone', label: 'Ширина зоны на месте', min: 0, max: 0.6, step: 0.01 }, { type: 'title', label: 'Правка карты глубины' }, { key: 'bright', label: 'Яркость карты', min: -0.5, max: 0.5, step: 0.01 }, { key: 'contrast', label: 'Контраст карты', min: 0.2, max: 3, step: 0.02 }, { key: 'gamma', label: 'Тени (гамма)', min: 0.3, max: 3, step: 0.02 }, { key: 'blur', label: 'Размытие карты', min: 0, max: 12, step: 1, int: true }, { type: 'title', label: 'Движение' }, { key: 'speed', label: 'Скорость', min: 0.1, max: 4, step: 0.05 }, { key: 'layers', label: 'Число слоёв', min: 2, max: 16, step: 1, int: true, when: ['mode', ['layers']] }, { key: 'sway', label: 'Покачивание', min: 0, max: 1, step: 0.02 }, { key: 'smooth', label: 'Плавность глубины', min: 0, max: 1, step: 0.02 }, { key: 'view', label: 'Что показывать', type: 'seg', options: [['photo', 'Кадр'], ['map', 'Карта'], ['heat', 'Цвет глубины']] }] },
 { id: 'trail', group: 'Анимация', name: 'Шлейф', icon: 'stack', hint: 'За движущейся анимированной моделью остаются полупрозрачные копии прошлых поз. Настраиваются число копий и шаг между ними', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 0.5, count: 8, step: 0.1, fade: 0.8, pts: 25000, size: 0.6, tint: 0, shrink: 0.35 }, extras: [{ key: 'count', label: 'Сколько копий в шлейфе', min: 2, max: 24, step: 1, int: true }, { key: 'step', label: 'Время между копиями, с', min: 0.03, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Как быстро гаснут копии', min: 0.4, max: 0.97, step: 0.01 }, { key: 'shrink', label: 'Как мельчают копии', min: 0, max: 0.9, step: 0.02 }, { key: 'pts', label: 'Точек в копии', min: 5000, max: 80000, step: 1000, int: true }, { key: 'size', label: 'Размер точек', min: 0.3, max: 2.5, step: 0.05 }, { key: 'tint', label: 'Окраска цветом палитры', min: 0, max: 1, step: 0.02 }] },
 { id: 'jitter', hidden: true, group: 'Движение', name: 'Дрожь', icon: 'waveform', hint: 'Мелкая вибрация на высоких частотах', max: 2, def: { on: false, amount: 0.7, band: 'high', react: 1 }, extras: [] },
 { id: 'glitch', group: 'Движение', name: 'Глитч', icon: 'lightning', hint: 'Цифровой сбой. Виды: полосы, блоки, развёртка. Цвета расходятся, на всплесках часть точек выпадает', max: 2, def: { on: false, amount: 0.8, band: 'none', react: 1, mode: 'bands', slices: 16, rgb: 'on', speed: 1, burst: 0.7, drop: 0.5 }, extras: [{ key: 'mode', label: 'Вид сбоя', type: 'select', options: [['bands', 'Полосы: горизонтальный сдвиг строк'], ['blocks', 'Блоки: объёмное смещение кубами'], ['scan', 'Развёртка: строчный разрыв']] }, { key: 'slices', label: 'Число полос', min: 6, max: 40, step: 1, int: true }, { key: 'burst', label: 'Резкость всплесков', min: 0, max: 1, step: 0.05 }, { key: 'drop', label: 'Выпадение точек', min: 0, max: 1, step: 0.05 }, { key: 'rgb', label: 'Расхождение цветов', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05 }] },
@@ -80261,6 +80293,33 @@ en: {
 'Раскадровка: нейросеть посчитала глубину всех кадров ({}).': 'Storyboard: the neural network has computed depth for all frames ({}).',
 'Раскадровка: нейросеть считает глубину кадров, {} из {}. Остальные пока по яркости.': 'Storyboard: the neural network is computing frame depth, {} of {}. The rest use brightness for now.',
 'кадры не рисовались (вкладка была скрыта)': 'no frames were drawn (the tab was hidden)',
+'Своя карта': 'Own map',
+'Загрузить карту глубины…': 'Load depth map…',
+'Карта глубины: {}': 'Depth map: {}',
+'Не удалось открыть карту глубины: {}': 'Could not open the depth map: {}',
+'Своя карта глубины: {}. Светлое ближе, тёмное дальше.': 'Own depth map: {}. Light is closer, dark is farther.',
+'Своя карта глубины: {}. Светлое ближе, тёмное дальше, одна карта на все кадры.': 'Own depth map: {}. Light is closer, dark is farther, one map for all frames.',
+'Загрузите картинку с картой глубины: светлое ближе, тёмное дальше. Пока видна карта по яркости.': 'Load an image with a depth map: light is closer, dark is farther. The brightness map is shown for now.',
+'Объём по глубине': 'Volume by depth',
+'Откуда глубина': 'Depth source',
+'Нет': 'No',
+'форма не выдавливается': 'the shape is not pushed out',
+'По яркости': 'By brightness',
+'светлое выступает': 'light areas stand out',
+'Нейросеть': 'Neural network',
+'настоящая глубина кадра': 'real depth of the frame',
+'картинка: светлое ближе': 'an image: light is closer',
+'Что выступает': 'What stands out',
+'Ближнее': 'Near',
+'Дальнее': 'Far',
+'Контраст глубины': 'Depth contrast',
+'Что видно на форме': 'What is shown on the shape',
+'Видео': 'Video',
+'Карта глубины': 'Depth map',
+'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него). Форму можно выдавить по глубине кадра: по яркости, нейросетью или своей картой. Видео из «Медиа» или отдельный файл': 'Video plays right on the shape, like a film on a sculpture. Modes: wrap around the shape, stuck to its front, projector (the frame stays on screen, the shape slides through it). The shape can be pushed out by the frame depth: by brightness, by the neural network or by your own map. Video from Media or a separate file',
+'Загружаю нейросеть глубины для «Экрана» (один раз, около 50 МБ)': 'Loading the depth neural network for Screen (once, about 50 MB)',
+'Нейросеть глубины не запустилась: {}. Работает объём по яркости': 'The depth neural network did not start: {}. Volume by brightness is used',
+'Карта глубины для «Экрана»: {}': 'Depth map for Screen: {}',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -80785,6 +80844,33 @@ uk: {
 'Раскадровка: нейросеть посчитала глубину всех кадров ({}).': 'Розкадрування: нейромережа порахувала глибину всіх кадрів ({}).',
 'Раскадровка: нейросеть считает глубину кадров, {} из {}. Остальные пока по яркости.': 'Розкадрування: нейромережа рахує глибину кадрів, {} з {}. Решта поки за яскравістю.',
 'кадры не рисовались (вкладка была скрыта)': 'кадри не малювалися (вкладку було приховано)',
+'Своя карта': 'Своя карта',
+'Загрузить карту глубины…': 'Завантажити карту глибини…',
+'Карта глубины: {}': 'Карта глибини: {}',
+'Не удалось открыть карту глубины: {}': 'Не вдалося відкрити карту глибини: {}',
+'Своя карта глубины: {}. Светлое ближе, тёмное дальше.': 'Своя карта глибини: {}. Світле ближче, темне далі.',
+'Своя карта глубины: {}. Светлое ближе, тёмное дальше, одна карта на все кадры.': 'Своя карта глибини: {}. Світле ближче, темне далі, одна карта на всі кадри.',
+'Загрузите картинку с картой глубины: светлое ближе, тёмное дальше. Пока видна карта по яркости.': 'Завантажте картинку з картою глибини: світле ближче, темне далі. Поки видно карту за яскравістю.',
+'Объём по глубине': 'Об’єм за глибиною',
+'Откуда глубина': 'Звідки глибина',
+'Нет': 'Ні',
+'форма не выдавливается': 'форма не видавлюється',
+'По яркости': 'За яскравістю',
+'светлое выступает': 'світле виступає',
+'Нейросеть': 'Нейромережа',
+'настоящая глубина кадра': 'справжня глибина кадру',
+'картинка: светлое ближе': 'картинка: світле ближче',
+'Что выступает': 'Що виступає',
+'Ближнее': 'Ближнє',
+'Дальнее': 'Далеке',
+'Контраст глубины': 'Контраст глибини',
+'Что видно на форме': 'Що видно на формі',
+'Видео': 'Відео',
+'Карта глубины': 'Карта глибини',
+'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него). Форму можно выдавить по глубине кадра: по яркости, нейросетью или своей картой. Видео из «Медиа» или отдельный файл': 'Відео грає просто на формі, як кіно на скульптурі. Види: обгортка навколо форми, приклеєно до лиця форми, проєктор (кадр на екрані, форма ковзає крізь нього). Форму можна видавити за глибиною кадру: за яскравістю, нейромережею або своєю картою. Відео з «Медіа» або окремий файл',
+'Загружаю нейросеть глубины для «Экрана» (один раз, около 50 МБ)': 'Завантажую нейромережу глибини для «Екрана» (один раз, близько 50 МБ)',
+'Нейросеть глубины не запустилась: {}. Работает объём по яркости': 'Нейромережа глибини не запустилася: {}. Працює об’єм за яскравістю',
+'Карта глубины для «Экрана»: {}': 'Карта глибини для «Екрана»: {}',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -81309,6 +81395,33 @@ es: {
 'Раскадровка: нейросеть посчитала глубину всех кадров ({}).': 'Storyboard: la red neuronal calculó la profundidad de todos los fotogramas ({}).',
 'Раскадровка: нейросеть считает глубину кадров, {} из {}. Остальные пока по яркости.': 'Storyboard: la red neuronal calcula la profundidad, {} de {}. El resto usa el brillo por ahora.',
 'кадры не рисовались (вкладка была скрыта)': 'no se dibujaron fotogramas (la pestaña estaba oculta)',
+'Своя карта': 'Mapa propio',
+'Загрузить карту глубины…': 'Cargar mapa de profundidad…',
+'Карта глубины: {}': 'Mapa de profundidad: {}',
+'Не удалось открыть карту глубины: {}': 'No se pudo abrir el mapa de profundidad: {}',
+'Своя карта глубины: {}. Светлое ближе, тёмное дальше.': 'Mapa de profundidad propio: {}. Lo claro está más cerca, lo oscuro más lejos.',
+'Своя карта глубины: {}. Светлое ближе, тёмное дальше, одна карта на все кадры.': 'Mapa de profundidad propio: {}. Lo claro está más cerca, lo oscuro más lejos, un mapa para todos los fotogramas.',
+'Загрузите картинку с картой глубины: светлое ближе, тёмное дальше. Пока видна карта по яркости.': 'Carga una imagen con un mapa de profundidad: lo claro está más cerca, lo oscuro más lejos. Por ahora se ve el mapa por brillo.',
+'Объём по глубине': 'Volumen por profundidad',
+'Откуда глубина': 'Origen de la profundidad',
+'Нет': 'No',
+'форма не выдавливается': 'la forma no se extruye',
+'По яркости': 'Por brillo',
+'светлое выступает': 'lo claro sobresale',
+'Нейросеть': 'Red neuronal',
+'настоящая глубина кадра': 'profundidad real del fotograma',
+'картинка: светлое ближе': 'una imagen: lo claro está más cerca',
+'Что выступает': 'Qué sobresale',
+'Ближнее': 'Lo cercano',
+'Дальнее': 'Lo lejano',
+'Контраст глубины': 'Contraste de profundidad',
+'Что видно на форме': 'Qué se ve en la forma',
+'Видео': 'Vídeo',
+'Карта глубины': 'Mapa de profundidad',
+'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него). Форму можно выдавить по глубине кадра: по яркости, нейросетью или своей картой. Видео из «Медиа» или отдельный файл': 'El vídeo se reproduce sobre la forma, como cine en una escultura. Modos: envoltura alrededor de la forma, pegado al frente, proyector (el fotograma queda en pantalla y la forma lo atraviesa). La forma puede extruirse según la profundidad del fotograma: por brillo, con la red neuronal o con tu propio mapa. Vídeo de Medios o un archivo aparte',
+'Загружаю нейросеть глубины для «Экрана» (один раз, около 50 МБ)': 'Cargando la red neuronal de profundidad para Pantalla (una vez, unos 50 MB)',
+'Нейросеть глубины не запустилась: {}. Работает объём по яркости': 'La red neuronal de profundidad no arrancó: {}. Se usa el volumen por brillo',
+'Карта глубины для «Экрана»: {}': 'Mapa de profundidad para Pantalla: {}',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -81833,6 +81946,33 @@ de: {
 'Раскадровка: нейросеть посчитала глубину всех кадров ({}).': 'Storyboard: Das neuronale Netz hat die Tiefe aller Bilder berechnet ({}).',
 'Раскадровка: нейросеть считает глубину кадров, {} из {}. Остальные пока по яркости.': 'Storyboard: Das neuronale Netz berechnet die Tiefe der Bilder, {} von {}. Der Rest nutzt vorerst die Helligkeit.',
 'кадры не рисовались (вкладка была скрыта)': 'es wurden keine Bilder gezeichnet (der Tab war ausgeblendet)',
+'Своя карта': 'Eigene Karte',
+'Загрузить карту глубины…': 'Tiefenkarte laden…',
+'Карта глубины: {}': 'Tiefenkarte: {}',
+'Не удалось открыть карту глубины: {}': 'Tiefenkarte konnte nicht geöffnet werden: {}',
+'Своя карта глубины: {}. Светлое ближе, тёмное дальше.': 'Eigene Tiefenkarte: {}. Hell ist näher, dunkel weiter weg.',
+'Своя карта глубины: {}. Светлое ближе, тёмное дальше, одна карта на все кадры.': 'Eigene Tiefenkarte: {}. Hell ist näher, dunkel weiter weg, eine Karte für alle Bilder.',
+'Загрузите картинку с картой глубины: светлое ближе, тёмное дальше. Пока видна карта по яркости.': 'Lade ein Bild mit einer Tiefenkarte: Hell ist näher, dunkel weiter weg. Vorerst ist die Helligkeitskarte zu sehen.',
+'Объём по глубине': 'Volumen nach Tiefe',
+'Откуда глубина': 'Tiefenquelle',
+'Нет': 'Nein',
+'форма не выдавливается': 'die Form wird nicht herausgedrückt',
+'По яркости': 'Nach Helligkeit',
+'светлое выступает': 'Helles tritt hervor',
+'Нейросеть': 'Neuronales Netz',
+'настоящая глубина кадра': 'echte Tiefe des Bildes',
+'картинка: светлое ближе': 'ein Bild: Hell ist näher',
+'Что выступает': 'Was hervortritt',
+'Ближнее': 'Nahes',
+'Дальнее': 'Fernes',
+'Контраст глубины': 'Tiefenkontrast',
+'Что видно на форме': 'Was auf der Form zu sehen ist',
+'Видео': 'Video',
+'Карта глубины': 'Tiefenkarte',
+'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него). Форму можно выдавить по глубине кадра: по яркости, нейросетью или своей картой. Видео из «Медиа» или отдельный файл': 'Das Video läuft direkt auf der Form, wie ein Film auf einer Skulptur. Modi: um die Form gewickelt, vorne aufgeklebt, Projektor (das Bild bleibt auf dem Bildschirm, die Form gleitet hindurch). Die Form kann nach der Bildtiefe herausgedrückt werden: nach Helligkeit, per neuronalem Netz oder mit eigener Karte. Video aus Medien oder eine eigene Datei',
+'Загружаю нейросеть глубины для «Экрана» (один раз, около 50 МБ)': 'Lade das Tiefen-Netz für Bildschirm (einmalig, etwa 50 MB)',
+'Нейросеть глубины не запустилась: {}. Работает объём по яркости': 'Das Tiefen-Netz ist nicht gestartet: {}. Volumen nach Helligkeit wird verwendet',
+'Карта глубины для «Экрана»: {}': 'Tiefenkarte für Bildschirm: {}',
 },
 };
 };
@@ -83273,14 +83413,23 @@ this._framesDepthTick(fr);
 }
 _frDepthSig() {
 const Dp = this.state.layers.depth;
-return Dp.src + '|' + Math.round(Dp.blur || 0);
+return Dp.src + '|' + Math.round(Dp.blur || 0) + '|' + (Dp.src === 'file' ? this._depthFile?.id || 0 : 0);
 }
 _frDepthOne(fr, k) {
 const Dp = this.state.layers.depth;
 const { cols, rows } = fr;
 const per = cols * rows;
 const f = fr.frames[k];
-let map = Dp.src === 'ai' && fr.dOk[k] && fr.dAi ? { w: cols, h: rows, data: fr.dAi.subarray(k * per, (k + 1) * per) } : lumaDepth(f, cols, rows, 4);
+let map;
+const file = Dp.src === 'file' ? this._depthFile : null;
+if (file) {
+if (fr.dFileId !== file.id) {
+fr.dFile = new Float32Array(per);
+depthToGrid(file, cols, rows, fr.dFile);
+fr.dFileId = file.id;
+}
+map = { w: cols, h: rows, data: fr.dFile };
+} else map = Dp.src === 'ai' && fr.dOk[k] && fr.dAi ? { w: cols, h: rows, data: fr.dAi.subarray(k * per, (k + 1) * per) } : lumaDepth(f, cols, rows, 4);
 const r = Math.round((Dp.blur || 0) * 0.4);
 if (r > 0) map = adjustDepth(map, { blur: r });
 const d = map.data;
@@ -84720,7 +84869,7 @@ uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()), uPaintP: U(new THREE.Vector4()),
 uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
 uHyp: U(new THREE.Vector4()), uHypP: U(new THREE.Vector4()),
-uScr: U(new THREE.Vector4()), uScrP: U(new THREE.Vector4(0, 0.4, 1, 1.78)), uScrTex: U(scrDummy()),
+uScr: U(new THREE.Vector4()), uScrP: U(new THREE.Vector4(0, 0.4, 1, 1.78)), uScrTex: U(scrDummy()), uScrD: U(new THREE.Vector4(0, 0.5, 1, 1)), uScrQ: U(new THREE.Vector4()), uScrDep: U(scrDummy()),
 uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uAnimN: U(0), uCen: U(new THREE.Vector3()), uExp: U(new THREE.Vector4()), uExpP: U(new THREE.Vector4()), uPieceTex: U(pieceTex), uGrow: U(new THREE.Vector4()), uGrowP: U(new THREE.Vector4()), uGrowSeed: U(new THREE.Vector3()), uJel: U(Array.from({ length: 3 }, () => new THREE.Vector4(0, 0, 0, -99))), uJelO: U(Array.from({ length: 3 }, () => new THREE.Vector4())), uJelP: U(new THREE.Vector4()), uDisQ: U(new THREE.Vector4(0.32, 1, 0.35, 0.85)), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 };
 }
@@ -87724,6 +87873,9 @@ varying float vGl;
 uniform vec4 uScr;
 uniform vec4 uScrP;
 uniform sampler2D uScrTex;
+uniform vec4 uScrD; // объём по глубине: x источник (0 нет, 1 яркость, 2 карта), y сила, z знак (-1 выступает дальнее), w контраст
+uniform vec4 uScrQ; // x: показывать карту глубины вместо видео
+uniform sampler2D uScrDep;
 #endif
 #ifdef HERO
 #define HEROSIZE clamp(sqrt(uFr.z / max(uHero.z, 1.0)), 0.4, 1.0)
@@ -88073,10 +88225,18 @@ void main() {
 		}
 		vec3 scr = texture2D(uScrTex, clamp(suv, 0.0, 1.0)).rgb * uScr.w;
 		float slum = dot(scr, vec3(0.3, 0.59, 0.11));
+		// объём по глубине: яркость кадра или карта глубины (нейросеть, своя картинка) выдавливают форму вдоль нормали
+		float sdv = 0.0;
+		if (uScrD.x > 0.5) {
+			sdv = uScrD.x < 1.5 ? clamp(slum / max(uScr.w, 0.05), 0.0, 1.0) : texture2D(uScrDep, clamp(suv, 0.0, 1.0)).r;
+			sdv = clamp((sdv - 0.5) * uScrD.w + 0.5, 0.0, 1.0);
+			if (uScrD.z < 0.0) sdv = 1.0 - sdv;
+			if (uScrQ.x > 0.5) scr = vec3(sdv);
+		}
 		vColor = mix(vColor, mix(vColor * 0.35, scr, uScrP.z), smask * uScr.x);
-		if (uScr.y > 2.5 && uScr.y < 3.5) {
+		if (uScrD.x > 0.5) {
 			vec3 dirn = dot(nrmM, nrmM) > 0.01 ? normalize(nrmM) : normalize(bsx + vec3(1e-4));
-			pos += dirn * slum * uScrP.y * 0.4 * smask * uScr.x;
+			pos += dirn * sdv * uScrD.y * 0.45 * smask * uScr.x;
 		}
 	}
 #endif
@@ -88420,7 +88580,7 @@ __defs['src/effects/engine/depth.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'DepthPart', () => DepthPart);
 const { downloadBlob } = __req('src/core/util.js');
-const { adjustDepth, depthToGrid, grabFrame, grabRGB: grabRGB4, lumaDepth, normalizeDepth } = __req('src/effects/input/depth-ai.js');
+const { adjustDepth, depthToGrid, grabFrame, grabRGB: grabRGB4, loadDepthImage, lumaDepth, normalizeDepth, pickImageFile } = __req('src/effects/input/depth-ai.js');
 class DepthPart {
 onDepthChange(fn) {
 this._dListeners.add(fn);
@@ -88435,7 +88595,7 @@ const D = this._D;
 const L = this.state.layers.depth;
 const frames = !!(this._framesOn && this._frames);
 const [fOk, fAll] = frames ? this._frDepthCount() : [0, 0];
-return { media: !!this.pm.ready, video: this.pm.kind === 'video', src: L.src, phase: ai.phase, prog: ai.prog, device: ai.device, error: ai.error || D.err, hasMap: frames || !!D.map, aiMap: !!D.map && D.mapSrc === 'ai', busy: D.busy, frames, fOk, fAll };
+return { file: this._depthFile?.name || '', media: !!this.pm.ready, video: this.pm.kind === 'video', src: L.src, phase: ai.phase, prog: ai.prog, device: ai.device, error: ai.error || D.err, hasMap: frames || !!D.map, aiMap: !!D.map && D.mapSrc === 'ai', busy: D.busy, frames, fOk, fAll };
 }
 drawDepthMap(cv, plain = false) {
 const m = this._frDepthMap() || this._D.proc || this._D.map;
@@ -88476,6 +88636,22 @@ fr.dRetry = 0;
 this.depthAI.init().catch(() => {});
 this._depthEmit();
 }
+async depthPick() {
+const f = await pickImageFile();
+if (f) await this.depthLoad(f);
+}
+async depthLoad(file) {
+try {
+const m = await loadDepthImage(file);
+this._depthFile = { ...m, name: file.name, id: (this._depthFile?.id || 0) + 1 };
+this.state.layers.depth.src = 'file';
+this.app.toast('Карта глубины: ' + file.name, 'ok', 2200);
+} catch (e) {
+this.app.toast('Не удалось открыть карту глубины: ' + (e.message || e), 'error');
+}
+this._depthEmit();
+this.emit();
+}
 saveDepthMap() {
 const m = this._D.map;
 if (!m) return;
@@ -88491,7 +88667,7 @@ const g = this.geometry;
 const n = pm.count;
 const key = pm.rec || pm.el;
 if (D.key !== key) {
-Object.assign(D, { key, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, err: '' });
+Object.assign(D, { key, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, err: '', fileId: 0 });
 this._depthEmit();
 }
 if (rgb) {
@@ -88500,7 +88676,20 @@ D.rgbN++;
 }
 if (!L.on) return;
 const ai = L.src === 'ai';
-if (D.rgb && D.lumaN !== D.rgbN && (!ai || !D.aiHas)) {
+const file = L.src === 'file' ? this._depthFile : null;
+if (file && D.fileId !== file.id) {
+D.fileId = file.id;
+D.map = file;
+D.mapSrc = 'file';
+D.dirty = true;
+this._depthEmit();
+}
+if (!file && D.fileId) {
+D.fileId = 0;
+D.lumaN = -1;
+D.aiHas = false;
+}
+if (!file && D.rgb && D.lumaN !== D.rgbN && (!ai || !D.aiHas)) {
 D.lumaN = D.rgbN;
 D.map = lumaDepth(D.rgb, pm.cols, pm.rows);
 D.mapSrc = 'luma';
@@ -90764,13 +90953,14 @@ __defs['src/effects/engine/screen.js'] = function (__exports, __req) {
 __def(__exports, 'ScreenPart', () => ScreenPart);
 const THREE = __req('vendor/three/build/three.module.js');
 const { clamp } = __req('src/core/util.js');
+const { grabFrame, loadDepthImage, normalizeDepth, pickImageFile } = __req('src/effects/input/depth-ai.js');
 class ScreenPart {
 _screenSource() {
 const L = this.state.layers.vscreen;
 if (L.source === 'file') {
 const f = this._scrFile;
 if (!f || !f.el.videoWidth) return null;
-return { tex: f.tex, ar: f.el.videoWidth / f.el.videoHeight };
+return { tex: f.tex, ar: f.el.videoWidth / f.el.videoHeight, media: f.media };
 }
 const pm = this.pm;
 if (!pm || !pm.ready || !pm.el) return null;
@@ -90783,7 +90973,7 @@ if (!this._scrCur || this._scrCur.el !== el) {
 this._scrCur?.tex.dispose();
 this._scrCur = { el, tex: this._screenTex(el, isVideo) };
 }
-return { tex: this._scrCur.tex, ar: w / h };
+return { tex: this._scrCur.tex, ar: w / h, media: el };
 }
 _screenTex(el, isVideo) {
 const t = isVideo ? new THREE.VideoTexture(el) : new THREE.Texture(el);
@@ -90811,7 +91001,7 @@ if (file.type.startsWith('image/')) {
 const img = new Image();
 img.onload = () => {
 const tex = this._screenTex(img, false);
-this._scrFile = { el: { videoWidth: img.naturalWidth, videoHeight: img.naturalHeight }, tex, dispose: () => { tex.dispose(); URL.revokeObjectURL(url); } };
+this._scrFile = { el: { videoWidth: img.naturalWidth, videoHeight: img.naturalHeight }, media: img, tex, dispose: () => { tex.dispose(); URL.revokeObjectURL(url); } };
 this._scrName = file.name;
 this.state.layers.vscreen.source = 'file';
 this.app.toast('Для «Экрана» выбрано: ' + file.name, 'ok', 2200);
@@ -90829,7 +91019,7 @@ v.preload = 'auto';
 v.src = url;
 v.addEventListener('loadeddata', () => {
 const tex = this._screenTex(v, true);
-this._scrFile = { el: v, tex, dispose: () => { v.pause(); tex.dispose(); URL.revokeObjectURL(url); } };
+this._scrFile = { el: v, media: v, tex, dispose: () => { v.pause(); tex.dispose(); URL.revokeObjectURL(url); } };
 this._scrName = file.name;
 this.state.layers.vscreen.source = 'file';
 v.play().catch(() => {});
@@ -90847,10 +91037,91 @@ u.uScr.value.x = 0;
 return;
 }
 if (u.uScrTex.value !== src.tex) u.uScrTex.value = src.tex;
-const mode = { wrap: 0, stick: 1, project: 2, relief: 3 }[L.mode] ?? 1;
+if (L.mode === 'relief') {
+L.mode = 'stick';
+if (!L.dsrc || L.dsrc === 'off') L.dsrc = 'bright';
+}
+const mode = { wrap: 0, stick: 1, project: 2 }[L.mode] ?? 1;
 u.uScr.value.set(Math.min(eff, 1), mode, Math.max(0.1, L.scale), L.bright);
 u.uScrP.value.set((L.rotate * Math.PI) / 180, L.depth, L.mix, src.ar);
+const ds = L.dsrc || 'off';
+const hasMap = ds !== 'off' && ds !== 'bright' && this._screenDepth(ds, src.media);
+u.uScrD.value.set(ds === 'off' ? 0 : hasMap ? 2 : 1, L.depth ?? 0.5, L.dinv === 'far' ? -1 : 1, L.dcon ?? 1);
+u.uScrQ.value.set(L.dshow === 'map' && ds !== 'off' ? 1 : 0, 0, 0, 0);
+if (hasMap && u.uScrDep.value !== this._scrDepTex) u.uScrDep.value = this._scrDepTex;
 if (this._scrFile && L.source === 'file' && this._scrFile.el.paused && this._scrFile.el.play) this._scrFile.el.play().catch(() => {});
+}
+_screenDepth(ds, el) {
+const S = (this._scrD ||= { busy: false, key: null, t: -1, cur: '', st: {} });
+if (ds === 'file') {
+const f = this._scrDepFile;
+if (!f) return false;
+if (S.cur !== 'file' + f.id) {
+S.cur = 'file' + f.id;
+this._scrDepWrite(f);
+}
+return true;
+}
+if (S.cur.startsWith('file')) {
+S.cur = '';
+S.key = null;
+}
+if (el && !S.busy && this.depthAI.phase !== 'error') {
+const isVid = el.tagName === 'VIDEO';
+const t = isVid ? el.currentTime : 0;
+if ((S.key !== el || (isVid && Math.abs(t - S.t) > 0.04)) && (!isVid || el.readyState >= 2)) {
+const cpu = this.depthAI.device === 'wasm';
+const img = grabFrame(el, isVid ? (cpu ? 280 : 448) : cpu ? 420 : 640);
+if (img) {
+if (S.key !== el) S.st = {};
+S.busy = true;
+S.key = el;
+S.t = t;
+if (this.depthAI.phase !== 'ready' && !S.told) {
+S.told = true;
+this.app.toast('Загружаю нейросеть глубины для «Экрана» (один раз, около 50 МБ)', 'info', 3000);
+}
+this.depthAI
+.estimate(img)
+.then((r) => {
+if (this.state.layers.vscreen.dsrc !== 'ai') return;
+this._scrDepWrite({ w: r.w, h: r.h, data: normalizeDepth(r.data, S.st, isVid ? 0.35 : 0) });
+S.cur = 'ai';
+})
+.catch((e) => {
+if (!S.failed) this.app.toast('Нейросеть глубины не запустилась: ' + (e.message || e) + '. Работает объём по яркости', 'warn');
+S.failed = true;
+})
+.finally(() => (S.busy = false));
+}
+}
+}
+return S.cur === 'ai' && !!this._scrDepTex;
+}
+_scrDepWrite(m) {
+let t = this._scrDepTex;
+if (!t || t.image.width !== m.w || t.image.height !== m.h) {
+t?.dispose();
+t = this._scrDepTex = new THREE.DataTexture(new Uint8Array(m.w * m.h), m.w, m.h, THREE.RedFormat, THREE.UnsignedByteType);
+t.minFilter = t.magFilter = THREE.LinearFilter;
+t.generateMipmaps = false;
+t.unpackAlignment = 1;
+}
+const d = t.image.data;
+for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) d[(m.h - 1 - y) * m.w + x] = (Math.min(1, Math.max(0, m.data[y * m.w + x])) * 255 + 0.5) | 0;
+t.needsUpdate = true;
+}
+async screenDepthPick() {
+const f = await pickImageFile();
+if (!f) return;
+try {
+this._scrDepFile = { ...(await loadDepthImage(f)), id: (this._scrDepFile?.id || 0) + 1 };
+this.state.layers.vscreen.dsrc = 'file';
+this.app.toast('Карта глубины для «Экрана»: ' + f.name, 'ok', 2200);
+} catch (e) {
+this.app.toast('Не удалось открыть карту глубины: ' + (e.message || e), 'error');
+}
+this.emit();
 }
 }
 };
@@ -92116,6 +92387,7 @@ const depthUpd = () => {
 const I = engine.depthInfo();
 let t;
 if (!I.media) t = 'Откройте фото или видео: эффект работает с ними.';
+else if (I.src === 'file') t = I.file ? 'Своя карта глубины: ' + I.file + '. Светлое ближе, тёмное дальше' + (I.frames ? ', одна карта на все кадры.' : '.') : 'Загрузите картинку с картой глубины: светлое ближе, тёмное дальше. Пока видна карта по яркости.';
 else if (I.frames && I.src === 'luma') t = 'Раскадровка: у каждого кадра своя карта по яркости, светлое ближе. Для настоящей глубины выберите «Нейросеть».';
 else if (I.frames && I.phase === 'ready') t = I.fOk >= I.fAll ? 'Раскадровка: нейросеть посчитала глубину всех кадров (' + I.fAll + ').' : 'Раскадровка: нейросеть считает глубину кадров, ' + I.fOk + ' из ' + I.fAll + '. Остальные пока по яркости.';
 else if (I.src === 'luma') t = 'Быстрая карта по яркости: светлое считается ближе. Для настоящей глубины выберите «Нейросеть».';

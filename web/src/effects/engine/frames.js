@@ -366,14 +366,23 @@ this._framesDepthTick(fr);
 }
 _frDepthSig() {
 const Dp = this.state.layers.depth;
-return Dp.src + '|' + Math.round(Dp.blur || 0);
+return Dp.src + '|' + Math.round(Dp.blur || 0) + '|' + (Dp.src === 'file' ? this._depthFile?.id || 0 : 0);
 }
 _frDepthOne(fr, k) {
 const Dp = this.state.layers.depth;
 const { cols, rows } = fr;
 const per = cols * rows;
 const f = fr.frames[k];
-let map = Dp.src === 'ai' && fr.dOk[k] && fr.dAi ? { w: cols, h: rows, data: fr.dAi.subarray(k * per, (k + 1) * per) } : lumaDepth(f, cols, rows, 4);
+let map;
+const file = Dp.src === 'file' ? this._depthFile : null;
+if (file) {
+if (fr.dFileId !== file.id) {
+fr.dFile = new Float32Array(per);
+depthToGrid(file, cols, rows, fr.dFile);
+fr.dFileId = file.id;
+}
+map = { w: cols, h: rows, data: fr.dFile };
+} else map = Dp.src === 'ai' && fr.dOk[k] && fr.dAi ? { w: cols, h: rows, data: fr.dAi.subarray(k * per, (k + 1) * per) } : lumaDepth(f, cols, rows, 4);
 const r = Math.round((Dp.blur || 0) * 0.4);
 if (r > 0) map = adjustDepth(map, { blur: r });
 const d = map.data;

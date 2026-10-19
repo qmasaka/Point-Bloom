@@ -429,7 +429,7 @@ export class FramesPart {
 	/** С какими настройками записан альфа-канал: при их смене кадры переписываются */
 	_frDepthSig() {
 		const Dp = this.state.layers.depth;
-		return Dp.src + '|' + Math.round(Dp.blur || 0);
+		return Dp.src + '|' + Math.round(Dp.blur || 0) + '|' + (Dp.src === 'file' ? this._depthFile?.id || 0 : 0);
 	}
 
 	/** Записывает глубину одного кадра (слоя) в альфа-канал: от нейросети, если она уже посчитала этот кадр, иначе по яркости */
@@ -438,7 +438,17 @@ export class FramesPart {
 		const { cols, rows } = fr;
 		const per = cols * rows;
 		const f = fr.frames[k];
-		let map = Dp.src === 'ai' && fr.dOk[k] && fr.dAi ? { w: cols, h: rows, data: fr.dAi.subarray(k * per, (k + 1) * per) } : lumaDepth(f, cols, rows, 4);
+		let map;
+		const file = Dp.src === 'file' ? this._depthFile : null;
+		if (file) {
+			// своя карта одна на все кадры: переносим её на сетку кадра один раз
+			if (fr.dFileId !== file.id) {
+				fr.dFile = new Float32Array(per);
+				depthToGrid(file, cols, rows, fr.dFile);
+				fr.dFileId = file.id;
+			}
+			map = { w: cols, h: rows, data: fr.dFile };
+		} else map = Dp.src === 'ai' && fr.dOk[k] && fr.dAi ? { w: cols, h: rows, data: fr.dAi.subarray(k * per, (k + 1) * per) } : lumaDepth(f, cols, rows, 4);
 		// размытие задано в пикселях большой карты, сетка кадра в несколько раз мельче
 		const r = Math.round((Dp.blur || 0) * 0.4);
 		if (r > 0) map = adjustDepth(map, { blur: r });
