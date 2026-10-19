@@ -362,6 +362,13 @@ cls: 'btn-block fx-anim-quick-btn',
 title: 'Открыть таймлайн для анимации эффектов и камеры',
 onClick: () => toggleAnim()
 });
+const SPECIAL = { 'Видео': 'video', 'Фото и видео': 'photo', 'Анимация': 'anim' };
+const specialTitle = h('span', { class: 'fx-special-title' });
+const specialSub = h('div', { class: 'fx-special-sub' });
+const specialIcon = h('span', { class: 'fx-special-ic' });
+const specialBody = h('div', { class: 'fx-special-body' });
+const special = h('section', { class: 'fx-special', hidden: true }, h('div', { class: 'fx-special-head' }, specialIcon, specialTitle), specialSub, specialBody);
+left.append(special);
 for (const grp of FX_GROUP_NAMES) {
 const folder = h('div', { class: 'fx-folder' });
 const fhead = h('button', { type: 'button', class: 'fx-folder-head', 'aria-expanded': 'true' }, h('span', { class: 'fx-folder-caret', html: icon('caret-down', 13) }), h('span', { class: 'fx-folder-name' }, grp), h('span', { class: 'fx-folder-n' }));
@@ -371,7 +378,7 @@ const closed = folder.classList.toggle('is-closed');
 fhead.setAttribute('aria-expanded', String(!closed));
 });
 folder.append(fhead, fbody);
-left.append(folder);
+(SPECIAL[grp] ? specialBody : left).append(folder);
 for (const def of FX_LAYERS.filter((d) => d.group === grp && !d.hidden)) {
 st.layers[def.id] = { ...def.def, ...(st.layers[def.id] || {}) };
 const L = st.layers[def.id];
@@ -2632,6 +2639,26 @@ countActive();
 for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoLoaded;
 for (const c of cards) if (c.def.group === 'Фото и видео') c.folder.hidden = !engine.pm.ready;
 for (const c of cards) if (c.def.group === 'Анимация') c.folder.hidden = !engine.animReady;
+{
+const kinds = [];
+if (engine.videoLoaded) kinds.push('video');
+else if (engine.pm.ready) kinds.push('photo');
+if (engine.animReady) kinds.push('anim');
+special.hidden = !kinds.length;
+const one = kinds.length === 1 ? kinds[0] : 'mix';
+const T = {
+video: ['film-strip', 'Для вашего видео', 'Эти эффекты работают только с открытым видео и появляются вместе с ним.'],
+photo: ['image', 'Для вашего фото', 'Эти эффекты работают только с открытым фото или видео и появляются вместе с ним.'],
+anim: ['stack', 'Для анимации персонажа', 'Эти эффекты работают только у модели с анимацией и появляются вместе с ней.'],
+mix: ['sparkle', 'Для вашего материала', 'Эти эффекты работают только с открытым видео, фото или анимацией и появляются вместе с ними.'],
+}[one];
+if (special.dataset.kind !== one) {
+special.dataset.kind = one;
+specialIcon.innerHTML = icon(T[0], 14);
+specialTitle.textContent = T[1];
+specialSub.textContent = T[2];
+}
+}
 const cur = cards.find((c) => c.def.id === selected);
 if (cur && cur.folder.hidden) select_((cards.find((c) => !c.folder.hidden && c.L.on) || cards.find((c) => !c.folder.hidden) || cards[0]).def.id);
 renderReactList();

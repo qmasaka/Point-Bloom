@@ -80366,6 +80366,14 @@ en: {
 'Работает на видео из «Медиа» (не вместе с «Раскадровкой»). Прошлое набирается, пока видео играет. Ступени 0: время течёт плавно.': 'Works on the video from Media (not together with Storyboard). The past builds up while the video plays. Steps at 0: time flows smoothly.',
 'Цвет остаётся на точках, с': 'Color stays on points, s',
 'Ноль: цвет только там, где сейчас кадр. Больше нуля: точки запоминают кадр и медленно гаснут. В «Проекторе» вращайте форму, и видео её раскрасит; в остальных видах за движением в кадре тянутся следы.': 'Zero: color only where the frame is now. Above zero: points remember the frame and slowly fade. In Projector, rotate the shape and the video paints it; in the other modes motion in the frame leaves trails.',
+'Для вашего видео': 'For your video',
+'Для вашего фото': 'For your photo',
+'Для анимации персонажа': 'For character animation',
+'Для вашего материала': 'For your media',
+'Эти эффекты работают только с открытым видео и появляются вместе с ним.': 'These effects work only with an open video and appear together with it.',
+'Эти эффекты работают только с открытым фото или видео и появляются вместе с ним.': 'These effects work only with an open photo or video and appear together with it.',
+'Эти эффекты работают только у модели с анимацией и появляются вместе с ней.': 'These effects work only on a model with animation and appear together with it.',
+'Эти эффекты работают только с открытым видео, фото или анимацией и появляются вместе с ними.': 'These effects work only with an open video, photo or animation and appear together with them.',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -80948,6 +80956,14 @@ uk: {
 'Работает на видео из «Медиа» (не вместе с «Раскадровкой»). Прошлое набирается, пока видео играет. Ступени 0: время течёт плавно.': 'Працює на відео з «Медіа» (не разом із «Розкадруванням»). Минуле набирається, поки відео грає. Сходинки 0: час тече плавно.',
 'Цвет остаётся на точках, с': 'Колір лишається на точках, с',
 'Ноль: цвет только там, где сейчас кадр. Больше нуля: точки запоминают кадр и медленно гаснут. В «Проекторе» вращайте форму, и видео её раскрасит; в остальных видах за движением в кадре тянутся следы.': 'Нуль: колір лише там, де зараз кадр. Більше нуля: точки запам’ятовують кадр і повільно гаснуть. У «Проєкторі» обертайте форму, і відео її розфарбує; в інших видах за рухом у кадрі тягнуться сліди.',
+'Для вашего видео': 'Для вашого відео',
+'Для вашего фото': 'Для вашого фото',
+'Для анимации персонажа': 'Для анімації персонажа',
+'Для вашего материала': 'Для вашого матеріалу',
+'Эти эффекты работают только с открытым видео и появляются вместе с ним.': 'Ці ефекти працюють лише з відкритим відео й з’являються разом із ним.',
+'Эти эффекты работают только с открытым фото или видео и появляются вместе с ним.': 'Ці ефекти працюють лише з відкритим фото чи відео й з’являються разом із ним.',
+'Эти эффекты работают только у модели с анимацией и появляются вместе с ней.': 'Ці ефекти працюють лише в моделі з анімацією й з’являються разом із нею.',
+'Эти эффекты работают только с открытым видео, фото или анимацией и появляются вместе с ними.': 'Ці ефекти працюють лише з відкритим відео, фото чи анімацією й з’являються разом із ними.',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -81530,6 +81546,14 @@ es: {
 'Работает на видео из «Медиа» (не вместе с «Раскадровкой»). Прошлое набирается, пока видео играет. Ступени 0: время течёт плавно.': 'Funciona con el vídeo de Medios (no junto con Storyboard). El pasado se acumula mientras el vídeo se reproduce. Escalones en 0: el tiempo fluye suave.',
 'Цвет остаётся на точках, с': 'El color se queda en los puntos, s',
 'Ноль: цвет только там, где сейчас кадр. Больше нуля: точки запоминают кадр и медленно гаснут. В «Проекторе» вращайте форму, и видео её раскрасит; в остальных видах за движением в кадре тянутся следы.': 'Cero: color solo donde está ahora el fotograma. Más de cero: los puntos recuerdan el fotograma y se apagan despacio. En Proyector, gira la forma y el vídeo la pinta; en los otros modos el movimiento deja estelas.',
+'Для вашего видео': 'Para tu vídeo',
+'Для вашего фото': 'Para tu foto',
+'Для анимации персонажа': 'Para la animación del personaje',
+'Для вашего материала': 'Para tu material',
+'Эти эффекты работают только с открытым видео и появляются вместе с ним.': 'Estos efectos solo funcionan con un vídeo abierto y aparecen junto con él.',
+'Эти эффекты работают только с открытым фото или видео и появляются вместе с ним.': 'Estos efectos solo funcionan con una foto o un vídeo abierto y aparecen junto con él.',
+'Эти эффекты работают только у модели с анимацией и появляются вместе с ней.': 'Estos efectos solo funcionan en un modelo con animación y aparecen junto con él.',
+'Эти эффекты работают только с открытым видео, фото или анимацией и появляются вместе с ними.': 'Estos efectos solo funcionan con un vídeo, foto o animación abiertos y aparecen junto con ellos.',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -82112,6 +82136,14 @@ de: {
 'Работает на видео из «Медиа» (не вместе с «Раскадровкой»). Прошлое набирается, пока видео играет. Ступени 0: время течёт плавно.': 'Funktioniert mit dem Video aus Medien (nicht zusammen mit Storyboard). Die Vergangenheit sammelt sich, während das Video läuft. Stufen 0: Die Zeit fließt gleichmäßig.',
 'Цвет остаётся на точках, с': 'Farbe bleibt auf den Punkten, s',
 'Ноль: цвет только там, где сейчас кадр. Больше нуля: точки запоминают кадр и медленно гаснут. В «Проекторе» вращайте форму, и видео её раскрасит; в остальных видах за движением в кадре тянутся следы.': 'Null: Farbe nur dort, wo gerade das Bild ist. Über null: Punkte merken sich das Bild und verblassen langsam. Im Projektor drehe die Form, und das Video bemalt sie; in den anderen Modi zieht Bewegung im Bild Spuren.',
+'Для вашего видео': 'Für dein Video',
+'Для вашего фото': 'Für dein Foto',
+'Для анимации персонажа': 'Für Figurenanimation',
+'Для вашего материала': 'Für dein Material',
+'Эти эффекты работают только с открытым видео и появляются вместе с ним.': 'Diese Effekte funktionieren nur mit einem geöffneten Video und erscheinen zusammen damit.',
+'Эти эффекты работают только с открытым фото или видео и появляются вместе с ним.': 'Diese Effekte funktionieren nur mit einem geöffneten Foto oder Video und erscheinen zusammen damit.',
+'Эти эффекты работают только у модели с анимацией и появляются вместе с ней.': 'Diese Effekte funktionieren nur bei einem Modell mit Animation und erscheinen zusammen damit.',
+'Эти эффекты работают только с открытым видео, фото или анимацией и появляются вместе с ними.': 'Diese Effekte funktionieren nur mit einem geöffneten Video, Foto oder einer Animation und erscheinen zusammen damit.',
 },
 };
 };
@@ -92736,6 +92768,13 @@ cls: 'btn-block fx-anim-quick-btn',
 title: 'Открыть таймлайн для анимации эффектов и камеры',
 onClick: () => toggleAnim()
 });
+const SPECIAL = { 'Видео': 'video', 'Фото и видео': 'photo', 'Анимация': 'anim' };
+const specialTitle = h('span', { class: 'fx-special-title' });
+const specialSub = h('div', { class: 'fx-special-sub' });
+const specialIcon = h('span', { class: 'fx-special-ic' });
+const specialBody = h('div', { class: 'fx-special-body' });
+const special = h('section', { class: 'fx-special', hidden: true }, h('div', { class: 'fx-special-head' }, specialIcon, specialTitle), specialSub, specialBody);
+left.append(special);
 for (const grp of FX_GROUP_NAMES) {
 const folder = h('div', { class: 'fx-folder' });
 const fhead = h('button', { type: 'button', class: 'fx-folder-head', 'aria-expanded': 'true' }, h('span', { class: 'fx-folder-caret', html: icon('caret-down', 13) }), h('span', { class: 'fx-folder-name' }, grp), h('span', { class: 'fx-folder-n' }));
@@ -92745,7 +92784,7 @@ const closed = folder.classList.toggle('is-closed');
 fhead.setAttribute('aria-expanded', String(!closed));
 });
 folder.append(fhead, fbody);
-left.append(folder);
+(SPECIAL[grp] ? specialBody : left).append(folder);
 for (const def of FX_LAYERS.filter((d) => d.group === grp && !d.hidden)) {
 st.layers[def.id] = { ...def.def, ...(st.layers[def.id] || {}) };
 const L = st.layers[def.id];
@@ -95006,6 +95045,26 @@ countActive();
 for (const c of cards) if (c.def.group === 'Видео') c.folder.hidden = !engine.videoLoaded;
 for (const c of cards) if (c.def.group === 'Фото и видео') c.folder.hidden = !engine.pm.ready;
 for (const c of cards) if (c.def.group === 'Анимация') c.folder.hidden = !engine.animReady;
+{
+const kinds = [];
+if (engine.videoLoaded) kinds.push('video');
+else if (engine.pm.ready) kinds.push('photo');
+if (engine.animReady) kinds.push('anim');
+special.hidden = !kinds.length;
+const one = kinds.length === 1 ? kinds[0] : 'mix';
+const T = {
+video: ['film-strip', 'Для вашего видео', 'Эти эффекты работают только с открытым видео и появляются вместе с ним.'],
+photo: ['image', 'Для вашего фото', 'Эти эффекты работают только с открытым фото или видео и появляются вместе с ним.'],
+anim: ['stack', 'Для анимации персонажа', 'Эти эффекты работают только у модели с анимацией и появляются вместе с ней.'],
+mix: ['sparkle', 'Для вашего материала', 'Эти эффекты работают только с открытым видео, фото или анимацией и появляются вместе с ними.'],
+}[one];
+if (special.dataset.kind !== one) {
+special.dataset.kind = one;
+specialIcon.innerHTML = icon(T[0], 14);
+specialTitle.textContent = T[1];
+specialSub.textContent = T[2];
+}
+}
 const cur = cards.find((c) => c.def.id === selected);
 if (cur && cur.folder.hidden) select_((cards.find((c) => !c.folder.hidden && c.L.on) || cards.find((c) => !c.folder.hidden) || cards[0]).def.id);
 renderReactList();
