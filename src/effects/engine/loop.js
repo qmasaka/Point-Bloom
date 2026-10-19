@@ -464,6 +464,7 @@ export class LoopPart {
 				}
 			}
 			if (st.source === 'media' && this.pm.ready && this.geometry && this.geometry.attributes.position.count === this.pm.count) this._depthTick(dt, rgbNew);
+			this._slitTick(rgbNew, u);
 			// морфинг по списку форм
 			{
 				const mc = st.morphCfg;

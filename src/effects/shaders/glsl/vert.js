@@ -45,6 +45,14 @@ uniform sampler2D uScrTex;
 uniform vec4 uScrD; // объём по глубине: x источник (0 нет, 1 яркость, 2 карта), y сила, z знак (-1 выступает дальнее), w контраст
 uniform vec4 uScrQ; // x: показывать карту глубины вместо видео
 uniform sampler2D uScrDep;
+// память цвета «Экрана»: текстура по номеру точки (строки по 2048), rgb хранится как корень из цвета / 4, a: сколько его осталось. Считается на процессоре (screen.js)
+uniform sampler2D uScrMTex;
+uniform float uScrMN;
+// «Слит-скан»: x сила, y сколько прошлого (доля буфера), z голова буфера, w вид; uSlitP: направление, бегущий срез, время вглубь, ступени; uSlitG: колонки, строки, точек, кадров в буфере
+uniform vec4 uSlit;
+uniform vec4 uSlitP;
+uniform vec4 uSlitG;
+uniform highp sampler2DArray uSlitTex;
 #endif
 #ifdef HERO
 #define HEROSIZE clamp(sqrt(uFr.z / max(uHero.z, 1.0)), 0.4, 1.0)
@@ -215,6 +223,37 @@ void main() {
 	float eC = uMorph < 0.9999 ? (int(uMorphS.x + 0.5) == 2 ? smoothstep(0.5, 0.9, ltC) : morphEase(ltC)) : 1.0;
 	vec3 colM = mix(aColor, aColorB, eC);
 	if (uFr.x > 0.5) colM = frCol;
+#ifdef VSCREEN
+#ifndef HERO
+	// слит-скан: у точки своя задержка во времени, цвет из кадра в прошлом (между соседними кадрами плавно)
+	if (uSlit.x > 0.001) {
+		float sip = floor(aIdx * uSlitG.z + 0.5);
+		float sci = mod(sip, uSlitG.x);
+		float scj = floor(sip / uSlitG.x);
+		vec2 suv0 = vec2((sci + 0.5) / uSlitG.x, (scj + 0.5) / uSlitG.y);
+		int sm = int(uSlit.w + 0.5);
+		float sf;
+		if (sm == 0) sf = suv0.y;
+		else if (sm == 1) sf = suv0.x;
+		else if (sm == 2) sf = clamp(length((suv0 - 0.5) * vec2(uSlitG.x / uSlitG.y, 1.0)) * 1.25, 0.0, 1.0);
+		else if (sm == 3) sf = uDepth.x > 0.001 ? 1.0 - gDepth : 1.0 - gLum;
+		else sf = snoise(vec3(suv0 * vec2(uSlitG.x / uSlitG.y, 1.0) * 2.5, uTime * 0.12)) * 0.5 + 0.5;
+		if (uSlitP.y > 0.001) sf = fract(sf + uTime * uSlitP.y * 0.25);
+		if (uSlitP.w > 1.5) sf = floor(sf * uSlitP.w) / (uSlitP.w - 1.0);
+		sf = clamp(sf, 0.0, 1.0);
+		if (uSlitP.x < 0.0) sf = 1.0 - sf;
+		float sd = sf * uSlit.y * (uSlitG.w - 1.0);
+		float s0 = floor(sd);
+		int sl0 = int(mod(uSlit.z - s0 + uSlitG.w * 8.0, uSlitG.w));
+		int sl1 = int(mod(uSlit.z - s0 - 1.0 + uSlitG.w * 8.0, uSlitG.w));
+		vec3 scol = mix(texelFetch(uSlitTex, ivec3(int(sci), int(scj), sl0), 0).rgb, texelFetch(uSlitTex, ivec3(int(sci), int(scj), sl1), 0).rgb, sd - s0);
+		float sk = min(uSlit.x, 1.0);
+		colM = mix(colM, scol, sk);
+		// время вглубь: чем старше кадр точки, тем дальше она от зрителя
+		pos.z -= sf * uSlit.y * uSlitP.z * 1.2 * sk;
+	}
+#endif
+#endif
 	vec3 nrmM = mix(aNormal, aNormalB, eC);
 	if (uColorBy > 2.5 && uColorBy < 3.5) col = colM;
 	else if (uColorBy > 3.5 && uColorBy < 4.5) col = uSolid;
@@ -402,7 +441,20 @@ void main() {
 			if (uScrD.z < 0.0) sdv = 1.0 - sdv;
 			if (uScrQ.x > 0.5) scr = vec3(sdv);
 		}
+#ifndef HERO
+		// память цвета: в кадре светлейшее из нового и запомненного (длинная выдержка), вне кадра запомненное гаснет
+		vec4 smem = vec4(0.0);
+		if (uScrQ.y > 0.5) {
+			float smi = floor(aIdx * uScrMN + 0.5);
+			smem = texelFetch(uScrMTex, ivec2(int(mod(smi, 2048.0)), int(floor(smi / 2048.0))), 0);
+			smem.rgb = smem.rgb * smem.rgb * 4.0;
+			scr = max(scr, smem.rgb);
+		}
+#endif
 		vColor = mix(vColor, mix(vColor * 0.35, scr, uScrP.z), smask * uScr.x);
+#ifndef HERO
+		if (uScrQ.y > 0.5) vColor = mix(vColor, mix(vColor * 0.35, smem.rgb, uScrP.z), smem.a * (1.0 - smask) * uScr.x);
+#endif
 		if (uScrD.x > 0.5) {
 			vec3 dirn = dot(nrmM, nrmM) > 0.01 ? normalize(nrmM) : normalize(bsx + vec3(1e-4));
 			pos += dirn * sdv * uScrD.y * 0.45 * smask * uScr.x;

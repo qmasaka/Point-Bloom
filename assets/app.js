@@ -39778,6 +39778,7 @@ const ICON_PATHS = {
 'question': '<path d="M140,180a12,12,0,1,1-12-12A12,12,0,0,1,140,180ZM128,72c-22.06,0-40,16.15-40,36v4a8,8,0,0,0,16,0v-4c0-11,10.77-20,24-20s24,9,24,20-10.77,20-24,20a8,8,0,0,0-8,8v8a8,8,0,0,0,16,0v-.72c18.24-3.35,32-17.9,32-35.28C168,88.15,150.06,72,128,72Zm104,56A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/>',
 'record': '<path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm0-160a72,72,0,1,0,72,72A72.08,72.08,0,0,0,128,56Zm0,128a56,56,0,1,1,56-56A56.06,56.06,0,0,1,128,184Z"/>',
 'repeat': '<path d="M24,128A72.08,72.08,0,0,1,96,56H204.69L194.34,45.66a8,8,0,0,1,11.32-11.32l24,24a8,8,0,0,1,0,11.32l-24,24a8,8,0,0,1-11.32-11.32L204.69,72H96a56.06,56.06,0,0,0-56,56,8,8,0,0,1-16,0Zm200-8a8,8,0,0,0-8,8,56.06,56.06,0,0,1-56,56H51.31l10.35-10.34a8,8,0,0,0-11.32-11.32l-24,24a8,8,0,0,0,0,11.32l24,24a8,8,0,0,0,11.32-11.32L51.31,200H160a72.08,72.08,0,0,0,72-72A8,8,0,0,0,224,120Z"/>',
+'rows': '<path d="M208,136H48a16,16,0,0,0-16,16v40a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V152A16,16,0,0,0,208,136Zm0,56H48V152H208v40Zm0-144H48A16,16,0,0,0,32,64v40a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V64A16,16,0,0,0,208,48Zm0,56H48V64H208v40Z"/>',
 'scan': '<path d="M224,40V80a8,8,0,0,1-16,0V48H176a8,8,0,0,1,0-16h40A8,8,0,0,1,224,40ZM80,208H48V176a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H80a8,8,0,0,0,0-16Zm136-40a8,8,0,0,0-8,8v32H176a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V176A8,8,0,0,0,216,168ZM40,88a8,8,0,0,0,8-8V48H80a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8V80A8,8,0,0,0,40,88ZM80,72h96a8,8,0,0,1,8,8v96a8,8,0,0,1-8,8H80a8,8,0,0,1-8-8V80A8,8,0,0,1,80,72Zm8,96h80V88H88Z"/>',
 'scissors': '<path d="M157.73,113.13A8,8,0,0,1,159.82,102L227.48,55.7a8,8,0,0,1,9,13.21l-67.67,46.3a7.92,7.92,0,0,1-4.51,1.4A8,8,0,0,1,157.73,113.13Zm80.87,85.09a8,8,0,0,1-11.12,2.08L136,137.7,93.49,166.78a36,36,0,1,1-9-13.19L121.83,128,84.44,102.41a35.86,35.86,0,1,1,9-13.19l143,97.87A8,8,0,0,1,238.6,198.22ZM80,180a20,20,0,1,0-5.86,14.14A19.85,19.85,0,0,0,80,180ZM74.14,90.13a20,20,0,1,0-28.28,0A19.85,19.85,0,0,0,74.14,90.13Z"/>',
 'selection': '<path d="M152,40a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h32A8,8,0,0,1,152,40Zm-8,168H112a8,8,0,0,0,0,16h32a8,8,0,0,0,0-16ZM208,32H184a8,8,0,0,0,0,16h24V72a8,8,0,0,0,16,0V48A16,16,0,0,0,208,32Zm8,72a8,8,0,0,0-8,8v32a8,8,0,0,0,16,0V112A8,8,0,0,0,216,104Zm0,72a8,8,0,0,0-8,8v24H184a8,8,0,0,0,0,16h24a16,16,0,0,0,16-16V184A8,8,0,0,0,216,176ZM40,152a8,8,0,0,0,8-8V112a8,8,0,0,0-16,0v32A8,8,0,0,0,40,152Zm32,56H48V184a8,8,0,0,0-16,0v24a16,16,0,0,0,16,16H72a8,8,0,0,0,0-16ZM72,32H48A16,16,0,0,0,32,48V72a8,8,0,0,0,16,0V48H72a8,8,0,0,0,0-16Z"/>',
@@ -72535,6 +72536,7 @@ if (!pts) return false;
 for (const c of pts.children) if (c.visible && !e.ghosts.includes(c) && !this._gpuDraws(c)) return true;
 if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
 if (e.shared && e.shared.uScr && e.shared.uScr.value.x > 0.001) return true;
+if (e.shared && e.shared.uSlit && e.shared.uSlit.value.x > 0.001) return true;
 return false;
 }
 _syncCloud(g = this.engine.geometry, layer = 'main') {
@@ -72835,7 +72837,17 @@ const { perf } = __req('src/core/perf.js');
 const FX_ACTIONS = [['none', 'Без действия'], ['push', 'Отталкивание: от ладони'], ['pull', 'Притягивание: к ладони'], ['swirl', 'Вихрь: вращение пальцами'], ['rotate', 'Вращение: поворот модели'], ['sculpt', 'Лепка: изменение формы'], ['gravity', 'Гравитация: притяжение к руке'], ['wave', 'Ударная волна: фронт от руки'], ['break', 'Распад: пока держишь жест'], ['dissolve', 'Растворение: пока держишь жест'], ['brush', 'Световой штрих: след в воздухе'], ['slicecut', 'Срез рукой: секущая плоскость'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:twist', 'Эффект: Деформация'], ['fx:blast', 'Эффект: Взрыв по биту'], ['fx:flow', 'Эффект: Течение'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф'], ['fx:hyper', 'Эффект: Гиперпространство']];
 const FX_LAYERS = [
 { id: 'frames', sound: false, group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Видео раскладывается на кадры из точек, кадры собираются в блок. Показ идёт за таймлайном', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, thin: 0, showMode: 'off', showLen: 0.12, hero: 150000, future: 'hide', gain: 1, sat: 0, bsize: 1.5, track: 'grow', tone: 'all', toneCut: 0.5, tail: 100, tailSoft: 0.6, dkeep: 0.5 }, extras: [{ type: 'title', label: 'Раскладка' }, { key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: слои вглубь'], ['wall', 'Стена: плоская сетка'], ['film', 'Киноплёнка: кадры в ряд'], ['tunnel', 'Туннель: перспектива вглубь']], relayout: true }, { key: 'track', label: 'Что в стопке', type: 'seg', options: [['grow', 'Пройденное'], ['full', 'Весь ряд']], when: ['layout', ['stack', 'tunnel']] }, { key: 'depth', label: 'Глубина', min: 0.2, max: 4, step: 0.1, relayout: true, when: ['layout', ['stack', 'tunnel']] }, { type: 'title', label: 'Показ' }, { key: 'showMode', label: 'Как показывать', type: 'select', options: [['off', 'Статично: все кадры как есть'], ['peel', 'Листание: слёт пройденных'], ['projector', 'Проектор: бегущий луч'], ['trail', 'Шлейф: затухающий след']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Редкие'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { key: 'thin', label: 'Прореживать остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { type: 'title', label: 'Объём' }, { type: 'note', text: 'Включите «Объём по глубине» в разделе «Фото и видео»: каждый кадр выдавится по своей карте глубины.' }, { key: 'dkeep', label: 'Объём остальных кадров', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Хвост' }, { key: 'tail', label: 'Длина хвоста, доля видео', min: 5, max: 100, step: 1, int: true, unit: '%' }, { key: 'tailSoft', label: 'Как гаснет хвост: резко ... плавно', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Цвет остальных кадров' }, { key: 'sat', label: 'Насыщенность (0 это цвета видео)', min: -1, max: 1, step: 0.05 }, { key: 'gain', label: 'Яркость', min: 0.4, max: 3, step: 0.05 }, { key: 'tone', label: 'Какие тона оставить', type: 'seg', options: [['all', 'Все'], ['light', 'Светлые'], ['dark', 'Тёмные']] }, { key: 'toneCut', label: 'Граница светлого и тёмного', min: 0.05, max: 0.95, step: 0.01, when: ['tone', ['light', 'dark']] }, { key: 'bsize', label: 'Размер точек', min: 0.5, max: 4, step: 0.1 }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
-{ id: 'vscreen', sound: false, group: 'Графика', name: 'Экран', icon: 'monitor', hint: 'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него). Форму можно выдавить по глубине кадра: по яркости, нейросетью или своей картой. Видео из «Медиа» или отдельный файл', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, source: 'current', mode: 'stick', scale: 1, rotate: 0, bright: 1, mix: 1, depth: 0.5, dsrc: 'off', dinv: 'near', dcon: 1, dshow: 'video' }, extras: [
+{ id: 'slitscan', group: 'Видео', name: 'Слит-скан', icon: 'scan', hint: 'У каждой точки видео своё время: верх кадра показывает сейчас, а низ то, что было секунду назад (или по столбцам, кругам, глубине, пятнам). Движение тянется и изгибается во времени', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0.6, mode: 'rows', length: 0.8, frames: 48, dir: 'fwd', sweep: 0, bands: 0, push: 0 }, extras: [
+{ key: 'mode', label: 'Как течёт время', type: 'select', options: [['rows', 'Строки', 'время течёт сверху вниз'], ['cols', 'Столбцы', 'время течёт слева направо'], ['radial', 'Круги', 'от центра наружу'], ['depth', 'По глубине', 'дальнее отстаёт, с «Объёмом по глубине» по его карте'], ['noise', 'Пятна', 'плавающие облака времени']] },
+{ key: 'length', label: 'Сколько прошлого', min: 0, max: 1, step: 0.02 },
+{ key: 'frames', label: 'Память, кадров', min: 8, max: 120, step: 1, int: true },
+{ key: 'dir', label: 'Направление', type: 'seg', options: [['fwd', 'Прямо'], ['back', 'Обратно']] },
+{ key: 'sweep', label: 'Бегущий срез', min: 0, max: 2, step: 0.05 },
+{ key: 'bands', label: 'Ступени времени', min: 0, max: 24, step: 1, int: true, noNorm: true },
+{ key: 'push', label: 'Время вглубь', min: 0, max: 1, step: 0.05 },
+{ type: 'note', text: 'Работает на видео из «Медиа» (не вместе с «Раскадровкой»). Прошлое набирается, пока видео играет. Ступени 0: время течёт плавно.' },
+] },
+{ id: 'vscreen', sound: false, group: 'Графика', name: 'Экран', icon: 'monitor', hint: 'Видео играет прямо на форме, как кино на скульптуре. Виды: обёртка вокруг формы, приклеено к лицу формы, проектор (кадр на экране, форма скользит сквозь него). Форму можно выдавить по глубине кадра: по яркости, нейросетью или своей картой. Видео из «Медиа» или отдельный файл', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, source: 'current', mode: 'stick', scale: 1, rotate: 0, bright: 1, mix: 1, depth: 0.5, mem: 0, dsrc: 'off', dinv: 'near', dcon: 1, dshow: 'video' }, extras: [
 { type: 'note', text: 'Откройте видео или фото в «Медиа» или выберите свой файл ниже: оно сразу появится на форме.' },
 { key: 'source', label: 'Источник', type: 'seg', options: [['current', 'Из «Медиа»'], ['file', 'Свой файл']] },
 { type: 'button', label: 'Выбрать видео или фото…', act: 'screenPick', icon: 'folder-open', when: ['source', ['file']] },
@@ -72845,6 +72857,8 @@ const FX_LAYERS = [
 { key: 'rotate', label: 'Поворот кадра, °', min: -180, max: 180, step: 5, int: true, noNorm: true, when: ['mode', ['stick', 'project']] },
 { key: 'mix', label: 'Видео поверх цвета формы', min: 0, max: 1, step: 0.05 },
 { key: 'bright', label: 'Яркость видео, ×', min: 0.3, max: 2, step: 0.05, noNorm: true },
+{ key: 'mem', label: 'Цвет остаётся на точках, с', min: 0, max: 10, step: 0.1, noNorm: true },
+{ type: 'note', text: 'Ноль: цвет только там, где сейчас кадр. Больше нуля: точки запоминают кадр и медленно гаснут. В «Проекторе» вращайте форму, и видео её раскрасит; в остальных видах за движением в кадре тянутся следы.' },
 { type: 'title', label: 'Объём по глубине' },
 { key: 'dsrc', label: 'Откуда глубина', type: 'select', options: [['off', 'Нет', 'форма не выдавливается'], ['bright', 'По яркости', 'светлое выступает'], ['ai', 'Нейросеть', 'настоящая глубина кадра'], ['file', 'Своя карта', 'картинка: светлое ближе']] },
 { type: 'button', label: 'Загрузить карту глубины…', act: 'screenDepthPick', icon: 'folder-open', when: ['dsrc', ['file']] },
@@ -72926,7 +72940,7 @@ const FX_LAYERS = [
 ] },
 ];
 const FX_GROUPS = {
-'Видео': ['frames'],
+'Видео': ['frames', 'slitscan'],
 'Фото и видео': ['depth'],
 'Анимация': ['trail'],
 'Движение': ['curl', 'gravity', 'twist'],
@@ -80329,6 +80343,29 @@ en: {
 'Откройте видео в «Медиа» или выберите своё видео для «Экрана»': 'Open a video in Media or choose your own video for Screen',
 'Эффекты слушают звук видео «Экрана»': 'Effects now listen to the Screen video sound',
 'Не удалось взять звук из видео: {}': 'Could not take the sound from the video: {}',
+'Слит-скан': 'Slit-scan',
+'У каждой точки видео своё время: верх кадра показывает сейчас, а низ то, что было секунду назад (или по столбцам, кругам, глубине, пятнам). Движение тянется и изгибается во времени': 'Every point of the video has its own time: the top of the frame shows now and the bottom shows a second ago (or by columns, rings, depth, blobs). Motion stretches and bends in time',
+'Как течёт время': 'How time flows',
+'Строки': 'Rows',
+'время течёт сверху вниз': 'time flows top to bottom',
+'время течёт слева направо': 'time flows left to right',
+'Круги': 'Rings',
+'от центра наружу': 'from the center outward',
+'По глубине': 'By depth',
+'дальнее отстаёт, с «Объёмом по глубине» по его карте': 'the far lags behind; with Volume by depth it uses its map',
+'Пятна': 'Blobs',
+'плавающие облака времени': 'floating clouds of time',
+'Сколько прошлого': 'How much past',
+'Память, кадров': 'Memory, frames',
+'Направление': 'Direction',
+'Прямо': 'Forward',
+'Обратно': 'Reverse',
+'Бегущий срез': 'Running slice',
+'Ступени времени': 'Time steps',
+'Время вглубь': 'Time into depth',
+'Работает на видео из «Медиа» (не вместе с «Раскадровкой»). Прошлое набирается, пока видео играет. Ступени 0: время течёт плавно.': 'Works on the video from Media (not together with Storyboard). The past builds up while the video plays. Steps at 0: time flows smoothly.',
+'Цвет остаётся на точках, с': 'Color stays on points, s',
+'Ноль: цвет только там, где сейчас кадр. Больше нуля: точки запоминают кадр и медленно гаснут. В «Проекторе» вращайте форму, и видео её раскрасит; в остальных видах за движением в кадре тянутся следы.': 'Zero: color only where the frame is now. Above zero: points remember the frame and slowly fade. In Projector, rotate the shape and the video paints it; in the other modes motion in the frame leaves trails.',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -80888,6 +80925,29 @@ uk: {
 'Откройте видео в «Медиа» или выберите своё видео для «Экрана»': 'Відкрийте відео в «Медіа» або виберіть своє відео для «Екрана»',
 'Эффекты слушают звук видео «Экрана»': 'Ефекти слухають звук відео «Екрана»',
 'Не удалось взять звук из видео: {}': 'Не вдалося взяти звук із відео: {}',
+'Слит-скан': 'Сліт-скан',
+'У каждой точки видео своё время: верх кадра показывает сейчас, а низ то, что было секунду назад (или по столбцам, кругам, глубине, пятнам). Движение тянется и изгибается во времени': 'У кожної точки відео свій час: верх кадру показує зараз, а низ те, що було секунду тому (або за стовпцями, колами, глибиною, плямами). Рух тягнеться й вигинається в часі',
+'Как течёт время': 'Як тече час',
+'Строки': 'Рядки',
+'время течёт сверху вниз': 'час тече згори вниз',
+'время течёт слева направо': 'час тече зліва направо',
+'Круги': 'Кола',
+'от центра наружу': 'від центру назовні',
+'По глубине': 'За глибиною',
+'дальнее отстаёт, с «Объёмом по глубине» по его карте': 'далеке відстає, з «Об’ємом за глибиною» за його картою',
+'Пятна': 'Плями',
+'плавающие облака времени': 'плавучі хмари часу',
+'Сколько прошлого': 'Скільки минулого',
+'Память, кадров': 'Пам’ять, кадрів',
+'Направление': 'Напрямок',
+'Прямо': 'Прямо',
+'Обратно': 'Навпаки',
+'Бегущий срез': 'Біжучий зріз',
+'Ступени времени': 'Сходинки часу',
+'Время вглубь': 'Час углиб',
+'Работает на видео из «Медиа» (не вместе с «Раскадровкой»). Прошлое набирается, пока видео играет. Ступени 0: время течёт плавно.': 'Працює на відео з «Медіа» (не разом із «Розкадруванням»). Минуле набирається, поки відео грає. Сходинки 0: час тече плавно.',
+'Цвет остаётся на точках, с': 'Колір лишається на точках, с',
+'Ноль: цвет только там, где сейчас кадр. Больше нуля: точки запоминают кадр и медленно гаснут. В «Проекторе» вращайте форму, и видео её раскрасит; в остальных видах за движением в кадре тянутся следы.': 'Нуль: колір лише там, де зараз кадр. Більше нуля: точки запам’ятовують кадр і повільно гаснуть. У «Проєкторі» обертайте форму, і відео її розфарбує; в інших видах за рухом у кадрі тягнуться сліди.',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -81447,6 +81507,29 @@ es: {
 'Откройте видео в «Медиа» или выберите своё видео для «Экрана»': 'Abre un vídeo en Medios o elige tu propio vídeo para Pantalla',
 'Эффекты слушают звук видео «Экрана»': 'Los efectos escuchan el sonido del vídeo de Pantalla',
 'Не удалось взять звук из видео: {}': 'No se pudo tomar el sonido del vídeo: {}',
+'Слит-скан': 'Slit-scan',
+'У каждой точки видео своё время: верх кадра показывает сейчас, а низ то, что было секунду назад (или по столбцам, кругам, глубине, пятнам). Движение тянется и изгибается во времени': 'Cada punto del vídeo tiene su propio tiempo: la parte de arriba muestra el ahora y la de abajo lo de hace un segundo (o por columnas, círculos, profundidad, manchas). El movimiento se estira y se curva en el tiempo',
+'Как течёт время': 'Cómo fluye el tiempo',
+'Строки': 'Filas',
+'время течёт сверху вниз': 'el tiempo fluye de arriba abajo',
+'время течёт слева направо': 'el tiempo fluye de izquierda a derecha',
+'Круги': 'Círculos',
+'от центра наружу': 'del centro hacia fuera',
+'По глубине': 'Por profundidad',
+'дальнее отстаёт, с «Объёмом по глубине» по его карте': 'lo lejano se retrasa; con Volumen por profundidad usa su mapa',
+'Пятна': 'Manchas',
+'плавающие облака времени': 'nubes de tiempo flotantes',
+'Сколько прошлого': 'Cuánto pasado',
+'Память, кадров': 'Memoria, fotogramas',
+'Направление': 'Dirección',
+'Прямо': 'Directo',
+'Обратно': 'Inverso',
+'Бегущий срез': 'Corte en movimiento',
+'Ступени времени': 'Escalones de tiempo',
+'Время вглубь': 'Tiempo hacia el fondo',
+'Работает на видео из «Медиа» (не вместе с «Раскадровкой»). Прошлое набирается, пока видео играет. Ступени 0: время течёт плавно.': 'Funciona con el vídeo de Medios (no junto con Storyboard). El pasado se acumula mientras el vídeo se reproduce. Escalones en 0: el tiempo fluye suave.',
+'Цвет остаётся на точках, с': 'El color se queda en los puntos, s',
+'Ноль: цвет только там, где сейчас кадр. Больше нуля: точки запоминают кадр и медленно гаснут. В «Проекторе» вращайте форму, и видео её раскрасит; в остальных видах за движением в кадре тянутся следы.': 'Cero: color solo donde está ahora el fotograma. Más de cero: los puntos recuerdan el fotograma y se apagan despacio. En Proyector, gira la forma y el vídeo la pinta; en los otros modos el movimiento deja estelas.',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -82006,6 +82089,29 @@ de: {
 'Откройте видео в «Медиа» или выберите своё видео для «Экрана»': 'Öffne ein Video in Medien oder wähle ein eigenes Video für Bildschirm',
 'Эффекты слушают звук видео «Экрана»': 'Die Effekte hören den Ton des Bildschirm-Videos',
 'Не удалось взять звук из видео: {}': 'Ton aus dem Video konnte nicht übernommen werden: {}',
+'Слит-скан': 'Slit-Scan',
+'У каждой точки видео своё время: верх кадра показывает сейчас, а низ то, что было секунду назад (или по столбцам, кругам, глубине, пятнам). Движение тянется и изгибается во времени': 'Jeder Punkt des Videos hat seine eigene Zeit: Oben im Bild ist jetzt, unten eine Sekunde früher (oder nach Spalten, Ringen, Tiefe, Flecken). Bewegung dehnt und biegt sich in der Zeit',
+'Как течёт время': 'Wie die Zeit fließt',
+'Строки': 'Zeilen',
+'время течёт сверху вниз': 'die Zeit fließt von oben nach unten',
+'время течёт слева направо': 'die Zeit fließt von links nach rechts',
+'Круги': 'Ringe',
+'от центра наружу': 'von der Mitte nach außen',
+'По глубине': 'Nach Tiefe',
+'дальнее отстаёт, с «Объёмом по глубине» по его карте': 'Fernes hinkt hinterher; mit Volumen nach Tiefe nach dessen Karte',
+'Пятна': 'Flecken',
+'плавающие облака времени': 'schwebende Zeitwolken',
+'Сколько прошлого': 'Wie viel Vergangenheit',
+'Память, кадров': 'Speicher, Bilder',
+'Направление': 'Richtung',
+'Прямо': 'Vorwärts',
+'Обратно': 'Rückwärts',
+'Бегущий срез': 'Laufender Schnitt',
+'Ступени времени': 'Zeitstufen',
+'Время вглубь': 'Zeit in die Tiefe',
+'Работает на видео из «Медиа» (не вместе с «Раскадровкой»). Прошлое набирается, пока видео играет. Ступени 0: время течёт плавно.': 'Funktioniert mit dem Video aus Medien (nicht zusammen mit Storyboard). Die Vergangenheit sammelt sich, während das Video läuft. Stufen 0: Die Zeit fließt gleichmäßig.',
+'Цвет остаётся на точках, с': 'Farbe bleibt auf den Punkten, s',
+'Ноль: цвет только там, где сейчас кадр. Больше нуля: точки запоминают кадр и медленно гаснут. В «Проекторе» вращайте форму, и видео её раскрасит; в остальных видах за движением в кадре тянутся следы.': 'Null: Farbe nur dort, wo gerade das Bild ist. Über null: Punkte merken sich das Bild und verblassen langsam. Im Projektor drehe die Form, und das Video bemalt sie; in den anderen Modi zieht Bewegung im Bild Spuren.',
 },
 };
 };
@@ -83754,7 +83860,7 @@ const { saveJSON } = __req('src/core/util.js');
 const { KEY } = __req('src/effects/state/defaults.js');
 class KeyframesPart {
 _animLayers() {
-return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'hyper'];
+return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'hyper', 'slitscan'];
 }
 animCapture() {
 const nav = this.app.nav;
@@ -84902,7 +85008,8 @@ uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()), uPaintP: U(new THREE.Vector4()),
 uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
 uHyp: U(new THREE.Vector4()), uHypP: U(new THREE.Vector4()),
-uScr: U(new THREE.Vector4()), uScrP: U(new THREE.Vector4(0, 0.4, 1, 1.78)), uScrTex: U(scrDummy()), uScrD: U(new THREE.Vector4(0, 0.5, 1, 1)), uScrQ: U(new THREE.Vector4()), uScrDep: U(scrDummy()),
+uScr: U(new THREE.Vector4()), uScrP: U(new THREE.Vector4(0, 0.4, 1, 1.78)), uScrTex: U(scrDummy()), uScrD: U(new THREE.Vector4(0, 0.5, 1, 1)), uScrQ: U(new THREE.Vector4()), uScrDep: U(scrDummy()), uScrMTex: U(scrDummy()), uScrMN: U(1),
+uSlit: U(new THREE.Vector4()), uSlitP: U(new THREE.Vector4()), uSlitG: U(new THREE.Vector4(1, 1, 1, 1)), uSlitTex: U(frDummyTex()),
 uScopeC: U(new THREE.Color(0.24, 1, 0.48)), uScopeW: U(2.4), uScopeLB: U(1), uDepth: U(new THREE.Vector4()), uDepthP: U(new THREE.Vector4()), uDepthQ: U(new THREE.Vector4()), uFlat: U(0), uScope: U(new THREE.Vector4()), uScopeP: U(new THREE.Vector4()), uScopeQ: U(new THREE.Vector4()), uShape: U(1), uCurlP: U(new THREE.Vector4()), uSpecP: U(new THREE.Vector4()), uWaveP: U(new THREE.Vector4()), uWaveSrc: U(new THREE.Vector4()), uPulseP: U(new THREE.Vector4()), uVoxelP: U(new THREE.Vector4()), uGlitchP: U(new THREE.Vector4()), uBlast: U(new THREE.Vector4()), uFlow: U(new THREE.Vector4()), uDisP: U(new THREE.Vector4()), uSolid: U(new THREE.Color()), uAtt: U(1), uHand: U(Array.from({ length: 12 }, () => new THREE.Vector4())), uHandP: U(new THREE.Vector4()), uGrav: U(new THREE.Vector4()), uGravT: U(new THREE.Vector4()), uPhysP: U(new THREE.Vector4()), uAsm: U(0), uDis: U(new THREE.Vector4()), uDisT: U(0.8), uAnimN: U(0), uCen: U(new THREE.Vector3()), uExp: U(new THREE.Vector4()), uExpP: U(new THREE.Vector4()), uPieceTex: U(pieceTex), uGrow: U(new THREE.Vector4()), uGrowP: U(new THREE.Vector4()), uGrowSeed: U(new THREE.Vector3()), uJel: U(Array.from({ length: 3 }, () => new THREE.Vector4(0, 0, 0, -99))), uJelO: U(Array.from({ length: 3 }, () => new THREE.Vector4())), uJelP: U(new THREE.Vector4()), uDisQ: U(new THREE.Vector4(0.32, 1, 0.35, 0.85)), uGravP: U(new THREE.Vector4()), uRes: U(new THREE.Vector2(1, 1)), uLinkW: U(1.8),
 };
 }
@@ -87909,6 +88016,14 @@ uniform sampler2D uScrTex;
 uniform vec4 uScrD; // объём по глубине: x источник (0 нет, 1 яркость, 2 карта), y сила, z знак (-1 выступает дальнее), w контраст
 uniform vec4 uScrQ; // x: показывать карту глубины вместо видео
 uniform sampler2D uScrDep;
+// память цвета «Экрана»: текстура по номеру точки (строки по 2048), rgb хранится как корень из цвета / 4, a: сколько его осталось. Считается на процессоре (screen.js)
+uniform sampler2D uScrMTex;
+uniform float uScrMN;
+// «Слит-скан»: x сила, y сколько прошлого (доля буфера), z голова буфера, w вид; uSlitP: направление, бегущий срез, время вглубь, ступени; uSlitG: колонки, строки, точек, кадров в буфере
+uniform vec4 uSlit;
+uniform vec4 uSlitP;
+uniform vec4 uSlitG;
+uniform highp sampler2DArray uSlitTex;
 #endif
 #ifdef HERO
 #define HEROSIZE clamp(sqrt(uFr.z / max(uHero.z, 1.0)), 0.4, 1.0)
@@ -88079,6 +88194,37 @@ void main() {
 	float eC = uMorph < 0.9999 ? (int(uMorphS.x + 0.5) == 2 ? smoothstep(0.5, 0.9, ltC) : morphEase(ltC)) : 1.0;
 	vec3 colM = mix(aColor, aColorB, eC);
 	if (uFr.x > 0.5) colM = frCol;
+#ifdef VSCREEN
+#ifndef HERO
+	// слит-скан: у точки своя задержка во времени, цвет из кадра в прошлом (между соседними кадрами плавно)
+	if (uSlit.x > 0.001) {
+		float sip = floor(aIdx * uSlitG.z + 0.5);
+		float sci = mod(sip, uSlitG.x);
+		float scj = floor(sip / uSlitG.x);
+		vec2 suv0 = vec2((sci + 0.5) / uSlitG.x, (scj + 0.5) / uSlitG.y);
+		int sm = int(uSlit.w + 0.5);
+		float sf;
+		if (sm == 0) sf = suv0.y;
+		else if (sm == 1) sf = suv0.x;
+		else if (sm == 2) sf = clamp(length((suv0 - 0.5) * vec2(uSlitG.x / uSlitG.y, 1.0)) * 1.25, 0.0, 1.0);
+		else if (sm == 3) sf = uDepth.x > 0.001 ? 1.0 - gDepth : 1.0 - gLum;
+		else sf = snoise(vec3(suv0 * vec2(uSlitG.x / uSlitG.y, 1.0) * 2.5, uTime * 0.12)) * 0.5 + 0.5;
+		if (uSlitP.y > 0.001) sf = fract(sf + uTime * uSlitP.y * 0.25);
+		if (uSlitP.w > 1.5) sf = floor(sf * uSlitP.w) / (uSlitP.w - 1.0);
+		sf = clamp(sf, 0.0, 1.0);
+		if (uSlitP.x < 0.0) sf = 1.0 - sf;
+		float sd = sf * uSlit.y * (uSlitG.w - 1.0);
+		float s0 = floor(sd);
+		int sl0 = int(mod(uSlit.z - s0 + uSlitG.w * 8.0, uSlitG.w));
+		int sl1 = int(mod(uSlit.z - s0 - 1.0 + uSlitG.w * 8.0, uSlitG.w));
+		vec3 scol = mix(texelFetch(uSlitTex, ivec3(int(sci), int(scj), sl0), 0).rgb, texelFetch(uSlitTex, ivec3(int(sci), int(scj), sl1), 0).rgb, sd - s0);
+		float sk = min(uSlit.x, 1.0);
+		colM = mix(colM, scol, sk);
+		// время вглубь: чем старше кадр точки, тем дальше она от зрителя
+		pos.z -= sf * uSlit.y * uSlitP.z * 1.2 * sk;
+	}
+#endif
+#endif
 	vec3 nrmM = mix(aNormal, aNormalB, eC);
 	if (uColorBy > 2.5 && uColorBy < 3.5) col = colM;
 	else if (uColorBy > 3.5 && uColorBy < 4.5) col = uSolid;
@@ -88266,7 +88412,20 @@ void main() {
 			if (uScrD.z < 0.0) sdv = 1.0 - sdv;
 			if (uScrQ.x > 0.5) scr = vec3(sdv);
 		}
+#ifndef HERO
+		// память цвета: в кадре светлейшее из нового и запомненного (длинная выдержка), вне кадра запомненное гаснет
+		vec4 smem = vec4(0.0);
+		if (uScrQ.y > 0.5) {
+			float smi = floor(aIdx * uScrMN + 0.5);
+			smem = texelFetch(uScrMTex, ivec2(int(mod(smi, 2048.0)), int(floor(smi / 2048.0))), 0);
+			smem.rgb = smem.rgb * smem.rgb * 4.0;
+			scr = max(scr, smem.rgb);
+		}
+#endif
 		vColor = mix(vColor, mix(vColor * 0.35, scr, uScrP.z), smask * uScr.x);
+#ifndef HERO
+		if (uScrQ.y > 0.5) vColor = mix(vColor, mix(vColor * 0.35, smem.rgb, uScrP.z), smem.a * (1.0 - smask) * uScr.x);
+#endif
 		if (uScrD.x > 0.5) {
 			vec3 dirn = dot(nrmM, nrmM) > 0.01 ? normalize(nrmM) : normalize(bsx + vec3(1e-4));
 			pos += dirn * sdv * uScrD.y * 0.45 * smask * uScr.x;
@@ -90424,6 +90583,7 @@ if (L.links.on) this._syncLinks();
 }
 }
 if (st.source === 'media' && this.pm.ready && this.geometry && this.geometry.attributes.position.count === this.pm.count) this._depthTick(dt, rgbNew);
+this._slitTick(rgbNew, u);
 {
 const mc = st.morphCfg;
 const beatNew = this.levels.beat > 0.9 && (this._bPrev || 0) <= 0.9;
@@ -91089,6 +91249,7 @@ const eff = L.on ? clamp(this._eff(L), 0, 2) : 0;
 const src = eff > 0.001 ? this._screenSource() : null;
 if (!src) {
 u.uScr.value.x = 0;
+u.uScrQ.value.y = 0;
 return;
 }
 if (u.uScrTex.value !== src.tex) u.uScrTex.value = src.tex;
@@ -91104,6 +91265,7 @@ const hasMap = ds !== 'off' && ds !== 'bright' && this._screenDepth(ds, src.medi
 u.uScrD.value.set(ds === 'off' ? 0 : hasMap ? 2 : 1, L.depth ?? 0.5, L.dinv === 'far' ? -1 : 1, L.dcon ?? 1);
 u.uScrQ.value.set(L.dshow === 'map' && ds !== 'off' ? 1 : 0, 0, 0, 0);
 if (hasMap && u.uScrDep.value !== this._scrDepTex) u.uScrDep.value = this._scrDepTex;
+u.uScrQ.value.y = this._screenMemTick(L, src) ? 1 : 0;
 if (this._scrFile && L.source === 'file' && this._scrFile.el.paused && this._scrFile.el.play) this._scrFile.el.play().catch(() => {});
 }
 _screenDepth(ds, el) {
@@ -91193,6 +91355,177 @@ this.app.toast('Не удалось открыть карту глубины: ' 
 }
 this.emit();
 }
+_screenMemTick(L, src) {
+const T = L.mem || 0;
+const g = this.geometry;
+if (T <= 0.01 || !g || !src.media || (L.dshow === 'map' && L.dsrc && L.dsrc !== 'off')) return false;
+const n = g.attributes.position.count;
+let tex = this._scrMTex;
+if (!tex || tex.userData.n !== n) {
+tex?.dispose();
+const W = 2048, H = Math.ceil(n / W);
+tex = this._scrMTex = new THREE.DataTexture(new Uint8Array(W * H * 4), W, H, THREE.RGBAFormat, THREE.UnsignedByteType);
+tex.minFilter = tex.magFilter = THREE.NearestFilter;
+tex.generateMipmaps = false;
+tex.userData.n = n;
+this._scrMF = new Float32Array(n * 4);
+this._scrM = null;
+}
+if (this.shared.uScrMTex.value !== tex) this.shared.uScrMTex.value = tex;
+this.shared.uScrMN.value = n;
+const M = (this._scrM ||= { ptr: 0, tGrab: -1, frame: null, chunkT: new Float64Array(Math.ceil(n / 200000)).fill(this._time) });
+if (this._time - M.tGrab > 1 / 30) {
+M.tGrab = this._time;
+M.frame = grabFrame(src.media, 160);
+}
+const f = M.frame;
+if (!f) return true;
+const CH = 200000;
+const c = Math.floor(M.ptr / CH);
+const i0 = c * CH;
+const i1 = Math.min(n, i0 + CH);
+const dtc = Math.max(0, this._time - M.chunkT[c]);
+M.chunkT[c] = this._time;
+M.ptr = i1 >= n ? 0 : i1;
+const k = Math.exp(-dtc / T);
+const P = this.shared;
+const cen = P.uCen.value;
+const y0 = P.uYR.value.x;
+const hy = Math.max(P.uYR.value.y - y0, 1e-4);
+const ym = (P.uYR.value.x + P.uYR.value.y) * 0.5;
+const ar = Math.max(src.ar, 0.05);
+const sc = Math.max(0.1, L.scale);
+const rot = (L.rotate * Math.PI) / 180;
+const cr = Math.cos(rot), sr = Math.sin(rot);
+const mode = L.mode;
+const bright = L.bright;
+const T3 = g.attributes.aTarget.array;
+const N3 = g.attributes.aNormal.array;
+const m = this._scrMF;
+const out = tex.image.data;
+let mvp = null, scrAsp = 1;
+if (mode === 'project') {
+const cam = this.app.viewport.camera;
+mvp = new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse).multiply(this.points.matrixWorld).elements;
+scrAsp = cam.projectionMatrix.elements[5] / cam.projectionMatrix.elements[0];
+}
+const LUT = (this._scrLUT ||= Float32Array.from({ length: 256 }, (_, i) => {
+const v = i / 255;
+return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+}));
+const fw = f.w, fh = f.h, fd = f.data;
+for (let i = i0; i < i1; i++) {
+const o = i * 4;
+m[o] *= k;
+m[o + 1] *= k;
+m[o + 2] *= k;
+m[o + 3] *= k;
+const bx = T3[i * 3] - cen.x, by = T3[i * 3 + 1], bz = T3[i * 3 + 2] - cen.z;
+let u, v;
+if (mode === 'wrap') {
+u = Math.atan2(bz, bx) / (Math.PI * 2) + 0.5;
+v = (by - y0) / hy;
+u = (u - 0.5) / sc + 0.5;
+u -= Math.floor(u);
+} else {
+let x, y;
+if (mode === 'project') {
+const px = T3[i * 3], py = T3[i * 3 + 1], pz = T3[i * 3 + 2];
+const w = mvp[3] * px + mvp[7] * py + mvp[11] * pz + mvp[15];
+if (w <= 1e-4) continue;
+x = (((mvp[0] * px + mvp[4] * py + mvp[8] * pz + mvp[12]) / w) * 0.5 * scrAsp) / ar;
+y = ((mvp[1] * px + mvp[5] * py + mvp[9] * pz + mvp[13]) / w) * 0.5;
+} else {
+if (N3[i * 3 + 2] < -0.05) continue;
+x = bx / (hy * ar);
+y = (by - ym) / hy;
+}
+x /= sc;
+y /= sc;
+u = cr * x - sr * y + 0.5;
+v = sr * x + cr * y + 0.5;
+if (u < 0 || u > 1 || v < 0 || v > 1) continue;
+}
+const px = Math.min(fw - 1, (u * fw) | 0);
+const py = Math.min(fh - 1, ((1 - Math.min(1, Math.max(0, v))) * fh) | 0);
+const q = (py * fw + px) * 4;
+const r = LUT[fd[q]] * bright, gg = LUT[fd[q + 1]] * bright, b = LUT[fd[q + 2]] * bright;
+if (r > m[o]) m[o] = r;
+if (gg > m[o + 1]) m[o + 1] = gg;
+if (b > m[o + 2]) m[o + 2] = b;
+m[o + 3] = 1;
+}
+for (let o = i0 * 4, e = i1 * 4; o < e; o += 4) {
+out[o] = Math.min(255, Math.sqrt(m[o] * 0.25) * 255 + 0.5);
+out[o + 1] = Math.min(255, Math.sqrt(m[o + 1] * 0.25) * 255 + 0.5);
+out[o + 2] = Math.min(255, Math.sqrt(m[o + 2] * 0.25) * 255 + 0.5);
+out[o + 3] = Math.min(255, m[o + 3] * 255 + 0.5);
+}
+tex.needsUpdate = true;
+return true;
+}
+}
+};
+__defs['src/effects/engine/slitscan.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'SlitPart', () => SlitPart);
+const THREE = __req('vendor/three/build/three.module.js');
+const { clamp } = __req('src/core/util.js');
+class SlitPart {
+_slitTick(rgbNew, u) {
+const S = this.state.layers.slitscan;
+const pm = this.pm;
+const ok = S.on && this.state.source === 'media' && pm.ready && (pm.kind === 'video' || pm.isRec) && this.geometry?.attributes.position.count === pm.count;
+const eff = ok ? clamp(this._eff(S), 0, 1.5) : 0;
+if (eff <= 0.001) {
+u.uSlit.value.x = 0;
+return;
+}
+const cols = pm.cols, rows = pm.rows;
+const per = cols * rows * 4;
+const M = Math.max(4, Math.min(Math.round(S.frames || 48), Math.floor(64e6 / per)));
+let H = this._slit;
+if (!H || H.cols !== cols || H.rows !== rows || H.M !== M) {
+H?.tex.dispose();
+const data = new Uint8Array(per * M);
+const tex = new THREE.DataArrayTexture(data, cols, rows, M);
+tex.format = THREE.RGBAFormat;
+tex.type = THREE.UnsignedByteType;
+tex.colorSpace = THREE.SRGBColorSpace;
+tex.minFilter = tex.magFilter = THREE.NearestFilter;
+tex.generateMipmaps = false;
+tex.unpackAlignment = 1;
+H = this._slit = { cols, rows, M, data, tex, head: 0, filled: false };
+}
+const rgb = rgbNew || (!H.filled ? pm.sample() : null);
+if (rgb) {
+const write = (layer) => {
+const d = H.data;
+let o = layer * per;
+for (let i = 0; i < rgb.length; i += 3) {
+d[o] = rgb[i];
+d[o + 1] = rgb[i + 1];
+d[o + 2] = rgb[i + 2];
+d[o + 3] = 255;
+o += 4;
+}
+};
+if (!H.filled) {
+for (let l = 0; l < M; l++) write(l);
+H.filled = true;
+H.tex.clearLayerUpdates?.();
+} else {
+H.head = (H.head + 1) % M;
+write(H.head);
+H.tex.addLayerUpdate?.(H.head);
+}
+H.tex.needsUpdate = true;
+}
+if (u.uSlitTex.value !== H.tex) u.uSlitTex.value = H.tex;
+u.uSlit.value.set(eff, S.length ?? 0.8, H.head, { rows: 0, cols: 1, radial: 2, depth: 3, noise: 4 }[S.mode] ?? 0);
+u.uSlitP.value.set(S.dir === 'back' ? -1 : 1, S.sweep || 0, S.push || 0, Math.round(S.bands || 0));
+u.uSlitG.value.set(cols, rows, cols * rows, M);
+}
 }
 };
 __defs['src/effects/engine/mixin.js'] = function (__exports, __req) {
@@ -91236,6 +91569,7 @@ const { InteractionPart } = __req('src/effects/engine/interaction.js');
 const { LoopPart } = __req('src/effects/engine/loop.js');
 const { RecordingPart } = __req('src/effects/engine/recording.js');
 const { ScreenPart } = __req('src/effects/engine/screen.js');
+const { SlitPart } = __req('src/effects/engine/slitscan.js');
 const { mixin } = __req('src/effects/engine/mixin.js');
 class EffectsEngine {
 constructor(app) {
@@ -91539,7 +91873,7 @@ nav.paintLock = want;
 this.app.viewport.container.classList.toggle('paint-lock', want);
 }
 }
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart);
 };
 __defs['src/animation/anim-activity.js'] = function (__exports, __req) {
 'use strict';
@@ -91862,6 +92196,16 @@ feedback: (c, t) => {
 for (let k = 16; k >= 0; k--) {
 const tt = t * 1.8 - k * 0.09;
 dot(c, Math.cos(tt) * 10, Math.sin(tt * 1.3) * 6, k === 0 ? 3.4 : 2.6 - k * 0.12, k === 0 ? 1 : 0.7 - k * 0.04);
+}
+},
+slitscan: (c, t) => {
+for (let j = 0; j < 8; j++) for (let i = 0; i < 12; i++) {
+const x = (i - 5.5) * 2.4;
+const y = (j - 3.5) * 2.6;
+const tt = t * 1.6 - j * 0.22;
+const ph = Math.sin(x * 0.28 - tt * 2.2);
+const lit = Math.max(0, ph) ** 3;
+dot(c, x, y, 1.2 + lit * 1.4, 0.25 + 0.75 * lit);
 }
 },
 hyper: (c, t) => {
@@ -92381,7 +92725,7 @@ rotate: { id: 'rotate', name: 'Вращение', icon: 'arrows-clockwise', hint
 bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 };
 const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'hyper'];
+const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'hyper', 'slitscan'];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
 const animQuickBtn = button({

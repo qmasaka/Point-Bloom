@@ -253,6 +253,16 @@ const tt = t * 1.8 - k * 0.09;
 dot(c, Math.cos(tt) * 10, Math.sin(tt * 1.3) * 6, k === 0 ? 3.4 : 2.6 - k * 0.12, k === 0 ? 1 : 0.7 - k * 0.04);
 }
 },
+slitscan: (c, t) => {
+for (let j = 0; j < 8; j++) for (let i = 0; i < 12; i++) {
+const x = (i - 5.5) * 2.4;
+const y = (j - 3.5) * 2.6;
+const tt = t * 1.6 - j * 0.22;
+const ph = Math.sin(x * 0.28 - tt * 2.2);
+const lit = Math.max(0, ph) ** 3;
+dot(c, x, y, 1.2 + lit * 1.4, 0.25 + 0.75 * lit);
+}
+},
 hyper: (c, t) => {
 const a = t * 0.9;
 const b = t * 0.55;

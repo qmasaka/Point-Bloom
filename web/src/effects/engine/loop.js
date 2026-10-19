@@ -417,6 +417,7 @@ if (L.links.on) this._syncLinks();
 }
 }
 if (st.source === 'media' && this.pm.ready && this.geometry && this.geometry.attributes.position.count === this.pm.count) this._depthTick(dt, rgbNew);
+this._slitTick(rgbNew, u);
 {
 const mc = st.morphCfg;
 const beatNew = this.levels.beat > 0.9 && (this._bPrev || 0) <= 0.9;

@@ -23,6 +23,7 @@ import { InteractionPart } from './interaction.js';
 import { LoopPart } from './loop.js';
 import { RecordingPart } from './recording.js';
 import { ScreenPart } from './screen.js';
+import { SlitPart } from './slitscan.js';
 import { mixin } from './mixin.js';
 export class EffectsEngine {
 constructor(app) {
@@ -326,4 +327,4 @@ nav.paintLock = want;
 this.app.viewport.container.classList.toggle('paint-lock', want);
 }
 }
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart);
