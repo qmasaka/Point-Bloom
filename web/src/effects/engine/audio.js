@@ -38,7 +38,7 @@ this.touch();
 get trackLabel() {
 if (this.sourceType === 'mic') return 'Микрофон';
 if (this.sourceType === 'file') return this.audioName || 'Трек';
-if (this.sourceType === 'video') return 'Звук видео';
+if (this.sourceType === 'video') return this._vidEl && this._vidEl !== this.pm.el ? 'Звук видео «Экрана»' : 'Звук видео';
 return (SYNTH_STYLES.find((s) => s.id === this.state.audio.style) || SYNTH_STYLES[0]).name;
 }
 async play() {
@@ -74,9 +74,13 @@ this._disconnectVideo();
 this.playing = false;
 this.emit();
 }
-_videoGate() {
-const el = this.pm.el;
-if (!el || this.pm.kind !== 'video') return null;
+_audioVideo() {
+const own = this._vidEl;
+if (own && own !== this.pm.el && own === this._scrFile?.media) return own;
+return this.pm.ready && this.pm.kind === 'video' ? this.pm.el : null;
+}
+_videoGate(el = this.pm.kind === 'video' ? this.pm.el : null) {
+if (!el || el.tagName !== 'VIDEO') return null;
 this._ensureCtx();
 if (!el._fxNode) {
 el._fxNode = this.ctx.createMediaElementSource(el);
@@ -87,17 +91,25 @@ el.muted = false;
 return el._fxGate;
 }
 _connectVideo() {
-const gate = this._videoGate();
+const el = this._audioVideo();
+const gate = this._videoGate(el);
 if (!gate) return false;
+if (this._vidGate && this._vidGate !== gate) this._disconnectVideo();
 gate.disconnect();
 gate.gain.value = 1;
 gate.connect(this.bus);
 this._vidGate = gate;
+this._vidEl = el;
+if (el === this.pm.el) {
 this.pm.onMute = (m) => {
 if (this.out) this.out.gain.value = m ? 0 : this.state.audio.volume;
 };
 this.pm.onMute(this.pm.muted);
 this.pm.play();
+} else {
+if (this.out) this.out.gain.value = this.state.audio.volume;
+el.play().catch(() => {});
+}
 return true;
 }
 _vidSink() {
@@ -117,7 +129,7 @@ gate.connect(this._vidSink());
 } catch (e) {
 }
 this._vidGate = null;
-this.pm.onMute = null;
+if (this._vidEl === this.pm.el) this.pm.onMute = null;
 if (this.out) this.out.gain.value = this.state.audio.volume;
 }
 }
@@ -132,8 +144,11 @@ this.pm.onMute = (m) => {
 gate.gain.value = m ? 0 : 1;
 };
 }
-async useVideoAudio() {
-if (!this.pm.ready || this.pm.kind !== 'video') throw new Error('Откройте видео на вкладке «Медиа»');
+async useVideoAudio(el) {
+const scr = this._scrFile?.media?.tagName === 'VIDEO' ? this._scrFile.media : null;
+el = el || (this.pm.ready && this.pm.kind === 'video' ? this.pm.el : scr);
+if (!el) throw new Error('Откройте видео на вкладке «Медиа» или выберите видео для «Экрана»');
+this._vidEl = el;
 this._ensureCtx();
 this.synth.stop();
 this._stopFile();

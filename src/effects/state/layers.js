@@ -11,6 +11,7 @@ export const FX_LAYERS = [
 		{ type: 'note', text: 'Откройте видео или фото в «Медиа» или выберите свой файл ниже: оно сразу появится на форме.' },
 		{ key: 'source', label: 'Источник', type: 'seg', options: [['current', 'Из «Медиа»'], ['file', 'Свой файл']] },
 		{ type: 'button', label: 'Выбрать видео или фото…', act: 'screenPick', icon: 'folder-open', when: ['source', ['file']] },
+		{ type: 'button', label: 'Звук из этого видео', act: 'screenAudio', icon: 'speaker-high' },
 		{ key: 'mode', label: 'Вид', type: 'select', options: [['stick', 'Приклеено', 'кадр на лице формы'], ['wrap', 'Обёртка', 'кадр вокруг формы'], ['project', 'Проектор', 'кадр на экране, форма скользит']] },
 		{ key: 'scale', label: 'Масштаб кадра, ×', min: 0.3, max: 3, step: 0.05, noNorm: true },
 		{ key: 'rotate', label: 'Поворот кадра, °', min: -180, max: 180, step: 5, int: true, noNorm: true, when: ['mode', ['stick', 'project']] },

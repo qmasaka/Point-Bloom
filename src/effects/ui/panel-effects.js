@@ -708,7 +708,7 @@ export function createEffectsPanel(app, root, engine) {
 		options: [
 			{ value: 'synth', label: 'Музыка', title: 'Встроенная музыка: эмбиент, джангл, брейккор' },
 			{ value: 'file', label: 'Файл', title: 'Загрузить свой аудиофайл' },
-			{ value: 'video', label: 'Видео', title: 'Звук из открытого видео' },
+			{ value: 'video', label: 'Видео', title: 'Звук из открытого видео или из видео «Экрана»' },
 			{ value: 'mic', label: 'Микроф.', title: 'Живой звук с микрофона' },
 		],
 		value: engine.sourceType,

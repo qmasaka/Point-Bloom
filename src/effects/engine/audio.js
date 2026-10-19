@@ -43,7 +43,7 @@ export class AudioPart {
 	get trackLabel() {
 		if (this.sourceType === 'mic') return 'Микрофон';
 		if (this.sourceType === 'file') return this.audioName || 'Трек';
-		if (this.sourceType === 'video') return 'Звук видео';
+		if (this.sourceType === 'video') return this._vidEl && this._vidEl !== this.pm.el ? 'Звук видео «Экрана»' : 'Звук видео';
 		return (SYNTH_STYLES.find((s) => s.id === this.state.audio.style) || SYNTH_STYLES[0]).name;
 	}
 
@@ -83,10 +83,16 @@ export class AudioPart {
 		this.emit();
 	}
 
-	/** Звук открытого видео: один раз заводим в аудиограф, дальше он идёт либо в анализатор (режим эффектов), либо прямо в колонки */
-	_videoGate() {
-		const el = this.pm.el;
-		if (!el || this.pm.kind !== 'video') return null;
+	/** Видео, чей звук слушают эффекты: открытое в «Медиа» или своё видео «Экрана» */
+	_audioVideo() {
+		const own = this._vidEl;
+		if (own && own !== this.pm.el && own === this._scrFile?.media) return own;
+		return this.pm.ready && this.pm.kind === 'video' ? this.pm.el : null;
+	}
+
+	/** Звук видео: один раз заводим в аудиограф, дальше он идёт либо в анализатор (режим эффектов), либо прямо в колонки */
+	_videoGate(el = this.pm.kind === 'video' ? this.pm.el : null) {
+		if (!el || el.tagName !== 'VIDEO') return null;
 		this._ensureCtx();
 		if (!el._fxNode) {
 			el._fxNode = this.ctx.createMediaElementSource(el);
@@ -98,18 +104,27 @@ export class AudioPart {
 	}
 
 	_connectVideo() {
-		const gate = this._videoGate();
+		const el = this._audioVideo();
+		const gate = this._videoGate(el);
 		if (!gate) return false;
+		if (this._vidGate && this._vidGate !== gate) this._disconnectVideo();
 		gate.disconnect();
 		gate.gain.value = 1;
 		gate.connect(this.bus);
 		this._vidGate = gate;
-		// выключение звука видео в эффектах гасит только вывод: анализ продолжает работать
-		this.pm.onMute = (m) => {
-			if (this.out) this.out.gain.value = m ? 0 : this.state.audio.volume;
-		};
-		this.pm.onMute(this.pm.muted);
-		this.pm.play();
+		this._vidEl = el;
+		if (el === this.pm.el) {
+			// выключение звука видео в эффектах гасит только вывод: анализ продолжает работать
+			this.pm.onMute = (m) => {
+				if (this.out) this.out.gain.value = m ? 0 : this.state.audio.volume;
+			};
+			this.pm.onMute(this.pm.muted);
+			this.pm.play();
+		} else {
+			// своё видео «Экрана»: играет само по себе, звук идёт через анализатор в колонки
+			if (this.out) this.out.gain.value = this.state.audio.volume;
+			el.play().catch(() => {});
+		}
 		return true;
 	}
 
@@ -133,7 +148,7 @@ export class AudioPart {
 				/* уже отключён */
 			}
 			this._vidGate = null;
-			this.pm.onMute = null;
+			if (this._vidEl === this.pm.el) this.pm.onMute = null;
 			if (this.out) this.out.gain.value = this.state.audio.volume;
 		}
 	}
@@ -151,8 +166,12 @@ export class AudioPart {
 		};
 	}
 
-	async useVideoAudio() {
-		if (!this.pm.ready || this.pm.kind !== 'video') throw new Error('Откройте видео на вкладке «Медиа»');
+	/** Звук видео. el: какое видео слушать (по умолчанию открытое в «Медиа», а если его нет, своё видео «Экрана») */
+	async useVideoAudio(el) {
+		const scr = this._scrFile?.media?.tagName === 'VIDEO' ? this._scrFile.media : null;
+		el = el || (this.pm.ready && this.pm.kind === 'video' ? this.pm.el : scr);
+		if (!el) throw new Error('Откройте видео на вкладке «Медиа» или выберите видео для «Экрана»');
+		this._vidEl = el;
 		this._ensureCtx();
 		this.synth.stop();
 		this._stopFile();

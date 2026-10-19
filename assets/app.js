@@ -72839,6 +72839,7 @@ const FX_LAYERS = [
 { type: 'note', text: 'Откройте видео или фото в «Медиа» или выберите свой файл ниже: оно сразу появится на форме.' },
 { key: 'source', label: 'Источник', type: 'seg', options: [['current', 'Из «Медиа»'], ['file', 'Свой файл']] },
 { type: 'button', label: 'Выбрать видео или фото…', act: 'screenPick', icon: 'folder-open', when: ['source', ['file']] },
+{ type: 'button', label: 'Звук из этого видео', act: 'screenAudio', icon: 'speaker-high' },
 { key: 'mode', label: 'Вид', type: 'select', options: [['stick', 'Приклеено', 'кадр на лице формы'], ['wrap', 'Обёртка', 'кадр вокруг формы'], ['project', 'Проектор', 'кадр на экране, форма скользит']] },
 { key: 'scale', label: 'Масштаб кадра, ×', min: 0.3, max: 3, step: 0.05, noNorm: true },
 { key: 'rotate', label: 'Поворот кадра, °', min: -180, max: 180, step: 5, int: true, noNorm: true, when: ['mode', ['stick', 'project']] },
@@ -80320,6 +80321,14 @@ en: {
 'Загружаю нейросеть глубины для «Экрана» (один раз, около 50 МБ)': 'Loading the depth neural network for Screen (once, about 50 MB)',
 'Нейросеть глубины не запустилась: {}. Работает объём по яркости': 'The depth neural network did not start: {}. Volume by brightness is used',
 'Карта глубины для «Экрана»: {}': 'Depth map for Screen: {}',
+'Звук из этого видео': 'Sound from this video',
+'Звук видео «Экрана»': 'Screen video sound',
+'Звук из открытого видео или из видео «Экрана»': 'Sound from the open video or from the Screen video',
+'Откройте видео на вкладке «Медиа» или выберите видео для «Экрана»': 'Open a video on the Media tab or choose a video for Screen',
+'Сначала выберите видео для «Экрана»': 'Choose a video for Screen first',
+'Откройте видео в «Медиа» или выберите своё видео для «Экрана»': 'Open a video in Media or choose your own video for Screen',
+'Эффекты слушают звук видео «Экрана»': 'Effects now listen to the Screen video sound',
+'Не удалось взять звук из видео: {}': 'Could not take the sound from the video: {}',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -80871,6 +80880,14 @@ uk: {
 'Загружаю нейросеть глубины для «Экрана» (один раз, около 50 МБ)': 'Завантажую нейромережу глибини для «Екрана» (один раз, близько 50 МБ)',
 'Нейросеть глубины не запустилась: {}. Работает объём по яркости': 'Нейромережа глибини не запустилася: {}. Працює об’єм за яскравістю',
 'Карта глубины для «Экрана»: {}': 'Карта глибини для «Екрана»: {}',
+'Звук из этого видео': 'Звук із цього відео',
+'Звук видео «Экрана»': 'Звук відео «Екрана»',
+'Звук из открытого видео или из видео «Экрана»': 'Звук із відкритого відео або з відео «Екрана»',
+'Откройте видео на вкладке «Медиа» или выберите видео для «Экрана»': 'Відкрийте відео на вкладці «Медіа» або виберіть відео для «Екрана»',
+'Сначала выберите видео для «Экрана»': 'Спершу виберіть відео для «Екрана»',
+'Откройте видео в «Медиа» или выберите своё видео для «Экрана»': 'Відкрийте відео в «Медіа» або виберіть своє відео для «Екрана»',
+'Эффекты слушают звук видео «Экрана»': 'Ефекти слухають звук відео «Екрана»',
+'Не удалось взять звук из видео: {}': 'Не вдалося взяти звук із відео: {}',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -81422,6 +81439,14 @@ es: {
 'Загружаю нейросеть глубины для «Экрана» (один раз, около 50 МБ)': 'Cargando la red neuronal de profundidad para Pantalla (una vez, unos 50 MB)',
 'Нейросеть глубины не запустилась: {}. Работает объём по яркости': 'La red neuronal de profundidad no arrancó: {}. Se usa el volumen por brillo',
 'Карта глубины для «Экрана»: {}': 'Mapa de profundidad para Pantalla: {}',
+'Звук из этого видео': 'Sonido de este vídeo',
+'Звук видео «Экрана»': 'Sonido del vídeo de Pantalla',
+'Звук из открытого видео или из видео «Экрана»': 'Sonido del vídeo abierto o del vídeo de Pantalla',
+'Откройте видео на вкладке «Медиа» или выберите видео для «Экрана»': 'Abre un vídeo en la pestaña Medios o elige un vídeo para Pantalla',
+'Сначала выберите видео для «Экрана»': 'Primero elige un vídeo para Pantalla',
+'Откройте видео в «Медиа» или выберите своё видео для «Экрана»': 'Abre un vídeo en Medios o elige tu propio vídeo para Pantalla',
+'Эффекты слушают звук видео «Экрана»': 'Los efectos escuchan el sonido del vídeo de Pantalla',
+'Не удалось взять звук из видео: {}': 'No se pudo tomar el sonido del vídeo: {}',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -81973,6 +81998,14 @@ de: {
 'Загружаю нейросеть глубины для «Экрана» (один раз, около 50 МБ)': 'Lade das Tiefen-Netz für Bildschirm (einmalig, etwa 50 MB)',
 'Нейросеть глубины не запустилась: {}. Работает объём по яркости': 'Das Tiefen-Netz ist nicht gestartet: {}. Volumen nach Helligkeit wird verwendet',
 'Карта глубины для «Экрана»: {}': 'Tiefenkarte für Bildschirm: {}',
+'Звук из этого видео': 'Ton aus diesem Video',
+'Звук видео «Экрана»': 'Ton des Bildschirm-Videos',
+'Звук из открытого видео или из видео «Экрана»': 'Ton aus dem geöffneten Video oder dem Bildschirm-Video',
+'Откройте видео на вкладке «Медиа» или выберите видео для «Экрана»': 'Öffne ein Video im Tab Medien oder wähle ein Video für Bildschirm',
+'Сначала выберите видео для «Экрана»': 'Wähle zuerst ein Video für Bildschirm',
+'Откройте видео в «Медиа» или выберите своё видео для «Экрана»': 'Öffne ein Video in Medien oder wähle ein eigenes Video für Bildschirm',
+'Эффекты слушают звук видео «Экрана»': 'Die Effekte hören den Ton des Bildschirm-Videos',
+'Не удалось взять звук из видео: {}': 'Ton aus dem Video konnte nicht übernommen werden: {}',
 },
 };
 };
@@ -89190,7 +89223,7 @@ this.touch();
 get trackLabel() {
 if (this.sourceType === 'mic') return 'Микрофон';
 if (this.sourceType === 'file') return this.audioName || 'Трек';
-if (this.sourceType === 'video') return 'Звук видео';
+if (this.sourceType === 'video') return this._vidEl && this._vidEl !== this.pm.el ? 'Звук видео «Экрана»' : 'Звук видео';
 return (SYNTH_STYLES.find((s) => s.id === this.state.audio.style) || SYNTH_STYLES[0]).name;
 }
 async play() {
@@ -89226,9 +89259,13 @@ this._disconnectVideo();
 this.playing = false;
 this.emit();
 }
-_videoGate() {
-const el = this.pm.el;
-if (!el || this.pm.kind !== 'video') return null;
+_audioVideo() {
+const own = this._vidEl;
+if (own && own !== this.pm.el && own === this._scrFile?.media) return own;
+return this.pm.ready && this.pm.kind === 'video' ? this.pm.el : null;
+}
+_videoGate(el = this.pm.kind === 'video' ? this.pm.el : null) {
+if (!el || el.tagName !== 'VIDEO') return null;
 this._ensureCtx();
 if (!el._fxNode) {
 el._fxNode = this.ctx.createMediaElementSource(el);
@@ -89239,17 +89276,25 @@ el.muted = false;
 return el._fxGate;
 }
 _connectVideo() {
-const gate = this._videoGate();
+const el = this._audioVideo();
+const gate = this._videoGate(el);
 if (!gate) return false;
+if (this._vidGate && this._vidGate !== gate) this._disconnectVideo();
 gate.disconnect();
 gate.gain.value = 1;
 gate.connect(this.bus);
 this._vidGate = gate;
+this._vidEl = el;
+if (el === this.pm.el) {
 this.pm.onMute = (m) => {
 if (this.out) this.out.gain.value = m ? 0 : this.state.audio.volume;
 };
 this.pm.onMute(this.pm.muted);
 this.pm.play();
+} else {
+if (this.out) this.out.gain.value = this.state.audio.volume;
+el.play().catch(() => {});
+}
 return true;
 }
 _vidSink() {
@@ -89269,7 +89314,7 @@ gate.connect(this._vidSink());
 } catch (e) {
 }
 this._vidGate = null;
-this.pm.onMute = null;
+if (this._vidEl === this.pm.el) this.pm.onMute = null;
 if (this.out) this.out.gain.value = this.state.audio.volume;
 }
 }
@@ -89284,8 +89329,11 @@ this.pm.onMute = (m) => {
 gate.gain.value = m ? 0 : 1;
 };
 }
-async useVideoAudio() {
-if (!this.pm.ready || this.pm.kind !== 'video') throw new Error('Откройте видео на вкладке «Медиа»');
+async useVideoAudio(el) {
+const scr = this._scrFile?.media?.tagName === 'VIDEO' ? this._scrFile.media : null;
+el = el || (this.pm.ready && this.pm.kind === 'video' ? this.pm.el : scr);
+if (!el) throw new Error('Откройте видео на вкладке «Медиа» или выберите видео для «Экрана»');
+this._vidEl = el;
 this._ensureCtx();
 this.synth.stop();
 this._stopFile();
@@ -90996,6 +91044,8 @@ inp.click();
 }
 screenLoad(file) {
 const url = URL.createObjectURL(file);
+const hadAudio = this.sourceType === 'video' && this._vidEl && this._vidEl === this._scrFile?.media;
+if (hadAudio) this._disconnectVideo();
 this._scrFile?.dispose();
 if (file.type.startsWith('image/')) {
 const img = new Image();
@@ -91005,6 +91055,10 @@ this._scrFile = { el: { videoWidth: img.naturalWidth, videoHeight: img.naturalHe
 this._scrName = file.name;
 this.state.layers.vscreen.source = 'file';
 this.app.toast('Для «Экрана» выбрано: ' + file.name, 'ok', 2200);
+if (hadAudio) {
+this._vidEl = null;
+if (this.pm.kind === 'video') this.useVideoAudio().catch(() => {});
+}
 this.app.viewport.invalidate();
 this.emit();
 };
@@ -91023,6 +91077,7 @@ this._scrFile = { el: v, media: v, tex, dispose: () => { v.pause(); tex.dispose(
 this._scrName = file.name;
 this.state.layers.vscreen.source = 'file';
 v.play().catch(() => {});
+if (hadAudio) this.useVideoAudio(v).catch(() => {});
 this.app.toast('Для «Экрана» выбрано: ' + file.name, 'ok', 2200);
 this.app.viewport.invalidate();
 this.emit();
@@ -91110,6 +91165,21 @@ t.unpackAlignment = 1;
 const d = t.image.data;
 for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) d[(m.h - 1 - y) * m.w + x] = (Math.min(1, Math.max(0, m.data[y * m.w + x])) * 255 + 0.5) | 0;
 t.needsUpdate = true;
+}
+async screenAudio() {
+const L = this.state.layers.vscreen;
+const el = L.source === 'file' ? this._scrFile?.media : this.pm.ready ? this.pm.el : null;
+if (!el || el.tagName !== 'VIDEO') {
+this.app.toast(L.source === 'file' ? 'Сначала выберите видео для «Экрана»' : 'Откройте видео в «Медиа» или выберите своё видео для «Экрана»', 'info');
+return;
+}
+try {
+await this.useVideoAudio(el);
+this.app.toast('Эффекты слушают звук видео «Экрана»', 'ok', 2200);
+} catch (e) {
+this.app.toast('Не удалось взять звук из видео: ' + (e.message || e), 'error');
+}
+this.emit();
 }
 async screenDepthPick() {
 const f = await pickImageFile();
@@ -92629,7 +92699,7 @@ const sourceSeg = segmented({
 options: [
 { value: 'synth', label: 'Музыка', title: 'Встроенная музыка: эмбиент, джангл, брейккор' },
 { value: 'file', label: 'Файл', title: 'Загрузить свой аудиофайл' },
-{ value: 'video', label: 'Видео', title: 'Звук из открытого видео' },
+{ value: 'video', label: 'Видео', title: 'Звук из открытого видео или из видео «Экрана»' },
 { value: 'mic', label: 'Микроф.', title: 'Живой звук с микрофона' },
 ],
 value: engine.sourceType,

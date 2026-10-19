@@ -50,6 +50,9 @@ export class ScreenPart {
 
 	screenLoad(file) {
 		const url = URL.createObjectURL(file);
+		// звук слушал прежнее видео «Экрана»: новое видео сразу подхватывает его (ниже), а картинка возвращает звук видео из «Медиа»
+		const hadAudio = this.sourceType === 'video' && this._vidEl && this._vidEl === this._scrFile?.media;
+		if (hadAudio) this._disconnectVideo();
 		this._scrFile?.dispose();
 		if (file.type.startsWith('image/')) {
 			const img = new Image();
@@ -59,6 +62,10 @@ export class ScreenPart {
 				this._scrName = file.name;
 				this.state.layers.vscreen.source = 'file';
 				this.app.toast('Для «Экрана» выбрано: ' + file.name, 'ok', 2200);
+				if (hadAudio) {
+					this._vidEl = null;
+					if (this.pm.kind === 'video') this.useVideoAudio().catch(() => {});
+				}
 				this.app.viewport.invalidate();
 				this.emit();
 			};
@@ -77,6 +84,7 @@ export class ScreenPart {
 			this._scrName = file.name;
 			this.state.layers.vscreen.source = 'file';
 			v.play().catch(() => {});
+			if (hadAudio) this.useVideoAudio(v).catch(() => {});
 			this.app.toast('Для «Экрана» выбрано: ' + file.name, 'ok', 2200);
 			this.app.viewport.invalidate();
 			this.emit();
@@ -175,6 +183,23 @@ export class ScreenPart {
 		const d = t.image.data;
 		for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) d[(m.h - 1 - y) * m.w + x] = (Math.min(1, Math.max(0, m.data[y * m.w + x])) * 255 + 0.5) | 0;
 		t.needsUpdate = true;
+	}
+
+	/** Кнопка «Звук из видео»: эффекты слушают звук видео, которое играет на «Экране» */
+	async screenAudio() {
+		const L = this.state.layers.vscreen;
+		const el = L.source === 'file' ? this._scrFile?.media : this.pm.ready ? this.pm.el : null;
+		if (!el || el.tagName !== 'VIDEO') {
+			this.app.toast(L.source === 'file' ? 'Сначала выберите видео для «Экрана»' : 'Откройте видео в «Медиа» или выберите своё видео для «Экрана»', 'info');
+			return;
+		}
+		try {
+			await this.useVideoAudio(el);
+			this.app.toast('Эффекты слушают звук видео «Экрана»', 'ok', 2200);
+		} catch (e) {
+			this.app.toast('Не удалось взять звук из видео: ' + (e.message || e), 'error');
+		}
+		this.emit();
 	}
 
 	/** Кнопка «Загрузить карту глубины» у «Экрана» */

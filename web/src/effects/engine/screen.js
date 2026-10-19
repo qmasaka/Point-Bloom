@@ -43,6 +43,8 @@ inp.click();
 }
 screenLoad(file) {
 const url = URL.createObjectURL(file);
+const hadAudio = this.sourceType === 'video' && this._vidEl && this._vidEl === this._scrFile?.media;
+if (hadAudio) this._disconnectVideo();
 this._scrFile?.dispose();
 if (file.type.startsWith('image/')) {
 const img = new Image();
@@ -52,6 +54,10 @@ this._scrFile = { el: { videoWidth: img.naturalWidth, videoHeight: img.naturalHe
 this._scrName = file.name;
 this.state.layers.vscreen.source = 'file';
 this.app.toast('Для «Экрана» выбрано: ' + file.name, 'ok', 2200);
+if (hadAudio) {
+this._vidEl = null;
+if (this.pm.kind === 'video') this.useVideoAudio().catch(() => {});
+}
 this.app.viewport.invalidate();
 this.emit();
 };
@@ -70,6 +76,7 @@ this._scrFile = { el: v, media: v, tex, dispose: () => { v.pause(); tex.dispose(
 this._scrName = file.name;
 this.state.layers.vscreen.source = 'file';
 v.play().catch(() => {});
+if (hadAudio) this.useVideoAudio(v).catch(() => {});
 this.app.toast('Для «Экрана» выбрано: ' + file.name, 'ok', 2200);
 this.app.viewport.invalidate();
 this.emit();
@@ -157,6 +164,21 @@ t.unpackAlignment = 1;
 const d = t.image.data;
 for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) d[(m.h - 1 - y) * m.w + x] = (Math.min(1, Math.max(0, m.data[y * m.w + x])) * 255 + 0.5) | 0;
 t.needsUpdate = true;
+}
+async screenAudio() {
+const L = this.state.layers.vscreen;
+const el = L.source === 'file' ? this._scrFile?.media : this.pm.ready ? this.pm.el : null;
+if (!el || el.tagName !== 'VIDEO') {
+this.app.toast(L.source === 'file' ? 'Сначала выберите видео для «Экрана»' : 'Откройте видео в «Медиа» или выберите своё видео для «Экрана»', 'info');
+return;
+}
+try {
+await this.useVideoAudio(el);
+this.app.toast('Эффекты слушают звук видео «Экрана»', 'ok', 2200);
+} catch (e) {
+this.app.toast('Не удалось взять звук из видео: ' + (e.message || e), 'error');
+}
+this.emit();
 }
 async screenDepthPick() {
 const f = await pickImageFile();
