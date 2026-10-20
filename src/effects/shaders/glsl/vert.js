@@ -31,8 +31,6 @@ uniform vec3 uP1;
 uniform vec3 uP2;
 uniform vec3 uSliceC;
 uniform vec3 uMarkC;
-uniform vec4 uLens; // гравитационная линза: x сила, y радиус кольца Эйнштейна (доля высоты экрана), z свечение кольца, w соотношение сторон экрана
-uniform vec4 uLensC; // xy: где масса на экране (-1..1)
 varying vec3 vColor;
 varying float vD;
 varying float vDk;
@@ -55,6 +53,10 @@ uniform vec4 uSlit;
 uniform vec4 uSlitP;
 uniform vec4 uSlitG;
 uniform highp sampler2DArray uSlitTex;
+// «Пиксельная сортировка»: x сила, y как движется (0 держит, 1 волна, 2 удар, 3 дыхание), z скорость, w направление (0 строки, 1 столбцы); uSortP: точек, колонок, растяжение, свечение
+uniform vec4 uSort;
+uniform vec4 uSortP;
+uniform highp sampler2D uSortTex;
 #endif
 #ifdef SHADOW
 // «Тень на стене»: копия облака проецируется по лучу света на пол или стену (только WebGL, объект в engine/shadow.js)
@@ -260,6 +262,21 @@ void main() {
 		colM = mix(colM, scol, sk);
 		// время вглубь: чем старше кадр точки, тем дальше она от зрителя
 		pos.z -= sf * uSlit.y * uSlitP.z * 1.2 * sk;
+	}
+	// пиксельная сортировка: точка едет к своему месту в отсортированной полосе, вместе со своим цветом
+	if (uSort.x > 0.001) {
+		float qi = floor(aIdx * uSortP.x + 0.5);
+		vec2 qd = texelFetch(uSortTex, ivec2(int(mod(qi, 2048.0)), int(floor(qi / 2048.0))), 0).xy;
+		float qline = uSort.w > 0.5 ? mod(qi, uSortP.y) : floor(qi / uSortP.y);
+		int qm = int(uSort.y + 0.5);
+		float qk = 1.0;
+		if (qm == 1) qk = 0.5 + 0.5 * sin(uTime * uSort.z * 1.6 - qline * 0.07);
+		else if (qm == 2) qk = clamp(uBeat * 1.4, 0.0, 1.0);
+		else if (qm == 3) qk = 0.5 + 0.5 * sin(uTime * uSort.z * 1.2);
+		qk = qk * qk * (3.0 - 2.0 * qk) * min(uSort.x, 1.0);
+		pos.xy += qd * qk * uSortP.z;
+		// сдвинутые точки светятся: видны полосы сортировки
+		colM *= 1.0 + min(length(qd) * 6.0, 1.0) * qk * uSortP.w;
 	}
 #endif
 #endif
@@ -499,26 +516,6 @@ void main() {
 	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
 #endif
 	gl_Position = projectionMatrix * mv;
-	// гравитационная линза: изображение точки на экране отклоняется вокруг невидимой массы по уравнению линзы.
-	// Внутри кольца Эйнштейна изображений нет (чёрный круг), точки у самого кольца растянуты, ярче и крупнее
-	float lensMu = 1.0;
-	if (uLens.x > 0.001) {
-		if (gl_Position.w > 1e-4) {
-			vec2 lnd = gl_Position.xy / gl_Position.w;
-			vec2 lbv = (lnd - uLensC.xy) * vec2(uLens.w, 1.0);
-			float lb = length(lbv);
-			float lte = max(uLens.y, 1e-4);
-			float lth = 0.5 * (lb + sqrt(lb * lb + 4.0 * lte * lte));
-			vec2 limg = uLensC.xy + (lb > 1e-6 ? lbv / lb : vec2(0.0, 1.0)) * lth / vec2(uLens.w, 1.0);
-			float lk = min(uLens.x, 1.0);
-			gl_Position.xy = mix(lnd, limg, lk) * gl_Position.w;
-			float lu = lb / lte;
-			lensMu = mix(1.0, clamp((lu * lu + 2.0) / (2.0 * lu * sqrt(lu * lu + 4.0) + 1e-4) + 0.5, 1.0, 4.0), lk);
-			vColor *= mix(1.0, lensMu, 0.55);
-			float lring = (lth - lte) / (lte * 0.18);
-			vColor += uP2 * uLens.z * exp(-lring * lring) * 0.9 * lk;
-		}
-	}
 
 	// Масштаб по шуму и спектру (Scale POP)
 	float szNoise = 1.0;
@@ -542,7 +539,6 @@ void main() {
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
 	s *= max(0.15, szNoise * szAudio) * (1.0 - uDisQ.w * dkv) * mix(0.3, 1.0, gGrow) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
-	s *= sqrt(lensMu);
 	s *= 1.0 - 0.85 * gHypF;
 	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;

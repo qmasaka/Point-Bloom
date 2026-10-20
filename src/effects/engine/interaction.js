@@ -31,6 +31,14 @@ export class InteractionPart {
 
 	_onMove(e) {
 		if (!this.points) return;
+		// скорость курсора на экране (для датамоша «Мышью»)
+		const mp = this._mScr;
+		if (mp) {
+			const v = (this._mVel ||= { x: 0, y: 0 });
+			v.x += (e.clientX - mp.x - v.x) * 0.35;
+			v.y += (e.clientY - mp.y - v.y) * 0.35;
+		}
+		this._mScr = { x: e.clientX, y: e.clientY };
 		const vp = this.app.viewport;
 		const r = vp.canvas.getBoundingClientRect();
 		const ndc = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -(((e.clientY - r.top) / r.height) * 2 - 1));
@@ -77,9 +85,16 @@ export class InteractionPart {
 			}
 			S.above = lvl > 0.55;
 		}
+		// мышью: сбой держится, пока курсор движется по сцене, и гаснет за «Сколько держится сбой»
+		if (trig === 'cursor') {
+			const moving = this.mouseOn && this._time - (this._moveT ?? -9) < 0.12;
+			const tc = moving ? 0.08 : Math.max(0.1, +L.recover || 1.2);
+			S.cur = (S.cur || 0) + ((moving ? 1 : 0) - (S.cur || 0)) * (1 - Math.exp(-(this._lastDt || 0.016) / tc));
+		}
 		let hold;
 		if (t < S.cleanUntil) hold = 0;
 		else if (trig === 'always') hold = 1;
+		else if (trig === 'cursor') hold = S.cur || 0;
 		else {
 			const x = (t - S.kickAt) / Math.max(0.1, +L.recover || 2.5);
 			hold = x >= 1 ? 0 : Math.pow(1 - Math.max(0, x), 0.7);
@@ -98,7 +113,8 @@ export class InteractionPart {
 			stale: L.stale,
 			jit: L.jit,
 			drift: L.drift,
-			angle: ((L.angle || 0) * Math.PI) / 180,
+			// мышью: картинка размазывается туда, куда ведёте курсор
+			angle: trig === 'cursor' && this._mVel && Math.hypot(this._mVel.x, this._mVel.y) > 0.5 ? Math.atan2(-this._mVel.y, this._mVel.x) : ((L.angle || 0) * Math.PI) / 180,
 			flow: style === 2 ? Math.max(L.flow, 0.4) : L.flow,
 			inertia: L.inertia,
 			leak: 0.003 + (L.leak ?? 0.3) * 0.09,
@@ -128,6 +144,10 @@ export class InteractionPart {
 			melt: { style: 'melt', trigger: 'always', block: '16', detail: 0.05, inertia: 0.8, leak: 0.12, smooth: 1, drift: 0.3, angle: 270, flow: 0.7, chroma: 0.35, quant: 0 },
 			blocks: { style: 'blocks', trigger: 'timer', period: 2.5, recover: 1.5, block: '32', detail: 0.35, inertia: 0.3, leak: 0.4, smooth: 0, drift: 0.2, angle: 0, flow: 0, chroma: 0.15, quant: 0.6, stale: 0.25, jit: 0.5 },
 			beat: { style: 'bleed', trigger: 'beat', recover: 0.9, block: '16', detail: 0.1, inertia: 0.4, leak: 0.3, smooth: 0.5, drift: 0.4, angle: 270, flow: 0, chroma: 0.3, quant: 0.1 },
+			drip: { style: 'melt', trigger: 'always', block: '8', detail: 0.1, inertia: 0.85, leak: 0.1, smooth: 0.8, drift: 0.8, angle: 270, flow: 0.15, chroma: 0.2, quant: 0 },
+			storm: { style: 'blocks', trigger: 'always', block: '16', detail: 0.1, inertia: 0.6, leak: 0.2, smooth: 0.2, drift: 0.5, angle: 0, flow: 0.8, chroma: 0.8, quant: 0.4, stale: 0.4, jit: 1 },
+			ghost: { style: 'bleed', trigger: 'timer', period: 5, recover: 6, block: '32', detail: 0.6, inertia: 0.9, leak: 0.05, smooth: 1, drift: 0.15, angle: 90, flow: 0.2, chroma: 0.15, quant: 0 },
+			mouse: { style: 'bleed', trigger: 'cursor', recover: 1.2, block: '16', detail: 0.15, inertia: 0.6, leak: 0.25, smooth: 0.6, drift: 0.6, flow: 0.1, chroma: 0.3, quant: 0 },
 		}[name];
 		if (!P) return;
 		Object.assign(L, P, { on: true });

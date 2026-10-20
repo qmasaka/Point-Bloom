@@ -381,7 +381,7 @@ export function createEffectsPanel(app, root, engine) {
 		bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 	};
 	const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-	const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'hyper', 'slitscan', 'timeform', 'chladni', 'lens', 'shadow'];
+	const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
 	let toggleAnim = () => {};
 	let animAddFromInspector = () => {};
 	const animQuickBtn = button({
@@ -426,6 +426,8 @@ export function createEffectsPanel(app, root, engine) {
 			});
 			const amount = slider({ noNorm: true, min: 0, max: def.max, step: 0.05, value: L.amount, digits: 2, onInput: (v) => { L.amount = v; }, onChange: save });
 			const body = h('div', { class: 'fx-layer-body' });
+			// направление сноса датамоша теперь стрелками по 45°: старые значения прилипают к ближайшей стрелке
+			if (def.id === 'datamosh' && typeof L.angle === 'number') L.angle = (((Math.round(L.angle / 45) * 45) % 360) + 360) % 360;
 			if (def.id === 'physics') {
 				const collapseBtn = button({
 					label: engine.isCollapsed ? 'Собрать форму' : 'Разрушить форму',
@@ -538,7 +540,7 @@ export function createEffectsPanel(app, root, engine) {
 					g.box.hidden = !any || !g.open;
 				});
 			};
-			if (def.extras.some((x) => x.key) && def.extras[0].type !== 'title') body.append(h('div', { class: 'fx-sub' }, 'Параметры'));
+			if (def.extras.some((x) => x.key) && def.extras[0].type !== 'title' && def.extras[0].type !== 'row') body.append(h('div', { class: 'fx-sub' }, 'Параметры'));
 			for (const ex of def.extras) {
 				if (autoSplit && ex.key && ++ctlN === 6) startGroup('Ещё настройки', false);
 				const after = () => {
@@ -570,10 +572,34 @@ export function createEffectsPanel(app, root, engine) {
 						},
 					});
 					put(bt, ex);
+				} else if (ex.type === 'row') {
+					// несколько кнопок в один ряд: действия или готовые настройки (чипы)
+					const row = h('div', { class: 'fx-btn-row' + (ex.chips ? ' is-chips' : '') });
+					for (const it of ex.items) {
+						const bt = button({
+							label: it.label,
+							icon: it.icon,
+							variant: it.primary ? 'primary' : 'secondary',
+							cls: 'btn-sm',
+							onClick: () => {
+								if (it.preset) {
+									engine.moshPreset(L, it.preset);
+									for (const [k, ctl] of Object.entries(extraCtl)) ctl.set(L[k]);
+									amount.set(L.amount);
+									row.querySelectorAll('.btn').forEach((b) => b.classList.toggle('is-picked', b === bt));
+									applyWhen();
+									save();
+									engine.emit();
+								} else engine[it.act]();
+							},
+						});
+						row.append(bt);
+					}
+					put(row, ex);
 				} else if (ex.type === 'note') {
 					put(h('div', { class: 'field-hint' }, ex.text), ex);
 				} else if (ex.type === 'title') {
-					startGroup(ex.label, groups.length === 0);
+					startGroup(ex.label, ex.open ?? groups.length === 0);
 				} else if (ex.type === 'color') {
 					const ctl = colorChoice(L, ex.key, after, !!ex.natural);
 					extraCtl[ex.key] = ctl;
@@ -2861,7 +2887,7 @@ export function createEffectsPanel(app, root, engine) {
 		for (const c of cards) {
 			if (c.def.group !== 'Видео') continue;
 			c.folder.hidden = !engine.pm.ready;
-			if (c.def.id === 'frames' || c.def.id === 'slitscan' || c.def.id === 'timeform') c.card.hidden = !engine.videoLoaded;
+			if (c.def.id === 'frames' || c.def.id === 'slitscan') c.card.hidden = !engine.videoLoaded;
 		}
 		{
 			const vc = cards.find((c) => c.def.group === 'Видео');

@@ -132,7 +132,8 @@ export class WebGPUBackend extends RenderBackend {
 		if (e.shared && e.shared.uScr && e.shared.uScr.value.x > 0.001) return true;
 		// «Слит-скан» тоже только в WebGL
 		if (e.shared && e.shared.uSlit && e.shared.uSlit.value.x > 0.001) return true;
-		// «Время как форма» и «Тень на стене» рисует WebGL (их объекты видимы, это ловится выше), «Фигуры Хладни» и «Линза» есть и в WebGPU
+		if (e.shared && e.shared.uSort && e.shared.uSort.value.x > 0.001) return true;
+		// «Тень на стене» рисует WebGL (её объект виден, это ловится выше), «Фигуры Хладни» есть и в WebGPU
 		return false;
 	}
 

@@ -30,8 +30,8 @@ import { RecordingPart } from './recording.js';
 import { ScreenPart } from './screen.js';
 import { SlitPart } from './slitscan.js';
 import { ChladniPart } from './chladni.js';
-import { LensPart } from './lens.js';
 import { ShadowPart } from './shadow.js';
+import { PixelSortPart } from './pixelsort.js';
 import { mixin } from './mixin.js';
 
 export class EffectsEngine {
@@ -381,4 +381,4 @@ export class EffectsEngine {
 }
 
 // Остальные методы лежат в отдельных файлах рядом и подмешиваются в класс.
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, LensPart, ShadowPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShadowPart, PixelSortPart);

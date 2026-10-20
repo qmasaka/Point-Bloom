@@ -1,28 +1,20 @@
 import * as THREE from 'three';
 import { clamp } from '../../core/util.js';
-import { timeformFrag, timeformVert } from '../shaders/glsl/timeform.js';
 export class SlitPart {
 _slitTick(rgbNew, u) {
 const S = this.state.layers.slitscan;
-const TF = this.state.layers.timeform;
 const pm = this.pm;
 const ok = this.state.source === 'media' && pm.ready && (pm.kind === 'video' || pm.isRec) && this.geometry?.attributes.position.count === pm.count;
 const es = ok && S.on ? clamp(this._eff(S), 0, 1.5) : 0;
-const et = ok && TF.on ? clamp(this._eff(TF), 0, 1.5) : 0;
-const need = Math.max(es > 0.001 ? S.frames || 48 : 0, et > 0.001 ? TF.frames || 60 : 0);
-if (!need) {
+if (es <= 0.001) {
 u.uSlit.value.x = 0;
-this._timeformTick(null, 0);
 return;
 }
-const H = this._ringTick(rgbNew, need);
-if (es > 0.001) {
+const H = this._ringTick(rgbNew, S.frames || 48);
 if (u.uSlitTex.value !== H.tex) u.uSlitTex.value = H.tex;
 u.uSlit.value.set(es, S.length ?? 0.8, H.head, { rows: 0, cols: 1, radial: 2, depth: 3, noise: 4 }[S.mode] ?? 0);
 u.uSlitP.value.set(S.dir === 'back' ? -1 : 1, S.sweep || 0, S.push || 0, Math.round(S.bands || 0));
 u.uSlitG.value.set(H.cols, H.rows, H.cols * H.rows, H.M);
-} else u.uSlit.value.x = 0;
-this._timeformTick(H, et);
 }
 _ringTick(rgbNew, need) {
 const pm = this.pm;
@@ -67,60 +59,5 @@ H.tex.addLayerUpdate?.(H.head);
 H.tex.needsUpdate = true;
 }
 return H;
-}
-_timeformTick(H, eff) {
-const T = this.state.layers.timeform;
-let O = this._tf;
-if (!H || eff <= 0.001 || !this.points) {
-if (O) O.pts.visible = false;
-return;
-}
-const pm = this.pm;
-const aspect = pm.aspect || H.cols / H.rows;
-const per = Math.max(400, Math.floor((T.pts || 800000) / H.M));
-const gw = Math.max(8, Math.round(Math.sqrt(per * aspect)));
-const gh = Math.max(8, Math.round(gw / aspect));
-const key = gw + 'x' + gh + 'x' + H.M;
-if (!O || O.key !== key || O.pts.parent !== this.points) {
-if (O) {
-O.pts.removeFromParent();
-O.pts.geometry.dispose();
-O.pts.material.dispose();
-}
-const n = gw * gh * H.M;
-const p = new Float32Array(n * 3);
-let o = 0;
-for (let k = 0; k < H.M; k++) for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
-p[o++] = x;
-p[o++] = y;
-p[o++] = k;
-}
-const g = new THREE.BufferGeometry();
-g.setAttribute('position', new THREE.BufferAttribute(p, 3));
-const V = (v) => ({ value: v });
-const m = new THREE.ShaderMaterial({ vertexShader: timeformVert, fragmentShader: timeformFrag, transparent: true, depthWrite: false, uniforms: { uRing: V(H.tex), uG: V(new THREE.Vector4()), uP: V(new THREE.Vector4()), uQ: V(new THREE.Vector4()), uT: V(new THREE.Vector4()), uC: V(new THREE.Vector4()), uPR: V(1) } });
-const pts = new THREE.Points(g, m);
-pts.frustumCulled = false;
-pts.userData.helper = true;
-this.points.add(pts);
-O = this._tf = { pts, key };
-}
-const U = O.pts.material.uniforms;
-U.uRing.value = H.tex;
-U.uG.value.set(H.cols, H.rows, H.M, H.head);
-U.uP.value.set(gw, gh, T.length ?? 1, { all: 0, motion: 1, light: 2, dark: 3 }[T.keep] ?? 1);
-const W = aspect >= 1 ? 2.2 : 2.2 * aspect;
-U.uQ.value.set(T.cut ?? 0.3, this.app.settings.point.size * (T.size ?? 1), W, W / aspect);
-U.uT.value.set(T.depth ?? 2, eff, { back: 0, up: 1, side: 2 }[T.dir] ?? 0, T.fade ?? 0.6);
-const c = this.shared.uP2.value;
-U.uC.value.set(c.r, c.g, c.b, T.tint ?? 0.4);
-U.uPR.value = this.shared.uPR.value;
-const add = this.state.look.blend === 'add';
-const bl = add ? THREE.AdditiveBlending : THREE.NormalBlending;
-if (O.pts.material.blending !== bl) {
-O.pts.material.blending = bl;
-O.pts.material.needsUpdate = true;
-}
-O.pts.visible = true;
 }
 }

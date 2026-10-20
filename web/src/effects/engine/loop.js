@@ -264,7 +264,6 @@ u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, m
 }
 this._screenTick(u);
 this._chladniTick(dt, L.chladni, u);
-this._lensTick(dt, L.lens, u);
 this._shadowTick(dt, L.shadow, u);
 {
 const H = L.hyper;
@@ -421,6 +420,7 @@ if (L.links.on) this._syncLinks();
 }
 if (st.source === 'media' && this.pm.ready && this.geometry && this.geometry.attributes.position.count === this.pm.count) this._depthTick(dt, rgbNew);
 this._slitTick(rgbNew, u);
+this._sortTick(rgbNew, u);
 {
 const mc = st.morphCfg;
 const beatNew = this.levels.beat > 0.9 && (this._bPrev || 0) <= 0.9;

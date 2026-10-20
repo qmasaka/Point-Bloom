@@ -263,17 +263,6 @@ if (v > 0.5) continue;
 dot(c, (x / Math.PI) * 22, (y / Math.PI) * 22, 1.2 + (0.5 - v) * 1.6, 1 - v * 1.6);
 }
 },
-lens: (c, t) => {
-const cx = Math.cos(t * 0.7) * 2.5, cy = Math.sin(t * 0.9) * 1.5;
-const te = 5.5;
-for (let j = 0; j < 9; j++) for (let i = 0; i < 13; i++) {
-const bx = (i - 6) * 2.4 - cx, by = (j - 4) * 2.6 - cy;
-const b = Math.hypot(bx, by) + 1e-3;
-const th = 0.5 * (b + Math.sqrt(b * b + 4 * te * te));
-const mu = Math.min(3, (te * 1.8) / b);
-dot(c, cx + (bx / b) * th, cy + (by / b) * th * 0.8, 1 + mu * 0.35, 0.35 + Math.min(0.65, mu * 0.25));
-}
-},
 shadow: (c, t) => {
 const lx = Math.cos(t * 0.8) * 6;
 for (let i = 0; i < 26; i++) {
@@ -283,13 +272,19 @@ dot(c, Math.cos(a) * 7 - lx, 8.5 + Math.sin(a) * 1.4, 1.6, 0.28);
 }
 for (let i = -12; i <= 12; i += 2) dot(c, i, 10.6, 0.8, 0.18);
 },
-timeform: (c, t) => {
-for (let k = 22; k >= 0; k--) {
-const tt = t * 1.6 - k * 0.12;
-const x = Math.sin(tt) * 7 + k * 0.45;
-const y = Math.cos(tt * 1.3) * 4 - k * 0.38;
-const a = 1 - k / 26;
-dot(c, x, y, 1.2 + a * 1.8, a);
+pixelsort: (c, t) => {
+const k = 0.5 + 0.5 * Math.sin(t * 1.6);
+for (let j = 0; j < 8; j++) {
+const y = (j - 3.5) * 2.7;
+const s0 = -9 + ((j * 37) % 7), s1 = s0 + 9 + ((j * 13) % 6);
+for (let i = 0; i < 13; i++) {
+const x = (i - 6) * 2.2;
+const inside = x >= s0 && x <= s1;
+const h = ((i * 7 + j * 11) % 13) / 13;
+const tx = inside ? s0 + h * (s1 - s0) : x;
+const b = inside ? 0.35 + 0.65 * ((x - s0) / (s1 - s0) * (1 - k) + h * k) : 0.3;
+dot(c, x + (tx - x) * k, y, 1.4, b);
+}
 }
 },
 slitscan: (c, t) => {

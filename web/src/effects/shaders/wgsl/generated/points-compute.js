@@ -14,8 +14,6 @@ struct Frame {
 	@size(16) uP2: vec3f,
 	@size(16) uSliceC: vec3f,
 	@size(16) uMarkC: vec3f,
-	uLens: vec4f,
-	uLensC: vec4f,
 	@size(16) uTime: f32,
 	@size(16) uTOff: f32,
 	@size(16) uMorph: f32,
@@ -1613,24 +1611,6 @@ fn main_() {
 	vD = disp;
 	var mv: vec4f = (fr.modelViewMatrix * vec4f(pos, 1.0));
 	gl_Position = (fr.projectionMatrix * mv);
-	var lensMu: f32 = 1.0;
-	if ((fr.uLens.x > 0.001)) {
-		if ((gl_Position.w > 1e-4)) {
-			var lnd: vec2f = (gl_Position.xy / gl_Position.w);
-			var lbv: vec2f = (((lnd - fr.uLensC.xy)) * vec2f(fr.uLens.w, 1.0));
-			var lb: f32 = length(lbv);
-			var lte: f32 = max(fr.uLens.y, 1e-4);
-			var lth: f32 = (0.5 * ((lb + sqrt(((lb * lb) + ((4.0 * lte) * lte))))));
-			var limg: vec2f = (fr.uLensC.xy + (((select(vec2f(0.0, 1.0), (lbv / lb), (lb > 1e-6))) * lth) / vec2f(fr.uLens.w, 1.0)));
-			var lk: f32 = min(fr.uLens.x, 1.0);
-			{ let _sw23 = (mix(lnd, limg, lk) * gl_Position.w); gl_Position = vec4f(_sw23.x, _sw23.y, gl_Position.z, gl_Position.w); }
-			var lu: f32 = (lb / lte);
-			lensMu = mix(1.0, clamp((((((lu * lu) + 2.0)) / ((((2.0 * lu) * sqrt(((lu * lu) + 4.0))) + 1e-4))) + 0.5), 1.0, 4.0), lk);
-			vColor *= vec3f(mix(1.0, lensMu, 0.55));
-			var lring: f32 = (((lth - lte)) / ((lte * 0.18)));
-			vColor += ((((fr.uP2 * fr.uLens.z) * exp((-lring * lring))) * 0.9) * lk);
-		}
-	}
 	var szNoise: f32 = 1.0;
 	if ((fr.uLookP2.x > 0.001)) {
 		szNoise = (1.0 + (fr.uLookP2.x * ((snoise(((base * 2.2) + (fr.uTime * 0.4))) * 0.75))));
@@ -1649,7 +1629,6 @@ fn main_() {
 	var s: f32 = ((((fr.uSize * fr.uPR) * (((((1.0 + (disp * 0.5)) + (fr.uBeat * 0.2)) + (sl * 1.2)) + (mkm * 0.7)))) * fr.uGlyph.y) * fr.uFr6.x);
 	s *= ((((((max(0.15, (szNoise * szAudio)) * ((1.0 - (fr.uDisQ.w * dkv)))) * mix(0.3, 1.0, gGrow)) * ((1.0 + (select(0.0, (mkv * 0.9), ((fr.uMark.x > 3.5) && (fr.uMark.x < 4.5))))))) * ((1.0 - (0.6 * (select(0.0, smoothstep(0.35, 0.9, mkv), ((fr.uMark.x > 2.5) && (fr.uMark.x < 3.5)))))))) * ((1.0 - (0.7 * smoothstep(0.3, 0.8, cvan))))) * ((0.25 + (0.75 * vis))));
 	s *= ((1.0 + (coc * 2.4)));
-	s *= sqrt(lensMu);
 	s *= (1.0 - (0.85 * gHypF));
 	s *= (((((1.0 + (gScopeT * fr.uScopeQ.y)) + ((gScopeG * fr.uScopeQ.z) * 2.5)) + (gDepthG * 0.8))) * ((1.0 - gScopeD)));
 	s *= select(0.73, (3.8 / max(-mv.z, 0.4)), (fr.uAtt > 0.5));

@@ -290,7 +290,6 @@ export class LoopPart {
 			}
 			this._screenTick(u);
 			this._chladniTick(dt, L.chladni, u);
-			this._lensTick(dt, L.lens, u);
 			this._shadowTick(dt, L.shadow, u);
 			// гиперпространство: угол поворота в 4D копится (смена скорости не дёргает форму), удар звука даёт рывок
 			{
@@ -468,6 +467,7 @@ export class LoopPart {
 			}
 			if (st.source === 'media' && this.pm.ready && this.geometry && this.geometry.attributes.position.count === this.pm.count) this._depthTick(dt, rgbNew);
 			this._slitTick(rgbNew, u);
+			this._sortTick(rgbNew, u);
 			// морфинг по списку форм
 			{
 				const mc = st.morphCfg;

@@ -15,8 +15,6 @@ struct Frame {
 	@size(16) uP2: vec3f,
 	@size(16) uSliceC: vec3f,
 	@size(16) uMarkC: vec3f,
-	uLens: vec4f,
-	uLensC: vec4f,
 	@size(16) uTime: f32,
 	@size(16) uTOff: f32,
 	@size(16) uMorph: f32,

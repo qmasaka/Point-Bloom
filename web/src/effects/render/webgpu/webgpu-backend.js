@@ -99,6 +99,7 @@ for (const c of pts.children) if (c.visible && !e.ghosts.includes(c) && !this._g
 if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
 if (e.shared && e.shared.uScr && e.shared.uScr.value.x > 0.001) return true;
 if (e.shared && e.shared.uSlit && e.shared.uSlit.value.x > 0.001) return true;
+if (e.shared && e.shared.uSort && e.shared.uSort.value.x > 0.001) return true;
 return false;
 }
 _syncCloud(g = this.engine.geometry, layer = 'main') {

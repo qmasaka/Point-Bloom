@@ -2785,6 +2785,29 @@ body {
 .fx-folder.is-closed .fx-folder-body {
 	display: none;
 }
+/* ряд кнопок в настройках эффекта: действия и готовые настройки */
+.fx-btn-row {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+	gap: 6px;
+}
+.fx-btn-row > .btn {
+	min-width: 0;
+}
+.fx-btn-row.is-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.fx-btn-row.is-chips > .btn {
+	border-radius: 999px;
+	padding-inline: 12px;
+}
+.fx-btn-row.is-chips > .btn.is-picked {
+	border-color: var(--accent-line);
+	background: var(--accent-soft);
+	color: var(--accent-text);
+}
 /* эффекты под открытое видео, фото или анимацию: вверху списка, отделены линией */
 .fx-special {
 	margin-bottom: 8px;

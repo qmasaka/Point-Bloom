@@ -7,14 +7,14 @@
 | Шейдер | Строк | Назначение |
 |---|---:|---|
 | common | 1170 | общий код: шум, смещения всех эффектов, зоны, руки, физика |
-| vert | 1724 | вершинный шейдер точек (подключает common) |
+| vert | 1720 | вершинный шейдер точек (подключает common) |
 | frag | 59 | фрагментный шейдер точек |
 | lineVert | 1257 | вершинный шейдер линий «Связи» |
 | lineFrag | 65 | фрагментный шейдер линий «Связи» |
 | scopeVert | 1222 | вершинный шейдер линии «Осциллограф» |
 | scopeFrag | 12 | фрагментный шейдер линии «Осциллограф» |
 
-Значений кадра (uniform) всего: **128**; условий включения эффекта в шейдере: **55**.
+Значений кадра (uniform) всего: **129**; условий включения эффекта в шейдере: **55**.
 
 ## Эффекты
 
@@ -23,9 +23,9 @@
 | Группа | Эффект (id) | Название | Строк в vert | Условия включения | Значения кадра (по loop.js) |
 |---|---|---|---:|---|---|
 | Видео | `depth` | Объём по глубине |  |  |  |
+| Видео | `pixelsort` | Пиксельная сортировка |  |  |  |
 | Видео | `frames` | Раскадровка |  |  |  |
 | Видео | `slitscan` | Слит-скан |  |  |  |
-| Видео | `timeform` | Время как форма |  |  |  |
 | Анимация | `trail` | Шлейф |  |  |  |
 | Движение | `curl` | Вихри и течение | 32 | `uCurl.x>0.001` `uCurlP.z>1.5` `uFlow.x>0.001` | `uCurl` `uCurlP` `uFlow` |
 | Движение | `gravity` | Гравитация |  |  |  |
@@ -44,7 +44,6 @@
 | Цифровые | `glitch` | Глитч | 56 | `uGlitch.x>0.001` `uGlitchP.x>0.5` | `uGlitch` `uGlitchP` |
 | Цифровые | `datamosh` | Датамош |  |  |  |
 | Графика | `vscreen` | Экран |  |  |  |
-| Графика | `lens` | Гравитационная линза |  |  |  |
 | Графика | `shadow` | Тень на стене |  |  |  |
 | Графика | `links` | Связи |  |  | `uLink` `uLinkW` |
 | Графика | `slice` | Срез |  |  |  |
@@ -85,7 +84,6 @@
 | `uHandP.x>0.001` | 33 | 24 | 24 |
 | `uHyp.x>0.001` | 13 | 8 | 8 |
 | `uJitter.x>0.001` | 3 | 3 | 3 |
-| `uLens.x>0.001` | 17 |  |  |
 | `uLinkP.x>1.5` |  | 1 |  |
 | `uLinkP.y>0.5` |  |  |  |
 | `uLinkP.z>0.5` |  | 4 |  |
@@ -111,6 +109,7 @@
 | `uSlit.x>0.001` | 26 |  |  |
 | `uSlitP.w>1.5` | 1 |  |  |
 | `uSlitP.y>0.001` | 1 |  |  |
+| `uSort.x>0.001` | 14 |  |  |
 | `uSpec.x>0.001` | 14 | 14 | 14 |
 | `uTwist.x>0.001` | 23 | 23 | 23 |
 | `uVoxel.x>0.01` | 26 | 26 | 26 |
@@ -118,5 +117,5 @@
 
 ## Значения кадра
 
-`uTime`, `uMorph`, `uMorphS`, `uMorphO`, `uSettle`, `uFr`, `uFr2`, `uFr3`, `uFr4`, `uFr5`, `uHero`, `uFr6`, `uFr7`, `uHeroTex`, `uFrTex`, `uSize`, `uPR`, `uBeat`, `uColorBy`, `uBright`, `uGlow`, `uAdd`, `uDens`, `uP0`, `uP1`, `uP2`, `uYR`, `uShade`, `uGlyph`, `uAtlas`, `uMouse`, `uMouseOn`, `uSpecTex`, `uCurl`, `uSpec`, `uWave`, `uTwist`, `uPulse`, `uVoxel`, `uJitter`, `uCursor`, `uGlitch`, `uSlice`, `uSliceM`, `uSliceC`, `uMark`, `uMarkC`, `uLink`, `uLinkP`, `uContact`, `uShockP`, `uTrk`, `uImp`, `uShock`, `uMask`, `uMaskA`, `uMaskShow`, `uPhysics`, `uCollapseTime`, `uBrushHits`, `uBrushParam`, `uPaintP`, `uLookP2`, `uDof`, `uHyp`, `uHypP`, `uCh`, `uLens`, `uLensC`, `uChA`, `uScr`, `uScrP`, `uScrTex`, `uScrD`, `uScrQ`, `uScrDep`, `uScrMTex`, `uScrMN`, `uSlit`, `uSlitP`, `uSlitG`, `uSlitTex`, `uScopeC`, `uScopeW`, `uScopeLB`, `uDepth`, `uDepthP`, `uDepthQ`, `uFlat`, `uScope`, `uScopeP`, `uScopeQ`, `uShape`, `uCurlP`, `uSpecP`, `uWaveP`, `uWaveSrc`, `uPulseP`, `uVoxelP`, `uGlitchP`, `uBlast`, `uFlow`, `uDisP`, `uSolid`, `uAtt`, `uHand`, `uHandP`, `uGrav`, `uGravT`, `uPhysP`, `uAsm`, `uDis`, `uDisT`, `uAnimN`, `uCen`, `uExp`, `uExpP`, `uPieceTex`, `uGrow`, `uGrowP`, `uGrowSeed`, `uJel`, `uJelO`, `uJelP`, `uDisQ`, `uGravP`, `uRes`, `uLinkW`
+`uTime`, `uMorph`, `uMorphS`, `uMorphO`, `uSettle`, `uFr`, `uFr2`, `uFr3`, `uFr4`, `uFr5`, `uHero`, `uFr6`, `uFr7`, `uHeroTex`, `uFrTex`, `uSize`, `uPR`, `uBeat`, `uColorBy`, `uBright`, `uGlow`, `uAdd`, `uDens`, `uP0`, `uP1`, `uP2`, `uYR`, `uShade`, `uGlyph`, `uAtlas`, `uMouse`, `uMouseOn`, `uSpecTex`, `uCurl`, `uSpec`, `uWave`, `uTwist`, `uPulse`, `uVoxel`, `uJitter`, `uCursor`, `uGlitch`, `uSlice`, `uSliceM`, `uSliceC`, `uMark`, `uMarkC`, `uLink`, `uLinkP`, `uContact`, `uShockP`, `uTrk`, `uImp`, `uShock`, `uMask`, `uMaskA`, `uMaskShow`, `uPhysics`, `uCollapseTime`, `uBrushHits`, `uBrushParam`, `uPaintP`, `uLookP2`, `uDof`, `uHyp`, `uHypP`, `uCh`, `uChA`, `uScr`, `uScrP`, `uScrTex`, `uScrD`, `uScrQ`, `uScrDep`, `uScrMTex`, `uScrMN`, `uSlit`, `uSlitP`, `uSlitG`, `uSlitTex`, `uSort`, `uSortP`, `uSortTex`, `uScopeC`, `uScopeW`, `uScopeLB`, `uDepth`, `uDepthP`, `uDepthQ`, `uFlat`, `uScope`, `uScopeP`, `uScopeQ`, `uShape`, `uCurlP`, `uSpecP`, `uWaveP`, `uWaveSrc`, `uPulseP`, `uVoxelP`, `uGlitchP`, `uBlast`, `uFlow`, `uDisP`, `uSolid`, `uAtt`, `uHand`, `uHandP`, `uGrav`, `uGravT`, `uPhysP`, `uAsm`, `uDis`, `uDisT`, `uAnimN`, `uCen`, `uExp`, `uExpP`, `uPieceTex`, `uGrow`, `uGrowP`, `uGrowSeed`, `uJel`, `uJelO`, `uJelP`, `uDisQ`, `uGravP`, `uRes`, `uLinkW`
 
