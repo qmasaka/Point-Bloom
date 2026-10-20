@@ -88,7 +88,7 @@ else {
 const x = (t - S.kickAt) / Math.max(0.1, +L.recover || 2.5);
 hold = x >= 1 ? 0 : Math.pow(1 - Math.max(0, x), 0.7);
 }
-const style = { bleed: 0, blocks: 1, melt: 2 }[L.style] ?? 0;
+const style = { bleed: 0, blocks: 1, melt: 2, trails: 3, broken: 4, scatter: 5 }[L.style] ?? 0;
 return {
 on: true,
 hold,
@@ -106,6 +106,9 @@ angle: trig === 'cursor' && this._mVel && Math.hypot(this._mVel.x, this._mVel.y)
 flow: style === 2 ? Math.max(L.flow, 0.4) : L.flow,
 inertia: L.inertia,
 leak: 0.003 + (L.leak ?? 0.3) * 0.09,
+coh: L.coh ?? 0.6,
+void: L.void ?? 1,
+trail: L.trail ?? 0.6,
 sceneMix: style === 2 ? 0.35 : 1,
 time: t,
 };
@@ -129,8 +132,9 @@ melt: { style: 'melt', trigger: 'always', block: '16', detail: 0.05, inertia: 0.
 blocks: { style: 'blocks', trigger: 'timer', period: 2.5, recover: 1.5, block: '32', detail: 0.35, inertia: 0.3, leak: 0.4, smooth: 0, drift: 0.2, angle: 0, flow: 0, chroma: 0.15, quant: 0.6, stale: 0.25, jit: 0.5 },
 beat: { style: 'bleed', trigger: 'beat', recover: 0.9, block: '16', detail: 0.1, inertia: 0.4, leak: 0.3, smooth: 0.5, drift: 0.4, angle: 270, flow: 0, chroma: 0.3, quant: 0.1 },
 drip: { style: 'melt', trigger: 'always', block: '8', detail: 0.1, inertia: 0.85, leak: 0.1, smooth: 0.8, drift: 0.8, angle: 270, flow: 0.15, chroma: 0.2, quant: 0 },
-storm: { style: 'blocks', trigger: 'always', block: '16', detail: 0.1, inertia: 0.6, leak: 0.2, smooth: 0.2, drift: 0.5, angle: 0, flow: 0.8, chroma: 0.8, quant: 0.4, stale: 0.4, jit: 1 },
-ghost: { style: 'bleed', trigger: 'timer', period: 5, recover: 6, block: '32', detail: 0.6, inertia: 0.9, leak: 0.05, smooth: 1, drift: 0.15, angle: 90, flow: 0.2, chroma: 0.15, quant: 0 },
+trails: { style: 'trails', trigger: 'always', block: '16', inertia: 0.7, smooth: 1, drift: 0.2, angle: 90, flow: 0.6, chroma: 0.25, quant: 0, coh: 0.8, void: 1, trail: 0.7 },
+broken: { style: 'broken', trigger: 'timer', period: 2.5, recover: 1.8, block: '32', detail: 0.3, inertia: 0.4, leak: 0.3, smooth: 0, drift: 0.2, angle: 0, flow: 0, chroma: 0.4, quant: 0.5, stale: 0.35, coh: 0.3 },
+scatter: { style: 'scatter', trigger: 'timer', period: 3, recover: 2.5, block: '16', detail: 0.1, inertia: 0.5, leak: 0.2, smooth: 0, drift: 0.1, angle: 270, flow: 0.1, chroma: 0.2, quant: 0.2, coh: 0.4 },
 mouse: { style: 'bleed', trigger: 'cursor', recover: 1.2, block: '16', detail: 0.15, inertia: 0.6, leak: 0.25, smooth: 0.6, drift: 0.6, flow: 0.1, chroma: 0.3, quant: 0 },
 }[name];
 if (!P) return;

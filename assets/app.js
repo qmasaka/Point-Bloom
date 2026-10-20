@@ -66915,7 +66915,8 @@ void main() {
 	cuv = blockC / uRes;
 	vec2 mv = vec2(0.0);
 	if (uSceneMix > 0.001 && uHasPrev > 0.5) {
-		lodL = log2(max(uBlock * 0.3, 1.0));
+		// у облака точек кадр редкий: точки сравниваются по размытой плотности, иначе поиск цепляется за случайные одинаковые точки и векторы скачут
+		lodL = log2(max(uBlock * 0.6, 1.0));
 		float q = uBlock * 0.28;
 		oo[0] = vec2(0.0); oo[1] = vec2(q, q); oo[2] = vec2(-q, q); oo[3] = vec2(q, -q); oo[4] = vec2(-q, -q);
 		for (int i = 0; i < 5; i++) cc[i] = featCur(cuv + oo[i] / uRes);
@@ -66963,7 +66964,7 @@ uniform sampler2D uPrevSrc;
 uniform sampler2D uMoshPrev;
 uniform sampler2D uMV;
 uniform vec2 uRes, uMVSize;
-uniform float uBlock, uRange, uSmooth, uHold, uResid, uChroma, uQuant, uStyle, uStale, uJit, uTime, uHasHist, uLeak;
+uniform float uBlock, uRange, uSmooth, uHold, uResid, uChroma, uQuant, uStyle, uStale, uJit, uTime, uHasHist, uLeak, uCoh, uVoid, uTrail;
 varying vec2 vUv;
 float h11(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 vec2 fetchMV(vec2 ij) {
@@ -66982,6 +66983,19 @@ vec2 mvAt(vec2 px) {
 	vec2 d = fetchMV(i0 + vec2(1.0, 1.0));
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
+// слитность потоков: вектор блока усредняется с соседями, и потёки идут цельными струями, а не рябью
+vec2 mvCoh(vec2 px) {
+	vec2 m0 = mvAt(px);
+	if (uCoh < 0.01) return m0;
+	vec2 bc = floor(px / uBlock);
+	vec2 s = vec2(0.0);
+	for (int j = -1; j <= 1; j++) {
+		for (int i = -1; i <= 1; i++) {
+			s += fetchMV(bc + vec2(float(i), float(j)));
+		}
+	}
+	return mix(m0, s / 9.0, uCoh);
+}
 void main() {
 	vec4 cur = texture2D(uCur, vUv);
 	float hold = uHold * uHasHist;
@@ -66989,7 +67003,21 @@ void main() {
 	vec2 px = vUv * uRes;
 	vec2 bid = floor(px / uBlock);
 	float r = h11(bid);
-	vec2 mv = mvAt(px);
+	vec2 mv = mvCoh(px);
+	float slot3 = floor(uTime * 3.0);
+	if (uStyle > 3.5 && uStyle < 4.5) {
+		// битый поток: целые ряды блоков съезжают вбок, как строка, прочитанная со сдвигом
+		float rowHit = step(0.82, h11(vec2(bid.y * 3.1, slot3)));
+		mv.x += (h11(vec2(bid.y, slot3)) - 0.5) * uBlock * 8.0 * rowHit;
+	}
+	vec2 suv = vUv;
+	if (uStyle > 4.5) {
+		// рассыпание: картинка крупными пикселями, каждый сползает и осыпается вниз сам по себе
+		vec2 cell = vec2(max(uBlock * 0.5, 2.0));
+		vec2 cid = floor(px / cell);
+		suv = (cid + 0.5) * cell / uRes;
+		mv += vec2((h11(cid + 2.3) - 0.5) * 0.6, -0.4 - h11(cid) * 1.6) * cell.x * 0.35;
+	}
 	float stale = 0.0;
 	if (uStyle > 0.5 && uStyle < 1.5) {
 		// блоки: часть блоков залипает и сползает сама по себе
@@ -67001,16 +67029,37 @@ void main() {
 	}
 	vec2 d = mv / uRes;
 	float cs = uChroma * 0.6;
-	vec4 pr = texture2D(uMoshPrev, vUv - d * (1.0 + cs));
-	vec4 pg = texture2D(uMoshPrev, vUv - d);
-	vec4 pb = texture2D(uMoshPrev, vUv - d * (1.0 - cs));
+	vec4 pr = texture2D(uMoshPrev, suv - d * (1.0 + cs));
+	vec4 pg = texture2D(uMoshPrev, suv - d);
+	vec4 pb = texture2D(uMoshPrev, suv - d * (1.0 - cs));
 	vec4 pred = vec4(pr.r, pg.g, pb.b, pg.a);
 	vec4 predSrc = texture2D(uPrevSrc, vUv - d);
+	// чистая картинка там, где точек нет: фон остаётся пустым, если потёки в пустоту выключены
+	float cLum = dot(cur.rgb, vec3(0.3, 0.59, 0.11));
+	float keepBg = (1.0 - uVoid) * (1.0 - smoothstep(0.012, 0.07, cLum));
+	if (uStyle > 2.5 && uStyle < 3.5) {
+		// световые потёки: прошлая картинка течёт по полю движения и медленно гаснет, точки рисуют поверх светящиеся следы
+		vec4 tr = max(pred * mix(0.82, 0.988, uTrail), cur);
+		gl_FragColor = clamp(mix(mix(cur, tr, hold), cur, keepBg), 0.0, 6.0);
+		return;
+	}
 	vec4 dec = pred + (cur - predSrc) * uResid;
 	float m = clamp((1.0 - hold) * 1.6 - r * 0.6, 0.0, 1.0) * (1.0 - stale);
 	// понемногу картинка всегда возвращается, иначе сдвиг копится и кадр уезжает за край
 	m = max(m, uLeak * (1.0 - stale));
 	vec4 o = mix(dec, cur, m);
+	if (uStyle > 3.5 && uStyle < 4.5) {
+		// битый поток: часть блоков без данных, от них остался только средний цвет, а цветовой сигнал сорван в зелёный или пурпурный
+		float rb = h11(bid * 1.37 + slot3 * 3.1);
+		vec4 dc = textureLod(uCur, (bid + 0.5) * uBlock / uRes, log2(uBlock));
+		float yy = dot(dc.rgb, vec3(0.299, 0.587, 0.114));
+		vec3 tint = rb > 0.5 ? vec3(0.15, 1.0, 0.35) : vec3(0.95, 0.2, 0.9);
+		// пустые блоки остаются тёмными: данные теряются только там, где есть точки
+		vec3 bad = mix(vec3(yy), tint * yy * 1.7, 0.6);
+		float lost = step(0.9 - uStale, rb) * hold;
+		o = mix(o, vec4(bad, dc.a), lost);
+	}
+	o = mix(o, cur, keepBg);
 	if (uQuant > 0.001) {
 		// грубое квантование цвета и сдвиг оттенка по блокам, как у перегруженного кодека
 		float q = mix(48.0, 5.0, uQuant);
@@ -67180,6 +67229,9 @@ uJit: { value: 0 },
 uTime: { value: 0 },
 uHasHist: { value: 0 },
 uLeak: { value: 0.03 },
+uCoh: { value: 0.6 },
+uVoid: { value: 1 },
+uTrail: { value: 0.6 },
 },
 vertexShader: vert,
 fragmentShader: moshFrag,
@@ -67265,6 +67317,9 @@ u.uJit.value = m.jit;
 u.uTime.value = m.time;
 u.uHasHist.value = hist ? 1 : 0;
 u.uLeak.value = m.leak;
+u.uCoh.value = m.coh;
+u.uVoid.value = m.void;
+u.uTrail.value = m.trail;
 this.quadScene.clear();
 this.quadScene.add(this.moshMesh);
 r.setRenderTarget(this.rtMoshB);
@@ -67594,7 +67649,7 @@ const POST_PASSES = {
 ]
 },
 "mv": {
-"wgsl": "struct U {\n\t@size(16) uRes: vec2f,\n\t@size(16) uDrift: vec2f,\n\t@size(16) uBlock: f32,\n\t@size(16) uRange: f32,\n\t@size(16) uGain: f32,\n\t@size(16) uInertia: f32,\n\t@size(16) uSceneMix: f32,\n\t@size(16) uHasPrev: f32,\n\t@size(16) uFlow: f32,\n\t@size(16) uTime: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uCur: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrev: texture_2d<f32>;\n@group(0) @binding(3) var t_uPrevMV: texture_2d<f32>;\n@group(0) @binding(4) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nvar<private> cc: array<f32, 5>;\nvar<private> oo: array<vec2f, 5>;\nvar<private> cuv: vec2f;\nvar<private> lodL: f32;\n\nfn featCur(uv_in: vec2f) -> f32 {\n\tvar uv: vec2f = uv_in;\n\tvar s: vec4f = textureSampleLevel(t_uCur, samp, vec2f((uv).x, 1.0 - (uv).y), lodL);\n\treturn (dot(s.rgb, vec3f(0.299, 0.587, 0.114)) + (0.5 * s.a));\n}\n\nfn featPrev(uv_in: vec2f) -> f32 {\n\tvar uv: vec2f = uv_in;\n\tvar s: vec4f = textureSampleLevel(t_uPrev, samp, vec2f((uv).x, 1.0 - (uv).y), lodL);\n\treturn (dot(s.rgb, vec3f(0.299, 0.587, 0.114)) + (0.5 * s.a));\n}\n\nfn sad(mv_in: vec2f) -> f32 {\n\tvar mv: vec2f = mv_in;\n\tvar e: f32 = 0.0;\n\tfor (var i: i32 = 0; (i < 5); i++) {\n\t\te += abs((cc[i] - featPrev((cuv + (((oo[i] - mv)) / u.uRes)))));\n\t}\n\treturn e;\n}\n\nfn main_() {\n\tvar blockC: vec2f = (((floor(gl_FragCoord.xy) + 0.5)) * u.uBlock);\n\tcuv = (blockC / u.uRes);\n\tvar mv: vec2f = vec2f(0.0);\n\tif (((u.uSceneMix > 0.001) && (u.uHasPrev > 0.5))) {\n\t\tlodL = log2(max((u.uBlock * 0.3), 1.0));\n\t\tvar q: f32 = (u.uBlock * 0.28);\n\t\too[0] = vec2f(0.0);\n\t\too[1] = vec2f(q, q);\n\t\too[2] = vec2f(-q, q);\n\t\too[3] = vec2f(q, -q);\n\t\too[4] = vec2f(-q, -q);\n\t\tfor (var i: i32 = 0; (i < 5); i++) {\n\t\t\tcc[i] = featCur((cuv + (oo[i] / u.uRes)));\n\t\t}\n\t\tvar step0: f32 = max(1.0, (u.uBlock * 0.5));\n\t\tvar e0: f32 = sad(vec2f(0.0));\n\t\tvar best: vec2f = vec2f(0.0);\n\t\tvar bestE: f32 = e0;\n\t\tfor (var j: i32 = -3; (j <= 3); j++) {\n\t\t\tfor (var i: i32 = -3; (i <= 3); i++) {\n\t\t\t\tif (((i == 0) && (j == 0))) {\n\t\t\t\t\tcontinue;\n\t\t\t\t}\n\t\t\t\tvar c: vec2f = (vec2f(f32(i), f32(j)) * step0);\n\t\t\t\tvar e: f32 = (sad(c) + (0.004 * length(vec2f(f32(i), f32(j)))));\n\t\t\t\tif ((e < bestE)) {\n\t\t\t\t\tbestE = e;\n\t\t\t\t\tbest = c;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tvar ctr: vec2f = best;\n\t\tfor (var j: i32 = -1; (j <= 1); j++) {\n\t\t\tfor (var i: i32 = -1; (i <= 1); i++) {\n\t\t\t\tif (((i == 0) && (j == 0))) {\n\t\t\t\t\tcontinue;\n\t\t\t\t}\n\t\t\t\tvar c: vec2f = (ctr + ((vec2f(f32(i), f32(j)) * step0) * 0.5));\n\t\t\t\tvar e: f32 = (sad(c) + ((0.004 * length(c)) / step0));\n\t\t\t\tif ((e < bestE)) {\n\t\t\t\t\tbestE = e;\n\t\t\t\t\tbest = c;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tif (((e0 - bestE) < 0.02)) {\n\t\t\tbest = vec2f(0.0);\n\t\t}\n\t\tmv = ((best * u.uSceneMix) * u.uGain);\n\t}\n\tvar g: vec2f = (cuv * 6.2832);\n\tvar fl: vec2f = (vec2f((sin(((g.y * 1.2) + (u.uTime * 0.9))) + sin(((g.x * 0.5) - (u.uTime * 0.6)))), (cos(((g.x * 1.2) - (u.uTime * 0.7))) + cos(((g.y * 0.7) + (u.uTime * 0.5))))) * 0.5);\n\tmv += (((u.uDrift + (fl * u.uFlow))) * u.uGain);\n\tif ((u.uHasPrev > 0.5)) {\n\t\tvar pm: vec2f = ((((textureSampleLevel(t_uPrevMV, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).xy * 2.0) - 1.0)) * u.uRange);\n\t\tmv = mix(mv, pm, u.uInertia);\n\t}\n\tmv = clamp(mv, vec2f((-u.uRange * 0.98)), vec2f((u.uRange * 0.98)));\n\tgl_FragColor = vec4f((((mv / u.uRange) * 0.5) + 0.5), 0.0, 1.0);\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
+"wgsl": "struct U {\n\t@size(16) uRes: vec2f,\n\t@size(16) uDrift: vec2f,\n\t@size(16) uBlock: f32,\n\t@size(16) uRange: f32,\n\t@size(16) uGain: f32,\n\t@size(16) uInertia: f32,\n\t@size(16) uSceneMix: f32,\n\t@size(16) uHasPrev: f32,\n\t@size(16) uFlow: f32,\n\t@size(16) uTime: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uCur: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrev: texture_2d<f32>;\n@group(0) @binding(3) var t_uPrevMV: texture_2d<f32>;\n@group(0) @binding(4) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nvar<private> cc: array<f32, 5>;\nvar<private> oo: array<vec2f, 5>;\nvar<private> cuv: vec2f;\nvar<private> lodL: f32;\n\nfn featCur(uv_in: vec2f) -> f32 {\n\tvar uv: vec2f = uv_in;\n\tvar s: vec4f = textureSampleLevel(t_uCur, samp, vec2f((uv).x, 1.0 - (uv).y), lodL);\n\treturn (dot(s.rgb, vec3f(0.299, 0.587, 0.114)) + (0.5 * s.a));\n}\n\nfn featPrev(uv_in: vec2f) -> f32 {\n\tvar uv: vec2f = uv_in;\n\tvar s: vec4f = textureSampleLevel(t_uPrev, samp, vec2f((uv).x, 1.0 - (uv).y), lodL);\n\treturn (dot(s.rgb, vec3f(0.299, 0.587, 0.114)) + (0.5 * s.a));\n}\n\nfn sad(mv_in: vec2f) -> f32 {\n\tvar mv: vec2f = mv_in;\n\tvar e: f32 = 0.0;\n\tfor (var i: i32 = 0; (i < 5); i++) {\n\t\te += abs((cc[i] - featPrev((cuv + (((oo[i] - mv)) / u.uRes)))));\n\t}\n\treturn e;\n}\n\nfn main_() {\n\tvar blockC: vec2f = (((floor(gl_FragCoord.xy) + 0.5)) * u.uBlock);\n\tcuv = (blockC / u.uRes);\n\tvar mv: vec2f = vec2f(0.0);\n\tif (((u.uSceneMix > 0.001) && (u.uHasPrev > 0.5))) {\n\t\tlodL = log2(max((u.uBlock * 0.6), 1.0));\n\t\tvar q: f32 = (u.uBlock * 0.28);\n\t\too[0] = vec2f(0.0);\n\t\too[1] = vec2f(q, q);\n\t\too[2] = vec2f(-q, q);\n\t\too[3] = vec2f(q, -q);\n\t\too[4] = vec2f(-q, -q);\n\t\tfor (var i: i32 = 0; (i < 5); i++) {\n\t\t\tcc[i] = featCur((cuv + (oo[i] / u.uRes)));\n\t\t}\n\t\tvar step0: f32 = max(1.0, (u.uBlock * 0.5));\n\t\tvar e0: f32 = sad(vec2f(0.0));\n\t\tvar best: vec2f = vec2f(0.0);\n\t\tvar bestE: f32 = e0;\n\t\tfor (var j: i32 = -3; (j <= 3); j++) {\n\t\t\tfor (var i: i32 = -3; (i <= 3); i++) {\n\t\t\t\tif (((i == 0) && (j == 0))) {\n\t\t\t\t\tcontinue;\n\t\t\t\t}\n\t\t\t\tvar c: vec2f = (vec2f(f32(i), f32(j)) * step0);\n\t\t\t\tvar e: f32 = (sad(c) + (0.004 * length(vec2f(f32(i), f32(j)))));\n\t\t\t\tif ((e < bestE)) {\n\t\t\t\t\tbestE = e;\n\t\t\t\t\tbest = c;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tvar ctr: vec2f = best;\n\t\tfor (var j: i32 = -1; (j <= 1); j++) {\n\t\t\tfor (var i: i32 = -1; (i <= 1); i++) {\n\t\t\t\tif (((i == 0) && (j == 0))) {\n\t\t\t\t\tcontinue;\n\t\t\t\t}\n\t\t\t\tvar c: vec2f = (ctr + ((vec2f(f32(i), f32(j)) * step0) * 0.5));\n\t\t\t\tvar e: f32 = (sad(c) + ((0.004 * length(c)) / step0));\n\t\t\t\tif ((e < bestE)) {\n\t\t\t\t\tbestE = e;\n\t\t\t\t\tbest = c;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tif (((e0 - bestE) < 0.02)) {\n\t\t\tbest = vec2f(0.0);\n\t\t}\n\t\tmv = ((best * u.uSceneMix) * u.uGain);\n\t}\n\tvar g: vec2f = (cuv * 6.2832);\n\tvar fl: vec2f = (vec2f((sin(((g.y * 1.2) + (u.uTime * 0.9))) + sin(((g.x * 0.5) - (u.uTime * 0.6)))), (cos(((g.x * 1.2) - (u.uTime * 0.7))) + cos(((g.y * 0.7) + (u.uTime * 0.5))))) * 0.5);\n\tmv += (((u.uDrift + (fl * u.uFlow))) * u.uGain);\n\tif ((u.uHasPrev > 0.5)) {\n\t\tvar pm: vec2f = ((((textureSampleLevel(t_uPrevMV, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).xy * 2.0) - 1.0)) * u.uRange);\n\t\tmv = mix(mv, pm, u.uInertia);\n\t}\n\tmv = clamp(mv, vec2f((-u.uRange * 0.98)), vec2f((u.uRange * 0.98)));\n\tgl_FragColor = vec4f((((mv / u.uRange) * 0.5) + 0.5), 0.0, 1.0);\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
 "spec": [
 [
 "uRes",
@@ -67664,7 +67719,7 @@ const POST_PASSES = {
 ]
 },
 "mosh": {
-"wgsl": "struct U {\n\t@size(16) uRes: vec2f,\n\t@size(16) uMVSize: vec2f,\n\t@size(16) uBlock: f32,\n\t@size(16) uRange: f32,\n\t@size(16) uSmooth: f32,\n\t@size(16) uHold: f32,\n\t@size(16) uResid: f32,\n\t@size(16) uChroma: f32,\n\t@size(16) uQuant: f32,\n\t@size(16) uStyle: f32,\n\t@size(16) uStale: f32,\n\t@size(16) uJit: f32,\n\t@size(16) uTime: f32,\n\t@size(16) uHasHist: f32,\n\t@size(16) uLeak: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uCur: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrevSrc: texture_2d<f32>;\n@group(0) @binding(3) var t_uMoshPrev: texture_2d<f32>;\n@group(0) @binding(4) var t_uMV: texture_2d<f32>;\n@group(0) @binding(5) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn h11(p_in: vec2f) -> f32 {\n\tvar p: vec2f = p_in;\n\treturn fract((sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453));\n}\n\nfn fetchMV(ij_in: vec2f) -> vec2f {\n\tvar ij: vec2f = ij_in;\n\tvar sz: vec2i = vec2i(u.uMVSize);\n\tvar p: vec2i = clamp(vec2i(ij), vec2i(0), (sz - 1));\n\treturn ((((textureLoad(t_uMV, vec2i((p).x, i32(textureDimensions(t_uMV).y) - 1 - (p).y), 0).xy * 2.0) - 1.0)) * u.uRange);\n}\n\nfn mvAt(px_in: vec2f) -> vec2f {\n\tvar px: vec2f = px_in;\n\tvar g: vec2f = ((px / u.uBlock) - 0.5);\n\tvar i0: vec2f = floor(g);\n\tvar f: vec2f = fract(g);\n\tf = mix(step(vec2f(0.5), f), f, u.uSmooth);\n\tvar a: vec2f = fetchMV(i0);\n\tvar b: vec2f = fetchMV((i0 + vec2f(1.0, 0.0)));\n\tvar c: vec2f = fetchMV((i0 + vec2f(0.0, 1.0)));\n\tvar d: vec2f = fetchMV((i0 + vec2f(1.0, 1.0)));\n\treturn mix(mix(a, b, f.x), mix(c, d, f.x), f.y);\n}\n\nfn main_() {\n\tvar cur: vec4f = textureSampleLevel(t_uCur, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\tvar hold: f32 = (u.uHold * u.uHasHist);\n\tif ((hold < 0.002)) {\n\t\tgl_FragColor = cur;\n\t\treturn;\n\t}\n\tvar px: vec2f = (vUv * u.uRes);\n\tvar bid: vec2f = floor((px / u.uBlock));\n\tvar r: f32 = h11(bid);\n\tvar mv: vec2f = mvAt(px);\n\tvar stale: f32 = 0.0;\n\tif (((u.uStyle > 0.5) && (u.uStyle < 1.5))) {\n\t\tvar slot: f32 = floor((u.uTime * 5.0));\n\t\tvar rs: f32 = h11((bid + (slot * 7.13)));\n\t\tstale = step((1.0 - u.uStale), rs);\n\t\tvar jit: vec2f = (((((vec2f(h11(((bid + 3.1) + slot)), h11(((bid + 9.7) + slot))) - 0.5)) * 2.0) * u.uJit) * u.uBlock);\n\t\tmv += (jit * stale);\n\t}\n\tvar d: vec2f = (mv / u.uRes);\n\tvar cs: f32 = (u.uChroma * 0.6);\n\tvar pr: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((vUv - (d * ((1.0 + cs))))).x, 1.0 - ((vUv - (d * ((1.0 + cs))))).y), 0.0);\n\tvar pg: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((vUv - d)).x, 1.0 - ((vUv - d)).y), 0.0);\n\tvar pb: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((vUv - (d * ((1.0 - cs))))).x, 1.0 - ((vUv - (d * ((1.0 - cs))))).y), 0.0);\n\tvar pred: vec4f = vec4f(pr.r, pg.g, pb.b, pg.a);\n\tvar predSrc: vec4f = textureSampleLevel(t_uPrevSrc, samp, vec2f(((vUv - d)).x, 1.0 - ((vUv - d)).y), 0.0);\n\tvar dec: vec4f = (pred + (((cur - predSrc)) * u.uResid));\n\tvar m: f32 = (clamp(((((1.0 - hold)) * 1.6) - (r * 0.6)), 0.0, 1.0) * ((1.0 - stale)));\n\tm = max(m, (u.uLeak * ((1.0 - stale))));\n\tvar o: vec4f = mix(dec, cur, m);\n\tif ((u.uQuant > 0.001)) {\n\t\tvar q: f32 = mix(48.0, 5.0, u.uQuant);\n\t\tvar qd: vec3f = (floor(((o.rgb * q) + 0.5)) / q);\n\t\tqd += ((((vec3f(h11((bid + 1.7)), h11((bid + 5.3)), h11((bid + 8.9))) - 0.5)) * 0.08) * u.uQuant);\n\t\t{ let _sw0 = mix(o.rgb, qd, (u.uQuant * ((1.0 - m)))); o = vec4f(_sw0.x, _sw0.y, _sw0.z, o.w); }\n\t}\n\tgl_FragColor = clamp(o, vec4f(0.0), vec4f(6.0));\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
+"wgsl": "struct U {\n\t@size(16) uRes: vec2f,\n\t@size(16) uMVSize: vec2f,\n\t@size(16) uBlock: f32,\n\t@size(16) uRange: f32,\n\t@size(16) uSmooth: f32,\n\t@size(16) uHold: f32,\n\t@size(16) uResid: f32,\n\t@size(16) uChroma: f32,\n\t@size(16) uQuant: f32,\n\t@size(16) uStyle: f32,\n\t@size(16) uStale: f32,\n\t@size(16) uJit: f32,\n\t@size(16) uTime: f32,\n\t@size(16) uHasHist: f32,\n\t@size(16) uLeak: f32,\n\t@size(16) uCoh: f32,\n\t@size(16) uVoid: f32,\n\t@size(16) uTrail: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uCur: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrevSrc: texture_2d<f32>;\n@group(0) @binding(3) var t_uMoshPrev: texture_2d<f32>;\n@group(0) @binding(4) var t_uMV: texture_2d<f32>;\n@group(0) @binding(5) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn h11(p_in: vec2f) -> f32 {\n\tvar p: vec2f = p_in;\n\treturn fract((sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453));\n}\n\nfn fetchMV(ij_in: vec2f) -> vec2f {\n\tvar ij: vec2f = ij_in;\n\tvar sz: vec2i = vec2i(u.uMVSize);\n\tvar p: vec2i = clamp(vec2i(ij), vec2i(0), (sz - 1));\n\treturn ((((textureLoad(t_uMV, vec2i((p).x, i32(textureDimensions(t_uMV).y) - 1 - (p).y), 0).xy * 2.0) - 1.0)) * u.uRange);\n}\n\nfn mvAt(px_in: vec2f) -> vec2f {\n\tvar px: vec2f = px_in;\n\tvar g: vec2f = ((px / u.uBlock) - 0.5);\n\tvar i0: vec2f = floor(g);\n\tvar f: vec2f = fract(g);\n\tf = mix(step(vec2f(0.5), f), f, u.uSmooth);\n\tvar a: vec2f = fetchMV(i0);\n\tvar b: vec2f = fetchMV((i0 + vec2f(1.0, 0.0)));\n\tvar c: vec2f = fetchMV((i0 + vec2f(0.0, 1.0)));\n\tvar d: vec2f = fetchMV((i0 + vec2f(1.0, 1.0)));\n\treturn mix(mix(a, b, f.x), mix(c, d, f.x), f.y);\n}\n\nfn mvCoh(px_in: vec2f) -> vec2f {\n\tvar px: vec2f = px_in;\n\tvar m0: vec2f = mvAt(px);\n\tif ((u.uCoh < 0.01)) {\n\t\treturn m0;\n\t}\n\tvar bc: vec2f = floor((px / u.uBlock));\n\tvar s: vec2f = vec2f(0.0);\n\tfor (var j: i32 = -1; (j <= 1); j++) {\n\t\tfor (var i: i32 = -1; (i <= 1); i++) {\n\t\t\ts += fetchMV((bc + vec2f(f32(i), f32(j))));\n\t\t}\n\t}\n\treturn mix(m0, (s / 9.0), u.uCoh);\n}\n\nfn main_() {\n\tvar cur: vec4f = textureSampleLevel(t_uCur, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\tvar hold: f32 = (u.uHold * u.uHasHist);\n\tif ((hold < 0.002)) {\n\t\tgl_FragColor = cur;\n\t\treturn;\n\t}\n\tvar px: vec2f = (vUv * u.uRes);\n\tvar bid: vec2f = floor((px / u.uBlock));\n\tvar r: f32 = h11(bid);\n\tvar mv: vec2f = mvCoh(px);\n\tvar slot3: f32 = floor((u.uTime * 3.0));\n\tif (((u.uStyle > 3.5) && (u.uStyle < 4.5))) {\n\t\tvar rowHit: f32 = step(0.82, h11(vec2f((bid.y * 3.1), slot3)));\n\t\tmv.x += (((((h11(vec2f(bid.y, slot3)) - 0.5)) * u.uBlock) * 8.0) * rowHit);\n\t}\n\tvar suv: vec2f = vUv;\n\tif ((u.uStyle > 4.5)) {\n\t\tvar cell: vec2f = vec2f(max((u.uBlock * 0.5), 2.0));\n\t\tvar cid: vec2f = floor((px / cell));\n\t\tsuv = ((((cid + 0.5)) * cell) / u.uRes);\n\t\tmv += ((vec2f((((h11((cid + 2.3)) - 0.5)) * 0.6), (-0.4 - (h11(cid) * 1.6))) * cell.x) * 0.35);\n\t}\n\tvar stale: f32 = 0.0;\n\tif (((u.uStyle > 0.5) && (u.uStyle < 1.5))) {\n\t\tvar slot: f32 = floor((u.uTime * 5.0));\n\t\tvar rs: f32 = h11((bid + (slot * 7.13)));\n\t\tstale = step((1.0 - u.uStale), rs);\n\t\tvar jit: vec2f = (((((vec2f(h11(((bid + 3.1) + slot)), h11(((bid + 9.7) + slot))) - 0.5)) * 2.0) * u.uJit) * u.uBlock);\n\t\tmv += (jit * stale);\n\t}\n\tvar d: vec2f = (mv / u.uRes);\n\tvar cs: f32 = (u.uChroma * 0.6);\n\tvar pr: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - (d * ((1.0 + cs))))).x, 1.0 - ((suv - (d * ((1.0 + cs))))).y), 0.0);\n\tvar pg: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - d)).x, 1.0 - ((suv - d)).y), 0.0);\n\tvar pb: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - (d * ((1.0 - cs))))).x, 1.0 - ((suv - (d * ((1.0 - cs))))).y), 0.0);\n\tvar pred: vec4f = vec4f(pr.r, pg.g, pb.b, pg.a);\n\tvar predSrc: vec4f = textureSampleLevel(t_uPrevSrc, samp, vec2f(((vUv - d)).x, 1.0 - ((vUv - d)).y), 0.0);\n\tvar cLum: f32 = dot(cur.rgb, vec3f(0.3, 0.59, 0.11));\n\tvar keepBg: f32 = (((1.0 - u.uVoid)) * ((1.0 - smoothstep(0.012, 0.07, cLum))));\n\tif (((u.uStyle > 2.5) && (u.uStyle < 3.5))) {\n\t\tvar tr: vec4f = max((pred * mix(0.82, 0.988, u.uTrail)), cur);\n\t\tgl_FragColor = clamp(mix(mix(cur, tr, hold), cur, keepBg), vec4f(0.0), vec4f(6.0));\n\t\treturn;\n\t}\n\tvar dec: vec4f = (pred + (((cur - predSrc)) * u.uResid));\n\tvar m: f32 = (clamp(((((1.0 - hold)) * 1.6) - (r * 0.6)), 0.0, 1.0) * ((1.0 - stale)));\n\tm = max(m, (u.uLeak * ((1.0 - stale))));\n\tvar o: vec4f = mix(dec, cur, m);\n\tif (((u.uStyle > 3.5) && (u.uStyle < 4.5))) {\n\t\tvar rb: f32 = h11(((bid * 1.37) + (slot3 * 3.1)));\n\t\tvar dc: vec4f = textureSampleLevel(t_uCur, samp, vec2f((((((bid + 0.5)) * u.uBlock) / u.uRes)).x, 1.0 - (((((bid + 0.5)) * u.uBlock) / u.uRes)).y), log2(u.uBlock));\n\t\tvar yy: f32 = dot(dc.rgb, vec3f(0.299, 0.587, 0.114));\n\t\tvar tint: vec3f = select(vec3f(0.95, 0.2, 0.9), vec3f(0.15, 1.0, 0.35), (rb > 0.5));\n\t\tvar bad: vec3f = mix(vec3f(yy), ((tint * yy) * 1.7), 0.6);\n\t\tvar lost: f32 = (step((0.9 - u.uStale), rb) * hold);\n\t\to = mix(o, vec4f(bad, dc.a), lost);\n\t}\n\to = mix(o, cur, keepBg);\n\tif ((u.uQuant > 0.001)) {\n\t\tvar q: f32 = mix(48.0, 5.0, u.uQuant);\n\t\tvar qd: vec3f = (floor(((o.rgb * q) + 0.5)) / q);\n\t\tqd += ((((vec3f(h11((bid + 1.7)), h11((bid + 5.3)), h11((bid + 8.9))) - 0.5)) * 0.08) * u.uQuant);\n\t\t{ let _sw0 = mix(o.rgb, qd, (u.uQuant * ((1.0 - m)))); o = vec4f(_sw0.x, _sw0.y, _sw0.z, o.w); }\n\t}\n\tgl_FragColor = clamp(o, vec4f(0.0), vec4f(6.0));\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
 "spec": [
 [
 "uRes",
@@ -67738,6 +67793,21 @@ const POST_PASSES = {
 ],
 [
 "uLeak",
+"f32",
+0
+],
+[
+"uCoh",
+"f32",
+0
+],
+[
+"uVoid",
+"f32",
+0
+],
+[
+"uTrail",
 "f32",
 0
 ],
@@ -67950,6 +68020,9 @@ uJit: m.jit,
 uTime: m.time,
 uHasHist: hist ? 1 : 0,
 uLeak: m.leak,
+uCoh: m.coh,
+uVoid: m.void,
+uTrail: m.trail,
 },
 { uCur: scene.createView(), uPrevSrc: sceneB.createView(), uMoshPrev: moshA.createView(), uMV: mvB.createView() }
 );
@@ -73039,18 +73112,21 @@ const FX_LAYERS = [
 ] },
 { id: 'slice', group: 'Графика', name: 'Срез', icon: 'scan', hint: 'По форме идёт срез. Виды: лазер (линии), рельеф (точки на линиях), развёртка (форма проявляется за плоскостью)', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'model' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
 { id: 'feedback', sound: false, group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой световой хвост из прошлых кадров. Виды: выдержка, туннель', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
-{ id: 'datamosh', group: 'Графика', name: 'Датамош', icon: 'checkerboard', hint: 'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'bleed', trigger: 'timer', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, stale: 0.2, jit: 0.4 }, extras: [
+{ id: 'datamosh', group: 'Графика', name: 'Датамош', icon: 'checkerboard', hint: 'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'bleed', trigger: 'timer', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, stale: 0.2, jit: 0.4, coh: 0.6, void: 1, trail: 0.6 }, extras: [
 { type: 'row', items: [{ label: 'Сломать кадр', act: 'moshKick', icon: 'lightning', primary: true }, { label: 'Чистый кадр', act: 'moshClear', icon: 'broom' }] },
 { type: 'title', label: 'Готовые настройки', open: true },
-{ type: 'row', chips: true, items: [{ label: 'Классика', preset: 'classic' }, { label: 'Расплав', preset: 'melt' }, { label: 'Стекание', preset: 'drip' }, { label: 'Блоки', preset: 'blocks' }, { label: 'Шторм', preset: 'storm' }, { label: 'Призрак', preset: 'ghost' }, { label: 'По биту', preset: 'beat' }, { label: 'Мышью', preset: 'mouse' }] },
+{ type: 'row', chips: true, items: [{ label: 'Классика', preset: 'classic' }, { label: 'Расплав', preset: 'melt' }, { label: 'Стекание', preset: 'drip' }, { label: 'Блоки', preset: 'blocks' }, { label: 'Потёки', preset: 'trails' }, { label: 'Битый поток', preset: 'broken' }, { label: 'Рассыпание', preset: 'scatter' }, { label: 'Мышью', preset: 'mouse' }] },
 { type: 'title', label: 'Когда ломается', open: true },
-{ key: 'style', label: 'Вид сбоя', type: 'select', options: [['bleed', 'Размазывание', 'движение тянет за собой старые пиксели'], ['blocks', 'Блоки', 'макроблоки залипают и ползут'], ['melt', 'Расплав', 'картинка пластично стекает']] },
+{ key: 'style', label: 'Вид сбоя', type: 'select', options: [['bleed', 'Размазывание', 'движение тянет за собой старые пиксели'], ['blocks', 'Блоки', 'макроблоки залипают и ползут'], ['melt', 'Расплав', 'картинка пластично стекает'], ['trails', 'Световые потёки', 'точки оставляют следы, текущие по движению'], ['broken', 'Битый поток', 'блоки теряют данные: средний цвет, сорванный цвет'], ['scatter', 'Рассыпание', 'кадр крупными пикселями сползает и осыпается']] },
+{ key: 'trail', label: 'Длина потёков', min: 0, max: 1, step: 0.05, when: ['style', ['trails']] },
 { key: 'trigger', label: 'Запуск', type: 'select', options: [['timer', 'По таймеру', 'сбой через равные паузы'], ['beat', 'По биту', 'в такт музыке'], ['cursor', 'Мышью', 'пока водите, кадр размазывается за курсором'], ['manual', 'Кнопкой', 'только «Сломать кадр»'], ['always', 'Непрерывно', 'сбой не кончается']] },
 { key: 'period', label: 'Пауза между сбоями, с', min: 0.5, max: 12, step: 0.1, noNorm: true, when: ['trigger', ['timer']] },
 { key: 'recover', label: 'Сколько держится сбой, с', min: 0.2, max: 10, step: 0.1, noNorm: true, when: ['trigger', ['timer', 'beat', 'manual', 'cursor']] },
 { type: 'title', label: 'Куда течёт' },
 { key: 'angle', label: 'Направление сноса', type: 'seg', options: [[180, '←'], [135, '↖'], [90, '↑'], [45, '↗'], [0, '→'], [315, '↘'], [270, '↓'], [225, '↙']] },
 { key: 'drift', label: 'Снос в эту сторону', min: 0, max: 1, step: 0.05 },
+{ key: 'coh', label: 'Слитность потоков', min: 0, max: 1, step: 0.05 },
+{ key: 'void', label: 'Потёки в пустоту', min: 0, max: 1, step: 0.05 },
 { key: 'flow', label: 'Вихри', min: 0, max: 1, step: 0.05 },
 { key: 'inertia', label: 'Инерция (долго тянется)', min: 0, max: 0.95, step: 0.05 },
 { key: 'leak', label: 'Возврат чистой картинки', min: 0, max: 1, step: 0.05 },
@@ -73060,7 +73136,7 @@ const FX_LAYERS = [
 { key: 'detail', label: 'Сохранять детали кадра', min: 0, max: 1, step: 0.05 },
 { key: 'chroma', label: 'Цветовое размазывание', min: 0, max: 1, step: 0.05 },
 { key: 'quant', label: 'Грубые цвета блоков', min: 0, max: 1, step: 0.05 },
-{ key: 'stale', label: 'Доля залипших блоков', min: 0, max: 0.8, step: 0.05, when: ['style', ['blocks']] },
+{ key: 'stale', label: 'Доля залипших блоков', min: 0, max: 0.8, step: 0.05, when: ['style', ['blocks', 'broken']] },
 { key: 'jit', label: 'Сдвиг залипших блоков', min: 0, max: 1.5, step: 0.05, when: ['style', ['blocks']] },
 ] },
 { id: 'echo', group: 'Графика', name: 'Эхо', icon: 'ghost', hint: 'Призрачные копии формы. Виды: спираль, зеркала, ореол', max: 1.5, def: { on: false, amount: 0.8, band: 'beat', react: 0.5, mode: 'spiral', copies: 4, delay: 0.14, spread: 0.45, fade: 0.7 }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['spiral', 'Спираль'], ['kaleido', 'Зеркала'], ['time', 'Ореол']] }, { key: 'copies', label: 'Копий', min: 1, max: 5, step: 1, int: true }, { key: 'spread', label: 'Угол между копиями', min: 0.05, max: 1.5, step: 0.05 }, { key: 'delay', label: 'Задержка, с', min: 0.02, max: 0.6, step: 0.01 }, { key: 'fade', label: 'Затухание копий', min: 0.3, max: 0.95, step: 0.05 }] },
@@ -80638,6 +80714,16 @@ en: {
 'Вихри': 'Swirls',
 'Инерция (долго тянется)': 'Inertia (drags on)',
 'Возврат чистой картинки': 'Return of the clean picture',
+'Световые потёки': 'Light streaks',
+'точки оставляют следы, текущие по движению': 'points leave trails that flow with the motion',
+'Битый поток': 'Broken stream',
+'блоки теряют данные: средний цвет, сорванный цвет': 'blocks lose data: average color, torn color',
+'Рассыпание': 'Crumble',
+'кадр крупными пикселями сползает и осыпается': 'the frame slides and crumbles in big pixels',
+'Длина потёков': 'Streak length',
+'Слитность потоков': 'Flow coherence',
+'Потёки в пустоту': 'Streaks into the void',
+'Потёки': 'Streaks',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -81352,6 +81438,16 @@ uk: {
 'Вихри': 'Вихори',
 'Инерция (долго тянется)': 'Інерція (довго тягнеться)',
 'Возврат чистой картинки': 'Повернення чистої картинки',
+'Световые потёки': 'Світлові потоки',
+'точки оставляют следы, текущие по движению': 'точки лишають сліди, що течуть за рухом',
+'Битый поток': 'Битий потік',
+'блоки теряют данные: средний цвет, сорванный цвет': 'блоки втрачають дані: середній колір, зірваний колір',
+'Рассыпание': 'Розсипання',
+'кадр крупными пикселями сползает и осыпается': 'кадр великими пікселями сповзає й осипається',
+'Длина потёков': 'Довжина потоків',
+'Слитность потоков': 'Злитість потоків',
+'Потёки в пустоту': 'Потоки в порожнечу',
+'Потёки': 'Потоки',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -82066,6 +82162,16 @@ es: {
 'Вихри': 'Remolinos',
 'Инерция (долго тянется)': 'Inercia (se arrastra más)',
 'Возврат чистой картинки': 'Regreso de la imagen limpia',
+'Световые потёки': 'Estelas de luz',
+'точки оставляют следы, текущие по движению': 'los puntos dejan estelas que fluyen con el movimiento',
+'Битый поток': 'Flujo roto',
+'блоки теряют данные: средний цвет, сорванный цвет': 'los bloques pierden datos: color medio, color roto',
+'Рассыпание': 'Desmoronamiento',
+'кадр крупными пикселями сползает и осыпается': 'el fotograma se desliza y se desmorona en píxeles grandes',
+'Длина потёков': 'Longitud de las estelas',
+'Слитность потоков': 'Coherencia del flujo',
+'Потёки в пустоту': 'Estelas hacia el vacío',
+'Потёки': 'Estelas',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -82780,6 +82886,16 @@ de: {
 'Вихри': 'Wirbel',
 'Инерция (долго тянется)': 'Trägheit (zieht sich lange)',
 'Возврат чистой картинки': 'Rückkehr des sauberen Bildes',
+'Световые потёки': 'Lichtschlieren',
+'точки оставляют следы, текущие по движению': 'Punkte hinterlassen Spuren, die mit der Bewegung fließen',
+'Битый поток': 'Kaputter Stream',
+'блоки теряют данные: средний цвет, сорванный цвет': 'Blöcke verlieren Daten: Mittelfarbe, gerissene Farbe',
+'Рассыпание': 'Zerbröseln',
+'кадр крупными пикселями сползает и осыпается': 'das Bild rutscht in großen Pixeln ab und zerbröselt',
+'Длина потёков': 'Schlierenlänge',
+'Слитность потоков': 'Fluss-Zusammenhalt',
+'Потёки в пустоту': 'Schlieren ins Leere',
+'Потёки': 'Schlieren',
 },
 };
 };
@@ -90617,7 +90733,7 @@ else {
 const x = (t - S.kickAt) / Math.max(0.1, +L.recover || 2.5);
 hold = x >= 1 ? 0 : Math.pow(1 - Math.max(0, x), 0.7);
 }
-const style = { bleed: 0, blocks: 1, melt: 2 }[L.style] ?? 0;
+const style = { bleed: 0, blocks: 1, melt: 2, trails: 3, broken: 4, scatter: 5 }[L.style] ?? 0;
 return {
 on: true,
 hold,
@@ -90635,6 +90751,9 @@ angle: trig === 'cursor' && this._mVel && Math.hypot(this._mVel.x, this._mVel.y)
 flow: style === 2 ? Math.max(L.flow, 0.4) : L.flow,
 inertia: L.inertia,
 leak: 0.003 + (L.leak ?? 0.3) * 0.09,
+coh: L.coh ?? 0.6,
+void: L.void ?? 1,
+trail: L.trail ?? 0.6,
 sceneMix: style === 2 ? 0.35 : 1,
 time: t,
 };
@@ -90658,8 +90777,9 @@ melt: { style: 'melt', trigger: 'always', block: '16', detail: 0.05, inertia: 0.
 blocks: { style: 'blocks', trigger: 'timer', period: 2.5, recover: 1.5, block: '32', detail: 0.35, inertia: 0.3, leak: 0.4, smooth: 0, drift: 0.2, angle: 0, flow: 0, chroma: 0.15, quant: 0.6, stale: 0.25, jit: 0.5 },
 beat: { style: 'bleed', trigger: 'beat', recover: 0.9, block: '16', detail: 0.1, inertia: 0.4, leak: 0.3, smooth: 0.5, drift: 0.4, angle: 270, flow: 0, chroma: 0.3, quant: 0.1 },
 drip: { style: 'melt', trigger: 'always', block: '8', detail: 0.1, inertia: 0.85, leak: 0.1, smooth: 0.8, drift: 0.8, angle: 270, flow: 0.15, chroma: 0.2, quant: 0 },
-storm: { style: 'blocks', trigger: 'always', block: '16', detail: 0.1, inertia: 0.6, leak: 0.2, smooth: 0.2, drift: 0.5, angle: 0, flow: 0.8, chroma: 0.8, quant: 0.4, stale: 0.4, jit: 1 },
-ghost: { style: 'bleed', trigger: 'timer', period: 5, recover: 6, block: '32', detail: 0.6, inertia: 0.9, leak: 0.05, smooth: 1, drift: 0.15, angle: 90, flow: 0.2, chroma: 0.15, quant: 0 },
+trails: { style: 'trails', trigger: 'always', block: '16', inertia: 0.7, smooth: 1, drift: 0.2, angle: 90, flow: 0.6, chroma: 0.25, quant: 0, coh: 0.8, void: 1, trail: 0.7 },
+broken: { style: 'broken', trigger: 'timer', period: 2.5, recover: 1.8, block: '32', detail: 0.3, inertia: 0.4, leak: 0.3, smooth: 0, drift: 0.2, angle: 0, flow: 0, chroma: 0.4, quant: 0.5, stale: 0.35, coh: 0.3 },
+scatter: { style: 'scatter', trigger: 'timer', period: 3, recover: 2.5, block: '16', detail: 0.1, inertia: 0.5, leak: 0.2, smooth: 0, drift: 0.1, angle: 270, flow: 0.1, chroma: 0.2, quant: 0.2, coh: 0.4 },
 mouse: { style: 'bleed', trigger: 'cursor', recover: 1.2, block: '16', detail: 0.15, inertia: 0.6, leak: 0.25, smooth: 0.6, drift: 0.6, flow: 0.1, chroma: 0.3, quant: 0 },
 }[name];
 if (!P) return;

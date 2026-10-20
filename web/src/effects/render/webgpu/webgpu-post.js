@@ -183,6 +183,9 @@ uJit: m.jit,
 uTime: m.time,
 uHasHist: hist ? 1 : 0,
 uLeak: m.leak,
+uCoh: m.coh,
+uVoid: m.void,
+uTrail: m.trail,
 },
 { uCur: scene.createView(), uPrevSrc: sceneB.createView(), uMoshPrev: moshA.createView(), uMV: mvB.createView() }
 );

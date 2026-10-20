@@ -169,6 +169,9 @@ export class PostPipeline {
 				uTime: { value: 0 },
 				uHasHist: { value: 0 },
 				uLeak: { value: 0.03 },
+				uCoh: { value: 0.6 },
+				uVoid: { value: 1 },
+				uTrail: { value: 0.6 },
 			},
 			vertexShader: vert,
 			fragmentShader: moshFrag,
@@ -259,6 +262,9 @@ export class PostPipeline {
 		u.uTime.value = m.time;
 		u.uHasHist.value = hist ? 1 : 0;
 		u.uLeak.value = m.leak;
+		u.uCoh.value = m.coh;
+		u.uVoid.value = m.void;
+		u.uTrail.value = m.trail;
 		this.quadScene.clear();
 		this.quadScene.add(this.moshMesh);
 		r.setRenderTarget(this.rtMoshB);

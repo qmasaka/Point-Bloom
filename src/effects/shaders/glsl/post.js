@@ -108,7 +108,8 @@ void main() {
 	cuv = blockC / uRes;
 	vec2 mv = vec2(0.0);
 	if (uSceneMix > 0.001 && uHasPrev > 0.5) {
-		lodL = log2(max(uBlock * 0.3, 1.0));
+		// у облака точек кадр редкий: точки сравниваются по размытой плотности, иначе поиск цепляется за случайные одинаковые точки и векторы скачут
+		lodL = log2(max(uBlock * 0.6, 1.0));
 		float q = uBlock * 0.28;
 		oo[0] = vec2(0.0); oo[1] = vec2(q, q); oo[2] = vec2(-q, q); oo[3] = vec2(q, -q); oo[4] = vec2(-q, -q);
 		for (int i = 0; i < 5; i++) cc[i] = featCur(cuv + oo[i] / uRes);
@@ -157,7 +158,7 @@ uniform sampler2D uPrevSrc;
 uniform sampler2D uMoshPrev;
 uniform sampler2D uMV;
 uniform vec2 uRes, uMVSize;
-uniform float uBlock, uRange, uSmooth, uHold, uResid, uChroma, uQuant, uStyle, uStale, uJit, uTime, uHasHist, uLeak;
+uniform float uBlock, uRange, uSmooth, uHold, uResid, uChroma, uQuant, uStyle, uStale, uJit, uTime, uHasHist, uLeak, uCoh, uVoid, uTrail;
 varying vec2 vUv;
 float h11(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 vec2 fetchMV(vec2 ij) {
@@ -176,6 +177,19 @@ vec2 mvAt(vec2 px) {
 	vec2 d = fetchMV(i0 + vec2(1.0, 1.0));
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
+// слитность потоков: вектор блока усредняется с соседями, и потёки идут цельными струями, а не рябью
+vec2 mvCoh(vec2 px) {
+	vec2 m0 = mvAt(px);
+	if (uCoh < 0.01) return m0;
+	vec2 bc = floor(px / uBlock);
+	vec2 s = vec2(0.0);
+	for (int j = -1; j <= 1; j++) {
+		for (int i = -1; i <= 1; i++) {
+			s += fetchMV(bc + vec2(float(i), float(j)));
+		}
+	}
+	return mix(m0, s / 9.0, uCoh);
+}
 void main() {
 	vec4 cur = texture2D(uCur, vUv);
 	float hold = uHold * uHasHist;
@@ -183,7 +197,21 @@ void main() {
 	vec2 px = vUv * uRes;
 	vec2 bid = floor(px / uBlock);
 	float r = h11(bid);
-	vec2 mv = mvAt(px);
+	vec2 mv = mvCoh(px);
+	float slot3 = floor(uTime * 3.0);
+	if (uStyle > 3.5 && uStyle < 4.5) {
+		// битый поток: целые ряды блоков съезжают вбок, как строка, прочитанная со сдвигом
+		float rowHit = step(0.82, h11(vec2(bid.y * 3.1, slot3)));
+		mv.x += (h11(vec2(bid.y, slot3)) - 0.5) * uBlock * 8.0 * rowHit;
+	}
+	vec2 suv = vUv;
+	if (uStyle > 4.5) {
+		// рассыпание: картинка крупными пикселями, каждый сползает и осыпается вниз сам по себе
+		vec2 cell = vec2(max(uBlock * 0.5, 2.0));
+		vec2 cid = floor(px / cell);
+		suv = (cid + 0.5) * cell / uRes;
+		mv += vec2((h11(cid + 2.3) - 0.5) * 0.6, -0.4 - h11(cid) * 1.6) * cell.x * 0.35;
+	}
 	float stale = 0.0;
 	if (uStyle > 0.5 && uStyle < 1.5) {
 		// блоки: часть блоков залипает и сползает сама по себе
@@ -195,16 +223,37 @@ void main() {
 	}
 	vec2 d = mv / uRes;
 	float cs = uChroma * 0.6;
-	vec4 pr = texture2D(uMoshPrev, vUv - d * (1.0 + cs));
-	vec4 pg = texture2D(uMoshPrev, vUv - d);
-	vec4 pb = texture2D(uMoshPrev, vUv - d * (1.0 - cs));
+	vec4 pr = texture2D(uMoshPrev, suv - d * (1.0 + cs));
+	vec4 pg = texture2D(uMoshPrev, suv - d);
+	vec4 pb = texture2D(uMoshPrev, suv - d * (1.0 - cs));
 	vec4 pred = vec4(pr.r, pg.g, pb.b, pg.a);
 	vec4 predSrc = texture2D(uPrevSrc, vUv - d);
+	// чистая картинка там, где точек нет: фон остаётся пустым, если потёки в пустоту выключены
+	float cLum = dot(cur.rgb, vec3(0.3, 0.59, 0.11));
+	float keepBg = (1.0 - uVoid) * (1.0 - smoothstep(0.012, 0.07, cLum));
+	if (uStyle > 2.5 && uStyle < 3.5) {
+		// световые потёки: прошлая картинка течёт по полю движения и медленно гаснет, точки рисуют поверх светящиеся следы
+		vec4 tr = max(pred * mix(0.82, 0.988, uTrail), cur);
+		gl_FragColor = clamp(mix(mix(cur, tr, hold), cur, keepBg), 0.0, 6.0);
+		return;
+	}
 	vec4 dec = pred + (cur - predSrc) * uResid;
 	float m = clamp((1.0 - hold) * 1.6 - r * 0.6, 0.0, 1.0) * (1.0 - stale);
 	// понемногу картинка всегда возвращается, иначе сдвиг копится и кадр уезжает за край
 	m = max(m, uLeak * (1.0 - stale));
 	vec4 o = mix(dec, cur, m);
+	if (uStyle > 3.5 && uStyle < 4.5) {
+		// битый поток: часть блоков без данных, от них остался только средний цвет, а цветовой сигнал сорван в зелёный или пурпурный
+		float rb = h11(bid * 1.37 + slot3 * 3.1);
+		vec4 dc = textureLod(uCur, (bid + 0.5) * uBlock / uRes, log2(uBlock));
+		float yy = dot(dc.rgb, vec3(0.299, 0.587, 0.114));
+		vec3 tint = rb > 0.5 ? vec3(0.15, 1.0, 0.35) : vec3(0.95, 0.2, 0.9);
+		// пустые блоки остаются тёмными: данные теряются только там, где есть точки
+		vec3 bad = mix(vec3(yy), tint * yy * 1.7, 0.6);
+		float lost = step(0.9 - uStale, rb) * hold;
+		o = mix(o, vec4(bad, dc.a), lost);
+	}
+	o = mix(o, cur, keepBg);
 	if (uQuant > 0.001) {
 		// грубое квантование цвета и сдвиг оттенка по блокам, как у перегруженного кодека
 		float q = mix(48.0, 5.0, uQuant);
