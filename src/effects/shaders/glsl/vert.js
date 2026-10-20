@@ -550,5 +550,11 @@ void main() {
 		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;
 	}
+#ifdef TRACKPICK
+	// рамки слежения: итоговое положение точки (после всех эффектов) пишется в пиксель с её номером (engine/track-pick.js)
+	vColor = pos;
+	gl_Position = vec4((float(gl_VertexID) + 0.5) / 16.0 * 2.0 - 1.0, 0.0, 0.0, 1.0);
+	gl_PointSize = 1.0;
+#endif
 }
 `;

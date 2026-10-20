@@ -103,7 +103,7 @@ it.next = this.t + rnd(1.0, 3.2) / sp;
 it.id = Math.floor(rnd(1, 99));
 it.conf = rnd(0.82, 0.99);
 }
-if (this.follow && it.idx != null && !(targets && targets.length) && !this.pickOverride) {
+if (it.idx != null && !(targets && targets.length) && !this.pickOverride) {
 const i3 = it.idx * 3;
 if (i3 + 2 < tArr.length) {
 const nx = oArr[i3] + (tArr[i3] - oArr[i3]) * mm, ny = oArr[i3 + 1] + (tArr[i3 + 1] - oArr[i3 + 1]) * mm, nz = oArr[i3 + 2] + (tArr[i3 + 2] - oArr[i3 + 2]) * mm;
@@ -111,6 +111,21 @@ if (it.carry) it.pos.set(it.pos.x + nx - it.target.x, it.pos.y + ny - it.target.
 it.target.set(nx, ny, nz);
 it.carry = true;
 }
+}
+const off = (it.off ||= new THREE.Vector3());
+const G = this.gpu;
+let gk = -1;
+if (G && it.idx != null && !(targets && targets.length)) gk = G.idxs.indexOf(it.idx);
+if (gk >= 0 && G.data[gk * 4 + 3] > 0.5) {
+const i3 = it.idx * 3;
+const cx = oArr[i3] + (tArr[i3] - oArr[i3]) * mm, cy = oArr[i3 + 1] + (tArr[i3 + 1] - oArr[i3 + 1]) * mm, cz = oArr[i3 + 2] + (tArr[i3 + 2] - oArr[i3 + 2]) * mm;
+const k = it.offOk ? 1 - Math.exp(-dt * 30) : 1;
+off.x += (G.data[gk * 4] - cx - off.x) * k;
+off.y += (G.data[gk * 4 + 1] - cy - off.y) * k;
+off.z += (G.data[gk * 4 + 2] - cz - off.z) * k;
+it.offOk = true;
+} else if (it.offOk) {
+off.multiplyScalar(Math.exp(-dt * 8));
 }
 const before = it.pos.clone();
 it.pos.lerp(it.target, 1 - Math.exp(-dt * Math.max(this.follow ? 20 : 0, 6.5 * sp)));
@@ -129,6 +144,7 @@ if (!points || alpha < 0.02) return;
 const dpx = [];
 for (const it of this.items.slice(0, Math.round(cfg.count))) {
 const v = this._v.copy(it.pos);
+if (it.off) v.add(it.off);
 points.localToWorld(v);
 v.project(camera);
 if (v.z > 1 || v.z < -1) continue;

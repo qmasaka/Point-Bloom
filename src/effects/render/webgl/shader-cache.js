@@ -114,6 +114,7 @@ export class ShaderCachePart {
 		const now = performance.now();
 		const wanted = (k) => now - ((this._wantT && this._wantT[k]) || -1e9) < 800;
 		if (this.hero) kinds.push('hero');
+		if (this._tp && wanted('pick')) kinds.push('pick');
 		if (this._shadow?.pts.parent === this.points && (this._shadow.pts.visible || wanted('shadow'))) kinds.push('shadow');
 		if (this.linkObj && (this.linkObj.visible || wanted('line'))) kinds.push('line');
 		if (this._scopeLine && (this._scopeLine.visible || wanted('scope'))) kinds.push('scope');
@@ -149,6 +150,7 @@ export class ShaderCachePart {
 		const base = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} };
 		if (kind === 'line') return new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('line', set), fragmentShader: lineFrag }));
 		if (kind === 'scope') return new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('scope', set), fragmentShader: scopeFrag }));
+		if (kind === 'pick') return new THREE.Points(g, new THREE.ShaderMaterial({ uniforms: {}, defines: { TRACKPICK: 1 }, depthTest: false, depthWrite: false, vertexShader: this._fxSource('vert', set), fragmentShader: 'precision highp float; varying vec3 vColor; void main() { gl_FragColor = vec4(vColor, 1.0); }' }));
 		if (kind === 'shadow') {
 			const bl = this._shadow?.pts.material.blending ?? THREE.NormalBlending;
 			return new THREE.Points(g, new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: bl, uniforms: {}, defines: { SHADOW: 1 }, vertexShader: this._fxSource('vert', set), fragmentShader: shadowFrag }));

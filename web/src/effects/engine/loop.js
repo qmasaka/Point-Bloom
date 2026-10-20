@@ -601,6 +601,7 @@ else if (this.mouseOn) tgs = [this.mouse];
 }
 this.hud.pickOverride = this.shared.uFr.value.x > 0.5 ? () => this._frameSample() : null;
 this.hud.follow = !!(this._animCloud && this.app.anim.has);
+this.hud.gpu = n > 0 && !this.hud.pickOverride ? this._trackPick(this.hud.items.map((it) => it.idx)) : null;
 this.hud.speed = T.speed ?? 1;
 this.hud.update(n, this.geometry, this.morph, this.levels, dt, tgs);
 const hex = (c) => '#' + new THREE.Color(c).getHexString(THREE.SRGBColorSpace);

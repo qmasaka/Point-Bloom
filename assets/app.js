@@ -83641,7 +83641,7 @@ it.next = this.t + rnd(1.0, 3.2) / sp;
 it.id = Math.floor(rnd(1, 99));
 it.conf = rnd(0.82, 0.99);
 }
-if (this.follow && it.idx != null && !(targets && targets.length) && !this.pickOverride) {
+if (it.idx != null && !(targets && targets.length) && !this.pickOverride) {
 const i3 = it.idx * 3;
 if (i3 + 2 < tArr.length) {
 const nx = oArr[i3] + (tArr[i3] - oArr[i3]) * mm, ny = oArr[i3 + 1] + (tArr[i3 + 1] - oArr[i3 + 1]) * mm, nz = oArr[i3 + 2] + (tArr[i3 + 2] - oArr[i3 + 2]) * mm;
@@ -83649,6 +83649,21 @@ if (it.carry) it.pos.set(it.pos.x + nx - it.target.x, it.pos.y + ny - it.target.
 it.target.set(nx, ny, nz);
 it.carry = true;
 }
+}
+const off = (it.off ||= new THREE.Vector3());
+const G = this.gpu;
+let gk = -1;
+if (G && it.idx != null && !(targets && targets.length)) gk = G.idxs.indexOf(it.idx);
+if (gk >= 0 && G.data[gk * 4 + 3] > 0.5) {
+const i3 = it.idx * 3;
+const cx = oArr[i3] + (tArr[i3] - oArr[i3]) * mm, cy = oArr[i3 + 1] + (tArr[i3 + 1] - oArr[i3 + 1]) * mm, cz = oArr[i3 + 2] + (tArr[i3 + 2] - oArr[i3 + 2]) * mm;
+const k = it.offOk ? 1 - Math.exp(-dt * 30) : 1;
+off.x += (G.data[gk * 4] - cx - off.x) * k;
+off.y += (G.data[gk * 4 + 1] - cy - off.y) * k;
+off.z += (G.data[gk * 4 + 2] - cz - off.z) * k;
+it.offOk = true;
+} else if (it.offOk) {
+off.multiplyScalar(Math.exp(-dt * 8));
 }
 const before = it.pos.clone();
 it.pos.lerp(it.target, 1 - Math.exp(-dt * Math.max(this.follow ? 20 : 0, 6.5 * sp)));
@@ -83667,6 +83682,7 @@ if (!points || alpha < 0.02) return;
 const dpx = [];
 for (const it of this.items.slice(0, Math.round(cfg.count))) {
 const v = this._v.copy(it.pos);
+if (it.off) v.add(it.off);
 points.localToWorld(v);
 v.project(camera);
 if (v.z > 1 || v.z < -1) continue;
@@ -89344,6 +89360,12 @@ void main() {
 		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;
 	}
+#ifdef TRACKPICK
+	// рамки слежения: итоговое положение точки (после всех эффектов) пишется в пиксель с её номером (engine/track-pick.js)
+	vColor = pos;
+	gl_Position = vec4((float(gl_VertexID) + 0.5) / 16.0 * 2.0 - 1.0, 0.0, 0.0, 1.0);
+	gl_PointSize = 1.0;
+#endif
 }
 `;
 };
@@ -89544,6 +89566,7 @@ const kinds = [this._vertKind()];
 const now = performance.now();
 const wanted = (k) => now - ((this._wantT && this._wantT[k]) || -1e9) < 800;
 if (this.hero) kinds.push('hero');
+if (this._tp && wanted('pick')) kinds.push('pick');
 if (this._shadow?.pts.parent === this.points && (this._shadow.pts.visible || wanted('shadow'))) kinds.push('shadow');
 if (this.linkObj && (this.linkObj.visible || wanted('line'))) kinds.push('line');
 if (this._scopeLine && (this._scopeLine.visible || wanted('scope'))) kinds.push('scope');
@@ -89572,6 +89595,7 @@ const g = this._warmGeo || (this._warmGeo = new THREE.BufferGeometry().setAttrib
 const base = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} };
 if (kind === 'line') return new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('line', set), fragmentShader: lineFrag }));
 if (kind === 'scope') return new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('scope', set), fragmentShader: scopeFrag }));
+if (kind === 'pick') return new THREE.Points(g, new THREE.ShaderMaterial({ uniforms: {}, defines: { TRACKPICK: 1 }, depthTest: false, depthWrite: false, vertexShader: this._fxSource('vert', set), fragmentShader: 'precision highp float; varying vec3 vColor; void main() { gl_FragColor = vec4(vColor, 1.0); }' }));
 if (kind === 'shadow') {
 const bl = this._shadow?.pts.material.blending ?? THREE.NormalBlending;
 return new THREE.Points(g, new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: bl, uniforms: {}, defines: { SHADOW: 1 }, vertexShader: this._fxSource('vert', set), fragmentShader: shadowFrag }));
@@ -91717,6 +91741,7 @@ else if (this.mouseOn) tgs = [this.mouse];
 }
 this.hud.pickOverride = this.shared.uFr.value.x > 0.5 ? () => this._frameSample() : null;
 this.hud.follow = !!(this._animCloud && this.app.anim.has);
+this.hud.gpu = n > 0 && !this.hud.pickOverride ? this._trackPick(this.hud.items.map((it) => it.idx)) : null;
 this.hud.speed = T.speed ?? 1;
 this.hud.update(n, this.geometry, this.morph, this.levels, dt, tgs);
 const hex = (c) => '#' + new THREE.Color(c).getHexString(THREE.SRGBColorSpace);
@@ -92708,6 +92733,90 @@ S.tex.needsUpdate = true;
 }
 }
 };
+__defs['src/effects/engine/track-pick.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'TrackPickPart', () => TrackPickPart);
+const THREE = __req('vendor/three/build/three.module.js');
+const SLOTS = 16;
+const pickFrag = `
+precision highp float;
+varying vec3 vColor;
+void main() {
+	gl_FragColor = vec4(vColor, 1.0);
+}
+`;
+class TrackPickPart {
+_trackPick(idxs) {
+const g = this.geometry;
+const r = this.app.viewport.renderer;
+if (!g || !this.points || this._glDormant || this._tpFailed || !r.capabilities?.isWebGL2) return null;
+let P = this._tp;
+if (!P || P.src !== g) {
+P?.pts.geometry.dispose();
+P?.pts.material.dispose();
+const pg = new THREE.BufferGeometry();
+for (const [name, a] of Object.entries(g.attributes)) pg.setAttribute(name, new THREE.BufferAttribute(new a.array.constructor(SLOTS * a.itemSize), a.itemSize));
+const m = new THREE.ShaderMaterial({ vertexShader: this._fxSource('vert', this._fxCur || new Set()), fragmentShader: pickFrag, defines: { TRACKPICK: 1 }, uniforms: { ...this.shared, uTOff: { value: 0 }, uGhost: { value: 1 }, uHero: { value: new THREE.Vector4() } }, depthTest: false, depthWrite: false, transparent: false });
+const pts = new THREE.Points(pg, m);
+pts.frustumCulled = false;
+pts.matrixAutoUpdate = false;
+const scene = new THREE.Scene();
+scene.add(pts);
+const rt = P?.rt || new THREE.WebGLRenderTarget(SLOTS, 1, { type: THREE.FloatType, format: THREE.RGBAFormat, depthBuffer: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+P = this._tp = { src: g, pts, scene, rt, buf: new Float32Array(SLOTS * 4), res: null, pending: false, sig: this._fxSig() };
+}
+const sig = this._fxSig();
+if (P.sig !== sig) {
+P.sig = sig;
+P.pts.material.vertexShader = this._fxSource('vert', this._fxCur);
+P.pts.material.needsUpdate = true;
+}
+if (!this._gate('pick', true)) return P.res;
+const pg = P.pts.geometry;
+const used = idxs.slice(0, SLOTS);
+for (const [name, a] of Object.entries(pg.attributes)) {
+const s = g.attributes[name];
+if (!s) continue;
+const k = a.itemSize;
+for (let i = 0; i < SLOTS; i++) {
+const id = used[i];
+if (id == null || id * k >= s.array.length) {
+if (name === 'aHide') a.array[i] = 1;
+continue;
+}
+for (let c = 0; c < k; c++) a.array[i * k + c] = s.array[id * k + c];
+}
+a.needsUpdate = true;
+}
+P.pts.matrixWorld.copy(this.points.matrixWorld);
+const prev = r.getRenderTarget();
+const cc = r.getClearColor(new THREE.Color());
+const ca = r.getClearAlpha();
+try {
+r.setRenderTarget(P.rt);
+r.setClearColor(0x000000, 0);
+r.clear(true, false, false);
+r.render(P.scene, this.app.viewport.camera);
+} finally {
+r.setRenderTarget(prev);
+r.setClearColor(cc, ca);
+}
+if (!P.pending) {
+P.pending = true;
+const snap = used.slice();
+r.readRenderTargetPixelsAsync(P.rt, 0, 0, SLOTS, 1, P.buf)
+.then(() => {
+P.res = { idxs: snap, data: P.buf.slice() };
+})
+.catch(() => {
+this._tpFailed = true;
+})
+.finally(() => (P.pending = false));
+}
+return P.res;
+}
+}
+};
 __defs['src/effects/engine/mixin.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'mixin', () => mixin);
@@ -92753,6 +92862,7 @@ const { SlitPart } = __req('src/effects/engine/slitscan.js');
 const { ChladniPart } = __req('src/effects/engine/chladni.js');
 const { ShadowPart } = __req('src/effects/engine/shadow.js');
 const { PixelSortPart } = __req('src/effects/engine/pixelsort.js');
+const { TrackPickPart } = __req('src/effects/engine/track-pick.js');
 const { mixin } = __req('src/effects/engine/mixin.js');
 class EffectsEngine {
 constructor(app) {
@@ -93056,7 +93166,7 @@ nav.paintLock = want;
 this.app.viewport.container.classList.toggle('paint-lock', want);
 }
 }
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShadowPart, PixelSortPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShadowPart, PixelSortPart, TrackPickPart);
 };
 __defs['src/animation/anim-activity.js'] = function (__exports, __req) {
 'use strict';

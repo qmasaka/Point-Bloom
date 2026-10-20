@@ -27,6 +27,7 @@ import { SlitPart } from './slitscan.js';
 import { ChladniPart } from './chladni.js';
 import { ShadowPart } from './shadow.js';
 import { PixelSortPart } from './pixelsort.js';
+import { TrackPickPart } from './track-pick.js';
 import { mixin } from './mixin.js';
 export class EffectsEngine {
 constructor(app) {
@@ -330,4 +331,4 @@ nav.paintLock = want;
 this.app.viewport.container.classList.toggle('paint-lock', want);
 }
 }
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShadowPart, PixelSortPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShadowPart, PixelSortPart, TrackPickPart);
