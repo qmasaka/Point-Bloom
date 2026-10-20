@@ -29,7 +29,7 @@ export function createFrameUniforms({ count, specTex, pieceTex }) {
 		uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()), uPaintP: U(new THREE.Vector4()),
 		uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
 		// «Экран»: видео на форме (см. блок VSCREEN в vert.js)
-		uHyp: U(new THREE.Vector4()), uHypP: U(new THREE.Vector4()),
+		uHyp: U(new THREE.Vector4()), uHypP: U(new THREE.Vector4()), uCh: U(new THREE.Vector4()), uLens: U(new THREE.Vector4()), uLensC: U(new THREE.Vector4()), uChA: U(new THREE.Vector4(1, 2, 1, 2)),
 		uScr: U(new THREE.Vector4()), uScrP: U(new THREE.Vector4(0, 0.4, 1, 1.78)), uScrTex: U(scrDummy()), uScrD: U(new THREE.Vector4(0, 0.5, 1, 1)), uScrQ: U(new THREE.Vector4()), uScrDep: U(scrDummy()), uScrMTex: U(scrDummy()), uScrMN: U(1),
 		// «Слит-скан»: кольцевой буфер кадров видео (см. engine/slitscan.js)
 		uSlit: U(new THREE.Vector4()), uSlitP: U(new THREE.Vector4()), uSlitG: U(new THREE.Vector4(1, 1, 1, 1)), uSlitTex: U(frDummyTex()),

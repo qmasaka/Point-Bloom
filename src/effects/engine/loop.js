@@ -289,6 +289,9 @@ export class LoopPart {
 				u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, map: 1, heat: 2 }[Dp.view] ?? 0);
 			}
 			this._screenTick(u);
+			this._chladniTick(dt, L.chladni, u);
+			this._lensTick(dt, L.lens, u);
+			this._shadowTick(dt, L.shadow, u);
 			// гиперпространство: угол поворота в 4D копится (смена скорости не дёргает форму), удар звука даёт рывок
 			{
 				const H = L.hyper;

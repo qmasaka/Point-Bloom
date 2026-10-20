@@ -15,6 +15,8 @@ struct Frame {
 	@size(16) uP2: vec3f,
 	@size(16) uSliceC: vec3f,
 	@size(16) uMarkC: vec3f,
+	uLens: vec4f,
+	uLensC: vec4f,
 	@size(16) uTime: f32,
 	@size(16) uTOff: f32,
 	@size(16) uMorph: f32,
@@ -92,6 +94,8 @@ struct Frame {
 	uDof: vec4f,
 	uHyp: vec4f,
 	uHypP: vec4f,
+	uCh: vec4f,
+	uChA: vec4f,
 	uFr: vec4f,
 	uFr2: vec4f,
 	uFr3: vec4f,
@@ -172,6 +176,7 @@ var<private> gNormal: vec3f = vec3f(0.0);
 var<private> gLum: f32 = 0.5;
 var<private> gHypW: f32 = 0.0;
 var<private> gHypF: f32 = 0.0;
+var<private> gChN: f32 = 0.0;
 
 fn mod289_vec3(x_in: vec3f) -> vec3f {
 	var x: vec3f = x_in;
@@ -655,6 +660,28 @@ fn hyperWarp(p_in: vec3f, c_in: vec3f, R_in: f32, md_in: f32, a_in: f32, w4: ptr
 	return (c + (o * ((oc / max(ol, 1e-4)))));
 }
 
+fn chF(q_in: vec3f, n_in: f32, m_in: f32) -> f32 {
+	var q: vec3f = q_in;
+	var n: f32 = n_in;
+	var m: f32 = m_in;
+	var f: f32 = ((cos((n * q.x)) * cos((m * q.y))) - (cos((m * q.x)) * cos((n * q.y))));
+	if ((fr.uFlat > 0.5)) {
+		return f;
+	}
+	return ((((f + (cos((n * q.y)) * cos((m * q.z)))) - (cos((m * q.y)) * cos((n * q.z)))) + (cos((n * q.z)) * cos((m * q.x)))) - (cos((m * q.z)) * cos((n * q.x))));
+}
+
+fn chField(q_in: vec3f) -> f32 {
+	var q: vec3f = q_in;
+	if ((fr.uCh.y < 0.001)) {
+		return chF(q, fr.uChA.x, fr.uChA.y);
+	}
+	if ((fr.uCh.y > 0.999)) {
+		return chF(q, fr.uChA.z, fr.uChA.w);
+	}
+	return mix(chF(q, fr.uChA.x, fr.uChA.y), chF(q, fr.uChA.z, fr.uChA.w), fr.uCh.y);
+}
+
 fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<function, vec3f>, maskV: ptr<function, f32>) -> vec3f {
 	var aOrigin: vec3f = aOrigin_in;
 	var aTarget: vec3f = aTarget_in;
@@ -737,6 +764,28 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		rad = normalize(gNormal);
 	}
 	var pos: vec3f = (*base);
+	if ((fr.uCh.x > 0.001)) {
+		var chh: f32 = (max((fr.uYR.y - fr.uYR.x), 0.5) * 0.5);
+		var chk: f32 = ((1.5708 * fr.uCh.z) / chh);
+		var chq: vec3f = (((pos - fr.uCen)) * chk);
+		var chn: vec3f = select((select(rad, normalize(gNormal), (dot(gNormal, gNormal) > 0.01))), vec3f(0.0, 0.0, 1.0), (fr.uFlat > 0.5));
+		for (var ci: i32 = 0; (ci < 4); ci++) {
+			var cf: f32 = chField(chq);
+			var cg: vec3f = (vec3f((chField((chq + vec3f(0.02, 0.0, 0.0))) - cf), (chField((chq + vec3f(0.0, 0.02, 0.0))) - cf), (chField((chq + vec3f(0.0, 0.0, 0.02))) - cf)) / 0.02);
+			cg -= (chn * dot(cg, chn));
+			var cst: vec3f = ((-cf * cg) / max(dot(cg, cg), 0.01));
+			var csl: f32 = length(cst);
+			if ((csl > 0.7)) {
+				cst *= vec3f((0.7 / csl));
+			}
+			chq += cst;
+		}
+		var cfe: f32 = abs(chField(chq));
+		gChN = exp((-cfe * 5.0));
+		var ctk: f32 = floor((t * 30.0));
+		var cbz: vec3f = (((((vec3f(hash11(((aIdx * 3.1) + ctk)), hash11(((aIdx * 5.7) + ctk)), hash11(((aIdx * 1.3) + ctk))) - 0.5)) * ((1.0 - gChN))) * fr.uCh.w) * ((0.03 + (fr.uBeat * 0.05))));
+		pos = mix(pos, ((fr.uCen + (chq / chk)) + cbz), min(fr.uCh.x, 1.0));
+	}
 	if ((fr.uTwist.x > 0.001)) {
 		var y01t: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
 		var tw: f32 = (fr.uTwist.x * ((1.0 + (select(0.0, (0.35 * sin(((t * fr.uTwist.z) * 2.0))), (fr.uTwist.z > 0.01))))));
@@ -1434,6 +1483,9 @@ fn main_() {
 	if (((fr.uMask.x > 0.5) && (fr.uMaskShow > 0.5))) {
 		vColor = mix(vColor, (fr.uP2 * 1.4), (maskV * 0.55));
 	}
+	if ((fr.uCh.x > 0.001)) {
+		vColor *= vec3f(mix(1.0, (0.45 + (1.1 * gChN)), min(fr.uCh.x, 1.0)));
+	}
 	if ((fr.uHyp.x > 0.001)) {
 		var hk4: f32 = clamp((((gHypW + 1.0)) * 0.5), 0.0, 1.0);
 		var hc: vec3f = select(mix(fr.uP1, fr.uP2, (((hk4 - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (hk4 * 2.0)), (hk4 < 0.5));
@@ -1562,6 +1614,24 @@ fn main_() {
 	vD = disp;
 	var mv: vec4f = (fr.modelViewMatrix * vec4f(pos, 1.0));
 	gl_Position = (fr.projectionMatrix * mv);
+	var lensMu: f32 = 1.0;
+	if ((fr.uLens.x > 0.001)) {
+		if ((gl_Position.w > 1e-4)) {
+			var lnd: vec2f = (gl_Position.xy / gl_Position.w);
+			var lbv: vec2f = (((lnd - fr.uLensC.xy)) * vec2f(fr.uLens.w, 1.0));
+			var lb: f32 = length(lbv);
+			var lte: f32 = max(fr.uLens.y, 1e-4);
+			var lth: f32 = (0.5 * ((lb + sqrt(((lb * lb) + ((4.0 * lte) * lte))))));
+			var limg: vec2f = (fr.uLensC.xy + (((select(vec2f(0.0, 1.0), (lbv / lb), (lb > 1e-6))) * lth) / vec2f(fr.uLens.w, 1.0)));
+			var lk: f32 = min(fr.uLens.x, 1.0);
+			{ let _sw23 = (mix(lnd, limg, lk) * gl_Position.w); gl_Position = vec4f(_sw23.x, _sw23.y, gl_Position.z, gl_Position.w); }
+			var lu: f32 = (lb / lte);
+			lensMu = mix(1.0, clamp((((((lu * lu) + 2.0)) / ((((2.0 * lu) * sqrt(((lu * lu) + 4.0))) + 1e-4))) + 0.5), 1.0, 4.0), lk);
+			vColor *= vec3f(mix(1.0, lensMu, 0.55));
+			var lring: f32 = (((lth - lte)) / ((lte * 0.18)));
+			vColor += ((((fr.uP2 * fr.uLens.z) * exp((-lring * lring))) * 0.9) * lk);
+		}
+	}
 	var szNoise: f32 = 1.0;
 	if ((fr.uLookP2.x > 0.001)) {
 		szNoise = (1.0 + (fr.uLookP2.x * ((snoise(((base * 2.2) + (fr.uTime * 0.4))) * 0.75))));
@@ -1580,6 +1650,7 @@ fn main_() {
 	var s: f32 = ((((fr.uSize * fr.uPR) * (((((1.0 + (disp * 0.5)) + (fr.uBeat * 0.2)) + (sl * 1.2)) + (mkm * 0.7)))) * fr.uGlyph.y) * fr.uFr6.x);
 	s *= ((((((max(0.15, (szNoise * szAudio)) * ((1.0 - (fr.uDisQ.w * dkv)))) * mix(0.3, 1.0, gGrow)) * ((1.0 + (select(0.0, (mkv * 0.9), ((fr.uMark.x > 3.5) && (fr.uMark.x < 4.5))))))) * ((1.0 - (0.6 * (select(0.0, smoothstep(0.35, 0.9, mkv), ((fr.uMark.x > 2.5) && (fr.uMark.x < 3.5)))))))) * ((1.0 - (0.7 * smoothstep(0.3, 0.8, cvan))))) * ((0.25 + (0.75 * vis))));
 	s *= ((1.0 + (coc * 2.4)));
+	s *= sqrt(lensMu);
 	s *= (1.0 - (0.85 * gHypF));
 	s *= (((((1.0 + (gScopeT * fr.uScopeQ.y)) + ((gScopeG * fr.uScopeQ.z) * 2.5)) + (gDepthG * 0.8))) * ((1.0 - gScopeD)));
 	s *= select(0.73, (3.8 / max(-mv.z, 0.4)), (fr.uAtt > 0.5));

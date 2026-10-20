@@ -70,6 +70,9 @@ uniform vec4 uHyp; // гиперпространство: x сила, y угол
 uniform vec4 uHypP; // y окраска по 4-й оси, z как гаснут улетевшие в бесконечность, w угловая скорость (для копий «Эха»)
 float gHypW = 0.0; // где точка на 3-сфере: -1 у центра, +1 на бесконечности
 float gHypF = 0.0; // насколько точка ушла в бесконечность (гаснет и мельчает)
+uniform vec4 uCh; // фигуры Хладни: x сила, y переход от узора A к B, z масштаб, w дрожь песка
+uniform vec4 uChA; // номера мод узора A (n, m) и узора B (n, m)
+float gChN = 0.0; // насколько точка легла на узловую линию (там она светится)
 #define PI 3.1415926535
 
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -504,6 +507,18 @@ vec3 hyperWarp(vec3 p, vec3 c, float R, float md, float a, out float w4) {
 	return c + o * (oc / max(ol, 1e-4));
 }
 
+// Фигуры Хладни: поле стоячей волны на пластине (у плоских фото и видео) или в объёме; песок собирается там, где поле равно нулю
+float chF(vec3 q, float n, float m) {
+	float f = cos(n * q.x) * cos(m * q.y) - cos(m * q.x) * cos(n * q.y);
+	if (uFlat > 0.5) return f;
+	return f + cos(n * q.y) * cos(m * q.z) - cos(m * q.y) * cos(n * q.z) + cos(n * q.z) * cos(m * q.x) - cos(m * q.z) * cos(n * q.x);
+}
+float chField(vec3 q) {
+	if (uCh.y < 0.001) return chF(q, uChA.x, uChA.y);
+	if (uCh.y > 0.999) return chF(q, uChA.z, uChA.w);
+	return mix(chF(q, uChA.x, uChA.y), chF(q, uChA.z, uChA.w), uCh.y);
+}
+
 // Положение одной точки после всех эффектов. base: форма без эффектов, maskV: доля эффектов в этой точке (зона)
 vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float maskV) {
 	float t = uTime - uTOff;
@@ -579,6 +594,29 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	// движущаяся анимированная модель: «наружу» это нормаль её поверхности, а не направление от центра сцены (оно смотрит не туда, когда модель далеко от центра)
 	if (uAnimN > 0.5 && dot(gNormal, gNormal) > 0.01) rad = normalize(gNormal);
 	vec3 pos = base;
+
+	if (uCh.x > 0.001) {
+		// песок скатывается к ближайшей узловой линии (шаги Ньютона по полю), двигаясь только вдоль поверхности формы
+		float chh = max(uYR.y - uYR.x, 0.5) * 0.5;
+		float chk = 1.5708 * uCh.z / chh;
+		vec3 chq = (pos - uCen) * chk;
+		vec3 chn = uFlat > 0.5 ? vec3(0.0, 0.0, 1.0) : (dot(gNormal, gNormal) > 0.01 ? normalize(gNormal) : rad);
+		for (int ci = 0; ci < 4; ci++) {
+			float cf = chField(chq);
+			vec3 cg = vec3(chField(chq + vec3(0.02, 0.0, 0.0)) - cf, chField(chq + vec3(0.0, 0.02, 0.0)) - cf, chField(chq + vec3(0.0, 0.0, 0.02)) - cf) / 0.02;
+			cg -= chn * dot(cg, chn);
+			vec3 cst = -cf * cg / max(dot(cg, cg), 0.01);
+			float csl = length(cst);
+			if (csl > 0.7) cst *= 0.7 / csl;
+			chq += cst;
+		}
+		float cfe = abs(chField(chq));
+		gChN = exp(-cfe * 5.0);
+		// дрожь: песок, который ещё не улёгся, подпрыгивает (сильнее на ударе)
+		float ctk = floor(t * 30.0);
+		vec3 cbz = (vec3(hash11(aIdx * 3.1 + ctk), hash11(aIdx * 5.7 + ctk), hash11(aIdx * 1.3 + ctk)) - 0.5) * (1.0 - gChN) * uCh.w * (0.03 + uBeat * 0.05);
+		pos = mix(pos, uCen + chq / chk + cbz, min(uCh.x, 1.0));
+	}
 
 	if (uTwist.x > 0.001) {
 		float y01t = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);

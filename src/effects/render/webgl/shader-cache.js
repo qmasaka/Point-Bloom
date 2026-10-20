@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { waitPrograms } from './programs.js';
 import { FX_GUARDS, specializeFx } from './specialize.js';
 import { frag } from '../../shaders/glsl/frag.js';
+import { shadowFrag } from '../../shaders/glsl/shadow-frag.js';
 import { lineFrag } from '../../shaders/glsl/line-frag.js';
 import { lineVert } from '../../shaders/glsl/line-vert.js';
 import { scopeFrag } from '../../shaders/glsl/scope-frag.js';
@@ -113,6 +114,7 @@ export class ShaderCachePart {
 		const now = performance.now();
 		const wanted = (k) => now - ((this._wantT && this._wantT[k]) || -1e9) < 800;
 		if (this.hero) kinds.push('hero');
+		if (this._shadow?.pts.parent === this.points && (this._shadow.pts.visible || wanted('shadow'))) kinds.push('shadow');
 		if (this.linkObj && (this.linkObj.visible || wanted('line'))) kinds.push('line');
 		if (this._scopeLine && (this._scopeLine.visible || wanted('scope'))) kinds.push('scope');
 		return kinds;
@@ -147,6 +149,10 @@ export class ShaderCachePart {
 		const base = { transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: {} };
 		if (kind === 'line') return new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('line', set), fragmentShader: lineFrag }));
 		if (kind === 'scope') return new THREE.Mesh(g, new THREE.ShaderMaterial({ ...base, side: THREE.DoubleSide, vertexShader: this._fxSource('scope', set), fragmentShader: scopeFrag }));
+		if (kind === 'shadow') {
+			const bl = this._shadow?.pts.material.blending ?? THREE.NormalBlending;
+			return new THREE.Points(g, new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: bl, uniforms: {}, defines: { SHADOW: 1 }, vertexShader: this._fxSource('vert', set), fragmentShader: shadowFrag }));
+		}
 		// точки: параметры материала такие же, как у настоящего (смешивание, прозрачность, запись глубины), иначе ключ программы другой и прогрев не помогает
 		const hero = kind === 'hero';
 		const add = hero ? !this.hero || this.hero.material.blending === THREE.AdditiveBlending : kind !== 'vert|norm';

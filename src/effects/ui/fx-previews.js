@@ -273,6 +273,49 @@ const DRAW = {
 			dot(c, Math.cos(tt) * 10, Math.sin(tt * 1.3) * 6, k === 0 ? 3.4 : 2.6 - k * 0.12, k === 0 ? 1 : 0.7 - k * 0.04);
 		}
 	},
+	chladni: (c, t) => {
+		// песок на пластине: точки стягиваются к узловым линиям, узор плавно сменяется
+		const k = (Math.sin(t * 0.8) + 1) * 0.5;
+		const f = (x, y) => (1 - k) * (Math.cos(1 * x) * Math.cos(3 * y) - Math.cos(3 * x) * Math.cos(1 * y)) + k * (Math.cos(2 * x) * Math.cos(3 * y) - Math.cos(3 * x) * Math.cos(2 * y));
+		for (let j = 0; j < 15; j++) for (let i = 0; i < 15; i++) {
+			const x = ((i + 0.5) / 15 - 0.5) * Math.PI, y = ((j + 0.5) / 15 - 0.5) * Math.PI;
+			const v = Math.abs(f(x, y));
+			if (v > 0.5) continue;
+			dot(c, (x / Math.PI) * 22, (y / Math.PI) * 22, 1.2 + (0.5 - v) * 1.6, 1 - v * 1.6);
+		}
+	},
+	lens: (c, t) => {
+		// масса посередине: сетка точек вокруг неё выгнута в кольцо, в центре пусто
+		const cx = Math.cos(t * 0.7) * 2.5, cy = Math.sin(t * 0.9) * 1.5;
+		const te = 5.5;
+		for (let j = 0; j < 9; j++) for (let i = 0; i < 13; i++) {
+			const bx = (i - 6) * 2.4 - cx, by = (j - 4) * 2.6 - cy;
+			const b = Math.hypot(bx, by) + 1e-3;
+			const th = 0.5 * (b + Math.sqrt(b * b + 4 * te * te));
+			const mu = Math.min(3, (te * 1.8) / b);
+			dot(c, cx + (bx / b) * th, cy + (by / b) * th * 0.8, 1 + mu * 0.35, 0.35 + Math.min(0.65, mu * 0.25));
+		}
+	},
+	shadow: (c, t) => {
+		// шар из точек и его тень на полу, свет ходит по кругу
+		const lx = Math.cos(t * 0.8) * 6;
+		for (let i = 0; i < 26; i++) {
+			const a = (i / 26) * Math.PI * 2;
+			dot(c, Math.cos(a) * 5.2, -3 + Math.sin(a) * 5.2, 1.4, 0.9);
+			dot(c, Math.cos(a) * 7 - lx, 8.5 + Math.sin(a) * 1.4, 1.6, 0.28);
+		}
+		for (let i = -12; i <= 12; i += 2) dot(c, i, 10.6, 0.8, 0.18);
+	},
+	timeform: (c, t) => {
+		// прошлые положения движущейся точки уходят вглубь и складываются в изогнутый след
+		for (let k = 22; k >= 0; k--) {
+			const tt = t * 1.6 - k * 0.12;
+			const x = Math.sin(tt) * 7 + k * 0.45;
+			const y = Math.cos(tt * 1.3) * 4 - k * 0.38;
+			const a = 1 - k / 26;
+			dot(c, x, y, 1.2 + a * 1.8, a);
+		}
+	},
 	slitscan: (c, t) => {
 		// сетка точек, по которой идёт яркая волна; каждая строка отстаёт от верхней во времени, поэтому волна изгибается
 		for (let j = 0; j < 8; j++) for (let i = 0; i < 12; i++) {

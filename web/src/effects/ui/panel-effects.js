@@ -351,7 +351,7 @@ rotate: { id: 'rotate', name: 'Вращение', icon: 'arrows-clockwise', hint
 bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 };
 const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'hyper', 'slitscan'];
+const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'hyper', 'slitscan', 'timeform', 'chladni', 'lens', 'shadow'];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
 const animQuickBtn = button({
@@ -2635,7 +2635,7 @@ countActive();
 for (const c of cards) {
 if (c.def.group !== 'Видео') continue;
 c.folder.hidden = !engine.pm.ready;
-if (c.def.id === 'frames' || c.def.id === 'slitscan') c.card.hidden = !engine.videoLoaded;
+if (c.def.id === 'frames' || c.def.id === 'slitscan' || c.def.id === 'timeform') c.card.hidden = !engine.videoLoaded;
 }
 {
 const vc = cards.find((c) => c.def.group === 'Видео');

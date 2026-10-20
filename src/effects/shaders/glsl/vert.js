@@ -31,6 +31,8 @@ uniform vec3 uP1;
 uniform vec3 uP2;
 uniform vec3 uSliceC;
 uniform vec3 uMarkC;
+uniform vec4 uLens; // гравитационная линза: x сила, y радиус кольца Эйнштейна (доля высоты экрана), z свечение кольца, w соотношение сторон экрана
+uniform vec4 uLensC; // xy: где масса на экране (-1..1)
 varying vec3 vColor;
 varying float vD;
 varying float vDk;
@@ -53,6 +55,13 @@ uniform vec4 uSlit;
 uniform vec4 uSlitP;
 uniform vec4 uSlitG;
 uniform highp sampler2DArray uSlitTex;
+#endif
+#ifdef SHADOW
+// «Тень на стене»: копия облака проецируется по лучу света на пол или стену (только WebGL, объект в engine/shadow.js)
+uniform vec4 uShd; // x непрозрачность, y мягкость, z цвет (0 тёмная, 1 свет палитры, 2 цвет модели), w живая тень (колыхание)
+uniform vec4 uShdL; // xyz направление на свет (в мире), w: 0 пол, 1 стена
+uniform vec4 uShdP; // x положение плоскости (y пола или z стены), y затухание с высотой над плоскостью
+uniform vec3 uShdC; // цвет тёмной тени
 #endif
 #ifdef HERO
 #define HEROSIZE clamp(sqrt(uFr.z / max(uHero.z, 1.0)), 0.4, 1.0)
@@ -275,6 +284,8 @@ void main() {
 		vColor = uPaintP.z > 0.5 ? vColor * mix(vec3(1.0), pig * 1.15, cov) : mix(vColor, pig * uBright, cov);
 	}
 	if (uMask.x > 0.5 && uMaskShow > 0.5) vColor = mix(vColor, uP2 * 1.4, maskV * 0.55);
+	// фигуры Хладни: песок на узловых линиях ярче, чем в пучностях
+	if (uCh.x > 0.001) vColor *= mix(1.0, 0.45 + 1.1 * gChN, min(uCh.x, 1.0));
 	// гиперпространство: цвет по четвёртой оси (у центра 3-сферы первый цвет палитры, у бесконечности последний), детали кадра сохраняются по яркости
 	if (uHyp.x > 0.001) {
 		float hk4 = clamp((gHypW + 1.0) * 0.5, 0.0, 1.0);
@@ -461,9 +472,53 @@ void main() {
 		}
 	}
 #endif
+#ifdef SHADOW
+	// тень считается в мировых координатах: стена и пол стоят на месте, даже когда форма вращается
+	float shA = 0.0;
+	{
+		vec3 swp = (modelMatrix * vec4(pos, 1.0)).xyz;
+		vec3 shN = uShdL.w < 0.5 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
+		vec3 shL = normalize(uShdL.xyz);
+		float shh = dot(swp, shN) - uShdP.x;
+		vec3 ssp = swp - shL * (shh / max(dot(shL, shN), 0.08));
+		if (uShd.w > 0.001) {
+			// живая тень: колышется, как от пламени свечи
+			vec3 st1 = vec3(1.0, 0.0, 0.0);
+			vec3 st2 = uShdL.w < 0.5 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+			ssp += (st1 * snoise(ssp * 1.4 + vec3(0.0, uTime * 0.7, 0.0)) + st2 * snoise(ssp * 1.4 + vec3(5.0, -uTime * 0.6, 3.0))) * uShd.w * 0.12;
+		}
+		ssp += shN * 0.003;
+		shA = uShd.x * exp(-max(shh, 0.0) * uShdP.y) * (shh < -0.03 ? 0.0 : 1.0);
+		vColor = uShd.z < 0.5 ? uShdC : (uShd.z < 1.5 ? uP2 * 1.4 * uBright : colM * uBright * 1.3);
+		pos = ssp;
+	}
+	vD = shA;
+	vec4 mv = viewMatrix * vec4(pos, 1.0);
+#else
 	vD = disp;
 	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+#endif
 	gl_Position = projectionMatrix * mv;
+	// гравитационная линза: изображение точки на экране отклоняется вокруг невидимой массы по уравнению линзы.
+	// Внутри кольца Эйнштейна изображений нет (чёрный круг), точки у самого кольца растянуты, ярче и крупнее
+	float lensMu = 1.0;
+	if (uLens.x > 0.001) {
+		if (gl_Position.w > 1e-4) {
+			vec2 lnd = gl_Position.xy / gl_Position.w;
+			vec2 lbv = (lnd - uLensC.xy) * vec2(uLens.w, 1.0);
+			float lb = length(lbv);
+			float lte = max(uLens.y, 1e-4);
+			float lth = 0.5 * (lb + sqrt(lb * lb + 4.0 * lte * lte));
+			vec2 limg = uLensC.xy + (lb > 1e-6 ? lbv / lb : vec2(0.0, 1.0)) * lth / vec2(uLens.w, 1.0);
+			float lk = min(uLens.x, 1.0);
+			gl_Position.xy = mix(lnd, limg, lk) * gl_Position.w;
+			float lu = lb / lte;
+			lensMu = mix(1.0, clamp((lu * lu + 2.0) / (2.0 * lu * sqrt(lu * lu + 4.0) + 1e-4) + 0.5, 1.0, 4.0), lk);
+			vColor *= mix(1.0, lensMu, 0.55);
+			float lring = (lth - lte) / (lte * 0.18);
+			vColor += uP2 * uLens.z * exp(-lring * lring) * 0.9 * lk;
+		}
+	}
 
 	// Масштаб по шуму и спектру (Scale POP)
 	float szNoise = 1.0;
@@ -487,9 +542,13 @@ void main() {
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
 	s *= max(0.15, szNoise * szAudio) * (1.0 - uDisQ.w * dkv) * mix(0.3, 1.0, gGrow) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
+	s *= sqrt(lensMu);
 	s *= 1.0 - 0.85 * gHypF;
 	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD);
 	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
+#ifdef SHADOW
+	s *= mix(1.0, 2.8, uShd.y);
+#endif
 	gl_PointSize = clamp(s, 1.0, 95.0);
 	if (gScopeD > 0.97 || dkv > 0.97 || gDrop > 0.5 || gGrow < 0.03 || gHypF > 0.97) {
 		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);

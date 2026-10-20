@@ -263,6 +263,9 @@ else u.uDepthQ.value.set(Dp.zone ?? 0.12, 0, 1, 1);
 u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, map: 1, heat: 2 }[Dp.view] ?? 0);
 }
 this._screenTick(u);
+this._chladniTick(dt, L.chladni, u);
+this._lensTick(dt, L.lens, u);
+this._shadowTick(dt, L.shadow, u);
 {
 const H = L.hyper;
 const he0 = this._eff(H);
