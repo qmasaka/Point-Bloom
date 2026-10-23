@@ -102,6 +102,14 @@ struct Frame {
 	uHero: vec4f,
 	uFr6: vec4f,
 	uFr7: vec4f,
+	uShoot: vec4f,
+	uShootP: vec4f,
+	uShootD: vec4f,
+	uShootE: vec4f,
+	uShootC: vec4f,
+	uShootS: array<vec4f, 24>,
+	uShootN: array<vec4f, 24>,
+	uShootB: array<vec4f, 6>,
 	modelMatrix: mat4x4f,
 	modelViewMatrix: mat4x4f,
 	projectionMatrix: mat4x4f,
@@ -1597,6 +1605,107 @@ fn main_() {
 		vColor += (((vColor * band) * 0.9) + ((fr.uP2 * band) * 0.2));
 		pos += ((normalize((vec3f(pos.x, 0.0, pos.z) + vec3f(1e-4))) * band) * 0.03);
 	}
+	var shSzMul: f32 = 1.0;
+	if ((fr.uShoot.x > 0.001)) {
+		var bsh: vec3f = (base - fr.uCen);
+		var nsh: vec3f = select(normalize((bsh + vec3f(1e-4))), normalize(nrmM), (dot(nrmM, nrmM) > 0.01));
+		var shOff: vec3f = vec3f(0.0);
+		var shK: f32 = 0.0;
+		var hsh: f32 = hash11((aIdx * 3.77));
+		var shFam: bool = ((((fr.uShoot.y > 1.5) && (fr.uShoot.y < 2.5))) || (fr.uShoot.y > 3.5));
+		var bm: f32 = 0.0;
+		var bd: f32 = 1.0;
+		var bs: vec4f = vec4f(0.0);
+		var bn: vec4f = vec4f(0.0, 0.0, 1.0, 1.0);
+		for (var i: i32 = 0; (i < 24); i++) {
+			var sd: vec4f = fr.uShootS[i];
+			if ((sd.w < 0.002)) {
+				continue;
+			}
+			var dsh: f32 = (distance(base, sd.xyz) / fr.uShoot.z);
+			if ((dsh >= 1.0)) {
+				continue;
+			}
+			if (shFam) {
+				var m: f32 = (1.0 - smoothstep((1.0 - max(fr.uShootE.x, 0.02)), 1.0, dsh));
+				if ((m > bm)) {
+					bm = m;
+					bd = dsh;
+					bs = sd;
+					bn = fr.uShootN[i];
+				}
+				continue;
+			}
+			var pr: f32 = (1.0 - dsh);
+			var grow: f32 = (sd.w * fr.uShoot.w);
+			if ((fr.uShoot.y < 0.5)) {
+				pr = ((pr * pr) * pr);
+				shOff += ((nsh * pr) * grow);
+			} else if ((fr.uShoot.y < 1.5)) {
+				pr = ((pr * pr) * ((3.0 - (2.0 * pr))));
+				shOff += (((nsh * pr) * grow) * 0.55);
+			} else {
+				pr = (pr * pr);
+				var ph: f32 = ((fr.uShootP.z * 2.2) + (f32(i) * 1.7));
+				var side: vec3f = normalize((cross(nsh, vec3f(0.31, 0.92, 0.23)) + vec3f(1e-4)));
+				shOff += (((nsh * pr) * grow) + ((((side * sin((ph + (dsh * 9.0)))) * pr) * grow) * ((0.25 + (0.6 * fr.uShootP.y)))));
+			}
+			shK = max(shK, (pr * min((sd.w * 1.5), 1.0)));
+		}
+		if ((shFam && (bm > 0.0))) {
+			var d: f32 = bs.w;
+			var stp: f32 = max(fr.uShootD.y, 0.005);
+			var dn: vec3f = select(normalize(((bs.xyz - fr.uCen) + vec3f(1e-4))), normalize(bn.xyz), (length(bn.xyz) > 0.01));
+			if (((fr.uShootD.x > 0.5) && (fr.uShootD.x < 1.5))) {
+				dn = normalize(((bs.xyz - fr.uCen) + vec3f(1e-4)));
+			} else if (((fr.uShootD.x > 1.5) && (fr.uShootD.x < 2.5))) {
+				dn = vec3f(0.0, 1.0, 0.0);
+			} else if ((fr.uShootD.x > 2.5)) {
+				dn = normalize((vec3f(fr.modelViewMatrix[0][2], fr.modelViewMatrix[1][2], fr.modelViewMatrix[2][2]) + vec3f(1e-5)));
+			}
+			var md: f32 = fr.uShoot.y;
+			var off: vec3f;
+			if ((md < 2.5)) {
+				off = ((dn * d) * bm);
+			} else if ((md < 4.5)) {
+				var tt: f32 = hash11((aIdx * 5.13));
+				off = (((dn * d) * pow(tt, 0.75)) * smoothstep(0.0, 0.6, bm));
+			} else if ((md < 5.5)) {
+				var ring: f32 = floor(((((1.0 - bd)) * 4.0) + 0.001));
+				off = (((dn * d) * mix(0.25, 1.0, (ring / 3.0))) * bm);
+			} else if ((md < 6.5)) {
+				var cl: vec3f = floor((base / max((fr.uShoot.z * 0.32), 0.01)));
+				var hc: f32 = hash11(dot(cl, vec3f(17.13, 31.71, 57.29)));
+				var tilt: vec3f = (vec3f(hash11((hc * 91.0)), hash11((hc * 57.0)), hash11((hc * 33.0))) - 0.5);
+				off = (((normalize((dn + (tilt * 0.7))) * d) * ((0.45 + (hc * 1.1)))) * bm);
+			} else if ((md < 7.5)) {
+				var layer: f32 = floor((hash11((aIdx * 9.71)) * 6.0));
+				off = ((dn * max(0.0, (d - ((layer * stp) * 0.75)))) * bm);
+			} else if ((md < 8.5)) {
+				var rel: vec3f = (base - bs.xyz);
+				var ang: f32 = ((d / stp) * 0.6);
+				var ca: f32 = cos(ang);
+				var sa: f32 = sin(ang);
+				var rr: vec3f = (((rel * ca) + (cross(dn, rel) * sa)) + ((dn * dot(dn, rel)) * ((1.0 - ca))));
+				off = ((((rr - rel) + (dn * d))) * bm);
+			} else {
+				var rd: vec3f = (vec3f(hash11((aIdx * 1.3)), hash11((aIdx * 2.9)), hash11((aIdx * 5.1))) - 0.5);
+				off = (((normalize((dn + (rd * 1.3))) * d) * ((0.35 + (hash11((aIdx * 7.7)) * 1.3)))) * bm);
+			}
+			off += ((((vec3f(sin(((fr.uShootP.z * 1.7) + (hsh * 6.283))), cos(((fr.uShootP.z * 1.3) + (hsh * 4.1))), sin(((fr.uShootP.z * 1.1) + (hsh * 2.7)))) * 0.03) * min(d, 1.0)) * fr.uShootP.y) * bm);
+			shOff += off;
+			var stK: f32 = clamp((d / stp), 0.0, 1.0);
+			shK = max(shK, (bm * stK));
+			shSzMul = (1.0 + ((bm * stK) * fr.uShootP.w));
+			vColor *= vec3f(mix(1.0, bn.w, bm));
+			shSzMul *= mix(1.0, max(bn.w, 0.05), bm);
+		}
+		if (!shFam) {
+			shOff *= vec3f((1.0 + ((fr.uShootP.y * 0.1) * sin(((fr.uShootP.z * 3.0) + (hsh * 6.283))))));
+		}
+		pos += (shOff * min(fr.uShoot.x, 1.0));
+		vColor += ((((((fr.uP2 * 1.4) + (vColor * 0.3))) * shK) * fr.uShootP.x) * min(fr.uShoot.x, 1.0));
+	}
 	vD = disp;
 	var mv: vec4f = (fr.modelViewMatrix * vec4f(pos, 1.0));
 	gl_Position = (fr.projectionMatrix * mv);
@@ -1616,6 +1725,7 @@ fn main_() {
 	}
 	vCoc = coc;
 	var s: f32 = ((((fr.uSize * fr.uPR) * (((((1.0 + (disp * 0.5)) + (fr.uBeat * 0.2)) + (sl * 1.2)) + (mkm * 0.7)))) * fr.uGlyph.y) * clamp(sqrt((fr.uFr.z / max(fr.uHero.z, 1.0))), 0.4, 1.0));
+	s *= shSzMul;
 	s *= ((((((max(0.15, (szNoise * szAudio)) * ((1.0 - (fr.uDisQ.w * dkv)))) * mix(0.3, 1.0, gGrow)) * ((1.0 + (select(0.0, (mkv * 0.9), ((fr.uMark.x > 3.5) && (fr.uMark.x < 4.5))))))) * ((1.0 - (0.6 * (select(0.0, smoothstep(0.35, 0.9, mkv), ((fr.uMark.x > 2.5) && (fr.uMark.x < 3.5)))))))) * ((1.0 - (0.7 * smoothstep(0.3, 0.8, cvan))))) * ((0.25 + (0.75 * vis))));
 	s *= ((1.0 + (coc * 2.4)));
 	s *= (1.0 - (0.85 * gHypF));

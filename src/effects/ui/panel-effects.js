@@ -562,7 +562,7 @@ export function createEffectsPanel(app, root, engine) {
 						cls: ex.preset ? 'btn-sm' : 'btn-block',
 						onClick: () => {
 							if (ex.preset) {
-								engine.moshPreset(L, ex.preset);
+								engine[ex.fn || 'moshPreset'](L, ex.preset);
 								for (const [k, ctl] of Object.entries(extraCtl)) ctl.set(L[k]);
 								amount.set(L.amount);
 								applyWhen();
@@ -583,7 +583,7 @@ export function createEffectsPanel(app, root, engine) {
 							cls: 'btn-sm',
 							onClick: () => {
 								if (it.preset) {
-									engine.moshPreset(L, it.preset);
+									engine[it.fn || ex.fn || 'moshPreset'](L, it.preset);
 									for (const [k, ctl] of Object.entries(extraCtl)) ctl.set(L[k]);
 									amount.set(L.amount);
 									row.querySelectorAll('.btn').forEach((b) => b.classList.toggle('is-picked', b === bt));

@@ -44,7 +44,7 @@ function build(src, defines) {
 	return prog;
 }
 
-const progV = build(vert, {});
+const progV = build(vert, { VSHOOT: 1 });
 for (const u of BUILTIN_UNIFORMS) if (!progV.uniforms.find((x) => x.name === u.name)) progV.uniforms.push(u);
 const progF = build(frag, {});
 const MESHES = {
@@ -170,7 +170,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 `;
 const computeWGSL = makeCompute(progV, resV);
 // «герой» раскадровки (видео поверх блока): тот же шейдер с #define HERO
-const progHero = build(vert, { HERO: 1 });
+const progHero = build(vert, { HERO: 1, VSHOOT: 1 });
 for (const u of BUILTIN_UNIFORMS) if (!progHero.uniforms.find((x) => x.name === u.name)) progHero.uniforms.push(u);
 for (const u of progHero.uniforms) {
 	const o = seen.get(u.name);

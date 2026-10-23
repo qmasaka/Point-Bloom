@@ -539,7 +539,7 @@ void main() {
 			shSzMul *= mix(1.0, max(bn.w, 0.05), bm);
 		}
 		// дрожь: живое мерцание отросшего
-		if (!shFam) shOff *= 1.0 + uShootP.y * 0.25 * sin(uShootP.z * 9.0 + hsh * 6.283);
+		if (!shFam) shOff *= 1.0 + uShootP.y * 0.1 * sin(uShootP.z * 3.0 + hsh * 6.283);
 		pos += shOff * min(uShoot.x, 1.0);
 		vColor += (uP2 * 1.4 + vColor * 0.3) * shK * uShootP.x * min(uShoot.x, 1.0);
 	}

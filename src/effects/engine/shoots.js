@@ -44,6 +44,7 @@ export class ShootsPart {
 			bass = 0.36 + 0.34 * Math.sin(this._time * 1.6);
 		}
 		if (beat) S.lastBeat = this._time;
+		S.quiet = this._time - S.lastBeat > 1.8;
 		const V = u.uShootS.value;
 		const W = u.uShootN.value;
 		if (DETACH.has(L.mode)) this._shootDetach(S, L, dt, beat, N, V, W);
@@ -52,6 +53,20 @@ export class ShootsPart {
 		u.uShootP.value.set(L.glow ?? 0.3, L.wobble ?? 0.3, this._time, L.sizeUp ?? 0.15);
 		u.uShootD.value.set({ normal: 0, radial: 1, up: 2, view: 3 }[L.dir] ?? 0, Math.max(0.005, L.step ?? 0.12), 0, 0);
 		u.uShootE.value.set(L.edge ?? 0.35, 0, 0, 0);
+	}
+
+	/** Готовые наборы настроек */
+	shootPreset(L, name) {
+		const P = {
+			crescendo: { mode: 'slab', trigger: 'beat', step: 0.12, maxSteps: 7, stepTime: 0.25, bounce: 0.35, peak: 'back', active: 2, size: 0.4, edge: 0.4, dir: 'normal', glow: 0.3, sizeUp: 0.15, wobble: 0.3, decay: 0.08 },
+			blast: { mode: 'shards', trigger: 'beat', step: 0.2, maxSteps: 5, stepTime: 0.12, bounce: 0.7, peak: 'drop', active: 4, size: 0.5, edge: 0.2, dir: 'radial', glow: 0.5, sizeUp: 0.3, wobble: 0.4, decay: 0.08 },
+			breath: { mode: 'slab', trigger: 'both', step: 0.07, maxSteps: 6, stepTime: 0.4, bounce: 0.1, peak: 'back', active: 3, size: 0.7, edge: 0.8, dir: 'normal', glow: 0.2, sizeUp: 0, wobble: 0.2, decay: 0.15 },
+			pillars: { mode: 'pillar', trigger: 'beat', step: 0.14, maxSteps: 8, stepTime: 0.2, bounce: 0.5, peak: 'hold', active: 3, size: 0.3, edge: 0.3, dir: 'normal', glow: 0.4, sizeUp: 0.1, wobble: 0.2, decay: 0.08 },
+			dust: { mode: 'dust', trigger: 'both', step: 0.1, maxSteps: 8, stepTime: 0.3, bounce: 0.3, peak: 'drop', active: 3, size: 0.6, edge: 0.7, dir: 'up', glow: 0.35, sizeUp: 0.2, wobble: 0.5, decay: 0.08 },
+			needles: { mode: 'spikes', trigger: 'both', step: 0.15, size: 0.3, perBeat: 3, maxLen: 1.2, bassPush: 0.6, glow: 0.5, wobble: 0.3, decay: 0.1 },
+		}[name];
+		if (!P) return;
+		Object.assign(L, P, { on: true });
 	}
 
 	/** Отрыв участков: шаг за удар, упругий рывок, поведение на пределе */
@@ -76,6 +91,27 @@ export class ShootsPart {
 		const step = Math.max(0.005, L.step ?? 0.12);
 		const maxSteps = clamp(Math.round(L.maxSteps ?? 6), 1, 24);
 		const peak = L.peak || 'back';
+		// в тишине (давно нет ударов) участки сами возвращаются по шагу, пока не сядут на место
+		const dec = L.decay ?? 0.08;
+		if (S.quiet && dec > 0 && !beat) {
+			S.qT = (S.qT || 0) + dt;
+			if (S.qT > 0.12 / dec) {
+				S.qT = 0;
+				for (const i of S.active) {
+					const r = R[i];
+					if (r.phase === 'grow' || r.phase === 'held') {
+						r.phase = 'back';
+					}
+					if (r.phase === 'back') {
+						r.steps--;
+						if (r.steps <= 0) {
+							r.steps = 0;
+							r.phase = 'settle';
+						}
+					}
+				}
+			}
+		} else S.qT = 0;
 		if (beat) {
 			for (const i of S.active) {
 				const r = R[i];

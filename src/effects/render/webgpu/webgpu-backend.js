@@ -130,8 +130,6 @@ export class WebGPUBackend extends RenderBackend {
 		if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
 		// «Экран» (видео на форме) есть только в WebGL
 		if (e.shared && e.shared.uScr && e.shared.uScr.value.x > 0.001) return true;
-		// «Рост на ритме» тоже только в WebGL
-		if (e.shared && e.shared.uShoot && e.shared.uShoot.value.x > 0.001) return true;
 		// «Слит-скан» тоже только в WebGL
 		if (e.shared && e.shared.uSlit && e.shared.uSlit.value.x > 0.001) return true;
 		if (e.shared && e.shared.uSort && e.shared.uSort.value.x > 0.001) return true;
