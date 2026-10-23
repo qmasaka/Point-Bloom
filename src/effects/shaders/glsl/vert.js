@@ -41,7 +41,10 @@ varying float vGl;
 // «Рост на ритме»: очаги роста на форме. uShootS это 24 очага (xyz место на форме, w сколько выросло); только WebGL
 uniform vec4 uShoot;
 uniform vec4 uShootP;
+uniform vec4 uShootD;
+uniform vec4 uShootC;
 uniform vec4 uShootS[24];
+uniform vec4 uShootB[6];
 #endif
 #ifdef VSCREEN
 // «Экран»: видео играет на форме. Объявления только здесь: переводчик в WGSL этот блок не видит (этот эффект только в WebGL)
@@ -434,14 +437,17 @@ void main() {
 		pos += normalize(vec3(pos.x, 0.0, pos.z) + vec3(1e-4)) * band * 0.03;
 	}
 #ifdef VSHOOT
-	// «Рост на ритме»: uShoot = (сила, вид, радиус очага, предельная длина), uShootP = (свечение кончиков, дрожь, время, 0)
-	// виды: 0 шипы, 1 бугры, 2 отрыв (куски отделяются и парят), 3 щупальца
+	// «Рост на ритме»: uShoot = (сила, вид, радиус очага, предельная длина), uShootP = (свечение, дрожь, время, крупность оторвавшихся),
+	// uShootD = (охват, закрутка, разлёт от центра, фонтан вверх), uShootC = (накопленное нарастание, скорость волны, толщина волны, затухание вдали),
+	// uShootB = волны последних ударов (возраст, сила); виды: 0 шипы, 1 бугры, 2 отрыв (нарастает с каждым ударом), 3 щупальца
+	float shSzMul = 1.0;
 	if (uShoot.x > 0.001) {
 		vec3 bsh = base - uCen;
 		vec3 nsh = dot(nrmM, nrmM) > 0.01 ? normalize(nrmM) : normalize(bsh + vec3(1e-4));
 		vec3 shOff = vec3(0.0);
 		float shK = 0.0;
 		float hsh = hash11(aIdx * 3.77);
+		float infl = 0.0;
 		for (int i = 0; i < 24; i++) {
 			vec4 sd = uShootS[i];
 			if (sd.w < 0.003) continue;
@@ -456,21 +462,54 @@ void main() {
 				pr = pr * pr * (3.0 - 2.0 * pr);
 				shOff += nsh * pr * grow * 0.55;
 			} else if (uShoot.y < 2.5) {
-				// отрыв: часть точек очага (случайная) отделяется и уплывает, остальные остаются на форме
-				float take = step(hsh, pr * min(sd.w * 1.4, 1.0));
-				float fly = (0.35 + 1.1 * hash11(aIdx * 7.3)) * grow * take;
-				shOff += (nsh + 0.45 * vec3(hash11(aIdx * 1.3) - 0.5, hash11(aIdx * 2.9) - 0.5, hash11(aIdx * 5.1) - 0.5)) * fly;
-				pr *= take;
+				pr = pr * pr * (3.0 - 2.0 * pr);
+				infl = max(infl, pr * min(sd.w * 1.4, 1.0));
 			} else {
 				pr = pr * pr;
-				float ph = uShootP.z * 2.2 + aIdx * 0.0 + float(i) * 1.7;
+				float ph = uShootP.z * 2.2 + float(i) * 1.7;
 				vec3 side = normalize(cross(nsh, vec3(0.31, 0.92, 0.23)) + vec3(1e-4));
 				shOff += nsh * pr * grow + side * sin(ph + dsh * 9.0) * pr * grow * (0.25 + 0.6 * uShootP.y);
 			}
 			shK = max(shK, pr * min(sd.w * 1.5, 1.0));
 		}
+		if (uShoot.y > 1.5 && uShoot.y < 2.5) {
+			// отрыв: каждый удар поднимает общий уровень, чем он выше, тем больше точек отделяется и тем дальше они улетают.
+			// Очаги (там, где растёт сильнее) отрываются первыми; случайный номер точки решает, когда именно она тронется.
+			float h2 = hash11(aIdx * 7.3);
+			float h3 = hash11(aIdx * 11.9);
+			float lvl = clamp(max(infl, uShootC.x * uShootD.x), 0.0, 1.6);
+			float take = smoothstep(hsh * 0.85, hsh * 0.85 + 0.18, lvl);
+			float dist = uShoot.w * 1.1 * lvl * (0.2 + 1.3 * h2) * take;
+			// волны ударов: на каждый удар от центра бежит оболочка и подхватывает точки сильнее
+			float rr = length(bsh);
+			float kick = 0.0;
+			for (int b = 0; b < 6; b++) {
+				vec2 pb = uShootB[b].xy;
+				if (pb.y < 0.001) continue;
+				float front = pb.x * uShootC.y;
+				float wv = (rr - front) / max(uShootC.z, 0.02);
+				kick += pb.y * exp(-wv * wv) * exp(-pb.x * 0.9);
+				dist *= 1.0 + pb.y * 0.5 * exp(-pb.x * 2.4);
+			}
+			dist += kick * uShoot.w * 0.55 * take;
+			vec3 radial = normalize(bsh + vec3(1e-4));
+			vec3 dir = normalize(mix(nsh, radial, uShootD.z) + vec3(0.0, uShootD.w * 0.9, 0.0) + 0.5 * vec3(hash11(aIdx * 1.3) - 0.5, hash11(aIdx * 2.9) - 0.5, hash11(aIdx * 5.1) - 0.5));
+			vec3 np = pos + dir * dist;
+			// закрутка: чем дальше улетела точка, тем больше она повёрнута вокруг оси
+			float ang = dist * uShootD.y * 2.4;
+			float ca = cos(ang), sa = sin(ang);
+			vec3 rel = np - uCen;
+			np = uCen + vec3(rel.x * ca - rel.z * sa, rel.y, rel.x * sa + rel.z * ca);
+			// дрожь: оторвавшиеся живут сами
+			np += vec3(sin(uShootP.z * 1.7 + h3 * 6.283), cos(uShootP.z * 1.3 + h2 * 6.283), sin(uShootP.z * 1.1 + hsh * 6.283)) * 0.06 * dist * uShootP.y;
+			shOff += np - pos;
+			float farK = clamp(dist / max(uShoot.w, 1e-3), 0.0, 1.5);
+			shK = max(shK, take * min(farK * 1.4, 1.0));
+			shSzMul = 1.0 + take * farK * uShootP.w;
+			vColor *= 1.0 - uShootC.w * take * min(farK, 1.0) * 0.8;
+		}
 		// дрожь: живое мерцание отросшего
-		shOff *= 1.0 + uShootP.y * 0.25 * sin(uShootP.z * 9.0 + hsh * 6.283);
+		if (uShoot.y < 1.5 || uShoot.y > 2.5) shOff *= 1.0 + uShootP.y * 0.25 * sin(uShootP.z * 9.0 + hsh * 6.283);
 		pos += shOff * min(uShoot.x, 1.0);
 		vColor += (uP2 * 1.4 + vColor * 0.3) * shK * uShootP.x * min(uShoot.x, 1.0);
 	}
@@ -585,6 +624,9 @@ void main() {
 	vCoc = coc;
 
 	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
+#ifdef VSHOOT
+	s *= shSzMul;
+#endif
 	s *= max(0.15, szNoise * szAudio) * (1.0 - uDisQ.w * dkv) * mix(0.3, 1.0, gGrow) * (1.0 + (uMark.x > 3.5 && uMark.x < 4.5 ? mkv * 0.9 : 0.0)) * (1.0 - 0.6 * (uMark.x > 2.5 && uMark.x < 3.5 ? smoothstep(0.35, 0.9, mkv) : 0.0)) * (1.0 - 0.7 * smoothstep(0.3, 0.8, cvan)) * (0.25 + 0.75 * vis);
 	s *= (1.0 + coc * 2.4);
 	s *= 1.0 - 0.85 * gHypF;
