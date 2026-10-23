@@ -17,7 +17,7 @@ let v = cache.get(ck);
 if (!v) {
 const base = kind === 'line' ? lineVert : kind === 'scope' ? scopeVert : vert;
 v = specializeFx(base, (name, comp, thr) => (FX_GUARDS.has(name + '.' + comp + '>' + thr) ? on.has(name + '.' + comp + '>' + thr) : undefined));
-if (kind === 'vert') v = '#define VSCREEN 1\n' + v;
+if (kind === 'vert') v = '#define VSCREEN 1\n#define VSHOOT 1\n' + v;
 cache.set(ck, v);
 }
 return v;

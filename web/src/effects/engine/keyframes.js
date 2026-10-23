@@ -2,7 +2,7 @@ import { saveJSON } from '../../core/util.js';
 import { KEY } from '../state/defaults.js';
 export class KeyframesPart {
 _animLayers() {
-return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
+return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
 }
 animCapture() {
 const nav = this.app.nav;

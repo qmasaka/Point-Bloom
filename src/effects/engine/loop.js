@@ -290,6 +290,7 @@ export class LoopPart {
 			}
 			this._screenTick(u);
 			this._chladniTick(dt, L.chladni, u);
+			this._shootTick(dt, L.shoots, u);
 			this._shadowTick(dt, L.shadow, u);
 			// гиперпространство: угол поворота в 4D копится (смена скорости не дёргает форму), удар звука даёт рывок
 			{

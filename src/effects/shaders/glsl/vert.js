@@ -37,6 +37,12 @@ varying float vDk;
 varying float vCoc;
 varying float vGl;
 ` + common + `
+#ifdef VSHOOT
+// «Рост на ритме»: очаги роста на форме. uShootS это 24 очага (xyz место на форме, w сколько выросло); только WebGL
+uniform vec4 uShoot;
+uniform vec4 uShootP;
+uniform vec4 uShootS[24];
+#endif
 #ifdef VSCREEN
 // «Экран»: видео играет на форме. Объявления только здесь: переводчик в WGSL этот блок не видит (этот эффект только в WebGL)
 uniform vec4 uScr;
@@ -427,6 +433,48 @@ void main() {
 		vColor += vColor * band * 0.9 + uP2 * band * 0.2;
 		pos += normalize(vec3(pos.x, 0.0, pos.z) + vec3(1e-4)) * band * 0.03;
 	}
+#ifdef VSHOOT
+	// «Рост на ритме»: uShoot = (сила, вид, радиус очага, предельная длина), uShootP = (свечение кончиков, дрожь, время, 0)
+	// виды: 0 шипы, 1 бугры, 2 отрыв (куски отделяются и парят), 3 щупальца
+	if (uShoot.x > 0.001) {
+		vec3 bsh = base - uCen;
+		vec3 nsh = dot(nrmM, nrmM) > 0.01 ? normalize(nrmM) : normalize(bsh + vec3(1e-4));
+		vec3 shOff = vec3(0.0);
+		float shK = 0.0;
+		float hsh = hash11(aIdx * 3.77);
+		for (int i = 0; i < 24; i++) {
+			vec4 sd = uShootS[i];
+			if (sd.w < 0.003) continue;
+			float dsh = distance(base, sd.xyz) / uShoot.z;
+			if (dsh >= 1.0) continue;
+			float pr = 1.0 - dsh;
+			float grow = sd.w * uShoot.w;
+			if (uShoot.y < 0.5) {
+				pr = pr * pr * pr;
+				shOff += nsh * pr * grow;
+			} else if (uShoot.y < 1.5) {
+				pr = pr * pr * (3.0 - 2.0 * pr);
+				shOff += nsh * pr * grow * 0.55;
+			} else if (uShoot.y < 2.5) {
+				// отрыв: часть точек очага (случайная) отделяется и уплывает, остальные остаются на форме
+				float take = step(hsh, pr * min(sd.w * 1.4, 1.0));
+				float fly = (0.35 + 1.1 * hash11(aIdx * 7.3)) * grow * take;
+				shOff += (nsh + 0.45 * vec3(hash11(aIdx * 1.3) - 0.5, hash11(aIdx * 2.9) - 0.5, hash11(aIdx * 5.1) - 0.5)) * fly;
+				pr *= take;
+			} else {
+				pr = pr * pr;
+				float ph = uShootP.z * 2.2 + aIdx * 0.0 + float(i) * 1.7;
+				vec3 side = normalize(cross(nsh, vec3(0.31, 0.92, 0.23)) + vec3(1e-4));
+				shOff += nsh * pr * grow + side * sin(ph + dsh * 9.0) * pr * grow * (0.25 + 0.6 * uShootP.y);
+			}
+			shK = max(shK, pr * min(sd.w * 1.5, 1.0));
+		}
+		// дрожь: живое мерцание отросшего
+		shOff *= 1.0 + uShootP.y * 0.25 * sin(uShootP.z * 9.0 + hsh * 6.283);
+		pos += shOff * min(uShoot.x, 1.0);
+		vColor += (uP2 * 1.4 + vColor * 0.3) * shK * uShootP.x * min(uShoot.x, 1.0);
+	}
+#endif
 #ifdef VSCREEN
 	// «Экран»: uScr = (сила, вид, масштаб, яркость), uScrP = (поворот, сила рельефа, смешивание с цветом формы, соотношение сторон кадра)
 	// виды: 0 обёртка вокруг формы, 1 приклеено (кадр на лице формы, вращается с ней), 2 проектор (кадр на экране, форма скользит сквозь него), 3 рельеф (как «приклеено», яркое выдавливается)

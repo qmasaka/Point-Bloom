@@ -218,6 +218,21 @@ const y = Math.sin(t * 2.2) * 8;
 for (const [x, yy] of ring(30, 9)) dot(c, x * 1.2, yy, Math.abs(yy - y) < 2 ? 2.6 : 1.4, Math.abs(yy - y) < 2 ? 1 : 0.35);
 for (let i = -6; i <= 6; i++) dot(c, i * 1.8, y, 1.6, 0.9);
 },
+shoots: (c, t) => {
+for (let k = 0; k < 120; k++) {
+const a = (k / 120) * Math.PI * 2;
+dot(c, Math.cos(a) * 7.5, Math.sin(a) * 6, 1.4, 0.35);
+}
+for (let s = 0; s < 7; s++) {
+const a = (s / 7) * Math.PI * 2 + 0.4;
+const g = Math.max(0, Math.sin(t * 3.4 + s * 1.9));
+const len = 2 + g * 7;
+for (let j = 0; j <= 5; j++) {
+const r = 7 + (len * j) / 5;
+dot(c, Math.cos(a) * r, Math.sin(a) * r * 0.82, 1.2 + (1 - j / 5) * 1.0, 0.4 + 0.6 * (j / 5) * g + 0.2);
+}
+}
+},
 vscreen: (c, t) => {
 for (let j = -5; j <= 5; j++) for (let i = -6; i <= 6; i++) {
 const x = i * 2.1, y = j * 2.1;

@@ -72712,6 +72712,7 @@ if (!pts) return false;
 for (const c of pts.children) if (c.visible && !e.ghosts.includes(c) && !this._gpuDraws(c)) return true;
 if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
 if (e.shared && e.shared.uScr && e.shared.uScr.value.x > 0.001) return true;
+if (e.shared && e.shared.uShoot && e.shared.uShoot.value.x > 0.001) return true;
 if (e.shared && e.shared.uSlit && e.shared.uSlit.value.x > 0.001) return true;
 if (e.shared && e.shared.uSort && e.shared.uSort.value.x > 0.001) return true;
 return false;
@@ -73068,7 +73069,24 @@ const FX_LAYERS = [
 { id: 'explode', group: 'Разрушение', name: 'Разбор на части', icon: 'cube', hint: 'Форма разъезжается на жёсткие куски, они поворачиваются и возвращаются на место. Настраиваются число кусков, дальность и вращение', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', speed: 0.8, pieces: 40, dist: 1, spin: 0.5, stagger: 0.5 }, extras: [{ key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['hold', 'Всегда разобрана']] }, { key: 'pieces', label: 'Число кусков', min: 6, max: 256, step: 1, int: true }, { key: 'dist', label: 'Как далеко расходятся', min: 0.2, max: 3, step: 0.05 }, { key: 'spin', label: 'Вращение кусков', min: 0, max: 1, step: 0.05 }, { key: 'stagger', label: 'Разброс по времени', min: 0, max: 0.9, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1, when: ['mode', ['loop']] }] },
 { id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Форма исчезает и собирается обратно. Виды: лазерный срез, слои, блоки, песок, воронка, взрыв, горение, ветер, росток', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', dir: 'both', order: 'top', style: 'laser', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.35, scatter: 1, edge: 0.32, glow: 0.35, shrink: 0.85, seed: 'bottom', tendril: 0.6, bud: 0.7 }, extras: [{ type: 'title', label: 'Как растворяется' }, { key: 'style', label: 'Вид', type: 'select', options: [['laser', 'Лазерный срез: сканирующая плоскость'], ['layers', 'Сдвиг слоёв: полосы в стороны'], ['chunks', 'Блочный распад: объёмные кубы'], ['sand', 'Осыпание: частицы на пол'], ['vortex', 'Воронка: закручивание к центру'], ['shock', 'Ударная волна: импульс от центра'], ['burn', 'Испепеление: частицы вверх'], ['wind', 'Сдувание: боковой поток ветра'], ['sprout', 'Прорастание: ветвление формы']] }, { key: 'seed', label: 'Откуда растёт', type: 'select', options: [['bottom', 'Снизу вверх: от основания'], ['point', 'Из точки: случайный фокус'], ['center', 'Из центра: радиально наружу']], when: ['style', ['sprout']] }, { key: 'order', label: 'Откуда начинается', type: 'select', when: ['style', ['laser', 'layers', 'chunks', 'sand', 'vortex', 'shock', 'burn', 'wind']], options: [['top', 'Сверху вниз'], ['bottom', 'Снизу вверх'], ['side', 'Слева направо'], ['center', 'Из центра наружу'], ['edges', 'С краёв к центру'], ['noise', 'Случайные зоны']] }, { type: 'title', label: 'Запуск' }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'dir', label: 'Что дольше', type: 'seg', options: [['both', 'Поровну'], ['out', 'Распад'], ['in', 'Сборка']], when: ['mode', ['loop']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01, when: ['mode', ['slider']] }, { type: 'title', label: 'Движение частиц' }, { key: 'scatter', label: 'Размах движения', min: 0.2, max: 2.5, step: 0.05 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер и закрутка', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Лёгкая турбулентность', min: 0, max: 2, step: 0.05 }, { type: 'title', label: 'Кромка и частицы' }, { key: 'edge', label: 'Ширина кромки распада', min: 0.1, max: 0.7, step: 0.02 }, { key: 'glow', label: 'Свечение кромки', min: 0, max: 1.5, step: 0.05 }, { key: 'shrink', label: 'Мельчание частиц', min: 0, max: 1, step: 0.05 }, { key: 'tendril', label: 'Усики (неровный фронт)', min: 0, max: 1, step: 0.05, when: ['style', ['sprout']] }, { key: 'bud', label: 'Почки на кромке', min: 0, max: 1.5, step: 0.05, when: ['style', ['sprout']] }] },
 { id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки превращаются в кубики. Виды: сетка, лего, дыхание, волна, ступени, разлёт. Настраиваются размер и высота', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 1, mode: 'grid', speed: 1, size: 1, height: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['grid', 'Кубическая сетка: равномерные блоки'], ['lego', 'Столбцы: рельеф разной высоты'], ['breathe', 'Дыхание: пульсирующая сетка'], ['wave', 'Волна: бегущий подъём кубов'], ['stairs', 'Террасы: ступенчатые уровни'], ['scatter', 'Дрожание: вибрация на месте']] }, { key: 'size', label: 'Размер кубиков', min: 0.4, max: 2.5, step: 0.05 }, { key: 'height', label: 'Высота и размах', min: 0, max: 2, step: 0.05, when: ['mode', ['lego', 'wave', 'stairs', 'scatter']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe', 'wave', 'scatter']] }] },
-{ id: 'chladni', group: 'Звук и ритм', name: 'Фигуры Хладни', icon: 'circles-four', hint: 'Как песок на звенящей пластине: точки сбегаются на узловые линии стоячей волны и складываются в симметричный узор. Меняется нота, и песок перебегает в новый узор', max: 1, def: { on: false, amount: 1, band: 'none', react: 0.5, mode: 'sound', pattern: 3, period: 3, morph: 0.8, scale: 1, buzz: 0.6 }, extras: [
+{ id: 'shoots', group: 'Звук и ритм', name: 'Рост на ритме', icon: 'tree-structure', hint: 'Музыка выращивает на форме отростки: бас вздувает очаги, каждый удар отращивает их дальше и дальше, а в тишине всё медленно втягивается обратно. Виды: шипы, бугры, отрыв (куски отделяются и парят), щупальца', max: 1.5, def: { on: false, amount: 1, band: 'bass', react: 0.6, mode: 'spikes', trigger: 'both', seeds: 14, size: 0.3, step: 0.3, perBeat: 2, maxLen: 0.7, decay: 0.28, bassPush: 0.8, glow: 0.6, wobble: 0.5, auto: 'on' }, extras: [
+{ key: 'mode', label: 'Как растёт', type: 'select', options: [['spikes', 'Шипы', 'острые иглы вдоль поверхности'], ['bulge', 'Бугры', 'мягкие выпуклости'], ['detach', 'Отрыв', 'куски отделяются и парят'], ['tendril', 'Щупальца', 'извивающиеся отростки']] },
+{ key: 'trigger', label: 'Что растит', type: 'seg', options: [['beat', 'Удары'], ['bass', 'Бас'], ['both', 'Оба']] },
+{ type: 'title', label: 'Рост' },
+{ key: 'step', label: 'Рост за удар', min: 0.05, max: 1, step: 0.05, when: ['trigger', ['beat', 'both']] },
+{ key: 'perBeat', label: 'Сколько очагов за удар', min: 1, max: 12, step: 1, int: true, noNorm: true, when: ['trigger', ['beat', 'both']] },
+{ key: 'bassPush', label: 'Отклик на бас', min: 0, max: 2, step: 0.05, when: ['trigger', ['bass', 'both']] },
+{ key: 'maxLen', label: 'Предельная длина', min: 0.2, max: 2, step: 0.05 },
+{ key: 'decay', label: 'Втягивание в тишине', min: 0.02, max: 1, step: 0.02 },
+{ type: 'title', label: 'Очаги' },
+{ key: 'seeds', label: 'Число очагов', min: 4, max: 24, step: 1, int: true, noNorm: true },
+{ key: 'size', label: 'Размер очага', min: 0.15, max: 1, step: 0.05 },
+{ type: 'title', label: 'Вид' },
+{ key: 'glow', label: 'Свечение кончиков', min: 0, max: 1, step: 0.05 },
+{ key: 'wobble', label: 'Дрожь', min: 0, max: 1, step: 0.05 },
+{ key: 'auto', label: 'Без звука', type: 'seg', options: [['on', 'Сам по таймеру'], ['off', 'Стоит']] },
+] },
+{ id: 'chladni', group: 'Звук и ритм', name: 'Звуковой песок', icon: 'circles-four', hint: 'Как песок на звенящей пластине: точки сбегаются на узловые линии стоячей волны и складываются в симметричный узор. Меняется нота, и песок перебегает в новый узор', max: 1, def: { on: false, amount: 1, band: 'none', react: 0.5, mode: 'sound', pattern: 3, period: 3, morph: 0.8, scale: 1, buzz: 0.6 }, extras: [
 { key: 'mode', label: 'Что меняет узор', type: 'select', options: [['sound', 'Высота звука', 'низкие ноты: мало линий, высокие: много'], ['beat', 'Удары', 'на каждый удар новый узор'], ['timer', 'Таймер', 'сам по кругу'], ['fixed', 'Один узор', 'выбранный номер']] },
 { key: 'pattern', label: 'Узор', min: 1, max: 14, step: 1, int: true, noNorm: true, when: ['mode', ['fixed']] },
 { key: 'period', label: 'Новый узор раз в, с', min: 0.5, max: 10, step: 0.1, noNorm: true, when: ['mode', ['timer']] },
@@ -73160,7 +73178,7 @@ const FX_GROUPS = {
 'Видео': ['depth', 'pixelsort', 'frames', 'slitscan'],
 'Анимация': ['trail'],
 'Движение': ['curl', 'gravity', 'twist'],
-'Звук и ритм': ['spectrum', 'wave', 'blast', 'chladni', 'scope'],
+'Звук и ритм': ['spectrum', 'wave', 'blast', 'shoots', 'chladni', 'scope'],
 'Разрушение': ['physics', 'explode', 'dissolve'],
 'Цифровые': ['voxel', 'glitch', 'datamosh'],
 'Графика': ['vscreen', 'shadow', 'links', 'slice', 'feedback', 'echo', 'tracking'],
@@ -80724,6 +80742,34 @@ en: {
 'Слитность потоков': 'Flow coherence',
 'Потёки в пустоту': 'Streaks into the void',
 'Потёки': 'Streaks',
+'Звуковой песок': 'Sound sand',
+'Рост на ритме': 'Beat growth',
+'Музыка выращивает на форме отростки: бас вздувает очаги, каждый удар отращивает их дальше и дальше, а в тишине всё медленно втягивается обратно. Виды: шипы, бугры, отрыв (куски отделяются и парят), щупальца': 'Music grows shoots on the shape: bass swells the spots, every beat grows them further and further, and in silence everything slowly retracts. Modes: spikes, bumps, detach (pieces break off and float), tendrils',
+'Как растёт': 'How it grows',
+'Шипы': 'Spikes',
+'острые иглы вдоль поверхности': 'sharp needles along the surface',
+'Бугры': 'Bumps',
+'мягкие выпуклости': 'soft bulges',
+'Отрыв': 'Detach',
+'куски отделяются и парят': 'pieces break off and float',
+'Щупальца': 'Tendrils',
+'извивающиеся отростки': 'writhing shoots',
+'Что растит': 'What grows it',
+'Оба': 'Both',
+'Рост': 'Growth',
+'Рост за удар': 'Growth per beat',
+'Сколько очагов за удар': 'Spots per beat',
+'Отклик на бас': 'Bass response',
+'Предельная длина': 'Maximum length',
+'Втягивание в тишине': 'Retraction in silence',
+'Очаги': 'Spots',
+'Число очагов': 'Number of spots',
+'Размер очага': 'Spot size',
+'Свечение кончиков': 'Tip glow',
+'Дрожь': 'Tremble',
+'Без звука': 'Without sound',
+'Сам по таймеру': 'By itself on a timer',
+'Стоит': 'Idle',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -81448,6 +81494,34 @@ uk: {
 'Слитность потоков': 'Злитість потоків',
 'Потёки в пустоту': 'Потоки в порожнечу',
 'Потёки': 'Потоки',
+'Звуковой песок': 'Звуковий пісок',
+'Рост на ритме': 'Зростання на ритмі',
+'Музыка выращивает на форме отростки: бас вздувает очаги, каждый удар отращивает их дальше и дальше, а в тишине всё медленно втягивается обратно. Виды: шипы, бугры, отрыв (куски отделяются и парят), щупальца': 'Музика вирощує на формі відростки: бас роздуває осередки, кожен удар відрощує їх дедалі далі, а в тиші все повільно втягується назад. Види: шипи, горби, відрив (шматки відокремлюються й ширяють), щупальця',
+'Как растёт': 'Як росте',
+'Шипы': 'Шипи',
+'острые иглы вдоль поверхности': 'гострі голки вздовж поверхні',
+'Бугры': 'Горби',
+'мягкие выпуклости': 'м’які опуклості',
+'Отрыв': 'Відрив',
+'куски отделяются и парят': 'шматки відокремлюються й ширяють',
+'Щупальца': 'Щупальця',
+'извивающиеся отростки': 'звивисті відростки',
+'Что растит': 'Що вирощує',
+'Оба': 'Обидва',
+'Рост': 'Зростання',
+'Рост за удар': 'Зростання за удар',
+'Сколько очагов за удар': 'Скільки осередків за удар',
+'Отклик на бас': 'Відгук на бас',
+'Предельная длина': 'Гранична довжина',
+'Втягивание в тишине': 'Втягування в тиші',
+'Очаги': 'Осередки',
+'Число очагов': 'Кількість осередків',
+'Размер очага': 'Розмір осередку',
+'Свечение кончиков': 'Світіння кінчиків',
+'Дрожь': 'Тремтіння',
+'Без звука': 'Без звуку',
+'Сам по таймеру': 'Сам за таймером',
+'Стоит': 'Стоїть',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -82172,6 +82246,34 @@ es: {
 'Слитность потоков': 'Coherencia del flujo',
 'Потёки в пустоту': 'Estelas hacia el vacío',
 'Потёки': 'Estelas',
+'Звуковой песок': 'Arena sonora',
+'Рост на ритме': 'Crecimiento al ritmo',
+'Музыка выращивает на форме отростки: бас вздувает очаги, каждый удар отращивает их дальше и дальше, а в тишине всё медленно втягивается обратно. Виды: шипы, бугры, отрыв (куски отделяются и парят), щупальца': 'La música hace crecer brotes en la forma: el bajo hincha los focos, cada golpe los alarga más y más, y en el silencio todo se retrae despacio. Modos: pinchos, bultos, desprendimiento (trozos que se separan y flotan), tentáculos',
+'Как растёт': 'Cómo crece',
+'Шипы': 'Pinchos',
+'острые иглы вдоль поверхности': 'agujas afiladas sobre la superficie',
+'Бугры': 'Bultos',
+'мягкие выпуклости': 'abultamientos suaves',
+'Отрыв': 'Desprendimiento',
+'куски отделяются и парят': 'los trozos se separan y flotan',
+'Щупальца': 'Tentáculos',
+'извивающиеся отростки': 'brotes serpenteantes',
+'Что растит': 'Qué lo hace crecer',
+'Оба': 'Ambos',
+'Рост': 'Crecimiento',
+'Рост за удар': 'Crecimiento por golpe',
+'Сколько очагов за удар': 'Focos por golpe',
+'Отклик на бас': 'Respuesta al bajo',
+'Предельная длина': 'Longitud máxima',
+'Втягивание в тишине': 'Retracción en silencio',
+'Очаги': 'Focos',
+'Число очагов': 'Número de focos',
+'Размер очага': 'Tamaño del foco',
+'Свечение кончиков': 'Brillo de las puntas',
+'Дрожь': 'Temblor',
+'Без звука': 'Sin sonido',
+'Сам по таймеру': 'Solo con temporizador',
+'Стоит': 'Quieto',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -82896,6 +82998,34 @@ de: {
 'Слитность потоков': 'Fluss-Zusammenhalt',
 'Потёки в пустоту': 'Schlieren ins Leere',
 'Потёки': 'Schlieren',
+'Звуковой песок': 'Klangsand',
+'Рост на ритме': 'Wachstum im Takt',
+'Музыка выращивает на форме отростки: бас вздувает очаги, каждый удар отращивает их дальше и дальше, а в тишине всё медленно втягивается обратно. Виды: шипы, бугры, отрыв (куски отделяются и парят), щупальца': 'Musik lässt auf der Form Triebe wachsen: Bass bläht die Herde auf, jeder Schlag lässt sie weiter wachsen, und in der Stille zieht sich alles langsam zurück. Arten: Stacheln, Beulen, Ablösen (Stücke lösen sich und schweben), Tentakel',
+'Как растёт': 'Wie es wächst',
+'Шипы': 'Stacheln',
+'острые иглы вдоль поверхности': 'spitze Nadeln entlang der Oberfläche',
+'Бугры': 'Beulen',
+'мягкие выпуклости': 'weiche Wölbungen',
+'Отрыв': 'Ablösen',
+'куски отделяются и парят': 'Stücke lösen sich und schweben',
+'Щупальца': 'Tentakel',
+'извивающиеся отростки': 'sich windende Triebe',
+'Что растит': 'Was es wachsen lässt',
+'Оба': 'Beides',
+'Рост': 'Wachstum',
+'Рост за удар': 'Wachstum pro Schlag',
+'Сколько очагов за удар': 'Herde pro Schlag',
+'Отклик на бас': 'Bassreaktion',
+'Предельная длина': 'Maximale Länge',
+'Втягивание в тишине': 'Einziehen in der Stille',
+'Очаги': 'Herde',
+'Число очагов': 'Anzahl der Herde',
+'Размер очага': 'Herdgröße',
+'Свечение кончиков': 'Leuchten der Spitzen',
+'Дрожь': 'Zittern',
+'Без звука': 'Ohne Ton',
+'Сам по таймеру': 'Von selbst im Takt',
+'Стоит': 'Ruhend',
 },
 };
 };
@@ -84660,7 +84790,7 @@ const { saveJSON } = __req('src/core/util.js');
 const { KEY } = __req('src/effects/state/defaults.js');
 class KeyframesPart {
 _animLayers() {
-return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
+return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
 }
 animCapture() {
 const nav = this.app.nav;
@@ -85808,6 +85938,7 @@ uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()), uPaintP: U(new THREE.Vector4()),
 uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
 uHyp: U(new THREE.Vector4()), uHypP: U(new THREE.Vector4()), uCh: U(new THREE.Vector4()), uChA: U(new THREE.Vector4(1, 2, 1, 2)),
+uShoot: U(new THREE.Vector4()), uShootP: U(new THREE.Vector4()), uShootS: U(Array.from({ length: 24 }, () => new THREE.Vector4())),
 uScr: U(new THREE.Vector4()), uScrP: U(new THREE.Vector4(0, 0.4, 1, 1.78)), uScrTex: U(scrDummy()), uScrD: U(new THREE.Vector4(0, 0.5, 1, 1)), uScrQ: U(new THREE.Vector4()), uScrDep: U(scrDummy()), uScrMTex: U(scrDummy()), uScrMN: U(1),
 uSlit: U(new THREE.Vector4()), uSlitP: U(new THREE.Vector4()), uSlitG: U(new THREE.Vector4(1, 1, 1, 1)), uSlitTex: U(frDummyTex()),
 uSort: U(new THREE.Vector4()), uSortP: U(new THREE.Vector4(1, 1, 1, 0)), uSortTex: U(frDummy2D()),
@@ -88847,6 +88978,12 @@ varying float vDk;
 varying float vCoc;
 varying float vGl;
 ` + common + `
+#ifdef VSHOOT
+// «Рост на ритме»: очаги роста на форме. uShootS это 24 очага (xyz место на форме, w сколько выросло); только WebGL
+uniform vec4 uShoot;
+uniform vec4 uShootP;
+uniform vec4 uShootS[24];
+#endif
 #ifdef VSCREEN
 // «Экран»: видео играет на форме. Объявления только здесь: переводчик в WGSL этот блок не видит (этот эффект только в WebGL)
 uniform vec4 uScr;
@@ -89237,6 +89374,48 @@ void main() {
 		vColor += vColor * band * 0.9 + uP2 * band * 0.2;
 		pos += normalize(vec3(pos.x, 0.0, pos.z) + vec3(1e-4)) * band * 0.03;
 	}
+#ifdef VSHOOT
+	// «Рост на ритме»: uShoot = (сила, вид, радиус очага, предельная длина), uShootP = (свечение кончиков, дрожь, время, 0)
+	// виды: 0 шипы, 1 бугры, 2 отрыв (куски отделяются и парят), 3 щупальца
+	if (uShoot.x > 0.001) {
+		vec3 bsh = base - uCen;
+		vec3 nsh = dot(nrmM, nrmM) > 0.01 ? normalize(nrmM) : normalize(bsh + vec3(1e-4));
+		vec3 shOff = vec3(0.0);
+		float shK = 0.0;
+		float hsh = hash11(aIdx * 3.77);
+		for (int i = 0; i < 24; i++) {
+			vec4 sd = uShootS[i];
+			if (sd.w < 0.003) continue;
+			float dsh = distance(base, sd.xyz) / uShoot.z;
+			if (dsh >= 1.0) continue;
+			float pr = 1.0 - dsh;
+			float grow = sd.w * uShoot.w;
+			if (uShoot.y < 0.5) {
+				pr = pr * pr * pr;
+				shOff += nsh * pr * grow;
+			} else if (uShoot.y < 1.5) {
+				pr = pr * pr * (3.0 - 2.0 * pr);
+				shOff += nsh * pr * grow * 0.55;
+			} else if (uShoot.y < 2.5) {
+				// отрыв: часть точек очага (случайная) отделяется и уплывает, остальные остаются на форме
+				float take = step(hsh, pr * min(sd.w * 1.4, 1.0));
+				float fly = (0.35 + 1.1 * hash11(aIdx * 7.3)) * grow * take;
+				shOff += (nsh + 0.45 * vec3(hash11(aIdx * 1.3) - 0.5, hash11(aIdx * 2.9) - 0.5, hash11(aIdx * 5.1) - 0.5)) * fly;
+				pr *= take;
+			} else {
+				pr = pr * pr;
+				float ph = uShootP.z * 2.2 + aIdx * 0.0 + float(i) * 1.7;
+				vec3 side = normalize(cross(nsh, vec3(0.31, 0.92, 0.23)) + vec3(1e-4));
+				shOff += nsh * pr * grow + side * sin(ph + dsh * 9.0) * pr * grow * (0.25 + 0.6 * uShootP.y);
+			}
+			shK = max(shK, pr * min(sd.w * 1.5, 1.0));
+		}
+		// дрожь: живое мерцание отросшего
+		shOff *= 1.0 + uShootP.y * 0.25 * sin(uShootP.z * 9.0 + hsh * 6.283);
+		pos += shOff * min(uShoot.x, 1.0);
+		vColor += (uP2 * 1.4 + vColor * 0.3) * shK * uShootP.x * min(uShoot.x, 1.0);
+	}
+#endif
 #ifdef VSCREEN
 	// «Экран»: uScr = (сила, вид, масштаб, яркость), uScrP = (поворот, сила рельефа, смешивание с цветом формы, соотношение сторон кадра)
 	// виды: 0 обёртка вокруг формы, 1 приклеено (кадр на лице формы, вращается с ней), 2 проектор (кадр на экране, форма скользит сквозь него), 3 рельеф (как «приклеено», яркое выдавливается)
@@ -89499,7 +89678,7 @@ let v = cache.get(ck);
 if (!v) {
 const base = kind === 'line' ? lineVert : kind === 'scope' ? scopeVert : vert;
 v = specializeFx(base, (name, comp, thr) => (FX_GUARDS.has(name + '.' + comp + '>' + thr) ? on.has(name + '.' + comp + '>' + thr) : undefined));
-if (kind === 'vert') v = '#define VSCREEN 1\n' + v;
+if (kind === 'vert') v = '#define VSCREEN 1\n#define VSHOOT 1\n' + v;
 cache.set(ck, v);
 }
 return v;
@@ -91404,6 +91583,7 @@ u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, m
 }
 this._screenTick(u);
 this._chladniTick(dt, L.chladni, u);
+this._shootTick(dt, L.shoots, u);
 this._shadowTick(dt, L.shadow, u);
 {
 const H = L.hyper;
@@ -92560,6 +92740,95 @@ u.uCh.value.set(ce, e, C.scale ?? 1, C.buzz ?? 0.6);
 }
 }
 };
+__defs['src/effects/engine/shoots.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'ShootsPart', () => ShootsPart);
+const { clamp } = __req('src/core/util.js');
+const MODE = { spikes: 0, bulge: 1, detach: 2, tendril: 3 };
+class ShootsPart {
+_shootTick(dt, L, u) {
+const eff = L.on ? this._eff(L) : 0;
+if (eff <= 0.001 || !this.geometry) {
+u.uShoot.value.x = 0;
+return;
+}
+const S = (this._shS ||= { geo: null, n: 0, pos: null, g: null, th: null, beat: 0, autoT: 0 });
+const N = clamp(Math.round(L.seeds || 14), 4, 24);
+if (S.geo !== this.geometry || S.n !== N) this._shootSeeds(S, N);
+let beat = false;
+let bass = 0;
+if (this.soundActive) {
+bass = this.levels.bass;
+beat = this.levels.beat > 0.9 && S.beat <= 0.9;
+S.beat = this.levels.beat;
+} else if (L.auto === 'on') {
+S.autoT += dt;
+if (S.autoT > 0.7) {
+S.autoT = 0;
+beat = true;
+}
+bass = 0.36 + 0.34 * Math.sin(this._time * 1.6);
+}
+const trig = L.trigger || 'both';
+if (beat && trig !== 'bass') {
+const k = clamp(Math.round(L.perBeat || 3), 1, 12);
+for (let j = 0; j < k; j++) {
+const i = Math.floor(Math.random() * N);
+S.g[i] = Math.min(1, S.g[i] + (L.step ?? 0.35) * (0.7 + 0.6 * Math.random()));
+}
+}
+const dec = L.decay ?? 0.12;
+const push = (L.bassPush ?? 0.8) * 0.9;
+const V = u.uShootS.value;
+for (let i = 0; i < 24; i++) {
+if (i >= N) {
+V[i].w = 0;
+continue;
+}
+if (trig !== 'beat') {
+const over = bass - S.th[i];
+if (over > 0) S.g[i] = Math.min(1, S.g[i] + over * dt * push);
+}
+S.g[i] = Math.max(0, S.g[i] - dt * dec * (0.4 + S.g[i]));
+V[i].set(S.pos[i * 3], S.pos[i * 3 + 1], S.pos[i * 3 + 2], S.g[i]);
+}
+u.uShoot.value.set(Math.min(eff, 1.5), MODE[L.mode] ?? 0, Math.max(0.1, (L.size ?? 0.5) * 0.9), Math.max(0.1, (L.maxLen ?? 1) * 0.7));
+u.uShootP.value.set(L.glow ?? 0.6, L.wobble ?? 0.5, this._time, 0);
+}
+_shootSeeds(S, N) {
+const T = this.geometry.attributes.aTarget.array;
+const cnt = this.geometry.attributes.aTarget.count;
+const cand = [];
+for (let i = 0; i < 700; i++) cand.push(Math.floor(Math.random() * cnt));
+const pick = [cand[0]];
+const d2 = (a, b) => (T[a * 3] - T[b * 3]) ** 2 + (T[a * 3 + 1] - T[b * 3 + 1]) ** 2 + (T[a * 3 + 2] - T[b * 3 + 2]) ** 2;
+while (pick.length < N) {
+let best = -1;
+let bd = -1;
+for (const c of cand) {
+let m = Infinity;
+for (const p of pick) m = Math.min(m, d2(c, p));
+if (m > bd) {
+bd = m;
+best = c;
+}
+}
+pick.push(best);
+}
+S.geo = this.geometry;
+S.n = N;
+S.pos = new Float32Array(N * 3);
+S.g = new Float32Array(N);
+S.th = new Float32Array(N);
+for (let i = 0; i < N; i++) {
+S.pos[i * 3] = T[pick[i] * 3];
+S.pos[i * 3 + 1] = T[pick[i] * 3 + 1];
+S.pos[i * 3 + 2] = T[pick[i] * 3 + 2];
+S.th[i] = 0.18 + 0.62 * Math.random();
+}
+}
+}
+};
 __defs['src/effects/engine/shadow.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'ShadowPart', () => ShadowPart);
@@ -92860,6 +93129,7 @@ const { RecordingPart } = __req('src/effects/engine/recording.js');
 const { ScreenPart } = __req('src/effects/engine/screen.js');
 const { SlitPart } = __req('src/effects/engine/slitscan.js');
 const { ChladniPart } = __req('src/effects/engine/chladni.js');
+const { ShootsPart } = __req('src/effects/engine/shoots.js');
 const { ShadowPart } = __req('src/effects/engine/shadow.js');
 const { PixelSortPart } = __req('src/effects/engine/pixelsort.js');
 const { TrackPickPart } = __req('src/effects/engine/track-pick.js');
@@ -93166,7 +93436,7 @@ nav.paintLock = want;
 this.app.viewport.container.classList.toggle('paint-lock', want);
 }
 }
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShadowPart, PixelSortPart, TrackPickPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, PixelSortPart, TrackPickPart);
 };
 __defs['src/animation/anim-activity.js'] = function (__exports, __req) {
 'use strict';
@@ -93455,6 +93725,21 @@ slice: (c, t) => {
 const y = Math.sin(t * 2.2) * 8;
 for (const [x, yy] of ring(30, 9)) dot(c, x * 1.2, yy, Math.abs(yy - y) < 2 ? 2.6 : 1.4, Math.abs(yy - y) < 2 ? 1 : 0.35);
 for (let i = -6; i <= 6; i++) dot(c, i * 1.8, y, 1.6, 0.9);
+},
+shoots: (c, t) => {
+for (let k = 0; k < 120; k++) {
+const a = (k / 120) * Math.PI * 2;
+dot(c, Math.cos(a) * 7.5, Math.sin(a) * 6, 1.4, 0.35);
+}
+for (let s = 0; s < 7; s++) {
+const a = (s / 7) * Math.PI * 2 + 0.4;
+const g = Math.max(0, Math.sin(t * 3.4 + s * 1.9));
+const len = 2 + g * 7;
+for (let j = 0; j <= 5; j++) {
+const r = 7 + (len * j) / 5;
+dot(c, Math.cos(a) * r, Math.sin(a) * r * 0.82, 1.2 + (1 - j / 5) * 1.0, 0.4 + 0.6 * (j / 5) * g + 0.2);
+}
+}
 },
 vscreen: (c, t) => {
 for (let j = -5; j <= 5; j++) for (let i = -6; i <= 6; i++) {
@@ -94052,7 +94337,7 @@ rotate: { id: 'rotate', name: 'Вращение', icon: 'arrows-clockwise', hint
 bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 };
 const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
+const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
 const animQuickBtn = button({
