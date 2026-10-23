@@ -73302,9 +73302,10 @@ const FX_LAYERS = [
 { id: 'explode', group: 'Разрушение', name: 'Разбор на части', icon: 'cube', hint: 'Форма разъезжается на жёсткие куски, они поворачиваются и возвращаются на место. Настраиваются число кусков, дальность и вращение', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', speed: 0.8, pieces: 40, dist: 1, spin: 0.5, stagger: 0.5 }, extras: [{ key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['hold', 'Всегда разобрана']] }, { key: 'pieces', label: 'Число кусков', min: 6, max: 256, step: 1, int: true }, { key: 'dist', label: 'Как далеко расходятся', min: 0.2, max: 3, step: 0.05 }, { key: 'spin', label: 'Вращение кусков', min: 0, max: 1, step: 0.05 }, { key: 'stagger', label: 'Разброс по времени', min: 0, max: 0.9, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1, when: ['mode', ['loop']] }] },
 { id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Форма исчезает и собирается обратно. Виды: лазерный срез, слои, блоки, песок, воронка, взрыв, горение, ветер, росток', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', dir: 'both', order: 'top', style: 'laser', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.35, scatter: 1, edge: 0.32, glow: 0.35, shrink: 0.85, seed: 'bottom', tendril: 0.6, bud: 0.7 }, extras: [{ type: 'title', label: 'Как растворяется' }, { key: 'style', label: 'Вид', type: 'select', options: [['laser', 'Лазерный срез: сканирующая плоскость'], ['layers', 'Сдвиг слоёв: полосы в стороны'], ['chunks', 'Блочный распад: объёмные кубы'], ['sand', 'Осыпание: частицы на пол'], ['vortex', 'Воронка: закручивание к центру'], ['shock', 'Ударная волна: импульс от центра'], ['burn', 'Испепеление: частицы вверх'], ['wind', 'Сдувание: боковой поток ветра'], ['sprout', 'Прорастание: ветвление формы']] }, { key: 'seed', label: 'Откуда растёт', type: 'select', options: [['bottom', 'Снизу вверх: от основания'], ['point', 'Из точки: случайный фокус'], ['center', 'Из центра: радиально наружу']], when: ['style', ['sprout']] }, { key: 'order', label: 'Откуда начинается', type: 'select', when: ['style', ['laser', 'layers', 'chunks', 'sand', 'vortex', 'shock', 'burn', 'wind']], options: [['top', 'Сверху вниз'], ['bottom', 'Снизу вверх'], ['side', 'Слева направо'], ['center', 'Из центра наружу'], ['edges', 'С краёв к центру'], ['noise', 'Случайные зоны']] }, { type: 'title', label: 'Запуск' }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'dir', label: 'Что дольше', type: 'seg', options: [['both', 'Поровну'], ['out', 'Распад'], ['in', 'Сборка']], when: ['mode', ['loop']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01, when: ['mode', ['slider']] }, { type: 'title', label: 'Движение частиц' }, { key: 'scatter', label: 'Размах движения', min: 0.2, max: 2.5, step: 0.05 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер и закрутка', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Лёгкая турбулентность', min: 0, max: 2, step: 0.05 }, { type: 'title', label: 'Кромка и частицы' }, { key: 'edge', label: 'Ширина кромки распада', min: 0.1, max: 0.7, step: 0.02 }, { key: 'glow', label: 'Свечение кромки', min: 0, max: 1.5, step: 0.05 }, { key: 'shrink', label: 'Мельчание частиц', min: 0, max: 1, step: 0.05 }, { key: 'tendril', label: 'Усики (неровный фронт)', min: 0, max: 1, step: 0.05, when: ['style', ['sprout']] }, { key: 'bud', label: 'Почки на кромке', min: 0, max: 1.5, step: 0.05, when: ['style', ['sprout']] }] },
 { id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки превращаются в кубики. Виды: сетка, лего, дыхание, волна, ступени, разлёт. Настраиваются размер и высота', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 1, mode: 'grid', speed: 1, size: 1, height: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['grid', 'Кубическая сетка: равномерные блоки'], ['lego', 'Столбцы: рельеф разной высоты'], ['breathe', 'Дыхание: пульсирующая сетка'], ['wave', 'Волна: бегущий подъём кубов'], ['stairs', 'Террасы: ступенчатые уровни'], ['scatter', 'Дрожание: вибрация на месте']] }, { key: 'size', label: 'Размер кубиков', min: 0.4, max: 2.5, step: 0.05 }, { key: 'height', label: 'Высота и размах', min: 0, max: 2, step: 0.05, when: ['mode', ['lego', 'wave', 'stairs', 'scatter']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe', 'wave', 'scatter']] }] },
-{ id: 'shoots', group: 'Звук и ритм', name: 'Рост на ритме', icon: 'tree-structure', hint: 'Участки формы отходят от неё: каждый удар сдвигает участок ещё на шаг дальше', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'slab', trigger: 'beat', every: 0.7, auto: 'on', step: 0.1, maxSteps: 10, stepTime: 0.25, peak: 'hold', quiet: 'stay', active: 2, size: 0.4, edge: 0.4, spread: 0, taper: 0, tiers: 4, shardSize: 0.5, layers: 6, twist: 1, scatter: 1.3, seeds: 14, dir: 'normal', glow: 0.3, wobble: 0.3, sizeUp: 0.15, perBeat: 2, maxLen: 1, decay: 0.08, bassPush: 0.5 }, extras: [
+{ id: 'shoots', sound: false, group: 'Звук и ритм', name: 'Рост на ритме', icon: 'tree-structure', hint: 'Участки формы отходят от неё: каждый удар сдвигает участок ещё на шаг дальше', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'slab', trigger: 'both', every: 0.7, auto: 'on', step: 0.08, maxSteps: 16, bassSpeed: 1, stepTime: 0.25, peak: 'hold', quiet: 'stay', active: 2, size: 0.4, edge: 0.4, spread: 0, taper: 0, tiers: 4, shardSize: 0.5, layers: 6, twist: 1, scatter: 1.3, seeds: 14, dir: 'normal', glow: 0.3, wobble: 0.3, sizeUp: 0.15, perBeat: 2, maxLen: 1, decay: 0.08, bassPush: 0.5 }, extras: [
 { key: 'mode', label: 'Форма отхода', type: 'select', options: [['slab', 'Плита', 'участок целым куском'], ['pillar', 'Столб', 'вытягивается колонной или шпилем'], ['terrace', 'Ступени', 'ступенчатая пирамида'], ['shards', 'Осколки', 'колется на куски'], ['peel', 'Слои', 'отходит слой за слоем'], ['screw', 'Винт', 'выкручивается'], ['dust', 'Пыль', 'рассыпается точками'], ['spikes', 'Шипы', 'острые иглы'], ['bulge', 'Бугры', 'мягкие выпуклости'], ['tendril', 'Щупальца', 'извивающиеся отростки']] },
-{ key: 'trigger', label: 'Что даёт шаг', type: 'seg', options: [['beat', 'Удар'], ['bass', 'Бас'], ['both', 'Оба']] },
+{ key: 'trigger', label: 'Что растит форму', type: 'seg', options: [['beat', 'Удары'], ['bass', 'Бас'], ['both', 'Оба']] },
+{ type: 'note', text: 'Удары двигают ступенями, по шагу на удар. Бас растит плавно: чем он громче, тем быстрее идёт рост' },
 { type: 'title', label: 'Рост', open: true },
 { type: 'note', text: 'Один удар это один шаг. Участок уходит на «сдвиг» × «ударов до предела»', when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
 { key: 'step', label: 'Сдвиг за удар', min: 0.02, max: 0.5, step: 0.01, noNorm: true, when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
@@ -73313,7 +73314,7 @@ const FX_LAYERS = [
 { key: 'quiet', label: 'Когда удары пропали', type: 'seg', options: [['stay', 'Остаётся'], ['back', 'Возвращается']] },
 { key: 'maxLen', label: 'Длина отростков', min: 0.2, max: 4, step: 0.05, when: ['mode', ['spikes', 'bulge', 'tendril']] },
 { key: 'perBeat', label: 'Отростков за удар', min: 1, max: 12, step: 1, int: true, noNorm: true, when: ['mode', ['spikes', 'bulge', 'tendril']] },
-{ key: 'bassPush', label: 'Рост между ударами от баса', min: 0, max: 2, step: 0.05, when: ['mode', ['spikes', 'bulge', 'tendril']] },
+{ key: 'bassSpeed', label: 'Рост от баса, шагов в секунду', min: 0.2, max: 8, step: 0.1, noNorm: true, when: ['trigger', ['bass', 'both']] },
 { key: 'stepTime', label: 'Длительность рывка, с', min: 0.03, max: 1, step: 0.01, noNorm: true },
 { type: 'title', label: 'Форма отхода' },
 { key: 'taper', label: 'Заострение к концу', min: 0, max: 1, step: 0.05, when: ['mode', ['pillar']] },
@@ -81168,6 +81169,9 @@ en: {
 'Увеличение точек': 'Point enlargement',
 'Идут сами': 'Run by themselves',
 'Рост между ударами от баса': 'Growth from bass between hits',
+'Что растит форму': 'What grows the shape',
+'Удары двигают ступенями, по шагу на удар. Бас растит плавно: чем он громче, тем быстрее идёт рост': 'Hits move it in steps, one step per hit. Bass grows it smoothly: the louder it is, the faster the growth',
+'Рост от баса, шагов в секунду': 'Growth from bass, steps per second',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -82067,6 +82071,9 @@ uk: {
 'Увеличение точек': 'Збільшення точок',
 'Идут сами': 'Йдуть самі',
 'Рост между ударами от баса': 'Ріст між ударами від баса',
+'Что растит форму': 'Що росте форму',
+'Удары двигают ступенями, по шагу на удар. Бас растит плавно: чем он громче, тем быстрее идёт рост': 'Удари рухають ступенями, по кроку на удар. Бас росте плавно: чим він гучніший, тим швидше ріст',
+'Рост от баса, шагов в секунду': 'Ріст від баса, кроків за секунду',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -82966,6 +82973,9 @@ es: {
 'Увеличение точек': 'Aumento de puntos',
 'Идут сами': 'Van solos',
 'Рост между ударами от баса': 'Crecimiento por bajo entre golpes',
+'Что растит форму': 'Qué hace crecer la forma',
+'Удары двигают ступенями, по шагу на удар. Бас растит плавно: чем он громче, тем быстрее идёт рост': 'Los golpes avanzan por pasos, un paso por golpe. El bajo crece suave: cuanto más fuerte, más rápido',
+'Рост от баса, шагов в секунду': 'Crecimiento por bajo, pasos por segundo',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -83865,6 +83875,9 @@ de: {
 'Увеличение точек': 'Punktvergrößerung',
 'Идут сами': 'Laufen selbst',
 'Рост между ударами от баса': 'Wachstum durch Bass zwischen Schlägen',
+'Что растит форму': 'Was die Form wachsen lässt',
+'Удары двигают ступенями, по шагу на удар. Бас растит плавно: чем он громче, тем быстрее идёт рост': 'Schläge bewegen in Stufen, ein Schritt pro Schlag. Bass wächst sanft: je lauter, desto schneller',
+'Рост от баса, шагов в секунду': 'Wachstum durch Bass, Schritte pro Sekunde',
 },
 };
 };
@@ -93665,7 +93678,7 @@ const MODE = { spikes: 0, bulge: 1, tendril: 3, slab: 2, pillar: 4, terrace: 5, 
 const DETACH = new Set(['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']);
 class ShootsPart {
 _shootTick(dt, L, u) {
-const eff = L.on ? this._eff(L) : 0;
+const eff = L.on ? L.amount * (this._fxGate ?? 1) : 0;
 if (eff <= 0.001 || !this.geometry) {
 u.uShoot.value.x = 0;
 return;
@@ -93679,12 +93692,11 @@ let bass = 0;
 const trig = L.trigger || 'beat';
 if (this.soundActive) {
 bass = this.levels.bass;
-const bBeat = this.levels.beat > 0.9 && S.beat <= 0.9;
+const tb = this._tb;
+const bNew = tb !== undefined && tb !== S.tb;
+S.tb = tb;
+beat = bNew || (this.levels.beat > 0.9 && S.beat <= 0.9);
 S.beat = this.levels.beat;
-const up = bass > 0.6;
-const bBass = up && !S.bassUp && this._time - S.lastBeat > 0.18;
-S.bassUp = bass > 0.5 ? up || S.bassUp : false;
-beat = trig === 'beat' ? bBeat : trig === 'bass' ? bBass : bBeat || bBass;
 } else if (L.auto !== 'off') {
 S.autoT += dt;
 if (S.autoT > (L.every ?? 0.7)) {
@@ -93693,7 +93705,10 @@ beat = true;
 }
 bass = 0.36 + 0.34 * Math.sin(this._time * 1.6);
 }
-if (beat) S.lastBeat = this._time;
+if (trig === 'bass') beat = false;
+const bassOn = trig !== 'beat';
+S.bassOver = bassOn ? clamp((bass - 0.2) / 0.8, 0, 1) : 0;
+if (beat || S.bassOver > 0.1) S.lastBeat = this._time;
 S.quiet = this._time - S.lastBeat > 1.8;
 const V = u.uShootS.value;
 const W = u.uShootN.value;
@@ -93715,7 +93730,7 @@ const free = [];
 for (let i = 0; i < N; i++) if (R[i].phase === 'idle' && !S.active.includes(i)) free.push(i);
 if (!free.length) break;
 const i = free[Math.floor(Math.random() * free.length)];
-Object.assign(R[i], { steps: 0, d: 0, v: 0, fade: 1, phase: 'grow' });
+Object.assign(R[i], { steps: 0, acc: 0, d: 0, v: 0, fade: 1, phase: 'grow' });
 S.active.push(i);
 }
 while (S.active.length > want) {
@@ -93744,13 +93759,12 @@ r.phase = 'settle';
 }
 }
 } else S.qT = 0;
-if (beat) {
-for (const i of S.active) {
-const r = R[i];
+const advance = (r) => {
 if (r.phase === 'grow') {
 r.steps++;
 if (r.steps >= maxSteps) {
 r.steps = maxSteps;
+r.acc = 0;
 if (peak === 'back') r.phase = 'back';
 else if (peak === 'next') r.phase = 'frozen';
 else if (peak === 'drop') r.phase = 'drop';
@@ -93761,8 +93775,21 @@ else r.phase = 'held';
 r.steps--;
 if (r.steps <= 0) {
 r.steps = 0;
+r.acc = 0;
 r.phase = 'settle';
 }
+}
+};
+if (beat) for (const i of S.active) advance(R[i]);
+if (S.bassOver > 0) {
+const rate = S.bassOver * (L.bassSpeed ?? 2) * dt;
+for (const i of S.active) {
+const r = R[i];
+if (r.phase !== 'grow' && r.phase !== 'back') continue;
+r.acc = (r.acc || 0) + rate;
+while (r.acc >= 1 && (r.phase === 'grow' || r.phase === 'back')) {
+r.acc -= 1;
+advance(r);
 }
 }
 }
@@ -93771,7 +93798,7 @@ const w = 4.6 / T;
 const z = 0.8;
 for (let i = 0; i < N; i++) {
 const r = R[i];
-let target = r.steps * step;
+let target = (r.steps + (r.phase === 'grow' ? r.acc || 0 : r.phase === 'back' ? -(r.acc || 0) : 0)) * step;
 if (r.phase === 'drop') {
 r.dropV = (r.dropV || step * 3) + dt * step * 10;
 r.d += r.dropV * dt;
@@ -93831,7 +93858,6 @@ S.qT = 0;
 for (let i = 0; i < N; i++) if (!S.gx[i]) S.g[i] = Math.max(0, S.g[i] - inc);
 }
 } else if (!S.quiet) S.qT = 0;
-const push = (L.bassPush ?? 0.5) * 0.9;
 const T = Math.max(0.03, L.stepTime ?? 0.25);
 const w = 4.6 / T;
 for (let i = 0; i < 24; i++) {
@@ -93847,9 +93873,9 @@ S.gx[i] = 0;
 S.gd[i] = 1;
 }
 } else if (trig !== 'beat' && S.gd[i] > 0) {
-const over = bass - S.th[i];
+const over = clamp((bass - S.th[i]) / (1 - S.th[i]), 0, 1);
 if (over > 0) {
-S.g[i] = Math.min(1, S.g[i] + over * dt * push * 0.6);
+S.g[i] = Math.min(1, S.g[i] + inc * over * (L.bassSpeed ?? 2) * dt);
 if (S.g[i] >= 0.999) reach(i);
 }
 }

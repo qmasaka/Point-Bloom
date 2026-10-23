@@ -897,6 +897,9 @@ en: {
 'Увеличение точек': 'Point enlargement',
 'Идут сами': 'Run by themselves',
 'Рост между ударами от баса': 'Growth from bass between hits',
+'Что растит форму': 'What grows the shape',
+'Удары двигают ступенями, по шагу на удар. Бас растит плавно: чем он громче, тем быстрее идёт рост': 'Hits move it in steps, one step per hit. Bass grows it smoothly: the louder it is, the faster the growth',
+'Рост от баса, шагов в секунду': 'Growth from bass, steps per second',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -1796,6 +1799,9 @@ uk: {
 'Увеличение точек': 'Збільшення точок',
 'Идут сами': 'Йдуть самі',
 'Рост между ударами от баса': 'Ріст між ударами від баса',
+'Что растит форму': 'Що росте форму',
+'Удары двигают ступенями, по шагу на удар. Бас растит плавно: чем он громче, тем быстрее идёт рост': 'Удари рухають ступенями, по кроку на удар. Бас росте плавно: чим він гучніший, тим швидше ріст',
+'Рост от баса, шагов в секунду': 'Ріст від баса, кроків за секунду',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -2695,6 +2701,9 @@ es: {
 'Увеличение точек': 'Aumento de puntos',
 'Идут сами': 'Van solos',
 'Рост между ударами от баса': 'Crecimiento por bajo entre golpes',
+'Что растит форму': 'Qué hace crecer la forma',
+'Удары двигают ступенями, по шагу на удар. Бас растит плавно: чем он громче, тем быстрее идёт рост': 'Los golpes avanzan por pasos, un paso por golpe. El bajo crece suave: cuanto más fuerte, más rápido',
+'Рост от баса, шагов в секунду': 'Crecimiento por bajo, pasos por segundo',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -3594,5 +3603,8 @@ de: {
 'Увеличение точек': 'Punktvergrößerung',
 'Идут сами': 'Laufen selbst',
 'Рост между ударами от баса': 'Wachstum durch Bass zwischen Schlägen',
+'Что растит форму': 'Was die Form wachsen lässt',
+'Удары двигают ступенями, по шагу на удар. Бас растит плавно: чем он громче, тем быстрее идёт рост': 'Schläge bewegen in Stufen, ein Schritt pro Schlag. Bass wächst sanft: je lauter, desto schneller',
+'Рост от баса, шагов в секунду': 'Wachstum durch Bass, Schritte pro Sekunde',
 },
 };

@@ -13,7 +13,8 @@ const DETACH = new Set(['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 
  */
 export class ShootsPart {
 	_shootTick(dt, L, u) {
-		const eff = L.on ? this._eff(L) : 0;
+		// сила не качается от громкости (диапазон и реакция тут не нужны): рост ведут только удары и бас по своим правилам
+		const eff = L.on ? L.amount * (this._fxGate ?? 1) : 0;
 		if (eff <= 0.001 || !this.geometry) {
 			u.uShoot.value.x = 0;
 			return;
@@ -29,12 +30,12 @@ export class ShootsPart {
 		const trig = L.trigger || 'beat';
 		if (this.soundActive) {
 			bass = this.levels.bass;
-			const bBeat = this.levels.beat > 0.9 && S.beat <= 0.9;
+			// удар анализатора: метка времени надёжнее порога на коротком всплеске (на 60 к/с он не всегда доходит до 0.9)
+			const tb = this._tb;
+			const bNew = tb !== undefined && tb !== S.tb;
+			S.tb = tb;
+			beat = bNew || (this.levels.beat > 0.9 && S.beat <= 0.9);
 			S.beat = this.levels.beat;
-			const up = bass > 0.6;
-			const bBass = up && !S.bassUp && this._time - S.lastBeat > 0.18;
-			S.bassUp = bass > 0.5 ? up || S.bassUp : false;
-			beat = trig === 'beat' ? bBeat : trig === 'bass' ? bBass : bBeat || bBass;
 		} else if (L.auto !== 'off') {
 			S.autoT += dt;
 			if (S.autoT > (L.every ?? 0.7)) {
@@ -43,7 +44,11 @@ export class ShootsPart {
 			}
 			bass = 0.36 + 0.34 * Math.sin(this._time * 1.6);
 		}
-		if (beat) S.lastBeat = this._time;
+		// «Удар» двигает ступенями, «Бас» растит плавно по громкости баса, «Оба» вместе
+		if (trig === 'bass') beat = false;
+		const bassOn = trig !== 'beat';
+		S.bassOver = bassOn ? clamp((bass - 0.2) / 0.8, 0, 1) : 0;
+		if (beat || S.bassOver > 0.1) S.lastBeat = this._time;
 		S.quiet = this._time - S.lastBeat > 1.8;
 		const V = u.uShootS.value;
 		const W = u.uShootN.value;
@@ -69,7 +74,7 @@ export class ShootsPart {
 			for (let i = 0; i < N; i++) if (R[i].phase === 'idle' && !S.active.includes(i)) free.push(i);
 			if (!free.length) break;
 			const i = free[Math.floor(Math.random() * free.length)];
-			Object.assign(R[i], { steps: 0, d: 0, v: 0, fade: 1, phase: 'grow' });
+			Object.assign(R[i], { steps: 0, acc: 0, d: 0, v: 0, fade: 1, phase: 'grow' });
 			S.active.push(i);
 		}
 		while (S.active.length > want) {
@@ -99,25 +104,38 @@ export class ShootsPart {
 				}
 			}
 		} else S.qT = 0;
-		if (beat) {
+		const advance = (r) => {
+			if (r.phase === 'grow') {
+				r.steps++;
+				if (r.steps >= maxSteps) {
+					r.steps = maxSteps;
+					r.acc = 0;
+					if (peak === 'back') r.phase = 'back';
+					else if (peak === 'next') r.phase = 'frozen';
+					else if (peak === 'drop') r.phase = 'drop';
+					else if (peak === 'reset') r.phase = 'settle';
+					else r.phase = 'held';
+				}
+			} else if (r.phase === 'back') {
+				r.steps--;
+				if (r.steps <= 0) {
+					r.steps = 0;
+					r.acc = 0;
+					r.phase = 'settle';
+				}
+			}
+		};
+		if (beat) for (const i of S.active) advance(R[i]);
+		// бас растит плавно: доля шага копится по громкости баса, целый шаг засчитывается как удар
+		if (S.bassOver > 0) {
+			const rate = S.bassOver * (L.bassSpeed ?? 2) * dt;
 			for (const i of S.active) {
 				const r = R[i];
-				if (r.phase === 'grow') {
-					r.steps++;
-					if (r.steps >= maxSteps) {
-						r.steps = maxSteps;
-						if (peak === 'back') r.phase = 'back';
-						else if (peak === 'next') r.phase = 'frozen';
-						else if (peak === 'drop') r.phase = 'drop';
-						else if (peak === 'reset') r.phase = 'settle';
-						else r.phase = 'held';
-					}
-				} else if (r.phase === 'back') {
-					r.steps--;
-					if (r.steps <= 0) {
-						r.steps = 0;
-						r.phase = 'settle';
-					}
+				if (r.phase !== 'grow' && r.phase !== 'back') continue;
+				r.acc = (r.acc || 0) + rate;
+				while (r.acc >= 1 && (r.phase === 'grow' || r.phase === 'back')) {
+					r.acc -= 1;
+					advance(r);
 				}
 			}
 		}
@@ -127,7 +145,7 @@ export class ShootsPart {
 		const z = 0.8;
 		for (let i = 0; i < N; i++) {
 			const r = R[i];
-			let target = r.steps * step;
+			let target = (r.steps + (r.phase === 'grow' ? r.acc || 0 : r.phase === 'back' ? -(r.acc || 0) : 0)) * step;
 			if (r.phase === 'drop') {
 				// отломился: летит дальше и гаснет, потом место свободно для нового участка
 				r.dropV = (r.dropV || step * 3) + dt * step * 10;
@@ -195,7 +213,6 @@ export class ShootsPart {
 				for (let i = 0; i < N; i++) if (!S.gx[i]) S.g[i] = Math.max(0, S.g[i] - inc);
 			}
 		} else if (!S.quiet) S.qT = 0;
-		const push = (L.bassPush ?? 0.5) * 0.9;
 		const T = Math.max(0.03, L.stepTime ?? 0.25);
 		const w = 4.6 / T;
 		for (let i = 0; i < 24; i++) {
@@ -212,10 +229,10 @@ export class ShootsPart {
 					S.gd[i] = 1;
 				}
 			} else if (trig !== 'beat' && S.gd[i] > 0) {
-				// бас растит и между ударами
-				const over = bass - S.th[i];
+				// бас растит плавно: у каждого очага свой порог, чем громче бас, тем быстрее он растёт
+				const over = clamp((bass - S.th[i]) / (1 - S.th[i]), 0, 1);
 				if (over > 0) {
-					S.g[i] = Math.min(1, S.g[i] + over * dt * push * 0.6);
+					S.g[i] = Math.min(1, S.g[i] + inc * over * (L.bassSpeed ?? 2) * dt);
 					if (S.g[i] >= 0.999) reach(i);
 				}
 			}
