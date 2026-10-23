@@ -1652,7 +1652,7 @@ fn main_() {
 			shK = max(shK, (pr * min((sd.w * 1.5), 1.0)));
 		}
 		if ((shFam && (bm > 0.0))) {
-			var d: f32 = bs.w;
+			var d: f32 = (bs.w * ((1.0 - (fr.uShootE.y * hsh))));
 			var stp: f32 = max(fr.uShootD.y, 0.005);
 			var dn: vec3f = select(normalize(((bs.xyz - fr.uCen) + vec3f(1e-4))), normalize(bn.xyz), (length(bn.xyz) > 0.01));
 			if (((fr.uShootD.x > 0.5) && (fr.uShootD.x < 1.5))) {
@@ -1668,28 +1668,31 @@ fn main_() {
 				off = ((dn * d) * bm);
 			} else if ((md < 4.5)) {
 				var tt: f32 = hash11((aIdx * 5.13));
-				off = (((dn * d) * pow(tt, 0.75)) * smoothstep(0.0, 0.6, bm));
+				var pf: f32 = (pow(tt, 0.75) * smoothstep(0.0, 0.6, bm));
+				var prel: vec3f = (base - bs.xyz);
+				off = (((dn * d) * pf) - ((((prel - (dn * dot(dn, prel)))) * fr.uShootE.z) * clamp((((d * pf) * 1.5) / fr.uShoot.z), 0.0, 1.0)));
 			} else if ((md < 5.5)) {
-				var ring: f32 = floor(((((1.0 - bd)) * 4.0) + 0.001));
-				off = (((dn * d) * mix(0.25, 1.0, (ring / 3.0))) * bm);
+				var tiers: f32 = max(fr.uShootD.z, 2.0);
+				var ring: f32 = min(floor(((((1.0 - bd)) * tiers) + 0.001)), (tiers - 1.0));
+				off = (((dn * d) * mix(0.25, 1.0, (ring / ((tiers - 1.0))))) * bm);
 			} else if ((md < 6.5)) {
-				var cl: vec3f = floor((base / max((fr.uShoot.z * 0.32), 0.01)));
+				var cl: vec3f = floor((base / max((fr.uShoot.z * ((0.08 + (0.55 * fr.uShootD.z)))), 0.01)));
 				var hc: f32 = hash11(dot(cl, vec3f(17.13, 31.71, 57.29)));
 				var tilt: vec3f = (vec3f(hash11((hc * 91.0)), hash11((hc * 57.0)), hash11((hc * 33.0))) - 0.5);
 				off = (((normalize((dn + (tilt * 0.7))) * d) * ((0.45 + (hc * 1.1)))) * bm);
 			} else if ((md < 7.5)) {
-				var layer: f32 = floor((hash11((aIdx * 9.71)) * 6.0));
+				var layer: f32 = floor((hash11((aIdx * 9.71)) * max(fr.uShootD.z, 2.0)));
 				off = ((dn * max(0.0, (d - ((layer * stp) * 0.75)))) * bm);
 			} else if ((md < 8.5)) {
 				var rel: vec3f = (base - bs.xyz);
-				var ang: f32 = ((d / stp) * 0.6);
+				var ang: f32 = (((d / stp) * 0.6) * fr.uShootD.z);
 				var ca: f32 = cos(ang);
 				var sa: f32 = sin(ang);
 				var rr: vec3f = (((rel * ca) + (cross(dn, rel) * sa)) + ((dn * dot(dn, rel)) * ((1.0 - ca))));
 				off = ((((rr - rel) + (dn * d))) * bm);
 			} else {
 				var rd: vec3f = (vec3f(hash11((aIdx * 1.3)), hash11((aIdx * 2.9)), hash11((aIdx * 5.1))) - 0.5);
-				off = (((normalize((dn + (rd * 1.3))) * d) * ((0.35 + (hash11((aIdx * 7.7)) * 1.3)))) * bm);
+				off = (((normalize((dn + (rd * fr.uShootD.z))) * d) * ((0.35 + (hash11((aIdx * 7.7)) * 1.3)))) * bm);
 			}
 			off += ((((vec3f(sin(((fr.uShootP.z * 1.7) + (hsh * 6.283))), cos(((fr.uShootP.z * 1.3) + (hsh * 4.1))), sin(((fr.uShootP.z * 1.1) + (hsh * 2.7)))) * 0.03) * min(d, 1.0)) * fr.uShootP.y) * bm);
 			shOff += off;

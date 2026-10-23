@@ -439,7 +439,7 @@ void main() {
 #ifdef VSHOOT
 	// «Рост на ритме»: uShoot = (сила, вид, радиус очага, предельная длина щупалец и шипов), uShootP = (свечение, дрожь, время, крупность оторвавшихся),
 	// uShootS = 24 очага (xyz место на форме, w: у шипов сколько выросло, у видов отрыва на сколько участок отошёл), uShootN = нормаль участка и его видимость,
-	// uShootD = (куда отходит: 0 наружу, 1 от центра, 2 вверх, 3 к зрителю; длина шага), uShootE.x = мягкость края участка.
+	// uShootD = (куда отходит: 0 наружу, 1 от центра, 2 вверх, 3 к зрителю; длина шага; особая настройка вида: ступени, размер осколков, слои, закрутка, разлёт), uShootE = (мягкость края участка, разброс длины, заострение столба).
 	// Виды: 0 шипы, 1 бугры, 3 щупальца растут из очагов; отрыв участков: 2 плита, 4 столб, 5 ступени, 6 осколки, 7 слои, 8 винт, 9 пыль
 	float shSzMul = 1.0;
 	if (uShoot.x > 0.001) {
@@ -487,7 +487,7 @@ void main() {
 		}
 		if (shFam && bm > 0.0) {
 			// участок отходит на bs.w (ступенями по ударам) в выбранную сторону, у каждого вида отрыва своя форма
-			float d = bs.w;
+			float d = bs.w * (1.0 - uShootE.y * hsh);
 			float stp = max(uShootD.y, 0.005);
 			vec3 dn = length(bn.xyz) > 0.01 ? normalize(bn.xyz) : normalize(bs.xyz - uCen + vec3(1e-4));
 			if (uShootD.x > 0.5 && uShootD.x < 1.5) dn = normalize(bs.xyz - uCen + vec3(1e-4));
@@ -501,32 +501,36 @@ void main() {
 			} else if (md < 4.5) {
 				// столб: точки участка растягиваются вдоль пути, участок вырастает колонной
 				float tt = hash11(aIdx * 5.13);
-				off = dn * d * pow(tt, 0.75) * smoothstep(0.0, 0.6, bm);
+				float pf = pow(tt, 0.75) * smoothstep(0.0, 0.6, bm);
+				vec3 prel = base - bs.xyz;
+				// заострение: боковые точки стягиваются к оси, чем дальше они вытянуты
+				off = dn * d * pf - (prel - dn * dot(dn, prel)) * uShootE.z * clamp(d * pf * 1.5 / uShoot.z, 0.0, 1.0);
 			} else if (md < 5.5) {
 				// ступени: кольца участка отходят на разную высоту, вырастает ступенчатая пирамида
-				float ring = floor((1.0 - bd) * 4.0 + 0.001);
-				off = dn * d * mix(0.25, 1.0, ring / 3.0) * bm;
+				float tiers = max(uShootD.z, 2.0);
+				float ring = min(floor((1.0 - bd) * tiers + 0.001), tiers - 1.0);
+				off = dn * d * mix(0.25, 1.0, ring / (tiers - 1.0)) * bm;
 			} else if (md < 6.5) {
 				// осколки: участок колется на куски, каждый отходит на свою длину и с наклоном
-				vec3 cl = floor(base / max(uShoot.z * 0.32, 0.01));
+				vec3 cl = floor(base / max(uShoot.z * (0.08 + 0.55 * uShootD.z), 0.01));
 				float hc = hash11(dot(cl, vec3(17.13, 31.71, 57.29)));
 				vec3 tilt = vec3(hash11(hc * 91.0), hash11(hc * 57.0), hash11(hc * 33.0)) - 0.5;
 				off = normalize(dn + tilt * 0.7) * d * (0.45 + hc * 1.1) * bm;
 			} else if (md < 7.5) {
 				// слои: участок расслаивается, как стопка листов: с каждым ударом поднимается ещё один слой
-				float layer = floor(hash11(aIdx * 9.71) * 6.0);
+				float layer = floor(hash11(aIdx * 9.71) * max(uShootD.z, 2.0));
 				off = dn * max(0.0, d - layer * stp * 0.75) * bm;
 			} else if (md < 8.5) {
 				// винт: участок выкручивается, поворачиваясь вокруг своей оси с каждым шагом
 				vec3 rel = base - bs.xyz;
-				float ang = d / stp * 0.6;
+				float ang = d / stp * 0.6 * uShootD.z;
 				float ca = cos(ang), sa = sin(ang);
 				vec3 rr = rel * ca + cross(dn, rel) * sa + dn * dot(dn, rel) * (1.0 - ca);
 				off = (rr - rel + dn * d) * bm;
 			} else {
 				// пыль: участок рассыпается, каждая точка уходит своей дорогой, но тоже ступенями
 				vec3 rd = vec3(hash11(aIdx * 1.3), hash11(aIdx * 2.9), hash11(aIdx * 5.1)) - 0.5;
-				off = normalize(dn + rd * 1.3) * d * (0.35 + hash11(aIdx * 7.7) * 1.3) * bm;
+				off = normalize(dn + rd * uShootD.z) * d * (0.35 + hash11(aIdx * 7.7) * 1.3) * bm;
 			}
 			// дрожь: отошедшие точки чуть живут на месте
 			off += vec3(sin(uShootP.z * 1.7 + hsh * 6.283), cos(uShootP.z * 1.3 + hsh * 4.1), sin(uShootP.z * 1.1 + hsh * 2.7)) * 0.03 * min(d, 1.0) * uShootP.y * bm;

@@ -39,26 +39,15 @@ if (DETACH.has(L.mode)) this._shootDetach(S, L, dt, beat, N, V, W);
 else this._shootGrow(S, L, dt, beat, bass, N, V, W);
 u.uShoot.value.set(Math.min(eff, 1.5), MODE[L.mode] ?? 2, Math.max(0.05, (L.size ?? 0.3) * 0.9), Math.max(0.1, (L.maxLen ?? 1) * 0.7));
 u.uShootP.value.set(L.glow ?? 0.3, L.wobble ?? 0.3, this._time, L.sizeUp ?? 0.15);
-u.uShootD.value.set({ normal: 0, radial: 1, up: 2, view: 3 }[L.dir] ?? 0, Math.max(0.005, L.step ?? 0.12), 0, 0);
-u.uShootE.value.set(L.edge ?? 0.35, 0, 0, 0);
-}
-shootPreset(L, name) {
-const P = {
-crescendo: { mode: 'slab', trigger: 'beat', step: 0.12, maxSteps: 7, stepTime: 0.25, bounce: 0.35, peak: 'back', active: 2, size: 0.4, edge: 0.4, dir: 'normal', glow: 0.3, sizeUp: 0.15, wobble: 0.3, decay: 0.08 },
-blast: { mode: 'shards', trigger: 'beat', step: 0.2, maxSteps: 5, stepTime: 0.12, bounce: 0.7, peak: 'drop', active: 4, size: 0.5, edge: 0.2, dir: 'radial', glow: 0.5, sizeUp: 0.3, wobble: 0.4, decay: 0.08 },
-breath: { mode: 'slab', trigger: 'both', step: 0.07, maxSteps: 6, stepTime: 0.4, bounce: 0.1, peak: 'back', active: 3, size: 0.7, edge: 0.8, dir: 'normal', glow: 0.2, sizeUp: 0, wobble: 0.2, decay: 0.15 },
-pillars: { mode: 'pillar', trigger: 'beat', step: 0.14, maxSteps: 8, stepTime: 0.2, bounce: 0.5, peak: 'hold', active: 3, size: 0.3, edge: 0.3, dir: 'normal', glow: 0.4, sizeUp: 0.1, wobble: 0.2, decay: 0.08 },
-dust: { mode: 'dust', trigger: 'both', step: 0.1, maxSteps: 8, stepTime: 0.3, bounce: 0.3, peak: 'drop', active: 3, size: 0.6, edge: 0.7, dir: 'up', glow: 0.35, sizeUp: 0.2, wobble: 0.5, decay: 0.08 },
-needles: { mode: 'spikes', trigger: 'both', step: 0.15, size: 0.3, perBeat: 3, maxLen: 1.2, bassPush: 0.6, glow: 0.5, wobble: 0.3, decay: 0.1 },
-}[name];
-if (!P) return;
-Object.assign(L, P, { on: true });
+const xtra = { terrace: L.tiers ?? 4, shards: L.shardSize ?? 0.5, peel: L.layers ?? 6, screw: L.twist ?? 1, dust: L.scatter ?? 1.3 }[L.mode] ?? 0;
+u.uShootD.value.set({ normal: 0, radial: 1, up: 2, view: 3 }[L.dir] ?? 0, Math.max(0.005, L.step ?? 0.12), xtra, 0);
+u.uShootE.value.set(L.edge ?? 0.35, L.spread ?? 0, L.taper ?? 0, 0);
 }
 _shootDetach(S, L, dt, beat, N, V, W) {
 if (!S.R || S.R.length !== N) S.R = Array.from({ length: N }, () => ({ steps: 0, d: 0, v: 0, fade: 1, phase: 'idle' }));
 const R = S.R;
 const want = clamp(Math.round(L.active ?? 2), 1, Math.min(8, N));
-S.active = S.active.filter((i) => R[i].phase !== 'idle');
+S.active = S.active.filter((i) => R[i].phase !== 'idle' && R[i].phase !== 'frozen');
 while (S.active.length < want) {
 const free = [];
 for (let i = 0; i < N; i++) if (R[i].phase === 'idle' && !S.active.includes(i)) free.push(i);
@@ -73,11 +62,10 @@ R[i].phase = 'settle';
 }
 const step = Math.max(0.005, L.step ?? 0.12);
 const maxSteps = clamp(Math.round(L.maxSteps ?? 6), 1, 24);
-const peak = L.peak || 'back';
-const dec = L.decay ?? 0.08;
-if (S.quiet && dec > 0 && !beat) {
+const peak = L.peak || 'hold';
+if (L.quiet === 'back' && S.quiet && !beat) {
 S.qT = (S.qT || 0) + dt;
-if (S.qT > 0.12 / dec) {
+if (S.qT > 0.5) {
 S.qT = 0;
 for (const i of S.active) {
 const r = R[i];
@@ -102,6 +90,7 @@ r.steps++;
 if (r.steps >= maxSteps) {
 r.steps = maxSteps;
 if (peak === 'back') r.phase = 'back';
+else if (peak === 'next') r.phase = 'frozen';
 else if (peak === 'drop') r.phase = 'drop';
 else if (peak === 'reset') r.phase = 'settle';
 else r.phase = 'held';
@@ -117,7 +106,7 @@ r.phase = 'settle';
 }
 const T = Math.max(0.03, L.stepTime ?? 0.25);
 const w = 4.6 / T;
-const z = 1 - 0.85 * clamp(L.bounce ?? 0.35, 0, 1);
+const z = 0.8;
 for (let i = 0; i < N; i++) {
 const r = R[i];
 let target = r.steps * step;
