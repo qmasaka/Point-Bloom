@@ -93724,10 +93724,26 @@ _shootDetach(S, L, dt, beat, N, V, W) {
 if (!S.R || S.R.length !== N) S.R = Array.from({ length: N }, () => ({ steps: 0, d: 0, v: 0, fade: 1, phase: 'idle' }));
 const R = S.R;
 const want = clamp(Math.round(L.active ?? 2), 1, Math.min(8, N));
-S.active = S.active.filter((i) => R[i].phase !== 'idle' && R[i].phase !== 'frozen');
-while (S.active.length < want) {
+const step = Math.max(0.005, L.step ?? 0.12);
+const maxSteps = clamp(Math.round(L.maxSteps ?? 6), 1, 24);
+const peak = L.peak || 'hold';
+for (const r of R) {
+if (r.phase === 'grow' || r.phase === 'back' || r.phase === 'top') {
+if (r.steps > maxSteps) r.steps = maxSteps;
+if (r.steps >= maxSteps) {
+r.acc = 0;
+if (peak === 'back') r.phase = 'back';
+else if (peak === 'drop') r.phase = 'drop';
+else if (peak === 'reset') r.phase = 'settle';
+else r.phase = 'top';
+} else if (r.phase === 'top' || (r.phase === 'back' && peak !== 'back')) r.phase = 'grow';
+}
+}
+S.active = S.active.filter((i) => R[i].phase === 'grow' || R[i].phase === 'back');
+const holding = peak === 'hold' ? R.filter((r) => r.phase === 'top').length : 0;
+while (S.active.length + holding < want) {
 const free = [];
-for (let i = 0; i < N; i++) if (R[i].phase === 'idle' && !S.active.includes(i)) free.push(i);
+for (let i = 0; i < N; i++) if (R[i].phase === 'idle') free.push(i);
 if (!free.length) break;
 const i = free[Math.floor(Math.random() * free.length)];
 Object.assign(R[i], { steps: 0, acc: 0, d: 0, v: 0, fade: 1, phase: 'grow' });
@@ -93737,41 +93753,22 @@ while (S.active.length > want) {
 const i = S.active.pop();
 R[i].phase = 'settle';
 }
-const step = Math.max(0.005, L.step ?? 0.12);
-const maxSteps = clamp(Math.round(L.maxSteps ?? 6), 1, 24);
-const peak = L.peak || 'hold';
 if (L.quiet === 'back' && S.quiet && !beat) {
 S.qT = (S.qT || 0) + dt;
 if (S.qT > 0.5) {
 S.qT = 0;
-for (const i of S.active) {
-const r = R[i];
-if (r.phase === 'grow' || r.phase === 'held') {
-r.phase = 'back';
-}
-if (r.phase === 'back') {
+for (const r of R) {
+if ((r.phase === 'grow' || r.phase === 'top') && r.steps > 0) {
 r.steps--;
-if (r.steps <= 0) {
-r.steps = 0;
-r.phase = 'settle';
-}
+r.acc = 0;
+if (r.phase === 'top') r.phase = 'grow';
 }
 }
 }
 } else S.qT = 0;
 const advance = (r) => {
-if (r.phase === 'grow') {
-r.steps++;
-if (r.steps >= maxSteps) {
-r.steps = maxSteps;
-r.acc = 0;
-if (peak === 'back') r.phase = 'back';
-else if (peak === 'next') r.phase = 'frozen';
-else if (peak === 'drop') r.phase = 'drop';
-else if (peak === 'reset') r.phase = 'settle';
-else r.phase = 'held';
-}
-} else if (r.phase === 'back') {
+if (r.phase === 'grow') r.steps++;
+else if (r.phase === 'back') {
 r.steps--;
 if (r.steps <= 0) {
 r.steps = 0;
@@ -93787,7 +93784,7 @@ for (const i of S.active) {
 const r = R[i];
 if (r.phase !== 'grow' && r.phase !== 'back') continue;
 r.acc = (r.acc || 0) + rate;
-while (r.acc >= 1 && (r.phase === 'grow' || r.phase === 'back')) {
+while (r.acc >= 1 && (r.phase === 'grow' || r.phase === 'back') && r.steps < maxSteps + (r.phase === 'back' ? 1 : 0)) {
 r.acc -= 1;
 advance(r);
 }
@@ -93828,8 +93825,8 @@ const peak = L.peak || 'hold';
 const inc = 1 / clamp(Math.round(L.maxSteps ?? 10), 1, 24);
 const reach = (i) => {
 S.g[i] = 1;
-if (peak === 'back') S.gd[i] = -1;
-else if (peak === 'drop') S.gx[i] = 2;
+S.gd[i] = peak === 'back' ? -1 : 1;
+if (peak === 'drop') S.gx[i] = 2;
 else if (peak === 'reset') S.gx[i] = 1;
 };
 if (beat && trig !== 'bass') {
@@ -93865,6 +93862,10 @@ if (i >= N) {
 V[i].w = 0;
 S.gs[i] = 0;
 continue;
+}
+if (!S.gx[i]) {
+if (S.g[i] >= 0.999) reach(i);
+else if (S.gd[i] < 0 && peak !== 'back') S.gd[i] = 1;
 }
 if (S.gx[i]) {
 S.g[i] = Math.max(0, S.g[i] - dt * (S.gx[i] === 2 ? 2.5 : 0.6));
