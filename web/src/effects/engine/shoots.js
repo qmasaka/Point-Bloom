@@ -128,27 +128,73 @@ W[i].set(S.nrm[i * 3], S.nrm[i * 3 + 1], S.nrm[i * 3 + 2], Math.max(0, r.fade));
 for (let i = N; i < 24; i++) V[i].w = 0;
 }
 _shootGrow(S, L, dt, beat, bass, N, V, W) {
+if (!S.gs || S.gs.length !== 24) {
+S.gs = new Float32Array(24);
+S.gv = new Float32Array(24);
+S.gd = new Int8Array(24).fill(1);
+S.gx = new Int8Array(24);
+}
 const trig = L.trigger || 'beat';
-const step = L.step ?? 0.12;
-if (beat) {
+const peak = L.peak || 'hold';
+const inc = 1 / clamp(Math.round(L.maxSteps ?? 10), 1, 24);
+const reach = (i) => {
+S.g[i] = 1;
+if (peak === 'back') S.gd[i] = -1;
+else if (peak === 'drop') S.gx[i] = 2;
+else if (peak === 'reset') S.gx[i] = 1;
+};
+if (beat && trig !== 'bass') {
+const free = [];
+for (let i = 0; i < N; i++) {
+if (S.gx[i]) continue;
+if (S.gd[i] < 0) {
+S.g[i] -= inc;
+if (S.g[i] <= 0) {
+S.g[i] = 0;
+S.gd[i] = 1;
+}
+} else if (S.g[i] < 0.999) free.push(i);
+}
 const k = clamp(Math.round(L.perBeat || 2), 1, 12);
-for (let j = 0; j < k; j++) {
-const i = Math.floor(Math.random() * N);
-S.g[i] = Math.min(1, S.g[i] + step * 2.2 * (0.7 + 0.6 * Math.random()));
+for (let j = 0; j < k && free.length; j++) {
+const i = free.splice(Math.floor(Math.random() * free.length), 1)[0];
+S.g[i] = Math.min(1, S.g[i] + inc);
+if (S.g[i] >= 0.999) reach(i);
 }
 }
+if (L.quiet === 'back' && S.quiet && !beat) {
+S.qT = (S.qT || 0) + dt;
+if (S.qT > 0.5) {
+S.qT = 0;
+for (let i = 0; i < N; i++) if (!S.gx[i]) S.g[i] = Math.max(0, S.g[i] - inc);
+}
+} else if (!S.quiet) S.qT = 0;
 const push = (L.bassPush ?? 0.5) * 0.9;
+const T = Math.max(0.03, L.stepTime ?? 0.25);
+const w = 4.6 / T;
 for (let i = 0; i < 24; i++) {
 if (i >= N) {
 V[i].w = 0;
+S.gs[i] = 0;
 continue;
 }
-if (trig !== 'beat') {
-const over = bass - S.th[i];
-if (over > 0) S.g[i] = Math.min(1, S.g[i] + over * dt * push * 2.4);
+if (S.gx[i]) {
+S.g[i] = Math.max(0, S.g[i] - dt * (S.gx[i] === 2 ? 2.5 : 0.6));
+if (S.g[i] <= 0) {
+S.gx[i] = 0;
+S.gd[i] = 1;
 }
-S.g[i] = Math.max(0, S.g[i] - dt * (0.18 + (L.decay ?? 0.08)) * (0.4 + S.g[i]));
-V[i].set(S.pos[i * 3], S.pos[i * 3 + 1], S.pos[i * 3 + 2], S.g[i]);
+} else if (trig !== 'beat' && S.gd[i] > 0) {
+const over = bass - S.th[i];
+if (over > 0) {
+S.g[i] = Math.min(1, S.g[i] + over * dt * push * 0.6);
+if (S.g[i] >= 0.999) reach(i);
+}
+}
+const dtc = Math.min(dt, 0.05);
+S.gv[i] += (w * w * (S.g[i] - S.gs[i]) - 2 * 0.8 * w * S.gv[i]) * dtc;
+S.gs[i] = Math.max(0, S.gs[i] + S.gv[i] * dtc);
+V[i].set(S.pos[i * 3], S.pos[i * 3 + 1], S.pos[i * 3 + 2], S.gs[i]);
 W[i].set(S.nrm[i * 3], S.nrm[i * 3 + 1], S.nrm[i * 3 + 2], 1);
 }
 }

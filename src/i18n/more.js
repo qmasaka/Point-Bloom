@@ -898,6 +898,7 @@ export default {
 		'Растёт одновременно': 'Growing at once',
 		'Увеличение точек': 'Point enlargement',
 		'Идут сами': 'Run by themselves',
+		'Рост между ударами от баса': 'Growth from bass between hits',
 	},
 	uk: {
 		'Установить приложение': 'Встановити застосунок',
@@ -1797,6 +1798,7 @@ export default {
 		'Растёт одновременно': 'Росте одночасно',
 		'Увеличение точек': 'Збільшення точок',
 		'Идут сами': 'Йдуть самі',
+		'Рост между ударами от баса': 'Ріст між ударами від баса',
 	},
 	es: {
 		'Установить приложение': 'Instalar la aplicación',
@@ -2696,6 +2698,7 @@ export default {
 		'Растёт одновременно': 'Crecen a la vez',
 		'Увеличение точек': 'Aumento de puntos',
 		'Идут сами': 'Van solos',
+		'Рост между ударами от баса': 'Crecimiento por bajo entre golpes',
 	},
 	de: {
 		'Установить приложение': 'App installieren',
@@ -3595,5 +3598,6 @@ export default {
 		'Растёт одновременно': 'Gleichzeitig wachsend',
 		'Увеличение точек': 'Punktvergrößerung',
 		'Идут сами': 'Laufen selbst',
+		'Рост между ударами от баса': 'Wachstum durch Bass zwischen Schlägen',
 	},
 };

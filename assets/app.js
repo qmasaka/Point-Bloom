@@ -73307,15 +73307,14 @@ const FX_LAYERS = [
 { key: 'trigger', label: 'Что даёт шаг', type: 'seg', options: [['beat', 'Удар'], ['bass', 'Бас'], ['both', 'Оба']] },
 { type: 'title', label: 'Рост', open: true },
 { type: 'note', text: 'Один удар это один шаг. Участок уходит на «сдвиг» × «ударов до предела»', when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
-{ key: 'step', label: 'Сдвиг за удар', min: 0.02, max: 0.5, step: 0.01, noNorm: true },
-{ key: 'maxSteps', label: 'Ударов до предела', min: 1, max: 24, step: 1, int: true, noNorm: true, when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
-{ key: 'peak', label: 'Дойдя до предела', type: 'select', options: [['hold', 'Остаётся', 'стоит там, пока не смените настройки'], ['next', 'Остаётся, растёт другой', 'этот стоит, на форме начинает расти ещё один'], ['back', 'Идёт обратно', 'по ударам, шаг за шагом, потом снова вперёд'], ['drop', 'Отламывается', 'улетает и гаснет, вместо него растёт новый'], ['reset', 'Оседает', 'плавно садится на форму, потом растёт новый']], when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
-{ key: 'quiet', label: 'Когда удары пропали', type: 'seg', options: [['stay', 'Остаётся'], ['back', 'Возвращается']], when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
+{ key: 'step', label: 'Сдвиг за удар', min: 0.02, max: 0.5, step: 0.01, noNorm: true, when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
+{ key: 'maxSteps', label: 'Ударов до предела', min: 1, max: 24, step: 1, int: true, noNorm: true },
+{ key: 'peak', label: 'Дойдя до предела', type: 'select', options: [['hold', 'Остаётся', 'стоит там, пока не смените настройки'], ['next', 'Остаётся, растёт другой', 'этот стоит, на форме начинает расти ещё один'], ['back', 'Идёт обратно', 'по ударам, шаг за шагом, потом снова вперёд'], ['drop', 'Отламывается', 'улетает и гаснет, вместо него растёт новый'], ['reset', 'Оседает', 'плавно садится на форму, потом растёт новый']] },
+{ key: 'quiet', label: 'Когда удары пропали', type: 'seg', options: [['stay', 'Остаётся'], ['back', 'Возвращается']] },
 { key: 'maxLen', label: 'Длина отростков', min: 0.2, max: 4, step: 0.05, when: ['mode', ['spikes', 'bulge', 'tendril']] },
 { key: 'perBeat', label: 'Отростков за удар', min: 1, max: 12, step: 1, int: true, noNorm: true, when: ['mode', ['spikes', 'bulge', 'tendril']] },
-{ key: 'bassPush', label: 'Рост от баса', min: 0, max: 2, step: 0.05, when: ['mode', ['spikes', 'bulge', 'tendril']] },
-{ key: 'decay', label: 'Опадают в тишине', min: 0, max: 0.6, step: 0.01, when: ['mode', ['spikes', 'bulge', 'tendril']] },
-{ key: 'stepTime', label: 'Длительность рывка, с', min: 0.03, max: 1, step: 0.01, noNorm: true, when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
+{ key: 'bassPush', label: 'Рост между ударами от баса', min: 0, max: 2, step: 0.05, when: ['mode', ['spikes', 'bulge', 'tendril']] },
+{ key: 'stepTime', label: 'Длительность рывка, с', min: 0.03, max: 1, step: 0.01, noNorm: true },
 { type: 'title', label: 'Форма отхода' },
 { key: 'taper', label: 'Заострение к концу', min: 0, max: 1, step: 0.05, when: ['mode', ['pillar']] },
 { key: 'tiers', label: 'Число ступеней', min: 2, max: 10, step: 1, int: true, noNorm: true, when: ['mode', ['terrace']] },
@@ -81168,6 +81167,7 @@ en: {
 'Растёт одновременно': 'Growing at once',
 'Увеличение точек': 'Point enlargement',
 'Идут сами': 'Run by themselves',
+'Рост между ударами от баса': 'Growth from bass between hits',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -82066,6 +82066,7 @@ uk: {
 'Растёт одновременно': 'Росте одночасно',
 'Увеличение точек': 'Збільшення точок',
 'Идут сами': 'Йдуть самі',
+'Рост между ударами от баса': 'Ріст між ударами від баса',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -82964,6 +82965,7 @@ es: {
 'Растёт одновременно': 'Crecen a la vez',
 'Увеличение точек': 'Aumento de puntos',
 'Идут сами': 'Van solos',
+'Рост между ударами от баса': 'Crecimiento por bajo entre golpes',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -83862,6 +83864,7 @@ de: {
 'Растёт одновременно': 'Gleichzeitig wachsend',
 'Увеличение точек': 'Punktvergrößerung',
 'Идут сами': 'Laufen selbst',
+'Рост между ударами от баса': 'Wachstum durch Bass zwischen Schlägen',
 },
 };
 };
@@ -93787,27 +93790,73 @@ W[i].set(S.nrm[i * 3], S.nrm[i * 3 + 1], S.nrm[i * 3 + 2], Math.max(0, r.fade));
 for (let i = N; i < 24; i++) V[i].w = 0;
 }
 _shootGrow(S, L, dt, beat, bass, N, V, W) {
+if (!S.gs || S.gs.length !== 24) {
+S.gs = new Float32Array(24);
+S.gv = new Float32Array(24);
+S.gd = new Int8Array(24).fill(1);
+S.gx = new Int8Array(24);
+}
 const trig = L.trigger || 'beat';
-const step = L.step ?? 0.12;
-if (beat) {
+const peak = L.peak || 'hold';
+const inc = 1 / clamp(Math.round(L.maxSteps ?? 10), 1, 24);
+const reach = (i) => {
+S.g[i] = 1;
+if (peak === 'back') S.gd[i] = -1;
+else if (peak === 'drop') S.gx[i] = 2;
+else if (peak === 'reset') S.gx[i] = 1;
+};
+if (beat && trig !== 'bass') {
+const free = [];
+for (let i = 0; i < N; i++) {
+if (S.gx[i]) continue;
+if (S.gd[i] < 0) {
+S.g[i] -= inc;
+if (S.g[i] <= 0) {
+S.g[i] = 0;
+S.gd[i] = 1;
+}
+} else if (S.g[i] < 0.999) free.push(i);
+}
 const k = clamp(Math.round(L.perBeat || 2), 1, 12);
-for (let j = 0; j < k; j++) {
-const i = Math.floor(Math.random() * N);
-S.g[i] = Math.min(1, S.g[i] + step * 2.2 * (0.7 + 0.6 * Math.random()));
+for (let j = 0; j < k && free.length; j++) {
+const i = free.splice(Math.floor(Math.random() * free.length), 1)[0];
+S.g[i] = Math.min(1, S.g[i] + inc);
+if (S.g[i] >= 0.999) reach(i);
 }
 }
+if (L.quiet === 'back' && S.quiet && !beat) {
+S.qT = (S.qT || 0) + dt;
+if (S.qT > 0.5) {
+S.qT = 0;
+for (let i = 0; i < N; i++) if (!S.gx[i]) S.g[i] = Math.max(0, S.g[i] - inc);
+}
+} else if (!S.quiet) S.qT = 0;
 const push = (L.bassPush ?? 0.5) * 0.9;
+const T = Math.max(0.03, L.stepTime ?? 0.25);
+const w = 4.6 / T;
 for (let i = 0; i < 24; i++) {
 if (i >= N) {
 V[i].w = 0;
+S.gs[i] = 0;
 continue;
 }
-if (trig !== 'beat') {
-const over = bass - S.th[i];
-if (over > 0) S.g[i] = Math.min(1, S.g[i] + over * dt * push * 2.4);
+if (S.gx[i]) {
+S.g[i] = Math.max(0, S.g[i] - dt * (S.gx[i] === 2 ? 2.5 : 0.6));
+if (S.g[i] <= 0) {
+S.gx[i] = 0;
+S.gd[i] = 1;
 }
-S.g[i] = Math.max(0, S.g[i] - dt * (0.18 + (L.decay ?? 0.08)) * (0.4 + S.g[i]));
-V[i].set(S.pos[i * 3], S.pos[i * 3 + 1], S.pos[i * 3 + 2], S.g[i]);
+} else if (trig !== 'beat' && S.gd[i] > 0) {
+const over = bass - S.th[i];
+if (over > 0) {
+S.g[i] = Math.min(1, S.g[i] + over * dt * push * 0.6);
+if (S.g[i] >= 0.999) reach(i);
+}
+}
+const dtc = Math.min(dt, 0.05);
+S.gv[i] += (w * w * (S.g[i] - S.gs[i]) - 2 * 0.8 * w * S.gv[i]) * dtc;
+S.gs[i] = Math.max(0, S.gs[i] + S.gv[i] * dtc);
+V[i].set(S.pos[i * 3], S.pos[i * 3 + 1], S.pos[i * 3 + 2], S.gs[i]);
 W[i].set(S.nrm[i * 3], S.nrm[i * 3 + 1], S.nrm[i * 3 + 2], 1);
 }
 }
