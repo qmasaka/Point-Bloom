@@ -7,7 +7,7 @@ if (eff <= 0.001 || !this.geometry) {
 u.uShoot.value.x = 0;
 return;
 }
-const S = (this._shS ||= { geo: null, n: 0, pos: null, g: null, th: null, beat: 0, autoT: 0, C: 0, pulses: [], pi: 0, strong: 0 });
+const S = (this._shS ||= { geo: null, n: 0, pos: null, g: null, th: null, beat: 0, autoT: 0, C: 0, D: 0, dir: 1, lastBeat: -9, cycle: 0, pulses: [], pi: 0 });
 const N = clamp(Math.round(L.seeds || 14), 4, 24);
 if (S.geo !== this.geometry || S.n !== N) this._shootSeeds(S, N);
 let beat = false;
@@ -25,26 +25,43 @@ beat = true;
 bass = 0.36 + 0.34 * Math.sin(this._time * 1.6);
 }
 const trig = L.trigger || 'both';
-const cap = L.limit ?? 1.2;
+const step = L.step ?? 0.12;
+const loop = L.peak === 'loop';
+const move = (amount) => {
+S.C += S.dir * amount;
+if (S.C >= 1) {
+S.C = 1;
+if (loop) S.dir = -1;
+} else if (S.C <= 0) {
+S.C = 0;
+if (S.dir < 0) {
+S.dir = 1;
+if (L.reroll !== 'off') S.cycle = (S.cycle + 1) % 97;
+}
+}
+};
 if (beat) {
+S.lastBeat = this._time;
 S.pulses[S.pi % 6] = { t0: this._time, s: 0.7 + 0.3 * Math.random() };
 S.pi++;
 if (trig !== 'bass') {
-S.C = Math.min(cap, S.C + (L.step ?? 0.3) * 0.55);
+move(step * (0.8 + 0.4 * Math.random()));
 const k = clamp(Math.round(L.perBeat || 2), 1, 12);
 for (let j = 0; j < k; j++) {
 const i = Math.floor(Math.random() * N);
-S.g[i] = Math.min(1, S.g[i] + (L.step ?? 0.3) * (0.7 + 0.6 * Math.random()));
+S.g[i] = Math.min(1, S.g[i] + step * 2.2 * (0.7 + 0.6 * Math.random()));
 }
 }
 }
-const dec = L.decay ?? 0.28;
-const push = (L.bassPush ?? 0.8) * 0.9;
+const push = (L.bassPush ?? 0.5) * 0.9;
 if (trig !== 'beat') {
 const over = bass - 0.3;
-if (over > 0) S.C = Math.min(cap, S.C + over * dt * push * 0.8);
+if (over > 0) move(over * dt * push * 0.5);
 }
-S.C = Math.max(0, S.C - dt * dec * (0.25 + 0.75 * S.C));
+const quiet = this._time - S.lastBeat > 1.6;
+const dec = L.decay ?? 0.08;
+if (quiet && dec > 0) S.C = Math.max(0, S.C - dt * dec);
+S.D += (S.C - S.D) * (1 - Math.exp(-dt * 7));
 const V = u.uShootS.value;
 for (let i = 0; i < 24; i++) {
 if (i >= N) {
@@ -55,7 +72,7 @@ if (trig !== 'beat') {
 const over = bass - S.th[i];
 if (over > 0) S.g[i] = Math.min(1, S.g[i] + over * dt * push * 2.4);
 }
-S.g[i] = Math.max(0, S.g[i] - dt * dec * (0.4 + S.g[i]));
+S.g[i] = Math.max(0, S.g[i] - dt * (0.18 + (L.decay ?? 0.08)) * (0.4 + S.g[i]));
 V[i].set(S.pos[i * 3], S.pos[i * 3 + 1], S.pos[i * 3 + 2], S.g[i]);
 }
 const B = u.uShootB.value;
@@ -66,10 +83,12 @@ const age = p ? this._time - p.t0 : 99;
 if (!p || age > 3 || shells < 0.01) B[b].set(0, 0, 0, 0);
 else B[b].set(age, p.s * shells, 0, 0);
 }
-u.uShoot.value.set(Math.min(eff, 1.5), MODE[L.mode] ?? 2, Math.max(0.1, (L.size ?? 0.3) * 0.9), Math.max(0.1, (L.maxLen ?? 0.7) * 0.7));
-u.uShootP.value.set(L.glow ?? 0.6, L.wobble ?? 0.5, this._time, L.sizeUp ?? 0.5);
+const detach = (L.mode ?? 'detach') === 'detach';
+u.uShoot.value.set(Math.min(eff, 1.5), MODE[L.mode] ?? 2, Math.max(0.1, (L.size ?? 0.3) * 0.9), Math.max(0.1, (L.maxLen ?? 1) * (detach ? 1 : 0.7)));
+u.uShootP.value.set(L.glow ?? 0.3, L.wobble ?? 0.5, this._time, L.sizeUp ?? 0.12);
 u.uShootD.value.set(L.reach ?? 1, L.twist ?? 0.4, L.radial ?? 0.4, L.fountain ?? 0);
-u.uShootC.value.set(S.C, 1.1 + (L.shellSpeed ?? 1) * 1.6, 0.28, L.fade ?? 0.3);
+u.uShootE.value.set(L.patch ?? 0.5, L.patchSize ?? 0.35, L.spread ?? 0.7, S.cycle * 3.7);
+u.uShootC.value.set(S.D, 1.1 + (L.shellSpeed ?? 1) * 1.6, 0.28, L.fade ?? 0.25);
 }
 _shootSeeds(S, N) {
 const T = this.geometry.attributes.aTarget.array;

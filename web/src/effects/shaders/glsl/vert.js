@@ -40,6 +40,7 @@ varying float vGl;
 uniform vec4 uShoot;
 uniform vec4 uShootP;
 uniform vec4 uShootD;
+uniform vec4 uShootE;
 uniform vec4 uShootC;
 uniform vec4 uShootS[24];
 uniform vec4 uShootB[6];
@@ -460,8 +461,7 @@ void main() {
 				pr = pr * pr * (3.0 - 2.0 * pr);
 				shOff += nsh * pr * grow * 0.55;
 			} else if (uShoot.y < 2.5) {
-				pr = pr * pr * (3.0 - 2.0 * pr);
-				infl = max(infl, pr * min(sd.w * 1.4, 1.0));
+				pr = 0.0;
 			} else {
 				pr = pr * pr;
 				float ph = uShootP.z * 2.2 + float(i) * 1.7;
@@ -471,13 +471,18 @@ void main() {
 			shK = max(shK, pr * min(sd.w * 1.5, 1.0));
 		}
 		if (uShoot.y > 1.5 && uShoot.y < 2.5) {
-			// отрыв: каждый удар поднимает общий уровень, чем он выше, тем больше точек отделяется и тем дальше они улетают.
-			// Очаги (там, где растёт сильнее) отрываются первыми; случайный номер точки решает, когда именно она тронется.
+			// отрыв: общий уровень растёт только от ударов и держится, пока его не сдвинут следующие удары (после пика он может так же по ударам вернуться).
+			// Чем выше уровень, тем больше точек отделилось и тем дальше они ушли, но не дальше заданной длины.
+			// Порог каждой точки случайный: uShootE.x решает, мелкой пылью (0) или крупными участками (1) отрываются куски, uShootE.y это размер участков.
 			float h2 = hash11(aIdx * 7.3);
 			float h3 = hash11(aIdx * 11.9);
-			float lvl = clamp(max(infl, uShootC.x * uShootD.x), 0.0, 1.6);
-			float take = smoothstep(hsh * 0.85, hsh * 0.85 + 0.18, lvl);
-			float dist = uShoot.w * 1.1 * lvl * (0.2 + 1.3 * h2) * take;
+			vec3 cellk = floor(base / max(uShootE.y, 0.05)) + vec3(uShootE.w);
+			float hc = hash11(dot(cellk, vec3(17.13, 31.71, 57.29)));
+			float thr = mix(hsh, hc, uShootE.x);
+			float lvl = clamp(uShootC.x, 0.0, 1.0);
+			float take = smoothstep(thr * 0.85 - 0.02, thr * 0.85 + 0.16, min(lvl * uShootD.x, 1.4));
+			float fdist = mix(1.0, 0.15 + 1.1 * h2, uShootE.z);
+			float dist = uShoot.w * lvl * fdist * take;
 			// волны ударов: на каждый удар от центра бежит оболочка и подхватывает точки сильнее
 			float rr = length(bsh);
 			float kick = 0.0;
@@ -487,9 +492,9 @@ void main() {
 				float front = pb.x * uShootC.y;
 				float wv = (rr - front) / max(uShootC.z, 0.02);
 				kick += pb.y * exp(-wv * wv) * exp(-pb.x * 0.9);
-				dist *= 1.0 + pb.y * 0.5 * exp(-pb.x * 2.4);
+				dist *= 1.0 + pb.y * 0.35 * exp(-pb.x * 2.4);
 			}
-			dist += kick * uShoot.w * 0.55 * take;
+			dist += kick * uShoot.w * 0.25 * take;
 			vec3 radial = normalize(bsh + vec3(1e-4));
 			vec3 dir = normalize(mix(nsh, radial, uShootD.z) + vec3(0.0, uShootD.w * 0.9, 0.0) + 0.5 * vec3(hash11(aIdx * 1.3) - 0.5, hash11(aIdx * 2.9) - 0.5, hash11(aIdx * 5.1) - 0.5));
 			vec3 np = pos + dir * dist;
