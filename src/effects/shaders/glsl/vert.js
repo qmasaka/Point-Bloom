@@ -45,6 +45,7 @@ uniform vec4 uShootD;
 uniform vec4 uShootE;
 uniform vec4 uShootC;
 uniform vec4 uShootS[24];
+uniform vec4 uShootN[24]; // нормаль участка (xyz) и сколько его осталось видно (w: гаснет, когда участок отломился)
 uniform vec4 uShootB[6];
 #endif
 #ifdef VSCREEN
@@ -438,9 +439,10 @@ void main() {
 		pos += normalize(vec3(pos.x, 0.0, pos.z) + vec3(1e-4)) * band * 0.03;
 	}
 #ifdef VSHOOT
-	// «Рост на ритме»: uShoot = (сила, вид, радиус очага, предельная длина), uShootP = (свечение, дрожь, время, крупность оторвавшихся),
-	// uShootD = (охват, закрутка, разлёт от центра, фонтан вверх), uShootC = (накопленное нарастание, скорость волны, толщина волны, затухание вдали),
-	// uShootB = волны последних ударов (возраст, сила); виды: 0 шипы, 1 бугры, 2 отрыв (нарастает с каждым ударом), 3 щупальца
+	// «Рост на ритме»: uShoot = (сила, вид, радиус очага, предельная длина щупалец и шипов), uShootP = (свечение, дрожь, время, крупность оторвавшихся),
+	// uShootS = 24 очага (xyz место на форме, w: у шипов сколько выросло, у видов отрыва на сколько участок отошёл), uShootN = нормаль участка и его видимость,
+	// uShootD = (куда отходит: 0 наружу, 1 от центра, 2 вверх, 3 к зрителю; длина шага), uShootE.x = мягкость края участка.
+	// Виды: 0 шипы, 1 бугры, 3 щупальца растут из очагов; отрыв участков: 2 плита, 4 столб, 5 ступени, 6 осколки, 7 слои, 8 винт, 9 пыль
 	float shSzMul = 1.0;
 	if (uShoot.x > 0.001) {
 		vec3 bsh = base - uCen;
@@ -448,12 +450,27 @@ void main() {
 		vec3 shOff = vec3(0.0);
 		float shK = 0.0;
 		float hsh = hash11(aIdx * 3.77);
-		float infl = 0.0;
+		bool shFam = (uShoot.y > 1.5 && uShoot.y < 2.5) || uShoot.y > 3.5;
+		// у видов отрыва точка принадлежит одному участку: тому, что сильнее всего её захватил
+		float bm = 0.0;
+		float bd = 1.0;
+		vec4 bs = vec4(0.0);
+		vec4 bn = vec4(0.0, 0.0, 1.0, 1.0);
 		for (int i = 0; i < 24; i++) {
 			vec4 sd = uShootS[i];
-			if (sd.w < 0.003) continue;
+			if (sd.w < 0.002) continue;
 			float dsh = distance(base, sd.xyz) / uShoot.z;
 			if (dsh >= 1.0) continue;
+			if (shFam) {
+				float m = 1.0 - smoothstep(1.0 - max(uShootE.x, 0.02), 1.0, dsh);
+				if (m > bm) {
+					bm = m;
+					bd = dsh;
+					bs = sd;
+					bn = uShootN[i];
+				}
+				continue;
+			}
 			float pr = 1.0 - dsh;
 			float grow = sd.w * uShoot.w;
 			if (uShoot.y < 0.5) {
@@ -462,8 +479,6 @@ void main() {
 			} else if (uShoot.y < 1.5) {
 				pr = pr * pr * (3.0 - 2.0 * pr);
 				shOff += nsh * pr * grow * 0.55;
-			} else if (uShoot.y < 2.5) {
-				pr = 0.0;
 			} else {
 				pr = pr * pr;
 				float ph = uShootP.z * 2.2 + float(i) * 1.7;
@@ -472,49 +487,61 @@ void main() {
 			}
 			shK = max(shK, pr * min(sd.w * 1.5, 1.0));
 		}
-		if (uShoot.y > 1.5 && uShoot.y < 2.5) {
-			// отрыв: общий уровень растёт только от ударов и держится, пока его не сдвинут следующие удары (после пика он может так же по ударам вернуться).
-			// Чем выше уровень, тем больше точек отделилось и тем дальше они ушли, но не дальше заданной длины.
-			// Порог каждой точки случайный: uShootE.x решает, мелкой пылью (0) или крупными участками (1) отрываются куски, uShootE.y это размер участков.
-			float h2 = hash11(aIdx * 7.3);
-			float h3 = hash11(aIdx * 11.9);
-			vec3 cellk = floor(base / max(uShootE.y, 0.05)) + vec3(uShootE.w);
-			float hc = hash11(dot(cellk, vec3(17.13, 31.71, 57.29)));
-			float thr = mix(hsh, hc, uShootE.x);
-			float lvl = clamp(uShootC.x, 0.0, 1.0);
-			float take = smoothstep(thr * 0.85 - 0.02, thr * 0.85 + 0.16, min(lvl * uShootD.x, 1.4));
-			float fdist = mix(1.0, 0.15 + 1.1 * h2, uShootE.z);
-			float dist = uShoot.w * lvl * fdist * take;
-			// волны ударов: на каждый удар от центра бежит оболочка и подхватывает точки сильнее
-			float rr = length(bsh);
-			float kick = 0.0;
-			for (int b = 0; b < 6; b++) {
-				vec2 pb = uShootB[b].xy;
-				if (pb.y < 0.001) continue;
-				float front = pb.x * uShootC.y;
-				float wv = (rr - front) / max(uShootC.z, 0.02);
-				kick += pb.y * exp(-wv * wv) * exp(-pb.x * 0.9);
-				dist *= 1.0 + pb.y * 0.35 * exp(-pb.x * 2.4);
+		if (shFam && bm > 0.0) {
+			// участок отходит на bs.w (ступенями по ударам) в выбранную сторону, у каждого вида отрыва своя форма
+			float d = bs.w;
+			float stp = max(uShootD.y, 0.005);
+			vec3 dn = length(bn.xyz) > 0.01 ? normalize(bn.xyz) : normalize(bs.xyz - uCen + vec3(1e-4));
+			if (uShootD.x > 0.5 && uShootD.x < 1.5) dn = normalize(bs.xyz - uCen + vec3(1e-4));
+			else if (uShootD.x > 1.5 && uShootD.x < 2.5) dn = vec3(0.0, 1.0, 0.0);
+			else if (uShootD.x > 2.5) dn = normalize(vec3(modelViewMatrix[0][2], modelViewMatrix[1][2], modelViewMatrix[2][2]) + vec3(1e-5));
+			float md = uShoot.y;
+			vec3 off;
+			if (md < 2.5) {
+				// плита: участок целиком, ровным куском
+				off = dn * d * bm;
+			} else if (md < 4.5) {
+				// столб: точки участка растягиваются вдоль пути, участок вырастает колонной
+				float tt = hash11(aIdx * 5.13);
+				off = dn * d * pow(tt, 0.75) * smoothstep(0.0, 0.6, bm);
+			} else if (md < 5.5) {
+				// ступени: кольца участка отходят на разную высоту, вырастает ступенчатая пирамида
+				float ring = floor((1.0 - bd) * 4.0 + 0.001);
+				off = dn * d * mix(0.25, 1.0, ring / 3.0) * bm;
+			} else if (md < 6.5) {
+				// осколки: участок колется на куски, каждый отходит на свою длину и с наклоном
+				vec3 cl = floor(base / max(uShoot.z * 0.32, 0.01));
+				float hc = hash11(dot(cl, vec3(17.13, 31.71, 57.29)));
+				vec3 tilt = vec3(hash11(hc * 91.0), hash11(hc * 57.0), hash11(hc * 33.0)) - 0.5;
+				off = normalize(dn + tilt * 0.7) * d * (0.45 + hc * 1.1) * bm;
+			} else if (md < 7.5) {
+				// слои: участок расслаивается, как стопка листов: с каждым ударом поднимается ещё один слой
+				float layer = floor(hash11(aIdx * 9.71) * 6.0);
+				off = dn * max(0.0, d - layer * stp * 0.75) * bm;
+			} else if (md < 8.5) {
+				// винт: участок выкручивается, поворачиваясь вокруг своей оси с каждым шагом
+				vec3 rel = base - bs.xyz;
+				float ang = d / stp * 0.6;
+				float ca = cos(ang), sa = sin(ang);
+				vec3 rr = rel * ca + cross(dn, rel) * sa + dn * dot(dn, rel) * (1.0 - ca);
+				off = (rr - rel + dn * d) * bm;
+			} else {
+				// пыль: участок рассыпается, каждая точка уходит своей дорогой, но тоже ступенями
+				vec3 rd = vec3(hash11(aIdx * 1.3), hash11(aIdx * 2.9), hash11(aIdx * 5.1)) - 0.5;
+				off = normalize(dn + rd * 1.3) * d * (0.35 + hash11(aIdx * 7.7) * 1.3) * bm;
 			}
-			dist += kick * uShoot.w * 0.25 * take;
-			vec3 radial = normalize(bsh + vec3(1e-4));
-			vec3 dir = normalize(mix(nsh, radial, uShootD.z) + vec3(0.0, uShootD.w * 0.9, 0.0) + 0.5 * vec3(hash11(aIdx * 1.3) - 0.5, hash11(aIdx * 2.9) - 0.5, hash11(aIdx * 5.1) - 0.5));
-			vec3 np = pos + dir * dist;
-			// закрутка: чем дальше улетела точка, тем больше она повёрнута вокруг оси
-			float ang = dist * uShootD.y * 2.4;
-			float ca = cos(ang), sa = sin(ang);
-			vec3 rel = np - uCen;
-			np = uCen + vec3(rel.x * ca - rel.z * sa, rel.y, rel.x * sa + rel.z * ca);
-			// дрожь: оторвавшиеся живут сами
-			np += vec3(sin(uShootP.z * 1.7 + h3 * 6.283), cos(uShootP.z * 1.3 + h2 * 6.283), sin(uShootP.z * 1.1 + hsh * 6.283)) * 0.06 * dist * uShootP.y;
-			shOff += np - pos;
-			float farK = clamp(dist / max(uShoot.w, 1e-3), 0.0, 1.5);
-			shK = max(shK, take * min(farK * 1.4, 1.0));
-			shSzMul = 1.0 + take * farK * uShootP.w;
-			vColor *= 1.0 - uShootC.w * take * min(farK, 1.0) * 0.8;
+			// дрожь: отошедшие точки чуть живут на месте
+			off += vec3(sin(uShootP.z * 1.7 + hsh * 6.283), cos(uShootP.z * 1.3 + hsh * 4.1), sin(uShootP.z * 1.1 + hsh * 2.7)) * 0.03 * min(d, 1.0) * uShootP.y * bm;
+			shOff += off;
+			float stK = clamp(d / stp, 0.0, 1.0);
+			shK = max(shK, bm * stK);
+			shSzMul = 1.0 + bm * stK * uShootP.w;
+			// отломившийся участок гаснет и мельчает
+			vColor *= mix(1.0, bn.w, bm);
+			shSzMul *= mix(1.0, max(bn.w, 0.05), bm);
 		}
 		// дрожь: живое мерцание отросшего
-		if (uShoot.y < 1.5 || uShoot.y > 2.5) shOff *= 1.0 + uShootP.y * 0.25 * sin(uShootP.z * 9.0 + hsh * 6.283);
+		if (!shFam) shOff *= 1.0 + uShootP.y * 0.25 * sin(uShootP.z * 9.0 + hsh * 6.283);
 		pos += shOff * min(uShoot.x, 1.0);
 		vColor += (uP2 * 1.4 + vColor * 0.3) * shK * uShootP.x * min(uShoot.x, 1.0);
 	}

@@ -73069,38 +73069,31 @@ const FX_LAYERS = [
 { id: 'explode', group: 'Разрушение', name: 'Разбор на части', icon: 'cube', hint: 'Форма разъезжается на жёсткие куски, они поворачиваются и возвращаются на место. Настраиваются число кусков, дальность и вращение', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', speed: 0.8, pieces: 40, dist: 1, spin: 0.5, stagger: 0.5 }, extras: [{ key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['hold', 'Всегда разобрана']] }, { key: 'pieces', label: 'Число кусков', min: 6, max: 256, step: 1, int: true }, { key: 'dist', label: 'Как далеко расходятся', min: 0.2, max: 3, step: 0.05 }, { key: 'spin', label: 'Вращение кусков', min: 0, max: 1, step: 0.05 }, { key: 'stagger', label: 'Разброс по времени', min: 0, max: 0.9, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1, when: ['mode', ['loop']] }] },
 { id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Форма исчезает и собирается обратно. Виды: лазерный срез, слои, блоки, песок, воронка, взрыв, горение, ветер, росток', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', dir: 'both', order: 'top', style: 'laser', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.35, scatter: 1, edge: 0.32, glow: 0.35, shrink: 0.85, seed: 'bottom', tendril: 0.6, bud: 0.7 }, extras: [{ type: 'title', label: 'Как растворяется' }, { key: 'style', label: 'Вид', type: 'select', options: [['laser', 'Лазерный срез: сканирующая плоскость'], ['layers', 'Сдвиг слоёв: полосы в стороны'], ['chunks', 'Блочный распад: объёмные кубы'], ['sand', 'Осыпание: частицы на пол'], ['vortex', 'Воронка: закручивание к центру'], ['shock', 'Ударная волна: импульс от центра'], ['burn', 'Испепеление: частицы вверх'], ['wind', 'Сдувание: боковой поток ветра'], ['sprout', 'Прорастание: ветвление формы']] }, { key: 'seed', label: 'Откуда растёт', type: 'select', options: [['bottom', 'Снизу вверх: от основания'], ['point', 'Из точки: случайный фокус'], ['center', 'Из центра: радиально наружу']], when: ['style', ['sprout']] }, { key: 'order', label: 'Откуда начинается', type: 'select', when: ['style', ['laser', 'layers', 'chunks', 'sand', 'vortex', 'shock', 'burn', 'wind']], options: [['top', 'Сверху вниз'], ['bottom', 'Снизу вверх'], ['side', 'Слева направо'], ['center', 'Из центра наружу'], ['edges', 'С краёв к центру'], ['noise', 'Случайные зоны']] }, { type: 'title', label: 'Запуск' }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'dir', label: 'Что дольше', type: 'seg', options: [['both', 'Поровну'], ['out', 'Распад'], ['in', 'Сборка']], when: ['mode', ['loop']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01, when: ['mode', ['slider']] }, { type: 'title', label: 'Движение частиц' }, { key: 'scatter', label: 'Размах движения', min: 0.2, max: 2.5, step: 0.05 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер и закрутка', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Лёгкая турбулентность', min: 0, max: 2, step: 0.05 }, { type: 'title', label: 'Кромка и частицы' }, { key: 'edge', label: 'Ширина кромки распада', min: 0.1, max: 0.7, step: 0.02 }, { key: 'glow', label: 'Свечение кромки', min: 0, max: 1.5, step: 0.05 }, { key: 'shrink', label: 'Мельчание частиц', min: 0, max: 1, step: 0.05 }, { key: 'tendril', label: 'Усики (неровный фронт)', min: 0, max: 1, step: 0.05, when: ['style', ['sprout']] }, { key: 'bud', label: 'Почки на кромке', min: 0, max: 1.5, step: 0.05, when: ['style', ['sprout']] }] },
 { id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки превращаются в кубики. Виды: сетка, лего, дыхание, волна, ступени, разлёт. Настраиваются размер и высота', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 1, mode: 'grid', speed: 1, size: 1, height: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['grid', 'Кубическая сетка: равномерные блоки'], ['lego', 'Столбцы: рельеф разной высоты'], ['breathe', 'Дыхание: пульсирующая сетка'], ['wave', 'Волна: бегущий подъём кубов'], ['stairs', 'Террасы: ступенчатые уровни'], ['scatter', 'Дрожание: вибрация на месте']] }, { key: 'size', label: 'Размер кубиков', min: 0.4, max: 2.5, step: 0.05 }, { key: 'height', label: 'Высота и размах', min: 0, max: 2, step: 0.05, when: ['mode', ['lego', 'wave', 'stairs', 'scatter']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe', 'wave', 'scatter']] }] },
-{ id: 'shoots', group: 'Звук и ритм', name: 'Рост на ритме', icon: 'tree-structure', hint: 'Музыка выращивает на форме отростки. Главный вид «Отрыв»: с каждым ударом всё больше точек отделяется и уходит всё дальше (до заданной длины) и остаётся там до следующего удара. На пике они либо держатся, либо так же по ударам возвращаются, и круг начинается снова. Есть ещё шипы, бугры и щупальца', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'detach', trigger: 'both', peak: 'loop', seeds: 14, size: 0.3, step: 0.12, perBeat: 2, maxLen: 1, decay: 0.08, bassPush: 0.5, glow: 0.3, wobble: 0.5, auto: 'on', reach: 1, patch: 0.5, patchSize: 0.35, spread: 0.7, reroll: 'on', twist: 0.4, radial: 0.4, fountain: 0, shells: 0.7, shellSpeed: 1, sizeUp: 0.12, fade: 0.25 }, extras: [
-{ key: 'mode', label: 'Как растёт', type: 'select', options: [['detach', 'Отрыв', 'нарастает с каждым ударом и держится'], ['spikes', 'Шипы', 'острые иглы вдоль поверхности'], ['bulge', 'Бугры', 'мягкие выпуклости'], ['tendril', 'Щупальца', 'извивающиеся отростки']] },
-{ key: 'trigger', label: 'Что растит', type: 'seg', options: [['beat', 'Удары'], ['bass', 'Бас'], ['both', 'Оба']] },
-{ key: 'peak', label: 'Когда дошло до предела', type: 'seg', options: [['hold', 'Держится'], ['loop', 'Возвращается по ударам']], when: ['mode', ['detach']] },
-{ type: 'title', label: 'Длина и рост' },
-{ key: 'maxLen', label: 'Максимальная длина', min: 0.2, max: 4, step: 0.05 },
-{ key: 'step', label: 'Шаг за удар', min: 0.02, max: 0.5, step: 0.01, when: ['trigger', ['beat', 'both']] },
-{ key: 'bassPush', label: 'Отклик на бас', min: 0, max: 2, step: 0.05, when: ['trigger', ['bass', 'both']] },
-{ key: 'decay', label: 'Возврат в тишине', min: 0, max: 0.6, step: 0.01 },
-{ type: 'title', label: 'Какие части улетают' },
-{ key: 'patch', label: 'Случайность участков', min: 0, max: 1, step: 0.05, when: ['mode', ['detach']] },
-{ key: 'patchSize', label: 'Размер участков', min: 0.1, max: 1.2, step: 0.05, when: ['mode', ['detach']] },
-{ key: 'reach', label: 'Сколько точек улетает', min: 0.3, max: 2, step: 0.05, when: ['mode', ['detach']] },
-{ key: 'spread', label: 'Разброс по дальности', min: 0, max: 1, step: 0.05, when: ['mode', ['detach']] },
-{ key: 'reroll', label: 'Новые части на каждом круге', type: 'seg', options: [['on', 'Да'], ['off', 'Те же']], when: ['mode', ['detach']] },
-{ type: 'title', label: 'Траектория' },
-{ key: 'radial', label: 'Разлёт от центра', min: 0, max: 1, step: 0.05, when: ['mode', ['detach']] },
-{ key: 'twist', label: 'Закрутка', min: 0, max: 1.5, step: 0.05, when: ['mode', ['detach']] },
-{ key: 'fountain', label: 'Фонтан вверх', min: 0, max: 1, step: 0.05, when: ['mode', ['detach']] },
-{ key: 'sizeUp', label: 'Крупность улетевших', min: 0, max: 2, step: 0.05, when: ['mode', ['detach']] },
-{ key: 'fade', label: 'Тускнеют вдали', min: 0, max: 1, step: 0.05, when: ['mode', ['detach']] },
-{ type: 'title', label: 'Волны ударов' },
-{ key: 'shells', label: 'Волна на каждый удар', min: 0, max: 1.5, step: 0.05, when: ['mode', ['detach']] },
-{ key: 'shellSpeed', label: 'Скорость волны', min: 0.3, max: 2.5, step: 0.05, when: ['mode', ['detach']] },
-{ type: 'title', label: 'Очаги' },
+{ id: 'shoots', group: 'Звук и ритм', name: 'Рост на ритме', icon: 'tree-structure', hint: 'Музыка отрывает от формы участки ступенями: удар, и участок рывком отходит на шаг и встаёт, следующий удар, и он отходит ещё. Виды отрыва: плита, столб, ступени, осколки, слои, винт, пыль. Есть ещё шипы, бугры и щупальца', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'slab', trigger: 'beat', every: 0.7, auto: 'on', step: 0.12, maxSteps: 6, stepTime: 0.25, bounce: 0.35, peak: 'back', active: 2, size: 0.35, edge: 0.35, seeds: 14, dir: 'normal', glow: 0.3, wobble: 0.3, sizeUp: 0.15, perBeat: 2, maxLen: 1, decay: 0.08, bassPush: 0.5 }, extras: [
+{ key: 'mode', label: 'Как отрывается', type: 'select', options: [['slab', 'Плита', 'участок отходит целым куском'], ['pillar', 'Столб', 'участок вытягивается колонной'], ['terrace', 'Ступени', 'вырастает ступенчатая пирамида'], ['shards', 'Осколки', 'участок колется на куски с наклоном'], ['peel', 'Слои', 'с каждым ударом отходит ещё один слой'], ['screw', 'Винт', 'участок выкручивается, поворачиваясь'], ['dust', 'Пыль', 'участок рассыпается точками'], ['spikes', 'Шипы', 'острые иглы растут из очагов'], ['bulge', 'Бугры', 'мягкие выпуклости'], ['tendril', 'Щупальца', 'извивающиеся отростки']] },
+{ key: 'trigger', label: 'Что двигает', type: 'seg', options: [['beat', 'Удары'], ['bass', 'Бас'], ['both', 'Оба']] },
+{ type: 'title', label: 'Шаг', open: true },
+{ key: 'step', label: 'На сколько за удар', min: 0.02, max: 0.5, step: 0.01, noNorm: true },
+{ key: 'maxSteps', label: 'Шагов до предела', min: 1, max: 16, step: 1, int: true, noNorm: true, when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
+{ key: 'stepTime', label: 'Как быстро отходит, с', min: 0.03, max: 1, step: 0.01, noNorm: true, when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
+{ key: 'bounce', label: 'Рывок (перелёт и отскок)', min: 0, max: 1, step: 0.05, when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
+{ key: 'peak', label: 'На пределе', type: 'select', options: [['back', 'Возвращается', 'так же по ударам, шаг за шагом'], ['hold', 'Держится', 'остаётся отошедшим'], ['drop', 'Отламывается', 'улетает и гаснет, растёт новый'], ['reset', 'Садится на место', 'плавно, и растёт новый участок']], when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
+{ type: 'title', label: 'Участки' },
+{ key: 'active', label: 'Сколько участков растёт сразу', min: 1, max: 8, step: 1, int: true, noNorm: true, when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
+{ key: 'size', label: 'Размер участка', min: 0.1, max: 1.2, step: 0.05 },
+{ key: 'edge', label: 'Край участка: резкий ... мягкий', min: 0, max: 1, step: 0.05, when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
+{ key: 'dir', label: 'Куда отходит', type: 'seg', options: [['normal', 'Наружу'], ['radial', 'От центра'], ['up', 'Вверх'], ['view', 'К зрителю']], when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
+{ key: 'seeds', label: 'Мест на форме', min: 4, max: 24, step: 1, int: true, noNorm: true },
 { key: 'perBeat', label: 'Сколько очагов за удар', min: 1, max: 12, step: 1, int: true, noNorm: true, when: ['mode', ['spikes', 'bulge', 'tendril']] },
-{ key: 'seeds', label: 'Число очагов', min: 4, max: 24, step: 1, int: true, noNorm: true, when: ['mode', ['spikes', 'bulge', 'tendril']] },
-{ key: 'size', label: 'Размер очага', min: 0.15, max: 1, step: 0.05, when: ['mode', ['spikes', 'bulge', 'tendril']] },
+{ key: 'maxLen', label: 'Длина отростков', min: 0.2, max: 4, step: 0.05, when: ['mode', ['spikes', 'bulge', 'tendril']] },
+{ key: 'bassPush', label: 'Отклик на бас', min: 0, max: 2, step: 0.05, when: ['mode', ['spikes', 'bulge', 'tendril']] },
+{ key: 'decay', label: 'Опадает в тишине', min: 0, max: 0.6, step: 0.01, when: ['mode', ['spikes', 'bulge', 'tendril']] },
 { type: 'title', label: 'Вид' },
-{ key: 'glow', label: 'Свечение улетевшего и кончиков', min: 0, max: 1.5, step: 0.05 },
+{ key: 'glow', label: 'Свечение отошедшего', min: 0, max: 1.5, step: 0.05 },
+{ key: 'sizeUp', label: 'Крупнее отошедшие точки', min: 0, max: 2, step: 0.05, when: ['mode', ['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']] },
 { key: 'wobble', label: 'Дрожь', min: 0, max: 1, step: 0.05 },
 { key: 'auto', label: 'Без звука', type: 'seg', options: [['on', 'Сам по таймеру'], ['off', 'Стоит']] },
+{ key: 'every', label: 'Удар без звука раз в, с', min: 0.2, max: 3, step: 0.05, noNorm: true, when: ['auto', ['on']] },
 ] },
 { id: 'chladni', group: 'Звук и ритм', name: 'Звуковой песок', icon: 'circles-four', hint: 'Как песок на звенящей пластине: точки сбегаются на узловые линии стоячей волны и складываются в симметричный узор. Меняется нота, и песок перебегает в новый узор', max: 1, def: { on: false, amount: 1, band: 'none', react: 0.5, mode: 'sound', pattern: 3, period: 3, morph: 0.8, scale: 1, buzz: 0.6 }, extras: [
 { key: 'mode', label: 'Что меняет узор', type: 'select', options: [['sound', 'Высота звука', 'низкие ноты: мало линий, высокие: много'], ['beat', 'Удары', 'на каждый удар новый узор'], ['timer', 'Таймер', 'сам по кругу'], ['fixed', 'Один узор', 'выбранный номер']] },
@@ -80817,6 +80810,48 @@ en: {
 'Да': 'Yes',
 'Те же': 'The same',
 'Траектория': 'Trajectory',
+'Музыка отрывает от формы участки ступенями: удар, и участок рывком отходит на шаг и встаёт, следующий удар, и он отходит ещё. Виды отрыва: плита, столб, ступени, осколки, слои, винт, пыль. Есть ещё шипы, бугры и щупальца': 'Music tears parts off the shape in steps: on a beat a part jolts out one step and stops, on the next beat it moves out further. Detach types: slab, pillar, terraces, shards, layers, screw, dust. Also spikes, bumps and tendrils',
+'Как отрывается': 'How it detaches',
+'Плита': 'Slab',
+'участок отходит целым куском': 'the part moves out in one piece',
+'Столб': 'Pillar',
+'участок вытягивается колонной': 'the part stretches into a column',
+'вырастает ступенчатая пирамида': 'a stepped pyramid grows',
+'Осколки': 'Shards',
+'участок колется на куски с наклоном': 'the part splits into tilted pieces',
+'Слои': 'Layers',
+'с каждым ударом отходит ещё один слой': 'one more layer lifts with every beat',
+'участок выкручивается, поворачиваясь': 'the part screws out as it turns',
+'участок рассыпается точками': 'the part scatters into points',
+'острые иглы растут из очагов': 'sharp needles grow from the spots',
+'Что двигает': 'What moves it',
+'Бас': 'Bass',
+'Шаг': 'Step',
+'На сколько за удар': 'How far per beat',
+'Шагов до предела': 'Steps to the limit',
+'Как быстро отходит, с': 'How fast it moves, s',
+'Рывок (перелёт и отскок)': 'Jolt (overshoot and bounce)',
+'На пределе': 'At the limit',
+'Возвращается': 'Returns',
+'так же по ударам, шаг за шагом': 'step by step on the beats',
+'остаётся отошедшим': 'stays moved out',
+'Отламывается': 'Breaks off',
+'улетает и гаснет, растёт новый': 'flies off and fades, a new one grows',
+'Садится на место': 'Settles back',
+'плавно, и растёт новый участок': 'smoothly, and a new part grows',
+'Участки': 'Parts',
+'Сколько участков растёт сразу': 'How many parts grow at once',
+'Размер участка': 'Part size',
+'Край участка: резкий ... мягкий': 'Part edge: sharp ... soft',
+'Куда отходит': 'Where it moves',
+'Наружу': 'Outward',
+'К зрителю': 'Toward viewer',
+'Мест на форме': 'Places on the shape',
+'Длина отростков': 'Shoot length',
+'Опадает в тишине': 'Falls back in silence',
+'Свечение отошедшего': 'Glow of the moved parts',
+'Крупнее отошедшие точки': 'Bigger moved points',
+'Удар без звука раз в, с': 'Beat without sound every, s',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -81600,6 +81635,48 @@ uk: {
 'Да': 'Так',
 'Те же': 'Ті самі',
 'Траектория': 'Траєкторія',
+'Музыка отрывает от формы участки ступенями: удар, и участок рывком отходит на шаг и встаёт, следующий удар, и он отходит ещё. Виды отрыва: плита, столб, ступени, осколки, слои, винт, пыль. Есть ещё шипы, бугры и щупальца': 'Музика відриває від форми ділянки сходинками: удар, і ділянка ривком відходить на крок і зупиняється, наступний удар, і вона відходить ще. Види відриву: плита, стовп, сходинки, уламки, шари, гвинт, пил. Є ще шипи, горби й щупальця',
+'Как отрывается': 'Як відривається',
+'Плита': 'Плита',
+'участок отходит целым куском': 'ділянка відходить цілим шматком',
+'Столб': 'Стовп',
+'участок вытягивается колонной': 'ділянка витягується колоною',
+'вырастает ступенчатая пирамида': 'виростає ступінчаста піраміда',
+'Осколки': 'Уламки',
+'участок колется на куски с наклоном': 'ділянка колеться на шматки з нахилом',
+'Слои': 'Шари',
+'с каждым ударом отходит ещё один слой': 'з кожним ударом відходить ще один шар',
+'участок выкручивается, поворачиваясь': 'ділянка викручується, обертаючись',
+'участок рассыпается точками': 'ділянка розсипається точками',
+'острые иглы растут из очагов': 'гострі голки ростуть з осередків',
+'Что двигает': 'Що рухає',
+'Бас': 'Бас',
+'Шаг': 'Крок',
+'На сколько за удар': 'На скільки за удар',
+'Шагов до предела': 'Кроків до межі',
+'Как быстро отходит, с': 'Як швидко відходить, с',
+'Рывок (перелёт и отскок)': 'Ривок (переліт і відскок)',
+'На пределе': 'На межі',
+'Возвращается': 'Повертається',
+'так же по ударам, шаг за шагом': 'так само за ударами, крок за кроком',
+'остаётся отошедшим': 'лишається відсунутою',
+'Отламывается': 'Відламується',
+'улетает и гаснет, растёт новый': 'відлітає й гасне, росте нова',
+'Садится на место': 'Сідає на місце',
+'плавно, и растёт новый участок': 'плавно, і росте нова ділянка',
+'Участки': 'Ділянки',
+'Сколько участков растёт сразу': 'Скільки ділянок росте одразу',
+'Размер участка': 'Розмір ділянки',
+'Край участка: резкий ... мягкий': 'Край ділянки: різкий ... м’який',
+'Куда отходит': 'Куди відходить',
+'Наружу': 'Назовні',
+'К зрителю': 'До глядача',
+'Мест на форме': 'Місць на формі',
+'Длина отростков': 'Довжина відростків',
+'Опадает в тишине': 'Опадає в тиші',
+'Свечение отошедшего': 'Світіння відсунутого',
+'Крупнее отошедшие точки': 'Більші відсунуті точки',
+'Удар без звука раз в, с': 'Удар без звуку раз на, с',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -82383,6 +82460,48 @@ es: {
 'Да': 'Sí',
 'Те же': 'Las mismas',
 'Траектория': 'Trayectoria',
+'Музыка отрывает от формы участки ступенями: удар, и участок рывком отходит на шаг и встаёт, следующий удар, и он отходит ещё. Виды отрыва: плита, столб, ступени, осколки, слои, винт, пыль. Есть ещё шипы, бугры и щупальца': 'La música arranca partes de la forma por escalones: en un golpe una parte salta un paso y se detiene, en el siguiente se aleja más. Tipos: losa, columna, escalones, esquirlas, capas, tornillo, polvo. También púas, bultos y tentáculos',
+'Как отрывается': 'Cómo se desprende',
+'Плита': 'Losa',
+'участок отходит целым куском': 'la parte sale en una sola pieza',
+'Столб': 'Columna',
+'участок вытягивается колонной': 'la parte se estira en columna',
+'вырастает ступенчатая пирамида': 'crece una pirámide escalonada',
+'Осколки': 'Esquirlas',
+'участок колется на куски с наклоном': 'la parte se parte en trozos inclinados',
+'Слои': 'Capas',
+'с каждым ударом отходит ещё один слой': 'con cada golpe se levanta una capa más',
+'участок выкручивается, поворачиваясь': 'la parte sale girando como un tornillo',
+'участок рассыпается точками': 'la parte se dispersa en puntos',
+'острые иглы растут из очагов': 'agujas afiladas crecen de los focos',
+'Что двигает': 'Qué lo mueve',
+'Бас': 'Bajo',
+'Шаг': 'Paso',
+'На сколько за удар': 'Cuánto por golpe',
+'Шагов до предела': 'Pasos hasta el límite',
+'Как быстро отходит, с': 'Qué tan rápido sale, s',
+'Рывок (перелёт и отскок)': 'Sacudida (rebase y rebote)',
+'На пределе': 'En el límite',
+'Возвращается': 'Vuelve',
+'так же по ударам, шаг за шагом': 'paso a paso con los golpes',
+'остаётся отошедшим': 'se queda fuera',
+'Отламывается': 'Se rompe',
+'улетает и гаснет, растёт новый': 'sale volando y se apaga, crece otra',
+'Садится на место': 'Vuelve a su sitio',
+'плавно, и растёт новый участок': 'suavemente, y crece una parte nueva',
+'Участки': 'Partes',
+'Сколько участков растёт сразу': 'Cuántas partes crecen a la vez',
+'Размер участка': 'Tamaño de la parte',
+'Край участка: резкий ... мягкий': 'Borde de la parte: nítido ... suave',
+'Куда отходит': 'Hacia dónde sale',
+'Наружу': 'Hacia fuera',
+'К зрителю': 'Hacia el espectador',
+'Мест на форме': 'Lugares en la forma',
+'Длина отростков': 'Longitud de los brotes',
+'Опадает в тишине': 'Baja en silencio',
+'Свечение отошедшего': 'Brillo de lo desprendido',
+'Крупнее отошедшие точки': 'Puntos desprendidos más grandes',
+'Удар без звука раз в, с': 'Golpe sin sonido cada, s',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -83166,6 +83285,48 @@ de: {
 'Да': 'Ja',
 'Те же': 'Dieselben',
 'Траектория': 'Flugbahn',
+'Музыка отрывает от формы участки ступенями: удар, и участок рывком отходит на шаг и встаёт, следующий удар, и он отходит ещё. Виды отрыва: плита, столб, ступени, осколки, слои, винт, пыль. Есть ещё шипы, бугры и щупальца': 'Die Musik reißt Teile der Form stufenweise ab: Beim Beat springt ein Teil einen Schritt heraus und bleibt stehen, beim nächsten geht er weiter. Arten: Platte, Säule, Stufen, Splitter, Schichten, Schraube, Staub. Dazu Stacheln, Beulen und Tentakel',
+'Как отрывается': 'Wie es sich löst',
+'Плита': 'Platte',
+'участок отходит целым куском': 'der Teil geht als ganzes Stück heraus',
+'Столб': 'Säule',
+'участок вытягивается колонной': 'der Teil zieht sich zur Säule',
+'вырастает ступенчатая пирамида': 'eine Stufenpyramide wächst',
+'Осколки': 'Splitter',
+'участок колется на куски с наклоном': 'der Teil zerbricht in schräge Stücke',
+'Слои': 'Schichten',
+'с каждым ударом отходит ещё один слой': 'mit jedem Beat hebt sich eine weitere Schicht',
+'участок выкручивается, поворачиваясь': 'der Teil dreht sich heraus',
+'участок рассыпается точками': 'der Teil zerfällt in Punkte',
+'острые иглы растут из очагов': 'spitze Nadeln wachsen aus den Stellen',
+'Что двигает': 'Was es bewegt',
+'Бас': 'Bass',
+'Шаг': 'Schritt',
+'На сколько за удар': 'Wie weit pro Beat',
+'Шагов до предела': 'Schritte bis zur Grenze',
+'Как быстро отходит, с': 'Wie schnell es herausgeht, s',
+'Рывок (перелёт и отскок)': 'Ruck (Überschwingen und Zurückfedern)',
+'На пределе': 'An der Grenze',
+'Возвращается': 'Kehrt zurück',
+'так же по ударам, шаг за шагом': 'Schritt für Schritt auf den Beats',
+'остаётся отошедшим': 'bleibt draußen',
+'Отламывается': 'Bricht ab',
+'улетает и гаснет, растёт новый': 'fliegt davon und verblasst, ein neuer wächst',
+'Садится на место': 'Setzt sich zurück',
+'плавно, и растёт новый участок': 'sanft, und ein neuer Teil wächst',
+'Участки': 'Teile',
+'Сколько участков растёт сразу': 'Wie viele Teile gleichzeitig wachsen',
+'Размер участка': 'Teilgröße',
+'Край участка: резкий ... мягкий': 'Rand des Teils: scharf ... weich',
+'Куда отходит': 'Wohin es geht',
+'Наружу': 'Nach außen',
+'К зрителю': 'Zum Betrachter',
+'Мест на форме': 'Stellen auf der Form',
+'Длина отростков': 'Trieblänge',
+'Опадает в тишине': 'Fällt in der Stille zurück',
+'Свечение отошедшего': 'Leuchten des Gelösten',
+'Крупнее отошедшие точки': 'Größere gelöste Punkte',
+'Удар без звука раз в, с': 'Beat ohne Ton alle, s',
 },
 };
 };
@@ -86078,7 +86239,7 @@ uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0),
 uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()), uPaintP: U(new THREE.Vector4()),
 uLookP2: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
 uHyp: U(new THREE.Vector4()), uHypP: U(new THREE.Vector4()), uCh: U(new THREE.Vector4()), uChA: U(new THREE.Vector4(1, 2, 1, 2)),
-uShoot: U(new THREE.Vector4()), uShootP: U(new THREE.Vector4()), uShootD: U(new THREE.Vector4()), uShootE: U(new THREE.Vector4()), uShootC: U(new THREE.Vector4()), uShootS: U(Array.from({ length: 24 }, () => new THREE.Vector4())), uShootB: U(Array.from({ length: 6 }, () => new THREE.Vector4())),
+uShoot: U(new THREE.Vector4()), uShootP: U(new THREE.Vector4()), uShootD: U(new THREE.Vector4()), uShootE: U(new THREE.Vector4()), uShootC: U(new THREE.Vector4()), uShootS: U(Array.from({ length: 24 }, () => new THREE.Vector4())), uShootN: U(Array.from({ length: 24 }, () => new THREE.Vector4(0, 0, 1, 1))), uShootB: U(Array.from({ length: 6 }, () => new THREE.Vector4())),
 uScr: U(new THREE.Vector4()), uScrP: U(new THREE.Vector4(0, 0.4, 1, 1.78)), uScrTex: U(scrDummy()), uScrD: U(new THREE.Vector4(0, 0.5, 1, 1)), uScrQ: U(new THREE.Vector4()), uScrDep: U(scrDummy()), uScrMTex: U(scrDummy()), uScrMN: U(1),
 uSlit: U(new THREE.Vector4()), uSlitP: U(new THREE.Vector4()), uSlitG: U(new THREE.Vector4(1, 1, 1, 1)), uSlitTex: U(frDummyTex()),
 uSort: U(new THREE.Vector4()), uSortP: U(new THREE.Vector4(1, 1, 1, 0)), uSortTex: U(frDummy2D()),
@@ -89126,6 +89287,7 @@ uniform vec4 uShootD;
 uniform vec4 uShootE;
 uniform vec4 uShootC;
 uniform vec4 uShootS[24];
+uniform vec4 uShootN[24]; // нормаль участка (xyz) и сколько его осталось видно (w: гаснет, когда участок отломился)
 uniform vec4 uShootB[6];
 #endif
 #ifdef VSCREEN
@@ -89519,9 +89681,10 @@ void main() {
 		pos += normalize(vec3(pos.x, 0.0, pos.z) + vec3(1e-4)) * band * 0.03;
 	}
 #ifdef VSHOOT
-	// «Рост на ритме»: uShoot = (сила, вид, радиус очага, предельная длина), uShootP = (свечение, дрожь, время, крупность оторвавшихся),
-	// uShootD = (охват, закрутка, разлёт от центра, фонтан вверх), uShootC = (накопленное нарастание, скорость волны, толщина волны, затухание вдали),
-	// uShootB = волны последних ударов (возраст, сила); виды: 0 шипы, 1 бугры, 2 отрыв (нарастает с каждым ударом), 3 щупальца
+	// «Рост на ритме»: uShoot = (сила, вид, радиус очага, предельная длина щупалец и шипов), uShootP = (свечение, дрожь, время, крупность оторвавшихся),
+	// uShootS = 24 очага (xyz место на форме, w: у шипов сколько выросло, у видов отрыва на сколько участок отошёл), uShootN = нормаль участка и его видимость,
+	// uShootD = (куда отходит: 0 наружу, 1 от центра, 2 вверх, 3 к зрителю; длина шага), uShootE.x = мягкость края участка.
+	// Виды: 0 шипы, 1 бугры, 3 щупальца растут из очагов; отрыв участков: 2 плита, 4 столб, 5 ступени, 6 осколки, 7 слои, 8 винт, 9 пыль
 	float shSzMul = 1.0;
 	if (uShoot.x > 0.001) {
 		vec3 bsh = base - uCen;
@@ -89529,12 +89692,27 @@ void main() {
 		vec3 shOff = vec3(0.0);
 		float shK = 0.0;
 		float hsh = hash11(aIdx * 3.77);
-		float infl = 0.0;
+		bool shFam = (uShoot.y > 1.5 && uShoot.y < 2.5) || uShoot.y > 3.5;
+		// у видов отрыва точка принадлежит одному участку: тому, что сильнее всего её захватил
+		float bm = 0.0;
+		float bd = 1.0;
+		vec4 bs = vec4(0.0);
+		vec4 bn = vec4(0.0, 0.0, 1.0, 1.0);
 		for (int i = 0; i < 24; i++) {
 			vec4 sd = uShootS[i];
-			if (sd.w < 0.003) continue;
+			if (sd.w < 0.002) continue;
 			float dsh = distance(base, sd.xyz) / uShoot.z;
 			if (dsh >= 1.0) continue;
+			if (shFam) {
+				float m = 1.0 - smoothstep(1.0 - max(uShootE.x, 0.02), 1.0, dsh);
+				if (m > bm) {
+					bm = m;
+					bd = dsh;
+					bs = sd;
+					bn = uShootN[i];
+				}
+				continue;
+			}
 			float pr = 1.0 - dsh;
 			float grow = sd.w * uShoot.w;
 			if (uShoot.y < 0.5) {
@@ -89543,8 +89721,6 @@ void main() {
 			} else if (uShoot.y < 1.5) {
 				pr = pr * pr * (3.0 - 2.0 * pr);
 				shOff += nsh * pr * grow * 0.55;
-			} else if (uShoot.y < 2.5) {
-				pr = 0.0;
 			} else {
 				pr = pr * pr;
 				float ph = uShootP.z * 2.2 + float(i) * 1.7;
@@ -89553,49 +89729,61 @@ void main() {
 			}
 			shK = max(shK, pr * min(sd.w * 1.5, 1.0));
 		}
-		if (uShoot.y > 1.5 && uShoot.y < 2.5) {
-			// отрыв: общий уровень растёт только от ударов и держится, пока его не сдвинут следующие удары (после пика он может так же по ударам вернуться).
-			// Чем выше уровень, тем больше точек отделилось и тем дальше они ушли, но не дальше заданной длины.
-			// Порог каждой точки случайный: uShootE.x решает, мелкой пылью (0) или крупными участками (1) отрываются куски, uShootE.y это размер участков.
-			float h2 = hash11(aIdx * 7.3);
-			float h3 = hash11(aIdx * 11.9);
-			vec3 cellk = floor(base / max(uShootE.y, 0.05)) + vec3(uShootE.w);
-			float hc = hash11(dot(cellk, vec3(17.13, 31.71, 57.29)));
-			float thr = mix(hsh, hc, uShootE.x);
-			float lvl = clamp(uShootC.x, 0.0, 1.0);
-			float take = smoothstep(thr * 0.85 - 0.02, thr * 0.85 + 0.16, min(lvl * uShootD.x, 1.4));
-			float fdist = mix(1.0, 0.15 + 1.1 * h2, uShootE.z);
-			float dist = uShoot.w * lvl * fdist * take;
-			// волны ударов: на каждый удар от центра бежит оболочка и подхватывает точки сильнее
-			float rr = length(bsh);
-			float kick = 0.0;
-			for (int b = 0; b < 6; b++) {
-				vec2 pb = uShootB[b].xy;
-				if (pb.y < 0.001) continue;
-				float front = pb.x * uShootC.y;
-				float wv = (rr - front) / max(uShootC.z, 0.02);
-				kick += pb.y * exp(-wv * wv) * exp(-pb.x * 0.9);
-				dist *= 1.0 + pb.y * 0.35 * exp(-pb.x * 2.4);
+		if (shFam && bm > 0.0) {
+			// участок отходит на bs.w (ступенями по ударам) в выбранную сторону, у каждого вида отрыва своя форма
+			float d = bs.w;
+			float stp = max(uShootD.y, 0.005);
+			vec3 dn = length(bn.xyz) > 0.01 ? normalize(bn.xyz) : normalize(bs.xyz - uCen + vec3(1e-4));
+			if (uShootD.x > 0.5 && uShootD.x < 1.5) dn = normalize(bs.xyz - uCen + vec3(1e-4));
+			else if (uShootD.x > 1.5 && uShootD.x < 2.5) dn = vec3(0.0, 1.0, 0.0);
+			else if (uShootD.x > 2.5) dn = normalize(vec3(modelViewMatrix[0][2], modelViewMatrix[1][2], modelViewMatrix[2][2]) + vec3(1e-5));
+			float md = uShoot.y;
+			vec3 off;
+			if (md < 2.5) {
+				// плита: участок целиком, ровным куском
+				off = dn * d * bm;
+			} else if (md < 4.5) {
+				// столб: точки участка растягиваются вдоль пути, участок вырастает колонной
+				float tt = hash11(aIdx * 5.13);
+				off = dn * d * pow(tt, 0.75) * smoothstep(0.0, 0.6, bm);
+			} else if (md < 5.5) {
+				// ступени: кольца участка отходят на разную высоту, вырастает ступенчатая пирамида
+				float ring = floor((1.0 - bd) * 4.0 + 0.001);
+				off = dn * d * mix(0.25, 1.0, ring / 3.0) * bm;
+			} else if (md < 6.5) {
+				// осколки: участок колется на куски, каждый отходит на свою длину и с наклоном
+				vec3 cl = floor(base / max(uShoot.z * 0.32, 0.01));
+				float hc = hash11(dot(cl, vec3(17.13, 31.71, 57.29)));
+				vec3 tilt = vec3(hash11(hc * 91.0), hash11(hc * 57.0), hash11(hc * 33.0)) - 0.5;
+				off = normalize(dn + tilt * 0.7) * d * (0.45 + hc * 1.1) * bm;
+			} else if (md < 7.5) {
+				// слои: участок расслаивается, как стопка листов: с каждым ударом поднимается ещё один слой
+				float layer = floor(hash11(aIdx * 9.71) * 6.0);
+				off = dn * max(0.0, d - layer * stp * 0.75) * bm;
+			} else if (md < 8.5) {
+				// винт: участок выкручивается, поворачиваясь вокруг своей оси с каждым шагом
+				vec3 rel = base - bs.xyz;
+				float ang = d / stp * 0.6;
+				float ca = cos(ang), sa = sin(ang);
+				vec3 rr = rel * ca + cross(dn, rel) * sa + dn * dot(dn, rel) * (1.0 - ca);
+				off = (rr - rel + dn * d) * bm;
+			} else {
+				// пыль: участок рассыпается, каждая точка уходит своей дорогой, но тоже ступенями
+				vec3 rd = vec3(hash11(aIdx * 1.3), hash11(aIdx * 2.9), hash11(aIdx * 5.1)) - 0.5;
+				off = normalize(dn + rd * 1.3) * d * (0.35 + hash11(aIdx * 7.7) * 1.3) * bm;
 			}
-			dist += kick * uShoot.w * 0.25 * take;
-			vec3 radial = normalize(bsh + vec3(1e-4));
-			vec3 dir = normalize(mix(nsh, radial, uShootD.z) + vec3(0.0, uShootD.w * 0.9, 0.0) + 0.5 * vec3(hash11(aIdx * 1.3) - 0.5, hash11(aIdx * 2.9) - 0.5, hash11(aIdx * 5.1) - 0.5));
-			vec3 np = pos + dir * dist;
-			// закрутка: чем дальше улетела точка, тем больше она повёрнута вокруг оси
-			float ang = dist * uShootD.y * 2.4;
-			float ca = cos(ang), sa = sin(ang);
-			vec3 rel = np - uCen;
-			np = uCen + vec3(rel.x * ca - rel.z * sa, rel.y, rel.x * sa + rel.z * ca);
-			// дрожь: оторвавшиеся живут сами
-			np += vec3(sin(uShootP.z * 1.7 + h3 * 6.283), cos(uShootP.z * 1.3 + h2 * 6.283), sin(uShootP.z * 1.1 + hsh * 6.283)) * 0.06 * dist * uShootP.y;
-			shOff += np - pos;
-			float farK = clamp(dist / max(uShoot.w, 1e-3), 0.0, 1.5);
-			shK = max(shK, take * min(farK * 1.4, 1.0));
-			shSzMul = 1.0 + take * farK * uShootP.w;
-			vColor *= 1.0 - uShootC.w * take * min(farK, 1.0) * 0.8;
+			// дрожь: отошедшие точки чуть живут на месте
+			off += vec3(sin(uShootP.z * 1.7 + hsh * 6.283), cos(uShootP.z * 1.3 + hsh * 4.1), sin(uShootP.z * 1.1 + hsh * 2.7)) * 0.03 * min(d, 1.0) * uShootP.y * bm;
+			shOff += off;
+			float stK = clamp(d / stp, 0.0, 1.0);
+			shK = max(shK, bm * stK);
+			shSzMul = 1.0 + bm * stK * uShootP.w;
+			// отломившийся участок гаснет и мельчает
+			vColor *= mix(1.0, bn.w, bm);
+			shSzMul *= mix(1.0, max(bn.w, 0.05), bm);
 		}
 		// дрожь: живое мерцание отросшего
-		if (uShoot.y < 1.5 || uShoot.y > 2.5) shOff *= 1.0 + uShootP.y * 0.25 * sin(uShootP.z * 9.0 + hsh * 6.283);
+		if (!shFam) shOff *= 1.0 + uShootP.y * 0.25 * sin(uShootP.z * 9.0 + hsh * 6.283);
 		pos += shOff * min(uShoot.x, 1.0);
 		vColor += (uP2 * 1.4 + vColor * 0.3) * shK * uShootP.x * min(uShoot.x, 1.0);
 	}
@@ -92931,7 +93119,8 @@ __defs['src/effects/engine/shoots.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'ShootsPart', () => ShootsPart);
 const { clamp } = __req('src/core/util.js');
-const MODE = { spikes: 0, bulge: 1, detach: 2, tendril: 3 };
+const MODE = { spikes: 0, bulge: 1, tendril: 3, slab: 2, pillar: 4, terrace: 5, shards: 6, peel: 7, screw: 8, dust: 9 };
+const DETACH = new Set(['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']);
 class ShootsPart {
 _shootTick(dt, L, u) {
 const eff = L.on ? this._eff(L) : 0;
@@ -92939,62 +93128,114 @@ if (eff <= 0.001 || !this.geometry) {
 u.uShoot.value.x = 0;
 return;
 }
-const S = (this._shS ||= { geo: null, n: 0, pos: null, g: null, th: null, beat: 0, autoT: 0, C: 0, D: 0, dir: 1, lastBeat: -9, cycle: 0, pulses: [], pi: 0 });
+if (L.mode === 'detach') L.mode = 'slab';
+const S = (this._shS ||= { geo: null, n: 0, pos: null, nrm: null, g: null, th: null, beat: 0, bassUp: false, autoT: 0, lastBeat: -9, R: null, active: [] });
 const N = clamp(Math.round(L.seeds || 14), 4, 24);
 if (S.geo !== this.geometry || S.n !== N) this._shootSeeds(S, N);
 let beat = false;
 let bass = 0;
+const trig = L.trigger || 'beat';
 if (this.soundActive) {
 bass = this.levels.bass;
-beat = this.levels.beat > 0.9 && S.beat <= 0.9;
+const bBeat = this.levels.beat > 0.9 && S.beat <= 0.9;
 S.beat = this.levels.beat;
-} else if (L.auto === 'on') {
+const up = bass > 0.6;
+const bBass = up && !S.bassUp && this._time - S.lastBeat > 0.18;
+S.bassUp = bass > 0.5 ? up || S.bassUp : false;
+beat = trig === 'beat' ? bBeat : trig === 'bass' ? bBass : bBeat || bBass;
+} else if (L.auto !== 'off') {
 S.autoT += dt;
-if (S.autoT > 0.7) {
+if (S.autoT > (L.every ?? 0.7)) {
 S.autoT = 0;
 beat = true;
 }
 bass = 0.36 + 0.34 * Math.sin(this._time * 1.6);
 }
-const trig = L.trigger || 'both';
-const step = L.step ?? 0.12;
-const loop = L.peak === 'loop';
-const move = (amount) => {
-S.C += S.dir * amount;
-if (S.C >= 1) {
-S.C = 1;
-if (loop) S.dir = -1;
-} else if (S.C <= 0) {
-S.C = 0;
-if (S.dir < 0) {
-S.dir = 1;
-if (L.reroll !== 'off') S.cycle = (S.cycle + 1) % 97;
+if (beat) S.lastBeat = this._time;
+const V = u.uShootS.value;
+const W = u.uShootN.value;
+if (DETACH.has(L.mode)) this._shootDetach(S, L, dt, beat, N, V, W);
+else this._shootGrow(S, L, dt, beat, bass, N, V, W);
+u.uShoot.value.set(Math.min(eff, 1.5), MODE[L.mode] ?? 2, Math.max(0.05, (L.size ?? 0.3) * 0.9), Math.max(0.1, (L.maxLen ?? 1) * 0.7));
+u.uShootP.value.set(L.glow ?? 0.3, L.wobble ?? 0.3, this._time, L.sizeUp ?? 0.15);
+u.uShootD.value.set({ normal: 0, radial: 1, up: 2, view: 3 }[L.dir] ?? 0, Math.max(0.005, L.step ?? 0.12), 0, 0);
+u.uShootE.value.set(L.edge ?? 0.35, 0, 0, 0);
 }
+_shootDetach(S, L, dt, beat, N, V, W) {
+if (!S.R || S.R.length !== N) S.R = Array.from({ length: N }, () => ({ steps: 0, d: 0, v: 0, fade: 1, phase: 'idle' }));
+const R = S.R;
+const want = clamp(Math.round(L.active ?? 2), 1, Math.min(8, N));
+S.active = S.active.filter((i) => R[i].phase !== 'idle');
+while (S.active.length < want) {
+const free = [];
+for (let i = 0; i < N; i++) if (R[i].phase === 'idle' && !S.active.includes(i)) free.push(i);
+if (!free.length) break;
+const i = free[Math.floor(Math.random() * free.length)];
+Object.assign(R[i], { steps: 0, d: 0, v: 0, fade: 1, phase: 'grow' });
+S.active.push(i);
 }
-};
+while (S.active.length > want) {
+const i = S.active.pop();
+R[i].phase = 'settle';
+}
+const step = Math.max(0.005, L.step ?? 0.12);
+const maxSteps = clamp(Math.round(L.maxSteps ?? 6), 1, 24);
+const peak = L.peak || 'back';
 if (beat) {
-S.lastBeat = this._time;
-S.pulses[S.pi % 6] = { t0: this._time, s: 0.7 + 0.3 * Math.random() };
-S.pi++;
-if (trig !== 'bass') {
-move(step * (0.8 + 0.4 * Math.random()));
+for (const i of S.active) {
+const r = R[i];
+if (r.phase === 'grow') {
+r.steps++;
+if (r.steps >= maxSteps) {
+r.steps = maxSteps;
+if (peak === 'back') r.phase = 'back';
+else if (peak === 'drop') r.phase = 'drop';
+else if (peak === 'reset') r.phase = 'settle';
+else r.phase = 'held';
+}
+} else if (r.phase === 'back') {
+r.steps--;
+if (r.steps <= 0) {
+r.steps = 0;
+r.phase = 'settle';
+}
+}
+}
+}
+const T = Math.max(0.03, L.stepTime ?? 0.25);
+const w = 4.6 / T;
+const z = 1 - 0.85 * clamp(L.bounce ?? 0.35, 0, 1);
+for (let i = 0; i < N; i++) {
+const r = R[i];
+let target = r.steps * step;
+if (r.phase === 'drop') {
+r.dropV = (r.dropV || step * 3) + dt * step * 10;
+r.d += r.dropV * dt;
+r.fade -= dt * 1.1;
+if (r.fade <= 0) Object.assign(r, { steps: 0, d: 0, v: 0, fade: 1, phase: 'idle', dropV: 0 });
+} else {
+if (r.phase === 'settle') target = 0;
+const a = w * w * (target - r.d) - 2 * z * w * r.v;
+r.v += a * Math.min(dt, 0.05);
+r.d += r.v * Math.min(dt, 0.05);
+if (r.phase === 'settle' && Math.abs(r.d) < 0.004 && Math.abs(r.v) < 0.05) Object.assign(r, { d: 0, v: 0, phase: 'idle' });
+}
+V[i].set(S.pos[i * 3], S.pos[i * 3 + 1], S.pos[i * 3 + 2], r.phase === 'idle' ? 0 : Math.max(0, r.d));
+W[i].set(S.nrm[i * 3], S.nrm[i * 3 + 1], S.nrm[i * 3 + 2], Math.max(0, r.fade));
+}
+for (let i = N; i < 24; i++) V[i].w = 0;
+}
+_shootGrow(S, L, dt, beat, bass, N, V, W) {
+const trig = L.trigger || 'beat';
+const step = L.step ?? 0.12;
+if (beat) {
 const k = clamp(Math.round(L.perBeat || 2), 1, 12);
 for (let j = 0; j < k; j++) {
 const i = Math.floor(Math.random() * N);
 S.g[i] = Math.min(1, S.g[i] + step * 2.2 * (0.7 + 0.6 * Math.random()));
 }
 }
-}
 const push = (L.bassPush ?? 0.5) * 0.9;
-if (trig !== 'beat') {
-const over = bass - 0.3;
-if (over > 0) move(over * dt * push * 0.5);
-}
-const quiet = this._time - S.lastBeat > 1.6;
-const dec = L.decay ?? 0.08;
-if (quiet && dec > 0) S.C = Math.max(0, S.C - dt * dec);
-S.D += (S.C - S.D) * (1 - Math.exp(-dt * 7));
-const V = u.uShootS.value;
 for (let i = 0; i < 24; i++) {
 if (i >= N) {
 V[i].w = 0;
@@ -93006,24 +93247,12 @@ if (over > 0) S.g[i] = Math.min(1, S.g[i] + over * dt * push * 2.4);
 }
 S.g[i] = Math.max(0, S.g[i] - dt * (0.18 + (L.decay ?? 0.08)) * (0.4 + S.g[i]));
 V[i].set(S.pos[i * 3], S.pos[i * 3 + 1], S.pos[i * 3 + 2], S.g[i]);
+W[i].set(S.nrm[i * 3], S.nrm[i * 3 + 1], S.nrm[i * 3 + 2], 1);
 }
-const B = u.uShootB.value;
-const shells = L.shells ?? 0.7;
-for (let b = 0; b < 6; b++) {
-const p = S.pulses[b];
-const age = p ? this._time - p.t0 : 99;
-if (!p || age > 3 || shells < 0.01) B[b].set(0, 0, 0, 0);
-else B[b].set(age, p.s * shells, 0, 0);
-}
-const detach = (L.mode ?? 'detach') === 'detach';
-u.uShoot.value.set(Math.min(eff, 1.5), MODE[L.mode] ?? 2, Math.max(0.1, (L.size ?? 0.3) * 0.9), Math.max(0.1, (L.maxLen ?? 1) * (detach ? 1 : 0.7)));
-u.uShootP.value.set(L.glow ?? 0.3, L.wobble ?? 0.5, this._time, L.sizeUp ?? 0.12);
-u.uShootD.value.set(L.reach ?? 1, L.twist ?? 0.4, L.radial ?? 0.4, L.fountain ?? 0);
-u.uShootE.value.set(L.patch ?? 0.5, L.patchSize ?? 0.35, L.spread ?? 0.7, S.cycle * 3.7);
-u.uShootC.value.set(S.D, 1.1 + (L.shellSpeed ?? 1) * 1.6, 0.28, L.fade ?? 0.25);
 }
 _shootSeeds(S, N) {
 const T = this.geometry.attributes.aTarget.array;
+const Nr = this.geometry.attributes.aNormal?.array;
 const cnt = this.geometry.attributes.aTarget.count;
 const cand = [];
 for (let i = 0; i < 700; i++) cand.push(Math.floor(Math.random() * cnt));
@@ -93045,12 +93274,16 @@ pick.push(best);
 S.geo = this.geometry;
 S.n = N;
 S.pos = new Float32Array(N * 3);
+S.nrm = new Float32Array(N * 3);
 S.g = new Float32Array(N);
 S.th = new Float32Array(N);
+S.R = null;
+S.active = [];
 for (let i = 0; i < N; i++) {
-S.pos[i * 3] = T[pick[i] * 3];
-S.pos[i * 3 + 1] = T[pick[i] * 3 + 1];
-S.pos[i * 3 + 2] = T[pick[i] * 3 + 2];
+for (let c = 0; c < 3; c++) {
+S.pos[i * 3 + c] = T[pick[i] * 3 + c];
+S.nrm[i * 3 + c] = Nr ? Nr[pick[i] * 3 + c] : c === 2 ? 1 : 0;
+}
 S.th[i] = 0.18 + 0.62 * Math.random();
 }
 }
