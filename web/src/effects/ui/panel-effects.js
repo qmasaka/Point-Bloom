@@ -314,7 +314,7 @@ const morphWeight = segmented({ options: [{ value: 'auto', label: 'Как в м�
 const morphGo = button({ label: 'Следующая форма', icon: 'arrow-right', variant: 'primary', cls: 'btn-block', title: 'Запустить переход к следующей форме из списка', onClick: () => engine.morphNext() });
 const turnsRow = field('Закрутка', morphTurns.el);
 const timeRow = field('Длительность', morphTime.el);
-const intRow = field('Каждые', morphInt.el);
+const intRow = field('Секунд на форму', morphInt.el);
 const liftRow = field('Объём по глубине в пути', morphLift.el);
 const scrubRow = field('Вручную', morphScrub.el);
 const morphSettings = h('div', { class: 'sec-body', style: { padding: 0 } },
@@ -350,7 +350,7 @@ styleSel.set(cur.id);
 styleHint.textContent = cur.hint;
 turnsRow.hidden = cur.id !== 'swirl' && cur.id !== 'hyper';
 if (mc.mode === 'beat') Object.assign(mc, { mode: 'music', band: 'beat', amode: 'gate' });
-intRow.hidden = mc.mode !== 'timer';
+intRow.hidden = mc.mode === 'music';
 morphMusic.hidden = mc.mode !== 'music';
 scrubRow.hidden = false;
 const follow = mc.mode === 'music' && mc.amode === 'amp';

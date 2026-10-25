@@ -994,6 +994,9 @@ export default {
 		'Светлое выше': 'Light is higher',
 		'Тёмное выше': 'Dark is higher',
 		'Ход перехода (ведёт музыка)': 'Progress (driven by music)',
+		'Секунд на форму': 'Seconds per shape',
+		'Остановить смену форм': 'Stop changing shapes',
+		'Менять формы по времени': 'Change shapes over time',
 	},
 	uk: {
 		'Установить приложение': 'Встановити застосунок',
@@ -1989,6 +1992,9 @@ export default {
 		'Светлое выше': 'Світле вище',
 		'Тёмное выше': 'Темне вище',
 		'Ход перехода (ведёт музыка)': 'Хід переходу (веде музика)',
+		'Секунд на форму': 'Секунд на форму',
+		'Остановить смену форм': 'Зупинити зміну форм',
+		'Менять формы по времени': 'Змінювати форми за часом',
 	},
 	es: {
 		'Установить приложение': 'Instalar la aplicación',
@@ -2984,6 +2990,9 @@ export default {
 		'Светлое выше': 'Lo claro más alto',
 		'Тёмное выше': 'Lo oscuro más alto',
 		'Ход перехода (ведёт музыка)': 'Progreso (lo lleva la música)',
+		'Секунд на форму': 'Segundos por forma',
+		'Остановить смену форм': 'Detener el cambio de formas',
+		'Менять формы по времени': 'Cambiar formas con el tiempo',
 	},
 	de: {
 		'Установить приложение': 'App installieren',
@@ -3979,5 +3988,8 @@ export default {
 		'Светлое выше': 'Helles höher',
 		'Тёмное выше': 'Dunkles höher',
 		'Ход перехода (ведёт музыка)': 'Fortschritt (Musik steuert)',
+		'Секунд на форму': 'Sekunden pro Form',
+		'Остановить смену форм': 'Formwechsel stoppen',
+		'Менять формы по времени': 'Formen zeitlich wechseln',
 	},
 };

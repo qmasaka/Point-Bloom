@@ -11,8 +11,33 @@ export function createMediaBar(app, host) {
 const mc = app.media;
 const pm = mc.live;
 const isOn = () => (pm.kind === 'video' && pm.el ? pm.playing && !pm.el.paused : pm.playing);
+const eng = () => app.ui.effectsEngine;
+const morphOn = () => app.ui.workspace === 'fx' && eng()?.active && (eng().playlist?.length || 0) >= 2;
+const mcfg = () => eng().state.morphCfg;
+const slot = () => Math.max(0.5, mcfg().interval || 4);
+const mTotal = () => slot() * eng().playlist.length;
+const mTime = () => {
+const e = eng();
+const i = Math.max(0, e._pi ?? 0);
+return Math.min(mTotal(), i * slot() + Math.min(slot(), Math.max(0, e._time - (e._lastMorph || 0))));
+};
+const mPlaying = () => mcfg().mode === 'timer';
+const mSeek = (t) => {
+const e = eng();
+const list = e.playlist;
+const i = Math.max(0, Math.min(list.length - 1, Math.floor(t / slot())));
+if (list[i] !== (e.curKey || e.state.source)) e.morphTo(list[i]);
+e._pi = i;
+e._lastMorph = e._time - (t - i * slot());
+};
 const toggle = () => {
-if (isOn()) pm.pause();
+if (morphOn()) {
+const c = mcfg();
+c.mode = mPlaying() ? 'manual' : 'timer';
+eng()._lastMorph = eng()._time - (mTime() % slot());
+eng().touch();
+eng().emit();
+} else if (isOn()) pm.pause();
 else pm.play();
 sync();
 play.blur();
@@ -24,12 +49,14 @@ let scrubbing = false;
 let wasPlaying = false;
 seek.addEventListener('pointerdown', () => {
 scrubbing = true;
+if (morphOn()) return;
 wasPlaying = pm.playing;
 pm.pause();
 });
 const endScrub = () => {
 if (!scrubbing) return;
 scrubbing = false;
+if (morphOn()) return sync();
 if (wasPlaying) pm.play();
 sync();
 };
@@ -37,6 +64,11 @@ seek.addEventListener('pointerup', endScrub);
 seek.addEventListener('pointercancel', endScrub);
 seek.addEventListener('change', endScrub);
 seek.addEventListener('input', () => {
+if (morphOn()) {
+mSeek(parseFloat(seek.value));
+paint();
+return;
+}
 seek.style.setProperty('--p', (parseFloat(seek.value) / Math.max(0.1, pm.duration)) * 100 + '%');
 if (!scrubbing) {
 wasPlaying = pm.playing;
@@ -66,12 +98,35 @@ else mc.rebuild({ frame: false });
 sync();
 }
 function paint() {
+if (morphOn()) {
+const T = mTotal();
+time.textContent = fmt(mTime());
+total.textContent = fmt(T);
+seek.max = T;
+seek.style.setProperty('--p', Math.min(100, (mTime() / T) * 100) + '%');
+const n = eng().playlist.length;
+seek.style.setProperty('--ticks', n);
+el.classList.add('is-morph');
+return;
+}
+el.classList.remove('is-morph');
 time.textContent = fmt(pm.time);
 total.textContent = fmt(pm.duration);
 seek.max = Math.max(0.1, pm.duration);
 seek.style.setProperty('--p', Math.min(100, (pm.time / Math.max(0.1, pm.duration)) * 100) + '%');
 }
 function sync() {
+if (morphOn()) {
+el.hidden = false;
+const p = mPlaying();
+play.innerHTML = '<span class="ic-wrap">' + icon(p ? 'pause' : 'play', 18) + '</span>';
+play.dataset.tip = p ? 'Остановить смену форм' : 'Менять формы по времени';
+play.classList.toggle('is-paused', !p);
+mute.hidden = loop.hidden = mode.hidden = rec.hidden = true;
+paint();
+return;
+}
+loop.hidden = false;
 const vid = (pm.kind === 'video' || pm.kind === 'rec') && mc.present;
 el.hidden = !vid;
 if (!vid) return;
@@ -90,10 +145,14 @@ rec.classList.toggle('is-rec', pm.recording);
 paint();
 }
 app.bus.on('media', sync);
+app.bus.on('fx', () => {
+sync();
+watch();
+});
 let timer = 0;
 const tick = () => {
 if (pm.recording) return;
-if (!scrubbing) seek.value = pm.time;
+if (!scrubbing) seek.value = morphOn() ? mTime() : pm.time;
 paint();
 };
 const watch = () => {
