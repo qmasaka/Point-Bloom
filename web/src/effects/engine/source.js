@@ -445,6 +445,9 @@ vis.needsUpdate = true;
 }
 o.needsUpdate = t.needsUpdate = true;
 this.cloudKey = key;
+this._animOut = this._animIn || this._animCloud || null;
+this._animIn = (key === 'model' || key.startsWith('obj:')) && target.anim && target.norm ? target : null;
+this._animCloud = null;
 const outE = prevKey && prevKey.startsWith('media') && prevKey !== key ? this.app.media.entry(prevKey) : null;
 if (outE) outE.want = outE.pm.playing;
 this._mm = outE || isMedia ? { out: outE, in: isMedia && prevKey !== key ? mEntry : null } : null;

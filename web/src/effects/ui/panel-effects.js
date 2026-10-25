@@ -106,7 +106,9 @@ if (cl.length) return fromClouds(cl, count);
 const list = app.model.meshesOf(obj);
 if (!list.length) return null;
 const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
-return sampleSurface(entries, count, {});
+const sc = await sampleSurface(entries, count, { anim: app.anim.has });
+if (sc && sc.anim && app.anim.has) sc.animBox = app.anim.animatedBounds();
+return sc;
 },
 available: () => clouds().length > 0 || meshes().length > 0,
 kind: () => (clouds().length ? 'cloud' : meshes().length ? 'mesh' : 'none'),

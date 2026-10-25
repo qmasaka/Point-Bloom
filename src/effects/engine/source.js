@@ -524,6 +524,10 @@ export class SourcePart {
 		}
 		o.needsUpdate = t.needsUpdate = true;
 		this.cloudKey = key;
+		// анимированные модели живут и во время перехода: уходящая двигается, пока улетает, приходящая уже двигается, пока собирается, поэтому в конце нет скачка позы
+		this._animOut = this._animIn || this._animCloud || null;
+		this._animIn = (key === 'model' || key.startsWith('obj:')) && target.anim && target.norm ? target : null;
+		this._animCloud = null;
 		// видео играет, пока точки разлетаются, и снова запускается, когда собираются в видео: что именно, считает _mediaMorphTick
 		const outE = prevKey && prevKey.startsWith('media') && prevKey !== key ? this.app.media.entry(prevKey) : null;
 		if (outE) outE.want = outE.pm.playing;

@@ -87817,6 +87817,9 @@ vis.needsUpdate = true;
 }
 o.needsUpdate = t.needsUpdate = true;
 this.cloudKey = key;
+this._animOut = this._animIn || this._animCloud || null;
+this._animIn = (key === 'model' || key.startsWith('obj:')) && target.anim && target.norm ? target : null;
+this._animCloud = null;
 const outE = prevKey && prevKey.startsWith('media') && prevKey !== key ? this.app.media.entry(prevKey) : null;
 if (outE) outE.want = outE.pm.playing;
 this._mm = outE || isMedia ? { out: outE, in: isMedia && prevKey !== key ? mEntry : null } : null;
@@ -88126,6 +88129,7 @@ g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fil
 this._grabs = new Map();
 this._animCloud = st.source === 'model' && c.anim && c.norm ? c : null;
 this._animVer = -1;
+this._animIn = this._animOut = null;
 if (!this.specTex) {
 this.specTex = new THREE.DataTexture(new Uint8Array(64), 64, 1, THREE.RedFormat, THREE.UnsignedByteType);
 this.specTex.minFilter = this.specTex.magFilter = THREE.LinearFilter;
@@ -93690,6 +93694,9 @@ if (this.morphing && !this._morphHold) {
 this.morph = Math.min(1, this.morph + dt / Math.max(0.3, st0.morphCfg.time));
 if (this.morph >= 1) {
 this.morphing = false;
+this._animCloud = this._animIn || null;
+this._animIn = this._animOut = null;
+this._animVer = -1;
 this._settleOn = false;
 this._settleT = this._time;
 }
@@ -93984,6 +93991,19 @@ A.syncTime(this.animT);
 } else if (this._charSync) {
 this._charSync = false;
 A.playing = this._charWas;
+}
+}
+if (this.morphing && this.geometry && this.app.anim.has && (this._animIn || this._animOut) && this._animVerM !== this.app.anim.version) {
+this._animVerM = this.app.anim.version;
+const g = this.geometry;
+const n = g.attributes.position.count;
+for (const [ac, attr] of [[this._animIn, 'aTarget'], [this._animOut, 'aOrigin']]) {
+if (!ac || ac.count !== n) continue;
+const key = attr === 'aTarget' ? '_mbIn' : '_mbOut';
+if (!this[key] || this[key].length !== n * 3) this[key] = new Float32Array(n * 3);
+evalAnimPoints(ac.anim, ac.norm, this[key], null);
+g.attributes[attr].array.set(this[key]);
+g.attributes[attr].needsUpdate = true;
 }
 }
 if (!this._animCloud && this.shared.uAnimN.value) this.shared.uAnimN.value = 0;
@@ -96576,7 +96596,9 @@ if (cl.length) return fromClouds(cl, count);
 const list = app.model.meshesOf(obj);
 if (!list.length) return null;
 const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
-return sampleSurface(entries, count, {});
+const sc = await sampleSurface(entries, count, { anim: app.anim.has });
+if (sc && sc.anim && app.anim.has) sc.animBox = app.anim.animatedBounds();
+return sc;
 },
 available: () => clouds().length > 0 || meshes().length > 0,
 kind: () => (clouds().length ? 'cloud' : meshes().length ? 'mesh' : 'none'),

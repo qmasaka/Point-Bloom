@@ -73,6 +73,10 @@ export class LoopPart {
 				this.morph = Math.min(1, this.morph + dt / Math.max(0.3, st0.morphCfg.time));
 				if (this.morph >= 1) {
 					this.morphing = false;
+					// переход закончился: дальше живёт поза приходящей формы (если она анимирована)
+					this._animCloud = this._animIn || null;
+					this._animIn = this._animOut = null;
+					this._animVer = -1;
 					// после сборки по форме больше не бежит полоса света
 					this._settleOn = false;
 					this._settleT = this._time;
@@ -405,6 +409,20 @@ export class LoopPart {
 				}
 			}
 			// персонаж с анимацией: точки идут за позой скелета
+			// во время перехода анимированные формы продолжают двигаться: уходящая в начале пути, приходящая в конце
+			if (this.morphing && this.geometry && this.app.anim.has && (this._animIn || this._animOut) && this._animVerM !== this.app.anim.version) {
+				this._animVerM = this.app.anim.version;
+				const g = this.geometry;
+				const n = g.attributes.position.count;
+				for (const [ac, attr] of [[this._animIn, 'aTarget'], [this._animOut, 'aOrigin']]) {
+					if (!ac || ac.count !== n) continue;
+					const key = attr === 'aTarget' ? '_mbIn' : '_mbOut';
+					if (!this[key] || this[key].length !== n * 3) this[key] = new Float32Array(n * 3);
+					evalAnimPoints(ac.anim, ac.norm, this[key], null);
+					g.attributes[attr].array.set(this[key]);
+					g.attributes[attr].needsUpdate = true;
+				}
+			}
 			if (!this._animCloud && this.shared.uAnimN.value) this.shared.uAnimN.value = 0;
 			if (this._animCloud && st.source === 'model' && this.geometry && !this.morphing && this.app.anim.has && this._animVer !== this.app.anim.version && performance.now() - (this._animT || 0) >= (perf.tier === 'high' ? 0 : 33)) {
 				this._animVer = this.app.anim.version;

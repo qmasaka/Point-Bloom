@@ -40,6 +40,7 @@ g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fil
 this._grabs = new Map();
 this._animCloud = st.source === 'model' && c.anim && c.norm ? c : null;
 this._animVer = -1;
+this._animIn = this._animOut = null;
 if (!this.specTex) {
 this.specTex = new THREE.DataTexture(new Uint8Array(64), 64, 1, THREE.RedFormat, THREE.UnsignedByteType);
 this.specTex.minFilter = this.specTex.magFilter = THREE.LinearFilter;
