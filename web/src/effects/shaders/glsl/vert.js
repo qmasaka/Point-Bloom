@@ -599,9 +599,49 @@ void main() {
 		float sg3 = hash11(aIdx * 4.177);
 		float sg4 = hash11(aIdx * 6.731);
 		float sg5 = hash11(aIdx * 8.219);
-		float sgMode = mod(uSig.y, 2.0);
-		float sgCyber = uSig.y > 1.5 ? 1.0 : 0.0;
+		float sgMode = mod(uSig.y, 3.0);
+		float sgCyber = uSig.y > 2.5 ? 1.0 : 0.0;
 		float part = step(sg5, uSig.w);
+		if (sgMode > 1.5) {
+			// завитки из формы: на поверхности в случайных местах прорастают маленькие симметричные готические завитки из её же точек.
+			// Каждый живёт сам: прорисовывается от корня, покачивается, потом рассыпается наружу, и вырастает в другом месте
+			float cs = max(uYR.y - uYR.x, 0.5) * 0.07 * uSig.z;
+			vec3 cid = floor((base - uCen) / cs);
+			float ch = hash11(dot(cid, vec3(12.9898, 78.233, 37.719)) + uSigP.y * 0.37);
+			float period = max(uSigP.x, 0.5);
+			float ph = fract(uSigQ.z / period + ch * 7.13);
+			// в одном цикле прорастает доля мест, в следующем другие
+			float cyc = floor(uSigQ.z / period + ch * 7.13);
+			float on = step(hash11(ch * 91.7 + cyc * 3.31), uSig.w);
+			vec3 root = (cid + 0.5) * cs + uCen;
+			vec3 n = normalize(mix(root - uCen + vec3(1e-3), vec3(0.0, 0.0, 1.0), uFlat));
+			vec3 rh = vec3(hash11(ch * 3.1), hash11(ch * 5.7), hash11(ch * 8.3)) - 0.5;
+			vec3 tt = normalize(cross(n, normalize(rh + vec3(0.0, 0.31, 0.0))) + vec3(1e-4));
+			float tw = uSigQ.z * 0.35 * uSigQ.y + ch * 6.28;
+			vec3 bb = cross(n, tt);
+			tt = tt * cos(tw * 0.3) + bb * sin(tw * 0.3);
+			bb = cross(n, tt);
+			float k2 = ch * 31.7;
+			vec2 p0 = sigBez(k2, 0.0, uSigP.y);
+			vec2 pl = sigStroke(k2, sg2, uSigP.y, sgCyber) - p0;
+			float side = sg3 < 0.5 ? -1.0 : 1.0;
+			float L = cs * 2.6;
+			float sway = sin(uSigQ.z * 1.4 + ch * 20.0) * 0.35 * uSigQ.y;
+			vec2 lr = vec2(pl.x * cos(sway) - pl.y * sin(sway), pl.x * sin(sway) + pl.y * cos(sway));
+			float grow = smoothstep(0.0, 0.45, ph);
+			float fade = 1.0 - smoothstep(0.78, 1.0, ph);
+			float wv = uSigP.z * 3.0 * L * pow(1.0 - sg2, 1.2);
+			float o3 = sg4 * 2.0 - 1.0;
+			vec3 tgt = root + (n * max(lr.x, 0.0) + tt * lr.y * side) * L + bb * o3 * o3 * o3 * wv;
+			// рассыпание: точки уносит наружу и чуть закручивает
+			tgt += (n * 0.8 + tt * side * 0.4) * L * (1.0 - fade) * (0.4 + sg2);
+			float drawn = smoothstep(grow + 0.03, grow - 0.03, sg2);
+			float m = on * step(sg5, 0.75) * drawn * fade * min(uSig.x, 1.0);
+			pos = mix(pos, tgt, m);
+			float tip = exp(-pow((sg2 - grow) / 0.04, 2.0)) * on * step(sg5, 0.75) * step(grow, 0.999) * fade;
+			vColor = mix(vColor, vColor * 0.7 + uP2 * 0.6, m * min(uSigP.w, 1.0)) + uP2 * (m * max(uSigP.w - 1.0, 0.0) * 0.6 + tip * 1.4);
+			shSzMul *= 1.0 - m * 0.25 + tip * 0.35;
+		} else {
 		float K = 6.0;
 		float sS = sg2;
 		vec2 q;
@@ -656,6 +696,7 @@ void main() {
 		shSzMul *= 1.0 + m * 0.35 + tip;
 		// на форме остальные точки приглушаются, чтобы узор читался
 		if (sgMode < 0.5) vColor *= mix(1.0, 1.0 - uSigQ.x, (1.0 - part * drawn) * uSigQ.w * min(uSig.x, 1.0));
+		}
 	}
 #endif
 #ifdef VSCREEN

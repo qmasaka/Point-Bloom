@@ -70229,61 +70229,98 @@ fn main_() {
 		var sg3: f32 = hash11((aIdx * 4.177));
 		var sg4: f32 = hash11((aIdx * 6.731));
 		var sg5: f32 = hash11((aIdx * 8.219));
-		var sgMode: f32 = glsl_mod_f(fr.uSig.y, 2.0);
-		var sgCyber: f32 = select(0.0, 1.0, (fr.uSig.y > 1.5));
+		var sgMode: f32 = glsl_mod_f(fr.uSig.y, 3.0);
+		var sgCyber: f32 = select(0.0, 1.0, (fr.uSig.y > 2.5));
 		var part: f32 = step(sg5, fr.uSig.w);
-		var K: f32 = 6.0;
-		var sS: f32 = sg2;
-		var q: vec2f;
-		var w: f32;
-		if ((sg1 < 0.1)) {
-			q = vec2f(0.0, ((((sS * 2.0) - 1.0)) * 1.15));
-			w = (((fr.uSigP.z * 0.9) * ((0.4 + (0.6 * pow(abs(sin(((sS * 21.0) + fr.uSigP.y))), 4.0))))) * ((1.0 - pow(abs(((sS * 2.0) - 1.0)), 3.0))));
-			var o0: f32 = ((sg4 * 2.0) - 1.0);
-			q.x += (((o0 * o0) * o0) * w);
-		} else if ((sg1 < 0.72)) {
-			var k: f32 = floor(((((sg1 - 0.1)) / 0.62) * K));
-			q = sigStroke(k, sS, fr.uSigP.y, sgCyber);
-			var q2: vec2f = sigStroke(k, min(1.0, (sS + 0.01)), fr.uSigP.y, sgCyber);
-			var tg: vec2f = normalize(((q2 - q) + vec2f(1e-5)));
-			var nr: vec2f = vec2f(-tg.y, tg.x);
-			w = select((((fr.uSigP.z * 2.2) * pow(sin((sS * 3.14159)), 0.8)) * pow((1.0 - sS), 0.6)), ((fr.uSigP.z * 0.7) * pow((1.0 - sS), 0.8)), (sgCyber > 0.5));
-			var o1: f32 = ((sg4 * 2.0) - 1.0);
-			q += ((((nr * o1) * o1) * o1) * w);
+		if ((sgMode > 1.5)) {
+			var cs: f32 = ((max((fr.uYR.y - fr.uYR.x), 0.5) * 0.07) * fr.uSig.z);
+			var cid: vec3f = floor((((base - fr.uCen)) / cs));
+			var ch: f32 = hash11((dot(cid, vec3f(12.9898, 78.233, 37.719)) + (fr.uSigP.y * 0.37)));
+			var period: f32 = max(fr.uSigP.x, 0.5);
+			var ph: f32 = fract(((fr.uSigQ.z / period) + (ch * 7.13)));
+			var cyc: f32 = floor(((fr.uSigQ.z / period) + (ch * 7.13)));
+			var on: f32 = step(hash11(((ch * 91.7) + (cyc * 3.31))), fr.uSig.w);
+			var root: vec3f = ((((cid + 0.5)) * cs) + fr.uCen);
+			var n: vec3f = normalize(mix(((root - fr.uCen) + vec3f(1e-3)), vec3f(0.0, 0.0, 1.0), fr.uFlat));
+			var rh: vec3f = (vec3f(hash11((ch * 3.1)), hash11((ch * 5.7)), hash11((ch * 8.3))) - 0.5);
+			var tt: vec3f = normalize((cross(n, normalize((rh + vec3f(0.0, 0.31, 0.0)))) + vec3f(1e-4)));
+			var tw: f32 = (((fr.uSigQ.z * 0.35) * fr.uSigQ.y) + (ch * 6.28));
+			var bb: vec3f = cross(n, tt);
+			tt = ((tt * cos((tw * 0.3))) + (bb * sin((tw * 0.3))));
+			bb = cross(n, tt);
+			var k2: f32 = (ch * 31.7);
+			var p0: vec2f = sigBez(k2, 0.0, fr.uSigP.y);
+			var pl: vec2f = (sigStroke(k2, sg2, fr.uSigP.y, sgCyber) - p0);
+			var side: f32 = select(1.0, -1.0, (sg3 < 0.5));
+			var L: f32 = (cs * 2.6);
+			var sway: f32 = ((sin(((fr.uSigQ.z * 1.4) + (ch * 20.0))) * 0.35) * fr.uSigQ.y);
+			var lr: vec2f = vec2f(((pl.x * cos(sway)) - (pl.y * sin(sway))), ((pl.x * sin(sway)) + (pl.y * cos(sway))));
+			var grow: f32 = smoothstep(0.0, 0.45, ph);
+			var fade: f32 = (1.0 - smoothstep(0.78, 1.0, ph));
+			var wv: f32 = (((fr.uSigP.z * 3.0) * L) * pow((1.0 - sg2), 1.2));
+			var o3: f32 = ((sg4 * 2.0) - 1.0);
+			var tgt: vec3f = ((root + ((((n * max(lr.x, 0.0)) + ((tt * lr.y) * side))) * L)) + ((((bb * o3) * o3) * o3) * wv));
+			tgt += ((((((n * 0.8) + ((tt * side) * 0.4))) * L) * ((1.0 - fade))) * ((0.4 + sg2)));
+			var drawn: f32 = smoothstep((grow + 0.03), (grow - 0.03), sg2);
+			var m: f32 = ((((on * step(sg5, 0.75)) * drawn) * fade) * min(fr.uSig.x, 1.0));
+			pos = mix(pos, tgt, m);
+			var tip: f32 = ((((exp(-pow((((sg2 - grow)) / 0.04), 2.0)) * on) * step(sg5, 0.75)) * step(grow, 0.999)) * fade);
+			vColor = (mix(vColor, ((vColor * 0.7) + (fr.uP2 * 0.6)), (m * min(fr.uSigP.w, 1.0))) + (fr.uP2 * ((((m * max((fr.uSigP.w - 1.0), 0.0)) * 0.6) + (tip * 1.4)))));
+			shSzMul *= ((1.0 - (m * 0.25)) + (tip * 0.35));
 		} else {
-			var k: f32 = floor(((((sg1 - 0.72)) / 0.28) * K));
-			var j: f32 = floor((sg3 * 4.0));
-			var sb: f32 = (0.15 + (0.7 * hash11((((k * 5.1) + (j * 1.7)) + fr.uSigP.y))));
-			var b0: vec2f = sigStroke(k, sb, fr.uSigP.y, sgCyber);
-			var b1: vec2f = sigStroke(k, min(1.0, (sb + 0.01)), fr.uSigP.y, sgCyber);
-			var tg: vec2f = normalize(((b1 - b0) + vec2f(1e-5)));
-			var ang: f32 = (select(-0.85, 0.85, (glsl_mod_f(j, 2.0) < 0.5)));
-			var d: vec2f = vec2f(((tg.x * cos(ang)) - (tg.y * sin(ang))), ((tg.x * sin(ang)) + (tg.y * cos(ang))));
-			var L: f32 = (0.08 + (0.16 * hash11((((k * 9.3) + (j * 3.1)) + fr.uSigP.y))));
-			q = (b0 + ((d * L) * sS));
-			w = ((fr.uSigP.z * 1.1) * pow((1.0 - sS), 1.6));
-			var o2: f32 = ((sg4 * 2.0) - 1.0);
-			q += ((((vec2f(-d.y, d.x) * o2) * o2) * o2) * w);
-			sS = (sb + ((sS * ((1.0 - sb))) * 0.5));
-		}
-		if ((((sg1 >= 0.1) && (sg1 < 0.72)) && (sg3 < 0.5))) {
-			q.x = -q.x;
-		}
-		if (((sg1 >= 0.72) && (hash11((aIdx * 9.91)) < 0.5))) {
-			q.x = -q.x;
-		}
-		q.y *= 1.15;
-		q += ((vec2f(sin(((fr.uSigQ.z * 1.7) + (sg1 * 30.0))), cos(((fr.uSigQ.z * 1.3) + (sg2 * 30.0)))) * 0.01) * fr.uSigQ.y);
-		var H: f32 = (((max((fr.uYR.y - fr.uYR.x), 0.5) * 0.5) * fr.uSig.z) * (select(1.0, 1.25, (sgMode > 0.5))));
-		var tgt: vec3f = vec3f((fr.uCen.x + (q.x * H)), (fr.uCen.y + (q.y * H)), select(((fr.uCen.z + (((pos.z - fr.uCen.z)) * 0.2)) + (0.15 * H)), (fr.uCen.z + ((((sg4 - 0.5)) * 0.04) * H)), (sgMode > 0.5)));
-		var drawn: f32 = smoothstep((fr.uSigP.x + 0.02), (fr.uSigP.x - 0.02), sS);
-		var m: f32 = (((part * drawn) * fr.uSigQ.w) * min(fr.uSig.x, 1.0));
-		pos = mix(pos, tgt, m);
-		var tip: f32 = (((exp(-pow((((sS - fr.uSigP.x)) / 0.025), 2.0)) * part) * fr.uSigQ.w) * step(fr.uSigP.x, 0.999));
-		vColor = (mix(vColor, ((vColor * 0.75) + (fr.uP2 * 0.55)), (m * min(fr.uSigP.w, 1.0))) + (fr.uP2 * ((((m * max((fr.uSigP.w - 1.0), 0.0)) * 0.6) + (tip * 1.2)))));
-		shSzMul *= ((1.0 + (m * 0.35)) + tip);
-		if ((sgMode < 0.5)) {
-			vColor *= vec3f(mix(1.0, (1.0 - fr.uSigQ.x), ((((1.0 - (part * drawn))) * fr.uSigQ.w) * min(fr.uSig.x, 1.0))));
+			var K: f32 = 6.0;
+			var sS: f32 = sg2;
+			var q: vec2f;
+			var w: f32;
+			if ((sg1 < 0.1)) {
+				q = vec2f(0.0, ((((sS * 2.0) - 1.0)) * 1.15));
+				w = (((fr.uSigP.z * 0.9) * ((0.4 + (0.6 * pow(abs(sin(((sS * 21.0) + fr.uSigP.y))), 4.0))))) * ((1.0 - pow(abs(((sS * 2.0) - 1.0)), 3.0))));
+				var o0: f32 = ((sg4 * 2.0) - 1.0);
+				q.x += (((o0 * o0) * o0) * w);
+			} else if ((sg1 < 0.72)) {
+				var k: f32 = floor(((((sg1 - 0.1)) / 0.62) * K));
+				q = sigStroke(k, sS, fr.uSigP.y, sgCyber);
+				var q2: vec2f = sigStroke(k, min(1.0, (sS + 0.01)), fr.uSigP.y, sgCyber);
+				var tg: vec2f = normalize(((q2 - q) + vec2f(1e-5)));
+				var nr: vec2f = vec2f(-tg.y, tg.x);
+				w = select((((fr.uSigP.z * 2.2) * pow(sin((sS * 3.14159)), 0.8)) * pow((1.0 - sS), 0.6)), ((fr.uSigP.z * 0.7) * pow((1.0 - sS), 0.8)), (sgCyber > 0.5));
+				var o1: f32 = ((sg4 * 2.0) - 1.0);
+				q += ((((nr * o1) * o1) * o1) * w);
+			} else {
+				var k: f32 = floor(((((sg1 - 0.72)) / 0.28) * K));
+				var j: f32 = floor((sg3 * 4.0));
+				var sb: f32 = (0.15 + (0.7 * hash11((((k * 5.1) + (j * 1.7)) + fr.uSigP.y))));
+				var b0: vec2f = sigStroke(k, sb, fr.uSigP.y, sgCyber);
+				var b1: vec2f = sigStroke(k, min(1.0, (sb + 0.01)), fr.uSigP.y, sgCyber);
+				var tg: vec2f = normalize(((b1 - b0) + vec2f(1e-5)));
+				var ang: f32 = (select(-0.85, 0.85, (glsl_mod_f(j, 2.0) < 0.5)));
+				var d: vec2f = vec2f(((tg.x * cos(ang)) - (tg.y * sin(ang))), ((tg.x * sin(ang)) + (tg.y * cos(ang))));
+				var L: f32 = (0.08 + (0.16 * hash11((((k * 9.3) + (j * 3.1)) + fr.uSigP.y))));
+				q = (b0 + ((d * L) * sS));
+				w = ((fr.uSigP.z * 1.1) * pow((1.0 - sS), 1.6));
+				var o2: f32 = ((sg4 * 2.0) - 1.0);
+				q += ((((vec2f(-d.y, d.x) * o2) * o2) * o2) * w);
+				sS = (sb + ((sS * ((1.0 - sb))) * 0.5));
+			}
+			if ((((sg1 >= 0.1) && (sg1 < 0.72)) && (sg3 < 0.5))) {
+				q.x = -q.x;
+			}
+			if (((sg1 >= 0.72) && (hash11((aIdx * 9.91)) < 0.5))) {
+				q.x = -q.x;
+			}
+			q.y *= 1.15;
+			q += ((vec2f(sin(((fr.uSigQ.z * 1.7) + (sg1 * 30.0))), cos(((fr.uSigQ.z * 1.3) + (sg2 * 30.0)))) * 0.01) * fr.uSigQ.y);
+			var H: f32 = (((max((fr.uYR.y - fr.uYR.x), 0.5) * 0.5) * fr.uSig.z) * (select(1.0, 1.25, (sgMode > 0.5))));
+			var tgt: vec3f = vec3f((fr.uCen.x + (q.x * H)), (fr.uCen.y + (q.y * H)), select(((fr.uCen.z + (((pos.z - fr.uCen.z)) * 0.2)) + (0.15 * H)), (fr.uCen.z + ((((sg4 - 0.5)) * 0.04) * H)), (sgMode > 0.5)));
+			var drawn: f32 = smoothstep((fr.uSigP.x + 0.02), (fr.uSigP.x - 0.02), sS);
+			var m: f32 = (((part * drawn) * fr.uSigQ.w) * min(fr.uSig.x, 1.0));
+			pos = mix(pos, tgt, m);
+			var tip: f32 = (((exp(-pow((((sS - fr.uSigP.x)) / 0.025), 2.0)) * part) * fr.uSigQ.w) * step(fr.uSigP.x, 0.999));
+			vColor = (mix(vColor, ((vColor * 0.75) + (fr.uP2 * 0.55)), (m * min(fr.uSigP.w, 1.0))) + (fr.uP2 * ((((m * max((fr.uSigP.w - 1.0), 0.0)) * 0.6) + (tip * 1.2)))));
+			shSzMul *= ((1.0 + (m * 0.35)) + tip);
+			if ((sgMode < 0.5)) {
+				vColor *= vec3f(mix(1.0, (1.0 - fr.uSigQ.x), ((((1.0 - (part * drawn))) * fr.uSigQ.w) * min(fr.uSig.x, 1.0))));
+			}
 		}
 	}
 	if ((fr.uScr.x > 0.001)) {
@@ -72396,61 +72433,98 @@ fn main_() {
 		var sg3: f32 = hash11((aIdx * 4.177));
 		var sg4: f32 = hash11((aIdx * 6.731));
 		var sg5: f32 = hash11((aIdx * 8.219));
-		var sgMode: f32 = glsl_mod_f(fr.uSig.y, 2.0);
-		var sgCyber: f32 = select(0.0, 1.0, (fr.uSig.y > 1.5));
+		var sgMode: f32 = glsl_mod_f(fr.uSig.y, 3.0);
+		var sgCyber: f32 = select(0.0, 1.0, (fr.uSig.y > 2.5));
 		var part: f32 = step(sg5, fr.uSig.w);
-		var K: f32 = 6.0;
-		var sS: f32 = sg2;
-		var q: vec2f;
-		var w: f32;
-		if ((sg1 < 0.1)) {
-			q = vec2f(0.0, ((((sS * 2.0) - 1.0)) * 1.15));
-			w = (((fr.uSigP.z * 0.9) * ((0.4 + (0.6 * pow(abs(sin(((sS * 21.0) + fr.uSigP.y))), 4.0))))) * ((1.0 - pow(abs(((sS * 2.0) - 1.0)), 3.0))));
-			var o0: f32 = ((sg4 * 2.0) - 1.0);
-			q.x += (((o0 * o0) * o0) * w);
-		} else if ((sg1 < 0.72)) {
-			var k: f32 = floor(((((sg1 - 0.1)) / 0.62) * K));
-			q = sigStroke(k, sS, fr.uSigP.y, sgCyber);
-			var q2: vec2f = sigStroke(k, min(1.0, (sS + 0.01)), fr.uSigP.y, sgCyber);
-			var tg: vec2f = normalize(((q2 - q) + vec2f(1e-5)));
-			var nr: vec2f = vec2f(-tg.y, tg.x);
-			w = select((((fr.uSigP.z * 2.2) * pow(sin((sS * 3.14159)), 0.8)) * pow((1.0 - sS), 0.6)), ((fr.uSigP.z * 0.7) * pow((1.0 - sS), 0.8)), (sgCyber > 0.5));
-			var o1: f32 = ((sg4 * 2.0) - 1.0);
-			q += ((((nr * o1) * o1) * o1) * w);
+		if ((sgMode > 1.5)) {
+			var cs: f32 = ((max((fr.uYR.y - fr.uYR.x), 0.5) * 0.07) * fr.uSig.z);
+			var cid: vec3f = floor((((base - fr.uCen)) / cs));
+			var ch: f32 = hash11((dot(cid, vec3f(12.9898, 78.233, 37.719)) + (fr.uSigP.y * 0.37)));
+			var period: f32 = max(fr.uSigP.x, 0.5);
+			var ph: f32 = fract(((fr.uSigQ.z / period) + (ch * 7.13)));
+			var cyc: f32 = floor(((fr.uSigQ.z / period) + (ch * 7.13)));
+			var on: f32 = step(hash11(((ch * 91.7) + (cyc * 3.31))), fr.uSig.w);
+			var root: vec3f = ((((cid + 0.5)) * cs) + fr.uCen);
+			var n: vec3f = normalize(mix(((root - fr.uCen) + vec3f(1e-3)), vec3f(0.0, 0.0, 1.0), fr.uFlat));
+			var rh: vec3f = (vec3f(hash11((ch * 3.1)), hash11((ch * 5.7)), hash11((ch * 8.3))) - 0.5);
+			var tt: vec3f = normalize((cross(n, normalize((rh + vec3f(0.0, 0.31, 0.0)))) + vec3f(1e-4)));
+			var tw: f32 = (((fr.uSigQ.z * 0.35) * fr.uSigQ.y) + (ch * 6.28));
+			var bb: vec3f = cross(n, tt);
+			tt = ((tt * cos((tw * 0.3))) + (bb * sin((tw * 0.3))));
+			bb = cross(n, tt);
+			var k2: f32 = (ch * 31.7);
+			var p0: vec2f = sigBez(k2, 0.0, fr.uSigP.y);
+			var pl: vec2f = (sigStroke(k2, sg2, fr.uSigP.y, sgCyber) - p0);
+			var side: f32 = select(1.0, -1.0, (sg3 < 0.5));
+			var L: f32 = (cs * 2.6);
+			var sway: f32 = ((sin(((fr.uSigQ.z * 1.4) + (ch * 20.0))) * 0.35) * fr.uSigQ.y);
+			var lr: vec2f = vec2f(((pl.x * cos(sway)) - (pl.y * sin(sway))), ((pl.x * sin(sway)) + (pl.y * cos(sway))));
+			var grow: f32 = smoothstep(0.0, 0.45, ph);
+			var fade: f32 = (1.0 - smoothstep(0.78, 1.0, ph));
+			var wv: f32 = (((fr.uSigP.z * 3.0) * L) * pow((1.0 - sg2), 1.2));
+			var o3: f32 = ((sg4 * 2.0) - 1.0);
+			var tgt: vec3f = ((root + ((((n * max(lr.x, 0.0)) + ((tt * lr.y) * side))) * L)) + ((((bb * o3) * o3) * o3) * wv));
+			tgt += ((((((n * 0.8) + ((tt * side) * 0.4))) * L) * ((1.0 - fade))) * ((0.4 + sg2)));
+			var drawn: f32 = smoothstep((grow + 0.03), (grow - 0.03), sg2);
+			var m: f32 = ((((on * step(sg5, 0.75)) * drawn) * fade) * min(fr.uSig.x, 1.0));
+			pos = mix(pos, tgt, m);
+			var tip: f32 = ((((exp(-pow((((sg2 - grow)) / 0.04), 2.0)) * on) * step(sg5, 0.75)) * step(grow, 0.999)) * fade);
+			vColor = (mix(vColor, ((vColor * 0.7) + (fr.uP2 * 0.6)), (m * min(fr.uSigP.w, 1.0))) + (fr.uP2 * ((((m * max((fr.uSigP.w - 1.0), 0.0)) * 0.6) + (tip * 1.4)))));
+			shSzMul *= ((1.0 - (m * 0.25)) + (tip * 0.35));
 		} else {
-			var k: f32 = floor(((((sg1 - 0.72)) / 0.28) * K));
-			var j: f32 = floor((sg3 * 4.0));
-			var sb: f32 = (0.15 + (0.7 * hash11((((k * 5.1) + (j * 1.7)) + fr.uSigP.y))));
-			var b0: vec2f = sigStroke(k, sb, fr.uSigP.y, sgCyber);
-			var b1: vec2f = sigStroke(k, min(1.0, (sb + 0.01)), fr.uSigP.y, sgCyber);
-			var tg: vec2f = normalize(((b1 - b0) + vec2f(1e-5)));
-			var ang: f32 = (select(-0.85, 0.85, (glsl_mod_f(j, 2.0) < 0.5)));
-			var d: vec2f = vec2f(((tg.x * cos(ang)) - (tg.y * sin(ang))), ((tg.x * sin(ang)) + (tg.y * cos(ang))));
-			var L: f32 = (0.08 + (0.16 * hash11((((k * 9.3) + (j * 3.1)) + fr.uSigP.y))));
-			q = (b0 + ((d * L) * sS));
-			w = ((fr.uSigP.z * 1.1) * pow((1.0 - sS), 1.6));
-			var o2: f32 = ((sg4 * 2.0) - 1.0);
-			q += ((((vec2f(-d.y, d.x) * o2) * o2) * o2) * w);
-			sS = (sb + ((sS * ((1.0 - sb))) * 0.5));
-		}
-		if ((((sg1 >= 0.1) && (sg1 < 0.72)) && (sg3 < 0.5))) {
-			q.x = -q.x;
-		}
-		if (((sg1 >= 0.72) && (hash11((aIdx * 9.91)) < 0.5))) {
-			q.x = -q.x;
-		}
-		q.y *= 1.15;
-		q += ((vec2f(sin(((fr.uSigQ.z * 1.7) + (sg1 * 30.0))), cos(((fr.uSigQ.z * 1.3) + (sg2 * 30.0)))) * 0.01) * fr.uSigQ.y);
-		var H: f32 = (((max((fr.uYR.y - fr.uYR.x), 0.5) * 0.5) * fr.uSig.z) * (select(1.0, 1.25, (sgMode > 0.5))));
-		var tgt: vec3f = vec3f((fr.uCen.x + (q.x * H)), (fr.uCen.y + (q.y * H)), select(((fr.uCen.z + (((pos.z - fr.uCen.z)) * 0.2)) + (0.15 * H)), (fr.uCen.z + ((((sg4 - 0.5)) * 0.04) * H)), (sgMode > 0.5)));
-		var drawn: f32 = smoothstep((fr.uSigP.x + 0.02), (fr.uSigP.x - 0.02), sS);
-		var m: f32 = (((part * drawn) * fr.uSigQ.w) * min(fr.uSig.x, 1.0));
-		pos = mix(pos, tgt, m);
-		var tip: f32 = (((exp(-pow((((sS - fr.uSigP.x)) / 0.025), 2.0)) * part) * fr.uSigQ.w) * step(fr.uSigP.x, 0.999));
-		vColor = (mix(vColor, ((vColor * 0.75) + (fr.uP2 * 0.55)), (m * min(fr.uSigP.w, 1.0))) + (fr.uP2 * ((((m * max((fr.uSigP.w - 1.0), 0.0)) * 0.6) + (tip * 1.2)))));
-		shSzMul *= ((1.0 + (m * 0.35)) + tip);
-		if ((sgMode < 0.5)) {
-			vColor *= vec3f(mix(1.0, (1.0 - fr.uSigQ.x), ((((1.0 - (part * drawn))) * fr.uSigQ.w) * min(fr.uSig.x, 1.0))));
+			var K: f32 = 6.0;
+			var sS: f32 = sg2;
+			var q: vec2f;
+			var w: f32;
+			if ((sg1 < 0.1)) {
+				q = vec2f(0.0, ((((sS * 2.0) - 1.0)) * 1.15));
+				w = (((fr.uSigP.z * 0.9) * ((0.4 + (0.6 * pow(abs(sin(((sS * 21.0) + fr.uSigP.y))), 4.0))))) * ((1.0 - pow(abs(((sS * 2.0) - 1.0)), 3.0))));
+				var o0: f32 = ((sg4 * 2.0) - 1.0);
+				q.x += (((o0 * o0) * o0) * w);
+			} else if ((sg1 < 0.72)) {
+				var k: f32 = floor(((((sg1 - 0.1)) / 0.62) * K));
+				q = sigStroke(k, sS, fr.uSigP.y, sgCyber);
+				var q2: vec2f = sigStroke(k, min(1.0, (sS + 0.01)), fr.uSigP.y, sgCyber);
+				var tg: vec2f = normalize(((q2 - q) + vec2f(1e-5)));
+				var nr: vec2f = vec2f(-tg.y, tg.x);
+				w = select((((fr.uSigP.z * 2.2) * pow(sin((sS * 3.14159)), 0.8)) * pow((1.0 - sS), 0.6)), ((fr.uSigP.z * 0.7) * pow((1.0 - sS), 0.8)), (sgCyber > 0.5));
+				var o1: f32 = ((sg4 * 2.0) - 1.0);
+				q += ((((nr * o1) * o1) * o1) * w);
+			} else {
+				var k: f32 = floor(((((sg1 - 0.72)) / 0.28) * K));
+				var j: f32 = floor((sg3 * 4.0));
+				var sb: f32 = (0.15 + (0.7 * hash11((((k * 5.1) + (j * 1.7)) + fr.uSigP.y))));
+				var b0: vec2f = sigStroke(k, sb, fr.uSigP.y, sgCyber);
+				var b1: vec2f = sigStroke(k, min(1.0, (sb + 0.01)), fr.uSigP.y, sgCyber);
+				var tg: vec2f = normalize(((b1 - b0) + vec2f(1e-5)));
+				var ang: f32 = (select(-0.85, 0.85, (glsl_mod_f(j, 2.0) < 0.5)));
+				var d: vec2f = vec2f(((tg.x * cos(ang)) - (tg.y * sin(ang))), ((tg.x * sin(ang)) + (tg.y * cos(ang))));
+				var L: f32 = (0.08 + (0.16 * hash11((((k * 9.3) + (j * 3.1)) + fr.uSigP.y))));
+				q = (b0 + ((d * L) * sS));
+				w = ((fr.uSigP.z * 1.1) * pow((1.0 - sS), 1.6));
+				var o2: f32 = ((sg4 * 2.0) - 1.0);
+				q += ((((vec2f(-d.y, d.x) * o2) * o2) * o2) * w);
+				sS = (sb + ((sS * ((1.0 - sb))) * 0.5));
+			}
+			if ((((sg1 >= 0.1) && (sg1 < 0.72)) && (sg3 < 0.5))) {
+				q.x = -q.x;
+			}
+			if (((sg1 >= 0.72) && (hash11((aIdx * 9.91)) < 0.5))) {
+				q.x = -q.x;
+			}
+			q.y *= 1.15;
+			q += ((vec2f(sin(((fr.uSigQ.z * 1.7) + (sg1 * 30.0))), cos(((fr.uSigQ.z * 1.3) + (sg2 * 30.0)))) * 0.01) * fr.uSigQ.y);
+			var H: f32 = (((max((fr.uYR.y - fr.uYR.x), 0.5) * 0.5) * fr.uSig.z) * (select(1.0, 1.25, (sgMode > 0.5))));
+			var tgt: vec3f = vec3f((fr.uCen.x + (q.x * H)), (fr.uCen.y + (q.y * H)), select(((fr.uCen.z + (((pos.z - fr.uCen.z)) * 0.2)) + (0.15 * H)), (fr.uCen.z + ((((sg4 - 0.5)) * 0.04) * H)), (sgMode > 0.5)));
+			var drawn: f32 = smoothstep((fr.uSigP.x + 0.02), (fr.uSigP.x - 0.02), sS);
+			var m: f32 = (((part * drawn) * fr.uSigQ.w) * min(fr.uSig.x, 1.0));
+			pos = mix(pos, tgt, m);
+			var tip: f32 = (((exp(-pow((((sS - fr.uSigP.x)) / 0.025), 2.0)) * part) * fr.uSigQ.w) * step(fr.uSigP.x, 0.999));
+			vColor = (mix(vColor, ((vColor * 0.75) + (fr.uP2 * 0.55)), (m * min(fr.uSigP.w, 1.0))) + (fr.uP2 * ((((m * max((fr.uSigP.w - 1.0), 0.0)) * 0.6) + (tip * 1.2)))));
+			shSzMul *= ((1.0 + (m * 0.35)) + tip);
+			if ((sgMode < 0.5)) {
+				vColor *= vec3f(mix(1.0, (1.0 - fr.uSigQ.x), ((((1.0 - (part * drawn))) * fr.uSigQ.w) * min(fr.uSig.x, 1.0))));
+			}
 		}
 	}
 	if ((fr.uScr.x > 0.001)) {
@@ -74619,61 +74693,98 @@ fn main_() {
 		var sg3: f32 = hash11((aIdx * 4.177));
 		var sg4: f32 = hash11((aIdx * 6.731));
 		var sg5: f32 = hash11((aIdx * 8.219));
-		var sgMode: f32 = glsl_mod_f(fr.uSig.y, 2.0);
-		var sgCyber: f32 = select(0.0, 1.0, (fr.uSig.y > 1.5));
+		var sgMode: f32 = glsl_mod_f(fr.uSig.y, 3.0);
+		var sgCyber: f32 = select(0.0, 1.0, (fr.uSig.y > 2.5));
 		var part: f32 = step(sg5, fr.uSig.w);
-		var K: f32 = 6.0;
-		var sS: f32 = sg2;
-		var q: vec2f;
-		var w: f32;
-		if ((sg1 < 0.1)) {
-			q = vec2f(0.0, ((((sS * 2.0) - 1.0)) * 1.15));
-			w = (((fr.uSigP.z * 0.9) * ((0.4 + (0.6 * pow(abs(sin(((sS * 21.0) + fr.uSigP.y))), 4.0))))) * ((1.0 - pow(abs(((sS * 2.0) - 1.0)), 3.0))));
-			var o0: f32 = ((sg4 * 2.0) - 1.0);
-			q.x += (((o0 * o0) * o0) * w);
-		} else if ((sg1 < 0.72)) {
-			var k: f32 = floor(((((sg1 - 0.1)) / 0.62) * K));
-			q = sigStroke(k, sS, fr.uSigP.y, sgCyber);
-			var q2: vec2f = sigStroke(k, min(1.0, (sS + 0.01)), fr.uSigP.y, sgCyber);
-			var tg: vec2f = normalize(((q2 - q) + vec2f(1e-5)));
-			var nr: vec2f = vec2f(-tg.y, tg.x);
-			w = select((((fr.uSigP.z * 2.2) * pow(sin((sS * 3.14159)), 0.8)) * pow((1.0 - sS), 0.6)), ((fr.uSigP.z * 0.7) * pow((1.0 - sS), 0.8)), (sgCyber > 0.5));
-			var o1: f32 = ((sg4 * 2.0) - 1.0);
-			q += ((((nr * o1) * o1) * o1) * w);
+		if ((sgMode > 1.5)) {
+			var cs: f32 = ((max((fr.uYR.y - fr.uYR.x), 0.5) * 0.07) * fr.uSig.z);
+			var cid: vec3f = floor((((base - fr.uCen)) / cs));
+			var ch: f32 = hash11((dot(cid, vec3f(12.9898, 78.233, 37.719)) + (fr.uSigP.y * 0.37)));
+			var period: f32 = max(fr.uSigP.x, 0.5);
+			var ph: f32 = fract(((fr.uSigQ.z / period) + (ch * 7.13)));
+			var cyc: f32 = floor(((fr.uSigQ.z / period) + (ch * 7.13)));
+			var on: f32 = step(hash11(((ch * 91.7) + (cyc * 3.31))), fr.uSig.w);
+			var root: vec3f = ((((cid + 0.5)) * cs) + fr.uCen);
+			var n: vec3f = normalize(mix(((root - fr.uCen) + vec3f(1e-3)), vec3f(0.0, 0.0, 1.0), fr.uFlat));
+			var rh: vec3f = (vec3f(hash11((ch * 3.1)), hash11((ch * 5.7)), hash11((ch * 8.3))) - 0.5);
+			var tt: vec3f = normalize((cross(n, normalize((rh + vec3f(0.0, 0.31, 0.0)))) + vec3f(1e-4)));
+			var tw: f32 = (((fr.uSigQ.z * 0.35) * fr.uSigQ.y) + (ch * 6.28));
+			var bb: vec3f = cross(n, tt);
+			tt = ((tt * cos((tw * 0.3))) + (bb * sin((tw * 0.3))));
+			bb = cross(n, tt);
+			var k2: f32 = (ch * 31.7);
+			var p0: vec2f = sigBez(k2, 0.0, fr.uSigP.y);
+			var pl: vec2f = (sigStroke(k2, sg2, fr.uSigP.y, sgCyber) - p0);
+			var side: f32 = select(1.0, -1.0, (sg3 < 0.5));
+			var L: f32 = (cs * 2.6);
+			var sway: f32 = ((sin(((fr.uSigQ.z * 1.4) + (ch * 20.0))) * 0.35) * fr.uSigQ.y);
+			var lr: vec2f = vec2f(((pl.x * cos(sway)) - (pl.y * sin(sway))), ((pl.x * sin(sway)) + (pl.y * cos(sway))));
+			var grow: f32 = smoothstep(0.0, 0.45, ph);
+			var fade: f32 = (1.0 - smoothstep(0.78, 1.0, ph));
+			var wv: f32 = (((fr.uSigP.z * 3.0) * L) * pow((1.0 - sg2), 1.2));
+			var o3: f32 = ((sg4 * 2.0) - 1.0);
+			var tgt: vec3f = ((root + ((((n * max(lr.x, 0.0)) + ((tt * lr.y) * side))) * L)) + ((((bb * o3) * o3) * o3) * wv));
+			tgt += ((((((n * 0.8) + ((tt * side) * 0.4))) * L) * ((1.0 - fade))) * ((0.4 + sg2)));
+			var drawn: f32 = smoothstep((grow + 0.03), (grow - 0.03), sg2);
+			var m: f32 = ((((on * step(sg5, 0.75)) * drawn) * fade) * min(fr.uSig.x, 1.0));
+			pos = mix(pos, tgt, m);
+			var tip: f32 = ((((exp(-pow((((sg2 - grow)) / 0.04), 2.0)) * on) * step(sg5, 0.75)) * step(grow, 0.999)) * fade);
+			vColor = (mix(vColor, ((vColor * 0.7) + (fr.uP2 * 0.6)), (m * min(fr.uSigP.w, 1.0))) + (fr.uP2 * ((((m * max((fr.uSigP.w - 1.0), 0.0)) * 0.6) + (tip * 1.4)))));
+			shSzMul *= ((1.0 - (m * 0.25)) + (tip * 0.35));
 		} else {
-			var k: f32 = floor(((((sg1 - 0.72)) / 0.28) * K));
-			var j: f32 = floor((sg3 * 4.0));
-			var sb: f32 = (0.15 + (0.7 * hash11((((k * 5.1) + (j * 1.7)) + fr.uSigP.y))));
-			var b0: vec2f = sigStroke(k, sb, fr.uSigP.y, sgCyber);
-			var b1: vec2f = sigStroke(k, min(1.0, (sb + 0.01)), fr.uSigP.y, sgCyber);
-			var tg: vec2f = normalize(((b1 - b0) + vec2f(1e-5)));
-			var ang: f32 = (select(-0.85, 0.85, (glsl_mod_f(j, 2.0) < 0.5)));
-			var d: vec2f = vec2f(((tg.x * cos(ang)) - (tg.y * sin(ang))), ((tg.x * sin(ang)) + (tg.y * cos(ang))));
-			var L: f32 = (0.08 + (0.16 * hash11((((k * 9.3) + (j * 3.1)) + fr.uSigP.y))));
-			q = (b0 + ((d * L) * sS));
-			w = ((fr.uSigP.z * 1.1) * pow((1.0 - sS), 1.6));
-			var o2: f32 = ((sg4 * 2.0) - 1.0);
-			q += ((((vec2f(-d.y, d.x) * o2) * o2) * o2) * w);
-			sS = (sb + ((sS * ((1.0 - sb))) * 0.5));
-		}
-		if ((((sg1 >= 0.1) && (sg1 < 0.72)) && (sg3 < 0.5))) {
-			q.x = -q.x;
-		}
-		if (((sg1 >= 0.72) && (hash11((aIdx * 9.91)) < 0.5))) {
-			q.x = -q.x;
-		}
-		q.y *= 1.15;
-		q += ((vec2f(sin(((fr.uSigQ.z * 1.7) + (sg1 * 30.0))), cos(((fr.uSigQ.z * 1.3) + (sg2 * 30.0)))) * 0.01) * fr.uSigQ.y);
-		var H: f32 = (((max((fr.uYR.y - fr.uYR.x), 0.5) * 0.5) * fr.uSig.z) * (select(1.0, 1.25, (sgMode > 0.5))));
-		var tgt: vec3f = vec3f((fr.uCen.x + (q.x * H)), (fr.uCen.y + (q.y * H)), select(((fr.uCen.z + (((pos.z - fr.uCen.z)) * 0.2)) + (0.15 * H)), (fr.uCen.z + ((((sg4 - 0.5)) * 0.04) * H)), (sgMode > 0.5)));
-		var drawn: f32 = smoothstep((fr.uSigP.x + 0.02), (fr.uSigP.x - 0.02), sS);
-		var m: f32 = (((part * drawn) * fr.uSigQ.w) * min(fr.uSig.x, 1.0));
-		pos = mix(pos, tgt, m);
-		var tip: f32 = (((exp(-pow((((sS - fr.uSigP.x)) / 0.025), 2.0)) * part) * fr.uSigQ.w) * step(fr.uSigP.x, 0.999));
-		vColor = (mix(vColor, ((vColor * 0.75) + (fr.uP2 * 0.55)), (m * min(fr.uSigP.w, 1.0))) + (fr.uP2 * ((((m * max((fr.uSigP.w - 1.0), 0.0)) * 0.6) + (tip * 1.2)))));
-		shSzMul *= ((1.0 + (m * 0.35)) + tip);
-		if ((sgMode < 0.5)) {
-			vColor *= vec3f(mix(1.0, (1.0 - fr.uSigQ.x), ((((1.0 - (part * drawn))) * fr.uSigQ.w) * min(fr.uSig.x, 1.0))));
+			var K: f32 = 6.0;
+			var sS: f32 = sg2;
+			var q: vec2f;
+			var w: f32;
+			if ((sg1 < 0.1)) {
+				q = vec2f(0.0, ((((sS * 2.0) - 1.0)) * 1.15));
+				w = (((fr.uSigP.z * 0.9) * ((0.4 + (0.6 * pow(abs(sin(((sS * 21.0) + fr.uSigP.y))), 4.0))))) * ((1.0 - pow(abs(((sS * 2.0) - 1.0)), 3.0))));
+				var o0: f32 = ((sg4 * 2.0) - 1.0);
+				q.x += (((o0 * o0) * o0) * w);
+			} else if ((sg1 < 0.72)) {
+				var k: f32 = floor(((((sg1 - 0.1)) / 0.62) * K));
+				q = sigStroke(k, sS, fr.uSigP.y, sgCyber);
+				var q2: vec2f = sigStroke(k, min(1.0, (sS + 0.01)), fr.uSigP.y, sgCyber);
+				var tg: vec2f = normalize(((q2 - q) + vec2f(1e-5)));
+				var nr: vec2f = vec2f(-tg.y, tg.x);
+				w = select((((fr.uSigP.z * 2.2) * pow(sin((sS * 3.14159)), 0.8)) * pow((1.0 - sS), 0.6)), ((fr.uSigP.z * 0.7) * pow((1.0 - sS), 0.8)), (sgCyber > 0.5));
+				var o1: f32 = ((sg4 * 2.0) - 1.0);
+				q += ((((nr * o1) * o1) * o1) * w);
+			} else {
+				var k: f32 = floor(((((sg1 - 0.72)) / 0.28) * K));
+				var j: f32 = floor((sg3 * 4.0));
+				var sb: f32 = (0.15 + (0.7 * hash11((((k * 5.1) + (j * 1.7)) + fr.uSigP.y))));
+				var b0: vec2f = sigStroke(k, sb, fr.uSigP.y, sgCyber);
+				var b1: vec2f = sigStroke(k, min(1.0, (sb + 0.01)), fr.uSigP.y, sgCyber);
+				var tg: vec2f = normalize(((b1 - b0) + vec2f(1e-5)));
+				var ang: f32 = (select(-0.85, 0.85, (glsl_mod_f(j, 2.0) < 0.5)));
+				var d: vec2f = vec2f(((tg.x * cos(ang)) - (tg.y * sin(ang))), ((tg.x * sin(ang)) + (tg.y * cos(ang))));
+				var L: f32 = (0.08 + (0.16 * hash11((((k * 9.3) + (j * 3.1)) + fr.uSigP.y))));
+				q = (b0 + ((d * L) * sS));
+				w = ((fr.uSigP.z * 1.1) * pow((1.0 - sS), 1.6));
+				var o2: f32 = ((sg4 * 2.0) - 1.0);
+				q += ((((vec2f(-d.y, d.x) * o2) * o2) * o2) * w);
+				sS = (sb + ((sS * ((1.0 - sb))) * 0.5));
+			}
+			if ((((sg1 >= 0.1) && (sg1 < 0.72)) && (sg3 < 0.5))) {
+				q.x = -q.x;
+			}
+			if (((sg1 >= 0.72) && (hash11((aIdx * 9.91)) < 0.5))) {
+				q.x = -q.x;
+			}
+			q.y *= 1.15;
+			q += ((vec2f(sin(((fr.uSigQ.z * 1.7) + (sg1 * 30.0))), cos(((fr.uSigQ.z * 1.3) + (sg2 * 30.0)))) * 0.01) * fr.uSigQ.y);
+			var H: f32 = (((max((fr.uYR.y - fr.uYR.x), 0.5) * 0.5) * fr.uSig.z) * (select(1.0, 1.25, (sgMode > 0.5))));
+			var tgt: vec3f = vec3f((fr.uCen.x + (q.x * H)), (fr.uCen.y + (q.y * H)), select(((fr.uCen.z + (((pos.z - fr.uCen.z)) * 0.2)) + (0.15 * H)), (fr.uCen.z + ((((sg4 - 0.5)) * 0.04) * H)), (sgMode > 0.5)));
+			var drawn: f32 = smoothstep((fr.uSigP.x + 0.02), (fr.uSigP.x - 0.02), sS);
+			var m: f32 = (((part * drawn) * fr.uSigQ.w) * min(fr.uSig.x, 1.0));
+			pos = mix(pos, tgt, m);
+			var tip: f32 = (((exp(-pow((((sS - fr.uSigP.x)) / 0.025), 2.0)) * part) * fr.uSigQ.w) * step(fr.uSigP.x, 0.999));
+			vColor = (mix(vColor, ((vColor * 0.75) + (fr.uP2 * 0.55)), (m * min(fr.uSigP.w, 1.0))) + (fr.uP2 * ((((m * max((fr.uSigP.w - 1.0), 0.0)) * 0.6) + (tip * 1.2)))));
+			shSzMul *= ((1.0 + (m * 0.35)) + tip);
+			if ((sgMode < 0.5)) {
+				vColor *= vec3f(mix(1.0, (1.0 - fr.uSigQ.x), ((((1.0 - (part * drawn))) * fr.uSigQ.w) * min(fr.uSig.x, 1.0))));
+			}
 		}
 	}
 	if ((fr.uScr.x > 0.001)) {
@@ -77334,19 +77445,21 @@ const FX_LAYERS = [
 { id: 'explode', group: 'Разрушение', name: 'Разбор на части', icon: 'cube', hint: 'Форма разъезжается на жёсткие куски, они поворачиваются и возвращаются на место. Настраиваются число кусков, дальность и вращение', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', speed: 0.8, pieces: 40, dist: 1, spin: 0.5, stagger: 0.5 }, extras: [{ key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['hold', 'Всегда разобрана']] }, { key: 'pieces', label: 'Число кусков', min: 6, max: 256, step: 1, int: true }, { key: 'dist', label: 'Как далеко расходятся', min: 0.2, max: 3, step: 0.05 }, { key: 'spin', label: 'Вращение кусков', min: 0, max: 1, step: 0.05 }, { key: 'stagger', label: 'Разброс по времени', min: 0, max: 0.9, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1, when: ['mode', ['loop']] }] },
 { id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Форма исчезает и собирается обратно. Виды: лазерный срез, слои, блоки, песок, воронка, взрыв, горение, ветер, росток', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', dir: 'both', order: 'top', style: 'laser', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.35, scatter: 1, edge: 0.32, glow: 0.35, shrink: 0.85, seed: 'bottom', tendril: 0.6, bud: 0.7 }, extras: [{ type: 'title', label: 'Как растворяется' }, { key: 'style', label: 'Вид', type: 'select', options: [['laser', 'Лазерный срез: сканирующая плоскость'], ['layers', 'Сдвиг слоёв: полосы в стороны'], ['chunks', 'Блочный распад: объёмные кубы'], ['sand', 'Осыпание: частицы на пол'], ['vortex', 'Воронка: закручивание к центру'], ['shock', 'Ударная волна: импульс от центра'], ['burn', 'Испепеление: частицы вверх'], ['wind', 'Сдувание: боковой поток ветра'], ['sprout', 'Прорастание: ветвление формы']] }, { key: 'seed', label: 'Откуда растёт', type: 'select', options: [['bottom', 'Снизу вверх: от основания'], ['point', 'Из точки: случайный фокус'], ['center', 'Из центра: радиально наружу']], when: ['style', ['sprout']] }, { key: 'order', label: 'Откуда начинается', type: 'select', when: ['style', ['laser', 'layers', 'chunks', 'sand', 'vortex', 'shock', 'burn', 'wind']], options: [['top', 'Сверху вниз'], ['bottom', 'Снизу вверх'], ['side', 'Слева направо'], ['center', 'Из центра наружу'], ['edges', 'С краёв к центру'], ['noise', 'Случайные зоны']] }, { type: 'title', label: 'Запуск' }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'dir', label: 'Что дольше', type: 'seg', options: [['both', 'Поровну'], ['out', 'Распад'], ['in', 'Сборка']], when: ['mode', ['loop']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01, when: ['mode', ['slider']] }, { type: 'title', label: 'Движение частиц' }, { key: 'scatter', label: 'Размах движения', min: 0.2, max: 2.5, step: 0.05 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер и закрутка', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Лёгкая турбулентность', min: 0, max: 2, step: 0.05 }, { type: 'title', label: 'Кромка и частицы' }, { key: 'edge', label: 'Ширина кромки распада', min: 0.1, max: 0.7, step: 0.02 }, { key: 'glow', label: 'Свечение кромки', min: 0, max: 1.5, step: 0.05 }, { key: 'shrink', label: 'Мельчание частиц', min: 0, max: 1, step: 0.05 }, { key: 'tendril', label: 'Усики (неровный фронт)', min: 0, max: 1, step: 0.05, when: ['style', ['sprout']] }, { key: 'bud', label: 'Почки на кромке', min: 0, max: 1.5, step: 0.05, when: ['style', ['sprout']] }] },
 { id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки превращаются в кубики. Виды: сетка, лего, дыхание, волна, ступени, разлёт. Настраиваются размер и высота', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 1, mode: 'grid', speed: 1, size: 1, height: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['grid', 'Кубическая сетка: равномерные блоки'], ['lego', 'Столбцы: рельеф разной высоты'], ['breathe', 'Дыхание: пульсирующая сетка'], ['wave', 'Волна: бегущий подъём кубов'], ['stairs', 'Террасы: ступенчатые уровни'], ['scatter', 'Дрожание: вибрация на месте']] }, { key: 'size', label: 'Размер кубиков', min: 0.4, max: 2.5, step: 0.05 }, { key: 'height', label: 'Высота и размах', min: 0, max: 2, step: 0.05, when: ['mode', ['lego', 'wave', 'stairs', 'scatter']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe', 'wave', 'scatter']] }] },
-{ id: 'sigil', sound: false, group: 'Эксперименты', name: 'Сигилы', icon: 'spiral', hint: 'Точки формы собираются в генеративный орнамент: готические завитки или кибер-шипы, симметрично по оси. Узор прорисовывается и сменяется новым', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'on', style: 'gothic', scale: 1, frac: 0.5, width: 0.035, glow: 0.6, dim: 0.6, wobble: 0.3, draw: 2.5, hold: 3, loop: 'on', beat: 'off' }, extras: [
+{ id: 'sigil', sound: false, group: 'Эксперименты', name: 'Сигилы', icon: 'spiral', hint: 'Из формы прорастают маленькие готические завитки из её же точек: растут, покачиваются и рассыпаются. Или вся форма собирается в один большой орнамент', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'sprout', density: 0.3, life: 4, style: 'gothic', scale: 1, frac: 0.5, width: 0.035, glow: 0.6, dim: 0.6, wobble: 0.3, draw: 2.5, hold: 3, loop: 'on', beat: 'off' }, extras: [
 { type: 'row', items: [{ label: 'Новый узор', icon: 'arrows-clockwise', act: 'sigilNew' }] },
 { key: 'style', label: 'Стиль', type: 'seg', options: [['gothic', 'Готика'], ['cyber', 'Кибер']] },
-{ key: 'mode', label: 'Где', type: 'seg', options: [['on', 'На форме'], ['around', 'Вокруг']] },
+{ key: 'mode', label: 'Где', type: 'seg', options: [['sprout', 'Завитки'], ['on', 'На форме'], ['around', 'Вокруг']] },
+{ key: 'density', label: 'Сколько завитков', min: 0.05, max: 1, step: 0.05, when: ['mode', ['sprout']] },
+{ key: 'life', label: 'Жизнь завитка, с', min: 1, max: 12, step: 0.5, noNorm: true, when: ['mode', ['sprout']] },
 { key: 'scale', label: 'Размер узора', min: 0.4, max: 2.5, step: 0.05, noNorm: true },
-{ key: 'frac', label: 'Точек в узоре', min: 0.05, max: 1, step: 0.05 },
+{ key: 'frac', label: 'Точек в узоре', min: 0.05, max: 1, step: 0.05, when: ['mode', ['on', 'around']] },
 { key: 'width', label: 'Толщина линий', min: 0.01, max: 0.2, step: 0.005, noNorm: true },
 { key: 'glow', label: 'Свечение', min: 0, max: 2, step: 0.05 },
 { key: 'dim', label: 'Приглушить остальное', min: 0, max: 1, step: 0.05, when: ['mode', ['on']] },
 { key: 'wobble', label: 'Дрожь', min: 0, max: 1, step: 0.05 },
-{ type: 'title', label: 'Смена узора' },
-{ key: 'draw', label: 'Прорисовка, с', min: 0.3, max: 8, step: 0.1, noNorm: true },
-{ key: 'loop', label: 'Потом', type: 'seg', options: [['on', 'Новый узор'], ['off', 'Остаётся']] },
+{ type: 'title', label: 'Смена узора', when: ['mode', ['on', 'around']] },
+{ key: 'draw', label: 'Прорисовка, с', min: 0.3, max: 8, step: 0.1, noNorm: true, when: ['mode', ['on', 'around']] },
+{ key: 'loop', label: 'Потом', type: 'seg', options: [['on', 'Новый узор'], ['off', 'Остаётся']], when: ['mode', ['on', 'around']] },
 { key: 'hold', label: 'Держится, с', min: 0, max: 10, step: 0.5, noNorm: true, when: ['loop', ['on']] },
 { key: 'beat', label: 'По удару музыки', type: 'seg', options: [['off', 'Нет'], ['on', 'Новый узор']] },
 ] },
@@ -85343,6 +85456,10 @@ en: {
 'Потом': 'Then',
 'Держится, с': 'Holds, s',
 'По удару музыки': 'On music hit',
+'Из формы прорастают маленькие готические завитки из её же точек: растут, покачиваются и рассыпаются. Или вся форма собирается в один большой орнамент': 'Small gothic curls grow out of the shape from its own points: they grow, sway and crumble away. Or the whole shape gathers into one large ornament',
+'Завитки': 'Curls',
+'Сколько завитков': 'How many curls',
+'Жизнь завитка, с': 'Curl life, s',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -86358,6 +86475,10 @@ uk: {
 'Потом': 'Потім',
 'Держится, с': 'Тримається, с',
 'По удару музыки': 'За ударом музики',
+'Из формы прорастают маленькие готические завитки из её же точек: растут, покачиваются и рассыпаются. Или вся форма собирается в один большой орнамент': 'З форми проростають маленькі готичні завитки з її ж точок: ростуть, гойдаються і розсипаються. Або вся форма збирається в один великий орнамент',
+'Завитки': 'Завитки',
+'Сколько завитков': 'Скільки завитків',
+'Жизнь завитка, с': 'Життя завитка, с',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -87373,6 +87494,10 @@ es: {
 'Потом': 'Luego',
 'Держится, с': 'Se mantiene, s',
 'По удару музыки': 'Con el golpe de música',
+'Из формы прорастают маленькие готические завитки из её же точек: растут, покачиваются и рассыпаются. Или вся форма собирается в один большой орнамент': 'De la forma brotan pequeñas volutas góticas con sus propios puntos: crecen, se balancean y se deshacen. O toda la forma se reúne en un gran ornamento',
+'Завитки': 'Volutas',
+'Сколько завитков': 'Cuántas volutas',
+'Жизнь завитка, с': 'Vida de la voluta, s',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -88388,6 +88513,10 @@ de: {
 'Потом': 'Danach',
 'Держится, с': 'Hält, s',
 'По удару музыки': 'Beim Musikschlag',
+'Из формы прорастают маленькие готические завитки из её же точек: растут, покачиваются и рассыпаются. Или вся форма собирается в один большой орнамент': 'Aus der Form wachsen kleine gotische Schnörkel aus ihren eigenen Punkten: sie wachsen, wiegen sich und zerfallen. Oder die ganze Form sammelt sich zu einem großen Ornament',
+'Завитки': 'Schnörkel',
+'Сколько завитков': 'Wie viele Schnörkel',
+'Жизнь завитка, с': 'Lebensdauer, s',
 },
 };
 };
@@ -95431,9 +95560,49 @@ void main() {
 		float sg3 = hash11(aIdx * 4.177);
 		float sg4 = hash11(aIdx * 6.731);
 		float sg5 = hash11(aIdx * 8.219);
-		float sgMode = mod(uSig.y, 2.0);
-		float sgCyber = uSig.y > 1.5 ? 1.0 : 0.0;
+		float sgMode = mod(uSig.y, 3.0);
+		float sgCyber = uSig.y > 2.5 ? 1.0 : 0.0;
 		float part = step(sg5, uSig.w);
+		if (sgMode > 1.5) {
+			// завитки из формы: на поверхности в случайных местах прорастают маленькие симметричные готические завитки из её же точек.
+			// Каждый живёт сам: прорисовывается от корня, покачивается, потом рассыпается наружу, и вырастает в другом месте
+			float cs = max(uYR.y - uYR.x, 0.5) * 0.07 * uSig.z;
+			vec3 cid = floor((base - uCen) / cs);
+			float ch = hash11(dot(cid, vec3(12.9898, 78.233, 37.719)) + uSigP.y * 0.37);
+			float period = max(uSigP.x, 0.5);
+			float ph = fract(uSigQ.z / period + ch * 7.13);
+			// в одном цикле прорастает доля мест, в следующем другие
+			float cyc = floor(uSigQ.z / period + ch * 7.13);
+			float on = step(hash11(ch * 91.7 + cyc * 3.31), uSig.w);
+			vec3 root = (cid + 0.5) * cs + uCen;
+			vec3 n = normalize(mix(root - uCen + vec3(1e-3), vec3(0.0, 0.0, 1.0), uFlat));
+			vec3 rh = vec3(hash11(ch * 3.1), hash11(ch * 5.7), hash11(ch * 8.3)) - 0.5;
+			vec3 tt = normalize(cross(n, normalize(rh + vec3(0.0, 0.31, 0.0))) + vec3(1e-4));
+			float tw = uSigQ.z * 0.35 * uSigQ.y + ch * 6.28;
+			vec3 bb = cross(n, tt);
+			tt = tt * cos(tw * 0.3) + bb * sin(tw * 0.3);
+			bb = cross(n, tt);
+			float k2 = ch * 31.7;
+			vec2 p0 = sigBez(k2, 0.0, uSigP.y);
+			vec2 pl = sigStroke(k2, sg2, uSigP.y, sgCyber) - p0;
+			float side = sg3 < 0.5 ? -1.0 : 1.0;
+			float L = cs * 2.6;
+			float sway = sin(uSigQ.z * 1.4 + ch * 20.0) * 0.35 * uSigQ.y;
+			vec2 lr = vec2(pl.x * cos(sway) - pl.y * sin(sway), pl.x * sin(sway) + pl.y * cos(sway));
+			float grow = smoothstep(0.0, 0.45, ph);
+			float fade = 1.0 - smoothstep(0.78, 1.0, ph);
+			float wv = uSigP.z * 3.0 * L * pow(1.0 - sg2, 1.2);
+			float o3 = sg4 * 2.0 - 1.0;
+			vec3 tgt = root + (n * max(lr.x, 0.0) + tt * lr.y * side) * L + bb * o3 * o3 * o3 * wv;
+			// рассыпание: точки уносит наружу и чуть закручивает
+			tgt += (n * 0.8 + tt * side * 0.4) * L * (1.0 - fade) * (0.4 + sg2);
+			float drawn = smoothstep(grow + 0.03, grow - 0.03, sg2);
+			float m = on * step(sg5, 0.75) * drawn * fade * min(uSig.x, 1.0);
+			pos = mix(pos, tgt, m);
+			float tip = exp(-pow((sg2 - grow) / 0.04, 2.0)) * on * step(sg5, 0.75) * step(grow, 0.999) * fade;
+			vColor = mix(vColor, vColor * 0.7 + uP2 * 0.6, m * min(uSigP.w, 1.0)) + uP2 * (m * max(uSigP.w - 1.0, 0.0) * 0.6 + tip * 1.4);
+			shSzMul *= 1.0 - m * 0.25 + tip * 0.35;
+		} else {
 		float K = 6.0;
 		float sS = sg2;
 		vec2 q;
@@ -95488,6 +95657,7 @@ void main() {
 		shSzMul *= 1.0 + m * 0.35 + tip;
 		// на форме остальные точки приглушаются, чтобы узор читался
 		if (sgMode < 0.5) vColor *= mix(1.0, 1.0 - uSigQ.x, (1.0 - part * drawn) * uSigQ.w * min(uSig.x, 1.0));
+		}
 	}
 #endif
 #ifdef VSCREEN
@@ -99136,9 +99306,13 @@ const f = S.t - draw - hold;
 if (f > 0) vis = clamp(1 - f / 0.8, 0, 1);
 if (f > 0.8) this.sigilNew();
 }
-const mode = L.mode === 'around' ? 1 : 0;
+const mode = L.mode === 'around' ? 1 : L.mode === 'on' ? 0 : 2;
 const style = L.style === 'cyber' ? 1 : 0;
-u.uSig.value.set(Math.min(eff, 1.5), mode + style * 2, L.scale ?? 1, L.frac ?? 0.5);
+if (mode === 2) {
+prog = Math.max(0.5, L.life ?? 4);
+vis = 1;
+}
+u.uSig.value.set(Math.min(eff, 1.5), mode + style * 3, L.scale ?? 1, mode === 2 ? L.density ?? 0.3 : L.frac ?? 0.5);
 u.uSigP.value.set(prog, S.seed, L.width ?? 0.035, L.glow ?? 0.6);
 u.uSigQ.value.set(L.dim ?? 0.6, L.wobble ?? 0.3, this._time, vis);
 }

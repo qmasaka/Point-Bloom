@@ -25,9 +25,13 @@ const f = S.t - draw - hold;
 if (f > 0) vis = clamp(1 - f / 0.8, 0, 1);
 if (f > 0.8) this.sigilNew();
 }
-const mode = L.mode === 'around' ? 1 : 0;
+const mode = L.mode === 'around' ? 1 : L.mode === 'on' ? 0 : 2;
 const style = L.style === 'cyber' ? 1 : 0;
-u.uSig.value.set(Math.min(eff, 1.5), mode + style * 2, L.scale ?? 1, L.frac ?? 0.5);
+if (mode === 2) {
+prog = Math.max(0.5, L.life ?? 4);
+vis = 1;
+}
+u.uSig.value.set(Math.min(eff, 1.5), mode + style * 3, L.scale ?? 1, mode === 2 ? L.density ?? 0.3 : L.frac ?? 0.5);
 u.uSigP.value.set(prog, S.seed, L.width ?? 0.035, L.glow ?? 0.6);
 u.uSigQ.value.set(L.dim ?? 0.6, L.wobble ?? 0.3, this._time, vis);
 }

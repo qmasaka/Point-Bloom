@@ -1015,6 +1015,10 @@ export default {
 		'Потом': 'Then',
 		'Держится, с': 'Holds, s',
 		'По удару музыки': 'On music hit',
+		'Из формы прорастают маленькие готические завитки из её же точек: растут, покачиваются и рассыпаются. Или вся форма собирается в один большой орнамент': 'Small gothic curls grow out of the shape from its own points: they grow, sway and crumble away. Or the whole shape gathers into one large ornament',
+		'Завитки': 'Curls',
+		'Сколько завитков': 'How many curls',
+		'Жизнь завитка, с': 'Curl life, s',
 	},
 	uk: {
 		'Установить приложение': 'Встановити застосунок',
@@ -2031,6 +2035,10 @@ export default {
 		'Потом': 'Потім',
 		'Держится, с': 'Тримається, с',
 		'По удару музыки': 'За ударом музики',
+		'Из формы прорастают маленькие готические завитки из её же точек: растут, покачиваются и рассыпаются. Или вся форма собирается в один большой орнамент': 'З форми проростають маленькі готичні завитки з її ж точок: ростуть, гойдаються і розсипаються. Або вся форма збирається в один великий орнамент',
+		'Завитки': 'Завитки',
+		'Сколько завитков': 'Скільки завитків',
+		'Жизнь завитка, с': 'Життя завитка, с',
 	},
 	es: {
 		'Установить приложение': 'Instalar la aplicación',
@@ -3047,6 +3055,10 @@ export default {
 		'Потом': 'Luego',
 		'Держится, с': 'Se mantiene, s',
 		'По удару музыки': 'Con el golpe de música',
+		'Из формы прорастают маленькие готические завитки из её же точек: растут, покачиваются и рассыпаются. Или вся форма собирается в один большой орнамент': 'De la forma brotan pequeñas volutas góticas con sus propios puntos: crecen, se balancean y se deshacen. O toda la forma se reúne en un gran ornamento',
+		'Завитки': 'Volutas',
+		'Сколько завитков': 'Cuántas volutas',
+		'Жизнь завитка, с': 'Vida de la voluta, s',
 	},
 	de: {
 		'Установить приложение': 'App installieren',
@@ -4063,5 +4075,9 @@ export default {
 		'Потом': 'Danach',
 		'Держится, с': 'Hält, s',
 		'По удару музыки': 'Beim Musikschlag',
+		'Из формы прорастают маленькие готические завитки из её же точек: растут, покачиваются и рассыпаются. Или вся форма собирается в один большой орнамент': 'Aus der Form wachsen kleine gotische Schnörkel aus ihren eigenen Punkten: sie wachsen, wiegen sich und zerfallen. Oder die ganze Form sammelt sich zu einem großen Ornament',
+		'Завитки': 'Schnörkel',
+		'Сколько завитков': 'Wie viele Schnörkel',
+		'Жизнь завитка, с': 'Lebensdauer, s',
 	},
 };
