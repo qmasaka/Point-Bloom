@@ -5,20 +5,31 @@ import { WebGPUPoints } from './webgpu-points.js';
 import { WebGPUPost } from './webgpu-post.js';
 import { WebGPUMesh } from './webgpu-mesh.js';
 import { WebGPUTrail } from './webgpu-trail.js';
+import { WebGPUSurface } from './webgpu-surface.js';
 import { markGpuBad } from './device.js';
 
 // атрибуты облака (имена как в GLSL), которые движок эффектов хранит в геометрии three.js
 const ATTRS = ['aOrigin', 'aTarget', 'aNormal', 'aNormalB', 'aPaint', 'aColor', 'aColorB', 'aHide', 'aDepth', 'aPath', 'aSculpt', 'aVis', 'aIdx'];
 
 const _mv = new THREE.Matrix4();
-const _nm = new THREE.Matrix3();
+const _pm = new THREE.Matrix4();
+const _v4 = new THREE.Vector4();
+
+// тональная компрессия renderer.toneMapping → значение uTone в шейдерах WebGPU (остальные виды рисует WebGL)
+const TONE = new Map([
+	[THREE.NoToneMapping, 0],
+	[THREE.NeutralToneMapping, 1],
+	[THREE.ACESFilmicToneMapping, 2],
+	[THREE.AgXToneMapping, 3],
+]);
 
 /**
  * Рендер-движок эффектов на WebGPU. Сцена редактора (сетка, фон) по-прежнему рисуется WebGL на основном холсте, а облако точек
  * и пост-обработка (обратная связь, свечение, аберрация) рисуются WebGPU на втором холсте поверх него.
  *
- * То, что на WebGPU ещё не перенесено (связи, осциллограф, шлейф-линии, раскадровка, нестандартная тон-карта, запись видео), рисует прежний WebGL:
- * пока такой объект виден, кадр целиком идёт старым путём. Шейдеры WebGL при этом собираются лениво (см. wakeGl), поэтому у тех, кому они не нужны,
+ * На WebGPU перенесено всё: облако со всеми эффектами (и «Экран», «Слит-скан», «Пиксельная сортировка»), «Тень на стене», шлейф, связи, осциллограф,
+ * раскадровка и «герой», пост-обработка, все тональные компрессии из настроек, рамки слежения. Прежний WebGL берёт кадр, только если WebGPU не справился
+ * (не собрался шейдер, потеряно устройство). Шейдеры WebGL при этом собираются лениво (см. wakeGl), поэтому у тех, кому они не нужны,
  * видеодрайвер не получает ни одной большой программы.
  */
 export class WebGPUBackend extends RenderBackend {
@@ -53,6 +64,7 @@ export class WebGPUBackend extends RenderBackend {
 		this.pts = new WebGPUPoints(this.gpu, cv);
 		this.post = new WebGPUPost(this.gpu.device, this.gpu.format);
 		this.trail = new WebGPUTrail(this.gpu.device, this.gpu.format);
+		this.surface = new WebGPUSurface(this.gpu.device, this.gpu.format);
 		this.meshes = { links: new WebGPUMesh(this.pts, 'links'), scope: new WebGPUMesh(this.pts, 'scope') };
 		this.hasHistory = false;
 		this.gpu.device.lost.then((info) => {
@@ -105,6 +117,12 @@ export class WebGPUBackend extends RenderBackend {
 	 * true: можно показывать; false: ещё собирается; undefined: WebGPU такое не рисует.
 	 */
 	gpuMesh(kind) {
+		if (kind === 'shadow') {
+			if (this.lost || this.pts.shadowFailed || this.surface.failed) return undefined;
+			this.pts.prepareShadow();
+			this.surface.prepare();
+			return this.pts.shadowReady(false) && this.pts.shadowReady(true) && this.surface.ready(false) && this.surface.ready(true);
+		}
 		const m = this.meshes?.[{ line: 'links', scope: 'scope' }[kind]];
 		if (!m || this.lost || m.failed) return undefined;
 		m.prepare();
@@ -118,7 +136,14 @@ export class WebGPUBackend extends RenderBackend {
 		if (obj === e.linkObj) return !this.meshes.links.failed;
 		if (obj === e._scopeLine) return !this.meshes.scope.failed;
 		if (obj === e.hero) return !this.pts.heroFailed;
+		const sh = e._shadow;
+		if (sh && (obj === sh.pts || obj === sh.plane)) return !this.pts.shadowFailed && !this.surface.failed;
 		return !!e._trail && obj === e._trail.group && !this.trail.failed;
+	}
+
+	/** Тональная компрессия из настроек: номер для шейдеров WebGPU или undefined, если такой там нет */
+	_tone() {
+		return TONE.get(this.engine.app.viewport.renderer.toneMapping);
 	}
 
 	/** Есть ли в сцене то, что умеет рисовать только WebGL */
@@ -127,14 +152,7 @@ export class WebGPUBackend extends RenderBackend {
 		const pts = e.points;
 		if (!pts) return false;
 		for (const c of pts.children) if (c.visible && !e.ghosts.includes(c) && !this._gpuDraws(c)) return true;
-		if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
-		// «Экран» (видео на форме) есть только в WebGL
-		if (e.shared && e.shared.uScr && e.shared.uScr.value.x > 0.001) return true;
-		// «Слит-скан» тоже только в WebGL
-		if (e.shared && e.shared.uSlit && e.shared.uSlit.value.x > 0.001) return true;
-		if (e.shared && e.shared.uSort && e.shared.uSort.value.x > 0.001) return true;
-		// «Тень на стене» рисует WebGL (её объект виден, это ловится выше), «Фигуры Хладни» есть и в WebGPU
-		return false;
+		return this._tone() === undefined;
 	}
 
 	/** Облако слоя в WebGPU совпадает с геометрией движка: при смене облака загружается заново, при правке атрибутов обновляются нужные буферы */
@@ -162,7 +180,7 @@ export class WebGPUBackend extends RenderBackend {
 		return true;
 	}
 
-	/** Служебные текстуры: спектр звука, центры кусков, атлас символов, кадры раскадровки и кадр видео «героя» */
+	/** Служебные текстуры: спектр звука, центры кусков, атлас символов, кадры раскадровки, кадр видео «героя», «Экран», «Слит-скан», «Пиксельная сортировка» */
 	_syncTextures() {
 		const e = this.engine;
 		const pts = this.pts;
@@ -196,24 +214,107 @@ export class WebGPUBackend extends RenderBackend {
 			const v = ht && ht.image;
 			if (v && v.videoWidth && v.readyState >= 2) pts.setHeroSource(v, v.videoWidth, v.videoHeight);
 		}
+		this._syncScreen();
 	}
 
+	/** Текстуры «Экрана», «Слит-скана» и «Пиксельной сортировки»: загружаются, только пока эффект включён, и только то, что изменилось */
+	_syncScreen() {
+		const sh = this.engine.shared;
+		const pts = this.pts;
+		const S = this.sync;
+		if (sh.uScr.value.x > 0.001) {
+			const img = sh.uScrTex.value?.image;
+			// видео или картинка; заглушка (DataTexture) остаётся чёрным кадром
+			if (img && img.videoWidth && img.readyState >= 2) pts.setScreenSource(img, img.videoWidth, img.videoHeight);
+			else if (img && img.complete && img.naturalWidth) pts.setScreenSource(img, img.naturalWidth, img.naturalHeight);
+			const dep = sh.uScrDep.value;
+			if (sh.uScrD.value.x > 1.5 && dep?.image?.data && (S.scrDep !== dep || S.scrDepVer !== dep.version)) {
+				S.scrDep = dep;
+				S.scrDepVer = dep.version;
+				pts.setScreenDepth(dep.image.data, dep.image.width, dep.image.height);
+			}
+			const mem = sh.uScrMTex.value;
+			if (sh.uScrQ.value.y > 0.5 && mem?.image?.data && (S.scrMem !== mem || S.scrMemVer !== mem.version)) {
+				// память пересчитывается кусками по 200 тысяч точек: загружаются только строки, которые изменились (engine/screen.js, userData.dirty)
+				const d = S.scrMem === mem ? mem.userData.dirty : null;
+				const W = mem.image.width;
+				S.scrMem = mem;
+				S.scrMemVer = mem.version;
+				pts.setScreenMemory(mem.image.data, W, mem.image.height, d ? [Math.floor(d[0] / W), Math.ceil(d[1] / W)] : null);
+				mem.userData.dirty = null;
+			}
+		}
+		const slit = sh.uSlitTex.value;
+		if (sh.uSlit.value.x > 0.001 && slit?.isDataArrayTexture && slit.image.data && (S.slit !== slit || S.slitVer !== slit.version)) {
+			const im = slit.image;
+			// в обычном кадре в кольцо дописан один кадр: загружается только его слой
+			const layers = S.slit === slit && slit.layerUpdates?.size ? [...slit.layerUpdates] : null;
+			S.slit = slit;
+			S.slitVer = slit.version;
+			pts.setSlit(im.data, im.width, im.height, im.depth, layers);
+			slit.clearLayerUpdates?.();
+		}
+		const sort = sh.uSortTex.value;
+		if (sh.uSort.value.x > 0.001 && sort?.image?.data instanceof Float32Array && (S.sort !== sort || S.sortVer !== sort.version)) {
+			S.sort = sort;
+			S.sortVer = sort.version;
+			pts.setSort(sort.image.data, sort.image.width, sort.image.height);
+		}
+	}
+
+	/**
+	 * Рамки слежения: настоящие положения точек после всех эффектов (с прошлых кадров), как engine/track-pick.js делает в WebGL.
+	 * Положение на экране из прохода расчёта переводится обратно в координаты облака. Возвращает { idxs, data } (по 4 числа на точку, w = 1: точка найдена) или null.
+	 */
+	trackPick(idxs) {
+		if (this.lost || !this.pts) return null;
+		this.pts.pickRequest(idxs);
+		const r = this.pts.pickResult();
+		if (!r) return null;
+		if (r !== this._pickSrc) {
+			this._pickSrc = r;
+			_pm.fromArray(r.proj).multiply(_mv.fromArray(r.mv)).invert();
+			const data = new Float32Array(64);
+			r.idxs.forEach((id, k) => {
+				const c = r.clip;
+				const x = c[k * 4], y = c[k * 4 + 1], z = c[k * 4 + 2], w = c[k * 4 + 3];
+				// скрытая точка (эффект убрал её с экрана): положения нет
+				if (x === 2 && y === 2 && z === 2 && w === 1) return;
+				_v4.set(x, y, z, w).applyMatrix4(_pm);
+				if (Math.abs(_v4.w) < 1e-8) return;
+				data[k * 4] = _v4.x / _v4.w;
+				data[k * 4 + 1] = _v4.y / _v4.w;
+				data[k * 4 + 2] = _v4.z / _v4.w;
+				data[k * 4 + 3] = 1;
+			});
+			this._pickRes = { idxs: r.idxs, data };
+		}
+		return this._pickRes;
+	}
+
+	/** Значения экземпляра (матрицы объекта и его собственные значения). Матрицы у каждого объекта свои и переиспользуются из кадра в кадр */
 	_inst(obj, camera, extra) {
-		_mv.multiplyMatrices(camera.matrixWorldInverse, obj.matrixWorld);
-		_nm.getNormalMatrix(_mv);
-		return { modelMatrix: obj.matrixWorld.clone(), modelViewMatrix: _mv.clone(), normalMatrix: _nm.clone(), ...extra };
+		const m = (this._mats ||= new WeakMap());
+		let r = m.get(obj);
+		if (!r) m.set(obj, (r = { modelMatrix: new THREE.Matrix4(), modelViewMatrix: new THREE.Matrix4(), normalMatrix: new THREE.Matrix3() }));
+		r.modelMatrix.copy(obj.matrixWorld);
+		r.modelViewMatrix.multiplyMatrices(camera.matrixWorldInverse, obj.matrixWorld);
+		r.normalMatrix.getNormalMatrix(r.modelViewMatrix);
+		return { modelMatrix: r.modelMatrix, modelViewMatrix: r.modelViewMatrix, normalMatrix: r.normalMatrix, ...extra };
 	}
 
 	/**
 	 * Составной холст из обоих слоёв (основной WebGL и облако WebGPU): с него идёт запись видео и GIF.
-	 * Создаётся при первом обращении и дальше обновляется каждый кадр.
+	 * Создаётся при первом обращении и обновляется каждый кадр, пока идёт запись (раньше склейка двух полноэкранных холстов шла каждый кадр до конца сеанса)
 	 */
 	captureCanvas() {
 		if (!this.cap) {
 			this.cap = document.createElement('canvas');
 			this.capCtx = this.cap.getContext('2d');
-			this._compose();
 		}
+		// запись ещё не отметилась в движке (recording, animBusy): пару секунд холст обновляется в любом случае
+		this.capHold = performance.now() + 2000;
+		this._compose();
 		return this.cap;
 	}
 
@@ -229,7 +330,8 @@ export class WebGPUBackend extends RenderBackend {
 
 	_frame(renderer, scene, camera) {
 		this._draw(renderer, scene, camera);
-		if (this.cap) this._compose();
+		const e = this.engine;
+		if (this.cap && (e.recording || e.animBusy || performance.now() < this.capHold)) this._compose();
 	}
 
 	_draw(renderer, scene, camera) {
@@ -245,6 +347,8 @@ export class WebGPUBackend extends RenderBackend {
 		this.useGl = wantGl && this.glWarm && e._fxCovered();
 		if (this.useGl) {
 			this.stats.gl++;
+			// кадры «Слит-скана» в этот раз загрузит WebGL: при возврате кольцо загружается целиком
+			this.sync.slit = null;
 			this.canvas.style.visibility = 'hidden';
 			e.points.visible = true;
 			this.gl.hook(renderer, scene, camera);
@@ -275,7 +379,20 @@ export class WebGPUBackend extends RenderBackend {
 		const h = Math.max(1, vp.canvas.height);
 		const shared = e.shared;
 		const add = shared.uAdd.value > 0.5;
-		const list = [this._inst(e.points, camera, { uTOff: e.material.uniforms.uTOff.value, uGhost: e.material.uniforms.uGhost.value })];
+		const list = [];
+		// «Тень на стене»: копия облака по лучу света, рисуется до облака (renderOrder -1 в WebGL)
+		const sh = e._shadow;
+		// программы готовятся, как только объект виден: движок спрашивает о них (gpuMesh) только пока WebGL спит, а он мог уже проснуться
+		if (sh && (sh.pts.visible || sh.plane.visible) && sh.pts.parent === e.points) {
+			pts.prepareShadow();
+			this.surface.prepare();
+		}
+		if (sh && sh.pts.visible && sh.pts.parent === e.points && pts.shadowReady(false) && pts.shadowReady(true)) {
+			const su = sh.pts.material.uniforms;
+			const blend = sh.pts.material.blending === THREE.AdditiveBlending ? 'add' : 'normal';
+			list.push(this._inst(sh.pts, camera, { uTOff: su.uTOff.value, uGhost: su.uGhost.value, uHero: su.uHero.value, uShd: su.uShd.value, uShdL: su.uShdL.value, uShdP: su.uShdP.value, uShdC: su.uShdC.value, shadow: blend }));
+		}
+		list.push(this._inst(e.points, camera, { uTOff: e.material.uniforms.uTOff.value, uGhost: e.material.uniforms.uGhost.value, main: true }));
 		for (const g of e.ghosts) {
 			if (!g.visible) continue;
 			list.push(this._inst(g, camera, { uTOff: g.material.uniforms.uTOff.value, uGhost: g.material.uniforms.uGhost.value, uHero: g.material.uniforms.uHero.value }));
@@ -286,7 +403,7 @@ export class WebGPUBackend extends RenderBackend {
 			pts.prepareHero();
 			if (pts.heroReady() && this._syncCloud(hero.geometry, 'hero')) list.push(this._inst(hero, camera, { uTOff: hero.material.uniforms.uTOff.value, uGhost: hero.material.uniforms.uGhost.value, layer: 'hero' }));
 		}
-		const common = { projectionMatrix: camera.projectionMatrix, uExposure: renderer.toneMappingExposure };
+		const common = { projectionMatrix: camera.projectionMatrix, viewMatrix: camera.matrixWorldInverse, uExposure: renderer.toneMappingExposure, uTone: this._tone() ?? 1 };
 		const L = e.state.layers;
 		const fb = L.feedback;
 		const bloom = e.state.look.bloom || 0;
@@ -308,11 +425,13 @@ export class WebGPUBackend extends RenderBackend {
 			post.moshOff();
 			this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common, camera);
 			D.queue.submit([enc.finish()]);
+			pts.pickMap();
 			return;
 		}
 		if (!pts.ready(add, true) || (useFb && !post.ready('fb')) || (useMosh && !(post.ready('mv') && post.ready('mosh') && post.mipPipeline))) {
 			this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common, camera);
 			D.queue.submit([enc.finish()]);
+			pts.pickMap();
 			return;
 		}
 		const scene = post.rt('scene', w, h, { mips: useMosh });
@@ -350,27 +469,39 @@ export class WebGPUBackend extends RenderBackend {
 		} else {
 			this.hasHistory = false;
 		}
-		post.run(enc, 'out', pts.ctx.getCurrentTexture().createView(), size, { uBloom: bloom, uAberration: ab, uRes: size }, { uTex: src });
+		// экспозиция и тональная компрессия на выходе, как #include <tonemapping_fragment> в выходном проходе WebGL
+		post.run(enc, 'out', pts.ctx.getCurrentTexture().createView(), size, { uBloom: bloom, uAberration: ab, uRes: size, uExposure: common.uExposure, uTone: common.uTone }, { uTex: src });
 		D.queue.submit([enc.finish()]);
+		pts.pickMap();
 	}
 
-	/** Облако (с призраками), затем линии (связи, осциллограф) в одну и ту же цель */
+	/** Поверхность под тенью, шлейф, облако (с тенью и призраками), затем линии (связи, осциллограф) в одну и ту же цель */
 	_scene(enc, view, size, rt, list, common, camera) {
 		const e = this.engine;
-		// шлейф персонажа рисуется первым (renderOrder -1 в WebGL) и очищает цель
-		const tr = e._trail;
 		let noClear = false;
+		// поверхность под «Тенью на стене» самая дальняя (renderOrder -2 в WebGL) и очищает цель
+		const plane = e._shadow?.plane;
+		if (plane && plane.visible && plane.parent === e.points && this.surface.ready(rt)) {
+			this._mvp ||= new THREE.Matrix4();
+			this._mvp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse).multiply(plane.matrixWorld);
+			this.surface.draw(enc, view, this.pts._depthFor(size[0], size[1]).createView(), rt, plane, { mvp: this._mvp, exposure: common.uExposure, tone: common.uTone });
+			noClear = true;
+		}
+		// шлейф персонажа рисуется до облака (renderOrder -1 в WebGL)
+		const tr = e._trail;
 		if (tr && tr.group.visible && tr.group.parent === e.points) {
 			this.trail.prepare();
 			if (this.trail.ready(rt) && this.trail.sync(tr)) {
 				this._mv ||= new THREE.Matrix4();
-				this.trail.draw(enc, view, this.pts._depthFor(size[0], size[1]).createView(), rt, tr, { mv: this._mv, proj: camera.projectionMatrix, camera, size, exposure: common.uExposure });
+				this.trail.draw(enc, view, this.pts._depthFor(size[0], size[1]).createView(), rt, tr, { mv: this._mv, proj: camera.projectionMatrix, camera, size, exposure: common.uExposure, tone: common.uTone, load: noClear });
 				noClear = true;
 			}
 		}
 		this.pts.frame(e.shared, common, list, { view, size, rt, noClear, encoder: enc });
 		for (const [obj, m] of [[e.linkObj, this.meshes.links], [e._scopeLine, this.meshes.scope]]) {
-			if (!obj || !obj.visible || !m.ready(rt)) continue;
+			if (!obj || !obj.visible) continue;
+			m.prepare();
+			if (!m.ready(rt)) continue;
 			if (m.sync(obj.geometry)) m.draw(enc, view, rt);
 		}
 	}
@@ -384,6 +515,7 @@ export class WebGPUBackend extends RenderBackend {
 		if (e.points) e.points.visible = true;
 		for (const m of Object.values(this.meshes || {})) m.dispose();
 		this.trail?.dispose();
+		this.surface?.dispose();
 		this.pts?.dispose();
 		this.post?.dispose();
 		this.canvas?.remove();

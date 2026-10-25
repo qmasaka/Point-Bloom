@@ -336,6 +336,9 @@ export class ScreenPart {
 			out[o + 3] = Math.min(255, m[o + 3] * 255 + 0.5);
 		}
 		tex.needsUpdate = true;
+		// какие точки изменились с прошлой загрузки: WebGPU загружает только их строки (WebGL загружает текстуру целиком)
+		const dd = tex.userData.dirty;
+		tex.userData.dirty = dd ? [Math.min(dd[0], i0), Math.max(dd[1], i1)] : [i0, i1];
 		return true;
 	}
 }

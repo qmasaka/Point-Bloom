@@ -9,6 +9,7 @@
 | `effects-inventory.mjs` | Собирает `docs/effects-inventory.md`: таблицу эффектов, значений кадра и размеров шейдеров (`node dev/effects-inventory.mjs > docs/effects-inventory.md`). |
 | `webgpu-proto.html` / `.js` | Стенд сравнения WebGL и WebGPU: сравнение картинок попиксельно (`__proto.compare`, `fuzz`, `postCompare` для пост-обработки, `moshCompare` для датамоша), скорость, холодная сборка шейдеров. Запуск и результаты: `docs/webgpu-prototype-report.md`. |
 | `gen-wgsl.mjs`, `glsl2wgsl.mjs` | Переводчик GLSL → WGSL и генератор `src/effects/shaders/wgsl/generated/*` из боевых GLSL-шейдеров. После любой правки GLSL: `node dev/gen-wgsl.mjs`. |
+| `compare-backends.js` | Сравнение WebGPU и WebGL на одном кадре: каждый эффект рисуется обоими путями подряд из одного состояния, картинки сравниваются попиксельно; видно и то, не уходил ли кадр в WebGL. Запуск в консоли приложения с `?gpu=1` (в режиме «Эффекты»): подключить скрипт, затем `await __compare.run()`. |
 | `baseline.json` | Эталонные результаты дымового теста (с чем сравнивать после правок). |
 
 ## Сборка и запуск

@@ -330,7 +330,7 @@ async function fuzz(opts = {}) {
 	await setup(N, true); // полный GLSL без урезания: он выполняет все ветви
 	await webgpu.prepare(prepOpts());
 	const cloud = generateShapePoints('torus', N);
-	const miss = missingFrameValues(webgl.shared, { modelMatrix: 1, modelViewMatrix: 1, projectionMatrix: 1, normalMatrix: 1, uRes: 1, uExposure: 1, uTOff: 1, uGhost: 1 });
+	const miss = missingFrameValues(webgl.shared, { modelMatrix: 1, modelViewMatrix: 1, projectionMatrix: 1, viewMatrix: 1, normalMatrix: 1, uRes: 1, uPx: 1, uExposure: 1, uTone: 1, uTOff: 1, uGhost: 1 });
 	if (miss.length) log('значения кадра, которых нет в данных (будут нулями): ' + miss.join(', '));
 	for (const [fam, names] of Object.entries(FAMILIES)) {
 		if (only && !only.includes(fam)) continue;

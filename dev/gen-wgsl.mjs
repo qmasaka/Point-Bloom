@@ -3,8 +3,10 @@
 //
 // Что получается:
 //  - points-compute.js: вычислительный проход «одна точка → положение на экране, размер, цвет» (весь вершинный шейдер GLSL, переведённый как есть);
-//  - points-render.js: рисование квадратов по готовым данным + фрагментный шейдер GLSL, переведённый как есть;
-//  - frame-spec.js: список значений кадра (имя, тип, длина массива) для упаковки в uniform-буфер.
+//  - points-compute-hero.js, points-compute-shadow.js: варианты того же расчёта для «героя» раскадровки (HERO) и «Тени на стене» (SHADOW);
+//  - points-render.js: рисование квадратов по готовым данным + фрагментный шейдер GLSL, переведённый как есть (и фрагментный шейдер тени);
+//  - frame-spec.js: список значений кадра (имя, тип, длина массива) для упаковки в uniform-буфер;
+//  - tone.js: тональная компрессия как у three.js (для шейдеров WebGPU, написанных руками).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -20,15 +22,19 @@ const { lineVert } = await GLSL('line-vert.js');
 const { lineFrag } = await GLSL('line-frag.js');
 const { scopeVert } = await GLSL('scope-vert.js');
 const { scopeFrag } = await GLSL('scope-frag.js');
+const { shadowFrag } = await GLSL('shadow-frag.js');
 
 // встроенные матрицы three.js, которых нет в тексте шейдера
 const BUILTIN_UNIFORMS = [
 	{ type: 'mat4', name: 'modelMatrix', len: 0 },
 	{ type: 'mat4', name: 'modelViewMatrix', len: 0 },
 	{ type: 'mat4', name: 'projectionMatrix', len: 0 },
+	{ type: 'mat4', name: 'viewMatrix', len: 0 }, // нужна «Тени на стене»: тень считается в мировых координатах
 	{ type: 'mat3', name: 'normalMatrix', len: 0 },
-	{ type: 'vec2', name: 'uRes', len: 0 }, // размер холста в пикселях (для размера точек)
+	{ type: 'vec2', name: 'uRes', len: 0 }, // размер окна в CSS-пикселях, как в WebGL (толщина линий связей и осциллографа)
+	{ type: 'vec2', name: 'uPx', len: 0 }, // размер цели в настоящих пикселях (размер точек: gl_PointSize считается в них)
 	{ type: 'float', name: 'uExposure', len: 0 }, // экспозиция тональной компрессии
+	{ type: 'float', name: 'uTone', len: 0 }, // тональная компрессия как у renderer.toneMapping: 0 нет, 1 Neutral, 2 ACES, 3 AgX
 ];
 
 const TEXTURES_VERT = {
@@ -36,6 +42,12 @@ const TEXTURES_VERT = {
 	uPieceTex: { name: 'pieceTex', mode: 'load' },
 	uHeroTex: { name: 'heroTex', mode: 'sample', sampler: 'linSamp' },
 	uFrTex: { name: 'frTex', mode: 'load', array: true },
+	// «Экран», «Слит-скан», «Пиксельная сортировка» (блок VSCREEN)
+	uScrTex: { name: 'scrTex', mode: 'sample', sampler: 'linSamp' },
+	uScrDep: { name: 'scrDep', mode: 'sample', sampler: 'linSamp' },
+	uScrMTex: { name: 'scrMTex', mode: 'load' },
+	uSlitTex: { name: 'slitTex', mode: 'load', array: true },
+	uSortTex: { name: 'sortTex', mode: 'load' },
 };
 const TEXTURES_FRAG = { uAtlas: { name: 'atlasTex', mode: 'sample', sampler: 'linSamp' } };
 
@@ -44,9 +56,15 @@ function build(src, defines) {
 	return prog;
 }
 
-const progV = build(vert, { VSHOOT: 1 });
+// те же блоки, что включает WebGL (render/webgl/shader-cache.js, _fxSource): «Рост на ритме» и «Экран» со «Слит-сканом» и «Пиксельной сортировкой»
+const VERT_DEFINES = { VSHOOT: 1, VSCREEN: 1 };
+const progV = build(vert, VERT_DEFINES);
 for (const u of BUILTIN_UNIFORMS) if (!progV.uniforms.find((x) => x.name === u.name)) progV.uniforms.push(u);
 const progF = build(frag, {});
+// «Тень на стене»: тот же шейдер с #define SHADOW и свой фрагментный шейдер
+const progShadow = build(vert, { ...VERT_DEFINES, SHADOW: 1 });
+for (const u of BUILTIN_UNIFORMS) if (!progShadow.uniforms.find((x) => x.name === u.name)) progShadow.uniforms.push(u);
+const progShadowF = build(shadowFrag, {});
 const MESHES = {
 	links: { vert: lineVert, frag: lineFrag },
 	scope: { vert: scopeVert, frag: scopeFrag },
@@ -60,7 +78,7 @@ for (const m of Object.values(MESHES)) {
 // значения кадра: объединение uniform'ов всех шейдеров (точки, связи, осциллограф)
 const frameUniforms = [];
 const seen = new Map();
-for (const u of [...progV.uniforms, ...progF.uniforms, ...Object.values(MESHES).flatMap((m) => [...m.pv.uniforms, ...m.pf.uniforms])]) {
+for (const u of [...progV.uniforms, ...progF.uniforms, ...progShadow.uniforms, ...progShadowF.uniforms, ...Object.values(MESHES).flatMap((m) => [...m.pv.uniforms, ...m.pf.uniforms])]) {
 	if (/^sampler/.test(u.type)) continue;
 	if (seen.has(u.name)) {
 		const o = seen.get(u.name);
@@ -89,7 +107,7 @@ const resF = emitWGSL(progF, {
 
 const privDecl = (list) => list.map((a) => `var<private> ${a.name}: ${TYPE_WGSL[a.type]};`).join('\n');
 
-// вывод как у three.js: нейтральная тональная компрессия (Khronos PBR Neutral), затем перевод линейного цвета в sRGB
+// вывод как у three.js: тональная компрессия (renderer.toneMapping: нет, Neutral, ACES Filmic, AgX; формулы из three.js), затем перевод линейного цвета в sRGB
 const TONE_FUNCS = `
 fn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {
 	let startCompression = 0.8 - 0.04;
@@ -106,30 +124,79 @@ fn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {
 	let g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
 	return mix(color, vec3f(newPeak), g);
 }
+fn rrtAndOdtFit(v: vec3f) -> vec3f {
+	let a = v * (v + 0.0245786) - 0.000090537;
+	let b = v * (0.983729 * v + 0.4329510) + 0.238081;
+	return a / b;
+}
+fn toneAces(c0: vec3f, exposure: f32) -> vec3f {
+	let inM = mat3x3f(vec3f(0.59719, 0.07600, 0.02840), vec3f(0.35458, 0.90834, 0.13383), vec3f(0.04823, 0.01566, 0.83777));
+	let outM = mat3x3f(vec3f(1.60475, -0.10208, -0.00327), vec3f(-0.53108, 1.10813, -0.07276), vec3f(-0.07367, -0.00605, 1.07602));
+	var color = c0 * (exposure / 0.6);
+	color = inM * color;
+	color = rrtAndOdtFit(color);
+	color = outM * color;
+	return saturate(color);
+}
+fn agxContrast(x: vec3f) -> vec3f {
+	let x2 = x * x;
+	let x4 = x2 * x2;
+	return 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;
+}
+fn toneAgx(c0: vec3f, exposure: f32) -> vec3f {
+	let rec2020ToSrgb = mat3x3f(vec3f(1.6605, -0.1246, -0.0182), vec3f(-0.5876, 1.1329, -0.1006), vec3f(-0.0728, -0.0083, 1.1187));
+	let srgbToRec2020 = mat3x3f(vec3f(0.6274, 0.0691, 0.0164), vec3f(0.3293, 0.9195, 0.0880), vec3f(0.0433, 0.0113, 0.8956));
+	let inset = mat3x3f(vec3f(0.856627153315983, 0.137318972929847, 0.11189821299995), vec3f(0.0951212405381588, 0.761241990602591, 0.0767994186031903), vec3f(0.0482516061458583, 0.101439036467562, 0.811302368396859));
+	let outset = mat3x3f(vec3f(1.1271005818144368, -0.1413297634984383, -0.14132976349843826), vec3f(-0.11060664309660323, 1.157823702216272, -0.11060664309660294), vec3f(-0.016493938717834573, -0.016493938717834257, 1.2519364065950405));
+	let minEv = -12.47393;
+	let maxEv = 4.026069;
+	var color = c0 * exposure;
+	color = srgbToRec2020 * color;
+	color = inset * color;
+	color = max(color, vec3f(1e-10));
+	color = log2(color);
+	color = (color - minEv) / (maxEv - minEv);
+	color = clamp(color, vec3f(0.0), vec3f(1.0));
+	color = agxContrast(color);
+	color = outset * color;
+	color = pow(max(vec3f(0.0), color), vec3f(2.2));
+	color = rec2020ToSrgb * color;
+	return clamp(color, vec3f(0.0), vec3f(1.0));
+}
+fn toneMap(c: vec3f, exposure: f32, mode: f32) -> vec3f {
+	if (mode < 0.5) { return c; }
+	if (mode < 1.5) { return toneNeutral(c, exposure); }
+	if (mode < 2.5) { return toneAces(c, exposure); }
+	return toneAgx(c, exposure);
+}
 fn linearToSrgb(v: vec3f) -> vec3f {
 	return select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));
 }
 `;
 
 // ---------------------------------------------------------------- вычислительный проход
-const makeCompute = (progV, resV) => `${frameStruct}
-@group(0) @binding(0) var<uniform> fr: Frame;
-@group(0) @binding(1) var<storage, read> inOrigin: array<vec4f>;
-@group(0) @binding(2) var<storage, read> inTarget: array<vec4f>;
-@group(0) @binding(3) var<storage, read> inColorA: array<vec4f>;
-@group(0) @binding(4) var<storage, read> inColorB: array<vec4f>;
-@group(0) @binding(5) var<storage, read> inNormA: array<vec4f>;
-@group(0) @binding(6) var<storage, read> inNormB: array<vec4f>;
-@group(0) @binding(7) var<storage, read> inSculpt: array<vec4f>;
-@group(0) @binding(8) var<storage, read> inPaint: array<vec4f>;
-@group(0) @binding(9) var<storage, read_write> outA: array<vec4f>;
-@group(0) @binding(10) var<storage, read_write> outB: array<vec4f>;
-@group(0) @binding(11) var<storage, read_write> outC: array<vec4f>;
-@group(0) @binding(12) var specTex: texture_2d<f32>;
+// служебные текстуры прохода расчёта (общие у точек, связей и осциллографа; привязки как в WebGPUPoints.computeBGL)
+const TEX_DECL = `@group(0) @binding(12) var specTex: texture_2d<f32>;
 @group(0) @binding(13) var linSamp: sampler;
 @group(0) @binding(14) var pieceTex: texture_2d<f32>;
 @group(0) @binding(15) var frTex: texture_2d_array<f32>;
 @group(0) @binding(16) var heroTex: texture_2d<f32>;
+@group(0) @binding(17) var scrTex: texture_2d<f32>;
+@group(0) @binding(18) var scrDep: texture_2d<f32>;
+@group(0) @binding(19) var scrMTex: texture_2d<f32>;
+@group(0) @binding(20) var slitTex: texture_2d_array<f32>;
+@group(0) @binding(21) var sortTex: texture_2d<f32>;`;
+const makeCompute = (progV, resV) => `${frameStruct}
+@group(0) @binding(0) var<uniform> fr: Frame;
+// данные точек: по два набора в буфере (первая половина и вторая), чтобы проходу хватало 8 буферов хранения (минимум, который WebGPU гарантирует)
+@group(0) @binding(1) var<storage, read> inP0: array<vec4f>; // положение и скрытие | цель морфинга и глубина
+@group(0) @binding(2) var<storage, read> inP1: array<vec4f>; // цвет A и путь | цвет B и видимость
+@group(0) @binding(3) var<storage, read> inP2: array<vec4f>; // нормаль A и видимость | нормаль B
+@group(0) @binding(4) var<storage, read> inP3: array<vec4f>; // лепка и номер точки | краска
+@group(0) @binding(9) var<storage, read_write> outA: array<vec4f>;
+@group(0) @binding(10) var<storage, read_write> outB: array<vec4f>;
+@group(0) @binding(11) var<storage, read_write> outC: array<vec4f>;
+${TEX_DECL}
 
 ${privDecl(progV.attributes)}
 ${privDecl(progV.varyings)}
@@ -141,13 +208,14 @@ ${resV.wgsl}
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
 	let i = gid.x;
-	let count = arrayLength(&inOrigin);
+	let count = arrayLength(&inP0) / 2u;
 	if (i >= count) { return; }
-	let o = inOrigin[i];
-	let t = inTarget[i];
-	let ca = inColorA[i];
-	let cb = inColorB[i];
-	let na = inNormA[i];
+	let o = inP0[i];
+	let t = inP0[count + i];
+	let ca = inP1[i];
+	let cb = inP1[count + i];
+	let na = inP2[i];
+	let sc = inP3[i];
 	aOrigin = o.xyz;
 	aHide = o.w;
 	aTarget = t.xyz;
@@ -157,11 +225,11 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 	aColorB = cb.rgb;
 	aVis = vec2f(cb.w, na.w);
 	aNormal = na.xyz;
-	aNormalB = inNormB[i].xyz;
-	aSculpt = inSculpt[i].xyz;
+	aNormalB = inP2[count + i].xyz;
+	aSculpt = sc.xyz;
 	// индекс точки берётся из массива движка (aIdx = i / число точек, округлённое до float32 на CPU): хеши вида fract(sin(aIdx * k)) раздувают разницу в последнем бите до полного расхождения
-	aIdx = inSculpt[i].w;
-	aPaint = inPaint[i];
+	aIdx = sc.w;
+	aPaint = inP3[count + i];
 	main_();
 	outA[i] = gl_Position;
 	outB[i] = vec4f(vColor, gl_PointSize);
@@ -170,7 +238,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 `;
 const computeWGSL = makeCompute(progV, resV);
 // «герой» раскадровки (видео поверх блока): тот же шейдер с #define HERO
-const progHero = build(vert, { HERO: 1, VSHOOT: 1 });
+const progHero = build(vert, { ...VERT_DEFINES, HERO: 1 });
 for (const u of BUILTIN_UNIFORMS) if (!progHero.uniforms.find((x) => x.name === u.name)) progHero.uniforms.push(u);
 for (const u of progHero.uniforms) {
 	const o = seen.get(u.name);
@@ -180,7 +248,7 @@ const resHero = emitWGSL(progHero, { textures: TEXTURES_VERT, builtinTypes: { gl
 const computeHeroWGSL = makeCompute(progHero, resHero);
 
 // ---------------------------------------------------------------- рисование
-const renderWGSL = `${frameStruct}
+const makeRender = (progF, resF) => `${frameStruct}
 @group(0) @binding(0) var<uniform> fr: Frame;
 @group(0) @binding(1) var<storage, read> outA: array<vec4f>;
 @group(0) @binding(2) var<storage, read> outB: array<vec4f>;
@@ -213,7 +281,7 @@ fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VOut 
 	var clip = a;
 	// в WebGL глубина клипа от -w до w, в WebGPU от 0 до w
 	clip.z = (clip.z + clip.w) * 0.5;
-	let off = corner * (b.w / fr.uRes);
+	let off = corner * (b.w / fr.uPx);
 	clip = vec4f(clip.xy + off * clip.w, clip.z, clip.w);
 	var o: VOut;
 	o.clip = clip;
@@ -238,7 +306,7 @@ fn setup_in(in: VOut) {
 fn fs(in: VOut) -> @location(0) vec4f {
 	setup_in(in);
 	frag_main_();
-	return vec4f(linearToSrgb(toneNeutral(gl_FragColor.rgb, fr.uExposure)), gl_FragColor.a);
+	return vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, fr.uExposure, fr.uTone)), gl_FragColor.a);
 }
 
 // в промежуточный буфер (дальше идёт пост-обработка): линейный цвет как есть
@@ -249,6 +317,13 @@ fn fs_raw(in: VOut) -> @location(0) vec4f {
 	return gl_FragColor;
 }
 `;
+const renderWGSL = makeRender(progF, resF);
+
+// «Тень на стене»: расчёт с #define SHADOW (точка ложится по лучу света на пол или стену) и свой фрагментный шейдер (мягкие круглые точки)
+const resShadow = emitWGSL(progShadow, { textures: TEXTURES_VERT, builtinTypes: { gl_Position: 'vec4', gl_PointSize: 'float' }, renameFuncs: { main: 'main_' } });
+const computeShadowWGSL = makeCompute(progShadow, resShadow);
+const resShadowF = emitWGSL(progShadowF, { textures: TEXTURES_FRAG, builtinTypes: { gl_FragColor: 'vec4', gl_PointCoord: 'vec2' }, renameFuncs: { main: 'frag_main_' } });
+const shadowRenderWGSL = makeRender(progShadowF, resShadowF);
 
 // ---------------------------------------------------------------- линии (связи, осциллограф): по вершине на поток
 const COMP = { float: 1, vec2: 2, vec3: 3, vec4: 4 };
@@ -271,7 +346,8 @@ const meshOut = {};
 for (const [name, m] of Object.entries(MESHES)) {
 	const ain = packSlots(m.pv.attributes);
 	const vout = packSlots(m.pv.varyings);
-	if (ain.slots > 8 || vout.slots > 2) throw new Error(`${name}: слишком много данных (${ain.slots} слотов атрибутов, ${vout.slots} слотов переменных)`);
+	// входы, положение и переменные: всё в буферах хранения, а WebGPU гарантирует только 8 на проход
+	if (ain.slots + 1 + vout.slots > 8 || vout.slots > 2) throw new Error(`${name}: слишком много данных (${ain.slots} слотов атрибутов, ${vout.slots} слотов переменных)`);
 	const rv = emitWGSL(m.pv, { textures: TEXTURES_VERT, builtinTypes: { gl_Position: 'vec4' }, renameFuncs: { main: 'main_' } });
 	const rf = emitWGSL(m.pf, { textures: TEXTURES_FRAG, builtinTypes: { gl_FragColor: 'vec4' }, renameFuncs: { main: 'frag_main_' } });
 	const inDecl = Array.from({ length: ain.slots }, (_, s) => `@group(0) @binding(${s + 1}) var<storage, read> inS${s}: array<vec4f>;`).join('\n');
@@ -287,11 +363,7 @@ for (const [name, m] of Object.entries(MESHES)) {
 @group(0) @binding(0) var<uniform> fr: Frame;
 ${inDecl}
 ${outDecl}
-@group(0) @binding(12) var specTex: texture_2d<f32>;
-@group(0) @binding(13) var linSamp: sampler;
-@group(0) @binding(14) var pieceTex: texture_2d<f32>;
-@group(0) @binding(15) var frTex: texture_2d_array<f32>;
-@group(0) @binding(16) var heroTex: texture_2d<f32>;
+${TEX_DECL}
 
 ${privDecl(m.pv.attributes)}
 ${privDecl(m.pv.varyings)}
@@ -348,7 +420,7 @@ ${unpack}
 fn fs(in: VOut) -> @location(0) vec4f {
 	setup_in(in);
 	frag_main_();
-	return vec4f(linearToSrgb(toneNeutral(gl_FragColor.rgb, fr.uExposure)), gl_FragColor.a);
+	return vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, fr.uExposure, fr.uTone)), gl_FragColor.a);
 }
 
 @fragment
@@ -358,7 +430,7 @@ fn fs_raw(in: VOut) -> @location(0) vec4f {
 	return gl_FragColor;
 }
 `;
-	meshOut[name] = { compute, render, attrs: ain.items, slots: ain.slots };
+	meshOut[name] = { compute, render, attrs: ain.items, slots: ain.slots, vslots: vout.slots };
 }
 
 // ---------------------------------------------------------------- пост-обработка: полноэкранные проходы
@@ -369,6 +441,7 @@ for (const [name, src] of Object.entries(POST)) {
 	const prog = parseGLSL(src, {});
 	prog.uniforms.push({ type: 'vec2', name: 'uTarget', len: 0 }); // размер цели в пикселях (для gl_FragCoord)
 	prog.uniforms.push({ type: 'float', name: 'uExposure', len: 0 });
+	prog.uniforms.push({ type: 'float', name: 'uTone', len: 0 });
 	const samplers = prog.uniforms.filter((u) => /^sampler/.test(u.type));
 	const textures = Object.fromEntries(samplers.map((u) => [u.name, { name: 't_' + u.name, mode: 'sample', sampler: 'samp' }]));
 	const res = emitWGSL(prog, {
@@ -413,7 +486,7 @@ fn fs(in: VOut) -> @location(0) vec4f {
 	vUv = in.uv;
 	gl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);
 	main_();
-${tonemap ? '	return vec4f(linearToSrgb(toneNeutral(gl_FragColor.rgb, u.uExposure)), gl_FragColor.a);' : '	return gl_FragColor;'}
+${tonemap ? '	return vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, u.uExposure, u.uTone)), gl_FragColor.a);' : '	return gl_FragColor;'}
 }
 `;
 	postOut[name] = { wgsl, spec: uni.map((u) => [u.name, TYPE_WGSL[u.type], u.len || 0]), textures: samplers.map((u) => u.name) };
@@ -427,10 +500,13 @@ const banner = '// Сгенерировано dev/gen-wgsl.mjs из шейдер
 const esc = (s) => s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 fs.writeFileSync(path.join(OUT, 'points-compute.js'), `${banner}export const pointsComputeWGSL = /* wgsl */ \`\n${esc(computeWGSL)}\`;\n`);
 fs.writeFileSync(path.join(OUT, 'points-compute-hero.js'), `${banner}export const pointsComputeHeroWGSL = /* wgsl */ \`\n${esc(computeHeroWGSL)}\`;\n`);
-fs.writeFileSync(path.join(OUT, 'points-render.js'), `${banner}export const pointsRenderWGSL = /* wgsl */ \`\n${esc(renderWGSL)}\`;\n`);
+fs.writeFileSync(path.join(OUT, 'points-compute-shadow.js'), `${banner}export const pointsComputeShadowWGSL = /* wgsl */ \`\n${esc(computeShadowWGSL)}\`;\n`);
+fs.writeFileSync(path.join(OUT, 'points-render.js'), `${banner}export const pointsRenderWGSL = /* wgsl */ \`\n${esc(renderWGSL)}\`;\nexport const shadowRenderWGSL = /* wgsl */ \`\n${esc(shadowRenderWGSL)}\`;\n`);
 fs.writeFileSync(path.join(OUT, 'mesh-programs.js'), `${banner}export const MESH_PROGRAMS = ${JSON.stringify(meshOut, null, 1)};
 `);
 fs.writeFileSync(path.join(OUT, 'post-passes.js'), `${banner}export const POST_PASSES = ${JSON.stringify(postOut, null, 1)};
 `);
+// тональная компрессия для шейдеров, написанных руками (шлейф персонажа, поверхность под тенью): та же, что у сгенерированных
+fs.writeFileSync(path.join(OUT, 'tone.js'), `${banner}export const TONE_WGSL = /* wgsl */ \`${esc(TONE_FUNCS)}\`;\n`);
 fs.writeFileSync(path.join(OUT, 'frame-spec.js'), `${banner}// имя, тип в WGSL, длина массива (0: не массив)\nexport const FRAME_SPEC = ${JSON.stringify(spec.map((s) => [s.name, s.type, s.len]))};\n`);
 console.log(`готово: compute ${computeWGSL.split('\n').length} строк, render ${renderWGSL.split('\n').length} строк, значений кадра ${spec.length}`);

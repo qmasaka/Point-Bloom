@@ -14,11 +14,13 @@ void main() {
  * Где на самом деле точки рамок слежения. Эффекты (волны, глубина, вихри и другие) двигают точки на видеокарте, а рамки знают только исходные положения,
  * поэтому на видео и под эффектами рамка висела не там, где точка. Здесь до 16 закреплённых точек рисуются тем же шейдером в полоску 16×1 пикселей,
  * в каждом пикселе остаётся итоговое положение, и оно читается обратно без ожидания (результат приходит на следующем кадре).
- * Только для WebGL; при WebGPU рамки остаются на исходных положениях. Методы подмешиваются в EffectsEngine.
+ * Это путь WebGL; при WebGPU положения читаются из его прохода расчёта (WebGPUBackend.trackPick). Методы подмешиваются в EffectsEngine.
  */
 export class TrackPickPart {
 	/** Готовит проход и отдаёт последний результат: { idxs, data } или null */
 	_trackPick(idxs) {
+		// WebGPU рисует облако: положения читаются из его прохода расчёта, шейдер WebGL для этого не нужен
+		if (this.backend?.trackPick && !this.backend.useGl) return this.backend.trackPick(idxs);
 		const g = this.geometry;
 		const r = this.app.viewport.renderer;
 		if (!g || !this.points || this._glDormant || this._tpFailed || !r.capabilities?.isWebGL2) return null;

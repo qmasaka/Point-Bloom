@@ -20,7 +20,7 @@ export class ShaderCachePart {
 		if (!v) {
 			const base = kind === 'line' ? lineVert : kind === 'scope' ? scopeVert : vert;
 			v = specializeFx(base, (name, comp, thr) => (FX_GUARDS.has(name + '.' + comp + '>' + thr) ? on.has(name + '.' + comp + '>' + thr) : undefined));
-			// «Экран» есть только в WebGL: блок #ifdef VSCREEN включается здесь, в WGSL-версии его нет
+			// «Экран» и «Рост на ритме»: блоки #ifdef VSCREEN и VSHOOT включаются здесь (в WGSL их включает dev/gen-wgsl.mjs)
 			if (kind === 'vert') v = '#define VSCREEN 1\n#define VSHOOT 1\n' + v;
 			cache.set(ck, v);
 		}

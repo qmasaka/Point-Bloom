@@ -6,15 +6,15 @@
 
 | Шейдер | Строк | Назначение |
 |---|---:|---|
-| common | 1170 | общий код: шум, смещения всех эффектов, зоны, руки, физика |
-| vert | 1720 | вершинный шейдер точек (подключает common) |
+| common | 1372 | общий код: шум, смещения всех эффектов, зоны, руки, физика |
+| vert | 2056 | вершинный шейдер точек (подключает common) |
 | frag | 59 | фрагментный шейдер точек |
-| lineVert | 1257 | вершинный шейдер линий «Связи» |
+| lineVert | 1459 | вершинный шейдер линий «Связи» |
 | lineFrag | 65 | фрагментный шейдер линий «Связи» |
-| scopeVert | 1222 | вершинный шейдер линии «Осциллограф» |
+| scopeVert | 1424 | вершинный шейдер линии «Осциллограф» |
 | scopeFrag | 12 | фрагментный шейдер линии «Осциллограф» |
 
-Значений кадра (uniform) всего: **129**; условий включения эффекта в шейдере: **55**.
+Значений кадра (uniform) всего: **138**; условий включения эффекта в шейдере: **57**.
 
 ## Эффекты
 
@@ -35,7 +35,8 @@
 | Звук и ритм | `spectrum` | Спектр | 14 | `uSpec.x>0.001` | `uSpec` `uSpecP` |
 | Звук и ритм | `wave` | Волны | 24 | `uWave.x>0.001` | `uWave` |
 | Звук и ритм | `blast` | Взрыв | 9 | `uBlast.x>0.001` | `uBlast` |
-| Звук и ритм | `chladni` | Фигуры Хладни |  |  |  |
+| Звук и ритм | `shoots` | Рост на ритме |  |  |  |
+| Звук и ритм | `chladni` | Звуковой песок |  |  |  |
 | Звук и ритм | `scope` | Осциллограф |  |  |  |
 | Разрушение | `physics` | Распад |  |  |  |
 | Разрушение | `explode` | Разбор на части |  |  |  |
@@ -103,6 +104,8 @@
 | `uScrQ.y>0.5` | 7 |  |  |
 | `uShd.w>0.001` | 6 |  |  |
 | `uShockP.x>0.001` | 9 | 9 | 9 |
+| `uShoot.x>0.001` | 105 |  |  |
+| `uShootD.x>0.5` |  |  |  |
 | `uSlice.x>0.001` | 16 |  |  |
 | `uSliceM.x>0.5` | 1 | 1 | 1 |
 | `uSliceM.x>1.5` |  |  |  |
@@ -117,5 +120,5 @@
 
 ## Значения кадра
 
-`uTime`, `uMorph`, `uMorphS`, `uMorphO`, `uSettle`, `uFr`, `uFr2`, `uFr3`, `uFr4`, `uFr5`, `uHero`, `uFr6`, `uFr7`, `uHeroTex`, `uFrTex`, `uSize`, `uPR`, `uBeat`, `uColorBy`, `uBright`, `uGlow`, `uAdd`, `uDens`, `uP0`, `uP1`, `uP2`, `uYR`, `uShade`, `uGlyph`, `uAtlas`, `uMouse`, `uMouseOn`, `uSpecTex`, `uCurl`, `uSpec`, `uWave`, `uTwist`, `uPulse`, `uVoxel`, `uJitter`, `uCursor`, `uGlitch`, `uSlice`, `uSliceM`, `uSliceC`, `uMark`, `uMarkC`, `uLink`, `uLinkP`, `uContact`, `uShockP`, `uTrk`, `uImp`, `uShock`, `uMask`, `uMaskA`, `uMaskShow`, `uPhysics`, `uCollapseTime`, `uBrushHits`, `uBrushParam`, `uPaintP`, `uLookP2`, `uDof`, `uHyp`, `uHypP`, `uCh`, `uChA`, `uScr`, `uScrP`, `uScrTex`, `uScrD`, `uScrQ`, `uScrDep`, `uScrMTex`, `uScrMN`, `uSlit`, `uSlitP`, `uSlitG`, `uSlitTex`, `uSort`, `uSortP`, `uSortTex`, `uScopeC`, `uScopeW`, `uScopeLB`, `uDepth`, `uDepthP`, `uDepthQ`, `uFlat`, `uScope`, `uScopeP`, `uScopeQ`, `uShape`, `uCurlP`, `uSpecP`, `uWaveP`, `uWaveSrc`, `uPulseP`, `uVoxelP`, `uGlitchP`, `uBlast`, `uFlow`, `uDisP`, `uSolid`, `uAtt`, `uHand`, `uHandP`, `uGrav`, `uGravT`, `uPhysP`, `uAsm`, `uDis`, `uDisT`, `uAnimN`, `uCen`, `uExp`, `uExpP`, `uPieceTex`, `uGrow`, `uGrowP`, `uGrowSeed`, `uJel`, `uJelO`, `uJelP`, `uDisQ`, `uGravP`, `uRes`, `uLinkW`
+`uTime`, `uMorph`, `uMorphS`, `uMorphO`, `uMorphD`, `uSettle`, `uFr`, `uFr2`, `uFr3`, `uFr4`, `uFr5`, `uHero`, `uFr6`, `uFr7`, `uHeroTex`, `uFrTex`, `uSize`, `uPR`, `uBeat`, `uColorBy`, `uBright`, `uGlow`, `uAdd`, `uDens`, `uP0`, `uP1`, `uP2`, `uYR`, `uShade`, `uGlyph`, `uAtlas`, `uMouse`, `uMouseOn`, `uSpecTex`, `uCurl`, `uSpec`, `uWave`, `uTwist`, `uPulse`, `uVoxel`, `uJitter`, `uCursor`, `uGlitch`, `uSlice`, `uSliceM`, `uSliceC`, `uMark`, `uMarkC`, `uLink`, `uLinkP`, `uContact`, `uShockP`, `uTrk`, `uImp`, `uShock`, `uMask`, `uMaskA`, `uMaskShow`, `uPhysics`, `uCollapseTime`, `uBrushHits`, `uBrushParam`, `uPaintP`, `uLookP2`, `uDof`, `uHyp`, `uHypP`, `uCh`, `uChA`, `uShoot`, `uShootP`, `uShootD`, `uShootE`, `uShootC`, `uShootS`, `uShootN`, `uShootB`, `uScr`, `uScrP`, `uScrTex`, `uScrD`, `uScrQ`, `uScrDep`, `uScrMTex`, `uScrMN`, `uSlit`, `uSlitP`, `uSlitG`, `uSlitTex`, `uSort`, `uSortP`, `uSortTex`, `uScopeC`, `uScopeW`, `uScopeLB`, `uDepth`, `uDepthP`, `uDepthQ`, `uFlat`, `uScope`, `uScopeP`, `uScopeQ`, `uShape`, `uCurlP`, `uSpecP`, `uWaveP`, `uWaveSrc`, `uPulseP`, `uVoxelP`, `uGlitchP`, `uBlast`, `uFlow`, `uDisP`, `uSolid`, `uAtt`, `uHand`, `uHandP`, `uGrav`, `uGravT`, `uPhysP`, `uAsm`, `uDis`, `uDisT`, `uAnimN`, `uCen`, `uExp`, `uExpP`, `uPieceTex`, `uGrow`, `uGrowP`, `uGrowSeed`, `uJel`, `uJelO`, `uJelP`, `uDisQ`, `uGravP`, `uRes`, `uLinkW`
 

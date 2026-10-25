@@ -18,6 +18,18 @@ export class WebGPUMesh {
 		this.geo = null;
 		this.bufs = null;
 		this.drawCount = 0;
+		// свои привязки: столько буферов хранения, сколько нужно этой линии (вместе с выходами не больше 8, см. dev/gen-wgsl.mjs)
+		const C = GPUShaderStage.COMPUTE;
+		const ro = { type: 'read-only-storage' };
+		const outs = 1 + this.prog.vslots;
+		this.computeBGL = this.device.createBindGroupLayout({
+			entries: [
+				{ binding: 0, visibility: C, buffer: { type: 'uniform' } },
+				...Array.from({ length: this.prog.slots }, (_, s) => ({ binding: s + 1, visibility: C, buffer: ro })),
+				...Array.from({ length: outs }, (_, s) => ({ binding: 9 + s, visibility: C, buffer: { type: 'storage' } })),
+				...points.texLayout(),
+			],
+		});
 	}
 
 	/** Собирает конвейеры асинхронно (один раз, по первому требованию) */
@@ -29,7 +41,7 @@ export class WebGPUMesh {
 		const jobs = [];
 		const cm = D.createShaderModule({ code: this.prog.compute });
 		jobs.push(
-			D.createComputePipelineAsync({ layout: D.createPipelineLayout({ bindGroupLayouts: [pts.computeBGL] }), compute: { module: cm, entryPoint: 'main' } }).then((p) => {
+			D.createComputePipelineAsync({ layout: D.createPipelineLayout({ bindGroupLayouts: [this.computeBGL] }), compute: { module: cm, entryPoint: 'main' } }).then((p) => {
 				this.pipelines.compute = p;
 			})
 		);
@@ -76,7 +88,7 @@ export class WebGPUMesh {
 		const mk = (size, usage) => D.createBuffer({ size: Math.max(16, size), usage });
 		const slots = Array.from({ length: this.prog.slots }, () => mk(V * 16, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST));
 		const outClip = mk(V * 16, GPUBufferUsage.STORAGE);
-		const outV = [mk(V * 16, GPUBufferUsage.STORAGE), mk(V * 16, GPUBufferUsage.STORAGE)];
+		const outV = Array.from({ length: this.prog.vslots }, () => mk(V * 16, GPUBufferUsage.STORAGE));
 		const index = mk(idx.byteLength, GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST);
 		const frameBuf = pts._inst(0).buf;
 		this.bufs = { slots, outClip, outV, index, V, frameBuf };
@@ -96,23 +108,12 @@ export class WebGPUMesh {
 		const e = (binding, buffer) => ({ binding, resource: { buffer } });
 		const dummy = pts.dummyBuf;
 		this.computeGroup = D.createBindGroup({
-			layout: pts.computeBGL,
-			entries: [
-				e(0, b.frameBuf),
-				...[1, 2, 3, 4, 5, 6, 7, 8].map((bd) => e(bd, b.slots[bd - 1] || dummy)),
-				e(9, b.outClip),
-				e(10, b.outV[0]),
-				e(11, b.outV[1]),
-				{ binding: 12, resource: pts.specTex.createView() },
-				{ binding: 13, resource: pts.sampler },
-				{ binding: 14, resource: pts.pieceTex.createView() },
-				{ binding: 15, resource: pts.frTex.createView({ dimension: '2d-array' }) },
-				{ binding: 16, resource: pts.heroTex.createView() },
-			],
+			layout: this.computeBGL,
+			entries: [e(0, b.frameBuf), ...b.slots.map((buf, s) => e(s + 1, buf)), e(9, b.outClip), ...b.outV.map((buf, s) => e(10 + s, buf)), ...pts.texEntries()],
 		});
 		this.renderGroup = D.createBindGroup({
 			layout: pts.renderBGL,
-			entries: [e(0, b.frameBuf), e(1, b.outClip), e(2, b.outV[0]), e(3, b.outV[1]), { binding: 4, resource: pts.atlasTex.createView() }, { binding: 5, resource: pts.sampler }],
+			entries: [e(0, b.frameBuf), e(1, b.outClip), e(2, b.outV[0] || dummy), e(3, b.outV[1] || dummy), { binding: 4, resource: pts.atlasTex.createView() }, { binding: 5, resource: pts.sampler }],
 		});
 		this.texVer = pts.texVersion;
 		this.frameBufUsed = b.frameBuf;
