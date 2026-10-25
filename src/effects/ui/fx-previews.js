@@ -235,6 +235,22 @@ const DRAW = {
 		for (const [x, yy] of ring(30, 9)) dot(c, x * 1.2, yy, Math.abs(yy - y) < 2 ? 2.6 : 1.4, Math.abs(yy - y) < 2 ? 1 : 0.35);
 		for (let i = -6; i <= 6; i++) dot(c, i * 1.8, y, 1.6, 0.9);
 	},
+	sigil: (c, t) => {
+		// симметричный орнамент: завитки по обе стороны оси прорисовываются и гаснут
+		const p = (t * 0.4) % 1.3;
+		for (let s = 0; s <= 1; s += 0.04) {
+			if (s > p) break;
+			dot(c, 0, (s * 2 - 1) * 9, 1.4, 0.9);
+			for (const side of [-1, 1]) {
+				for (const [y0, a0, R] of [[-4, 0.6, 4.2], [3, -0.5, 3.4]]) {
+					const a = a0 + Math.PI / 2 + s * 4.2;
+					const cx = 0.6 + R * Math.cos(a0 - Math.PI / 2), cy = y0 + R * Math.sin(a0 - Math.PI / 2);
+					const r = R * (1 - 0.7 * s);
+					dot(c, side * (cx + r * Math.cos(a)), cy + r * Math.sin(a), 1.6 * (1 - s) + 0.6, 0.5 + 0.5 * (1 - s));
+				}
+			}
+		}
+	},
 	shoots: (c, t) => {
 		// шар из точек, из которого на ритм вырастают шипы
 		for (let k = 0; k < 120; k++) {

@@ -269,6 +269,7 @@ u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, m
 this._screenTick(u);
 this._chladniTick(dt, L.chladni, u);
 this._shootTick(dt, L.shoots, u);
+if (L.sigil) this._sigilTick(dt, L.sigil, u);
 this._shadowTick(dt, L.shadow, u);
 {
 const H = L.hyper;

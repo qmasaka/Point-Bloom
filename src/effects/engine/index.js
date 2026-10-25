@@ -31,6 +31,7 @@ import { ScreenPart } from './screen.js';
 import { SlitPart } from './slitscan.js';
 import { ChladniPart } from './chladni.js';
 import { ShootsPart } from './shoots.js';
+import { SigilPart } from './sigil.js';
 import { ShadowPart } from './shadow.js';
 import { PixelSortPart } from './pixelsort.js';
 import { TrackPickPart } from './track-pick.js';
@@ -397,4 +398,4 @@ export class EffectsEngine {
 }
 
 // Остальные методы лежат в отдельных файлах рядом и подмешиваются в класс.
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, PixelSortPart, TrackPickPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, SigilPart, ShadowPart, PixelSortPart, TrackPickPart);
