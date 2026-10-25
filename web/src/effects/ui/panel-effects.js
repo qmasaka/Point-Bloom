@@ -245,7 +245,7 @@ formsSig = formsSigNow();
 };
 const morphHint = h('div', { class: 'field-hint' });
 const styleSel = select({
-options: MORPH_STYLES.map((ms) => ({ value: ms.id, label: ms.name, sub: ms.hint, icon: ms.icon })),
+options: MORPH_STYLES.map((ms) => ({ value: ms.id, label: ms.name, icon: ms.icon })),
 value: mc.style,
 onChange: (v) => {
 const ms = MORPH_STYLES.find((x) => x.id === v);
@@ -281,6 +281,16 @@ const morphMode = segmented({ cls: 'seg-tight', options: [{ value: 'manual', lab
 const morphOrder = segmented({ cls: 'seg-tight', options: [{ value: 'seq', label: 'По кругу' }, { value: 'pingpong', label: 'Туда и обратно' }, { value: 'random', label: 'Случайно' }], value: mc.order, onChange: (v) => { mc.order = v; save(); } });
 const morphScrub = slider({ noNorm: true, min: 0, max: 100, step: 1, value: 0, digits: 0, unit: '%', onInput: (v) => engine.morphScrub(v / 100), onChange: (v) => { engine.morphScrubEnd(); if (v >= 100) setTimeout(() => morphScrub.set(0), 250); } });
 const morphInt = slider({ noNorm: true, min: 1, max: 20, step: 0.5, value: mc.interval, digits: 1, unit: ' с', onInput: (v) => { mc.interval = v; }, onChange: save });
+morphScrub.el.addEventListener('pointerdown', () => {
+engine._scrubUser = true;
+const up = () => {
+engine._scrubUser = false;
+window.removeEventListener('pointerup', up);
+window.removeEventListener('pointercancel', up);
+};
+window.addEventListener('pointerup', up);
+window.addEventListener('pointercancel', up);
+});
 const morphLift = slider({ min: 0, max: 1.5, step: 0.05, value: mc.lift || 0, digits: 2, onInput: (v) => { mc.lift = v; }, onChange: save });
 const morphSpin = slider({ noNorm: true, min: -3, max: 3, step: 1, value: mc.spin || 0, digits: 0, format: (v) => (v ? (v > 0 ? '+' : '') + v + ' об.' : 'нет'), onInput: (v) => { mc.spin = v; }, onChange: save });
 const morphFsize = slider({ noNorm: true, min: 0.2, max: 3, step: 0.05, value: mc.fsize ?? 1, digits: 2, format: (v) => '×' + v.toFixed(2), onInput: (v) => { mc.fsize = v; }, onChange: save });
@@ -333,7 +343,7 @@ turnsRow.hidden = cur.id !== 'swirl' && cur.id !== 'hyper';
 if (mc.mode === 'beat') Object.assign(mc, { mode: 'music', band: 'beat', amode: 'gate' });
 intRow.hidden = mc.mode !== 'timer';
 morphMusic.hidden = mc.mode !== 'music';
-scrubRow.hidden = mc.mode === 'music' && mc.amode === 'amp';
+scrubRow.hidden = false;
 liftRow.hidden = !picked.some(isMediaKey);
 morphLift.set(mc.lift || 0);
 morphSpin.set(mc.spin || 0);
@@ -410,6 +420,7 @@ requestAnimationFrame(tick);
 if (!engine.active || now - last < 40) return;
 last = now;
 for (const p of pickers) p.draw();
+if (!engine._scrubUser) morphScrub.set(engine.morphing ? Math.round(engine.morph * 100) : 0);
 };
 requestAnimationFrame(tick);
 })();

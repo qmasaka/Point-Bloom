@@ -253,6 +253,7 @@ if (!(this._morphHold && this.morphing)) {
 S.holding = false;
 return;
 }
+if (this._scrubUser) return;
 this.morph = Math.min(1, S.p);
 if (S.p >= 0.985) {
 this._morphHold = false;

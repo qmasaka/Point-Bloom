@@ -300,6 +300,8 @@ export class SourcePart {
 			S.holding = false;
 			return;
 		}
+		// ползунок «Вручную» тянут рукой: музыка ждёт, пока его отпустят
+		if (this._scrubUser) return;
 		this.morph = Math.min(1, S.p);
 		if (S.p >= 0.985) {
 			this._morphHold = false;
