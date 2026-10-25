@@ -13,7 +13,7 @@ let soundSrc = null;
 const soundSrcRow = h('div', { class: 'field-wrap' });
 const soundSig = { v: '' };
 const pts = slider({ noNorm: true, log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
-const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
+const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоское', title: 'Без рельефа' }, { value: 'bright', label: 'Светлое', title: 'Светлое выше' }, { value: 'dark', label: 'Тёмное', title: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
 const depth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; mc.styleChanged(); }, onChange: save });
 const touchF = () => mc.styleChanged();
 const pct = (v) => Math.round(v * 100) + '%';
@@ -53,7 +53,7 @@ const hasRec = !!pm.rec;
 info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : '';
 const vids = (mc.lib || []).filter((e) => e.pm.ready && e.pm.kind === 'video');
 const sig = vids.map((e) => e.id + e.pm.name).join('|') + '#' + mc.soundKey;
-if (fx && sig !== soundSig.v) {
+if (false && fx && sig !== soundSig.v) {
 soundSig.v = sig;
 soundSrcRow.textContent = '';
 if (vids.length > 1) {

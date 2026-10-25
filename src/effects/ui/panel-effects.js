@@ -341,15 +341,23 @@ export function createEffectsPanel(app, root, engine) {
 	const morphWeight = segmented({ options: [{ value: 'auto', label: 'Как в модели', title: 'У модели с меньшим числом точек лишние гаснут, при переходе к большей недостающие проявляются' }, { value: 'equal', label: 'Поровну', title: 'У всех моделей одинаковое число точек' }], value: mc.weight, onChange: (v) => { mc.weight = v; save(); } });
 	const morphGo = button({ label: 'Следующая форма', icon: 'arrow-right', variant: 'primary', cls: 'btn-block', title: 'Запустить переход к следующей форме из списка', onClick: () => engine.morphNext() });
 	const turnsRow = field('Закрутка', morphTurns.el);
+	const timeRow = field('Длительность', morphTime.el);
 	const intRow = field('Каждые', morphInt.el);
 	const liftRow = field('Объём по глубине в пути', morphLift.el);
 	const scrubRow = field('Вручную', morphScrub.el);
 	const morphSettings = h('div', { class: 'sec-body', style: { padding: 0 } },
+		h('div', { class: 'fx-sub' }, 'Запуск'),
+		field('Переход', morphMode.el, { wide: true }),
+		intRow,
+		morphMusic,
+		scrubRow,
+		field('Порядок форм', morphOrder.el, { wide: true }),
+		field('Число точек у моделей', morphWeight.el, { wide: true }),
 		h('div', { class: 'fx-sub' }, 'Переход'),
 		field('Вид перехода', styleSel.el, { wide: true }),
 		styleHint,
 		aiBox,
-		field('Длительность', morphTime.el),
+		timeRow,
 		field('Характер движения', morphEase.el, { wide: true }),
 		h('div', { class: 'fx-sub' }, 'Движение точек'),
 		field('Какие точки первыми', morphSort.el, { wide: true }),
@@ -361,13 +369,6 @@ export function createEffectsPanel(app, root, engine) {
 		field('Размер точек в пути', morphFsize.el),
 		field('Обороты всей формы', morphSpin.el),
 		liftRow,
-		h('div', { class: 'fx-sub' }, 'Запуск'),
-		field('Переход', morphMode.el, { wide: true }),
-		intRow,
-		morphMusic,
-		scrubRow,
-		field('Порядок форм', morphOrder.el, { wide: true }),
-		field('Число точек у моделей', morphWeight.el, { wide: true }),
 		morphGo
 	);
 	const morphBox = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, morphSettings);
@@ -382,6 +383,10 @@ export function createEffectsPanel(app, root, engine) {
 		morphMusic.hidden = mc.mode !== 'music';
 		// под музыкой «Плавно» ползунок двигает сама музыка, но его можно перехватить рукой
 		scrubRow.hidden = false;
+		// под музыкой «Плавно» ходом правит громкость, длительность ничего не значит
+		const follow = mc.mode === 'music' && mc.amode === 'amp';
+		timeRow.hidden = follow;
+		scrubRow.querySelector('.field-label') && (scrubRow.querySelector('.field-label').textContent = follow ? 'Ход перехода (ведёт музыка)' : 'Вручную');
 		liftRow.hidden = !picked.some(isMediaKey);
 		morphLift.set(mc.lift || 0);
 		morphSpin.set(mc.spin || 0);

@@ -90,6 +90,11 @@ if (el && el !== this._vidEl) {
 const old = this._vidPm;
 if (old && old.onMute) old.onMute = null;
 this._connectVideo();
+const sp = this._soundPm();
+if (old && sp !== old) {
+sp.setMuted(old.muted);
+old.muted = true;
+}
 }
 }
 _videoGate(el = this.pm.kind === 'video' ? this.pm.el : null) {

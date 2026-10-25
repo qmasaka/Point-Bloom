@@ -104,6 +104,12 @@ export class AudioPart {
 			const old = this._vidPm;
 			if (old && old.onMute) old.onMute = null;
 			this._connectVideo();
+			// звук включён или выключен так же, как был у прежнего видео: новое видео изначально без звука и иначе молчало бы
+			const sp = this._soundPm();
+			if (old && sp !== old) {
+				sp.setMuted(old.muted);
+				old.muted = true;
+			}
 		}
 	}
 

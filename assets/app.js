@@ -66245,7 +66245,7 @@ let soundSrc = null;
 const soundSrcRow = h('div', { class: 'field-wrap' });
 const soundSig = { v: '' };
 const pts = slider({ noNorm: true, log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
-const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
+const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоское', title: 'Без рельефа' }, { value: 'bright', label: 'Светлое', title: 'Светлое выше' }, { value: 'dark', label: 'Тёмное', title: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
 const depth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; mc.styleChanged(); }, onChange: save });
 const touchF = () => mc.styleChanged();
 const pct = (v) => Math.round(v * 100) + '%';
@@ -66285,7 +66285,7 @@ const hasRec = !!pm.rec;
 info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : '';
 const vids = (mc.lib || []).filter((e) => e.pm.ready && e.pm.kind === 'video');
 const sig = vids.map((e) => e.id + e.pm.name).join('|') + '#' + mc.soundKey;
-if (fx && sig !== soundSig.v) {
+if (false && fx && sig !== soundSig.v) {
 soundSig.v = sig;
 soundSrcRow.textContent = '';
 if (vids.length > 1) {
@@ -81690,6 +81690,11 @@ en: {
 'Показанного сейчас': 'The one on screen',
 'Звук всегда из этого видео. Нажмите, чтобы звук шёл от показанного': 'Sound always from this video. Click to take sound from the shown one',
 'Брать звук всегда из этого видео': 'Always take sound from this video',
+'Плоское': 'Flat',
+'Без рельефа': 'No relief',
+'Светлое выше': 'Light is higher',
+'Тёмное выше': 'Dark is higher',
+'Ход перехода (ведёт музыка)': 'Progress (driven by music)',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -82679,6 +82684,11 @@ uk: {
 'Показанного сейчас': 'Показаного зараз',
 'Звук всегда из этого видео. Нажмите, чтобы звук шёл от показанного': 'Звук завжди з цього відео. Натисніть, щоб звук ішов від показаного',
 'Брать звук всегда из этого видео': 'Брати звук завжди з цього відео',
+'Плоское': 'Пласке',
+'Без рельефа': 'Без рельєфу',
+'Светлое выше': 'Світле вище',
+'Тёмное выше': 'Темне вище',
+'Ход перехода (ведёт музыка)': 'Хід переходу (веде музика)',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -83668,6 +83678,11 @@ es: {
 'Показанного сейчас': 'El que se muestra',
 'Звук всегда из этого видео. Нажмите, чтобы звук шёл от показанного': 'Sonido siempre de este vídeo. Pulsa para usar el que se muestra',
 'Брать звук всегда из этого видео': 'Tomar siempre el sonido de este vídeo',
+'Плоское': 'Plano',
+'Без рельефа': 'Sin relieve',
+'Светлое выше': 'Lo claro más alto',
+'Тёмное выше': 'Lo oscuro más alto',
+'Ход перехода (ведёт музыка)': 'Progreso (lo lleva la música)',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -84657,6 +84672,11 @@ de: {
 'Показанного сейчас': 'Dem gezeigten',
 'Звук всегда из этого видео. Нажмите, чтобы звук шёл от показанного': 'Ton immer von diesem Video. Klicken, um den Ton vom gezeigten zu nehmen',
 'Брать звук всегда из этого видео': 'Ton immer von diesem Video nehmen',
+'Плоское': 'Flach',
+'Без рельефа': 'Ohne Relief',
+'Светлое выше': 'Helles höher',
+'Тёмное выше': 'Dunkles höher',
+'Ход перехода (ведёт музыка)': 'Fortschritt (Musik steuert)',
 },
 };
 };
@@ -92763,6 +92783,11 @@ if (el && el !== this._vidEl) {
 const old = this._vidPm;
 if (old && old.onMute) old.onMute = null;
 this._connectVideo();
+const sp = this._soundPm();
+if (old && sp !== old) {
+sp.setMuted(old.muted);
+old.muted = true;
+}
 }
 }
 _videoGate(el = this.pm.kind === 'video' ? this.pm.el : null) {
@@ -96689,15 +96714,23 @@ const morphEase = segmented({ cls: 'seg-tight', options: MORPH_EASES.map(([value
 const morphWeight = segmented({ options: [{ value: 'auto', label: 'Как в модели', title: 'У модели с меньшим числом точек лишние гаснут, при переходе к большей недостающие проявляются' }, { value: 'equal', label: 'Поровну', title: 'У всех моделей одинаковое число точек' }], value: mc.weight, onChange: (v) => { mc.weight = v; save(); } });
 const morphGo = button({ label: 'Следующая форма', icon: 'arrow-right', variant: 'primary', cls: 'btn-block', title: 'Запустить переход к следующей форме из списка', onClick: () => engine.morphNext() });
 const turnsRow = field('Закрутка', morphTurns.el);
+const timeRow = field('Длительность', morphTime.el);
 const intRow = field('Каждые', morphInt.el);
 const liftRow = field('Объём по глубине в пути', morphLift.el);
 const scrubRow = field('Вручную', morphScrub.el);
 const morphSettings = h('div', { class: 'sec-body', style: { padding: 0 } },
+h('div', { class: 'fx-sub' }, 'Запуск'),
+field('Переход', morphMode.el, { wide: true }),
+intRow,
+morphMusic,
+scrubRow,
+field('Порядок форм', morphOrder.el, { wide: true }),
+field('Число точек у моделей', morphWeight.el, { wide: true }),
 h('div', { class: 'fx-sub' }, 'Переход'),
 field('Вид перехода', styleSel.el, { wide: true }),
 styleHint,
 aiBox,
-field('Длительность', morphTime.el),
+timeRow,
 field('Характер движения', morphEase.el, { wide: true }),
 h('div', { class: 'fx-sub' }, 'Движение точек'),
 field('Какие точки первыми', morphSort.el, { wide: true }),
@@ -96709,13 +96742,6 @@ field('Вспышка в пути', morphGlow.el),
 field('Размер точек в пути', morphFsize.el),
 field('Обороты всей формы', morphSpin.el),
 liftRow,
-h('div', { class: 'fx-sub' }, 'Запуск'),
-field('Переход', morphMode.el, { wide: true }),
-intRow,
-morphMusic,
-scrubRow,
-field('Порядок форм', morphOrder.el, { wide: true }),
-field('Число точек у моделей', morphWeight.el, { wide: true }),
 morphGo
 );
 const morphBox = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, morphSettings);
@@ -96728,6 +96754,9 @@ if (mc.mode === 'beat') Object.assign(mc, { mode: 'music', band: 'beat', amode: 
 intRow.hidden = mc.mode !== 'timer';
 morphMusic.hidden = mc.mode !== 'music';
 scrubRow.hidden = false;
+const follow = mc.mode === 'music' && mc.amode === 'amp';
+timeRow.hidden = follow;
+scrubRow.querySelector('.field-label') && (scrubRow.querySelector('.field-label').textContent = follow ? 'Ход перехода (ведёт музыка)' : 'Вручную');
 liftRow.hidden = !picked.some(isMediaKey);
 morphLift.set(mc.lift || 0);
 morphSpin.set(mc.spin || 0);
