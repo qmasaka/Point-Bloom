@@ -153,6 +153,8 @@ export class Viewport {
 		this.headlight.visible = !!r.headlight;
 		const bg = BACKGROUNDS[r.bg] || BACKGROUNDS.dark;
 		this.stage.style.background = bg.css;
+		// на телефоне и планшете тот же фон лежит и под нижним листом (assets/style.css, --stage-bg): лист парит над сценой без тёмной подложки
+		document.documentElement.style.setProperty('--stage-bg', bg.css);
 		this.grid.setTheme(bg.light);
 		this.invalidate();
 	}

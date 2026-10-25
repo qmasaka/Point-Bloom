@@ -1,4 +1,4 @@
-export const NEED_STORAGE_BUFFERS = 11;
+export const NEED_STORAGE_BUFFERS = 8;
 const BAD_KEY = 'pointbloom.gpu.bad';
 export function markGpuBad(reason) {
 console.warn('WebGPU отключён для режима «Авто»:', reason);

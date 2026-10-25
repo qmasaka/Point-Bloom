@@ -52,7 +52,11 @@ export function placeAbove(pop, btn, host, align = 'center', gap = 14) {
 	} else {
 		pop.style.right = 'auto';
 		pop.style.transform = 'translateX(-50%)';
-		pop.style.left = Math.round(br.left + br.width / 2 - hr.left) + 'px';
+		// на узком экране меню у крайней кнопки не уходит за край: центр сдвигается внутрь, отступ 8 px
+		const half = pop.offsetWidth / 2;
+		const x = br.left + br.width / 2 - hr.left;
+		const lo = half + 8, hi = hr.width - half - 8;
+		pop.style.left = Math.round(hi >= lo ? clamp(x, lo, hi) : hr.width / 2) + 'px';
 	}
 }
 

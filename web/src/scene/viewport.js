@@ -128,6 +128,7 @@ this.scene.environmentIntensity = r.env;
 this.headlight.visible = !!r.headlight;
 const bg = BACKGROUNDS[r.bg] || BACKGROUNDS.dark;
 this.stage.style.background = bg.css;
+document.documentElement.style.setProperty('--stage-bg', bg.css);
 this.grid.setTheme(bg.light);
 this.invalidate();
 }

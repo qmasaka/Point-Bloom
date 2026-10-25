@@ -9,6 +9,7 @@ void main() {
 `;
 export class TrackPickPart {
 _trackPick(idxs) {
+if (this.backend?.trackPick && !this.backend.useGl) return this.backend.trackPick(idxs);
 const g = this.geometry;
 const r = this.app.viewport.renderer;
 if (!g || !this.points || this._glDormant || this._tpFailed || !r.capabilities?.isWebGL2) return null;

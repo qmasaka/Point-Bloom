@@ -1,11 +1,12 @@
 import { RT_FORMAT } from './webgpu-post.js';
+import { TONE_WGSL } from '../../shaders/wgsl/generated/tone.js';
 const WGSL = `
 struct U {
 	mv: mat4x4f,
 	proj: mat4x4f,
 	tintC: vec4f,   // rgb: цвет подмеса, w: доля подмеса
 	params: vec4f,  // x: размер точки в пикселях (до сжатия по расстоянию), y: прозрачность, zw: размер холста
-	out: vec4f,     // x: экспозиция
+	out: vec4f,     // x: экспозиция, y: тональная компрессия (0 нет, 1 Neutral, 2 ACES, 3 AgX)
 }
 @group(0) @binding(0) var<uniform> u: U;
 
@@ -36,29 +37,12 @@ fn vs(in: VIn) -> VOut {
 	return o;
 }
 
-fn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {
-	let startCompression = 0.8 - 0.04;
-	let desaturation = 0.15;
-	var color = c0 * exposure;
-	let x = min(color.r, min(color.g, color.b));
-	let offset = select(0.04, x - 6.25 * x * x, x < 0.08);
-	color = color - offset;
-	let peak = max(color.r, max(color.g, color.b));
-	if (peak < startCompression) { return color; }
-	let d = 1.0 - startCompression;
-	let newPeak = 1.0 - d * d / (peak + d - startCompression);
-	color = color * (newPeak / peak);
-	let g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
-	return mix(color, vec3f(newPeak), g);
-}
-fn linearToSrgb(v: vec3f) -> vec3f {
-	return select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));
-}
+${TONE_WGSL}
 
 @fragment
 fn fs(in: VOut) -> @location(0) vec4f {
 	if (length(in.pc - vec2f(0.5)) > 0.5) { discard; }
-	return vec4f(linearToSrgb(toneNeutral(in.color, u.out.x)), u.params.y);
+	return vec4f(linearToSrgb(toneMap(in.color, u.out.x, u.out.y)), u.params.y);
 }
 
 @fragment
@@ -160,8 +144,8 @@ draw(enc, view, depthView, rt, tr, ctx) {
 const D = this.device;
 const pipe = this.pipelines[rt ? 'rt' : 'screen'];
 const rp = enc.beginRenderPass({
-colorAttachments: [{ view, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }],
-depthStencilAttachment: { view: depthView, depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' },
+colorAttachments: [{ view, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: ctx.load ? 'load' : 'clear', storeOp: 'store' }],
+depthStencilAttachment: { view: depthView, depthClearValue: 1, depthLoadOp: ctx.load ? 'load' : 'clear', depthStoreOp: 'store' },
 });
 if (pipe && this.count) {
 rp.setPipeline(pipe);
@@ -177,7 +161,7 @@ data.set(ctx.proj.elements, 16);
 const c = mt.uTintC.value;
 data.set([c.r, c.g, c.b, mt.uTint.value], 32);
 data.set([mt.uSize.value, mt.uAlpha.value, ctx.size[0], ctx.size[1]], 36);
-data.set([ctx.exposure, 0, 0, 0], 40);
+data.set([ctx.exposure, ctx.tone ?? 1, 0, 0], 40);
 D.queue.writeBuffer(g.ubuf, 0, data);
 rp.setBindGroup(0, g.group);
 rp.setVertexBuffer(0, g.pos);

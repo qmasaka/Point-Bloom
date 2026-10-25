@@ -33259,7 +33259,10 @@ pop.style.right = Math.round(hr.right - br.right - 6) + 'px';
 } else {
 pop.style.right = 'auto';
 pop.style.transform = 'translateX(-50%)';
-pop.style.left = Math.round(br.left + br.width / 2 - hr.left) + 'px';
+const half = pop.offsetWidth / 2;
+const x = br.left + br.width / 2 - hr.left;
+const lo = half + 8, hi = hr.width - half - 8;
+pop.style.left = Math.round(hi >= lo ? clamp(x, lo, hi) : hr.width / 2) + 'px';
 }
 }
 function fmt(n, digits = 3) {
@@ -35291,6 +35294,7 @@ this.scene.environmentIntensity = r.env;
 this.headlight.visible = !!r.headlight;
 const bg = BACKGROUNDS[r.bg] || BACKGROUNDS.dark;
 this.stage.style.background = bg.css;
+document.documentElement.style.setProperty('--stage-bg', bg.css);
 this.grid.setTheme(bg.light);
 this.invalidate();
 }
@@ -41199,7 +41203,7 @@ return { el, sync };
 __defs['src/ui/mobile.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'initMobile', () => initMobile);
-const MIN = 84;
+const MIN = 98;
 function initMobile(app) {
 const root = document.getElementById('app');
 const ws = document.querySelector('.workspace');
@@ -41208,7 +41212,7 @@ const fxLeft = document.getElementById('fxLeft');
 const mq = window.matchMedia('(max-width: 900px)');
 let state = 'min';
 const vh = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-const heights = () => (vh() < 520 ? { min: MIN, mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: MIN, mid: Math.round(vh() * 0.46), full: Math.round(vh() - 110) });
+const heights = () => (vh() < 520 ? { min: MIN, mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: MIN, mid: Math.round(vh() * 0.46), full: Math.round(vh() - 124) });
 const setH = (px) => root.style.setProperty('--sheet-h', Math.round(px) + 'px');
 function setState(s) {
 state = s;
@@ -67568,7 +67572,7 @@ this.post = null;
 __defs['src/effects/shaders/wgsl/generated/frame-spec.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'FRAME_SPEC', () => FRAME_SPEC);
-const FRAME_SPEC = [["uAdd","f32",0],["uSolid","vec3f",0],["uAtt","f32",0],["uSize","f32",0],["uPR","f32",0],["uGlyph","vec3f",0],["uColorBy","f32",0],["uBright","f32",0],["uMaskShow","f32",0],["uP0","vec3f",0],["uP1","vec3f",0],["uP2","vec3f",0],["uSliceC","vec3f",0],["uMarkC","vec3f",0],["uTime","f32",0],["uTOff","f32",0],["uMorph","f32",0],["uMorphS","vec4f",0],["uMorphO","vec4f",0],["uMorphD","vec4f",0],["uSettle","f32",0],["uBeat","f32",0],["uYR","vec2f",0],["uMouse","vec3f",0],["uMouseOn","f32",0],["uShade","f32",0],["uCurlP","vec4f",0],["uSpecP","vec4f",0],["uWaveP","vec4f",0],["uWaveSrc","vec4f",0],["uPulseP","vec4f",0],["uVoxelP","vec4f",0],["uGlitchP","vec4f",0],["uBlast","vec4f",0],["uFlow","vec4f",0],["uDisP","vec4f",0],["uScope","vec4f",0],["uScopeP","vec4f",0],["uScopeQ","vec4f",0],["uScopeC","vec3f",0],["uDepth","vec4f",0],["uDepthP","vec4f",0],["uDepthQ","vec4f",0],["uFlat","f32",0],["uCurl","vec4f",0],["uSpec","vec4f",0],["uWave","vec4f",0],["uTwist","vec4f",0],["uPulse","vec4f",0],["uVoxel","vec4f",0],["uJitter","vec4f",0],["uCursor","vec4f",0],["uMask","vec4f",0],["uMaskA","vec4f",0],["uGlitch","vec4f",0],["uContact","vec4f",0],["uShockP","vec4f",0],["uTrk","vec4f",16],["uHand","vec4f",12],["uGrav","vec4f",0],["uSlice","vec4f",0],["uSliceM","vec4f",0],["uMark","vec4f",0],["uGravT","vec4f",0],["uPhysP","vec4f",0],["uAsm","f32",0],["uDis","vec4f",0],["uDisT","f32",0],["uAnimN","f32",0],["uCen","vec3f",0],["uDisQ","vec4f",0],["uGravP","vec4f",0],["uHandP","vec4f",0],["uImp","vec4f",32],["uShock","vec4f",4],["uExp","vec4f",0],["uExpP","vec4f",0],["uGrow","vec4f",0],["uGrowP","vec4f",0],["uGrowSeed","vec3f",0],["uJel","vec4f",3],["uJelO","vec4f",3],["uJelP","vec4f",0],["uPhysics","vec4f",0],["uCollapseTime","f32",0],["uBrushHits","vec4f",20],["uPaintP","vec4f",0],["uBrushParam","vec4f",0],["uLookP2","vec4f",0],["uDof","vec4f",0],["uHyp","vec4f",0],["uHypP","vec4f",0],["uCh","vec4f",0],["uChA","vec4f",0],["uFr","vec4f",0],["uFr2","vec4f",0],["uFr3","vec4f",0],["uFr4","vec4f",0],["uFr5","vec4f",0],["uHero","vec4f",0],["uFr6","vec4f",0],["uFr7","vec4f",0],["uShoot","vec4f",0],["uShootP","vec4f",0],["uShootD","vec4f",0],["uShootE","vec4f",0],["uShootC","vec4f",0],["uShootS","vec4f",24],["uShootN","vec4f",24],["uShootB","vec4f",6],["modelMatrix","mat4x4f",0],["modelViewMatrix","mat4x4f",0],["projectionMatrix","mat4x4f",0],["normalMatrix","mat3x3f",0],["uRes","vec2f",0],["uExposure","f32",0],["uGlow","f32",0],["uDens","f32",0],["uGhost","f32",0],["uShape","f32",0],["uLink","vec4f",0],["uLinkP","vec4f",0],["uLinkW","f32",0],["uScopeW","f32",0],["uScopeLB","f32",0]];
+const FRAME_SPEC = [["uAdd","f32",0],["uSolid","vec3f",0],["uAtt","f32",0],["uSize","f32",0],["uPR","f32",0],["uGlyph","vec3f",0],["uColorBy","f32",0],["uBright","f32",0],["uMaskShow","f32",0],["uP0","vec3f",0],["uP1","vec3f",0],["uP2","vec3f",0],["uSliceC","vec3f",0],["uMarkC","vec3f",0],["uTime","f32",0],["uTOff","f32",0],["uMorph","f32",0],["uMorphS","vec4f",0],["uMorphO","vec4f",0],["uMorphD","vec4f",0],["uSettle","f32",0],["uBeat","f32",0],["uYR","vec2f",0],["uMouse","vec3f",0],["uMouseOn","f32",0],["uShade","f32",0],["uCurlP","vec4f",0],["uSpecP","vec4f",0],["uWaveP","vec4f",0],["uWaveSrc","vec4f",0],["uPulseP","vec4f",0],["uVoxelP","vec4f",0],["uGlitchP","vec4f",0],["uBlast","vec4f",0],["uFlow","vec4f",0],["uDisP","vec4f",0],["uScope","vec4f",0],["uScopeP","vec4f",0],["uScopeQ","vec4f",0],["uScopeC","vec3f",0],["uDepth","vec4f",0],["uDepthP","vec4f",0],["uDepthQ","vec4f",0],["uFlat","f32",0],["uCurl","vec4f",0],["uSpec","vec4f",0],["uWave","vec4f",0],["uTwist","vec4f",0],["uPulse","vec4f",0],["uVoxel","vec4f",0],["uJitter","vec4f",0],["uCursor","vec4f",0],["uMask","vec4f",0],["uMaskA","vec4f",0],["uGlitch","vec4f",0],["uContact","vec4f",0],["uShockP","vec4f",0],["uTrk","vec4f",16],["uHand","vec4f",12],["uGrav","vec4f",0],["uSlice","vec4f",0],["uSliceM","vec4f",0],["uMark","vec4f",0],["uGravT","vec4f",0],["uPhysP","vec4f",0],["uAsm","f32",0],["uDis","vec4f",0],["uDisT","f32",0],["uAnimN","f32",0],["uCen","vec3f",0],["uDisQ","vec4f",0],["uGravP","vec4f",0],["uHandP","vec4f",0],["uImp","vec4f",32],["uShock","vec4f",4],["uExp","vec4f",0],["uExpP","vec4f",0],["uGrow","vec4f",0],["uGrowP","vec4f",0],["uGrowSeed","vec3f",0],["uJel","vec4f",3],["uJelO","vec4f",3],["uJelP","vec4f",0],["uPhysics","vec4f",0],["uCollapseTime","f32",0],["uBrushHits","vec4f",20],["uPaintP","vec4f",0],["uBrushParam","vec4f",0],["uLookP2","vec4f",0],["uDof","vec4f",0],["uHyp","vec4f",0],["uHypP","vec4f",0],["uCh","vec4f",0],["uChA","vec4f",0],["uFr","vec4f",0],["uFr2","vec4f",0],["uFr3","vec4f",0],["uFr4","vec4f",0],["uFr5","vec4f",0],["uHero","vec4f",0],["uFr6","vec4f",0],["uFr7","vec4f",0],["uShoot","vec4f",0],["uShootP","vec4f",0],["uShootD","vec4f",0],["uShootE","vec4f",0],["uShootC","vec4f",0],["uShootS","vec4f",24],["uShootN","vec4f",24],["uShootB","vec4f",6],["uScr","vec4f",0],["uScrP","vec4f",0],["uScrD","vec4f",0],["uScrQ","vec4f",0],["uScrMN","f32",0],["uSlit","vec4f",0],["uSlitP","vec4f",0],["uSlitG","vec4f",0],["uSort","vec4f",0],["uSortP","vec4f",0],["modelMatrix","mat4x4f",0],["modelViewMatrix","mat4x4f",0],["projectionMatrix","mat4x4f",0],["viewMatrix","mat4x4f",0],["normalMatrix","mat3x3f",0],["uRes","vec2f",0],["uPx","vec2f",0],["uExposure","f32",0],["uTone","f32",0],["uGlow","f32",0],["uDens","f32",0],["uGhost","f32",0],["uShape","f32",0],["uShd","vec4f",0],["uShdL","vec4f",0],["uShdP","vec4f",0],["uShdC","vec3f",0],["uLink","vec4f",0],["uLinkP","vec4f",0],["uLinkW","f32",0],["uScopeW","f32",0],["uScopeLB","f32",0]];
 };
 __defs['src/effects/render/webgpu/frame-layout.js'] = function (__exports, __req) {
 'use strict';
@@ -67644,7 +67648,7 @@ __defs['src/effects/shaders/wgsl/generated/post-passes.js'] = function (__export
 __def(__exports, 'POST_PASSES', () => POST_PASSES);
 const POST_PASSES = {
 "fb": {
-"wgsl": "struct U {\n\t@size(16) uDecay: f32,\n\t@size(16) uZoom: f32,\n\t@size(16) uTwist: f32,\n\t@size(16) uHasPrev: f32,\n\t@size(16) uTint: vec3f,\n\t@size(16) uTintK: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uScene: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrev: texture_2d<f32>;\n@group(0) @binding(3) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn main_() {\n\tvar curr: vec4f = textureSampleLevel(t_uScene, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\tvar prev: vec4f = vec4f(0.0);\n\tif ((u.uHasPrev > 0.5)) {\n\t\tvar c: vec2f = vec2f(0.5);\n\t\tvar p: vec2f = (vUv - c);\n\t\tvar a: f32 = u.uTwist;\n\t\tvar rot: mat2x2f = mat2x2f(cos(a), -sin(a), sin(a), cos(a));\n\t\tvar pUv: vec2f = ((((rot * p)) / max(0.001, u.uZoom)) + c);\n\t\tif (((((pUv.x >= 0.0) && (pUv.x <= 1.0)) && (pUv.y >= 0.0)) && (pUv.y <= 1.0))) {\n\t\t\tprev = (textureSampleLevel(t_uPrev, samp, vec2f((pUv).x, 1.0 - (pUv).y), 0.0) * u.uDecay);\n\t\t\t{ let _sw0 = mix(prev.rgb, ((prev.rgb * u.uTint) * 1.7), (u.uTintK * 0.07)); prev = vec4f(_sw0.x, _sw0.y, _sw0.z, prev.w); }\n\t\t}\n\t}\n\tvar col: vec3f = max(curr.rgb, prev.rgb);\n\tvar a: f32 = max(curr.a, (prev.a * u.uDecay));\n\tgl_FragColor = vec4f(col, a);\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
+"wgsl": "struct U {\n\t@size(16) uDecay: f32,\n\t@size(16) uZoom: f32,\n\t@size(16) uTwist: f32,\n\t@size(16) uHasPrev: f32,\n\t@size(16) uTint: vec3f,\n\t@size(16) uTintK: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uScene: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrev: texture_2d<f32>;\n@group(0) @binding(3) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn main_() {\n\tvar curr: vec4f = textureSampleLevel(t_uScene, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\tvar prev: vec4f = vec4f(0.0);\n\tif ((u.uHasPrev > 0.5)) {\n\t\tvar c: vec2f = vec2f(0.5);\n\t\tvar p: vec2f = (vUv - c);\n\t\tvar a: f32 = u.uTwist;\n\t\tvar rot: mat2x2f = mat2x2f(cos(a), -sin(a), sin(a), cos(a));\n\t\tvar pUv: vec2f = ((((rot * p)) / max(0.001, u.uZoom)) + c);\n\t\tif (((((pUv.x >= 0.0) && (pUv.x <= 1.0)) && (pUv.y >= 0.0)) && (pUv.y <= 1.0))) {\n\t\t\tprev = (textureSampleLevel(t_uPrev, samp, vec2f((pUv).x, 1.0 - (pUv).y), 0.0) * u.uDecay);\n\t\t\t{ let _sw0 = mix(prev.rgb, ((prev.rgb * u.uTint) * 1.7), (u.uTintK * 0.07)); prev = vec4f(_sw0.x, _sw0.y, _sw0.z, prev.w); }\n\t\t}\n\t}\n\tvar col: vec3f = max(curr.rgb, prev.rgb);\n\tvar a: f32 = max(curr.a, (prev.a * u.uDecay));\n\tgl_FragColor = vec4f(col, a);\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
 "spec": [
 [
 "uDecay",
@@ -67685,6 +67689,11 @@ const POST_PASSES = {
 "uExposure",
 "f32",
 0
+],
+[
+"uTone",
+"f32",
+0
 ]
 ],
 "textures": [
@@ -67693,7 +67702,7 @@ const POST_PASSES = {
 ]
 },
 "out": {
-"wgsl": "struct U {\n\t@size(16) uBloom: f32,\n\t@size(16) uAberration: f32,\n\t@size(16) uRes: vec2f,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uTex: texture_2d<f32>;\n@group(0) @binding(2) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn main_() {\n\tvar dir: vec2f = (vUv - vec2f(0.5));\n\tvar distSq: f32 = dot(dir, dir);\n\tvar shift: vec2f = (((dir * distSq) * u.uAberration) * 0.04);\n\tvar baseCol: vec4f;\n\tif ((u.uAberration > 0.001)) {\n\t\tvar r: f32 = textureSampleLevel(t_uTex, samp, vec2f(((vUv + shift)).x, 1.0 - ((vUv + shift)).y), 0.0).r;\n\t\tvar g: f32 = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).g;\n\t\tvar b: f32 = textureSampleLevel(t_uTex, samp, vec2f(((vUv - shift)).x, 1.0 - ((vUv - shift)).y), 0.0).b;\n\t\tvar a: f32 = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).a;\n\t\tbaseCol = vec4f(r, g, b, a);\n\t} else {\n\t\tbaseCol = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\t}\n\tif ((u.uBloom > 0.01)) {\n\t\tvar texel_: vec2f = (1.0 / u.uRes);\n\t\tvar bloom: vec4f = vec4f(0.0);\n\t\tvar rad: f32 = 3.2;\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(-rad, -rad) * texel_))).x, 1.0 - ((vUv + (vec2f(-rad, -rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(rad, -rad) * texel_))).x, 1.0 - ((vUv + (vec2f(rad, -rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(-rad, rad) * texel_))).x, 1.0 - ((vUv + (vec2f(-rad, rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(rad, rad) * texel_))).x, 1.0 - ((vUv + (vec2f(rad, rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(0.0, (-rad * 1.4)) * texel_))).x, 1.0 - ((vUv + (vec2f(0.0, (-rad * 1.4)) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(0.0, (rad * 1.4)) * texel_))).x, 1.0 - ((vUv + (vec2f(0.0, (rad * 1.4)) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f((-rad * 1.4), 0.0) * texel_))).x, 1.0 - ((vUv + (vec2f((-rad * 1.4), 0.0) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f((rad * 1.4), 0.0) * texel_))).x, 1.0 - ((vUv + (vec2f((rad * 1.4), 0.0) * texel_))).y), 0.0);\n\t\tbloom *= vec4f(0.125);\n\t\t{ let _sw0 = (baseCol.rgb + ((bloom.rgb * u.uBloom) * 0.85)); baseCol = vec4f(_sw0.x, _sw0.y, _sw0.z, baseCol.w); }\n\t}\n\tgl_FragColor = baseCol;\n}\n\n\nfn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {\n\tlet startCompression = 0.8 - 0.04;\n\tlet desaturation = 0.15;\n\tvar color = c0 * exposure;\n\tlet x = min(color.r, min(color.g, color.b));\n\tlet offset = select(0.04, x - 6.25 * x * x, x < 0.08);\n\tcolor = color - offset;\n\tlet peak = max(color.r, max(color.g, color.b));\n\tif (peak < startCompression) { return color; }\n\tlet d = 1.0 - startCompression;\n\tlet newPeak = 1.0 - d * d / (peak + d - startCompression);\n\tcolor = color * (newPeak / peak);\n\tlet g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);\n\treturn mix(color, vec3f(newPeak), g);\n}\nfn linearToSrgb(v: vec3f) -> vec3f {\n\treturn select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));\n}\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn vec4f(linearToSrgb(toneNeutral(gl_FragColor.rgb, u.uExposure)), gl_FragColor.a);\n}\n",
+"wgsl": "struct U {\n\t@size(16) uBloom: f32,\n\t@size(16) uAberration: f32,\n\t@size(16) uRes: vec2f,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uTex: texture_2d<f32>;\n@group(0) @binding(2) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn main_() {\n\tvar dir: vec2f = (vUv - vec2f(0.5));\n\tvar distSq: f32 = dot(dir, dir);\n\tvar shift: vec2f = (((dir * distSq) * u.uAberration) * 0.04);\n\tvar baseCol: vec4f;\n\tif ((u.uAberration > 0.001)) {\n\t\tvar r: f32 = textureSampleLevel(t_uTex, samp, vec2f(((vUv + shift)).x, 1.0 - ((vUv + shift)).y), 0.0).r;\n\t\tvar g: f32 = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).g;\n\t\tvar b: f32 = textureSampleLevel(t_uTex, samp, vec2f(((vUv - shift)).x, 1.0 - ((vUv - shift)).y), 0.0).b;\n\t\tvar a: f32 = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).a;\n\t\tbaseCol = vec4f(r, g, b, a);\n\t} else {\n\t\tbaseCol = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\t}\n\tif ((u.uBloom > 0.01)) {\n\t\tvar texel_: vec2f = (1.0 / u.uRes);\n\t\tvar bloom: vec4f = vec4f(0.0);\n\t\tvar rad: f32 = 3.2;\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(-rad, -rad) * texel_))).x, 1.0 - ((vUv + (vec2f(-rad, -rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(rad, -rad) * texel_))).x, 1.0 - ((vUv + (vec2f(rad, -rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(-rad, rad) * texel_))).x, 1.0 - ((vUv + (vec2f(-rad, rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(rad, rad) * texel_))).x, 1.0 - ((vUv + (vec2f(rad, rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(0.0, (-rad * 1.4)) * texel_))).x, 1.0 - ((vUv + (vec2f(0.0, (-rad * 1.4)) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(0.0, (rad * 1.4)) * texel_))).x, 1.0 - ((vUv + (vec2f(0.0, (rad * 1.4)) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f((-rad * 1.4), 0.0) * texel_))).x, 1.0 - ((vUv + (vec2f((-rad * 1.4), 0.0) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f((rad * 1.4), 0.0) * texel_))).x, 1.0 - ((vUv + (vec2f((rad * 1.4), 0.0) * texel_))).y), 0.0);\n\t\tbloom *= vec4f(0.125);\n\t\t{ let _sw0 = (baseCol.rgb + ((bloom.rgb * u.uBloom) * 0.85)); baseCol = vec4f(_sw0.x, _sw0.y, _sw0.z, baseCol.w); }\n\t}\n\tgl_FragColor = baseCol;\n}\n\n\nfn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {\n\tlet startCompression = 0.8 - 0.04;\n\tlet desaturation = 0.15;\n\tvar color = c0 * exposure;\n\tlet x = min(color.r, min(color.g, color.b));\n\tlet offset = select(0.04, x - 6.25 * x * x, x < 0.08);\n\tcolor = color - offset;\n\tlet peak = max(color.r, max(color.g, color.b));\n\tif (peak < startCompression) { return color; }\n\tlet d = 1.0 - startCompression;\n\tlet newPeak = 1.0 - d * d / (peak + d - startCompression);\n\tcolor = color * (newPeak / peak);\n\tlet g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);\n\treturn mix(color, vec3f(newPeak), g);\n}\nfn rrtAndOdtFit(v: vec3f) -> vec3f {\n\tlet a = v * (v + 0.0245786) - 0.000090537;\n\tlet b = v * (0.983729 * v + 0.4329510) + 0.238081;\n\treturn a / b;\n}\nfn toneAces(c0: vec3f, exposure: f32) -> vec3f {\n\tlet inM = mat3x3f(vec3f(0.59719, 0.07600, 0.02840), vec3f(0.35458, 0.90834, 0.13383), vec3f(0.04823, 0.01566, 0.83777));\n\tlet outM = mat3x3f(vec3f(1.60475, -0.10208, -0.00327), vec3f(-0.53108, 1.10813, -0.07276), vec3f(-0.07367, -0.00605, 1.07602));\n\tvar color = c0 * (exposure / 0.6);\n\tcolor = inM * color;\n\tcolor = rrtAndOdtFit(color);\n\tcolor = outM * color;\n\treturn saturate(color);\n}\nfn agxContrast(x: vec3f) -> vec3f {\n\tlet x2 = x * x;\n\tlet x4 = x2 * x2;\n\treturn 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;\n}\nfn toneAgx(c0: vec3f, exposure: f32) -> vec3f {\n\tlet rec2020ToSrgb = mat3x3f(vec3f(1.6605, -0.1246, -0.0182), vec3f(-0.5876, 1.1329, -0.1006), vec3f(-0.0728, -0.0083, 1.1187));\n\tlet srgbToRec2020 = mat3x3f(vec3f(0.6274, 0.0691, 0.0164), vec3f(0.3293, 0.9195, 0.0880), vec3f(0.0433, 0.0113, 0.8956));\n\tlet inset = mat3x3f(vec3f(0.856627153315983, 0.137318972929847, 0.11189821299995), vec3f(0.0951212405381588, 0.761241990602591, 0.0767994186031903), vec3f(0.0482516061458583, 0.101439036467562, 0.811302368396859));\n\tlet outset = mat3x3f(vec3f(1.1271005818144368, -0.1413297634984383, -0.14132976349843826), vec3f(-0.11060664309660323, 1.157823702216272, -0.11060664309660294), vec3f(-0.016493938717834573, -0.016493938717834257, 1.2519364065950405));\n\tlet minEv = -12.47393;\n\tlet maxEv = 4.026069;\n\tvar color = c0 * exposure;\n\tcolor = srgbToRec2020 * color;\n\tcolor = inset * color;\n\tcolor = max(color, vec3f(1e-10));\n\tcolor = log2(color);\n\tcolor = (color - minEv) / (maxEv - minEv);\n\tcolor = clamp(color, vec3f(0.0), vec3f(1.0));\n\tcolor = agxContrast(color);\n\tcolor = outset * color;\n\tcolor = pow(max(vec3f(0.0), color), vec3f(2.2));\n\tcolor = rec2020ToSrgb * color;\n\treturn clamp(color, vec3f(0.0), vec3f(1.0));\n}\nfn toneMap(c: vec3f, exposure: f32, mode: f32) -> vec3f {\n\tif (mode < 0.5) { return c; }\n\tif (mode < 1.5) { return toneNeutral(c, exposure); }\n\tif (mode < 2.5) { return toneAces(c, exposure); }\n\treturn toneAgx(c, exposure);\n}\nfn linearToSrgb(v: vec3f) -> vec3f {\n\treturn select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));\n}\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, u.uExposure, u.uTone)), gl_FragColor.a);\n}\n",
 "spec": [
 [
 "uBloom",
@@ -67719,6 +67728,11 @@ const POST_PASSES = {
 "uExposure",
 "f32",
 0
+],
+[
+"uTone",
+"f32",
+0
 ]
 ],
 "textures": [
@@ -67726,7 +67740,7 @@ const POST_PASSES = {
 ]
 },
 "mv": {
-"wgsl": "struct U {\n\t@size(16) uRes: vec2f,\n\t@size(16) uDrift: vec2f,\n\t@size(16) uBlock: f32,\n\t@size(16) uRange: f32,\n\t@size(16) uGain: f32,\n\t@size(16) uInertia: f32,\n\t@size(16) uSceneMix: f32,\n\t@size(16) uHasPrev: f32,\n\t@size(16) uFlow: f32,\n\t@size(16) uTime: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uCur: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrev: texture_2d<f32>;\n@group(0) @binding(3) var t_uPrevMV: texture_2d<f32>;\n@group(0) @binding(4) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nvar<private> cc: array<f32, 5>;\nvar<private> oo: array<vec2f, 5>;\nvar<private> cuv: vec2f;\nvar<private> lodL: f32;\n\nfn featCur(uv_in: vec2f) -> f32 {\n\tvar uv: vec2f = uv_in;\n\tvar s: vec4f = textureSampleLevel(t_uCur, samp, vec2f((uv).x, 1.0 - (uv).y), lodL);\n\treturn (dot(s.rgb, vec3f(0.299, 0.587, 0.114)) + (0.5 * s.a));\n}\n\nfn featPrev(uv_in: vec2f) -> f32 {\n\tvar uv: vec2f = uv_in;\n\tvar s: vec4f = textureSampleLevel(t_uPrev, samp, vec2f((uv).x, 1.0 - (uv).y), lodL);\n\treturn (dot(s.rgb, vec3f(0.299, 0.587, 0.114)) + (0.5 * s.a));\n}\n\nfn sad(mv_in: vec2f) -> f32 {\n\tvar mv: vec2f = mv_in;\n\tvar e: f32 = 0.0;\n\tfor (var i: i32 = 0; (i < 5); i++) {\n\t\te += abs((cc[i] - featPrev((cuv + (((oo[i] - mv)) / u.uRes)))));\n\t}\n\treturn e;\n}\n\nfn main_() {\n\tvar blockC: vec2f = (((floor(gl_FragCoord.xy) + 0.5)) * u.uBlock);\n\tcuv = (blockC / u.uRes);\n\tvar mv: vec2f = vec2f(0.0);\n\tif (((u.uSceneMix > 0.001) && (u.uHasPrev > 0.5))) {\n\t\tlodL = log2(max((u.uBlock * 0.6), 1.0));\n\t\tvar q: f32 = (u.uBlock * 0.28);\n\t\too[0] = vec2f(0.0);\n\t\too[1] = vec2f(q, q);\n\t\too[2] = vec2f(-q, q);\n\t\too[3] = vec2f(q, -q);\n\t\too[4] = vec2f(-q, -q);\n\t\tfor (var i: i32 = 0; (i < 5); i++) {\n\t\t\tcc[i] = featCur((cuv + (oo[i] / u.uRes)));\n\t\t}\n\t\tvar step0: f32 = max(1.0, (u.uBlock * 0.5));\n\t\tvar e0: f32 = sad(vec2f(0.0));\n\t\tvar best: vec2f = vec2f(0.0);\n\t\tvar bestE: f32 = e0;\n\t\tfor (var j: i32 = -3; (j <= 3); j++) {\n\t\t\tfor (var i: i32 = -3; (i <= 3); i++) {\n\t\t\t\tif (((i == 0) && (j == 0))) {\n\t\t\t\t\tcontinue;\n\t\t\t\t}\n\t\t\t\tvar c: vec2f = (vec2f(f32(i), f32(j)) * step0);\n\t\t\t\tvar e: f32 = (sad(c) + (0.004 * length(vec2f(f32(i), f32(j)))));\n\t\t\t\tif ((e < bestE)) {\n\t\t\t\t\tbestE = e;\n\t\t\t\t\tbest = c;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tvar ctr: vec2f = best;\n\t\tfor (var j: i32 = -1; (j <= 1); j++) {\n\t\t\tfor (var i: i32 = -1; (i <= 1); i++) {\n\t\t\t\tif (((i == 0) && (j == 0))) {\n\t\t\t\t\tcontinue;\n\t\t\t\t}\n\t\t\t\tvar c: vec2f = (ctr + ((vec2f(f32(i), f32(j)) * step0) * 0.5));\n\t\t\t\tvar e: f32 = (sad(c) + ((0.004 * length(c)) / step0));\n\t\t\t\tif ((e < bestE)) {\n\t\t\t\t\tbestE = e;\n\t\t\t\t\tbest = c;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tif (((e0 - bestE) < 0.02)) {\n\t\t\tbest = vec2f(0.0);\n\t\t}\n\t\tmv = ((best * u.uSceneMix) * u.uGain);\n\t}\n\tvar g: vec2f = (cuv * 6.2832);\n\tvar fl: vec2f = (vec2f((sin(((g.y * 1.2) + (u.uTime * 0.9))) + sin(((g.x * 0.5) - (u.uTime * 0.6)))), (cos(((g.x * 1.2) - (u.uTime * 0.7))) + cos(((g.y * 0.7) + (u.uTime * 0.5))))) * 0.5);\n\tmv += (((u.uDrift + (fl * u.uFlow))) * u.uGain);\n\tif ((u.uHasPrev > 0.5)) {\n\t\tvar pm: vec2f = ((((textureSampleLevel(t_uPrevMV, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).xy * 2.0) - 1.0)) * u.uRange);\n\t\tmv = mix(mv, pm, u.uInertia);\n\t}\n\tmv = clamp(mv, vec2f((-u.uRange * 0.98)), vec2f((u.uRange * 0.98)));\n\tgl_FragColor = vec4f((((mv / u.uRange) * 0.5) + 0.5), 0.0, 1.0);\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
+"wgsl": "struct U {\n\t@size(16) uRes: vec2f,\n\t@size(16) uDrift: vec2f,\n\t@size(16) uBlock: f32,\n\t@size(16) uRange: f32,\n\t@size(16) uGain: f32,\n\t@size(16) uInertia: f32,\n\t@size(16) uSceneMix: f32,\n\t@size(16) uHasPrev: f32,\n\t@size(16) uFlow: f32,\n\t@size(16) uTime: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uCur: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrev: texture_2d<f32>;\n@group(0) @binding(3) var t_uPrevMV: texture_2d<f32>;\n@group(0) @binding(4) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nvar<private> cc: array<f32, 5>;\nvar<private> oo: array<vec2f, 5>;\nvar<private> cuv: vec2f;\nvar<private> lodL: f32;\n\nfn featCur(uv_in: vec2f) -> f32 {\n\tvar uv: vec2f = uv_in;\n\tvar s: vec4f = textureSampleLevel(t_uCur, samp, vec2f((uv).x, 1.0 - (uv).y), lodL);\n\treturn (dot(s.rgb, vec3f(0.299, 0.587, 0.114)) + (0.5 * s.a));\n}\n\nfn featPrev(uv_in: vec2f) -> f32 {\n\tvar uv: vec2f = uv_in;\n\tvar s: vec4f = textureSampleLevel(t_uPrev, samp, vec2f((uv).x, 1.0 - (uv).y), lodL);\n\treturn (dot(s.rgb, vec3f(0.299, 0.587, 0.114)) + (0.5 * s.a));\n}\n\nfn sad(mv_in: vec2f) -> f32 {\n\tvar mv: vec2f = mv_in;\n\tvar e: f32 = 0.0;\n\tfor (var i: i32 = 0; (i < 5); i++) {\n\t\te += abs((cc[i] - featPrev((cuv + (((oo[i] - mv)) / u.uRes)))));\n\t}\n\treturn e;\n}\n\nfn main_() {\n\tvar blockC: vec2f = (((floor(gl_FragCoord.xy) + 0.5)) * u.uBlock);\n\tcuv = (blockC / u.uRes);\n\tvar mv: vec2f = vec2f(0.0);\n\tif (((u.uSceneMix > 0.001) && (u.uHasPrev > 0.5))) {\n\t\tlodL = log2(max((u.uBlock * 0.6), 1.0));\n\t\tvar q: f32 = (u.uBlock * 0.28);\n\t\too[0] = vec2f(0.0);\n\t\too[1] = vec2f(q, q);\n\t\too[2] = vec2f(-q, q);\n\t\too[3] = vec2f(q, -q);\n\t\too[4] = vec2f(-q, -q);\n\t\tfor (var i: i32 = 0; (i < 5); i++) {\n\t\t\tcc[i] = featCur((cuv + (oo[i] / u.uRes)));\n\t\t}\n\t\tvar step0: f32 = max(1.0, (u.uBlock * 0.5));\n\t\tvar e0: f32 = sad(vec2f(0.0));\n\t\tvar best: vec2f = vec2f(0.0);\n\t\tvar bestE: f32 = e0;\n\t\tfor (var j: i32 = -3; (j <= 3); j++) {\n\t\t\tfor (var i: i32 = -3; (i <= 3); i++) {\n\t\t\t\tif (((i == 0) && (j == 0))) {\n\t\t\t\t\tcontinue;\n\t\t\t\t}\n\t\t\t\tvar c: vec2f = (vec2f(f32(i), f32(j)) * step0);\n\t\t\t\tvar e: f32 = (sad(c) + (0.004 * length(vec2f(f32(i), f32(j)))));\n\t\t\t\tif ((e < bestE)) {\n\t\t\t\t\tbestE = e;\n\t\t\t\t\tbest = c;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tvar ctr: vec2f = best;\n\t\tfor (var j: i32 = -1; (j <= 1); j++) {\n\t\t\tfor (var i: i32 = -1; (i <= 1); i++) {\n\t\t\t\tif (((i == 0) && (j == 0))) {\n\t\t\t\t\tcontinue;\n\t\t\t\t}\n\t\t\t\tvar c: vec2f = (ctr + ((vec2f(f32(i), f32(j)) * step0) * 0.5));\n\t\t\t\tvar e: f32 = (sad(c) + ((0.004 * length(c)) / step0));\n\t\t\t\tif ((e < bestE)) {\n\t\t\t\t\tbestE = e;\n\t\t\t\t\tbest = c;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tif (((e0 - bestE) < 0.02)) {\n\t\t\tbest = vec2f(0.0);\n\t\t}\n\t\tmv = ((best * u.uSceneMix) * u.uGain);\n\t}\n\tvar g: vec2f = (cuv * 6.2832);\n\tvar fl: vec2f = (vec2f((sin(((g.y * 1.2) + (u.uTime * 0.9))) + sin(((g.x * 0.5) - (u.uTime * 0.6)))), (cos(((g.x * 1.2) - (u.uTime * 0.7))) + cos(((g.y * 0.7) + (u.uTime * 0.5))))) * 0.5);\n\tmv += (((u.uDrift + (fl * u.uFlow))) * u.uGain);\n\tif ((u.uHasPrev > 0.5)) {\n\t\tvar pm: vec2f = ((((textureSampleLevel(t_uPrevMV, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).xy * 2.0) - 1.0)) * u.uRange);\n\t\tmv = mix(mv, pm, u.uInertia);\n\t}\n\tmv = clamp(mv, vec2f((-u.uRange * 0.98)), vec2f((u.uRange * 0.98)));\n\tgl_FragColor = vec4f((((mv / u.uRange) * 0.5) + 0.5), 0.0, 1.0);\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
 "spec": [
 [
 "uRes",
@@ -67787,6 +67801,11 @@ const POST_PASSES = {
 "uExposure",
 "f32",
 0
+],
+[
+"uTone",
+"f32",
+0
 ]
 ],
 "textures": [
@@ -67796,7 +67815,7 @@ const POST_PASSES = {
 ]
 },
 "mosh": {
-"wgsl": "struct U {\n\t@size(16) uRes: vec2f,\n\t@size(16) uMVSize: vec2f,\n\t@size(16) uBlock: f32,\n\t@size(16) uRange: f32,\n\t@size(16) uSmooth: f32,\n\t@size(16) uHold: f32,\n\t@size(16) uResid: f32,\n\t@size(16) uChroma: f32,\n\t@size(16) uQuant: f32,\n\t@size(16) uStyle: f32,\n\t@size(16) uStale: f32,\n\t@size(16) uJit: f32,\n\t@size(16) uTime: f32,\n\t@size(16) uHasHist: f32,\n\t@size(16) uLeak: f32,\n\t@size(16) uCoh: f32,\n\t@size(16) uVoid: f32,\n\t@size(16) uTrail: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uCur: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrevSrc: texture_2d<f32>;\n@group(0) @binding(3) var t_uMoshPrev: texture_2d<f32>;\n@group(0) @binding(4) var t_uMV: texture_2d<f32>;\n@group(0) @binding(5) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn h11(p_in: vec2f) -> f32 {\n\tvar p: vec2f = p_in;\n\treturn fract((sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453));\n}\n\nfn fetchMV(ij_in: vec2f) -> vec2f {\n\tvar ij: vec2f = ij_in;\n\tvar sz: vec2i = vec2i(u.uMVSize);\n\tvar p: vec2i = clamp(vec2i(ij), vec2i(0), (sz - 1));\n\treturn ((((textureLoad(t_uMV, vec2i((p).x, i32(textureDimensions(t_uMV).y) - 1 - (p).y), 0).xy * 2.0) - 1.0)) * u.uRange);\n}\n\nfn mvAt(px_in: vec2f) -> vec2f {\n\tvar px: vec2f = px_in;\n\tvar g: vec2f = ((px / u.uBlock) - 0.5);\n\tvar i0: vec2f = floor(g);\n\tvar f: vec2f = fract(g);\n\tf = mix(step(vec2f(0.5), f), f, u.uSmooth);\n\tvar a: vec2f = fetchMV(i0);\n\tvar b: vec2f = fetchMV((i0 + vec2f(1.0, 0.0)));\n\tvar c: vec2f = fetchMV((i0 + vec2f(0.0, 1.0)));\n\tvar d: vec2f = fetchMV((i0 + vec2f(1.0, 1.0)));\n\treturn mix(mix(a, b, f.x), mix(c, d, f.x), f.y);\n}\n\nfn mvCoh(px_in: vec2f) -> vec2f {\n\tvar px: vec2f = px_in;\n\tvar m0: vec2f = mvAt(px);\n\tif ((u.uCoh < 0.01)) {\n\t\treturn m0;\n\t}\n\tvar bc: vec2f = floor((px / u.uBlock));\n\tvar s: vec2f = vec2f(0.0);\n\tfor (var j: i32 = -1; (j <= 1); j++) {\n\t\tfor (var i: i32 = -1; (i <= 1); i++) {\n\t\t\ts += fetchMV((bc + vec2f(f32(i), f32(j))));\n\t\t}\n\t}\n\treturn mix(m0, (s / 9.0), u.uCoh);\n}\n\nfn main_() {\n\tvar cur: vec4f = textureSampleLevel(t_uCur, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\tvar hold: f32 = (u.uHold * u.uHasHist);\n\tif ((hold < 0.002)) {\n\t\tgl_FragColor = cur;\n\t\treturn;\n\t}\n\tvar px: vec2f = (vUv * u.uRes);\n\tvar bid: vec2f = floor((px / u.uBlock));\n\tvar r: f32 = h11(bid);\n\tvar mv: vec2f = mvCoh(px);\n\tvar slot3: f32 = floor((u.uTime * 3.0));\n\tif (((u.uStyle > 3.5) && (u.uStyle < 4.5))) {\n\t\tvar rowHit: f32 = step(0.82, h11(vec2f((bid.y * 3.1), slot3)));\n\t\tmv.x += (((((h11(vec2f(bid.y, slot3)) - 0.5)) * u.uBlock) * 8.0) * rowHit);\n\t}\n\tvar suv: vec2f = vUv;\n\tif ((u.uStyle > 4.5)) {\n\t\tvar cell: vec2f = vec2f(max((u.uBlock * 0.5), 2.0));\n\t\tvar cid: vec2f = floor((px / cell));\n\t\tsuv = ((((cid + 0.5)) * cell) / u.uRes);\n\t\tmv += ((vec2f((((h11((cid + 2.3)) - 0.5)) * 0.6), (-0.4 - (h11(cid) * 1.6))) * cell.x) * 0.35);\n\t}\n\tvar stale: f32 = 0.0;\n\tif (((u.uStyle > 0.5) && (u.uStyle < 1.5))) {\n\t\tvar slot: f32 = floor((u.uTime * 5.0));\n\t\tvar rs: f32 = h11((bid + (slot * 7.13)));\n\t\tstale = step((1.0 - u.uStale), rs);\n\t\tvar jit: vec2f = (((((vec2f(h11(((bid + 3.1) + slot)), h11(((bid + 9.7) + slot))) - 0.5)) * 2.0) * u.uJit) * u.uBlock);\n\t\tmv += (jit * stale);\n\t}\n\tvar d: vec2f = (mv / u.uRes);\n\tvar cs: f32 = (u.uChroma * 0.6);\n\tvar pr: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - (d * ((1.0 + cs))))).x, 1.0 - ((suv - (d * ((1.0 + cs))))).y), 0.0);\n\tvar pg: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - d)).x, 1.0 - ((suv - d)).y), 0.0);\n\tvar pb: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - (d * ((1.0 - cs))))).x, 1.0 - ((suv - (d * ((1.0 - cs))))).y), 0.0);\n\tvar pred: vec4f = vec4f(pr.r, pg.g, pb.b, pg.a);\n\tvar predSrc: vec4f = textureSampleLevel(t_uPrevSrc, samp, vec2f(((vUv - d)).x, 1.0 - ((vUv - d)).y), 0.0);\n\tvar cLum: f32 = dot(cur.rgb, vec3f(0.3, 0.59, 0.11));\n\tvar keepBg: f32 = (((1.0 - u.uVoid)) * ((1.0 - smoothstep(0.012, 0.07, cLum))));\n\tif (((u.uStyle > 2.5) && (u.uStyle < 3.5))) {\n\t\tvar tr: vec4f = max((pred * mix(0.82, 0.988, u.uTrail)), cur);\n\t\tgl_FragColor = clamp(mix(mix(cur, tr, hold), cur, keepBg), vec4f(0.0), vec4f(6.0));\n\t\treturn;\n\t}\n\tvar dec: vec4f = (pred + (((cur - predSrc)) * u.uResid));\n\tvar m: f32 = (clamp(((((1.0 - hold)) * 1.6) - (r * 0.6)), 0.0, 1.0) * ((1.0 - stale)));\n\tm = max(m, (u.uLeak * ((1.0 - stale))));\n\tvar o: vec4f = mix(dec, cur, m);\n\tif (((u.uStyle > 3.5) && (u.uStyle < 4.5))) {\n\t\tvar rb: f32 = h11(((bid * 1.37) + (slot3 * 3.1)));\n\t\tvar dc: vec4f = textureSampleLevel(t_uCur, samp, vec2f((((((bid + 0.5)) * u.uBlock) / u.uRes)).x, 1.0 - (((((bid + 0.5)) * u.uBlock) / u.uRes)).y), log2(u.uBlock));\n\t\tvar yy: f32 = dot(dc.rgb, vec3f(0.299, 0.587, 0.114));\n\t\tvar tint: vec3f = select(vec3f(0.95, 0.2, 0.9), vec3f(0.15, 1.0, 0.35), (rb > 0.5));\n\t\tvar bad: vec3f = mix(vec3f(yy), ((tint * yy) * 1.7), 0.6);\n\t\tvar lost: f32 = (step((0.9 - u.uStale), rb) * hold);\n\t\to = mix(o, vec4f(bad, dc.a), lost);\n\t}\n\to = mix(o, cur, keepBg);\n\tif ((u.uQuant > 0.001)) {\n\t\tvar q: f32 = mix(48.0, 5.0, u.uQuant);\n\t\tvar qd: vec3f = (floor(((o.rgb * q) + 0.5)) / q);\n\t\tqd += ((((vec3f(h11((bid + 1.7)), h11((bid + 5.3)), h11((bid + 8.9))) - 0.5)) * 0.08) * u.uQuant);\n\t\t{ let _sw0 = mix(o.rgb, qd, (u.uQuant * ((1.0 - m)))); o = vec4f(_sw0.x, _sw0.y, _sw0.z, o.w); }\n\t}\n\tgl_FragColor = clamp(o, vec4f(0.0), vec4f(6.0));\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
+"wgsl": "struct U {\n\t@size(16) uRes: vec2f,\n\t@size(16) uMVSize: vec2f,\n\t@size(16) uBlock: f32,\n\t@size(16) uRange: f32,\n\t@size(16) uSmooth: f32,\n\t@size(16) uHold: f32,\n\t@size(16) uResid: f32,\n\t@size(16) uChroma: f32,\n\t@size(16) uQuant: f32,\n\t@size(16) uStyle: f32,\n\t@size(16) uStale: f32,\n\t@size(16) uJit: f32,\n\t@size(16) uTime: f32,\n\t@size(16) uHasHist: f32,\n\t@size(16) uLeak: f32,\n\t@size(16) uCoh: f32,\n\t@size(16) uVoid: f32,\n\t@size(16) uTrail: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uCur: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrevSrc: texture_2d<f32>;\n@group(0) @binding(3) var t_uMoshPrev: texture_2d<f32>;\n@group(0) @binding(4) var t_uMV: texture_2d<f32>;\n@group(0) @binding(5) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn h11(p_in: vec2f) -> f32 {\n\tvar p: vec2f = p_in;\n\treturn fract((sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453));\n}\n\nfn fetchMV(ij_in: vec2f) -> vec2f {\n\tvar ij: vec2f = ij_in;\n\tvar sz: vec2i = vec2i(u.uMVSize);\n\tvar p: vec2i = clamp(vec2i(ij), vec2i(0), (sz - 1));\n\treturn ((((textureLoad(t_uMV, vec2i((p).x, i32(textureDimensions(t_uMV).y) - 1 - (p).y), 0).xy * 2.0) - 1.0)) * u.uRange);\n}\n\nfn mvAt(px_in: vec2f) -> vec2f {\n\tvar px: vec2f = px_in;\n\tvar g: vec2f = ((px / u.uBlock) - 0.5);\n\tvar i0: vec2f = floor(g);\n\tvar f: vec2f = fract(g);\n\tf = mix(step(vec2f(0.5), f), f, u.uSmooth);\n\tvar a: vec2f = fetchMV(i0);\n\tvar b: vec2f = fetchMV((i0 + vec2f(1.0, 0.0)));\n\tvar c: vec2f = fetchMV((i0 + vec2f(0.0, 1.0)));\n\tvar d: vec2f = fetchMV((i0 + vec2f(1.0, 1.0)));\n\treturn mix(mix(a, b, f.x), mix(c, d, f.x), f.y);\n}\n\nfn mvCoh(px_in: vec2f) -> vec2f {\n\tvar px: vec2f = px_in;\n\tvar m0: vec2f = mvAt(px);\n\tif ((u.uCoh < 0.01)) {\n\t\treturn m0;\n\t}\n\tvar bc: vec2f = floor((px / u.uBlock));\n\tvar s: vec2f = vec2f(0.0);\n\tfor (var j: i32 = -1; (j <= 1); j++) {\n\t\tfor (var i: i32 = -1; (i <= 1); i++) {\n\t\t\ts += fetchMV((bc + vec2f(f32(i), f32(j))));\n\t\t}\n\t}\n\treturn mix(m0, (s / 9.0), u.uCoh);\n}\n\nfn main_() {\n\tvar cur: vec4f = textureSampleLevel(t_uCur, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\tvar hold: f32 = (u.uHold * u.uHasHist);\n\tif ((hold < 0.002)) {\n\t\tgl_FragColor = cur;\n\t\treturn;\n\t}\n\tvar px: vec2f = (vUv * u.uRes);\n\tvar bid: vec2f = floor((px / u.uBlock));\n\tvar r: f32 = h11(bid);\n\tvar mv: vec2f = mvCoh(px);\n\tvar slot3: f32 = floor((u.uTime * 3.0));\n\tif (((u.uStyle > 3.5) && (u.uStyle < 4.5))) {\n\t\tvar rowHit: f32 = step(0.82, h11(vec2f((bid.y * 3.1), slot3)));\n\t\tmv.x += (((((h11(vec2f(bid.y, slot3)) - 0.5)) * u.uBlock) * 8.0) * rowHit);\n\t}\n\tvar suv: vec2f = vUv;\n\tif ((u.uStyle > 4.5)) {\n\t\tvar cell: vec2f = vec2f(max((u.uBlock * 0.5), 2.0));\n\t\tvar cid: vec2f = floor((px / cell));\n\t\tsuv = ((((cid + 0.5)) * cell) / u.uRes);\n\t\tmv += ((vec2f((((h11((cid + 2.3)) - 0.5)) * 0.6), (-0.4 - (h11(cid) * 1.6))) * cell.x) * 0.35);\n\t}\n\tvar stale: f32 = 0.0;\n\tif (((u.uStyle > 0.5) && (u.uStyle < 1.5))) {\n\t\tvar slot: f32 = floor((u.uTime * 5.0));\n\t\tvar rs: f32 = h11((bid + (slot * 7.13)));\n\t\tstale = step((1.0 - u.uStale), rs);\n\t\tvar jit: vec2f = (((((vec2f(h11(((bid + 3.1) + slot)), h11(((bid + 9.7) + slot))) - 0.5)) * 2.0) * u.uJit) * u.uBlock);\n\t\tmv += (jit * stale);\n\t}\n\tvar d: vec2f = (mv / u.uRes);\n\tvar cs: f32 = (u.uChroma * 0.6);\n\tvar pr: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - (d * ((1.0 + cs))))).x, 1.0 - ((suv - (d * ((1.0 + cs))))).y), 0.0);\n\tvar pg: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - d)).x, 1.0 - ((suv - d)).y), 0.0);\n\tvar pb: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - (d * ((1.0 - cs))))).x, 1.0 - ((suv - (d * ((1.0 - cs))))).y), 0.0);\n\tvar pred: vec4f = vec4f(pr.r, pg.g, pb.b, pg.a);\n\tvar predSrc: vec4f = textureSampleLevel(t_uPrevSrc, samp, vec2f(((vUv - d)).x, 1.0 - ((vUv - d)).y), 0.0);\n\tvar cLum: f32 = dot(cur.rgb, vec3f(0.3, 0.59, 0.11));\n\tvar keepBg: f32 = (((1.0 - u.uVoid)) * ((1.0 - smoothstep(0.012, 0.07, cLum))));\n\tif (((u.uStyle > 2.5) && (u.uStyle < 3.5))) {\n\t\tvar tr: vec4f = max((pred * mix(0.82, 0.988, u.uTrail)), cur);\n\t\tgl_FragColor = clamp(mix(mix(cur, tr, hold), cur, keepBg), vec4f(0.0), vec4f(6.0));\n\t\treturn;\n\t}\n\tvar dec: vec4f = (pred + (((cur - predSrc)) * u.uResid));\n\tvar m: f32 = (clamp(((((1.0 - hold)) * 1.6) - (r * 0.6)), 0.0, 1.0) * ((1.0 - stale)));\n\tm = max(m, (u.uLeak * ((1.0 - stale))));\n\tvar o: vec4f = mix(dec, cur, m);\n\tif (((u.uStyle > 3.5) && (u.uStyle < 4.5))) {\n\t\tvar rb: f32 = h11(((bid * 1.37) + (slot3 * 3.1)));\n\t\tvar dc: vec4f = textureSampleLevel(t_uCur, samp, vec2f((((((bid + 0.5)) * u.uBlock) / u.uRes)).x, 1.0 - (((((bid + 0.5)) * u.uBlock) / u.uRes)).y), log2(u.uBlock));\n\t\tvar yy: f32 = dot(dc.rgb, vec3f(0.299, 0.587, 0.114));\n\t\tvar tint: vec3f = select(vec3f(0.95, 0.2, 0.9), vec3f(0.15, 1.0, 0.35), (rb > 0.5));\n\t\tvar bad: vec3f = mix(vec3f(yy), ((tint * yy) * 1.7), 0.6);\n\t\tvar lost: f32 = (step((0.9 - u.uStale), rb) * hold);\n\t\to = mix(o, vec4f(bad, dc.a), lost);\n\t}\n\to = mix(o, cur, keepBg);\n\tif ((u.uQuant > 0.001)) {\n\t\tvar q: f32 = mix(48.0, 5.0, u.uQuant);\n\t\tvar qd: vec3f = (floor(((o.rgb * q) + 0.5)) / q);\n\t\tqd += ((((vec3f(h11((bid + 1.7)), h11((bid + 5.3)), h11((bid + 8.9))) - 0.5)) * 0.08) * u.uQuant);\n\t\t{ let _sw0 = mix(o.rgb, qd, (u.uQuant * ((1.0 - m)))); o = vec4f(_sw0.x, _sw0.y, _sw0.z, o.w); }\n\t}\n\tgl_FragColor = clamp(o, vec4f(0.0), vec4f(6.0));\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
 "spec": [
 [
 "uRes",
@@ -67895,6 +67914,11 @@ const POST_PASSES = {
 ],
 [
 "uExposure",
+"f32",
+0
+],
+[
+"uTone",
 "f32",
 0
 ]
@@ -68240,16 +68264,33 @@ struct Frame {
 	uShootS: array<vec4f, 24>,
 	uShootN: array<vec4f, 24>,
 	uShootB: array<vec4f, 6>,
+	uScr: vec4f,
+	uScrP: vec4f,
+	uScrD: vec4f,
+	uScrQ: vec4f,
+	@size(16) uScrMN: f32,
+	uSlit: vec4f,
+	uSlitP: vec4f,
+	uSlitG: vec4f,
+	uSort: vec4f,
+	uSortP: vec4f,
 	modelMatrix: mat4x4f,
 	modelViewMatrix: mat4x4f,
 	projectionMatrix: mat4x4f,
+	viewMatrix: mat4x4f,
 	normalMatrix: mat3x3f,
 	@size(16) uRes: vec2f,
+	@size(16) uPx: vec2f,
 	@size(16) uExposure: f32,
+	@size(16) uTone: f32,
 	@size(16) uGlow: f32,
 	@size(16) uDens: f32,
 	@size(16) uGhost: f32,
 	@size(16) uShape: f32,
+	uShd: vec4f,
+	uShdL: vec4f,
+	uShdP: vec4f,
+	@size(16) uShdC: vec3f,
 	uLink: vec4f,
 	uLinkP: vec4f,
 	@size(16) uLinkW: f32,
@@ -68257,14 +68298,11 @@ struct Frame {
 	@size(16) uScopeLB: f32,
 }
 @group(0) @binding(0) var<uniform> fr: Frame;
-@group(0) @binding(1) var<storage, read> inOrigin: array<vec4f>;
-@group(0) @binding(2) var<storage, read> inTarget: array<vec4f>;
-@group(0) @binding(3) var<storage, read> inColorA: array<vec4f>;
-@group(0) @binding(4) var<storage, read> inColorB: array<vec4f>;
-@group(0) @binding(5) var<storage, read> inNormA: array<vec4f>;
-@group(0) @binding(6) var<storage, read> inNormB: array<vec4f>;
-@group(0) @binding(7) var<storage, read> inSculpt: array<vec4f>;
-@group(0) @binding(8) var<storage, read> inPaint: array<vec4f>;
+// данные точек: по два набора в буфере (первая половина и вторая), чтобы проходу хватало 8 буферов хранения (минимум, который WebGPU гарантирует)
+@group(0) @binding(1) var<storage, read> inP0: array<vec4f>; // положение и скрытие | цель морфинга и глубина
+@group(0) @binding(2) var<storage, read> inP1: array<vec4f>; // цвет A и путь | цвет B и видимость
+@group(0) @binding(3) var<storage, read> inP2: array<vec4f>; // нормаль A и видимость | нормаль B
+@group(0) @binding(4) var<storage, read> inP3: array<vec4f>; // лепка и номер точки | краска
 @group(0) @binding(9) var<storage, read_write> outA: array<vec4f>;
 @group(0) @binding(10) var<storage, read_write> outB: array<vec4f>;
 @group(0) @binding(11) var<storage, read_write> outC: array<vec4f>;
@@ -68273,6 +68311,11 @@ struct Frame {
 @group(0) @binding(14) var pieceTex: texture_2d<f32>;
 @group(0) @binding(15) var frTex: texture_2d_array<f32>;
 @group(0) @binding(16) var heroTex: texture_2d<f32>;
+@group(0) @binding(17) var scrTex: texture_2d<f32>;
+@group(0) @binding(18) var scrDep: texture_2d<f32>;
+@group(0) @binding(19) var scrMTex: texture_2d<f32>;
+@group(0) @binding(20) var slitTex: texture_2d_array<f32>;
+@group(0) @binding(21) var sortTex: texture_2d<f32>;
 
 var<private> aOrigin: vec3f;
 var<private> aTarget: vec3f;
@@ -69795,6 +69838,60 @@ fn main_() {
 	if ((fr.uFr.x > 0.5)) {
 		colM = frCol;
 	}
+	if ((fr.uSlit.x > 0.001)) {
+		var sip: f32 = floor(((aIdx * fr.uSlitG.z) + 0.5));
+		var sci: f32 = glsl_mod_f(sip, fr.uSlitG.x);
+		var scj: f32 = floor((sip / fr.uSlitG.x));
+		var suv0: vec2f = vec2f((((sci + 0.5)) / fr.uSlitG.x), (((scj + 0.5)) / fr.uSlitG.y));
+		var sm: i32 = i32((fr.uSlit.w + 0.5));
+		var sf: f32;
+		if ((sm == 0)) {
+			sf = suv0.y;
+		} else if ((sm == 1)) {
+			sf = suv0.x;
+		} else if ((sm == 2)) {
+			sf = clamp((length((((suv0 - 0.5)) * vec2f((fr.uSlitG.x / fr.uSlitG.y), 1.0))) * 1.25), 0.0, 1.0);
+		} else if ((sm == 3)) {
+			sf = select((1.0 - gLum), (1.0 - gDepth), (fr.uDepth.x > 0.001));
+		} else {
+			sf = ((snoise(vec3f(((suv0 * vec2f((fr.uSlitG.x / fr.uSlitG.y), 1.0)) * 2.5), (fr.uTime * 0.12))) * 0.5) + 0.5);
+		}
+		if ((fr.uSlitP.y > 0.001)) {
+			sf = fract((sf + ((fr.uTime * fr.uSlitP.y) * 0.25)));
+		}
+		if ((fr.uSlitP.w > 1.5)) {
+			sf = (floor((sf * fr.uSlitP.w)) / ((fr.uSlitP.w - 1.0)));
+		}
+		sf = clamp(sf, 0.0, 1.0);
+		if ((fr.uSlitP.x < 0.0)) {
+			sf = (1.0 - sf);
+		}
+		var sd: f32 = ((sf * fr.uSlit.y) * ((fr.uSlitG.w - 1.0)));
+		var s0: f32 = floor(sd);
+		var sl0: i32 = i32(glsl_mod_f(((fr.uSlit.z - s0) + (fr.uSlitG.w * 8.0)), fr.uSlitG.w));
+		var sl1: i32 = i32(glsl_mod_f((((fr.uSlit.z - s0) - 1.0) + (fr.uSlitG.w * 8.0)), fr.uSlitG.w));
+		var scol: vec3f = mix(textureLoad(slitTex, vec3i(i32(sci), i32(scj), sl0).xy, vec3i(i32(sci), i32(scj), sl0).z, 0).rgb, textureLoad(slitTex, vec3i(i32(sci), i32(scj), sl1).xy, vec3i(i32(sci), i32(scj), sl1).z, 0).rgb, (sd - s0));
+		var sk: f32 = min(fr.uSlit.x, 1.0);
+		colM = mix(colM, scol, sk);
+		pos.z -= ((((sf * fr.uSlit.y) * fr.uSlitP.z) * 1.2) * sk);
+	}
+	if ((fr.uSort.x > 0.001)) {
+		var qi: f32 = floor(((aIdx * fr.uSortP.x) + 0.5));
+		var qd: vec2f = textureLoad(sortTex, vec2i(i32(glsl_mod_f(qi, 2048.0)), i32(floor((qi / 2048.0)))), 0).xy;
+		var qline: f32 = select(floor((qi / fr.uSortP.y)), glsl_mod_f(qi, fr.uSortP.y), (fr.uSort.w > 0.5));
+		var qm: i32 = i32((fr.uSort.y + 0.5));
+		var qk: f32 = 1.0;
+		if ((qm == 1)) {
+			qk = (0.5 + (0.5 * sin((((fr.uTime * fr.uSort.z) * 1.6) - (qline * 0.07)))));
+		} else if ((qm == 2)) {
+			qk = clamp((fr.uBeat * 1.4), 0.0, 1.0);
+		} else if ((qm == 3)) {
+			qk = (0.5 + (0.5 * sin(((fr.uTime * fr.uSort.z) * 1.2))));
+		}
+		qk = (((qk * qk) * ((3.0 - (2.0 * qk)))) * min(fr.uSort.x, 1.0));
+		{ let _sw24 = (pos.xy + ((qd * qk) * fr.uSortP.z)); pos = vec3f(_sw24.x, _sw24.y, pos.z); }
+		colM *= vec3f((1.0 + ((min((length(qd) * 6.0), 1.0) * qk) * fr.uSortP.w)));
+	}
 	var nrmM: vec3f = mix(aNormal, aNormalB, eC);
 	if (((fr.uColorBy > 2.5) && (fr.uColorBy < 3.5))) {
 		col = colM;
@@ -70051,6 +70148,65 @@ fn main_() {
 		pos += (shOff * min(fr.uShoot.x, 1.0));
 		vColor += ((((((fr.uP2 * 1.4) + (vColor * 0.3))) * shK) * fr.uShootP.x) * min(fr.uShoot.x, 1.0));
 	}
+	if ((fr.uScr.x > 0.001)) {
+		var bsx: vec3f = (base - fr.uCen);
+		var hyx: f32 = max((fr.uYR.y - fr.uYR.x), 1e-4);
+		var arx: f32 = max(fr.uScrP.w, 0.05);
+		var suv: vec2f;
+		var smask: f32 = 1.0;
+		if ((fr.uScr.y < 0.5)) {
+			suv = vec2f(((atan2(bsx.z, bsx.x) / 6.2831853) + 0.5), clamp((((base.y - fr.uYR.x)) / hyx), 0.0, 1.0));
+			suv.x = fract(((((suv.x - 0.5)) / fr.uScr.z) + 0.5));
+		} else if (((fr.uScr.y < 1.5) || (fr.uScr.y > 2.5))) {
+			suv = vec2f((0.5 + (bsx.x / ((hyx * arx)))), (0.5 + (((base.y - (((fr.uYR.x + fr.uYR.y)) * 0.5))) / hyx)));
+			suv = ((((suv - 0.5)) / fr.uScr.z) + 0.5);
+			var cr: f32 = cos(fr.uScrP.x);
+			var sr: f32 = sin(fr.uScrP.x);
+			suv = (vec2f(((cr * ((suv.x - 0.5))) - (sr * ((suv.y - 0.5)))), ((sr * ((suv.x - 0.5))) + (cr * ((suv.y - 0.5))))) + 0.5);
+			smask = (((step(0.0, suv.x) * step(suv.x, 1.0)) * step(0.0, suv.y)) * step(suv.y, 1.0));
+			if ((dot(nrmM, nrmM) > 0.01)) {
+				smask *= smoothstep(-0.35, 0.25, nrmM.z);
+			}
+		} else {
+			var cpx: vec4f = ((fr.projectionMatrix * fr.modelViewMatrix) * vec4f(pos, 1.0));
+			var nd: vec2f = (cpx.xy / max(cpx.w, 1e-4));
+			var scrAsp: f32 = (fr.projectionMatrix[1][1] / fr.projectionMatrix[0][0]);
+			suv = vec2f((0.5 + (((nd.x * 0.5) * scrAsp) / arx)), (0.5 + (nd.y * 0.5)));
+			suv = ((((suv - 0.5)) / fr.uScr.z) + 0.5);
+			var cr: f32 = cos(fr.uScrP.x);
+			var sr: f32 = sin(fr.uScrP.x);
+			suv = (vec2f(((cr * ((suv.x - 0.5))) - (sr * ((suv.y - 0.5)))), ((sr * ((suv.x - 0.5))) + (cr * ((suv.y - 0.5))))) + 0.5);
+			smask = (((step(0.0, suv.x) * step(suv.x, 1.0)) * step(0.0, suv.y)) * step(suv.y, 1.0));
+		}
+		var scr: vec3f = (textureSampleLevel(scrTex, linSamp, clamp(suv, vec2f(0.0), vec2f(1.0)), 0.0).rgb * fr.uScr.w);
+		var slum: f32 = dot(scr, vec3f(0.3, 0.59, 0.11));
+		var sdv: f32 = 0.0;
+		if ((fr.uScrD.x > 0.5)) {
+			sdv = select(textureSampleLevel(scrDep, linSamp, clamp(suv, vec2f(0.0), vec2f(1.0)), 0.0).r, clamp((slum / max(fr.uScr.w, 0.05)), 0.0, 1.0), (fr.uScrD.x < 1.5));
+			sdv = clamp(((((sdv - 0.5)) * fr.uScrD.w) + 0.5), 0.0, 1.0);
+			if ((fr.uScrD.z < 0.0)) {
+				sdv = (1.0 - sdv);
+			}
+			if ((fr.uScrQ.x > 0.5)) {
+				scr = vec3f(sdv);
+			}
+		}
+		var smem: vec4f = vec4f(0.0);
+		if ((fr.uScrQ.y > 0.5)) {
+			var smi: f32 = floor(((aIdx * fr.uScrMN) + 0.5));
+			smem = textureLoad(scrMTex, vec2i(i32(glsl_mod_f(smi, 2048.0)), i32(floor((smi / 2048.0)))), 0);
+			{ let _sw25 = ((smem.rgb * smem.rgb) * 4.0); smem = vec4f(_sw25.x, _sw25.y, _sw25.z, smem.w); }
+			scr = max(scr, smem.rgb);
+		}
+		vColor = mix(vColor, mix((vColor * 0.35), scr, fr.uScrP.z), (smask * fr.uScr.x));
+		if ((fr.uScrQ.y > 0.5)) {
+			vColor = mix(vColor, mix((vColor * 0.35), smem.rgb, fr.uScrP.z), ((smem.a * ((1.0 - smask))) * fr.uScr.x));
+		}
+		if ((fr.uScrD.x > 0.5)) {
+			var dirn: vec3f = select(normalize((bsx + vec3f(1e-4))), normalize(nrmM), (dot(nrmM, nrmM) > 0.01));
+			pos += (((((dirn * sdv) * fr.uScrD.y) * 0.45) * smask) * fr.uScr.x);
+		}
+	}
 	vD = disp;
 	var mv: vec4f = (fr.modelViewMatrix * vec4f(pos, 1.0));
 	gl_Position = (fr.projectionMatrix * mv);
@@ -70087,13 +70243,14 @@ fn main_() {
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
 	let i = gid.x;
-	let count = arrayLength(&inOrigin);
+	let count = arrayLength(&inP0) / 2u;
 	if (i >= count) { return; }
-	let o = inOrigin[i];
-	let t = inTarget[i];
-	let ca = inColorA[i];
-	let cb = inColorB[i];
-	let na = inNormA[i];
+	let o = inP0[i];
+	let t = inP0[count + i];
+	let ca = inP1[i];
+	let cb = inP1[count + i];
+	let na = inP2[i];
+	let sc = inP3[i];
 	aOrigin = o.xyz;
 	aHide = o.w;
 	aTarget = t.xyz;
@@ -70103,11 +70260,11 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 	aColorB = cb.rgb;
 	aVis = vec2f(cb.w, na.w);
 	aNormal = na.xyz;
-	aNormalB = inNormB[i].xyz;
-	aSculpt = inSculpt[i].xyz;
+	aNormalB = inP2[count + i].xyz;
+	aSculpt = sc.xyz;
 	// индекс точки берётся из массива движка (aIdx = i / число точек, округлённое до float32 на CPU): хеши вида fract(sin(aIdx * k)) раздувают разницу в последнем бите до полного расхождения
-	aIdx = inSculpt[i].w;
-	aPaint = inPaint[i];
+	aIdx = sc.w;
+	aPaint = inP3[count + i];
 	main_();
 	outA[i] = gl_Position;
 	outB[i] = vec4f(vColor, gl_PointSize);
@@ -70230,16 +70387,33 @@ struct Frame {
 	uShootS: array<vec4f, 24>,
 	uShootN: array<vec4f, 24>,
 	uShootB: array<vec4f, 6>,
+	uScr: vec4f,
+	uScrP: vec4f,
+	uScrD: vec4f,
+	uScrQ: vec4f,
+	@size(16) uScrMN: f32,
+	uSlit: vec4f,
+	uSlitP: vec4f,
+	uSlitG: vec4f,
+	uSort: vec4f,
+	uSortP: vec4f,
 	modelMatrix: mat4x4f,
 	modelViewMatrix: mat4x4f,
 	projectionMatrix: mat4x4f,
+	viewMatrix: mat4x4f,
 	normalMatrix: mat3x3f,
 	@size(16) uRes: vec2f,
+	@size(16) uPx: vec2f,
 	@size(16) uExposure: f32,
+	@size(16) uTone: f32,
 	@size(16) uGlow: f32,
 	@size(16) uDens: f32,
 	@size(16) uGhost: f32,
 	@size(16) uShape: f32,
+	uShd: vec4f,
+	uShdL: vec4f,
+	uShdP: vec4f,
+	@size(16) uShdC: vec3f,
 	uLink: vec4f,
 	uLinkP: vec4f,
 	@size(16) uLinkW: f32,
@@ -70247,14 +70421,11 @@ struct Frame {
 	@size(16) uScopeLB: f32,
 }
 @group(0) @binding(0) var<uniform> fr: Frame;
-@group(0) @binding(1) var<storage, read> inOrigin: array<vec4f>;
-@group(0) @binding(2) var<storage, read> inTarget: array<vec4f>;
-@group(0) @binding(3) var<storage, read> inColorA: array<vec4f>;
-@group(0) @binding(4) var<storage, read> inColorB: array<vec4f>;
-@group(0) @binding(5) var<storage, read> inNormA: array<vec4f>;
-@group(0) @binding(6) var<storage, read> inNormB: array<vec4f>;
-@group(0) @binding(7) var<storage, read> inSculpt: array<vec4f>;
-@group(0) @binding(8) var<storage, read> inPaint: array<vec4f>;
+// данные точек: по два набора в буфере (первая половина и вторая), чтобы проходу хватало 8 буферов хранения (минимум, который WebGPU гарантирует)
+@group(0) @binding(1) var<storage, read> inP0: array<vec4f>; // положение и скрытие | цель морфинга и глубина
+@group(0) @binding(2) var<storage, read> inP1: array<vec4f>; // цвет A и путь | цвет B и видимость
+@group(0) @binding(3) var<storage, read> inP2: array<vec4f>; // нормаль A и видимость | нормаль B
+@group(0) @binding(4) var<storage, read> inP3: array<vec4f>; // лепка и номер точки | краска
 @group(0) @binding(9) var<storage, read_write> outA: array<vec4f>;
 @group(0) @binding(10) var<storage, read_write> outB: array<vec4f>;
 @group(0) @binding(11) var<storage, read_write> outC: array<vec4f>;
@@ -70263,6 +70434,11 @@ struct Frame {
 @group(0) @binding(14) var pieceTex: texture_2d<f32>;
 @group(0) @binding(15) var frTex: texture_2d_array<f32>;
 @group(0) @binding(16) var heroTex: texture_2d<f32>;
+@group(0) @binding(17) var scrTex: texture_2d<f32>;
+@group(0) @binding(18) var scrDep: texture_2d<f32>;
+@group(0) @binding(19) var scrMTex: texture_2d<f32>;
+@group(0) @binding(20) var slitTex: texture_2d_array<f32>;
+@group(0) @binding(21) var sortTex: texture_2d<f32>;
 
 var<private> aOrigin: vec3f;
 var<private> aTarget: vec3f;
@@ -72029,6 +72205,55 @@ fn main_() {
 		pos += (shOff * min(fr.uShoot.x, 1.0));
 		vColor += ((((((fr.uP2 * 1.4) + (vColor * 0.3))) * shK) * fr.uShootP.x) * min(fr.uShoot.x, 1.0));
 	}
+	if ((fr.uScr.x > 0.001)) {
+		var bsx: vec3f = (base - fr.uCen);
+		var hyx: f32 = max((fr.uYR.y - fr.uYR.x), 1e-4);
+		var arx: f32 = max(fr.uScrP.w, 0.05);
+		var suv: vec2f;
+		var smask: f32 = 1.0;
+		if ((fr.uScr.y < 0.5)) {
+			suv = vec2f(((atan2(bsx.z, bsx.x) / 6.2831853) + 0.5), clamp((((base.y - fr.uYR.x)) / hyx), 0.0, 1.0));
+			suv.x = fract(((((suv.x - 0.5)) / fr.uScr.z) + 0.5));
+		} else if (((fr.uScr.y < 1.5) || (fr.uScr.y > 2.5))) {
+			suv = vec2f((0.5 + (bsx.x / ((hyx * arx)))), (0.5 + (((base.y - (((fr.uYR.x + fr.uYR.y)) * 0.5))) / hyx)));
+			suv = ((((suv - 0.5)) / fr.uScr.z) + 0.5);
+			var cr: f32 = cos(fr.uScrP.x);
+			var sr: f32 = sin(fr.uScrP.x);
+			suv = (vec2f(((cr * ((suv.x - 0.5))) - (sr * ((suv.y - 0.5)))), ((sr * ((suv.x - 0.5))) + (cr * ((suv.y - 0.5))))) + 0.5);
+			smask = (((step(0.0, suv.x) * step(suv.x, 1.0)) * step(0.0, suv.y)) * step(suv.y, 1.0));
+			if ((dot(nrmM, nrmM) > 0.01)) {
+				smask *= smoothstep(-0.35, 0.25, nrmM.z);
+			}
+		} else {
+			var cpx: vec4f = ((fr.projectionMatrix * fr.modelViewMatrix) * vec4f(pos, 1.0));
+			var nd: vec2f = (cpx.xy / max(cpx.w, 1e-4));
+			var scrAsp: f32 = (fr.projectionMatrix[1][1] / fr.projectionMatrix[0][0]);
+			suv = vec2f((0.5 + (((nd.x * 0.5) * scrAsp) / arx)), (0.5 + (nd.y * 0.5)));
+			suv = ((((suv - 0.5)) / fr.uScr.z) + 0.5);
+			var cr: f32 = cos(fr.uScrP.x);
+			var sr: f32 = sin(fr.uScrP.x);
+			suv = (vec2f(((cr * ((suv.x - 0.5))) - (sr * ((suv.y - 0.5)))), ((sr * ((suv.x - 0.5))) + (cr * ((suv.y - 0.5))))) + 0.5);
+			smask = (((step(0.0, suv.x) * step(suv.x, 1.0)) * step(0.0, suv.y)) * step(suv.y, 1.0));
+		}
+		var scr: vec3f = (textureSampleLevel(scrTex, linSamp, clamp(suv, vec2f(0.0), vec2f(1.0)), 0.0).rgb * fr.uScr.w);
+		var slum: f32 = dot(scr, vec3f(0.3, 0.59, 0.11));
+		var sdv: f32 = 0.0;
+		if ((fr.uScrD.x > 0.5)) {
+			sdv = select(textureSampleLevel(scrDep, linSamp, clamp(suv, vec2f(0.0), vec2f(1.0)), 0.0).r, clamp((slum / max(fr.uScr.w, 0.05)), 0.0, 1.0), (fr.uScrD.x < 1.5));
+			sdv = clamp(((((sdv - 0.5)) * fr.uScrD.w) + 0.5), 0.0, 1.0);
+			if ((fr.uScrD.z < 0.0)) {
+				sdv = (1.0 - sdv);
+			}
+			if ((fr.uScrQ.x > 0.5)) {
+				scr = vec3f(sdv);
+			}
+		}
+		vColor = mix(vColor, mix((vColor * 0.35), scr, fr.uScrP.z), (smask * fr.uScr.x));
+		if ((fr.uScrD.x > 0.5)) {
+			var dirn: vec3f = select(normalize((bsx + vec3f(1e-4))), normalize(nrmM), (dot(nrmM, nrmM) > 0.01));
+			pos += (((((dirn * sdv) * fr.uScrD.y) * 0.45) * smask) * fr.uScr.x);
+		}
+	}
 	vD = disp;
 	var mv: vec4f = (fr.modelViewMatrix * vec4f(pos, 1.0));
 	gl_Position = (fr.projectionMatrix * mv);
@@ -72065,13 +72290,14 @@ fn main_() {
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
 	let i = gid.x;
-	let count = arrayLength(&inOrigin);
+	let count = arrayLength(&inP0) / 2u;
 	if (i >= count) { return; }
-	let o = inOrigin[i];
-	let t = inTarget[i];
-	let ca = inColorA[i];
-	let cb = inColorB[i];
-	let na = inNormA[i];
+	let o = inP0[i];
+	let t = inP0[count + i];
+	let ca = inP1[i];
+	let cb = inP1[count + i];
+	let na = inP2[i];
+	let sc = inP3[i];
 	aOrigin = o.xyz;
 	aHide = o.w;
 	aTarget = t.xyz;
@@ -72081,11 +72307,2152 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 	aColorB = cb.rgb;
 	aVis = vec2f(cb.w, na.w);
 	aNormal = na.xyz;
-	aNormalB = inNormB[i].xyz;
-	aSculpt = inSculpt[i].xyz;
+	aNormalB = inP2[count + i].xyz;
+	aSculpt = sc.xyz;
 	// индекс точки берётся из массива движка (aIdx = i / число точек, округлённое до float32 на CPU): хеши вида fract(sin(aIdx * k)) раздувают разницу в последнем бите до полного расхождения
-	aIdx = inSculpt[i].w;
-	aPaint = inPaint[i];
+	aIdx = sc.w;
+	aPaint = inP3[count + i];
+	main_();
+	outA[i] = gl_Position;
+	outB[i] = vec4f(vColor, gl_PointSize);
+	outC[i] = vec4f(vD, vDk, vCoc, vGl);
+}
+`;
+};
+__defs['src/effects/shaders/wgsl/generated/points-compute-shadow.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'pointsComputeShadowWGSL', () => pointsComputeShadowWGSL);
+const pointsComputeShadowWGSL = `
+struct Frame {
+	@size(16) uAdd: f32,
+	@size(16) uSolid: vec3f,
+	@size(16) uAtt: f32,
+	@size(16) uSize: f32,
+	@size(16) uPR: f32,
+	@size(16) uGlyph: vec3f,
+	@size(16) uColorBy: f32,
+	@size(16) uBright: f32,
+	@size(16) uMaskShow: f32,
+	@size(16) uP0: vec3f,
+	@size(16) uP1: vec3f,
+	@size(16) uP2: vec3f,
+	@size(16) uSliceC: vec3f,
+	@size(16) uMarkC: vec3f,
+	@size(16) uTime: f32,
+	@size(16) uTOff: f32,
+	@size(16) uMorph: f32,
+	uMorphS: vec4f,
+	uMorphO: vec4f,
+	uMorphD: vec4f,
+	@size(16) uSettle: f32,
+	@size(16) uBeat: f32,
+	@size(16) uYR: vec2f,
+	@size(16) uMouse: vec3f,
+	@size(16) uMouseOn: f32,
+	@size(16) uShade: f32,
+	uCurlP: vec4f,
+	uSpecP: vec4f,
+	uWaveP: vec4f,
+	uWaveSrc: vec4f,
+	uPulseP: vec4f,
+	uVoxelP: vec4f,
+	uGlitchP: vec4f,
+	uBlast: vec4f,
+	uFlow: vec4f,
+	uDisP: vec4f,
+	uScope: vec4f,
+	uScopeP: vec4f,
+	uScopeQ: vec4f,
+	@size(16) uScopeC: vec3f,
+	uDepth: vec4f,
+	uDepthP: vec4f,
+	uDepthQ: vec4f,
+	@size(16) uFlat: f32,
+	uCurl: vec4f,
+	uSpec: vec4f,
+	uWave: vec4f,
+	uTwist: vec4f,
+	uPulse: vec4f,
+	uVoxel: vec4f,
+	uJitter: vec4f,
+	uCursor: vec4f,
+	uMask: vec4f,
+	uMaskA: vec4f,
+	uGlitch: vec4f,
+	uContact: vec4f,
+	uShockP: vec4f,
+	uTrk: array<vec4f, 16>,
+	uHand: array<vec4f, 12>,
+	uGrav: vec4f,
+	uSlice: vec4f,
+	uSliceM: vec4f,
+	uMark: vec4f,
+	uGravT: vec4f,
+	uPhysP: vec4f,
+	@size(16) uAsm: f32,
+	uDis: vec4f,
+	@size(16) uDisT: f32,
+	@size(16) uAnimN: f32,
+	@size(16) uCen: vec3f,
+	uDisQ: vec4f,
+	uGravP: vec4f,
+	uHandP: vec4f,
+	uImp: array<vec4f, 32>,
+	uShock: array<vec4f, 4>,
+	uExp: vec4f,
+	uExpP: vec4f,
+	uGrow: vec4f,
+	uGrowP: vec4f,
+	@size(16) uGrowSeed: vec3f,
+	uJel: array<vec4f, 3>,
+	uJelO: array<vec4f, 3>,
+	uJelP: vec4f,
+	uPhysics: vec4f,
+	@size(16) uCollapseTime: f32,
+	uBrushHits: array<vec4f, 20>,
+	uPaintP: vec4f,
+	uBrushParam: vec4f,
+	uLookP2: vec4f,
+	uDof: vec4f,
+	uHyp: vec4f,
+	uHypP: vec4f,
+	uCh: vec4f,
+	uChA: vec4f,
+	uFr: vec4f,
+	uFr2: vec4f,
+	uFr3: vec4f,
+	uFr4: vec4f,
+	uFr5: vec4f,
+	uHero: vec4f,
+	uFr6: vec4f,
+	uFr7: vec4f,
+	uShoot: vec4f,
+	uShootP: vec4f,
+	uShootD: vec4f,
+	uShootE: vec4f,
+	uShootC: vec4f,
+	uShootS: array<vec4f, 24>,
+	uShootN: array<vec4f, 24>,
+	uShootB: array<vec4f, 6>,
+	uScr: vec4f,
+	uScrP: vec4f,
+	uScrD: vec4f,
+	uScrQ: vec4f,
+	@size(16) uScrMN: f32,
+	uSlit: vec4f,
+	uSlitP: vec4f,
+	uSlitG: vec4f,
+	uSort: vec4f,
+	uSortP: vec4f,
+	modelMatrix: mat4x4f,
+	modelViewMatrix: mat4x4f,
+	projectionMatrix: mat4x4f,
+	viewMatrix: mat4x4f,
+	normalMatrix: mat3x3f,
+	@size(16) uRes: vec2f,
+	@size(16) uPx: vec2f,
+	@size(16) uExposure: f32,
+	@size(16) uTone: f32,
+	@size(16) uGlow: f32,
+	@size(16) uDens: f32,
+	@size(16) uGhost: f32,
+	@size(16) uShape: f32,
+	uShd: vec4f,
+	uShdL: vec4f,
+	uShdP: vec4f,
+	@size(16) uShdC: vec3f,
+	uLink: vec4f,
+	uLinkP: vec4f,
+	@size(16) uLinkW: f32,
+	@size(16) uScopeW: f32,
+	@size(16) uScopeLB: f32,
+}
+@group(0) @binding(0) var<uniform> fr: Frame;
+// данные точек: по два набора в буфере (первая половина и вторая), чтобы проходу хватало 8 буферов хранения (минимум, который WebGPU гарантирует)
+@group(0) @binding(1) var<storage, read> inP0: array<vec4f>; // положение и скрытие | цель морфинга и глубина
+@group(0) @binding(2) var<storage, read> inP1: array<vec4f>; // цвет A и путь | цвет B и видимость
+@group(0) @binding(3) var<storage, read> inP2: array<vec4f>; // нормаль A и видимость | нормаль B
+@group(0) @binding(4) var<storage, read> inP3: array<vec4f>; // лепка и номер точки | краска
+@group(0) @binding(9) var<storage, read_write> outA: array<vec4f>;
+@group(0) @binding(10) var<storage, read_write> outB: array<vec4f>;
+@group(0) @binding(11) var<storage, read_write> outC: array<vec4f>;
+@group(0) @binding(12) var specTex: texture_2d<f32>;
+@group(0) @binding(13) var linSamp: sampler;
+@group(0) @binding(14) var pieceTex: texture_2d<f32>;
+@group(0) @binding(15) var frTex: texture_2d_array<f32>;
+@group(0) @binding(16) var heroTex: texture_2d<f32>;
+@group(0) @binding(17) var scrTex: texture_2d<f32>;
+@group(0) @binding(18) var scrDep: texture_2d<f32>;
+@group(0) @binding(19) var scrMTex: texture_2d<f32>;
+@group(0) @binding(20) var slitTex: texture_2d_array<f32>;
+@group(0) @binding(21) var sortTex: texture_2d<f32>;
+
+var<private> aOrigin: vec3f;
+var<private> aTarget: vec3f;
+var<private> aColor: vec3f;
+var<private> aIdx: f32;
+var<private> aSculpt: vec3f;
+var<private> aNormal: vec3f;
+var<private> aNormalB: vec3f;
+var<private> aPaint: vec4f;
+var<private> aColorB: vec3f;
+var<private> aHide: f32;
+var<private> aDepth: f32;
+var<private> aPath: f32;
+var<private> aVis: vec2f;
+var<private> vColor: vec3f;
+var<private> vD: f32;
+var<private> vDk: f32;
+var<private> vCoc: f32;
+var<private> vGl: f32;
+var<private> gl_Position: vec4f;
+var<private> gl_PointSize: f32;
+
+fn glsl_mod_f(x: f32, y: f32) -> f32 { return x - y * floor(x / y); }
+
+var<private> gGl: f32 = 0.0;
+var<private> gCh: f32 = -1.0;
+var<private> gDrop: f32 = 0.0;
+var<private> gGrow: f32 = 1.0;
+var<private> gGrowE: f32 = 0.0;
+var<private> gBurst: f32 = 0.0;
+var<private> gScopeG: f32 = 0.0;
+var<private> gScopeT: f32 = 0.0;
+var<private> gScopeD: f32 = 0.0;
+var<private> gDepth: f32 = 0.5;
+var<private> gDepthG: f32 = 0.0;
+var<private> gNormal: vec3f = vec3f(0.0);
+var<private> gLum: f32 = 0.5;
+var<private> gHypW: f32 = 0.0;
+var<private> gHypF: f32 = 0.0;
+var<private> gChN: f32 = 0.0;
+
+fn mod289_vec3(x_in: vec3f) -> vec3f {
+	var x: vec3f = x_in;
+	return (x - (floor((x * ((1.0 / 289.0)))) * 289.0));
+}
+
+fn mod289_vec4(x_in: vec4f) -> vec4f {
+	var x: vec4f = x_in;
+	return (x - (floor((x * ((1.0 / 289.0)))) * 289.0));
+}
+
+fn permute(x_in: vec4f) -> vec4f {
+	var x: vec4f = x_in;
+	return mod289_vec4((((((x * 34.0)) + 1.0)) * x));
+}
+
+fn taylorInvSqrt(r_in: vec4f) -> vec4f {
+	var r: vec4f = r_in;
+	return (1.79284291400159 - (0.85373472095314 * r));
+}
+
+fn snoise(v_in: vec3f) -> f32 {
+	var v: vec3f = v_in;
+	const C: vec2f = vec2f((1.0 / 6.0), (1.0 / 3.0));
+	const D: vec4f = vec4f(0.0, 0.5, 1.0, 2.0);
+	var i: vec3f = floor((v + dot(v, C.yyy)));
+	var x0: vec3f = ((v - i) + dot(i, C.xxx));
+	var g: vec3f = step(x0.yzx, x0.xyz);
+	var l: vec3f = (1.0 - g);
+	var i1: vec3f = min(g.xyz, l.zxy);
+	var i2: vec3f = max(g.xyz, l.zxy);
+	var x1: vec3f = ((x0 - i1) + C.xxx);
+	var x2: vec3f = ((x0 - i2) + C.yyy);
+	var x3: vec3f = (x0 - D.yyy);
+	i = mod289_vec3(i);
+	var p: vec4f = permute(((permute(((permute((i.z + vec4f(0.0, i1.z, i2.z, 1.0))) + i.y) + vec4f(0.0, i1.y, i2.y, 1.0))) + i.x) + vec4f(0.0, i1.x, i2.x, 1.0)));
+	var n_: f32 = 0.142857142857;
+	var ns: vec3f = ((n_ * D.wyz) - D.xzx);
+	var j: vec4f = (p - (49.0 * floor(((p * ns.z) * ns.z))));
+	var x_: vec4f = floor((j * ns.z));
+	var y_: vec4f = floor((j - (7.0 * x_)));
+	var x: vec4f = ((x_ * ns.x) + ns.yyyy);
+	var y: vec4f = ((y_ * ns.x) + ns.yyyy);
+	var h: vec4f = ((1.0 - abs(x)) - abs(y));
+	var b0: vec4f = vec4f(x.xy, y.xy);
+	var b1: vec4f = vec4f(x.zw, y.zw);
+	var s0: vec4f = ((floor(b0) * 2.0) + 1.0);
+	var s1: vec4f = ((floor(b1) * 2.0) + 1.0);
+	var sh: vec4f = -step(h, vec4f(0.0));
+	var a0: vec4f = (b0.xzyw + (s0.xzyw * sh.xxyy));
+	var a1: vec4f = (b1.xzyw + (s1.xzyw * sh.zzww));
+	var p0: vec3f = vec3f(a0.xy, h.x);
+	var p1: vec3f = vec3f(a0.zw, h.y);
+	var p2: vec3f = vec3f(a1.xy, h.z);
+	var p3: vec3f = vec3f(a1.zw, h.w);
+	var norm: vec4f = taylorInvSqrt(vec4f(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+	p0 *= vec3f(norm.x);
+	p1 *= vec3f(norm.y);
+	p2 *= vec3f(norm.z);
+	p3 *= vec3f(norm.w);
+	var m: vec4f = max((0.6 - vec4f(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3))), vec4f(0.0));
+	m = (m * m);
+	return (42.0 * dot((m * m), vec4f(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3))));
+}
+
+fn curlNoise(p_in: vec3f) -> vec3f {
+	var p: vec3f = p_in;
+	const e: f32 = 0.08;
+	var n1: f32 = snoise((p + vec3f(e, 0.0, 0.0)));
+	var n2: f32 = snoise((p - vec3f(e, 0.0, 0.0)));
+	var n3: f32 = snoise((p + vec3f(0.0, e, 0.0)));
+	var n4: f32 = snoise((p - vec3f(0.0, e, 0.0)));
+	var n5: f32 = snoise((p + vec3f(0.0, 0.0, e)));
+	var n6: f32 = snoise((p - vec3f(0.0, 0.0, e)));
+	return normalize((vec3f((((n4 - n3)) - ((n6 - n5))), (((n6 - n5)) - ((n2 - n1))), (((n2 - n1)) - ((n4 - n3)))) + 1e-5));
+}
+
+fn hash11(p_in: f32) -> f32 {
+	var p: f32 = p_in;
+	return fract((sin((p * 127.1)) * 43758.5453));
+}
+
+fn hit2(b_in: bool) -> f32 {
+	var b: bool = b_in;
+	return select(0.0, 1.0, b);
+}
+
+fn contactAt(c_in: vec3f, st_in: f32, base_in: vec3f, rad_in: vec3f, pos: ptr<function, vec3f>) {
+	var c: vec3f = c_in;
+	var st: f32 = st_in;
+	var base: vec3f = base_in;
+	var rad: vec3f = rad_in;
+	var dd: vec3f = (base - c);
+	var r: f32 = fr.uContact.y;
+	var d2: f32 = dot(dd, dd);
+	if (((d2 >= (r * r)) || (st < 0.001))) {
+		return;
+	}
+	var f: f32 = (1.0 - (sqrt(d2) / r));
+	f = ((f * f) * ((3.0 - (2.0 * f))));
+	var k: f32 = ((f * st) * fr.uContact.x);
+	if ((fr.uContact.z < 0.5)) {
+		(*pos) += ((rad * k) * 0.4);
+	} else if ((fr.uContact.z < 1.5)) {
+		var ax: vec3f = normalize((c + vec3f(1e-4)));
+		var a: f32 = (k * 2.4);
+		var q: vec3f = ((*pos) - c);
+		(*pos) = (((c + (q * cos(a))) + (cross(ax, q) * sin(a))) + ((ax * dot(ax, q)) * ((1.0 - cos(a)))));
+	} else if ((fr.uContact.z < 2.5)) {
+		(*pos) -= ((normalize((dd + vec3f(1e-4))) * k) * 0.3);
+	} else if ((fr.uContact.z < 3.5)) {
+		(*pos) += ((normalize((dd + vec3f(1e-4))) * k) * 0.3);
+	} else if ((fr.uContact.z < 4.5)) {
+		(*pos) += (((rad * sin(((length(dd) * 20.0) - (fr.uTime * 6.0)))) * k) * 0.14);
+	} else if ((fr.uContact.z < 5.5)) {
+		var hh: f32 = fract((sin(dot(base.xz, vec2f(12.9898, 78.233))) * 43758.5453));
+		(*pos).y -= (((k * k) * 0.55) * ((0.6 + (0.8 * hh))));
+		{ let _sw0 = ((*pos).xz + vec2f(((((hh - 0.5)) * k) * 0.06))); (*pos) = vec3f(_sw0.x, (*pos).y, _sw0.y); }
+	} else if ((fr.uContact.z < 6.5)) {
+		(*pos) += ((curlNoise(((base * 3.0) + (fr.uTime * 0.8))) * k) * 0.45);
+	}
+}
+
+fn contactK(b_in: vec3f) -> f32 {
+	var b: vec3f = b_in;
+	var m: f32 = 0.0;
+	var r: f32 = (fr.uContact.y * ((1.0 + (0.12 * sin((fr.uTime * 4.0))))));
+	for (var i: i32 = 0; (i < 16); i++) {
+		if ((f32(i) >= fr.uContact.w)) {
+			break;
+		}
+		var d: f32 = distance(b, fr.uTrk[i].xyz);
+		if ((d < r)) {
+			m = max(m, (((1.0 - (d / r))) * fr.uTrk[i].w));
+		}
+	}
+	for (var i: i32 = 0; (i < 32); i++) {
+		if ((f32(i) >= fr.uShockP.z)) {
+			break;
+		}
+		var d: f32 = distance(b, fr.uImp[i].xyz);
+		if ((d < r)) {
+			m = max(m, (((1.0 - (d / r))) * fr.uImp[i].w));
+		}
+	}
+	return clamp((m * fr.uContact.x), 0.0, 1.0);
+}
+
+fn markK(b_in: vec3f) -> f32 {
+	var b: vec3f = b_in;
+	if (((fr.uMark.x < 0.5) || (fr.uContact.w < 0.5))) {
+		return 0.0;
+	}
+	var m: f32 = 0.0;
+	for (var i: i32 = 0; (i < 16); i++) {
+		if ((f32(i) >= fr.uContact.w)) {
+			break;
+		}
+		var d: f32 = distance(b, fr.uTrk[i].xyz);
+		if ((d < fr.uMark.y)) {
+			m = max(m, (1.0 - (d / fr.uMark.y)));
+		}
+	}
+	return (((m * m) * ((3.0 - (2.0 * m)))) * fr.uMark.z);
+}
+
+fn hueRot(c_in: vec3f, a_in: f32) -> vec3f {
+	var c: vec3f = c_in;
+	var a: f32 = a_in;
+	var k: vec3f = vec3f(0.57735);
+	return (((c * cos(a)) + (cross(k, c) * sin(a))) + ((k * dot(k, c)) * ((1.0 - cos(a)))));
+}
+
+fn sliceK(b_in: vec3f) -> f32 {
+	var b: vec3f = b_in;
+	if ((fr.uSlice.x < 0.001)) {
+		return 0.0;
+	}
+	var axCode: f32 = glsl_mod_f(fr.uSlice.w, 10.0);
+	var nLines: f32 = max(1.0, floor((fr.uSlice.w / 10.0)));
+	var c: f32 = select((select((select((((b.x + b.y)) * 0.707), b.z, (axCode < 2.5))), b.x, (axCode < 1.5))), b.y, (axCode < 0.5));
+	var v: f32 = clamp((((c + 1.2)) / 2.4), 0.0, 1.0);
+	var coord: f32 = glsl_mod_f(((v * nLines) - (fr.uSlice.y * nLines)), 1.0);
+	return (((1.0 - smoothstep((fr.uSlice.z * 0.4), fr.uSlice.z, abs((coord - 0.5))))) * fr.uSlice.x);
+}
+
+fn disK(b_in: vec3f, idx_in: f32) -> f32 {
+	var b: vec3f = b_in;
+	var idx: f32 = idx_in;
+	if ((fr.uDis.x < 0.001)) {
+		return 0.0;
+	}
+	var st: f32 = fr.uDisP.x;
+	var y01: f32 = clamp((((b.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+	if (((st > 2.5) && (st < 3.5))) {
+		y01 = (floor(((y01 * 12.0) + 0.001)) / 12.0);
+	}
+	var h: f32 = select(hash11((idx * 37.3)), hash11((floor((idx * 1800.0)) * 0.731)), (((st > 3.5) && (st < 4.5))));
+	var jit: f32 = select(select(select(select(select(select(select(0.1, 0.12, (st < 6.5)), 0.18, (st < 5.5)), 0.3, (st < 4.5)), 0.0, (st < 3.5)), 0.03, (st < 2.5)), 0.28, (st < 1.5)), 0.16, (st < 0.5));
+	var m: f32 = fr.uDis.y;
+	var still: bool = (fr.uAnimN < 0.5);
+	var ord: f32;
+	if ((m < 0.5)) {
+		ord = (1.0 - y01);
+	} else if ((m < 1.5)) {
+		ord = select(hash11((idx * 13.7)), ((snoise((b * 1.7)) * 0.5) + 0.5), still);
+	} else if ((m < 2.5)) {
+		ord = y01;
+	} else if ((m < 3.5)) {
+		ord = select(y01, clamp(((((b.x - fr.uCen.x)) * 0.3) + 0.5), 0.0, 1.0), still);
+	} else {
+		var r01: f32 = clamp((length((b - fr.uCen)) / max((((fr.uYR.y - fr.uYR.x)) * 0.6), 0.3)), 0.0, 1.0);
+		ord = select((1.0 - r01), r01, (m < 4.5));
+	}
+	ord = ((ord * ((1.0 - jit))) + (h * jit));
+	var w: f32 = max(fr.uDisQ.x, 0.06);
+	if (((st > 1.5) && (st < 2.5))) {
+		w *= 0.45;
+	}
+	return clamp(((((fr.uDis.x * ((1.0 + w))) - ord)) / w), 0.0, 1.0);
+}
+
+fn growK(b_in: vec3f, idx_in: f32) -> f32 {
+	var b: vec3f = b_in;
+	var idx: f32 = idx_in;
+	var S: f32 = max((fr.uYR.y - fr.uYR.x), 0.5);
+	var y01: f32 = clamp((((b.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+	var d: f32;
+	if ((fr.uGrow.y < 0.5)) {
+		d = ((y01 * 0.8) + (clamp((length((b.xz - fr.uCen.xz)) / S), 0.0, 1.0) * 0.2));
+	} else if ((fr.uGrow.y < 1.5)) {
+		d = clamp((distance(b, fr.uGrowSeed) / ((S * 1.5))), 0.0, 1.0);
+	} else {
+		d = clamp((length((b - fr.uCen)) / ((S * 0.7))), 0.0, 1.0);
+	}
+	var nz: f32 = select(hash11((floor((idx * 700.0)) * 0.37)), ((snoise(((b * 3.0) + 7.0)) * 0.5) + 0.5), (fr.uAnimN < 0.5));
+	d = clamp(((d + ((((nz - 0.5)) * 0.45) * fr.uGrow.z)) + (((hash11((idx * 9.1)) - 0.5)) * 0.03)), 0.0, 1.0);
+	var w: f32 = max(fr.uGrow.w, 0.04);
+	return clamp(((((fr.uGrow.x * ((1.0 + w))) - d)) / w), 0.0, 1.0);
+}
+
+fn morphLocal(A_in: vec3f, B_in: vec3f, idx_in: f32) -> f32 {
+	var A: vec3f = A_in;
+	var B: vec3f = B_in;
+	var idx: f32 = idx_in;
+	var h: f32 = hash11((idx * 3.17));
+	var msty: i32 = i32((fr.uMorphS.x + 0.5));
+	if ((msty == 8)) {
+		h = hash11(dot(floor((((A - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));
+	}
+	if ((msty == 13)) {
+		h = hash11(dot(floor((((A - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));
+	}
+	var ord: f32 = h;
+	var so: i32 = i32((fr.uMorphO.x + 0.5));
+	var yN: f32 = clamp((((A.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+	if ((so == 1)) {
+		ord = ((yN * 0.85) + (h * 0.15));
+	} else if ((so == 2)) {
+		ord = ((((1.0 - yN)) * 0.85) + (h * 0.15));
+	} else if ((so == 3)) {
+		ord = ((clamp((length(A) / 1.4), 0.0, 1.0) * 0.85) + (h * 0.15));
+	} else if ((so == 4)) {
+		ord = ((clamp((((A.x + 1.2)) / 2.4), 0.0, 1.0) * 0.85) + (h * 0.15));
+	} else if ((so == 5)) {
+		ord = ((((1.0 - gDepth)) * 0.85) + (h * 0.15));
+	} else if ((so == 6)) {
+		ord = ((gDepth * 0.85) + (h * 0.15));
+	}
+	if ((msty == 10)) {
+		ord = ((((1.0 - gDepth)) * 0.8) + (h * 0.2));
+	}
+	if ((msty == 11)) {
+		ord = ((clamp((((B.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0) * 0.92) + (h * 0.08));
+	}
+	var sg: f32 = fr.uMorphS.z;
+	return clamp(((fr.uMorph * ((1.0 + sg))) - (ord * sg)), 0.0, 1.0);
+}
+
+fn morphEase(x_in: f32) -> f32 {
+	var x: f32 = x_in;
+	var e: i32 = i32((fr.uMorphO.y + 0.5));
+	if ((e == 1)) {
+		return (((x * x) * x) * (((x * (((x * 6.0) - 15.0))) + 10.0)));
+	}
+	if ((e == 2)) {
+		var c1: f32 = 1.70158;
+		var y: f32 = (x - 1.0);
+		return ((1.0 + (((((c1 + 1.0)) * y) * y) * y)) + ((c1 * y) * y));
+	}
+	return ((x * x) * ((3.0 - (2.0 * x))));
+}
+
+fn frPlace(lay_in: f32, k_in: f32, n_in: f32, u_in: f32, v_in: f32, nrm: ptr<function, vec3f>) -> vec3f {
+	var lay: f32 = lay_in;
+	var k: f32 = k_in;
+	var n: f32 = n_in;
+	var u: f32 = u_in;
+	var v: f32 = v_in;
+	var t: f32 = select(0.5, (k / ((n - 1.0))), (n > 1.0));
+	var W: f32 = fr.uFr2.z;
+	var H: f32 = fr.uFr2.w;
+	var depth: f32 = fr.uFr3.x;
+	(*nrm) = vec3f(0.0, 0.0, 1.0);
+	if (((lay > 0.5) && (lay < 1.5))) {
+		var gx: f32 = ceil(sqrt((n * ((W / H)))));
+		var gy: f32 = ceil((n / gx));
+		var s: f32 = min((2.4 / ((gx * W))), (2.4 / ((gy * H))));
+		var cx: f32 = glsl_mod_f(k, gx);
+		var cy: f32 = floor((k / gx));
+		return vec3f(((((((cx - (((gx - 1.0)) * 0.5))) * W) * s) * 1.04) + ((u * W) * s)), (((((((((gy - 1.0)) * 0.5) - cy)) * H) * s) * 1.04) + ((v * H) * s)), 0.0);
+	}
+	var ad: f32 = (k - fr.uFr4.x);
+	if (((lay > 1.5) && (lay < 2.5))) {
+		var sc: f32 = 0.5;
+		var aa: f32 = abs(ad);
+		var c1: f32 = ((W * 0.54) + ((W * sc) * 0.53));
+		var c: f32 = select((c1 + (((((aa - 1.0)) * W) * sc) * 1.06)), (aa * c1), (aa < 1.0));
+		var s: f32 = mix(1.0, sc, min(aa, 1.0));
+		return vec3f(((sign(ad) * c) + ((u * W) * s)), ((v * H) * s), 0.0);
+	}
+	var dz: f32 = select(1.0, -1.0, (((fr.uFr4.y > 0.5) && (fr.uFr4.y < 1.5))));
+	var kz: f32 = k;
+	var cen: f32 = select(fr.uFr4.x, (((n - 1.0)) * 0.5), (fr.uFr6.y > 0.5));
+	var ts: f32 = select(1.0, (1.0 - (0.72 * clamp((max(-ad, 0.0) / max((n - 1.0), 1.0)), 0.0, 1.0))), (lay > 2.5));
+	return vec3f(((u * W) * ts), ((v * H) * ts), (((((kz - cen)) * depth) / max((n - 1.0), 1.0)) * dz));
+}
+
+fn frMix(k_in: f32, u_in: f32, v_in: f32, nrm: ptr<function, vec3f>) -> vec3f {
+	var k: f32 = k_in;
+	var u: f32 = u_in;
+	var v: f32 = v_in;
+	var nA: vec3f;
+	var nB: vec3f;
+	var pA: vec3f = frPlace(fr.uFr3.y, k, fr.uFr.y, u, v, &nA);
+	if ((fr.uFr3.w > 0.0001)) {
+		var pB: vec3f = frPlace(fr.uFr3.z, k, fr.uFr.y, u, v, &nB);
+		var m: f32 = ((fr.uFr3.w * fr.uFr3.w) * ((3.0 - (2.0 * fr.uFr3.w))));
+		(*nrm) = normalize(mix(nA, nB, m));
+		return mix(pA, pB, m);
+	}
+	(*nrm) = nA;
+	return pA;
+}
+
+fn frBlockPos(aIdx_in: f32, nrm: ptr<function, vec3f>, kk: ptr<function, f32>, cell: ptr<function, vec2f>) -> vec3f {
+	var aIdx: f32 = aIdx_in;
+	var ip: f32 = floor(((aIdx * fr.uFr.w) + 0.5));
+	var k: f32 = floor((ip / fr.uFr.z));
+	var loc: f32 = (ip - (k * fr.uFr.z));
+	var ci: f32 = glsl_mod_f(loc, fr.uFr2.x);
+	var cj: f32 = floor((loc / fr.uFr2.x));
+	(*kk) = k;
+	(*cell) = vec2f(ci, cj);
+	var jt: vec2f = (vec2f(fract((sin((k * 12.9898)) * 43758.5453)), fract((sin(((k * 78.233) + 1.7)) * 24634.6345))) - 0.5);
+	return frMix(k, (((((ci + 0.5) + (jt.x * 0.9))) / fr.uFr2.x) - 0.5), (0.5 - ((((cj + 0.5) + (jt.y * 0.9))) / fr.uFr2.y)), nrm);
+}
+
+fn frShow(k_in: f32, tcol: ptr<function, vec3f>) -> vec4f {
+	var k: f32 = k_in;
+	var n: f32 = fr.uFr.y;
+	var idx: f32 = fr.uFr4.x;
+	var mode: i32 = i32((fr.uFr4.y + 0.5));
+	var d: f32 = (k - idx);
+	var fw: f32 = max(2.0, (n * 0.04));
+	var w: f32 = 1.0;
+	var lift: f32 = 0.0;
+	var tint: f32 = 0.0;
+	(*tcol) = fr.uP2;
+	if ((mode == 0)) {
+		var hl: f32 = fr.uFr4.w;
+		if ((hl > 0.001)) {
+			w = ((1.0 - (0.5 * hl)) + ((((0.5 + (1.4 * hl))) * max(0.0, (1.0 - (abs(d) / 2.5)))) * hl));
+		}
+		if ((d < -0.5)) {
+			w *= (0.45 + (0.55 / ((1.0 + (0.2 * (-d))))));
+		}
+		if ((((d > 0.5) && (fr.uFr6.y < 0.5)) && (abs((fr.uFr3.y - 2.0)) > 0.5))) {
+			w *= select(select(1.0, 0.4, (fr.uFr5.z > 0.5)), 0.0, (fr.uFr5.z > 1.5));
+		}
+	} else if ((mode == 1)) {
+		if ((d < 0.0)) {
+			w = max(0.0, (1.0 + (d / fw)));
+		}
+		lift = (1.0 - w);
+		w *= (1.0 + (0.25 * max(0.0, (1.0 - abs(d)))));
+	} else if ((mode == 2)) {
+		if ((d > 0.0)) {
+			w = (max(0.0, (1.0 - (d / fw))) * (select(0.0, 0.5, (d <= fw))));
+			lift = (-((1.0 - w)) * 0.6);
+		}
+		w *= (1.0 + (0.25 * max(0.0, (1.0 - abs(d)))));
+	} else if ((mode == 3)) {
+		var half_: f32 = max(3.0, (n * 0.08));
+		var ad: f32 = abs(d);
+		w = select(max(0.0, (1.0 - (((ad - half_)) / fw))), 1.0, (ad <= half_));
+		lift = ((((1.0 - w)) * sign((d + 0.0001))) * 0.8);
+		w *= (1.0 + (0.25 * max(0.0, (1.0 - ad))));
+	} else {
+		var span: f32 = max(1.5, (n * max(0.02, fr.uFr4.z)));
+		if ((mode == 4)) {
+			var beam: f32 = exp(((-((d / span)) * ((d / span))) * 2.0));
+			var after: f32 = select(0.0, (exp((d / ((span * 2.4)))) * 0.4), (d < 0.0));
+			w = ((0.18 + (beam * 1.5)) + after);
+			tint = min(0.85, (beam * 0.8));
+			lift = select(0.0, -min(0.35, ((-d / n) * 1.2)), (d < 0.0));
+		} else {
+			var age: f32 = (-d / span);
+			if ((d > 0.0)) {
+				w = 0.0;
+			} else {
+				w = (max(0.0, (exp((-age * 1.1)) * 0.9)) + (1.35 * max(0.0, (1.0 - abs(d)))));
+				var t: f32 = min(1.0, age);
+				(*tcol) = select(mix(fr.uP1, fr.uP2, (((t - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (t * 2.0)), (t < 0.5));
+				tint = (min(0.9, (0.3 + (age * 0.7))) * ((1.0 - max(0.0, (1.0 - abs(d))))));
+				lift = -min(0.6, (age * 0.25));
+			}
+		}
+	}
+	return vec4f(w, lift, tint, 0.0);
+}
+
+fn dzone(x_in: f32) -> f32 {
+	var x: f32 = x_in;
+	var a: f32 = abs(x);
+	return ((sign(x) * max((a - fr.uDepthQ.x), 0.0)) / max((1.0 - fr.uDepthQ.x), 0.25));
+}
+
+fn depthShape(b_in: vec3f) -> vec3f {
+	var b: vec3f = b_in;
+	var t: f32 = (fr.uTime - fr.uTOff);
+	var A: f32 = fr.uDepth.x;
+	var sp: f32 = fr.uDepth.z;
+	var dn: f32 = select((1.0 - gDepth), gDepth, (fr.uDepthP.y > 0.0));
+	var fo: f32 = select((1.0 - fr.uDepth.w), fr.uDepth.w, (fr.uDepthP.y > 0.0));
+	var dd: f32 = dzone((dn - fo));
+	var md: i32 = i32((fr.uDepth.y + 0.5));
+	if ((md == 0)) {
+		b.z += ((dd * A) * 1.2);
+	} else if ((md == 1)) {
+		var N: f32 = max(2.0, floor((fr.uDepthP.x + 0.5)));
+		var x: f32 = (dn * N);
+		var dq: f32 = (((floor(x) + smoothstep(0.38, 0.62, fract(x)))) / N);
+		b.z += ((dzone((dq - fo)) * A) * 1.5);
+	} else if ((md == 2)) {
+		b.z += (((dd * A) * 1.3) * ((0.5 + (0.5 * sin(((t * sp) * 0.9))))));
+	} else if ((md == 3)) {
+		b.z += (((dd * A) * 1.4) * ((0.55 + (0.45 * sin(((b.x * 3.2) - ((t * sp) * 1.6)))))));
+	} else if ((md == 4)) {
+		b.z += ((((dd * 0.6) + ((sin(((length(b.xy) * 9.0) - ((t * sp) * 2.2))) * 0.25) * ((0.35 + dn))))) * A);
+	} else if ((md == 5)) {
+		var a: f32 = (((dd * A) * 1.6) * sin(((t * sp) * 0.7)));
+		var cs: f32 = cos(a);
+		var sn: f32 = sin(a);
+		{ let _sw1 = (mat2x2f(cs, -sn, sn, cs) * b.xz); b = vec3f(_sw1.x, b.y, _sw1.y); }
+		b.z += ((dd * A) * 0.5);
+	} else {
+		var p: f32 = (0.5 + (0.5 * sin((((t * sp) * 0.8) - 1.5708))));
+		b.z += ((dd * A) * ((0.4 + ((1.8 * p) * p))));
+		{ let _sw2 = (b.xy * vec2f((1.0 + ((((dd * A) * 0.5) * p) * p)))); b = vec3f(_sw2.x, _sw2.y, b.z); }
+	}
+	var a: f32 = ((t * sp) * 0.8);
+	{ let _sw3 = (b.xy + ((((vec2f(cos(a), (sin(a) * 0.55)) * dd) * fr.uDepthP.z) * A) * 0.4)); b = vec3f(_sw3.x, _sw3.y, b.z); }
+	return b;
+}
+
+fn hyperWarp(p_in: vec3f, c_in: vec3f, R_in: f32, md_in: f32, a_in: f32, w4: ptr<function, f32>) -> vec3f {
+	var p: vec3f = p_in;
+	var c: vec3f = c_in;
+	var R: f32 = R_in;
+	var md: f32 = md_in;
+	var a: f32 = a_in;
+	var q: vec3f = (((p - c)) / R);
+	var r2: f32 = dot(q, q);
+	var h: vec4f = (vec4f((2.0 * q), (r2 - 1.0)) / ((r2 + 1.0)));
+	var ca: f32 = cos(a);
+	var sa: f32 = sin(a);
+	if ((md < 0.5)) {
+		{ let _sw4 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw4.x, _sw4.y); }
+	} else if ((md < 1.5)) {
+		{ let _sw5 = vec2f(((h.x * ca) - (h.y * sa)), ((h.x * sa) + (h.y * ca))); h = vec4f(_sw5.x, _sw5.y, h.z, h.w); }
+		{ let _sw6 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw6.x, _sw6.y); }
+	} else if ((md < 2.5)) {
+		{ let _sw7 = vec2f(((h.x * ca) - (h.w * sa)), ((h.x * sa) + (h.w * ca))); h = vec4f(_sw7.x, h.y, h.z, _sw7.y); }
+		var cb: f32 = cos((a * 0.618));
+		var sb: f32 = sin((a * 0.618));
+		{ let _sw8 = vec2f(((h.y * cb) - (h.z * sb)), ((h.y * sb) + (h.z * cb))); h = vec4f(h.x, _sw8.x, _sw8.y, h.w); }
+	} else {
+		var b: f32 = (2.4 * sin(a));
+		var cb: f32 = cos(b);
+		var sb: f32 = sin(b);
+		{ let _sw9 = vec2f(((h.z * cb) - (h.w * sb)), ((h.z * sb) + (h.w * cb))); h = vec4f(h.x, h.y, _sw9.x, _sw9.y); }
+	}
+	(*w4) = h.w;
+	var o: vec3f = ((h.xyz / max((1.0 - h.w), 0.03)) * R);
+	var ol: f32 = length(o);
+	var oc: f32 = select((1.8 + ((1.0 - exp(-((ol - 1.8)))))), ol, (ol < 1.8));
+	return (c + (o * ((oc / max(ol, 1e-4)))));
+}
+
+fn chF(q_in: vec3f, n_in: f32, m_in: f32) -> f32 {
+	var q: vec3f = q_in;
+	var n: f32 = n_in;
+	var m: f32 = m_in;
+	var f: f32 = ((cos((n * q.x)) * cos((m * q.y))) - (cos((m * q.x)) * cos((n * q.y))));
+	if ((fr.uFlat > 0.5)) {
+		return f;
+	}
+	return ((((f + (cos((n * q.y)) * cos((m * q.z)))) - (cos((m * q.y)) * cos((n * q.z)))) + (cos((n * q.z)) * cos((m * q.x)))) - (cos((m * q.z)) * cos((n * q.x))));
+}
+
+fn chField(q_in: vec3f) -> f32 {
+	var q: vec3f = q_in;
+	if ((fr.uCh.y < 0.001)) {
+		return chF(q, fr.uChA.x, fr.uChA.y);
+	}
+	if ((fr.uCh.y > 0.999)) {
+		return chF(q, fr.uChA.z, fr.uChA.w);
+	}
+	return mix(chF(q, fr.uChA.x, fr.uChA.y), chF(q, fr.uChA.z, fr.uChA.w), fr.uCh.y);
+}
+
+fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<function, vec3f>, maskV: ptr<function, f32>) -> vec3f {
+	var aOrigin: vec3f = aOrigin_in;
+	var aTarget: vec3f = aTarget_in;
+	var aIdx: f32 = aIdx_in;
+	var t: f32 = (fr.uTime - fr.uTOff);
+	var m: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));
+	(*base) = aTarget;
+	if (((fr.uFr.x > 0.5) && (fr.uMorph > 0.9999))) {
+		var fnrm: vec3f;
+		var fk: f32;
+		var fcell: vec2f;
+		(*base) = frBlockPos(aIdx, &fnrm, &fk, &fcell);
+	}
+	if ((fr.uMorph < 0.9999)) {
+		var lt: f32 = morphLocal(aOrigin, aTarget, aIdx);
+		var e: f32 = morphEase(lt);
+		var sc: f32 = fr.uMorphS.y;
+		var sty: i32 = i32((fr.uMorphS.x + 0.5));
+		var mid: vec3f = (((aOrigin + aTarget)) * 0.5);
+		var cn: vec3f = curlNoise(((mid * 1.8) + vec3f(0.0, (t * 0.3), 0.0)));
+		var hA: f32 = hash11((aIdx * 5.31));
+		var hB: f32 = hash11((aIdx * 7.77));
+		var hC: f32 = hash11((aIdx * 2.13));
+		var flightK: f32 = sin((e * 3.1415926535));
+		var ctrl: vec3f = (mid + ((cn * sc) * 0.9));
+		if ((sty == 3)) {
+			ctrl = (mid + ((cn * sc) * 0.3));
+		}
+		var om: f32 = (1.0 - e);
+		(*base) = ((((om * om) * aOrigin) + (((2.0 * om) * e) * ctrl)) + ((e * e) * aTarget));
+		if ((sty == 0)) {
+			var fq: f32 = pow(flightK, 1.2);
+			var tb1: vec3f = curlNoise((((*base) * 1.35) + vec3f(0.0, 0.0, (t * 0.35))));
+			var tb2: vec3f = curlNoise((((*base) * 3.2) - vec3f((t * 0.55), 0.0, 0.0)));
+			(*base) += (((((tb1 * 0.5) + (tb2 * 0.18))) * sc) * fq);
+		}
+		if ((sty == 1)) {
+			var vxz: vec2f = ((*base).xz - fr.uCen.xz);
+			var vr: f32 = length(vxz);
+			var vang: f32 = ((((sin((e * 3.1415926535)) * fr.uMorphS.w) * 6.2831853) * ((0.7 + (0.3 * hash11((aIdx * 1.3)))))) * pow((1.0 / ((0.32 + vr))), 0.5));
+			var vcs: f32 = cos(vang);
+			var vsn: f32 = sin(vang);
+			vxz = vec2f(((vxz.x * vcs) - (vxz.y * vsn)), ((vxz.x * vsn) + (vxz.y * vcs)));
+			vxz *= vec2f((1.0 - ((0.38 * flightK) * smoothstep(0.0, 1.1, vr))));
+			{ let _sw10 = (fr.uCen.xz + vxz); (*base) = vec3f(_sw10.x, (*base).y, _sw10.y); }
+			(*base).y += ((((((hB - 0.3)) * 0.35) * sc) * flightK) * flightK);
+		}
+		if ((sty == 3)) {
+			var band: f32 = (smoothstep(0.0, 0.3, lt) * ((1.0 - smoothstep(0.6, 1.0, lt))));
+			var sq: vec3f = ((((floor(((((*base) - fr.uCen)) * 20.0)) + 0.5)) / 20.0) + fr.uCen);
+			(*base) = mix((*base), sq, (band * 0.8));
+			(*base) += ((((vec3f(hA, hB, hC) - 0.5)) * 0.045) * band);
+		}
+		if ((sty == 4)) {
+			var H: f32 = (((0.45 + (0.85 * hA))) * sc);
+			var cloud: vec3f = ((aOrigin + vec3f(0.0, H, 0.0)) + (((((cn * ((0.5 + (0.7 * hB)))) + (((vec3f(hA, hC, hB) - 0.5)) * 0.45))) * sc) * 0.8));
+			var k1: f32 = clamp((e / 0.5), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);
+			var u1: f32 = (1.0 - pow((1.0 - k1), 2.4));
+			var u2: f32 = (1.0 - pow((1.0 - k2), 2.0));
+			var p1: vec3f = (mix(aOrigin, cloud, u1) + (((curlNoise(((aOrigin * 2.0) + vec3f(0.0, (t * 0.4), 0.0))) * 0.12) * sc) * sin((k1 * 3.1415926535))));
+			var p2: vec3f = (mix(cloud, aTarget, u2) + ((((curlNoise(((cloud * 1.5) + vec3f((t * 0.3), 0.0, 0.0))) * 0.1) * sc) * sin((k2 * 3.1415926535))) * ((1.0 - k2))));
+			(*base) = select(p2, p1, (e < 0.5));
+		}
+		if ((sty == 5)) {
+			var fl5: f32 = (fr.uYR.x - 0.02);
+			var R5: f32 = (0.55 + (0.35 * sc));
+			var an5: f32 = (hA * 6.2831853);
+			var rr5: f32 = (sqrt(hB) * R5);
+			var hh5: f32 = ((pow(max(0.0, (1.0 - (rr5 / R5))), 0.85) * 0.85) * ((0.7 + (0.3 * hC))));
+			var heap: vec3f = vec3f((fr.uCen.x + (cos(an5) * rr5)), (fl5 + hh5), (fr.uCen.z + (sin(an5) * rr5)));
+			var k1: f32 = clamp((e / 0.5), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);
+			var fall: f32 = (k1 * k1);
+			var slide: f32 = (1.0 - pow((1.0 - k1), 2.0));
+			var p1: vec3f = vec3f(mix(aOrigin.x, heap.x, slide), mix(aOrigin.y, heap.y, fall), mix(aOrigin.z, heap.z, slide));
+			{ let _sw11 = (p1.xz + ((((vec2f(hA, hC) - 0.5)) * 0.06) * sin((k1 * 3.1415926535)))); p1 = vec3f(_sw11.x, p1.y, _sw11.y); }
+			var gr: f32 = ((k2 * k2) * ((3.0 - (2.0 * k2))));
+			var p2: vec3f = mix(heap, aTarget, gr);
+			p2.y += (((0.3 * sc) * sin((k2 * 3.1415926535))) * ((0.4 + hA)));
+			p2 += ((cn * 0.12) * sin((k2 * 3.1415926535)));
+			(*base) = select(p2, p1, (e < 0.5));
+		}
+		if ((sty == 2)) {
+			var fl: f32 = (fr.uYR.x - 0.04);
+			var h1: f32 = hA;
+			var h2: f32 = hB;
+			var h3: f32 = hC;
+			var dx: vec3f = normalize(((vec3f(aOrigin.x, 0.0, aOrigin.z) + (vec3f((h1 - 0.5), 0.0, (h2 - 0.5)) * 0.9)) + vec3f(1e-3, 0.0, 0.0)));
+			var spd: f32 = (((0.35 + (h3 * 1.1))) * sc);
+			var vy0: f32 = (((0.5 + (h2 * 1.3))) * sc);
+			var te: f32 = clamp((lt / 0.45), 0.0, 1.0);
+			var tau: f32 = (te * 1.6);
+			var gy: f32 = (fl + (h1 * 0.03));
+			var pl: vec3f = aOrigin;
+			{ let _sw12 = (pl.xz + (((dx.xz * spd) * ((1.0 - exp(-3.52)))) * 1.4)); pl = vec3f(_sw12.x, pl.y, _sw12.y); }
+			pl.y = gy;
+			var pf: vec3f = aOrigin;
+			{ let _sw13 = (pf.xz + (((dx.xz * spd) * ((1.0 - exp((-2.2 * tau))))) * 1.4)); pf = vec3f(_sw13.x, pf.y, _sw13.y); }
+			var g2: f32 = 2.1;
+			var disc: f32 = ((vy0 * vy0) + ((4.0 * g2) * max((aOrigin.y - gy), 0.0)));
+			var tL: f32 = (((vy0 + sqrt(disc))) / ((2.0 * g2)));
+			var yb: f32 = ((aOrigin.y + (vy0 * tau)) - ((g2 * tau) * tau));
+			if ((tau > tL)) {
+				var vI: f32 = (vy0 - ((2.0 * g2) * tL));
+				var v1: f32 = (-0.3 * vI);
+				var tb: f32 = (tau - tL);
+				yb = select(gy, ((gy + (v1 * tb)) - ((g2 * tb) * tb)), (tb < (v1 / g2)));
+			}
+			pf.y = mix(max(yb, gy), gy, smoothstep(0.9, 1.0, te));
+			var tg: f32 = clamp((((lt - 0.58)) / 0.42), 0.0, 1.0);
+			var eg: f32 = ((tg * tg) * ((3.0 - (2.0 * tg))));
+			var c2: vec3f = (((((pl + aTarget)) * 0.5) + vec3f(0.0, (0.5 + (0.6 * h2)), 0.0)) + ((cn * 0.2) * sc));
+			var og: f32 = (1.0 - eg);
+			var pg: vec3f = ((((og * og) * pl) + (((2.0 * og) * eg) * c2)) + ((eg * eg) * aTarget));
+			(*base) = select((select(pg, pl, (lt < 0.58))), pf, (lt < 0.45));
+		}
+		if ((sty == 6)) {
+			var hw4: f32;
+			var q4: vec3f = mix(aOrigin, aTarget, smoothstep(0.38, 0.62, e));
+			(*base) = hyperWarp(q4, fr.uCen, (1.3 * max(sc, 0.15)), select(0.0, 1.0, (fr.uMorphS.w > 1.05)), ((2.4 * sin((e * 3.1415926535))) * ((0.85 + (0.15 * hash11((aIdx * 2.7)))))), &hw4);
+			gHypW = hw4;
+			gHypF = max(gHypF, smoothstep(0.55, 0.97, hw4));
+		}
+		if ((sty == 7)) {
+			var co7: vec3f = (aOrigin - fr.uCen);
+			var ct7: vec3f = (aTarget - fr.uCen);
+			var d17: vec3f = normalize((co7 + vec3f(1e-3)));
+			var d27: vec3f = normalize((ct7 + vec3f(1e-3)));
+			var R7: f32 = (0.7 + (0.5 * sc));
+			var k1: f32 = clamp((e / 0.35), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.35)) / 0.3), 0.0, 1.0);
+			var k3: f32 = clamp((((e - 0.65)) / 0.35), 0.0, 1.0);
+			k1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));
+			k2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));
+			k3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));
+			if ((e < 0.35)) {
+				(*base) = mix(aOrigin, (fr.uCen + (d17 * R7)), k1);
+			} else if ((e < 0.65)) {
+				(*base) = (fr.uCen + (normalize((mix(d17, d27, k2) + vec3f(1e-3))) * R7));
+			} else {
+				(*base) = mix((fr.uCen + (d27 * R7)), aTarget, k3);
+			}
+			(*base) += (((normalize((((*base) - fr.uCen) + vec3f(1e-3))) * 0.05) * sin(((dot(d17, vec3f(5.0, 7.0, 3.0)) * 2.0) + (t * 3.0)))) * sin((clamp(e, 0.0, 1.0) * 3.1415926535)));
+		}
+		if ((sty == 8)) {
+			var ch8: f32 = hash11(dot(floor((((aOrigin - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));
+			var c8: vec3f = (mid + vec3f(0.0, (((0.35 + (0.8 * ch8))) * sc), 0.0));
+			(*base) = ((((om * om) * aOrigin) + (((2.0 * om) * e) * c8)) + ((e * e) * aTarget));
+		}
+		if ((sty == 9)) {
+			var q9a: vec3f = (aOrigin - fr.uCen);
+			var q9b: vec3f = (aTarget - fr.uCen);
+			var k1: f32 = clamp((e / 0.4), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.4)) / 0.2), 0.0, 1.0);
+			var k3: f32 = clamp((((e - 0.6)) / 0.4), 0.0, 1.0);
+			k1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));
+			k2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));
+			k3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));
+			var fa: vec3f = vec3f(0.0, q9a.y, q9a.z);
+			var fb: vec3f = vec3f(0.0, q9b.y, q9b.z);
+			if ((e < 0.4)) {
+				(*base) = (fr.uCen + mix(q9a, fa, k1));
+			} else if ((e < 0.6)) {
+				(*base) = (fr.uCen + mix(fa, fb, k2));
+			} else {
+				(*base) = (fr.uCen + mix(fb, q9b, k3));
+			}
+		}
+		if ((sty == 10)) {
+			var dz: f32 = (1.6 * max(sc, 0.3));
+			var RA: vec3f = (aOrigin + vec3f(0.0, 0.0, ((((gDepth - 0.5)) * dz) * fr.uMorphD.x)));
+			var RB: vec3f = (aTarget + vec3f(0.0, 0.0, ((((gDepth - 0.5)) * dz) * fr.uMorphD.y)));
+			var k1: f32 = clamp((e / 0.3), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.3)) / 0.4), 0.0, 1.0);
+			var k3: f32 = clamp((((e - 0.7)) / 0.3), 0.0, 1.0);
+			k1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));
+			k2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));
+			k3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));
+			var c10: vec3f = (((((RA + RB)) * 0.5) + vec3f(0.0, 0.0, ((((0.3 + gDepth)) * 0.7) * sc))) + ((cn * 0.25) * sc));
+			var o10: f32 = (1.0 - k2);
+			var mid10: vec3f = ((((o10 * o10) * RA) + (((2.0 * o10) * k2) * c10)) + ((k2 * k2) * RB));
+			if ((e < 0.3)) {
+				(*base) = mix(aOrigin, RA, k1);
+			} else if ((e < 0.7)) {
+				(*base) = mid10;
+			} else {
+				(*base) = mix(RB, aTarget, k3);
+			}
+		}
+		if ((sty == 11)) {
+			var head: vec3f = vec3f(fr.uCen.x, (fr.uYR.y + 0.45), fr.uCen.z);
+			var nozzle: vec3f = (aTarget + vec3f(0.0, 0.22, 0.0));
+			var k1: f32 = clamp((e / 0.55), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.55)) / 0.45), 0.0, 1.0);
+			var g11: vec3f = (mix(aOrigin, head, ((k1 * k1) * ((3.0 - (2.0 * k1))))) + (((cn * 0.15) * sc) * sin((k1 * 3.1415926535))));
+			var o11: f32 = (1.0 - k2);
+			var p11: vec3f = ((((o11 * o11) * head) + (((2.0 * o11) * k2) * vec3f(nozzle.x, head.y, nozzle.z))) + ((k2 * k2) * nozzle));
+			p11 = mix(p11, aTarget, smoothstep(0.85, 1.0, k2));
+			(*base) = select(p11, g11, (e < 0.55));
+		}
+		if ((sty == 12)) {
+			var a12: f32 = ((hA * 6.2831853) + (t * 2.4));
+			var ring: vec3f = (fr.uCen + ((vec3f(cos(a12), sin(a12), 0.0) * ((0.32 + (0.06 * hB)))) * ((0.6 + (0.4 * sc)))));
+			var k1: f32 = clamp((e / 0.5), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);
+			var qa: vec3f = (aOrigin - fr.uCen);
+			var qb: vec3f = (aTarget - fr.uCen);
+			var sw1: f32 = ((k1 * k1) * 5.0);
+			var sw2: f32 = ((((1.0 - k2)) * ((1.0 - k2))) * 5.0);
+			var ra: vec3f = (fr.uCen + vec3f(((qa.x * cos(sw1)) - (qa.y * sin(sw1))), ((qa.x * sin(sw1)) + (qa.y * cos(sw1))), qa.z));
+			var rb: vec3f = (fr.uCen + vec3f(((qb.x * cos(sw2)) - (qb.y * sin(sw2))), ((qb.x * sin(sw2)) + (qb.y * cos(sw2))), qb.z));
+			var p1: vec3f = mix(ra, ring, ((k1 * k1) * ((3.0 - (2.0 * k1)))));
+			var p2: vec3f = mix(ring, rb, ((k2 * k2) * ((3.0 - (2.0 * k2)))));
+			(*base) = select(p2, p1, (e < 0.5));
+		}
+		if ((sty == 13)) {
+			var ca: vec3f = ((((floor((((aOrigin - fr.uCen)) * 3.0)) + 0.5)) / 3.0) + fr.uCen);
+			var cb: vec3f = ((((floor((((aTarget - fr.uCen)) * 3.0)) + 0.5)) / 3.0) + fr.uCen);
+			var sa: f32 = hash11(dot(floor((((aOrigin - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));
+			var sb: f32 = hash11(dot(floor((((aTarget - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));
+			var k1: f32 = clamp((e / 0.6), 0.0, 1.0);
+			var k2: f32 = clamp((((1.0 - e)) / 0.6), 0.0, 1.0);
+			var da: vec3f = normalize((((ca - fr.uCen) + (vec3f((sa - 0.5), 0.3, 0.2) * 0.6)) + vec3f(1e-3)));
+			var db: vec3f = normalize((((cb - fr.uCen) + (vec3f((sb - 0.5), 0.3, 0.2) * 0.6)) + vec3f(1e-3)));
+			var ra: f32 = ((k1 * 3.1415926535) * ((0.8 + (1.6 * sa))));
+			var rb: f32 = ((k2 * 3.1415926535) * ((0.8 + (1.6 * sb))));
+			var la: vec3f = (aOrigin - ca);
+			var lb: vec3f = (aTarget - cb);
+			la = vec3f(((la.x * cos(ra)) - (la.y * sin(ra))), ((la.x * sin(ra)) + (la.y * cos(ra))), la.z);
+			lb = vec3f(((lb.x * cos(rb)) - (lb.y * sin(rb))), ((lb.x * sin(rb)) + (lb.y * cos(rb))), lb.z);
+			var P1: vec3f = (((ca + la) + ((((da * k1) * k1) * 1.3) * sc)) - vec3f(0.0, (((0.9 * k1) * k1) * k1), 0.0));
+			var P2: vec3f = (((cb + lb) + ((((db * k2) * k2) * 1.3) * sc)) - vec3f(0.0, (((0.9 * k2) * k2) * k2), 0.0));
+			(*base) = mix(P1, P2, smoothstep(0.42, 0.58, e));
+		}
+		if ((sty == 14)) {
+			var ab: vec3f = (aTarget - aOrigin);
+			var L14: f32 = length(ab);
+			var ax: vec3f = select(vec3f(0.0, 1.0, 0.0), (ab / L14), (L14 > 1e-4));
+			var n1: vec3f = normalize(cross(ax, select(vec3f(1.0, 0.0, 0.0), vec3f(0.0, 1.0, 0.0), (abs(ax.y) < 0.9))));
+			var n2: vec3f = cross(ax, n1);
+			var bund: f32 = ((floor((hA * 10.0)) / 10.0) * 6.2831853);
+			var nb: vec3f = ((n1 * cos(bund)) + (n2 * sin(bund)));
+			(*base) = (mix(aOrigin, aTarget, e) + ((((nb * sin((e * 3.1415926535))) * ((0.25 + (0.55 * L14)))) * sc) * ((0.85 + (0.3 * hB)))));
+		}
+		if ((abs(fr.uMorphD.z) > 0.001)) {
+			var sm: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));
+			var ra: f32 = ((fr.uMorphD.z * 6.2831853) * sm);
+			var q: vec3f = ((*base) - fr.uCen);
+			(*base) = (fr.uCen + vec3f(((q.x * cos(ra)) - (q.z * sin(ra))), q.y, ((q.x * sin(ra)) + (q.z * cos(ra)))));
+		}
+	}
+	if (((fr.uMorph < 0.9999) && (fr.uMorphO.w > 0.001))) {
+		(*base).z += ((((((gDepth - 0.5)) * 2.0) * fr.uMorphO.w) * sin((morphEase(morphLocal(aOrigin, aTarget, aIdx)) * 3.1415926535))) * ((0.6 + (0.4 * hash11((aIdx * 4.1))))));
+	}
+	if ((fr.uDepth.x > 0.001)) {
+		(*base) = depthShape((*base));
+	}
+	var rad: vec3f = normalize(((*base) + vec3f(1e-4)));
+	rad = normalize(mix(rad, vec3f(0.0, 0.0, 1.0), (0.8 * fr.uFlat)));
+	if (((fr.uAnimN > 0.5) && (dot(gNormal, gNormal) > 0.01))) {
+		rad = normalize(gNormal);
+	}
+	var pos: vec3f = (*base);
+	if ((fr.uCh.x > 0.001)) {
+		var chh: f32 = (max((fr.uYR.y - fr.uYR.x), 0.5) * 0.5);
+		var chk: f32 = ((1.5708 * fr.uCh.z) / chh);
+		var chq: vec3f = (((pos - fr.uCen)) * chk);
+		var chn: vec3f = select((select(rad, normalize(gNormal), (dot(gNormal, gNormal) > 0.01))), vec3f(0.0, 0.0, 1.0), (fr.uFlat > 0.5));
+		for (var ci: i32 = 0; (ci < 4); ci++) {
+			var cf: f32 = chField(chq);
+			var cg: vec3f = (vec3f((chField((chq + vec3f(0.02, 0.0, 0.0))) - cf), (chField((chq + vec3f(0.0, 0.02, 0.0))) - cf), (chField((chq + vec3f(0.0, 0.0, 0.02))) - cf)) / 0.02);
+			cg -= (chn * dot(cg, chn));
+			var cst: vec3f = ((-cf * cg) / max(dot(cg, cg), 0.01));
+			var csl: f32 = length(cst);
+			if ((csl > 0.7)) {
+				cst *= vec3f((0.7 / csl));
+			}
+			chq += cst;
+		}
+		var cfe: f32 = abs(chField(chq));
+		gChN = exp((-cfe * 5.0));
+		var ctk: f32 = floor((t * 30.0));
+		var cbz: vec3f = (((((vec3f(hash11(((aIdx * 3.1) + ctk)), hash11(((aIdx * 5.7) + ctk)), hash11(((aIdx * 1.3) + ctk))) - 0.5)) * ((1.0 - gChN))) * fr.uCh.w) * ((0.03 + (fr.uBeat * 0.05))));
+		pos = mix(pos, ((fr.uCen + (chq / chk)) + cbz), min(fr.uCh.x, 1.0));
+	}
+	if ((fr.uTwist.x > 0.001)) {
+		var y01t: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+		var tw: f32 = (fr.uTwist.x * ((1.0 + (select(0.0, (0.35 * sin(((t * fr.uTwist.z) * 2.0))), (fr.uTwist.z > 0.01))))));
+		if ((fr.uTwist.y < 0.5)) {
+			var a: f32 = ((pos.y * tw) * 1.6);
+			var c: f32 = cos(a);
+			var s: f32 = sin(a);
+			{ let _sw14 = (mat2x2f(c, -s, s, c) * pos.xz); pos = vec3f(_sw14.x, pos.y, _sw14.y); }
+		} else if ((fr.uTwist.y < 1.5)) {
+			pos.x += (((y01t * y01t) * tw) * 0.9);
+			pos.y -= ((((y01t * y01t) * y01t) * tw) * 0.16);
+		} else if ((fr.uTwist.y < 2.5)) {
+			{ let _sw15 = (pos.xz * vec2f((1.0 + (((tw * 0.6) * ((0.5 - y01t))) * 2.0)))); pos = vec3f(_sw15.x, pos.y, _sw15.y); }
+		} else if ((fr.uTwist.y < 3.5)) {
+			var sw: f32 = sin(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z)))));
+			pos.x += ((sw * tw) * 0.2);
+			pos.z += ((cos(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z))))) * tw) * 0.12);
+		} else {
+			{ let _sw16 = (pos.xz * vec2f((1.0 + ((tw * 0.3) * sin(((y01t * 6.2831) - (t * ((1.2 + fr.uTwist.z))))))))); pos = vec3f(_sw16.x, pos.y, _sw16.y); }
+		}
+	}
+	if ((fr.uWave.x > 0.001)) {
+		var wv: f32 = 0.0;
+		if ((fr.uWaveP.y < 0.5)) {
+			wv = sin((((distance((*base), fr.uWaveSrc.xyz) * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));
+		} else if ((fr.uWaveP.y < 1.5)) {
+			var age: f32 = (fr.uTime - fr.uWaveP.w);
+			if ((age > 0.0)) {
+				var d: f32 = distance((*base), fr.uWaveSrc.xyz);
+				var ring: f32 = ((age * fr.uWaveP.x) * 1.3);
+				wv = ((sin(((((d - ring)) * fr.uWave.y) * 2.6)) * exp((-abs((d - ring)) * 2.5))) * exp((-age * fr.uWaveP.z)));
+			}
+		} else if ((fr.uWaveP.y < 2.5)) {
+			var wd: vec3f = vec3f(cos(fr.uWaveSrc.w), 0.0, sin(fr.uWaveSrc.w));
+			wv = sin((((dot((*base), wd) * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));
+		} else if ((fr.uWaveP.y < 3.5)) {
+			var yw: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+			wv = sin((((atan2(((*base).z - fr.uCen.z), ((*base).x - fr.uCen.x)) * 3.0) + ((yw * fr.uWave.y) * 1.3)) - ((t * 3.0) * fr.uWaveP.x)));
+		} else {
+			wv = sin(((((*base).y * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));
+		}
+		pos += ((((rad * wv) * fr.uWave.x) * 0.14) * ((1.0 + (1.5 * fr.uFlat))));
+	}
+	if ((fr.uSpec.x > 0.001)) {
+		var y01s: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+		if ((fr.uSpec.y < 0.5)) {
+			pos += (((rad * textureSampleLevel(specTex, linSamp, vec2f((abs(atan2((*base).z, (*base).x)) / 3.1415926535), 0.5), 0.0).r) * fr.uSpec.x) * 0.7);
+		} else if ((fr.uSpec.y < 1.5)) {
+			pos += (((rad * textureSampleLevel(specTex, linSamp, vec2f(y01s, 0.5), 0.0).r) * fr.uSpec.x) * 0.7);
+		} else if ((fr.uSpec.y < 2.5)) {
+			var ub: f32 = (floor(((abs(atan2((*base).z, (*base).x)) / 3.1415926535) * fr.uSpecP.y)) / fr.uSpecP.y);
+			pos += (((rad * textureSampleLevel(specTex, linSamp, vec2f(ub, 0.5), 0.0).r) * fr.uSpec.x) * 0.8);
+		} else {
+			var xs: f32 = clamp((abs((*base).x) / 1.2), 0.0, 1.0);
+			pos.y += (((textureSampleLevel(specTex, linSamp, vec2f(xs, 0.5), 0.0).r * fr.uSpec.x) * 0.8) * ((0.35 + (0.65 * y01s))));
+		}
+	}
+	var pe: f32 = fr.uPulse.x;
+	if ((fr.uPulseP.x > 0.5)) {
+		var age: f32 = ((fr.uTime - fr.uPulseP.z) - (length((*base)) * fr.uPulseP.y));
+		var env: f32 = select(0.0, (exp(((-age * 3.2) * fr.uPulseP.w)) * smoothstep(0.0, 0.04, age)), (age > 0.0));
+		var age2: f32 = (age - 0.2);
+		env += select(0.0, ((0.55 * exp(((-age2 * 3.2) * fr.uPulseP.w))) * smoothstep(0.0, 0.04, age2)), (age2 > 0.0));
+		pe = ((fr.uPulse.x * env) * 1.6);
+		if ((fr.uPulseP.x > 1.5)) {
+			pos.y *= (1.0 + (pe * 0.2));
+			{ let _sw17 = (pos.xz * vec2f((1.0 - (pe * 0.11)))); pos = vec3f(_sw17.x, pos.y, _sw17.y); }
+			pe = 0.0;
+		}
+	}
+	pos += (((rad * pe) * 0.28) * ((1.0 + (1.5 * fr.uFlat))));
+	pos *= vec3f((1.0 + (pe * 0.1)));
+	if ((fr.uBlast.x > 0.001)) {
+		var age: f32 = (fr.uTime - fr.uBlast.w);
+		if ((age > 0.0)) {
+			var env: f32 = (exp((-age * fr.uBlast.y)) * cos(((age * fr.uBlast.y) * 3.0)));
+			var rnd: f32 = (0.45 + (0.55 * mix(1.0, hash11((aIdx * 7.1)), fr.uBlast.z)));
+			var dir: vec3f = normalize((rad + ((((vec3f(hash11(aIdx), hash11((aIdx + 1.0)), hash11((aIdx + 2.0))) - 0.5)) * 0.7) * fr.uBlast.z)));
+			pos += ((((dir * env) * rnd) * fr.uBlast.x) * 0.75);
+		}
+	}
+	if ((fr.uFlow.x > 0.001)) {
+		var fc: vec3f = curlNoise((((*base) * fr.uFlow.y) + vec3f(0.0, ((t * fr.uFlow.z) * 0.1), 0.0)));
+		var tg: vec3f = normalize(((fc - (rad * dot(fc, rad))) + vec3f(1e-4)));
+		tg = ((tg * cos(fr.uFlow.w)) + (cross(rad, tg) * sin(fr.uFlow.w)));
+		var ph: f32 = ((t * fr.uFlow.z) + (hash11((aIdx * 5.3)) * 6.2831));
+		pos += (((tg * sin(ph)) * fr.uFlow.x) * 0.24);
+	}
+	if (((fr.uMark.x > 3.5) && (fr.uMark.x < 5.5))) {
+		var mkd: f32 = markK((*base));
+		if ((fr.uMark.x < 4.5)) {
+			pos += ((rad * mkd) * 0.22);
+		} else {
+			pos = mix(pos, (((floor((pos / 0.06)) + 0.5)) * 0.06), smoothstep(0.0, 0.4, mkd));
+		}
+	}
+	if (((fr.uSliceM.x > 0.5) && (fr.uSliceM.x < 1.5))) {
+		pos += ((rad * sliceK((*base))) * fr.uSliceM.y);
+	}
+	var dk: f32 = disK((*base), aIdx);
+	if ((dk > 0.0)) {
+		var sc: f32 = fr.uDisQ.y;
+		var ds: f32 = fr.uDisP.x;
+		var y01d: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+		var cl: f32 = floor((aIdx * 1800.0));
+		var ch: f32 = hash11((cl * 0.731));
+		var ch2: f32 = hash11(((cl * 1.913) + 3.1));
+		var cd: vec3f = ((*base) - fr.uCen);
+		var outd: vec3f = (cd / ((length(cd) + 1e-3)));
+		var dsp: vec3f = select(((*base) * 1.8), (vec3f(hash11((aIdx * 1.7)), hash11((aIdx * 2.3)), hash11((aIdx * 3.1))) * 8.0), (fr.uAnimN > 0.5));
+		pos += ((((curlNoise((dsp + vec3f(0.0, (-t * 0.6), (t * 0.3)))) * dk) * fr.uDisT) * 0.22) * sc);
+		if ((ds < 0.5)) {
+			var wv: vec3f = vec3f(((fr.uDis.w * 1.4) + 0.2), (-fr.uDis.z * 0.5), 0.3);
+			var sp: f32 = (0.65 + (0.35 * sin(((y01d * 7.0) + (t * 0.8)))));
+			pos += (((((wv * dk) * dk) * 1.5) * sp) * sc);
+		} else if ((ds < 1.5)) {
+			pos.y += (((dk * dk) * ((0.7 + (0.5 * ch)))) * sc);
+			{ let _sw18 = (pos.xz + ((((vec2f(sin(((t * 1.5) + (ch * 6.0))), cos(((t * 1.3) + (ch * 5.0)))) * dk) * 0.1) * sc) + ((vec2f((fr.uDis.w * 0.5), 0.0) * dk) * sc))); pos = vec3f(_sw18.x, pos.y, _sw18.y); }
+		} else if ((ds < 2.5)) {
+			pos += ((((outd * dk) * 0.12) * sc) + vec3f(0.0, ((dk * 0.05) * sc), 0.0));
+		} else if ((ds < 3.5)) {
+			var band: f32 = floor(((y01d * 12.0) + 0.001));
+			var sg: f32 = select(-1.0, 1.0, (glsl_mod_f(band, 2.0) < 0.5));
+			pos.x += (((((sg * dk) * dk) * 1.7) * sc) + ((fr.uDis.w * dk) * 0.3));
+			pos.y -= ((((dk * dk) * fr.uDis.z) * 0.25) * sc);
+		} else if ((ds < 4.5)) {
+			var mv: vec3f = vec3f(((((ch - 0.5)) * 0.9) + (fr.uDis.w * 0.3)), 0.0, (((ch2 - 0.5)) * 0.9));
+			pos += ((mv * dk) * sc);
+			pos.y = max((pos.y - ((((dk * dk) * ((0.5 + fr.uDis.z))) * 1.8) * sc)), (fr.uYR.x + (ch * 0.05)));
+		} else if ((ds < 5.5)) {
+			pos.y = max((pos.y - ((((dk * dk) * ((0.5 + fr.uDis.z))) * 2.2) * sc)), (fr.uYR.x + (hash11((aIdx * 5.1)) * 0.05)));
+			pos.x += (((fr.uDis.w * dk) * 0.25) * sc);
+		} else if ((ds < 6.5)) {
+			var q: vec3f = ((*base) - fr.uCen);
+			var ang: f32 = (((dk * dk) * ((3.2 + (fr.uDis.w * 1.2)))) * sc);
+			var cs: f32 = cos(ang);
+			var sn: f32 = sin(ang);
+			{ let _sw19 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw19.x, q.y, _sw19.y); }
+			q *= vec3f((1.0 - ((0.9 * dk) * dk)));
+			pos = ((fr.uCen + q) + vec3f(0.0, (((dk * dk) * 0.45) * sc), 0.0));
+		} else {
+			pos += (((outd * pow(dk, 0.7)) * ((1.1 + (0.3 * ch)))) * sc);
+			pos.y -= ((((dk * dk) * fr.uDis.z) * 0.8) * sc);
+		}
+	}
+	if ((fr.uExp.x > 0.001)) {
+		var pid: f32 = floor((aIdx * fr.uExp.y));
+		var pc: vec3f = textureLoad(pieceTex, vec2i(vec2f((((pid + 0.5)) / 256.0), 0.5) * vec2f(textureDimensions(pieceTex))), 0).xyz;
+		var h1: f32 = hash11((pid * 1.7));
+		var h2: f32 = hash11((pid * 2.9));
+		var h3: f32 = hash11((pid * 4.1));
+		var od: vec3f = (pc - fr.uCen);
+		var dr: vec3f = normalize(((od + ((((vec3f(h1, h2, h3) - 0.5)) * 0.35) * ((length(od) + 0.3)))) + vec3f(1e-4)));
+		var ke: f32 = clamp((((fr.uExp.x - (h2 * fr.uExp.z))) / max((1.0 - fr.uExp.z), 0.2)), 0.0, 1.0);
+		ke = ((ke * ke) * ((3.0 - (2.0 * ke))));
+		var ax: vec3f = normalize((vec3f((h1 - 0.5), (h3 - 0.5), (h2 - 0.5)) + vec3f(1e-3)));
+		var ang: f32 = (((ke * ((h3 - 0.5))) * 3.0) * fr.uExp.w);
+		var qe: vec3f = (pos - pc);
+		qe = (((qe * cos(ang)) + (cross(ax, qe) * sin(ang))) + ((ax * dot(ax, qe)) * ((1.0 - cos(ang)))));
+		pos = ((pc + qe) + (((dr * ke) * fr.uExpP.x) * ((0.5 + (0.5 * h1)))));
+	}
+	if ((fr.uGrowP.z > 0.5)) {
+		gGrow = growK((*base), aIdx);
+		gGrowE = ((gGrow * ((1.0 - gGrow))) * 4.0);
+		pos += (((rad * gGrowE) * fr.uGrowP.x) * 0.12);
+		var yG: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+		{ let _sw20 = (pos.xz + ((((vec2f(sin(((t * 1.2) + (yG * 5.0))), cos(((t * 0.9) + (yG * 4.0)))) * 0.018) * fr.uGrowP.y) * gGrow) * ((0.3 + yG)))); pos = vec3f(_sw20.x, pos.y, _sw20.y); }
+	}
+	{
+		for (var ji: i32 = 0; (ji < 3); ji++) {
+			var jage: f32 = (fr.uTime - fr.uJel[ji].w);
+			if (((jage < 0.0) || (jage > 7.0))) {
+				continue;
+			}
+			var jd: f32 = distance((*base), fr.uJelO[ji].xyz);
+			var ja: f32 = (jage - (jd * 0.45));
+			if ((ja < 0.0)) {
+				continue;
+			}
+			var env: f32 = (exp((-ja * fr.uJelP.y)) * sin((ja * fr.uJelP.x)));
+			pos += (((fr.uJel[ji].xyz * env) * fr.uJelP.z) * 0.35);
+			pos += ((((((((*base) - fr.uJelO[ji].xyz)) * env) * fr.uJelP.w) * fr.uJelP.z) * 0.16) * length(fr.uJel[ji].xyz));
+		}
+	}
+	if ((fr.uGrav.x > 0.001)) {
+		var gq: vec3f = (pos - fr.uGravP.xyz);
+		var gr: f32 = (length(gq) + 1e-3);
+		var gin: f32 = (1.0 - smoothstep((fr.uGravP.w * 0.7), (fr.uGravP.w * 1.7), gr));
+		var ga: f32 = smoothstep(0.0, 1.0, clamp((fr.uGrav.x * gin), 0.0, 1.0));
+		var up: vec3f = normalize(vec3f((sin(fr.uGravT.x) * cos(fr.uGravT.y)), cos(fr.uGravT.x), (sin(fr.uGravT.x) * sin(fr.uGravT.y))));
+		var ref_: vec3f = select(vec3f(1.0, 0.0, 0.0), vec3f(0.0, 1.0, 0.0), (abs(up.y) < 0.99));
+		var e1: vec3f = normalize(cross(ref_, up));
+		var e2: vec3f = cross(up, e1);
+		var lx: f32 = dot(gq, e1);
+		var lh: f32 = dot(gq, up);
+		var lz: f32 = dot(gq, e2);
+		if ((fr.uGrav.y < 0.5)) {
+			var ph0: f32 = ((t * fr.uGrav.z) * 0.45);
+			var ang: f32 = (ga * (((ph0 * 0.8) + ((1.3 * sin((ph0 * 0.6))) / ((0.5 + gr))))));
+			var ca: f32 = cos(ang);
+			var sa: f32 = sin(ang);
+			var nx: f32 = ((lx * ca) - (lz * sa));
+			var nz: f32 = ((lx * sa) + (lz * ca));
+			var az: f32 = atan2(nz, nx);
+			lh = ((lh * ((1.0 - (fr.uGrav.w * ga)))) + (((0.07 * gr) * sin(((az * 2.0) + (t * 0.4)))) * ga));
+			var arm: f32 = sin((((2.0 * az) - (3.4 * log((gr + 0.15)))) + (t * 0.25)));
+			var ar: f32 = (1.0 + (((0.2 * arm) * ga) * fr.uGrav.w));
+			lx = (nx * ar);
+			lz = (nz * ar);
+		} else if ((fr.uGrav.y < 1.5)) {
+			var h1: f32 = hash11((aIdx * 91.7));
+			var ph: f32 = fract((((t * 0.16) * fr.uGrav.z) + h1));
+			var sg: f32 = select(-1.0, 1.0, (h1 > 0.5));
+			var r0: f32 = max(gr, 0.08);
+			if (((ph < 0.8) || (fr.uGravT.w < 0.01))) {
+				var s: f32 = clamp((ph / 0.8), 0.0, 1.0);
+				var rr: f32 = ((r0 * pow((1.0 - s), 1.6)) + 0.03);
+				var ang: f32 = (((s * s) * 11.0) * ga);
+				var az0: f32 = atan2(lz, lx);
+				var flt: f32 = (1.0 - ((fr.uGrav.w * s) * ga));
+				var ha: f32 = (lh * flt);
+				var k: f32 = mix(1.0, (rr / r0), ga);
+				var rl: f32 = (length(vec2f(lx, lz)) * k);
+				lx = (cos((az0 + ang)) * rl);
+				lz = (sin((az0 + ang)) * rl);
+				lh = (ha * mix(1.0, (rr / r0), ga));
+			} else {
+				var u: f32 = (((ph - 0.8)) / 0.2);
+				var len: f32 = ((((fr.uGravT.w * ((0.4 + (h1 * 0.9)))) * u) * u) * ga);
+				var az0: f32 = (atan2(lz, lx) + (t * 2.0));
+				lx = ((cos(az0) * 0.05) * ((1.0 - (u * 0.5))));
+				lz = ((sin(az0) * 0.05) * ((1.0 - (u * 0.5))));
+				lh = (sg * ((0.08 + len)));
+			}
+		} else if ((fr.uGrav.y > 3.5)) {
+			var rr0: f32 = length(vec2f(lx, lz));
+			var ringN: f32 = floor((rr0 * 5.0));
+			var rr1: f32 = mix(rr0, (((ringN + 0.5)) / 5.0), (ga * 0.85));
+			var dirR: f32 = select(-1.0, 1.0, (glsl_mod_f(ringN, 2.0) < 0.5));
+			var az1: f32 = (atan2(lz, lx) + ((((dirR * t) * fr.uGrav.z) * ((0.25 + (0.5 / ((0.4 + rr1)))))) * ga));
+			lx = (cos(az1) * rr1);
+			lz = (sin(az1) * rr1);
+			lh = (lh * ((1.0 - (fr.uGrav.w * ga))));
+		} else if ((fr.uGrav.y > 2.5)) {
+			var q: vec3f = (((e1 * lx) + (up * lh)) + (e2 * lz));
+			var ax: vec3f = normalize((vec3f((hash11((aIdx * 13.1)) - 0.5), (hash11((aIdx * 7.7)) - 0.5), (hash11((aIdx * 3.3)) - 0.5)) + vec3f(1e-3)));
+			var ang: f32 = ((((t * fr.uGrav.z) * ((0.7 + (1.6 / ((gr + 0.3)))))) * ga) * ((0.6 + (0.8 * hash11((aIdx * 5.9))))));
+			q = (((q * cos(ang)) + (cross(ax, q) * sin(ang))) + ((ax * dot(ax, q)) * ((1.0 - cos(ang)))));
+			q *= vec3f((1.0 + (((fr.uGravT.z * 0.3) * ga) * sin(((t * 0.8) + (aIdx * 40.0))))));
+			lx = dot(q, e1);
+			lh = dot(q, up);
+			lz = dot(q, e2);
+		} else {
+			var sd: f32 = (aIdx * 61.0);
+			var ang: f32 = (((0.14 * fr.uGrav.z) * t) * ga);
+			var ca: f32 = cos(ang);
+			var sa: f32 = sin(ang);
+			var nx: f32 = ((lx * ca) - (lz * sa));
+			var nz: f32 = ((lx * sa) + (lz * ca));
+			var amp: f32 = (0.4 + (fr.uGravT.z * 1.2));
+			lx = (nx + (((ga * 0.12) * amp) * sin((((t * 0.55) * fr.uGrav.z) + (sd * 1.3)))));
+			lz = (nz + (((ga * 0.12) * amp) * cos((((t * 0.5) * fr.uGrav.z) + (sd * 0.8)))));
+			lh += (((ga * 0.2) * amp) * sin((((t * 0.7) * fr.uGrav.z) + sd)));
+			var br: f32 = (1.0 + (((0.2 * amp) * ga) * ((0.5 + (0.5 * sin((((t * 0.35) * fr.uGrav.z) + (sd * 0.4))))))));
+			lx *= br;
+			lz *= br;
+			lh *= br;
+		}
+		pos = (((fr.uGravP.xyz + (e1 * lx)) + (up * lh)) + (e2 * lz));
+	}
+	if ((fr.uCurl.x > 0.001)) {
+		var ca: f32 = (pow(fr.uCurl.x, 1.45) * 0.055);
+		var thr: f32 = ((snoise((((*base) * 1.8) + (t * 0.3))) * 0.5) + 0.5);
+		var det: f32 = smoothstep(0.35, 0.85, (thr + (min(fr.uCurl.x, 1.0) * 0.12)));
+		var cn: vec3f = ((curlNoise((((*base) * fr.uCurl.y) + (vec3f((t * 0.4), (t * 0.3), (t * 0.5)) * fr.uCurlP.x))) * det) * ca);
+		if ((fr.uCurlP.z > 1.5)) {
+			var yc: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+			var band: f32 = floor(((yc * 8.0) + 0.001));
+			var sg: f32 = select(-1.0, 1.0, (glsl_mod_f(band, 2.0) < 0.5));
+			var ang: f32 = (((sg * sin((((t * fr.uCurlP.x) * 0.7) + (band * 0.8)))) * min(fr.uCurl.x, 2.0)) * 0.55);
+			var q: vec3f = (pos - fr.uCen);
+			var cs: f32 = cos(ang);
+			var sn: f32 = sin(ang);
+			{ let _sw21 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw21.x, q.y, _sw21.y); }
+			pos = (fr.uCen + q);
+			cn = vec3f(0.0);
+		} else if ((fr.uCurlP.z > 0.5)) {
+			var fd: vec3f = vec3f(cos(fr.uCurlP.y), 0.35, sin(fr.uCurlP.y));
+			var ph: f32 = (0.5 + (0.5 * sin((((t * fr.uCurlP.x) * 0.7) + (hash11((aIdx * 3.7)) * 6.2831)))));
+			cn += ((((fd * ph) * det) * ca) * 0.9);
+		}
+		pos += cn;
+	}
+	if ((fr.uGlitch.x > 0.001)) {
+		var yg: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+		var spd: f32 = fr.uGlitchP.y;
+		var cyc: f32 = ((t * spd) * 1.1);
+		var bst: f32 = (step(0.55, hash11(((floor(cyc) * 3.17) + 1.3))) * ((1.0 - smoothstep(0.0, 0.4, fract(cyc)))));
+		gBurst = bst;
+		var I: f32 = (fr.uGlitch.x * ((0.55 + (((0.5 + (fr.uGlitchP.w * 1.6))) * bst))));
+		var gm: f32 = fr.uGlitchP.z;
+		var tick: f32 = floor(((t * 10.0) * spd));
+		var hit: bool = false;
+		if ((gm < 0.5)) {
+			var band: f32 = floor((yg * fr.uGlitch.y));
+			var r: f32 = hash11(((band * 13.7) + tick));
+			if ((r > 0.55)) {
+				var shf: f32 = (((((r - 0.5)) * 2.4) * ((hash11((band + 7.0)) - 0.5))) * I);
+				pos.x += (shf * ((1.0 + fr.uFlat)));
+				pos.z += (((shf * 1.6) * ((hash11((band + 3.0)) - 0.5))) * ((1.0 + fr.uFlat)));
+				hit = true;
+			}
+		} else if ((gm < 1.5)) {
+			var cell: vec3f = floor(((*base) * vec3f(4.0, (fr.uGlitch.y * 0.35), 4.0)));
+			var r: f32 = hash11((dot(cell, vec3f(12.9, 78.2, 37.7)) + (tick * 1.7)));
+			if ((r > 0.62)) {
+				var hv: vec3f = (vec3f(hash11((r * 91.0)), hash11((r * 57.0)), hash11((r * 33.0))) - 0.5);
+				pos += ((((hv * ((r - 0.55))) * 1.6) * I) * vec3f(1.0, 0.35, 1.0));
+				hit = true;
+			}
+		} else {
+			var row: f32 = floor(((yg * fr.uGlitch.y) * 3.0));
+			var r: f32 = hash11(((row * 5.3) + (tick * 2.3)));
+			if ((r > 0.8)) {
+				pos.x += (((((hash11(((row * 9.1) + tick)) - 0.5)) * 2.4) * I) * ((1.0 + fr.uFlat)));
+				hit = true;
+			}
+			pos.x += ((((hash11((row + tick)) - 0.5)) * 0.02) * I);
+		}
+		if (hit) {
+			gGl = I;
+			if ((fr.uGlitchP.x > 0.5)) {
+				var chn: f32 = floor((hash11(((aIdx * 17.3) + tick)) * 3.0));
+				pos.x += ((((chn - 1.0)) * 0.09) * I);
+				gCh = chn;
+			}
+		}
+		gDrop = (step(hash11(((aIdx * 3.7) + tick)), (((fr.uGlitch.z * 0.4) * bst) * fr.uGlitch.x)) * hit2(hit));
+	}
+	if ((fr.uVoxel.x > 0.01)) {
+		var vm: f32 = fr.uVoxelP.x;
+		var amp: f32 = fr.uVoxelP.w;
+		var g: f32 = (mix(0.3, mix(0.035, 0.07, fr.uFlat), clamp(fr.uVoxel.x, 0.0, 1.0)) * fr.uVoxelP.z);
+		if (((vm > 1.5) && (vm < 2.5))) {
+			g *= (1.0 + (0.35 * sin(((t * fr.uVoxelP.y) * 2.0))));
+		}
+		var cell: vec3f = floor((pos / g));
+		var q: vec3f = (((cell + 0.5)) * g);
+		if (((vm > 0.5) && (vm < 1.5))) {
+			var h2: f32 = hash11(dot(cell, vec3f(12.9, 78.2, 37.7)));
+			q.y += ((((((h2 - 0.5)) * g) * 2.0) * amp) * sin((((t * fr.uVoxelP.y) * 1.5) + (h2 * 6.2831))));
+		} else if (((vm > 2.5) && (vm < 3.5))) {
+			q.y += (((sin(((dot(cell.xz, vec2f(0.7, 0.5)) * 0.55) - ((t * fr.uVoxelP.y) * 2.0))) * g) * 1.6) * amp);
+		} else if (((vm > 3.5) && (vm < 4.5))) {
+			var stp: f32 = ((g * 2.0) * max(amp, 0.3));
+			q.y = ((((floor((((pos.y - fr.uYR.x)) / stp)) + 0.5)) * stp) + fr.uYR.x);
+		} else if ((vm > 4.5)) {
+			var hv: vec3f = (vec3f(hash11(dot(cell, vec3f(12.9, 78.2, 37.7))), hash11(dot(cell, vec3f(39.3, 11.1, 52.7))), hash11(dot(cell, vec3f(7.7, 91.3, 23.9)))) - 0.5);
+			q += ((((hv * g) * 3.0) * amp) * ((0.5 + (0.5 * sin((((t * fr.uVoxelP.y) * 2.0) + (hv.x * 12.0)))))));
+		}
+		q.z += (((fr.uFlat * ((gLum - 0.5))) * g) * 9.0);
+		pos = mix(pos, q, smoothstep(0.0, 0.25, fr.uVoxel.x));
+	}
+	if ((fr.uJitter.x > 0.001)) {
+		pos += ((vec3f(sin(((t * 17.0) + (aIdx * 91.0))), sin(((t * 13.0) + (aIdx * 57.0))), sin(((t * 11.0) + (aIdx * 33.0)))) * fr.uJitter.x) * 0.03);
+	}
+	if ((fr.uHyp.x > 0.001)) {
+		var hw: f32;
+		var hp: vec3f = hyperWarp(pos, fr.uCen, (1.25 / max(fr.uHyp.w, 0.05)), fr.uHyp.z, (fr.uHyp.y - (fr.uTOff * fr.uHypP.w)), &hw);
+		var hk: f32 = min(fr.uHyp.x, 1.0);
+		pos = mix(pos, hp, hk);
+		gHypW = hw;
+		gHypF = (smoothstep(mix(0.99, 0.6, fr.uHypP.z), 0.997, hw) * hk);
+	}
+	(*maskV) = 1.0;
+	if ((fr.uMask.x > 0.5)) {
+		var y01: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+		var soft: f32 = max(fr.uMask.z, 0.02);
+		if ((fr.uMask.x < 1.5)) {
+			(*maskV) = smoothstep((fr.uMaskA.x - (soft * 0.5)), (fr.uMaskA.x + (soft * 0.5)), y01);
+		} else if ((fr.uMask.x < 2.5)) {
+			var r: f32 = ((fr.uMask.y * 1.6) + 0.01);
+			(*maskV) = (1.0 - smoothstep((r * ((1.0 - soft))), r, distance((*base), fr.uMaskA.xyz)));
+		} else if ((fr.uMask.x < 3.5)) {
+			var n: f32 = ((snoise((((*base) * 1.6) + vec3f(0.0, fr.uMaskA.w, (fr.uMaskA.w * 0.6)))) * 0.5) + 0.5);
+			(*maskV) = smoothstep(((1.0 - fr.uMask.y) - (soft * 0.3)), ((1.0 - fr.uMask.y) + (soft * 0.3)), n);
+		} else {
+			var w: f32 = ((fr.uMask.y * 0.35) + 0.004);
+			(*maskV) = (1.0 - smoothstep(w, ((w + (soft * 0.3)) + 0.02), abs((y01 - fr.uMaskA.x))));
+		}
+		if ((fr.uMask.w > 0.5)) {
+			(*maskV) = (1.0 - (*maskV));
+		}
+	}
+	pos = mix((*base), pos, (*maskV));
+	if ((fr.uContact.x > 0.001)) {
+		for (var i: i32 = 0; (i < 16); i++) {
+			if ((f32(i) >= fr.uContact.w)) {
+				break;
+			}
+			contactAt(fr.uTrk[i].xyz, fr.uTrk[i].w, (*base), rad, &pos);
+		}
+		for (var i: i32 = 0; (i < 32); i++) {
+			if ((f32(i) >= fr.uShockP.z)) {
+				break;
+			}
+			contactAt(fr.uImp[i].xyz, fr.uImp[i].w, (*base), rad, &pos);
+		}
+	}
+	if ((fr.uShockP.x > 0.001)) {
+		for (var i: i32 = 0; (i < 4); i++) {
+			var age: f32 = fr.uShock[i].w;
+			if ((age < 0.0)) {
+				continue;
+			}
+			var dist: f32 = distance((*base), fr.uShock[i].xyz);
+			var x: f32 = (((dist - (age * fr.uShockP.y))) / 0.22);
+			pos += ((((rad * exp((-x * x))) * exp((-age * 0.9))) * fr.uShockP.x) * 0.45);
+		}
+	}
+	if ((fr.uBrushParam.x > 0.001)) {
+		for (var i: i32 = 0; (i < 20); i++) {
+			var age: f32 = fr.uBrushHits[i].w;
+			if ((age < 0.0)) {
+				continue;
+			}
+			var dist: f32 = distance((*base), fr.uBrushHits[i].xyz);
+			var r: f32 = fr.uBrushParam.y;
+			if ((dist < r)) {
+				var life: f32 = (1.0 - (age / fr.uBrushParam.z));
+				var infl: f32 = ((((1.0 - (dist / r))) * life) * fr.uBrushParam.x);
+				pos += ((rad * infl) * 0.35);
+			}
+		}
+	}
+	if ((fr.uPhysics.x > 0.001)) {
+		var seed: f32 = hash11(((aIdx * 1234.56) + 17.1));
+		var seed2: f32 = hash11(((aIdx * 2345.67) + 39.3));
+		var seed3: f32 = hash11(((aIdx * 3456.78) + 81.7));
+		var yP: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+		var onset: f32 = (((((1.0 - yP)) * fr.uPhysP.y) * 1.3) + (seed * 0.3));
+		var pt: f32 = max(0.0, (fr.uCollapseTime - onset));
+		var radd: vec3f = normalize(((*base) + vec3f(1e-3)));
+		var tang: vec3f = normalize((vec3f(-(*base).z, 0.0, (*base).x) + vec3f(1e-3, 0.0, 0.0)));
+		var v0: vec3f = ((((radd * ((0.5 + (seed * 1.1)))) + ((tang * fr.uPhysP.z) * ((0.3 + (seed3 * 0.9)))))) * fr.uPhysP.x);
+		var vy0: f32 = (((0.5 + (seed2 * 1.0))) * fr.uPhysP.x);
+		var g: f32 = (fr.uPhysics.y * 3.8);
+		var floorY: f32 = (fr.uYR.x - 0.04);
+		var drag: f32 = (1.0 - exp((-pt * 1.5)));
+		var pPhys: vec3f = (*base);
+		pPhys.x += (((v0.x * drag) / 1.5) + ((fr.uPhysics.w * 0.5) * drag));
+		pPhys.z += ((v0.z * drag) / 1.5);
+		var h0: f32 = max(((*base).y - floorY), 0.0);
+		var vimp: f32 = sqrt(((vy0 * vy0) + ((2.0 * g) * h0)));
+		var t1: f32 = (((vy0 + vimp)) / g);
+		var yy: f32;
+		if ((pt < t1)) {
+			yy = (((*base).y + (vy0 * pt)) - (((0.5 * g) * pt) * pt));
+		} else {
+			var tt: f32 = (pt - t1);
+			var vy: f32 = (vimp * fr.uPhysics.z);
+			var hh: f32 = 0.0;
+			for (var b: i32 = 0; (b < 4); b++) {
+				var T: f32 = ((2.0 * vy) / g);
+				if ((tt < T)) {
+					hh = ((vy * tt) - (((0.5 * g) * tt) * tt));
+					break;
+				}
+				tt -= T;
+				vy *= fr.uPhysics.z;
+			}
+			yy = (floorY + max(hh, 0.0));
+		}
+		pPhys.y = max(yy, floorY);
+		var spinA: f32 = (((((1.0 - exp((-pt * 1.2)))) * fr.uPhysP.z) * ((seed2 - 0.5))) * 2.0);
+		var sq: vec2f = pPhys.xz;
+		var cs: f32 = cos(spinA);
+		var sn: f32 = sin(spinA);
+		{ let _sw22 = vec2f(((sq.x * cs) - (sq.y * sn)), ((sq.x * sn) + (sq.y * cs))); pPhys = vec3f(_sw22.x, pPhys.y, _sw22.y); }
+		var strength: f32 = min(1.0, fr.uPhysics.x);
+		var target_: vec3f = mix(pos, pPhys, strength);
+		if ((fr.uAsm > 0.0)) {
+			var s0: f32 = ((yP * 0.42) + (seed * 0.2));
+			var sA: f32 = clamp(((((fr.uAsm * 1.4) - s0)) / 0.55), 0.0, 1.0);
+			var eA: f32 = ((sA * sA) * ((3.0 - (2.0 * sA))));
+			var side: vec3f = normalize((cross((pPhys - pos), vec3f(0.0, 1.0, 0.0)) + vec3f(1e-3)));
+			target_ = mix(target_, pos, eA);
+			target_ += (((side * sin((eA * 3.14159))) * 0.45) * ((seed3 - 0.3)));
+			target_.y += ((sin((eA * 3.14159)) * 0.5) * ((0.4 + seed)));
+		}
+		pos = target_;
+	}
+	if ((fr.uHandP.x > 0.001)) {
+		for (var i: i32 = 0; (i < 12); i++) {
+			if ((f32(i) >= fr.uHandP.w)) {
+				break;
+			}
+			var hd: vec3f = (pos - fr.uHand[i].xyz);
+			var r: f32 = fr.uHandP.y;
+			var d2: f32 = dot(hd, hd);
+			if ((d2 < (r * r))) {
+				var f: f32 = (1.0 - (sqrt(d2) / r));
+				f = ((f * f) * ((3.0 - (2.0 * f))));
+				var hs: f32 = fr.uHand[i].w;
+				if ((hs > 1.5)) {
+					hs -= 2.0;
+					var a: f32 = (((f * hs) * fr.uHandP.x) * 2.6);
+					var ca: f32 = cos(a);
+					var sa: f32 = sin(a);
+					var q: vec2f = (pos.xz - fr.uHand[i].xz);
+					{ let _sw23 = (fr.uHand[i].xz + vec2f(((q.x * ca) - (q.y * sa)), ((q.x * sa) + (q.y * ca)))); pos = vec3f(_sw23.x, pos.y, _sw23.y); }
+					pos.y += (((f * hs) * fr.uHandP.x) * 0.12);
+				} else {
+					pos += ((((normalize((hd + vec3f(1e-3))) * f) * hs) * fr.uHandP.x) * 0.75);
+				}
+			}
+		}
+	}
+	if (((fr.uMouseOn > 0.5) && (fr.uCursor.x > 0.001))) {
+		var tm: vec3f = (pos - fr.uMouse);
+		var r2: f32 = (fr.uCursor.y * fr.uCursor.y);
+		var d2: f32 = dot(tm, tm);
+		if ((d2 < r2)) {
+			var f: f32 = (1.0 - (d2 / r2));
+			if ((fr.uCursor.z > 1.5)) {
+				var vax: vec3f = normalize((vec3f(fr.modelViewMatrix[0][2], fr.modelViewMatrix[1][2], fr.modelViewMatrix[2][2]) + vec3f(1e-5)));
+				var ca: f32 = (((f * f) * fr.uCursor.x) * 2.2);
+				var cc: f32 = cos(ca);
+				var cs: f32 = sin(ca);
+				pos = (((fr.uMouse + (tm * cc)) + (cross(vax, tm) * cs)) + ((vax * dot(vax, tm)) * ((1.0 - cc))));
+			} else {
+				pos += (((((normalize((tm + vec3f(1e-3))) * f) * f) * fr.uCursor.x) * 0.6) * fr.uCursor.z);
+			}
+		}
+	}
+	return pos;
+}
+
+fn main_() {
+	if ((aHide > 0.5)) {
+		gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);
+		gl_PointSize = 0.0;
+		vColor = vec3f(0.0);
+		vD = 0.0;
+		vCoc = 0.0;
+		vGl = 0.0;
+		return;
+	}
+	var frCol: vec3f = vec3f(1.0);
+	var frNrm: vec3f = vec3f(0.0, 0.0, 1.0);
+	var frLift: f32 = 0.0;
+	var frAp: f32 = -1.0;
+	var frDep: f32 = 0.5;
+	if ((fr.uFr.x > 0.5)) {
+		var fk: f32;
+		var fcell: vec2f;
+		var fp: vec3f = frBlockPos(aIdx, &frNrm, &fk, &fcell);
+		frAp = (((fcell.y + (fcell.x / fr.uFr2.x))) / fr.uFr2.y);
+		var tcol: vec3f;
+		var sh: vec4f = frShow(fk, &tcol);
+		var cull: bool = (sh.x < 0.02);
+		if (((fr.uAdd < 0.5) && (sh.x < 1.0))) {
+			if ((fract((sin((dot(fcell, vec2f(39.346, 11.135)) + (fk * 1.713))) * 24634.6345)) > sh.x)) {
+				cull = true;
+			}
+		}
+		if ((fr.uAdd < 0.5)) {
+			sh.x = 1.0;
+		}
+		if (((fr.uHero.w > 0.5) && (abs((fk - floor((fr.uFr4.x + 0.5)))) < 0.1))) {
+			cull = true;
+		}
+		var dl: f32 = abs((fk - fr.uFr4.x));
+		var keep: f32 = mix(1.0, clamp((1.0 / ((1.0 + (dl * 0.45)))), 0.08, 1.0), fr.uFr5.y);
+		var hs: f32 = fract((sin((dot(fcell, vec2f(12.9898, 78.233)) + (fk * 0.731))) * 43758.5453));
+		if (((dl > 0.5) && (hs > keep))) {
+			cull = true;
+		}
+		if ((fr.uFr7.x < 0.999)) {
+			var tx: f32 = (dl / max((fr.uFr7.x * fr.uFr.y), 1.0));
+			if (((tx >= 1.0) || (hs > (1.0 - smoothstep(min((1.0 - fr.uFr7.z), 0.999), 1.0, tx))))) {
+				cull = true;
+			}
+		}
+		if (cull) {
+			gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);
+			gl_PointSize = 0.0;
+			vColor = vec3f(0.0);
+			vD = 0.0;
+			vCoc = 0.0;
+			vGl = 0.0;
+			return;
+		}
+		var layer: i32 = i32(glsl_mod_f((fk + fr.uFr5.x), fr.uFr.y));
+		var fc: vec3f = textureLoad(frTex, vec3i(i32(fcell.x), i32(fcell.y), layer).xy, vec3i(i32(fcell.x), i32(fcell.y), layer).z, 0).rgb;
+		fc = min((fc * fr.uFr5.w), vec3f(1.6));
+		if ((abs(fr.uFr7.y) > 0.001)) {
+			fc = max(mix(vec3f(dot(fc, vec3f(0.3, 0.59, 0.11))), fc, (1.0 + (fr.uFr7.y * (select(1.0, 2.0, (fr.uFr7.y > 0.0)))))), vec3f(0.0));
+		}
+		if ((fr.uFr6.z > 0.5)) {
+			var lt: f32 = pow(dot(fc, vec3f(0.3, 0.59, 0.11)), 0.4545);
+			if (select((lt > fr.uFr6.w), (lt < fr.uFr6.w), (fr.uFr6.z < 1.5))) {
+				gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);
+				gl_PointSize = 0.0;
+				vColor = vec3f(0.0);
+				vD = 0.0;
+				vCoc = 0.0;
+				vGl = 0.0;
+				return;
+			}
+		}
+		var l: f32 = dot(fc, vec3f(0.3, 0.59, 0.11));
+		frCol = ((((fc * ((1.0 - sh.z))) + ((tcol * ((0.35 + (l * 1.6)))) * sh.z))) * sh.x);
+		frLift = sh.y;
+		if ((fr.uDepth.x > 0.001)) {
+			frDep = textureLoad(frTex, vec3i(i32(fcell.x), i32(fcell.y), layer).xy, vec3i(i32(fcell.x), i32(fcell.y), layer).z, 0).a;
+			frDep = pow(max(clamp((((((frDep - 0.5)) * fr.uDepthQ.z) + 0.5) + fr.uDepthQ.y), 0.0, 1.0), 1e-4), fr.uDepthQ.w);
+			var dkeep: f32 = mix(fr.uFr7.w, 1.0, (1.0 - clamp(abs((fk - fr.uFr4.x)), 0.0, 1.0)));
+			frDep = mix(fr.uDepth.w, frDep, dkeep);
+		}
+	}
+	var base: vec3f;
+	var maskV: f32;
+	gDepth = select(aDepth, frDep, (fr.uFr.x > 0.5));
+	gNormal = aNormal;
+	gLum = select(dot(aColor, vec3f(0.3, 0.59, 0.11)), dot(frCol, vec3f(0.3, 0.59, 0.11)), (fr.uFr.x > 0.5));
+	if ((fr.uScope.x > 0.001)) {
+		var rv: bool = (fr.uScope.y > 1.5);
+		var cm: f32 = select(fr.uScope.y, (fr.uScope.y - 2.0), rv);
+		var ap0: f32 = select(aPath, frAp, (frAp >= 0.0));
+		var ap: f32 = select(ap0, (1.0 - ap0), rv);
+		if ((fr.uScopeP.w > 1.5)) {
+			ap = fract((ap * fr.uScopeP.w));
+		}
+		var sAge: f32 = (fr.uScope.z - ap);
+		var hideAll: f32 = ((select(0.0, 1.0, (ap < fr.uScopeP.z))) * min(1.0, (fr.uScopeP.x * 4.0)));
+		if ((sAge >= 0.0)) {
+			gScopeT = ((select(exp(((-sAge * 4.0) / max(fr.uScope.w, 0.02))), 1.0, (cm < 0.5))) * fr.uScopeP.y);
+			gScopeG = (exp((-sAge * 45.0)) * fr.uScopeP.y);
+			if (((fr.uScopeP.z > 0.0) && (ap >= fr.uScopeP.z))) {
+				gScopeG = max(gScopeG, exp((-((ap - fr.uScopeP.z)) * 45.0)));
+			}
+			gScopeD = hideAll;
+		} else {
+			gScopeD = max(clamp(((fr.uScopeP.x * fr.uScope.x) * 1.6), 0.0, 1.0), hideAll);
+		}
+	}
+	var pos: vec3f = fxDisplace(aOrigin, aTarget, aIdx, &base, &maskV);
+	pos += aSculpt;
+	if ((gScopeG > 0.01)) {
+		pos += (((((vec3f(hash11((aIdx * 13.1)), hash11((aIdx * 7.7)), hash11((aIdx * 3.3))) - 0.5)) * gScopeG) * fr.uScopeQ.w) * 0.4);
+	}
+	if ((fr.uFr.x > 0.5)) {
+		pos += ((frNrm * frLift) * 0.7);
+	}
+	var dkv: f32 = disK(base, aIdx);
+	vDk = max(max(dkv, gDrop), (1.0 - gGrow));
+	var t: f32 = (fr.uTime - fr.uTOff);
+	var disp: f32 = clamp((length((pos - base)) * 1.5), 0.0, 1.0);
+	var k: f32;
+	if ((fr.uColorBy < 0.5)) {
+		k = clamp((disp + (fr.uBeat * 0.12)), 0.0, 1.0);
+	} else if ((fr.uColorBy < 1.5)) {
+		k = clamp((((pos.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+	} else {
+		k = fract(((aIdx * 3.0) + (t * 0.03)));
+	}
+	var col: vec3f = select(mix(fr.uP1, fr.uP2, (((k - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (k * 2.0)), (k < 0.5));
+	var ltC: f32 = select(1.0, morphLocal(aOrigin, aTarget, aIdx), (fr.uMorph < 0.9999));
+	var eC: f32 = select(1.0, (select(morphEase(ltC), smoothstep(0.5, 0.9, ltC), (i32((fr.uMorphS.x + 0.5)) == 2))), (fr.uMorph < 0.9999));
+	var colM: vec3f = mix(aColor, aColorB, eC);
+	if ((fr.uFr.x > 0.5)) {
+		colM = frCol;
+	}
+	if ((fr.uSlit.x > 0.001)) {
+		var sip: f32 = floor(((aIdx * fr.uSlitG.z) + 0.5));
+		var sci: f32 = glsl_mod_f(sip, fr.uSlitG.x);
+		var scj: f32 = floor((sip / fr.uSlitG.x));
+		var suv0: vec2f = vec2f((((sci + 0.5)) / fr.uSlitG.x), (((scj + 0.5)) / fr.uSlitG.y));
+		var sm: i32 = i32((fr.uSlit.w + 0.5));
+		var sf: f32;
+		if ((sm == 0)) {
+			sf = suv0.y;
+		} else if ((sm == 1)) {
+			sf = suv0.x;
+		} else if ((sm == 2)) {
+			sf = clamp((length((((suv0 - 0.5)) * vec2f((fr.uSlitG.x / fr.uSlitG.y), 1.0))) * 1.25), 0.0, 1.0);
+		} else if ((sm == 3)) {
+			sf = select((1.0 - gLum), (1.0 - gDepth), (fr.uDepth.x > 0.001));
+		} else {
+			sf = ((snoise(vec3f(((suv0 * vec2f((fr.uSlitG.x / fr.uSlitG.y), 1.0)) * 2.5), (fr.uTime * 0.12))) * 0.5) + 0.5);
+		}
+		if ((fr.uSlitP.y > 0.001)) {
+			sf = fract((sf + ((fr.uTime * fr.uSlitP.y) * 0.25)));
+		}
+		if ((fr.uSlitP.w > 1.5)) {
+			sf = (floor((sf * fr.uSlitP.w)) / ((fr.uSlitP.w - 1.0)));
+		}
+		sf = clamp(sf, 0.0, 1.0);
+		if ((fr.uSlitP.x < 0.0)) {
+			sf = (1.0 - sf);
+		}
+		var sd: f32 = ((sf * fr.uSlit.y) * ((fr.uSlitG.w - 1.0)));
+		var s0: f32 = floor(sd);
+		var sl0: i32 = i32(glsl_mod_f(((fr.uSlit.z - s0) + (fr.uSlitG.w * 8.0)), fr.uSlitG.w));
+		var sl1: i32 = i32(glsl_mod_f((((fr.uSlit.z - s0) - 1.0) + (fr.uSlitG.w * 8.0)), fr.uSlitG.w));
+		var scol: vec3f = mix(textureLoad(slitTex, vec3i(i32(sci), i32(scj), sl0).xy, vec3i(i32(sci), i32(scj), sl0).z, 0).rgb, textureLoad(slitTex, vec3i(i32(sci), i32(scj), sl1).xy, vec3i(i32(sci), i32(scj), sl1).z, 0).rgb, (sd - s0));
+		var sk: f32 = min(fr.uSlit.x, 1.0);
+		colM = mix(colM, scol, sk);
+		pos.z -= ((((sf * fr.uSlit.y) * fr.uSlitP.z) * 1.2) * sk);
+	}
+	if ((fr.uSort.x > 0.001)) {
+		var qi: f32 = floor(((aIdx * fr.uSortP.x) + 0.5));
+		var qd: vec2f = textureLoad(sortTex, vec2i(i32(glsl_mod_f(qi, 2048.0)), i32(floor((qi / 2048.0)))), 0).xy;
+		var qline: f32 = select(floor((qi / fr.uSortP.y)), glsl_mod_f(qi, fr.uSortP.y), (fr.uSort.w > 0.5));
+		var qm: i32 = i32((fr.uSort.y + 0.5));
+		var qk: f32 = 1.0;
+		if ((qm == 1)) {
+			qk = (0.5 + (0.5 * sin((((fr.uTime * fr.uSort.z) * 1.6) - (qline * 0.07)))));
+		} else if ((qm == 2)) {
+			qk = clamp((fr.uBeat * 1.4), 0.0, 1.0);
+		} else if ((qm == 3)) {
+			qk = (0.5 + (0.5 * sin(((fr.uTime * fr.uSort.z) * 1.2))));
+		}
+		qk = (((qk * qk) * ((3.0 - (2.0 * qk)))) * min(fr.uSort.x, 1.0));
+		{ let _sw24 = (pos.xy + ((qd * qk) * fr.uSortP.z)); pos = vec3f(_sw24.x, _sw24.y, pos.z); }
+		colM *= vec3f((1.0 + ((min((length(qd) * 6.0), 1.0) * qk) * fr.uSortP.w)));
+	}
+	var nrmM: vec3f = mix(aNormal, aNormalB, eC);
+	if (((fr.uColorBy > 2.5) && (fr.uColorBy < 3.5))) {
+		col = colM;
+	} else if (((fr.uColorBy > 3.5) && (fr.uColorBy < 4.5))) {
+		col = fr.uSolid;
+	} else if ((fr.uColorBy > 4.5)) {
+		var wn: vec3f = (mat3x3f(vec3f(fr.modelMatrix[0].xyz), vec3f(fr.modelMatrix[1].xyz), vec3f(fr.modelMatrix[2].xyz)) * nrmM);
+		wn = select(vec3f(0.0, 1.0, 0.0), normalize(wn), (length(wn) > 0.0));
+		col = pow(((wn * 0.5) + 0.5), vec3f(2.2));
+	}
+	var vm: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));
+	var vis: f32 = mix(aVis.x, aVis.y, vm);
+	vColor = (((col * fr.uBright) * ((1.0 + (fr.uBeat * 0.3)))) * vis);
+	if (((fr.uPaintP.x > 0.5) && (aPaint.w > 0.002))) {
+		var pa: f32 = aPaint.w;
+		var cov: f32 = (1.0 - exp((-pa * 3.4)));
+		cov *= mix(1.0, (0.8 + (0.4 * hash11((aIdx * 91.7)))), fr.uPaintP.y);
+		var pig: vec3f = pow(max(aPaint.rgb, vec3f(0.002)), vec3f((0.7 + (0.5 * min(pa, 1.6)))));
+		vColor = select(mix(vColor, (pig * fr.uBright), cov), (vColor * mix(vec3f(1.0), (pig * 1.15), cov)), (fr.uPaintP.z > 0.5));
+	}
+	if (((fr.uMask.x > 0.5) && (fr.uMaskShow > 0.5))) {
+		vColor = mix(vColor, (fr.uP2 * 1.4), (maskV * 0.55));
+	}
+	if ((fr.uCh.x > 0.001)) {
+		vColor *= vec3f(mix(1.0, (0.45 + (1.1 * gChN)), min(fr.uCh.x, 1.0)));
+	}
+	if ((fr.uHyp.x > 0.001)) {
+		var hk4: f32 = clamp((((gHypW + 1.0)) * 0.5), 0.0, 1.0);
+		var hc: vec3f = select(mix(fr.uP1, fr.uP2, (((hk4 - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (hk4 * 2.0)), (hk4 < 0.5));
+		vColor = mix(vColor, ((hc * fr.uBright) * ((0.55 + (0.9 * dot(vColor, vec3f(0.3, 0.59, 0.11)))))), (fr.uHypP.y * min(fr.uHyp.x, 1.0)));
+	}
+	vColor *= vec3f((1.0 - (0.6 * gHypF)));
+	if (((fr.uShade > 0.001) && (dot(nrmM, nrmM) > 0.01))) {
+		var nv: vec3f = normalize((fr.normalMatrix * nrmM));
+		var lit: f32 = dot(nv, normalize(vec3f(-0.45, 0.65, 0.6)));
+		var f: f32 = (0.18 + (1.05 * pow(clamp(((lit * 0.5) + 0.5), 0.0, 1.0), 1.6)));
+		f *= select(1.0, mix(1.0, 0.55, clamp((-nv.z * 1.6), 0.0, 1.0)), (nv.z < 0.0));
+		vColor *= vec3f(mix(1.0, f, fr.uShade));
+	}
+	vGl = clamp(((sqrt(max(dot(vColor, vec3f(0.3, 0.59, 0.11)), 0.0)) * 0.85) + (((hash11((aIdx * 1.7)) - 0.5)) * 0.35)), 0.0, 1.0);
+	if ((fr.uBrushParam.x > 0.001)) {
+		var bGlow: f32 = 0.0;
+		for (var i: i32 = 0; (i < 20); i++) {
+			var age: f32 = fr.uBrushHits[i].w;
+			if ((age < 0.0)) {
+				continue;
+			}
+			var dist: f32 = distance(base, fr.uBrushHits[i].xyz);
+			if ((dist < fr.uBrushParam.y)) {
+				var life: f32 = (1.0 - (age / fr.uBrushParam.z));
+				bGlow = max(bGlow, (((1.0 - (dist / fr.uBrushParam.y))) * life));
+			}
+		}
+		if ((bGlow > 0.001)) {
+			vColor += (((fr.uP2 * bGlow) * 2.2) * fr.uBrushParam.x);
+		}
+	}
+	if ((fr.uHandP.x > 0.001)) {
+		var hg: f32 = 0.0;
+		for (var i: i32 = 0; (i < 12); i++) {
+			if ((f32(i) >= fr.uHandP.w)) {
+				break;
+			}
+			var hdst: f32 = distance(pos, fr.uHand[i].xyz);
+			if ((hdst < fr.uHandP.y)) {
+				hg = max(hg, (((1.0 - (hdst / fr.uHandP.y))) * (select(abs(fr.uHand[i].w), (fr.uHand[i].w - 2.0), (fr.uHand[i].w > 1.5)))));
+			}
+		}
+		vColor += ((((fr.uP2 * hg) * hg) * 1.6) * fr.uHandP.x);
+	}
+	var mkv: f32 = markK(base);
+	if ((mkv > 0.0)) {
+		if ((fr.uMark.x < 1.5)) {
+			vColor = mix(vColor, (((vec3f(1.0) - min(vColor, vec3f(1.0)))) * 1.3), mkv);
+		} else if ((fr.uMark.x < 2.5)) {
+			vColor = mix(vColor, (hueRot(vColor, ((fr.uTime * 2.0) + (length(base) * 6.0))) * 1.15), mkv);
+		} else if ((fr.uMark.x < 3.5)) {
+			var edge: f32 = (smoothstep(0.0, 0.35, mkv) * ((1.0 - smoothstep(0.35, 0.9, mkv))));
+			vColor = ((vColor * ((1.0 - smoothstep(0.35, 0.9, mkv)))) + ((fr.uMarkC * edge) * 2.0));
+		} else if ((fr.uMark.x < 4.5)) {
+			vColor *= vec3f((1.0 + (mkv * 0.8)));
+		} else if ((fr.uMark.x > 5.5)) {
+			vColor += ((fr.uMarkC * mkv) * 1.8);
+		}
+	}
+	var cvan: f32 = 0.0;
+	if (((fr.uContact.z > 6.5) && (fr.uContact.x > 0.001))) {
+		cvan = contactK(base);
+		vColor *= vec3f((1.0 - smoothstep(0.1, 0.8, cvan)));
+	}
+	var sl: f32 = 0.0;
+	if ((fr.uSlice.x > 0.001)) {
+		var axCode: f32 = glsl_mod_f(fr.uSlice.w, 10.0);
+		var nLines: f32 = max(1.0, floor((fr.uSlice.w / 10.0)));
+		var c: f32 = select((select((select((((base.x + base.y)) * 0.707), base.z, (axCode < 2.5))), base.x, (axCode < 1.5))), base.y, (axCode < 0.5));
+		var v: f32 = clamp((((c + 1.2)) / 2.4), 0.0, 1.0);
+		if ((fr.uSliceM.x > 1.5)) {
+			var d: f32 = (fr.uSlice.y - v);
+			sl = (((1.0 - smoothstep(0.0, ((fr.uSlice.z * 0.3) + 0.012), abs(d)))) * fr.uSlice.x);
+			vColor *= vec3f(mix(1.0, smoothstep(-0.012, 0.012, d), min(fr.uSlice.x, 1.0)));
+			vColor += (((select(fr.uSliceC, (vColor * 0.25), (fr.uSliceM.z > 0.5))) * sl) * 2.4);
+		} else {
+			var coord: f32 = glsl_mod_f(((v * nLines) - (fr.uSlice.y * nLines)), 1.0);
+			sl = (((1.0 - smoothstep((fr.uSlice.z * 0.4), fr.uSlice.z, abs((coord - 0.5))))) * fr.uSlice.x);
+			vColor += (((select(fr.uSliceC, (vColor * 0.25), (fr.uSliceM.z > 0.5))) * sl) * 2.2);
+		}
+	}
+	if ((fr.uDepth.x > 0.001)) {
+		if ((fr.uDepthP.w > 1.5)) {
+			var jet: vec3f = clamp(vec3f((1.5 - abs(((4.0 * gDepth) - 3.0))), (1.5 - abs(((4.0 * gDepth) - 2.0))), (1.5 - abs(((4.0 * gDepth) - 1.0)))), vec3f(0.0), vec3f(1.0));
+			vColor = mix(vColor, (jet * ((0.4 + (0.95 * dot(vColor, vec3f(0.3, 0.59, 0.11)))))), 0.88);
+		} else if ((fr.uDepthP.w > 0.5)) {
+			vColor = vec3f(gDepth);
+		}
+	}
+	if ((fr.uScope.x > 0.001)) {
+		vColor = mix(vColor, (fr.uScopeC * 1.4), (fr.uScopeQ.x * gScopeT));
+		vColor += (((fr.uScopeC * gScopeG) * fr.uScopeQ.z) * 3.0);
+	}
+	if ((gGl > 0.0)) {
+		vColor *= vec3f((0.55 + (0.45 * hash11((floor((fr.uTime * 24.0)) + floor((pos.y * 14.0)))))));
+		vColor *= vec3f((1.0 - ((0.45 * min(gGl, 1.0)) * step(0.5, fract((pos.y * 38.0))))));
+		if ((gCh > -0.5)) {
+			vColor = mix(vColor, (vColor * vec3f(select(0.05, 2.2, (gCh < 0.5)), select(0.05, 2.2, (abs((gCh - 1.0)) < 0.5)), select(0.05, 2.2, (gCh > 1.5)))), min(1.0, gGl));
+		}
+		vColor += ((vec3f(0.25, 0.3, 0.35) * gBurst) * min(gGl, 1.0));
+	}
+	if ((fr.uGrowP.z > 0.5)) {
+		vColor += ((mix(vec3f(0.3, 0.95, 0.4), fr.uP2, 0.3) * pow(gGrowE, 1.6)) * 0.55);
+	}
+	if ((dkv > 0.0)) {
+		var edge: f32 = (smoothstep(0.02, 0.25, dkv) * ((1.0 - smoothstep(0.25, 0.75, dkv))));
+		if (((fr.uDisP.x > 0.5) && (fr.uDisP.x < 1.5))) {
+			vColor += ((vec3f(1.0, 0.42, 0.08) * edge) * 2.4);
+		} else {
+			vColor += (((fr.uP2 * edge) * fr.uDisQ.z) * 2.0);
+		}
+	}
+	var mkm: f32 = 0.0;
+	if (((fr.uMorph < 0.9999) && (fr.uMorphO.z > 0.001))) {
+		mkm = (sin((morphLocal(aOrigin, aTarget, aIdx) * 3.1415926535)) * fr.uMorphO.z);
+		vColor += (((vColor * mkm) * 1.1) + ((fr.uP2 * mkm) * 0.25));
+	}
+	var mfs: f32 = select(1.0, mix(1.0, fr.uMorphD.w, sin((morphLocal(aOrigin, aTarget, aIdx) * 3.1415926535))), (fr.uMorph < 0.9999));
+	if (((fr.uSettle >= 0.0) && (fr.uSettle < 1.0))) {
+		var yS: f32 = clamp((((base.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+		var dd: f32 = (((yS - (((fr.uSettle * 1.35) - 0.15)))) / 0.14);
+		var band: f32 = (exp((-dd * dd)) * ((1.0 - fr.uSettle)));
+		mkm += (band * 1.0);
+		vColor += (((vColor * band) * 0.9) + ((fr.uP2 * band) * 0.2));
+		pos += ((normalize((vec3f(pos.x, 0.0, pos.z) + vec3f(1e-4))) * band) * 0.03);
+	}
+	var shSzMul: f32 = 1.0;
+	if ((fr.uShoot.x > 0.001)) {
+		var bsh: vec3f = (base - fr.uCen);
+		var nsh: vec3f = select(normalize((bsh + vec3f(1e-4))), normalize(nrmM), (dot(nrmM, nrmM) > 0.01));
+		var shOff: vec3f = vec3f(0.0);
+		var shK: f32 = 0.0;
+		var hsh: f32 = hash11((aIdx * 3.77));
+		var shFam: bool = ((((fr.uShoot.y > 1.5) && (fr.uShoot.y < 2.5))) || (fr.uShoot.y > 3.5));
+		var bm: f32 = 0.0;
+		var bd: f32 = 1.0;
+		var bs: vec4f = vec4f(0.0);
+		var bn: vec4f = vec4f(0.0, 0.0, 1.0, 1.0);
+		for (var i: i32 = 0; (i < 24); i++) {
+			var sd: vec4f = fr.uShootS[i];
+			if ((sd.w < 0.002)) {
+				continue;
+			}
+			var dsh: f32 = (distance(base, sd.xyz) / fr.uShoot.z);
+			if ((dsh >= 1.0)) {
+				continue;
+			}
+			if (shFam) {
+				var m: f32 = (1.0 - smoothstep((1.0 - max(fr.uShootE.x, 0.02)), 1.0, dsh));
+				if ((m > bm)) {
+					bm = m;
+					bd = dsh;
+					bs = sd;
+					bn = fr.uShootN[i];
+				}
+				continue;
+			}
+			var pr: f32 = (1.0 - dsh);
+			var grow: f32 = (sd.w * fr.uShoot.w);
+			if ((fr.uShoot.y < 0.5)) {
+				pr = ((pr * pr) * pr);
+				shOff += ((nsh * pr) * grow);
+			} else if ((fr.uShoot.y < 1.5)) {
+				pr = ((pr * pr) * ((3.0 - (2.0 * pr))));
+				shOff += (((nsh * pr) * grow) * 0.55);
+			} else {
+				pr = (pr * pr);
+				var ph: f32 = ((fr.uShootP.z * 2.2) + (f32(i) * 1.7));
+				var side: vec3f = normalize((cross(nsh, vec3f(0.31, 0.92, 0.23)) + vec3f(1e-4)));
+				shOff += (((nsh * pr) * grow) + ((((side * sin((ph + (dsh * 9.0)))) * pr) * grow) * ((0.25 + (0.6 * fr.uShootP.y)))));
+			}
+			shK = max(shK, (pr * min((sd.w * 1.5), 1.0)));
+		}
+		if ((shFam && (bm > 0.0))) {
+			var d: f32 = (bs.w * ((1.0 - (fr.uShootE.y * hsh))));
+			var stp: f32 = max(fr.uShootD.y, 0.005);
+			var dn: vec3f = select(normalize(((bs.xyz - fr.uCen) + vec3f(1e-4))), normalize(bn.xyz), (length(bn.xyz) > 0.01));
+			if (((fr.uShootD.x > 0.5) && (fr.uShootD.x < 1.5))) {
+				dn = normalize(((bs.xyz - fr.uCen) + vec3f(1e-4)));
+			} else if (((fr.uShootD.x > 1.5) && (fr.uShootD.x < 2.5))) {
+				dn = vec3f(0.0, 1.0, 0.0);
+			} else if ((fr.uShootD.x > 2.5)) {
+				dn = normalize((vec3f(fr.modelViewMatrix[0][2], fr.modelViewMatrix[1][2], fr.modelViewMatrix[2][2]) + vec3f(1e-5)));
+			}
+			var md: f32 = fr.uShoot.y;
+			var off: vec3f;
+			if ((md < 2.5)) {
+				off = ((dn * d) * bm);
+			} else if ((md < 4.5)) {
+				var tt: f32 = hash11((aIdx * 5.13));
+				var pf: f32 = (pow(tt, 0.75) * smoothstep(0.0, 0.6, bm));
+				var prel: vec3f = (base - bs.xyz);
+				off = (((dn * d) * pf) - ((((prel - (dn * dot(dn, prel)))) * fr.uShootE.z) * clamp((((d * pf) * 1.5) / fr.uShoot.z), 0.0, 1.0)));
+			} else if ((md < 5.5)) {
+				var tiers: f32 = max(fr.uShootD.z, 2.0);
+				var ring: f32 = min(floor(((((1.0 - bd)) * tiers) + 0.001)), (tiers - 1.0));
+				off = (((dn * d) * mix(0.25, 1.0, (ring / ((tiers - 1.0))))) * bm);
+			} else if ((md < 6.5)) {
+				var cl: vec3f = floor((base / max((fr.uShoot.z * ((0.08 + (0.55 * fr.uShootD.z)))), 0.01)));
+				var hc: f32 = hash11(dot(cl, vec3f(17.13, 31.71, 57.29)));
+				var tilt: vec3f = (vec3f(hash11((hc * 91.0)), hash11((hc * 57.0)), hash11((hc * 33.0))) - 0.5);
+				off = (((normalize((dn + (tilt * 0.7))) * d) * ((0.45 + (hc * 1.1)))) * bm);
+			} else if ((md < 7.5)) {
+				var layer: f32 = floor((hash11((aIdx * 9.71)) * max(fr.uShootD.z, 2.0)));
+				off = ((dn * max(0.0, (d - ((layer * stp) * 0.75)))) * bm);
+			} else if ((md < 8.5)) {
+				var rel: vec3f = (base - bs.xyz);
+				var ang: f32 = (((d / stp) * 0.6) * fr.uShootD.z);
+				var ca: f32 = cos(ang);
+				var sa: f32 = sin(ang);
+				var rr: vec3f = (((rel * ca) + (cross(dn, rel) * sa)) + ((dn * dot(dn, rel)) * ((1.0 - ca))));
+				off = ((((rr - rel) + (dn * d))) * bm);
+			} else {
+				var rd: vec3f = (vec3f(hash11((aIdx * 1.3)), hash11((aIdx * 2.9)), hash11((aIdx * 5.1))) - 0.5);
+				off = (((normalize((dn + (rd * fr.uShootD.z))) * d) * ((0.35 + (hash11((aIdx * 7.7)) * 1.3)))) * bm);
+			}
+			off += ((((vec3f(sin(((fr.uShootP.z * 1.7) + (hsh * 6.283))), cos(((fr.uShootP.z * 1.3) + (hsh * 4.1))), sin(((fr.uShootP.z * 1.1) + (hsh * 2.7)))) * 0.03) * min(d, 1.0)) * fr.uShootP.y) * bm);
+			shOff += off;
+			var stK: f32 = clamp((d / stp), 0.0, 1.0);
+			shK = max(shK, (bm * stK));
+			shSzMul = (1.0 + ((bm * stK) * fr.uShootP.w));
+			vColor *= vec3f(mix(1.0, bn.w, bm));
+			shSzMul *= mix(1.0, max(bn.w, 0.05), bm);
+		}
+		if (!shFam) {
+			shOff *= vec3f((1.0 + ((fr.uShootP.y * 0.1) * sin(((fr.uShootP.z * 3.0) + (hsh * 6.283))))));
+		}
+		pos += (shOff * min(fr.uShoot.x, 1.0));
+		vColor += ((((((fr.uP2 * 1.4) + (vColor * 0.3))) * shK) * fr.uShootP.x) * min(fr.uShoot.x, 1.0));
+	}
+	if ((fr.uScr.x > 0.001)) {
+		var bsx: vec3f = (base - fr.uCen);
+		var hyx: f32 = max((fr.uYR.y - fr.uYR.x), 1e-4);
+		var arx: f32 = max(fr.uScrP.w, 0.05);
+		var suv: vec2f;
+		var smask: f32 = 1.0;
+		if ((fr.uScr.y < 0.5)) {
+			suv = vec2f(((atan2(bsx.z, bsx.x) / 6.2831853) + 0.5), clamp((((base.y - fr.uYR.x)) / hyx), 0.0, 1.0));
+			suv.x = fract(((((suv.x - 0.5)) / fr.uScr.z) + 0.5));
+		} else if (((fr.uScr.y < 1.5) || (fr.uScr.y > 2.5))) {
+			suv = vec2f((0.5 + (bsx.x / ((hyx * arx)))), (0.5 + (((base.y - (((fr.uYR.x + fr.uYR.y)) * 0.5))) / hyx)));
+			suv = ((((suv - 0.5)) / fr.uScr.z) + 0.5);
+			var cr: f32 = cos(fr.uScrP.x);
+			var sr: f32 = sin(fr.uScrP.x);
+			suv = (vec2f(((cr * ((suv.x - 0.5))) - (sr * ((suv.y - 0.5)))), ((sr * ((suv.x - 0.5))) + (cr * ((suv.y - 0.5))))) + 0.5);
+			smask = (((step(0.0, suv.x) * step(suv.x, 1.0)) * step(0.0, suv.y)) * step(suv.y, 1.0));
+			if ((dot(nrmM, nrmM) > 0.01)) {
+				smask *= smoothstep(-0.35, 0.25, nrmM.z);
+			}
+		} else {
+			var cpx: vec4f = ((fr.projectionMatrix * fr.modelViewMatrix) * vec4f(pos, 1.0));
+			var nd: vec2f = (cpx.xy / max(cpx.w, 1e-4));
+			var scrAsp: f32 = (fr.projectionMatrix[1][1] / fr.projectionMatrix[0][0]);
+			suv = vec2f((0.5 + (((nd.x * 0.5) * scrAsp) / arx)), (0.5 + (nd.y * 0.5)));
+			suv = ((((suv - 0.5)) / fr.uScr.z) + 0.5);
+			var cr: f32 = cos(fr.uScrP.x);
+			var sr: f32 = sin(fr.uScrP.x);
+			suv = (vec2f(((cr * ((suv.x - 0.5))) - (sr * ((suv.y - 0.5)))), ((sr * ((suv.x - 0.5))) + (cr * ((suv.y - 0.5))))) + 0.5);
+			smask = (((step(0.0, suv.x) * step(suv.x, 1.0)) * step(0.0, suv.y)) * step(suv.y, 1.0));
+		}
+		var scr: vec3f = (textureSampleLevel(scrTex, linSamp, clamp(suv, vec2f(0.0), vec2f(1.0)), 0.0).rgb * fr.uScr.w);
+		var slum: f32 = dot(scr, vec3f(0.3, 0.59, 0.11));
+		var sdv: f32 = 0.0;
+		if ((fr.uScrD.x > 0.5)) {
+			sdv = select(textureSampleLevel(scrDep, linSamp, clamp(suv, vec2f(0.0), vec2f(1.0)), 0.0).r, clamp((slum / max(fr.uScr.w, 0.05)), 0.0, 1.0), (fr.uScrD.x < 1.5));
+			sdv = clamp(((((sdv - 0.5)) * fr.uScrD.w) + 0.5), 0.0, 1.0);
+			if ((fr.uScrD.z < 0.0)) {
+				sdv = (1.0 - sdv);
+			}
+			if ((fr.uScrQ.x > 0.5)) {
+				scr = vec3f(sdv);
+			}
+		}
+		var smem: vec4f = vec4f(0.0);
+		if ((fr.uScrQ.y > 0.5)) {
+			var smi: f32 = floor(((aIdx * fr.uScrMN) + 0.5));
+			smem = textureLoad(scrMTex, vec2i(i32(glsl_mod_f(smi, 2048.0)), i32(floor((smi / 2048.0)))), 0);
+			{ let _sw25 = ((smem.rgb * smem.rgb) * 4.0); smem = vec4f(_sw25.x, _sw25.y, _sw25.z, smem.w); }
+			scr = max(scr, smem.rgb);
+		}
+		vColor = mix(vColor, mix((vColor * 0.35), scr, fr.uScrP.z), (smask * fr.uScr.x));
+		if ((fr.uScrQ.y > 0.5)) {
+			vColor = mix(vColor, mix((vColor * 0.35), smem.rgb, fr.uScrP.z), ((smem.a * ((1.0 - smask))) * fr.uScr.x));
+		}
+		if ((fr.uScrD.x > 0.5)) {
+			var dirn: vec3f = select(normalize((bsx + vec3f(1e-4))), normalize(nrmM), (dot(nrmM, nrmM) > 0.01));
+			pos += (((((dirn * sdv) * fr.uScrD.y) * 0.45) * smask) * fr.uScr.x);
+		}
+	}
+	var shA: f32 = 0.0;
+	{
+		var swp: vec3f = ((fr.modelMatrix * vec4f(pos, 1.0))).xyz;
+		var shN: vec3f = select(vec3f(0.0, 0.0, 1.0), vec3f(0.0, 1.0, 0.0), (fr.uShdL.w < 0.5));
+		var shL: vec3f = normalize(fr.uShdL.xyz);
+		var shh: f32 = (dot(swp, shN) - fr.uShdP.x);
+		var ssp: vec3f = (swp - (shL * ((shh / max(dot(shL, shN), 0.08)))));
+		if ((fr.uShd.w > 0.001)) {
+			var st1: vec3f = vec3f(1.0, 0.0, 0.0);
+			var st2: vec3f = select(vec3f(0.0, 1.0, 0.0), vec3f(0.0, 0.0, 1.0), (fr.uShdL.w < 0.5));
+			ssp += (((((st1 * snoise(((ssp * 1.4) + vec3f(0.0, (fr.uTime * 0.7), 0.0)))) + (st2 * snoise(((ssp * 1.4) + vec3f(5.0, (-fr.uTime * 0.6), 3.0)))))) * fr.uShd.w) * 0.12);
+		}
+		ssp += (shN * 0.003);
+		shA = ((fr.uShd.x * exp((-max(shh, 0.0) * fr.uShdP.y))) * (select(1.0, 0.0, (shh < -0.03))));
+		vColor = select((select(((colM * fr.uBright) * 1.3), ((fr.uP2 * 1.4) * fr.uBright), (fr.uShd.z < 1.5))), fr.uShdC, (fr.uShd.z < 0.5));
+		pos = ssp;
+	}
+	vD = shA;
+	var mv: vec4f = (fr.viewMatrix * vec4f(pos, 1.0));
+	gl_Position = (fr.projectionMatrix * mv);
+	var szNoise: f32 = 1.0;
+	if ((fr.uLookP2.x > 0.001)) {
+		szNoise = (1.0 + (fr.uLookP2.x * ((snoise(((base * 2.2) + (fr.uTime * 0.4))) * 0.75))));
+	}
+	var szAudio: f32 = 1.0;
+	if ((fr.uLookP2.y > 0.001)) {
+		var bandAudio: f32 = mix(fr.uBeat, fr.uSpec.x, step(0.0, base.y));
+		szAudio = (1.0 + (fr.uLookP2.y * (((bandAudio * 1.2) * ((0.6 + (0.4 * sin((aIdx * 62.8)))))))));
+	}
+	var coc: f32 = 0.0;
+	if ((fr.uDof.x > 0.5)) {
+		var viewDist: f32 = -mv.z;
+		coc = clamp((abs((viewDist - fr.uDof.y)) / max(0.05, fr.uDof.z)), 0.0, 1.0);
+	}
+	vCoc = coc;
+	var s: f32 = (((((fr.uSize * fr.uPR) * (((((1.0 + (disp * 0.5)) + (fr.uBeat * 0.2)) + (sl * 1.2)) + (mkm * 0.7)))) * fr.uGlyph.y) * fr.uFr6.x) * mfs);
+	s *= shSzMul;
+	s *= ((((((max(0.15, (szNoise * szAudio)) * ((1.0 - (fr.uDisQ.w * dkv)))) * mix(0.3, 1.0, gGrow)) * ((1.0 + (select(0.0, (mkv * 0.9), ((fr.uMark.x > 3.5) && (fr.uMark.x < 4.5))))))) * ((1.0 - (0.6 * (select(0.0, smoothstep(0.35, 0.9, mkv), ((fr.uMark.x > 2.5) && (fr.uMark.x < 3.5)))))))) * ((1.0 - (0.7 * smoothstep(0.3, 0.8, cvan))))) * ((0.25 + (0.75 * vis))));
+	s *= ((1.0 + (coc * 2.4)));
+	s *= (1.0 - (0.85 * gHypF));
+	s *= (((((1.0 + (gScopeT * fr.uScopeQ.y)) + ((gScopeG * fr.uScopeQ.z) * 2.5)) + (gDepthG * 0.8))) * ((1.0 - gScopeD)));
+	s *= select(0.73, (3.8 / max(-mv.z, 0.4)), (fr.uAtt > 0.5));
+	s *= mix(1.0, 2.8, fr.uShd.y);
+	gl_PointSize = clamp(s, 1.0, 95.0);
+	if ((((((gScopeD > 0.97) || (dkv > 0.97)) || (gDrop > 0.5)) || (gGrow < 0.03)) || (gHypF > 0.97))) {
+		gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);
+		gl_PointSize = 0.0;
+	}
+}
+
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+	let i = gid.x;
+	let count = arrayLength(&inP0) / 2u;
+	if (i >= count) { return; }
+	let o = inP0[i];
+	let t = inP0[count + i];
+	let ca = inP1[i];
+	let cb = inP1[count + i];
+	let na = inP2[i];
+	let sc = inP3[i];
+	aOrigin = o.xyz;
+	aHide = o.w;
+	aTarget = t.xyz;
+	aDepth = t.w;
+	aColor = ca.rgb;
+	aPath = ca.w;
+	aColorB = cb.rgb;
+	aVis = vec2f(cb.w, na.w);
+	aNormal = na.xyz;
+	aNormalB = inP2[count + i].xyz;
+	aSculpt = sc.xyz;
+	// индекс точки берётся из массива движка (aIdx = i / число точек, округлённое до float32 на CPU): хеши вида fract(sin(aIdx * k)) раздувают разницу в последнем бите до полного расхождения
+	aIdx = sc.w;
+	aPaint = inP3[count + i];
 	main_();
 	outA[i] = gl_Position;
 	outB[i] = vec4f(vColor, gl_PointSize);
@@ -72096,6 +74463,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 __defs['src/effects/shaders/wgsl/generated/points-render.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'pointsRenderWGSL', () => pointsRenderWGSL);
+__def(__exports, 'shadowRenderWGSL', () => shadowRenderWGSL);
 const pointsRenderWGSL = `
 struct Frame {
 	@size(16) uAdd: f32,
@@ -72208,16 +74576,33 @@ struct Frame {
 	uShootS: array<vec4f, 24>,
 	uShootN: array<vec4f, 24>,
 	uShootB: array<vec4f, 6>,
+	uScr: vec4f,
+	uScrP: vec4f,
+	uScrD: vec4f,
+	uScrQ: vec4f,
+	@size(16) uScrMN: f32,
+	uSlit: vec4f,
+	uSlitP: vec4f,
+	uSlitG: vec4f,
+	uSort: vec4f,
+	uSortP: vec4f,
 	modelMatrix: mat4x4f,
 	modelViewMatrix: mat4x4f,
 	projectionMatrix: mat4x4f,
+	viewMatrix: mat4x4f,
 	normalMatrix: mat3x3f,
 	@size(16) uRes: vec2f,
+	@size(16) uPx: vec2f,
 	@size(16) uExposure: f32,
+	@size(16) uTone: f32,
 	@size(16) uGlow: f32,
 	@size(16) uDens: f32,
 	@size(16) uGhost: f32,
 	@size(16) uShape: f32,
+	uShd: vec4f,
+	uShdL: vec4f,
+	uShdP: vec4f,
+	@size(16) uShdC: vec3f,
 	uLink: vec4f,
 	uLinkP: vec4f,
 	@size(16) uLinkW: f32,
@@ -72310,6 +74695,51 @@ fn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {
 	let g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
 	return mix(color, vec3f(newPeak), g);
 }
+fn rrtAndOdtFit(v: vec3f) -> vec3f {
+	let a = v * (v + 0.0245786) - 0.000090537;
+	let b = v * (0.983729 * v + 0.4329510) + 0.238081;
+	return a / b;
+}
+fn toneAces(c0: vec3f, exposure: f32) -> vec3f {
+	let inM = mat3x3f(vec3f(0.59719, 0.07600, 0.02840), vec3f(0.35458, 0.90834, 0.13383), vec3f(0.04823, 0.01566, 0.83777));
+	let outM = mat3x3f(vec3f(1.60475, -0.10208, -0.00327), vec3f(-0.53108, 1.10813, -0.07276), vec3f(-0.07367, -0.00605, 1.07602));
+	var color = c0 * (exposure / 0.6);
+	color = inM * color;
+	color = rrtAndOdtFit(color);
+	color = outM * color;
+	return saturate(color);
+}
+fn agxContrast(x: vec3f) -> vec3f {
+	let x2 = x * x;
+	let x4 = x2 * x2;
+	return 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;
+}
+fn toneAgx(c0: vec3f, exposure: f32) -> vec3f {
+	let rec2020ToSrgb = mat3x3f(vec3f(1.6605, -0.1246, -0.0182), vec3f(-0.5876, 1.1329, -0.1006), vec3f(-0.0728, -0.0083, 1.1187));
+	let srgbToRec2020 = mat3x3f(vec3f(0.6274, 0.0691, 0.0164), vec3f(0.3293, 0.9195, 0.0880), vec3f(0.0433, 0.0113, 0.8956));
+	let inset = mat3x3f(vec3f(0.856627153315983, 0.137318972929847, 0.11189821299995), vec3f(0.0951212405381588, 0.761241990602591, 0.0767994186031903), vec3f(0.0482516061458583, 0.101439036467562, 0.811302368396859));
+	let outset = mat3x3f(vec3f(1.1271005818144368, -0.1413297634984383, -0.14132976349843826), vec3f(-0.11060664309660323, 1.157823702216272, -0.11060664309660294), vec3f(-0.016493938717834573, -0.016493938717834257, 1.2519364065950405));
+	let minEv = -12.47393;
+	let maxEv = 4.026069;
+	var color = c0 * exposure;
+	color = srgbToRec2020 * color;
+	color = inset * color;
+	color = max(color, vec3f(1e-10));
+	color = log2(color);
+	color = (color - minEv) / (maxEv - minEv);
+	color = clamp(color, vec3f(0.0), vec3f(1.0));
+	color = agxContrast(color);
+	color = outset * color;
+	color = pow(max(vec3f(0.0), color), vec3f(2.2));
+	color = rec2020ToSrgb * color;
+	return clamp(color, vec3f(0.0), vec3f(1.0));
+}
+fn toneMap(c: vec3f, exposure: f32, mode: f32) -> vec3f {
+	if (mode < 0.5) { return c; }
+	if (mode < 1.5) { return toneNeutral(c, exposure); }
+	if (mode < 2.5) { return toneAces(c, exposure); }
+	return toneAgx(c, exposure);
+}
 fn linearToSrgb(v: vec3f) -> vec3f {
 	return select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));
 }
@@ -72332,7 +74762,7 @@ fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VOut 
 	var clip = a;
 	// в WebGL глубина клипа от -w до w, в WebGPU от 0 до w
 	clip.z = (clip.z + clip.w) * 0.5;
-	let off = corner * (b.w / fr.uRes);
+	let off = corner * (b.w / fr.uPx);
 	clip = vec4f(clip.xy + off * clip.w, clip.z, clip.w);
 	var o: VOut;
 	o.clip = clip;
@@ -72357,7 +74787,300 @@ fn setup_in(in: VOut) {
 fn fs(in: VOut) -> @location(0) vec4f {
 	setup_in(in);
 	frag_main_();
-	return vec4f(linearToSrgb(toneNeutral(gl_FragColor.rgb, fr.uExposure)), gl_FragColor.a);
+	return vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, fr.uExposure, fr.uTone)), gl_FragColor.a);
+}
+
+// в промежуточный буфер (дальше идёт пост-обработка): линейный цвет как есть
+@fragment
+fn fs_raw(in: VOut) -> @location(0) vec4f {
+	setup_in(in);
+	frag_main_();
+	return gl_FragColor;
+}
+`;
+const shadowRenderWGSL = `
+struct Frame {
+	@size(16) uAdd: f32,
+	@size(16) uSolid: vec3f,
+	@size(16) uAtt: f32,
+	@size(16) uSize: f32,
+	@size(16) uPR: f32,
+	@size(16) uGlyph: vec3f,
+	@size(16) uColorBy: f32,
+	@size(16) uBright: f32,
+	@size(16) uMaskShow: f32,
+	@size(16) uP0: vec3f,
+	@size(16) uP1: vec3f,
+	@size(16) uP2: vec3f,
+	@size(16) uSliceC: vec3f,
+	@size(16) uMarkC: vec3f,
+	@size(16) uTime: f32,
+	@size(16) uTOff: f32,
+	@size(16) uMorph: f32,
+	uMorphS: vec4f,
+	uMorphO: vec4f,
+	uMorphD: vec4f,
+	@size(16) uSettle: f32,
+	@size(16) uBeat: f32,
+	@size(16) uYR: vec2f,
+	@size(16) uMouse: vec3f,
+	@size(16) uMouseOn: f32,
+	@size(16) uShade: f32,
+	uCurlP: vec4f,
+	uSpecP: vec4f,
+	uWaveP: vec4f,
+	uWaveSrc: vec4f,
+	uPulseP: vec4f,
+	uVoxelP: vec4f,
+	uGlitchP: vec4f,
+	uBlast: vec4f,
+	uFlow: vec4f,
+	uDisP: vec4f,
+	uScope: vec4f,
+	uScopeP: vec4f,
+	uScopeQ: vec4f,
+	@size(16) uScopeC: vec3f,
+	uDepth: vec4f,
+	uDepthP: vec4f,
+	uDepthQ: vec4f,
+	@size(16) uFlat: f32,
+	uCurl: vec4f,
+	uSpec: vec4f,
+	uWave: vec4f,
+	uTwist: vec4f,
+	uPulse: vec4f,
+	uVoxel: vec4f,
+	uJitter: vec4f,
+	uCursor: vec4f,
+	uMask: vec4f,
+	uMaskA: vec4f,
+	uGlitch: vec4f,
+	uContact: vec4f,
+	uShockP: vec4f,
+	uTrk: array<vec4f, 16>,
+	uHand: array<vec4f, 12>,
+	uGrav: vec4f,
+	uSlice: vec4f,
+	uSliceM: vec4f,
+	uMark: vec4f,
+	uGravT: vec4f,
+	uPhysP: vec4f,
+	@size(16) uAsm: f32,
+	uDis: vec4f,
+	@size(16) uDisT: f32,
+	@size(16) uAnimN: f32,
+	@size(16) uCen: vec3f,
+	uDisQ: vec4f,
+	uGravP: vec4f,
+	uHandP: vec4f,
+	uImp: array<vec4f, 32>,
+	uShock: array<vec4f, 4>,
+	uExp: vec4f,
+	uExpP: vec4f,
+	uGrow: vec4f,
+	uGrowP: vec4f,
+	@size(16) uGrowSeed: vec3f,
+	uJel: array<vec4f, 3>,
+	uJelO: array<vec4f, 3>,
+	uJelP: vec4f,
+	uPhysics: vec4f,
+	@size(16) uCollapseTime: f32,
+	uBrushHits: array<vec4f, 20>,
+	uPaintP: vec4f,
+	uBrushParam: vec4f,
+	uLookP2: vec4f,
+	uDof: vec4f,
+	uHyp: vec4f,
+	uHypP: vec4f,
+	uCh: vec4f,
+	uChA: vec4f,
+	uFr: vec4f,
+	uFr2: vec4f,
+	uFr3: vec4f,
+	uFr4: vec4f,
+	uFr5: vec4f,
+	uHero: vec4f,
+	uFr6: vec4f,
+	uFr7: vec4f,
+	uShoot: vec4f,
+	uShootP: vec4f,
+	uShootD: vec4f,
+	uShootE: vec4f,
+	uShootC: vec4f,
+	uShootS: array<vec4f, 24>,
+	uShootN: array<vec4f, 24>,
+	uShootB: array<vec4f, 6>,
+	uScr: vec4f,
+	uScrP: vec4f,
+	uScrD: vec4f,
+	uScrQ: vec4f,
+	@size(16) uScrMN: f32,
+	uSlit: vec4f,
+	uSlitP: vec4f,
+	uSlitG: vec4f,
+	uSort: vec4f,
+	uSortP: vec4f,
+	modelMatrix: mat4x4f,
+	modelViewMatrix: mat4x4f,
+	projectionMatrix: mat4x4f,
+	viewMatrix: mat4x4f,
+	normalMatrix: mat3x3f,
+	@size(16) uRes: vec2f,
+	@size(16) uPx: vec2f,
+	@size(16) uExposure: f32,
+	@size(16) uTone: f32,
+	@size(16) uGlow: f32,
+	@size(16) uDens: f32,
+	@size(16) uGhost: f32,
+	@size(16) uShape: f32,
+	uShd: vec4f,
+	uShdL: vec4f,
+	uShdP: vec4f,
+	@size(16) uShdC: vec3f,
+	uLink: vec4f,
+	uLinkP: vec4f,
+	@size(16) uLinkW: f32,
+	@size(16) uScopeW: f32,
+	@size(16) uScopeLB: f32,
+}
+@group(0) @binding(0) var<uniform> fr: Frame;
+@group(0) @binding(1) var<storage, read> outA: array<vec4f>;
+@group(0) @binding(2) var<storage, read> outB: array<vec4f>;
+@group(0) @binding(3) var<storage, read> outC: array<vec4f>;
+@group(0) @binding(4) var atlasTex: texture_2d<f32>;
+@group(0) @binding(5) var linSamp: sampler;
+
+var<private> vColor: vec3f;
+var<private> vD: f32;
+var<private> vDk: f32;
+var<private> vCoc: f32;
+var<private> vGl: f32;
+var<private> gl_FragColor: vec4f;
+var<private> gl_PointCoord: vec2f;
+
+fn frag_main_() {
+	var c: vec2f = (gl_PointCoord - 0.5);
+	var r: f32 = length(c);
+	if ((r > 0.5)) {
+		discard;
+	}
+	var a: f32 = (((((1.0 - smoothstep(mix(0.3, 0.0, fr.uShd.y), 0.5, r))) * vD) * ((1.0 - vDk))) * 0.4);
+	if ((a < 0.002)) {
+		discard;
+	}
+	gl_FragColor = vec4f(vColor, a);
+}
+
+
+
+fn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {
+	let startCompression = 0.8 - 0.04;
+	let desaturation = 0.15;
+	var color = c0 * exposure;
+	let x = min(color.r, min(color.g, color.b));
+	let offset = select(0.04, x - 6.25 * x * x, x < 0.08);
+	color = color - offset;
+	let peak = max(color.r, max(color.g, color.b));
+	if (peak < startCompression) { return color; }
+	let d = 1.0 - startCompression;
+	let newPeak = 1.0 - d * d / (peak + d - startCompression);
+	color = color * (newPeak / peak);
+	let g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
+	return mix(color, vec3f(newPeak), g);
+}
+fn rrtAndOdtFit(v: vec3f) -> vec3f {
+	let a = v * (v + 0.0245786) - 0.000090537;
+	let b = v * (0.983729 * v + 0.4329510) + 0.238081;
+	return a / b;
+}
+fn toneAces(c0: vec3f, exposure: f32) -> vec3f {
+	let inM = mat3x3f(vec3f(0.59719, 0.07600, 0.02840), vec3f(0.35458, 0.90834, 0.13383), vec3f(0.04823, 0.01566, 0.83777));
+	let outM = mat3x3f(vec3f(1.60475, -0.10208, -0.00327), vec3f(-0.53108, 1.10813, -0.07276), vec3f(-0.07367, -0.00605, 1.07602));
+	var color = c0 * (exposure / 0.6);
+	color = inM * color;
+	color = rrtAndOdtFit(color);
+	color = outM * color;
+	return saturate(color);
+}
+fn agxContrast(x: vec3f) -> vec3f {
+	let x2 = x * x;
+	let x4 = x2 * x2;
+	return 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;
+}
+fn toneAgx(c0: vec3f, exposure: f32) -> vec3f {
+	let rec2020ToSrgb = mat3x3f(vec3f(1.6605, -0.1246, -0.0182), vec3f(-0.5876, 1.1329, -0.1006), vec3f(-0.0728, -0.0083, 1.1187));
+	let srgbToRec2020 = mat3x3f(vec3f(0.6274, 0.0691, 0.0164), vec3f(0.3293, 0.9195, 0.0880), vec3f(0.0433, 0.0113, 0.8956));
+	let inset = mat3x3f(vec3f(0.856627153315983, 0.137318972929847, 0.11189821299995), vec3f(0.0951212405381588, 0.761241990602591, 0.0767994186031903), vec3f(0.0482516061458583, 0.101439036467562, 0.811302368396859));
+	let outset = mat3x3f(vec3f(1.1271005818144368, -0.1413297634984383, -0.14132976349843826), vec3f(-0.11060664309660323, 1.157823702216272, -0.11060664309660294), vec3f(-0.016493938717834573, -0.016493938717834257, 1.2519364065950405));
+	let minEv = -12.47393;
+	let maxEv = 4.026069;
+	var color = c0 * exposure;
+	color = srgbToRec2020 * color;
+	color = inset * color;
+	color = max(color, vec3f(1e-10));
+	color = log2(color);
+	color = (color - minEv) / (maxEv - minEv);
+	color = clamp(color, vec3f(0.0), vec3f(1.0));
+	color = agxContrast(color);
+	color = outset * color;
+	color = pow(max(vec3f(0.0), color), vec3f(2.2));
+	color = rec2020ToSrgb * color;
+	return clamp(color, vec3f(0.0), vec3f(1.0));
+}
+fn toneMap(c: vec3f, exposure: f32, mode: f32) -> vec3f {
+	if (mode < 0.5) { return c; }
+	if (mode < 1.5) { return toneNeutral(c, exposure); }
+	if (mode < 2.5) { return toneAces(c, exposure); }
+	return toneAgx(c, exposure);
+}
+fn linearToSrgb(v: vec3f) -> vec3f {
+	return select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));
+}
+
+struct VOut {
+	@builtin(position) clip: vec4f,
+	@location(0) color: vec3f,
+	@location(1) misc: vec3f,
+	@location(2) gl: f32,
+	@location(3) pc: vec2f,
+}
+
+@vertex
+fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VOut {
+	var corners = array<vec2f, 4>(vec2f(-1.0, -1.0), vec2f(1.0, -1.0), vec2f(-1.0, 1.0), vec2f(1.0, 1.0));
+	let corner = corners[vi];
+	let a = outA[ii];
+	let b = outB[ii];
+	let c = outC[ii];
+	var clip = a;
+	// в WebGL глубина клипа от -w до w, в WebGPU от 0 до w
+	clip.z = (clip.z + clip.w) * 0.5;
+	let off = corner * (b.w / fr.uPx);
+	clip = vec4f(clip.xy + off * clip.w, clip.z, clip.w);
+	var o: VOut;
+	o.clip = clip;
+	o.color = b.rgb;
+	o.misc = vec3f(c.x, c.y, c.z);
+	o.gl = c.w;
+	o.pc = vec2f(corner.x * 0.5 + 0.5, 0.5 - corner.y * 0.5);
+	return o;
+}
+
+fn setup_in(in: VOut) {
+	vColor = in.color;
+	vD = in.misc.x;
+	vDk = in.misc.y;
+	vCoc = in.misc.z;
+	vGl = in.gl;
+	gl_PointCoord = in.pc;
+}
+
+// на экран: с тональной компрессией и переводом в sRGB
+@fragment
+fn fs(in: VOut) -> @location(0) vec4f {
+	setup_in(in);
+	frag_main_();
+	return vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, fr.uExposure, fr.uTone)), gl_FragColor.a);
 }
 
 // в промежуточный буфер (дальше идёт пост-обработка): линейный цвет как есть
@@ -72376,7 +75099,8 @@ const { FRAME_BYTES, packFrame } = __req('src/effects/render/webgpu/frame-layout
 const { RT_FORMAT } = __req('src/effects/render/webgpu/webgpu-post.js');
 const { pointsComputeWGSL } = __req('src/effects/shaders/wgsl/generated/points-compute.js');
 const { pointsComputeHeroWGSL } = __req('src/effects/shaders/wgsl/generated/points-compute-hero.js');
-const { pointsRenderWGSL } = __req('src/effects/shaders/wgsl/generated/points-render.js');
+const { pointsComputeShadowWGSL } = __req('src/effects/shaders/wgsl/generated/points-compute-shadow.js');
+const { pointsRenderWGSL, shadowRenderWGSL } = __req('src/effects/shaders/wgsl/generated/points-render.js');
 const ATTR_GROUPS = {
 aOrigin: ['origin'],
 aHide: ['origin'],
@@ -72392,9 +75116,10 @@ aSculpt: ['sculpt'],
 aIdx: ['sculpt'],
 aPaint: ['paint'],
 };
-function packGroup(group, a, n) {
-const out = new Float32Array(n * 4);
-const v3 = (src, dst) => {
+function packGroup(group, a, n, out = new Float32Array(n * 4)) {
+out = out.length === n * 4 ? out : out.subarray(0, n * 4);
+out.fill(0);
+const v3 = (src) => {
 if (!src) return;
 for (let i = 0; i < n; i++) {
 out[i * 4] = src[i * 3];
@@ -72441,6 +75166,10 @@ break;
 return out;
 }
 const GROUPS = ['origin', 'target', 'colorA', 'colorB', 'normA', 'normB', 'sculpt', 'paint'];
+const PAIR = { origin: [0, 0], target: [0, 1], colorA: [1, 0], colorB: [1, 1], normA: [2, 0], normB: [2, 1], sculpt: [3, 0], paint: [3, 1] };
+const IN_BUFS = ['in0', 'in1', 'in2', 'in3'];
+const BLEND_ADD = { color: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' }, alpha: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' } };
+const BLEND_NORMAL = { color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' } };
 class WebGPUPoints {
 constructor(gpu, canvas) {
 this.device = gpu.device;
@@ -72458,8 +75187,14 @@ this.sampler = D.createSampler({ magFilter: 'linear', minFilter: 'linear', addre
 this.specTex = D.createTexture({ size: [64, 1], format: 'r8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
 this.pieceTex = D.createTexture({ size: [256, 1], format: 'rgba32float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
 this.frTex = D.createTexture({ size: [1, 1, 1], format: 'rgba8unorm-srgb', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
-this.heroTex = D.createTexture({ size: [1, 1], format: 'rgba8unorm-srgb', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT });
-this.atlasTex = D.createTexture({ size: [1, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT });
+this.heroTex = this._tex2d(1, 1, 'rgba8unorm-srgb', true);
+this.atlasTex = this._tex2d(1, 1, 'rgba8unorm', true);
+this.scrTex = this._tex2d(1, 1, 'rgba8unorm-srgb', true);
+this.scrDep = this._tex2d(1, 1, 'r8unorm');
+this.scrMTex = this._tex2d(1, 1, 'rgba8unorm');
+this.slitTex = D.createTexture({ size: [1, 1, 1], format: 'rgba8unorm-srgb', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+this.sortTex = this._tex2d(1, 1, 'rg32float');
+D.queue.writeTexture({ texture: this.scrTex }, new Uint8Array([0, 0, 0, 255]), { bytesPerRow: 4 }, [1, 1]);
 const C = GPUShaderStage.COMPUTE;
 const V = GPUShaderStage.VERTEX;
 const F = GPUShaderStage.FRAGMENT;
@@ -72467,13 +75202,9 @@ const ro = { type: 'read-only-storage' };
 this.computeBGL = D.createBindGroupLayout({
 entries: [
 { binding: 0, visibility: C, buffer: { type: 'uniform' } },
-...[1, 2, 3, 4, 5, 6, 7, 8].map((binding) => ({ binding, visibility: C, buffer: ro })),
+...[1, 2, 3, 4].map((binding) => ({ binding, visibility: C, buffer: ro })),
 ...[9, 10, 11].map((binding) => ({ binding, visibility: C, buffer: { type: 'storage' } })),
-{ binding: 12, visibility: C, texture: { sampleType: 'float' } },
-{ binding: 13, visibility: C, sampler: { type: 'filtering' } },
-{ binding: 14, visibility: C, texture: { sampleType: 'unfilterable-float' } },
-{ binding: 15, visibility: C, texture: { sampleType: 'unfilterable-float', viewDimension: '2d-array' } },
-{ binding: 16, visibility: C, texture: { sampleType: 'float' } },
+...this.texLayout(),
 ],
 });
 this.renderBGL = D.createBindGroupLayout({
@@ -72488,6 +75219,48 @@ entries: [
 });
 this.dummyBuf = D.createBuffer({ size: 16, usage: GPUBufferUsage.STORAGE });
 this.depth = null;
+this.pick = null;
+}
+_tex2d(w, h, format, external = false) {
+const usage = GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | (external ? GPUTextureUsage.RENDER_ATTACHMENT : 0);
+return this.device.createTexture({ size: [w, h], format, usage });
+}
+texLayout() {
+const C = GPUShaderStage.COMPUTE;
+const t = (binding, sampleType, viewDimension = '2d') => ({ binding, visibility: C, texture: { sampleType, viewDimension } });
+return [
+t(12, 'float'),
+{ binding: 13, visibility: C, sampler: { type: 'filtering' } },
+t(14, 'unfilterable-float'),
+t(15, 'unfilterable-float', '2d-array'),
+t(16, 'float'),
+t(17, 'float'),
+t(18, 'float'),
+t(19, 'unfilterable-float'),
+t(20, 'unfilterable-float', '2d-array'),
+t(21, 'unfilterable-float'),
+];
+}
+texEntries() {
+return [
+{ binding: 12, resource: this.specTex.createView() },
+{ binding: 13, resource: this.sampler },
+{ binding: 14, resource: this.pieceTex.createView() },
+{ binding: 15, resource: this.frTex.createView({ dimension: '2d-array' }) },
+{ binding: 16, resource: this.heroTex.createView() },
+{ binding: 17, resource: this.scrTex.createView() },
+{ binding: 18, resource: this.scrDep.createView() },
+{ binding: 19, resource: this.scrMTex.createView() },
+{ binding: 20, resource: this.slitTex.createView({ dimension: '2d-array' }) },
+{ binding: 21, resource: this.sortTex.createView() },
+];
+}
+_resize(key, w, h, format, external) {
+const cur = this[key];
+if (cur.width === w && cur.height === h) return cur;
+cur.destroy();
+this.texVersion++;
+return (this[key] = this._tex2d(w, h, format, external));
 }
 get count() {
 return this.layers.main ? this.layers.main.count : 0;
@@ -72504,15 +75277,21 @@ if (!attrs.aIdx) {
 attrs.aIdx = new Float32Array(n);
 for (let i = 0; i < n; i++) attrs.aIdx[i] = i / n;
 }
-for (const g of GROUPS) {
-L.bufs[g]?.destroy();
-L.bufs[g] = D.createBuffer({ size: n * 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
-D.queue.writeBuffer(L.bufs[g], 0, packGroup(g, attrs, n));
+for (const k of IN_BUFS) {
+L.bufs[k]?.destroy();
+L.bufs[k] = D.createBuffer({ size: n * 32, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
 }
+for (const g of GROUPS) this._writeGroup(L, g);
 for (const k of ['outA', 'outB', 'outC']) {
 L.bufs[k]?.destroy();
-L.bufs[k] = D.createBuffer({ size: n * 16, usage: GPUBufferUsage.STORAGE });
+L.bufs[k] = D.createBuffer({ size: n * 16, usage: GPUBufferUsage.STORAGE | (k === 'outA' ? GPUBufferUsage.COPY_SRC : 0) });
 }
+}
+_writeGroup(L, g) {
+const [b, half] = PAIR[g];
+const need = L.count * 4;
+if (!this._pack || this._pack.length < need) this._pack = new Float32Array(need);
+this.device.queue.writeBuffer(L.bufs[IN_BUFS[b]], half * L.count * 16, packGroup(g, L.attrs, L.count, this._pack), 0, need);
 }
 dropCloud(layer) {
 const L = this.layers[layer];
@@ -72536,22 +75315,14 @@ const computeGroup = D.createBindGroup({
 layout: this.computeBGL,
 entries: [
 e(0, it.buf),
-e(1, b.origin),
-e(2, b.target),
-e(3, b.colorA),
-e(4, b.colorB),
-e(5, b.normA),
-e(6, b.normB),
-e(7, b.sculpt),
-e(8, b.paint),
+e(1, b.in0),
+e(2, b.in1),
+e(3, b.in2),
+e(4, b.in3),
 e(9, b.outA),
 e(10, b.outB),
 e(11, b.outC),
-{ binding: 12, resource: this.specTex.createView() },
-{ binding: 13, resource: this.sampler },
-{ binding: 14, resource: this.pieceTex.createView() },
-{ binding: 15, resource: this.frTex.createView({ dimension: '2d-array' }) },
-{ binding: 16, resource: this.heroTex.createView() },
+...this.texEntries(),
 ],
 });
 const renderGroup = D.createBindGroup({
@@ -72564,7 +75335,7 @@ updateAttributes(names, layer = 'main') {
 const L = this.layers[layer];
 const groups = new Set();
 for (const nm of names) for (const g of ATTR_GROUPS[nm] || []) groups.add(g);
-for (const g of groups) this.device.queue.writeBuffer(L.bufs[g], 0, packGroup(g, L.attrs, L.count));
+for (const g of groups) this._writeGroup(L, g);
 }
 setSpectrum(bytes) {
 this.device.queue.writeTexture({ texture: this.specTex }, bytes, { bytesPerRow: 64 }, [64, 1]);
@@ -72593,16 +75364,76 @@ this.texVersion++;
 this.device.queue.copyExternalImageToTexture({ source: canvas, flipY: true }, { texture: this.atlasTex }, [w, h]);
 }
 setHeroSource(source, w, h) {
+this._external('heroTex', source, w, h);
+}
+setScreenSource(source, w, h) {
+this._external('scrTex', source, w, h);
+}
+_external(key, source, w, h) {
 if (!w || !h) return;
-if (this.heroTex.width !== w || this.heroTex.height !== h) {
-this.heroTex.destroy();
-this.heroTex = this.device.createTexture({ size: [w, h], format: 'rgba8unorm-srgb', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT });
-this.texVersion++;
+const tex = this._resize(key, w, h, 'rgba8unorm-srgb', true);
+const isVideo = typeof source.currentTime === 'number';
+const sig = (this._extSig ||= {});
+const prev = sig[key];
+const same = prev && prev.tex === tex && prev.source === source;
+if (same && !isVideo) return;
+if (same && isVideo) {
+const fresh = this._videoFresh(source, key);
+if (fresh === false || (fresh === undefined && prev.t === source.currentTime && source.paused)) return;
 }
 try {
-this.device.queue.copyExternalImageToTexture({ source, flipY: true }, { texture: this.heroTex, colorSpace: 'srgb' }, [w, h]);
+this.device.queue.copyExternalImageToTexture({ source, flipY: true }, { texture: tex, colorSpace: 'srgb' }, [w, h]);
+sig[key] = { tex, source, t: isVideo ? source.currentTime : 0 };
 } catch (e) {
 }
+}
+_videoFresh(video, key) {
+if (typeof video.requestVideoFrameCallback !== 'function') return undefined;
+const W = (this._vfc ||= new WeakMap());
+let st = W.get(video);
+if (!st) {
+st = { n: 0, seen: {}, at: performance.now() };
+W.set(video, st);
+const on = () => {
+st.n++;
+st.at = performance.now();
+video.requestVideoFrameCallback(on);
+};
+video.requestVideoFrameCallback(on);
+return true;
+}
+if (!video.paused && performance.now() - st.at > 300) return undefined;
+if (st.seen[key] === st.n) return false;
+st.seen[key] = st.n;
+return true;
+}
+setScreenDepth(data, w, h) {
+const tex = this._resize('scrDep', w, h, 'r8unorm');
+this.device.queue.writeTexture({ texture: tex }, data, { bytesPerRow: w }, [w, h]);
+}
+setScreenMemory(data, w, h, rows = null) {
+const cur = this.scrMTex;
+const tex = this._resize('scrMTex', w, h, 'rgba8unorm');
+const [r0, r1] = rows && cur === tex ? rows : [0, h];
+if (r1 <= r0) return;
+this.device.queue.writeTexture({ texture: tex, origin: [0, r0] }, data, { offset: r0 * w * 4, bytesPerRow: w * 4 }, [w, r1 - r0]);
+}
+setSlit(data, cols, rows, M, layers = null) {
+let tex = this.slitTex;
+if (tex.width !== cols || tex.height !== rows || tex.depthOrArrayLayers !== M) {
+tex.destroy();
+tex = this.slitTex = this.device.createTexture({ size: [cols, rows, M], format: 'rgba8unorm-srgb', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+this.texVersion++;
+layers = null;
+}
+const per = cols * rows * 4;
+const write = (l, n) => this.device.queue.writeTexture({ texture: tex, origin: [0, 0, l] }, data, { offset: l * per, bytesPerRow: cols * 4, rowsPerImage: rows }, [cols, rows, n]);
+if (!layers) write(0, M);
+else for (const l of layers) write(l, 1);
+}
+setSort(data, w, h) {
+const tex = this._resize('sortTex', w, h, 'rg32float');
+this.device.queue.writeTexture({ texture: tex }, data, { bytesPerRow: w * 8 }, [w, h]);
 }
 async prepare({ salt = 0, mapShader = null } = {}) {
 const D = this.device;
@@ -72642,7 +75473,7 @@ entryPoint: rt ? 'fs_raw' : 'fs',
 targets: [
 {
 format: rt ? RT_FORMAT : this.format,
-blend: add ? { color: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' }, alpha: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' } } : undefined,
+blend: add ? BLEND_ADD : undefined,
 },
 ],
 },
@@ -72670,6 +75501,42 @@ this.heroFailed = true;
 console.warn('WebGPU: не собрался шейдер «героя» раскадровки, его рисует WebGL:', e && e.message ? e.message : e);
 });
 return this.heroJob;
+}
+prepareShadow() {
+if (this.shadowJob) return this.shadowJob;
+const D = this.device;
+const jobs = [];
+const cm = D.createShaderModule({ code: pointsComputeShadowWGSL });
+jobs.push(
+D.createComputePipelineAsync({ layout: D.createPipelineLayout({ bindGroupLayouts: [this.computeBGL] }), compute: { module: cm, entryPoint: 'main' } }).then((p) => {
+this.pipelines.computeShadow = p;
+})
+);
+const module = D.createShaderModule({ code: shadowRenderWGSL });
+const layout = D.createPipelineLayout({ bindGroupLayouts: [this.renderBGL] });
+for (const add of [false, true]) {
+for (const rt of [false, true]) {
+jobs.push(
+D.createRenderPipelineAsync({
+layout,
+vertex: { module, entryPoint: 'vs' },
+fragment: { module, entryPoint: rt ? 'fs_raw' : 'fs', targets: [{ format: rt ? RT_FORMAT : this.format, blend: add ? BLEND_ADD : BLEND_NORMAL }] },
+primitive: { topology: 'triangle-strip' },
+depthStencil: { format: 'depth24plus', depthWriteEnabled: false, depthCompare: 'less-equal' },
+}).then((p) => {
+this.pipelines['shadow-' + (add ? 'add' : 'normal') + (rt ? '-rt' : '')] = p;
+})
+);
+}
+}
+this.shadowJob = Promise.all(jobs).catch((e) => {
+this.shadowFailed = true;
+console.warn('WebGPU: не собрался шейдер «Тени на стене», её рисует WebGL:', e && e.message ? e.message : e);
+});
+return this.shadowJob;
+}
+shadowReady(rt) {
+return !!(this.pipelines.computeShadow && this.pipelines['shadow-add' + (rt ? '-rt' : '')] && this.pipelines['shadow-normal' + (rt ? '-rt' : '')]);
 }
 ready(add = true, rt = false) {
 return !!(this.pipelines.compute && this.pipelines['points-' + (add ? 'add' : 'normal') + (rt ? '-rt' : '')]);
@@ -72699,22 +75566,26 @@ const depth = this._depthFor(w, h);
 const add = shared.uAdd.value > 0.5;
 const enc = opts.encoder || D.createCommandEncoder();
 const view = opts.view || this.ctx.getCurrentTexture().createView();
-const pipe = this.pipelines['points-' + (add ? 'add' : 'normal') + (rt ? '-rt' : '')];
+const pipeMain = this.pipelines['points-' + (add ? 'add' : 'normal') + (rt ? '-rt' : '')];
 let first = !opts.noClear;
+let slot = 1;
 list.forEach((own, i) => {
 const layer = own.layer || 'main';
 const L = this.layers[layer];
-const computePipe = layer === 'hero' ? this.pipelines.computeHero : this.pipelines.compute;
+const computePipe = own.shadow ? this.pipelines.computeShadow : layer === 'hero' ? this.pipelines.computeHero : this.pipelines.compute;
+const pipe = own.shadow ? this.pipelines['shadow-' + own.shadow + (rt ? '-rt' : '')] : pipeMain;
 if (!L || !computePipe) return;
-const it = this._inst(i);
+const main = own.main ?? (i === 0 && layer === 'main' && !own.shadow);
+const it = this._inst(main ? 0 : slot++);
 const g = this._groupsFor(it, layer);
-packFrame(shared, { uRes: [w, h], uExposure: 1, uTOff: 0, uGhost: 1, ...extra, ...own }, this.frameData);
+packFrame(shared, { uPx: [w, h], uExposure: 1, uTOff: 0, uGhost: 1, ...extra, ...own }, this.frameData);
 D.queue.writeBuffer(it.buf, 0, this.frameData);
 const cp = enc.beginComputePass();
 cp.setPipeline(computePipe);
 cp.setBindGroup(0, g.computeGroup);
 cp.dispatchWorkgroups(Math.ceil(L.count / 64));
 cp.end();
+if (main && this.pick) this._pickCopy(enc, L, own, extra);
 const rp = enc.beginRenderPass({
 colorAttachments: [{ view, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: first ? 'clear' : 'load', storeOp: 'store' }],
 depthStencilAttachment: { view: depth.createView(), depthClearValue: 1, depthLoadOp: first ? 'clear' : 'load', depthStoreOp: 'store' },
@@ -72734,7 +75605,42 @@ depthStencilAttachment: { view: depth.createView(), depthClearValue: 1, depthLoa
 });
 rp.end();
 }
-if (!opts.encoder) D.queue.submit([enc.finish()]);
+if (!opts.encoder) {
+D.queue.submit([enc.finish()]);
+this.pickMap();
+}
+}
+pickRequest(idxs) {
+const P = (this.pick ||= { buf: null, busy: null, want: null, res: null });
+P.want = idxs.slice(0, 16);
+}
+pickResult() {
+return this.pick ? this.pick.res : null;
+}
+_pickCopy(enc, L, own, extra) {
+const P = this.pick;
+if (P.busy || P.failed || !P.want || !own.modelViewMatrix || !extra.projectionMatrix) return;
+P.buf ||= this.device.createBuffer({ size: 16 * 16, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+const idxs = P.want.filter((id) => id != null && id >= 0 && id < L.count);
+idxs.forEach((id, k) => enc.copyBufferToBuffer(L.bufs.outA, id * 16, P.buf, k * 16, 16));
+P.snap = { idxs, mv: Float32Array.from(own.modelViewMatrix.elements), proj: Float32Array.from(extra.projectionMatrix.elements) };
+P.busy = 'copied';
+}
+pickMap() {
+const P = this.pick;
+if (!P || P.busy !== 'copied') return;
+P.busy = 'mapping';
+const snap = P.snap;
+P.buf
+.mapAsync(GPUMapMode.READ)
+.then(() => {
+P.res = { ...snap, clip: new Float32Array(P.buf.getMappedRange().slice(0)) };
+P.buf.unmap();
+})
+.catch(() => {
+P.failed = true;
+})
+.finally(() => (P.busy = null));
 }
 idle() {
 return this.device.queue.onSubmittedWorkDone();
@@ -72743,8 +75649,9 @@ dispose() {
 for (const L of Object.values(this.layers)) for (const b of Object.values(L.bufs)) b.destroy();
 this.layers = {};
 for (const it of this.insts) it.buf.destroy();
-for (const t of [this.specTex, this.pieceTex, this.frTex, this.heroTex, this.atlasTex]) t.destroy();
+for (const t of [this.specTex, this.pieceTex, this.frTex, this.heroTex, this.atlasTex, this.scrTex, this.scrDep, this.scrMTex, this.slitTex, this.sortTex]) t.destroy();
 this.dummyBuf.destroy();
+this.pick?.buf?.destroy();
 this.depth?.destroy();
 this.ctx.unconfigure();
 }
@@ -72755,8 +75662,8 @@ __defs['src/effects/shaders/wgsl/generated/mesh-programs.js'] = function (__expo
 __def(__exports, 'MESH_PROGRAMS', () => MESH_PROGRAMS);
 const MESH_PROGRAMS = {
 "links": {
-"compute": "struct Frame {\n\t@size(16) uAdd: f32,\n\t@size(16) uSolid: vec3f,\n\t@size(16) uAtt: f32,\n\t@size(16) uSize: f32,\n\t@size(16) uPR: f32,\n\t@size(16) uGlyph: vec3f,\n\t@size(16) uColorBy: f32,\n\t@size(16) uBright: f32,\n\t@size(16) uMaskShow: f32,\n\t@size(16) uP0: vec3f,\n\t@size(16) uP1: vec3f,\n\t@size(16) uP2: vec3f,\n\t@size(16) uSliceC: vec3f,\n\t@size(16) uMarkC: vec3f,\n\t@size(16) uTime: f32,\n\t@size(16) uTOff: f32,\n\t@size(16) uMorph: f32,\n\tuMorphS: vec4f,\n\tuMorphO: vec4f,\n\tuMorphD: vec4f,\n\t@size(16) uSettle: f32,\n\t@size(16) uBeat: f32,\n\t@size(16) uYR: vec2f,\n\t@size(16) uMouse: vec3f,\n\t@size(16) uMouseOn: f32,\n\t@size(16) uShade: f32,\n\tuCurlP: vec4f,\n\tuSpecP: vec4f,\n\tuWaveP: vec4f,\n\tuWaveSrc: vec4f,\n\tuPulseP: vec4f,\n\tuVoxelP: vec4f,\n\tuGlitchP: vec4f,\n\tuBlast: vec4f,\n\tuFlow: vec4f,\n\tuDisP: vec4f,\n\tuScope: vec4f,\n\tuScopeP: vec4f,\n\tuScopeQ: vec4f,\n\t@size(16) uScopeC: vec3f,\n\tuDepth: vec4f,\n\tuDepthP: vec4f,\n\tuDepthQ: vec4f,\n\t@size(16) uFlat: f32,\n\tuCurl: vec4f,\n\tuSpec: vec4f,\n\tuWave: vec4f,\n\tuTwist: vec4f,\n\tuPulse: vec4f,\n\tuVoxel: vec4f,\n\tuJitter: vec4f,\n\tuCursor: vec4f,\n\tuMask: vec4f,\n\tuMaskA: vec4f,\n\tuGlitch: vec4f,\n\tuContact: vec4f,\n\tuShockP: vec4f,\n\tuTrk: array<vec4f, 16>,\n\tuHand: array<vec4f, 12>,\n\tuGrav: vec4f,\n\tuSlice: vec4f,\n\tuSliceM: vec4f,\n\tuMark: vec4f,\n\tuGravT: vec4f,\n\tuPhysP: vec4f,\n\t@size(16) uAsm: f32,\n\tuDis: vec4f,\n\t@size(16) uDisT: f32,\n\t@size(16) uAnimN: f32,\n\t@size(16) uCen: vec3f,\n\tuDisQ: vec4f,\n\tuGravP: vec4f,\n\tuHandP: vec4f,\n\tuImp: array<vec4f, 32>,\n\tuShock: array<vec4f, 4>,\n\tuExp: vec4f,\n\tuExpP: vec4f,\n\tuGrow: vec4f,\n\tuGrowP: vec4f,\n\t@size(16) uGrowSeed: vec3f,\n\tuJel: array<vec4f, 3>,\n\tuJelO: array<vec4f, 3>,\n\tuJelP: vec4f,\n\tuPhysics: vec4f,\n\t@size(16) uCollapseTime: f32,\n\tuBrushHits: array<vec4f, 20>,\n\tuPaintP: vec4f,\n\tuBrushParam: vec4f,\n\tuLookP2: vec4f,\n\tuDof: vec4f,\n\tuHyp: vec4f,\n\tuHypP: vec4f,\n\tuCh: vec4f,\n\tuChA: vec4f,\n\tuFr: vec4f,\n\tuFr2: vec4f,\n\tuFr3: vec4f,\n\tuFr4: vec4f,\n\tuFr5: vec4f,\n\tuHero: vec4f,\n\tuFr6: vec4f,\n\tuFr7: vec4f,\n\tuShoot: vec4f,\n\tuShootP: vec4f,\n\tuShootD: vec4f,\n\tuShootE: vec4f,\n\tuShootC: vec4f,\n\tuShootS: array<vec4f, 24>,\n\tuShootN: array<vec4f, 24>,\n\tuShootB: array<vec4f, 6>,\n\tmodelMatrix: mat4x4f,\n\tmodelViewMatrix: mat4x4f,\n\tprojectionMatrix: mat4x4f,\n\tnormalMatrix: mat3x3f,\n\t@size(16) uRes: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uGlow: f32,\n\t@size(16) uDens: f32,\n\t@size(16) uGhost: f32,\n\t@size(16) uShape: f32,\n\tuLink: vec4f,\n\tuLinkP: vec4f,\n\t@size(16) uLinkW: f32,\n\t@size(16) uScopeW: f32,\n\t@size(16) uScopeLB: f32,\n}\n@group(0) @binding(0) var<uniform> fr: Frame;\n@group(0) @binding(1) var<storage, read> inS0: array<vec4f>;\n@group(0) @binding(2) var<storage, read> inS1: array<vec4f>;\n@group(0) @binding(3) var<storage, read> inS2: array<vec4f>;\n@group(0) @binding(4) var<storage, read> inS3: array<vec4f>;\n@group(0) @binding(5) var<storage, read> inS4: array<vec4f>;\n@group(0) @binding(9) var<storage, read_write> outClip: array<vec4f>;\n@group(0) @binding(10) var<storage, read_write> outV0: array<vec4f>;\n@group(0) @binding(11) var<storage, read_write> outV1: array<vec4f>;\n@group(0) @binding(12) var specTex: texture_2d<f32>;\n@group(0) @binding(13) var linSamp: sampler;\n@group(0) @binding(14) var pieceTex: texture_2d<f32>;\n@group(0) @binding(15) var frTex: texture_2d_array<f32>;\n@group(0) @binding(16) var heroTex: texture_2d<f32>;\n\nvar<private> aOrigin: vec3f;\nvar<private> aTarget: vec3f;\nvar<private> aIdx: f32;\nvar<private> aOriginB: vec3f;\nvar<private> aTargetB: vec3f;\nvar<private> aIdxB: f32;\nvar<private> aDepth: f32;\nvar<private> aDepthB: f32;\nvar<private> aEnd: f32;\nvar<private> aSide: f32;\nvar<private> vC: vec3f;\nvar<private> vA: f32;\nvar<private> vEnd: f32;\nvar<private> vIdx: f32;\nvar<private> vSide: f32;\nvar<private> vStrain: f32;\nvar<private> gl_Position: vec4f;\n\nfn glsl_mod_f(x: f32, y: f32) -> f32 { return x - y * floor(x / y); }\n\nvar<private> gGl: f32 = 0.0;\nvar<private> gCh: f32 = -1.0;\nvar<private> gDrop: f32 = 0.0;\nvar<private> gGrow: f32 = 1.0;\nvar<private> gGrowE: f32 = 0.0;\nvar<private> gBurst: f32 = 0.0;\nvar<private> gScopeG: f32 = 0.0;\nvar<private> gScopeT: f32 = 0.0;\nvar<private> gScopeD: f32 = 0.0;\nvar<private> gDepth: f32 = 0.5;\nvar<private> gDepthG: f32 = 0.0;\nvar<private> gNormal: vec3f = vec3f(0.0);\nvar<private> gLum: f32 = 0.5;\nvar<private> gHypW: f32 = 0.0;\nvar<private> gHypF: f32 = 0.0;\nvar<private> gChN: f32 = 0.0;\n\nfn mod289_vec3(x_in: vec3f) -> vec3f {\n\tvar x: vec3f = x_in;\n\treturn (x - (floor((x * ((1.0 / 289.0)))) * 289.0));\n}\n\nfn mod289_vec4(x_in: vec4f) -> vec4f {\n\tvar x: vec4f = x_in;\n\treturn (x - (floor((x * ((1.0 / 289.0)))) * 289.0));\n}\n\nfn permute(x_in: vec4f) -> vec4f {\n\tvar x: vec4f = x_in;\n\treturn mod289_vec4((((((x * 34.0)) + 1.0)) * x));\n}\n\nfn taylorInvSqrt(r_in: vec4f) -> vec4f {\n\tvar r: vec4f = r_in;\n\treturn (1.79284291400159 - (0.85373472095314 * r));\n}\n\nfn snoise(v_in: vec3f) -> f32 {\n\tvar v: vec3f = v_in;\n\tconst C: vec2f = vec2f((1.0 / 6.0), (1.0 / 3.0));\n\tconst D: vec4f = vec4f(0.0, 0.5, 1.0, 2.0);\n\tvar i: vec3f = floor((v + dot(v, C.yyy)));\n\tvar x0: vec3f = ((v - i) + dot(i, C.xxx));\n\tvar g: vec3f = step(x0.yzx, x0.xyz);\n\tvar l: vec3f = (1.0 - g);\n\tvar i1: vec3f = min(g.xyz, l.zxy);\n\tvar i2: vec3f = max(g.xyz, l.zxy);\n\tvar x1: vec3f = ((x0 - i1) + C.xxx);\n\tvar x2: vec3f = ((x0 - i2) + C.yyy);\n\tvar x3: vec3f = (x0 - D.yyy);\n\ti = mod289_vec3(i);\n\tvar p: vec4f = permute(((permute(((permute((i.z + vec4f(0.0, i1.z, i2.z, 1.0))) + i.y) + vec4f(0.0, i1.y, i2.y, 1.0))) + i.x) + vec4f(0.0, i1.x, i2.x, 1.0)));\n\tvar n_: f32 = 0.142857142857;\n\tvar ns: vec3f = ((n_ * D.wyz) - D.xzx);\n\tvar j: vec4f = (p - (49.0 * floor(((p * ns.z) * ns.z))));\n\tvar x_: vec4f = floor((j * ns.z));\n\tvar y_: vec4f = floor((j - (7.0 * x_)));\n\tvar x: vec4f = ((x_ * ns.x) + ns.yyyy);\n\tvar y: vec4f = ((y_ * ns.x) + ns.yyyy);\n\tvar h: vec4f = ((1.0 - abs(x)) - abs(y));\n\tvar b0: vec4f = vec4f(x.xy, y.xy);\n\tvar b1: vec4f = vec4f(x.zw, y.zw);\n\tvar s0: vec4f = ((floor(b0) * 2.0) + 1.0);\n\tvar s1: vec4f = ((floor(b1) * 2.0) + 1.0);\n\tvar sh: vec4f = -step(h, vec4f(0.0));\n\tvar a0: vec4f = (b0.xzyw + (s0.xzyw * sh.xxyy));\n\tvar a1: vec4f = (b1.xzyw + (s1.xzyw * sh.zzww));\n\tvar p0: vec3f = vec3f(a0.xy, h.x);\n\tvar p1: vec3f = vec3f(a0.zw, h.y);\n\tvar p2: vec3f = vec3f(a1.xy, h.z);\n\tvar p3: vec3f = vec3f(a1.zw, h.w);\n\tvar norm: vec4f = taylorInvSqrt(vec4f(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));\n\tp0 *= vec3f(norm.x);\n\tp1 *= vec3f(norm.y);\n\tp2 *= vec3f(norm.z);\n\tp3 *= vec3f(norm.w);\n\tvar m: vec4f = max((0.6 - vec4f(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3))), vec4f(0.0));\n\tm = (m * m);\n\treturn (42.0 * dot((m * m), vec4f(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3))));\n}\n\nfn curlNoise(p_in: vec3f) -> vec3f {\n\tvar p: vec3f = p_in;\n\tconst e: f32 = 0.08;\n\tvar n1: f32 = snoise((p + vec3f(e, 0.0, 0.0)));\n\tvar n2: f32 = snoise((p - vec3f(e, 0.0, 0.0)));\n\tvar n3: f32 = snoise((p + vec3f(0.0, e, 0.0)));\n\tvar n4: f32 = snoise((p - vec3f(0.0, e, 0.0)));\n\tvar n5: f32 = snoise((p + vec3f(0.0, 0.0, e)));\n\tvar n6: f32 = snoise((p - vec3f(0.0, 0.0, e)));\n\treturn normalize((vec3f((((n4 - n3)) - ((n6 - n5))), (((n6 - n5)) - ((n2 - n1))), (((n2 - n1)) - ((n4 - n3)))) + 1e-5));\n}\n\nfn hash11(p_in: f32) -> f32 {\n\tvar p: f32 = p_in;\n\treturn fract((sin((p * 127.1)) * 43758.5453));\n}\n\nfn hit2(b_in: bool) -> f32 {\n\tvar b: bool = b_in;\n\treturn select(0.0, 1.0, b);\n}\n\nfn contactAt(c_in: vec3f, st_in: f32, base_in: vec3f, rad_in: vec3f, pos: ptr<function, vec3f>) {\n\tvar c: vec3f = c_in;\n\tvar st: f32 = st_in;\n\tvar base: vec3f = base_in;\n\tvar rad: vec3f = rad_in;\n\tvar dd: vec3f = (base - c);\n\tvar r: f32 = fr.uContact.y;\n\tvar d2: f32 = dot(dd, dd);\n\tif (((d2 >= (r * r)) || (st < 0.001))) {\n\t\treturn;\n\t}\n\tvar f: f32 = (1.0 - (sqrt(d2) / r));\n\tf = ((f * f) * ((3.0 - (2.0 * f))));\n\tvar k: f32 = ((f * st) * fr.uContact.x);\n\tif ((fr.uContact.z < 0.5)) {\n\t\t(*pos) += ((rad * k) * 0.4);\n\t} else if ((fr.uContact.z < 1.5)) {\n\t\tvar ax: vec3f = normalize((c + vec3f(1e-4)));\n\t\tvar a: f32 = (k * 2.4);\n\t\tvar q: vec3f = ((*pos) - c);\n\t\t(*pos) = (((c + (q * cos(a))) + (cross(ax, q) * sin(a))) + ((ax * dot(ax, q)) * ((1.0 - cos(a)))));\n\t} else if ((fr.uContact.z < 2.5)) {\n\t\t(*pos) -= ((normalize((dd + vec3f(1e-4))) * k) * 0.3);\n\t} else if ((fr.uContact.z < 3.5)) {\n\t\t(*pos) += ((normalize((dd + vec3f(1e-4))) * k) * 0.3);\n\t} else if ((fr.uContact.z < 4.5)) {\n\t\t(*pos) += (((rad * sin(((length(dd) * 20.0) - (fr.uTime * 6.0)))) * k) * 0.14);\n\t} else if ((fr.uContact.z < 5.5)) {\n\t\tvar hh: f32 = fract((sin(dot(base.xz, vec2f(12.9898, 78.233))) * 43758.5453));\n\t\t(*pos).y -= (((k * k) * 0.55) * ((0.6 + (0.8 * hh))));\n\t\t{ let _sw0 = ((*pos).xz + vec2f(((((hh - 0.5)) * k) * 0.06))); (*pos) = vec3f(_sw0.x, (*pos).y, _sw0.y); }\n\t} else if ((fr.uContact.z < 6.5)) {\n\t\t(*pos) += ((curlNoise(((base * 3.0) + (fr.uTime * 0.8))) * k) * 0.45);\n\t}\n}\n\nfn contactK(b_in: vec3f) -> f32 {\n\tvar b: vec3f = b_in;\n\tvar m: f32 = 0.0;\n\tvar r: f32 = (fr.uContact.y * ((1.0 + (0.12 * sin((fr.uTime * 4.0))))));\n\tfor (var i: i32 = 0; (i < 16); i++) {\n\t\tif ((f32(i) >= fr.uContact.w)) {\n\t\t\tbreak;\n\t\t}\n\t\tvar d: f32 = distance(b, fr.uTrk[i].xyz);\n\t\tif ((d < r)) {\n\t\t\tm = max(m, (((1.0 - (d / r))) * fr.uTrk[i].w));\n\t\t}\n\t}\n\tfor (var i: i32 = 0; (i < 32); i++) {\n\t\tif ((f32(i) >= fr.uShockP.z)) {\n\t\t\tbreak;\n\t\t}\n\t\tvar d: f32 = distance(b, fr.uImp[i].xyz);\n\t\tif ((d < r)) {\n\t\t\tm = max(m, (((1.0 - (d / r))) * fr.uImp[i].w));\n\t\t}\n\t}\n\treturn clamp((m * fr.uContact.x), 0.0, 1.0);\n}\n\nfn markK(b_in: vec3f) -> f32 {\n\tvar b: vec3f = b_in;\n\tif (((fr.uMark.x < 0.5) || (fr.uContact.w < 0.5))) {\n\t\treturn 0.0;\n\t}\n\tvar m: f32 = 0.0;\n\tfor (var i: i32 = 0; (i < 16); i++) {\n\t\tif ((f32(i) >= fr.uContact.w)) {\n\t\t\tbreak;\n\t\t}\n\t\tvar d: f32 = distance(b, fr.uTrk[i].xyz);\n\t\tif ((d < fr.uMark.y)) {\n\t\t\tm = max(m, (1.0 - (d / fr.uMark.y)));\n\t\t}\n\t}\n\treturn (((m * m) * ((3.0 - (2.0 * m)))) * fr.uMark.z);\n}\n\nfn hueRot(c_in: vec3f, a_in: f32) -> vec3f {\n\tvar c: vec3f = c_in;\n\tvar a: f32 = a_in;\n\tvar k: vec3f = vec3f(0.57735);\n\treturn (((c * cos(a)) + (cross(k, c) * sin(a))) + ((k * dot(k, c)) * ((1.0 - cos(a)))));\n}\n\nfn sliceK(b_in: vec3f) -> f32 {\n\tvar b: vec3f = b_in;\n\tif ((fr.uSlice.x < 0.001)) {\n\t\treturn 0.0;\n\t}\n\tvar axCode: f32 = glsl_mod_f(fr.uSlice.w, 10.0);\n\tvar nLines: f32 = max(1.0, floor((fr.uSlice.w / 10.0)));\n\tvar c: f32 = select((select((select((((b.x + b.y)) * 0.707), b.z, (axCode < 2.5))), b.x, (axCode < 1.5))), b.y, (axCode < 0.5));\n\tvar v: f32 = clamp((((c + 1.2)) / 2.4), 0.0, 1.0);\n\tvar coord: f32 = glsl_mod_f(((v * nLines) - (fr.uSlice.y * nLines)), 1.0);\n\treturn (((1.0 - smoothstep((fr.uSlice.z * 0.4), fr.uSlice.z, abs((coord - 0.5))))) * fr.uSlice.x);\n}\n\nfn disK(b_in: vec3f, idx_in: f32) -> f32 {\n\tvar b: vec3f = b_in;\n\tvar idx: f32 = idx_in;\n\tif ((fr.uDis.x < 0.001)) {\n\t\treturn 0.0;\n\t}\n\tvar st: f32 = fr.uDisP.x;\n\tvar y01: f32 = clamp((((b.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\tif (((st > 2.5) && (st < 3.5))) {\n\t\ty01 = (floor(((y01 * 12.0) + 0.001)) / 12.0);\n\t}\n\tvar h: f32 = select(hash11((idx * 37.3)), hash11((floor((idx * 1800.0)) * 0.731)), (((st > 3.5) && (st < 4.5))));\n\tvar jit: f32 = select(select(select(select(select(select(select(0.1, 0.12, (st < 6.5)), 0.18, (st < 5.5)), 0.3, (st < 4.5)), 0.0, (st < 3.5)), 0.03, (st < 2.5)), 0.28, (st < 1.5)), 0.16, (st < 0.5));\n\tvar m: f32 = fr.uDis.y;\n\tvar still: bool = (fr.uAnimN < 0.5);\n\tvar ord: f32;\n\tif ((m < 0.5)) {\n\t\tord = (1.0 - y01);\n\t} else if ((m < 1.5)) {\n\t\tord = select(hash11((idx * 13.7)), ((snoise((b * 1.7)) * 0.5) + 0.5), still);\n\t} else if ((m < 2.5)) {\n\t\tord = y01;\n\t} else if ((m < 3.5)) {\n\t\tord = select(y01, clamp(((((b.x - fr.uCen.x)) * 0.3) + 0.5), 0.0, 1.0), still);\n\t} else {\n\t\tvar r01: f32 = clamp((length((b - fr.uCen)) / max((((fr.uYR.y - fr.uYR.x)) * 0.6), 0.3)), 0.0, 1.0);\n\t\tord = select((1.0 - r01), r01, (m < 4.5));\n\t}\n\tord = ((ord * ((1.0 - jit))) + (h * jit));\n\tvar w: f32 = max(fr.uDisQ.x, 0.06);\n\tif (((st > 1.5) && (st < 2.5))) {\n\t\tw *= 0.45;\n\t}\n\treturn clamp(((((fr.uDis.x * ((1.0 + w))) - ord)) / w), 0.0, 1.0);\n}\n\nfn growK(b_in: vec3f, idx_in: f32) -> f32 {\n\tvar b: vec3f = b_in;\n\tvar idx: f32 = idx_in;\n\tvar S: f32 = max((fr.uYR.y - fr.uYR.x), 0.5);\n\tvar y01: f32 = clamp((((b.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\tvar d: f32;\n\tif ((fr.uGrow.y < 0.5)) {\n\t\td = ((y01 * 0.8) + (clamp((length((b.xz - fr.uCen.xz)) / S), 0.0, 1.0) * 0.2));\n\t} else if ((fr.uGrow.y < 1.5)) {\n\t\td = clamp((distance(b, fr.uGrowSeed) / ((S * 1.5))), 0.0, 1.0);\n\t} else {\n\t\td = clamp((length((b - fr.uCen)) / ((S * 0.7))), 0.0, 1.0);\n\t}\n\tvar nz: f32 = select(hash11((floor((idx * 700.0)) * 0.37)), ((snoise(((b * 3.0) + 7.0)) * 0.5) + 0.5), (fr.uAnimN < 0.5));\n\td = clamp(((d + ((((nz - 0.5)) * 0.45) * fr.uGrow.z)) + (((hash11((idx * 9.1)) - 0.5)) * 0.03)), 0.0, 1.0);\n\tvar w: f32 = max(fr.uGrow.w, 0.04);\n\treturn clamp(((((fr.uGrow.x * ((1.0 + w))) - d)) / w), 0.0, 1.0);\n}\n\nfn morphLocal(A_in: vec3f, B_in: vec3f, idx_in: f32) -> f32 {\n\tvar A: vec3f = A_in;\n\tvar B: vec3f = B_in;\n\tvar idx: f32 = idx_in;\n\tvar h: f32 = hash11((idx * 3.17));\n\tvar msty: i32 = i32((fr.uMorphS.x + 0.5));\n\tif ((msty == 8)) {\n\t\th = hash11(dot(floor((((A - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));\n\t}\n\tif ((msty == 13)) {\n\t\th = hash11(dot(floor((((A - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));\n\t}\n\tvar ord: f32 = h;\n\tvar so: i32 = i32((fr.uMorphO.x + 0.5));\n\tvar yN: f32 = clamp((((A.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\tif ((so == 1)) {\n\t\tord = ((yN * 0.85) + (h * 0.15));\n\t} else if ((so == 2)) {\n\t\tord = ((((1.0 - yN)) * 0.85) + (h * 0.15));\n\t} else if ((so == 3)) {\n\t\tord = ((clamp((length(A) / 1.4), 0.0, 1.0) * 0.85) + (h * 0.15));\n\t} else if ((so == 4)) {\n\t\tord = ((clamp((((A.x + 1.2)) / 2.4), 0.0, 1.0) * 0.85) + (h * 0.15));\n\t} else if ((so == 5)) {\n\t\tord = ((((1.0 - gDepth)) * 0.85) + (h * 0.15));\n\t} else if ((so == 6)) {\n\t\tord = ((gDepth * 0.85) + (h * 0.15));\n\t}\n\tif ((msty == 10)) {\n\t\tord = ((((1.0 - gDepth)) * 0.8) + (h * 0.2));\n\t}\n\tif ((msty == 11)) {\n\t\tord = ((clamp((((B.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0) * 0.92) + (h * 0.08));\n\t}\n\tvar sg: f32 = fr.uMorphS.z;\n\treturn clamp(((fr.uMorph * ((1.0 + sg))) - (ord * sg)), 0.0, 1.0);\n}\n\nfn morphEase(x_in: f32) -> f32 {\n\tvar x: f32 = x_in;\n\tvar e: i32 = i32((fr.uMorphO.y + 0.5));\n\tif ((e == 1)) {\n\t\treturn (((x * x) * x) * (((x * (((x * 6.0) - 15.0))) + 10.0)));\n\t}\n\tif ((e == 2)) {\n\t\tvar c1: f32 = 1.70158;\n\t\tvar y: f32 = (x - 1.0);\n\t\treturn ((1.0 + (((((c1 + 1.0)) * y) * y) * y)) + ((c1 * y) * y));\n\t}\n\treturn ((x * x) * ((3.0 - (2.0 * x))));\n}\n\nfn frPlace(lay_in: f32, k_in: f32, n_in: f32, u_in: f32, v_in: f32, nrm: ptr<function, vec3f>) -> vec3f {\n\tvar lay: f32 = lay_in;\n\tvar k: f32 = k_in;\n\tvar n: f32 = n_in;\n\tvar u: f32 = u_in;\n\tvar v: f32 = v_in;\n\tvar t: f32 = select(0.5, (k / ((n - 1.0))), (n > 1.0));\n\tvar W: f32 = fr.uFr2.z;\n\tvar H: f32 = fr.uFr2.w;\n\tvar depth: f32 = fr.uFr3.x;\n\t(*nrm) = vec3f(0.0, 0.0, 1.0);\n\tif (((lay > 0.5) && (lay < 1.5))) {\n\t\tvar gx: f32 = ceil(sqrt((n * ((W / H)))));\n\t\tvar gy: f32 = ceil((n / gx));\n\t\tvar s: f32 = min((2.4 / ((gx * W))), (2.4 / ((gy * H))));\n\t\tvar cx: f32 = glsl_mod_f(k, gx);\n\t\tvar cy: f32 = floor((k / gx));\n\t\treturn vec3f(((((((cx - (((gx - 1.0)) * 0.5))) * W) * s) * 1.04) + ((u * W) * s)), (((((((((gy - 1.0)) * 0.5) - cy)) * H) * s) * 1.04) + ((v * H) * s)), 0.0);\n\t}\n\tvar ad: f32 = (k - fr.uFr4.x);\n\tif (((lay > 1.5) && (lay < 2.5))) {\n\t\tvar sc: f32 = 0.5;\n\t\tvar aa: f32 = abs(ad);\n\t\tvar c1: f32 = ((W * 0.54) + ((W * sc) * 0.53));\n\t\tvar c: f32 = select((c1 + (((((aa - 1.0)) * W) * sc) * 1.06)), (aa * c1), (aa < 1.0));\n\t\tvar s: f32 = mix(1.0, sc, min(aa, 1.0));\n\t\treturn vec3f(((sign(ad) * c) + ((u * W) * s)), ((v * H) * s), 0.0);\n\t}\n\tvar dz: f32 = select(1.0, -1.0, (((fr.uFr4.y > 0.5) && (fr.uFr4.y < 1.5))));\n\tvar kz: f32 = k;\n\tvar cen: f32 = select(fr.uFr4.x, (((n - 1.0)) * 0.5), (fr.uFr6.y > 0.5));\n\tvar ts: f32 = select(1.0, (1.0 - (0.72 * clamp((max(-ad, 0.0) / max((n - 1.0), 1.0)), 0.0, 1.0))), (lay > 2.5));\n\treturn vec3f(((u * W) * ts), ((v * H) * ts), (((((kz - cen)) * depth) / max((n - 1.0), 1.0)) * dz));\n}\n\nfn frMix(k_in: f32, u_in: f32, v_in: f32, nrm: ptr<function, vec3f>) -> vec3f {\n\tvar k: f32 = k_in;\n\tvar u: f32 = u_in;\n\tvar v: f32 = v_in;\n\tvar nA: vec3f;\n\tvar nB: vec3f;\n\tvar pA: vec3f = frPlace(fr.uFr3.y, k, fr.uFr.y, u, v, &nA);\n\tif ((fr.uFr3.w > 0.0001)) {\n\t\tvar pB: vec3f = frPlace(fr.uFr3.z, k, fr.uFr.y, u, v, &nB);\n\t\tvar m: f32 = ((fr.uFr3.w * fr.uFr3.w) * ((3.0 - (2.0 * fr.uFr3.w))));\n\t\t(*nrm) = normalize(mix(nA, nB, m));\n\t\treturn mix(pA, pB, m);\n\t}\n\t(*nrm) = nA;\n\treturn pA;\n}\n\nfn frBlockPos(aIdx_in: f32, nrm: ptr<function, vec3f>, kk: ptr<function, f32>, cell: ptr<function, vec2f>) -> vec3f {\n\tvar aIdx: f32 = aIdx_in;\n\tvar ip: f32 = floor(((aIdx * fr.uFr.w) + 0.5));\n\tvar k: f32 = floor((ip / fr.uFr.z));\n\tvar loc: f32 = (ip - (k * fr.uFr.z));\n\tvar ci: f32 = glsl_mod_f(loc, fr.uFr2.x);\n\tvar cj: f32 = floor((loc / fr.uFr2.x));\n\t(*kk) = k;\n\t(*cell) = vec2f(ci, cj);\n\tvar jt: vec2f = (vec2f(fract((sin((k * 12.9898)) * 43758.5453)), fract((sin(((k * 78.233) + 1.7)) * 24634.6345))) - 0.5);\n\treturn frMix(k, (((((ci + 0.5) + (jt.x * 0.9))) / fr.uFr2.x) - 0.5), (0.5 - ((((cj + 0.5) + (jt.y * 0.9))) / fr.uFr2.y)), nrm);\n}\n\nfn frShow(k_in: f32, tcol: ptr<function, vec3f>) -> vec4f {\n\tvar k: f32 = k_in;\n\tvar n: f32 = fr.uFr.y;\n\tvar idx: f32 = fr.uFr4.x;\n\tvar mode: i32 = i32((fr.uFr4.y + 0.5));\n\tvar d: f32 = (k - idx);\n\tvar fw: f32 = max(2.0, (n * 0.04));\n\tvar w: f32 = 1.0;\n\tvar lift: f32 = 0.0;\n\tvar tint: f32 = 0.0;\n\t(*tcol) = fr.uP2;\n\tif ((mode == 0)) {\n\t\tvar hl: f32 = fr.uFr4.w;\n\t\tif ((hl > 0.001)) {\n\t\t\tw = ((1.0 - (0.5 * hl)) + ((((0.5 + (1.4 * hl))) * max(0.0, (1.0 - (abs(d) / 2.5)))) * hl));\n\t\t}\n\t\tif ((d < -0.5)) {\n\t\t\tw *= (0.45 + (0.55 / ((1.0 + (0.2 * (-d))))));\n\t\t}\n\t\tif ((((d > 0.5) && (fr.uFr6.y < 0.5)) && (abs((fr.uFr3.y - 2.0)) > 0.5))) {\n\t\t\tw *= select(select(1.0, 0.4, (fr.uFr5.z > 0.5)), 0.0, (fr.uFr5.z > 1.5));\n\t\t}\n\t} else if ((mode == 1)) {\n\t\tif ((d < 0.0)) {\n\t\t\tw = max(0.0, (1.0 + (d / fw)));\n\t\t}\n\t\tlift = (1.0 - w);\n\t\tw *= (1.0 + (0.25 * max(0.0, (1.0 - abs(d)))));\n\t} else if ((mode == 2)) {\n\t\tif ((d > 0.0)) {\n\t\t\tw = (max(0.0, (1.0 - (d / fw))) * (select(0.0, 0.5, (d <= fw))));\n\t\t\tlift = (-((1.0 - w)) * 0.6);\n\t\t}\n\t\tw *= (1.0 + (0.25 * max(0.0, (1.0 - abs(d)))));\n\t} else if ((mode == 3)) {\n\t\tvar half_: f32 = max(3.0, (n * 0.08));\n\t\tvar ad: f32 = abs(d);\n\t\tw = select(max(0.0, (1.0 - (((ad - half_)) / fw))), 1.0, (ad <= half_));\n\t\tlift = ((((1.0 - w)) * sign((d + 0.0001))) * 0.8);\n\t\tw *= (1.0 + (0.25 * max(0.0, (1.0 - ad))));\n\t} else {\n\t\tvar span: f32 = max(1.5, (n * max(0.02, fr.uFr4.z)));\n\t\tif ((mode == 4)) {\n\t\t\tvar beam: f32 = exp(((-((d / span)) * ((d / span))) * 2.0));\n\t\t\tvar after: f32 = select(0.0, (exp((d / ((span * 2.4)))) * 0.4), (d < 0.0));\n\t\t\tw = ((0.18 + (beam * 1.5)) + after);\n\t\t\ttint = min(0.85, (beam * 0.8));\n\t\t\tlift = select(0.0, -min(0.35, ((-d / n) * 1.2)), (d < 0.0));\n\t\t} else {\n\t\t\tvar age: f32 = (-d / span);\n\t\t\tif ((d > 0.0)) {\n\t\t\t\tw = 0.0;\n\t\t\t} else {\n\t\t\t\tw = (max(0.0, (exp((-age * 1.1)) * 0.9)) + (1.35 * max(0.0, (1.0 - abs(d)))));\n\t\t\t\tvar t: f32 = min(1.0, age);\n\t\t\t\t(*tcol) = select(mix(fr.uP1, fr.uP2, (((t - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (t * 2.0)), (t < 0.5));\n\t\t\t\ttint = (min(0.9, (0.3 + (age * 0.7))) * ((1.0 - max(0.0, (1.0 - abs(d))))));\n\t\t\t\tlift = -min(0.6, (age * 0.25));\n\t\t\t}\n\t\t}\n\t}\n\treturn vec4f(w, lift, tint, 0.0);\n}\n\nfn dzone(x_in: f32) -> f32 {\n\tvar x: f32 = x_in;\n\tvar a: f32 = abs(x);\n\treturn ((sign(x) * max((a - fr.uDepthQ.x), 0.0)) / max((1.0 - fr.uDepthQ.x), 0.25));\n}\n\nfn depthShape(b_in: vec3f) -> vec3f {\n\tvar b: vec3f = b_in;\n\tvar t: f32 = (fr.uTime - fr.uTOff);\n\tvar A: f32 = fr.uDepth.x;\n\tvar sp: f32 = fr.uDepth.z;\n\tvar dn: f32 = select((1.0 - gDepth), gDepth, (fr.uDepthP.y > 0.0));\n\tvar fo: f32 = select((1.0 - fr.uDepth.w), fr.uDepth.w, (fr.uDepthP.y > 0.0));\n\tvar dd: f32 = dzone((dn - fo));\n\tvar md: i32 = i32((fr.uDepth.y + 0.5));\n\tif ((md == 0)) {\n\t\tb.z += ((dd * A) * 1.2);\n\t} else if ((md == 1)) {\n\t\tvar N: f32 = max(2.0, floor((fr.uDepthP.x + 0.5)));\n\t\tvar x: f32 = (dn * N);\n\t\tvar dq: f32 = (((floor(x) + smoothstep(0.38, 0.62, fract(x)))) / N);\n\t\tb.z += ((dzone((dq - fo)) * A) * 1.5);\n\t} else if ((md == 2)) {\n\t\tb.z += (((dd * A) * 1.3) * ((0.5 + (0.5 * sin(((t * sp) * 0.9))))));\n\t} else if ((md == 3)) {\n\t\tb.z += (((dd * A) * 1.4) * ((0.55 + (0.45 * sin(((b.x * 3.2) - ((t * sp) * 1.6)))))));\n\t} else if ((md == 4)) {\n\t\tb.z += ((((dd * 0.6) + ((sin(((length(b.xy) * 9.0) - ((t * sp) * 2.2))) * 0.25) * ((0.35 + dn))))) * A);\n\t} else if ((md == 5)) {\n\t\tvar a: f32 = (((dd * A) * 1.6) * sin(((t * sp) * 0.7)));\n\t\tvar cs: f32 = cos(a);\n\t\tvar sn: f32 = sin(a);\n\t\t{ let _sw1 = (mat2x2f(cs, -sn, sn, cs) * b.xz); b = vec3f(_sw1.x, b.y, _sw1.y); }\n\t\tb.z += ((dd * A) * 0.5);\n\t} else {\n\t\tvar p: f32 = (0.5 + (0.5 * sin((((t * sp) * 0.8) - 1.5708))));\n\t\tb.z += ((dd * A) * ((0.4 + ((1.8 * p) * p))));\n\t\t{ let _sw2 = (b.xy * vec2f((1.0 + ((((dd * A) * 0.5) * p) * p)))); b = vec3f(_sw2.x, _sw2.y, b.z); }\n\t}\n\tvar a: f32 = ((t * sp) * 0.8);\n\t{ let _sw3 = (b.xy + ((((vec2f(cos(a), (sin(a) * 0.55)) * dd) * fr.uDepthP.z) * A) * 0.4)); b = vec3f(_sw3.x, _sw3.y, b.z); }\n\treturn b;\n}\n\nfn hyperWarp(p_in: vec3f, c_in: vec3f, R_in: f32, md_in: f32, a_in: f32, w4: ptr<function, f32>) -> vec3f {\n\tvar p: vec3f = p_in;\n\tvar c: vec3f = c_in;\n\tvar R: f32 = R_in;\n\tvar md: f32 = md_in;\n\tvar a: f32 = a_in;\n\tvar q: vec3f = (((p - c)) / R);\n\tvar r2: f32 = dot(q, q);\n\tvar h: vec4f = (vec4f((2.0 * q), (r2 - 1.0)) / ((r2 + 1.0)));\n\tvar ca: f32 = cos(a);\n\tvar sa: f32 = sin(a);\n\tif ((md < 0.5)) {\n\t\t{ let _sw4 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw4.x, _sw4.y); }\n\t} else if ((md < 1.5)) {\n\t\t{ let _sw5 = vec2f(((h.x * ca) - (h.y * sa)), ((h.x * sa) + (h.y * ca))); h = vec4f(_sw5.x, _sw5.y, h.z, h.w); }\n\t\t{ let _sw6 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw6.x, _sw6.y); }\n\t} else if ((md < 2.5)) {\n\t\t{ let _sw7 = vec2f(((h.x * ca) - (h.w * sa)), ((h.x * sa) + (h.w * ca))); h = vec4f(_sw7.x, h.y, h.z, _sw7.y); }\n\t\tvar cb: f32 = cos((a * 0.618));\n\t\tvar sb: f32 = sin((a * 0.618));\n\t\t{ let _sw8 = vec2f(((h.y * cb) - (h.z * sb)), ((h.y * sb) + (h.z * cb))); h = vec4f(h.x, _sw8.x, _sw8.y, h.w); }\n\t} else {\n\t\tvar b: f32 = (2.4 * sin(a));\n\t\tvar cb: f32 = cos(b);\n\t\tvar sb: f32 = sin(b);\n\t\t{ let _sw9 = vec2f(((h.z * cb) - (h.w * sb)), ((h.z * sb) + (h.w * cb))); h = vec4f(h.x, h.y, _sw9.x, _sw9.y); }\n\t}\n\t(*w4) = h.w;\n\tvar o: vec3f = ((h.xyz / max((1.0 - h.w), 0.03)) * R);\n\tvar ol: f32 = length(o);\n\tvar oc: f32 = select((1.8 + ((1.0 - exp(-((ol - 1.8)))))), ol, (ol < 1.8));\n\treturn (c + (o * ((oc / max(ol, 1e-4)))));\n}\n\nfn chF(q_in: vec3f, n_in: f32, m_in: f32) -> f32 {\n\tvar q: vec3f = q_in;\n\tvar n: f32 = n_in;\n\tvar m: f32 = m_in;\n\tvar f: f32 = ((cos((n * q.x)) * cos((m * q.y))) - (cos((m * q.x)) * cos((n * q.y))));\n\tif ((fr.uFlat > 0.5)) {\n\t\treturn f;\n\t}\n\treturn ((((f + (cos((n * q.y)) * cos((m * q.z)))) - (cos((m * q.y)) * cos((n * q.z)))) + (cos((n * q.z)) * cos((m * q.x)))) - (cos((m * q.z)) * cos((n * q.x))));\n}\n\nfn chField(q_in: vec3f) -> f32 {\n\tvar q: vec3f = q_in;\n\tif ((fr.uCh.y < 0.001)) {\n\t\treturn chF(q, fr.uChA.x, fr.uChA.y);\n\t}\n\tif ((fr.uCh.y > 0.999)) {\n\t\treturn chF(q, fr.uChA.z, fr.uChA.w);\n\t}\n\treturn mix(chF(q, fr.uChA.x, fr.uChA.y), chF(q, fr.uChA.z, fr.uChA.w), fr.uCh.y);\n}\n\nfn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<function, vec3f>, maskV: ptr<function, f32>) -> vec3f {\n\tvar aOrigin: vec3f = aOrigin_in;\n\tvar aTarget: vec3f = aTarget_in;\n\tvar aIdx: f32 = aIdx_in;\n\tvar t: f32 = (fr.uTime - fr.uTOff);\n\tvar m: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));\n\t(*base) = aTarget;\n\tif (((fr.uFr.x > 0.5) && (fr.uMorph > 0.9999))) {\n\t\tvar fnrm: vec3f;\n\t\tvar fk: f32;\n\t\tvar fcell: vec2f;\n\t\t(*base) = frBlockPos(aIdx, &fnrm, &fk, &fcell);\n\t}\n\tif ((fr.uMorph < 0.9999)) {\n\t\tvar lt: f32 = morphLocal(aOrigin, aTarget, aIdx);\n\t\tvar e: f32 = morphEase(lt);\n\t\tvar sc: f32 = fr.uMorphS.y;\n\t\tvar sty: i32 = i32((fr.uMorphS.x + 0.5));\n\t\tvar mid: vec3f = (((aOrigin + aTarget)) * 0.5);\n\t\tvar cn: vec3f = curlNoise(((mid * 1.8) + vec3f(0.0, (t * 0.3), 0.0)));\n\t\tvar hA: f32 = hash11((aIdx * 5.31));\n\t\tvar hB: f32 = hash11((aIdx * 7.77));\n\t\tvar hC: f32 = hash11((aIdx * 2.13));\n\t\tvar flightK: f32 = sin((e * 3.1415926535));\n\t\tvar ctrl: vec3f = (mid + ((cn * sc) * 0.9));\n\t\tif ((sty == 3)) {\n\t\t\tctrl = (mid + ((cn * sc) * 0.3));\n\t\t}\n\t\tvar om: f32 = (1.0 - e);\n\t\t(*base) = ((((om * om) * aOrigin) + (((2.0 * om) * e) * ctrl)) + ((e * e) * aTarget));\n\t\tif ((sty == 0)) {\n\t\t\tvar fq: f32 = pow(flightK, 1.2);\n\t\t\tvar tb1: vec3f = curlNoise((((*base) * 1.35) + vec3f(0.0, 0.0, (t * 0.35))));\n\t\t\tvar tb2: vec3f = curlNoise((((*base) * 3.2) - vec3f((t * 0.55), 0.0, 0.0)));\n\t\t\t(*base) += (((((tb1 * 0.5) + (tb2 * 0.18))) * sc) * fq);\n\t\t}\n\t\tif ((sty == 1)) {\n\t\t\tvar vxz: vec2f = ((*base).xz - fr.uCen.xz);\n\t\t\tvar vr: f32 = length(vxz);\n\t\t\tvar vang: f32 = ((((sin((e * 3.1415926535)) * fr.uMorphS.w) * 6.2831853) * ((0.7 + (0.3 * hash11((aIdx * 1.3)))))) * pow((1.0 / ((0.32 + vr))), 0.5));\n\t\t\tvar vcs: f32 = cos(vang);\n\t\t\tvar vsn: f32 = sin(vang);\n\t\t\tvxz = vec2f(((vxz.x * vcs) - (vxz.y * vsn)), ((vxz.x * vsn) + (vxz.y * vcs)));\n\t\t\tvxz *= vec2f((1.0 - ((0.38 * flightK) * smoothstep(0.0, 1.1, vr))));\n\t\t\t{ let _sw10 = (fr.uCen.xz + vxz); (*base) = vec3f(_sw10.x, (*base).y, _sw10.y); }\n\t\t\t(*base).y += ((((((hB - 0.3)) * 0.35) * sc) * flightK) * flightK);\n\t\t}\n\t\tif ((sty == 3)) {\n\t\t\tvar band: f32 = (smoothstep(0.0, 0.3, lt) * ((1.0 - smoothstep(0.6, 1.0, lt))));\n\t\t\tvar sq: vec3f = ((((floor(((((*base) - fr.uCen)) * 20.0)) + 0.5)) / 20.0) + fr.uCen);\n\t\t\t(*base) = mix((*base), sq, (band * 0.8));\n\t\t\t(*base) += ((((vec3f(hA, hB, hC) - 0.5)) * 0.045) * band);\n\t\t}\n\t\tif ((sty == 4)) {\n\t\t\tvar H: f32 = (((0.45 + (0.85 * hA))) * sc);\n\t\t\tvar cloud: vec3f = ((aOrigin + vec3f(0.0, H, 0.0)) + (((((cn * ((0.5 + (0.7 * hB)))) + (((vec3f(hA, hC, hB) - 0.5)) * 0.45))) * sc) * 0.8));\n\t\t\tvar k1: f32 = clamp((e / 0.5), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);\n\t\t\tvar u1: f32 = (1.0 - pow((1.0 - k1), 2.4));\n\t\t\tvar u2: f32 = (1.0 - pow((1.0 - k2), 2.0));\n\t\t\tvar p1: vec3f = (mix(aOrigin, cloud, u1) + (((curlNoise(((aOrigin * 2.0) + vec3f(0.0, (t * 0.4), 0.0))) * 0.12) * sc) * sin((k1 * 3.1415926535))));\n\t\t\tvar p2: vec3f = (mix(cloud, aTarget, u2) + ((((curlNoise(((cloud * 1.5) + vec3f((t * 0.3), 0.0, 0.0))) * 0.1) * sc) * sin((k2 * 3.1415926535))) * ((1.0 - k2))));\n\t\t\t(*base) = select(p2, p1, (e < 0.5));\n\t\t}\n\t\tif ((sty == 5)) {\n\t\t\tvar fl5: f32 = (fr.uYR.x - 0.02);\n\t\t\tvar R5: f32 = (0.55 + (0.35 * sc));\n\t\t\tvar an5: f32 = (hA * 6.2831853);\n\t\t\tvar rr5: f32 = (sqrt(hB) * R5);\n\t\t\tvar hh5: f32 = ((pow(max(0.0, (1.0 - (rr5 / R5))), 0.85) * 0.85) * ((0.7 + (0.3 * hC))));\n\t\t\tvar heap: vec3f = vec3f((fr.uCen.x + (cos(an5) * rr5)), (fl5 + hh5), (fr.uCen.z + (sin(an5) * rr5)));\n\t\t\tvar k1: f32 = clamp((e / 0.5), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);\n\t\t\tvar fall: f32 = (k1 * k1);\n\t\t\tvar slide: f32 = (1.0 - pow((1.0 - k1), 2.0));\n\t\t\tvar p1: vec3f = vec3f(mix(aOrigin.x, heap.x, slide), mix(aOrigin.y, heap.y, fall), mix(aOrigin.z, heap.z, slide));\n\t\t\t{ let _sw11 = (p1.xz + ((((vec2f(hA, hC) - 0.5)) * 0.06) * sin((k1 * 3.1415926535)))); p1 = vec3f(_sw11.x, p1.y, _sw11.y); }\n\t\t\tvar gr: f32 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tvar p2: vec3f = mix(heap, aTarget, gr);\n\t\t\tp2.y += (((0.3 * sc) * sin((k2 * 3.1415926535))) * ((0.4 + hA)));\n\t\t\tp2 += ((cn * 0.12) * sin((k2 * 3.1415926535)));\n\t\t\t(*base) = select(p2, p1, (e < 0.5));\n\t\t}\n\t\tif ((sty == 2)) {\n\t\t\tvar fl: f32 = (fr.uYR.x - 0.04);\n\t\t\tvar h1: f32 = hA;\n\t\t\tvar h2: f32 = hB;\n\t\t\tvar h3: f32 = hC;\n\t\t\tvar dx: vec3f = normalize(((vec3f(aOrigin.x, 0.0, aOrigin.z) + (vec3f((h1 - 0.5), 0.0, (h2 - 0.5)) * 0.9)) + vec3f(1e-3, 0.0, 0.0)));\n\t\t\tvar spd: f32 = (((0.35 + (h3 * 1.1))) * sc);\n\t\t\tvar vy0: f32 = (((0.5 + (h2 * 1.3))) * sc);\n\t\t\tvar te: f32 = clamp((lt / 0.45), 0.0, 1.0);\n\t\t\tvar tau: f32 = (te * 1.6);\n\t\t\tvar gy: f32 = (fl + (h1 * 0.03));\n\t\t\tvar pl: vec3f = aOrigin;\n\t\t\t{ let _sw12 = (pl.xz + (((dx.xz * spd) * ((1.0 - exp(-3.52)))) * 1.4)); pl = vec3f(_sw12.x, pl.y, _sw12.y); }\n\t\t\tpl.y = gy;\n\t\t\tvar pf: vec3f = aOrigin;\n\t\t\t{ let _sw13 = (pf.xz + (((dx.xz * spd) * ((1.0 - exp((-2.2 * tau))))) * 1.4)); pf = vec3f(_sw13.x, pf.y, _sw13.y); }\n\t\t\tvar g2: f32 = 2.1;\n\t\t\tvar disc: f32 = ((vy0 * vy0) + ((4.0 * g2) * max((aOrigin.y - gy), 0.0)));\n\t\t\tvar tL: f32 = (((vy0 + sqrt(disc))) / ((2.0 * g2)));\n\t\t\tvar yb: f32 = ((aOrigin.y + (vy0 * tau)) - ((g2 * tau) * tau));\n\t\t\tif ((tau > tL)) {\n\t\t\t\tvar vI: f32 = (vy0 - ((2.0 * g2) * tL));\n\t\t\t\tvar v1: f32 = (-0.3 * vI);\n\t\t\t\tvar tb: f32 = (tau - tL);\n\t\t\t\tyb = select(gy, ((gy + (v1 * tb)) - ((g2 * tb) * tb)), (tb < (v1 / g2)));\n\t\t\t}\n\t\t\tpf.y = mix(max(yb, gy), gy, smoothstep(0.9, 1.0, te));\n\t\t\tvar tg: f32 = clamp((((lt - 0.58)) / 0.42), 0.0, 1.0);\n\t\t\tvar eg: f32 = ((tg * tg) * ((3.0 - (2.0 * tg))));\n\t\t\tvar c2: vec3f = (((((pl + aTarget)) * 0.5) + vec3f(0.0, (0.5 + (0.6 * h2)), 0.0)) + ((cn * 0.2) * sc));\n\t\t\tvar og: f32 = (1.0 - eg);\n\t\t\tvar pg: vec3f = ((((og * og) * pl) + (((2.0 * og) * eg) * c2)) + ((eg * eg) * aTarget));\n\t\t\t(*base) = select((select(pg, pl, (lt < 0.58))), pf, (lt < 0.45));\n\t\t}\n\t\tif ((sty == 6)) {\n\t\t\tvar hw4: f32;\n\t\t\tvar q4: vec3f = mix(aOrigin, aTarget, smoothstep(0.38, 0.62, e));\n\t\t\t(*base) = hyperWarp(q4, fr.uCen, (1.3 * max(sc, 0.15)), select(0.0, 1.0, (fr.uMorphS.w > 1.05)), ((2.4 * sin((e * 3.1415926535))) * ((0.85 + (0.15 * hash11((aIdx * 2.7)))))), &hw4);\n\t\t\tgHypW = hw4;\n\t\t\tgHypF = max(gHypF, smoothstep(0.55, 0.97, hw4));\n\t\t}\n\t\tif ((sty == 7)) {\n\t\t\tvar co7: vec3f = (aOrigin - fr.uCen);\n\t\t\tvar ct7: vec3f = (aTarget - fr.uCen);\n\t\t\tvar d17: vec3f = normalize((co7 + vec3f(1e-3)));\n\t\t\tvar d27: vec3f = normalize((ct7 + vec3f(1e-3)));\n\t\t\tvar R7: f32 = (0.7 + (0.5 * sc));\n\t\t\tvar k1: f32 = clamp((e / 0.35), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.35)) / 0.3), 0.0, 1.0);\n\t\t\tvar k3: f32 = clamp((((e - 0.65)) / 0.35), 0.0, 1.0);\n\t\t\tk1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));\n\t\t\tk2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tk3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));\n\t\t\tif ((e < 0.35)) {\n\t\t\t\t(*base) = mix(aOrigin, (fr.uCen + (d17 * R7)), k1);\n\t\t\t} else if ((e < 0.65)) {\n\t\t\t\t(*base) = (fr.uCen + (normalize((mix(d17, d27, k2) + vec3f(1e-3))) * R7));\n\t\t\t} else {\n\t\t\t\t(*base) = mix((fr.uCen + (d27 * R7)), aTarget, k3);\n\t\t\t}\n\t\t\t(*base) += (((normalize((((*base) - fr.uCen) + vec3f(1e-3))) * 0.05) * sin(((dot(d17, vec3f(5.0, 7.0, 3.0)) * 2.0) + (t * 3.0)))) * sin((clamp(e, 0.0, 1.0) * 3.1415926535)));\n\t\t}\n\t\tif ((sty == 8)) {\n\t\t\tvar ch8: f32 = hash11(dot(floor((((aOrigin - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));\n\t\t\tvar c8: vec3f = (mid + vec3f(0.0, (((0.35 + (0.8 * ch8))) * sc), 0.0));\n\t\t\t(*base) = ((((om * om) * aOrigin) + (((2.0 * om) * e) * c8)) + ((e * e) * aTarget));\n\t\t}\n\t\tif ((sty == 9)) {\n\t\t\tvar q9a: vec3f = (aOrigin - fr.uCen);\n\t\t\tvar q9b: vec3f = (aTarget - fr.uCen);\n\t\t\tvar k1: f32 = clamp((e / 0.4), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.4)) / 0.2), 0.0, 1.0);\n\t\t\tvar k3: f32 = clamp((((e - 0.6)) / 0.4), 0.0, 1.0);\n\t\t\tk1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));\n\t\t\tk2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tk3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));\n\t\t\tvar fa: vec3f = vec3f(0.0, q9a.y, q9a.z);\n\t\t\tvar fb: vec3f = vec3f(0.0, q9b.y, q9b.z);\n\t\t\tif ((e < 0.4)) {\n\t\t\t\t(*base) = (fr.uCen + mix(q9a, fa, k1));\n\t\t\t} else if ((e < 0.6)) {\n\t\t\t\t(*base) = (fr.uCen + mix(fa, fb, k2));\n\t\t\t} else {\n\t\t\t\t(*base) = (fr.uCen + mix(fb, q9b, k3));\n\t\t\t}\n\t\t}\n\t\tif ((sty == 10)) {\n\t\t\tvar dz: f32 = (1.6 * max(sc, 0.3));\n\t\t\tvar RA: vec3f = (aOrigin + vec3f(0.0, 0.0, ((((gDepth - 0.5)) * dz) * fr.uMorphD.x)));\n\t\t\tvar RB: vec3f = (aTarget + vec3f(0.0, 0.0, ((((gDepth - 0.5)) * dz) * fr.uMorphD.y)));\n\t\t\tvar k1: f32 = clamp((e / 0.3), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.3)) / 0.4), 0.0, 1.0);\n\t\t\tvar k3: f32 = clamp((((e - 0.7)) / 0.3), 0.0, 1.0);\n\t\t\tk1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));\n\t\t\tk2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tk3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));\n\t\t\tvar c10: vec3f = (((((RA + RB)) * 0.5) + vec3f(0.0, 0.0, ((((0.3 + gDepth)) * 0.7) * sc))) + ((cn * 0.25) * sc));\n\t\t\tvar o10: f32 = (1.0 - k2);\n\t\t\tvar mid10: vec3f = ((((o10 * o10) * RA) + (((2.0 * o10) * k2) * c10)) + ((k2 * k2) * RB));\n\t\t\tif ((e < 0.3)) {\n\t\t\t\t(*base) = mix(aOrigin, RA, k1);\n\t\t\t} else if ((e < 0.7)) {\n\t\t\t\t(*base) = mid10;\n\t\t\t} else {\n\t\t\t\t(*base) = mix(RB, aTarget, k3);\n\t\t\t}\n\t\t}\n\t\tif ((sty == 11)) {\n\t\t\tvar head: vec3f = vec3f(fr.uCen.x, (fr.uYR.y + 0.45), fr.uCen.z);\n\t\t\tvar nozzle: vec3f = (aTarget + vec3f(0.0, 0.22, 0.0));\n\t\t\tvar k1: f32 = clamp((e / 0.55), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.55)) / 0.45), 0.0, 1.0);\n\t\t\tvar g11: vec3f = (mix(aOrigin, head, ((k1 * k1) * ((3.0 - (2.0 * k1))))) + (((cn * 0.15) * sc) * sin((k1 * 3.1415926535))));\n\t\t\tvar o11: f32 = (1.0 - k2);\n\t\t\tvar p11: vec3f = ((((o11 * o11) * head) + (((2.0 * o11) * k2) * vec3f(nozzle.x, head.y, nozzle.z))) + ((k2 * k2) * nozzle));\n\t\t\tp11 = mix(p11, aTarget, smoothstep(0.85, 1.0, k2));\n\t\t\t(*base) = select(p11, g11, (e < 0.55));\n\t\t}\n\t\tif ((sty == 12)) {\n\t\t\tvar a12: f32 = ((hA * 6.2831853) + (t * 2.4));\n\t\t\tvar ring: vec3f = (fr.uCen + ((vec3f(cos(a12), sin(a12), 0.0) * ((0.32 + (0.06 * hB)))) * ((0.6 + (0.4 * sc)))));\n\t\t\tvar k1: f32 = clamp((e / 0.5), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);\n\t\t\tvar qa: vec3f = (aOrigin - fr.uCen);\n\t\t\tvar qb: vec3f = (aTarget - fr.uCen);\n\t\t\tvar sw1: f32 = ((k1 * k1) * 5.0);\n\t\t\tvar sw2: f32 = ((((1.0 - k2)) * ((1.0 - k2))) * 5.0);\n\t\t\tvar ra: vec3f = (fr.uCen + vec3f(((qa.x * cos(sw1)) - (qa.y * sin(sw1))), ((qa.x * sin(sw1)) + (qa.y * cos(sw1))), qa.z));\n\t\t\tvar rb: vec3f = (fr.uCen + vec3f(((qb.x * cos(sw2)) - (qb.y * sin(sw2))), ((qb.x * sin(sw2)) + (qb.y * cos(sw2))), qb.z));\n\t\t\tvar p1: vec3f = mix(ra, ring, ((k1 * k1) * ((3.0 - (2.0 * k1)))));\n\t\t\tvar p2: vec3f = mix(ring, rb, ((k2 * k2) * ((3.0 - (2.0 * k2)))));\n\t\t\t(*base) = select(p2, p1, (e < 0.5));\n\t\t}\n\t\tif ((sty == 13)) {\n\t\t\tvar ca: vec3f = ((((floor((((aOrigin - fr.uCen)) * 3.0)) + 0.5)) / 3.0) + fr.uCen);\n\t\t\tvar cb: vec3f = ((((floor((((aTarget - fr.uCen)) * 3.0)) + 0.5)) / 3.0) + fr.uCen);\n\t\t\tvar sa: f32 = hash11(dot(floor((((aOrigin - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));\n\t\t\tvar sb: f32 = hash11(dot(floor((((aTarget - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));\n\t\t\tvar k1: f32 = clamp((e / 0.6), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((1.0 - e)) / 0.6), 0.0, 1.0);\n\t\t\tvar da: vec3f = normalize((((ca - fr.uCen) + (vec3f((sa - 0.5), 0.3, 0.2) * 0.6)) + vec3f(1e-3)));\n\t\t\tvar db: vec3f = normalize((((cb - fr.uCen) + (vec3f((sb - 0.5), 0.3, 0.2) * 0.6)) + vec3f(1e-3)));\n\t\t\tvar ra: f32 = ((k1 * 3.1415926535) * ((0.8 + (1.6 * sa))));\n\t\t\tvar rb: f32 = ((k2 * 3.1415926535) * ((0.8 + (1.6 * sb))));\n\t\t\tvar la: vec3f = (aOrigin - ca);\n\t\t\tvar lb: vec3f = (aTarget - cb);\n\t\t\tla = vec3f(((la.x * cos(ra)) - (la.y * sin(ra))), ((la.x * sin(ra)) + (la.y * cos(ra))), la.z);\n\t\t\tlb = vec3f(((lb.x * cos(rb)) - (lb.y * sin(rb))), ((lb.x * sin(rb)) + (lb.y * cos(rb))), lb.z);\n\t\t\tvar P1: vec3f = (((ca + la) + ((((da * k1) * k1) * 1.3) * sc)) - vec3f(0.0, (((0.9 * k1) * k1) * k1), 0.0));\n\t\t\tvar P2: vec3f = (((cb + lb) + ((((db * k2) * k2) * 1.3) * sc)) - vec3f(0.0, (((0.9 * k2) * k2) * k2), 0.0));\n\t\t\t(*base) = mix(P1, P2, smoothstep(0.42, 0.58, e));\n\t\t}\n\t\tif ((sty == 14)) {\n\t\t\tvar ab: vec3f = (aTarget - aOrigin);\n\t\t\tvar L14: f32 = length(ab);\n\t\t\tvar ax: vec3f = select(vec3f(0.0, 1.0, 0.0), (ab / L14), (L14 > 1e-4));\n\t\t\tvar n1: vec3f = normalize(cross(ax, select(vec3f(1.0, 0.0, 0.0), vec3f(0.0, 1.0, 0.0), (abs(ax.y) < 0.9))));\n\t\t\tvar n2: vec3f = cross(ax, n1);\n\t\t\tvar bund: f32 = ((floor((hA * 10.0)) / 10.0) * 6.2831853);\n\t\t\tvar nb: vec3f = ((n1 * cos(bund)) + (n2 * sin(bund)));\n\t\t\t(*base) = (mix(aOrigin, aTarget, e) + ((((nb * sin((e * 3.1415926535))) * ((0.25 + (0.55 * L14)))) * sc) * ((0.85 + (0.3 * hB)))));\n\t\t}\n\t\tif ((abs(fr.uMorphD.z) > 0.001)) {\n\t\t\tvar sm: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));\n\t\t\tvar ra: f32 = ((fr.uMorphD.z * 6.2831853) * sm);\n\t\t\tvar q: vec3f = ((*base) - fr.uCen);\n\t\t\t(*base) = (fr.uCen + vec3f(((q.x * cos(ra)) - (q.z * sin(ra))), q.y, ((q.x * sin(ra)) + (q.z * cos(ra)))));\n\t\t}\n\t}\n\tif (((fr.uMorph < 0.9999) && (fr.uMorphO.w > 0.001))) {\n\t\t(*base).z += ((((((gDepth - 0.5)) * 2.0) * fr.uMorphO.w) * sin((morphEase(morphLocal(aOrigin, aTarget, aIdx)) * 3.1415926535))) * ((0.6 + (0.4 * hash11((aIdx * 4.1))))));\n\t}\n\tif ((fr.uDepth.x > 0.001)) {\n\t\t(*base) = depthShape((*base));\n\t}\n\tvar rad: vec3f = normalize(((*base) + vec3f(1e-4)));\n\trad = normalize(mix(rad, vec3f(0.0, 0.0, 1.0), (0.8 * fr.uFlat)));\n\tif (((fr.uAnimN > 0.5) && (dot(gNormal, gNormal) > 0.01))) {\n\t\trad = normalize(gNormal);\n\t}\n\tvar pos: vec3f = (*base);\n\tif ((fr.uCh.x > 0.001)) {\n\t\tvar chh: f32 = (max((fr.uYR.y - fr.uYR.x), 0.5) * 0.5);\n\t\tvar chk: f32 = ((1.5708 * fr.uCh.z) / chh);\n\t\tvar chq: vec3f = (((pos - fr.uCen)) * chk);\n\t\tvar chn: vec3f = select((select(rad, normalize(gNormal), (dot(gNormal, gNormal) > 0.01))), vec3f(0.0, 0.0, 1.0), (fr.uFlat > 0.5));\n\t\tfor (var ci: i32 = 0; (ci < 4); ci++) {\n\t\t\tvar cf: f32 = chField(chq);\n\t\t\tvar cg: vec3f = (vec3f((chField((chq + vec3f(0.02, 0.0, 0.0))) - cf), (chField((chq + vec3f(0.0, 0.02, 0.0))) - cf), (chField((chq + vec3f(0.0, 0.0, 0.02))) - cf)) / 0.02);\n\t\t\tcg -= (chn * dot(cg, chn));\n\t\t\tvar cst: vec3f = ((-cf * cg) / max(dot(cg, cg), 0.01));\n\t\t\tvar csl: f32 = length(cst);\n\t\t\tif ((csl > 0.7)) {\n\t\t\t\tcst *= vec3f((0.7 / csl));\n\t\t\t}\n\t\t\tchq += cst;\n\t\t}\n\t\tvar cfe: f32 = abs(chField(chq));\n\t\tgChN = exp((-cfe * 5.0));\n\t\tvar ctk: f32 = floor((t * 30.0));\n\t\tvar cbz: vec3f = (((((vec3f(hash11(((aIdx * 3.1) + ctk)), hash11(((aIdx * 5.7) + ctk)), hash11(((aIdx * 1.3) + ctk))) - 0.5)) * ((1.0 - gChN))) * fr.uCh.w) * ((0.03 + (fr.uBeat * 0.05))));\n\t\tpos = mix(pos, ((fr.uCen + (chq / chk)) + cbz), min(fr.uCh.x, 1.0));\n\t}\n\tif ((fr.uTwist.x > 0.001)) {\n\t\tvar y01t: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar tw: f32 = (fr.uTwist.x * ((1.0 + (select(0.0, (0.35 * sin(((t * fr.uTwist.z) * 2.0))), (fr.uTwist.z > 0.01))))));\n\t\tif ((fr.uTwist.y < 0.5)) {\n\t\t\tvar a: f32 = ((pos.y * tw) * 1.6);\n\t\t\tvar c: f32 = cos(a);\n\t\t\tvar s: f32 = sin(a);\n\t\t\t{ let _sw14 = (mat2x2f(c, -s, s, c) * pos.xz); pos = vec3f(_sw14.x, pos.y, _sw14.y); }\n\t\t} else if ((fr.uTwist.y < 1.5)) {\n\t\t\tpos.x += (((y01t * y01t) * tw) * 0.9);\n\t\t\tpos.y -= ((((y01t * y01t) * y01t) * tw) * 0.16);\n\t\t} else if ((fr.uTwist.y < 2.5)) {\n\t\t\t{ let _sw15 = (pos.xz * vec2f((1.0 + (((tw * 0.6) * ((0.5 - y01t))) * 2.0)))); pos = vec3f(_sw15.x, pos.y, _sw15.y); }\n\t\t} else if ((fr.uTwist.y < 3.5)) {\n\t\t\tvar sw: f32 = sin(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z)))));\n\t\t\tpos.x += ((sw * tw) * 0.2);\n\t\t\tpos.z += ((cos(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z))))) * tw) * 0.12);\n\t\t} else {\n\t\t\t{ let _sw16 = (pos.xz * vec2f((1.0 + ((tw * 0.3) * sin(((y01t * 6.2831) - (t * ((1.2 + fr.uTwist.z))))))))); pos = vec3f(_sw16.x, pos.y, _sw16.y); }\n\t\t}\n\t}\n\tif ((fr.uWave.x > 0.001)) {\n\t\tvar wv: f32 = 0.0;\n\t\tif ((fr.uWaveP.y < 0.5)) {\n\t\t\twv = sin((((distance((*base), fr.uWaveSrc.xyz) * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t} else if ((fr.uWaveP.y < 1.5)) {\n\t\t\tvar age: f32 = (fr.uTime - fr.uWaveP.w);\n\t\t\tif ((age > 0.0)) {\n\t\t\t\tvar d: f32 = distance((*base), fr.uWaveSrc.xyz);\n\t\t\t\tvar ring: f32 = ((age * fr.uWaveP.x) * 1.3);\n\t\t\t\twv = ((sin(((((d - ring)) * fr.uWave.y) * 2.6)) * exp((-abs((d - ring)) * 2.5))) * exp((-age * fr.uWaveP.z)));\n\t\t\t}\n\t\t} else if ((fr.uWaveP.y < 2.5)) {\n\t\t\tvar wd: vec3f = vec3f(cos(fr.uWaveSrc.w), 0.0, sin(fr.uWaveSrc.w));\n\t\t\twv = sin((((dot((*base), wd) * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t} else if ((fr.uWaveP.y < 3.5)) {\n\t\t\tvar yw: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\t\twv = sin((((atan2(((*base).z - fr.uCen.z), ((*base).x - fr.uCen.x)) * 3.0) + ((yw * fr.uWave.y) * 1.3)) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t} else {\n\t\t\twv = sin(((((*base).y * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t}\n\t\tpos += ((((rad * wv) * fr.uWave.x) * 0.14) * ((1.0 + (1.5 * fr.uFlat))));\n\t}\n\tif ((fr.uSpec.x > 0.001)) {\n\t\tvar y01s: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tif ((fr.uSpec.y < 0.5)) {\n\t\t\tpos += (((rad * textureSampleLevel(specTex, linSamp, vec2f((abs(atan2((*base).z, (*base).x)) / 3.1415926535), 0.5), 0.0).r) * fr.uSpec.x) * 0.7);\n\t\t} else if ((fr.uSpec.y < 1.5)) {\n\t\t\tpos += (((rad * textureSampleLevel(specTex, linSamp, vec2f(y01s, 0.5), 0.0).r) * fr.uSpec.x) * 0.7);\n\t\t} else if ((fr.uSpec.y < 2.5)) {\n\t\t\tvar ub: f32 = (floor(((abs(atan2((*base).z, (*base).x)) / 3.1415926535) * fr.uSpecP.y)) / fr.uSpecP.y);\n\t\t\tpos += (((rad * textureSampleLevel(specTex, linSamp, vec2f(ub, 0.5), 0.0).r) * fr.uSpec.x) * 0.8);\n\t\t} else {\n\t\t\tvar xs: f32 = clamp((abs((*base).x) / 1.2), 0.0, 1.0);\n\t\t\tpos.y += (((textureSampleLevel(specTex, linSamp, vec2f(xs, 0.5), 0.0).r * fr.uSpec.x) * 0.8) * ((0.35 + (0.65 * y01s))));\n\t\t}\n\t}\n\tvar pe: f32 = fr.uPulse.x;\n\tif ((fr.uPulseP.x > 0.5)) {\n\t\tvar age: f32 = ((fr.uTime - fr.uPulseP.z) - (length((*base)) * fr.uPulseP.y));\n\t\tvar env: f32 = select(0.0, (exp(((-age * 3.2) * fr.uPulseP.w)) * smoothstep(0.0, 0.04, age)), (age > 0.0));\n\t\tvar age2: f32 = (age - 0.2);\n\t\tenv += select(0.0, ((0.55 * exp(((-age2 * 3.2) * fr.uPulseP.w))) * smoothstep(0.0, 0.04, age2)), (age2 > 0.0));\n\t\tpe = ((fr.uPulse.x * env) * 1.6);\n\t\tif ((fr.uPulseP.x > 1.5)) {\n\t\t\tpos.y *= (1.0 + (pe * 0.2));\n\t\t\t{ let _sw17 = (pos.xz * vec2f((1.0 - (pe * 0.11)))); pos = vec3f(_sw17.x, pos.y, _sw17.y); }\n\t\t\tpe = 0.0;\n\t\t}\n\t}\n\tpos += (((rad * pe) * 0.28) * ((1.0 + (1.5 * fr.uFlat))));\n\tpos *= vec3f((1.0 + (pe * 0.1)));\n\tif ((fr.uBlast.x > 0.001)) {\n\t\tvar age: f32 = (fr.uTime - fr.uBlast.w);\n\t\tif ((age > 0.0)) {\n\t\t\tvar env: f32 = (exp((-age * fr.uBlast.y)) * cos(((age * fr.uBlast.y) * 3.0)));\n\t\t\tvar rnd: f32 = (0.45 + (0.55 * mix(1.0, hash11((aIdx * 7.1)), fr.uBlast.z)));\n\t\t\tvar dir: vec3f = normalize((rad + ((((vec3f(hash11(aIdx), hash11((aIdx + 1.0)), hash11((aIdx + 2.0))) - 0.5)) * 0.7) * fr.uBlast.z)));\n\t\t\tpos += ((((dir * env) * rnd) * fr.uBlast.x) * 0.75);\n\t\t}\n\t}\n\tif ((fr.uFlow.x > 0.001)) {\n\t\tvar fc: vec3f = curlNoise((((*base) * fr.uFlow.y) + vec3f(0.0, ((t * fr.uFlow.z) * 0.1), 0.0)));\n\t\tvar tg: vec3f = normalize(((fc - (rad * dot(fc, rad))) + vec3f(1e-4)));\n\t\ttg = ((tg * cos(fr.uFlow.w)) + (cross(rad, tg) * sin(fr.uFlow.w)));\n\t\tvar ph: f32 = ((t * fr.uFlow.z) + (hash11((aIdx * 5.3)) * 6.2831));\n\t\tpos += (((tg * sin(ph)) * fr.uFlow.x) * 0.24);\n\t}\n\tif (((fr.uMark.x > 3.5) && (fr.uMark.x < 5.5))) {\n\t\tvar mkd: f32 = markK((*base));\n\t\tif ((fr.uMark.x < 4.5)) {\n\t\t\tpos += ((rad * mkd) * 0.22);\n\t\t} else {\n\t\t\tpos = mix(pos, (((floor((pos / 0.06)) + 0.5)) * 0.06), smoothstep(0.0, 0.4, mkd));\n\t\t}\n\t}\n\tif (((fr.uSliceM.x > 0.5) && (fr.uSliceM.x < 1.5))) {\n\t\tpos += ((rad * sliceK((*base))) * fr.uSliceM.y);\n\t}\n\tvar dk: f32 = disK((*base), aIdx);\n\tif ((dk > 0.0)) {\n\t\tvar sc: f32 = fr.uDisQ.y;\n\t\tvar ds: f32 = fr.uDisP.x;\n\t\tvar y01d: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar cl: f32 = floor((aIdx * 1800.0));\n\t\tvar ch: f32 = hash11((cl * 0.731));\n\t\tvar ch2: f32 = hash11(((cl * 1.913) + 3.1));\n\t\tvar cd: vec3f = ((*base) - fr.uCen);\n\t\tvar outd: vec3f = (cd / ((length(cd) + 1e-3)));\n\t\tvar dsp: vec3f = select(((*base) * 1.8), (vec3f(hash11((aIdx * 1.7)), hash11((aIdx * 2.3)), hash11((aIdx * 3.1))) * 8.0), (fr.uAnimN > 0.5));\n\t\tpos += ((((curlNoise((dsp + vec3f(0.0, (-t * 0.6), (t * 0.3)))) * dk) * fr.uDisT) * 0.22) * sc);\n\t\tif ((ds < 0.5)) {\n\t\t\tvar wv: vec3f = vec3f(((fr.uDis.w * 1.4) + 0.2), (-fr.uDis.z * 0.5), 0.3);\n\t\t\tvar sp: f32 = (0.65 + (0.35 * sin(((y01d * 7.0) + (t * 0.8)))));\n\t\t\tpos += (((((wv * dk) * dk) * 1.5) * sp) * sc);\n\t\t} else if ((ds < 1.5)) {\n\t\t\tpos.y += (((dk * dk) * ((0.7 + (0.5 * ch)))) * sc);\n\t\t\t{ let _sw18 = (pos.xz + ((((vec2f(sin(((t * 1.5) + (ch * 6.0))), cos(((t * 1.3) + (ch * 5.0)))) * dk) * 0.1) * sc) + ((vec2f((fr.uDis.w * 0.5), 0.0) * dk) * sc))); pos = vec3f(_sw18.x, pos.y, _sw18.y); }\n\t\t} else if ((ds < 2.5)) {\n\t\t\tpos += ((((outd * dk) * 0.12) * sc) + vec3f(0.0, ((dk * 0.05) * sc), 0.0));\n\t\t} else if ((ds < 3.5)) {\n\t\t\tvar band: f32 = floor(((y01d * 12.0) + 0.001));\n\t\t\tvar sg: f32 = select(-1.0, 1.0, (glsl_mod_f(band, 2.0) < 0.5));\n\t\t\tpos.x += (((((sg * dk) * dk) * 1.7) * sc) + ((fr.uDis.w * dk) * 0.3));\n\t\t\tpos.y -= ((((dk * dk) * fr.uDis.z) * 0.25) * sc);\n\t\t} else if ((ds < 4.5)) {\n\t\t\tvar mv: vec3f = vec3f(((((ch - 0.5)) * 0.9) + (fr.uDis.w * 0.3)), 0.0, (((ch2 - 0.5)) * 0.9));\n\t\t\tpos += ((mv * dk) * sc);\n\t\t\tpos.y = max((pos.y - ((((dk * dk) * ((0.5 + fr.uDis.z))) * 1.8) * sc)), (fr.uYR.x + (ch * 0.05)));\n\t\t} else if ((ds < 5.5)) {\n\t\t\tpos.y = max((pos.y - ((((dk * dk) * ((0.5 + fr.uDis.z))) * 2.2) * sc)), (fr.uYR.x + (hash11((aIdx * 5.1)) * 0.05)));\n\t\t\tpos.x += (((fr.uDis.w * dk) * 0.25) * sc);\n\t\t} else if ((ds < 6.5)) {\n\t\t\tvar q: vec3f = ((*base) - fr.uCen);\n\t\t\tvar ang: f32 = (((dk * dk) * ((3.2 + (fr.uDis.w * 1.2)))) * sc);\n\t\t\tvar cs: f32 = cos(ang);\n\t\t\tvar sn: f32 = sin(ang);\n\t\t\t{ let _sw19 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw19.x, q.y, _sw19.y); }\n\t\t\tq *= vec3f((1.0 - ((0.9 * dk) * dk)));\n\t\t\tpos = ((fr.uCen + q) + vec3f(0.0, (((dk * dk) * 0.45) * sc), 0.0));\n\t\t} else {\n\t\t\tpos += (((outd * pow(dk, 0.7)) * ((1.1 + (0.3 * ch)))) * sc);\n\t\t\tpos.y -= ((((dk * dk) * fr.uDis.z) * 0.8) * sc);\n\t\t}\n\t}\n\tif ((fr.uExp.x > 0.001)) {\n\t\tvar pid: f32 = floor((aIdx * fr.uExp.y));\n\t\tvar pc: vec3f = textureLoad(pieceTex, vec2i(vec2f((((pid + 0.5)) / 256.0), 0.5) * vec2f(textureDimensions(pieceTex))), 0).xyz;\n\t\tvar h1: f32 = hash11((pid * 1.7));\n\t\tvar h2: f32 = hash11((pid * 2.9));\n\t\tvar h3: f32 = hash11((pid * 4.1));\n\t\tvar od: vec3f = (pc - fr.uCen);\n\t\tvar dr: vec3f = normalize(((od + ((((vec3f(h1, h2, h3) - 0.5)) * 0.35) * ((length(od) + 0.3)))) + vec3f(1e-4)));\n\t\tvar ke: f32 = clamp((((fr.uExp.x - (h2 * fr.uExp.z))) / max((1.0 - fr.uExp.z), 0.2)), 0.0, 1.0);\n\t\tke = ((ke * ke) * ((3.0 - (2.0 * ke))));\n\t\tvar ax: vec3f = normalize((vec3f((h1 - 0.5), (h3 - 0.5), (h2 - 0.5)) + vec3f(1e-3)));\n\t\tvar ang: f32 = (((ke * ((h3 - 0.5))) * 3.0) * fr.uExp.w);\n\t\tvar qe: vec3f = (pos - pc);\n\t\tqe = (((qe * cos(ang)) + (cross(ax, qe) * sin(ang))) + ((ax * dot(ax, qe)) * ((1.0 - cos(ang)))));\n\t\tpos = ((pc + qe) + (((dr * ke) * fr.uExpP.x) * ((0.5 + (0.5 * h1)))));\n\t}\n\tif ((fr.uGrowP.z > 0.5)) {\n\t\tgGrow = growK((*base), aIdx);\n\t\tgGrowE = ((gGrow * ((1.0 - gGrow))) * 4.0);\n\t\tpos += (((rad * gGrowE) * fr.uGrowP.x) * 0.12);\n\t\tvar yG: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\t{ let _sw20 = (pos.xz + ((((vec2f(sin(((t * 1.2) + (yG * 5.0))), cos(((t * 0.9) + (yG * 4.0)))) * 0.018) * fr.uGrowP.y) * gGrow) * ((0.3 + yG)))); pos = vec3f(_sw20.x, pos.y, _sw20.y); }\n\t}\n\t{\n\t\tfor (var ji: i32 = 0; (ji < 3); ji++) {\n\t\t\tvar jage: f32 = (fr.uTime - fr.uJel[ji].w);\n\t\t\tif (((jage < 0.0) || (jage > 7.0))) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar jd: f32 = distance((*base), fr.uJelO[ji].xyz);\n\t\t\tvar ja: f32 = (jage - (jd * 0.45));\n\t\t\tif ((ja < 0.0)) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar env: f32 = (exp((-ja * fr.uJelP.y)) * sin((ja * fr.uJelP.x)));\n\t\t\tpos += (((fr.uJel[ji].xyz * env) * fr.uJelP.z) * 0.35);\n\t\t\tpos += ((((((((*base) - fr.uJelO[ji].xyz)) * env) * fr.uJelP.w) * fr.uJelP.z) * 0.16) * length(fr.uJel[ji].xyz));\n\t\t}\n\t}\n\tif ((fr.uGrav.x > 0.001)) {\n\t\tvar gq: vec3f = (pos - fr.uGravP.xyz);\n\t\tvar gr: f32 = (length(gq) + 1e-3);\n\t\tvar gin: f32 = (1.0 - smoothstep((fr.uGravP.w * 0.7), (fr.uGravP.w * 1.7), gr));\n\t\tvar ga: f32 = smoothstep(0.0, 1.0, clamp((fr.uGrav.x * gin), 0.0, 1.0));\n\t\tvar up: vec3f = normalize(vec3f((sin(fr.uGravT.x) * cos(fr.uGravT.y)), cos(fr.uGravT.x), (sin(fr.uGravT.x) * sin(fr.uGravT.y))));\n\t\tvar ref_: vec3f = select(vec3f(1.0, 0.0, 0.0), vec3f(0.0, 1.0, 0.0), (abs(up.y) < 0.99));\n\t\tvar e1: vec3f = normalize(cross(ref_, up));\n\t\tvar e2: vec3f = cross(up, e1);\n\t\tvar lx: f32 = dot(gq, e1);\n\t\tvar lh: f32 = dot(gq, up);\n\t\tvar lz: f32 = dot(gq, e2);\n\t\tif ((fr.uGrav.y < 0.5)) {\n\t\t\tvar ph0: f32 = ((t * fr.uGrav.z) * 0.45);\n\t\t\tvar ang: f32 = (ga * (((ph0 * 0.8) + ((1.3 * sin((ph0 * 0.6))) / ((0.5 + gr))))));\n\t\t\tvar ca: f32 = cos(ang);\n\t\t\tvar sa: f32 = sin(ang);\n\t\t\tvar nx: f32 = ((lx * ca) - (lz * sa));\n\t\t\tvar nz: f32 = ((lx * sa) + (lz * ca));\n\t\t\tvar az: f32 = atan2(nz, nx);\n\t\t\tlh = ((lh * ((1.0 - (fr.uGrav.w * ga)))) + (((0.07 * gr) * sin(((az * 2.0) + (t * 0.4)))) * ga));\n\t\t\tvar arm: f32 = sin((((2.0 * az) - (3.4 * log((gr + 0.15)))) + (t * 0.25)));\n\t\t\tvar ar: f32 = (1.0 + (((0.2 * arm) * ga) * fr.uGrav.w));\n\t\t\tlx = (nx * ar);\n\t\t\tlz = (nz * ar);\n\t\t} else if ((fr.uGrav.y < 1.5)) {\n\t\t\tvar h1: f32 = hash11((aIdx * 91.7));\n\t\t\tvar ph: f32 = fract((((t * 0.16) * fr.uGrav.z) + h1));\n\t\t\tvar sg: f32 = select(-1.0, 1.0, (h1 > 0.5));\n\t\t\tvar r0: f32 = max(gr, 0.08);\n\t\t\tif (((ph < 0.8) || (fr.uGravT.w < 0.01))) {\n\t\t\t\tvar s: f32 = clamp((ph / 0.8), 0.0, 1.0);\n\t\t\t\tvar rr: f32 = ((r0 * pow((1.0 - s), 1.6)) + 0.03);\n\t\t\t\tvar ang: f32 = (((s * s) * 11.0) * ga);\n\t\t\t\tvar az0: f32 = atan2(lz, lx);\n\t\t\t\tvar flt: f32 = (1.0 - ((fr.uGrav.w * s) * ga));\n\t\t\t\tvar ha: f32 = (lh * flt);\n\t\t\t\tvar k: f32 = mix(1.0, (rr / r0), ga);\n\t\t\t\tvar rl: f32 = (length(vec2f(lx, lz)) * k);\n\t\t\t\tlx = (cos((az0 + ang)) * rl);\n\t\t\t\tlz = (sin((az0 + ang)) * rl);\n\t\t\t\tlh = (ha * mix(1.0, (rr / r0), ga));\n\t\t\t} else {\n\t\t\t\tvar u: f32 = (((ph - 0.8)) / 0.2);\n\t\t\t\tvar len: f32 = ((((fr.uGravT.w * ((0.4 + (h1 * 0.9)))) * u) * u) * ga);\n\t\t\t\tvar az0: f32 = (atan2(lz, lx) + (t * 2.0));\n\t\t\t\tlx = ((cos(az0) * 0.05) * ((1.0 - (u * 0.5))));\n\t\t\t\tlz = ((sin(az0) * 0.05) * ((1.0 - (u * 0.5))));\n\t\t\t\tlh = (sg * ((0.08 + len)));\n\t\t\t}\n\t\t} else if ((fr.uGrav.y > 3.5)) {\n\t\t\tvar rr0: f32 = length(vec2f(lx, lz));\n\t\t\tvar ringN: f32 = floor((rr0 * 5.0));\n\t\t\tvar rr1: f32 = mix(rr0, (((ringN + 0.5)) / 5.0), (ga * 0.85));\n\t\t\tvar dirR: f32 = select(-1.0, 1.0, (glsl_mod_f(ringN, 2.0) < 0.5));\n\t\t\tvar az1: f32 = (atan2(lz, lx) + ((((dirR * t) * fr.uGrav.z) * ((0.25 + (0.5 / ((0.4 + rr1)))))) * ga));\n\t\t\tlx = (cos(az1) * rr1);\n\t\t\tlz = (sin(az1) * rr1);\n\t\t\tlh = (lh * ((1.0 - (fr.uGrav.w * ga))));\n\t\t} else if ((fr.uGrav.y > 2.5)) {\n\t\t\tvar q: vec3f = (((e1 * lx) + (up * lh)) + (e2 * lz));\n\t\t\tvar ax: vec3f = normalize((vec3f((hash11((aIdx * 13.1)) - 0.5), (hash11((aIdx * 7.7)) - 0.5), (hash11((aIdx * 3.3)) - 0.5)) + vec3f(1e-3)));\n\t\t\tvar ang: f32 = ((((t * fr.uGrav.z) * ((0.7 + (1.6 / ((gr + 0.3)))))) * ga) * ((0.6 + (0.8 * hash11((aIdx * 5.9))))));\n\t\t\tq = (((q * cos(ang)) + (cross(ax, q) * sin(ang))) + ((ax * dot(ax, q)) * ((1.0 - cos(ang)))));\n\t\t\tq *= vec3f((1.0 + (((fr.uGravT.z * 0.3) * ga) * sin(((t * 0.8) + (aIdx * 40.0))))));\n\t\t\tlx = dot(q, e1);\n\t\t\tlh = dot(q, up);\n\t\t\tlz = dot(q, e2);\n\t\t} else {\n\t\t\tvar sd: f32 = (aIdx * 61.0);\n\t\t\tvar ang: f32 = (((0.14 * fr.uGrav.z) * t) * ga);\n\t\t\tvar ca: f32 = cos(ang);\n\t\t\tvar sa: f32 = sin(ang);\n\t\t\tvar nx: f32 = ((lx * ca) - (lz * sa));\n\t\t\tvar nz: f32 = ((lx * sa) + (lz * ca));\n\t\t\tvar amp: f32 = (0.4 + (fr.uGravT.z * 1.2));\n\t\t\tlx = (nx + (((ga * 0.12) * amp) * sin((((t * 0.55) * fr.uGrav.z) + (sd * 1.3)))));\n\t\t\tlz = (nz + (((ga * 0.12) * amp) * cos((((t * 0.5) * fr.uGrav.z) + (sd * 0.8)))));\n\t\t\tlh += (((ga * 0.2) * amp) * sin((((t * 0.7) * fr.uGrav.z) + sd)));\n\t\t\tvar br: f32 = (1.0 + (((0.2 * amp) * ga) * ((0.5 + (0.5 * sin((((t * 0.35) * fr.uGrav.z) + (sd * 0.4))))))));\n\t\t\tlx *= br;\n\t\t\tlz *= br;\n\t\t\tlh *= br;\n\t\t}\n\t\tpos = (((fr.uGravP.xyz + (e1 * lx)) + (up * lh)) + (e2 * lz));\n\t}\n\tif ((fr.uCurl.x > 0.001)) {\n\t\tvar ca: f32 = (pow(fr.uCurl.x, 1.45) * 0.055);\n\t\tvar thr: f32 = ((snoise((((*base) * 1.8) + (t * 0.3))) * 0.5) + 0.5);\n\t\tvar det: f32 = smoothstep(0.35, 0.85, (thr + (min(fr.uCurl.x, 1.0) * 0.12)));\n\t\tvar cn: vec3f = ((curlNoise((((*base) * fr.uCurl.y) + (vec3f((t * 0.4), (t * 0.3), (t * 0.5)) * fr.uCurlP.x))) * det) * ca);\n\t\tif ((fr.uCurlP.z > 1.5)) {\n\t\t\tvar yc: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\t\tvar band: f32 = floor(((yc * 8.0) + 0.001));\n\t\t\tvar sg: f32 = select(-1.0, 1.0, (glsl_mod_f(band, 2.0) < 0.5));\n\t\t\tvar ang: f32 = (((sg * sin((((t * fr.uCurlP.x) * 0.7) + (band * 0.8)))) * min(fr.uCurl.x, 2.0)) * 0.55);\n\t\t\tvar q: vec3f = (pos - fr.uCen);\n\t\t\tvar cs: f32 = cos(ang);\n\t\t\tvar sn: f32 = sin(ang);\n\t\t\t{ let _sw21 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw21.x, q.y, _sw21.y); }\n\t\t\tpos = (fr.uCen + q);\n\t\t\tcn = vec3f(0.0);\n\t\t} else if ((fr.uCurlP.z > 0.5)) {\n\t\t\tvar fd: vec3f = vec3f(cos(fr.uCurlP.y), 0.35, sin(fr.uCurlP.y));\n\t\t\tvar ph: f32 = (0.5 + (0.5 * sin((((t * fr.uCurlP.x) * 0.7) + (hash11((aIdx * 3.7)) * 6.2831)))));\n\t\t\tcn += ((((fd * ph) * det) * ca) * 0.9);\n\t\t}\n\t\tpos += cn;\n\t}\n\tif ((fr.uGlitch.x > 0.001)) {\n\t\tvar yg: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar spd: f32 = fr.uGlitchP.y;\n\t\tvar cyc: f32 = ((t * spd) * 1.1);\n\t\tvar bst: f32 = (step(0.55, hash11(((floor(cyc) * 3.17) + 1.3))) * ((1.0 - smoothstep(0.0, 0.4, fract(cyc)))));\n\t\tgBurst = bst;\n\t\tvar I: f32 = (fr.uGlitch.x * ((0.55 + (((0.5 + (fr.uGlitchP.w * 1.6))) * bst))));\n\t\tvar gm: f32 = fr.uGlitchP.z;\n\t\tvar tick: f32 = floor(((t * 10.0) * spd));\n\t\tvar hit: bool = false;\n\t\tif ((gm < 0.5)) {\n\t\t\tvar band: f32 = floor((yg * fr.uGlitch.y));\n\t\t\tvar r: f32 = hash11(((band * 13.7) + tick));\n\t\t\tif ((r > 0.55)) {\n\t\t\t\tvar shf: f32 = (((((r - 0.5)) * 2.4) * ((hash11((band + 7.0)) - 0.5))) * I);\n\t\t\t\tpos.x += (shf * ((1.0 + fr.uFlat)));\n\t\t\t\tpos.z += (((shf * 1.6) * ((hash11((band + 3.0)) - 0.5))) * ((1.0 + fr.uFlat)));\n\t\t\t\thit = true;\n\t\t\t}\n\t\t} else if ((gm < 1.5)) {\n\t\t\tvar cell: vec3f = floor(((*base) * vec3f(4.0, (fr.uGlitch.y * 0.35), 4.0)));\n\t\t\tvar r: f32 = hash11((dot(cell, vec3f(12.9, 78.2, 37.7)) + (tick * 1.7)));\n\t\t\tif ((r > 0.62)) {\n\t\t\t\tvar hv: vec3f = (vec3f(hash11((r * 91.0)), hash11((r * 57.0)), hash11((r * 33.0))) - 0.5);\n\t\t\t\tpos += ((((hv * ((r - 0.55))) * 1.6) * I) * vec3f(1.0, 0.35, 1.0));\n\t\t\t\thit = true;\n\t\t\t}\n\t\t} else {\n\t\t\tvar row: f32 = floor(((yg * fr.uGlitch.y) * 3.0));\n\t\t\tvar r: f32 = hash11(((row * 5.3) + (tick * 2.3)));\n\t\t\tif ((r > 0.8)) {\n\t\t\t\tpos.x += (((((hash11(((row * 9.1) + tick)) - 0.5)) * 2.4) * I) * ((1.0 + fr.uFlat)));\n\t\t\t\thit = true;\n\t\t\t}\n\t\t\tpos.x += ((((hash11((row + tick)) - 0.5)) * 0.02) * I);\n\t\t}\n\t\tif (hit) {\n\t\t\tgGl = I;\n\t\t\tif ((fr.uGlitchP.x > 0.5)) {\n\t\t\t\tvar chn: f32 = floor((hash11(((aIdx * 17.3) + tick)) * 3.0));\n\t\t\t\tpos.x += ((((chn - 1.0)) * 0.09) * I);\n\t\t\t\tgCh = chn;\n\t\t\t}\n\t\t}\n\t\tgDrop = (step(hash11(((aIdx * 3.7) + tick)), (((fr.uGlitch.z * 0.4) * bst) * fr.uGlitch.x)) * hit2(hit));\n\t}\n\tif ((fr.uVoxel.x > 0.01)) {\n\t\tvar vm: f32 = fr.uVoxelP.x;\n\t\tvar amp: f32 = fr.uVoxelP.w;\n\t\tvar g: f32 = (mix(0.3, mix(0.035, 0.07, fr.uFlat), clamp(fr.uVoxel.x, 0.0, 1.0)) * fr.uVoxelP.z);\n\t\tif (((vm > 1.5) && (vm < 2.5))) {\n\t\t\tg *= (1.0 + (0.35 * sin(((t * fr.uVoxelP.y) * 2.0))));\n\t\t}\n\t\tvar cell: vec3f = floor((pos / g));\n\t\tvar q: vec3f = (((cell + 0.5)) * g);\n\t\tif (((vm > 0.5) && (vm < 1.5))) {\n\t\t\tvar h2: f32 = hash11(dot(cell, vec3f(12.9, 78.2, 37.7)));\n\t\t\tq.y += ((((((h2 - 0.5)) * g) * 2.0) * amp) * sin((((t * fr.uVoxelP.y) * 1.5) + (h2 * 6.2831))));\n\t\t} else if (((vm > 2.5) && (vm < 3.5))) {\n\t\t\tq.y += (((sin(((dot(cell.xz, vec2f(0.7, 0.5)) * 0.55) - ((t * fr.uVoxelP.y) * 2.0))) * g) * 1.6) * amp);\n\t\t} else if (((vm > 3.5) && (vm < 4.5))) {\n\t\t\tvar stp: f32 = ((g * 2.0) * max(amp, 0.3));\n\t\t\tq.y = ((((floor((((pos.y - fr.uYR.x)) / stp)) + 0.5)) * stp) + fr.uYR.x);\n\t\t} else if ((vm > 4.5)) {\n\t\t\tvar hv: vec3f = (vec3f(hash11(dot(cell, vec3f(12.9, 78.2, 37.7))), hash11(dot(cell, vec3f(39.3, 11.1, 52.7))), hash11(dot(cell, vec3f(7.7, 91.3, 23.9)))) - 0.5);\n\t\t\tq += ((((hv * g) * 3.0) * amp) * ((0.5 + (0.5 * sin((((t * fr.uVoxelP.y) * 2.0) + (hv.x * 12.0)))))));\n\t\t}\n\t\tq.z += (((fr.uFlat * ((gLum - 0.5))) * g) * 9.0);\n\t\tpos = mix(pos, q, smoothstep(0.0, 0.25, fr.uVoxel.x));\n\t}\n\tif ((fr.uJitter.x > 0.001)) {\n\t\tpos += ((vec3f(sin(((t * 17.0) + (aIdx * 91.0))), sin(((t * 13.0) + (aIdx * 57.0))), sin(((t * 11.0) + (aIdx * 33.0)))) * fr.uJitter.x) * 0.03);\n\t}\n\tif ((fr.uHyp.x > 0.001)) {\n\t\tvar hw: f32;\n\t\tvar hp: vec3f = hyperWarp(pos, fr.uCen, (1.25 / max(fr.uHyp.w, 0.05)), fr.uHyp.z, (fr.uHyp.y - (fr.uTOff * fr.uHypP.w)), &hw);\n\t\tvar hk: f32 = min(fr.uHyp.x, 1.0);\n\t\tpos = mix(pos, hp, hk);\n\t\tgHypW = hw;\n\t\tgHypF = (smoothstep(mix(0.99, 0.6, fr.uHypP.z), 0.997, hw) * hk);\n\t}\n\t(*maskV) = 1.0;\n\tif ((fr.uMask.x > 0.5)) {\n\t\tvar y01: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar soft: f32 = max(fr.uMask.z, 0.02);\n\t\tif ((fr.uMask.x < 1.5)) {\n\t\t\t(*maskV) = smoothstep((fr.uMaskA.x - (soft * 0.5)), (fr.uMaskA.x + (soft * 0.5)), y01);\n\t\t} else if ((fr.uMask.x < 2.5)) {\n\t\t\tvar r: f32 = ((fr.uMask.y * 1.6) + 0.01);\n\t\t\t(*maskV) = (1.0 - smoothstep((r * ((1.0 - soft))), r, distance((*base), fr.uMaskA.xyz)));\n\t\t} else if ((fr.uMask.x < 3.5)) {\n\t\t\tvar n: f32 = ((snoise((((*base) * 1.6) + vec3f(0.0, fr.uMaskA.w, (fr.uMaskA.w * 0.6)))) * 0.5) + 0.5);\n\t\t\t(*maskV) = smoothstep(((1.0 - fr.uMask.y) - (soft * 0.3)), ((1.0 - fr.uMask.y) + (soft * 0.3)), n);\n\t\t} else {\n\t\t\tvar w: f32 = ((fr.uMask.y * 0.35) + 0.004);\n\t\t\t(*maskV) = (1.0 - smoothstep(w, ((w + (soft * 0.3)) + 0.02), abs((y01 - fr.uMaskA.x))));\n\t\t}\n\t\tif ((fr.uMask.w > 0.5)) {\n\t\t\t(*maskV) = (1.0 - (*maskV));\n\t\t}\n\t}\n\tpos = mix((*base), pos, (*maskV));\n\tif ((fr.uContact.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 16); i++) {\n\t\t\tif ((f32(i) >= fr.uContact.w)) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tcontactAt(fr.uTrk[i].xyz, fr.uTrk[i].w, (*base), rad, &pos);\n\t\t}\n\t\tfor (var i: i32 = 0; (i < 32); i++) {\n\t\t\tif ((f32(i) >= fr.uShockP.z)) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tcontactAt(fr.uImp[i].xyz, fr.uImp[i].w, (*base), rad, &pos);\n\t\t}\n\t}\n\tif ((fr.uShockP.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 4); i++) {\n\t\t\tvar age: f32 = fr.uShock[i].w;\n\t\t\tif ((age < 0.0)) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar dist: f32 = distance((*base), fr.uShock[i].xyz);\n\t\t\tvar x: f32 = (((dist - (age * fr.uShockP.y))) / 0.22);\n\t\t\tpos += ((((rad * exp((-x * x))) * exp((-age * 0.9))) * fr.uShockP.x) * 0.45);\n\t\t}\n\t}\n\tif ((fr.uBrushParam.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 20); i++) {\n\t\t\tvar age: f32 = fr.uBrushHits[i].w;\n\t\t\tif ((age < 0.0)) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar dist: f32 = distance((*base), fr.uBrushHits[i].xyz);\n\t\t\tvar r: f32 = fr.uBrushParam.y;\n\t\t\tif ((dist < r)) {\n\t\t\t\tvar life: f32 = (1.0 - (age / fr.uBrushParam.z));\n\t\t\t\tvar infl: f32 = ((((1.0 - (dist / r))) * life) * fr.uBrushParam.x);\n\t\t\t\tpos += ((rad * infl) * 0.35);\n\t\t\t}\n\t\t}\n\t}\n\tif ((fr.uPhysics.x > 0.001)) {\n\t\tvar seed: f32 = hash11(((aIdx * 1234.56) + 17.1));\n\t\tvar seed2: f32 = hash11(((aIdx * 2345.67) + 39.3));\n\t\tvar seed3: f32 = hash11(((aIdx * 3456.78) + 81.7));\n\t\tvar yP: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar onset: f32 = (((((1.0 - yP)) * fr.uPhysP.y) * 1.3) + (seed * 0.3));\n\t\tvar pt: f32 = max(0.0, (fr.uCollapseTime - onset));\n\t\tvar radd: vec3f = normalize(((*base) + vec3f(1e-3)));\n\t\tvar tang: vec3f = normalize((vec3f(-(*base).z, 0.0, (*base).x) + vec3f(1e-3, 0.0, 0.0)));\n\t\tvar v0: vec3f = ((((radd * ((0.5 + (seed * 1.1)))) + ((tang * fr.uPhysP.z) * ((0.3 + (seed3 * 0.9)))))) * fr.uPhysP.x);\n\t\tvar vy0: f32 = (((0.5 + (seed2 * 1.0))) * fr.uPhysP.x);\n\t\tvar g: f32 = (fr.uPhysics.y * 3.8);\n\t\tvar floorY: f32 = (fr.uYR.x - 0.04);\n\t\tvar drag: f32 = (1.0 - exp((-pt * 1.5)));\n\t\tvar pPhys: vec3f = (*base);\n\t\tpPhys.x += (((v0.x * drag) / 1.5) + ((fr.uPhysics.w * 0.5) * drag));\n\t\tpPhys.z += ((v0.z * drag) / 1.5);\n\t\tvar h0: f32 = max(((*base).y - floorY), 0.0);\n\t\tvar vimp: f32 = sqrt(((vy0 * vy0) + ((2.0 * g) * h0)));\n\t\tvar t1: f32 = (((vy0 + vimp)) / g);\n\t\tvar yy: f32;\n\t\tif ((pt < t1)) {\n\t\t\tyy = (((*base).y + (vy0 * pt)) - (((0.5 * g) * pt) * pt));\n\t\t} else {\n\t\t\tvar tt: f32 = (pt - t1);\n\t\t\tvar vy: f32 = (vimp * fr.uPhysics.z);\n\t\t\tvar hh: f32 = 0.0;\n\t\t\tfor (var b: i32 = 0; (b < 4); b++) {\n\t\t\t\tvar T: f32 = ((2.0 * vy) / g);\n\t\t\t\tif ((tt < T)) {\n\t\t\t\t\thh = ((vy * tt) - (((0.5 * g) * tt) * tt));\n\t\t\t\t\tbreak;\n\t\t\t\t}\n\t\t\t\ttt -= T;\n\t\t\t\tvy *= fr.uPhysics.z;\n\t\t\t}\n\t\t\tyy = (floorY + max(hh, 0.0));\n\t\t}\n\t\tpPhys.y = max(yy, floorY);\n\t\tvar spinA: f32 = (((((1.0 - exp((-pt * 1.2)))) * fr.uPhysP.z) * ((seed2 - 0.5))) * 2.0);\n\t\tvar sq: vec2f = pPhys.xz;\n\t\tvar cs: f32 = cos(spinA);\n\t\tvar sn: f32 = sin(spinA);\n\t\t{ let _sw22 = vec2f(((sq.x * cs) - (sq.y * sn)), ((sq.x * sn) + (sq.y * cs))); pPhys = vec3f(_sw22.x, pPhys.y, _sw22.y); }\n\t\tvar strength: f32 = min(1.0, fr.uPhysics.x);\n\t\tvar target_: vec3f = mix(pos, pPhys, strength);\n\t\tif ((fr.uAsm > 0.0)) {\n\t\t\tvar s0: f32 = ((yP * 0.42) + (seed * 0.2));\n\t\t\tvar sA: f32 = clamp(((((fr.uAsm * 1.4) - s0)) / 0.55), 0.0, 1.0);\n\t\t\tvar eA: f32 = ((sA * sA) * ((3.0 - (2.0 * sA))));\n\t\t\tvar side: vec3f = normalize((cross((pPhys - pos), vec3f(0.0, 1.0, 0.0)) + vec3f(1e-3)));\n\t\t\ttarget_ = mix(target_, pos, eA);\n\t\t\ttarget_ += (((side * sin((eA * 3.14159))) * 0.45) * ((seed3 - 0.3)));\n\t\t\ttarget_.y += ((sin((eA * 3.14159)) * 0.5) * ((0.4 + seed)));\n\t\t}\n\t\tpos = target_;\n\t}\n\tif ((fr.uHandP.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 12); i++) {\n\t\t\tif ((f32(i) >= fr.uHandP.w)) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tvar hd: vec3f = (pos - fr.uHand[i].xyz);\n\t\t\tvar r: f32 = fr.uHandP.y;\n\t\t\tvar d2: f32 = dot(hd, hd);\n\t\t\tif ((d2 < (r * r))) {\n\t\t\t\tvar f: f32 = (1.0 - (sqrt(d2) / r));\n\t\t\t\tf = ((f * f) * ((3.0 - (2.0 * f))));\n\t\t\t\tvar hs: f32 = fr.uHand[i].w;\n\t\t\t\tif ((hs > 1.5)) {\n\t\t\t\t\ths -= 2.0;\n\t\t\t\t\tvar a: f32 = (((f * hs) * fr.uHandP.x) * 2.6);\n\t\t\t\t\tvar ca: f32 = cos(a);\n\t\t\t\t\tvar sa: f32 = sin(a);\n\t\t\t\t\tvar q: vec2f = (pos.xz - fr.uHand[i].xz);\n\t\t\t\t\t{ let _sw23 = (fr.uHand[i].xz + vec2f(((q.x * ca) - (q.y * sa)), ((q.x * sa) + (q.y * ca)))); pos = vec3f(_sw23.x, pos.y, _sw23.y); }\n\t\t\t\t\tpos.y += (((f * hs) * fr.uHandP.x) * 0.12);\n\t\t\t\t} else {\n\t\t\t\t\tpos += ((((normalize((hd + vec3f(1e-3))) * f) * hs) * fr.uHandP.x) * 0.75);\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\tif (((fr.uMouseOn > 0.5) && (fr.uCursor.x > 0.001))) {\n\t\tvar tm: vec3f = (pos - fr.uMouse);\n\t\tvar r2: f32 = (fr.uCursor.y * fr.uCursor.y);\n\t\tvar d2: f32 = dot(tm, tm);\n\t\tif ((d2 < r2)) {\n\t\t\tvar f: f32 = (1.0 - (d2 / r2));\n\t\t\tif ((fr.uCursor.z > 1.5)) {\n\t\t\t\tvar vax: vec3f = normalize((vec3f(fr.modelViewMatrix[0][2], fr.modelViewMatrix[1][2], fr.modelViewMatrix[2][2]) + vec3f(1e-5)));\n\t\t\t\tvar ca: f32 = (((f * f) * fr.uCursor.x) * 2.2);\n\t\t\t\tvar cc: f32 = cos(ca);\n\t\t\t\tvar cs: f32 = sin(ca);\n\t\t\t\tpos = (((fr.uMouse + (tm * cc)) + (cross(vax, tm) * cs)) + ((vax * dot(vax, tm)) * ((1.0 - cc))));\n\t\t\t} else {\n\t\t\t\tpos += (((((normalize((tm + vec3f(1e-3))) * f) * f) * fr.uCursor.x) * 0.6) * fr.uCursor.z);\n\t\t\t}\n\t\t}\n\t}\n\treturn pos;\n}\n\nfn main_() {\n\tvar bA: vec3f;\n\tvar bB: vec3f;\n\tvar mA: f32;\n\tvar mB: f32;\n\tgDepth = aDepth;\n\tgNormal = vec3f(0.0);\n\tvar pA: vec3f = fxDisplace(aOrigin, aTarget, aIdx, &bA, &mA);\n\tgDepth = aDepthB;\n\tvar pB: vec3f = fxDisplace(aOriginB, aTargetB, aIdxB, &bB, &mB);\n\tvar maxLen: f32 = (fr.uLink.y * 1.9);\n\tvar len: f32 = distance(pA, pB);\n\tif ((len > maxLen)) {\n\t\tgl_Position = vec4f(2.0, 2.0, 2.0, 1.0);\n\t\treturn;\n\t}\n\tvar strain: f32 = clamp((((len - (fr.uLink.y * 0.4))) / max((fr.uLink.y * 1.3), 0.01)), 0.0, 1.0);\n\tvStrain = strain;\n\tvar col: vec3f = (mix(fr.uP0, fr.uP2, (0.35 + (fr.uBeat * 0.4))) * fr.uBright);\n\tif (((fr.uLinkP.y > 0.5) && (fr.uLinkP.y < 1.5))) {\n\t\tvar cyan: vec3f = vec3f(0.12, 0.88, 0.9);\n\t\tvar gold: vec3f = vec3f(1.0, 0.76, 0.18);\n\t\tvar ruby: vec3f = vec3f(1.0, 0.22, 0.28);\n\t\tcol = select(mix(gold, ruby, (((strain - 0.5)) * 2.0)), mix(cyan, gold, (strain * 2.0)), (strain < 0.5));\n\t\tcol *= vec3f((fr.uBright * ((1.1 + (fr.uBeat * 0.35)))));\n\t} else if (((fr.uLinkP.y > 1.5) && (fr.uLinkP.y < 2.5))) {\n\t\tcol = mix(vec3f(0.08, 0.72, 1.0), vec3f(1.0, 0.08, 0.76), fract(((aIdx * 7.13) + (aEnd * 0.5))));\n\t\tcol *= vec3f((fr.uBright * 1.35));\n\t} else if ((fr.uLinkP.y > 2.5)) {\n\t\tcol = ((((0.5 + (0.5 * cos((6.2831853 * ((((aIdx + (aEnd * 0.35)) + (fr.uTime * 0.18)) + vec3f(0.0, 0.33, 0.67)))))))) * fr.uBright) * 1.25);\n\t}\n\tvC = col;\n\tvA = (fr.uLink.x * ((1.0 - smoothstep((fr.uLink.y * 0.8), maxLen, len))));\n\tvEnd = aEnd;\n\tvIdx = aIdx;\n\tvSide = aSide;\n\tvar mvp: mat4x4f = (fr.projectionMatrix * fr.modelViewMatrix);\n\tvar cA: vec4f = (mvp * vec4f(pA, 1.0));\n\tvar cB: vec4f = (mvp * vec4f(pB, 1.0));\n\tif (((cA.w < 0.02) || (cB.w < 0.02))) {\n\t\tgl_Position = vec4f(2.0, 2.0, 2.0, 1.0);\n\t\treturn;\n\t}\n\tvar sA: vec2f = (cA.xy / cA.w);\n\tvar sB: vec2f = (cB.xy / cB.w);\n\tvar dir: vec2f = (((sB - sA)) * vec2f((fr.uRes.x / fr.uRes.y), 1.0));\n\tvar dl: f32 = length(dir);\n\tdir = select(vec2f(1.0, 0.0), (dir / dl), (dl > 1e-5));\n\tvar nrm: vec2f = (vec2f(-dir.y, dir.x) * vec2f((fr.uRes.y / fr.uRes.x), 1.0));\n\tvar c: vec4f = mix(cA, cB, aEnd);\n\tvar flare: f32 = 1.0;\n\tif ((fr.uLinkP.z > 0.5)) {\n\t\tvar endDist: f32 = min(aEnd, (1.0 - aEnd));\n\t\tflare += (((1.0 - smoothstep(0.0, 0.18, endDist))) * 1.9);\n\t}\n\tvar baseW: f32 = fr.uLinkW;\n\tif (((fr.uLinkP.x > 1.5) && (fr.uLinkP.x < 2.5))) {\n\t\tbaseW = max(0.65, (fr.uLinkW * 0.6));\n\t}\n\t{ let _sw24 = (c.xy + ((((nrm * aSide) * (((baseW * flare) + 1.0))) / fr.uRes.y) * c.w)); c = vec4f(_sw24.x, _sw24.y, c.z, c.w); }\n\tgl_Position = c;\n}\n\n\n@compute @workgroup_size(64)\nfn main(@builtin(global_invocation_id) gid: vec3u) {\n\tlet i = gid.x;\n\tlet count = arrayLength(&inS0);\n\tif (i >= count) { return; }\n\tlet s0 = inS0[i];\n\tlet s1 = inS1[i];\n\tlet s2 = inS2[i];\n\tlet s3 = inS3[i];\n\tlet s4 = inS4[i];\n\taOrigin = s0.xyz;\n\taTarget = s1.xyz;\n\taIdx = s0.w;\n\taOriginB = s2.xyz;\n\taTargetB = s3.xyz;\n\taIdxB = s1.w;\n\taDepth = s2.w;\n\taDepthB = s3.w;\n\taEnd = s4.x;\n\taSide = s4.y;\n\tmain_();\n\toutClip[i] = gl_Position;\n\toutV0[i] = vec4f(vC, vA);\n\toutV1[i] = vec4f(vEnd, vIdx, vSide, vStrain);\n}\n",
-"render": "struct Frame {\n\t@size(16) uAdd: f32,\n\t@size(16) uSolid: vec3f,\n\t@size(16) uAtt: f32,\n\t@size(16) uSize: f32,\n\t@size(16) uPR: f32,\n\t@size(16) uGlyph: vec3f,\n\t@size(16) uColorBy: f32,\n\t@size(16) uBright: f32,\n\t@size(16) uMaskShow: f32,\n\t@size(16) uP0: vec3f,\n\t@size(16) uP1: vec3f,\n\t@size(16) uP2: vec3f,\n\t@size(16) uSliceC: vec3f,\n\t@size(16) uMarkC: vec3f,\n\t@size(16) uTime: f32,\n\t@size(16) uTOff: f32,\n\t@size(16) uMorph: f32,\n\tuMorphS: vec4f,\n\tuMorphO: vec4f,\n\tuMorphD: vec4f,\n\t@size(16) uSettle: f32,\n\t@size(16) uBeat: f32,\n\t@size(16) uYR: vec2f,\n\t@size(16) uMouse: vec3f,\n\t@size(16) uMouseOn: f32,\n\t@size(16) uShade: f32,\n\tuCurlP: vec4f,\n\tuSpecP: vec4f,\n\tuWaveP: vec4f,\n\tuWaveSrc: vec4f,\n\tuPulseP: vec4f,\n\tuVoxelP: vec4f,\n\tuGlitchP: vec4f,\n\tuBlast: vec4f,\n\tuFlow: vec4f,\n\tuDisP: vec4f,\n\tuScope: vec4f,\n\tuScopeP: vec4f,\n\tuScopeQ: vec4f,\n\t@size(16) uScopeC: vec3f,\n\tuDepth: vec4f,\n\tuDepthP: vec4f,\n\tuDepthQ: vec4f,\n\t@size(16) uFlat: f32,\n\tuCurl: vec4f,\n\tuSpec: vec4f,\n\tuWave: vec4f,\n\tuTwist: vec4f,\n\tuPulse: vec4f,\n\tuVoxel: vec4f,\n\tuJitter: vec4f,\n\tuCursor: vec4f,\n\tuMask: vec4f,\n\tuMaskA: vec4f,\n\tuGlitch: vec4f,\n\tuContact: vec4f,\n\tuShockP: vec4f,\n\tuTrk: array<vec4f, 16>,\n\tuHand: array<vec4f, 12>,\n\tuGrav: vec4f,\n\tuSlice: vec4f,\n\tuSliceM: vec4f,\n\tuMark: vec4f,\n\tuGravT: vec4f,\n\tuPhysP: vec4f,\n\t@size(16) uAsm: f32,\n\tuDis: vec4f,\n\t@size(16) uDisT: f32,\n\t@size(16) uAnimN: f32,\n\t@size(16) uCen: vec3f,\n\tuDisQ: vec4f,\n\tuGravP: vec4f,\n\tuHandP: vec4f,\n\tuImp: array<vec4f, 32>,\n\tuShock: array<vec4f, 4>,\n\tuExp: vec4f,\n\tuExpP: vec4f,\n\tuGrow: vec4f,\n\tuGrowP: vec4f,\n\t@size(16) uGrowSeed: vec3f,\n\tuJel: array<vec4f, 3>,\n\tuJelO: array<vec4f, 3>,\n\tuJelP: vec4f,\n\tuPhysics: vec4f,\n\t@size(16) uCollapseTime: f32,\n\tuBrushHits: array<vec4f, 20>,\n\tuPaintP: vec4f,\n\tuBrushParam: vec4f,\n\tuLookP2: vec4f,\n\tuDof: vec4f,\n\tuHyp: vec4f,\n\tuHypP: vec4f,\n\tuCh: vec4f,\n\tuChA: vec4f,\n\tuFr: vec4f,\n\tuFr2: vec4f,\n\tuFr3: vec4f,\n\tuFr4: vec4f,\n\tuFr5: vec4f,\n\tuHero: vec4f,\n\tuFr6: vec4f,\n\tuFr7: vec4f,\n\tuShoot: vec4f,\n\tuShootP: vec4f,\n\tuShootD: vec4f,\n\tuShootE: vec4f,\n\tuShootC: vec4f,\n\tuShootS: array<vec4f, 24>,\n\tuShootN: array<vec4f, 24>,\n\tuShootB: array<vec4f, 6>,\n\tmodelMatrix: mat4x4f,\n\tmodelViewMatrix: mat4x4f,\n\tprojectionMatrix: mat4x4f,\n\tnormalMatrix: mat3x3f,\n\t@size(16) uRes: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uGlow: f32,\n\t@size(16) uDens: f32,\n\t@size(16) uGhost: f32,\n\t@size(16) uShape: f32,\n\tuLink: vec4f,\n\tuLinkP: vec4f,\n\t@size(16) uLinkW: f32,\n\t@size(16) uScopeW: f32,\n\t@size(16) uScopeLB: f32,\n}\n@group(0) @binding(0) var<uniform> fr: Frame;\n@group(0) @binding(1) var<storage, read> outClip: array<vec4f>;\n@group(0) @binding(2) var<storage, read> outV0: array<vec4f>;\n@group(0) @binding(3) var<storage, read> outV1: array<vec4f>;\n@group(0) @binding(4) var atlasTex: texture_2d<f32>;\n@group(0) @binding(5) var linSamp: sampler;\n\nvar<private> vC: vec3f;\nvar<private> vA: f32;\nvar<private> vEnd: f32;\nvar<private> vIdx: f32;\nvar<private> vSide: f32;\nvar<private> vStrain: f32;\nvar<private> gl_FragColor: vec4f;\n\nfn frag_main_() {\n\tvar edge: f32 = (1.0 - smoothstep(0.35, 1.0, abs(vSide)));\n\tvar col: vec3f = vC;\n\tvar pulseA: f32 = 1.0;\n\tvar mode: i32 = i32((fr.uLinkP.x + 0.5));\n\tif ((fr.uLink.w > 0.5)) {\n\t\tvar spd: f32 = fr.uLink.z;\n\t\tif ((mode == 0)) {\n\t\t\tvar p: f32 = sin((((vEnd * 16.0) - ((fr.uTime * spd) * 3.5)) + (vIdx * 24.0)));\n\t\t\tvar spark: f32 = (smoothstep(0.45, 0.98, p) * 2.8);\n\t\t\tpulseA = (0.5 + spark);\n\t\t\tcol += ((col * spark) * 1.5);\n\t\t} else if ((mode == 1)) {\n\t\t\tvar t1: f32 = fract((((vEnd * 2.0) - ((fr.uTime * spd) * 0.95)) + (vIdx * 13.37)));\n\t\t\tvar spike1: f32 = (exp((-t1 * 16.0)) * 4.0);\n\t\t\tvar t2: f32 = fract((((((1.0 - vEnd)) * 2.0) - ((fr.uTime * spd) * 0.75)) + (vIdx * 29.11)));\n\t\t\tvar spike2: f32 = (exp((-t2 * 16.0)) * 3.0);\n\t\t\tvar syn: f32 = (spike1 + spike2);\n\t\t\tpulseA = (0.35 + syn);\n\t\t\tcol = (mix(col, vec3f(1.0), clamp((syn * 0.55), 0.0, 0.85)) + ((col * syn) * 1.8));\n\t\t} else if ((mode == 2)) {\n\t\t\tvar shimmer: f32 = (0.65 + (0.35 * sin((((fr.uTime * 3.2) + (vIdx * 43.0)) + (vEnd * 6.28)))));\n\t\t\tpulseA = shimmer;\n\t\t\tcol = mix(col, vec3f(0.9, 0.96, 1.0), (0.35 * shimmer));\n\t\t} else if ((mode == 3)) {\n\t\t\tvar core: f32 = (1.0 - smoothstep(0.0, 0.32, abs(vSide)));\n\t\t\tvar bits: f32 = step(0.46, fract((((vEnd * 10.0) - ((fr.uTime * spd) * 3.2)) + (vIdx * 19.3))));\n\t\t\tpulseA = (0.55 + (bits * 2.2));\n\t\t\tcol = ((col * pulseA) + ((vec3f(1.0) * core) * 1.6));\n\t\t} else if ((mode == 4)) {\n\t\t\tvar wave: f32 = (0.5 + (0.5 * sin((((vEnd * 12.0) - ((fr.uTime * spd) * 2.6)) + (vStrain * 6.0)))));\n\t\t\tpulseA = (0.5 + (wave * ((1.0 + (vStrain * 2.2)))));\n\t\t\tcol += (((vec3f(1.0, 0.45, 0.18) * vStrain) * 2.0) * wave);\n\t\t}\n\t}\n\tif ((fr.uLinkP.z > 0.5)) {\n\t\tvar endDist: f32 = min(vEnd, (1.0 - vEnd));\n\t\tvar dNode: f32 = length(vec2f((endDist * 7.5), (vSide * 0.72)));\n\t\tvar beacon: f32 = (exp((-dNode * 3.8)) * 2.6);\n\t\tcol += (((vec3f(1.0) + (vC * 0.6))) * beacon);\n\t\tpulseA = max(pulseA, (beacon * 1.3));\n\t}\n\tvar alpha: f32 = clamp(((vA * pulseA) * edge), 0.0, 1.0);\n\tgl_FragColor = vec4f((col * alpha), alpha);\n}\n\n\n\nfn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {\n\tlet startCompression = 0.8 - 0.04;\n\tlet desaturation = 0.15;\n\tvar color = c0 * exposure;\n\tlet x = min(color.r, min(color.g, color.b));\n\tlet offset = select(0.04, x - 6.25 * x * x, x < 0.08);\n\tcolor = color - offset;\n\tlet peak = max(color.r, max(color.g, color.b));\n\tif (peak < startCompression) { return color; }\n\tlet d = 1.0 - startCompression;\n\tlet newPeak = 1.0 - d * d / (peak + d - startCompression);\n\tcolor = color * (newPeak / peak);\n\tlet g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);\n\treturn mix(color, vec3f(newPeak), g);\n}\nfn linearToSrgb(v: vec3f) -> vec3f {\n\treturn select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));\n}\n\nstruct VOut {\n\t@builtin(position) clip: vec4f,\n\t@location(0) v0: vec4f,\n\t@location(1) v1: vec4f,\n}\n\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar clip = outClip[vi];\n\tclip.z = (clip.z + clip.w) * 0.5;\n\tvar o: VOut;\n\to.clip = clip;\n\to.v0 = outV0[vi];\n\to.v1 = outV1[vi];\n\treturn o;\n}\n\nfn setup_in(in: VOut) {\n\tvC = in.v0.xyz;\n\tvA = in.v0.w;\n\tvEnd = in.v1.x;\n\tvIdx = in.v1.y;\n\tvSide = in.v1.z;\n\tvStrain = in.v1.w;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tsetup_in(in);\n\tfrag_main_();\n\treturn vec4f(linearToSrgb(toneNeutral(gl_FragColor.rgb, fr.uExposure)), gl_FragColor.a);\n}\n\n@fragment\nfn fs_raw(in: VOut) -> @location(0) vec4f {\n\tsetup_in(in);\n\tfrag_main_();\n\treturn gl_FragColor;\n}\n",
+"compute": "struct Frame {\n\t@size(16) uAdd: f32,\n\t@size(16) uSolid: vec3f,\n\t@size(16) uAtt: f32,\n\t@size(16) uSize: f32,\n\t@size(16) uPR: f32,\n\t@size(16) uGlyph: vec3f,\n\t@size(16) uColorBy: f32,\n\t@size(16) uBright: f32,\n\t@size(16) uMaskShow: f32,\n\t@size(16) uP0: vec3f,\n\t@size(16) uP1: vec3f,\n\t@size(16) uP2: vec3f,\n\t@size(16) uSliceC: vec3f,\n\t@size(16) uMarkC: vec3f,\n\t@size(16) uTime: f32,\n\t@size(16) uTOff: f32,\n\t@size(16) uMorph: f32,\n\tuMorphS: vec4f,\n\tuMorphO: vec4f,\n\tuMorphD: vec4f,\n\t@size(16) uSettle: f32,\n\t@size(16) uBeat: f32,\n\t@size(16) uYR: vec2f,\n\t@size(16) uMouse: vec3f,\n\t@size(16) uMouseOn: f32,\n\t@size(16) uShade: f32,\n\tuCurlP: vec4f,\n\tuSpecP: vec4f,\n\tuWaveP: vec4f,\n\tuWaveSrc: vec4f,\n\tuPulseP: vec4f,\n\tuVoxelP: vec4f,\n\tuGlitchP: vec4f,\n\tuBlast: vec4f,\n\tuFlow: vec4f,\n\tuDisP: vec4f,\n\tuScope: vec4f,\n\tuScopeP: vec4f,\n\tuScopeQ: vec4f,\n\t@size(16) uScopeC: vec3f,\n\tuDepth: vec4f,\n\tuDepthP: vec4f,\n\tuDepthQ: vec4f,\n\t@size(16) uFlat: f32,\n\tuCurl: vec4f,\n\tuSpec: vec4f,\n\tuWave: vec4f,\n\tuTwist: vec4f,\n\tuPulse: vec4f,\n\tuVoxel: vec4f,\n\tuJitter: vec4f,\n\tuCursor: vec4f,\n\tuMask: vec4f,\n\tuMaskA: vec4f,\n\tuGlitch: vec4f,\n\tuContact: vec4f,\n\tuShockP: vec4f,\n\tuTrk: array<vec4f, 16>,\n\tuHand: array<vec4f, 12>,\n\tuGrav: vec4f,\n\tuSlice: vec4f,\n\tuSliceM: vec4f,\n\tuMark: vec4f,\n\tuGravT: vec4f,\n\tuPhysP: vec4f,\n\t@size(16) uAsm: f32,\n\tuDis: vec4f,\n\t@size(16) uDisT: f32,\n\t@size(16) uAnimN: f32,\n\t@size(16) uCen: vec3f,\n\tuDisQ: vec4f,\n\tuGravP: vec4f,\n\tuHandP: vec4f,\n\tuImp: array<vec4f, 32>,\n\tuShock: array<vec4f, 4>,\n\tuExp: vec4f,\n\tuExpP: vec4f,\n\tuGrow: vec4f,\n\tuGrowP: vec4f,\n\t@size(16) uGrowSeed: vec3f,\n\tuJel: array<vec4f, 3>,\n\tuJelO: array<vec4f, 3>,\n\tuJelP: vec4f,\n\tuPhysics: vec4f,\n\t@size(16) uCollapseTime: f32,\n\tuBrushHits: array<vec4f, 20>,\n\tuPaintP: vec4f,\n\tuBrushParam: vec4f,\n\tuLookP2: vec4f,\n\tuDof: vec4f,\n\tuHyp: vec4f,\n\tuHypP: vec4f,\n\tuCh: vec4f,\n\tuChA: vec4f,\n\tuFr: vec4f,\n\tuFr2: vec4f,\n\tuFr3: vec4f,\n\tuFr4: vec4f,\n\tuFr5: vec4f,\n\tuHero: vec4f,\n\tuFr6: vec4f,\n\tuFr7: vec4f,\n\tuShoot: vec4f,\n\tuShootP: vec4f,\n\tuShootD: vec4f,\n\tuShootE: vec4f,\n\tuShootC: vec4f,\n\tuShootS: array<vec4f, 24>,\n\tuShootN: array<vec4f, 24>,\n\tuShootB: array<vec4f, 6>,\n\tuScr: vec4f,\n\tuScrP: vec4f,\n\tuScrD: vec4f,\n\tuScrQ: vec4f,\n\t@size(16) uScrMN: f32,\n\tuSlit: vec4f,\n\tuSlitP: vec4f,\n\tuSlitG: vec4f,\n\tuSort: vec4f,\n\tuSortP: vec4f,\n\tmodelMatrix: mat4x4f,\n\tmodelViewMatrix: mat4x4f,\n\tprojectionMatrix: mat4x4f,\n\tviewMatrix: mat4x4f,\n\tnormalMatrix: mat3x3f,\n\t@size(16) uRes: vec2f,\n\t@size(16) uPx: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n\t@size(16) uGlow: f32,\n\t@size(16) uDens: f32,\n\t@size(16) uGhost: f32,\n\t@size(16) uShape: f32,\n\tuShd: vec4f,\n\tuShdL: vec4f,\n\tuShdP: vec4f,\n\t@size(16) uShdC: vec3f,\n\tuLink: vec4f,\n\tuLinkP: vec4f,\n\t@size(16) uLinkW: f32,\n\t@size(16) uScopeW: f32,\n\t@size(16) uScopeLB: f32,\n}\n@group(0) @binding(0) var<uniform> fr: Frame;\n@group(0) @binding(1) var<storage, read> inS0: array<vec4f>;\n@group(0) @binding(2) var<storage, read> inS1: array<vec4f>;\n@group(0) @binding(3) var<storage, read> inS2: array<vec4f>;\n@group(0) @binding(4) var<storage, read> inS3: array<vec4f>;\n@group(0) @binding(5) var<storage, read> inS4: array<vec4f>;\n@group(0) @binding(9) var<storage, read_write> outClip: array<vec4f>;\n@group(0) @binding(10) var<storage, read_write> outV0: array<vec4f>;\n@group(0) @binding(11) var<storage, read_write> outV1: array<vec4f>;\n@group(0) @binding(12) var specTex: texture_2d<f32>;\n@group(0) @binding(13) var linSamp: sampler;\n@group(0) @binding(14) var pieceTex: texture_2d<f32>;\n@group(0) @binding(15) var frTex: texture_2d_array<f32>;\n@group(0) @binding(16) var heroTex: texture_2d<f32>;\n@group(0) @binding(17) var scrTex: texture_2d<f32>;\n@group(0) @binding(18) var scrDep: texture_2d<f32>;\n@group(0) @binding(19) var scrMTex: texture_2d<f32>;\n@group(0) @binding(20) var slitTex: texture_2d_array<f32>;\n@group(0) @binding(21) var sortTex: texture_2d<f32>;\n\nvar<private> aOrigin: vec3f;\nvar<private> aTarget: vec3f;\nvar<private> aIdx: f32;\nvar<private> aOriginB: vec3f;\nvar<private> aTargetB: vec3f;\nvar<private> aIdxB: f32;\nvar<private> aDepth: f32;\nvar<private> aDepthB: f32;\nvar<private> aEnd: f32;\nvar<private> aSide: f32;\nvar<private> vC: vec3f;\nvar<private> vA: f32;\nvar<private> vEnd: f32;\nvar<private> vIdx: f32;\nvar<private> vSide: f32;\nvar<private> vStrain: f32;\nvar<private> gl_Position: vec4f;\n\nfn glsl_mod_f(x: f32, y: f32) -> f32 { return x - y * floor(x / y); }\n\nvar<private> gGl: f32 = 0.0;\nvar<private> gCh: f32 = -1.0;\nvar<private> gDrop: f32 = 0.0;\nvar<private> gGrow: f32 = 1.0;\nvar<private> gGrowE: f32 = 0.0;\nvar<private> gBurst: f32 = 0.0;\nvar<private> gScopeG: f32 = 0.0;\nvar<private> gScopeT: f32 = 0.0;\nvar<private> gScopeD: f32 = 0.0;\nvar<private> gDepth: f32 = 0.5;\nvar<private> gDepthG: f32 = 0.0;\nvar<private> gNormal: vec3f = vec3f(0.0);\nvar<private> gLum: f32 = 0.5;\nvar<private> gHypW: f32 = 0.0;\nvar<private> gHypF: f32 = 0.0;\nvar<private> gChN: f32 = 0.0;\n\nfn mod289_vec3(x_in: vec3f) -> vec3f {\n\tvar x: vec3f = x_in;\n\treturn (x - (floor((x * ((1.0 / 289.0)))) * 289.0));\n}\n\nfn mod289_vec4(x_in: vec4f) -> vec4f {\n\tvar x: vec4f = x_in;\n\treturn (x - (floor((x * ((1.0 / 289.0)))) * 289.0));\n}\n\nfn permute(x_in: vec4f) -> vec4f {\n\tvar x: vec4f = x_in;\n\treturn mod289_vec4((((((x * 34.0)) + 1.0)) * x));\n}\n\nfn taylorInvSqrt(r_in: vec4f) -> vec4f {\n\tvar r: vec4f = r_in;\n\treturn (1.79284291400159 - (0.85373472095314 * r));\n}\n\nfn snoise(v_in: vec3f) -> f32 {\n\tvar v: vec3f = v_in;\n\tconst C: vec2f = vec2f((1.0 / 6.0), (1.0 / 3.0));\n\tconst D: vec4f = vec4f(0.0, 0.5, 1.0, 2.0);\n\tvar i: vec3f = floor((v + dot(v, C.yyy)));\n\tvar x0: vec3f = ((v - i) + dot(i, C.xxx));\n\tvar g: vec3f = step(x0.yzx, x0.xyz);\n\tvar l: vec3f = (1.0 - g);\n\tvar i1: vec3f = min(g.xyz, l.zxy);\n\tvar i2: vec3f = max(g.xyz, l.zxy);\n\tvar x1: vec3f = ((x0 - i1) + C.xxx);\n\tvar x2: vec3f = ((x0 - i2) + C.yyy);\n\tvar x3: vec3f = (x0 - D.yyy);\n\ti = mod289_vec3(i);\n\tvar p: vec4f = permute(((permute(((permute((i.z + vec4f(0.0, i1.z, i2.z, 1.0))) + i.y) + vec4f(0.0, i1.y, i2.y, 1.0))) + i.x) + vec4f(0.0, i1.x, i2.x, 1.0)));\n\tvar n_: f32 = 0.142857142857;\n\tvar ns: vec3f = ((n_ * D.wyz) - D.xzx);\n\tvar j: vec4f = (p - (49.0 * floor(((p * ns.z) * ns.z))));\n\tvar x_: vec4f = floor((j * ns.z));\n\tvar y_: vec4f = floor((j - (7.0 * x_)));\n\tvar x: vec4f = ((x_ * ns.x) + ns.yyyy);\n\tvar y: vec4f = ((y_ * ns.x) + ns.yyyy);\n\tvar h: vec4f = ((1.0 - abs(x)) - abs(y));\n\tvar b0: vec4f = vec4f(x.xy, y.xy);\n\tvar b1: vec4f = vec4f(x.zw, y.zw);\n\tvar s0: vec4f = ((floor(b0) * 2.0) + 1.0);\n\tvar s1: vec4f = ((floor(b1) * 2.0) + 1.0);\n\tvar sh: vec4f = -step(h, vec4f(0.0));\n\tvar a0: vec4f = (b0.xzyw + (s0.xzyw * sh.xxyy));\n\tvar a1: vec4f = (b1.xzyw + (s1.xzyw * sh.zzww));\n\tvar p0: vec3f = vec3f(a0.xy, h.x);\n\tvar p1: vec3f = vec3f(a0.zw, h.y);\n\tvar p2: vec3f = vec3f(a1.xy, h.z);\n\tvar p3: vec3f = vec3f(a1.zw, h.w);\n\tvar norm: vec4f = taylorInvSqrt(vec4f(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));\n\tp0 *= vec3f(norm.x);\n\tp1 *= vec3f(norm.y);\n\tp2 *= vec3f(norm.z);\n\tp3 *= vec3f(norm.w);\n\tvar m: vec4f = max((0.6 - vec4f(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3))), vec4f(0.0));\n\tm = (m * m);\n\treturn (42.0 * dot((m * m), vec4f(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3))));\n}\n\nfn curlNoise(p_in: vec3f) -> vec3f {\n\tvar p: vec3f = p_in;\n\tconst e: f32 = 0.08;\n\tvar n1: f32 = snoise((p + vec3f(e, 0.0, 0.0)));\n\tvar n2: f32 = snoise((p - vec3f(e, 0.0, 0.0)));\n\tvar n3: f32 = snoise((p + vec3f(0.0, e, 0.0)));\n\tvar n4: f32 = snoise((p - vec3f(0.0, e, 0.0)));\n\tvar n5: f32 = snoise((p + vec3f(0.0, 0.0, e)));\n\tvar n6: f32 = snoise((p - vec3f(0.0, 0.0, e)));\n\treturn normalize((vec3f((((n4 - n3)) - ((n6 - n5))), (((n6 - n5)) - ((n2 - n1))), (((n2 - n1)) - ((n4 - n3)))) + 1e-5));\n}\n\nfn hash11(p_in: f32) -> f32 {\n\tvar p: f32 = p_in;\n\treturn fract((sin((p * 127.1)) * 43758.5453));\n}\n\nfn hit2(b_in: bool) -> f32 {\n\tvar b: bool = b_in;\n\treturn select(0.0, 1.0, b);\n}\n\nfn contactAt(c_in: vec3f, st_in: f32, base_in: vec3f, rad_in: vec3f, pos: ptr<function, vec3f>) {\n\tvar c: vec3f = c_in;\n\tvar st: f32 = st_in;\n\tvar base: vec3f = base_in;\n\tvar rad: vec3f = rad_in;\n\tvar dd: vec3f = (base - c);\n\tvar r: f32 = fr.uContact.y;\n\tvar d2: f32 = dot(dd, dd);\n\tif (((d2 >= (r * r)) || (st < 0.001))) {\n\t\treturn;\n\t}\n\tvar f: f32 = (1.0 - (sqrt(d2) / r));\n\tf = ((f * f) * ((3.0 - (2.0 * f))));\n\tvar k: f32 = ((f * st) * fr.uContact.x);\n\tif ((fr.uContact.z < 0.5)) {\n\t\t(*pos) += ((rad * k) * 0.4);\n\t} else if ((fr.uContact.z < 1.5)) {\n\t\tvar ax: vec3f = normalize((c + vec3f(1e-4)));\n\t\tvar a: f32 = (k * 2.4);\n\t\tvar q: vec3f = ((*pos) - c);\n\t\t(*pos) = (((c + (q * cos(a))) + (cross(ax, q) * sin(a))) + ((ax * dot(ax, q)) * ((1.0 - cos(a)))));\n\t} else if ((fr.uContact.z < 2.5)) {\n\t\t(*pos) -= ((normalize((dd + vec3f(1e-4))) * k) * 0.3);\n\t} else if ((fr.uContact.z < 3.5)) {\n\t\t(*pos) += ((normalize((dd + vec3f(1e-4))) * k) * 0.3);\n\t} else if ((fr.uContact.z < 4.5)) {\n\t\t(*pos) += (((rad * sin(((length(dd) * 20.0) - (fr.uTime * 6.0)))) * k) * 0.14);\n\t} else if ((fr.uContact.z < 5.5)) {\n\t\tvar hh: f32 = fract((sin(dot(base.xz, vec2f(12.9898, 78.233))) * 43758.5453));\n\t\t(*pos).y -= (((k * k) * 0.55) * ((0.6 + (0.8 * hh))));\n\t\t{ let _sw0 = ((*pos).xz + vec2f(((((hh - 0.5)) * k) * 0.06))); (*pos) = vec3f(_sw0.x, (*pos).y, _sw0.y); }\n\t} else if ((fr.uContact.z < 6.5)) {\n\t\t(*pos) += ((curlNoise(((base * 3.0) + (fr.uTime * 0.8))) * k) * 0.45);\n\t}\n}\n\nfn contactK(b_in: vec3f) -> f32 {\n\tvar b: vec3f = b_in;\n\tvar m: f32 = 0.0;\n\tvar r: f32 = (fr.uContact.y * ((1.0 + (0.12 * sin((fr.uTime * 4.0))))));\n\tfor (var i: i32 = 0; (i < 16); i++) {\n\t\tif ((f32(i) >= fr.uContact.w)) {\n\t\t\tbreak;\n\t\t}\n\t\tvar d: f32 = distance(b, fr.uTrk[i].xyz);\n\t\tif ((d < r)) {\n\t\t\tm = max(m, (((1.0 - (d / r))) * fr.uTrk[i].w));\n\t\t}\n\t}\n\tfor (var i: i32 = 0; (i < 32); i++) {\n\t\tif ((f32(i) >= fr.uShockP.z)) {\n\t\t\tbreak;\n\t\t}\n\t\tvar d: f32 = distance(b, fr.uImp[i].xyz);\n\t\tif ((d < r)) {\n\t\t\tm = max(m, (((1.0 - (d / r))) * fr.uImp[i].w));\n\t\t}\n\t}\n\treturn clamp((m * fr.uContact.x), 0.0, 1.0);\n}\n\nfn markK(b_in: vec3f) -> f32 {\n\tvar b: vec3f = b_in;\n\tif (((fr.uMark.x < 0.5) || (fr.uContact.w < 0.5))) {\n\t\treturn 0.0;\n\t}\n\tvar m: f32 = 0.0;\n\tfor (var i: i32 = 0; (i < 16); i++) {\n\t\tif ((f32(i) >= fr.uContact.w)) {\n\t\t\tbreak;\n\t\t}\n\t\tvar d: f32 = distance(b, fr.uTrk[i].xyz);\n\t\tif ((d < fr.uMark.y)) {\n\t\t\tm = max(m, (1.0 - (d / fr.uMark.y)));\n\t\t}\n\t}\n\treturn (((m * m) * ((3.0 - (2.0 * m)))) * fr.uMark.z);\n}\n\nfn hueRot(c_in: vec3f, a_in: f32) -> vec3f {\n\tvar c: vec3f = c_in;\n\tvar a: f32 = a_in;\n\tvar k: vec3f = vec3f(0.57735);\n\treturn (((c * cos(a)) + (cross(k, c) * sin(a))) + ((k * dot(k, c)) * ((1.0 - cos(a)))));\n}\n\nfn sliceK(b_in: vec3f) -> f32 {\n\tvar b: vec3f = b_in;\n\tif ((fr.uSlice.x < 0.001)) {\n\t\treturn 0.0;\n\t}\n\tvar axCode: f32 = glsl_mod_f(fr.uSlice.w, 10.0);\n\tvar nLines: f32 = max(1.0, floor((fr.uSlice.w / 10.0)));\n\tvar c: f32 = select((select((select((((b.x + b.y)) * 0.707), b.z, (axCode < 2.5))), b.x, (axCode < 1.5))), b.y, (axCode < 0.5));\n\tvar v: f32 = clamp((((c + 1.2)) / 2.4), 0.0, 1.0);\n\tvar coord: f32 = glsl_mod_f(((v * nLines) - (fr.uSlice.y * nLines)), 1.0);\n\treturn (((1.0 - smoothstep((fr.uSlice.z * 0.4), fr.uSlice.z, abs((coord - 0.5))))) * fr.uSlice.x);\n}\n\nfn disK(b_in: vec3f, idx_in: f32) -> f32 {\n\tvar b: vec3f = b_in;\n\tvar idx: f32 = idx_in;\n\tif ((fr.uDis.x < 0.001)) {\n\t\treturn 0.0;\n\t}\n\tvar st: f32 = fr.uDisP.x;\n\tvar y01: f32 = clamp((((b.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\tif (((st > 2.5) && (st < 3.5))) {\n\t\ty01 = (floor(((y01 * 12.0) + 0.001)) / 12.0);\n\t}\n\tvar h: f32 = select(hash11((idx * 37.3)), hash11((floor((idx * 1800.0)) * 0.731)), (((st > 3.5) && (st < 4.5))));\n\tvar jit: f32 = select(select(select(select(select(select(select(0.1, 0.12, (st < 6.5)), 0.18, (st < 5.5)), 0.3, (st < 4.5)), 0.0, (st < 3.5)), 0.03, (st < 2.5)), 0.28, (st < 1.5)), 0.16, (st < 0.5));\n\tvar m: f32 = fr.uDis.y;\n\tvar still: bool = (fr.uAnimN < 0.5);\n\tvar ord: f32;\n\tif ((m < 0.5)) {\n\t\tord = (1.0 - y01);\n\t} else if ((m < 1.5)) {\n\t\tord = select(hash11((idx * 13.7)), ((snoise((b * 1.7)) * 0.5) + 0.5), still);\n\t} else if ((m < 2.5)) {\n\t\tord = y01;\n\t} else if ((m < 3.5)) {\n\t\tord = select(y01, clamp(((((b.x - fr.uCen.x)) * 0.3) + 0.5), 0.0, 1.0), still);\n\t} else {\n\t\tvar r01: f32 = clamp((length((b - fr.uCen)) / max((((fr.uYR.y - fr.uYR.x)) * 0.6), 0.3)), 0.0, 1.0);\n\t\tord = select((1.0 - r01), r01, (m < 4.5));\n\t}\n\tord = ((ord * ((1.0 - jit))) + (h * jit));\n\tvar w: f32 = max(fr.uDisQ.x, 0.06);\n\tif (((st > 1.5) && (st < 2.5))) {\n\t\tw *= 0.45;\n\t}\n\treturn clamp(((((fr.uDis.x * ((1.0 + w))) - ord)) / w), 0.0, 1.0);\n}\n\nfn growK(b_in: vec3f, idx_in: f32) -> f32 {\n\tvar b: vec3f = b_in;\n\tvar idx: f32 = idx_in;\n\tvar S: f32 = max((fr.uYR.y - fr.uYR.x), 0.5);\n\tvar y01: f32 = clamp((((b.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\tvar d: f32;\n\tif ((fr.uGrow.y < 0.5)) {\n\t\td = ((y01 * 0.8) + (clamp((length((b.xz - fr.uCen.xz)) / S), 0.0, 1.0) * 0.2));\n\t} else if ((fr.uGrow.y < 1.5)) {\n\t\td = clamp((distance(b, fr.uGrowSeed) / ((S * 1.5))), 0.0, 1.0);\n\t} else {\n\t\td = clamp((length((b - fr.uCen)) / ((S * 0.7))), 0.0, 1.0);\n\t}\n\tvar nz: f32 = select(hash11((floor((idx * 700.0)) * 0.37)), ((snoise(((b * 3.0) + 7.0)) * 0.5) + 0.5), (fr.uAnimN < 0.5));\n\td = clamp(((d + ((((nz - 0.5)) * 0.45) * fr.uGrow.z)) + (((hash11((idx * 9.1)) - 0.5)) * 0.03)), 0.0, 1.0);\n\tvar w: f32 = max(fr.uGrow.w, 0.04);\n\treturn clamp(((((fr.uGrow.x * ((1.0 + w))) - d)) / w), 0.0, 1.0);\n}\n\nfn morphLocal(A_in: vec3f, B_in: vec3f, idx_in: f32) -> f32 {\n\tvar A: vec3f = A_in;\n\tvar B: vec3f = B_in;\n\tvar idx: f32 = idx_in;\n\tvar h: f32 = hash11((idx * 3.17));\n\tvar msty: i32 = i32((fr.uMorphS.x + 0.5));\n\tif ((msty == 8)) {\n\t\th = hash11(dot(floor((((A - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));\n\t}\n\tif ((msty == 13)) {\n\t\th = hash11(dot(floor((((A - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));\n\t}\n\tvar ord: f32 = h;\n\tvar so: i32 = i32((fr.uMorphO.x + 0.5));\n\tvar yN: f32 = clamp((((A.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\tif ((so == 1)) {\n\t\tord = ((yN * 0.85) + (h * 0.15));\n\t} else if ((so == 2)) {\n\t\tord = ((((1.0 - yN)) * 0.85) + (h * 0.15));\n\t} else if ((so == 3)) {\n\t\tord = ((clamp((length(A) / 1.4), 0.0, 1.0) * 0.85) + (h * 0.15));\n\t} else if ((so == 4)) {\n\t\tord = ((clamp((((A.x + 1.2)) / 2.4), 0.0, 1.0) * 0.85) + (h * 0.15));\n\t} else if ((so == 5)) {\n\t\tord = ((((1.0 - gDepth)) * 0.85) + (h * 0.15));\n\t} else if ((so == 6)) {\n\t\tord = ((gDepth * 0.85) + (h * 0.15));\n\t}\n\tif ((msty == 10)) {\n\t\tord = ((((1.0 - gDepth)) * 0.8) + (h * 0.2));\n\t}\n\tif ((msty == 11)) {\n\t\tord = ((clamp((((B.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0) * 0.92) + (h * 0.08));\n\t}\n\tvar sg: f32 = fr.uMorphS.z;\n\treturn clamp(((fr.uMorph * ((1.0 + sg))) - (ord * sg)), 0.0, 1.0);\n}\n\nfn morphEase(x_in: f32) -> f32 {\n\tvar x: f32 = x_in;\n\tvar e: i32 = i32((fr.uMorphO.y + 0.5));\n\tif ((e == 1)) {\n\t\treturn (((x * x) * x) * (((x * (((x * 6.0) - 15.0))) + 10.0)));\n\t}\n\tif ((e == 2)) {\n\t\tvar c1: f32 = 1.70158;\n\t\tvar y: f32 = (x - 1.0);\n\t\treturn ((1.0 + (((((c1 + 1.0)) * y) * y) * y)) + ((c1 * y) * y));\n\t}\n\treturn ((x * x) * ((3.0 - (2.0 * x))));\n}\n\nfn frPlace(lay_in: f32, k_in: f32, n_in: f32, u_in: f32, v_in: f32, nrm: ptr<function, vec3f>) -> vec3f {\n\tvar lay: f32 = lay_in;\n\tvar k: f32 = k_in;\n\tvar n: f32 = n_in;\n\tvar u: f32 = u_in;\n\tvar v: f32 = v_in;\n\tvar t: f32 = select(0.5, (k / ((n - 1.0))), (n > 1.0));\n\tvar W: f32 = fr.uFr2.z;\n\tvar H: f32 = fr.uFr2.w;\n\tvar depth: f32 = fr.uFr3.x;\n\t(*nrm) = vec3f(0.0, 0.0, 1.0);\n\tif (((lay > 0.5) && (lay < 1.5))) {\n\t\tvar gx: f32 = ceil(sqrt((n * ((W / H)))));\n\t\tvar gy: f32 = ceil((n / gx));\n\t\tvar s: f32 = min((2.4 / ((gx * W))), (2.4 / ((gy * H))));\n\t\tvar cx: f32 = glsl_mod_f(k, gx);\n\t\tvar cy: f32 = floor((k / gx));\n\t\treturn vec3f(((((((cx - (((gx - 1.0)) * 0.5))) * W) * s) * 1.04) + ((u * W) * s)), (((((((((gy - 1.0)) * 0.5) - cy)) * H) * s) * 1.04) + ((v * H) * s)), 0.0);\n\t}\n\tvar ad: f32 = (k - fr.uFr4.x);\n\tif (((lay > 1.5) && (lay < 2.5))) {\n\t\tvar sc: f32 = 0.5;\n\t\tvar aa: f32 = abs(ad);\n\t\tvar c1: f32 = ((W * 0.54) + ((W * sc) * 0.53));\n\t\tvar c: f32 = select((c1 + (((((aa - 1.0)) * W) * sc) * 1.06)), (aa * c1), (aa < 1.0));\n\t\tvar s: f32 = mix(1.0, sc, min(aa, 1.0));\n\t\treturn vec3f(((sign(ad) * c) + ((u * W) * s)), ((v * H) * s), 0.0);\n\t}\n\tvar dz: f32 = select(1.0, -1.0, (((fr.uFr4.y > 0.5) && (fr.uFr4.y < 1.5))));\n\tvar kz: f32 = k;\n\tvar cen: f32 = select(fr.uFr4.x, (((n - 1.0)) * 0.5), (fr.uFr6.y > 0.5));\n\tvar ts: f32 = select(1.0, (1.0 - (0.72 * clamp((max(-ad, 0.0) / max((n - 1.0), 1.0)), 0.0, 1.0))), (lay > 2.5));\n\treturn vec3f(((u * W) * ts), ((v * H) * ts), (((((kz - cen)) * depth) / max((n - 1.0), 1.0)) * dz));\n}\n\nfn frMix(k_in: f32, u_in: f32, v_in: f32, nrm: ptr<function, vec3f>) -> vec3f {\n\tvar k: f32 = k_in;\n\tvar u: f32 = u_in;\n\tvar v: f32 = v_in;\n\tvar nA: vec3f;\n\tvar nB: vec3f;\n\tvar pA: vec3f = frPlace(fr.uFr3.y, k, fr.uFr.y, u, v, &nA);\n\tif ((fr.uFr3.w > 0.0001)) {\n\t\tvar pB: vec3f = frPlace(fr.uFr3.z, k, fr.uFr.y, u, v, &nB);\n\t\tvar m: f32 = ((fr.uFr3.w * fr.uFr3.w) * ((3.0 - (2.0 * fr.uFr3.w))));\n\t\t(*nrm) = normalize(mix(nA, nB, m));\n\t\treturn mix(pA, pB, m);\n\t}\n\t(*nrm) = nA;\n\treturn pA;\n}\n\nfn frBlockPos(aIdx_in: f32, nrm: ptr<function, vec3f>, kk: ptr<function, f32>, cell: ptr<function, vec2f>) -> vec3f {\n\tvar aIdx: f32 = aIdx_in;\n\tvar ip: f32 = floor(((aIdx * fr.uFr.w) + 0.5));\n\tvar k: f32 = floor((ip / fr.uFr.z));\n\tvar loc: f32 = (ip - (k * fr.uFr.z));\n\tvar ci: f32 = glsl_mod_f(loc, fr.uFr2.x);\n\tvar cj: f32 = floor((loc / fr.uFr2.x));\n\t(*kk) = k;\n\t(*cell) = vec2f(ci, cj);\n\tvar jt: vec2f = (vec2f(fract((sin((k * 12.9898)) * 43758.5453)), fract((sin(((k * 78.233) + 1.7)) * 24634.6345))) - 0.5);\n\treturn frMix(k, (((((ci + 0.5) + (jt.x * 0.9))) / fr.uFr2.x) - 0.5), (0.5 - ((((cj + 0.5) + (jt.y * 0.9))) / fr.uFr2.y)), nrm);\n}\n\nfn frShow(k_in: f32, tcol: ptr<function, vec3f>) -> vec4f {\n\tvar k: f32 = k_in;\n\tvar n: f32 = fr.uFr.y;\n\tvar idx: f32 = fr.uFr4.x;\n\tvar mode: i32 = i32((fr.uFr4.y + 0.5));\n\tvar d: f32 = (k - idx);\n\tvar fw: f32 = max(2.0, (n * 0.04));\n\tvar w: f32 = 1.0;\n\tvar lift: f32 = 0.0;\n\tvar tint: f32 = 0.0;\n\t(*tcol) = fr.uP2;\n\tif ((mode == 0)) {\n\t\tvar hl: f32 = fr.uFr4.w;\n\t\tif ((hl > 0.001)) {\n\t\t\tw = ((1.0 - (0.5 * hl)) + ((((0.5 + (1.4 * hl))) * max(0.0, (1.0 - (abs(d) / 2.5)))) * hl));\n\t\t}\n\t\tif ((d < -0.5)) {\n\t\t\tw *= (0.45 + (0.55 / ((1.0 + (0.2 * (-d))))));\n\t\t}\n\t\tif ((((d > 0.5) && (fr.uFr6.y < 0.5)) && (abs((fr.uFr3.y - 2.0)) > 0.5))) {\n\t\t\tw *= select(select(1.0, 0.4, (fr.uFr5.z > 0.5)), 0.0, (fr.uFr5.z > 1.5));\n\t\t}\n\t} else if ((mode == 1)) {\n\t\tif ((d < 0.0)) {\n\t\t\tw = max(0.0, (1.0 + (d / fw)));\n\t\t}\n\t\tlift = (1.0 - w);\n\t\tw *= (1.0 + (0.25 * max(0.0, (1.0 - abs(d)))));\n\t} else if ((mode == 2)) {\n\t\tif ((d > 0.0)) {\n\t\t\tw = (max(0.0, (1.0 - (d / fw))) * (select(0.0, 0.5, (d <= fw))));\n\t\t\tlift = (-((1.0 - w)) * 0.6);\n\t\t}\n\t\tw *= (1.0 + (0.25 * max(0.0, (1.0 - abs(d)))));\n\t} else if ((mode == 3)) {\n\t\tvar half_: f32 = max(3.0, (n * 0.08));\n\t\tvar ad: f32 = abs(d);\n\t\tw = select(max(0.0, (1.0 - (((ad - half_)) / fw))), 1.0, (ad <= half_));\n\t\tlift = ((((1.0 - w)) * sign((d + 0.0001))) * 0.8);\n\t\tw *= (1.0 + (0.25 * max(0.0, (1.0 - ad))));\n\t} else {\n\t\tvar span: f32 = max(1.5, (n * max(0.02, fr.uFr4.z)));\n\t\tif ((mode == 4)) {\n\t\t\tvar beam: f32 = exp(((-((d / span)) * ((d / span))) * 2.0));\n\t\t\tvar after: f32 = select(0.0, (exp((d / ((span * 2.4)))) * 0.4), (d < 0.0));\n\t\t\tw = ((0.18 + (beam * 1.5)) + after);\n\t\t\ttint = min(0.85, (beam * 0.8));\n\t\t\tlift = select(0.0, -min(0.35, ((-d / n) * 1.2)), (d < 0.0));\n\t\t} else {\n\t\t\tvar age: f32 = (-d / span);\n\t\t\tif ((d > 0.0)) {\n\t\t\t\tw = 0.0;\n\t\t\t} else {\n\t\t\t\tw = (max(0.0, (exp((-age * 1.1)) * 0.9)) + (1.35 * max(0.0, (1.0 - abs(d)))));\n\t\t\t\tvar t: f32 = min(1.0, age);\n\t\t\t\t(*tcol) = select(mix(fr.uP1, fr.uP2, (((t - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (t * 2.0)), (t < 0.5));\n\t\t\t\ttint = (min(0.9, (0.3 + (age * 0.7))) * ((1.0 - max(0.0, (1.0 - abs(d))))));\n\t\t\t\tlift = -min(0.6, (age * 0.25));\n\t\t\t}\n\t\t}\n\t}\n\treturn vec4f(w, lift, tint, 0.0);\n}\n\nfn dzone(x_in: f32) -> f32 {\n\tvar x: f32 = x_in;\n\tvar a: f32 = abs(x);\n\treturn ((sign(x) * max((a - fr.uDepthQ.x), 0.0)) / max((1.0 - fr.uDepthQ.x), 0.25));\n}\n\nfn depthShape(b_in: vec3f) -> vec3f {\n\tvar b: vec3f = b_in;\n\tvar t: f32 = (fr.uTime - fr.uTOff);\n\tvar A: f32 = fr.uDepth.x;\n\tvar sp: f32 = fr.uDepth.z;\n\tvar dn: f32 = select((1.0 - gDepth), gDepth, (fr.uDepthP.y > 0.0));\n\tvar fo: f32 = select((1.0 - fr.uDepth.w), fr.uDepth.w, (fr.uDepthP.y > 0.0));\n\tvar dd: f32 = dzone((dn - fo));\n\tvar md: i32 = i32((fr.uDepth.y + 0.5));\n\tif ((md == 0)) {\n\t\tb.z += ((dd * A) * 1.2);\n\t} else if ((md == 1)) {\n\t\tvar N: f32 = max(2.0, floor((fr.uDepthP.x + 0.5)));\n\t\tvar x: f32 = (dn * N);\n\t\tvar dq: f32 = (((floor(x) + smoothstep(0.38, 0.62, fract(x)))) / N);\n\t\tb.z += ((dzone((dq - fo)) * A) * 1.5);\n\t} else if ((md == 2)) {\n\t\tb.z += (((dd * A) * 1.3) * ((0.5 + (0.5 * sin(((t * sp) * 0.9))))));\n\t} else if ((md == 3)) {\n\t\tb.z += (((dd * A) * 1.4) * ((0.55 + (0.45 * sin(((b.x * 3.2) - ((t * sp) * 1.6)))))));\n\t} else if ((md == 4)) {\n\t\tb.z += ((((dd * 0.6) + ((sin(((length(b.xy) * 9.0) - ((t * sp) * 2.2))) * 0.25) * ((0.35 + dn))))) * A);\n\t} else if ((md == 5)) {\n\t\tvar a: f32 = (((dd * A) * 1.6) * sin(((t * sp) * 0.7)));\n\t\tvar cs: f32 = cos(a);\n\t\tvar sn: f32 = sin(a);\n\t\t{ let _sw1 = (mat2x2f(cs, -sn, sn, cs) * b.xz); b = vec3f(_sw1.x, b.y, _sw1.y); }\n\t\tb.z += ((dd * A) * 0.5);\n\t} else {\n\t\tvar p: f32 = (0.5 + (0.5 * sin((((t * sp) * 0.8) - 1.5708))));\n\t\tb.z += ((dd * A) * ((0.4 + ((1.8 * p) * p))));\n\t\t{ let _sw2 = (b.xy * vec2f((1.0 + ((((dd * A) * 0.5) * p) * p)))); b = vec3f(_sw2.x, _sw2.y, b.z); }\n\t}\n\tvar a: f32 = ((t * sp) * 0.8);\n\t{ let _sw3 = (b.xy + ((((vec2f(cos(a), (sin(a) * 0.55)) * dd) * fr.uDepthP.z) * A) * 0.4)); b = vec3f(_sw3.x, _sw3.y, b.z); }\n\treturn b;\n}\n\nfn hyperWarp(p_in: vec3f, c_in: vec3f, R_in: f32, md_in: f32, a_in: f32, w4: ptr<function, f32>) -> vec3f {\n\tvar p: vec3f = p_in;\n\tvar c: vec3f = c_in;\n\tvar R: f32 = R_in;\n\tvar md: f32 = md_in;\n\tvar a: f32 = a_in;\n\tvar q: vec3f = (((p - c)) / R);\n\tvar r2: f32 = dot(q, q);\n\tvar h: vec4f = (vec4f((2.0 * q), (r2 - 1.0)) / ((r2 + 1.0)));\n\tvar ca: f32 = cos(a);\n\tvar sa: f32 = sin(a);\n\tif ((md < 0.5)) {\n\t\t{ let _sw4 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw4.x, _sw4.y); }\n\t} else if ((md < 1.5)) {\n\t\t{ let _sw5 = vec2f(((h.x * ca) - (h.y * sa)), ((h.x * sa) + (h.y * ca))); h = vec4f(_sw5.x, _sw5.y, h.z, h.w); }\n\t\t{ let _sw6 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw6.x, _sw6.y); }\n\t} else if ((md < 2.5)) {\n\t\t{ let _sw7 = vec2f(((h.x * ca) - (h.w * sa)), ((h.x * sa) + (h.w * ca))); h = vec4f(_sw7.x, h.y, h.z, _sw7.y); }\n\t\tvar cb: f32 = cos((a * 0.618));\n\t\tvar sb: f32 = sin((a * 0.618));\n\t\t{ let _sw8 = vec2f(((h.y * cb) - (h.z * sb)), ((h.y * sb) + (h.z * cb))); h = vec4f(h.x, _sw8.x, _sw8.y, h.w); }\n\t} else {\n\t\tvar b: f32 = (2.4 * sin(a));\n\t\tvar cb: f32 = cos(b);\n\t\tvar sb: f32 = sin(b);\n\t\t{ let _sw9 = vec2f(((h.z * cb) - (h.w * sb)), ((h.z * sb) + (h.w * cb))); h = vec4f(h.x, h.y, _sw9.x, _sw9.y); }\n\t}\n\t(*w4) = h.w;\n\tvar o: vec3f = ((h.xyz / max((1.0 - h.w), 0.03)) * R);\n\tvar ol: f32 = length(o);\n\tvar oc: f32 = select((1.8 + ((1.0 - exp(-((ol - 1.8)))))), ol, (ol < 1.8));\n\treturn (c + (o * ((oc / max(ol, 1e-4)))));\n}\n\nfn chF(q_in: vec3f, n_in: f32, m_in: f32) -> f32 {\n\tvar q: vec3f = q_in;\n\tvar n: f32 = n_in;\n\tvar m: f32 = m_in;\n\tvar f: f32 = ((cos((n * q.x)) * cos((m * q.y))) - (cos((m * q.x)) * cos((n * q.y))));\n\tif ((fr.uFlat > 0.5)) {\n\t\treturn f;\n\t}\n\treturn ((((f + (cos((n * q.y)) * cos((m * q.z)))) - (cos((m * q.y)) * cos((n * q.z)))) + (cos((n * q.z)) * cos((m * q.x)))) - (cos((m * q.z)) * cos((n * q.x))));\n}\n\nfn chField(q_in: vec3f) -> f32 {\n\tvar q: vec3f = q_in;\n\tif ((fr.uCh.y < 0.001)) {\n\t\treturn chF(q, fr.uChA.x, fr.uChA.y);\n\t}\n\tif ((fr.uCh.y > 0.999)) {\n\t\treturn chF(q, fr.uChA.z, fr.uChA.w);\n\t}\n\treturn mix(chF(q, fr.uChA.x, fr.uChA.y), chF(q, fr.uChA.z, fr.uChA.w), fr.uCh.y);\n}\n\nfn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<function, vec3f>, maskV: ptr<function, f32>) -> vec3f {\n\tvar aOrigin: vec3f = aOrigin_in;\n\tvar aTarget: vec3f = aTarget_in;\n\tvar aIdx: f32 = aIdx_in;\n\tvar t: f32 = (fr.uTime - fr.uTOff);\n\tvar m: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));\n\t(*base) = aTarget;\n\tif (((fr.uFr.x > 0.5) && (fr.uMorph > 0.9999))) {\n\t\tvar fnrm: vec3f;\n\t\tvar fk: f32;\n\t\tvar fcell: vec2f;\n\t\t(*base) = frBlockPos(aIdx, &fnrm, &fk, &fcell);\n\t}\n\tif ((fr.uMorph < 0.9999)) {\n\t\tvar lt: f32 = morphLocal(aOrigin, aTarget, aIdx);\n\t\tvar e: f32 = morphEase(lt);\n\t\tvar sc: f32 = fr.uMorphS.y;\n\t\tvar sty: i32 = i32((fr.uMorphS.x + 0.5));\n\t\tvar mid: vec3f = (((aOrigin + aTarget)) * 0.5);\n\t\tvar cn: vec3f = curlNoise(((mid * 1.8) + vec3f(0.0, (t * 0.3), 0.0)));\n\t\tvar hA: f32 = hash11((aIdx * 5.31));\n\t\tvar hB: f32 = hash11((aIdx * 7.77));\n\t\tvar hC: f32 = hash11((aIdx * 2.13));\n\t\tvar flightK: f32 = sin((e * 3.1415926535));\n\t\tvar ctrl: vec3f = (mid + ((cn * sc) * 0.9));\n\t\tif ((sty == 3)) {\n\t\t\tctrl = (mid + ((cn * sc) * 0.3));\n\t\t}\n\t\tvar om: f32 = (1.0 - e);\n\t\t(*base) = ((((om * om) * aOrigin) + (((2.0 * om) * e) * ctrl)) + ((e * e) * aTarget));\n\t\tif ((sty == 0)) {\n\t\t\tvar fq: f32 = pow(flightK, 1.2);\n\t\t\tvar tb1: vec3f = curlNoise((((*base) * 1.35) + vec3f(0.0, 0.0, (t * 0.35))));\n\t\t\tvar tb2: vec3f = curlNoise((((*base) * 3.2) - vec3f((t * 0.55), 0.0, 0.0)));\n\t\t\t(*base) += (((((tb1 * 0.5) + (tb2 * 0.18))) * sc) * fq);\n\t\t}\n\t\tif ((sty == 1)) {\n\t\t\tvar vxz: vec2f = ((*base).xz - fr.uCen.xz);\n\t\t\tvar vr: f32 = length(vxz);\n\t\t\tvar vang: f32 = ((((sin((e * 3.1415926535)) * fr.uMorphS.w) * 6.2831853) * ((0.7 + (0.3 * hash11((aIdx * 1.3)))))) * pow((1.0 / ((0.32 + vr))), 0.5));\n\t\t\tvar vcs: f32 = cos(vang);\n\t\t\tvar vsn: f32 = sin(vang);\n\t\t\tvxz = vec2f(((vxz.x * vcs) - (vxz.y * vsn)), ((vxz.x * vsn) + (vxz.y * vcs)));\n\t\t\tvxz *= vec2f((1.0 - ((0.38 * flightK) * smoothstep(0.0, 1.1, vr))));\n\t\t\t{ let _sw10 = (fr.uCen.xz + vxz); (*base) = vec3f(_sw10.x, (*base).y, _sw10.y); }\n\t\t\t(*base).y += ((((((hB - 0.3)) * 0.35) * sc) * flightK) * flightK);\n\t\t}\n\t\tif ((sty == 3)) {\n\t\t\tvar band: f32 = (smoothstep(0.0, 0.3, lt) * ((1.0 - smoothstep(0.6, 1.0, lt))));\n\t\t\tvar sq: vec3f = ((((floor(((((*base) - fr.uCen)) * 20.0)) + 0.5)) / 20.0) + fr.uCen);\n\t\t\t(*base) = mix((*base), sq, (band * 0.8));\n\t\t\t(*base) += ((((vec3f(hA, hB, hC) - 0.5)) * 0.045) * band);\n\t\t}\n\t\tif ((sty == 4)) {\n\t\t\tvar H: f32 = (((0.45 + (0.85 * hA))) * sc);\n\t\t\tvar cloud: vec3f = ((aOrigin + vec3f(0.0, H, 0.0)) + (((((cn * ((0.5 + (0.7 * hB)))) + (((vec3f(hA, hC, hB) - 0.5)) * 0.45))) * sc) * 0.8));\n\t\t\tvar k1: f32 = clamp((e / 0.5), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);\n\t\t\tvar u1: f32 = (1.0 - pow((1.0 - k1), 2.4));\n\t\t\tvar u2: f32 = (1.0 - pow((1.0 - k2), 2.0));\n\t\t\tvar p1: vec3f = (mix(aOrigin, cloud, u1) + (((curlNoise(((aOrigin * 2.0) + vec3f(0.0, (t * 0.4), 0.0))) * 0.12) * sc) * sin((k1 * 3.1415926535))));\n\t\t\tvar p2: vec3f = (mix(cloud, aTarget, u2) + ((((curlNoise(((cloud * 1.5) + vec3f((t * 0.3), 0.0, 0.0))) * 0.1) * sc) * sin((k2 * 3.1415926535))) * ((1.0 - k2))));\n\t\t\t(*base) = select(p2, p1, (e < 0.5));\n\t\t}\n\t\tif ((sty == 5)) {\n\t\t\tvar fl5: f32 = (fr.uYR.x - 0.02);\n\t\t\tvar R5: f32 = (0.55 + (0.35 * sc));\n\t\t\tvar an5: f32 = (hA * 6.2831853);\n\t\t\tvar rr5: f32 = (sqrt(hB) * R5);\n\t\t\tvar hh5: f32 = ((pow(max(0.0, (1.0 - (rr5 / R5))), 0.85) * 0.85) * ((0.7 + (0.3 * hC))));\n\t\t\tvar heap: vec3f = vec3f((fr.uCen.x + (cos(an5) * rr5)), (fl5 + hh5), (fr.uCen.z + (sin(an5) * rr5)));\n\t\t\tvar k1: f32 = clamp((e / 0.5), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);\n\t\t\tvar fall: f32 = (k1 * k1);\n\t\t\tvar slide: f32 = (1.0 - pow((1.0 - k1), 2.0));\n\t\t\tvar p1: vec3f = vec3f(mix(aOrigin.x, heap.x, slide), mix(aOrigin.y, heap.y, fall), mix(aOrigin.z, heap.z, slide));\n\t\t\t{ let _sw11 = (p1.xz + ((((vec2f(hA, hC) - 0.5)) * 0.06) * sin((k1 * 3.1415926535)))); p1 = vec3f(_sw11.x, p1.y, _sw11.y); }\n\t\t\tvar gr: f32 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tvar p2: vec3f = mix(heap, aTarget, gr);\n\t\t\tp2.y += (((0.3 * sc) * sin((k2 * 3.1415926535))) * ((0.4 + hA)));\n\t\t\tp2 += ((cn * 0.12) * sin((k2 * 3.1415926535)));\n\t\t\t(*base) = select(p2, p1, (e < 0.5));\n\t\t}\n\t\tif ((sty == 2)) {\n\t\t\tvar fl: f32 = (fr.uYR.x - 0.04);\n\t\t\tvar h1: f32 = hA;\n\t\t\tvar h2: f32 = hB;\n\t\t\tvar h3: f32 = hC;\n\t\t\tvar dx: vec3f = normalize(((vec3f(aOrigin.x, 0.0, aOrigin.z) + (vec3f((h1 - 0.5), 0.0, (h2 - 0.5)) * 0.9)) + vec3f(1e-3, 0.0, 0.0)));\n\t\t\tvar spd: f32 = (((0.35 + (h3 * 1.1))) * sc);\n\t\t\tvar vy0: f32 = (((0.5 + (h2 * 1.3))) * sc);\n\t\t\tvar te: f32 = clamp((lt / 0.45), 0.0, 1.0);\n\t\t\tvar tau: f32 = (te * 1.6);\n\t\t\tvar gy: f32 = (fl + (h1 * 0.03));\n\t\t\tvar pl: vec3f = aOrigin;\n\t\t\t{ let _sw12 = (pl.xz + (((dx.xz * spd) * ((1.0 - exp(-3.52)))) * 1.4)); pl = vec3f(_sw12.x, pl.y, _sw12.y); }\n\t\t\tpl.y = gy;\n\t\t\tvar pf: vec3f = aOrigin;\n\t\t\t{ let _sw13 = (pf.xz + (((dx.xz * spd) * ((1.0 - exp((-2.2 * tau))))) * 1.4)); pf = vec3f(_sw13.x, pf.y, _sw13.y); }\n\t\t\tvar g2: f32 = 2.1;\n\t\t\tvar disc: f32 = ((vy0 * vy0) + ((4.0 * g2) * max((aOrigin.y - gy), 0.0)));\n\t\t\tvar tL: f32 = (((vy0 + sqrt(disc))) / ((2.0 * g2)));\n\t\t\tvar yb: f32 = ((aOrigin.y + (vy0 * tau)) - ((g2 * tau) * tau));\n\t\t\tif ((tau > tL)) {\n\t\t\t\tvar vI: f32 = (vy0 - ((2.0 * g2) * tL));\n\t\t\t\tvar v1: f32 = (-0.3 * vI);\n\t\t\t\tvar tb: f32 = (tau - tL);\n\t\t\t\tyb = select(gy, ((gy + (v1 * tb)) - ((g2 * tb) * tb)), (tb < (v1 / g2)));\n\t\t\t}\n\t\t\tpf.y = mix(max(yb, gy), gy, smoothstep(0.9, 1.0, te));\n\t\t\tvar tg: f32 = clamp((((lt - 0.58)) / 0.42), 0.0, 1.0);\n\t\t\tvar eg: f32 = ((tg * tg) * ((3.0 - (2.0 * tg))));\n\t\t\tvar c2: vec3f = (((((pl + aTarget)) * 0.5) + vec3f(0.0, (0.5 + (0.6 * h2)), 0.0)) + ((cn * 0.2) * sc));\n\t\t\tvar og: f32 = (1.0 - eg);\n\t\t\tvar pg: vec3f = ((((og * og) * pl) + (((2.0 * og) * eg) * c2)) + ((eg * eg) * aTarget));\n\t\t\t(*base) = select((select(pg, pl, (lt < 0.58))), pf, (lt < 0.45));\n\t\t}\n\t\tif ((sty == 6)) {\n\t\t\tvar hw4: f32;\n\t\t\tvar q4: vec3f = mix(aOrigin, aTarget, smoothstep(0.38, 0.62, e));\n\t\t\t(*base) = hyperWarp(q4, fr.uCen, (1.3 * max(sc, 0.15)), select(0.0, 1.0, (fr.uMorphS.w > 1.05)), ((2.4 * sin((e * 3.1415926535))) * ((0.85 + (0.15 * hash11((aIdx * 2.7)))))), &hw4);\n\t\t\tgHypW = hw4;\n\t\t\tgHypF = max(gHypF, smoothstep(0.55, 0.97, hw4));\n\t\t}\n\t\tif ((sty == 7)) {\n\t\t\tvar co7: vec3f = (aOrigin - fr.uCen);\n\t\t\tvar ct7: vec3f = (aTarget - fr.uCen);\n\t\t\tvar d17: vec3f = normalize((co7 + vec3f(1e-3)));\n\t\t\tvar d27: vec3f = normalize((ct7 + vec3f(1e-3)));\n\t\t\tvar R7: f32 = (0.7 + (0.5 * sc));\n\t\t\tvar k1: f32 = clamp((e / 0.35), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.35)) / 0.3), 0.0, 1.0);\n\t\t\tvar k3: f32 = clamp((((e - 0.65)) / 0.35), 0.0, 1.0);\n\t\t\tk1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));\n\t\t\tk2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tk3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));\n\t\t\tif ((e < 0.35)) {\n\t\t\t\t(*base) = mix(aOrigin, (fr.uCen + (d17 * R7)), k1);\n\t\t\t} else if ((e < 0.65)) {\n\t\t\t\t(*base) = (fr.uCen + (normalize((mix(d17, d27, k2) + vec3f(1e-3))) * R7));\n\t\t\t} else {\n\t\t\t\t(*base) = mix((fr.uCen + (d27 * R7)), aTarget, k3);\n\t\t\t}\n\t\t\t(*base) += (((normalize((((*base) - fr.uCen) + vec3f(1e-3))) * 0.05) * sin(((dot(d17, vec3f(5.0, 7.0, 3.0)) * 2.0) + (t * 3.0)))) * sin((clamp(e, 0.0, 1.0) * 3.1415926535)));\n\t\t}\n\t\tif ((sty == 8)) {\n\t\t\tvar ch8: f32 = hash11(dot(floor((((aOrigin - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));\n\t\t\tvar c8: vec3f = (mid + vec3f(0.0, (((0.35 + (0.8 * ch8))) * sc), 0.0));\n\t\t\t(*base) = ((((om * om) * aOrigin) + (((2.0 * om) * e) * c8)) + ((e * e) * aTarget));\n\t\t}\n\t\tif ((sty == 9)) {\n\t\t\tvar q9a: vec3f = (aOrigin - fr.uCen);\n\t\t\tvar q9b: vec3f = (aTarget - fr.uCen);\n\t\t\tvar k1: f32 = clamp((e / 0.4), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.4)) / 0.2), 0.0, 1.0);\n\t\t\tvar k3: f32 = clamp((((e - 0.6)) / 0.4), 0.0, 1.0);\n\t\t\tk1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));\n\t\t\tk2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tk3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));\n\t\t\tvar fa: vec3f = vec3f(0.0, q9a.y, q9a.z);\n\t\t\tvar fb: vec3f = vec3f(0.0, q9b.y, q9b.z);\n\t\t\tif ((e < 0.4)) {\n\t\t\t\t(*base) = (fr.uCen + mix(q9a, fa, k1));\n\t\t\t} else if ((e < 0.6)) {\n\t\t\t\t(*base) = (fr.uCen + mix(fa, fb, k2));\n\t\t\t} else {\n\t\t\t\t(*base) = (fr.uCen + mix(fb, q9b, k3));\n\t\t\t}\n\t\t}\n\t\tif ((sty == 10)) {\n\t\t\tvar dz: f32 = (1.6 * max(sc, 0.3));\n\t\t\tvar RA: vec3f = (aOrigin + vec3f(0.0, 0.0, ((((gDepth - 0.5)) * dz) * fr.uMorphD.x)));\n\t\t\tvar RB: vec3f = (aTarget + vec3f(0.0, 0.0, ((((gDepth - 0.5)) * dz) * fr.uMorphD.y)));\n\t\t\tvar k1: f32 = clamp((e / 0.3), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.3)) / 0.4), 0.0, 1.0);\n\t\t\tvar k3: f32 = clamp((((e - 0.7)) / 0.3), 0.0, 1.0);\n\t\t\tk1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));\n\t\t\tk2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tk3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));\n\t\t\tvar c10: vec3f = (((((RA + RB)) * 0.5) + vec3f(0.0, 0.0, ((((0.3 + gDepth)) * 0.7) * sc))) + ((cn * 0.25) * sc));\n\t\t\tvar o10: f32 = (1.0 - k2);\n\t\t\tvar mid10: vec3f = ((((o10 * o10) * RA) + (((2.0 * o10) * k2) * c10)) + ((k2 * k2) * RB));\n\t\t\tif ((e < 0.3)) {\n\t\t\t\t(*base) = mix(aOrigin, RA, k1);\n\t\t\t} else if ((e < 0.7)) {\n\t\t\t\t(*base) = mid10;\n\t\t\t} else {\n\t\t\t\t(*base) = mix(RB, aTarget, k3);\n\t\t\t}\n\t\t}\n\t\tif ((sty == 11)) {\n\t\t\tvar head: vec3f = vec3f(fr.uCen.x, (fr.uYR.y + 0.45), fr.uCen.z);\n\t\t\tvar nozzle: vec3f = (aTarget + vec3f(0.0, 0.22, 0.0));\n\t\t\tvar k1: f32 = clamp((e / 0.55), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.55)) / 0.45), 0.0, 1.0);\n\t\t\tvar g11: vec3f = (mix(aOrigin, head, ((k1 * k1) * ((3.0 - (2.0 * k1))))) + (((cn * 0.15) * sc) * sin((k1 * 3.1415926535))));\n\t\t\tvar o11: f32 = (1.0 - k2);\n\t\t\tvar p11: vec3f = ((((o11 * o11) * head) + (((2.0 * o11) * k2) * vec3f(nozzle.x, head.y, nozzle.z))) + ((k2 * k2) * nozzle));\n\t\t\tp11 = mix(p11, aTarget, smoothstep(0.85, 1.0, k2));\n\t\t\t(*base) = select(p11, g11, (e < 0.55));\n\t\t}\n\t\tif ((sty == 12)) {\n\t\t\tvar a12: f32 = ((hA * 6.2831853) + (t * 2.4));\n\t\t\tvar ring: vec3f = (fr.uCen + ((vec3f(cos(a12), sin(a12), 0.0) * ((0.32 + (0.06 * hB)))) * ((0.6 + (0.4 * sc)))));\n\t\t\tvar k1: f32 = clamp((e / 0.5), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);\n\t\t\tvar qa: vec3f = (aOrigin - fr.uCen);\n\t\t\tvar qb: vec3f = (aTarget - fr.uCen);\n\t\t\tvar sw1: f32 = ((k1 * k1) * 5.0);\n\t\t\tvar sw2: f32 = ((((1.0 - k2)) * ((1.0 - k2))) * 5.0);\n\t\t\tvar ra: vec3f = (fr.uCen + vec3f(((qa.x * cos(sw1)) - (qa.y * sin(sw1))), ((qa.x * sin(sw1)) + (qa.y * cos(sw1))), qa.z));\n\t\t\tvar rb: vec3f = (fr.uCen + vec3f(((qb.x * cos(sw2)) - (qb.y * sin(sw2))), ((qb.x * sin(sw2)) + (qb.y * cos(sw2))), qb.z));\n\t\t\tvar p1: vec3f = mix(ra, ring, ((k1 * k1) * ((3.0 - (2.0 * k1)))));\n\t\t\tvar p2: vec3f = mix(ring, rb, ((k2 * k2) * ((3.0 - (2.0 * k2)))));\n\t\t\t(*base) = select(p2, p1, (e < 0.5));\n\t\t}\n\t\tif ((sty == 13)) {\n\t\t\tvar ca: vec3f = ((((floor((((aOrigin - fr.uCen)) * 3.0)) + 0.5)) / 3.0) + fr.uCen);\n\t\t\tvar cb: vec3f = ((((floor((((aTarget - fr.uCen)) * 3.0)) + 0.5)) / 3.0) + fr.uCen);\n\t\t\tvar sa: f32 = hash11(dot(floor((((aOrigin - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));\n\t\t\tvar sb: f32 = hash11(dot(floor((((aTarget - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));\n\t\t\tvar k1: f32 = clamp((e / 0.6), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((1.0 - e)) / 0.6), 0.0, 1.0);\n\t\t\tvar da: vec3f = normalize((((ca - fr.uCen) + (vec3f((sa - 0.5), 0.3, 0.2) * 0.6)) + vec3f(1e-3)));\n\t\t\tvar db: vec3f = normalize((((cb - fr.uCen) + (vec3f((sb - 0.5), 0.3, 0.2) * 0.6)) + vec3f(1e-3)));\n\t\t\tvar ra: f32 = ((k1 * 3.1415926535) * ((0.8 + (1.6 * sa))));\n\t\t\tvar rb: f32 = ((k2 * 3.1415926535) * ((0.8 + (1.6 * sb))));\n\t\t\tvar la: vec3f = (aOrigin - ca);\n\t\t\tvar lb: vec3f = (aTarget - cb);\n\t\t\tla = vec3f(((la.x * cos(ra)) - (la.y * sin(ra))), ((la.x * sin(ra)) + (la.y * cos(ra))), la.z);\n\t\t\tlb = vec3f(((lb.x * cos(rb)) - (lb.y * sin(rb))), ((lb.x * sin(rb)) + (lb.y * cos(rb))), lb.z);\n\t\t\tvar P1: vec3f = (((ca + la) + ((((da * k1) * k1) * 1.3) * sc)) - vec3f(0.0, (((0.9 * k1) * k1) * k1), 0.0));\n\t\t\tvar P2: vec3f = (((cb + lb) + ((((db * k2) * k2) * 1.3) * sc)) - vec3f(0.0, (((0.9 * k2) * k2) * k2), 0.0));\n\t\t\t(*base) = mix(P1, P2, smoothstep(0.42, 0.58, e));\n\t\t}\n\t\tif ((sty == 14)) {\n\t\t\tvar ab: vec3f = (aTarget - aOrigin);\n\t\t\tvar L14: f32 = length(ab);\n\t\t\tvar ax: vec3f = select(vec3f(0.0, 1.0, 0.0), (ab / L14), (L14 > 1e-4));\n\t\t\tvar n1: vec3f = normalize(cross(ax, select(vec3f(1.0, 0.0, 0.0), vec3f(0.0, 1.0, 0.0), (abs(ax.y) < 0.9))));\n\t\t\tvar n2: vec3f = cross(ax, n1);\n\t\t\tvar bund: f32 = ((floor((hA * 10.0)) / 10.0) * 6.2831853);\n\t\t\tvar nb: vec3f = ((n1 * cos(bund)) + (n2 * sin(bund)));\n\t\t\t(*base) = (mix(aOrigin, aTarget, e) + ((((nb * sin((e * 3.1415926535))) * ((0.25 + (0.55 * L14)))) * sc) * ((0.85 + (0.3 * hB)))));\n\t\t}\n\t\tif ((abs(fr.uMorphD.z) > 0.001)) {\n\t\t\tvar sm: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));\n\t\t\tvar ra: f32 = ((fr.uMorphD.z * 6.2831853) * sm);\n\t\t\tvar q: vec3f = ((*base) - fr.uCen);\n\t\t\t(*base) = (fr.uCen + vec3f(((q.x * cos(ra)) - (q.z * sin(ra))), q.y, ((q.x * sin(ra)) + (q.z * cos(ra)))));\n\t\t}\n\t}\n\tif (((fr.uMorph < 0.9999) && (fr.uMorphO.w > 0.001))) {\n\t\t(*base).z += ((((((gDepth - 0.5)) * 2.0) * fr.uMorphO.w) * sin((morphEase(morphLocal(aOrigin, aTarget, aIdx)) * 3.1415926535))) * ((0.6 + (0.4 * hash11((aIdx * 4.1))))));\n\t}\n\tif ((fr.uDepth.x > 0.001)) {\n\t\t(*base) = depthShape((*base));\n\t}\n\tvar rad: vec3f = normalize(((*base) + vec3f(1e-4)));\n\trad = normalize(mix(rad, vec3f(0.0, 0.0, 1.0), (0.8 * fr.uFlat)));\n\tif (((fr.uAnimN > 0.5) && (dot(gNormal, gNormal) > 0.01))) {\n\t\trad = normalize(gNormal);\n\t}\n\tvar pos: vec3f = (*base);\n\tif ((fr.uCh.x > 0.001)) {\n\t\tvar chh: f32 = (max((fr.uYR.y - fr.uYR.x), 0.5) * 0.5);\n\t\tvar chk: f32 = ((1.5708 * fr.uCh.z) / chh);\n\t\tvar chq: vec3f = (((pos - fr.uCen)) * chk);\n\t\tvar chn: vec3f = select((select(rad, normalize(gNormal), (dot(gNormal, gNormal) > 0.01))), vec3f(0.0, 0.0, 1.0), (fr.uFlat > 0.5));\n\t\tfor (var ci: i32 = 0; (ci < 4); ci++) {\n\t\t\tvar cf: f32 = chField(chq);\n\t\t\tvar cg: vec3f = (vec3f((chField((chq + vec3f(0.02, 0.0, 0.0))) - cf), (chField((chq + vec3f(0.0, 0.02, 0.0))) - cf), (chField((chq + vec3f(0.0, 0.0, 0.02))) - cf)) / 0.02);\n\t\t\tcg -= (chn * dot(cg, chn));\n\t\t\tvar cst: vec3f = ((-cf * cg) / max(dot(cg, cg), 0.01));\n\t\t\tvar csl: f32 = length(cst);\n\t\t\tif ((csl > 0.7)) {\n\t\t\t\tcst *= vec3f((0.7 / csl));\n\t\t\t}\n\t\t\tchq += cst;\n\t\t}\n\t\tvar cfe: f32 = abs(chField(chq));\n\t\tgChN = exp((-cfe * 5.0));\n\t\tvar ctk: f32 = floor((t * 30.0));\n\t\tvar cbz: vec3f = (((((vec3f(hash11(((aIdx * 3.1) + ctk)), hash11(((aIdx * 5.7) + ctk)), hash11(((aIdx * 1.3) + ctk))) - 0.5)) * ((1.0 - gChN))) * fr.uCh.w) * ((0.03 + (fr.uBeat * 0.05))));\n\t\tpos = mix(pos, ((fr.uCen + (chq / chk)) + cbz), min(fr.uCh.x, 1.0));\n\t}\n\tif ((fr.uTwist.x > 0.001)) {\n\t\tvar y01t: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar tw: f32 = (fr.uTwist.x * ((1.0 + (select(0.0, (0.35 * sin(((t * fr.uTwist.z) * 2.0))), (fr.uTwist.z > 0.01))))));\n\t\tif ((fr.uTwist.y < 0.5)) {\n\t\t\tvar a: f32 = ((pos.y * tw) * 1.6);\n\t\t\tvar c: f32 = cos(a);\n\t\t\tvar s: f32 = sin(a);\n\t\t\t{ let _sw14 = (mat2x2f(c, -s, s, c) * pos.xz); pos = vec3f(_sw14.x, pos.y, _sw14.y); }\n\t\t} else if ((fr.uTwist.y < 1.5)) {\n\t\t\tpos.x += (((y01t * y01t) * tw) * 0.9);\n\t\t\tpos.y -= ((((y01t * y01t) * y01t) * tw) * 0.16);\n\t\t} else if ((fr.uTwist.y < 2.5)) {\n\t\t\t{ let _sw15 = (pos.xz * vec2f((1.0 + (((tw * 0.6) * ((0.5 - y01t))) * 2.0)))); pos = vec3f(_sw15.x, pos.y, _sw15.y); }\n\t\t} else if ((fr.uTwist.y < 3.5)) {\n\t\t\tvar sw: f32 = sin(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z)))));\n\t\t\tpos.x += ((sw * tw) * 0.2);\n\t\t\tpos.z += ((cos(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z))))) * tw) * 0.12);\n\t\t} else {\n\t\t\t{ let _sw16 = (pos.xz * vec2f((1.0 + ((tw * 0.3) * sin(((y01t * 6.2831) - (t * ((1.2 + fr.uTwist.z))))))))); pos = vec3f(_sw16.x, pos.y, _sw16.y); }\n\t\t}\n\t}\n\tif ((fr.uWave.x > 0.001)) {\n\t\tvar wv: f32 = 0.0;\n\t\tif ((fr.uWaveP.y < 0.5)) {\n\t\t\twv = sin((((distance((*base), fr.uWaveSrc.xyz) * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t} else if ((fr.uWaveP.y < 1.5)) {\n\t\t\tvar age: f32 = (fr.uTime - fr.uWaveP.w);\n\t\t\tif ((age > 0.0)) {\n\t\t\t\tvar d: f32 = distance((*base), fr.uWaveSrc.xyz);\n\t\t\t\tvar ring: f32 = ((age * fr.uWaveP.x) * 1.3);\n\t\t\t\twv = ((sin(((((d - ring)) * fr.uWave.y) * 2.6)) * exp((-abs((d - ring)) * 2.5))) * exp((-age * fr.uWaveP.z)));\n\t\t\t}\n\t\t} else if ((fr.uWaveP.y < 2.5)) {\n\t\t\tvar wd: vec3f = vec3f(cos(fr.uWaveSrc.w), 0.0, sin(fr.uWaveSrc.w));\n\t\t\twv = sin((((dot((*base), wd) * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t} else if ((fr.uWaveP.y < 3.5)) {\n\t\t\tvar yw: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\t\twv = sin((((atan2(((*base).z - fr.uCen.z), ((*base).x - fr.uCen.x)) * 3.0) + ((yw * fr.uWave.y) * 1.3)) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t} else {\n\t\t\twv = sin(((((*base).y * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t}\n\t\tpos += ((((rad * wv) * fr.uWave.x) * 0.14) * ((1.0 + (1.5 * fr.uFlat))));\n\t}\n\tif ((fr.uSpec.x > 0.001)) {\n\t\tvar y01s: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tif ((fr.uSpec.y < 0.5)) {\n\t\t\tpos += (((rad * textureSampleLevel(specTex, linSamp, vec2f((abs(atan2((*base).z, (*base).x)) / 3.1415926535), 0.5), 0.0).r) * fr.uSpec.x) * 0.7);\n\t\t} else if ((fr.uSpec.y < 1.5)) {\n\t\t\tpos += (((rad * textureSampleLevel(specTex, linSamp, vec2f(y01s, 0.5), 0.0).r) * fr.uSpec.x) * 0.7);\n\t\t} else if ((fr.uSpec.y < 2.5)) {\n\t\t\tvar ub: f32 = (floor(((abs(atan2((*base).z, (*base).x)) / 3.1415926535) * fr.uSpecP.y)) / fr.uSpecP.y);\n\t\t\tpos += (((rad * textureSampleLevel(specTex, linSamp, vec2f(ub, 0.5), 0.0).r) * fr.uSpec.x) * 0.8);\n\t\t} else {\n\t\t\tvar xs: f32 = clamp((abs((*base).x) / 1.2), 0.0, 1.0);\n\t\t\tpos.y += (((textureSampleLevel(specTex, linSamp, vec2f(xs, 0.5), 0.0).r * fr.uSpec.x) * 0.8) * ((0.35 + (0.65 * y01s))));\n\t\t}\n\t}\n\tvar pe: f32 = fr.uPulse.x;\n\tif ((fr.uPulseP.x > 0.5)) {\n\t\tvar age: f32 = ((fr.uTime - fr.uPulseP.z) - (length((*base)) * fr.uPulseP.y));\n\t\tvar env: f32 = select(0.0, (exp(((-age * 3.2) * fr.uPulseP.w)) * smoothstep(0.0, 0.04, age)), (age > 0.0));\n\t\tvar age2: f32 = (age - 0.2);\n\t\tenv += select(0.0, ((0.55 * exp(((-age2 * 3.2) * fr.uPulseP.w))) * smoothstep(0.0, 0.04, age2)), (age2 > 0.0));\n\t\tpe = ((fr.uPulse.x * env) * 1.6);\n\t\tif ((fr.uPulseP.x > 1.5)) {\n\t\t\tpos.y *= (1.0 + (pe * 0.2));\n\t\t\t{ let _sw17 = (pos.xz * vec2f((1.0 - (pe * 0.11)))); pos = vec3f(_sw17.x, pos.y, _sw17.y); }\n\t\t\tpe = 0.0;\n\t\t}\n\t}\n\tpos += (((rad * pe) * 0.28) * ((1.0 + (1.5 * fr.uFlat))));\n\tpos *= vec3f((1.0 + (pe * 0.1)));\n\tif ((fr.uBlast.x > 0.001)) {\n\t\tvar age: f32 = (fr.uTime - fr.uBlast.w);\n\t\tif ((age > 0.0)) {\n\t\t\tvar env: f32 = (exp((-age * fr.uBlast.y)) * cos(((age * fr.uBlast.y) * 3.0)));\n\t\t\tvar rnd: f32 = (0.45 + (0.55 * mix(1.0, hash11((aIdx * 7.1)), fr.uBlast.z)));\n\t\t\tvar dir: vec3f = normalize((rad + ((((vec3f(hash11(aIdx), hash11((aIdx + 1.0)), hash11((aIdx + 2.0))) - 0.5)) * 0.7) * fr.uBlast.z)));\n\t\t\tpos += ((((dir * env) * rnd) * fr.uBlast.x) * 0.75);\n\t\t}\n\t}\n\tif ((fr.uFlow.x > 0.001)) {\n\t\tvar fc: vec3f = curlNoise((((*base) * fr.uFlow.y) + vec3f(0.0, ((t * fr.uFlow.z) * 0.1), 0.0)));\n\t\tvar tg: vec3f = normalize(((fc - (rad * dot(fc, rad))) + vec3f(1e-4)));\n\t\ttg = ((tg * cos(fr.uFlow.w)) + (cross(rad, tg) * sin(fr.uFlow.w)));\n\t\tvar ph: f32 = ((t * fr.uFlow.z) + (hash11((aIdx * 5.3)) * 6.2831));\n\t\tpos += (((tg * sin(ph)) * fr.uFlow.x) * 0.24);\n\t}\n\tif (((fr.uMark.x > 3.5) && (fr.uMark.x < 5.5))) {\n\t\tvar mkd: f32 = markK((*base));\n\t\tif ((fr.uMark.x < 4.5)) {\n\t\t\tpos += ((rad * mkd) * 0.22);\n\t\t} else {\n\t\t\tpos = mix(pos, (((floor((pos / 0.06)) + 0.5)) * 0.06), smoothstep(0.0, 0.4, mkd));\n\t\t}\n\t}\n\tif (((fr.uSliceM.x > 0.5) && (fr.uSliceM.x < 1.5))) {\n\t\tpos += ((rad * sliceK((*base))) * fr.uSliceM.y);\n\t}\n\tvar dk: f32 = disK((*base), aIdx);\n\tif ((dk > 0.0)) {\n\t\tvar sc: f32 = fr.uDisQ.y;\n\t\tvar ds: f32 = fr.uDisP.x;\n\t\tvar y01d: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar cl: f32 = floor((aIdx * 1800.0));\n\t\tvar ch: f32 = hash11((cl * 0.731));\n\t\tvar ch2: f32 = hash11(((cl * 1.913) + 3.1));\n\t\tvar cd: vec3f = ((*base) - fr.uCen);\n\t\tvar outd: vec3f = (cd / ((length(cd) + 1e-3)));\n\t\tvar dsp: vec3f = select(((*base) * 1.8), (vec3f(hash11((aIdx * 1.7)), hash11((aIdx * 2.3)), hash11((aIdx * 3.1))) * 8.0), (fr.uAnimN > 0.5));\n\t\tpos += ((((curlNoise((dsp + vec3f(0.0, (-t * 0.6), (t * 0.3)))) * dk) * fr.uDisT) * 0.22) * sc);\n\t\tif ((ds < 0.5)) {\n\t\t\tvar wv: vec3f = vec3f(((fr.uDis.w * 1.4) + 0.2), (-fr.uDis.z * 0.5), 0.3);\n\t\t\tvar sp: f32 = (0.65 + (0.35 * sin(((y01d * 7.0) + (t * 0.8)))));\n\t\t\tpos += (((((wv * dk) * dk) * 1.5) * sp) * sc);\n\t\t} else if ((ds < 1.5)) {\n\t\t\tpos.y += (((dk * dk) * ((0.7 + (0.5 * ch)))) * sc);\n\t\t\t{ let _sw18 = (pos.xz + ((((vec2f(sin(((t * 1.5) + (ch * 6.0))), cos(((t * 1.3) + (ch * 5.0)))) * dk) * 0.1) * sc) + ((vec2f((fr.uDis.w * 0.5), 0.0) * dk) * sc))); pos = vec3f(_sw18.x, pos.y, _sw18.y); }\n\t\t} else if ((ds < 2.5)) {\n\t\t\tpos += ((((outd * dk) * 0.12) * sc) + vec3f(0.0, ((dk * 0.05) * sc), 0.0));\n\t\t} else if ((ds < 3.5)) {\n\t\t\tvar band: f32 = floor(((y01d * 12.0) + 0.001));\n\t\t\tvar sg: f32 = select(-1.0, 1.0, (glsl_mod_f(band, 2.0) < 0.5));\n\t\t\tpos.x += (((((sg * dk) * dk) * 1.7) * sc) + ((fr.uDis.w * dk) * 0.3));\n\t\t\tpos.y -= ((((dk * dk) * fr.uDis.z) * 0.25) * sc);\n\t\t} else if ((ds < 4.5)) {\n\t\t\tvar mv: vec3f = vec3f(((((ch - 0.5)) * 0.9) + (fr.uDis.w * 0.3)), 0.0, (((ch2 - 0.5)) * 0.9));\n\t\t\tpos += ((mv * dk) * sc);\n\t\t\tpos.y = max((pos.y - ((((dk * dk) * ((0.5 + fr.uDis.z))) * 1.8) * sc)), (fr.uYR.x + (ch * 0.05)));\n\t\t} else if ((ds < 5.5)) {\n\t\t\tpos.y = max((pos.y - ((((dk * dk) * ((0.5 + fr.uDis.z))) * 2.2) * sc)), (fr.uYR.x + (hash11((aIdx * 5.1)) * 0.05)));\n\t\t\tpos.x += (((fr.uDis.w * dk) * 0.25) * sc);\n\t\t} else if ((ds < 6.5)) {\n\t\t\tvar q: vec3f = ((*base) - fr.uCen);\n\t\t\tvar ang: f32 = (((dk * dk) * ((3.2 + (fr.uDis.w * 1.2)))) * sc);\n\t\t\tvar cs: f32 = cos(ang);\n\t\t\tvar sn: f32 = sin(ang);\n\t\t\t{ let _sw19 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw19.x, q.y, _sw19.y); }\n\t\t\tq *= vec3f((1.0 - ((0.9 * dk) * dk)));\n\t\t\tpos = ((fr.uCen + q) + vec3f(0.0, (((dk * dk) * 0.45) * sc), 0.0));\n\t\t} else {\n\t\t\tpos += (((outd * pow(dk, 0.7)) * ((1.1 + (0.3 * ch)))) * sc);\n\t\t\tpos.y -= ((((dk * dk) * fr.uDis.z) * 0.8) * sc);\n\t\t}\n\t}\n\tif ((fr.uExp.x > 0.001)) {\n\t\tvar pid: f32 = floor((aIdx * fr.uExp.y));\n\t\tvar pc: vec3f = textureLoad(pieceTex, vec2i(vec2f((((pid + 0.5)) / 256.0), 0.5) * vec2f(textureDimensions(pieceTex))), 0).xyz;\n\t\tvar h1: f32 = hash11((pid * 1.7));\n\t\tvar h2: f32 = hash11((pid * 2.9));\n\t\tvar h3: f32 = hash11((pid * 4.1));\n\t\tvar od: vec3f = (pc - fr.uCen);\n\t\tvar dr: vec3f = normalize(((od + ((((vec3f(h1, h2, h3) - 0.5)) * 0.35) * ((length(od) + 0.3)))) + vec3f(1e-4)));\n\t\tvar ke: f32 = clamp((((fr.uExp.x - (h2 * fr.uExp.z))) / max((1.0 - fr.uExp.z), 0.2)), 0.0, 1.0);\n\t\tke = ((ke * ke) * ((3.0 - (2.0 * ke))));\n\t\tvar ax: vec3f = normalize((vec3f((h1 - 0.5), (h3 - 0.5), (h2 - 0.5)) + vec3f(1e-3)));\n\t\tvar ang: f32 = (((ke * ((h3 - 0.5))) * 3.0) * fr.uExp.w);\n\t\tvar qe: vec3f = (pos - pc);\n\t\tqe = (((qe * cos(ang)) + (cross(ax, qe) * sin(ang))) + ((ax * dot(ax, qe)) * ((1.0 - cos(ang)))));\n\t\tpos = ((pc + qe) + (((dr * ke) * fr.uExpP.x) * ((0.5 + (0.5 * h1)))));\n\t}\n\tif ((fr.uGrowP.z > 0.5)) {\n\t\tgGrow = growK((*base), aIdx);\n\t\tgGrowE = ((gGrow * ((1.0 - gGrow))) * 4.0);\n\t\tpos += (((rad * gGrowE) * fr.uGrowP.x) * 0.12);\n\t\tvar yG: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\t{ let _sw20 = (pos.xz + ((((vec2f(sin(((t * 1.2) + (yG * 5.0))), cos(((t * 0.9) + (yG * 4.0)))) * 0.018) * fr.uGrowP.y) * gGrow) * ((0.3 + yG)))); pos = vec3f(_sw20.x, pos.y, _sw20.y); }\n\t}\n\t{\n\t\tfor (var ji: i32 = 0; (ji < 3); ji++) {\n\t\t\tvar jage: f32 = (fr.uTime - fr.uJel[ji].w);\n\t\t\tif (((jage < 0.0) || (jage > 7.0))) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar jd: f32 = distance((*base), fr.uJelO[ji].xyz);\n\t\t\tvar ja: f32 = (jage - (jd * 0.45));\n\t\t\tif ((ja < 0.0)) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar env: f32 = (exp((-ja * fr.uJelP.y)) * sin((ja * fr.uJelP.x)));\n\t\t\tpos += (((fr.uJel[ji].xyz * env) * fr.uJelP.z) * 0.35);\n\t\t\tpos += ((((((((*base) - fr.uJelO[ji].xyz)) * env) * fr.uJelP.w) * fr.uJelP.z) * 0.16) * length(fr.uJel[ji].xyz));\n\t\t}\n\t}\n\tif ((fr.uGrav.x > 0.001)) {\n\t\tvar gq: vec3f = (pos - fr.uGravP.xyz);\n\t\tvar gr: f32 = (length(gq) + 1e-3);\n\t\tvar gin: f32 = (1.0 - smoothstep((fr.uGravP.w * 0.7), (fr.uGravP.w * 1.7), gr));\n\t\tvar ga: f32 = smoothstep(0.0, 1.0, clamp((fr.uGrav.x * gin), 0.0, 1.0));\n\t\tvar up: vec3f = normalize(vec3f((sin(fr.uGravT.x) * cos(fr.uGravT.y)), cos(fr.uGravT.x), (sin(fr.uGravT.x) * sin(fr.uGravT.y))));\n\t\tvar ref_: vec3f = select(vec3f(1.0, 0.0, 0.0), vec3f(0.0, 1.0, 0.0), (abs(up.y) < 0.99));\n\t\tvar e1: vec3f = normalize(cross(ref_, up));\n\t\tvar e2: vec3f = cross(up, e1);\n\t\tvar lx: f32 = dot(gq, e1);\n\t\tvar lh: f32 = dot(gq, up);\n\t\tvar lz: f32 = dot(gq, e2);\n\t\tif ((fr.uGrav.y < 0.5)) {\n\t\t\tvar ph0: f32 = ((t * fr.uGrav.z) * 0.45);\n\t\t\tvar ang: f32 = (ga * (((ph0 * 0.8) + ((1.3 * sin((ph0 * 0.6))) / ((0.5 + gr))))));\n\t\t\tvar ca: f32 = cos(ang);\n\t\t\tvar sa: f32 = sin(ang);\n\t\t\tvar nx: f32 = ((lx * ca) - (lz * sa));\n\t\t\tvar nz: f32 = ((lx * sa) + (lz * ca));\n\t\t\tvar az: f32 = atan2(nz, nx);\n\t\t\tlh = ((lh * ((1.0 - (fr.uGrav.w * ga)))) + (((0.07 * gr) * sin(((az * 2.0) + (t * 0.4)))) * ga));\n\t\t\tvar arm: f32 = sin((((2.0 * az) - (3.4 * log((gr + 0.15)))) + (t * 0.25)));\n\t\t\tvar ar: f32 = (1.0 + (((0.2 * arm) * ga) * fr.uGrav.w));\n\t\t\tlx = (nx * ar);\n\t\t\tlz = (nz * ar);\n\t\t} else if ((fr.uGrav.y < 1.5)) {\n\t\t\tvar h1: f32 = hash11((aIdx * 91.7));\n\t\t\tvar ph: f32 = fract((((t * 0.16) * fr.uGrav.z) + h1));\n\t\t\tvar sg: f32 = select(-1.0, 1.0, (h1 > 0.5));\n\t\t\tvar r0: f32 = max(gr, 0.08);\n\t\t\tif (((ph < 0.8) || (fr.uGravT.w < 0.01))) {\n\t\t\t\tvar s: f32 = clamp((ph / 0.8), 0.0, 1.0);\n\t\t\t\tvar rr: f32 = ((r0 * pow((1.0 - s), 1.6)) + 0.03);\n\t\t\t\tvar ang: f32 = (((s * s) * 11.0) * ga);\n\t\t\t\tvar az0: f32 = atan2(lz, lx);\n\t\t\t\tvar flt: f32 = (1.0 - ((fr.uGrav.w * s) * ga));\n\t\t\t\tvar ha: f32 = (lh * flt);\n\t\t\t\tvar k: f32 = mix(1.0, (rr / r0), ga);\n\t\t\t\tvar rl: f32 = (length(vec2f(lx, lz)) * k);\n\t\t\t\tlx = (cos((az0 + ang)) * rl);\n\t\t\t\tlz = (sin((az0 + ang)) * rl);\n\t\t\t\tlh = (ha * mix(1.0, (rr / r0), ga));\n\t\t\t} else {\n\t\t\t\tvar u: f32 = (((ph - 0.8)) / 0.2);\n\t\t\t\tvar len: f32 = ((((fr.uGravT.w * ((0.4 + (h1 * 0.9)))) * u) * u) * ga);\n\t\t\t\tvar az0: f32 = (atan2(lz, lx) + (t * 2.0));\n\t\t\t\tlx = ((cos(az0) * 0.05) * ((1.0 - (u * 0.5))));\n\t\t\t\tlz = ((sin(az0) * 0.05) * ((1.0 - (u * 0.5))));\n\t\t\t\tlh = (sg * ((0.08 + len)));\n\t\t\t}\n\t\t} else if ((fr.uGrav.y > 3.5)) {\n\t\t\tvar rr0: f32 = length(vec2f(lx, lz));\n\t\t\tvar ringN: f32 = floor((rr0 * 5.0));\n\t\t\tvar rr1: f32 = mix(rr0, (((ringN + 0.5)) / 5.0), (ga * 0.85));\n\t\t\tvar dirR: f32 = select(-1.0, 1.0, (glsl_mod_f(ringN, 2.0) < 0.5));\n\t\t\tvar az1: f32 = (atan2(lz, lx) + ((((dirR * t) * fr.uGrav.z) * ((0.25 + (0.5 / ((0.4 + rr1)))))) * ga));\n\t\t\tlx = (cos(az1) * rr1);\n\t\t\tlz = (sin(az1) * rr1);\n\t\t\tlh = (lh * ((1.0 - (fr.uGrav.w * ga))));\n\t\t} else if ((fr.uGrav.y > 2.5)) {\n\t\t\tvar q: vec3f = (((e1 * lx) + (up * lh)) + (e2 * lz));\n\t\t\tvar ax: vec3f = normalize((vec3f((hash11((aIdx * 13.1)) - 0.5), (hash11((aIdx * 7.7)) - 0.5), (hash11((aIdx * 3.3)) - 0.5)) + vec3f(1e-3)));\n\t\t\tvar ang: f32 = ((((t * fr.uGrav.z) * ((0.7 + (1.6 / ((gr + 0.3)))))) * ga) * ((0.6 + (0.8 * hash11((aIdx * 5.9))))));\n\t\t\tq = (((q * cos(ang)) + (cross(ax, q) * sin(ang))) + ((ax * dot(ax, q)) * ((1.0 - cos(ang)))));\n\t\t\tq *= vec3f((1.0 + (((fr.uGravT.z * 0.3) * ga) * sin(((t * 0.8) + (aIdx * 40.0))))));\n\t\t\tlx = dot(q, e1);\n\t\t\tlh = dot(q, up);\n\t\t\tlz = dot(q, e2);\n\t\t} else {\n\t\t\tvar sd: f32 = (aIdx * 61.0);\n\t\t\tvar ang: f32 = (((0.14 * fr.uGrav.z) * t) * ga);\n\t\t\tvar ca: f32 = cos(ang);\n\t\t\tvar sa: f32 = sin(ang);\n\t\t\tvar nx: f32 = ((lx * ca) - (lz * sa));\n\t\t\tvar nz: f32 = ((lx * sa) + (lz * ca));\n\t\t\tvar amp: f32 = (0.4 + (fr.uGravT.z * 1.2));\n\t\t\tlx = (nx + (((ga * 0.12) * amp) * sin((((t * 0.55) * fr.uGrav.z) + (sd * 1.3)))));\n\t\t\tlz = (nz + (((ga * 0.12) * amp) * cos((((t * 0.5) * fr.uGrav.z) + (sd * 0.8)))));\n\t\t\tlh += (((ga * 0.2) * amp) * sin((((t * 0.7) * fr.uGrav.z) + sd)));\n\t\t\tvar br: f32 = (1.0 + (((0.2 * amp) * ga) * ((0.5 + (0.5 * sin((((t * 0.35) * fr.uGrav.z) + (sd * 0.4))))))));\n\t\t\tlx *= br;\n\t\t\tlz *= br;\n\t\t\tlh *= br;\n\t\t}\n\t\tpos = (((fr.uGravP.xyz + (e1 * lx)) + (up * lh)) + (e2 * lz));\n\t}\n\tif ((fr.uCurl.x > 0.001)) {\n\t\tvar ca: f32 = (pow(fr.uCurl.x, 1.45) * 0.055);\n\t\tvar thr: f32 = ((snoise((((*base) * 1.8) + (t * 0.3))) * 0.5) + 0.5);\n\t\tvar det: f32 = smoothstep(0.35, 0.85, (thr + (min(fr.uCurl.x, 1.0) * 0.12)));\n\t\tvar cn: vec3f = ((curlNoise((((*base) * fr.uCurl.y) + (vec3f((t * 0.4), (t * 0.3), (t * 0.5)) * fr.uCurlP.x))) * det) * ca);\n\t\tif ((fr.uCurlP.z > 1.5)) {\n\t\t\tvar yc: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\t\tvar band: f32 = floor(((yc * 8.0) + 0.001));\n\t\t\tvar sg: f32 = select(-1.0, 1.0, (glsl_mod_f(band, 2.0) < 0.5));\n\t\t\tvar ang: f32 = (((sg * sin((((t * fr.uCurlP.x) * 0.7) + (band * 0.8)))) * min(fr.uCurl.x, 2.0)) * 0.55);\n\t\t\tvar q: vec3f = (pos - fr.uCen);\n\t\t\tvar cs: f32 = cos(ang);\n\t\t\tvar sn: f32 = sin(ang);\n\t\t\t{ let _sw21 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw21.x, q.y, _sw21.y); }\n\t\t\tpos = (fr.uCen + q);\n\t\t\tcn = vec3f(0.0);\n\t\t} else if ((fr.uCurlP.z > 0.5)) {\n\t\t\tvar fd: vec3f = vec3f(cos(fr.uCurlP.y), 0.35, sin(fr.uCurlP.y));\n\t\t\tvar ph: f32 = (0.5 + (0.5 * sin((((t * fr.uCurlP.x) * 0.7) + (hash11((aIdx * 3.7)) * 6.2831)))));\n\t\t\tcn += ((((fd * ph) * det) * ca) * 0.9);\n\t\t}\n\t\tpos += cn;\n\t}\n\tif ((fr.uGlitch.x > 0.001)) {\n\t\tvar yg: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar spd: f32 = fr.uGlitchP.y;\n\t\tvar cyc: f32 = ((t * spd) * 1.1);\n\t\tvar bst: f32 = (step(0.55, hash11(((floor(cyc) * 3.17) + 1.3))) * ((1.0 - smoothstep(0.0, 0.4, fract(cyc)))));\n\t\tgBurst = bst;\n\t\tvar I: f32 = (fr.uGlitch.x * ((0.55 + (((0.5 + (fr.uGlitchP.w * 1.6))) * bst))));\n\t\tvar gm: f32 = fr.uGlitchP.z;\n\t\tvar tick: f32 = floor(((t * 10.0) * spd));\n\t\tvar hit: bool = false;\n\t\tif ((gm < 0.5)) {\n\t\t\tvar band: f32 = floor((yg * fr.uGlitch.y));\n\t\t\tvar r: f32 = hash11(((band * 13.7) + tick));\n\t\t\tif ((r > 0.55)) {\n\t\t\t\tvar shf: f32 = (((((r - 0.5)) * 2.4) * ((hash11((band + 7.0)) - 0.5))) * I);\n\t\t\t\tpos.x += (shf * ((1.0 + fr.uFlat)));\n\t\t\t\tpos.z += (((shf * 1.6) * ((hash11((band + 3.0)) - 0.5))) * ((1.0 + fr.uFlat)));\n\t\t\t\thit = true;\n\t\t\t}\n\t\t} else if ((gm < 1.5)) {\n\t\t\tvar cell: vec3f = floor(((*base) * vec3f(4.0, (fr.uGlitch.y * 0.35), 4.0)));\n\t\t\tvar r: f32 = hash11((dot(cell, vec3f(12.9, 78.2, 37.7)) + (tick * 1.7)));\n\t\t\tif ((r > 0.62)) {\n\t\t\t\tvar hv: vec3f = (vec3f(hash11((r * 91.0)), hash11((r * 57.0)), hash11((r * 33.0))) - 0.5);\n\t\t\t\tpos += ((((hv * ((r - 0.55))) * 1.6) * I) * vec3f(1.0, 0.35, 1.0));\n\t\t\t\thit = true;\n\t\t\t}\n\t\t} else {\n\t\t\tvar row: f32 = floor(((yg * fr.uGlitch.y) * 3.0));\n\t\t\tvar r: f32 = hash11(((row * 5.3) + (tick * 2.3)));\n\t\t\tif ((r > 0.8)) {\n\t\t\t\tpos.x += (((((hash11(((row * 9.1) + tick)) - 0.5)) * 2.4) * I) * ((1.0 + fr.uFlat)));\n\t\t\t\thit = true;\n\t\t\t}\n\t\t\tpos.x += ((((hash11((row + tick)) - 0.5)) * 0.02) * I);\n\t\t}\n\t\tif (hit) {\n\t\t\tgGl = I;\n\t\t\tif ((fr.uGlitchP.x > 0.5)) {\n\t\t\t\tvar chn: f32 = floor((hash11(((aIdx * 17.3) + tick)) * 3.0));\n\t\t\t\tpos.x += ((((chn - 1.0)) * 0.09) * I);\n\t\t\t\tgCh = chn;\n\t\t\t}\n\t\t}\n\t\tgDrop = (step(hash11(((aIdx * 3.7) + tick)), (((fr.uGlitch.z * 0.4) * bst) * fr.uGlitch.x)) * hit2(hit));\n\t}\n\tif ((fr.uVoxel.x > 0.01)) {\n\t\tvar vm: f32 = fr.uVoxelP.x;\n\t\tvar amp: f32 = fr.uVoxelP.w;\n\t\tvar g: f32 = (mix(0.3, mix(0.035, 0.07, fr.uFlat), clamp(fr.uVoxel.x, 0.0, 1.0)) * fr.uVoxelP.z);\n\t\tif (((vm > 1.5) && (vm < 2.5))) {\n\t\t\tg *= (1.0 + (0.35 * sin(((t * fr.uVoxelP.y) * 2.0))));\n\t\t}\n\t\tvar cell: vec3f = floor((pos / g));\n\t\tvar q: vec3f = (((cell + 0.5)) * g);\n\t\tif (((vm > 0.5) && (vm < 1.5))) {\n\t\t\tvar h2: f32 = hash11(dot(cell, vec3f(12.9, 78.2, 37.7)));\n\t\t\tq.y += ((((((h2 - 0.5)) * g) * 2.0) * amp) * sin((((t * fr.uVoxelP.y) * 1.5) + (h2 * 6.2831))));\n\t\t} else if (((vm > 2.5) && (vm < 3.5))) {\n\t\t\tq.y += (((sin(((dot(cell.xz, vec2f(0.7, 0.5)) * 0.55) - ((t * fr.uVoxelP.y) * 2.0))) * g) * 1.6) * amp);\n\t\t} else if (((vm > 3.5) && (vm < 4.5))) {\n\t\t\tvar stp: f32 = ((g * 2.0) * max(amp, 0.3));\n\t\t\tq.y = ((((floor((((pos.y - fr.uYR.x)) / stp)) + 0.5)) * stp) + fr.uYR.x);\n\t\t} else if ((vm > 4.5)) {\n\t\t\tvar hv: vec3f = (vec3f(hash11(dot(cell, vec3f(12.9, 78.2, 37.7))), hash11(dot(cell, vec3f(39.3, 11.1, 52.7))), hash11(dot(cell, vec3f(7.7, 91.3, 23.9)))) - 0.5);\n\t\t\tq += ((((hv * g) * 3.0) * amp) * ((0.5 + (0.5 * sin((((t * fr.uVoxelP.y) * 2.0) + (hv.x * 12.0)))))));\n\t\t}\n\t\tq.z += (((fr.uFlat * ((gLum - 0.5))) * g) * 9.0);\n\t\tpos = mix(pos, q, smoothstep(0.0, 0.25, fr.uVoxel.x));\n\t}\n\tif ((fr.uJitter.x > 0.001)) {\n\t\tpos += ((vec3f(sin(((t * 17.0) + (aIdx * 91.0))), sin(((t * 13.0) + (aIdx * 57.0))), sin(((t * 11.0) + (aIdx * 33.0)))) * fr.uJitter.x) * 0.03);\n\t}\n\tif ((fr.uHyp.x > 0.001)) {\n\t\tvar hw: f32;\n\t\tvar hp: vec3f = hyperWarp(pos, fr.uCen, (1.25 / max(fr.uHyp.w, 0.05)), fr.uHyp.z, (fr.uHyp.y - (fr.uTOff * fr.uHypP.w)), &hw);\n\t\tvar hk: f32 = min(fr.uHyp.x, 1.0);\n\t\tpos = mix(pos, hp, hk);\n\t\tgHypW = hw;\n\t\tgHypF = (smoothstep(mix(0.99, 0.6, fr.uHypP.z), 0.997, hw) * hk);\n\t}\n\t(*maskV) = 1.0;\n\tif ((fr.uMask.x > 0.5)) {\n\t\tvar y01: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar soft: f32 = max(fr.uMask.z, 0.02);\n\t\tif ((fr.uMask.x < 1.5)) {\n\t\t\t(*maskV) = smoothstep((fr.uMaskA.x - (soft * 0.5)), (fr.uMaskA.x + (soft * 0.5)), y01);\n\t\t} else if ((fr.uMask.x < 2.5)) {\n\t\t\tvar r: f32 = ((fr.uMask.y * 1.6) + 0.01);\n\t\t\t(*maskV) = (1.0 - smoothstep((r * ((1.0 - soft))), r, distance((*base), fr.uMaskA.xyz)));\n\t\t} else if ((fr.uMask.x < 3.5)) {\n\t\t\tvar n: f32 = ((snoise((((*base) * 1.6) + vec3f(0.0, fr.uMaskA.w, (fr.uMaskA.w * 0.6)))) * 0.5) + 0.5);\n\t\t\t(*maskV) = smoothstep(((1.0 - fr.uMask.y) - (soft * 0.3)), ((1.0 - fr.uMask.y) + (soft * 0.3)), n);\n\t\t} else {\n\t\t\tvar w: f32 = ((fr.uMask.y * 0.35) + 0.004);\n\t\t\t(*maskV) = (1.0 - smoothstep(w, ((w + (soft * 0.3)) + 0.02), abs((y01 - fr.uMaskA.x))));\n\t\t}\n\t\tif ((fr.uMask.w > 0.5)) {\n\t\t\t(*maskV) = (1.0 - (*maskV));\n\t\t}\n\t}\n\tpos = mix((*base), pos, (*maskV));\n\tif ((fr.uContact.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 16); i++) {\n\t\t\tif ((f32(i) >= fr.uContact.w)) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tcontactAt(fr.uTrk[i].xyz, fr.uTrk[i].w, (*base), rad, &pos);\n\t\t}\n\t\tfor (var i: i32 = 0; (i < 32); i++) {\n\t\t\tif ((f32(i) >= fr.uShockP.z)) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tcontactAt(fr.uImp[i].xyz, fr.uImp[i].w, (*base), rad, &pos);\n\t\t}\n\t}\n\tif ((fr.uShockP.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 4); i++) {\n\t\t\tvar age: f32 = fr.uShock[i].w;\n\t\t\tif ((age < 0.0)) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar dist: f32 = distance((*base), fr.uShock[i].xyz);\n\t\t\tvar x: f32 = (((dist - (age * fr.uShockP.y))) / 0.22);\n\t\t\tpos += ((((rad * exp((-x * x))) * exp((-age * 0.9))) * fr.uShockP.x) * 0.45);\n\t\t}\n\t}\n\tif ((fr.uBrushParam.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 20); i++) {\n\t\t\tvar age: f32 = fr.uBrushHits[i].w;\n\t\t\tif ((age < 0.0)) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar dist: f32 = distance((*base), fr.uBrushHits[i].xyz);\n\t\t\tvar r: f32 = fr.uBrushParam.y;\n\t\t\tif ((dist < r)) {\n\t\t\t\tvar life: f32 = (1.0 - (age / fr.uBrushParam.z));\n\t\t\t\tvar infl: f32 = ((((1.0 - (dist / r))) * life) * fr.uBrushParam.x);\n\t\t\t\tpos += ((rad * infl) * 0.35);\n\t\t\t}\n\t\t}\n\t}\n\tif ((fr.uPhysics.x > 0.001)) {\n\t\tvar seed: f32 = hash11(((aIdx * 1234.56) + 17.1));\n\t\tvar seed2: f32 = hash11(((aIdx * 2345.67) + 39.3));\n\t\tvar seed3: f32 = hash11(((aIdx * 3456.78) + 81.7));\n\t\tvar yP: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar onset: f32 = (((((1.0 - yP)) * fr.uPhysP.y) * 1.3) + (seed * 0.3));\n\t\tvar pt: f32 = max(0.0, (fr.uCollapseTime - onset));\n\t\tvar radd: vec3f = normalize(((*base) + vec3f(1e-3)));\n\t\tvar tang: vec3f = normalize((vec3f(-(*base).z, 0.0, (*base).x) + vec3f(1e-3, 0.0, 0.0)));\n\t\tvar v0: vec3f = ((((radd * ((0.5 + (seed * 1.1)))) + ((tang * fr.uPhysP.z) * ((0.3 + (seed3 * 0.9)))))) * fr.uPhysP.x);\n\t\tvar vy0: f32 = (((0.5 + (seed2 * 1.0))) * fr.uPhysP.x);\n\t\tvar g: f32 = (fr.uPhysics.y * 3.8);\n\t\tvar floorY: f32 = (fr.uYR.x - 0.04);\n\t\tvar drag: f32 = (1.0 - exp((-pt * 1.5)));\n\t\tvar pPhys: vec3f = (*base);\n\t\tpPhys.x += (((v0.x * drag) / 1.5) + ((fr.uPhysics.w * 0.5) * drag));\n\t\tpPhys.z += ((v0.z * drag) / 1.5);\n\t\tvar h0: f32 = max(((*base).y - floorY), 0.0);\n\t\tvar vimp: f32 = sqrt(((vy0 * vy0) + ((2.0 * g) * h0)));\n\t\tvar t1: f32 = (((vy0 + vimp)) / g);\n\t\tvar yy: f32;\n\t\tif ((pt < t1)) {\n\t\t\tyy = (((*base).y + (vy0 * pt)) - (((0.5 * g) * pt) * pt));\n\t\t} else {\n\t\t\tvar tt: f32 = (pt - t1);\n\t\t\tvar vy: f32 = (vimp * fr.uPhysics.z);\n\t\t\tvar hh: f32 = 0.0;\n\t\t\tfor (var b: i32 = 0; (b < 4); b++) {\n\t\t\t\tvar T: f32 = ((2.0 * vy) / g);\n\t\t\t\tif ((tt < T)) {\n\t\t\t\t\thh = ((vy * tt) - (((0.5 * g) * tt) * tt));\n\t\t\t\t\tbreak;\n\t\t\t\t}\n\t\t\t\ttt -= T;\n\t\t\t\tvy *= fr.uPhysics.z;\n\t\t\t}\n\t\t\tyy = (floorY + max(hh, 0.0));\n\t\t}\n\t\tpPhys.y = max(yy, floorY);\n\t\tvar spinA: f32 = (((((1.0 - exp((-pt * 1.2)))) * fr.uPhysP.z) * ((seed2 - 0.5))) * 2.0);\n\t\tvar sq: vec2f = pPhys.xz;\n\t\tvar cs: f32 = cos(spinA);\n\t\tvar sn: f32 = sin(spinA);\n\t\t{ let _sw22 = vec2f(((sq.x * cs) - (sq.y * sn)), ((sq.x * sn) + (sq.y * cs))); pPhys = vec3f(_sw22.x, pPhys.y, _sw22.y); }\n\t\tvar strength: f32 = min(1.0, fr.uPhysics.x);\n\t\tvar target_: vec3f = mix(pos, pPhys, strength);\n\t\tif ((fr.uAsm > 0.0)) {\n\t\t\tvar s0: f32 = ((yP * 0.42) + (seed * 0.2));\n\t\t\tvar sA: f32 = clamp(((((fr.uAsm * 1.4) - s0)) / 0.55), 0.0, 1.0);\n\t\t\tvar eA: f32 = ((sA * sA) * ((3.0 - (2.0 * sA))));\n\t\t\tvar side: vec3f = normalize((cross((pPhys - pos), vec3f(0.0, 1.0, 0.0)) + vec3f(1e-3)));\n\t\t\ttarget_ = mix(target_, pos, eA);\n\t\t\ttarget_ += (((side * sin((eA * 3.14159))) * 0.45) * ((seed3 - 0.3)));\n\t\t\ttarget_.y += ((sin((eA * 3.14159)) * 0.5) * ((0.4 + seed)));\n\t\t}\n\t\tpos = target_;\n\t}\n\tif ((fr.uHandP.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 12); i++) {\n\t\t\tif ((f32(i) >= fr.uHandP.w)) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tvar hd: vec3f = (pos - fr.uHand[i].xyz);\n\t\t\tvar r: f32 = fr.uHandP.y;\n\t\t\tvar d2: f32 = dot(hd, hd);\n\t\t\tif ((d2 < (r * r))) {\n\t\t\t\tvar f: f32 = (1.0 - (sqrt(d2) / r));\n\t\t\t\tf = ((f * f) * ((3.0 - (2.0 * f))));\n\t\t\t\tvar hs: f32 = fr.uHand[i].w;\n\t\t\t\tif ((hs > 1.5)) {\n\t\t\t\t\ths -= 2.0;\n\t\t\t\t\tvar a: f32 = (((f * hs) * fr.uHandP.x) * 2.6);\n\t\t\t\t\tvar ca: f32 = cos(a);\n\t\t\t\t\tvar sa: f32 = sin(a);\n\t\t\t\t\tvar q: vec2f = (pos.xz - fr.uHand[i].xz);\n\t\t\t\t\t{ let _sw23 = (fr.uHand[i].xz + vec2f(((q.x * ca) - (q.y * sa)), ((q.x * sa) + (q.y * ca)))); pos = vec3f(_sw23.x, pos.y, _sw23.y); }\n\t\t\t\t\tpos.y += (((f * hs) * fr.uHandP.x) * 0.12);\n\t\t\t\t} else {\n\t\t\t\t\tpos += ((((normalize((hd + vec3f(1e-3))) * f) * hs) * fr.uHandP.x) * 0.75);\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\tif (((fr.uMouseOn > 0.5) && (fr.uCursor.x > 0.001))) {\n\t\tvar tm: vec3f = (pos - fr.uMouse);\n\t\tvar r2: f32 = (fr.uCursor.y * fr.uCursor.y);\n\t\tvar d2: f32 = dot(tm, tm);\n\t\tif ((d2 < r2)) {\n\t\t\tvar f: f32 = (1.0 - (d2 / r2));\n\t\t\tif ((fr.uCursor.z > 1.5)) {\n\t\t\t\tvar vax: vec3f = normalize((vec3f(fr.modelViewMatrix[0][2], fr.modelViewMatrix[1][2], fr.modelViewMatrix[2][2]) + vec3f(1e-5)));\n\t\t\t\tvar ca: f32 = (((f * f) * fr.uCursor.x) * 2.2);\n\t\t\t\tvar cc: f32 = cos(ca);\n\t\t\t\tvar cs: f32 = sin(ca);\n\t\t\t\tpos = (((fr.uMouse + (tm * cc)) + (cross(vax, tm) * cs)) + ((vax * dot(vax, tm)) * ((1.0 - cc))));\n\t\t\t} else {\n\t\t\t\tpos += (((((normalize((tm + vec3f(1e-3))) * f) * f) * fr.uCursor.x) * 0.6) * fr.uCursor.z);\n\t\t\t}\n\t\t}\n\t}\n\treturn pos;\n}\n\nfn main_() {\n\tvar bA: vec3f;\n\tvar bB: vec3f;\n\tvar mA: f32;\n\tvar mB: f32;\n\tgDepth = aDepth;\n\tgNormal = vec3f(0.0);\n\tvar pA: vec3f = fxDisplace(aOrigin, aTarget, aIdx, &bA, &mA);\n\tgDepth = aDepthB;\n\tvar pB: vec3f = fxDisplace(aOriginB, aTargetB, aIdxB, &bB, &mB);\n\tvar maxLen: f32 = (fr.uLink.y * 1.9);\n\tvar len: f32 = distance(pA, pB);\n\tif ((len > maxLen)) {\n\t\tgl_Position = vec4f(2.0, 2.0, 2.0, 1.0);\n\t\treturn;\n\t}\n\tvar strain: f32 = clamp((((len - (fr.uLink.y * 0.4))) / max((fr.uLink.y * 1.3), 0.01)), 0.0, 1.0);\n\tvStrain = strain;\n\tvar col: vec3f = (mix(fr.uP0, fr.uP2, (0.35 + (fr.uBeat * 0.4))) * fr.uBright);\n\tif (((fr.uLinkP.y > 0.5) && (fr.uLinkP.y < 1.5))) {\n\t\tvar cyan: vec3f = vec3f(0.12, 0.88, 0.9);\n\t\tvar gold: vec3f = vec3f(1.0, 0.76, 0.18);\n\t\tvar ruby: vec3f = vec3f(1.0, 0.22, 0.28);\n\t\tcol = select(mix(gold, ruby, (((strain - 0.5)) * 2.0)), mix(cyan, gold, (strain * 2.0)), (strain < 0.5));\n\t\tcol *= vec3f((fr.uBright * ((1.1 + (fr.uBeat * 0.35)))));\n\t} else if (((fr.uLinkP.y > 1.5) && (fr.uLinkP.y < 2.5))) {\n\t\tcol = mix(vec3f(0.08, 0.72, 1.0), vec3f(1.0, 0.08, 0.76), fract(((aIdx * 7.13) + (aEnd * 0.5))));\n\t\tcol *= vec3f((fr.uBright * 1.35));\n\t} else if ((fr.uLinkP.y > 2.5)) {\n\t\tcol = ((((0.5 + (0.5 * cos((6.2831853 * ((((aIdx + (aEnd * 0.35)) + (fr.uTime * 0.18)) + vec3f(0.0, 0.33, 0.67)))))))) * fr.uBright) * 1.25);\n\t}\n\tvC = col;\n\tvA = (fr.uLink.x * ((1.0 - smoothstep((fr.uLink.y * 0.8), maxLen, len))));\n\tvEnd = aEnd;\n\tvIdx = aIdx;\n\tvSide = aSide;\n\tvar mvp: mat4x4f = (fr.projectionMatrix * fr.modelViewMatrix);\n\tvar cA: vec4f = (mvp * vec4f(pA, 1.0));\n\tvar cB: vec4f = (mvp * vec4f(pB, 1.0));\n\tif (((cA.w < 0.02) || (cB.w < 0.02))) {\n\t\tgl_Position = vec4f(2.0, 2.0, 2.0, 1.0);\n\t\treturn;\n\t}\n\tvar sA: vec2f = (cA.xy / cA.w);\n\tvar sB: vec2f = (cB.xy / cB.w);\n\tvar dir: vec2f = (((sB - sA)) * vec2f((fr.uRes.x / fr.uRes.y), 1.0));\n\tvar dl: f32 = length(dir);\n\tdir = select(vec2f(1.0, 0.0), (dir / dl), (dl > 1e-5));\n\tvar nrm: vec2f = (vec2f(-dir.y, dir.x) * vec2f((fr.uRes.y / fr.uRes.x), 1.0));\n\tvar c: vec4f = mix(cA, cB, aEnd);\n\tvar flare: f32 = 1.0;\n\tif ((fr.uLinkP.z > 0.5)) {\n\t\tvar endDist: f32 = min(aEnd, (1.0 - aEnd));\n\t\tflare += (((1.0 - smoothstep(0.0, 0.18, endDist))) * 1.9);\n\t}\n\tvar baseW: f32 = fr.uLinkW;\n\tif (((fr.uLinkP.x > 1.5) && (fr.uLinkP.x < 2.5))) {\n\t\tbaseW = max(0.65, (fr.uLinkW * 0.6));\n\t}\n\t{ let _sw24 = (c.xy + ((((nrm * aSide) * (((baseW * flare) + 1.0))) / fr.uRes.y) * c.w)); c = vec4f(_sw24.x, _sw24.y, c.z, c.w); }\n\tgl_Position = c;\n}\n\n\n@compute @workgroup_size(64)\nfn main(@builtin(global_invocation_id) gid: vec3u) {\n\tlet i = gid.x;\n\tlet count = arrayLength(&inS0);\n\tif (i >= count) { return; }\n\tlet s0 = inS0[i];\n\tlet s1 = inS1[i];\n\tlet s2 = inS2[i];\n\tlet s3 = inS3[i];\n\tlet s4 = inS4[i];\n\taOrigin = s0.xyz;\n\taTarget = s1.xyz;\n\taIdx = s0.w;\n\taOriginB = s2.xyz;\n\taTargetB = s3.xyz;\n\taIdxB = s1.w;\n\taDepth = s2.w;\n\taDepthB = s3.w;\n\taEnd = s4.x;\n\taSide = s4.y;\n\tmain_();\n\toutClip[i] = gl_Position;\n\toutV0[i] = vec4f(vC, vA);\n\toutV1[i] = vec4f(vEnd, vIdx, vSide, vStrain);\n}\n",
+"render": "struct Frame {\n\t@size(16) uAdd: f32,\n\t@size(16) uSolid: vec3f,\n\t@size(16) uAtt: f32,\n\t@size(16) uSize: f32,\n\t@size(16) uPR: f32,\n\t@size(16) uGlyph: vec3f,\n\t@size(16) uColorBy: f32,\n\t@size(16) uBright: f32,\n\t@size(16) uMaskShow: f32,\n\t@size(16) uP0: vec3f,\n\t@size(16) uP1: vec3f,\n\t@size(16) uP2: vec3f,\n\t@size(16) uSliceC: vec3f,\n\t@size(16) uMarkC: vec3f,\n\t@size(16) uTime: f32,\n\t@size(16) uTOff: f32,\n\t@size(16) uMorph: f32,\n\tuMorphS: vec4f,\n\tuMorphO: vec4f,\n\tuMorphD: vec4f,\n\t@size(16) uSettle: f32,\n\t@size(16) uBeat: f32,\n\t@size(16) uYR: vec2f,\n\t@size(16) uMouse: vec3f,\n\t@size(16) uMouseOn: f32,\n\t@size(16) uShade: f32,\n\tuCurlP: vec4f,\n\tuSpecP: vec4f,\n\tuWaveP: vec4f,\n\tuWaveSrc: vec4f,\n\tuPulseP: vec4f,\n\tuVoxelP: vec4f,\n\tuGlitchP: vec4f,\n\tuBlast: vec4f,\n\tuFlow: vec4f,\n\tuDisP: vec4f,\n\tuScope: vec4f,\n\tuScopeP: vec4f,\n\tuScopeQ: vec4f,\n\t@size(16) uScopeC: vec3f,\n\tuDepth: vec4f,\n\tuDepthP: vec4f,\n\tuDepthQ: vec4f,\n\t@size(16) uFlat: f32,\n\tuCurl: vec4f,\n\tuSpec: vec4f,\n\tuWave: vec4f,\n\tuTwist: vec4f,\n\tuPulse: vec4f,\n\tuVoxel: vec4f,\n\tuJitter: vec4f,\n\tuCursor: vec4f,\n\tuMask: vec4f,\n\tuMaskA: vec4f,\n\tuGlitch: vec4f,\n\tuContact: vec4f,\n\tuShockP: vec4f,\n\tuTrk: array<vec4f, 16>,\n\tuHand: array<vec4f, 12>,\n\tuGrav: vec4f,\n\tuSlice: vec4f,\n\tuSliceM: vec4f,\n\tuMark: vec4f,\n\tuGravT: vec4f,\n\tuPhysP: vec4f,\n\t@size(16) uAsm: f32,\n\tuDis: vec4f,\n\t@size(16) uDisT: f32,\n\t@size(16) uAnimN: f32,\n\t@size(16) uCen: vec3f,\n\tuDisQ: vec4f,\n\tuGravP: vec4f,\n\tuHandP: vec4f,\n\tuImp: array<vec4f, 32>,\n\tuShock: array<vec4f, 4>,\n\tuExp: vec4f,\n\tuExpP: vec4f,\n\tuGrow: vec4f,\n\tuGrowP: vec4f,\n\t@size(16) uGrowSeed: vec3f,\n\tuJel: array<vec4f, 3>,\n\tuJelO: array<vec4f, 3>,\n\tuJelP: vec4f,\n\tuPhysics: vec4f,\n\t@size(16) uCollapseTime: f32,\n\tuBrushHits: array<vec4f, 20>,\n\tuPaintP: vec4f,\n\tuBrushParam: vec4f,\n\tuLookP2: vec4f,\n\tuDof: vec4f,\n\tuHyp: vec4f,\n\tuHypP: vec4f,\n\tuCh: vec4f,\n\tuChA: vec4f,\n\tuFr: vec4f,\n\tuFr2: vec4f,\n\tuFr3: vec4f,\n\tuFr4: vec4f,\n\tuFr5: vec4f,\n\tuHero: vec4f,\n\tuFr6: vec4f,\n\tuFr7: vec4f,\n\tuShoot: vec4f,\n\tuShootP: vec4f,\n\tuShootD: vec4f,\n\tuShootE: vec4f,\n\tuShootC: vec4f,\n\tuShootS: array<vec4f, 24>,\n\tuShootN: array<vec4f, 24>,\n\tuShootB: array<vec4f, 6>,\n\tuScr: vec4f,\n\tuScrP: vec4f,\n\tuScrD: vec4f,\n\tuScrQ: vec4f,\n\t@size(16) uScrMN: f32,\n\tuSlit: vec4f,\n\tuSlitP: vec4f,\n\tuSlitG: vec4f,\n\tuSort: vec4f,\n\tuSortP: vec4f,\n\tmodelMatrix: mat4x4f,\n\tmodelViewMatrix: mat4x4f,\n\tprojectionMatrix: mat4x4f,\n\tviewMatrix: mat4x4f,\n\tnormalMatrix: mat3x3f,\n\t@size(16) uRes: vec2f,\n\t@size(16) uPx: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n\t@size(16) uGlow: f32,\n\t@size(16) uDens: f32,\n\t@size(16) uGhost: f32,\n\t@size(16) uShape: f32,\n\tuShd: vec4f,\n\tuShdL: vec4f,\n\tuShdP: vec4f,\n\t@size(16) uShdC: vec3f,\n\tuLink: vec4f,\n\tuLinkP: vec4f,\n\t@size(16) uLinkW: f32,\n\t@size(16) uScopeW: f32,\n\t@size(16) uScopeLB: f32,\n}\n@group(0) @binding(0) var<uniform> fr: Frame;\n@group(0) @binding(1) var<storage, read> outClip: array<vec4f>;\n@group(0) @binding(2) var<storage, read> outV0: array<vec4f>;\n@group(0) @binding(3) var<storage, read> outV1: array<vec4f>;\n@group(0) @binding(4) var atlasTex: texture_2d<f32>;\n@group(0) @binding(5) var linSamp: sampler;\n\nvar<private> vC: vec3f;\nvar<private> vA: f32;\nvar<private> vEnd: f32;\nvar<private> vIdx: f32;\nvar<private> vSide: f32;\nvar<private> vStrain: f32;\nvar<private> gl_FragColor: vec4f;\n\nfn frag_main_() {\n\tvar edge: f32 = (1.0 - smoothstep(0.35, 1.0, abs(vSide)));\n\tvar col: vec3f = vC;\n\tvar pulseA: f32 = 1.0;\n\tvar mode: i32 = i32((fr.uLinkP.x + 0.5));\n\tif ((fr.uLink.w > 0.5)) {\n\t\tvar spd: f32 = fr.uLink.z;\n\t\tif ((mode == 0)) {\n\t\t\tvar p: f32 = sin((((vEnd * 16.0) - ((fr.uTime * spd) * 3.5)) + (vIdx * 24.0)));\n\t\t\tvar spark: f32 = (smoothstep(0.45, 0.98, p) * 2.8);\n\t\t\tpulseA = (0.5 + spark);\n\t\t\tcol += ((col * spark) * 1.5);\n\t\t} else if ((mode == 1)) {\n\t\t\tvar t1: f32 = fract((((vEnd * 2.0) - ((fr.uTime * spd) * 0.95)) + (vIdx * 13.37)));\n\t\t\tvar spike1: f32 = (exp((-t1 * 16.0)) * 4.0);\n\t\t\tvar t2: f32 = fract((((((1.0 - vEnd)) * 2.0) - ((fr.uTime * spd) * 0.75)) + (vIdx * 29.11)));\n\t\t\tvar spike2: f32 = (exp((-t2 * 16.0)) * 3.0);\n\t\t\tvar syn: f32 = (spike1 + spike2);\n\t\t\tpulseA = (0.35 + syn);\n\t\t\tcol = (mix(col, vec3f(1.0), clamp((syn * 0.55), 0.0, 0.85)) + ((col * syn) * 1.8));\n\t\t} else if ((mode == 2)) {\n\t\t\tvar shimmer: f32 = (0.65 + (0.35 * sin((((fr.uTime * 3.2) + (vIdx * 43.0)) + (vEnd * 6.28)))));\n\t\t\tpulseA = shimmer;\n\t\t\tcol = mix(col, vec3f(0.9, 0.96, 1.0), (0.35 * shimmer));\n\t\t} else if ((mode == 3)) {\n\t\t\tvar core: f32 = (1.0 - smoothstep(0.0, 0.32, abs(vSide)));\n\t\t\tvar bits: f32 = step(0.46, fract((((vEnd * 10.0) - ((fr.uTime * spd) * 3.2)) + (vIdx * 19.3))));\n\t\t\tpulseA = (0.55 + (bits * 2.2));\n\t\t\tcol = ((col * pulseA) + ((vec3f(1.0) * core) * 1.6));\n\t\t} else if ((mode == 4)) {\n\t\t\tvar wave: f32 = (0.5 + (0.5 * sin((((vEnd * 12.0) - ((fr.uTime * spd) * 2.6)) + (vStrain * 6.0)))));\n\t\t\tpulseA = (0.5 + (wave * ((1.0 + (vStrain * 2.2)))));\n\t\t\tcol += (((vec3f(1.0, 0.45, 0.18) * vStrain) * 2.0) * wave);\n\t\t}\n\t}\n\tif ((fr.uLinkP.z > 0.5)) {\n\t\tvar endDist: f32 = min(vEnd, (1.0 - vEnd));\n\t\tvar dNode: f32 = length(vec2f((endDist * 7.5), (vSide * 0.72)));\n\t\tvar beacon: f32 = (exp((-dNode * 3.8)) * 2.6);\n\t\tcol += (((vec3f(1.0) + (vC * 0.6))) * beacon);\n\t\tpulseA = max(pulseA, (beacon * 1.3));\n\t}\n\tvar alpha: f32 = clamp(((vA * pulseA) * edge), 0.0, 1.0);\n\tgl_FragColor = vec4f((col * alpha), alpha);\n}\n\n\n\nfn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {\n\tlet startCompression = 0.8 - 0.04;\n\tlet desaturation = 0.15;\n\tvar color = c0 * exposure;\n\tlet x = min(color.r, min(color.g, color.b));\n\tlet offset = select(0.04, x - 6.25 * x * x, x < 0.08);\n\tcolor = color - offset;\n\tlet peak = max(color.r, max(color.g, color.b));\n\tif (peak < startCompression) { return color; }\n\tlet d = 1.0 - startCompression;\n\tlet newPeak = 1.0 - d * d / (peak + d - startCompression);\n\tcolor = color * (newPeak / peak);\n\tlet g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);\n\treturn mix(color, vec3f(newPeak), g);\n}\nfn rrtAndOdtFit(v: vec3f) -> vec3f {\n\tlet a = v * (v + 0.0245786) - 0.000090537;\n\tlet b = v * (0.983729 * v + 0.4329510) + 0.238081;\n\treturn a / b;\n}\nfn toneAces(c0: vec3f, exposure: f32) -> vec3f {\n\tlet inM = mat3x3f(vec3f(0.59719, 0.07600, 0.02840), vec3f(0.35458, 0.90834, 0.13383), vec3f(0.04823, 0.01566, 0.83777));\n\tlet outM = mat3x3f(vec3f(1.60475, -0.10208, -0.00327), vec3f(-0.53108, 1.10813, -0.07276), vec3f(-0.07367, -0.00605, 1.07602));\n\tvar color = c0 * (exposure / 0.6);\n\tcolor = inM * color;\n\tcolor = rrtAndOdtFit(color);\n\tcolor = outM * color;\n\treturn saturate(color);\n}\nfn agxContrast(x: vec3f) -> vec3f {\n\tlet x2 = x * x;\n\tlet x4 = x2 * x2;\n\treturn 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;\n}\nfn toneAgx(c0: vec3f, exposure: f32) -> vec3f {\n\tlet rec2020ToSrgb = mat3x3f(vec3f(1.6605, -0.1246, -0.0182), vec3f(-0.5876, 1.1329, -0.1006), vec3f(-0.0728, -0.0083, 1.1187));\n\tlet srgbToRec2020 = mat3x3f(vec3f(0.6274, 0.0691, 0.0164), vec3f(0.3293, 0.9195, 0.0880), vec3f(0.0433, 0.0113, 0.8956));\n\tlet inset = mat3x3f(vec3f(0.856627153315983, 0.137318972929847, 0.11189821299995), vec3f(0.0951212405381588, 0.761241990602591, 0.0767994186031903), vec3f(0.0482516061458583, 0.101439036467562, 0.811302368396859));\n\tlet outset = mat3x3f(vec3f(1.1271005818144368, -0.1413297634984383, -0.14132976349843826), vec3f(-0.11060664309660323, 1.157823702216272, -0.11060664309660294), vec3f(-0.016493938717834573, -0.016493938717834257, 1.2519364065950405));\n\tlet minEv = -12.47393;\n\tlet maxEv = 4.026069;\n\tvar color = c0 * exposure;\n\tcolor = srgbToRec2020 * color;\n\tcolor = inset * color;\n\tcolor = max(color, vec3f(1e-10));\n\tcolor = log2(color);\n\tcolor = (color - minEv) / (maxEv - minEv);\n\tcolor = clamp(color, vec3f(0.0), vec3f(1.0));\n\tcolor = agxContrast(color);\n\tcolor = outset * color;\n\tcolor = pow(max(vec3f(0.0), color), vec3f(2.2));\n\tcolor = rec2020ToSrgb * color;\n\treturn clamp(color, vec3f(0.0), vec3f(1.0));\n}\nfn toneMap(c: vec3f, exposure: f32, mode: f32) -> vec3f {\n\tif (mode < 0.5) { return c; }\n\tif (mode < 1.5) { return toneNeutral(c, exposure); }\n\tif (mode < 2.5) { return toneAces(c, exposure); }\n\treturn toneAgx(c, exposure);\n}\nfn linearToSrgb(v: vec3f) -> vec3f {\n\treturn select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));\n}\n\nstruct VOut {\n\t@builtin(position) clip: vec4f,\n\t@location(0) v0: vec4f,\n\t@location(1) v1: vec4f,\n}\n\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar clip = outClip[vi];\n\tclip.z = (clip.z + clip.w) * 0.5;\n\tvar o: VOut;\n\to.clip = clip;\n\to.v0 = outV0[vi];\n\to.v1 = outV1[vi];\n\treturn o;\n}\n\nfn setup_in(in: VOut) {\n\tvC = in.v0.xyz;\n\tvA = in.v0.w;\n\tvEnd = in.v1.x;\n\tvIdx = in.v1.y;\n\tvSide = in.v1.z;\n\tvStrain = in.v1.w;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tsetup_in(in);\n\tfrag_main_();\n\treturn vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, fr.uExposure, fr.uTone)), gl_FragColor.a);\n}\n\n@fragment\nfn fs_raw(in: VOut) -> @location(0) vec4f {\n\tsetup_in(in);\n\tfrag_main_();\n\treturn gl_FragColor;\n}\n",
 "attrs": [
 [
 "aOrigin",
@@ -72819,11 +75726,12 @@ const MESH_PROGRAMS = {
 1
 ]
 ],
-"slots": 5
+"slots": 5,
+"vslots": 2
 },
 "scope": {
-"compute": "struct Frame {\n\t@size(16) uAdd: f32,\n\t@size(16) uSolid: vec3f,\n\t@size(16) uAtt: f32,\n\t@size(16) uSize: f32,\n\t@size(16) uPR: f32,\n\t@size(16) uGlyph: vec3f,\n\t@size(16) uColorBy: f32,\n\t@size(16) uBright: f32,\n\t@size(16) uMaskShow: f32,\n\t@size(16) uP0: vec3f,\n\t@size(16) uP1: vec3f,\n\t@size(16) uP2: vec3f,\n\t@size(16) uSliceC: vec3f,\n\t@size(16) uMarkC: vec3f,\n\t@size(16) uTime: f32,\n\t@size(16) uTOff: f32,\n\t@size(16) uMorph: f32,\n\tuMorphS: vec4f,\n\tuMorphO: vec4f,\n\tuMorphD: vec4f,\n\t@size(16) uSettle: f32,\n\t@size(16) uBeat: f32,\n\t@size(16) uYR: vec2f,\n\t@size(16) uMouse: vec3f,\n\t@size(16) uMouseOn: f32,\n\t@size(16) uShade: f32,\n\tuCurlP: vec4f,\n\tuSpecP: vec4f,\n\tuWaveP: vec4f,\n\tuWaveSrc: vec4f,\n\tuPulseP: vec4f,\n\tuVoxelP: vec4f,\n\tuGlitchP: vec4f,\n\tuBlast: vec4f,\n\tuFlow: vec4f,\n\tuDisP: vec4f,\n\tuScope: vec4f,\n\tuScopeP: vec4f,\n\tuScopeQ: vec4f,\n\t@size(16) uScopeC: vec3f,\n\tuDepth: vec4f,\n\tuDepthP: vec4f,\n\tuDepthQ: vec4f,\n\t@size(16) uFlat: f32,\n\tuCurl: vec4f,\n\tuSpec: vec4f,\n\tuWave: vec4f,\n\tuTwist: vec4f,\n\tuPulse: vec4f,\n\tuVoxel: vec4f,\n\tuJitter: vec4f,\n\tuCursor: vec4f,\n\tuMask: vec4f,\n\tuMaskA: vec4f,\n\tuGlitch: vec4f,\n\tuContact: vec4f,\n\tuShockP: vec4f,\n\tuTrk: array<vec4f, 16>,\n\tuHand: array<vec4f, 12>,\n\tuGrav: vec4f,\n\tuSlice: vec4f,\n\tuSliceM: vec4f,\n\tuMark: vec4f,\n\tuGravT: vec4f,\n\tuPhysP: vec4f,\n\t@size(16) uAsm: f32,\n\tuDis: vec4f,\n\t@size(16) uDisT: f32,\n\t@size(16) uAnimN: f32,\n\t@size(16) uCen: vec3f,\n\tuDisQ: vec4f,\n\tuGravP: vec4f,\n\tuHandP: vec4f,\n\tuImp: array<vec4f, 32>,\n\tuShock: array<vec4f, 4>,\n\tuExp: vec4f,\n\tuExpP: vec4f,\n\tuGrow: vec4f,\n\tuGrowP: vec4f,\n\t@size(16) uGrowSeed: vec3f,\n\tuJel: array<vec4f, 3>,\n\tuJelO: array<vec4f, 3>,\n\tuJelP: vec4f,\n\tuPhysics: vec4f,\n\t@size(16) uCollapseTime: f32,\n\tuBrushHits: array<vec4f, 20>,\n\tuPaintP: vec4f,\n\tuBrushParam: vec4f,\n\tuLookP2: vec4f,\n\tuDof: vec4f,\n\tuHyp: vec4f,\n\tuHypP: vec4f,\n\tuCh: vec4f,\n\tuChA: vec4f,\n\tuFr: vec4f,\n\tuFr2: vec4f,\n\tuFr3: vec4f,\n\tuFr4: vec4f,\n\tuFr5: vec4f,\n\tuHero: vec4f,\n\tuFr6: vec4f,\n\tuFr7: vec4f,\n\tuShoot: vec4f,\n\tuShootP: vec4f,\n\tuShootD: vec4f,\n\tuShootE: vec4f,\n\tuShootC: vec4f,\n\tuShootS: array<vec4f, 24>,\n\tuShootN: array<vec4f, 24>,\n\tuShootB: array<vec4f, 6>,\n\tmodelMatrix: mat4x4f,\n\tmodelViewMatrix: mat4x4f,\n\tprojectionMatrix: mat4x4f,\n\tnormalMatrix: mat3x3f,\n\t@size(16) uRes: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uGlow: f32,\n\t@size(16) uDens: f32,\n\t@size(16) uGhost: f32,\n\t@size(16) uShape: f32,\n\tuLink: vec4f,\n\tuLinkP: vec4f,\n\t@size(16) uLinkW: f32,\n\t@size(16) uScopeW: f32,\n\t@size(16) uScopeLB: f32,\n}\n@group(0) @binding(0) var<uniform> fr: Frame;\n@group(0) @binding(1) var<storage, read> inS0: array<vec4f>;\n@group(0) @binding(2) var<storage, read> inS1: array<vec4f>;\n@group(0) @binding(3) var<storage, read> inS2: array<vec4f>;\n@group(0) @binding(4) var<storage, read> inS3: array<vec4f>;\n@group(0) @binding(5) var<storage, read> inS4: array<vec4f>;\n@group(0) @binding(9) var<storage, read_write> outClip: array<vec4f>;\n@group(0) @binding(10) var<storage, read_write> outV0: array<vec4f>;\n@group(0) @binding(11) var<storage, read_write> outV1: array<vec4f>;\n@group(0) @binding(12) var specTex: texture_2d<f32>;\n@group(0) @binding(13) var linSamp: sampler;\n@group(0) @binding(14) var pieceTex: texture_2d<f32>;\n@group(0) @binding(15) var frTex: texture_2d_array<f32>;\n@group(0) @binding(16) var heroTex: texture_2d<f32>;\n\nvar<private> aOrigin: vec3f;\nvar<private> aTarget: vec3f;\nvar<private> aIdx: f32;\nvar<private> aOriginB: vec3f;\nvar<private> aTargetB: vec3f;\nvar<private> aIdxB: f32;\nvar<private> aDepth: f32;\nvar<private> aDepthB: f32;\nvar<private> aEnd: f32;\nvar<private> aSide: f32;\nvar<private> aSeg: f32;\nvar<private> vC: vec3f;\nvar<private> vA: f32;\nvar<private> vSide: f32;\nvar<private> gl_Position: vec4f;\n\nfn glsl_mod_f(x: f32, y: f32) -> f32 { return x - y * floor(x / y); }\n\nvar<private> gGl: f32 = 0.0;\nvar<private> gCh: f32 = -1.0;\nvar<private> gDrop: f32 = 0.0;\nvar<private> gGrow: f32 = 1.0;\nvar<private> gGrowE: f32 = 0.0;\nvar<private> gBurst: f32 = 0.0;\nvar<private> gScopeG: f32 = 0.0;\nvar<private> gScopeT: f32 = 0.0;\nvar<private> gScopeD: f32 = 0.0;\nvar<private> gDepth: f32 = 0.5;\nvar<private> gDepthG: f32 = 0.0;\nvar<private> gNormal: vec3f = vec3f(0.0);\nvar<private> gLum: f32 = 0.5;\nvar<private> gHypW: f32 = 0.0;\nvar<private> gHypF: f32 = 0.0;\nvar<private> gChN: f32 = 0.0;\n\nfn mod289_vec3(x_in: vec3f) -> vec3f {\n\tvar x: vec3f = x_in;\n\treturn (x - (floor((x * ((1.0 / 289.0)))) * 289.0));\n}\n\nfn mod289_vec4(x_in: vec4f) -> vec4f {\n\tvar x: vec4f = x_in;\n\treturn (x - (floor((x * ((1.0 / 289.0)))) * 289.0));\n}\n\nfn permute(x_in: vec4f) -> vec4f {\n\tvar x: vec4f = x_in;\n\treturn mod289_vec4((((((x * 34.0)) + 1.0)) * x));\n}\n\nfn taylorInvSqrt(r_in: vec4f) -> vec4f {\n\tvar r: vec4f = r_in;\n\treturn (1.79284291400159 - (0.85373472095314 * r));\n}\n\nfn snoise(v_in: vec3f) -> f32 {\n\tvar v: vec3f = v_in;\n\tconst C: vec2f = vec2f((1.0 / 6.0), (1.0 / 3.0));\n\tconst D: vec4f = vec4f(0.0, 0.5, 1.0, 2.0);\n\tvar i: vec3f = floor((v + dot(v, C.yyy)));\n\tvar x0: vec3f = ((v - i) + dot(i, C.xxx));\n\tvar g: vec3f = step(x0.yzx, x0.xyz);\n\tvar l: vec3f = (1.0 - g);\n\tvar i1: vec3f = min(g.xyz, l.zxy);\n\tvar i2: vec3f = max(g.xyz, l.zxy);\n\tvar x1: vec3f = ((x0 - i1) + C.xxx);\n\tvar x2: vec3f = ((x0 - i2) + C.yyy);\n\tvar x3: vec3f = (x0 - D.yyy);\n\ti = mod289_vec3(i);\n\tvar p: vec4f = permute(((permute(((permute((i.z + vec4f(0.0, i1.z, i2.z, 1.0))) + i.y) + vec4f(0.0, i1.y, i2.y, 1.0))) + i.x) + vec4f(0.0, i1.x, i2.x, 1.0)));\n\tvar n_: f32 = 0.142857142857;\n\tvar ns: vec3f = ((n_ * D.wyz) - D.xzx);\n\tvar j: vec4f = (p - (49.0 * floor(((p * ns.z) * ns.z))));\n\tvar x_: vec4f = floor((j * ns.z));\n\tvar y_: vec4f = floor((j - (7.0 * x_)));\n\tvar x: vec4f = ((x_ * ns.x) + ns.yyyy);\n\tvar y: vec4f = ((y_ * ns.x) + ns.yyyy);\n\tvar h: vec4f = ((1.0 - abs(x)) - abs(y));\n\tvar b0: vec4f = vec4f(x.xy, y.xy);\n\tvar b1: vec4f = vec4f(x.zw, y.zw);\n\tvar s0: vec4f = ((floor(b0) * 2.0) + 1.0);\n\tvar s1: vec4f = ((floor(b1) * 2.0) + 1.0);\n\tvar sh: vec4f = -step(h, vec4f(0.0));\n\tvar a0: vec4f = (b0.xzyw + (s0.xzyw * sh.xxyy));\n\tvar a1: vec4f = (b1.xzyw + (s1.xzyw * sh.zzww));\n\tvar p0: vec3f = vec3f(a0.xy, h.x);\n\tvar p1: vec3f = vec3f(a0.zw, h.y);\n\tvar p2: vec3f = vec3f(a1.xy, h.z);\n\tvar p3: vec3f = vec3f(a1.zw, h.w);\n\tvar norm: vec4f = taylorInvSqrt(vec4f(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));\n\tp0 *= vec3f(norm.x);\n\tp1 *= vec3f(norm.y);\n\tp2 *= vec3f(norm.z);\n\tp3 *= vec3f(norm.w);\n\tvar m: vec4f = max((0.6 - vec4f(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3))), vec4f(0.0));\n\tm = (m * m);\n\treturn (42.0 * dot((m * m), vec4f(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3))));\n}\n\nfn curlNoise(p_in: vec3f) -> vec3f {\n\tvar p: vec3f = p_in;\n\tconst e: f32 = 0.08;\n\tvar n1: f32 = snoise((p + vec3f(e, 0.0, 0.0)));\n\tvar n2: f32 = snoise((p - vec3f(e, 0.0, 0.0)));\n\tvar n3: f32 = snoise((p + vec3f(0.0, e, 0.0)));\n\tvar n4: f32 = snoise((p - vec3f(0.0, e, 0.0)));\n\tvar n5: f32 = snoise((p + vec3f(0.0, 0.0, e)));\n\tvar n6: f32 = snoise((p - vec3f(0.0, 0.0, e)));\n\treturn normalize((vec3f((((n4 - n3)) - ((n6 - n5))), (((n6 - n5)) - ((n2 - n1))), (((n2 - n1)) - ((n4 - n3)))) + 1e-5));\n}\n\nfn hash11(p_in: f32) -> f32 {\n\tvar p: f32 = p_in;\n\treturn fract((sin((p * 127.1)) * 43758.5453));\n}\n\nfn hit2(b_in: bool) -> f32 {\n\tvar b: bool = b_in;\n\treturn select(0.0, 1.0, b);\n}\n\nfn contactAt(c_in: vec3f, st_in: f32, base_in: vec3f, rad_in: vec3f, pos: ptr<function, vec3f>) {\n\tvar c: vec3f = c_in;\n\tvar st: f32 = st_in;\n\tvar base: vec3f = base_in;\n\tvar rad: vec3f = rad_in;\n\tvar dd: vec3f = (base - c);\n\tvar r: f32 = fr.uContact.y;\n\tvar d2: f32 = dot(dd, dd);\n\tif (((d2 >= (r * r)) || (st < 0.001))) {\n\t\treturn;\n\t}\n\tvar f: f32 = (1.0 - (sqrt(d2) / r));\n\tf = ((f * f) * ((3.0 - (2.0 * f))));\n\tvar k: f32 = ((f * st) * fr.uContact.x);\n\tif ((fr.uContact.z < 0.5)) {\n\t\t(*pos) += ((rad * k) * 0.4);\n\t} else if ((fr.uContact.z < 1.5)) {\n\t\tvar ax: vec3f = normalize((c + vec3f(1e-4)));\n\t\tvar a: f32 = (k * 2.4);\n\t\tvar q: vec3f = ((*pos) - c);\n\t\t(*pos) = (((c + (q * cos(a))) + (cross(ax, q) * sin(a))) + ((ax * dot(ax, q)) * ((1.0 - cos(a)))));\n\t} else if ((fr.uContact.z < 2.5)) {\n\t\t(*pos) -= ((normalize((dd + vec3f(1e-4))) * k) * 0.3);\n\t} else if ((fr.uContact.z < 3.5)) {\n\t\t(*pos) += ((normalize((dd + vec3f(1e-4))) * k) * 0.3);\n\t} else if ((fr.uContact.z < 4.5)) {\n\t\t(*pos) += (((rad * sin(((length(dd) * 20.0) - (fr.uTime * 6.0)))) * k) * 0.14);\n\t} else if ((fr.uContact.z < 5.5)) {\n\t\tvar hh: f32 = fract((sin(dot(base.xz, vec2f(12.9898, 78.233))) * 43758.5453));\n\t\t(*pos).y -= (((k * k) * 0.55) * ((0.6 + (0.8 * hh))));\n\t\t{ let _sw0 = ((*pos).xz + vec2f(((((hh - 0.5)) * k) * 0.06))); (*pos) = vec3f(_sw0.x, (*pos).y, _sw0.y); }\n\t} else if ((fr.uContact.z < 6.5)) {\n\t\t(*pos) += ((curlNoise(((base * 3.0) + (fr.uTime * 0.8))) * k) * 0.45);\n\t}\n}\n\nfn contactK(b_in: vec3f) -> f32 {\n\tvar b: vec3f = b_in;\n\tvar m: f32 = 0.0;\n\tvar r: f32 = (fr.uContact.y * ((1.0 + (0.12 * sin((fr.uTime * 4.0))))));\n\tfor (var i: i32 = 0; (i < 16); i++) {\n\t\tif ((f32(i) >= fr.uContact.w)) {\n\t\t\tbreak;\n\t\t}\n\t\tvar d: f32 = distance(b, fr.uTrk[i].xyz);\n\t\tif ((d < r)) {\n\t\t\tm = max(m, (((1.0 - (d / r))) * fr.uTrk[i].w));\n\t\t}\n\t}\n\tfor (var i: i32 = 0; (i < 32); i++) {\n\t\tif ((f32(i) >= fr.uShockP.z)) {\n\t\t\tbreak;\n\t\t}\n\t\tvar d: f32 = distance(b, fr.uImp[i].xyz);\n\t\tif ((d < r)) {\n\t\t\tm = max(m, (((1.0 - (d / r))) * fr.uImp[i].w));\n\t\t}\n\t}\n\treturn clamp((m * fr.uContact.x), 0.0, 1.0);\n}\n\nfn markK(b_in: vec3f) -> f32 {\n\tvar b: vec3f = b_in;\n\tif (((fr.uMark.x < 0.5) || (fr.uContact.w < 0.5))) {\n\t\treturn 0.0;\n\t}\n\tvar m: f32 = 0.0;\n\tfor (var i: i32 = 0; (i < 16); i++) {\n\t\tif ((f32(i) >= fr.uContact.w)) {\n\t\t\tbreak;\n\t\t}\n\t\tvar d: f32 = distance(b, fr.uTrk[i].xyz);\n\t\tif ((d < fr.uMark.y)) {\n\t\t\tm = max(m, (1.0 - (d / fr.uMark.y)));\n\t\t}\n\t}\n\treturn (((m * m) * ((3.0 - (2.0 * m)))) * fr.uMark.z);\n}\n\nfn hueRot(c_in: vec3f, a_in: f32) -> vec3f {\n\tvar c: vec3f = c_in;\n\tvar a: f32 = a_in;\n\tvar k: vec3f = vec3f(0.57735);\n\treturn (((c * cos(a)) + (cross(k, c) * sin(a))) + ((k * dot(k, c)) * ((1.0 - cos(a)))));\n}\n\nfn sliceK(b_in: vec3f) -> f32 {\n\tvar b: vec3f = b_in;\n\tif ((fr.uSlice.x < 0.001)) {\n\t\treturn 0.0;\n\t}\n\tvar axCode: f32 = glsl_mod_f(fr.uSlice.w, 10.0);\n\tvar nLines: f32 = max(1.0, floor((fr.uSlice.w / 10.0)));\n\tvar c: f32 = select((select((select((((b.x + b.y)) * 0.707), b.z, (axCode < 2.5))), b.x, (axCode < 1.5))), b.y, (axCode < 0.5));\n\tvar v: f32 = clamp((((c + 1.2)) / 2.4), 0.0, 1.0);\n\tvar coord: f32 = glsl_mod_f(((v * nLines) - (fr.uSlice.y * nLines)), 1.0);\n\treturn (((1.0 - smoothstep((fr.uSlice.z * 0.4), fr.uSlice.z, abs((coord - 0.5))))) * fr.uSlice.x);\n}\n\nfn disK(b_in: vec3f, idx_in: f32) -> f32 {\n\tvar b: vec3f = b_in;\n\tvar idx: f32 = idx_in;\n\tif ((fr.uDis.x < 0.001)) {\n\t\treturn 0.0;\n\t}\n\tvar st: f32 = fr.uDisP.x;\n\tvar y01: f32 = clamp((((b.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\tif (((st > 2.5) && (st < 3.5))) {\n\t\ty01 = (floor(((y01 * 12.0) + 0.001)) / 12.0);\n\t}\n\tvar h: f32 = select(hash11((idx * 37.3)), hash11((floor((idx * 1800.0)) * 0.731)), (((st > 3.5) && (st < 4.5))));\n\tvar jit: f32 = select(select(select(select(select(select(select(0.1, 0.12, (st < 6.5)), 0.18, (st < 5.5)), 0.3, (st < 4.5)), 0.0, (st < 3.5)), 0.03, (st < 2.5)), 0.28, (st < 1.5)), 0.16, (st < 0.5));\n\tvar m: f32 = fr.uDis.y;\n\tvar still: bool = (fr.uAnimN < 0.5);\n\tvar ord: f32;\n\tif ((m < 0.5)) {\n\t\tord = (1.0 - y01);\n\t} else if ((m < 1.5)) {\n\t\tord = select(hash11((idx * 13.7)), ((snoise((b * 1.7)) * 0.5) + 0.5), still);\n\t} else if ((m < 2.5)) {\n\t\tord = y01;\n\t} else if ((m < 3.5)) {\n\t\tord = select(y01, clamp(((((b.x - fr.uCen.x)) * 0.3) + 0.5), 0.0, 1.0), still);\n\t} else {\n\t\tvar r01: f32 = clamp((length((b - fr.uCen)) / max((((fr.uYR.y - fr.uYR.x)) * 0.6), 0.3)), 0.0, 1.0);\n\t\tord = select((1.0 - r01), r01, (m < 4.5));\n\t}\n\tord = ((ord * ((1.0 - jit))) + (h * jit));\n\tvar w: f32 = max(fr.uDisQ.x, 0.06);\n\tif (((st > 1.5) && (st < 2.5))) {\n\t\tw *= 0.45;\n\t}\n\treturn clamp(((((fr.uDis.x * ((1.0 + w))) - ord)) / w), 0.0, 1.0);\n}\n\nfn growK(b_in: vec3f, idx_in: f32) -> f32 {\n\tvar b: vec3f = b_in;\n\tvar idx: f32 = idx_in;\n\tvar S: f32 = max((fr.uYR.y - fr.uYR.x), 0.5);\n\tvar y01: f32 = clamp((((b.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\tvar d: f32;\n\tif ((fr.uGrow.y < 0.5)) {\n\t\td = ((y01 * 0.8) + (clamp((length((b.xz - fr.uCen.xz)) / S), 0.0, 1.0) * 0.2));\n\t} else if ((fr.uGrow.y < 1.5)) {\n\t\td = clamp((distance(b, fr.uGrowSeed) / ((S * 1.5))), 0.0, 1.0);\n\t} else {\n\t\td = clamp((length((b - fr.uCen)) / ((S * 0.7))), 0.0, 1.0);\n\t}\n\tvar nz: f32 = select(hash11((floor((idx * 700.0)) * 0.37)), ((snoise(((b * 3.0) + 7.0)) * 0.5) + 0.5), (fr.uAnimN < 0.5));\n\td = clamp(((d + ((((nz - 0.5)) * 0.45) * fr.uGrow.z)) + (((hash11((idx * 9.1)) - 0.5)) * 0.03)), 0.0, 1.0);\n\tvar w: f32 = max(fr.uGrow.w, 0.04);\n\treturn clamp(((((fr.uGrow.x * ((1.0 + w))) - d)) / w), 0.0, 1.0);\n}\n\nfn morphLocal(A_in: vec3f, B_in: vec3f, idx_in: f32) -> f32 {\n\tvar A: vec3f = A_in;\n\tvar B: vec3f = B_in;\n\tvar idx: f32 = idx_in;\n\tvar h: f32 = hash11((idx * 3.17));\n\tvar msty: i32 = i32((fr.uMorphS.x + 0.5));\n\tif ((msty == 8)) {\n\t\th = hash11(dot(floor((((A - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));\n\t}\n\tif ((msty == 13)) {\n\t\th = hash11(dot(floor((((A - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));\n\t}\n\tvar ord: f32 = h;\n\tvar so: i32 = i32((fr.uMorphO.x + 0.5));\n\tvar yN: f32 = clamp((((A.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\tif ((so == 1)) {\n\t\tord = ((yN * 0.85) + (h * 0.15));\n\t} else if ((so == 2)) {\n\t\tord = ((((1.0 - yN)) * 0.85) + (h * 0.15));\n\t} else if ((so == 3)) {\n\t\tord = ((clamp((length(A) / 1.4), 0.0, 1.0) * 0.85) + (h * 0.15));\n\t} else if ((so == 4)) {\n\t\tord = ((clamp((((A.x + 1.2)) / 2.4), 0.0, 1.0) * 0.85) + (h * 0.15));\n\t} else if ((so == 5)) {\n\t\tord = ((((1.0 - gDepth)) * 0.85) + (h * 0.15));\n\t} else if ((so == 6)) {\n\t\tord = ((gDepth * 0.85) + (h * 0.15));\n\t}\n\tif ((msty == 10)) {\n\t\tord = ((((1.0 - gDepth)) * 0.8) + (h * 0.2));\n\t}\n\tif ((msty == 11)) {\n\t\tord = ((clamp((((B.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0) * 0.92) + (h * 0.08));\n\t}\n\tvar sg: f32 = fr.uMorphS.z;\n\treturn clamp(((fr.uMorph * ((1.0 + sg))) - (ord * sg)), 0.0, 1.0);\n}\n\nfn morphEase(x_in: f32) -> f32 {\n\tvar x: f32 = x_in;\n\tvar e: i32 = i32((fr.uMorphO.y + 0.5));\n\tif ((e == 1)) {\n\t\treturn (((x * x) * x) * (((x * (((x * 6.0) - 15.0))) + 10.0)));\n\t}\n\tif ((e == 2)) {\n\t\tvar c1: f32 = 1.70158;\n\t\tvar y: f32 = (x - 1.0);\n\t\treturn ((1.0 + (((((c1 + 1.0)) * y) * y) * y)) + ((c1 * y) * y));\n\t}\n\treturn ((x * x) * ((3.0 - (2.0 * x))));\n}\n\nfn frPlace(lay_in: f32, k_in: f32, n_in: f32, u_in: f32, v_in: f32, nrm: ptr<function, vec3f>) -> vec3f {\n\tvar lay: f32 = lay_in;\n\tvar k: f32 = k_in;\n\tvar n: f32 = n_in;\n\tvar u: f32 = u_in;\n\tvar v: f32 = v_in;\n\tvar t: f32 = select(0.5, (k / ((n - 1.0))), (n > 1.0));\n\tvar W: f32 = fr.uFr2.z;\n\tvar H: f32 = fr.uFr2.w;\n\tvar depth: f32 = fr.uFr3.x;\n\t(*nrm) = vec3f(0.0, 0.0, 1.0);\n\tif (((lay > 0.5) && (lay < 1.5))) {\n\t\tvar gx: f32 = ceil(sqrt((n * ((W / H)))));\n\t\tvar gy: f32 = ceil((n / gx));\n\t\tvar s: f32 = min((2.4 / ((gx * W))), (2.4 / ((gy * H))));\n\t\tvar cx: f32 = glsl_mod_f(k, gx);\n\t\tvar cy: f32 = floor((k / gx));\n\t\treturn vec3f(((((((cx - (((gx - 1.0)) * 0.5))) * W) * s) * 1.04) + ((u * W) * s)), (((((((((gy - 1.0)) * 0.5) - cy)) * H) * s) * 1.04) + ((v * H) * s)), 0.0);\n\t}\n\tvar ad: f32 = (k - fr.uFr4.x);\n\tif (((lay > 1.5) && (lay < 2.5))) {\n\t\tvar sc: f32 = 0.5;\n\t\tvar aa: f32 = abs(ad);\n\t\tvar c1: f32 = ((W * 0.54) + ((W * sc) * 0.53));\n\t\tvar c: f32 = select((c1 + (((((aa - 1.0)) * W) * sc) * 1.06)), (aa * c1), (aa < 1.0));\n\t\tvar s: f32 = mix(1.0, sc, min(aa, 1.0));\n\t\treturn vec3f(((sign(ad) * c) + ((u * W) * s)), ((v * H) * s), 0.0);\n\t}\n\tvar dz: f32 = select(1.0, -1.0, (((fr.uFr4.y > 0.5) && (fr.uFr4.y < 1.5))));\n\tvar kz: f32 = k;\n\tvar cen: f32 = select(fr.uFr4.x, (((n - 1.0)) * 0.5), (fr.uFr6.y > 0.5));\n\tvar ts: f32 = select(1.0, (1.0 - (0.72 * clamp((max(-ad, 0.0) / max((n - 1.0), 1.0)), 0.0, 1.0))), (lay > 2.5));\n\treturn vec3f(((u * W) * ts), ((v * H) * ts), (((((kz - cen)) * depth) / max((n - 1.0), 1.0)) * dz));\n}\n\nfn frMix(k_in: f32, u_in: f32, v_in: f32, nrm: ptr<function, vec3f>) -> vec3f {\n\tvar k: f32 = k_in;\n\tvar u: f32 = u_in;\n\tvar v: f32 = v_in;\n\tvar nA: vec3f;\n\tvar nB: vec3f;\n\tvar pA: vec3f = frPlace(fr.uFr3.y, k, fr.uFr.y, u, v, &nA);\n\tif ((fr.uFr3.w > 0.0001)) {\n\t\tvar pB: vec3f = frPlace(fr.uFr3.z, k, fr.uFr.y, u, v, &nB);\n\t\tvar m: f32 = ((fr.uFr3.w * fr.uFr3.w) * ((3.0 - (2.0 * fr.uFr3.w))));\n\t\t(*nrm) = normalize(mix(nA, nB, m));\n\t\treturn mix(pA, pB, m);\n\t}\n\t(*nrm) = nA;\n\treturn pA;\n}\n\nfn frBlockPos(aIdx_in: f32, nrm: ptr<function, vec3f>, kk: ptr<function, f32>, cell: ptr<function, vec2f>) -> vec3f {\n\tvar aIdx: f32 = aIdx_in;\n\tvar ip: f32 = floor(((aIdx * fr.uFr.w) + 0.5));\n\tvar k: f32 = floor((ip / fr.uFr.z));\n\tvar loc: f32 = (ip - (k * fr.uFr.z));\n\tvar ci: f32 = glsl_mod_f(loc, fr.uFr2.x);\n\tvar cj: f32 = floor((loc / fr.uFr2.x));\n\t(*kk) = k;\n\t(*cell) = vec2f(ci, cj);\n\tvar jt: vec2f = (vec2f(fract((sin((k * 12.9898)) * 43758.5453)), fract((sin(((k * 78.233) + 1.7)) * 24634.6345))) - 0.5);\n\treturn frMix(k, (((((ci + 0.5) + (jt.x * 0.9))) / fr.uFr2.x) - 0.5), (0.5 - ((((cj + 0.5) + (jt.y * 0.9))) / fr.uFr2.y)), nrm);\n}\n\nfn frShow(k_in: f32, tcol: ptr<function, vec3f>) -> vec4f {\n\tvar k: f32 = k_in;\n\tvar n: f32 = fr.uFr.y;\n\tvar idx: f32 = fr.uFr4.x;\n\tvar mode: i32 = i32((fr.uFr4.y + 0.5));\n\tvar d: f32 = (k - idx);\n\tvar fw: f32 = max(2.0, (n * 0.04));\n\tvar w: f32 = 1.0;\n\tvar lift: f32 = 0.0;\n\tvar tint: f32 = 0.0;\n\t(*tcol) = fr.uP2;\n\tif ((mode == 0)) {\n\t\tvar hl: f32 = fr.uFr4.w;\n\t\tif ((hl > 0.001)) {\n\t\t\tw = ((1.0 - (0.5 * hl)) + ((((0.5 + (1.4 * hl))) * max(0.0, (1.0 - (abs(d) / 2.5)))) * hl));\n\t\t}\n\t\tif ((d < -0.5)) {\n\t\t\tw *= (0.45 + (0.55 / ((1.0 + (0.2 * (-d))))));\n\t\t}\n\t\tif ((((d > 0.5) && (fr.uFr6.y < 0.5)) && (abs((fr.uFr3.y - 2.0)) > 0.5))) {\n\t\t\tw *= select(select(1.0, 0.4, (fr.uFr5.z > 0.5)), 0.0, (fr.uFr5.z > 1.5));\n\t\t}\n\t} else if ((mode == 1)) {\n\t\tif ((d < 0.0)) {\n\t\t\tw = max(0.0, (1.0 + (d / fw)));\n\t\t}\n\t\tlift = (1.0 - w);\n\t\tw *= (1.0 + (0.25 * max(0.0, (1.0 - abs(d)))));\n\t} else if ((mode == 2)) {\n\t\tif ((d > 0.0)) {\n\t\t\tw = (max(0.0, (1.0 - (d / fw))) * (select(0.0, 0.5, (d <= fw))));\n\t\t\tlift = (-((1.0 - w)) * 0.6);\n\t\t}\n\t\tw *= (1.0 + (0.25 * max(0.0, (1.0 - abs(d)))));\n\t} else if ((mode == 3)) {\n\t\tvar half_: f32 = max(3.0, (n * 0.08));\n\t\tvar ad: f32 = abs(d);\n\t\tw = select(max(0.0, (1.0 - (((ad - half_)) / fw))), 1.0, (ad <= half_));\n\t\tlift = ((((1.0 - w)) * sign((d + 0.0001))) * 0.8);\n\t\tw *= (1.0 + (0.25 * max(0.0, (1.0 - ad))));\n\t} else {\n\t\tvar span: f32 = max(1.5, (n * max(0.02, fr.uFr4.z)));\n\t\tif ((mode == 4)) {\n\t\t\tvar beam: f32 = exp(((-((d / span)) * ((d / span))) * 2.0));\n\t\t\tvar after: f32 = select(0.0, (exp((d / ((span * 2.4)))) * 0.4), (d < 0.0));\n\t\t\tw = ((0.18 + (beam * 1.5)) + after);\n\t\t\ttint = min(0.85, (beam * 0.8));\n\t\t\tlift = select(0.0, -min(0.35, ((-d / n) * 1.2)), (d < 0.0));\n\t\t} else {\n\t\t\tvar age: f32 = (-d / span);\n\t\t\tif ((d > 0.0)) {\n\t\t\t\tw = 0.0;\n\t\t\t} else {\n\t\t\t\tw = (max(0.0, (exp((-age * 1.1)) * 0.9)) + (1.35 * max(0.0, (1.0 - abs(d)))));\n\t\t\t\tvar t: f32 = min(1.0, age);\n\t\t\t\t(*tcol) = select(mix(fr.uP1, fr.uP2, (((t - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (t * 2.0)), (t < 0.5));\n\t\t\t\ttint = (min(0.9, (0.3 + (age * 0.7))) * ((1.0 - max(0.0, (1.0 - abs(d))))));\n\t\t\t\tlift = -min(0.6, (age * 0.25));\n\t\t\t}\n\t\t}\n\t}\n\treturn vec4f(w, lift, tint, 0.0);\n}\n\nfn dzone(x_in: f32) -> f32 {\n\tvar x: f32 = x_in;\n\tvar a: f32 = abs(x);\n\treturn ((sign(x) * max((a - fr.uDepthQ.x), 0.0)) / max((1.0 - fr.uDepthQ.x), 0.25));\n}\n\nfn depthShape(b_in: vec3f) -> vec3f {\n\tvar b: vec3f = b_in;\n\tvar t: f32 = (fr.uTime - fr.uTOff);\n\tvar A: f32 = fr.uDepth.x;\n\tvar sp: f32 = fr.uDepth.z;\n\tvar dn: f32 = select((1.0 - gDepth), gDepth, (fr.uDepthP.y > 0.0));\n\tvar fo: f32 = select((1.0 - fr.uDepth.w), fr.uDepth.w, (fr.uDepthP.y > 0.0));\n\tvar dd: f32 = dzone((dn - fo));\n\tvar md: i32 = i32((fr.uDepth.y + 0.5));\n\tif ((md == 0)) {\n\t\tb.z += ((dd * A) * 1.2);\n\t} else if ((md == 1)) {\n\t\tvar N: f32 = max(2.0, floor((fr.uDepthP.x + 0.5)));\n\t\tvar x: f32 = (dn * N);\n\t\tvar dq: f32 = (((floor(x) + smoothstep(0.38, 0.62, fract(x)))) / N);\n\t\tb.z += ((dzone((dq - fo)) * A) * 1.5);\n\t} else if ((md == 2)) {\n\t\tb.z += (((dd * A) * 1.3) * ((0.5 + (0.5 * sin(((t * sp) * 0.9))))));\n\t} else if ((md == 3)) {\n\t\tb.z += (((dd * A) * 1.4) * ((0.55 + (0.45 * sin(((b.x * 3.2) - ((t * sp) * 1.6)))))));\n\t} else if ((md == 4)) {\n\t\tb.z += ((((dd * 0.6) + ((sin(((length(b.xy) * 9.0) - ((t * sp) * 2.2))) * 0.25) * ((0.35 + dn))))) * A);\n\t} else if ((md == 5)) {\n\t\tvar a: f32 = (((dd * A) * 1.6) * sin(((t * sp) * 0.7)));\n\t\tvar cs: f32 = cos(a);\n\t\tvar sn: f32 = sin(a);\n\t\t{ let _sw1 = (mat2x2f(cs, -sn, sn, cs) * b.xz); b = vec3f(_sw1.x, b.y, _sw1.y); }\n\t\tb.z += ((dd * A) * 0.5);\n\t} else {\n\t\tvar p: f32 = (0.5 + (0.5 * sin((((t * sp) * 0.8) - 1.5708))));\n\t\tb.z += ((dd * A) * ((0.4 + ((1.8 * p) * p))));\n\t\t{ let _sw2 = (b.xy * vec2f((1.0 + ((((dd * A) * 0.5) * p) * p)))); b = vec3f(_sw2.x, _sw2.y, b.z); }\n\t}\n\tvar a: f32 = ((t * sp) * 0.8);\n\t{ let _sw3 = (b.xy + ((((vec2f(cos(a), (sin(a) * 0.55)) * dd) * fr.uDepthP.z) * A) * 0.4)); b = vec3f(_sw3.x, _sw3.y, b.z); }\n\treturn b;\n}\n\nfn hyperWarp(p_in: vec3f, c_in: vec3f, R_in: f32, md_in: f32, a_in: f32, w4: ptr<function, f32>) -> vec3f {\n\tvar p: vec3f = p_in;\n\tvar c: vec3f = c_in;\n\tvar R: f32 = R_in;\n\tvar md: f32 = md_in;\n\tvar a: f32 = a_in;\n\tvar q: vec3f = (((p - c)) / R);\n\tvar r2: f32 = dot(q, q);\n\tvar h: vec4f = (vec4f((2.0 * q), (r2 - 1.0)) / ((r2 + 1.0)));\n\tvar ca: f32 = cos(a);\n\tvar sa: f32 = sin(a);\n\tif ((md < 0.5)) {\n\t\t{ let _sw4 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw4.x, _sw4.y); }\n\t} else if ((md < 1.5)) {\n\t\t{ let _sw5 = vec2f(((h.x * ca) - (h.y * sa)), ((h.x * sa) + (h.y * ca))); h = vec4f(_sw5.x, _sw5.y, h.z, h.w); }\n\t\t{ let _sw6 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw6.x, _sw6.y); }\n\t} else if ((md < 2.5)) {\n\t\t{ let _sw7 = vec2f(((h.x * ca) - (h.w * sa)), ((h.x * sa) + (h.w * ca))); h = vec4f(_sw7.x, h.y, h.z, _sw7.y); }\n\t\tvar cb: f32 = cos((a * 0.618));\n\t\tvar sb: f32 = sin((a * 0.618));\n\t\t{ let _sw8 = vec2f(((h.y * cb) - (h.z * sb)), ((h.y * sb) + (h.z * cb))); h = vec4f(h.x, _sw8.x, _sw8.y, h.w); }\n\t} else {\n\t\tvar b: f32 = (2.4 * sin(a));\n\t\tvar cb: f32 = cos(b);\n\t\tvar sb: f32 = sin(b);\n\t\t{ let _sw9 = vec2f(((h.z * cb) - (h.w * sb)), ((h.z * sb) + (h.w * cb))); h = vec4f(h.x, h.y, _sw9.x, _sw9.y); }\n\t}\n\t(*w4) = h.w;\n\tvar o: vec3f = ((h.xyz / max((1.0 - h.w), 0.03)) * R);\n\tvar ol: f32 = length(o);\n\tvar oc: f32 = select((1.8 + ((1.0 - exp(-((ol - 1.8)))))), ol, (ol < 1.8));\n\treturn (c + (o * ((oc / max(ol, 1e-4)))));\n}\n\nfn chF(q_in: vec3f, n_in: f32, m_in: f32) -> f32 {\n\tvar q: vec3f = q_in;\n\tvar n: f32 = n_in;\n\tvar m: f32 = m_in;\n\tvar f: f32 = ((cos((n * q.x)) * cos((m * q.y))) - (cos((m * q.x)) * cos((n * q.y))));\n\tif ((fr.uFlat > 0.5)) {\n\t\treturn f;\n\t}\n\treturn ((((f + (cos((n * q.y)) * cos((m * q.z)))) - (cos((m * q.y)) * cos((n * q.z)))) + (cos((n * q.z)) * cos((m * q.x)))) - (cos((m * q.z)) * cos((n * q.x))));\n}\n\nfn chField(q_in: vec3f) -> f32 {\n\tvar q: vec3f = q_in;\n\tif ((fr.uCh.y < 0.001)) {\n\t\treturn chF(q, fr.uChA.x, fr.uChA.y);\n\t}\n\tif ((fr.uCh.y > 0.999)) {\n\t\treturn chF(q, fr.uChA.z, fr.uChA.w);\n\t}\n\treturn mix(chF(q, fr.uChA.x, fr.uChA.y), chF(q, fr.uChA.z, fr.uChA.w), fr.uCh.y);\n}\n\nfn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<function, vec3f>, maskV: ptr<function, f32>) -> vec3f {\n\tvar aOrigin: vec3f = aOrigin_in;\n\tvar aTarget: vec3f = aTarget_in;\n\tvar aIdx: f32 = aIdx_in;\n\tvar t: f32 = (fr.uTime - fr.uTOff);\n\tvar m: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));\n\t(*base) = aTarget;\n\tif (((fr.uFr.x > 0.5) && (fr.uMorph > 0.9999))) {\n\t\tvar fnrm: vec3f;\n\t\tvar fk: f32;\n\t\tvar fcell: vec2f;\n\t\t(*base) = frBlockPos(aIdx, &fnrm, &fk, &fcell);\n\t}\n\tif ((fr.uMorph < 0.9999)) {\n\t\tvar lt: f32 = morphLocal(aOrigin, aTarget, aIdx);\n\t\tvar e: f32 = morphEase(lt);\n\t\tvar sc: f32 = fr.uMorphS.y;\n\t\tvar sty: i32 = i32((fr.uMorphS.x + 0.5));\n\t\tvar mid: vec3f = (((aOrigin + aTarget)) * 0.5);\n\t\tvar cn: vec3f = curlNoise(((mid * 1.8) + vec3f(0.0, (t * 0.3), 0.0)));\n\t\tvar hA: f32 = hash11((aIdx * 5.31));\n\t\tvar hB: f32 = hash11((aIdx * 7.77));\n\t\tvar hC: f32 = hash11((aIdx * 2.13));\n\t\tvar flightK: f32 = sin((e * 3.1415926535));\n\t\tvar ctrl: vec3f = (mid + ((cn * sc) * 0.9));\n\t\tif ((sty == 3)) {\n\t\t\tctrl = (mid + ((cn * sc) * 0.3));\n\t\t}\n\t\tvar om: f32 = (1.0 - e);\n\t\t(*base) = ((((om * om) * aOrigin) + (((2.0 * om) * e) * ctrl)) + ((e * e) * aTarget));\n\t\tif ((sty == 0)) {\n\t\t\tvar fq: f32 = pow(flightK, 1.2);\n\t\t\tvar tb1: vec3f = curlNoise((((*base) * 1.35) + vec3f(0.0, 0.0, (t * 0.35))));\n\t\t\tvar tb2: vec3f = curlNoise((((*base) * 3.2) - vec3f((t * 0.55), 0.0, 0.0)));\n\t\t\t(*base) += (((((tb1 * 0.5) + (tb2 * 0.18))) * sc) * fq);\n\t\t}\n\t\tif ((sty == 1)) {\n\t\t\tvar vxz: vec2f = ((*base).xz - fr.uCen.xz);\n\t\t\tvar vr: f32 = length(vxz);\n\t\t\tvar vang: f32 = ((((sin((e * 3.1415926535)) * fr.uMorphS.w) * 6.2831853) * ((0.7 + (0.3 * hash11((aIdx * 1.3)))))) * pow((1.0 / ((0.32 + vr))), 0.5));\n\t\t\tvar vcs: f32 = cos(vang);\n\t\t\tvar vsn: f32 = sin(vang);\n\t\t\tvxz = vec2f(((vxz.x * vcs) - (vxz.y * vsn)), ((vxz.x * vsn) + (vxz.y * vcs)));\n\t\t\tvxz *= vec2f((1.0 - ((0.38 * flightK) * smoothstep(0.0, 1.1, vr))));\n\t\t\t{ let _sw10 = (fr.uCen.xz + vxz); (*base) = vec3f(_sw10.x, (*base).y, _sw10.y); }\n\t\t\t(*base).y += ((((((hB - 0.3)) * 0.35) * sc) * flightK) * flightK);\n\t\t}\n\t\tif ((sty == 3)) {\n\t\t\tvar band: f32 = (smoothstep(0.0, 0.3, lt) * ((1.0 - smoothstep(0.6, 1.0, lt))));\n\t\t\tvar sq: vec3f = ((((floor(((((*base) - fr.uCen)) * 20.0)) + 0.5)) / 20.0) + fr.uCen);\n\t\t\t(*base) = mix((*base), sq, (band * 0.8));\n\t\t\t(*base) += ((((vec3f(hA, hB, hC) - 0.5)) * 0.045) * band);\n\t\t}\n\t\tif ((sty == 4)) {\n\t\t\tvar H: f32 = (((0.45 + (0.85 * hA))) * sc);\n\t\t\tvar cloud: vec3f = ((aOrigin + vec3f(0.0, H, 0.0)) + (((((cn * ((0.5 + (0.7 * hB)))) + (((vec3f(hA, hC, hB) - 0.5)) * 0.45))) * sc) * 0.8));\n\t\t\tvar k1: f32 = clamp((e / 0.5), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);\n\t\t\tvar u1: f32 = (1.0 - pow((1.0 - k1), 2.4));\n\t\t\tvar u2: f32 = (1.0 - pow((1.0 - k2), 2.0));\n\t\t\tvar p1: vec3f = (mix(aOrigin, cloud, u1) + (((curlNoise(((aOrigin * 2.0) + vec3f(0.0, (t * 0.4), 0.0))) * 0.12) * sc) * sin((k1 * 3.1415926535))));\n\t\t\tvar p2: vec3f = (mix(cloud, aTarget, u2) + ((((curlNoise(((cloud * 1.5) + vec3f((t * 0.3), 0.0, 0.0))) * 0.1) * sc) * sin((k2 * 3.1415926535))) * ((1.0 - k2))));\n\t\t\t(*base) = select(p2, p1, (e < 0.5));\n\t\t}\n\t\tif ((sty == 5)) {\n\t\t\tvar fl5: f32 = (fr.uYR.x - 0.02);\n\t\t\tvar R5: f32 = (0.55 + (0.35 * sc));\n\t\t\tvar an5: f32 = (hA * 6.2831853);\n\t\t\tvar rr5: f32 = (sqrt(hB) * R5);\n\t\t\tvar hh5: f32 = ((pow(max(0.0, (1.0 - (rr5 / R5))), 0.85) * 0.85) * ((0.7 + (0.3 * hC))));\n\t\t\tvar heap: vec3f = vec3f((fr.uCen.x + (cos(an5) * rr5)), (fl5 + hh5), (fr.uCen.z + (sin(an5) * rr5)));\n\t\t\tvar k1: f32 = clamp((e / 0.5), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);\n\t\t\tvar fall: f32 = (k1 * k1);\n\t\t\tvar slide: f32 = (1.0 - pow((1.0 - k1), 2.0));\n\t\t\tvar p1: vec3f = vec3f(mix(aOrigin.x, heap.x, slide), mix(aOrigin.y, heap.y, fall), mix(aOrigin.z, heap.z, slide));\n\t\t\t{ let _sw11 = (p1.xz + ((((vec2f(hA, hC) - 0.5)) * 0.06) * sin((k1 * 3.1415926535)))); p1 = vec3f(_sw11.x, p1.y, _sw11.y); }\n\t\t\tvar gr: f32 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tvar p2: vec3f = mix(heap, aTarget, gr);\n\t\t\tp2.y += (((0.3 * sc) * sin((k2 * 3.1415926535))) * ((0.4 + hA)));\n\t\t\tp2 += ((cn * 0.12) * sin((k2 * 3.1415926535)));\n\t\t\t(*base) = select(p2, p1, (e < 0.5));\n\t\t}\n\t\tif ((sty == 2)) {\n\t\t\tvar fl: f32 = (fr.uYR.x - 0.04);\n\t\t\tvar h1: f32 = hA;\n\t\t\tvar h2: f32 = hB;\n\t\t\tvar h3: f32 = hC;\n\t\t\tvar dx: vec3f = normalize(((vec3f(aOrigin.x, 0.0, aOrigin.z) + (vec3f((h1 - 0.5), 0.0, (h2 - 0.5)) * 0.9)) + vec3f(1e-3, 0.0, 0.0)));\n\t\t\tvar spd: f32 = (((0.35 + (h3 * 1.1))) * sc);\n\t\t\tvar vy0: f32 = (((0.5 + (h2 * 1.3))) * sc);\n\t\t\tvar te: f32 = clamp((lt / 0.45), 0.0, 1.0);\n\t\t\tvar tau: f32 = (te * 1.6);\n\t\t\tvar gy: f32 = (fl + (h1 * 0.03));\n\t\t\tvar pl: vec3f = aOrigin;\n\t\t\t{ let _sw12 = (pl.xz + (((dx.xz * spd) * ((1.0 - exp(-3.52)))) * 1.4)); pl = vec3f(_sw12.x, pl.y, _sw12.y); }\n\t\t\tpl.y = gy;\n\t\t\tvar pf: vec3f = aOrigin;\n\t\t\t{ let _sw13 = (pf.xz + (((dx.xz * spd) * ((1.0 - exp((-2.2 * tau))))) * 1.4)); pf = vec3f(_sw13.x, pf.y, _sw13.y); }\n\t\t\tvar g2: f32 = 2.1;\n\t\t\tvar disc: f32 = ((vy0 * vy0) + ((4.0 * g2) * max((aOrigin.y - gy), 0.0)));\n\t\t\tvar tL: f32 = (((vy0 + sqrt(disc))) / ((2.0 * g2)));\n\t\t\tvar yb: f32 = ((aOrigin.y + (vy0 * tau)) - ((g2 * tau) * tau));\n\t\t\tif ((tau > tL)) {\n\t\t\t\tvar vI: f32 = (vy0 - ((2.0 * g2) * tL));\n\t\t\t\tvar v1: f32 = (-0.3 * vI);\n\t\t\t\tvar tb: f32 = (tau - tL);\n\t\t\t\tyb = select(gy, ((gy + (v1 * tb)) - ((g2 * tb) * tb)), (tb < (v1 / g2)));\n\t\t\t}\n\t\t\tpf.y = mix(max(yb, gy), gy, smoothstep(0.9, 1.0, te));\n\t\t\tvar tg: f32 = clamp((((lt - 0.58)) / 0.42), 0.0, 1.0);\n\t\t\tvar eg: f32 = ((tg * tg) * ((3.0 - (2.0 * tg))));\n\t\t\tvar c2: vec3f = (((((pl + aTarget)) * 0.5) + vec3f(0.0, (0.5 + (0.6 * h2)), 0.0)) + ((cn * 0.2) * sc));\n\t\t\tvar og: f32 = (1.0 - eg);\n\t\t\tvar pg: vec3f = ((((og * og) * pl) + (((2.0 * og) * eg) * c2)) + ((eg * eg) * aTarget));\n\t\t\t(*base) = select((select(pg, pl, (lt < 0.58))), pf, (lt < 0.45));\n\t\t}\n\t\tif ((sty == 6)) {\n\t\t\tvar hw4: f32;\n\t\t\tvar q4: vec3f = mix(aOrigin, aTarget, smoothstep(0.38, 0.62, e));\n\t\t\t(*base) = hyperWarp(q4, fr.uCen, (1.3 * max(sc, 0.15)), select(0.0, 1.0, (fr.uMorphS.w > 1.05)), ((2.4 * sin((e * 3.1415926535))) * ((0.85 + (0.15 * hash11((aIdx * 2.7)))))), &hw4);\n\t\t\tgHypW = hw4;\n\t\t\tgHypF = max(gHypF, smoothstep(0.55, 0.97, hw4));\n\t\t}\n\t\tif ((sty == 7)) {\n\t\t\tvar co7: vec3f = (aOrigin - fr.uCen);\n\t\t\tvar ct7: vec3f = (aTarget - fr.uCen);\n\t\t\tvar d17: vec3f = normalize((co7 + vec3f(1e-3)));\n\t\t\tvar d27: vec3f = normalize((ct7 + vec3f(1e-3)));\n\t\t\tvar R7: f32 = (0.7 + (0.5 * sc));\n\t\t\tvar k1: f32 = clamp((e / 0.35), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.35)) / 0.3), 0.0, 1.0);\n\t\t\tvar k3: f32 = clamp((((e - 0.65)) / 0.35), 0.0, 1.0);\n\t\t\tk1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));\n\t\t\tk2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tk3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));\n\t\t\tif ((e < 0.35)) {\n\t\t\t\t(*base) = mix(aOrigin, (fr.uCen + (d17 * R7)), k1);\n\t\t\t} else if ((e < 0.65)) {\n\t\t\t\t(*base) = (fr.uCen + (normalize((mix(d17, d27, k2) + vec3f(1e-3))) * R7));\n\t\t\t} else {\n\t\t\t\t(*base) = mix((fr.uCen + (d27 * R7)), aTarget, k3);\n\t\t\t}\n\t\t\t(*base) += (((normalize((((*base) - fr.uCen) + vec3f(1e-3))) * 0.05) * sin(((dot(d17, vec3f(5.0, 7.0, 3.0)) * 2.0) + (t * 3.0)))) * sin((clamp(e, 0.0, 1.0) * 3.1415926535)));\n\t\t}\n\t\tif ((sty == 8)) {\n\t\t\tvar ch8: f32 = hash11(dot(floor((((aOrigin - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));\n\t\t\tvar c8: vec3f = (mid + vec3f(0.0, (((0.35 + (0.8 * ch8))) * sc), 0.0));\n\t\t\t(*base) = ((((om * om) * aOrigin) + (((2.0 * om) * e) * c8)) + ((e * e) * aTarget));\n\t\t}\n\t\tif ((sty == 9)) {\n\t\t\tvar q9a: vec3f = (aOrigin - fr.uCen);\n\t\t\tvar q9b: vec3f = (aTarget - fr.uCen);\n\t\t\tvar k1: f32 = clamp((e / 0.4), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.4)) / 0.2), 0.0, 1.0);\n\t\t\tvar k3: f32 = clamp((((e - 0.6)) / 0.4), 0.0, 1.0);\n\t\t\tk1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));\n\t\t\tk2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tk3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));\n\t\t\tvar fa: vec3f = vec3f(0.0, q9a.y, q9a.z);\n\t\t\tvar fb: vec3f = vec3f(0.0, q9b.y, q9b.z);\n\t\t\tif ((e < 0.4)) {\n\t\t\t\t(*base) = (fr.uCen + mix(q9a, fa, k1));\n\t\t\t} else if ((e < 0.6)) {\n\t\t\t\t(*base) = (fr.uCen + mix(fa, fb, k2));\n\t\t\t} else {\n\t\t\t\t(*base) = (fr.uCen + mix(fb, q9b, k3));\n\t\t\t}\n\t\t}\n\t\tif ((sty == 10)) {\n\t\t\tvar dz: f32 = (1.6 * max(sc, 0.3));\n\t\t\tvar RA: vec3f = (aOrigin + vec3f(0.0, 0.0, ((((gDepth - 0.5)) * dz) * fr.uMorphD.x)));\n\t\t\tvar RB: vec3f = (aTarget + vec3f(0.0, 0.0, ((((gDepth - 0.5)) * dz) * fr.uMorphD.y)));\n\t\t\tvar k1: f32 = clamp((e / 0.3), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.3)) / 0.4), 0.0, 1.0);\n\t\t\tvar k3: f32 = clamp((((e - 0.7)) / 0.3), 0.0, 1.0);\n\t\t\tk1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));\n\t\t\tk2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tk3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));\n\t\t\tvar c10: vec3f = (((((RA + RB)) * 0.5) + vec3f(0.0, 0.0, ((((0.3 + gDepth)) * 0.7) * sc))) + ((cn * 0.25) * sc));\n\t\t\tvar o10: f32 = (1.0 - k2);\n\t\t\tvar mid10: vec3f = ((((o10 * o10) * RA) + (((2.0 * o10) * k2) * c10)) + ((k2 * k2) * RB));\n\t\t\tif ((e < 0.3)) {\n\t\t\t\t(*base) = mix(aOrigin, RA, k1);\n\t\t\t} else if ((e < 0.7)) {\n\t\t\t\t(*base) = mid10;\n\t\t\t} else {\n\t\t\t\t(*base) = mix(RB, aTarget, k3);\n\t\t\t}\n\t\t}\n\t\tif ((sty == 11)) {\n\t\t\tvar head: vec3f = vec3f(fr.uCen.x, (fr.uYR.y + 0.45), fr.uCen.z);\n\t\t\tvar nozzle: vec3f = (aTarget + vec3f(0.0, 0.22, 0.0));\n\t\t\tvar k1: f32 = clamp((e / 0.55), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.55)) / 0.45), 0.0, 1.0);\n\t\t\tvar g11: vec3f = (mix(aOrigin, head, ((k1 * k1) * ((3.0 - (2.0 * k1))))) + (((cn * 0.15) * sc) * sin((k1 * 3.1415926535))));\n\t\t\tvar o11: f32 = (1.0 - k2);\n\t\t\tvar p11: vec3f = ((((o11 * o11) * head) + (((2.0 * o11) * k2) * vec3f(nozzle.x, head.y, nozzle.z))) + ((k2 * k2) * nozzle));\n\t\t\tp11 = mix(p11, aTarget, smoothstep(0.85, 1.0, k2));\n\t\t\t(*base) = select(p11, g11, (e < 0.55));\n\t\t}\n\t\tif ((sty == 12)) {\n\t\t\tvar a12: f32 = ((hA * 6.2831853) + (t * 2.4));\n\t\t\tvar ring: vec3f = (fr.uCen + ((vec3f(cos(a12), sin(a12), 0.0) * ((0.32 + (0.06 * hB)))) * ((0.6 + (0.4 * sc)))));\n\t\t\tvar k1: f32 = clamp((e / 0.5), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);\n\t\t\tvar qa: vec3f = (aOrigin - fr.uCen);\n\t\t\tvar qb: vec3f = (aTarget - fr.uCen);\n\t\t\tvar sw1: f32 = ((k1 * k1) * 5.0);\n\t\t\tvar sw2: f32 = ((((1.0 - k2)) * ((1.0 - k2))) * 5.0);\n\t\t\tvar ra: vec3f = (fr.uCen + vec3f(((qa.x * cos(sw1)) - (qa.y * sin(sw1))), ((qa.x * sin(sw1)) + (qa.y * cos(sw1))), qa.z));\n\t\t\tvar rb: vec3f = (fr.uCen + vec3f(((qb.x * cos(sw2)) - (qb.y * sin(sw2))), ((qb.x * sin(sw2)) + (qb.y * cos(sw2))), qb.z));\n\t\t\tvar p1: vec3f = mix(ra, ring, ((k1 * k1) * ((3.0 - (2.0 * k1)))));\n\t\t\tvar p2: vec3f = mix(ring, rb, ((k2 * k2) * ((3.0 - (2.0 * k2)))));\n\t\t\t(*base) = select(p2, p1, (e < 0.5));\n\t\t}\n\t\tif ((sty == 13)) {\n\t\t\tvar ca: vec3f = ((((floor((((aOrigin - fr.uCen)) * 3.0)) + 0.5)) / 3.0) + fr.uCen);\n\t\t\tvar cb: vec3f = ((((floor((((aTarget - fr.uCen)) * 3.0)) + 0.5)) / 3.0) + fr.uCen);\n\t\t\tvar sa: f32 = hash11(dot(floor((((aOrigin - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));\n\t\t\tvar sb: f32 = hash11(dot(floor((((aTarget - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));\n\t\t\tvar k1: f32 = clamp((e / 0.6), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((1.0 - e)) / 0.6), 0.0, 1.0);\n\t\t\tvar da: vec3f = normalize((((ca - fr.uCen) + (vec3f((sa - 0.5), 0.3, 0.2) * 0.6)) + vec3f(1e-3)));\n\t\t\tvar db: vec3f = normalize((((cb - fr.uCen) + (vec3f((sb - 0.5), 0.3, 0.2) * 0.6)) + vec3f(1e-3)));\n\t\t\tvar ra: f32 = ((k1 * 3.1415926535) * ((0.8 + (1.6 * sa))));\n\t\t\tvar rb: f32 = ((k2 * 3.1415926535) * ((0.8 + (1.6 * sb))));\n\t\t\tvar la: vec3f = (aOrigin - ca);\n\t\t\tvar lb: vec3f = (aTarget - cb);\n\t\t\tla = vec3f(((la.x * cos(ra)) - (la.y * sin(ra))), ((la.x * sin(ra)) + (la.y * cos(ra))), la.z);\n\t\t\tlb = vec3f(((lb.x * cos(rb)) - (lb.y * sin(rb))), ((lb.x * sin(rb)) + (lb.y * cos(rb))), lb.z);\n\t\t\tvar P1: vec3f = (((ca + la) + ((((da * k1) * k1) * 1.3) * sc)) - vec3f(0.0, (((0.9 * k1) * k1) * k1), 0.0));\n\t\t\tvar P2: vec3f = (((cb + lb) + ((((db * k2) * k2) * 1.3) * sc)) - vec3f(0.0, (((0.9 * k2) * k2) * k2), 0.0));\n\t\t\t(*base) = mix(P1, P2, smoothstep(0.42, 0.58, e));\n\t\t}\n\t\tif ((sty == 14)) {\n\t\t\tvar ab: vec3f = (aTarget - aOrigin);\n\t\t\tvar L14: f32 = length(ab);\n\t\t\tvar ax: vec3f = select(vec3f(0.0, 1.0, 0.0), (ab / L14), (L14 > 1e-4));\n\t\t\tvar n1: vec3f = normalize(cross(ax, select(vec3f(1.0, 0.0, 0.0), vec3f(0.0, 1.0, 0.0), (abs(ax.y) < 0.9))));\n\t\t\tvar n2: vec3f = cross(ax, n1);\n\t\t\tvar bund: f32 = ((floor((hA * 10.0)) / 10.0) * 6.2831853);\n\t\t\tvar nb: vec3f = ((n1 * cos(bund)) + (n2 * sin(bund)));\n\t\t\t(*base) = (mix(aOrigin, aTarget, e) + ((((nb * sin((e * 3.1415926535))) * ((0.25 + (0.55 * L14)))) * sc) * ((0.85 + (0.3 * hB)))));\n\t\t}\n\t\tif ((abs(fr.uMorphD.z) > 0.001)) {\n\t\t\tvar sm: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));\n\t\t\tvar ra: f32 = ((fr.uMorphD.z * 6.2831853) * sm);\n\t\t\tvar q: vec3f = ((*base) - fr.uCen);\n\t\t\t(*base) = (fr.uCen + vec3f(((q.x * cos(ra)) - (q.z * sin(ra))), q.y, ((q.x * sin(ra)) + (q.z * cos(ra)))));\n\t\t}\n\t}\n\tif (((fr.uMorph < 0.9999) && (fr.uMorphO.w > 0.001))) {\n\t\t(*base).z += ((((((gDepth - 0.5)) * 2.0) * fr.uMorphO.w) * sin((morphEase(morphLocal(aOrigin, aTarget, aIdx)) * 3.1415926535))) * ((0.6 + (0.4 * hash11((aIdx * 4.1))))));\n\t}\n\tif ((fr.uDepth.x > 0.001)) {\n\t\t(*base) = depthShape((*base));\n\t}\n\tvar rad: vec3f = normalize(((*base) + vec3f(1e-4)));\n\trad = normalize(mix(rad, vec3f(0.0, 0.0, 1.0), (0.8 * fr.uFlat)));\n\tif (((fr.uAnimN > 0.5) && (dot(gNormal, gNormal) > 0.01))) {\n\t\trad = normalize(gNormal);\n\t}\n\tvar pos: vec3f = (*base);\n\tif ((fr.uCh.x > 0.001)) {\n\t\tvar chh: f32 = (max((fr.uYR.y - fr.uYR.x), 0.5) * 0.5);\n\t\tvar chk: f32 = ((1.5708 * fr.uCh.z) / chh);\n\t\tvar chq: vec3f = (((pos - fr.uCen)) * chk);\n\t\tvar chn: vec3f = select((select(rad, normalize(gNormal), (dot(gNormal, gNormal) > 0.01))), vec3f(0.0, 0.0, 1.0), (fr.uFlat > 0.5));\n\t\tfor (var ci: i32 = 0; (ci < 4); ci++) {\n\t\t\tvar cf: f32 = chField(chq);\n\t\t\tvar cg: vec3f = (vec3f((chField((chq + vec3f(0.02, 0.0, 0.0))) - cf), (chField((chq + vec3f(0.0, 0.02, 0.0))) - cf), (chField((chq + vec3f(0.0, 0.0, 0.02))) - cf)) / 0.02);\n\t\t\tcg -= (chn * dot(cg, chn));\n\t\t\tvar cst: vec3f = ((-cf * cg) / max(dot(cg, cg), 0.01));\n\t\t\tvar csl: f32 = length(cst);\n\t\t\tif ((csl > 0.7)) {\n\t\t\t\tcst *= vec3f((0.7 / csl));\n\t\t\t}\n\t\t\tchq += cst;\n\t\t}\n\t\tvar cfe: f32 = abs(chField(chq));\n\t\tgChN = exp((-cfe * 5.0));\n\t\tvar ctk: f32 = floor((t * 30.0));\n\t\tvar cbz: vec3f = (((((vec3f(hash11(((aIdx * 3.1) + ctk)), hash11(((aIdx * 5.7) + ctk)), hash11(((aIdx * 1.3) + ctk))) - 0.5)) * ((1.0 - gChN))) * fr.uCh.w) * ((0.03 + (fr.uBeat * 0.05))));\n\t\tpos = mix(pos, ((fr.uCen + (chq / chk)) + cbz), min(fr.uCh.x, 1.0));\n\t}\n\tif ((fr.uTwist.x > 0.001)) {\n\t\tvar y01t: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar tw: f32 = (fr.uTwist.x * ((1.0 + (select(0.0, (0.35 * sin(((t * fr.uTwist.z) * 2.0))), (fr.uTwist.z > 0.01))))));\n\t\tif ((fr.uTwist.y < 0.5)) {\n\t\t\tvar a: f32 = ((pos.y * tw) * 1.6);\n\t\t\tvar c: f32 = cos(a);\n\t\t\tvar s: f32 = sin(a);\n\t\t\t{ let _sw14 = (mat2x2f(c, -s, s, c) * pos.xz); pos = vec3f(_sw14.x, pos.y, _sw14.y); }\n\t\t} else if ((fr.uTwist.y < 1.5)) {\n\t\t\tpos.x += (((y01t * y01t) * tw) * 0.9);\n\t\t\tpos.y -= ((((y01t * y01t) * y01t) * tw) * 0.16);\n\t\t} else if ((fr.uTwist.y < 2.5)) {\n\t\t\t{ let _sw15 = (pos.xz * vec2f((1.0 + (((tw * 0.6) * ((0.5 - y01t))) * 2.0)))); pos = vec3f(_sw15.x, pos.y, _sw15.y); }\n\t\t} else if ((fr.uTwist.y < 3.5)) {\n\t\t\tvar sw: f32 = sin(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z)))));\n\t\t\tpos.x += ((sw * tw) * 0.2);\n\t\t\tpos.z += ((cos(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z))))) * tw) * 0.12);\n\t\t} else {\n\t\t\t{ let _sw16 = (pos.xz * vec2f((1.0 + ((tw * 0.3) * sin(((y01t * 6.2831) - (t * ((1.2 + fr.uTwist.z))))))))); pos = vec3f(_sw16.x, pos.y, _sw16.y); }\n\t\t}\n\t}\n\tif ((fr.uWave.x > 0.001)) {\n\t\tvar wv: f32 = 0.0;\n\t\tif ((fr.uWaveP.y < 0.5)) {\n\t\t\twv = sin((((distance((*base), fr.uWaveSrc.xyz) * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t} else if ((fr.uWaveP.y < 1.5)) {\n\t\t\tvar age: f32 = (fr.uTime - fr.uWaveP.w);\n\t\t\tif ((age > 0.0)) {\n\t\t\t\tvar d: f32 = distance((*base), fr.uWaveSrc.xyz);\n\t\t\t\tvar ring: f32 = ((age * fr.uWaveP.x) * 1.3);\n\t\t\t\twv = ((sin(((((d - ring)) * fr.uWave.y) * 2.6)) * exp((-abs((d - ring)) * 2.5))) * exp((-age * fr.uWaveP.z)));\n\t\t\t}\n\t\t} else if ((fr.uWaveP.y < 2.5)) {\n\t\t\tvar wd: vec3f = vec3f(cos(fr.uWaveSrc.w), 0.0, sin(fr.uWaveSrc.w));\n\t\t\twv = sin((((dot((*base), wd) * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t} else if ((fr.uWaveP.y < 3.5)) {\n\t\t\tvar yw: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\t\twv = sin((((atan2(((*base).z - fr.uCen.z), ((*base).x - fr.uCen.x)) * 3.0) + ((yw * fr.uWave.y) * 1.3)) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t} else {\n\t\t\twv = sin(((((*base).y * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t}\n\t\tpos += ((((rad * wv) * fr.uWave.x) * 0.14) * ((1.0 + (1.5 * fr.uFlat))));\n\t}\n\tif ((fr.uSpec.x > 0.001)) {\n\t\tvar y01s: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tif ((fr.uSpec.y < 0.5)) {\n\t\t\tpos += (((rad * textureSampleLevel(specTex, linSamp, vec2f((abs(atan2((*base).z, (*base).x)) / 3.1415926535), 0.5), 0.0).r) * fr.uSpec.x) * 0.7);\n\t\t} else if ((fr.uSpec.y < 1.5)) {\n\t\t\tpos += (((rad * textureSampleLevel(specTex, linSamp, vec2f(y01s, 0.5), 0.0).r) * fr.uSpec.x) * 0.7);\n\t\t} else if ((fr.uSpec.y < 2.5)) {\n\t\t\tvar ub: f32 = (floor(((abs(atan2((*base).z, (*base).x)) / 3.1415926535) * fr.uSpecP.y)) / fr.uSpecP.y);\n\t\t\tpos += (((rad * textureSampleLevel(specTex, linSamp, vec2f(ub, 0.5), 0.0).r) * fr.uSpec.x) * 0.8);\n\t\t} else {\n\t\t\tvar xs: f32 = clamp((abs((*base).x) / 1.2), 0.0, 1.0);\n\t\t\tpos.y += (((textureSampleLevel(specTex, linSamp, vec2f(xs, 0.5), 0.0).r * fr.uSpec.x) * 0.8) * ((0.35 + (0.65 * y01s))));\n\t\t}\n\t}\n\tvar pe: f32 = fr.uPulse.x;\n\tif ((fr.uPulseP.x > 0.5)) {\n\t\tvar age: f32 = ((fr.uTime - fr.uPulseP.z) - (length((*base)) * fr.uPulseP.y));\n\t\tvar env: f32 = select(0.0, (exp(((-age * 3.2) * fr.uPulseP.w)) * smoothstep(0.0, 0.04, age)), (age > 0.0));\n\t\tvar age2: f32 = (age - 0.2);\n\t\tenv += select(0.0, ((0.55 * exp(((-age2 * 3.2) * fr.uPulseP.w))) * smoothstep(0.0, 0.04, age2)), (age2 > 0.0));\n\t\tpe = ((fr.uPulse.x * env) * 1.6);\n\t\tif ((fr.uPulseP.x > 1.5)) {\n\t\t\tpos.y *= (1.0 + (pe * 0.2));\n\t\t\t{ let _sw17 = (pos.xz * vec2f((1.0 - (pe * 0.11)))); pos = vec3f(_sw17.x, pos.y, _sw17.y); }\n\t\t\tpe = 0.0;\n\t\t}\n\t}\n\tpos += (((rad * pe) * 0.28) * ((1.0 + (1.5 * fr.uFlat))));\n\tpos *= vec3f((1.0 + (pe * 0.1)));\n\tif ((fr.uBlast.x > 0.001)) {\n\t\tvar age: f32 = (fr.uTime - fr.uBlast.w);\n\t\tif ((age > 0.0)) {\n\t\t\tvar env: f32 = (exp((-age * fr.uBlast.y)) * cos(((age * fr.uBlast.y) * 3.0)));\n\t\t\tvar rnd: f32 = (0.45 + (0.55 * mix(1.0, hash11((aIdx * 7.1)), fr.uBlast.z)));\n\t\t\tvar dir: vec3f = normalize((rad + ((((vec3f(hash11(aIdx), hash11((aIdx + 1.0)), hash11((aIdx + 2.0))) - 0.5)) * 0.7) * fr.uBlast.z)));\n\t\t\tpos += ((((dir * env) * rnd) * fr.uBlast.x) * 0.75);\n\t\t}\n\t}\n\tif ((fr.uFlow.x > 0.001)) {\n\t\tvar fc: vec3f = curlNoise((((*base) * fr.uFlow.y) + vec3f(0.0, ((t * fr.uFlow.z) * 0.1), 0.0)));\n\t\tvar tg: vec3f = normalize(((fc - (rad * dot(fc, rad))) + vec3f(1e-4)));\n\t\ttg = ((tg * cos(fr.uFlow.w)) + (cross(rad, tg) * sin(fr.uFlow.w)));\n\t\tvar ph: f32 = ((t * fr.uFlow.z) + (hash11((aIdx * 5.3)) * 6.2831));\n\t\tpos += (((tg * sin(ph)) * fr.uFlow.x) * 0.24);\n\t}\n\tif (((fr.uMark.x > 3.5) && (fr.uMark.x < 5.5))) {\n\t\tvar mkd: f32 = markK((*base));\n\t\tif ((fr.uMark.x < 4.5)) {\n\t\t\tpos += ((rad * mkd) * 0.22);\n\t\t} else {\n\t\t\tpos = mix(pos, (((floor((pos / 0.06)) + 0.5)) * 0.06), smoothstep(0.0, 0.4, mkd));\n\t\t}\n\t}\n\tif (((fr.uSliceM.x > 0.5) && (fr.uSliceM.x < 1.5))) {\n\t\tpos += ((rad * sliceK((*base))) * fr.uSliceM.y);\n\t}\n\tvar dk: f32 = disK((*base), aIdx);\n\tif ((dk > 0.0)) {\n\t\tvar sc: f32 = fr.uDisQ.y;\n\t\tvar ds: f32 = fr.uDisP.x;\n\t\tvar y01d: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar cl: f32 = floor((aIdx * 1800.0));\n\t\tvar ch: f32 = hash11((cl * 0.731));\n\t\tvar ch2: f32 = hash11(((cl * 1.913) + 3.1));\n\t\tvar cd: vec3f = ((*base) - fr.uCen);\n\t\tvar outd: vec3f = (cd / ((length(cd) + 1e-3)));\n\t\tvar dsp: vec3f = select(((*base) * 1.8), (vec3f(hash11((aIdx * 1.7)), hash11((aIdx * 2.3)), hash11((aIdx * 3.1))) * 8.0), (fr.uAnimN > 0.5));\n\t\tpos += ((((curlNoise((dsp + vec3f(0.0, (-t * 0.6), (t * 0.3)))) * dk) * fr.uDisT) * 0.22) * sc);\n\t\tif ((ds < 0.5)) {\n\t\t\tvar wv: vec3f = vec3f(((fr.uDis.w * 1.4) + 0.2), (-fr.uDis.z * 0.5), 0.3);\n\t\t\tvar sp: f32 = (0.65 + (0.35 * sin(((y01d * 7.0) + (t * 0.8)))));\n\t\t\tpos += (((((wv * dk) * dk) * 1.5) * sp) * sc);\n\t\t} else if ((ds < 1.5)) {\n\t\t\tpos.y += (((dk * dk) * ((0.7 + (0.5 * ch)))) * sc);\n\t\t\t{ let _sw18 = (pos.xz + ((((vec2f(sin(((t * 1.5) + (ch * 6.0))), cos(((t * 1.3) + (ch * 5.0)))) * dk) * 0.1) * sc) + ((vec2f((fr.uDis.w * 0.5), 0.0) * dk) * sc))); pos = vec3f(_sw18.x, pos.y, _sw18.y); }\n\t\t} else if ((ds < 2.5)) {\n\t\t\tpos += ((((outd * dk) * 0.12) * sc) + vec3f(0.0, ((dk * 0.05) * sc), 0.0));\n\t\t} else if ((ds < 3.5)) {\n\t\t\tvar band: f32 = floor(((y01d * 12.0) + 0.001));\n\t\t\tvar sg: f32 = select(-1.0, 1.0, (glsl_mod_f(band, 2.0) < 0.5));\n\t\t\tpos.x += (((((sg * dk) * dk) * 1.7) * sc) + ((fr.uDis.w * dk) * 0.3));\n\t\t\tpos.y -= ((((dk * dk) * fr.uDis.z) * 0.25) * sc);\n\t\t} else if ((ds < 4.5)) {\n\t\t\tvar mv: vec3f = vec3f(((((ch - 0.5)) * 0.9) + (fr.uDis.w * 0.3)), 0.0, (((ch2 - 0.5)) * 0.9));\n\t\t\tpos += ((mv * dk) * sc);\n\t\t\tpos.y = max((pos.y - ((((dk * dk) * ((0.5 + fr.uDis.z))) * 1.8) * sc)), (fr.uYR.x + (ch * 0.05)));\n\t\t} else if ((ds < 5.5)) {\n\t\t\tpos.y = max((pos.y - ((((dk * dk) * ((0.5 + fr.uDis.z))) * 2.2) * sc)), (fr.uYR.x + (hash11((aIdx * 5.1)) * 0.05)));\n\t\t\tpos.x += (((fr.uDis.w * dk) * 0.25) * sc);\n\t\t} else if ((ds < 6.5)) {\n\t\t\tvar q: vec3f = ((*base) - fr.uCen);\n\t\t\tvar ang: f32 = (((dk * dk) * ((3.2 + (fr.uDis.w * 1.2)))) * sc);\n\t\t\tvar cs: f32 = cos(ang);\n\t\t\tvar sn: f32 = sin(ang);\n\t\t\t{ let _sw19 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw19.x, q.y, _sw19.y); }\n\t\t\tq *= vec3f((1.0 - ((0.9 * dk) * dk)));\n\t\t\tpos = ((fr.uCen + q) + vec3f(0.0, (((dk * dk) * 0.45) * sc), 0.0));\n\t\t} else {\n\t\t\tpos += (((outd * pow(dk, 0.7)) * ((1.1 + (0.3 * ch)))) * sc);\n\t\t\tpos.y -= ((((dk * dk) * fr.uDis.z) * 0.8) * sc);\n\t\t}\n\t}\n\tif ((fr.uExp.x > 0.001)) {\n\t\tvar pid: f32 = floor((aIdx * fr.uExp.y));\n\t\tvar pc: vec3f = textureLoad(pieceTex, vec2i(vec2f((((pid + 0.5)) / 256.0), 0.5) * vec2f(textureDimensions(pieceTex))), 0).xyz;\n\t\tvar h1: f32 = hash11((pid * 1.7));\n\t\tvar h2: f32 = hash11((pid * 2.9));\n\t\tvar h3: f32 = hash11((pid * 4.1));\n\t\tvar od: vec3f = (pc - fr.uCen);\n\t\tvar dr: vec3f = normalize(((od + ((((vec3f(h1, h2, h3) - 0.5)) * 0.35) * ((length(od) + 0.3)))) + vec3f(1e-4)));\n\t\tvar ke: f32 = clamp((((fr.uExp.x - (h2 * fr.uExp.z))) / max((1.0 - fr.uExp.z), 0.2)), 0.0, 1.0);\n\t\tke = ((ke * ke) * ((3.0 - (2.0 * ke))));\n\t\tvar ax: vec3f = normalize((vec3f((h1 - 0.5), (h3 - 0.5), (h2 - 0.5)) + vec3f(1e-3)));\n\t\tvar ang: f32 = (((ke * ((h3 - 0.5))) * 3.0) * fr.uExp.w);\n\t\tvar qe: vec3f = (pos - pc);\n\t\tqe = (((qe * cos(ang)) + (cross(ax, qe) * sin(ang))) + ((ax * dot(ax, qe)) * ((1.0 - cos(ang)))));\n\t\tpos = ((pc + qe) + (((dr * ke) * fr.uExpP.x) * ((0.5 + (0.5 * h1)))));\n\t}\n\tif ((fr.uGrowP.z > 0.5)) {\n\t\tgGrow = growK((*base), aIdx);\n\t\tgGrowE = ((gGrow * ((1.0 - gGrow))) * 4.0);\n\t\tpos += (((rad * gGrowE) * fr.uGrowP.x) * 0.12);\n\t\tvar yG: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\t{ let _sw20 = (pos.xz + ((((vec2f(sin(((t * 1.2) + (yG * 5.0))), cos(((t * 0.9) + (yG * 4.0)))) * 0.018) * fr.uGrowP.y) * gGrow) * ((0.3 + yG)))); pos = vec3f(_sw20.x, pos.y, _sw20.y); }\n\t}\n\t{\n\t\tfor (var ji: i32 = 0; (ji < 3); ji++) {\n\t\t\tvar jage: f32 = (fr.uTime - fr.uJel[ji].w);\n\t\t\tif (((jage < 0.0) || (jage > 7.0))) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar jd: f32 = distance((*base), fr.uJelO[ji].xyz);\n\t\t\tvar ja: f32 = (jage - (jd * 0.45));\n\t\t\tif ((ja < 0.0)) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar env: f32 = (exp((-ja * fr.uJelP.y)) * sin((ja * fr.uJelP.x)));\n\t\t\tpos += (((fr.uJel[ji].xyz * env) * fr.uJelP.z) * 0.35);\n\t\t\tpos += ((((((((*base) - fr.uJelO[ji].xyz)) * env) * fr.uJelP.w) * fr.uJelP.z) * 0.16) * length(fr.uJel[ji].xyz));\n\t\t}\n\t}\n\tif ((fr.uGrav.x > 0.001)) {\n\t\tvar gq: vec3f = (pos - fr.uGravP.xyz);\n\t\tvar gr: f32 = (length(gq) + 1e-3);\n\t\tvar gin: f32 = (1.0 - smoothstep((fr.uGravP.w * 0.7), (fr.uGravP.w * 1.7), gr));\n\t\tvar ga: f32 = smoothstep(0.0, 1.0, clamp((fr.uGrav.x * gin), 0.0, 1.0));\n\t\tvar up: vec3f = normalize(vec3f((sin(fr.uGravT.x) * cos(fr.uGravT.y)), cos(fr.uGravT.x), (sin(fr.uGravT.x) * sin(fr.uGravT.y))));\n\t\tvar ref_: vec3f = select(vec3f(1.0, 0.0, 0.0), vec3f(0.0, 1.0, 0.0), (abs(up.y) < 0.99));\n\t\tvar e1: vec3f = normalize(cross(ref_, up));\n\t\tvar e2: vec3f = cross(up, e1);\n\t\tvar lx: f32 = dot(gq, e1);\n\t\tvar lh: f32 = dot(gq, up);\n\t\tvar lz: f32 = dot(gq, e2);\n\t\tif ((fr.uGrav.y < 0.5)) {\n\t\t\tvar ph0: f32 = ((t * fr.uGrav.z) * 0.45);\n\t\t\tvar ang: f32 = (ga * (((ph0 * 0.8) + ((1.3 * sin((ph0 * 0.6))) / ((0.5 + gr))))));\n\t\t\tvar ca: f32 = cos(ang);\n\t\t\tvar sa: f32 = sin(ang);\n\t\t\tvar nx: f32 = ((lx * ca) - (lz * sa));\n\t\t\tvar nz: f32 = ((lx * sa) + (lz * ca));\n\t\t\tvar az: f32 = atan2(nz, nx);\n\t\t\tlh = ((lh * ((1.0 - (fr.uGrav.w * ga)))) + (((0.07 * gr) * sin(((az * 2.0) + (t * 0.4)))) * ga));\n\t\t\tvar arm: f32 = sin((((2.0 * az) - (3.4 * log((gr + 0.15)))) + (t * 0.25)));\n\t\t\tvar ar: f32 = (1.0 + (((0.2 * arm) * ga) * fr.uGrav.w));\n\t\t\tlx = (nx * ar);\n\t\t\tlz = (nz * ar);\n\t\t} else if ((fr.uGrav.y < 1.5)) {\n\t\t\tvar h1: f32 = hash11((aIdx * 91.7));\n\t\t\tvar ph: f32 = fract((((t * 0.16) * fr.uGrav.z) + h1));\n\t\t\tvar sg: f32 = select(-1.0, 1.0, (h1 > 0.5));\n\t\t\tvar r0: f32 = max(gr, 0.08);\n\t\t\tif (((ph < 0.8) || (fr.uGravT.w < 0.01))) {\n\t\t\t\tvar s: f32 = clamp((ph / 0.8), 0.0, 1.0);\n\t\t\t\tvar rr: f32 = ((r0 * pow((1.0 - s), 1.6)) + 0.03);\n\t\t\t\tvar ang: f32 = (((s * s) * 11.0) * ga);\n\t\t\t\tvar az0: f32 = atan2(lz, lx);\n\t\t\t\tvar flt: f32 = (1.0 - ((fr.uGrav.w * s) * ga));\n\t\t\t\tvar ha: f32 = (lh * flt);\n\t\t\t\tvar k: f32 = mix(1.0, (rr / r0), ga);\n\t\t\t\tvar rl: f32 = (length(vec2f(lx, lz)) * k);\n\t\t\t\tlx = (cos((az0 + ang)) * rl);\n\t\t\t\tlz = (sin((az0 + ang)) * rl);\n\t\t\t\tlh = (ha * mix(1.0, (rr / r0), ga));\n\t\t\t} else {\n\t\t\t\tvar u: f32 = (((ph - 0.8)) / 0.2);\n\t\t\t\tvar len: f32 = ((((fr.uGravT.w * ((0.4 + (h1 * 0.9)))) * u) * u) * ga);\n\t\t\t\tvar az0: f32 = (atan2(lz, lx) + (t * 2.0));\n\t\t\t\tlx = ((cos(az0) * 0.05) * ((1.0 - (u * 0.5))));\n\t\t\t\tlz = ((sin(az0) * 0.05) * ((1.0 - (u * 0.5))));\n\t\t\t\tlh = (sg * ((0.08 + len)));\n\t\t\t}\n\t\t} else if ((fr.uGrav.y > 3.5)) {\n\t\t\tvar rr0: f32 = length(vec2f(lx, lz));\n\t\t\tvar ringN: f32 = floor((rr0 * 5.0));\n\t\t\tvar rr1: f32 = mix(rr0, (((ringN + 0.5)) / 5.0), (ga * 0.85));\n\t\t\tvar dirR: f32 = select(-1.0, 1.0, (glsl_mod_f(ringN, 2.0) < 0.5));\n\t\t\tvar az1: f32 = (atan2(lz, lx) + ((((dirR * t) * fr.uGrav.z) * ((0.25 + (0.5 / ((0.4 + rr1)))))) * ga));\n\t\t\tlx = (cos(az1) * rr1);\n\t\t\tlz = (sin(az1) * rr1);\n\t\t\tlh = (lh * ((1.0 - (fr.uGrav.w * ga))));\n\t\t} else if ((fr.uGrav.y > 2.5)) {\n\t\t\tvar q: vec3f = (((e1 * lx) + (up * lh)) + (e2 * lz));\n\t\t\tvar ax: vec3f = normalize((vec3f((hash11((aIdx * 13.1)) - 0.5), (hash11((aIdx * 7.7)) - 0.5), (hash11((aIdx * 3.3)) - 0.5)) + vec3f(1e-3)));\n\t\t\tvar ang: f32 = ((((t * fr.uGrav.z) * ((0.7 + (1.6 / ((gr + 0.3)))))) * ga) * ((0.6 + (0.8 * hash11((aIdx * 5.9))))));\n\t\t\tq = (((q * cos(ang)) + (cross(ax, q) * sin(ang))) + ((ax * dot(ax, q)) * ((1.0 - cos(ang)))));\n\t\t\tq *= vec3f((1.0 + (((fr.uGravT.z * 0.3) * ga) * sin(((t * 0.8) + (aIdx * 40.0))))));\n\t\t\tlx = dot(q, e1);\n\t\t\tlh = dot(q, up);\n\t\t\tlz = dot(q, e2);\n\t\t} else {\n\t\t\tvar sd: f32 = (aIdx * 61.0);\n\t\t\tvar ang: f32 = (((0.14 * fr.uGrav.z) * t) * ga);\n\t\t\tvar ca: f32 = cos(ang);\n\t\t\tvar sa: f32 = sin(ang);\n\t\t\tvar nx: f32 = ((lx * ca) - (lz * sa));\n\t\t\tvar nz: f32 = ((lx * sa) + (lz * ca));\n\t\t\tvar amp: f32 = (0.4 + (fr.uGravT.z * 1.2));\n\t\t\tlx = (nx + (((ga * 0.12) * amp) * sin((((t * 0.55) * fr.uGrav.z) + (sd * 1.3)))));\n\t\t\tlz = (nz + (((ga * 0.12) * amp) * cos((((t * 0.5) * fr.uGrav.z) + (sd * 0.8)))));\n\t\t\tlh += (((ga * 0.2) * amp) * sin((((t * 0.7) * fr.uGrav.z) + sd)));\n\t\t\tvar br: f32 = (1.0 + (((0.2 * amp) * ga) * ((0.5 + (0.5 * sin((((t * 0.35) * fr.uGrav.z) + (sd * 0.4))))))));\n\t\t\tlx *= br;\n\t\t\tlz *= br;\n\t\t\tlh *= br;\n\t\t}\n\t\tpos = (((fr.uGravP.xyz + (e1 * lx)) + (up * lh)) + (e2 * lz));\n\t}\n\tif ((fr.uCurl.x > 0.001)) {\n\t\tvar ca: f32 = (pow(fr.uCurl.x, 1.45) * 0.055);\n\t\tvar thr: f32 = ((snoise((((*base) * 1.8) + (t * 0.3))) * 0.5) + 0.5);\n\t\tvar det: f32 = smoothstep(0.35, 0.85, (thr + (min(fr.uCurl.x, 1.0) * 0.12)));\n\t\tvar cn: vec3f = ((curlNoise((((*base) * fr.uCurl.y) + (vec3f((t * 0.4), (t * 0.3), (t * 0.5)) * fr.uCurlP.x))) * det) * ca);\n\t\tif ((fr.uCurlP.z > 1.5)) {\n\t\t\tvar yc: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\t\tvar band: f32 = floor(((yc * 8.0) + 0.001));\n\t\t\tvar sg: f32 = select(-1.0, 1.0, (glsl_mod_f(band, 2.0) < 0.5));\n\t\t\tvar ang: f32 = (((sg * sin((((t * fr.uCurlP.x) * 0.7) + (band * 0.8)))) * min(fr.uCurl.x, 2.0)) * 0.55);\n\t\t\tvar q: vec3f = (pos - fr.uCen);\n\t\t\tvar cs: f32 = cos(ang);\n\t\t\tvar sn: f32 = sin(ang);\n\t\t\t{ let _sw21 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw21.x, q.y, _sw21.y); }\n\t\t\tpos = (fr.uCen + q);\n\t\t\tcn = vec3f(0.0);\n\t\t} else if ((fr.uCurlP.z > 0.5)) {\n\t\t\tvar fd: vec3f = vec3f(cos(fr.uCurlP.y), 0.35, sin(fr.uCurlP.y));\n\t\t\tvar ph: f32 = (0.5 + (0.5 * sin((((t * fr.uCurlP.x) * 0.7) + (hash11((aIdx * 3.7)) * 6.2831)))));\n\t\t\tcn += ((((fd * ph) * det) * ca) * 0.9);\n\t\t}\n\t\tpos += cn;\n\t}\n\tif ((fr.uGlitch.x > 0.001)) {\n\t\tvar yg: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar spd: f32 = fr.uGlitchP.y;\n\t\tvar cyc: f32 = ((t * spd) * 1.1);\n\t\tvar bst: f32 = (step(0.55, hash11(((floor(cyc) * 3.17) + 1.3))) * ((1.0 - smoothstep(0.0, 0.4, fract(cyc)))));\n\t\tgBurst = bst;\n\t\tvar I: f32 = (fr.uGlitch.x * ((0.55 + (((0.5 + (fr.uGlitchP.w * 1.6))) * bst))));\n\t\tvar gm: f32 = fr.uGlitchP.z;\n\t\tvar tick: f32 = floor(((t * 10.0) * spd));\n\t\tvar hit: bool = false;\n\t\tif ((gm < 0.5)) {\n\t\t\tvar band: f32 = floor((yg * fr.uGlitch.y));\n\t\t\tvar r: f32 = hash11(((band * 13.7) + tick));\n\t\t\tif ((r > 0.55)) {\n\t\t\t\tvar shf: f32 = (((((r - 0.5)) * 2.4) * ((hash11((band + 7.0)) - 0.5))) * I);\n\t\t\t\tpos.x += (shf * ((1.0 + fr.uFlat)));\n\t\t\t\tpos.z += (((shf * 1.6) * ((hash11((band + 3.0)) - 0.5))) * ((1.0 + fr.uFlat)));\n\t\t\t\thit = true;\n\t\t\t}\n\t\t} else if ((gm < 1.5)) {\n\t\t\tvar cell: vec3f = floor(((*base) * vec3f(4.0, (fr.uGlitch.y * 0.35), 4.0)));\n\t\t\tvar r: f32 = hash11((dot(cell, vec3f(12.9, 78.2, 37.7)) + (tick * 1.7)));\n\t\t\tif ((r > 0.62)) {\n\t\t\t\tvar hv: vec3f = (vec3f(hash11((r * 91.0)), hash11((r * 57.0)), hash11((r * 33.0))) - 0.5);\n\t\t\t\tpos += ((((hv * ((r - 0.55))) * 1.6) * I) * vec3f(1.0, 0.35, 1.0));\n\t\t\t\thit = true;\n\t\t\t}\n\t\t} else {\n\t\t\tvar row: f32 = floor(((yg * fr.uGlitch.y) * 3.0));\n\t\t\tvar r: f32 = hash11(((row * 5.3) + (tick * 2.3)));\n\t\t\tif ((r > 0.8)) {\n\t\t\t\tpos.x += (((((hash11(((row * 9.1) + tick)) - 0.5)) * 2.4) * I) * ((1.0 + fr.uFlat)));\n\t\t\t\thit = true;\n\t\t\t}\n\t\t\tpos.x += ((((hash11((row + tick)) - 0.5)) * 0.02) * I);\n\t\t}\n\t\tif (hit) {\n\t\t\tgGl = I;\n\t\t\tif ((fr.uGlitchP.x > 0.5)) {\n\t\t\t\tvar chn: f32 = floor((hash11(((aIdx * 17.3) + tick)) * 3.0));\n\t\t\t\tpos.x += ((((chn - 1.0)) * 0.09) * I);\n\t\t\t\tgCh = chn;\n\t\t\t}\n\t\t}\n\t\tgDrop = (step(hash11(((aIdx * 3.7) + tick)), (((fr.uGlitch.z * 0.4) * bst) * fr.uGlitch.x)) * hit2(hit));\n\t}\n\tif ((fr.uVoxel.x > 0.01)) {\n\t\tvar vm: f32 = fr.uVoxelP.x;\n\t\tvar amp: f32 = fr.uVoxelP.w;\n\t\tvar g: f32 = (mix(0.3, mix(0.035, 0.07, fr.uFlat), clamp(fr.uVoxel.x, 0.0, 1.0)) * fr.uVoxelP.z);\n\t\tif (((vm > 1.5) && (vm < 2.5))) {\n\t\t\tg *= (1.0 + (0.35 * sin(((t * fr.uVoxelP.y) * 2.0))));\n\t\t}\n\t\tvar cell: vec3f = floor((pos / g));\n\t\tvar q: vec3f = (((cell + 0.5)) * g);\n\t\tif (((vm > 0.5) && (vm < 1.5))) {\n\t\t\tvar h2: f32 = hash11(dot(cell, vec3f(12.9, 78.2, 37.7)));\n\t\t\tq.y += ((((((h2 - 0.5)) * g) * 2.0) * amp) * sin((((t * fr.uVoxelP.y) * 1.5) + (h2 * 6.2831))));\n\t\t} else if (((vm > 2.5) && (vm < 3.5))) {\n\t\t\tq.y += (((sin(((dot(cell.xz, vec2f(0.7, 0.5)) * 0.55) - ((t * fr.uVoxelP.y) * 2.0))) * g) * 1.6) * amp);\n\t\t} else if (((vm > 3.5) && (vm < 4.5))) {\n\t\t\tvar stp: f32 = ((g * 2.0) * max(amp, 0.3));\n\t\t\tq.y = ((((floor((((pos.y - fr.uYR.x)) / stp)) + 0.5)) * stp) + fr.uYR.x);\n\t\t} else if ((vm > 4.5)) {\n\t\t\tvar hv: vec3f = (vec3f(hash11(dot(cell, vec3f(12.9, 78.2, 37.7))), hash11(dot(cell, vec3f(39.3, 11.1, 52.7))), hash11(dot(cell, vec3f(7.7, 91.3, 23.9)))) - 0.5);\n\t\t\tq += ((((hv * g) * 3.0) * amp) * ((0.5 + (0.5 * sin((((t * fr.uVoxelP.y) * 2.0) + (hv.x * 12.0)))))));\n\t\t}\n\t\tq.z += (((fr.uFlat * ((gLum - 0.5))) * g) * 9.0);\n\t\tpos = mix(pos, q, smoothstep(0.0, 0.25, fr.uVoxel.x));\n\t}\n\tif ((fr.uJitter.x > 0.001)) {\n\t\tpos += ((vec3f(sin(((t * 17.0) + (aIdx * 91.0))), sin(((t * 13.0) + (aIdx * 57.0))), sin(((t * 11.0) + (aIdx * 33.0)))) * fr.uJitter.x) * 0.03);\n\t}\n\tif ((fr.uHyp.x > 0.001)) {\n\t\tvar hw: f32;\n\t\tvar hp: vec3f = hyperWarp(pos, fr.uCen, (1.25 / max(fr.uHyp.w, 0.05)), fr.uHyp.z, (fr.uHyp.y - (fr.uTOff * fr.uHypP.w)), &hw);\n\t\tvar hk: f32 = min(fr.uHyp.x, 1.0);\n\t\tpos = mix(pos, hp, hk);\n\t\tgHypW = hw;\n\t\tgHypF = (smoothstep(mix(0.99, 0.6, fr.uHypP.z), 0.997, hw) * hk);\n\t}\n\t(*maskV) = 1.0;\n\tif ((fr.uMask.x > 0.5)) {\n\t\tvar y01: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar soft: f32 = max(fr.uMask.z, 0.02);\n\t\tif ((fr.uMask.x < 1.5)) {\n\t\t\t(*maskV) = smoothstep((fr.uMaskA.x - (soft * 0.5)), (fr.uMaskA.x + (soft * 0.5)), y01);\n\t\t} else if ((fr.uMask.x < 2.5)) {\n\t\t\tvar r: f32 = ((fr.uMask.y * 1.6) + 0.01);\n\t\t\t(*maskV) = (1.0 - smoothstep((r * ((1.0 - soft))), r, distance((*base), fr.uMaskA.xyz)));\n\t\t} else if ((fr.uMask.x < 3.5)) {\n\t\t\tvar n: f32 = ((snoise((((*base) * 1.6) + vec3f(0.0, fr.uMaskA.w, (fr.uMaskA.w * 0.6)))) * 0.5) + 0.5);\n\t\t\t(*maskV) = smoothstep(((1.0 - fr.uMask.y) - (soft * 0.3)), ((1.0 - fr.uMask.y) + (soft * 0.3)), n);\n\t\t} else {\n\t\t\tvar w: f32 = ((fr.uMask.y * 0.35) + 0.004);\n\t\t\t(*maskV) = (1.0 - smoothstep(w, ((w + (soft * 0.3)) + 0.02), abs((y01 - fr.uMaskA.x))));\n\t\t}\n\t\tif ((fr.uMask.w > 0.5)) {\n\t\t\t(*maskV) = (1.0 - (*maskV));\n\t\t}\n\t}\n\tpos = mix((*base), pos, (*maskV));\n\tif ((fr.uContact.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 16); i++) {\n\t\t\tif ((f32(i) >= fr.uContact.w)) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tcontactAt(fr.uTrk[i].xyz, fr.uTrk[i].w, (*base), rad, &pos);\n\t\t}\n\t\tfor (var i: i32 = 0; (i < 32); i++) {\n\t\t\tif ((f32(i) >= fr.uShockP.z)) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tcontactAt(fr.uImp[i].xyz, fr.uImp[i].w, (*base), rad, &pos);\n\t\t}\n\t}\n\tif ((fr.uShockP.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 4); i++) {\n\t\t\tvar age: f32 = fr.uShock[i].w;\n\t\t\tif ((age < 0.0)) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar dist: f32 = distance((*base), fr.uShock[i].xyz);\n\t\t\tvar x: f32 = (((dist - (age * fr.uShockP.y))) / 0.22);\n\t\t\tpos += ((((rad * exp((-x * x))) * exp((-age * 0.9))) * fr.uShockP.x) * 0.45);\n\t\t}\n\t}\n\tif ((fr.uBrushParam.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 20); i++) {\n\t\t\tvar age: f32 = fr.uBrushHits[i].w;\n\t\t\tif ((age < 0.0)) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar dist: f32 = distance((*base), fr.uBrushHits[i].xyz);\n\t\t\tvar r: f32 = fr.uBrushParam.y;\n\t\t\tif ((dist < r)) {\n\t\t\t\tvar life: f32 = (1.0 - (age / fr.uBrushParam.z));\n\t\t\t\tvar infl: f32 = ((((1.0 - (dist / r))) * life) * fr.uBrushParam.x);\n\t\t\t\tpos += ((rad * infl) * 0.35);\n\t\t\t}\n\t\t}\n\t}\n\tif ((fr.uPhysics.x > 0.001)) {\n\t\tvar seed: f32 = hash11(((aIdx * 1234.56) + 17.1));\n\t\tvar seed2: f32 = hash11(((aIdx * 2345.67) + 39.3));\n\t\tvar seed3: f32 = hash11(((aIdx * 3456.78) + 81.7));\n\t\tvar yP: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar onset: f32 = (((((1.0 - yP)) * fr.uPhysP.y) * 1.3) + (seed * 0.3));\n\t\tvar pt: f32 = max(0.0, (fr.uCollapseTime - onset));\n\t\tvar radd: vec3f = normalize(((*base) + vec3f(1e-3)));\n\t\tvar tang: vec3f = normalize((vec3f(-(*base).z, 0.0, (*base).x) + vec3f(1e-3, 0.0, 0.0)));\n\t\tvar v0: vec3f = ((((radd * ((0.5 + (seed * 1.1)))) + ((tang * fr.uPhysP.z) * ((0.3 + (seed3 * 0.9)))))) * fr.uPhysP.x);\n\t\tvar vy0: f32 = (((0.5 + (seed2 * 1.0))) * fr.uPhysP.x);\n\t\tvar g: f32 = (fr.uPhysics.y * 3.8);\n\t\tvar floorY: f32 = (fr.uYR.x - 0.04);\n\t\tvar drag: f32 = (1.0 - exp((-pt * 1.5)));\n\t\tvar pPhys: vec3f = (*base);\n\t\tpPhys.x += (((v0.x * drag) / 1.5) + ((fr.uPhysics.w * 0.5) * drag));\n\t\tpPhys.z += ((v0.z * drag) / 1.5);\n\t\tvar h0: f32 = max(((*base).y - floorY), 0.0);\n\t\tvar vimp: f32 = sqrt(((vy0 * vy0) + ((2.0 * g) * h0)));\n\t\tvar t1: f32 = (((vy0 + vimp)) / g);\n\t\tvar yy: f32;\n\t\tif ((pt < t1)) {\n\t\t\tyy = (((*base).y + (vy0 * pt)) - (((0.5 * g) * pt) * pt));\n\t\t} else {\n\t\t\tvar tt: f32 = (pt - t1);\n\t\t\tvar vy: f32 = (vimp * fr.uPhysics.z);\n\t\t\tvar hh: f32 = 0.0;\n\t\t\tfor (var b: i32 = 0; (b < 4); b++) {\n\t\t\t\tvar T: f32 = ((2.0 * vy) / g);\n\t\t\t\tif ((tt < T)) {\n\t\t\t\t\thh = ((vy * tt) - (((0.5 * g) * tt) * tt));\n\t\t\t\t\tbreak;\n\t\t\t\t}\n\t\t\t\ttt -= T;\n\t\t\t\tvy *= fr.uPhysics.z;\n\t\t\t}\n\t\t\tyy = (floorY + max(hh, 0.0));\n\t\t}\n\t\tpPhys.y = max(yy, floorY);\n\t\tvar spinA: f32 = (((((1.0 - exp((-pt * 1.2)))) * fr.uPhysP.z) * ((seed2 - 0.5))) * 2.0);\n\t\tvar sq: vec2f = pPhys.xz;\n\t\tvar cs: f32 = cos(spinA);\n\t\tvar sn: f32 = sin(spinA);\n\t\t{ let _sw22 = vec2f(((sq.x * cs) - (sq.y * sn)), ((sq.x * sn) + (sq.y * cs))); pPhys = vec3f(_sw22.x, pPhys.y, _sw22.y); }\n\t\tvar strength: f32 = min(1.0, fr.uPhysics.x);\n\t\tvar target_: vec3f = mix(pos, pPhys, strength);\n\t\tif ((fr.uAsm > 0.0)) {\n\t\t\tvar s0: f32 = ((yP * 0.42) + (seed * 0.2));\n\t\t\tvar sA: f32 = clamp(((((fr.uAsm * 1.4) - s0)) / 0.55), 0.0, 1.0);\n\t\t\tvar eA: f32 = ((sA * sA) * ((3.0 - (2.0 * sA))));\n\t\t\tvar side: vec3f = normalize((cross((pPhys - pos), vec3f(0.0, 1.0, 0.0)) + vec3f(1e-3)));\n\t\t\ttarget_ = mix(target_, pos, eA);\n\t\t\ttarget_ += (((side * sin((eA * 3.14159))) * 0.45) * ((seed3 - 0.3)));\n\t\t\ttarget_.y += ((sin((eA * 3.14159)) * 0.5) * ((0.4 + seed)));\n\t\t}\n\t\tpos = target_;\n\t}\n\tif ((fr.uHandP.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 12); i++) {\n\t\t\tif ((f32(i) >= fr.uHandP.w)) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tvar hd: vec3f = (pos - fr.uHand[i].xyz);\n\t\t\tvar r: f32 = fr.uHandP.y;\n\t\t\tvar d2: f32 = dot(hd, hd);\n\t\t\tif ((d2 < (r * r))) {\n\t\t\t\tvar f: f32 = (1.0 - (sqrt(d2) / r));\n\t\t\t\tf = ((f * f) * ((3.0 - (2.0 * f))));\n\t\t\t\tvar hs: f32 = fr.uHand[i].w;\n\t\t\t\tif ((hs > 1.5)) {\n\t\t\t\t\ths -= 2.0;\n\t\t\t\t\tvar a: f32 = (((f * hs) * fr.uHandP.x) * 2.6);\n\t\t\t\t\tvar ca: f32 = cos(a);\n\t\t\t\t\tvar sa: f32 = sin(a);\n\t\t\t\t\tvar q: vec2f = (pos.xz - fr.uHand[i].xz);\n\t\t\t\t\t{ let _sw23 = (fr.uHand[i].xz + vec2f(((q.x * ca) - (q.y * sa)), ((q.x * sa) + (q.y * ca)))); pos = vec3f(_sw23.x, pos.y, _sw23.y); }\n\t\t\t\t\tpos.y += (((f * hs) * fr.uHandP.x) * 0.12);\n\t\t\t\t} else {\n\t\t\t\t\tpos += ((((normalize((hd + vec3f(1e-3))) * f) * hs) * fr.uHandP.x) * 0.75);\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\tif (((fr.uMouseOn > 0.5) && (fr.uCursor.x > 0.001))) {\n\t\tvar tm: vec3f = (pos - fr.uMouse);\n\t\tvar r2: f32 = (fr.uCursor.y * fr.uCursor.y);\n\t\tvar d2: f32 = dot(tm, tm);\n\t\tif ((d2 < r2)) {\n\t\t\tvar f: f32 = (1.0 - (d2 / r2));\n\t\t\tif ((fr.uCursor.z > 1.5)) {\n\t\t\t\tvar vax: vec3f = normalize((vec3f(fr.modelViewMatrix[0][2], fr.modelViewMatrix[1][2], fr.modelViewMatrix[2][2]) + vec3f(1e-5)));\n\t\t\t\tvar ca: f32 = (((f * f) * fr.uCursor.x) * 2.2);\n\t\t\t\tvar cc: f32 = cos(ca);\n\t\t\t\tvar cs: f32 = sin(ca);\n\t\t\t\tpos = (((fr.uMouse + (tm * cc)) + (cross(vax, tm) * cs)) + ((vax * dot(vax, tm)) * ((1.0 - cc))));\n\t\t\t} else {\n\t\t\t\tpos += (((((normalize((tm + vec3f(1e-3))) * f) * f) * fr.uCursor.x) * 0.6) * fr.uCursor.z);\n\t\t\t}\n\t\t}\n\t}\n\treturn pos;\n}\n\nfn main_() {\n\tvar bA: vec3f;\n\tvar bB: vec3f;\n\tvar mA: f32;\n\tvar mB: f32;\n\tgDepth = aDepth;\n\tgNormal = vec3f(0.0);\n\tvar pA: vec3f = fxDisplace(aOrigin, aTarget, aIdx, &bA, &mA);\n\tgDepth = aDepthB;\n\tvar pB: vec3f = fxDisplace(aOriginB, aTargetB, aIdxB, &bB, &mB);\n\tvar rv: bool = (fr.uScope.y > 1.5);\n\tvar cm: f32 = select(fr.uScope.y, (fr.uScope.y - 2.0), rv);\n\tvar sp: f32 = select(aSeg, (1.0 - aSeg), rv);\n\tif ((fr.uScopeP.w > 1.5)) {\n\t\tsp = fract((sp * fr.uScopeP.w));\n\t}\n\tvar age: f32 = (fr.uScope.z - sp);\n\tvar lit: f32 = select(((select(exp(((-age * 4.0) / max(fr.uScope.w, 0.02))), 1.0, (cm < 0.5))) * fr.uScopeP.y), 0.0, ((age < 0.0) || (aSeg < 0.0)));\n\tvA = ((((lit * step(fr.uScopeP.z, sp)) * fr.uScope.x) * min(1.0, (fr.uScope.x * 2.0))) * fr.uScopeLB);\n\tvC = (fr.uScopeC * ((1.0 + ((exp((-max(age, 0.0) * 45.0)) * fr.uScopeQ.z) * 2.0))));\n\tvSide = aSide;\n\tvar mvp: mat4x4f = (fr.projectionMatrix * fr.modelViewMatrix);\n\tvar cA: vec4f = (mvp * vec4f(pA, 1.0));\n\tvar cB: vec4f = (mvp * vec4f(pB, 1.0));\n\tvar sA: vec2f = (cA.xy / cA.w);\n\tvar sB: vec2f = (cB.xy / cB.w);\n\tvar dir: vec2f = (((sB - sA)) * vec2f((fr.uRes.x / fr.uRes.y), 1.0));\n\tvar dl: f32 = length(dir);\n\tdir = select(vec2f(1.0, 0.0), (dir / dl), (dl > 1e-5));\n\tvar nrm: vec2f = (vec2f(-dir.y, dir.x) * vec2f((fr.uRes.y / fr.uRes.x), 1.0));\n\tvar c: vec4f = mix(cA, cB, aEnd);\n\t{ let _sw24 = (c.xy + ((((nrm * aSide) * ((fr.uScopeW + 1.0))) / fr.uRes.y) * c.w)); c = vec4f(_sw24.x, _sw24.y, c.z, c.w); }\n\tgl_Position = c;\n}\n\n\n@compute @workgroup_size(64)\nfn main(@builtin(global_invocation_id) gid: vec3u) {\n\tlet i = gid.x;\n\tlet count = arrayLength(&inS0);\n\tif (i >= count) { return; }\n\tlet s0 = inS0[i];\n\tlet s1 = inS1[i];\n\tlet s2 = inS2[i];\n\tlet s3 = inS3[i];\n\tlet s4 = inS4[i];\n\taOrigin = s0.xyz;\n\taTarget = s1.xyz;\n\taIdx = s0.w;\n\taOriginB = s2.xyz;\n\taTargetB = s3.xyz;\n\taIdxB = s1.w;\n\taDepth = s2.w;\n\taDepthB = s3.w;\n\taEnd = s4.x;\n\taSide = s4.y;\n\taSeg = s4.z;\n\tmain_();\n\toutClip[i] = gl_Position;\n\toutV0[i] = vec4f(vC, vA);\n\toutV1[i] = vec4f(vSide, 0.0, 0.0, 0.0);\n}\n",
-"render": "struct Frame {\n\t@size(16) uAdd: f32,\n\t@size(16) uSolid: vec3f,\n\t@size(16) uAtt: f32,\n\t@size(16) uSize: f32,\n\t@size(16) uPR: f32,\n\t@size(16) uGlyph: vec3f,\n\t@size(16) uColorBy: f32,\n\t@size(16) uBright: f32,\n\t@size(16) uMaskShow: f32,\n\t@size(16) uP0: vec3f,\n\t@size(16) uP1: vec3f,\n\t@size(16) uP2: vec3f,\n\t@size(16) uSliceC: vec3f,\n\t@size(16) uMarkC: vec3f,\n\t@size(16) uTime: f32,\n\t@size(16) uTOff: f32,\n\t@size(16) uMorph: f32,\n\tuMorphS: vec4f,\n\tuMorphO: vec4f,\n\tuMorphD: vec4f,\n\t@size(16) uSettle: f32,\n\t@size(16) uBeat: f32,\n\t@size(16) uYR: vec2f,\n\t@size(16) uMouse: vec3f,\n\t@size(16) uMouseOn: f32,\n\t@size(16) uShade: f32,\n\tuCurlP: vec4f,\n\tuSpecP: vec4f,\n\tuWaveP: vec4f,\n\tuWaveSrc: vec4f,\n\tuPulseP: vec4f,\n\tuVoxelP: vec4f,\n\tuGlitchP: vec4f,\n\tuBlast: vec4f,\n\tuFlow: vec4f,\n\tuDisP: vec4f,\n\tuScope: vec4f,\n\tuScopeP: vec4f,\n\tuScopeQ: vec4f,\n\t@size(16) uScopeC: vec3f,\n\tuDepth: vec4f,\n\tuDepthP: vec4f,\n\tuDepthQ: vec4f,\n\t@size(16) uFlat: f32,\n\tuCurl: vec4f,\n\tuSpec: vec4f,\n\tuWave: vec4f,\n\tuTwist: vec4f,\n\tuPulse: vec4f,\n\tuVoxel: vec4f,\n\tuJitter: vec4f,\n\tuCursor: vec4f,\n\tuMask: vec4f,\n\tuMaskA: vec4f,\n\tuGlitch: vec4f,\n\tuContact: vec4f,\n\tuShockP: vec4f,\n\tuTrk: array<vec4f, 16>,\n\tuHand: array<vec4f, 12>,\n\tuGrav: vec4f,\n\tuSlice: vec4f,\n\tuSliceM: vec4f,\n\tuMark: vec4f,\n\tuGravT: vec4f,\n\tuPhysP: vec4f,\n\t@size(16) uAsm: f32,\n\tuDis: vec4f,\n\t@size(16) uDisT: f32,\n\t@size(16) uAnimN: f32,\n\t@size(16) uCen: vec3f,\n\tuDisQ: vec4f,\n\tuGravP: vec4f,\n\tuHandP: vec4f,\n\tuImp: array<vec4f, 32>,\n\tuShock: array<vec4f, 4>,\n\tuExp: vec4f,\n\tuExpP: vec4f,\n\tuGrow: vec4f,\n\tuGrowP: vec4f,\n\t@size(16) uGrowSeed: vec3f,\n\tuJel: array<vec4f, 3>,\n\tuJelO: array<vec4f, 3>,\n\tuJelP: vec4f,\n\tuPhysics: vec4f,\n\t@size(16) uCollapseTime: f32,\n\tuBrushHits: array<vec4f, 20>,\n\tuPaintP: vec4f,\n\tuBrushParam: vec4f,\n\tuLookP2: vec4f,\n\tuDof: vec4f,\n\tuHyp: vec4f,\n\tuHypP: vec4f,\n\tuCh: vec4f,\n\tuChA: vec4f,\n\tuFr: vec4f,\n\tuFr2: vec4f,\n\tuFr3: vec4f,\n\tuFr4: vec4f,\n\tuFr5: vec4f,\n\tuHero: vec4f,\n\tuFr6: vec4f,\n\tuFr7: vec4f,\n\tuShoot: vec4f,\n\tuShootP: vec4f,\n\tuShootD: vec4f,\n\tuShootE: vec4f,\n\tuShootC: vec4f,\n\tuShootS: array<vec4f, 24>,\n\tuShootN: array<vec4f, 24>,\n\tuShootB: array<vec4f, 6>,\n\tmodelMatrix: mat4x4f,\n\tmodelViewMatrix: mat4x4f,\n\tprojectionMatrix: mat4x4f,\n\tnormalMatrix: mat3x3f,\n\t@size(16) uRes: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uGlow: f32,\n\t@size(16) uDens: f32,\n\t@size(16) uGhost: f32,\n\t@size(16) uShape: f32,\n\tuLink: vec4f,\n\tuLinkP: vec4f,\n\t@size(16) uLinkW: f32,\n\t@size(16) uScopeW: f32,\n\t@size(16) uScopeLB: f32,\n}\n@group(0) @binding(0) var<uniform> fr: Frame;\n@group(0) @binding(1) var<storage, read> outClip: array<vec4f>;\n@group(0) @binding(2) var<storage, read> outV0: array<vec4f>;\n@group(0) @binding(3) var<storage, read> outV1: array<vec4f>;\n@group(0) @binding(4) var atlasTex: texture_2d<f32>;\n@group(0) @binding(5) var linSamp: sampler;\n\nvar<private> vC: vec3f;\nvar<private> vA: f32;\nvar<private> vSide: f32;\nvar<private> gl_FragColor: vec4f;\n\nfn frag_main_() {\n\tvar edge: f32 = (1.0 - smoothstep(0.35, 1.0, abs(vSide)));\n\tgl_FragColor = vec4f((vC * ((vA * edge))), (vA * edge));\n}\n\n\n\nfn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {\n\tlet startCompression = 0.8 - 0.04;\n\tlet desaturation = 0.15;\n\tvar color = c0 * exposure;\n\tlet x = min(color.r, min(color.g, color.b));\n\tlet offset = select(0.04, x - 6.25 * x * x, x < 0.08);\n\tcolor = color - offset;\n\tlet peak = max(color.r, max(color.g, color.b));\n\tif (peak < startCompression) { return color; }\n\tlet d = 1.0 - startCompression;\n\tlet newPeak = 1.0 - d * d / (peak + d - startCompression);\n\tcolor = color * (newPeak / peak);\n\tlet g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);\n\treturn mix(color, vec3f(newPeak), g);\n}\nfn linearToSrgb(v: vec3f) -> vec3f {\n\treturn select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));\n}\n\nstruct VOut {\n\t@builtin(position) clip: vec4f,\n\t@location(0) v0: vec4f,\n\t@location(1) v1: vec4f,\n}\n\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar clip = outClip[vi];\n\tclip.z = (clip.z + clip.w) * 0.5;\n\tvar o: VOut;\n\to.clip = clip;\n\to.v0 = outV0[vi];\n\to.v1 = outV1[vi];\n\treturn o;\n}\n\nfn setup_in(in: VOut) {\n\tvC = in.v0.xyz;\n\tvA = in.v0.w;\n\tvSide = in.v1.x;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tsetup_in(in);\n\tfrag_main_();\n\treturn vec4f(linearToSrgb(toneNeutral(gl_FragColor.rgb, fr.uExposure)), gl_FragColor.a);\n}\n\n@fragment\nfn fs_raw(in: VOut) -> @location(0) vec4f {\n\tsetup_in(in);\n\tfrag_main_();\n\treturn gl_FragColor;\n}\n",
+"compute": "struct Frame {\n\t@size(16) uAdd: f32,\n\t@size(16) uSolid: vec3f,\n\t@size(16) uAtt: f32,\n\t@size(16) uSize: f32,\n\t@size(16) uPR: f32,\n\t@size(16) uGlyph: vec3f,\n\t@size(16) uColorBy: f32,\n\t@size(16) uBright: f32,\n\t@size(16) uMaskShow: f32,\n\t@size(16) uP0: vec3f,\n\t@size(16) uP1: vec3f,\n\t@size(16) uP2: vec3f,\n\t@size(16) uSliceC: vec3f,\n\t@size(16) uMarkC: vec3f,\n\t@size(16) uTime: f32,\n\t@size(16) uTOff: f32,\n\t@size(16) uMorph: f32,\n\tuMorphS: vec4f,\n\tuMorphO: vec4f,\n\tuMorphD: vec4f,\n\t@size(16) uSettle: f32,\n\t@size(16) uBeat: f32,\n\t@size(16) uYR: vec2f,\n\t@size(16) uMouse: vec3f,\n\t@size(16) uMouseOn: f32,\n\t@size(16) uShade: f32,\n\tuCurlP: vec4f,\n\tuSpecP: vec4f,\n\tuWaveP: vec4f,\n\tuWaveSrc: vec4f,\n\tuPulseP: vec4f,\n\tuVoxelP: vec4f,\n\tuGlitchP: vec4f,\n\tuBlast: vec4f,\n\tuFlow: vec4f,\n\tuDisP: vec4f,\n\tuScope: vec4f,\n\tuScopeP: vec4f,\n\tuScopeQ: vec4f,\n\t@size(16) uScopeC: vec3f,\n\tuDepth: vec4f,\n\tuDepthP: vec4f,\n\tuDepthQ: vec4f,\n\t@size(16) uFlat: f32,\n\tuCurl: vec4f,\n\tuSpec: vec4f,\n\tuWave: vec4f,\n\tuTwist: vec4f,\n\tuPulse: vec4f,\n\tuVoxel: vec4f,\n\tuJitter: vec4f,\n\tuCursor: vec4f,\n\tuMask: vec4f,\n\tuMaskA: vec4f,\n\tuGlitch: vec4f,\n\tuContact: vec4f,\n\tuShockP: vec4f,\n\tuTrk: array<vec4f, 16>,\n\tuHand: array<vec4f, 12>,\n\tuGrav: vec4f,\n\tuSlice: vec4f,\n\tuSliceM: vec4f,\n\tuMark: vec4f,\n\tuGravT: vec4f,\n\tuPhysP: vec4f,\n\t@size(16) uAsm: f32,\n\tuDis: vec4f,\n\t@size(16) uDisT: f32,\n\t@size(16) uAnimN: f32,\n\t@size(16) uCen: vec3f,\n\tuDisQ: vec4f,\n\tuGravP: vec4f,\n\tuHandP: vec4f,\n\tuImp: array<vec4f, 32>,\n\tuShock: array<vec4f, 4>,\n\tuExp: vec4f,\n\tuExpP: vec4f,\n\tuGrow: vec4f,\n\tuGrowP: vec4f,\n\t@size(16) uGrowSeed: vec3f,\n\tuJel: array<vec4f, 3>,\n\tuJelO: array<vec4f, 3>,\n\tuJelP: vec4f,\n\tuPhysics: vec4f,\n\t@size(16) uCollapseTime: f32,\n\tuBrushHits: array<vec4f, 20>,\n\tuPaintP: vec4f,\n\tuBrushParam: vec4f,\n\tuLookP2: vec4f,\n\tuDof: vec4f,\n\tuHyp: vec4f,\n\tuHypP: vec4f,\n\tuCh: vec4f,\n\tuChA: vec4f,\n\tuFr: vec4f,\n\tuFr2: vec4f,\n\tuFr3: vec4f,\n\tuFr4: vec4f,\n\tuFr5: vec4f,\n\tuHero: vec4f,\n\tuFr6: vec4f,\n\tuFr7: vec4f,\n\tuShoot: vec4f,\n\tuShootP: vec4f,\n\tuShootD: vec4f,\n\tuShootE: vec4f,\n\tuShootC: vec4f,\n\tuShootS: array<vec4f, 24>,\n\tuShootN: array<vec4f, 24>,\n\tuShootB: array<vec4f, 6>,\n\tuScr: vec4f,\n\tuScrP: vec4f,\n\tuScrD: vec4f,\n\tuScrQ: vec4f,\n\t@size(16) uScrMN: f32,\n\tuSlit: vec4f,\n\tuSlitP: vec4f,\n\tuSlitG: vec4f,\n\tuSort: vec4f,\n\tuSortP: vec4f,\n\tmodelMatrix: mat4x4f,\n\tmodelViewMatrix: mat4x4f,\n\tprojectionMatrix: mat4x4f,\n\tviewMatrix: mat4x4f,\n\tnormalMatrix: mat3x3f,\n\t@size(16) uRes: vec2f,\n\t@size(16) uPx: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n\t@size(16) uGlow: f32,\n\t@size(16) uDens: f32,\n\t@size(16) uGhost: f32,\n\t@size(16) uShape: f32,\n\tuShd: vec4f,\n\tuShdL: vec4f,\n\tuShdP: vec4f,\n\t@size(16) uShdC: vec3f,\n\tuLink: vec4f,\n\tuLinkP: vec4f,\n\t@size(16) uLinkW: f32,\n\t@size(16) uScopeW: f32,\n\t@size(16) uScopeLB: f32,\n}\n@group(0) @binding(0) var<uniform> fr: Frame;\n@group(0) @binding(1) var<storage, read> inS0: array<vec4f>;\n@group(0) @binding(2) var<storage, read> inS1: array<vec4f>;\n@group(0) @binding(3) var<storage, read> inS2: array<vec4f>;\n@group(0) @binding(4) var<storage, read> inS3: array<vec4f>;\n@group(0) @binding(5) var<storage, read> inS4: array<vec4f>;\n@group(0) @binding(9) var<storage, read_write> outClip: array<vec4f>;\n@group(0) @binding(10) var<storage, read_write> outV0: array<vec4f>;\n@group(0) @binding(11) var<storage, read_write> outV1: array<vec4f>;\n@group(0) @binding(12) var specTex: texture_2d<f32>;\n@group(0) @binding(13) var linSamp: sampler;\n@group(0) @binding(14) var pieceTex: texture_2d<f32>;\n@group(0) @binding(15) var frTex: texture_2d_array<f32>;\n@group(0) @binding(16) var heroTex: texture_2d<f32>;\n@group(0) @binding(17) var scrTex: texture_2d<f32>;\n@group(0) @binding(18) var scrDep: texture_2d<f32>;\n@group(0) @binding(19) var scrMTex: texture_2d<f32>;\n@group(0) @binding(20) var slitTex: texture_2d_array<f32>;\n@group(0) @binding(21) var sortTex: texture_2d<f32>;\n\nvar<private> aOrigin: vec3f;\nvar<private> aTarget: vec3f;\nvar<private> aIdx: f32;\nvar<private> aOriginB: vec3f;\nvar<private> aTargetB: vec3f;\nvar<private> aIdxB: f32;\nvar<private> aDepth: f32;\nvar<private> aDepthB: f32;\nvar<private> aEnd: f32;\nvar<private> aSide: f32;\nvar<private> aSeg: f32;\nvar<private> vC: vec3f;\nvar<private> vA: f32;\nvar<private> vSide: f32;\nvar<private> gl_Position: vec4f;\n\nfn glsl_mod_f(x: f32, y: f32) -> f32 { return x - y * floor(x / y); }\n\nvar<private> gGl: f32 = 0.0;\nvar<private> gCh: f32 = -1.0;\nvar<private> gDrop: f32 = 0.0;\nvar<private> gGrow: f32 = 1.0;\nvar<private> gGrowE: f32 = 0.0;\nvar<private> gBurst: f32 = 0.0;\nvar<private> gScopeG: f32 = 0.0;\nvar<private> gScopeT: f32 = 0.0;\nvar<private> gScopeD: f32 = 0.0;\nvar<private> gDepth: f32 = 0.5;\nvar<private> gDepthG: f32 = 0.0;\nvar<private> gNormal: vec3f = vec3f(0.0);\nvar<private> gLum: f32 = 0.5;\nvar<private> gHypW: f32 = 0.0;\nvar<private> gHypF: f32 = 0.0;\nvar<private> gChN: f32 = 0.0;\n\nfn mod289_vec3(x_in: vec3f) -> vec3f {\n\tvar x: vec3f = x_in;\n\treturn (x - (floor((x * ((1.0 / 289.0)))) * 289.0));\n}\n\nfn mod289_vec4(x_in: vec4f) -> vec4f {\n\tvar x: vec4f = x_in;\n\treturn (x - (floor((x * ((1.0 / 289.0)))) * 289.0));\n}\n\nfn permute(x_in: vec4f) -> vec4f {\n\tvar x: vec4f = x_in;\n\treturn mod289_vec4((((((x * 34.0)) + 1.0)) * x));\n}\n\nfn taylorInvSqrt(r_in: vec4f) -> vec4f {\n\tvar r: vec4f = r_in;\n\treturn (1.79284291400159 - (0.85373472095314 * r));\n}\n\nfn snoise(v_in: vec3f) -> f32 {\n\tvar v: vec3f = v_in;\n\tconst C: vec2f = vec2f((1.0 / 6.0), (1.0 / 3.0));\n\tconst D: vec4f = vec4f(0.0, 0.5, 1.0, 2.0);\n\tvar i: vec3f = floor((v + dot(v, C.yyy)));\n\tvar x0: vec3f = ((v - i) + dot(i, C.xxx));\n\tvar g: vec3f = step(x0.yzx, x0.xyz);\n\tvar l: vec3f = (1.0 - g);\n\tvar i1: vec3f = min(g.xyz, l.zxy);\n\tvar i2: vec3f = max(g.xyz, l.zxy);\n\tvar x1: vec3f = ((x0 - i1) + C.xxx);\n\tvar x2: vec3f = ((x0 - i2) + C.yyy);\n\tvar x3: vec3f = (x0 - D.yyy);\n\ti = mod289_vec3(i);\n\tvar p: vec4f = permute(((permute(((permute((i.z + vec4f(0.0, i1.z, i2.z, 1.0))) + i.y) + vec4f(0.0, i1.y, i2.y, 1.0))) + i.x) + vec4f(0.0, i1.x, i2.x, 1.0)));\n\tvar n_: f32 = 0.142857142857;\n\tvar ns: vec3f = ((n_ * D.wyz) - D.xzx);\n\tvar j: vec4f = (p - (49.0 * floor(((p * ns.z) * ns.z))));\n\tvar x_: vec4f = floor((j * ns.z));\n\tvar y_: vec4f = floor((j - (7.0 * x_)));\n\tvar x: vec4f = ((x_ * ns.x) + ns.yyyy);\n\tvar y: vec4f = ((y_ * ns.x) + ns.yyyy);\n\tvar h: vec4f = ((1.0 - abs(x)) - abs(y));\n\tvar b0: vec4f = vec4f(x.xy, y.xy);\n\tvar b1: vec4f = vec4f(x.zw, y.zw);\n\tvar s0: vec4f = ((floor(b0) * 2.0) + 1.0);\n\tvar s1: vec4f = ((floor(b1) * 2.0) + 1.0);\n\tvar sh: vec4f = -step(h, vec4f(0.0));\n\tvar a0: vec4f = (b0.xzyw + (s0.xzyw * sh.xxyy));\n\tvar a1: vec4f = (b1.xzyw + (s1.xzyw * sh.zzww));\n\tvar p0: vec3f = vec3f(a0.xy, h.x);\n\tvar p1: vec3f = vec3f(a0.zw, h.y);\n\tvar p2: vec3f = vec3f(a1.xy, h.z);\n\tvar p3: vec3f = vec3f(a1.zw, h.w);\n\tvar norm: vec4f = taylorInvSqrt(vec4f(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));\n\tp0 *= vec3f(norm.x);\n\tp1 *= vec3f(norm.y);\n\tp2 *= vec3f(norm.z);\n\tp3 *= vec3f(norm.w);\n\tvar m: vec4f = max((0.6 - vec4f(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3))), vec4f(0.0));\n\tm = (m * m);\n\treturn (42.0 * dot((m * m), vec4f(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3))));\n}\n\nfn curlNoise(p_in: vec3f) -> vec3f {\n\tvar p: vec3f = p_in;\n\tconst e: f32 = 0.08;\n\tvar n1: f32 = snoise((p + vec3f(e, 0.0, 0.0)));\n\tvar n2: f32 = snoise((p - vec3f(e, 0.0, 0.0)));\n\tvar n3: f32 = snoise((p + vec3f(0.0, e, 0.0)));\n\tvar n4: f32 = snoise((p - vec3f(0.0, e, 0.0)));\n\tvar n5: f32 = snoise((p + vec3f(0.0, 0.0, e)));\n\tvar n6: f32 = snoise((p - vec3f(0.0, 0.0, e)));\n\treturn normalize((vec3f((((n4 - n3)) - ((n6 - n5))), (((n6 - n5)) - ((n2 - n1))), (((n2 - n1)) - ((n4 - n3)))) + 1e-5));\n}\n\nfn hash11(p_in: f32) -> f32 {\n\tvar p: f32 = p_in;\n\treturn fract((sin((p * 127.1)) * 43758.5453));\n}\n\nfn hit2(b_in: bool) -> f32 {\n\tvar b: bool = b_in;\n\treturn select(0.0, 1.0, b);\n}\n\nfn contactAt(c_in: vec3f, st_in: f32, base_in: vec3f, rad_in: vec3f, pos: ptr<function, vec3f>) {\n\tvar c: vec3f = c_in;\n\tvar st: f32 = st_in;\n\tvar base: vec3f = base_in;\n\tvar rad: vec3f = rad_in;\n\tvar dd: vec3f = (base - c);\n\tvar r: f32 = fr.uContact.y;\n\tvar d2: f32 = dot(dd, dd);\n\tif (((d2 >= (r * r)) || (st < 0.001))) {\n\t\treturn;\n\t}\n\tvar f: f32 = (1.0 - (sqrt(d2) / r));\n\tf = ((f * f) * ((3.0 - (2.0 * f))));\n\tvar k: f32 = ((f * st) * fr.uContact.x);\n\tif ((fr.uContact.z < 0.5)) {\n\t\t(*pos) += ((rad * k) * 0.4);\n\t} else if ((fr.uContact.z < 1.5)) {\n\t\tvar ax: vec3f = normalize((c + vec3f(1e-4)));\n\t\tvar a: f32 = (k * 2.4);\n\t\tvar q: vec3f = ((*pos) - c);\n\t\t(*pos) = (((c + (q * cos(a))) + (cross(ax, q) * sin(a))) + ((ax * dot(ax, q)) * ((1.0 - cos(a)))));\n\t} else if ((fr.uContact.z < 2.5)) {\n\t\t(*pos) -= ((normalize((dd + vec3f(1e-4))) * k) * 0.3);\n\t} else if ((fr.uContact.z < 3.5)) {\n\t\t(*pos) += ((normalize((dd + vec3f(1e-4))) * k) * 0.3);\n\t} else if ((fr.uContact.z < 4.5)) {\n\t\t(*pos) += (((rad * sin(((length(dd) * 20.0) - (fr.uTime * 6.0)))) * k) * 0.14);\n\t} else if ((fr.uContact.z < 5.5)) {\n\t\tvar hh: f32 = fract((sin(dot(base.xz, vec2f(12.9898, 78.233))) * 43758.5453));\n\t\t(*pos).y -= (((k * k) * 0.55) * ((0.6 + (0.8 * hh))));\n\t\t{ let _sw0 = ((*pos).xz + vec2f(((((hh - 0.5)) * k) * 0.06))); (*pos) = vec3f(_sw0.x, (*pos).y, _sw0.y); }\n\t} else if ((fr.uContact.z < 6.5)) {\n\t\t(*pos) += ((curlNoise(((base * 3.0) + (fr.uTime * 0.8))) * k) * 0.45);\n\t}\n}\n\nfn contactK(b_in: vec3f) -> f32 {\n\tvar b: vec3f = b_in;\n\tvar m: f32 = 0.0;\n\tvar r: f32 = (fr.uContact.y * ((1.0 + (0.12 * sin((fr.uTime * 4.0))))));\n\tfor (var i: i32 = 0; (i < 16); i++) {\n\t\tif ((f32(i) >= fr.uContact.w)) {\n\t\t\tbreak;\n\t\t}\n\t\tvar d: f32 = distance(b, fr.uTrk[i].xyz);\n\t\tif ((d < r)) {\n\t\t\tm = max(m, (((1.0 - (d / r))) * fr.uTrk[i].w));\n\t\t}\n\t}\n\tfor (var i: i32 = 0; (i < 32); i++) {\n\t\tif ((f32(i) >= fr.uShockP.z)) {\n\t\t\tbreak;\n\t\t}\n\t\tvar d: f32 = distance(b, fr.uImp[i].xyz);\n\t\tif ((d < r)) {\n\t\t\tm = max(m, (((1.0 - (d / r))) * fr.uImp[i].w));\n\t\t}\n\t}\n\treturn clamp((m * fr.uContact.x), 0.0, 1.0);\n}\n\nfn markK(b_in: vec3f) -> f32 {\n\tvar b: vec3f = b_in;\n\tif (((fr.uMark.x < 0.5) || (fr.uContact.w < 0.5))) {\n\t\treturn 0.0;\n\t}\n\tvar m: f32 = 0.0;\n\tfor (var i: i32 = 0; (i < 16); i++) {\n\t\tif ((f32(i) >= fr.uContact.w)) {\n\t\t\tbreak;\n\t\t}\n\t\tvar d: f32 = distance(b, fr.uTrk[i].xyz);\n\t\tif ((d < fr.uMark.y)) {\n\t\t\tm = max(m, (1.0 - (d / fr.uMark.y)));\n\t\t}\n\t}\n\treturn (((m * m) * ((3.0 - (2.0 * m)))) * fr.uMark.z);\n}\n\nfn hueRot(c_in: vec3f, a_in: f32) -> vec3f {\n\tvar c: vec3f = c_in;\n\tvar a: f32 = a_in;\n\tvar k: vec3f = vec3f(0.57735);\n\treturn (((c * cos(a)) + (cross(k, c) * sin(a))) + ((k * dot(k, c)) * ((1.0 - cos(a)))));\n}\n\nfn sliceK(b_in: vec3f) -> f32 {\n\tvar b: vec3f = b_in;\n\tif ((fr.uSlice.x < 0.001)) {\n\t\treturn 0.0;\n\t}\n\tvar axCode: f32 = glsl_mod_f(fr.uSlice.w, 10.0);\n\tvar nLines: f32 = max(1.0, floor((fr.uSlice.w / 10.0)));\n\tvar c: f32 = select((select((select((((b.x + b.y)) * 0.707), b.z, (axCode < 2.5))), b.x, (axCode < 1.5))), b.y, (axCode < 0.5));\n\tvar v: f32 = clamp((((c + 1.2)) / 2.4), 0.0, 1.0);\n\tvar coord: f32 = glsl_mod_f(((v * nLines) - (fr.uSlice.y * nLines)), 1.0);\n\treturn (((1.0 - smoothstep((fr.uSlice.z * 0.4), fr.uSlice.z, abs((coord - 0.5))))) * fr.uSlice.x);\n}\n\nfn disK(b_in: vec3f, idx_in: f32) -> f32 {\n\tvar b: vec3f = b_in;\n\tvar idx: f32 = idx_in;\n\tif ((fr.uDis.x < 0.001)) {\n\t\treturn 0.0;\n\t}\n\tvar st: f32 = fr.uDisP.x;\n\tvar y01: f32 = clamp((((b.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\tif (((st > 2.5) && (st < 3.5))) {\n\t\ty01 = (floor(((y01 * 12.0) + 0.001)) / 12.0);\n\t}\n\tvar h: f32 = select(hash11((idx * 37.3)), hash11((floor((idx * 1800.0)) * 0.731)), (((st > 3.5) && (st < 4.5))));\n\tvar jit: f32 = select(select(select(select(select(select(select(0.1, 0.12, (st < 6.5)), 0.18, (st < 5.5)), 0.3, (st < 4.5)), 0.0, (st < 3.5)), 0.03, (st < 2.5)), 0.28, (st < 1.5)), 0.16, (st < 0.5));\n\tvar m: f32 = fr.uDis.y;\n\tvar still: bool = (fr.uAnimN < 0.5);\n\tvar ord: f32;\n\tif ((m < 0.5)) {\n\t\tord = (1.0 - y01);\n\t} else if ((m < 1.5)) {\n\t\tord = select(hash11((idx * 13.7)), ((snoise((b * 1.7)) * 0.5) + 0.5), still);\n\t} else if ((m < 2.5)) {\n\t\tord = y01;\n\t} else if ((m < 3.5)) {\n\t\tord = select(y01, clamp(((((b.x - fr.uCen.x)) * 0.3) + 0.5), 0.0, 1.0), still);\n\t} else {\n\t\tvar r01: f32 = clamp((length((b - fr.uCen)) / max((((fr.uYR.y - fr.uYR.x)) * 0.6), 0.3)), 0.0, 1.0);\n\t\tord = select((1.0 - r01), r01, (m < 4.5));\n\t}\n\tord = ((ord * ((1.0 - jit))) + (h * jit));\n\tvar w: f32 = max(fr.uDisQ.x, 0.06);\n\tif (((st > 1.5) && (st < 2.5))) {\n\t\tw *= 0.45;\n\t}\n\treturn clamp(((((fr.uDis.x * ((1.0 + w))) - ord)) / w), 0.0, 1.0);\n}\n\nfn growK(b_in: vec3f, idx_in: f32) -> f32 {\n\tvar b: vec3f = b_in;\n\tvar idx: f32 = idx_in;\n\tvar S: f32 = max((fr.uYR.y - fr.uYR.x), 0.5);\n\tvar y01: f32 = clamp((((b.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\tvar d: f32;\n\tif ((fr.uGrow.y < 0.5)) {\n\t\td = ((y01 * 0.8) + (clamp((length((b.xz - fr.uCen.xz)) / S), 0.0, 1.0) * 0.2));\n\t} else if ((fr.uGrow.y < 1.5)) {\n\t\td = clamp((distance(b, fr.uGrowSeed) / ((S * 1.5))), 0.0, 1.0);\n\t} else {\n\t\td = clamp((length((b - fr.uCen)) / ((S * 0.7))), 0.0, 1.0);\n\t}\n\tvar nz: f32 = select(hash11((floor((idx * 700.0)) * 0.37)), ((snoise(((b * 3.0) + 7.0)) * 0.5) + 0.5), (fr.uAnimN < 0.5));\n\td = clamp(((d + ((((nz - 0.5)) * 0.45) * fr.uGrow.z)) + (((hash11((idx * 9.1)) - 0.5)) * 0.03)), 0.0, 1.0);\n\tvar w: f32 = max(fr.uGrow.w, 0.04);\n\treturn clamp(((((fr.uGrow.x * ((1.0 + w))) - d)) / w), 0.0, 1.0);\n}\n\nfn morphLocal(A_in: vec3f, B_in: vec3f, idx_in: f32) -> f32 {\n\tvar A: vec3f = A_in;\n\tvar B: vec3f = B_in;\n\tvar idx: f32 = idx_in;\n\tvar h: f32 = hash11((idx * 3.17));\n\tvar msty: i32 = i32((fr.uMorphS.x + 0.5));\n\tif ((msty == 8)) {\n\t\th = hash11(dot(floor((((A - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));\n\t}\n\tif ((msty == 13)) {\n\t\th = hash11(dot(floor((((A - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));\n\t}\n\tvar ord: f32 = h;\n\tvar so: i32 = i32((fr.uMorphO.x + 0.5));\n\tvar yN: f32 = clamp((((A.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\tif ((so == 1)) {\n\t\tord = ((yN * 0.85) + (h * 0.15));\n\t} else if ((so == 2)) {\n\t\tord = ((((1.0 - yN)) * 0.85) + (h * 0.15));\n\t} else if ((so == 3)) {\n\t\tord = ((clamp((length(A) / 1.4), 0.0, 1.0) * 0.85) + (h * 0.15));\n\t} else if ((so == 4)) {\n\t\tord = ((clamp((((A.x + 1.2)) / 2.4), 0.0, 1.0) * 0.85) + (h * 0.15));\n\t} else if ((so == 5)) {\n\t\tord = ((((1.0 - gDepth)) * 0.85) + (h * 0.15));\n\t} else if ((so == 6)) {\n\t\tord = ((gDepth * 0.85) + (h * 0.15));\n\t}\n\tif ((msty == 10)) {\n\t\tord = ((((1.0 - gDepth)) * 0.8) + (h * 0.2));\n\t}\n\tif ((msty == 11)) {\n\t\tord = ((clamp((((B.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0) * 0.92) + (h * 0.08));\n\t}\n\tvar sg: f32 = fr.uMorphS.z;\n\treturn clamp(((fr.uMorph * ((1.0 + sg))) - (ord * sg)), 0.0, 1.0);\n}\n\nfn morphEase(x_in: f32) -> f32 {\n\tvar x: f32 = x_in;\n\tvar e: i32 = i32((fr.uMorphO.y + 0.5));\n\tif ((e == 1)) {\n\t\treturn (((x * x) * x) * (((x * (((x * 6.0) - 15.0))) + 10.0)));\n\t}\n\tif ((e == 2)) {\n\t\tvar c1: f32 = 1.70158;\n\t\tvar y: f32 = (x - 1.0);\n\t\treturn ((1.0 + (((((c1 + 1.0)) * y) * y) * y)) + ((c1 * y) * y));\n\t}\n\treturn ((x * x) * ((3.0 - (2.0 * x))));\n}\n\nfn frPlace(lay_in: f32, k_in: f32, n_in: f32, u_in: f32, v_in: f32, nrm: ptr<function, vec3f>) -> vec3f {\n\tvar lay: f32 = lay_in;\n\tvar k: f32 = k_in;\n\tvar n: f32 = n_in;\n\tvar u: f32 = u_in;\n\tvar v: f32 = v_in;\n\tvar t: f32 = select(0.5, (k / ((n - 1.0))), (n > 1.0));\n\tvar W: f32 = fr.uFr2.z;\n\tvar H: f32 = fr.uFr2.w;\n\tvar depth: f32 = fr.uFr3.x;\n\t(*nrm) = vec3f(0.0, 0.0, 1.0);\n\tif (((lay > 0.5) && (lay < 1.5))) {\n\t\tvar gx: f32 = ceil(sqrt((n * ((W / H)))));\n\t\tvar gy: f32 = ceil((n / gx));\n\t\tvar s: f32 = min((2.4 / ((gx * W))), (2.4 / ((gy * H))));\n\t\tvar cx: f32 = glsl_mod_f(k, gx);\n\t\tvar cy: f32 = floor((k / gx));\n\t\treturn vec3f(((((((cx - (((gx - 1.0)) * 0.5))) * W) * s) * 1.04) + ((u * W) * s)), (((((((((gy - 1.0)) * 0.5) - cy)) * H) * s) * 1.04) + ((v * H) * s)), 0.0);\n\t}\n\tvar ad: f32 = (k - fr.uFr4.x);\n\tif (((lay > 1.5) && (lay < 2.5))) {\n\t\tvar sc: f32 = 0.5;\n\t\tvar aa: f32 = abs(ad);\n\t\tvar c1: f32 = ((W * 0.54) + ((W * sc) * 0.53));\n\t\tvar c: f32 = select((c1 + (((((aa - 1.0)) * W) * sc) * 1.06)), (aa * c1), (aa < 1.0));\n\t\tvar s: f32 = mix(1.0, sc, min(aa, 1.0));\n\t\treturn vec3f(((sign(ad) * c) + ((u * W) * s)), ((v * H) * s), 0.0);\n\t}\n\tvar dz: f32 = select(1.0, -1.0, (((fr.uFr4.y > 0.5) && (fr.uFr4.y < 1.5))));\n\tvar kz: f32 = k;\n\tvar cen: f32 = select(fr.uFr4.x, (((n - 1.0)) * 0.5), (fr.uFr6.y > 0.5));\n\tvar ts: f32 = select(1.0, (1.0 - (0.72 * clamp((max(-ad, 0.0) / max((n - 1.0), 1.0)), 0.0, 1.0))), (lay > 2.5));\n\treturn vec3f(((u * W) * ts), ((v * H) * ts), (((((kz - cen)) * depth) / max((n - 1.0), 1.0)) * dz));\n}\n\nfn frMix(k_in: f32, u_in: f32, v_in: f32, nrm: ptr<function, vec3f>) -> vec3f {\n\tvar k: f32 = k_in;\n\tvar u: f32 = u_in;\n\tvar v: f32 = v_in;\n\tvar nA: vec3f;\n\tvar nB: vec3f;\n\tvar pA: vec3f = frPlace(fr.uFr3.y, k, fr.uFr.y, u, v, &nA);\n\tif ((fr.uFr3.w > 0.0001)) {\n\t\tvar pB: vec3f = frPlace(fr.uFr3.z, k, fr.uFr.y, u, v, &nB);\n\t\tvar m: f32 = ((fr.uFr3.w * fr.uFr3.w) * ((3.0 - (2.0 * fr.uFr3.w))));\n\t\t(*nrm) = normalize(mix(nA, nB, m));\n\t\treturn mix(pA, pB, m);\n\t}\n\t(*nrm) = nA;\n\treturn pA;\n}\n\nfn frBlockPos(aIdx_in: f32, nrm: ptr<function, vec3f>, kk: ptr<function, f32>, cell: ptr<function, vec2f>) -> vec3f {\n\tvar aIdx: f32 = aIdx_in;\n\tvar ip: f32 = floor(((aIdx * fr.uFr.w) + 0.5));\n\tvar k: f32 = floor((ip / fr.uFr.z));\n\tvar loc: f32 = (ip - (k * fr.uFr.z));\n\tvar ci: f32 = glsl_mod_f(loc, fr.uFr2.x);\n\tvar cj: f32 = floor((loc / fr.uFr2.x));\n\t(*kk) = k;\n\t(*cell) = vec2f(ci, cj);\n\tvar jt: vec2f = (vec2f(fract((sin((k * 12.9898)) * 43758.5453)), fract((sin(((k * 78.233) + 1.7)) * 24634.6345))) - 0.5);\n\treturn frMix(k, (((((ci + 0.5) + (jt.x * 0.9))) / fr.uFr2.x) - 0.5), (0.5 - ((((cj + 0.5) + (jt.y * 0.9))) / fr.uFr2.y)), nrm);\n}\n\nfn frShow(k_in: f32, tcol: ptr<function, vec3f>) -> vec4f {\n\tvar k: f32 = k_in;\n\tvar n: f32 = fr.uFr.y;\n\tvar idx: f32 = fr.uFr4.x;\n\tvar mode: i32 = i32((fr.uFr4.y + 0.5));\n\tvar d: f32 = (k - idx);\n\tvar fw: f32 = max(2.0, (n * 0.04));\n\tvar w: f32 = 1.0;\n\tvar lift: f32 = 0.0;\n\tvar tint: f32 = 0.0;\n\t(*tcol) = fr.uP2;\n\tif ((mode == 0)) {\n\t\tvar hl: f32 = fr.uFr4.w;\n\t\tif ((hl > 0.001)) {\n\t\t\tw = ((1.0 - (0.5 * hl)) + ((((0.5 + (1.4 * hl))) * max(0.0, (1.0 - (abs(d) / 2.5)))) * hl));\n\t\t}\n\t\tif ((d < -0.5)) {\n\t\t\tw *= (0.45 + (0.55 / ((1.0 + (0.2 * (-d))))));\n\t\t}\n\t\tif ((((d > 0.5) && (fr.uFr6.y < 0.5)) && (abs((fr.uFr3.y - 2.0)) > 0.5))) {\n\t\t\tw *= select(select(1.0, 0.4, (fr.uFr5.z > 0.5)), 0.0, (fr.uFr5.z > 1.5));\n\t\t}\n\t} else if ((mode == 1)) {\n\t\tif ((d < 0.0)) {\n\t\t\tw = max(0.0, (1.0 + (d / fw)));\n\t\t}\n\t\tlift = (1.0 - w);\n\t\tw *= (1.0 + (0.25 * max(0.0, (1.0 - abs(d)))));\n\t} else if ((mode == 2)) {\n\t\tif ((d > 0.0)) {\n\t\t\tw = (max(0.0, (1.0 - (d / fw))) * (select(0.0, 0.5, (d <= fw))));\n\t\t\tlift = (-((1.0 - w)) * 0.6);\n\t\t}\n\t\tw *= (1.0 + (0.25 * max(0.0, (1.0 - abs(d)))));\n\t} else if ((mode == 3)) {\n\t\tvar half_: f32 = max(3.0, (n * 0.08));\n\t\tvar ad: f32 = abs(d);\n\t\tw = select(max(0.0, (1.0 - (((ad - half_)) / fw))), 1.0, (ad <= half_));\n\t\tlift = ((((1.0 - w)) * sign((d + 0.0001))) * 0.8);\n\t\tw *= (1.0 + (0.25 * max(0.0, (1.0 - ad))));\n\t} else {\n\t\tvar span: f32 = max(1.5, (n * max(0.02, fr.uFr4.z)));\n\t\tif ((mode == 4)) {\n\t\t\tvar beam: f32 = exp(((-((d / span)) * ((d / span))) * 2.0));\n\t\t\tvar after: f32 = select(0.0, (exp((d / ((span * 2.4)))) * 0.4), (d < 0.0));\n\t\t\tw = ((0.18 + (beam * 1.5)) + after);\n\t\t\ttint = min(0.85, (beam * 0.8));\n\t\t\tlift = select(0.0, -min(0.35, ((-d / n) * 1.2)), (d < 0.0));\n\t\t} else {\n\t\t\tvar age: f32 = (-d / span);\n\t\t\tif ((d > 0.0)) {\n\t\t\t\tw = 0.0;\n\t\t\t} else {\n\t\t\t\tw = (max(0.0, (exp((-age * 1.1)) * 0.9)) + (1.35 * max(0.0, (1.0 - abs(d)))));\n\t\t\t\tvar t: f32 = min(1.0, age);\n\t\t\t\t(*tcol) = select(mix(fr.uP1, fr.uP2, (((t - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (t * 2.0)), (t < 0.5));\n\t\t\t\ttint = (min(0.9, (0.3 + (age * 0.7))) * ((1.0 - max(0.0, (1.0 - abs(d))))));\n\t\t\t\tlift = -min(0.6, (age * 0.25));\n\t\t\t}\n\t\t}\n\t}\n\treturn vec4f(w, lift, tint, 0.0);\n}\n\nfn dzone(x_in: f32) -> f32 {\n\tvar x: f32 = x_in;\n\tvar a: f32 = abs(x);\n\treturn ((sign(x) * max((a - fr.uDepthQ.x), 0.0)) / max((1.0 - fr.uDepthQ.x), 0.25));\n}\n\nfn depthShape(b_in: vec3f) -> vec3f {\n\tvar b: vec3f = b_in;\n\tvar t: f32 = (fr.uTime - fr.uTOff);\n\tvar A: f32 = fr.uDepth.x;\n\tvar sp: f32 = fr.uDepth.z;\n\tvar dn: f32 = select((1.0 - gDepth), gDepth, (fr.uDepthP.y > 0.0));\n\tvar fo: f32 = select((1.0 - fr.uDepth.w), fr.uDepth.w, (fr.uDepthP.y > 0.0));\n\tvar dd: f32 = dzone((dn - fo));\n\tvar md: i32 = i32((fr.uDepth.y + 0.5));\n\tif ((md == 0)) {\n\t\tb.z += ((dd * A) * 1.2);\n\t} else if ((md == 1)) {\n\t\tvar N: f32 = max(2.0, floor((fr.uDepthP.x + 0.5)));\n\t\tvar x: f32 = (dn * N);\n\t\tvar dq: f32 = (((floor(x) + smoothstep(0.38, 0.62, fract(x)))) / N);\n\t\tb.z += ((dzone((dq - fo)) * A) * 1.5);\n\t} else if ((md == 2)) {\n\t\tb.z += (((dd * A) * 1.3) * ((0.5 + (0.5 * sin(((t * sp) * 0.9))))));\n\t} else if ((md == 3)) {\n\t\tb.z += (((dd * A) * 1.4) * ((0.55 + (0.45 * sin(((b.x * 3.2) - ((t * sp) * 1.6)))))));\n\t} else if ((md == 4)) {\n\t\tb.z += ((((dd * 0.6) + ((sin(((length(b.xy) * 9.0) - ((t * sp) * 2.2))) * 0.25) * ((0.35 + dn))))) * A);\n\t} else if ((md == 5)) {\n\t\tvar a: f32 = (((dd * A) * 1.6) * sin(((t * sp) * 0.7)));\n\t\tvar cs: f32 = cos(a);\n\t\tvar sn: f32 = sin(a);\n\t\t{ let _sw1 = (mat2x2f(cs, -sn, sn, cs) * b.xz); b = vec3f(_sw1.x, b.y, _sw1.y); }\n\t\tb.z += ((dd * A) * 0.5);\n\t} else {\n\t\tvar p: f32 = (0.5 + (0.5 * sin((((t * sp) * 0.8) - 1.5708))));\n\t\tb.z += ((dd * A) * ((0.4 + ((1.8 * p) * p))));\n\t\t{ let _sw2 = (b.xy * vec2f((1.0 + ((((dd * A) * 0.5) * p) * p)))); b = vec3f(_sw2.x, _sw2.y, b.z); }\n\t}\n\tvar a: f32 = ((t * sp) * 0.8);\n\t{ let _sw3 = (b.xy + ((((vec2f(cos(a), (sin(a) * 0.55)) * dd) * fr.uDepthP.z) * A) * 0.4)); b = vec3f(_sw3.x, _sw3.y, b.z); }\n\treturn b;\n}\n\nfn hyperWarp(p_in: vec3f, c_in: vec3f, R_in: f32, md_in: f32, a_in: f32, w4: ptr<function, f32>) -> vec3f {\n\tvar p: vec3f = p_in;\n\tvar c: vec3f = c_in;\n\tvar R: f32 = R_in;\n\tvar md: f32 = md_in;\n\tvar a: f32 = a_in;\n\tvar q: vec3f = (((p - c)) / R);\n\tvar r2: f32 = dot(q, q);\n\tvar h: vec4f = (vec4f((2.0 * q), (r2 - 1.0)) / ((r2 + 1.0)));\n\tvar ca: f32 = cos(a);\n\tvar sa: f32 = sin(a);\n\tif ((md < 0.5)) {\n\t\t{ let _sw4 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw4.x, _sw4.y); }\n\t} else if ((md < 1.5)) {\n\t\t{ let _sw5 = vec2f(((h.x * ca) - (h.y * sa)), ((h.x * sa) + (h.y * ca))); h = vec4f(_sw5.x, _sw5.y, h.z, h.w); }\n\t\t{ let _sw6 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw6.x, _sw6.y); }\n\t} else if ((md < 2.5)) {\n\t\t{ let _sw7 = vec2f(((h.x * ca) - (h.w * sa)), ((h.x * sa) + (h.w * ca))); h = vec4f(_sw7.x, h.y, h.z, _sw7.y); }\n\t\tvar cb: f32 = cos((a * 0.618));\n\t\tvar sb: f32 = sin((a * 0.618));\n\t\t{ let _sw8 = vec2f(((h.y * cb) - (h.z * sb)), ((h.y * sb) + (h.z * cb))); h = vec4f(h.x, _sw8.x, _sw8.y, h.w); }\n\t} else {\n\t\tvar b: f32 = (2.4 * sin(a));\n\t\tvar cb: f32 = cos(b);\n\t\tvar sb: f32 = sin(b);\n\t\t{ let _sw9 = vec2f(((h.z * cb) - (h.w * sb)), ((h.z * sb) + (h.w * cb))); h = vec4f(h.x, h.y, _sw9.x, _sw9.y); }\n\t}\n\t(*w4) = h.w;\n\tvar o: vec3f = ((h.xyz / max((1.0 - h.w), 0.03)) * R);\n\tvar ol: f32 = length(o);\n\tvar oc: f32 = select((1.8 + ((1.0 - exp(-((ol - 1.8)))))), ol, (ol < 1.8));\n\treturn (c + (o * ((oc / max(ol, 1e-4)))));\n}\n\nfn chF(q_in: vec3f, n_in: f32, m_in: f32) -> f32 {\n\tvar q: vec3f = q_in;\n\tvar n: f32 = n_in;\n\tvar m: f32 = m_in;\n\tvar f: f32 = ((cos((n * q.x)) * cos((m * q.y))) - (cos((m * q.x)) * cos((n * q.y))));\n\tif ((fr.uFlat > 0.5)) {\n\t\treturn f;\n\t}\n\treturn ((((f + (cos((n * q.y)) * cos((m * q.z)))) - (cos((m * q.y)) * cos((n * q.z)))) + (cos((n * q.z)) * cos((m * q.x)))) - (cos((m * q.z)) * cos((n * q.x))));\n}\n\nfn chField(q_in: vec3f) -> f32 {\n\tvar q: vec3f = q_in;\n\tif ((fr.uCh.y < 0.001)) {\n\t\treturn chF(q, fr.uChA.x, fr.uChA.y);\n\t}\n\tif ((fr.uCh.y > 0.999)) {\n\t\treturn chF(q, fr.uChA.z, fr.uChA.w);\n\t}\n\treturn mix(chF(q, fr.uChA.x, fr.uChA.y), chF(q, fr.uChA.z, fr.uChA.w), fr.uCh.y);\n}\n\nfn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<function, vec3f>, maskV: ptr<function, f32>) -> vec3f {\n\tvar aOrigin: vec3f = aOrigin_in;\n\tvar aTarget: vec3f = aTarget_in;\n\tvar aIdx: f32 = aIdx_in;\n\tvar t: f32 = (fr.uTime - fr.uTOff);\n\tvar m: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));\n\t(*base) = aTarget;\n\tif (((fr.uFr.x > 0.5) && (fr.uMorph > 0.9999))) {\n\t\tvar fnrm: vec3f;\n\t\tvar fk: f32;\n\t\tvar fcell: vec2f;\n\t\t(*base) = frBlockPos(aIdx, &fnrm, &fk, &fcell);\n\t}\n\tif ((fr.uMorph < 0.9999)) {\n\t\tvar lt: f32 = morphLocal(aOrigin, aTarget, aIdx);\n\t\tvar e: f32 = morphEase(lt);\n\t\tvar sc: f32 = fr.uMorphS.y;\n\t\tvar sty: i32 = i32((fr.uMorphS.x + 0.5));\n\t\tvar mid: vec3f = (((aOrigin + aTarget)) * 0.5);\n\t\tvar cn: vec3f = curlNoise(((mid * 1.8) + vec3f(0.0, (t * 0.3), 0.0)));\n\t\tvar hA: f32 = hash11((aIdx * 5.31));\n\t\tvar hB: f32 = hash11((aIdx * 7.77));\n\t\tvar hC: f32 = hash11((aIdx * 2.13));\n\t\tvar flightK: f32 = sin((e * 3.1415926535));\n\t\tvar ctrl: vec3f = (mid + ((cn * sc) * 0.9));\n\t\tif ((sty == 3)) {\n\t\t\tctrl = (mid + ((cn * sc) * 0.3));\n\t\t}\n\t\tvar om: f32 = (1.0 - e);\n\t\t(*base) = ((((om * om) * aOrigin) + (((2.0 * om) * e) * ctrl)) + ((e * e) * aTarget));\n\t\tif ((sty == 0)) {\n\t\t\tvar fq: f32 = pow(flightK, 1.2);\n\t\t\tvar tb1: vec3f = curlNoise((((*base) * 1.35) + vec3f(0.0, 0.0, (t * 0.35))));\n\t\t\tvar tb2: vec3f = curlNoise((((*base) * 3.2) - vec3f((t * 0.55), 0.0, 0.0)));\n\t\t\t(*base) += (((((tb1 * 0.5) + (tb2 * 0.18))) * sc) * fq);\n\t\t}\n\t\tif ((sty == 1)) {\n\t\t\tvar vxz: vec2f = ((*base).xz - fr.uCen.xz);\n\t\t\tvar vr: f32 = length(vxz);\n\t\t\tvar vang: f32 = ((((sin((e * 3.1415926535)) * fr.uMorphS.w) * 6.2831853) * ((0.7 + (0.3 * hash11((aIdx * 1.3)))))) * pow((1.0 / ((0.32 + vr))), 0.5));\n\t\t\tvar vcs: f32 = cos(vang);\n\t\t\tvar vsn: f32 = sin(vang);\n\t\t\tvxz = vec2f(((vxz.x * vcs) - (vxz.y * vsn)), ((vxz.x * vsn) + (vxz.y * vcs)));\n\t\t\tvxz *= vec2f((1.0 - ((0.38 * flightK) * smoothstep(0.0, 1.1, vr))));\n\t\t\t{ let _sw10 = (fr.uCen.xz + vxz); (*base) = vec3f(_sw10.x, (*base).y, _sw10.y); }\n\t\t\t(*base).y += ((((((hB - 0.3)) * 0.35) * sc) * flightK) * flightK);\n\t\t}\n\t\tif ((sty == 3)) {\n\t\t\tvar band: f32 = (smoothstep(0.0, 0.3, lt) * ((1.0 - smoothstep(0.6, 1.0, lt))));\n\t\t\tvar sq: vec3f = ((((floor(((((*base) - fr.uCen)) * 20.0)) + 0.5)) / 20.0) + fr.uCen);\n\t\t\t(*base) = mix((*base), sq, (band * 0.8));\n\t\t\t(*base) += ((((vec3f(hA, hB, hC) - 0.5)) * 0.045) * band);\n\t\t}\n\t\tif ((sty == 4)) {\n\t\t\tvar H: f32 = (((0.45 + (0.85 * hA))) * sc);\n\t\t\tvar cloud: vec3f = ((aOrigin + vec3f(0.0, H, 0.0)) + (((((cn * ((0.5 + (0.7 * hB)))) + (((vec3f(hA, hC, hB) - 0.5)) * 0.45))) * sc) * 0.8));\n\t\t\tvar k1: f32 = clamp((e / 0.5), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);\n\t\t\tvar u1: f32 = (1.0 - pow((1.0 - k1), 2.4));\n\t\t\tvar u2: f32 = (1.0 - pow((1.0 - k2), 2.0));\n\t\t\tvar p1: vec3f = (mix(aOrigin, cloud, u1) + (((curlNoise(((aOrigin * 2.0) + vec3f(0.0, (t * 0.4), 0.0))) * 0.12) * sc) * sin((k1 * 3.1415926535))));\n\t\t\tvar p2: vec3f = (mix(cloud, aTarget, u2) + ((((curlNoise(((cloud * 1.5) + vec3f((t * 0.3), 0.0, 0.0))) * 0.1) * sc) * sin((k2 * 3.1415926535))) * ((1.0 - k2))));\n\t\t\t(*base) = select(p2, p1, (e < 0.5));\n\t\t}\n\t\tif ((sty == 5)) {\n\t\t\tvar fl5: f32 = (fr.uYR.x - 0.02);\n\t\t\tvar R5: f32 = (0.55 + (0.35 * sc));\n\t\t\tvar an5: f32 = (hA * 6.2831853);\n\t\t\tvar rr5: f32 = (sqrt(hB) * R5);\n\t\t\tvar hh5: f32 = ((pow(max(0.0, (1.0 - (rr5 / R5))), 0.85) * 0.85) * ((0.7 + (0.3 * hC))));\n\t\t\tvar heap: vec3f = vec3f((fr.uCen.x + (cos(an5) * rr5)), (fl5 + hh5), (fr.uCen.z + (sin(an5) * rr5)));\n\t\t\tvar k1: f32 = clamp((e / 0.5), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);\n\t\t\tvar fall: f32 = (k1 * k1);\n\t\t\tvar slide: f32 = (1.0 - pow((1.0 - k1), 2.0));\n\t\t\tvar p1: vec3f = vec3f(mix(aOrigin.x, heap.x, slide), mix(aOrigin.y, heap.y, fall), mix(aOrigin.z, heap.z, slide));\n\t\t\t{ let _sw11 = (p1.xz + ((((vec2f(hA, hC) - 0.5)) * 0.06) * sin((k1 * 3.1415926535)))); p1 = vec3f(_sw11.x, p1.y, _sw11.y); }\n\t\t\tvar gr: f32 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tvar p2: vec3f = mix(heap, aTarget, gr);\n\t\t\tp2.y += (((0.3 * sc) * sin((k2 * 3.1415926535))) * ((0.4 + hA)));\n\t\t\tp2 += ((cn * 0.12) * sin((k2 * 3.1415926535)));\n\t\t\t(*base) = select(p2, p1, (e < 0.5));\n\t\t}\n\t\tif ((sty == 2)) {\n\t\t\tvar fl: f32 = (fr.uYR.x - 0.04);\n\t\t\tvar h1: f32 = hA;\n\t\t\tvar h2: f32 = hB;\n\t\t\tvar h3: f32 = hC;\n\t\t\tvar dx: vec3f = normalize(((vec3f(aOrigin.x, 0.0, aOrigin.z) + (vec3f((h1 - 0.5), 0.0, (h2 - 0.5)) * 0.9)) + vec3f(1e-3, 0.0, 0.0)));\n\t\t\tvar spd: f32 = (((0.35 + (h3 * 1.1))) * sc);\n\t\t\tvar vy0: f32 = (((0.5 + (h2 * 1.3))) * sc);\n\t\t\tvar te: f32 = clamp((lt / 0.45), 0.0, 1.0);\n\t\t\tvar tau: f32 = (te * 1.6);\n\t\t\tvar gy: f32 = (fl + (h1 * 0.03));\n\t\t\tvar pl: vec3f = aOrigin;\n\t\t\t{ let _sw12 = (pl.xz + (((dx.xz * spd) * ((1.0 - exp(-3.52)))) * 1.4)); pl = vec3f(_sw12.x, pl.y, _sw12.y); }\n\t\t\tpl.y = gy;\n\t\t\tvar pf: vec3f = aOrigin;\n\t\t\t{ let _sw13 = (pf.xz + (((dx.xz * spd) * ((1.0 - exp((-2.2 * tau))))) * 1.4)); pf = vec3f(_sw13.x, pf.y, _sw13.y); }\n\t\t\tvar g2: f32 = 2.1;\n\t\t\tvar disc: f32 = ((vy0 * vy0) + ((4.0 * g2) * max((aOrigin.y - gy), 0.0)));\n\t\t\tvar tL: f32 = (((vy0 + sqrt(disc))) / ((2.0 * g2)));\n\t\t\tvar yb: f32 = ((aOrigin.y + (vy0 * tau)) - ((g2 * tau) * tau));\n\t\t\tif ((tau > tL)) {\n\t\t\t\tvar vI: f32 = (vy0 - ((2.0 * g2) * tL));\n\t\t\t\tvar v1: f32 = (-0.3 * vI);\n\t\t\t\tvar tb: f32 = (tau - tL);\n\t\t\t\tyb = select(gy, ((gy + (v1 * tb)) - ((g2 * tb) * tb)), (tb < (v1 / g2)));\n\t\t\t}\n\t\t\tpf.y = mix(max(yb, gy), gy, smoothstep(0.9, 1.0, te));\n\t\t\tvar tg: f32 = clamp((((lt - 0.58)) / 0.42), 0.0, 1.0);\n\t\t\tvar eg: f32 = ((tg * tg) * ((3.0 - (2.0 * tg))));\n\t\t\tvar c2: vec3f = (((((pl + aTarget)) * 0.5) + vec3f(0.0, (0.5 + (0.6 * h2)), 0.0)) + ((cn * 0.2) * sc));\n\t\t\tvar og: f32 = (1.0 - eg);\n\t\t\tvar pg: vec3f = ((((og * og) * pl) + (((2.0 * og) * eg) * c2)) + ((eg * eg) * aTarget));\n\t\t\t(*base) = select((select(pg, pl, (lt < 0.58))), pf, (lt < 0.45));\n\t\t}\n\t\tif ((sty == 6)) {\n\t\t\tvar hw4: f32;\n\t\t\tvar q4: vec3f = mix(aOrigin, aTarget, smoothstep(0.38, 0.62, e));\n\t\t\t(*base) = hyperWarp(q4, fr.uCen, (1.3 * max(sc, 0.15)), select(0.0, 1.0, (fr.uMorphS.w > 1.05)), ((2.4 * sin((e * 3.1415926535))) * ((0.85 + (0.15 * hash11((aIdx * 2.7)))))), &hw4);\n\t\t\tgHypW = hw4;\n\t\t\tgHypF = max(gHypF, smoothstep(0.55, 0.97, hw4));\n\t\t}\n\t\tif ((sty == 7)) {\n\t\t\tvar co7: vec3f = (aOrigin - fr.uCen);\n\t\t\tvar ct7: vec3f = (aTarget - fr.uCen);\n\t\t\tvar d17: vec3f = normalize((co7 + vec3f(1e-3)));\n\t\t\tvar d27: vec3f = normalize((ct7 + vec3f(1e-3)));\n\t\t\tvar R7: f32 = (0.7 + (0.5 * sc));\n\t\t\tvar k1: f32 = clamp((e / 0.35), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.35)) / 0.3), 0.0, 1.0);\n\t\t\tvar k3: f32 = clamp((((e - 0.65)) / 0.35), 0.0, 1.0);\n\t\t\tk1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));\n\t\t\tk2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tk3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));\n\t\t\tif ((e < 0.35)) {\n\t\t\t\t(*base) = mix(aOrigin, (fr.uCen + (d17 * R7)), k1);\n\t\t\t} else if ((e < 0.65)) {\n\t\t\t\t(*base) = (fr.uCen + (normalize((mix(d17, d27, k2) + vec3f(1e-3))) * R7));\n\t\t\t} else {\n\t\t\t\t(*base) = mix((fr.uCen + (d27 * R7)), aTarget, k3);\n\t\t\t}\n\t\t\t(*base) += (((normalize((((*base) - fr.uCen) + vec3f(1e-3))) * 0.05) * sin(((dot(d17, vec3f(5.0, 7.0, 3.0)) * 2.0) + (t * 3.0)))) * sin((clamp(e, 0.0, 1.0) * 3.1415926535)));\n\t\t}\n\t\tif ((sty == 8)) {\n\t\t\tvar ch8: f32 = hash11(dot(floor((((aOrigin - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));\n\t\t\tvar c8: vec3f = (mid + vec3f(0.0, (((0.35 + (0.8 * ch8))) * sc), 0.0));\n\t\t\t(*base) = ((((om * om) * aOrigin) + (((2.0 * om) * e) * c8)) + ((e * e) * aTarget));\n\t\t}\n\t\tif ((sty == 9)) {\n\t\t\tvar q9a: vec3f = (aOrigin - fr.uCen);\n\t\t\tvar q9b: vec3f = (aTarget - fr.uCen);\n\t\t\tvar k1: f32 = clamp((e / 0.4), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.4)) / 0.2), 0.0, 1.0);\n\t\t\tvar k3: f32 = clamp((((e - 0.6)) / 0.4), 0.0, 1.0);\n\t\t\tk1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));\n\t\t\tk2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tk3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));\n\t\t\tvar fa: vec3f = vec3f(0.0, q9a.y, q9a.z);\n\t\t\tvar fb: vec3f = vec3f(0.0, q9b.y, q9b.z);\n\t\t\tif ((e < 0.4)) {\n\t\t\t\t(*base) = (fr.uCen + mix(q9a, fa, k1));\n\t\t\t} else if ((e < 0.6)) {\n\t\t\t\t(*base) = (fr.uCen + mix(fa, fb, k2));\n\t\t\t} else {\n\t\t\t\t(*base) = (fr.uCen + mix(fb, q9b, k3));\n\t\t\t}\n\t\t}\n\t\tif ((sty == 10)) {\n\t\t\tvar dz: f32 = (1.6 * max(sc, 0.3));\n\t\t\tvar RA: vec3f = (aOrigin + vec3f(0.0, 0.0, ((((gDepth - 0.5)) * dz) * fr.uMorphD.x)));\n\t\t\tvar RB: vec3f = (aTarget + vec3f(0.0, 0.0, ((((gDepth - 0.5)) * dz) * fr.uMorphD.y)));\n\t\t\tvar k1: f32 = clamp((e / 0.3), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.3)) / 0.4), 0.0, 1.0);\n\t\t\tvar k3: f32 = clamp((((e - 0.7)) / 0.3), 0.0, 1.0);\n\t\t\tk1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));\n\t\t\tk2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));\n\t\t\tk3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));\n\t\t\tvar c10: vec3f = (((((RA + RB)) * 0.5) + vec3f(0.0, 0.0, ((((0.3 + gDepth)) * 0.7) * sc))) + ((cn * 0.25) * sc));\n\t\t\tvar o10: f32 = (1.0 - k2);\n\t\t\tvar mid10: vec3f = ((((o10 * o10) * RA) + (((2.0 * o10) * k2) * c10)) + ((k2 * k2) * RB));\n\t\t\tif ((e < 0.3)) {\n\t\t\t\t(*base) = mix(aOrigin, RA, k1);\n\t\t\t} else if ((e < 0.7)) {\n\t\t\t\t(*base) = mid10;\n\t\t\t} else {\n\t\t\t\t(*base) = mix(RB, aTarget, k3);\n\t\t\t}\n\t\t}\n\t\tif ((sty == 11)) {\n\t\t\tvar head: vec3f = vec3f(fr.uCen.x, (fr.uYR.y + 0.45), fr.uCen.z);\n\t\t\tvar nozzle: vec3f = (aTarget + vec3f(0.0, 0.22, 0.0));\n\t\t\tvar k1: f32 = clamp((e / 0.55), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.55)) / 0.45), 0.0, 1.0);\n\t\t\tvar g11: vec3f = (mix(aOrigin, head, ((k1 * k1) * ((3.0 - (2.0 * k1))))) + (((cn * 0.15) * sc) * sin((k1 * 3.1415926535))));\n\t\t\tvar o11: f32 = (1.0 - k2);\n\t\t\tvar p11: vec3f = ((((o11 * o11) * head) + (((2.0 * o11) * k2) * vec3f(nozzle.x, head.y, nozzle.z))) + ((k2 * k2) * nozzle));\n\t\t\tp11 = mix(p11, aTarget, smoothstep(0.85, 1.0, k2));\n\t\t\t(*base) = select(p11, g11, (e < 0.55));\n\t\t}\n\t\tif ((sty == 12)) {\n\t\t\tvar a12: f32 = ((hA * 6.2831853) + (t * 2.4));\n\t\t\tvar ring: vec3f = (fr.uCen + ((vec3f(cos(a12), sin(a12), 0.0) * ((0.32 + (0.06 * hB)))) * ((0.6 + (0.4 * sc)))));\n\t\t\tvar k1: f32 = clamp((e / 0.5), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);\n\t\t\tvar qa: vec3f = (aOrigin - fr.uCen);\n\t\t\tvar qb: vec3f = (aTarget - fr.uCen);\n\t\t\tvar sw1: f32 = ((k1 * k1) * 5.0);\n\t\t\tvar sw2: f32 = ((((1.0 - k2)) * ((1.0 - k2))) * 5.0);\n\t\t\tvar ra: vec3f = (fr.uCen + vec3f(((qa.x * cos(sw1)) - (qa.y * sin(sw1))), ((qa.x * sin(sw1)) + (qa.y * cos(sw1))), qa.z));\n\t\t\tvar rb: vec3f = (fr.uCen + vec3f(((qb.x * cos(sw2)) - (qb.y * sin(sw2))), ((qb.x * sin(sw2)) + (qb.y * cos(sw2))), qb.z));\n\t\t\tvar p1: vec3f = mix(ra, ring, ((k1 * k1) * ((3.0 - (2.0 * k1)))));\n\t\t\tvar p2: vec3f = mix(ring, rb, ((k2 * k2) * ((3.0 - (2.0 * k2)))));\n\t\t\t(*base) = select(p2, p1, (e < 0.5));\n\t\t}\n\t\tif ((sty == 13)) {\n\t\t\tvar ca: vec3f = ((((floor((((aOrigin - fr.uCen)) * 3.0)) + 0.5)) / 3.0) + fr.uCen);\n\t\t\tvar cb: vec3f = ((((floor((((aTarget - fr.uCen)) * 3.0)) + 0.5)) / 3.0) + fr.uCen);\n\t\t\tvar sa: f32 = hash11(dot(floor((((aOrigin - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));\n\t\t\tvar sb: f32 = hash11(dot(floor((((aTarget - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));\n\t\t\tvar k1: f32 = clamp((e / 0.6), 0.0, 1.0);\n\t\t\tvar k2: f32 = clamp((((1.0 - e)) / 0.6), 0.0, 1.0);\n\t\t\tvar da: vec3f = normalize((((ca - fr.uCen) + (vec3f((sa - 0.5), 0.3, 0.2) * 0.6)) + vec3f(1e-3)));\n\t\t\tvar db: vec3f = normalize((((cb - fr.uCen) + (vec3f((sb - 0.5), 0.3, 0.2) * 0.6)) + vec3f(1e-3)));\n\t\t\tvar ra: f32 = ((k1 * 3.1415926535) * ((0.8 + (1.6 * sa))));\n\t\t\tvar rb: f32 = ((k2 * 3.1415926535) * ((0.8 + (1.6 * sb))));\n\t\t\tvar la: vec3f = (aOrigin - ca);\n\t\t\tvar lb: vec3f = (aTarget - cb);\n\t\t\tla = vec3f(((la.x * cos(ra)) - (la.y * sin(ra))), ((la.x * sin(ra)) + (la.y * cos(ra))), la.z);\n\t\t\tlb = vec3f(((lb.x * cos(rb)) - (lb.y * sin(rb))), ((lb.x * sin(rb)) + (lb.y * cos(rb))), lb.z);\n\t\t\tvar P1: vec3f = (((ca + la) + ((((da * k1) * k1) * 1.3) * sc)) - vec3f(0.0, (((0.9 * k1) * k1) * k1), 0.0));\n\t\t\tvar P2: vec3f = (((cb + lb) + ((((db * k2) * k2) * 1.3) * sc)) - vec3f(0.0, (((0.9 * k2) * k2) * k2), 0.0));\n\t\t\t(*base) = mix(P1, P2, smoothstep(0.42, 0.58, e));\n\t\t}\n\t\tif ((sty == 14)) {\n\t\t\tvar ab: vec3f = (aTarget - aOrigin);\n\t\t\tvar L14: f32 = length(ab);\n\t\t\tvar ax: vec3f = select(vec3f(0.0, 1.0, 0.0), (ab / L14), (L14 > 1e-4));\n\t\t\tvar n1: vec3f = normalize(cross(ax, select(vec3f(1.0, 0.0, 0.0), vec3f(0.0, 1.0, 0.0), (abs(ax.y) < 0.9))));\n\t\t\tvar n2: vec3f = cross(ax, n1);\n\t\t\tvar bund: f32 = ((floor((hA * 10.0)) / 10.0) * 6.2831853);\n\t\t\tvar nb: vec3f = ((n1 * cos(bund)) + (n2 * sin(bund)));\n\t\t\t(*base) = (mix(aOrigin, aTarget, e) + ((((nb * sin((e * 3.1415926535))) * ((0.25 + (0.55 * L14)))) * sc) * ((0.85 + (0.3 * hB)))));\n\t\t}\n\t\tif ((abs(fr.uMorphD.z) > 0.001)) {\n\t\t\tvar sm: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));\n\t\t\tvar ra: f32 = ((fr.uMorphD.z * 6.2831853) * sm);\n\t\t\tvar q: vec3f = ((*base) - fr.uCen);\n\t\t\t(*base) = (fr.uCen + vec3f(((q.x * cos(ra)) - (q.z * sin(ra))), q.y, ((q.x * sin(ra)) + (q.z * cos(ra)))));\n\t\t}\n\t}\n\tif (((fr.uMorph < 0.9999) && (fr.uMorphO.w > 0.001))) {\n\t\t(*base).z += ((((((gDepth - 0.5)) * 2.0) * fr.uMorphO.w) * sin((morphEase(morphLocal(aOrigin, aTarget, aIdx)) * 3.1415926535))) * ((0.6 + (0.4 * hash11((aIdx * 4.1))))));\n\t}\n\tif ((fr.uDepth.x > 0.001)) {\n\t\t(*base) = depthShape((*base));\n\t}\n\tvar rad: vec3f = normalize(((*base) + vec3f(1e-4)));\n\trad = normalize(mix(rad, vec3f(0.0, 0.0, 1.0), (0.8 * fr.uFlat)));\n\tif (((fr.uAnimN > 0.5) && (dot(gNormal, gNormal) > 0.01))) {\n\t\trad = normalize(gNormal);\n\t}\n\tvar pos: vec3f = (*base);\n\tif ((fr.uCh.x > 0.001)) {\n\t\tvar chh: f32 = (max((fr.uYR.y - fr.uYR.x), 0.5) * 0.5);\n\t\tvar chk: f32 = ((1.5708 * fr.uCh.z) / chh);\n\t\tvar chq: vec3f = (((pos - fr.uCen)) * chk);\n\t\tvar chn: vec3f = select((select(rad, normalize(gNormal), (dot(gNormal, gNormal) > 0.01))), vec3f(0.0, 0.0, 1.0), (fr.uFlat > 0.5));\n\t\tfor (var ci: i32 = 0; (ci < 4); ci++) {\n\t\t\tvar cf: f32 = chField(chq);\n\t\t\tvar cg: vec3f = (vec3f((chField((chq + vec3f(0.02, 0.0, 0.0))) - cf), (chField((chq + vec3f(0.0, 0.02, 0.0))) - cf), (chField((chq + vec3f(0.0, 0.0, 0.02))) - cf)) / 0.02);\n\t\t\tcg -= (chn * dot(cg, chn));\n\t\t\tvar cst: vec3f = ((-cf * cg) / max(dot(cg, cg), 0.01));\n\t\t\tvar csl: f32 = length(cst);\n\t\t\tif ((csl > 0.7)) {\n\t\t\t\tcst *= vec3f((0.7 / csl));\n\t\t\t}\n\t\t\tchq += cst;\n\t\t}\n\t\tvar cfe: f32 = abs(chField(chq));\n\t\tgChN = exp((-cfe * 5.0));\n\t\tvar ctk: f32 = floor((t * 30.0));\n\t\tvar cbz: vec3f = (((((vec3f(hash11(((aIdx * 3.1) + ctk)), hash11(((aIdx * 5.7) + ctk)), hash11(((aIdx * 1.3) + ctk))) - 0.5)) * ((1.0 - gChN))) * fr.uCh.w) * ((0.03 + (fr.uBeat * 0.05))));\n\t\tpos = mix(pos, ((fr.uCen + (chq / chk)) + cbz), min(fr.uCh.x, 1.0));\n\t}\n\tif ((fr.uTwist.x > 0.001)) {\n\t\tvar y01t: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar tw: f32 = (fr.uTwist.x * ((1.0 + (select(0.0, (0.35 * sin(((t * fr.uTwist.z) * 2.0))), (fr.uTwist.z > 0.01))))));\n\t\tif ((fr.uTwist.y < 0.5)) {\n\t\t\tvar a: f32 = ((pos.y * tw) * 1.6);\n\t\t\tvar c: f32 = cos(a);\n\t\t\tvar s: f32 = sin(a);\n\t\t\t{ let _sw14 = (mat2x2f(c, -s, s, c) * pos.xz); pos = vec3f(_sw14.x, pos.y, _sw14.y); }\n\t\t} else if ((fr.uTwist.y < 1.5)) {\n\t\t\tpos.x += (((y01t * y01t) * tw) * 0.9);\n\t\t\tpos.y -= ((((y01t * y01t) * y01t) * tw) * 0.16);\n\t\t} else if ((fr.uTwist.y < 2.5)) {\n\t\t\t{ let _sw15 = (pos.xz * vec2f((1.0 + (((tw * 0.6) * ((0.5 - y01t))) * 2.0)))); pos = vec3f(_sw15.x, pos.y, _sw15.y); }\n\t\t} else if ((fr.uTwist.y < 3.5)) {\n\t\t\tvar sw: f32 = sin(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z)))));\n\t\t\tpos.x += ((sw * tw) * 0.2);\n\t\t\tpos.z += ((cos(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z))))) * tw) * 0.12);\n\t\t} else {\n\t\t\t{ let _sw16 = (pos.xz * vec2f((1.0 + ((tw * 0.3) * sin(((y01t * 6.2831) - (t * ((1.2 + fr.uTwist.z))))))))); pos = vec3f(_sw16.x, pos.y, _sw16.y); }\n\t\t}\n\t}\n\tif ((fr.uWave.x > 0.001)) {\n\t\tvar wv: f32 = 0.0;\n\t\tif ((fr.uWaveP.y < 0.5)) {\n\t\t\twv = sin((((distance((*base), fr.uWaveSrc.xyz) * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t} else if ((fr.uWaveP.y < 1.5)) {\n\t\t\tvar age: f32 = (fr.uTime - fr.uWaveP.w);\n\t\t\tif ((age > 0.0)) {\n\t\t\t\tvar d: f32 = distance((*base), fr.uWaveSrc.xyz);\n\t\t\t\tvar ring: f32 = ((age * fr.uWaveP.x) * 1.3);\n\t\t\t\twv = ((sin(((((d - ring)) * fr.uWave.y) * 2.6)) * exp((-abs((d - ring)) * 2.5))) * exp((-age * fr.uWaveP.z)));\n\t\t\t}\n\t\t} else if ((fr.uWaveP.y < 2.5)) {\n\t\t\tvar wd: vec3f = vec3f(cos(fr.uWaveSrc.w), 0.0, sin(fr.uWaveSrc.w));\n\t\t\twv = sin((((dot((*base), wd) * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t} else if ((fr.uWaveP.y < 3.5)) {\n\t\t\tvar yw: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\t\twv = sin((((atan2(((*base).z - fr.uCen.z), ((*base).x - fr.uCen.x)) * 3.0) + ((yw * fr.uWave.y) * 1.3)) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t} else {\n\t\t\twv = sin(((((*base).y * fr.uWave.y) * 2.0) - ((t * 3.0) * fr.uWaveP.x)));\n\t\t}\n\t\tpos += ((((rad * wv) * fr.uWave.x) * 0.14) * ((1.0 + (1.5 * fr.uFlat))));\n\t}\n\tif ((fr.uSpec.x > 0.001)) {\n\t\tvar y01s: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tif ((fr.uSpec.y < 0.5)) {\n\t\t\tpos += (((rad * textureSampleLevel(specTex, linSamp, vec2f((abs(atan2((*base).z, (*base).x)) / 3.1415926535), 0.5), 0.0).r) * fr.uSpec.x) * 0.7);\n\t\t} else if ((fr.uSpec.y < 1.5)) {\n\t\t\tpos += (((rad * textureSampleLevel(specTex, linSamp, vec2f(y01s, 0.5), 0.0).r) * fr.uSpec.x) * 0.7);\n\t\t} else if ((fr.uSpec.y < 2.5)) {\n\t\t\tvar ub: f32 = (floor(((abs(atan2((*base).z, (*base).x)) / 3.1415926535) * fr.uSpecP.y)) / fr.uSpecP.y);\n\t\t\tpos += (((rad * textureSampleLevel(specTex, linSamp, vec2f(ub, 0.5), 0.0).r) * fr.uSpec.x) * 0.8);\n\t\t} else {\n\t\t\tvar xs: f32 = clamp((abs((*base).x) / 1.2), 0.0, 1.0);\n\t\t\tpos.y += (((textureSampleLevel(specTex, linSamp, vec2f(xs, 0.5), 0.0).r * fr.uSpec.x) * 0.8) * ((0.35 + (0.65 * y01s))));\n\t\t}\n\t}\n\tvar pe: f32 = fr.uPulse.x;\n\tif ((fr.uPulseP.x > 0.5)) {\n\t\tvar age: f32 = ((fr.uTime - fr.uPulseP.z) - (length((*base)) * fr.uPulseP.y));\n\t\tvar env: f32 = select(0.0, (exp(((-age * 3.2) * fr.uPulseP.w)) * smoothstep(0.0, 0.04, age)), (age > 0.0));\n\t\tvar age2: f32 = (age - 0.2);\n\t\tenv += select(0.0, ((0.55 * exp(((-age2 * 3.2) * fr.uPulseP.w))) * smoothstep(0.0, 0.04, age2)), (age2 > 0.0));\n\t\tpe = ((fr.uPulse.x * env) * 1.6);\n\t\tif ((fr.uPulseP.x > 1.5)) {\n\t\t\tpos.y *= (1.0 + (pe * 0.2));\n\t\t\t{ let _sw17 = (pos.xz * vec2f((1.0 - (pe * 0.11)))); pos = vec3f(_sw17.x, pos.y, _sw17.y); }\n\t\t\tpe = 0.0;\n\t\t}\n\t}\n\tpos += (((rad * pe) * 0.28) * ((1.0 + (1.5 * fr.uFlat))));\n\tpos *= vec3f((1.0 + (pe * 0.1)));\n\tif ((fr.uBlast.x > 0.001)) {\n\t\tvar age: f32 = (fr.uTime - fr.uBlast.w);\n\t\tif ((age > 0.0)) {\n\t\t\tvar env: f32 = (exp((-age * fr.uBlast.y)) * cos(((age * fr.uBlast.y) * 3.0)));\n\t\t\tvar rnd: f32 = (0.45 + (0.55 * mix(1.0, hash11((aIdx * 7.1)), fr.uBlast.z)));\n\t\t\tvar dir: vec3f = normalize((rad + ((((vec3f(hash11(aIdx), hash11((aIdx + 1.0)), hash11((aIdx + 2.0))) - 0.5)) * 0.7) * fr.uBlast.z)));\n\t\t\tpos += ((((dir * env) * rnd) * fr.uBlast.x) * 0.75);\n\t\t}\n\t}\n\tif ((fr.uFlow.x > 0.001)) {\n\t\tvar fc: vec3f = curlNoise((((*base) * fr.uFlow.y) + vec3f(0.0, ((t * fr.uFlow.z) * 0.1), 0.0)));\n\t\tvar tg: vec3f = normalize(((fc - (rad * dot(fc, rad))) + vec3f(1e-4)));\n\t\ttg = ((tg * cos(fr.uFlow.w)) + (cross(rad, tg) * sin(fr.uFlow.w)));\n\t\tvar ph: f32 = ((t * fr.uFlow.z) + (hash11((aIdx * 5.3)) * 6.2831));\n\t\tpos += (((tg * sin(ph)) * fr.uFlow.x) * 0.24);\n\t}\n\tif (((fr.uMark.x > 3.5) && (fr.uMark.x < 5.5))) {\n\t\tvar mkd: f32 = markK((*base));\n\t\tif ((fr.uMark.x < 4.5)) {\n\t\t\tpos += ((rad * mkd) * 0.22);\n\t\t} else {\n\t\t\tpos = mix(pos, (((floor((pos / 0.06)) + 0.5)) * 0.06), smoothstep(0.0, 0.4, mkd));\n\t\t}\n\t}\n\tif (((fr.uSliceM.x > 0.5) && (fr.uSliceM.x < 1.5))) {\n\t\tpos += ((rad * sliceK((*base))) * fr.uSliceM.y);\n\t}\n\tvar dk: f32 = disK((*base), aIdx);\n\tif ((dk > 0.0)) {\n\t\tvar sc: f32 = fr.uDisQ.y;\n\t\tvar ds: f32 = fr.uDisP.x;\n\t\tvar y01d: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar cl: f32 = floor((aIdx * 1800.0));\n\t\tvar ch: f32 = hash11((cl * 0.731));\n\t\tvar ch2: f32 = hash11(((cl * 1.913) + 3.1));\n\t\tvar cd: vec3f = ((*base) - fr.uCen);\n\t\tvar outd: vec3f = (cd / ((length(cd) + 1e-3)));\n\t\tvar dsp: vec3f = select(((*base) * 1.8), (vec3f(hash11((aIdx * 1.7)), hash11((aIdx * 2.3)), hash11((aIdx * 3.1))) * 8.0), (fr.uAnimN > 0.5));\n\t\tpos += ((((curlNoise((dsp + vec3f(0.0, (-t * 0.6), (t * 0.3)))) * dk) * fr.uDisT) * 0.22) * sc);\n\t\tif ((ds < 0.5)) {\n\t\t\tvar wv: vec3f = vec3f(((fr.uDis.w * 1.4) + 0.2), (-fr.uDis.z * 0.5), 0.3);\n\t\t\tvar sp: f32 = (0.65 + (0.35 * sin(((y01d * 7.0) + (t * 0.8)))));\n\t\t\tpos += (((((wv * dk) * dk) * 1.5) * sp) * sc);\n\t\t} else if ((ds < 1.5)) {\n\t\t\tpos.y += (((dk * dk) * ((0.7 + (0.5 * ch)))) * sc);\n\t\t\t{ let _sw18 = (pos.xz + ((((vec2f(sin(((t * 1.5) + (ch * 6.0))), cos(((t * 1.3) + (ch * 5.0)))) * dk) * 0.1) * sc) + ((vec2f((fr.uDis.w * 0.5), 0.0) * dk) * sc))); pos = vec3f(_sw18.x, pos.y, _sw18.y); }\n\t\t} else if ((ds < 2.5)) {\n\t\t\tpos += ((((outd * dk) * 0.12) * sc) + vec3f(0.0, ((dk * 0.05) * sc), 0.0));\n\t\t} else if ((ds < 3.5)) {\n\t\t\tvar band: f32 = floor(((y01d * 12.0) + 0.001));\n\t\t\tvar sg: f32 = select(-1.0, 1.0, (glsl_mod_f(band, 2.0) < 0.5));\n\t\t\tpos.x += (((((sg * dk) * dk) * 1.7) * sc) + ((fr.uDis.w * dk) * 0.3));\n\t\t\tpos.y -= ((((dk * dk) * fr.uDis.z) * 0.25) * sc);\n\t\t} else if ((ds < 4.5)) {\n\t\t\tvar mv: vec3f = vec3f(((((ch - 0.5)) * 0.9) + (fr.uDis.w * 0.3)), 0.0, (((ch2 - 0.5)) * 0.9));\n\t\t\tpos += ((mv * dk) * sc);\n\t\t\tpos.y = max((pos.y - ((((dk * dk) * ((0.5 + fr.uDis.z))) * 1.8) * sc)), (fr.uYR.x + (ch * 0.05)));\n\t\t} else if ((ds < 5.5)) {\n\t\t\tpos.y = max((pos.y - ((((dk * dk) * ((0.5 + fr.uDis.z))) * 2.2) * sc)), (fr.uYR.x + (hash11((aIdx * 5.1)) * 0.05)));\n\t\t\tpos.x += (((fr.uDis.w * dk) * 0.25) * sc);\n\t\t} else if ((ds < 6.5)) {\n\t\t\tvar q: vec3f = ((*base) - fr.uCen);\n\t\t\tvar ang: f32 = (((dk * dk) * ((3.2 + (fr.uDis.w * 1.2)))) * sc);\n\t\t\tvar cs: f32 = cos(ang);\n\t\t\tvar sn: f32 = sin(ang);\n\t\t\t{ let _sw19 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw19.x, q.y, _sw19.y); }\n\t\t\tq *= vec3f((1.0 - ((0.9 * dk) * dk)));\n\t\t\tpos = ((fr.uCen + q) + vec3f(0.0, (((dk * dk) * 0.45) * sc), 0.0));\n\t\t} else {\n\t\t\tpos += (((outd * pow(dk, 0.7)) * ((1.1 + (0.3 * ch)))) * sc);\n\t\t\tpos.y -= ((((dk * dk) * fr.uDis.z) * 0.8) * sc);\n\t\t}\n\t}\n\tif ((fr.uExp.x > 0.001)) {\n\t\tvar pid: f32 = floor((aIdx * fr.uExp.y));\n\t\tvar pc: vec3f = textureLoad(pieceTex, vec2i(vec2f((((pid + 0.5)) / 256.0), 0.5) * vec2f(textureDimensions(pieceTex))), 0).xyz;\n\t\tvar h1: f32 = hash11((pid * 1.7));\n\t\tvar h2: f32 = hash11((pid * 2.9));\n\t\tvar h3: f32 = hash11((pid * 4.1));\n\t\tvar od: vec3f = (pc - fr.uCen);\n\t\tvar dr: vec3f = normalize(((od + ((((vec3f(h1, h2, h3) - 0.5)) * 0.35) * ((length(od) + 0.3)))) + vec3f(1e-4)));\n\t\tvar ke: f32 = clamp((((fr.uExp.x - (h2 * fr.uExp.z))) / max((1.0 - fr.uExp.z), 0.2)), 0.0, 1.0);\n\t\tke = ((ke * ke) * ((3.0 - (2.0 * ke))));\n\t\tvar ax: vec3f = normalize((vec3f((h1 - 0.5), (h3 - 0.5), (h2 - 0.5)) + vec3f(1e-3)));\n\t\tvar ang: f32 = (((ke * ((h3 - 0.5))) * 3.0) * fr.uExp.w);\n\t\tvar qe: vec3f = (pos - pc);\n\t\tqe = (((qe * cos(ang)) + (cross(ax, qe) * sin(ang))) + ((ax * dot(ax, qe)) * ((1.0 - cos(ang)))));\n\t\tpos = ((pc + qe) + (((dr * ke) * fr.uExpP.x) * ((0.5 + (0.5 * h1)))));\n\t}\n\tif ((fr.uGrowP.z > 0.5)) {\n\t\tgGrow = growK((*base), aIdx);\n\t\tgGrowE = ((gGrow * ((1.0 - gGrow))) * 4.0);\n\t\tpos += (((rad * gGrowE) * fr.uGrowP.x) * 0.12);\n\t\tvar yG: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\t{ let _sw20 = (pos.xz + ((((vec2f(sin(((t * 1.2) + (yG * 5.0))), cos(((t * 0.9) + (yG * 4.0)))) * 0.018) * fr.uGrowP.y) * gGrow) * ((0.3 + yG)))); pos = vec3f(_sw20.x, pos.y, _sw20.y); }\n\t}\n\t{\n\t\tfor (var ji: i32 = 0; (ji < 3); ji++) {\n\t\t\tvar jage: f32 = (fr.uTime - fr.uJel[ji].w);\n\t\t\tif (((jage < 0.0) || (jage > 7.0))) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar jd: f32 = distance((*base), fr.uJelO[ji].xyz);\n\t\t\tvar ja: f32 = (jage - (jd * 0.45));\n\t\t\tif ((ja < 0.0)) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar env: f32 = (exp((-ja * fr.uJelP.y)) * sin((ja * fr.uJelP.x)));\n\t\t\tpos += (((fr.uJel[ji].xyz * env) * fr.uJelP.z) * 0.35);\n\t\t\tpos += ((((((((*base) - fr.uJelO[ji].xyz)) * env) * fr.uJelP.w) * fr.uJelP.z) * 0.16) * length(fr.uJel[ji].xyz));\n\t\t}\n\t}\n\tif ((fr.uGrav.x > 0.001)) {\n\t\tvar gq: vec3f = (pos - fr.uGravP.xyz);\n\t\tvar gr: f32 = (length(gq) + 1e-3);\n\t\tvar gin: f32 = (1.0 - smoothstep((fr.uGravP.w * 0.7), (fr.uGravP.w * 1.7), gr));\n\t\tvar ga: f32 = smoothstep(0.0, 1.0, clamp((fr.uGrav.x * gin), 0.0, 1.0));\n\t\tvar up: vec3f = normalize(vec3f((sin(fr.uGravT.x) * cos(fr.uGravT.y)), cos(fr.uGravT.x), (sin(fr.uGravT.x) * sin(fr.uGravT.y))));\n\t\tvar ref_: vec3f = select(vec3f(1.0, 0.0, 0.0), vec3f(0.0, 1.0, 0.0), (abs(up.y) < 0.99));\n\t\tvar e1: vec3f = normalize(cross(ref_, up));\n\t\tvar e2: vec3f = cross(up, e1);\n\t\tvar lx: f32 = dot(gq, e1);\n\t\tvar lh: f32 = dot(gq, up);\n\t\tvar lz: f32 = dot(gq, e2);\n\t\tif ((fr.uGrav.y < 0.5)) {\n\t\t\tvar ph0: f32 = ((t * fr.uGrav.z) * 0.45);\n\t\t\tvar ang: f32 = (ga * (((ph0 * 0.8) + ((1.3 * sin((ph0 * 0.6))) / ((0.5 + gr))))));\n\t\t\tvar ca: f32 = cos(ang);\n\t\t\tvar sa: f32 = sin(ang);\n\t\t\tvar nx: f32 = ((lx * ca) - (lz * sa));\n\t\t\tvar nz: f32 = ((lx * sa) + (lz * ca));\n\t\t\tvar az: f32 = atan2(nz, nx);\n\t\t\tlh = ((lh * ((1.0 - (fr.uGrav.w * ga)))) + (((0.07 * gr) * sin(((az * 2.0) + (t * 0.4)))) * ga));\n\t\t\tvar arm: f32 = sin((((2.0 * az) - (3.4 * log((gr + 0.15)))) + (t * 0.25)));\n\t\t\tvar ar: f32 = (1.0 + (((0.2 * arm) * ga) * fr.uGrav.w));\n\t\t\tlx = (nx * ar);\n\t\t\tlz = (nz * ar);\n\t\t} else if ((fr.uGrav.y < 1.5)) {\n\t\t\tvar h1: f32 = hash11((aIdx * 91.7));\n\t\t\tvar ph: f32 = fract((((t * 0.16) * fr.uGrav.z) + h1));\n\t\t\tvar sg: f32 = select(-1.0, 1.0, (h1 > 0.5));\n\t\t\tvar r0: f32 = max(gr, 0.08);\n\t\t\tif (((ph < 0.8) || (fr.uGravT.w < 0.01))) {\n\t\t\t\tvar s: f32 = clamp((ph / 0.8), 0.0, 1.0);\n\t\t\t\tvar rr: f32 = ((r0 * pow((1.0 - s), 1.6)) + 0.03);\n\t\t\t\tvar ang: f32 = (((s * s) * 11.0) * ga);\n\t\t\t\tvar az0: f32 = atan2(lz, lx);\n\t\t\t\tvar flt: f32 = (1.0 - ((fr.uGrav.w * s) * ga));\n\t\t\t\tvar ha: f32 = (lh * flt);\n\t\t\t\tvar k: f32 = mix(1.0, (rr / r0), ga);\n\t\t\t\tvar rl: f32 = (length(vec2f(lx, lz)) * k);\n\t\t\t\tlx = (cos((az0 + ang)) * rl);\n\t\t\t\tlz = (sin((az0 + ang)) * rl);\n\t\t\t\tlh = (ha * mix(1.0, (rr / r0), ga));\n\t\t\t} else {\n\t\t\t\tvar u: f32 = (((ph - 0.8)) / 0.2);\n\t\t\t\tvar len: f32 = ((((fr.uGravT.w * ((0.4 + (h1 * 0.9)))) * u) * u) * ga);\n\t\t\t\tvar az0: f32 = (atan2(lz, lx) + (t * 2.0));\n\t\t\t\tlx = ((cos(az0) * 0.05) * ((1.0 - (u * 0.5))));\n\t\t\t\tlz = ((sin(az0) * 0.05) * ((1.0 - (u * 0.5))));\n\t\t\t\tlh = (sg * ((0.08 + len)));\n\t\t\t}\n\t\t} else if ((fr.uGrav.y > 3.5)) {\n\t\t\tvar rr0: f32 = length(vec2f(lx, lz));\n\t\t\tvar ringN: f32 = floor((rr0 * 5.0));\n\t\t\tvar rr1: f32 = mix(rr0, (((ringN + 0.5)) / 5.0), (ga * 0.85));\n\t\t\tvar dirR: f32 = select(-1.0, 1.0, (glsl_mod_f(ringN, 2.0) < 0.5));\n\t\t\tvar az1: f32 = (atan2(lz, lx) + ((((dirR * t) * fr.uGrav.z) * ((0.25 + (0.5 / ((0.4 + rr1)))))) * ga));\n\t\t\tlx = (cos(az1) * rr1);\n\t\t\tlz = (sin(az1) * rr1);\n\t\t\tlh = (lh * ((1.0 - (fr.uGrav.w * ga))));\n\t\t} else if ((fr.uGrav.y > 2.5)) {\n\t\t\tvar q: vec3f = (((e1 * lx) + (up * lh)) + (e2 * lz));\n\t\t\tvar ax: vec3f = normalize((vec3f((hash11((aIdx * 13.1)) - 0.5), (hash11((aIdx * 7.7)) - 0.5), (hash11((aIdx * 3.3)) - 0.5)) + vec3f(1e-3)));\n\t\t\tvar ang: f32 = ((((t * fr.uGrav.z) * ((0.7 + (1.6 / ((gr + 0.3)))))) * ga) * ((0.6 + (0.8 * hash11((aIdx * 5.9))))));\n\t\t\tq = (((q * cos(ang)) + (cross(ax, q) * sin(ang))) + ((ax * dot(ax, q)) * ((1.0 - cos(ang)))));\n\t\t\tq *= vec3f((1.0 + (((fr.uGravT.z * 0.3) * ga) * sin(((t * 0.8) + (aIdx * 40.0))))));\n\t\t\tlx = dot(q, e1);\n\t\t\tlh = dot(q, up);\n\t\t\tlz = dot(q, e2);\n\t\t} else {\n\t\t\tvar sd: f32 = (aIdx * 61.0);\n\t\t\tvar ang: f32 = (((0.14 * fr.uGrav.z) * t) * ga);\n\t\t\tvar ca: f32 = cos(ang);\n\t\t\tvar sa: f32 = sin(ang);\n\t\t\tvar nx: f32 = ((lx * ca) - (lz * sa));\n\t\t\tvar nz: f32 = ((lx * sa) + (lz * ca));\n\t\t\tvar amp: f32 = (0.4 + (fr.uGravT.z * 1.2));\n\t\t\tlx = (nx + (((ga * 0.12) * amp) * sin((((t * 0.55) * fr.uGrav.z) + (sd * 1.3)))));\n\t\t\tlz = (nz + (((ga * 0.12) * amp) * cos((((t * 0.5) * fr.uGrav.z) + (sd * 0.8)))));\n\t\t\tlh += (((ga * 0.2) * amp) * sin((((t * 0.7) * fr.uGrav.z) + sd)));\n\t\t\tvar br: f32 = (1.0 + (((0.2 * amp) * ga) * ((0.5 + (0.5 * sin((((t * 0.35) * fr.uGrav.z) + (sd * 0.4))))))));\n\t\t\tlx *= br;\n\t\t\tlz *= br;\n\t\t\tlh *= br;\n\t\t}\n\t\tpos = (((fr.uGravP.xyz + (e1 * lx)) + (up * lh)) + (e2 * lz));\n\t}\n\tif ((fr.uCurl.x > 0.001)) {\n\t\tvar ca: f32 = (pow(fr.uCurl.x, 1.45) * 0.055);\n\t\tvar thr: f32 = ((snoise((((*base) * 1.8) + (t * 0.3))) * 0.5) + 0.5);\n\t\tvar det: f32 = smoothstep(0.35, 0.85, (thr + (min(fr.uCurl.x, 1.0) * 0.12)));\n\t\tvar cn: vec3f = ((curlNoise((((*base) * fr.uCurl.y) + (vec3f((t * 0.4), (t * 0.3), (t * 0.5)) * fr.uCurlP.x))) * det) * ca);\n\t\tif ((fr.uCurlP.z > 1.5)) {\n\t\t\tvar yc: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\t\tvar band: f32 = floor(((yc * 8.0) + 0.001));\n\t\t\tvar sg: f32 = select(-1.0, 1.0, (glsl_mod_f(band, 2.0) < 0.5));\n\t\t\tvar ang: f32 = (((sg * sin((((t * fr.uCurlP.x) * 0.7) + (band * 0.8)))) * min(fr.uCurl.x, 2.0)) * 0.55);\n\t\t\tvar q: vec3f = (pos - fr.uCen);\n\t\t\tvar cs: f32 = cos(ang);\n\t\t\tvar sn: f32 = sin(ang);\n\t\t\t{ let _sw21 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw21.x, q.y, _sw21.y); }\n\t\t\tpos = (fr.uCen + q);\n\t\t\tcn = vec3f(0.0);\n\t\t} else if ((fr.uCurlP.z > 0.5)) {\n\t\t\tvar fd: vec3f = vec3f(cos(fr.uCurlP.y), 0.35, sin(fr.uCurlP.y));\n\t\t\tvar ph: f32 = (0.5 + (0.5 * sin((((t * fr.uCurlP.x) * 0.7) + (hash11((aIdx * 3.7)) * 6.2831)))));\n\t\t\tcn += ((((fd * ph) * det) * ca) * 0.9);\n\t\t}\n\t\tpos += cn;\n\t}\n\tif ((fr.uGlitch.x > 0.001)) {\n\t\tvar yg: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar spd: f32 = fr.uGlitchP.y;\n\t\tvar cyc: f32 = ((t * spd) * 1.1);\n\t\tvar bst: f32 = (step(0.55, hash11(((floor(cyc) * 3.17) + 1.3))) * ((1.0 - smoothstep(0.0, 0.4, fract(cyc)))));\n\t\tgBurst = bst;\n\t\tvar I: f32 = (fr.uGlitch.x * ((0.55 + (((0.5 + (fr.uGlitchP.w * 1.6))) * bst))));\n\t\tvar gm: f32 = fr.uGlitchP.z;\n\t\tvar tick: f32 = floor(((t * 10.0) * spd));\n\t\tvar hit: bool = false;\n\t\tif ((gm < 0.5)) {\n\t\t\tvar band: f32 = floor((yg * fr.uGlitch.y));\n\t\t\tvar r: f32 = hash11(((band * 13.7) + tick));\n\t\t\tif ((r > 0.55)) {\n\t\t\t\tvar shf: f32 = (((((r - 0.5)) * 2.4) * ((hash11((band + 7.0)) - 0.5))) * I);\n\t\t\t\tpos.x += (shf * ((1.0 + fr.uFlat)));\n\t\t\t\tpos.z += (((shf * 1.6) * ((hash11((band + 3.0)) - 0.5))) * ((1.0 + fr.uFlat)));\n\t\t\t\thit = true;\n\t\t\t}\n\t\t} else if ((gm < 1.5)) {\n\t\t\tvar cell: vec3f = floor(((*base) * vec3f(4.0, (fr.uGlitch.y * 0.35), 4.0)));\n\t\t\tvar r: f32 = hash11((dot(cell, vec3f(12.9, 78.2, 37.7)) + (tick * 1.7)));\n\t\t\tif ((r > 0.62)) {\n\t\t\t\tvar hv: vec3f = (vec3f(hash11((r * 91.0)), hash11((r * 57.0)), hash11((r * 33.0))) - 0.5);\n\t\t\t\tpos += ((((hv * ((r - 0.55))) * 1.6) * I) * vec3f(1.0, 0.35, 1.0));\n\t\t\t\thit = true;\n\t\t\t}\n\t\t} else {\n\t\t\tvar row: f32 = floor(((yg * fr.uGlitch.y) * 3.0));\n\t\t\tvar r: f32 = hash11(((row * 5.3) + (tick * 2.3)));\n\t\t\tif ((r > 0.8)) {\n\t\t\t\tpos.x += (((((hash11(((row * 9.1) + tick)) - 0.5)) * 2.4) * I) * ((1.0 + fr.uFlat)));\n\t\t\t\thit = true;\n\t\t\t}\n\t\t\tpos.x += ((((hash11((row + tick)) - 0.5)) * 0.02) * I);\n\t\t}\n\t\tif (hit) {\n\t\t\tgGl = I;\n\t\t\tif ((fr.uGlitchP.x > 0.5)) {\n\t\t\t\tvar chn: f32 = floor((hash11(((aIdx * 17.3) + tick)) * 3.0));\n\t\t\t\tpos.x += ((((chn - 1.0)) * 0.09) * I);\n\t\t\t\tgCh = chn;\n\t\t\t}\n\t\t}\n\t\tgDrop = (step(hash11(((aIdx * 3.7) + tick)), (((fr.uGlitch.z * 0.4) * bst) * fr.uGlitch.x)) * hit2(hit));\n\t}\n\tif ((fr.uVoxel.x > 0.01)) {\n\t\tvar vm: f32 = fr.uVoxelP.x;\n\t\tvar amp: f32 = fr.uVoxelP.w;\n\t\tvar g: f32 = (mix(0.3, mix(0.035, 0.07, fr.uFlat), clamp(fr.uVoxel.x, 0.0, 1.0)) * fr.uVoxelP.z);\n\t\tif (((vm > 1.5) && (vm < 2.5))) {\n\t\t\tg *= (1.0 + (0.35 * sin(((t * fr.uVoxelP.y) * 2.0))));\n\t\t}\n\t\tvar cell: vec3f = floor((pos / g));\n\t\tvar q: vec3f = (((cell + 0.5)) * g);\n\t\tif (((vm > 0.5) && (vm < 1.5))) {\n\t\t\tvar h2: f32 = hash11(dot(cell, vec3f(12.9, 78.2, 37.7)));\n\t\t\tq.y += ((((((h2 - 0.5)) * g) * 2.0) * amp) * sin((((t * fr.uVoxelP.y) * 1.5) + (h2 * 6.2831))));\n\t\t} else if (((vm > 2.5) && (vm < 3.5))) {\n\t\t\tq.y += (((sin(((dot(cell.xz, vec2f(0.7, 0.5)) * 0.55) - ((t * fr.uVoxelP.y) * 2.0))) * g) * 1.6) * amp);\n\t\t} else if (((vm > 3.5) && (vm < 4.5))) {\n\t\t\tvar stp: f32 = ((g * 2.0) * max(amp, 0.3));\n\t\t\tq.y = ((((floor((((pos.y - fr.uYR.x)) / stp)) + 0.5)) * stp) + fr.uYR.x);\n\t\t} else if ((vm > 4.5)) {\n\t\t\tvar hv: vec3f = (vec3f(hash11(dot(cell, vec3f(12.9, 78.2, 37.7))), hash11(dot(cell, vec3f(39.3, 11.1, 52.7))), hash11(dot(cell, vec3f(7.7, 91.3, 23.9)))) - 0.5);\n\t\t\tq += ((((hv * g) * 3.0) * amp) * ((0.5 + (0.5 * sin((((t * fr.uVoxelP.y) * 2.0) + (hv.x * 12.0)))))));\n\t\t}\n\t\tq.z += (((fr.uFlat * ((gLum - 0.5))) * g) * 9.0);\n\t\tpos = mix(pos, q, smoothstep(0.0, 0.25, fr.uVoxel.x));\n\t}\n\tif ((fr.uJitter.x > 0.001)) {\n\t\tpos += ((vec3f(sin(((t * 17.0) + (aIdx * 91.0))), sin(((t * 13.0) + (aIdx * 57.0))), sin(((t * 11.0) + (aIdx * 33.0)))) * fr.uJitter.x) * 0.03);\n\t}\n\tif ((fr.uHyp.x > 0.001)) {\n\t\tvar hw: f32;\n\t\tvar hp: vec3f = hyperWarp(pos, fr.uCen, (1.25 / max(fr.uHyp.w, 0.05)), fr.uHyp.z, (fr.uHyp.y - (fr.uTOff * fr.uHypP.w)), &hw);\n\t\tvar hk: f32 = min(fr.uHyp.x, 1.0);\n\t\tpos = mix(pos, hp, hk);\n\t\tgHypW = hw;\n\t\tgHypF = (smoothstep(mix(0.99, 0.6, fr.uHypP.z), 0.997, hw) * hk);\n\t}\n\t(*maskV) = 1.0;\n\tif ((fr.uMask.x > 0.5)) {\n\t\tvar y01: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar soft: f32 = max(fr.uMask.z, 0.02);\n\t\tif ((fr.uMask.x < 1.5)) {\n\t\t\t(*maskV) = smoothstep((fr.uMaskA.x - (soft * 0.5)), (fr.uMaskA.x + (soft * 0.5)), y01);\n\t\t} else if ((fr.uMask.x < 2.5)) {\n\t\t\tvar r: f32 = ((fr.uMask.y * 1.6) + 0.01);\n\t\t\t(*maskV) = (1.0 - smoothstep((r * ((1.0 - soft))), r, distance((*base), fr.uMaskA.xyz)));\n\t\t} else if ((fr.uMask.x < 3.5)) {\n\t\t\tvar n: f32 = ((snoise((((*base) * 1.6) + vec3f(0.0, fr.uMaskA.w, (fr.uMaskA.w * 0.6)))) * 0.5) + 0.5);\n\t\t\t(*maskV) = smoothstep(((1.0 - fr.uMask.y) - (soft * 0.3)), ((1.0 - fr.uMask.y) + (soft * 0.3)), n);\n\t\t} else {\n\t\t\tvar w: f32 = ((fr.uMask.y * 0.35) + 0.004);\n\t\t\t(*maskV) = (1.0 - smoothstep(w, ((w + (soft * 0.3)) + 0.02), abs((y01 - fr.uMaskA.x))));\n\t\t}\n\t\tif ((fr.uMask.w > 0.5)) {\n\t\t\t(*maskV) = (1.0 - (*maskV));\n\t\t}\n\t}\n\tpos = mix((*base), pos, (*maskV));\n\tif ((fr.uContact.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 16); i++) {\n\t\t\tif ((f32(i) >= fr.uContact.w)) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tcontactAt(fr.uTrk[i].xyz, fr.uTrk[i].w, (*base), rad, &pos);\n\t\t}\n\t\tfor (var i: i32 = 0; (i < 32); i++) {\n\t\t\tif ((f32(i) >= fr.uShockP.z)) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tcontactAt(fr.uImp[i].xyz, fr.uImp[i].w, (*base), rad, &pos);\n\t\t}\n\t}\n\tif ((fr.uShockP.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 4); i++) {\n\t\t\tvar age: f32 = fr.uShock[i].w;\n\t\t\tif ((age < 0.0)) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar dist: f32 = distance((*base), fr.uShock[i].xyz);\n\t\t\tvar x: f32 = (((dist - (age * fr.uShockP.y))) / 0.22);\n\t\t\tpos += ((((rad * exp((-x * x))) * exp((-age * 0.9))) * fr.uShockP.x) * 0.45);\n\t\t}\n\t}\n\tif ((fr.uBrushParam.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 20); i++) {\n\t\t\tvar age: f32 = fr.uBrushHits[i].w;\n\t\t\tif ((age < 0.0)) {\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tvar dist: f32 = distance((*base), fr.uBrushHits[i].xyz);\n\t\t\tvar r: f32 = fr.uBrushParam.y;\n\t\t\tif ((dist < r)) {\n\t\t\t\tvar life: f32 = (1.0 - (age / fr.uBrushParam.z));\n\t\t\t\tvar infl: f32 = ((((1.0 - (dist / r))) * life) * fr.uBrushParam.x);\n\t\t\t\tpos += ((rad * infl) * 0.35);\n\t\t\t}\n\t\t}\n\t}\n\tif ((fr.uPhysics.x > 0.001)) {\n\t\tvar seed: f32 = hash11(((aIdx * 1234.56) + 17.1));\n\t\tvar seed2: f32 = hash11(((aIdx * 2345.67) + 39.3));\n\t\tvar seed3: f32 = hash11(((aIdx * 3456.78) + 81.7));\n\t\tvar yP: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);\n\t\tvar onset: f32 = (((((1.0 - yP)) * fr.uPhysP.y) * 1.3) + (seed * 0.3));\n\t\tvar pt: f32 = max(0.0, (fr.uCollapseTime - onset));\n\t\tvar radd: vec3f = normalize(((*base) + vec3f(1e-3)));\n\t\tvar tang: vec3f = normalize((vec3f(-(*base).z, 0.0, (*base).x) + vec3f(1e-3, 0.0, 0.0)));\n\t\tvar v0: vec3f = ((((radd * ((0.5 + (seed * 1.1)))) + ((tang * fr.uPhysP.z) * ((0.3 + (seed3 * 0.9)))))) * fr.uPhysP.x);\n\t\tvar vy0: f32 = (((0.5 + (seed2 * 1.0))) * fr.uPhysP.x);\n\t\tvar g: f32 = (fr.uPhysics.y * 3.8);\n\t\tvar floorY: f32 = (fr.uYR.x - 0.04);\n\t\tvar drag: f32 = (1.0 - exp((-pt * 1.5)));\n\t\tvar pPhys: vec3f = (*base);\n\t\tpPhys.x += (((v0.x * drag) / 1.5) + ((fr.uPhysics.w * 0.5) * drag));\n\t\tpPhys.z += ((v0.z * drag) / 1.5);\n\t\tvar h0: f32 = max(((*base).y - floorY), 0.0);\n\t\tvar vimp: f32 = sqrt(((vy0 * vy0) + ((2.0 * g) * h0)));\n\t\tvar t1: f32 = (((vy0 + vimp)) / g);\n\t\tvar yy: f32;\n\t\tif ((pt < t1)) {\n\t\t\tyy = (((*base).y + (vy0 * pt)) - (((0.5 * g) * pt) * pt));\n\t\t} else {\n\t\t\tvar tt: f32 = (pt - t1);\n\t\t\tvar vy: f32 = (vimp * fr.uPhysics.z);\n\t\t\tvar hh: f32 = 0.0;\n\t\t\tfor (var b: i32 = 0; (b < 4); b++) {\n\t\t\t\tvar T: f32 = ((2.0 * vy) / g);\n\t\t\t\tif ((tt < T)) {\n\t\t\t\t\thh = ((vy * tt) - (((0.5 * g) * tt) * tt));\n\t\t\t\t\tbreak;\n\t\t\t\t}\n\t\t\t\ttt -= T;\n\t\t\t\tvy *= fr.uPhysics.z;\n\t\t\t}\n\t\t\tyy = (floorY + max(hh, 0.0));\n\t\t}\n\t\tpPhys.y = max(yy, floorY);\n\t\tvar spinA: f32 = (((((1.0 - exp((-pt * 1.2)))) * fr.uPhysP.z) * ((seed2 - 0.5))) * 2.0);\n\t\tvar sq: vec2f = pPhys.xz;\n\t\tvar cs: f32 = cos(spinA);\n\t\tvar sn: f32 = sin(spinA);\n\t\t{ let _sw22 = vec2f(((sq.x * cs) - (sq.y * sn)), ((sq.x * sn) + (sq.y * cs))); pPhys = vec3f(_sw22.x, pPhys.y, _sw22.y); }\n\t\tvar strength: f32 = min(1.0, fr.uPhysics.x);\n\t\tvar target_: vec3f = mix(pos, pPhys, strength);\n\t\tif ((fr.uAsm > 0.0)) {\n\t\t\tvar s0: f32 = ((yP * 0.42) + (seed * 0.2));\n\t\t\tvar sA: f32 = clamp(((((fr.uAsm * 1.4) - s0)) / 0.55), 0.0, 1.0);\n\t\t\tvar eA: f32 = ((sA * sA) * ((3.0 - (2.0 * sA))));\n\t\t\tvar side: vec3f = normalize((cross((pPhys - pos), vec3f(0.0, 1.0, 0.0)) + vec3f(1e-3)));\n\t\t\ttarget_ = mix(target_, pos, eA);\n\t\t\ttarget_ += (((side * sin((eA * 3.14159))) * 0.45) * ((seed3 - 0.3)));\n\t\t\ttarget_.y += ((sin((eA * 3.14159)) * 0.5) * ((0.4 + seed)));\n\t\t}\n\t\tpos = target_;\n\t}\n\tif ((fr.uHandP.x > 0.001)) {\n\t\tfor (var i: i32 = 0; (i < 12); i++) {\n\t\t\tif ((f32(i) >= fr.uHandP.w)) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t\tvar hd: vec3f = (pos - fr.uHand[i].xyz);\n\t\t\tvar r: f32 = fr.uHandP.y;\n\t\t\tvar d2: f32 = dot(hd, hd);\n\t\t\tif ((d2 < (r * r))) {\n\t\t\t\tvar f: f32 = (1.0 - (sqrt(d2) / r));\n\t\t\t\tf = ((f * f) * ((3.0 - (2.0 * f))));\n\t\t\t\tvar hs: f32 = fr.uHand[i].w;\n\t\t\t\tif ((hs > 1.5)) {\n\t\t\t\t\ths -= 2.0;\n\t\t\t\t\tvar a: f32 = (((f * hs) * fr.uHandP.x) * 2.6);\n\t\t\t\t\tvar ca: f32 = cos(a);\n\t\t\t\t\tvar sa: f32 = sin(a);\n\t\t\t\t\tvar q: vec2f = (pos.xz - fr.uHand[i].xz);\n\t\t\t\t\t{ let _sw23 = (fr.uHand[i].xz + vec2f(((q.x * ca) - (q.y * sa)), ((q.x * sa) + (q.y * ca)))); pos = vec3f(_sw23.x, pos.y, _sw23.y); }\n\t\t\t\t\tpos.y += (((f * hs) * fr.uHandP.x) * 0.12);\n\t\t\t\t} else {\n\t\t\t\t\tpos += ((((normalize((hd + vec3f(1e-3))) * f) * hs) * fr.uHandP.x) * 0.75);\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\tif (((fr.uMouseOn > 0.5) && (fr.uCursor.x > 0.001))) {\n\t\tvar tm: vec3f = (pos - fr.uMouse);\n\t\tvar r2: f32 = (fr.uCursor.y * fr.uCursor.y);\n\t\tvar d2: f32 = dot(tm, tm);\n\t\tif ((d2 < r2)) {\n\t\t\tvar f: f32 = (1.0 - (d2 / r2));\n\t\t\tif ((fr.uCursor.z > 1.5)) {\n\t\t\t\tvar vax: vec3f = normalize((vec3f(fr.modelViewMatrix[0][2], fr.modelViewMatrix[1][2], fr.modelViewMatrix[2][2]) + vec3f(1e-5)));\n\t\t\t\tvar ca: f32 = (((f * f) * fr.uCursor.x) * 2.2);\n\t\t\t\tvar cc: f32 = cos(ca);\n\t\t\t\tvar cs: f32 = sin(ca);\n\t\t\t\tpos = (((fr.uMouse + (tm * cc)) + (cross(vax, tm) * cs)) + ((vax * dot(vax, tm)) * ((1.0 - cc))));\n\t\t\t} else {\n\t\t\t\tpos += (((((normalize((tm + vec3f(1e-3))) * f) * f) * fr.uCursor.x) * 0.6) * fr.uCursor.z);\n\t\t\t}\n\t\t}\n\t}\n\treturn pos;\n}\n\nfn main_() {\n\tvar bA: vec3f;\n\tvar bB: vec3f;\n\tvar mA: f32;\n\tvar mB: f32;\n\tgDepth = aDepth;\n\tgNormal = vec3f(0.0);\n\tvar pA: vec3f = fxDisplace(aOrigin, aTarget, aIdx, &bA, &mA);\n\tgDepth = aDepthB;\n\tvar pB: vec3f = fxDisplace(aOriginB, aTargetB, aIdxB, &bB, &mB);\n\tvar rv: bool = (fr.uScope.y > 1.5);\n\tvar cm: f32 = select(fr.uScope.y, (fr.uScope.y - 2.0), rv);\n\tvar sp: f32 = select(aSeg, (1.0 - aSeg), rv);\n\tif ((fr.uScopeP.w > 1.5)) {\n\t\tsp = fract((sp * fr.uScopeP.w));\n\t}\n\tvar age: f32 = (fr.uScope.z - sp);\n\tvar lit: f32 = select(((select(exp(((-age * 4.0) / max(fr.uScope.w, 0.02))), 1.0, (cm < 0.5))) * fr.uScopeP.y), 0.0, ((age < 0.0) || (aSeg < 0.0)));\n\tvA = ((((lit * step(fr.uScopeP.z, sp)) * fr.uScope.x) * min(1.0, (fr.uScope.x * 2.0))) * fr.uScopeLB);\n\tvC = (fr.uScopeC * ((1.0 + ((exp((-max(age, 0.0) * 45.0)) * fr.uScopeQ.z) * 2.0))));\n\tvSide = aSide;\n\tvar mvp: mat4x4f = (fr.projectionMatrix * fr.modelViewMatrix);\n\tvar cA: vec4f = (mvp * vec4f(pA, 1.0));\n\tvar cB: vec4f = (mvp * vec4f(pB, 1.0));\n\tvar sA: vec2f = (cA.xy / cA.w);\n\tvar sB: vec2f = (cB.xy / cB.w);\n\tvar dir: vec2f = (((sB - sA)) * vec2f((fr.uRes.x / fr.uRes.y), 1.0));\n\tvar dl: f32 = length(dir);\n\tdir = select(vec2f(1.0, 0.0), (dir / dl), (dl > 1e-5));\n\tvar nrm: vec2f = (vec2f(-dir.y, dir.x) * vec2f((fr.uRes.y / fr.uRes.x), 1.0));\n\tvar c: vec4f = mix(cA, cB, aEnd);\n\t{ let _sw24 = (c.xy + ((((nrm * aSide) * ((fr.uScopeW + 1.0))) / fr.uRes.y) * c.w)); c = vec4f(_sw24.x, _sw24.y, c.z, c.w); }\n\tgl_Position = c;\n}\n\n\n@compute @workgroup_size(64)\nfn main(@builtin(global_invocation_id) gid: vec3u) {\n\tlet i = gid.x;\n\tlet count = arrayLength(&inS0);\n\tif (i >= count) { return; }\n\tlet s0 = inS0[i];\n\tlet s1 = inS1[i];\n\tlet s2 = inS2[i];\n\tlet s3 = inS3[i];\n\tlet s4 = inS4[i];\n\taOrigin = s0.xyz;\n\taTarget = s1.xyz;\n\taIdx = s0.w;\n\taOriginB = s2.xyz;\n\taTargetB = s3.xyz;\n\taIdxB = s1.w;\n\taDepth = s2.w;\n\taDepthB = s3.w;\n\taEnd = s4.x;\n\taSide = s4.y;\n\taSeg = s4.z;\n\tmain_();\n\toutClip[i] = gl_Position;\n\toutV0[i] = vec4f(vC, vA);\n\toutV1[i] = vec4f(vSide, 0.0, 0.0, 0.0);\n}\n",
+"render": "struct Frame {\n\t@size(16) uAdd: f32,\n\t@size(16) uSolid: vec3f,\n\t@size(16) uAtt: f32,\n\t@size(16) uSize: f32,\n\t@size(16) uPR: f32,\n\t@size(16) uGlyph: vec3f,\n\t@size(16) uColorBy: f32,\n\t@size(16) uBright: f32,\n\t@size(16) uMaskShow: f32,\n\t@size(16) uP0: vec3f,\n\t@size(16) uP1: vec3f,\n\t@size(16) uP2: vec3f,\n\t@size(16) uSliceC: vec3f,\n\t@size(16) uMarkC: vec3f,\n\t@size(16) uTime: f32,\n\t@size(16) uTOff: f32,\n\t@size(16) uMorph: f32,\n\tuMorphS: vec4f,\n\tuMorphO: vec4f,\n\tuMorphD: vec4f,\n\t@size(16) uSettle: f32,\n\t@size(16) uBeat: f32,\n\t@size(16) uYR: vec2f,\n\t@size(16) uMouse: vec3f,\n\t@size(16) uMouseOn: f32,\n\t@size(16) uShade: f32,\n\tuCurlP: vec4f,\n\tuSpecP: vec4f,\n\tuWaveP: vec4f,\n\tuWaveSrc: vec4f,\n\tuPulseP: vec4f,\n\tuVoxelP: vec4f,\n\tuGlitchP: vec4f,\n\tuBlast: vec4f,\n\tuFlow: vec4f,\n\tuDisP: vec4f,\n\tuScope: vec4f,\n\tuScopeP: vec4f,\n\tuScopeQ: vec4f,\n\t@size(16) uScopeC: vec3f,\n\tuDepth: vec4f,\n\tuDepthP: vec4f,\n\tuDepthQ: vec4f,\n\t@size(16) uFlat: f32,\n\tuCurl: vec4f,\n\tuSpec: vec4f,\n\tuWave: vec4f,\n\tuTwist: vec4f,\n\tuPulse: vec4f,\n\tuVoxel: vec4f,\n\tuJitter: vec4f,\n\tuCursor: vec4f,\n\tuMask: vec4f,\n\tuMaskA: vec4f,\n\tuGlitch: vec4f,\n\tuContact: vec4f,\n\tuShockP: vec4f,\n\tuTrk: array<vec4f, 16>,\n\tuHand: array<vec4f, 12>,\n\tuGrav: vec4f,\n\tuSlice: vec4f,\n\tuSliceM: vec4f,\n\tuMark: vec4f,\n\tuGravT: vec4f,\n\tuPhysP: vec4f,\n\t@size(16) uAsm: f32,\n\tuDis: vec4f,\n\t@size(16) uDisT: f32,\n\t@size(16) uAnimN: f32,\n\t@size(16) uCen: vec3f,\n\tuDisQ: vec4f,\n\tuGravP: vec4f,\n\tuHandP: vec4f,\n\tuImp: array<vec4f, 32>,\n\tuShock: array<vec4f, 4>,\n\tuExp: vec4f,\n\tuExpP: vec4f,\n\tuGrow: vec4f,\n\tuGrowP: vec4f,\n\t@size(16) uGrowSeed: vec3f,\n\tuJel: array<vec4f, 3>,\n\tuJelO: array<vec4f, 3>,\n\tuJelP: vec4f,\n\tuPhysics: vec4f,\n\t@size(16) uCollapseTime: f32,\n\tuBrushHits: array<vec4f, 20>,\n\tuPaintP: vec4f,\n\tuBrushParam: vec4f,\n\tuLookP2: vec4f,\n\tuDof: vec4f,\n\tuHyp: vec4f,\n\tuHypP: vec4f,\n\tuCh: vec4f,\n\tuChA: vec4f,\n\tuFr: vec4f,\n\tuFr2: vec4f,\n\tuFr3: vec4f,\n\tuFr4: vec4f,\n\tuFr5: vec4f,\n\tuHero: vec4f,\n\tuFr6: vec4f,\n\tuFr7: vec4f,\n\tuShoot: vec4f,\n\tuShootP: vec4f,\n\tuShootD: vec4f,\n\tuShootE: vec4f,\n\tuShootC: vec4f,\n\tuShootS: array<vec4f, 24>,\n\tuShootN: array<vec4f, 24>,\n\tuShootB: array<vec4f, 6>,\n\tuScr: vec4f,\n\tuScrP: vec4f,\n\tuScrD: vec4f,\n\tuScrQ: vec4f,\n\t@size(16) uScrMN: f32,\n\tuSlit: vec4f,\n\tuSlitP: vec4f,\n\tuSlitG: vec4f,\n\tuSort: vec4f,\n\tuSortP: vec4f,\n\tmodelMatrix: mat4x4f,\n\tmodelViewMatrix: mat4x4f,\n\tprojectionMatrix: mat4x4f,\n\tviewMatrix: mat4x4f,\n\tnormalMatrix: mat3x3f,\n\t@size(16) uRes: vec2f,\n\t@size(16) uPx: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n\t@size(16) uGlow: f32,\n\t@size(16) uDens: f32,\n\t@size(16) uGhost: f32,\n\t@size(16) uShape: f32,\n\tuShd: vec4f,\n\tuShdL: vec4f,\n\tuShdP: vec4f,\n\t@size(16) uShdC: vec3f,\n\tuLink: vec4f,\n\tuLinkP: vec4f,\n\t@size(16) uLinkW: f32,\n\t@size(16) uScopeW: f32,\n\t@size(16) uScopeLB: f32,\n}\n@group(0) @binding(0) var<uniform> fr: Frame;\n@group(0) @binding(1) var<storage, read> outClip: array<vec4f>;\n@group(0) @binding(2) var<storage, read> outV0: array<vec4f>;\n@group(0) @binding(3) var<storage, read> outV1: array<vec4f>;\n@group(0) @binding(4) var atlasTex: texture_2d<f32>;\n@group(0) @binding(5) var linSamp: sampler;\n\nvar<private> vC: vec3f;\nvar<private> vA: f32;\nvar<private> vSide: f32;\nvar<private> gl_FragColor: vec4f;\n\nfn frag_main_() {\n\tvar edge: f32 = (1.0 - smoothstep(0.35, 1.0, abs(vSide)));\n\tgl_FragColor = vec4f((vC * ((vA * edge))), (vA * edge));\n}\n\n\n\nfn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {\n\tlet startCompression = 0.8 - 0.04;\n\tlet desaturation = 0.15;\n\tvar color = c0 * exposure;\n\tlet x = min(color.r, min(color.g, color.b));\n\tlet offset = select(0.04, x - 6.25 * x * x, x < 0.08);\n\tcolor = color - offset;\n\tlet peak = max(color.r, max(color.g, color.b));\n\tif (peak < startCompression) { return color; }\n\tlet d = 1.0 - startCompression;\n\tlet newPeak = 1.0 - d * d / (peak + d - startCompression);\n\tcolor = color * (newPeak / peak);\n\tlet g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);\n\treturn mix(color, vec3f(newPeak), g);\n}\nfn rrtAndOdtFit(v: vec3f) -> vec3f {\n\tlet a = v * (v + 0.0245786) - 0.000090537;\n\tlet b = v * (0.983729 * v + 0.4329510) + 0.238081;\n\treturn a / b;\n}\nfn toneAces(c0: vec3f, exposure: f32) -> vec3f {\n\tlet inM = mat3x3f(vec3f(0.59719, 0.07600, 0.02840), vec3f(0.35458, 0.90834, 0.13383), vec3f(0.04823, 0.01566, 0.83777));\n\tlet outM = mat3x3f(vec3f(1.60475, -0.10208, -0.00327), vec3f(-0.53108, 1.10813, -0.07276), vec3f(-0.07367, -0.00605, 1.07602));\n\tvar color = c0 * (exposure / 0.6);\n\tcolor = inM * color;\n\tcolor = rrtAndOdtFit(color);\n\tcolor = outM * color;\n\treturn saturate(color);\n}\nfn agxContrast(x: vec3f) -> vec3f {\n\tlet x2 = x * x;\n\tlet x4 = x2 * x2;\n\treturn 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;\n}\nfn toneAgx(c0: vec3f, exposure: f32) -> vec3f {\n\tlet rec2020ToSrgb = mat3x3f(vec3f(1.6605, -0.1246, -0.0182), vec3f(-0.5876, 1.1329, -0.1006), vec3f(-0.0728, -0.0083, 1.1187));\n\tlet srgbToRec2020 = mat3x3f(vec3f(0.6274, 0.0691, 0.0164), vec3f(0.3293, 0.9195, 0.0880), vec3f(0.0433, 0.0113, 0.8956));\n\tlet inset = mat3x3f(vec3f(0.856627153315983, 0.137318972929847, 0.11189821299995), vec3f(0.0951212405381588, 0.761241990602591, 0.0767994186031903), vec3f(0.0482516061458583, 0.101439036467562, 0.811302368396859));\n\tlet outset = mat3x3f(vec3f(1.1271005818144368, -0.1413297634984383, -0.14132976349843826), vec3f(-0.11060664309660323, 1.157823702216272, -0.11060664309660294), vec3f(-0.016493938717834573, -0.016493938717834257, 1.2519364065950405));\n\tlet minEv = -12.47393;\n\tlet maxEv = 4.026069;\n\tvar color = c0 * exposure;\n\tcolor = srgbToRec2020 * color;\n\tcolor = inset * color;\n\tcolor = max(color, vec3f(1e-10));\n\tcolor = log2(color);\n\tcolor = (color - minEv) / (maxEv - minEv);\n\tcolor = clamp(color, vec3f(0.0), vec3f(1.0));\n\tcolor = agxContrast(color);\n\tcolor = outset * color;\n\tcolor = pow(max(vec3f(0.0), color), vec3f(2.2));\n\tcolor = rec2020ToSrgb * color;\n\treturn clamp(color, vec3f(0.0), vec3f(1.0));\n}\nfn toneMap(c: vec3f, exposure: f32, mode: f32) -> vec3f {\n\tif (mode < 0.5) { return c; }\n\tif (mode < 1.5) { return toneNeutral(c, exposure); }\n\tif (mode < 2.5) { return toneAces(c, exposure); }\n\treturn toneAgx(c, exposure);\n}\nfn linearToSrgb(v: vec3f) -> vec3f {\n\treturn select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));\n}\n\nstruct VOut {\n\t@builtin(position) clip: vec4f,\n\t@location(0) v0: vec4f,\n\t@location(1) v1: vec4f,\n}\n\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar clip = outClip[vi];\n\tclip.z = (clip.z + clip.w) * 0.5;\n\tvar o: VOut;\n\to.clip = clip;\n\to.v0 = outV0[vi];\n\to.v1 = outV1[vi];\n\treturn o;\n}\n\nfn setup_in(in: VOut) {\n\tvC = in.v0.xyz;\n\tvA = in.v0.w;\n\tvSide = in.v1.x;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tsetup_in(in);\n\tfrag_main_();\n\treturn vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, fr.uExposure, fr.uTone)), gl_FragColor.a);\n}\n\n@fragment\nfn fs_raw(in: VOut) -> @location(0) vec4f {\n\tsetup_in(in);\n\tfrag_main_();\n\treturn gl_FragColor;\n}\n",
 "attrs": [
 [
 "aOrigin",
@@ -72892,7 +75800,8 @@ const MESH_PROGRAMS = {
 1
 ]
 ],
-"slots": 5
+"slots": 5,
+"vslots": 2
 }
 };
 };
@@ -72912,6 +75821,17 @@ this.started = false;
 this.geo = null;
 this.bufs = null;
 this.drawCount = 0;
+const C = GPUShaderStage.COMPUTE;
+const ro = { type: 'read-only-storage' };
+const outs = 1 + this.prog.vslots;
+this.computeBGL = this.device.createBindGroupLayout({
+entries: [
+{ binding: 0, visibility: C, buffer: { type: 'uniform' } },
+...Array.from({ length: this.prog.slots }, (_, s) => ({ binding: s + 1, visibility: C, buffer: ro })),
+...Array.from({ length: outs }, (_, s) => ({ binding: 9 + s, visibility: C, buffer: { type: 'storage' } })),
+...points.texLayout(),
+],
+});
 }
 prepare() {
 if (this.started) return this.job;
@@ -72921,7 +75841,7 @@ const pts = this.pts;
 const jobs = [];
 const cm = D.createShaderModule({ code: this.prog.compute });
 jobs.push(
-D.createComputePipelineAsync({ layout: D.createPipelineLayout({ bindGroupLayouts: [pts.computeBGL] }), compute: { module: cm, entryPoint: 'main' } }).then((p) => {
+D.createComputePipelineAsync({ layout: D.createPipelineLayout({ bindGroupLayouts: [this.computeBGL] }), compute: { module: cm, entryPoint: 'main' } }).then((p) => {
 this.pipelines.compute = p;
 })
 );
@@ -72965,7 +75885,7 @@ this._free();
 const mk = (size, usage) => D.createBuffer({ size: Math.max(16, size), usage });
 const slots = Array.from({ length: this.prog.slots }, () => mk(V * 16, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST));
 const outClip = mk(V * 16, GPUBufferUsage.STORAGE);
-const outV = [mk(V * 16, GPUBufferUsage.STORAGE), mk(V * 16, GPUBufferUsage.STORAGE)];
+const outV = Array.from({ length: this.prog.vslots }, () => mk(V * 16, GPUBufferUsage.STORAGE));
 const index = mk(idx.byteLength, GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST);
 const frameBuf = pts._inst(0).buf;
 this.bufs = { slots, outClip, outV, index, V, frameBuf };
@@ -72983,23 +75903,12 @@ const b = this.bufs;
 const e = (binding, buffer) => ({ binding, resource: { buffer } });
 const dummy = pts.dummyBuf;
 this.computeGroup = D.createBindGroup({
-layout: pts.computeBGL,
-entries: [
-e(0, b.frameBuf),
-...[1, 2, 3, 4, 5, 6, 7, 8].map((bd) => e(bd, b.slots[bd - 1] || dummy)),
-e(9, b.outClip),
-e(10, b.outV[0]),
-e(11, b.outV[1]),
-{ binding: 12, resource: pts.specTex.createView() },
-{ binding: 13, resource: pts.sampler },
-{ binding: 14, resource: pts.pieceTex.createView() },
-{ binding: 15, resource: pts.frTex.createView({ dimension: '2d-array' }) },
-{ binding: 16, resource: pts.heroTex.createView() },
-],
+layout: this.computeBGL,
+entries: [e(0, b.frameBuf), ...b.slots.map((buf, s) => e(s + 1, buf)), e(9, b.outClip), ...b.outV.map((buf, s) => e(10 + s, buf)), ...pts.texEntries()],
 });
 this.renderGroup = D.createBindGroup({
 layout: pts.renderBGL,
-entries: [e(0, b.frameBuf), e(1, b.outClip), e(2, b.outV[0]), e(3, b.outV[1]), { binding: 4, resource: pts.atlasTex.createView() }, { binding: 5, resource: pts.sampler }],
+entries: [e(0, b.frameBuf), e(1, b.outClip), e(2, b.outV[0] || dummy), e(3, b.outV[1] || dummy), { binding: 4, resource: pts.atlasTex.createView() }, { binding: 5, resource: pts.sampler }],
 });
 this.texVer = pts.texVersion;
 this.frameBufUsed = b.frameBuf;
@@ -73070,17 +75979,87 @@ this._free();
 }
 }
 };
+__defs['src/effects/shaders/wgsl/generated/tone.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'TONE_WGSL', () => TONE_WGSL);
+const TONE_WGSL = `
+fn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {
+	let startCompression = 0.8 - 0.04;
+	let desaturation = 0.15;
+	var color = c0 * exposure;
+	let x = min(color.r, min(color.g, color.b));
+	let offset = select(0.04, x - 6.25 * x * x, x < 0.08);
+	color = color - offset;
+	let peak = max(color.r, max(color.g, color.b));
+	if (peak < startCompression) { return color; }
+	let d = 1.0 - startCompression;
+	let newPeak = 1.0 - d * d / (peak + d - startCompression);
+	color = color * (newPeak / peak);
+	let g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
+	return mix(color, vec3f(newPeak), g);
+}
+fn rrtAndOdtFit(v: vec3f) -> vec3f {
+	let a = v * (v + 0.0245786) - 0.000090537;
+	let b = v * (0.983729 * v + 0.4329510) + 0.238081;
+	return a / b;
+}
+fn toneAces(c0: vec3f, exposure: f32) -> vec3f {
+	let inM = mat3x3f(vec3f(0.59719, 0.07600, 0.02840), vec3f(0.35458, 0.90834, 0.13383), vec3f(0.04823, 0.01566, 0.83777));
+	let outM = mat3x3f(vec3f(1.60475, -0.10208, -0.00327), vec3f(-0.53108, 1.10813, -0.07276), vec3f(-0.07367, -0.00605, 1.07602));
+	var color = c0 * (exposure / 0.6);
+	color = inM * color;
+	color = rrtAndOdtFit(color);
+	color = outM * color;
+	return saturate(color);
+}
+fn agxContrast(x: vec3f) -> vec3f {
+	let x2 = x * x;
+	let x4 = x2 * x2;
+	return 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;
+}
+fn toneAgx(c0: vec3f, exposure: f32) -> vec3f {
+	let rec2020ToSrgb = mat3x3f(vec3f(1.6605, -0.1246, -0.0182), vec3f(-0.5876, 1.1329, -0.1006), vec3f(-0.0728, -0.0083, 1.1187));
+	let srgbToRec2020 = mat3x3f(vec3f(0.6274, 0.0691, 0.0164), vec3f(0.3293, 0.9195, 0.0880), vec3f(0.0433, 0.0113, 0.8956));
+	let inset = mat3x3f(vec3f(0.856627153315983, 0.137318972929847, 0.11189821299995), vec3f(0.0951212405381588, 0.761241990602591, 0.0767994186031903), vec3f(0.0482516061458583, 0.101439036467562, 0.811302368396859));
+	let outset = mat3x3f(vec3f(1.1271005818144368, -0.1413297634984383, -0.14132976349843826), vec3f(-0.11060664309660323, 1.157823702216272, -0.11060664309660294), vec3f(-0.016493938717834573, -0.016493938717834257, 1.2519364065950405));
+	let minEv = -12.47393;
+	let maxEv = 4.026069;
+	var color = c0 * exposure;
+	color = srgbToRec2020 * color;
+	color = inset * color;
+	color = max(color, vec3f(1e-10));
+	color = log2(color);
+	color = (color - minEv) / (maxEv - minEv);
+	color = clamp(color, vec3f(0.0), vec3f(1.0));
+	color = agxContrast(color);
+	color = outset * color;
+	color = pow(max(vec3f(0.0), color), vec3f(2.2));
+	color = rec2020ToSrgb * color;
+	return clamp(color, vec3f(0.0), vec3f(1.0));
+}
+fn toneMap(c: vec3f, exposure: f32, mode: f32) -> vec3f {
+	if (mode < 0.5) { return c; }
+	if (mode < 1.5) { return toneNeutral(c, exposure); }
+	if (mode < 2.5) { return toneAces(c, exposure); }
+	return toneAgx(c, exposure);
+}
+fn linearToSrgb(v: vec3f) -> vec3f {
+	return select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));
+}
+`;
+};
 __defs['src/effects/render/webgpu/webgpu-trail.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'WebGPUTrail', () => WebGPUTrail);
 const { RT_FORMAT } = __req('src/effects/render/webgpu/webgpu-post.js');
+const { TONE_WGSL } = __req('src/effects/shaders/wgsl/generated/tone.js');
 const WGSL = `
 struct U {
 	mv: mat4x4f,
 	proj: mat4x4f,
 	tintC: vec4f,   // rgb: цвет подмеса, w: доля подмеса
 	params: vec4f,  // x: размер точки в пикселях (до сжатия по расстоянию), y: прозрачность, zw: размер холста
-	out: vec4f,     // x: экспозиция
+	out: vec4f,     // x: экспозиция, y: тональная компрессия (0 нет, 1 Neutral, 2 ACES, 3 AgX)
 }
 @group(0) @binding(0) var<uniform> u: U;
 
@@ -73111,29 +76090,12 @@ fn vs(in: VIn) -> VOut {
 	return o;
 }
 
-fn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {
-	let startCompression = 0.8 - 0.04;
-	let desaturation = 0.15;
-	var color = c0 * exposure;
-	let x = min(color.r, min(color.g, color.b));
-	let offset = select(0.04, x - 6.25 * x * x, x < 0.08);
-	color = color - offset;
-	let peak = max(color.r, max(color.g, color.b));
-	if (peak < startCompression) { return color; }
-	let d = 1.0 - startCompression;
-	let newPeak = 1.0 - d * d / (peak + d - startCompression);
-	color = color * (newPeak / peak);
-	let g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
-	return mix(color, vec3f(newPeak), g);
-}
-fn linearToSrgb(v: vec3f) -> vec3f {
-	return select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));
-}
+${TONE_WGSL}
 
 @fragment
 fn fs(in: VOut) -> @location(0) vec4f {
 	if (length(in.pc - vec2f(0.5)) > 0.5) { discard; }
-	return vec4f(linearToSrgb(toneNeutral(in.color, u.out.x)), u.params.y);
+	return vec4f(linearToSrgb(toneMap(in.color, u.out.x, u.out.y)), u.params.y);
 }
 
 @fragment
@@ -73235,8 +76197,8 @@ draw(enc, view, depthView, rt, tr, ctx) {
 const D = this.device;
 const pipe = this.pipelines[rt ? 'rt' : 'screen'];
 const rp = enc.beginRenderPass({
-colorAttachments: [{ view, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }],
-depthStencilAttachment: { view: depthView, depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' },
+colorAttachments: [{ view, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: ctx.load ? 'load' : 'clear', storeOp: 'store' }],
+depthStencilAttachment: { view: depthView, depthClearValue: 1, depthLoadOp: ctx.load ? 'load' : 'clear', depthStoreOp: 'store' },
 });
 if (pipe && this.count) {
 rp.setPipeline(pipe);
@@ -73252,7 +76214,7 @@ data.set(ctx.proj.elements, 16);
 const c = mt.uTintC.value;
 data.set([c.r, c.g, c.b, mt.uTint.value], 32);
 data.set([mt.uSize.value, mt.uAlpha.value, ctx.size[0], ctx.size[1]], 36);
-data.set([ctx.exposure, 0, 0, 0], 40);
+data.set([ctx.exposure, ctx.tone ?? 1, 0, 0], 40);
 D.queue.writeBuffer(g.ubuf, 0, data);
 rp.setBindGroup(0, g.group);
 rp.setVertexBuffer(0, g.pos);
@@ -73267,6 +76229,120 @@ this._free();
 }
 }
 };
+__defs['src/effects/render/webgpu/webgpu-surface.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'WebGPUSurface', () => WebGPUSurface);
+const { RT_FORMAT } = __req('src/effects/render/webgpu/webgpu-post.js');
+const { TONE_WGSL } = __req('src/effects/shaders/wgsl/generated/tone.js');
+const WGSL = `
+struct U {
+	mvp: mat4x4f,
+	col: vec4f, // rgb: цвет (uC), a: непрозрачность в центре (uA)
+	out: vec4f, // x: экспозиция, y: тональная компрессия (0 нет, 1 Neutral, 2 ACES, 3 AgX)
+}
+@group(0) @binding(0) var<uniform> u: U;
+
+struct VOut {
+	@builtin(position) clip: vec4f,
+	@location(0) uv: vec2f,
+}
+
+// PlaneGeometry(1, 1): углы от -0.5 до 0.5, uv от 0 до 1
+@vertex
+fn vs(@builtin(vertex_index) vi: u32) -> VOut {
+	var uvs = array<vec2f, 4>(vec2f(0.0, 0.0), vec2f(1.0, 0.0), vec2f(0.0, 1.0), vec2f(1.0, 1.0));
+	let uv = uvs[vi];
+	var clip = u.mvp * vec4f(uv - 0.5, 0.0, 1.0);
+	// в WebGL глубина клипа от -w до w, в WebGPU от 0 до w
+	clip.z = (clip.z + clip.w) * 0.5;
+	var o: VOut;
+	o.clip = clip;
+	o.uv = uv;
+	return o;
+}
+
+${TONE_WGSL}
+
+fn surf(uv: vec2f) -> vec4f {
+	let d = length(uv - 0.5) * 2.0;
+	return vec4f(u.col.rgb, u.col.a * (1.0 - smoothstep(0.25, 1.0, d)));
+}
+
+@fragment
+fn fs(in: VOut) -> @location(0) vec4f {
+	let c = surf(in.uv);
+	return vec4f(linearToSrgb(toneMap(c.rgb, u.out.x, u.out.y)), c.a);
+}
+
+@fragment
+fn fs_raw(in: VOut) -> @location(0) vec4f {
+	return surf(in.uv);
+}
+`;
+class WebGPUSurface {
+constructor(device, canvasFormat) {
+this.device = device;
+this.format = canvasFormat;
+this.pipelines = {};
+this.started = false;
+this.data = new Float32Array(24);
+}
+prepare() {
+if (this.started) return this.job;
+this.started = true;
+const D = this.device;
+const module = D.createShaderModule({ code: WGSL });
+const bgl = D.createBindGroupLayout({ entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } }] });
+this.ubuf = D.createBuffer({ size: this.data.byteLength, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+this.group = D.createBindGroup({ layout: bgl, entries: [{ binding: 0, resource: { buffer: this.ubuf } }] });
+const layout = D.createPipelineLayout({ bindGroupLayouts: [bgl] });
+this.job = Promise.all(
+[false, true].map((rt) =>
+D.createRenderPipelineAsync({
+layout,
+vertex: { module, entryPoint: 'vs' },
+fragment: {
+module,
+entryPoint: rt ? 'fs_raw' : 'fs',
+targets: [{ format: rt ? RT_FORMAT : this.format, blend: { color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' } } }],
+},
+primitive: { topology: 'triangle-strip', cullMode: 'none' },
+depthStencil: { format: 'depth24plus', depthWriteEnabled: false, depthCompare: 'less-equal' },
+}).then((p) => {
+this.pipelines[rt ? 'rt' : 'screen'] = p;
+})
+)
+).catch((e) => {
+this.failed = true;
+console.warn('WebGPU: не собралась поверхность под тенью, её рисует WebGL:', e && e.message ? e.message : e);
+});
+return this.job;
+}
+ready(rt = false) {
+return !!this.pipelines[rt ? 'rt' : 'screen'];
+}
+draw(enc, view, depthView, rt, plane, ctx) {
+const U = plane.material.uniforms;
+const c = U.uC.value;
+const d = this.data;
+d.set(ctx.mvp.elements, 0);
+d.set([c.r, c.g, c.b, U.uA.value], 16);
+d.set([ctx.exposure, ctx.tone, 0, 0], 20);
+this.device.queue.writeBuffer(this.ubuf, 0, d);
+const rp = enc.beginRenderPass({
+colorAttachments: [{ view, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }],
+depthStencilAttachment: { view: depthView, depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' },
+});
+rp.setPipeline(this.pipelines[rt ? 'rt' : 'screen']);
+rp.setBindGroup(0, this.group);
+rp.draw(4);
+rp.end();
+}
+dispose() {
+this.ubuf?.destroy();
+}
+}
+};
 __defs['src/effects/render/webgpu/device.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'NEED_STORAGE_BUFFERS', () => NEED_STORAGE_BUFFERS);
@@ -73274,7 +76350,7 @@ __def(__exports, 'markGpuBad', () => markGpuBad);
 __def(__exports, 'gpuMarkedBad', () => gpuMarkedBad);
 __def(__exports, 'webgpuSupported', () => webgpuSupported);
 __def(__exports, 'requestGpu', () => requestGpu);
-const NEED_STORAGE_BUFFERS = 11;
+const NEED_STORAGE_BUFFERS = 8;
 const BAD_KEY = 'pointbloom.gpu.bad';
 function markGpuBad(reason) {
 console.warn('WebGPU отключён для режима «Авто»:', reason);
@@ -73333,10 +76409,18 @@ const { WebGPUPoints } = __req('src/effects/render/webgpu/webgpu-points.js');
 const { WebGPUPost } = __req('src/effects/render/webgpu/webgpu-post.js');
 const { WebGPUMesh } = __req('src/effects/render/webgpu/webgpu-mesh.js');
 const { WebGPUTrail } = __req('src/effects/render/webgpu/webgpu-trail.js');
+const { WebGPUSurface } = __req('src/effects/render/webgpu/webgpu-surface.js');
 const { markGpuBad } = __req('src/effects/render/webgpu/device.js');
 const ATTRS = ['aOrigin', 'aTarget', 'aNormal', 'aNormalB', 'aPaint', 'aColor', 'aColorB', 'aHide', 'aDepth', 'aPath', 'aSculpt', 'aVis', 'aIdx'];
 const _mv = new THREE.Matrix4();
-const _nm = new THREE.Matrix3();
+const _pm = new THREE.Matrix4();
+const _v4 = new THREE.Vector4();
+const TONE = new Map([
+[THREE.NoToneMapping, 0],
+[THREE.NeutralToneMapping, 1],
+[THREE.ACESFilmicToneMapping, 2],
+[THREE.AgXToneMapping, 3],
+]);
 class WebGPUBackend extends RenderBackend {
 constructor(engine, gpu) {
 super(engine);
@@ -73366,6 +76450,7 @@ vp.fxCompose = () => this.captureCanvas();
 this.pts = new WebGPUPoints(this.gpu, cv);
 this.post = new WebGPUPost(this.gpu.device, this.gpu.format);
 this.trail = new WebGPUTrail(this.gpu.device, this.gpu.format);
+this.surface = new WebGPUSurface(this.gpu.device, this.gpu.format);
 this.meshes = { links: new WebGPUMesh(this.pts, 'links'), scope: new WebGPUMesh(this.pts, 'scope') };
 this.hasHistory = false;
 this.gpu.device.lost.then((info) => {
@@ -73406,6 +76491,12 @@ this.glWarm = true;
 });
 }
 gpuMesh(kind) {
+if (kind === 'shadow') {
+if (this.lost || this.pts.shadowFailed || this.surface.failed) return undefined;
+this.pts.prepareShadow();
+this.surface.prepare();
+return this.pts.shadowReady(false) && this.pts.shadowReady(true) && this.surface.ready(false) && this.surface.ready(true);
+}
 const m = this.meshes?.[{ line: 'links', scope: 'scope' }[kind]];
 if (!m || this.lost || m.failed) return undefined;
 m.prepare();
@@ -73417,18 +76508,19 @@ if (this.lost) return false;
 if (obj === e.linkObj) return !this.meshes.links.failed;
 if (obj === e._scopeLine) return !this.meshes.scope.failed;
 if (obj === e.hero) return !this.pts.heroFailed;
+const sh = e._shadow;
+if (sh && (obj === sh.pts || obj === sh.plane)) return !this.pts.shadowFailed && !this.surface.failed;
 return !!e._trail && obj === e._trail.group && !this.trail.failed;
+}
+_tone() {
+return TONE.get(this.engine.app.viewport.renderer.toneMapping);
 }
 _glOnly() {
 const e = this.engine;
 const pts = e.points;
 if (!pts) return false;
 for (const c of pts.children) if (c.visible && !e.ghosts.includes(c) && !this._gpuDraws(c)) return true;
-if (e.app.viewport.renderer.toneMapping !== THREE.NeutralToneMapping) return true;
-if (e.shared && e.shared.uScr && e.shared.uScr.value.x > 0.001) return true;
-if (e.shared && e.shared.uSlit && e.shared.uSlit.value.x > 0.001) return true;
-if (e.shared && e.shared.uSort && e.shared.uSort.value.x > 0.001) return true;
-return false;
+return this._tone() === undefined;
 }
 _syncCloud(g = this.engine.geometry, layer = 'main') {
 if (!g) return false;
@@ -73486,18 +76578,88 @@ const ht = sh.uHeroTex.value;
 const v = ht && ht.image;
 if (v && v.videoWidth && v.readyState >= 2) pts.setHeroSource(v, v.videoWidth, v.videoHeight);
 }
+this._syncScreen();
+}
+_syncScreen() {
+const sh = this.engine.shared;
+const pts = this.pts;
+const S = this.sync;
+if (sh.uScr.value.x > 0.001) {
+const img = sh.uScrTex.value?.image;
+if (img && img.videoWidth && img.readyState >= 2) pts.setScreenSource(img, img.videoWidth, img.videoHeight);
+else if (img && img.complete && img.naturalWidth) pts.setScreenSource(img, img.naturalWidth, img.naturalHeight);
+const dep = sh.uScrDep.value;
+if (sh.uScrD.value.x > 1.5 && dep?.image?.data && (S.scrDep !== dep || S.scrDepVer !== dep.version)) {
+S.scrDep = dep;
+S.scrDepVer = dep.version;
+pts.setScreenDepth(dep.image.data, dep.image.width, dep.image.height);
+}
+const mem = sh.uScrMTex.value;
+if (sh.uScrQ.value.y > 0.5 && mem?.image?.data && (S.scrMem !== mem || S.scrMemVer !== mem.version)) {
+const d = S.scrMem === mem ? mem.userData.dirty : null;
+const W = mem.image.width;
+S.scrMem = mem;
+S.scrMemVer = mem.version;
+pts.setScreenMemory(mem.image.data, W, mem.image.height, d ? [Math.floor(d[0] / W), Math.ceil(d[1] / W)] : null);
+mem.userData.dirty = null;
+}
+}
+const slit = sh.uSlitTex.value;
+if (sh.uSlit.value.x > 0.001 && slit?.isDataArrayTexture && slit.image.data && (S.slit !== slit || S.slitVer !== slit.version)) {
+const im = slit.image;
+const layers = S.slit === slit && slit.layerUpdates?.size ? [...slit.layerUpdates] : null;
+S.slit = slit;
+S.slitVer = slit.version;
+pts.setSlit(im.data, im.width, im.height, im.depth, layers);
+slit.clearLayerUpdates?.();
+}
+const sort = sh.uSortTex.value;
+if (sh.uSort.value.x > 0.001 && sort?.image?.data instanceof Float32Array && (S.sort !== sort || S.sortVer !== sort.version)) {
+S.sort = sort;
+S.sortVer = sort.version;
+pts.setSort(sort.image.data, sort.image.width, sort.image.height);
+}
+}
+trackPick(idxs) {
+if (this.lost || !this.pts) return null;
+this.pts.pickRequest(idxs);
+const r = this.pts.pickResult();
+if (!r) return null;
+if (r !== this._pickSrc) {
+this._pickSrc = r;
+_pm.fromArray(r.proj).multiply(_mv.fromArray(r.mv)).invert();
+const data = new Float32Array(64);
+r.idxs.forEach((id, k) => {
+const c = r.clip;
+const x = c[k * 4], y = c[k * 4 + 1], z = c[k * 4 + 2], w = c[k * 4 + 3];
+if (x === 2 && y === 2 && z === 2 && w === 1) return;
+_v4.set(x, y, z, w).applyMatrix4(_pm);
+if (Math.abs(_v4.w) < 1e-8) return;
+data[k * 4] = _v4.x / _v4.w;
+data[k * 4 + 1] = _v4.y / _v4.w;
+data[k * 4 + 2] = _v4.z / _v4.w;
+data[k * 4 + 3] = 1;
+});
+this._pickRes = { idxs: r.idxs, data };
+}
+return this._pickRes;
 }
 _inst(obj, camera, extra) {
-_mv.multiplyMatrices(camera.matrixWorldInverse, obj.matrixWorld);
-_nm.getNormalMatrix(_mv);
-return { modelMatrix: obj.matrixWorld.clone(), modelViewMatrix: _mv.clone(), normalMatrix: _nm.clone(), ...extra };
+const m = (this._mats ||= new WeakMap());
+let r = m.get(obj);
+if (!r) m.set(obj, (r = { modelMatrix: new THREE.Matrix4(), modelViewMatrix: new THREE.Matrix4(), normalMatrix: new THREE.Matrix3() }));
+r.modelMatrix.copy(obj.matrixWorld);
+r.modelViewMatrix.multiplyMatrices(camera.matrixWorldInverse, obj.matrixWorld);
+r.normalMatrix.getNormalMatrix(r.modelViewMatrix);
+return { modelMatrix: r.modelMatrix, modelViewMatrix: r.modelViewMatrix, normalMatrix: r.normalMatrix, ...extra };
 }
 captureCanvas() {
 if (!this.cap) {
 this.cap = document.createElement('canvas');
 this.capCtx = this.cap.getContext('2d');
-this._compose();
 }
+this.capHold = performance.now() + 2000;
+this._compose();
 return this.cap;
 }
 _compose() {
@@ -73511,7 +76673,8 @@ if (this.canvas.style.visibility !== 'hidden') this.capCtx.drawImage(this.canvas
 }
 _frame(renderer, scene, camera) {
 this._draw(renderer, scene, camera);
-if (this.cap) this._compose();
+const e = this.engine;
+if (this.cap && (e.recording || e.animBusy || performance.now() < this.capHold)) this._compose();
 }
 _draw(renderer, scene, camera) {
 const e = this.engine;
@@ -73525,6 +76688,7 @@ if (wantGl) this.wakeGl();
 this.useGl = wantGl && this.glWarm && e._fxCovered();
 if (this.useGl) {
 this.stats.gl++;
+this.sync.slit = null;
 this.canvas.style.visibility = 'hidden';
 e.points.visible = true;
 this.gl.hook(renderer, scene, camera);
@@ -73553,7 +76717,18 @@ const w = Math.max(1, vp.canvas.width);
 const h = Math.max(1, vp.canvas.height);
 const shared = e.shared;
 const add = shared.uAdd.value > 0.5;
-const list = [this._inst(e.points, camera, { uTOff: e.material.uniforms.uTOff.value, uGhost: e.material.uniforms.uGhost.value })];
+const list = [];
+const sh = e._shadow;
+if (sh && (sh.pts.visible || sh.plane.visible) && sh.pts.parent === e.points) {
+pts.prepareShadow();
+this.surface.prepare();
+}
+if (sh && sh.pts.visible && sh.pts.parent === e.points && pts.shadowReady(false) && pts.shadowReady(true)) {
+const su = sh.pts.material.uniforms;
+const blend = sh.pts.material.blending === THREE.AdditiveBlending ? 'add' : 'normal';
+list.push(this._inst(sh.pts, camera, { uTOff: su.uTOff.value, uGhost: su.uGhost.value, uHero: su.uHero.value, uShd: su.uShd.value, uShdL: su.uShdL.value, uShdP: su.uShdP.value, uShdC: su.uShdC.value, shadow: blend }));
+}
+list.push(this._inst(e.points, camera, { uTOff: e.material.uniforms.uTOff.value, uGhost: e.material.uniforms.uGhost.value, main: true }));
 for (const g of e.ghosts) {
 if (!g.visible) continue;
 list.push(this._inst(g, camera, { uTOff: g.material.uniforms.uTOff.value, uGhost: g.material.uniforms.uGhost.value, uHero: g.material.uniforms.uHero.value }));
@@ -73563,7 +76738,7 @@ if (hero && hero.visible) {
 pts.prepareHero();
 if (pts.heroReady() && this._syncCloud(hero.geometry, 'hero')) list.push(this._inst(hero, camera, { uTOff: hero.material.uniforms.uTOff.value, uGhost: hero.material.uniforms.uGhost.value, layer: 'hero' }));
 }
-const common = { projectionMatrix: camera.projectionMatrix, uExposure: renderer.toneMappingExposure };
+const common = { projectionMatrix: camera.projectionMatrix, viewMatrix: camera.matrixWorldInverse, uExposure: renderer.toneMappingExposure, uTone: this._tone() ?? 1 };
 const L = e.state.layers;
 const fb = L.feedback;
 const bloom = e.state.look.bloom || 0;
@@ -73585,11 +76760,13 @@ this.hasHistory = false;
 post.moshOff();
 this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common, camera);
 D.queue.submit([enc.finish()]);
+pts.pickMap();
 return;
 }
 if (!pts.ready(add, true) || (useFb && !post.ready('fb')) || (useMosh && !(post.ready('mv') && post.ready('mosh') && post.mipPipeline))) {
 this._scene(enc, pts.ctx.getCurrentTexture().createView(), size, false, list, common, camera);
 D.queue.submit([enc.finish()]);
+pts.pickMap();
 return;
 }
 const scene = post.rt('scene', w, h, { mips: useMosh });
@@ -73627,24 +76804,34 @@ src = pong.createView();
 } else {
 this.hasHistory = false;
 }
-post.run(enc, 'out', pts.ctx.getCurrentTexture().createView(), size, { uBloom: bloom, uAberration: ab, uRes: size }, { uTex: src });
+post.run(enc, 'out', pts.ctx.getCurrentTexture().createView(), size, { uBloom: bloom, uAberration: ab, uRes: size, uExposure: common.uExposure, uTone: common.uTone }, { uTex: src });
 D.queue.submit([enc.finish()]);
+pts.pickMap();
 }
 _scene(enc, view, size, rt, list, common, camera) {
 const e = this.engine;
-const tr = e._trail;
 let noClear = false;
+const plane = e._shadow?.plane;
+if (plane && plane.visible && plane.parent === e.points && this.surface.ready(rt)) {
+this._mvp ||= new THREE.Matrix4();
+this._mvp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse).multiply(plane.matrixWorld);
+this.surface.draw(enc, view, this.pts._depthFor(size[0], size[1]).createView(), rt, plane, { mvp: this._mvp, exposure: common.uExposure, tone: common.uTone });
+noClear = true;
+}
+const tr = e._trail;
 if (tr && tr.group.visible && tr.group.parent === e.points) {
 this.trail.prepare();
 if (this.trail.ready(rt) && this.trail.sync(tr)) {
 this._mv ||= new THREE.Matrix4();
-this.trail.draw(enc, view, this.pts._depthFor(size[0], size[1]).createView(), rt, tr, { mv: this._mv, proj: camera.projectionMatrix, camera, size, exposure: common.uExposure });
+this.trail.draw(enc, view, this.pts._depthFor(size[0], size[1]).createView(), rt, tr, { mv: this._mv, proj: camera.projectionMatrix, camera, size, exposure: common.uExposure, tone: common.uTone, load: noClear });
 noClear = true;
 }
 }
 this.pts.frame(e.shared, common, list, { view, size, rt, noClear, encoder: enc });
 for (const [obj, m] of [[e.linkObj, this.meshes.links], [e._scopeLine, this.meshes.scope]]) {
-if (!obj || !obj.visible || !m.ready(rt)) continue;
+if (!obj || !obj.visible) continue;
+m.prepare();
+if (!m.ready(rt)) continue;
 if (m.sync(obj.geometry)) m.draw(enc, view, rt);
 }
 }
@@ -73657,6 +76844,7 @@ e._glDormant = false;
 if (e.points) e.points.visible = true;
 for (const m of Object.values(this.meshes || {})) m.dispose();
 this.trail?.dispose();
+this.surface?.dispose();
 this.pts?.dispose();
 this.post?.dispose();
 this.canvas?.remove();
@@ -88247,6 +91435,7 @@ return;
 const c = new THREE.Color(bg);
 const hi = c.clone().lerp(new THREE.Color(1, 1, 1), 0.025);
 stage.style.background = vignette ? `radial-gradient(ellipse at 50% 42%, #${hi.getHexString(THREE.SRGBColorSpace)} 0%, ${bg} 78%)` : bg;
+document.documentElement.style.setProperty('--stage-bg', stage.style.background);
 }
 }
 };
@@ -91224,7 +94413,7 @@ varying float vCoc;
 varying float vGl;
 ` + common + `
 #ifdef VSHOOT
-// «Рост на ритме»: очаги роста на форме. uShootS это 24 очага (xyz место на форме, w сколько выросло); только WebGL
+// «Рост на ритме»: очаги роста на форме. uShootS это 24 очага (xyz место на форме, w сколько выросло)
 uniform vec4 uShoot;
 uniform vec4 uShootP;
 uniform vec4 uShootD;
@@ -91235,7 +94424,7 @@ uniform vec4 uShootN[24]; // нормаль участка (xyz) и скольк
 uniform vec4 uShootB[6];
 #endif
 #ifdef VSCREEN
-// «Экран»: видео играет на форме. Объявления только здесь: переводчик в WGSL этот блок не видит (этот эффект только в WebGL)
+// «Экран»: видео играет на форме. Блок включают WebGL (shader-cache.js) и генератор WGSL (dev/gen-wgsl.mjs)
 uniform vec4 uScr;
 uniform vec4 uScrP;
 uniform sampler2D uScrTex;
@@ -91256,7 +94445,7 @@ uniform vec4 uSortP;
 uniform highp sampler2D uSortTex;
 #endif
 #ifdef SHADOW
-// «Тень на стене»: копия облака проецируется по лучу света на пол или стену (только WebGL, объект в engine/shadow.js)
+// «Тень на стене»: копия облака проецируется по лучу света на пол или стену (объект в engine/shadow.js; в WebGPU свой вариант расчёта, см. dev/gen-wgsl.mjs)
 uniform vec4 uShd; // x непрозрачность, y мягкость, z цвет (0 тёмная, 1 свет палитры, 2 цвет модели), w живая тень (колыхание)
 uniform vec4 uShdL; // xyz направление на свет (в мире), w: 0 пол, 1 стена
 uniform vec4 uShdP; // x положение плоскости (y пола или z стены), y затухание с высотой над плоскостью
@@ -94975,6 +98164,8 @@ out[o + 2] = Math.min(255, Math.sqrt(m[o + 2] * 0.25) * 255 + 0.5);
 out[o + 3] = Math.min(255, m[o + 3] * 255 + 0.5);
 }
 tex.needsUpdate = true;
+const dd = tex.userData.dirty;
+tex.userData.dirty = dd ? [Math.min(dd[0], i0), Math.max(dd[1], i1)] : [i0, i1];
 return true;
 }
 }
@@ -95538,6 +98729,7 @@ void main() {
 `;
 class TrackPickPart {
 _trackPick(idxs) {
+if (this.backend?.trackPick && !this.backend.useGl) return this.backend.trackPick(idxs);
 const g = this.geometry;
 const r = this.app.viewport.renderer;
 if (!g || !this.points || this._glDormant || this._tpFailed || !r.capabilities?.isWebGL2) return null;

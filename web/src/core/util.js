@@ -43,7 +43,10 @@ pop.style.right = Math.round(hr.right - br.right - 6) + 'px';
 } else {
 pop.style.right = 'auto';
 pop.style.transform = 'translateX(-50%)';
-pop.style.left = Math.round(br.left + br.width / 2 - hr.left) + 'px';
+const half = pop.offsetWidth / 2;
+const x = br.left + br.width / 2 - hr.left;
+const lo = half + 8, hi = hr.width - half - 8;
+pop.style.left = Math.round(hi >= lo ? clamp(x, lo, hi) : hr.width / 2) + 'px';
 }
 }
 export function fmt(n, digits = 3) {

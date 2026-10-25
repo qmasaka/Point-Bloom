@@ -36,7 +36,7 @@ varying float vCoc;
 varying float vGl;
 ` + common + `
 #ifdef VSHOOT
-// «Рост на ритме»: очаги роста на форме. uShootS это 24 очага (xyz место на форме, w сколько выросло); только WebGL
+// «Рост на ритме»: очаги роста на форме. uShootS это 24 очага (xyz место на форме, w сколько выросло)
 uniform vec4 uShoot;
 uniform vec4 uShootP;
 uniform vec4 uShootD;
@@ -47,7 +47,7 @@ uniform vec4 uShootN[24]; // нормаль участка (xyz) и скольк
 uniform vec4 uShootB[6];
 #endif
 #ifdef VSCREEN
-// «Экран»: видео играет на форме. Объявления только здесь: переводчик в WGSL этот блок не видит (этот эффект только в WebGL)
+// «Экран»: видео играет на форме. Блок включают WebGL (shader-cache.js) и генератор WGSL (dev/gen-wgsl.mjs)
 uniform vec4 uScr;
 uniform vec4 uScrP;
 uniform sampler2D uScrTex;
@@ -68,7 +68,7 @@ uniform vec4 uSortP;
 uniform highp sampler2D uSortTex;
 #endif
 #ifdef SHADOW
-// «Тень на стене»: копия облака проецируется по лучу света на пол или стену (только WebGL, объект в engine/shadow.js)
+// «Тень на стене»: копия облака проецируется по лучу света на пол или стену (объект в engine/shadow.js; в WebGPU свой вариант расчёта, см. dev/gen-wgsl.mjs)
 uniform vec4 uShd; // x непрозрачность, y мягкость, z цвет (0 тёмная, 1 свет палитры, 2 цвет модели), w живая тень (колыхание)
 uniform vec4 uShdL; // xyz направление на свет (в мире), w: 0 пол, 1 стена
 uniform vec4 uShdP; // x положение плоскости (y пола или z стены), y затухание с высотой над плоскостью

@@ -301,6 +301,8 @@ out[o + 2] = Math.min(255, Math.sqrt(m[o + 2] * 0.25) * 255 + 0.5);
 out[o + 3] = Math.min(255, m[o + 3] * 255 + 0.5);
 }
 tex.needsUpdate = true;
+const dd = tex.userData.dirty;
+tex.userData.dirty = dd ? [Math.min(dd[0], i0), Math.max(dd[1], i1)] : [i0, i1];
 return true;
 }
 }

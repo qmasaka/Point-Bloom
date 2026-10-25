@@ -1,4 +1,4 @@
-const MIN = 84;
+const MIN = 98;
 export function initMobile(app) {
 const root = document.getElementById('app');
 const ws = document.querySelector('.workspace');
@@ -7,7 +7,7 @@ const fxLeft = document.getElementById('fxLeft');
 const mq = window.matchMedia('(max-width: 900px)');
 let state = 'min';
 const vh = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-const heights = () => (vh() < 520 ? { min: MIN, mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: MIN, mid: Math.round(vh() * 0.46), full: Math.round(vh() - 110) });
+const heights = () => (vh() < 520 ? { min: MIN, mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: MIN, mid: Math.round(vh() * 0.46), full: Math.round(vh() - 124) });
 const setH = (px) => root.style.setProperty('--sheet-h', Math.round(px) + 'px');
 function setState(s) {
 state = s;

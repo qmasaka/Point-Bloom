@@ -1,6 +1,6 @@
 // Телефоны и планшеты: панель настроек становится нижним листом, который тянется вверх и вниз, а сцена остаётся сверху.
 // На широких экранах модуль ничего не делает (стили работают только до 900 px).
-const MIN = 84; // ручка и вкладки
+const MIN = 98; // ручка и вкладки целиком: отступ снизу 8, рамка, ручка 30 и ряд вкладок 58
 
 export function initMobile(app) {
 	const root = document.getElementById('app');
@@ -11,8 +11,9 @@ export function initMobile(app) {
 	let state = 'min';
 
 	const vh = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-	// в альбомной ориентации телефона высоты мало: лист ниже и выше открывается почти на весь экран
-	const heights = () => (vh() < 520 ? { min: MIN, mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: MIN, mid: Math.round(vh() * 0.46), full: Math.round(vh() - 110) });
+	// в альбомной ориентации телефона высоты мало: лист ниже и выше открывается почти на весь экран.
+	// В книжной над раскрытым листом остаётся место под верхнюю панель и нижнюю плашку режимов, чтобы они не наезжали друг на друга
+	const heights = () => (vh() < 520 ? { min: MIN, mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: MIN, mid: Math.round(vh() * 0.46), full: Math.round(vh() - 124) });
 	const setH = (px) => root.style.setProperty('--sheet-h', Math.round(px) + 'px');
 	function setState(s) {
 		state = s;

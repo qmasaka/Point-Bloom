@@ -110,16 +110,33 @@ struct Frame {
 	uShootS: array<vec4f, 24>,
 	uShootN: array<vec4f, 24>,
 	uShootB: array<vec4f, 6>,
+	uScr: vec4f,
+	uScrP: vec4f,
+	uScrD: vec4f,
+	uScrQ: vec4f,
+	@size(16) uScrMN: f32,
+	uSlit: vec4f,
+	uSlitP: vec4f,
+	uSlitG: vec4f,
+	uSort: vec4f,
+	uSortP: vec4f,
 	modelMatrix: mat4x4f,
 	modelViewMatrix: mat4x4f,
 	projectionMatrix: mat4x4f,
+	viewMatrix: mat4x4f,
 	normalMatrix: mat3x3f,
 	@size(16) uRes: vec2f,
+	@size(16) uPx: vec2f,
 	@size(16) uExposure: f32,
+	@size(16) uTone: f32,
 	@size(16) uGlow: f32,
 	@size(16) uDens: f32,
 	@size(16) uGhost: f32,
 	@size(16) uShape: f32,
+	uShd: vec4f,
+	uShdL: vec4f,
+	uShdP: vec4f,
+	@size(16) uShdC: vec3f,
 	uLink: vec4f,
 	uLinkP: vec4f,
 	@size(16) uLinkW: f32,
@@ -127,14 +144,11 @@ struct Frame {
 	@size(16) uScopeLB: f32,
 }
 @group(0) @binding(0) var<uniform> fr: Frame;
-@group(0) @binding(1) var<storage, read> inOrigin: array<vec4f>;
-@group(0) @binding(2) var<storage, read> inTarget: array<vec4f>;
-@group(0) @binding(3) var<storage, read> inColorA: array<vec4f>;
-@group(0) @binding(4) var<storage, read> inColorB: array<vec4f>;
-@group(0) @binding(5) var<storage, read> inNormA: array<vec4f>;
-@group(0) @binding(6) var<storage, read> inNormB: array<vec4f>;
-@group(0) @binding(7) var<storage, read> inSculpt: array<vec4f>;
-@group(0) @binding(8) var<storage, read> inPaint: array<vec4f>;
+// данные точек: по два набора в буфере (первая половина и вторая), чтобы проходу хватало 8 буферов хранения (минимум, который WebGPU гарантирует)
+@group(0) @binding(1) var<storage, read> inP0: array<vec4f>; // положение и скрытие | цель морфинга и глубина
+@group(0) @binding(2) var<storage, read> inP1: array<vec4f>; // цвет A и путь | цвет B и видимость
+@group(0) @binding(3) var<storage, read> inP2: array<vec4f>; // нормаль A и видимость | нормаль B
+@group(0) @binding(4) var<storage, read> inP3: array<vec4f>; // лепка и номер точки | краска
 @group(0) @binding(9) var<storage, read_write> outA: array<vec4f>;
 @group(0) @binding(10) var<storage, read_write> outB: array<vec4f>;
 @group(0) @binding(11) var<storage, read_write> outC: array<vec4f>;
@@ -143,6 +157,11 @@ struct Frame {
 @group(0) @binding(14) var pieceTex: texture_2d<f32>;
 @group(0) @binding(15) var frTex: texture_2d_array<f32>;
 @group(0) @binding(16) var heroTex: texture_2d<f32>;
+@group(0) @binding(17) var scrTex: texture_2d<f32>;
+@group(0) @binding(18) var scrDep: texture_2d<f32>;
+@group(0) @binding(19) var scrMTex: texture_2d<f32>;
+@group(0) @binding(20) var slitTex: texture_2d_array<f32>;
+@group(0) @binding(21) var sortTex: texture_2d<f32>;
 
 var<private> aOrigin: vec3f;
 var<private> aTarget: vec3f;
@@ -1909,6 +1928,55 @@ fn main_() {
 		pos += (shOff * min(fr.uShoot.x, 1.0));
 		vColor += ((((((fr.uP2 * 1.4) + (vColor * 0.3))) * shK) * fr.uShootP.x) * min(fr.uShoot.x, 1.0));
 	}
+	if ((fr.uScr.x > 0.001)) {
+		var bsx: vec3f = (base - fr.uCen);
+		var hyx: f32 = max((fr.uYR.y - fr.uYR.x), 1e-4);
+		var arx: f32 = max(fr.uScrP.w, 0.05);
+		var suv: vec2f;
+		var smask: f32 = 1.0;
+		if ((fr.uScr.y < 0.5)) {
+			suv = vec2f(((atan2(bsx.z, bsx.x) / 6.2831853) + 0.5), clamp((((base.y - fr.uYR.x)) / hyx), 0.0, 1.0));
+			suv.x = fract(((((suv.x - 0.5)) / fr.uScr.z) + 0.5));
+		} else if (((fr.uScr.y < 1.5) || (fr.uScr.y > 2.5))) {
+			suv = vec2f((0.5 + (bsx.x / ((hyx * arx)))), (0.5 + (((base.y - (((fr.uYR.x + fr.uYR.y)) * 0.5))) / hyx)));
+			suv = ((((suv - 0.5)) / fr.uScr.z) + 0.5);
+			var cr: f32 = cos(fr.uScrP.x);
+			var sr: f32 = sin(fr.uScrP.x);
+			suv = (vec2f(((cr * ((suv.x - 0.5))) - (sr * ((suv.y - 0.5)))), ((sr * ((suv.x - 0.5))) + (cr * ((suv.y - 0.5))))) + 0.5);
+			smask = (((step(0.0, suv.x) * step(suv.x, 1.0)) * step(0.0, suv.y)) * step(suv.y, 1.0));
+			if ((dot(nrmM, nrmM) > 0.01)) {
+				smask *= smoothstep(-0.35, 0.25, nrmM.z);
+			}
+		} else {
+			var cpx: vec4f = ((fr.projectionMatrix * fr.modelViewMatrix) * vec4f(pos, 1.0));
+			var nd: vec2f = (cpx.xy / max(cpx.w, 1e-4));
+			var scrAsp: f32 = (fr.projectionMatrix[1][1] / fr.projectionMatrix[0][0]);
+			suv = vec2f((0.5 + (((nd.x * 0.5) * scrAsp) / arx)), (0.5 + (nd.y * 0.5)));
+			suv = ((((suv - 0.5)) / fr.uScr.z) + 0.5);
+			var cr: f32 = cos(fr.uScrP.x);
+			var sr: f32 = sin(fr.uScrP.x);
+			suv = (vec2f(((cr * ((suv.x - 0.5))) - (sr * ((suv.y - 0.5)))), ((sr * ((suv.x - 0.5))) + (cr * ((suv.y - 0.5))))) + 0.5);
+			smask = (((step(0.0, suv.x) * step(suv.x, 1.0)) * step(0.0, suv.y)) * step(suv.y, 1.0));
+		}
+		var scr: vec3f = (textureSampleLevel(scrTex, linSamp, clamp(suv, vec2f(0.0), vec2f(1.0)), 0.0).rgb * fr.uScr.w);
+		var slum: f32 = dot(scr, vec3f(0.3, 0.59, 0.11));
+		var sdv: f32 = 0.0;
+		if ((fr.uScrD.x > 0.5)) {
+			sdv = select(textureSampleLevel(scrDep, linSamp, clamp(suv, vec2f(0.0), vec2f(1.0)), 0.0).r, clamp((slum / max(fr.uScr.w, 0.05)), 0.0, 1.0), (fr.uScrD.x < 1.5));
+			sdv = clamp(((((sdv - 0.5)) * fr.uScrD.w) + 0.5), 0.0, 1.0);
+			if ((fr.uScrD.z < 0.0)) {
+				sdv = (1.0 - sdv);
+			}
+			if ((fr.uScrQ.x > 0.5)) {
+				scr = vec3f(sdv);
+			}
+		}
+		vColor = mix(vColor, mix((vColor * 0.35), scr, fr.uScrP.z), (smask * fr.uScr.x));
+		if ((fr.uScrD.x > 0.5)) {
+			var dirn: vec3f = select(normalize((bsx + vec3f(1e-4))), normalize(nrmM), (dot(nrmM, nrmM) > 0.01));
+			pos += (((((dirn * sdv) * fr.uScrD.y) * 0.45) * smask) * fr.uScr.x);
+		}
+	}
 	vD = disp;
 	var mv: vec4f = (fr.modelViewMatrix * vec4f(pos, 1.0));
 	gl_Position = (fr.projectionMatrix * mv);
@@ -1945,13 +2013,14 @@ fn main_() {
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
 	let i = gid.x;
-	let count = arrayLength(&inOrigin);
+	let count = arrayLength(&inP0) / 2u;
 	if (i >= count) { return; }
-	let o = inOrigin[i];
-	let t = inTarget[i];
-	let ca = inColorA[i];
-	let cb = inColorB[i];
-	let na = inNormA[i];
+	let o = inP0[i];
+	let t = inP0[count + i];
+	let ca = inP1[i];
+	let cb = inP1[count + i];
+	let na = inP2[i];
+	let sc = inP3[i];
 	aOrigin = o.xyz;
 	aHide = o.w;
 	aTarget = t.xyz;
@@ -1961,11 +2030,11 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 	aColorB = cb.rgb;
 	aVis = vec2f(cb.w, na.w);
 	aNormal = na.xyz;
-	aNormalB = inNormB[i].xyz;
-	aSculpt = inSculpt[i].xyz;
+	aNormalB = inP2[count + i].xyz;
+	aSculpt = sc.xyz;
 	// индекс точки берётся из массива движка (aIdx = i / число точек, округлённое до float32 на CPU): хеши вида fract(sin(aIdx * k)) раздувают разницу в последнем бите до полного расхождения
-	aIdx = inSculpt[i].w;
-	aPaint = inPaint[i];
+	aIdx = sc.w;
+	aPaint = inP3[count + i];
 	main_();
 	outA[i] = gl_Position;
 	outB[i] = vec4f(vColor, gl_PointSize);
