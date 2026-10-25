@@ -6710,8 +6710,8 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 	.ui-float .vp-top-right { top: calc(var(--m-top) + 54px); right: var(--m-gap); }
 	/* лист раскрыт на весь экран: над ним остаётся узкая полоса сцены, инструменты и оси в ней не помещаются и прячутся */
 	.ui-float[data-sheet='full'] .toolrail, .ui-float[data-sheet='full'] .vp-top-right { opacity: 0; visibility: hidden; pointer-events: none; }
-	/* нижний лист: плавающая карточка с отступами, матовое стекло и скругление как у боковых панелей на компьютере; сцена видна сквозь него */
-	.ui-float .sidebar, .ui-float .workspace.sidebar-hidden .sidebar, .ui-float.fx-mode .fx-left, .ui-float.fx-mode .fx-left.fx-left-open { margin: 0 var(--m-gap) calc(var(--m-gap) + env(safe-area-inset-bottom, 0px)); border: 1px solid var(--fxg-line); border-radius: 14px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); box-shadow: var(--fxg-shadow); }
+	/* нижний лист: плавающая карточка с отступами, матовое стекло (плотнее и сильнее размыто, чем у плашек) и скругление как у боковых панелей на компьютере; сцена видна сквозь него */
+	.ui-float .sidebar, .ui-float .workspace.sidebar-hidden .sidebar, .ui-float.fx-mode .fx-left, .ui-float.fx-mode .fx-left.fx-left-open { margin: 0 var(--m-gap) calc(var(--m-gap) + env(safe-area-inset-bottom, 0px)); border: 1px solid var(--fxg-line); border-radius: 14px; background: linear-gradient(rgba(21, 23, 28, 0.6), rgba(21, 23, 28, 0.6)), var(--fxg-bg); backdrop-filter: blur(48px) saturate(1.6); -webkit-backdrop-filter: blur(48px) saturate(1.6); box-shadow: var(--fxg-shadow); }
 	.ui-float .panels, .ui-float .panel, .ui-float .fx-left-list { background: transparent; }
 	/* поля, переключатели вариантов и списки: та же полупрозрачная подложка и скругление, что на компьютере */
 	.ui-float .seg, .ui-float .fx-card, .ui-float .field input[type='text'], .ui-float .select { background: rgba(255, 255, 255, 0.045); border-color: var(--fxg-line); }
