@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { fitCount, mortonSort, normalizeCloud } from '../shapes/cloud-utils.js';
+import { fitCount, normalizeCloud, shuffleCloud } from '../shapes/cloud-utils.js';
 import { generateShapePoints } from '../shapes/shapes.js';
 import { depthToGrid, grabFrame, lumaDepth, normalizeDepth } from '../input/depth-ai.js';
 export class SourcePart {
@@ -173,12 +173,12 @@ let c;
 if (key === 'model') {
 c = this.modelProvider ? await this.modelProvider.get(n) : null;
 if (!c) return null;
-c = mortonSort(fitCount(normalizeCloud(c), n));
+c = shuffleCloud(fitCount(normalizeCloud(c), n));
 } else if (key.startsWith('obj:')) {
 const o = this.modelProvider?.objects().find((x) => x.id === key.slice(4));
 c = o ? await this.modelProvider.getOf(o.obj, n) : null;
 if (!c || !c.count) return null;
-c = mortonSort(fitCount(normalizeCloud(c), n));
+c = shuffleCloud(fitCount(normalizeCloud(c), n));
 } else {
 c = generateShapePoints(key, n);
 }

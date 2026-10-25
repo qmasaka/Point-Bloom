@@ -53,6 +53,34 @@ out[i + 2] = (p[i + 2] - cz) * k;
 }
 return { positions: out, normals: c.normals, colors: c.colors, count: c.count, anim: c.anim, norm: { cx, cy, cz, k, floorY: (miny - cy) * k } };
 }
+export function shuffleCloud(c) {
+const n = c.count;
+const src = new Int32Array(n);
+for (let i = 0; i < n; i++) src[i] = i;
+let s = (Math.random() * 4294967295) >>> 0 || 0x9e3779b9;
+const rnd = () => {
+s ^= s << 13;
+s ^= s >>> 17;
+s ^= s << 5;
+return (s >>> 0) / 4294967296;
+};
+for (let i = n - 1; i > 0; i--) {
+const j = Math.floor(rnd() * (i + 1));
+const t = src[i];
+src[i] = src[j];
+src[j] = t;
+}
+const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+for (let i = 0; i < n; i++) {
+const j = src[i];
+for (let k = 0; k < 3; k++) {
+pos[i * 3 + k] = c.positions[j * 3 + k];
+nor[i * 3 + k] = c.normals[j * 3 + k];
+col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
+}
+}
+return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm, animBox: c.animBox };
+}
 export function mortonSort(c) {
 const n = c.count;
 const P = c.positions;

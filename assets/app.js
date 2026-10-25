@@ -87153,6 +87153,7 @@ __defs['src/effects/shapes/cloud-utils.js'] = function (__exports, __req) {
 __def(__exports, 'reorderAnim', () => reorderAnim);
 __def(__exports, 'fitCount', () => fitCount);
 __def(__exports, 'normalizeCloud', () => normalizeCloud);
+__def(__exports, 'shuffleCloud', () => shuffleCloud);
 __def(__exports, 'mortonSort', () => mortonSort);
 function reorderAnim(a, src) {
 if (!a) return null;
@@ -87208,6 +87209,34 @@ out[i + 1] = (p[i + 1] - cy) * k;
 out[i + 2] = (p[i + 2] - cz) * k;
 }
 return { positions: out, normals: c.normals, colors: c.colors, count: c.count, anim: c.anim, norm: { cx, cy, cz, k, floorY: (miny - cy) * k } };
+}
+function shuffleCloud(c) {
+const n = c.count;
+const src = new Int32Array(n);
+for (let i = 0; i < n; i++) src[i] = i;
+let s = (Math.random() * 4294967295) >>> 0 || 0x9e3779b9;
+const rnd = () => {
+s ^= s << 13;
+s ^= s >>> 17;
+s ^= s << 5;
+return (s >>> 0) / 4294967296;
+};
+for (let i = n - 1; i > 0; i--) {
+const j = Math.floor(rnd() * (i + 1));
+const t = src[i];
+src[i] = src[j];
+src[j] = t;
+}
+const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+for (let i = 0; i < n; i++) {
+const j = src[i];
+for (let k = 0; k < 3; k++) {
+pos[i * 3 + k] = c.positions[j * 3 + k];
+nor[i * 3 + k] = c.normals[j * 3 + k];
+col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
+}
+}
+return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm, animBox: c.animBox };
 }
 function mortonSort(c) {
 const n = c.count;
@@ -87371,7 +87400,7 @@ __defs['src/effects/engine/source.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'SourcePart', () => SourcePart);
 const THREE = __req('vendor/three/build/three.module.js');
-const { fitCount, mortonSort, normalizeCloud } = __req('src/effects/shapes/cloud-utils.js');
+const { fitCount, normalizeCloud, shuffleCloud } = __req('src/effects/shapes/cloud-utils.js');
 const { generateShapePoints } = __req('src/effects/shapes/shapes.js');
 const { depthToGrid, grabFrame, lumaDepth, normalizeDepth } = __req('src/effects/input/depth-ai.js');
 class SourcePart {
@@ -87545,12 +87574,12 @@ let c;
 if (key === 'model') {
 c = this.modelProvider ? await this.modelProvider.get(n) : null;
 if (!c) return null;
-c = mortonSort(fitCount(normalizeCloud(c), n));
+c = shuffleCloud(fitCount(normalizeCloud(c), n));
 } else if (key.startsWith('obj:')) {
 const o = this.modelProvider?.objects().find((x) => x.id === key.slice(4));
 c = o ? await this.modelProvider.getOf(o.obj, n) : null;
 if (!c || !c.count) return null;
-c = mortonSort(fitCount(normalizeCloud(c), n));
+c = shuffleCloud(fitCount(normalizeCloud(c), n));
 } else {
 c = generateShapePoints(key, n);
 }
