@@ -128,7 +128,6 @@ this.scene.environmentIntensity = r.env;
 this.headlight.visible = !!r.headlight;
 const bg = BACKGROUNDS[r.bg] || BACKGROUNDS.dark;
 this.stage.style.background = bg.css;
-document.documentElement.style.setProperty('--stage-bg', bg.css);
 this.grid.setTheme(bg.light);
 this.invalidate();
 }
@@ -148,6 +147,14 @@ this.invalidate();
 }
 invalidate() {
 this.dirty = true;
+}
+setViewFrame(shift, refH = 0) {
+shift = Math.max(0, Math.round(shift));
+refH = Math.max(0, Math.round(refH));
+if (shift === this.viewShift && refH === this.viewRef) return;
+this.viewShift = shift;
+this.viewRef = refH;
+this.app.nav?.applyCamera();
 }
 getBounds(obj, target = new THREE.Box3()) {
 target.makeEmpty();

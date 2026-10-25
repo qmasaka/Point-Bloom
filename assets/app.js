@@ -35294,7 +35294,6 @@ this.scene.environmentIntensity = r.env;
 this.headlight.visible = !!r.headlight;
 const bg = BACKGROUNDS[r.bg] || BACKGROUNDS.dark;
 this.stage.style.background = bg.css;
-document.documentElement.style.setProperty('--stage-bg', bg.css);
 this.grid.setTheme(bg.light);
 this.invalidate();
 }
@@ -35314,6 +35313,14 @@ this.invalidate();
 }
 invalidate() {
 this.dirty = true;
+}
+setViewFrame(shift, refH = 0) {
+shift = Math.max(0, Math.round(shift));
+refH = Math.max(0, Math.round(refH));
+if (shift === this.viewShift && refH === this.viewRef) return;
+this.viewShift = shift;
+this.viewRef = refH;
+this.app.nav?.applyCamera();
 }
 getBounds(obj, target = new THREE.Box3()) {
 target.makeEmpty();
@@ -37575,6 +37582,14 @@ cam.aspect = aspect;
 cam.near = Math.max(d * 0.01, 1e-6);
 cam.far = Math.max(d * 100, (d + R) * 20);
 }
+const shift = this.vp.viewShift || 0;
+const ref = this.vp.viewRef || 0;
+const k = ref > 0 && ref < height ? ref / height : 1;
+if (shift > 0 || k < 1) {
+const fw = width * k;
+const fh = height * k;
+cam.setViewOffset(fw, fh, (fw - width) / 2, (fh - height) / 2 + shift, width, height);
+} else if (cam.view) cam.clearViewOffset();
 cam.updateProjectionMatrix();
 cam.updateMatrixWorld(true);
 this.vp.invalidate();
@@ -41213,12 +41228,21 @@ const mq = window.matchMedia('(max-width: 900px)');
 let state = 'min';
 const vh = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight);
 const heights = () => (vh() < 520 ? { min: MIN, mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: MIN, mid: Math.round(vh() * 0.46), full: Math.round(vh() - 124) });
-const setH = (px) => root.style.setProperty('--sheet-h', Math.round(px) + 'px');
+let sheetPx = MIN;
+const syncShift = () => {
+const on = mq.matches && !root.classList.contains('fx-focus');
+const base = heights()[root.classList.contains('fx-mode') ? 'mid' : 'min'];
+app.viewport?.setViewFrame(on ? sheetPx / 2 : 0, on ? ws.clientHeight - base : 0);
+};
+const setH = (px) => {
+sheetPx = Math.round(px);
+root.style.setProperty('--sheet-h', sheetPx + 'px');
+syncShift();
+};
 function setState(s) {
 state = s;
 root.dataset.sheet = s;
 setH(heights()[s]);
-setTimeout(() => app.viewport.resize(), 320);
 }
 function makeHandle() {
 const hd = document.createElement('div');
@@ -41293,6 +41317,7 @@ if (state === 'min') setState('mid');
 });
 let wasFx = root.classList.contains('fx-mode');
 new MutationObserver(() => {
+syncShift();
 const fx = root.classList.contains('fx-mode');
 if (fx === wasFx) return;
 wasFx = fx;
@@ -41308,6 +41333,7 @@ if (mq.matches) setState(state);
 else {
 root.style.removeProperty('--sheet-h');
 delete root.dataset.sheet;
+syncShift();
 setTimeout(() => app.viewport.resize(), 50);
 }
 }
@@ -88429,6 +88455,8 @@ return t.cur;
 }
 _draw(hands) {
 const c = this.pctx;
+const vw = this.video.videoWidth, vh = this.video.videoHeight;
+if (vw && vh && Math.abs(this.preview.height - Math.round((this.preview.width * vh) / vw)) > 1) this.preview.height = Math.round((this.preview.width * vh) / vw);
 const w = this.preview.width;
 const h = this.preview.height;
 c.save();
@@ -91435,7 +91463,6 @@ return;
 const c = new THREE.Color(bg);
 const hi = c.clone().lerp(new THREE.Color(1, 1, 1), 0.025);
 stage.style.background = vignette ? `radial-gradient(ellipse at 50% 42%, #${hi.getHexString(THREE.SRGBColorSpace)} 0%, ${bg} 78%)` : bg;
-document.documentElement.style.setProperty('--stage-bg', stage.style.background);
 }
 }
 };
@@ -91959,6 +91986,8 @@ this._timer = setTimeout(() => this._tick(), 40);
 _draw(frame, hits, active, px, py) {
 const { W, H } = this;
 const c = this.pctx;
+const vw = this.video.videoWidth, vh = this.video.videoHeight;
+if (vw && vh && Math.abs(this.preview.height - Math.round((this.preview.width * vh) / vw)) > 1) this.preview.height = Math.round((this.preview.width * vh) / vw);
 const pw = this.preview.width;
 const ph = this.preview.height;
 c.save();

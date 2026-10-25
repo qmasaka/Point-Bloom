@@ -69,6 +69,14 @@ cam.aspect = aspect;
 cam.near = Math.max(d * 0.01, 1e-6);
 cam.far = Math.max(d * 100, (d + R) * 20);
 }
+const shift = this.vp.viewShift || 0;
+const ref = this.vp.viewRef || 0;
+const k = ref > 0 && ref < height ? ref / height : 1;
+if (shift > 0 || k < 1) {
+const fw = width * k;
+const fh = height * k;
+cam.setViewOffset(fw, fh, (fw - width) / 2, (fh - height) / 2 + shift, width, height);
+} else if (cam.view) cam.clearViewOffset();
 cam.updateProjectionMatrix();
 cam.updateMatrixWorld(true);
 this.vp.invalidate();

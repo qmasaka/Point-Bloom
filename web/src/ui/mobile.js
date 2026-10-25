@@ -8,12 +8,21 @@ const mq = window.matchMedia('(max-width: 900px)');
 let state = 'min';
 const vh = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight);
 const heights = () => (vh() < 520 ? { min: MIN, mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: MIN, mid: Math.round(vh() * 0.46), full: Math.round(vh() - 124) });
-const setH = (px) => root.style.setProperty('--sheet-h', Math.round(px) + 'px');
+let sheetPx = MIN;
+const syncShift = () => {
+const on = mq.matches && !root.classList.contains('fx-focus');
+const base = heights()[root.classList.contains('fx-mode') ? 'mid' : 'min'];
+app.viewport?.setViewFrame(on ? sheetPx / 2 : 0, on ? ws.clientHeight - base : 0);
+};
+const setH = (px) => {
+sheetPx = Math.round(px);
+root.style.setProperty('--sheet-h', sheetPx + 'px');
+syncShift();
+};
 function setState(s) {
 state = s;
 root.dataset.sheet = s;
 setH(heights()[s]);
-setTimeout(() => app.viewport.resize(), 320);
 }
 function makeHandle() {
 const hd = document.createElement('div');
@@ -88,6 +97,7 @@ if (state === 'min') setState('mid');
 });
 let wasFx = root.classList.contains('fx-mode');
 new MutationObserver(() => {
+syncShift();
 const fx = root.classList.contains('fx-mode');
 if (fx === wasFx) return;
 wasFx = fx;
@@ -103,6 +113,7 @@ if (mq.matches) setState(state);
 else {
 root.style.removeProperty('--sheet-h');
 delete root.dataset.sheet;
+syncShift();
 setTimeout(() => app.viewport.resize(), 50);
 }
 }

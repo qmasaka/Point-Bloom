@@ -1,4 +1,5 @@
-// Телефоны и планшеты: панель настроек становится нижним листом, который тянется вверх и вниз, а сцена остаётся сверху.
+// Телефоны и планшеты: панель настроек становится нижним листом, который тянется вверх и вниз поверх сцены. Сцена не меняет размер:
+// картинка только сдвигается вверх, в видимую часть над листом (viewport.setViewFrame).
 // На широких экранах модуль ничего не делает (стили работают только до 900 px).
 const MIN = 98; // ручка и вкладки целиком: отступ снизу 8, рамка, ручка 30 и ряд вкладок 58
 
@@ -14,12 +15,23 @@ export function initMobile(app) {
 	// в альбомной ориентации телефона высоты мало: лист ниже и выше открывается почти на весь экран.
 	// В книжной над раскрытым листом остаётся место под верхнюю панель и нижнюю плашку режимов, чтобы они не наезжали друг на друга
 	const heights = () => (vh() < 520 ? { min: MIN, mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: MIN, mid: Math.round(vh() * 0.46), full: Math.round(vh() - 124) });
-	const setH = (px) => root.style.setProperty('--sheet-h', Math.round(px) + 'px');
+	let sheetPx = MIN;
+	// центр картинки посередине видимой части сцены; масштаб как у сцены над листом в обычном положении (в редакторе свёрнут, в эффектах наполовину),
+	// поэтому он не меняется, пока лист тянут. В «только сцене» листа нет: ни сдвига, ни своего масштаба
+	const syncShift = () => {
+		const on = mq.matches && !root.classList.contains('fx-focus');
+		const base = heights()[root.classList.contains('fx-mode') ? 'mid' : 'min'];
+		app.viewport?.setViewFrame(on ? sheetPx / 2 : 0, on ? ws.clientHeight - base : 0);
+	};
+	const setH = (px) => {
+		sheetPx = Math.round(px);
+		root.style.setProperty('--sheet-h', sheetPx + 'px');
+		syncShift();
+	};
 	function setState(s) {
 		state = s;
 		root.dataset.sheet = s;
 		setH(heights()[s]);
-		setTimeout(() => app.viewport.resize(), 320);
 	}
 
 	function makeHandle() {
@@ -102,6 +114,7 @@ export function initMobile(app) {
 	// режим эффектов: список эффектов первым, редактор: лист свёрнут, пока не откроете вкладку
 	let wasFx = root.classList.contains('fx-mode');
 	new MutationObserver(() => {
+		syncShift();
 		const fx = root.classList.contains('fx-mode');
 		if (fx === wasFx) return;
 		wasFx = fx;
@@ -118,6 +131,7 @@ export function initMobile(app) {
 		else {
 			root.style.removeProperty('--sheet-h');
 			delete root.dataset.sheet;
+			syncShift();
 			setTimeout(() => app.viewport.resize(), 50);
 		}
 	}

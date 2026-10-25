@@ -79,6 +79,8 @@ this._timer = setTimeout(() => this._tick(), 40);
 _draw(frame, hits, active, px, py) {
 const { W, H } = this;
 const c = this.pctx;
+const vw = this.video.videoWidth, vh = this.video.videoHeight;
+if (vw && vh && Math.abs(this.preview.height - Math.round((this.preview.width * vh) / vw)) > 1) this.preview.height = Math.round((this.preview.width * vh) / vw);
 const pw = this.preview.width;
 const ph = this.preview.height;
 c.save();

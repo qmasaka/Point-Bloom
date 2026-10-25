@@ -86,6 +86,9 @@ export class MotionCamTracker {
 	_draw(frame, hits, active, px, py) {
 		const { W, H } = this;
 		const c = this.pctx;
+		// пропорции превью как у кадра камеры: камера телефона снимает вертикально, и в окне 4:3 картинка растягивалась
+		const vw = this.video.videoWidth, vh = this.video.videoHeight;
+		if (vw && vh && Math.abs(this.preview.height - Math.round((this.preview.width * vh) / vw)) > 1) this.preview.height = Math.round((this.preview.width * vh) / vw);
 		const pw = this.preview.width;
 		const ph = this.preview.height;
 		c.save();

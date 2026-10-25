@@ -143,6 +143,5 @@ export class BuildPart {
 		const c = new THREE.Color(bg);
 		const hi = c.clone().lerp(new THREE.Color(1, 1, 1), 0.025);
 		stage.style.background = vignette ? `radial-gradient(ellipse at 50% 42%, #${hi.getHexString(THREE.SRGBColorSpace)} 0%, ${bg} 78%)` : bg;
-		document.documentElement.style.setProperty('--stage-bg', stage.style.background);
 	}
 }

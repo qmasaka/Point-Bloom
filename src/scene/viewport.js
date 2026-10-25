@@ -153,8 +153,6 @@ export class Viewport {
 		this.headlight.visible = !!r.headlight;
 		const bg = BACKGROUNDS[r.bg] || BACKGROUNDS.dark;
 		this.stage.style.background = bg.css;
-		// на телефоне и планшете тот же фон лежит и под нижним листом (assets/style.css, --stage-bg): лист парит над сценой без тёмной подложки
-		document.documentElement.style.setProperty('--stage-bg', bg.css);
 		this.grid.setTheme(bg.light);
 		this.invalidate();
 	}
@@ -177,6 +175,20 @@ export class Viewport {
 
 	invalidate() {
 		this.dirty = true;
+	}
+
+	/**
+	 * Кадр сцены на телефоне: нижний лист выдвигается поверх сцены, а она не меняет ни размер, ни масштаб.
+	 * shift: на сколько пикселей поднять картинку (в видимую часть над листом); refH: высота, по которой считается масштаб
+	 * (постоянная, пока лист двигается; 0: по высоте всего окна). См. ui/mobile.js и nav.applyCamera
+	 */
+	setViewFrame(shift, refH = 0) {
+		shift = Math.max(0, Math.round(shift));
+		refH = Math.max(0, Math.round(refH));
+		if (shift === this.viewShift && refH === this.viewRef) return;
+		this.viewShift = shift;
+		this.viewRef = refH;
+		this.app.nav?.applyCamera();
 	}
 
 	// ----------------------------------------------------------- измерения

@@ -217,6 +217,8 @@ return t.cur;
 }
 _draw(hands) {
 const c = this.pctx;
+const vw = this.video.videoWidth, vh = this.video.videoHeight;
+if (vw && vh && Math.abs(this.preview.height - Math.round((this.preview.width * vh) / vw)) > 1) this.preview.height = Math.round((this.preview.width * vh) / vw);
 const w = this.preview.width;
 const h = this.preview.height;
 c.save();
