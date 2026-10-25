@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { fitCount, mortonSort, normalizeCloud } from '../shapes/cloud-utils.js';
 import { generateShapePoints } from '../shapes/shapes.js';
-import { depthToGrid, lumaDepth } from '../input/depth-ai.js';
+import { depthToGrid, grabFrame, lumaDepth, normalizeDepth } from '../input/depth-ai.js';
 export class SourcePart {
 async useMedia() {
 this.state.look.colorBy = 'model';
@@ -264,17 +264,47 @@ S.cool = true;
 _mediaDepth(pm) {
 const D = this._D;
 const key = pm.rec || pm.el;
-let map = null;
-if (D && D.key === key && D.proc && D.mapSrc === 'ai') map = D.proc;
+let map = this.app.media.entry(pm)?.ai || null;
+if (!map && D && D.key === key && D.proc && D.mapSrc === 'ai') map = D.proc;
 if (!map) map = lumaDepth(pm.sample(), pm.cols, pm.rows);
 const out = new Float32Array(pm.count);
 depthToGrid(map, pm.cols, pm.rows, out);
 return out;
 }
+async morphAIDepth({ quiet = false } = {}) {
+if (this._aiBusy) return;
+const mc = this.app.media;
+const list = (this.playlist || []).map((k) => mc.entry(k)).filter((e) => e && e.pm.ready && !e.pm.isRec && e.pm.el);
+if (!list.length) {
+if (!quiet) this.app.toast('Добавьте в морфинг видео или фото: глубина строится для них', 'info');
+return;
+}
+this._aiBusy = true;
+this._aiDone = 0;
+this._aiTotal = list.length;
+this._depthEmit();
+try {
+for (const e of list) {
+const frame = grabFrame(e.pm.el, e.pm.kind === 'video' ? 448 : 640);
+if (!frame) continue;
+const r = await this.depthAI.estimate(frame);
+e.ai = { w: r.w, h: r.h, data: normalizeDepth(r.data, {}, 0) };
+this._aiDone++;
+this._depthEmit();
+}
+if (!quiet) this.app.toast('Карта глубины готова: переход пойдёт по ней', 'ok');
+} catch (err) {
+this.app.toast('Нейросеть глубины не запустилась: ' + (err.message || err) + '. Переход возьмёт глубину по яркости', 'warn');
+} finally {
+this._aiBusy = false;
+this._depthEmit();
+}
+}
 _morphDepthSetup(outE, inE) {
 const mc = this.state.morphCfg;
 if (!outE && !inE) return;
-if (!(mc.sort === 'depthnear' || mc.sort === 'depthfar' || (mc.lift || 0) > 0.001)) return;
+if (!(mc.sort === 'depthnear' || mc.sort === 'depthfar' || mc.style === 'relief' || (mc.lift || 0) > 0.001)) return;
+if (mc.style === 'relief' && [outE, inE].some((e) => e && !e.ai)) this.morphAIDepth({ quiet: true });
 const a = this.geometry?.attributes.aDepth;
 if (!a) return;
 const parts = [outE, inE].filter((e) => e && e.pm.ready && e.pm.count === a.array.length).map((e) => this._mediaDepth(e.pm));

@@ -20,6 +20,7 @@ struct Frame {
 	@size(16) uMorph: f32,
 	uMorphS: vec4f,
 	uMorphO: vec4f,
+	uMorphD: vec4f,
 	@size(16) uSettle: f32,
 	@size(16) uBeat: f32,
 	@size(16) uYR: vec2f,

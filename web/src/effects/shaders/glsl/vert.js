@@ -427,6 +427,8 @@ void main() {
 		mkm = sin(morphLocal(aOrigin, aTarget, aIdx) * PI) * uMorphO.z;
 		vColor += vColor * mkm * 1.1 + uP2 * mkm * 0.25;
 	}
+	// размер точек в пути: в полёте они крупнее или мельче, на месте прежние
+	float mfs = uMorph < 0.9999 ? mix(1.0, uMorphD.w, sin(morphLocal(aOrigin, aTarget, aIdx) * PI)) : 1.0;
 	// после сборки по форме снизу вверх пробегает мягкая волна света и лёгкий «вздох», как будто модель села на место
 	if (uSettle >= 0.0 && uSettle < 1.0) {
 		float yS = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
@@ -657,7 +659,7 @@ void main() {
 	}
 	vCoc = coc;
 
-	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE;
+	float s = uSize * uPR * (1.0 + disp * 0.5 + uBeat * 0.2 + sl * 1.2 + mkm * 0.7) * uGlyph.y * HEROSIZE * mfs;
 #ifdef VSHOOT
 	s *= shSzMul;
 #endif

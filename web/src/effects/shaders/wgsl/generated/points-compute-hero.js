@@ -19,6 +19,7 @@ struct Frame {
 	@size(16) uMorph: f32,
 	uMorphS: vec4f,
 	uMorphO: vec4f,
+	uMorphD: vec4f,
 	@size(16) uSettle: f32,
 	@size(16) uBeat: f32,
 	@size(16) uYR: vec2f,
@@ -428,8 +429,12 @@ fn morphLocal(A_in: vec3f, B_in: vec3f, idx_in: f32) -> f32 {
 	var B: vec3f = B_in;
 	var idx: f32 = idx_in;
 	var h: f32 = hash11((idx * 3.17));
-	if ((i32((fr.uMorphS.x + 0.5)) == 8)) {
+	var msty: i32 = i32((fr.uMorphS.x + 0.5));
+	if ((msty == 8)) {
 		h = hash11(dot(floor((((A - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));
+	}
+	if ((msty == 13)) {
+		h = hash11(dot(floor((((A - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));
 	}
 	var ord: f32 = h;
 	var so: i32 = i32((fr.uMorphO.x + 0.5));
@@ -446,6 +451,12 @@ fn morphLocal(A_in: vec3f, B_in: vec3f, idx_in: f32) -> f32 {
 		ord = ((((1.0 - gDepth)) * 0.85) + (h * 0.15));
 	} else if ((so == 6)) {
 		ord = ((gDepth * 0.85) + (h * 0.15));
+	}
+	if ((msty == 10)) {
+		ord = ((((1.0 - gDepth)) * 0.8) + (h * 0.2));
+	}
+	if ((msty == 11)) {
+		ord = ((clamp((((B.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0) * 0.92) + (h * 0.08));
 	}
 	var sg: f32 = fr.uMorphS.z;
 	return clamp(((fr.uMorph * ((1.0 + sg))) - (ord * sg)), 0.0, 1.0);
@@ -861,6 +872,88 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			} else {
 				(*base) = (fr.uCen + mix(fb, q9b, k3));
 			}
+		}
+		if ((sty == 10)) {
+			var dz: f32 = (1.6 * max(sc, 0.3));
+			var RA: vec3f = (aOrigin + vec3f(0.0, 0.0, ((((gDepth - 0.5)) * dz) * fr.uMorphD.x)));
+			var RB: vec3f = (aTarget + vec3f(0.0, 0.0, ((((gDepth - 0.5)) * dz) * fr.uMorphD.y)));
+			var k1: f32 = clamp((e / 0.3), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.3)) / 0.4), 0.0, 1.0);
+			var k3: f32 = clamp((((e - 0.7)) / 0.3), 0.0, 1.0);
+			k1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));
+			k2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));
+			k3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));
+			var c10: vec3f = (((((RA + RB)) * 0.5) + vec3f(0.0, 0.0, ((((0.3 + gDepth)) * 0.7) * sc))) + ((cn * 0.25) * sc));
+			var o10: f32 = (1.0 - k2);
+			var mid10: vec3f = ((((o10 * o10) * RA) + (((2.0 * o10) * k2) * c10)) + ((k2 * k2) * RB));
+			if ((e < 0.3)) {
+				(*base) = mix(aOrigin, RA, k1);
+			} else if ((e < 0.7)) {
+				(*base) = mid10;
+			} else {
+				(*base) = mix(RB, aTarget, k3);
+			}
+		}
+		if ((sty == 11)) {
+			var head: vec3f = vec3f(fr.uCen.x, (fr.uYR.y + 0.45), fr.uCen.z);
+			var nozzle: vec3f = (aTarget + vec3f(0.0, 0.22, 0.0));
+			var k1: f32 = clamp((e / 0.55), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.55)) / 0.45), 0.0, 1.0);
+			var g11: vec3f = (mix(aOrigin, head, ((k1 * k1) * ((3.0 - (2.0 * k1))))) + (((cn * 0.15) * sc) * sin((k1 * 3.1415926535))));
+			var o11: f32 = (1.0 - k2);
+			var p11: vec3f = ((((o11 * o11) * head) + (((2.0 * o11) * k2) * vec3f(nozzle.x, head.y, nozzle.z))) + ((k2 * k2) * nozzle));
+			p11 = mix(p11, aTarget, smoothstep(0.85, 1.0, k2));
+			(*base) = select(p11, g11, (e < 0.55));
+		}
+		if ((sty == 12)) {
+			var a12: f32 = ((hA * 6.2831853) + (t * 2.4));
+			var ring: vec3f = (fr.uCen + ((vec3f(cos(a12), sin(a12), 0.0) * ((0.32 + (0.06 * hB)))) * ((0.6 + (0.4 * sc)))));
+			var k1: f32 = clamp((e / 0.5), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);
+			var qa: vec3f = (aOrigin - fr.uCen);
+			var qb: vec3f = (aTarget - fr.uCen);
+			var sw1: f32 = ((k1 * k1) * 5.0);
+			var sw2: f32 = ((((1.0 - k2)) * ((1.0 - k2))) * 5.0);
+			var ra: vec3f = (fr.uCen + vec3f(((qa.x * cos(sw1)) - (qa.y * sin(sw1))), ((qa.x * sin(sw1)) + (qa.y * cos(sw1))), qa.z));
+			var rb: vec3f = (fr.uCen + vec3f(((qb.x * cos(sw2)) - (qb.y * sin(sw2))), ((qb.x * sin(sw2)) + (qb.y * cos(sw2))), qb.z));
+			var p1: vec3f = mix(ra, ring, ((k1 * k1) * ((3.0 - (2.0 * k1)))));
+			var p2: vec3f = mix(ring, rb, ((k2 * k2) * ((3.0 - (2.0 * k2)))));
+			(*base) = select(p2, p1, (e < 0.5));
+		}
+		if ((sty == 13)) {
+			var ca: vec3f = ((((floor((((aOrigin - fr.uCen)) * 3.0)) + 0.5)) / 3.0) + fr.uCen);
+			var cb: vec3f = ((((floor((((aTarget - fr.uCen)) * 3.0)) + 0.5)) / 3.0) + fr.uCen);
+			var sa: f32 = hash11(dot(floor((((aOrigin - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));
+			var sb: f32 = hash11(dot(floor((((aTarget - fr.uCen)) * 3.0)), vec3f(12.9, 78.2, 37.7)));
+			var k1: f32 = clamp((e / 0.6), 0.0, 1.0);
+			var k2: f32 = clamp((((1.0 - e)) / 0.6), 0.0, 1.0);
+			var da: vec3f = normalize((((ca - fr.uCen) + (vec3f((sa - 0.5), 0.3, 0.2) * 0.6)) + vec3f(1e-3)));
+			var db: vec3f = normalize((((cb - fr.uCen) + (vec3f((sb - 0.5), 0.3, 0.2) * 0.6)) + vec3f(1e-3)));
+			var ra: f32 = ((k1 * 3.1415926535) * ((0.8 + (1.6 * sa))));
+			var rb: f32 = ((k2 * 3.1415926535) * ((0.8 + (1.6 * sb))));
+			var la: vec3f = (aOrigin - ca);
+			var lb: vec3f = (aTarget - cb);
+			la = vec3f(((la.x * cos(ra)) - (la.y * sin(ra))), ((la.x * sin(ra)) + (la.y * cos(ra))), la.z);
+			lb = vec3f(((lb.x * cos(rb)) - (lb.y * sin(rb))), ((lb.x * sin(rb)) + (lb.y * cos(rb))), lb.z);
+			var P1: vec3f = (((ca + la) + ((((da * k1) * k1) * 1.3) * sc)) - vec3f(0.0, (((0.9 * k1) * k1) * k1), 0.0));
+			var P2: vec3f = (((cb + lb) + ((((db * k2) * k2) * 1.3) * sc)) - vec3f(0.0, (((0.9 * k2) * k2) * k2), 0.0));
+			(*base) = mix(P1, P2, smoothstep(0.42, 0.58, e));
+		}
+		if ((sty == 14)) {
+			var ab: vec3f = (aTarget - aOrigin);
+			var L14: f32 = length(ab);
+			var ax: vec3f = select(vec3f(0.0, 1.0, 0.0), (ab / L14), (L14 > 1e-4));
+			var n1: vec3f = normalize(cross(ax, select(vec3f(1.0, 0.0, 0.0), vec3f(0.0, 1.0, 0.0), (abs(ax.y) < 0.9))));
+			var n2: vec3f = cross(ax, n1);
+			var bund: f32 = ((floor((hA * 10.0)) / 10.0) * 6.2831853);
+			var nb: vec3f = ((n1 * cos(bund)) + (n2 * sin(bund)));
+			(*base) = (mix(aOrigin, aTarget, e) + ((((nb * sin((e * 3.1415926535))) * ((0.25 + (0.55 * L14)))) * sc) * ((0.85 + (0.3 * hB)))));
+		}
+		if ((abs(fr.uMorphD.z) > 0.001)) {
+			var sm: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));
+			var ra: f32 = ((fr.uMorphD.z * 6.2831853) * sm);
+			var q: vec3f = ((*base) - fr.uCen);
+			(*base) = (fr.uCen + vec3f(((q.x * cos(ra)) - (q.z * sin(ra))), q.y, ((q.x * sin(ra)) + (q.z * cos(ra)))));
 		}
 	}
 	if (((fr.uMorph < 0.9999) && (fr.uMorphO.w > 0.001))) {
@@ -1703,6 +1796,7 @@ fn main_() {
 		mkm = (sin((morphLocal(aOrigin, aTarget, aIdx) * 3.1415926535)) * fr.uMorphO.z);
 		vColor += (((vColor * mkm) * 1.1) + ((fr.uP2 * mkm) * 0.25));
 	}
+	var mfs: f32 = select(1.0, mix(1.0, fr.uMorphD.w, sin((morphLocal(aOrigin, aTarget, aIdx) * 3.1415926535))), (fr.uMorph < 0.9999));
 	if (((fr.uSettle >= 0.0) && (fr.uSettle < 1.0))) {
 		var yS: f32 = clamp((((base.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
 		var dd: f32 = (((yS - (((fr.uSettle * 1.35) - 0.15)))) / 0.14);
@@ -1833,7 +1927,7 @@ fn main_() {
 		coc = clamp((abs((viewDist - fr.uDof.y)) / max(0.05, fr.uDof.z)), 0.0, 1.0);
 	}
 	vCoc = coc;
-	var s: f32 = ((((fr.uSize * fr.uPR) * (((((1.0 + (disp * 0.5)) + (fr.uBeat * 0.2)) + (sl * 1.2)) + (mkm * 0.7)))) * fr.uGlyph.y) * clamp(sqrt((fr.uFr.z / max(fr.uHero.z, 1.0))), 0.4, 1.0));
+	var s: f32 = (((((fr.uSize * fr.uPR) * (((((1.0 + (disp * 0.5)) + (fr.uBeat * 0.2)) + (sl * 1.2)) + (mkm * 0.7)))) * fr.uGlyph.y) * clamp(sqrt((fr.uFr.z / max(fr.uHero.z, 1.0))), 0.4, 1.0)) * mfs);
 	s *= shSzMul;
 	s *= ((((((max(0.15, (szNoise * szAudio)) * ((1.0 - (fr.uDisQ.w * dkv)))) * mix(0.3, 1.0, gGrow)) * ((1.0 + (select(0.0, (mkv * 0.9), ((fr.uMark.x > 3.5) && (fr.uMark.x < 4.5))))))) * ((1.0 - (0.6 * (select(0.0, smoothstep(0.35, 0.9, mkv), ((fr.uMark.x > 2.5) && (fr.uMark.x < 3.5)))))))) * ((1.0 - (0.7 * smoothstep(0.3, 0.8, cvan))))) * ((0.25 + (0.75 * vis))));
 	s *= ((1.0 + (coc * 2.4)));

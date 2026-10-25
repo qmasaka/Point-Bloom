@@ -8,6 +8,8 @@ uniform float uTOff;
 uniform float uMorph;
 uniform vec4 uMorphS;
 uniform vec4 uMorphO;
+// x: уходящая форма это видео или фото, y: приходящая это видео или фото, z: обороты всей формы за переход, w: размер точек в пути
+uniform vec4 uMorphD;
 uniform float uSettle;
 uniform float uBeat;
 uniform vec2 uYR;
@@ -256,7 +258,10 @@ float growK(vec3 b, float idx) {
 float morphLocal(vec3 A, vec3 B, float idx) {
 	float h = hash11(idx * 3.17);
 	// «Кубики»: время старта одно на весь кубик пространства, поэтому точки уходят блоками
-	if (int(uMorphS.x + 0.5) == 8) h = hash11(dot(floor((A - uCen) * 5.0), vec3(17.13, 31.71, 57.29)));
+	int msty = int(uMorphS.x + 0.5);
+	if (msty == 8) h = hash11(dot(floor((A - uCen) * 5.0), vec3(17.13, 31.71, 57.29)));
+	// «Стекло»: осколок трогается целиком
+	if (msty == 13) h = hash11(dot(floor((A - uCen) * 3.0), vec3(12.9, 78.2, 37.7)));
 	float ord = h;
 	int so = int(uMorphO.x + 0.5);
 	float yN = clamp((A.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
@@ -267,6 +272,9 @@ float morphLocal(vec3 A, vec3 B, float idx) {
 	// по карте глубины видео или фото (gDepth: 1 ближе всего): точки уходят слоями, как будто кадр режут по глубине
 	else if (so == 5) ord = (1.0 - gDepth) * 0.85 + h * 0.15;
 	else if (so == 6) ord = gDepth * 0.85 + h * 0.15;
+	// «Рельеф (ИИ)» всегда идёт по глубине: ближние слои кадра первыми; «3D-печать» по высоте новой формы, снизу вверх
+	if (msty == 10) ord = (1.0 - gDepth) * 0.8 + h * 0.2;
+	if (msty == 11) ord = clamp((B.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0) * 0.92 + h * 0.08;
 	float sg = uMorphS.z;
 	return clamp(uMorph * (1.0 + sg) - ord * sg, 0.0, 1.0);
 }
@@ -693,6 +701,90 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			if (e < 0.4) base = uCen + mix(q9a, fa, k1);
 			else if (e < 0.6) base = uCen + mix(fa, fb, k2);
 			else base = uCen + mix(fb, q9b, k3);
+		}
+		if (sty == 10) {
+			// рельеф по глубине (нейросеть): плоский кадр сначала вспухает объёмом по своей карте глубины, слои отслаиваются от ближних к дальним и летят к новой форме; приходящее видео так же собирается из объёма и сплющивается в кадр
+			float dz = 1.6 * max(sc, 0.3);
+			vec3 RA = aOrigin + vec3(0.0, 0.0, (gDepth - 0.5) * dz * uMorphD.x);
+			vec3 RB = aTarget + vec3(0.0, 0.0, (gDepth - 0.5) * dz * uMorphD.y);
+			float k1 = clamp(e / 0.3, 0.0, 1.0);
+			float k2 = clamp((e - 0.3) / 0.4, 0.0, 1.0);
+			float k3 = clamp((e - 0.7) / 0.3, 0.0, 1.0);
+			k1 = k1 * k1 * (3.0 - 2.0 * k1);
+			k2 = k2 * k2 * (3.0 - 2.0 * k2);
+			k3 = k3 * k3 * (3.0 - 2.0 * k3);
+			vec3 c10 = (RA + RB) * 0.5 + vec3(0.0, 0.0, (0.3 + gDepth) * 0.7 * sc) + cn * 0.25 * sc;
+			float o10 = 1.0 - k2;
+			vec3 mid10 = o10 * o10 * RA + 2.0 * o10 * k2 * c10 + k2 * k2 * RB;
+			if (e < 0.3) base = mix(aOrigin, RA, k1);
+			else if (e < 0.7) base = mid10;
+			else base = mix(RB, aTarget, k3);
+		}
+		if (sty == 11) {
+			// 3D-печать: старая форма стекает в печатающую головку над сценой, головка кладёт новую форму слой за слоем снизу вверх
+			vec3 head = vec3(uCen.x, uYR.y + 0.45, uCen.z);
+			vec3 nozzle = aTarget + vec3(0.0, 0.22, 0.0);
+			float k1 = clamp(e / 0.55, 0.0, 1.0);
+			float k2 = clamp((e - 0.55) / 0.45, 0.0, 1.0);
+			vec3 g11 = mix(aOrigin, head, k1 * k1 * (3.0 - 2.0 * k1)) + cn * 0.15 * sc * sin(k1 * PI);
+			float o11 = 1.0 - k2;
+			vec3 p11 = o11 * o11 * head + 2.0 * o11 * k2 * vec3(nozzle.x, head.y, nozzle.z) + k2 * k2 * nozzle;
+			p11 = mix(p11, aTarget, smoothstep(0.85, 1.0, k2));
+			base = e < 0.55 ? g11 : p11;
+		}
+		if (sty == 12) {
+			// портал: точки по спирали затягивает в светящееся кольцо в центре, и из него же по спирали выходит новая форма
+			float a12 = hA * 6.2831853 + t * 2.4;
+			vec3 ring = uCen + vec3(cos(a12), sin(a12), 0.0) * (0.32 + 0.06 * hB) * (0.6 + 0.4 * sc);
+			float k1 = clamp(e / 0.5, 0.0, 1.0);
+			float k2 = clamp((e - 0.5) / 0.5, 0.0, 1.0);
+			vec3 qa = aOrigin - uCen;
+			vec3 qb = aTarget - uCen;
+			float sw1 = k1 * k1 * 5.0;
+			float sw2 = (1.0 - k2) * (1.0 - k2) * 5.0;
+			vec3 ra = uCen + vec3(qa.x * cos(sw1) - qa.y * sin(sw1), qa.x * sin(sw1) + qa.y * cos(sw1), qa.z);
+			vec3 rb = uCen + vec3(qb.x * cos(sw2) - qb.y * sin(sw2), qb.x * sin(sw2) + qb.y * cos(sw2), qb.z);
+			vec3 p1 = mix(ra, ring, k1 * k1 * (3.0 - 2.0 * k1));
+			vec3 p2 = mix(ring, rb, k2 * k2 * (3.0 - 2.0 * k2));
+			base = e < 0.5 ? p1 : p2;
+		}
+		if (sty == 13) {
+			// стекло: форма трескается на осколки, они летят, кувыркаются и падают; потом осколки новой формы прилетают и складываются в неё
+			vec3 ca = (floor((aOrigin - uCen) * 3.0) + 0.5) / 3.0 + uCen;
+			vec3 cb = (floor((aTarget - uCen) * 3.0) + 0.5) / 3.0 + uCen;
+			float sa = hash11(dot(floor((aOrigin - uCen) * 3.0), vec3(12.9, 78.2, 37.7)));
+			float sb = hash11(dot(floor((aTarget - uCen) * 3.0), vec3(12.9, 78.2, 37.7)));
+			float k1 = clamp(e / 0.6, 0.0, 1.0);
+			float k2 = clamp((1.0 - e) / 0.6, 0.0, 1.0);
+			vec3 da = normalize(ca - uCen + vec3(sa - 0.5, 0.3, 0.2) * 0.6 + vec3(1e-3));
+			vec3 db = normalize(cb - uCen + vec3(sb - 0.5, 0.3, 0.2) * 0.6 + vec3(1e-3));
+			float ra = k1 * PI * (0.8 + 1.6 * sa);
+			float rb = k2 * PI * (0.8 + 1.6 * sb);
+			vec3 la = aOrigin - ca;
+			vec3 lb = aTarget - cb;
+			la = vec3(la.x * cos(ra) - la.y * sin(ra), la.x * sin(ra) + la.y * cos(ra), la.z);
+			lb = vec3(lb.x * cos(rb) - lb.y * sin(rb), lb.x * sin(rb) + lb.y * cos(rb), lb.z);
+			vec3 P1 = ca + la + da * k1 * k1 * 1.3 * sc - vec3(0.0, 0.9 * k1 * k1 * k1, 0.0);
+			vec3 P2 = cb + lb + db * k2 * k2 * 1.3 * sc - vec3(0.0, 0.9 * k2 * k2 * k2, 0.0);
+			base = mix(P1, P2, smoothstep(0.42, 0.58, e));
+		}
+		if (sty == 14) {
+			// магнит: точки идут пучками по силовым линиям, дугами в стороны от прямого пути, как железные опилки у полюсов
+			vec3 ab = aTarget - aOrigin;
+			float L14 = length(ab);
+			vec3 ax = L14 > 1e-4 ? ab / L14 : vec3(0.0, 1.0, 0.0);
+			vec3 n1 = normalize(cross(ax, abs(ax.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0)));
+			vec3 n2 = cross(ax, n1);
+			float bund = floor(hA * 10.0) / 10.0 * 6.2831853;
+			vec3 nb = n1 * cos(bund) + n2 * sin(bund);
+			base = mix(aOrigin, aTarget, e) + nb * sin(e * PI) * (0.25 + 0.55 * L14) * sc * (0.85 + 0.3 * hB);
+		}
+		// вся форма поворачивается за переход на заданное число оборотов (целых, чтобы в конце не было скачка)
+		if (abs(uMorphD.z) > 0.001) {
+			float sm = uMorph * uMorph * (3.0 - 2.0 * uMorph);
+			float ra = uMorphD.z * 6.2831853 * sm;
+			vec3 q = base - uCen;
+			base = uCen + vec3(q.x * cos(ra) - q.z * sin(ra), q.y, q.x * sin(ra) + q.z * cos(ra));
 		}
 	}
 	// выдавливание по карте глубины видео или фото в пути: ближние части кадра летят к зрителю, дальние уходят назад, поэтому кадр распадается на слои

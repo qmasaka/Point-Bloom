@@ -133,7 +133,7 @@ export function select({ options = [], value, onChange, placeholder = 'Выбр�
 			lbl = parts[0].trim();
 			sub = parts.slice(1).join(': ').trim();
 		}
-		return { value: val, label: lbl, sub };
+		return { value: val, label: lbl, sub, icon: typeof o?.icon === 'string' ? o.icon : '' };
 	};
 
 	const fill = (opts) => {
@@ -148,6 +148,8 @@ export function select({ options = [], value, onChange, placeholder = 'Выбр�
 	const tr = (k) => (window.__i18n && window.__i18n.tr ? window.__i18n.tr(k) : k);
 
 	const curLabel = h('span', { class: 'custom-select-cur-text' });
+	// у пунктов может быть значок: тогда он стоит и в списке, и на самой кнопке
+	const curIcon = h('span', { class: 'custom-select-cur-ic', hidden: true });
 	const caret = svg('caret-down', 14);
 	caret.classList.add('custom-select-caret');
 
@@ -156,12 +158,15 @@ export function select({ options = [], value, onChange, placeholder = 'Выбр�
 		class: 'select custom-select-btn',
 		'aria-haspopup': 'listbox',
 		'aria-expanded': 'false',
-	}, curLabel, caret);
+	}, curIcon, curLabel, caret);
 
 	const wrap = h('div', { class: 'select-wrap custom-select-wrap' }, trigger, nativeSel);
 
 	function updateTrigger() {
 		const found = currentOpts.find((o) => o.value === currentVal);
+		curIcon.textContent = '';
+		curIcon.hidden = !(found && found.icon);
+		if (found && found.icon) curIcon.append(svg(found.icon, 15));
 		if (found) {
 			curLabel.textContent = tr(found.label);
 			curLabel.classList.remove('is-empty');
@@ -243,7 +248,7 @@ export function select({ options = [], value, onChange, placeholder = 'Выбр�
 				role: 'option',
 				'aria-selected': String(isSel),
 				dataset: { value: o.value, index: String(i) },
-			}, contentEl, checkEl);
+			}, o.icon ? h('span', { class: 'custom-select-item-ic' }, svg(o.icon, 16)) : '', contentEl, checkEl);
 
 			itemBtn.addEventListener('click', (e) => {
 				e.stopPropagation();

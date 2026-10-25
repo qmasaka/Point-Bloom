@@ -6869,59 +6869,6 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 	}
 }
 
-/* форма в морфинге: плашка с номером и кнопкой «перейти сейчас» */
-.fx-forms-wrap .fx-sub {
-	margin-top: 6px;
-}
-.chip-split {
-	display: inline-flex;
-	align-items: stretch;
-	border-radius: var(--r-ctl);
-}
-.chip-split .chip-btn {
-	gap: 5px;
-}
-.chip-split.is-on .chip-btn {
-	border-top-right-radius: 0;
-	border-bottom-right-radius: 0;
-}
-.chip-split:not(.is-on) .chip-btn,
-.chip-split.is-on:not(:has(.chip-go)) .chip-btn {
-	border-radius: var(--r-ctl);
-}
-.chip-split.is-cur .chip-btn {
-	box-shadow: inset 0 0 0 1px var(--accent);
-}
-.chip-n {
-	display: inline-grid;
-	place-items: center;
-	min-width: 15px;
-	height: 15px;
-	padding: 0 3px;
-	border-radius: 8px;
-	background: var(--accent);
-	color: var(--accent-ink);
-	font-family: var(--mono);
-	font-size: 10px;
-	font-weight: 600;
-}
-.chip-go {
-	display: inline-grid;
-	place-items: center;
-	width: 26px;
-	border: 1px solid var(--accent-line);
-	border-left: 0;
-	border-radius: 0 var(--r-ctl) var(--r-ctl) 0;
-	background: var(--accent-soft);
-	color: var(--accent-text);
-	cursor: pointer;
-	transition: background 0.15s var(--ease), color 0.15s var(--ease);
-}
-.chip-go:hover {
-	background: var(--accent);
-	color: var(--accent-ink);
-}
-
 /* переключатели вариантов в узкой панели: если подписи не помещаются в одну строку, кнопки переносятся, а не наезжают друг на друга */
 .seg {
 	flex-wrap: wrap;
@@ -6954,4 +6901,112 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 }
 .morph-music[hidden] {
 	display: none;
+}
+
+/* морфинг: список форм строками, как эффекты в левой панели (плитка со значком, имя, номер в очереди, «перейти», переключатель) */
+.mf-list {
+	display: grid;
+	gap: 2px;
+	margin: 2px 0 6px;
+}
+.mf-row {
+	display: grid;
+	grid-template-columns: 36px minmax(0, 1fr) auto auto auto;
+	align-items: center;
+	gap: 8px;
+	min-height: 40px;
+	padding: 5px 8px 5px 6px;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.mf-row:hover {
+	background: rgba(255, 255, 255, 0.04);
+}
+.mf-row.is-cur {
+	background: var(--accent-soft);
+	border-color: var(--accent-line);
+}
+.mf-ic {
+	display: grid;
+	place-items: center;
+	width: 36px;
+	height: 29px;
+	border-radius: 9px;
+	background: var(--bg-sunken);
+	border: 1px solid rgba(255, 255, 255, 0.09);
+	color: var(--text-faint);
+}
+.mf-row.is-on .mf-ic {
+	color: var(--accent-text);
+}
+.mf-name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 13px;
+	color: var(--text-dim);
+}
+.mf-row.is-on .mf-name {
+	color: var(--text);
+}
+.mf-n {
+	min-width: 16px;
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	color: var(--text-faint);
+	text-align: right;
+}
+.mf-row.is-cur .mf-n {
+	color: var(--accent-text);
+}
+.mf-go.btn-icon {
+	width: 26px;
+	height: 26px;
+	border-radius: 999px;
+}
+.mf-go.btn-icon:disabled {
+	opacity: 0.28;
+}
+.mf-style-hint {
+	margin-top: -2px;
+}
+/* выпадающий список со значками у пунктов */
+.custom-select-cur-ic {
+	display: inline-grid;
+	place-items: center;
+	color: var(--accent-text);
+	margin-right: 6px;
+	flex: none;
+}
+.custom-select-cur-ic[hidden] {
+	display: none;
+}
+.custom-select-item-ic {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: 30px;
+	height: 26px;
+	border-radius: 8px;
+	background: var(--bg-sunken);
+	border: 1px solid rgba(255, 255, 255, 0.09);
+	color: var(--text-dim);
+}
+.custom-select-item.is-selected .custom-select-item-ic {
+	color: var(--accent-text);
+	border-color: var(--accent-line);
+}
+.custom-select-item-content {
+	flex: 1;
+	min-width: 0;
+}
+/* описание пункта в выпадающем списке: до двух строк, а не обрезка на первой */
+.custom-select-item-desc {
+	white-space: normal;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	line-height: 1.3;
 }

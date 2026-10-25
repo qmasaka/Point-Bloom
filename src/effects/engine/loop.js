@@ -107,6 +107,7 @@ export class LoopPart {
 				const mcf = st.morphCfg;
 				u.uMorphS.value.set(Math.max(0, MORPH_STYLES.findIndex((x) => x.id === mcf.style)), mcf.scatter, mcf.stagger, mcf.turns);
 				u.uMorphO.value.set(Math.max(0, MORPH_SORTS.findIndex((x) => x[0] === mcf.sort)), Math.max(0, MORPH_EASES.findIndex((x) => x[0] === mcf.ease)), mcf.glow, mcf.lift || 0);
+				u.uMorphD.value.set(this._mm?.out ? 1 : 0, this._mm?.in ? 1 : 0, Math.round(mcf.spin || 0), mcf.fsize ?? 1);
 			}
 			// вид точек общий с вкладкой «Точки» редактора: форма, размер, цвет, затухание вдали
 			const pset = this.app.settings.point;
