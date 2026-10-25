@@ -442,6 +442,10 @@ fn morphLocal(A_in: vec3f, B_in: vec3f, idx_in: f32) -> f32 {
 		ord = ((clamp((length(A) / 1.4), 0.0, 1.0) * 0.85) + (h * 0.15));
 	} else if ((so == 4)) {
 		ord = ((clamp((((A.x + 1.2)) / 2.4), 0.0, 1.0) * 0.85) + (h * 0.15));
+	} else if ((so == 5)) {
+		ord = ((((1.0 - gDepth)) * 0.85) + (h * 0.15));
+	} else if ((so == 6)) {
+		ord = ((gDepth * 0.85) + (h * 0.15));
 	}
 	var sg: f32 = fr.uMorphS.z;
 	return clamp(((fr.uMorph * ((1.0 + sg))) - (ord * sg)), 0.0, 1.0);
@@ -709,38 +713,96 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		var sty: i32 = i32((fr.uMorphS.x + 0.5));
 		var mid: vec3f = (((aOrigin + aTarget)) * 0.5);
 		var cn: vec3f = curlNoise(((mid * 1.8) + vec3f(0.0, (t * 0.3), 0.0)));
+		var hA: f32 = hash11((aIdx * 5.31));
+		var hB: f32 = hash11((aIdx * 7.77));
+		var hC: f32 = hash11((aIdx * 2.13));
+		var flightK: f32 = sin((e * 3.1415926535));
 		var ctrl: vec3f = (mid + ((cn * sc) * 0.9));
-		var rdir: vec3f = normalize((mid + vec3f(1e-3)));
-		if ((sty == 1)) {
-			ctrl = (mid + ((normalize((vec3f(-mid.z, 0.0, mid.x) + vec3f(1e-3))) * sc) * 0.9));
-		} else if ((sty == 2)) {
-			ctrl = ((mid + ((rdir * sc) * 1.6)) + ((cn * sc) * 0.4));
-		} else if ((sty == 3)) {
+		if ((sty == 3)) {
 			ctrl = (mid + ((cn * sc) * 0.3));
-		} else if ((sty == 4)) {
-			ctrl = ((aOrigin + vec3f(0.0, (0.9 * sc), 0.0)) + ((cn * sc) * 0.8));
-		} else if ((sty == 5)) {
-			ctrl = (vec3f(mid.x, (min(aOrigin.y, aTarget.y) - (1.1 * sc)), mid.z) + ((cn * sc) * 0.25));
 		}
 		var om: f32 = (1.0 - e);
 		(*base) = ((((om * om) * aOrigin) + (((2.0 * om) * e) * ctrl)) + ((e * e) * aTarget));
+		if ((sty == 0)) {
+			var fq: f32 = pow(flightK, 1.2);
+			var tb1: vec3f = curlNoise((((*base) * 1.35) + vec3f(0.0, 0.0, (t * 0.35))));
+			var tb2: vec3f = curlNoise((((*base) * 3.2) - vec3f((t * 0.55), 0.0, 0.0)));
+			(*base) += (((((tb1 * 0.5) + (tb2 * 0.18))) * sc) * fq);
+		}
+		if ((sty == 1)) {
+			var vxz: vec2f = ((*base).xz - fr.uCen.xz);
+			var vr: f32 = length(vxz);
+			var vang: f32 = ((((sin((e * 3.1415926535)) * fr.uMorphS.w) * 6.2831853) * ((0.7 + (0.3 * hash11((aIdx * 1.3)))))) * pow((1.0 / ((0.32 + vr))), 0.5));
+			var vcs: f32 = cos(vang);
+			var vsn: f32 = sin(vang);
+			vxz = vec2f(((vxz.x * vcs) - (vxz.y * vsn)), ((vxz.x * vsn) + (vxz.y * vcs)));
+			vxz *= vec2f((1.0 - ((0.38 * flightK) * smoothstep(0.0, 1.1, vr))));
+			{ let _sw10 = (fr.uCen.xz + vxz); (*base) = vec3f(_sw10.x, (*base).y, _sw10.y); }
+			(*base).y += ((((((hB - 0.3)) * 0.35) * sc) * flightK) * flightK);
+		}
+		if ((sty == 3)) {
+			var band: f32 = (smoothstep(0.0, 0.3, lt) * ((1.0 - smoothstep(0.6, 1.0, lt))));
+			var sq: vec3f = ((((floor(((((*base) - fr.uCen)) * 20.0)) + 0.5)) / 20.0) + fr.uCen);
+			(*base) = mix((*base), sq, (band * 0.8));
+			(*base) += ((((vec3f(hA, hB, hC) - 0.5)) * 0.045) * band);
+		}
+		if ((sty == 4)) {
+			var H: f32 = (((0.45 + (0.85 * hA))) * sc);
+			var cloud: vec3f = ((aOrigin + vec3f(0.0, H, 0.0)) + (((((cn * ((0.5 + (0.7 * hB)))) + (((vec3f(hA, hC, hB) - 0.5)) * 0.45))) * sc) * 0.8));
+			var k1: f32 = clamp((e / 0.5), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);
+			var u1: f32 = (1.0 - pow((1.0 - k1), 2.4));
+			var u2: f32 = (1.0 - pow((1.0 - k2), 2.0));
+			var p1: vec3f = (mix(aOrigin, cloud, u1) + (((curlNoise(((aOrigin * 2.0) + vec3f(0.0, (t * 0.4), 0.0))) * 0.12) * sc) * sin((k1 * 3.1415926535))));
+			var p2: vec3f = (mix(cloud, aTarget, u2) + ((((curlNoise(((cloud * 1.5) + vec3f((t * 0.3), 0.0, 0.0))) * 0.1) * sc) * sin((k2 * 3.1415926535))) * ((1.0 - k2))));
+			(*base) = select(p2, p1, (e < 0.5));
+		}
+		if ((sty == 5)) {
+			var fl5: f32 = (fr.uYR.x - 0.02);
+			var R5: f32 = (0.55 + (0.35 * sc));
+			var an5: f32 = (hA * 6.2831853);
+			var rr5: f32 = (sqrt(hB) * R5);
+			var hh5: f32 = ((pow(max(0.0, (1.0 - (rr5 / R5))), 0.85) * 0.85) * ((0.7 + (0.3 * hC))));
+			var heap: vec3f = vec3f((fr.uCen.x + (cos(an5) * rr5)), (fl5 + hh5), (fr.uCen.z + (sin(an5) * rr5)));
+			var k1: f32 = clamp((e / 0.5), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.5)) / 0.5), 0.0, 1.0);
+			var fall: f32 = (k1 * k1);
+			var slide: f32 = (1.0 - pow((1.0 - k1), 2.0));
+			var p1: vec3f = vec3f(mix(aOrigin.x, heap.x, slide), mix(aOrigin.y, heap.y, fall), mix(aOrigin.z, heap.z, slide));
+			{ let _sw11 = (p1.xz + ((((vec2f(hA, hC) - 0.5)) * 0.06) * sin((k1 * 3.1415926535)))); p1 = vec3f(_sw11.x, p1.y, _sw11.y); }
+			var gr: f32 = ((k2 * k2) * ((3.0 - (2.0 * k2))));
+			var p2: vec3f = mix(heap, aTarget, gr);
+			p2.y += (((0.3 * sc) * sin((k2 * 3.1415926535))) * ((0.4 + hA)));
+			p2 += ((cn * 0.12) * sin((k2 * 3.1415926535)));
+			(*base) = select(p2, p1, (e < 0.5));
+		}
 		if ((sty == 2)) {
 			var fl: f32 = (fr.uYR.x - 0.04);
-			var h1: f32 = hash11((aIdx * 5.31));
-			var h2: f32 = hash11((aIdx * 7.77));
-			var h3: f32 = hash11((aIdx * 2.13));
+			var h1: f32 = hA;
+			var h2: f32 = hB;
+			var h3: f32 = hC;
 			var dx: vec3f = normalize(((vec3f(aOrigin.x, 0.0, aOrigin.z) + (vec3f((h1 - 0.5), 0.0, (h2 - 0.5)) * 0.9)) + vec3f(1e-3, 0.0, 0.0)));
 			var spd: f32 = (((0.35 + (h3 * 1.1))) * sc);
 			var vy0: f32 = (((0.5 + (h2 * 1.3))) * sc);
 			var te: f32 = clamp((lt / 0.45), 0.0, 1.0);
 			var tau: f32 = (te * 1.6);
+			var gy: f32 = (fl + (h1 * 0.03));
 			var pl: vec3f = aOrigin;
-			{ let _sw10 = (pl.xz + (((dx.xz * spd) * ((1.0 - exp(-3.52)))) * 1.4)); pl = vec3f(_sw10.x, pl.y, _sw10.y); }
-			pl.y = (fl + (h1 * 0.03));
+			{ let _sw12 = (pl.xz + (((dx.xz * spd) * ((1.0 - exp(-3.52)))) * 1.4)); pl = vec3f(_sw12.x, pl.y, _sw12.y); }
+			pl.y = gy;
 			var pf: vec3f = aOrigin;
-			{ let _sw11 = (pf.xz + (((dx.xz * spd) * ((1.0 - exp((-2.2 * tau))))) * 1.4)); pf = vec3f(_sw11.x, pf.y, _sw11.y); }
-			var yf: f32 = max((fl + (h1 * 0.03)), ((aOrigin.y + (vy0 * tau)) - ((2.1 * tau) * tau)));
-			pf.y = mix(yf, pl.y, smoothstep(0.85, 1.0, te));
+			{ let _sw13 = (pf.xz + (((dx.xz * spd) * ((1.0 - exp((-2.2 * tau))))) * 1.4)); pf = vec3f(_sw13.x, pf.y, _sw13.y); }
+			var g2: f32 = 2.1;
+			var disc: f32 = ((vy0 * vy0) + ((4.0 * g2) * max((aOrigin.y - gy), 0.0)));
+			var tL: f32 = (((vy0 + sqrt(disc))) / ((2.0 * g2)));
+			var yb: f32 = ((aOrigin.y + (vy0 * tau)) - ((g2 * tau) * tau));
+			if ((tau > tL)) {
+				var vI: f32 = (vy0 - ((2.0 * g2) * tL));
+				var v1: f32 = (-0.3 * vI);
+				var tb: f32 = (tau - tL);
+				yb = select(gy, ((gy + (v1 * tb)) - ((g2 * tb) * tb)), (tb < (v1 / g2)));
+			}
+			pf.y = mix(max(yb, gy), gy, smoothstep(0.9, 1.0, te));
 			var tg: f32 = clamp((((lt - 0.58)) / 0.42), 0.0, 1.0);
 			var eg: f32 = ((tg * tg) * ((3.0 - (2.0 * tg))));
 			var c2: vec3f = (((((pl + aTarget)) * 0.5) + vec3f(0.0, (0.5 + (0.6 * h2)), 0.0)) + ((cn * 0.2) * sc));
@@ -754,12 +816,6 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			(*base) = hyperWarp(q4, fr.uCen, (1.3 * max(sc, 0.15)), select(0.0, 1.0, (fr.uMorphS.w > 1.05)), ((2.4 * sin((e * 3.1415926535))) * ((0.85 + (0.15 * hash11((aIdx * 2.7)))))), &hw4);
 			gHypW = hw4;
 			gHypF = max(gHypF, smoothstep(0.55, 0.97, hw4));
-		}
-		if ((sty == 1)) {
-			var ang: f32 = (((sin((e * 3.1415926535)) * fr.uMorphS.w) * 6.2831853) * ((0.6 + (0.4 * hash11((aIdx * 1.3))))));
-			var cs: f32 = cos(ang);
-			var sn: f32 = sin(ang);
-			{ let _sw12 = vec2f((((*base).x * cs) - ((*base).z * sn)), (((*base).x * sn) + ((*base).z * cs))); (*base) = vec3f(_sw12.x, (*base).y, _sw12.y); }
 		}
 		if ((sty == 7)) {
 			var co7: vec3f = (aOrigin - fr.uCen);
@@ -780,6 +836,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			} else {
 				(*base) = mix((fr.uCen + (d27 * R7)), aTarget, k3);
 			}
+			(*base) += (((normalize((((*base) - fr.uCen) + vec3f(1e-3))) * 0.05) * sin(((dot(d17, vec3f(5.0, 7.0, 3.0)) * 2.0) + (t * 3.0)))) * sin((clamp(e, 0.0, 1.0) * 3.1415926535)));
 		}
 		if ((sty == 8)) {
 			var ch8: f32 = hash11(dot(floor((((aOrigin - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));
@@ -805,6 +862,9 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 				(*base) = (fr.uCen + mix(fb, q9b, k3));
 			}
 		}
+	}
+	if (((fr.uMorph < 0.9999) && (fr.uMorphO.w > 0.001))) {
+		(*base).z += ((((((gDepth - 0.5)) * 2.0) * fr.uMorphO.w) * sin((morphEase(morphLocal(aOrigin, aTarget, aIdx)) * 3.1415926535))) * ((0.6 + (0.4 * hash11((aIdx * 4.1))))));
 	}
 	if ((fr.uDepth.x > 0.001)) {
 		(*base) = depthShape((*base));
@@ -844,18 +904,18 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var a: f32 = ((pos.y * tw) * 1.6);
 			var c: f32 = cos(a);
 			var s: f32 = sin(a);
-			{ let _sw13 = (mat2x2f(c, -s, s, c) * pos.xz); pos = vec3f(_sw13.x, pos.y, _sw13.y); }
+			{ let _sw14 = (mat2x2f(c, -s, s, c) * pos.xz); pos = vec3f(_sw14.x, pos.y, _sw14.y); }
 		} else if ((fr.uTwist.y < 1.5)) {
 			pos.x += (((y01t * y01t) * tw) * 0.9);
 			pos.y -= ((((y01t * y01t) * y01t) * tw) * 0.16);
 		} else if ((fr.uTwist.y < 2.5)) {
-			{ let _sw14 = (pos.xz * vec2f((1.0 + (((tw * 0.6) * ((0.5 - y01t))) * 2.0)))); pos = vec3f(_sw14.x, pos.y, _sw14.y); }
+			{ let _sw15 = (pos.xz * vec2f((1.0 + (((tw * 0.6) * ((0.5 - y01t))) * 2.0)))); pos = vec3f(_sw15.x, pos.y, _sw15.y); }
 		} else if ((fr.uTwist.y < 3.5)) {
 			var sw: f32 = sin(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z)))));
 			pos.x += ((sw * tw) * 0.2);
 			pos.z += ((cos(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z))))) * tw) * 0.12);
 		} else {
-			{ let _sw15 = (pos.xz * vec2f((1.0 + ((tw * 0.3) * sin(((y01t * 6.2831) - (t * ((1.2 + fr.uTwist.z))))))))); pos = vec3f(_sw15.x, pos.y, _sw15.y); }
+			{ let _sw16 = (pos.xz * vec2f((1.0 + ((tw * 0.3) * sin(((y01t * 6.2831) - (t * ((1.2 + fr.uTwist.z))))))))); pos = vec3f(_sw16.x, pos.y, _sw16.y); }
 		}
 	}
 	if ((fr.uWave.x > 0.001)) {
@@ -903,7 +963,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		pe = ((fr.uPulse.x * env) * 1.6);
 		if ((fr.uPulseP.x > 1.5)) {
 			pos.y *= (1.0 + (pe * 0.2));
-			{ let _sw16 = (pos.xz * vec2f((1.0 - (pe * 0.11)))); pos = vec3f(_sw16.x, pos.y, _sw16.y); }
+			{ let _sw17 = (pos.xz * vec2f((1.0 - (pe * 0.11)))); pos = vec3f(_sw17.x, pos.y, _sw17.y); }
 			pe = 0.0;
 		}
 	}
@@ -954,7 +1014,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			pos += (((((wv * dk) * dk) * 1.5) * sp) * sc);
 		} else if ((ds < 1.5)) {
 			pos.y += (((dk * dk) * ((0.7 + (0.5 * ch)))) * sc);
-			{ let _sw17 = (pos.xz + ((((vec2f(sin(((t * 1.5) + (ch * 6.0))), cos(((t * 1.3) + (ch * 5.0)))) * dk) * 0.1) * sc) + ((vec2f((fr.uDis.w * 0.5), 0.0) * dk) * sc))); pos = vec3f(_sw17.x, pos.y, _sw17.y); }
+			{ let _sw18 = (pos.xz + ((((vec2f(sin(((t * 1.5) + (ch * 6.0))), cos(((t * 1.3) + (ch * 5.0)))) * dk) * 0.1) * sc) + ((vec2f((fr.uDis.w * 0.5), 0.0) * dk) * sc))); pos = vec3f(_sw18.x, pos.y, _sw18.y); }
 		} else if ((ds < 2.5)) {
 			pos += ((((outd * dk) * 0.12) * sc) + vec3f(0.0, ((dk * 0.05) * sc), 0.0));
 		} else if ((ds < 3.5)) {
@@ -974,7 +1034,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var ang: f32 = (((dk * dk) * ((3.2 + (fr.uDis.w * 1.2)))) * sc);
 			var cs: f32 = cos(ang);
 			var sn: f32 = sin(ang);
-			{ let _sw18 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw18.x, q.y, _sw18.y); }
+			{ let _sw19 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw19.x, q.y, _sw19.y); }
 			q *= vec3f((1.0 - ((0.9 * dk) * dk)));
 			pos = ((fr.uCen + q) + vec3f(0.0, (((dk * dk) * 0.45) * sc), 0.0));
 		} else {
@@ -1003,7 +1063,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		gGrowE = ((gGrow * ((1.0 - gGrow))) * 4.0);
 		pos += (((rad * gGrowE) * fr.uGrowP.x) * 0.12);
 		var yG: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
-		{ let _sw19 = (pos.xz + ((((vec2f(sin(((t * 1.2) + (yG * 5.0))), cos(((t * 0.9) + (yG * 4.0)))) * 0.018) * fr.uGrowP.y) * gGrow) * ((0.3 + yG)))); pos = vec3f(_sw19.x, pos.y, _sw19.y); }
+		{ let _sw20 = (pos.xz + ((((vec2f(sin(((t * 1.2) + (yG * 5.0))), cos(((t * 0.9) + (yG * 4.0)))) * 0.018) * fr.uGrowP.y) * gGrow) * ((0.3 + yG)))); pos = vec3f(_sw20.x, pos.y, _sw20.y); }
 	}
 	{
 		for (var ji: i32 = 0; (ji < 3); ji++) {
@@ -1120,7 +1180,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var q: vec3f = (pos - fr.uCen);
 			var cs: f32 = cos(ang);
 			var sn: f32 = sin(ang);
-			{ let _sw20 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw20.x, q.y, _sw20.y); }
+			{ let _sw21 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw21.x, q.y, _sw21.y); }
 			pos = (fr.uCen + q);
 			cn = vec3f(0.0);
 		} else if ((fr.uCurlP.z > 0.5)) {
@@ -1315,7 +1375,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		var sq: vec2f = pPhys.xz;
 		var cs: f32 = cos(spinA);
 		var sn: f32 = sin(spinA);
-		{ let _sw21 = vec2f(((sq.x * cs) - (sq.y * sn)), ((sq.x * sn) + (sq.y * cs))); pPhys = vec3f(_sw21.x, pPhys.y, _sw21.y); }
+		{ let _sw22 = vec2f(((sq.x * cs) - (sq.y * sn)), ((sq.x * sn) + (sq.y * cs))); pPhys = vec3f(_sw22.x, pPhys.y, _sw22.y); }
 		var strength: f32 = min(1.0, fr.uPhysics.x);
 		var target_: vec3f = mix(pos, pPhys, strength);
 		if ((fr.uAsm > 0.0)) {
@@ -1347,7 +1407,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 					var ca: f32 = cos(a);
 					var sa: f32 = sin(a);
 					var q: vec2f = (pos.xz - fr.uHand[i].xz);
-					{ let _sw22 = (fr.uHand[i].xz + vec2f(((q.x * ca) - (q.y * sa)), ((q.x * sa) + (q.y * ca)))); pos = vec3f(_sw22.x, pos.y, _sw22.y); }
+					{ let _sw23 = (fr.uHand[i].xz + vec2f(((q.x * ca) - (q.y * sa)), ((q.x * sa) + (q.y * ca)))); pos = vec3f(_sw23.x, pos.y, _sw23.y); }
 					pos.y += (((f * hs) * fr.uHandP.x) * 0.12);
 				} else {
 					pos += ((((normalize((hd + vec3f(1e-3))) * f) * hs) * fr.uHandP.x) * 0.75);

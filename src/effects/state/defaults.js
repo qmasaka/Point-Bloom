@@ -10,7 +10,7 @@ export function defaultState() {
 		count: 150000,
 		layers,
 		media: { pts: 80000, relief: 'bright', depth: 0.5 },
-		morphCfg: { mode: 'manual', interval: 4, time: 2.6, order: 'seq', weight: 'auto', style: 'flow', scatter: 0.8, stagger: 0.35, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 },
+		morphCfg: { mode: 'manual', interval: 4, time: 2.6, order: 'seq', weight: 'auto', style: 'flow', scatter: 0.8, stagger: 0.35, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4, band: 'bass', amode: 'gate', lo: 0.05, hi: 0.3, thr: 0.5, atk: 0.08, rel: 0.6, react: 0.6, gap: 1, lift: 0 },
 		mask: { mode: 'none', size: 0.5, soft: 0.4, speed: 0.5, invert: false, show: false },
 		look: {
 			bg: '',

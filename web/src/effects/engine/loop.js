@@ -96,7 +96,7 @@ u.uMorph.value = this.morph;
 {
 const mcf = st.morphCfg;
 u.uMorphS.value.set(Math.max(0, MORPH_STYLES.findIndex((x) => x.id === mcf.style)), mcf.scatter, mcf.stagger, mcf.turns);
-u.uMorphO.value.set(Math.max(0, MORPH_SORTS.findIndex((x) => x[0] === mcf.sort)), Math.max(0, MORPH_EASES.findIndex((x) => x[0] === mcf.ease)), mcf.glow, 0);
+u.uMorphO.value.set(Math.max(0, MORPH_SORTS.findIndex((x) => x[0] === mcf.sort)), Math.max(0, MORPH_EASES.findIndex((x) => x[0] === mcf.ease)), mcf.glow, mcf.lift || 0);
 }
 const pset = this.app.settings.point;
 u.uSize.value = pset.size;
@@ -426,12 +426,8 @@ this._slitTick(rgbNew, u);
 this._sortTick(rgbNew, u);
 {
 const mc = st.morphCfg;
-const beatNew = this.levels.beat > 0.9 && (this._bPrev || 0) <= 0.9;
-this._bPrev = this.levels.beat;
-if ((this.playlist?.length || 0) > 1 && mc.mode !== 'manual' && !this.morphing) {
-const since = this._time - (this._lastMorph || 0);
-if ((mc.mode === 'timer' && since > mc.interval) || (mc.mode === 'beat' && beatNew && since > Math.min(mc.interval, 3))) this.morphNext();
-}
+if (mc.mode === 'timer' && (this.playlist?.length || 0) > 1 && !this.morphing && this._time - (this._lastMorph || 0) > mc.interval) this.morphNext();
+this._morphMusicTick(dt);
 }
 {
 const D = L.dissolve;

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { fitCount, mortonSort, normalizeCloud } from '../shapes/cloud-utils.js';
 import { generateShapePoints } from '../shapes/shapes.js';
+import { depthToGrid, lumaDepth } from '../input/depth-ai.js';
 
 /** Источник облака точек: модель, фото, видео, формы, морфинг, число частиц. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class SourcePart {
@@ -87,19 +88,17 @@ export class SourcePart {
 		this.emit();
 	}
 
-	morphNext() {
+	/** Номер следующей формы в списке по выбранному порядку: по кругу, туда и обратно или случайно */
+	_pickNext() {
 		const list = this.playlist || [];
-		if (this._morphHold) {
-			// переход стоит на ползунке: кнопка доводит его до конца
-			this._morphHold = false;
-			return;
-		}
-		if (list.length < 2 || !this.active || this.morphing) return;
-		let i;
-		if (this.state.morphCfg.order === 'random') {
+		const order = this.state.morphCfg.order;
+		if (order === 'random') {
+			let i;
 			do i = Math.floor(Math.random() * list.length);
 			while (i === this._pi && list.length > 1);
-		} else if (this.state.morphCfg.order === 'pingpong') {
+			return i;
+		}
+		if (order === 'pingpong') {
 			// вперёд до конца списка, потом назад до начала
 			let d = this._pd || 1;
 			let j = (this._pi ?? -1) + d;
@@ -108,8 +107,20 @@ export class SourcePart {
 				j = (this._pi ?? 0) + d;
 			}
 			this._pd = d;
-			i = Math.max(0, Math.min(list.length - 1, j));
-		} else i = ((this._pi ?? -1) + 1) % list.length;
+			return Math.max(0, Math.min(list.length - 1, j));
+		}
+		return ((this._pi ?? -1) + 1) % list.length;
+	}
+
+	morphNext() {
+		const list = this.playlist || [];
+		if (this._morphHold) {
+			// переход стоит на ползунке: кнопка доводит его до конца
+			this._morphHold = false;
+			return;
+		}
+		if (list.length < 2 || !this.active || this.morphing) return;
+		const i = this._pickNext();
 		this._pi = i;
 		this._lastMorph = this._time;
 		this.setSource(list[i]).catch(() => {});
@@ -142,8 +153,7 @@ export class SourcePart {
 			const list = this.playlist || [];
 			if (list.length < 2 || this.morphing || this._scrubBusy || v <= 0) return;
 			this._scrubBusy = true;
-			const from = this._pi ?? -1;
-			const next = this.state.morphCfg.order === 'random' ? list[Math.floor(Math.random() * list.length)] : list[(from + 1) % list.length];
+			const next = list[this._pickNext()];
 			this._morphHold = true;
 			try {
 				await this.setSource(next);
@@ -232,6 +242,100 @@ export class SourcePart {
 			}
 			await new Promise((r) => setTimeout(r, 30));
 		}
+	}
+
+	/**
+	 * Морфинг под музыку. «Скачок»: когда выбранная полоса частот выше порога, форма переходит к следующей (не чаще, чем раз в «паузу»).
+	 * «Плавно»: форма идёт за громкостью, как ползунок: тихо это прежняя форма, громко это следующая. Дошла до конца: форма закрепляется,
+	 * и после тишины (громкость упала) начинается путь к следующей.
+	 */
+	_morphMusicTick(dt) {
+		const mc = this.state.morphCfg;
+		// старое значение «По биту» теперь это «По музыке» с полосой «Удар»
+		if (mc.mode === 'beat') Object.assign(mc, { mode: 'music', band: 'beat', amode: 'gate' });
+		const S = (this._mf ||= { open: false, p: 0, holding: false, busy: false, cool: false });
+		const on = mc.mode === 'music' && mc.band !== 'none' && this.active && (this.playlist?.length || 0) >= 2;
+		if (!on || mc.amode !== 'amp') {
+			// плавное следование выключили: начатый переход доезжает до конца сам
+			if (S.holding) {
+				S.holding = false;
+				if (this._morphHold) this._morphHold = false;
+			}
+			S.p = 0;
+		}
+		if (!on) return;
+		const v = this.soundActive ? this._bandLevel(mc) : 0;
+		if (mc.amode !== 'amp') {
+			const hot = v > mc.thr;
+			const rise = hot && !S.open;
+			S.open = S.open ? v > mc.thr * 0.8 : hot;
+			if (rise && !this.morphing && this._time - (this._lastMorph || 0) >= (mc.gap ?? 1)) this.morphNext();
+			return;
+		}
+		// плавно: громкость, сглаженная по скорости отклика, становится ходом перехода
+		const gain = 1 / Math.max(0.2, 1 - (mc.react ?? 0.6) * 0.8);
+		const target = Math.max(0, Math.min(1, v * gain));
+		const tc = Math.max(0.01, target > S.p ? mc.atk : mc.rel);
+		S.p += (target - S.p) * (1 - Math.exp(-Math.min(dt, 0.1) / tc));
+		if (!S.holding) {
+			if (this.morphing) return;
+			if (S.cool) {
+				if (S.p < 0.15) S.cool = false;
+				else return;
+			}
+			if (S.p > 0.06 && !S.busy) {
+				S.busy = true;
+				this.morphScrub(S.p)
+					.then(() => {
+						S.holding = !!(this._morphHold && this.morphing);
+					})
+					.catch(() => {})
+					.finally(() => {
+						S.busy = false;
+					});
+			}
+			return;
+		}
+		if (!(this._morphHold && this.morphing)) {
+			S.holding = false;
+			return;
+		}
+		this.morph = Math.min(1, S.p);
+		if (S.p >= 0.985) {
+			this._morphHold = false;
+			this.morph = 1;
+			S.holding = false;
+			S.cool = true;
+		}
+	}
+
+	/** Карта глубины для точек этого видео или фото (1 ближе всего): нейросетевая, если она уже построена для него, иначе быстрая по яркости */
+	_mediaDepth(pm) {
+		const D = this._D;
+		const key = pm.rec || pm.el;
+		let map = null;
+		if (D && D.key === key && D.proc && D.mapSrc === 'ai') map = D.proc;
+		if (!map) map = lumaDepth(pm.sample(), pm.cols, pm.rows);
+		const out = new Float32Array(pm.count);
+		depthToGrid(map, pm.cols, pm.rows, out);
+		return out;
+	}
+
+	/** Перед переходом, где есть видео или фото: порядок и выдавливание по глубине берут её из aDepth */
+	_morphDepthSetup(outE, inE) {
+		const mc = this.state.morphCfg;
+		if (!outE && !inE) return;
+		if (!(mc.sort === 'depthnear' || mc.sort === 'depthfar' || (mc.lift || 0) > 0.001)) return;
+		const a = this.geometry?.attributes.aDepth;
+		if (!a) return;
+		const parts = [outE, inE].filter((e) => e && e.pm.ready && e.pm.count === a.array.length).map((e) => this._mediaDepth(e.pm));
+		if (!parts.length) return;
+		for (let i = 0; i < a.array.length; i++) {
+			let sum = 0;
+			for (const p of parts) sum += p[i];
+			a.array[i] = sum / parts.length;
+		}
+		a.needsUpdate = true;
 	}
 
 	/** Переход к другому видео или фото закончился или был прерван новым: у уходящего ставим паузу, у пришедшего запускаем, если оно играло */
@@ -379,6 +483,7 @@ export class SourcePart {
 		const outE = prevKey && prevKey.startsWith('media') && prevKey !== key ? this.app.media.entry(prevKey) : null;
 		if (outE) outE.want = outE.pm.playing;
 		this._mm = outE || isMedia ? { out: outE, in: isMedia && prevKey !== key ? mEntry : null } : null;
+		this._morphDepthSetup(outE, isMedia && prevKey !== key ? mEntry : null);
 		this.morph = 0;
 		this.morphing = true;
 		this._settleOn = false;

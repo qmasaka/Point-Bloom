@@ -264,6 +264,9 @@ float morphLocal(vec3 A, vec3 B, float idx) {
 	else if (so == 2) ord = (1.0 - yN) * 0.85 + h * 0.15;
 	else if (so == 3) ord = clamp(length(A) / 1.4, 0.0, 1.0) * 0.85 + h * 0.15;
 	else if (so == 4) ord = clamp((A.x + 1.2) / 2.4, 0.0, 1.0) * 0.85 + h * 0.15;
+	// по карте глубины видео или фото (gDepth: 1 ближе всего): точки уходят слоями, как будто кадр режут по глубине
+	else if (so == 5) ord = (1.0 - gDepth) * 0.85 + h * 0.15;
+	else if (so == 6) ord = gDepth * 0.85 + h * 0.15;
 	float sg = uMorphS.z;
 	return clamp(uMorph * (1.0 + sg) - ord * sg, 0.0, 1.0);
 }
@@ -540,33 +543,101 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		int sty = int(uMorphS.x + 0.5);
 		vec3 mid = (aOrigin + aTarget) * 0.5;
 		vec3 cn = curlNoise(mid * 1.8 + vec3(0.0, t * 0.3, 0.0));
+		float hA = hash11(aIdx * 5.31);
+		float hB = hash11(aIdx * 7.77);
+		float hC = hash11(aIdx * 2.13);
+		float flightK = sin(e * PI);
+		// у «Течения», «Вихря» и «Сканера» путь это дуга через опорную точку; остальные виды ниже считают свой путь сами
 		vec3 ctrl = mid + cn * sc * 0.9;
-		vec3 rdir = normalize(mid + vec3(1e-3));
-		if (sty == 1) ctrl = mid + normalize(vec3(-mid.z, 0.0, mid.x) + vec3(1e-3)) * sc * 0.9;
-		else if (sty == 2) ctrl = mid + rdir * sc * 1.6 + cn * sc * 0.4;
-		else if (sty == 3) ctrl = mid + cn * sc * 0.3;
-		else if (sty == 4) ctrl = aOrigin + vec3(0.0, 0.9 * sc, 0.0) + cn * sc * 0.8;
-		else if (sty == 5) ctrl = vec3(mid.x, min(aOrigin.y, aTarget.y) - 1.1 * sc, mid.z) + cn * sc * 0.25;
+		if (sty == 3) ctrl = mid + cn * sc * 0.3;
 		float om = 1.0 - e;
 		base = om * om * aOrigin + 2.0 * om * e * ctrl + e * e * aTarget;
+		if (sty == 0) {
+			// течение: точки несёт живая жидкость, два масштаба вихрей (крупные завитки и мелкие нити), сильнее всего в середине пути; соседние точки текут вместе
+			float fq = pow(flightK, 1.2);
+			vec3 tb1 = curlNoise(base * 1.35 + vec3(0.0, 0.0, t * 0.35));
+			vec3 tb2 = curlNoise(base * 3.2 - vec3(t * 0.55, 0.0, 0.0));
+			base += (tb1 * 0.5 + tb2 * 0.18) * sc * fq;
+		}
+		if (sty == 1) {
+			// вихрь: форма закручивается воронкой. Ближе к оси угол больше (внутри быстрее), по пути форма сжимается к оси и точки чуть поднимаются, потом всё раскручивается
+			vec2 vxz = base.xz - uCen.xz;
+			float vr = length(vxz);
+			float vang = sin(e * PI) * uMorphS.w * 6.2831853 * (0.7 + 0.3 * hash11(aIdx * 1.3)) * pow(1.0 / (0.32 + vr), 0.5);
+			float vcs = cos(vang);
+			float vsn = sin(vang);
+			vxz = vec2(vxz.x * vcs - vxz.y * vsn, vxz.x * vsn + vxz.y * vcs);
+			vxz *= 1.0 - 0.38 * flightK * smoothstep(0.0, 1.1, vr);
+			base.xz = uCen.xz + vxz;
+			base.y += (hB - 0.3) * 0.35 * sc * flightK * flightK;
+		}
+		if (sty == 3) {
+			// сканер: на фронте точки на миг «оцифровываются» (липнут к сетке), дрожат и светятся, за фронтом уже новая форма
+			float band = smoothstep(0.0, 0.3, lt) * (1.0 - smoothstep(0.6, 1.0, lt));
+			vec3 sq = (floor((base - uCen) * 20.0) + 0.5) / 20.0 + uCen;
+			base = mix(base, sq, band * 0.8);
+			base += (vec3(hA, hB, hC) - 0.5) * 0.045 * band;
+		}
+		if (sty == 4) {
+			// пыль: старая форма поднимается облаком (быстро в начале, потом сопротивление воздуха), по высоте всё шире расползается; новая медленно оседает из него
+			float H = (0.45 + 0.85 * hA) * sc;
+			vec3 cloud = aOrigin + vec3(0.0, H, 0.0) + (cn * (0.5 + 0.7 * hB) + (vec3(hA, hC, hB) - 0.5) * 0.45) * sc * 0.8;
+			float k1 = clamp(e / 0.5, 0.0, 1.0);
+			float k2 = clamp((e - 0.5) / 0.5, 0.0, 1.0);
+			float u1 = 1.0 - pow(1.0 - k1, 2.4);
+			float u2 = 1.0 - pow(1.0 - k2, 2.0);
+			vec3 p1 = mix(aOrigin, cloud, u1) + curlNoise(aOrigin * 2.0 + vec3(0.0, t * 0.4, 0.0)) * 0.12 * sc * sin(k1 * PI);
+			vec3 p2 = mix(cloud, aTarget, u2) + curlNoise(cloud * 1.5 + vec3(t * 0.3, 0.0, 0.0)) * 0.1 * sc * sin(k2 * PI) * (1.0 - k2);
+			base = e < 0.5 ? p1 : p2;
+		}
+		if (sty == 5) {
+			// осыпание: точки падают с ускорением и скользят в кучу на полу (конус, как у песка), потом из кучи вырастает новая форма
+			float fl5 = uYR.x - 0.02;
+			float R5 = 0.55 + 0.35 * sc;
+			float an5 = hA * 6.2831853;
+			float rr5 = sqrt(hB) * R5;
+			float hh5 = pow(max(0.0, 1.0 - rr5 / R5), 0.85) * 0.85 * (0.7 + 0.3 * hC);
+			vec3 heap = vec3(uCen.x + cos(an5) * rr5, fl5 + hh5, uCen.z + sin(an5) * rr5);
+			float k1 = clamp(e / 0.5, 0.0, 1.0);
+			float k2 = clamp((e - 0.5) / 0.5, 0.0, 1.0);
+			float fall = k1 * k1;
+			float slide = 1.0 - pow(1.0 - k1, 2.0);
+			vec3 p1 = vec3(mix(aOrigin.x, heap.x, slide), mix(aOrigin.y, heap.y, fall), mix(aOrigin.z, heap.z, slide));
+			p1.xz += (vec2(hA, hC) - 0.5) * 0.06 * sin(k1 * PI);
+			float gr = k2 * k2 * (3.0 - 2.0 * k2);
+			vec3 p2 = mix(heap, aTarget, gr);
+			p2.y += 0.3 * sc * sin(k2 * PI) * (0.4 + hA);
+			p2 += cn * 0.12 * sin(k2 * PI);
+			base = e < 0.5 ? p1 : p2;
+		}
 		if (sty == 2) {
-			// взрыв: частицы разлетаются, падают на пол и лежат без отскока, затем поднимаются дугой в новую форму
+			// взрыв: частицы разлетаются по баллистике с сопротивлением, падают на пол, один раз подскакивают и лежат, затем поднимаются дугой в новую форму
 			float fl = uYR.x - 0.04;
-			float h1 = hash11(aIdx * 5.31);
-			float h2 = hash11(aIdx * 7.77);
-			float h3 = hash11(aIdx * 2.13);
+			float h1 = hA;
+			float h2 = hB;
+			float h3 = hC;
 			vec3 dx = normalize(vec3(aOrigin.x, 0.0, aOrigin.z) + vec3(h1 - 0.5, 0.0, h2 - 0.5) * 0.9 + vec3(1e-3, 0.0, 0.0));
 			float spd = (0.35 + h3 * 1.1) * sc;
 			float vy0 = (0.5 + h2 * 1.3) * sc;
 			float te = clamp(lt / 0.45, 0.0, 1.0);
 			float tau = te * 1.6;
+			float gy = fl + h1 * 0.03;
 			vec3 pl = aOrigin;
 			pl.xz += dx.xz * spd * (1.0 - exp(-3.52)) * 1.4;
-			pl.y = fl + h1 * 0.03;
+			pl.y = gy;
 			vec3 pf = aOrigin;
 			pf.xz += dx.xz * spd * (1.0 - exp(-2.2 * tau)) * 1.4;
-			float yf = max(fl + h1 * 0.03, aOrigin.y + vy0 * tau - 2.1 * tau * tau);
-			pf.y = mix(yf, pl.y, smoothstep(0.85, 1.0, te));
+			float g2 = 2.1;
+			float disc = vy0 * vy0 + 4.0 * g2 * max(aOrigin.y - gy, 0.0);
+			float tL = (vy0 + sqrt(disc)) / (2.0 * g2);
+			float yb = aOrigin.y + vy0 * tau - g2 * tau * tau;
+			if (tau > tL) {
+				float vI = vy0 - 2.0 * g2 * tL;
+				float v1 = -0.3 * vI;
+				float tb = tau - tL;
+				yb = tb < v1 / g2 ? gy + v1 * tb - g2 * tb * tb : gy;
+			}
+			pf.y = mix(max(yb, gy), gy, smoothstep(0.9, 1.0, te));
 			float tg = clamp((lt - 0.58) / 0.42, 0.0, 1.0);
 			float eg = tg * tg * (3.0 - 2.0 * tg);
 			vec3 c2 = (pl + aTarget) * 0.5 + vec3(0.0, 0.5 + 0.6 * h2, 0.0) + cn * 0.2 * sc;
@@ -581,12 +652,6 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			base = hyperWarp(q4, uCen, 1.3 * max(sc, 0.15), uMorphS.w > 1.05 ? 1.0 : 0.0, 2.4 * sin(e * PI) * (0.85 + 0.15 * hash11(aIdx * 2.7)), hw4);
 			gHypW = hw4;
 			gHypF = max(gHypF, smoothstep(0.55, 0.97, hw4));
-		}
-		if (sty == 1) {
-			float ang = sin(e * PI) * uMorphS.w * 6.2831853 * (0.6 + 0.4 * hash11(aIdx * 1.3));
-			float cs = cos(ang);
-			float sn = sin(ang);
-			base.xz = vec2(base.x * cs - base.z * sn, base.x * sn + base.z * cs);
 		}
 		if (sty == 7) {
 			// через сферу: форма стягивается в оболочку, оболочка перетекает в направления новой формы и раскрывается ею
@@ -604,6 +669,8 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			if (e < 0.35) base = mix(aOrigin, uCen + d17 * R7, k1);
 			else if (e < 0.65) base = uCen + normalize(mix(d17, d27, k2) + vec3(1e-3)) * R7;
 			else base = mix(uCen + d27 * R7, aTarget, k3);
+			// по оболочке бегут волны, как по поверхности капли
+			base += normalize(base - uCen + vec3(1e-3)) * 0.05 * sin(dot(d17, vec3(5.0, 7.0, 3.0)) * 2.0 + t * 3.0) * sin(clamp(e, 0.0, 1.0) * PI);
 		}
 		if (sty == 8) {
 			// кубики: блоки точек подпрыгивают и уходят вместе, каждый блок в свой момент
@@ -628,6 +695,8 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			else base = uCen + mix(fb, q9b, k3);
 		}
 	}
+	// выдавливание по карте глубины видео или фото в пути: ближние части кадра летят к зрителю, дальние уходят назад, поэтому кадр распадается на слои
+	if (uMorph < 0.9999 && uMorphO.w > 0.001) base.z += (gDepth - 0.5) * 2.0 * uMorphO.w * sin(morphEase(morphLocal(aOrigin, aTarget, aIdx)) * PI) * (0.6 + 0.4 * hash11(aIdx * 4.1));
 	if (uDepth.x > 0.001) base = depthShape(base);
 	vec3 rad = normalize(base + vec3(1e-4));
 	// у плоских источников (фото, видео, блок кадров) направление «наружу» это взгляд на кадр, иначе волны и импульсы лишь двигают картинку в её плоскости и почти не видны

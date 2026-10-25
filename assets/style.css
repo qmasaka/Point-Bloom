@@ -6921,3 +6921,37 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 	background: var(--accent);
 	color: var(--accent-ink);
 }
+
+/* переключатели вариантов в узкой панели: если подписи не помещаются в одну строку, кнопки переносятся, а не наезжают друг на друга */
+.seg {
+	flex-wrap: wrap;
+	row-gap: 2px;
+}
+.seg-btn {
+	flex: 1 1 0;
+	min-width: max-content;
+}
+.seg-wrap .seg-btn {
+	flex: 1 0 30%;
+}
+.chip-split {
+	max-width: 100%;
+	min-width: 0;
+}
+.chip-split .chip-btn {
+	min-width: 0;
+	max-width: 100%;
+	white-space: nowrap;
+}
+.chip-name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.morph-music {
+	display: grid;
+	gap: 6px;
+}
+.morph-music[hidden] {
+	display: none;
+}

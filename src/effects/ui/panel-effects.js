@@ -231,7 +231,7 @@ export function createEffectsPanel(app, root, engine) {
 			const k = picked.indexOf(f.key);
 			const on = k >= 0;
 			const b = h('button', { type: 'button', class: 'chip-btn' + (on ? ' is-active' : ''), 'data-tip': on ? 'Участвует в морфинге. Нажмите, чтобы убрать' : 'Нажмите, чтобы добавить в морфинг' },
-				h('span', { class: 'ic-wrap', html: icon(f.icon, 13) }), f.name, on ? h('b', { class: 'chip-n' }, String(k + 1)) : '');
+				h('span', { class: 'ic-wrap', html: icon(f.icon, 13) }), h('span', { class: 'chip-name' }, f.name), on ? h('b', { class: 'chip-n' }, String(k + 1)) : '');
 			b.addEventListener('click', () => {
 				const at = picked.indexOf(f.key);
 				if (at >= 0) picked.splice(at, 1);
@@ -252,6 +252,7 @@ export function createEffectsPanel(app, root, engine) {
 		morphNote.hidden = true;
 		morphHint.textContent = has ? '' : 'Отметьте минимум две формы: модели, видео или готовые фигуры.';
 		morphSettings.hidden = !has;
+		liftRow.hidden = !picked.some((k) => k === 'media' || k.startsWith('media:'));
 		formsSig = formsSigNow();
 	};
 	const morphHint = h('div', { class: 'field-hint' });
@@ -268,11 +269,14 @@ export function createEffectsPanel(app, root, engine) {
 			syncMorph();
 		},
 	});
-	const morphMode = segmented({ cls: 'seg-tight', options: [{ value: 'manual', label: 'Кнопкой' }, { value: 'beat', label: 'По биту' }, { value: 'timer', label: 'По таймеру' }], value: mc.mode, onChange: (v) => { mc.mode = v; save(); syncMorph(); } });
+	const morphMode = segmented({ cls: 'seg-tight', options: [{ value: 'manual', label: 'Кнопкой' }, { value: 'timer', label: 'По таймеру' }, { value: 'music', label: 'По музыке' }], value: mc.mode === 'beat' ? 'music' : mc.mode, onChange: (v) => { mc.mode = v; save(); syncMorph(); } });
 	const morphOrder = segmented({ cls: 'seg-tight', options: [{ value: 'seq', label: 'По кругу' }, { value: 'pingpong', label: 'Туда и обратно' }, { value: 'random', label: 'Случайно' }], value: mc.order, onChange: (v) => { mc.order = v; save(); } });
 	// переход вручную: ползунок ведёт форму к следующей в списке, на половине можно остановиться и получить обе формы вперемешку
 	const morphScrub = slider({ noNorm: true, min: 0, max: 100, step: 1, value: 0, digits: 0, unit: '%', onInput: (v) => engine.morphScrub(v / 100), onChange: (v) => { engine.morphScrubEnd(); if (v >= 100) setTimeout(() => morphScrub.set(0), 250); } });
-	const morphInt = slider({ min: 1, max: 20, step: 0.5, value: mc.interval, digits: 1, unit: ' с', onInput: (v) => { mc.interval = v; }, onChange: save });
+	const morphInt = slider({ noNorm: true, min: 1, max: 20, step: 0.5, value: mc.interval, digits: 1, unit: ' с', onInput: (v) => { mc.interval = v; }, onChange: save });
+	const morphLift = slider({ min: 0, max: 1.5, step: 0.05, value: mc.lift || 0, digits: 2, onInput: (v) => { mc.lift = v; }, onChange: save });
+	// всё, что настраивает морфинг под музыку, собирается ниже, когда готов живой индикатор уровня
+	const morphMusic = h('div', { class: 'sec-body morph-music', style: { padding: 0 } });
 	const morphTime = slider({ min: 0.4, max: 8, step: 0.1, value: mc.time, digits: 1, unit: ' с', onInput: (v) => { mc.time = v; }, onChange: save });
 	const morphScatter = slider({ min: 0, max: 2, step: 0.05, value: mc.scatter, digits: 2, onInput: (v) => { mc.scatter = v; }, onChange: save });
 	const morphStagger = slider({ min: 0, max: 3, step: 0.05, value: mc.stagger, digits: 2, onInput: (v) => { mc.stagger = v; }, onChange: save });
@@ -283,7 +287,9 @@ export function createEffectsPanel(app, root, engine) {
 	const morphWeight = segmented({ options: [{ value: 'auto', label: 'Как в модели', title: 'У модели с меньшим числом точек лишние гаснут, при переходе к большей недостающие проявляются' }, { value: 'equal', label: 'Поровну', title: 'У всех моделей одинаковое число точек' }], value: mc.weight, onChange: (v) => { mc.weight = v; save(); } });
 	const morphGo = button({ label: 'Следующая модель', icon: 'arrow-right', variant: 'primary', cls: 'btn-block', title: 'Запустить переход к следующей модели из списка', onClick: () => engine.morphNext() });
 	const turnsRow = field('Закрутка', morphTurns.el);
-	const intRow = field('Не чаще, чем раз в', morphInt.el);
+	const intRow = field('Каждые', morphInt.el);
+	const liftRow = field('Объём по глубине в пути', morphLift.el);
+	const scrubRow = field('Вручную', morphScrub.el);
 	const morphSettings = h('div', { class: 'sec-body', style: { padding: 0 } },
 		field('Вид перехода', styleSel.el, { wide: true }),
 		field('Длительность', morphTime.el),
@@ -293,11 +299,13 @@ export function createEffectsPanel(app, root, engine) {
 		field('Какие точки первыми', morphSort.el, { wide: true }),
 		field('Характер движения', morphEase.el, { wide: true }),
 		field('Вспышка в пути', morphGlow.el),
+		liftRow,
 		h('div', { class: 'fx-sub' }, 'Запуск'),
-		field('Вручную', morphScrub.el),
 		field('Переход', morphMode.el, { wide: true }),
-		field('Порядок моделей', morphOrder.el, { wide: true }),
 		intRow,
+		morphMusic,
+		scrubRow,
+		field('Порядок форм', morphOrder.el, { wide: true }),
 		field('Число точек у моделей', morphWeight.el, { wide: true }),
 		morphGo
 	);
@@ -308,7 +316,14 @@ export function createEffectsPanel(app, root, engine) {
 		styleSel.set(cur.id);
 		// у «Через 4D» больше одного оборота включает путь по расслоению Хопфа
 		turnsRow.hidden = cur.id !== 'swirl' && cur.id !== 'hyper';
-		intRow.hidden = mc.mode === 'manual';
+		if (mc.mode === 'beat') Object.assign(mc, { mode: 'music', band: 'beat', amode: 'gate' });
+		intRow.hidden = mc.mode !== 'timer';
+		morphMusic.hidden = mc.mode !== 'music';
+		// пока форма идёт за громкостью, ручной ползунок не нужен: ходом управляет музыка
+		scrubRow.hidden = mc.mode === 'music' && mc.amode === 'amp';
+		liftRow.hidden = !picked.some((k) => k === 'media' || k.startsWith('media:'));
+		morphLift.set(mc.lift || 0);
+		morphMusic.sync?.();
 		morphMode.set(mc.mode);
 		morphTime.set(mc.time);
 		morphScatter.set(mc.scatter);
@@ -387,6 +402,82 @@ export function createEffectsPanel(app, root, engine) {
 		};
 		requestAnimationFrame(tick);
 	})();
+
+	// ------------------------------------------------------------ морфинг под музыку: те же настройки звука, что у эффектов
+	{
+		const pct = (v) => Math.round(v * 100);
+		const tm = (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с');
+		const thr = slider({ noNorm: true, min: 0.05, max: 0.95, step: 0.01, value: mc.thr, format: (v) => String(pct(v)), onInput: (v) => { mc.thr = v; }, onChange: save });
+		const gap = slider({ noNorm: true, min: 0.2, max: 12, step: 0.1, value: mc.gap ?? 1, digits: 1, unit: ' с', onInput: (v) => { mc.gap = v; }, onChange: save });
+		const react = slider({ min: 0, max: 1, step: 0.05, value: mc.react ?? 0.6, format: (v) => pct(v) + '%', onInput: (v) => { mc.react = v; }, onChange: save });
+		const atk = slider({ log: true, min: 0.01, max: 2, step: 0.005, value: mc.atk, format: tm, onInput: (v) => { mc.atk = v; }, onChange: save });
+		const rel = slider({ log: true, min: 0.03, max: 4, step: 0.01, value: mc.rel, format: tm, onInput: (v) => { mc.rel = v; }, onChange: save });
+		const autoThr = button({
+			label: 'Подобрать порог по музыке',
+			icon: 'lightning',
+			variant: 'secondary',
+			cls: 'btn-block',
+			title: 'Порог ставится между фоновым уровнем и пиками за последние секунды',
+			onClick: () => {
+				const t = engine.autoThreshold(mc);
+				if (t === null) {
+					app.toast('Включите музыку или микрофон и подождите пару секунд: порог подбирается по тому, что слышит морфинг', 'info');
+					return;
+				}
+				mc.thr = t;
+				thr.set(t);
+				save();
+			},
+		});
+		const meter = levelMeter(mc, (v) => thr.set(v), save);
+		const band = segmented({
+			cls: 'seg-tight',
+			options: BANDS.filter((b) => ['bass', 'mid', 'high', 'beat'].includes(b.id)).map((b) => ({ value: b.id, label: b.label, title: b.title })),
+			value: mc.band === 'none' ? 'bass' : mc.band,
+			onChange: (v) => {
+				mc.band = v;
+				save();
+				meter.draw();
+			},
+		});
+		const mode = segmented({
+			cls: 'seg-tight',
+			options: [
+				{ value: 'gate', label: 'Скачок', title: 'Когда выбранные частоты громче порога, форма переходит к следующей' },
+				{ value: 'amp', label: 'Плавно', title: 'Форма идёт за громкостью: тихо это прежняя форма, громко это следующая' },
+			],
+			value: mc.amode === 'amp' ? 'amp' : 'gate',
+			onChange: (v) => {
+				mc.amode = v;
+				save();
+				morphMusic.sync();
+				syncMorph();
+			},
+		});
+		const note = h('div', { class: 'field-hint' });
+		const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Порог срабатывания', thr.el), autoThr, field('Не чаще, чем раз в', gap.el));
+		const ampBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Чувствительность', react.el), field('Отклик вверх', atk.el), field('Отклик вниз', rel.el));
+		morphMusic.append(field('Слушает', band.el, { wide: true }), meter.el, field('Как реагирует', mode.el, { wide: true }), gateBox, ampBox, note);
+		morphMusic.sync = () => {
+			if (mc.band === 'none' || mc.band === 'custom') mc.band = 'bass';
+			band.set(mc.band);
+			mode.set(mc.amode === 'amp' ? 'amp' : 'gate');
+			const amp = mc.amode === 'amp';
+			gateBox.hidden = amp;
+			ampBox.hidden = !amp;
+			thr.set(mc.thr);
+			gap.set(mc.gap ?? 1);
+			react.set(mc.react ?? 0.6);
+			atk.set(mc.atk);
+			rel.set(mc.rel);
+			note.textContent = amp
+				? 'Форма идёт за громкостью: тихо это прежняя форма, громко это следующая. Дошла до конца, закрепилась, и после затишья начинается путь к следующей.'
+				: 'Всплеск выбранных частот переключает форму на следующую.';
+			meter.draw();
+		};
+		morphMusic.sync();
+		syncMorph();
+	}
 
 	// ------------------------------------------------------------ слои
 	const cards = [];
