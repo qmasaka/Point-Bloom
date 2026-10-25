@@ -6707,10 +6707,17 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 	.ui-float .toolrail { top: calc(var(--m-top) + 54px); left: var(--m-gap); border-radius: 14px; padding: 4px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); box-shadow: var(--fxg-shadow); max-height: calc(var(--vh) - var(--m-top) - 54px - var(--sheet-h, 98px) - 72px); }
 	/* полоски между группами инструментов от края до края, как на компьютере */
 	.ui-float .rail-sep { width: auto; align-self: stretch; margin: 5px -4px; }
-	/* лист открыт и по высоте мало места: инструменты в две колонки обычного размера, без сжатия и прокрутки внутри колонки */
-	.ui-float:not(.fx-mode):not([data-sheet='min']) .toolrail { display: grid; grid-template-columns: repeat(2, auto); width: auto; gap: 2px; overflow: visible; max-height: none; }
-	.ui-float:not(.fx-mode):not([data-sheet='min']) .toolrail .btn-tool { flex: none; }
-	.ui-float:not(.fx-mode):not([data-sheet='min']) .rail-sep { grid-column: 1 / -1; margin: 4px -4px; }
+	/* колонка инструментов листается, если по высоте мало места: кнопки обычного размера (раньше они сжимались), прокрутка плавная и не уходит на сцену */
+	.ui-float .toolrail { overscroll-behavior: contain; scroll-snap-type: y proximity; scroll-padding: 4px; }
+	.ui-float .toolrail .btn-tool { flex: none; scroll-snap-align: start; }
+	/* ширина под кнопку 38 px: отступ выделенной кнопки до края колонки 4 px со всех сторон, скругления концентрические (14 = 10 + 4) */
+	.ui-float .toolrail { width: 48px; }
+	/* таймлайн анимации открыт: колонка кончается над ним, а не заходит под него */
+	.ui-float .workspace:has(.anim-bar:not([hidden])) .toolrail { max-height: calc(var(--vh) - var(--m-top) - 54px - var(--sheet-h, 98px) - 152px); }
+	/* таймлайн на телефоне: сверху кнопка, время и настройки клипа (прижаты вправо), снизу полоса перемотки во всю ширину */
+	.ui-float .anim-bar { padding: 6px 10px 8px 6px; row-gap: 4px; }
+	.ui-float .anim-bar .anim-settings { margin-left: auto; }
+	.ui-float .anim-bar .mb-seek { margin: 0 4px; }
 	.ui-float .vp-top-right { top: calc(var(--m-top) + 54px); right: var(--m-gap); }
 	/* лист раскрыт на весь экран: над ним остаётся узкая полоса сцены, инструменты и оси в ней не помещаются и прячутся */
 	.ui-float[data-sheet='full'] .toolrail, .ui-float[data-sheet='full'] .vp-top-right { opacity: 0; visibility: hidden; pointer-events: none; }
