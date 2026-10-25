@@ -173,6 +173,7 @@ emit() {
 this.app.bus.emit('fx');
 }
 _n() {
+if (this.pm.ready && (this.state.source === 'media' || (this.playlist || []).includes('media'))) return this.pm.count;
 const mp = this.modelProvider;
 if (mp && mp.kind() === 'cloud') return Math.max(1000, Math.min(this.state.count, mp.total()));
 return this.state.count;

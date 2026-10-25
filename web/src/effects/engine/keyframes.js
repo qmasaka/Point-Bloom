@@ -289,6 +289,7 @@ if (target && this.geometry) {
 const g = this.geometry;
 const t = g.attributes.aTarget;
 if (t && target.positions && target.positions.length === t.array.length) {
+this._morphTrackBackup = new Float32Array(t.array);
 t.array.set(target.positions);
 t.needsUpdate = true;
 this._morphTrackReady = true;
@@ -297,6 +298,19 @@ this._morphTrackReady = true;
 } catch (e) {
 } finally {
 this._morphTrackLoading = false;
+}
+}
+_releaseMorphTrack() {
+const t = this.geometry?.attributes.aTarget;
+if (t && this._morphTrackBackup && this._morphTrackBackup.length === t.array.length) {
+t.array.set(this._morphTrackBackup);
+t.needsUpdate = true;
+}
+this._morphTrackBackup = null;
+this._morphTrackReady = false;
+if (!this.morphing) {
+this.morph = 1;
+if (this.shared?.uMorph) this.shared.uMorph.value = 1;
 }
 }
 animLoadPreset(id) {

@@ -178,36 +178,63 @@ onChange: (v) => engine.setCount(v),
 });
 const countHint = h('div', { class: 'field-hint' });
 const addModel = button({ label: 'Добавить модель…', icon: 'folder-open', variant: 'secondary', cls: 'btn-block', title: 'Открыть модель, облако точек (PLY, PCD, XYZ) или архив и сразу использовать их здесь', onClick: () => app.ui.openFiles('add') });
+const addMedia = button({ label: 'Добавить видео или фото…', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Видео или фото станет формой из точек: к ней применяются все эффекты, и с ней можно делать морфинг. Видео или фото одно, новое заменит прежнее', onClick: () => app.ui.openFiles('media') });
 const modelNote = h('div', { class: 'field-hint' });
 const mc = st.morphCfg;
-const formsBox = h('div', { class: 'chip-row fx-forms' });
+const sceneRow = h('div', { class: 'chip-row fx-forms' });
+const shapeRow = h('div', { class: 'chip-row fx-forms' });
+const formsBox = h('div', { class: 'fx-forms-wrap' }, h('div', { class: 'fx-sub' }, 'Что в морфинге'), sceneRow, h('div', { class: 'fx-sub' }, 'Готовые фигуры'), shapeRow);
 const picked = [];
-let autoPicked = false;
+const seenForms = new Set();
+let formsSig = '';
+const formsSigNow = () => JSON.stringify([engine.uiForms().map((f) => f.key + f.name), picked, engine.curKey || engine.state.source]);
 const renderForms = () => {
-const list = engine.forms();
-for (let i = picked.length - 1; i >= 0; i--) if (!list.some((f) => f.key === picked[i])) picked.splice(i, 1);
-if (list.length >= 2 && !autoPicked && !picked.length) {
-autoPicked = true;
-list.forEach((o) => picked.push(o.key));
-engine.setPlaylist([...picked]);
+const list = engine.uiForms();
+let changed = false;
+for (let i = picked.length - 1; i >= 0; i--) {
+if (!list.some((f) => f.key === picked[i])) {
+picked.splice(i, 1);
+changed = true;
 }
-if (list.length < 2) autoPicked = false;
-formsBox.textContent = '';
+}
 for (const f of list) {
-const b = h('button', { type: 'button', class: 'chip-btn' + (picked.includes(f.key) ? ' is-active' : ''), 'data-tip': 'Участвует в морфинге. Порядок: как нажимали' }, f.name);
-b.addEventListener('click', () => {
+if (f.group === 'scene' && !seenForms.has(f.key)) {
+seenForms.add(f.key);
+if (!picked.includes(f.key)) {
+picked.push(f.key);
+changed = true;
+}
+}
+}
+if (changed) engine.setPlaylist([...picked]);
+const cur = engine.curKey || (engine.state.source === 'model' ? picked[0] : engine.state.source);
+for (const row of [sceneRow, shapeRow]) row.textContent = '';
+for (const f of list) {
 const k = picked.indexOf(f.key);
-if (k >= 0) picked.splice(k, 1);
+const on = k >= 0;
+const b = h('button', { type: 'button', class: 'chip-btn' + (on ? ' is-active' : ''), 'data-tip': on ? 'Участвует в морфинге. Нажмите, чтобы убрать' : 'Нажмите, чтобы добавить в морфинг' },
+h('span', { class: 'ic-wrap', html: icon(f.icon, 13) }), f.name, on ? h('b', { class: 'chip-n' }, String(k + 1)) : '');
+b.addEventListener('click', () => {
+const at = picked.indexOf(f.key);
+if (at >= 0) picked.splice(at, 1);
 else picked.push(f.key);
 engine.setPlaylist([...picked]);
 renderForms();
 });
-formsBox.append(b);
+const wrap = h('div', { class: 'chip-split' + (on ? ' is-on' : '') + (on && f.key === cur ? ' is-cur' : '') }, b);
+if (on && picked.length >= 2 && f.key !== cur) {
+const go = h('button', { type: 'button', class: 'chip-go', 'data-tip': 'Перейти к этой форме сейчас', html: icon('arrow-right', 12) });
+go.addEventListener('click', () => engine.morphTo(f.key));
+wrap.append(go);
 }
-const has = list.length >= 2;
-morphBox.hidden = !has;
-morphNote.hidden = has;
-morphHint.textContent = picked.length < 2 ? 'Отметьте минимум две модели, между которыми должен идти морфинг.' : '';
+(f.group === 'shape' ? shapeRow : sceneRow).append(wrap);
+}
+const has = picked.length >= 2;
+morphBox.hidden = false;
+morphNote.hidden = true;
+morphHint.textContent = has ? '' : 'Отметьте минимум две формы: модели, видео или готовые фигуры.';
+morphSettings.hidden = !has;
+formsSig = formsSigNow();
 };
 const morphHint = h('div', { class: 'field-hint' });
 const styleTiles = h('div', { class: 'shape-grid fx-shapes morph-styles', role: 'radiogroup', 'aria-label': 'Вид перехода' });
@@ -225,7 +252,8 @@ styleBtns.set(ms.id, b);
 styleTiles.append(b);
 }
 const morphMode = segmented({ cls: 'seg-tight', options: [{ value: 'manual', label: 'Кнопкой' }, { value: 'beat', label: 'По биту' }, { value: 'timer', label: 'По таймеру' }], value: mc.mode, onChange: (v) => { mc.mode = v; save(); syncMorph(); } });
-const morphOrder = segmented({ options: [{ value: 'seq', label: 'По кругу' }, { value: 'random', label: 'Случайно' }], value: mc.order, onChange: (v) => { mc.order = v; save(); } });
+const morphOrder = segmented({ cls: 'seg-tight', options: [{ value: 'seq', label: 'По кругу' }, { value: 'pingpong', label: 'Туда и обратно' }, { value: 'random', label: 'Случайно' }], value: mc.order, onChange: (v) => { mc.order = v; save(); } });
+const morphScrub = slider({ noNorm: true, min: 0, max: 100, step: 1, value: 0, digits: 0, unit: '%', onInput: (v) => engine.morphScrub(v / 100), onChange: (v) => { engine.morphScrubEnd(); if (v >= 100) setTimeout(() => morphScrub.set(0), 250); } });
 const morphInt = slider({ min: 1, max: 20, step: 0.5, value: mc.interval, digits: 1, unit: ' с', onInput: (v) => { mc.interval = v; }, onChange: save });
 const morphTime = slider({ min: 0.4, max: 8, step: 0.1, value: mc.time, digits: 1, unit: ' с', onInput: (v) => { mc.time = v; }, onChange: save });
 const morphScatter = slider({ min: 0, max: 2, step: 0.05, value: mc.scatter, digits: 2, onInput: (v) => { mc.scatter = v; }, onChange: save });
@@ -238,9 +266,7 @@ const morphWeight = segmented({ options: [{ value: 'auto', label: 'Как в м�
 const morphGo = button({ label: 'Следующая модель', icon: 'arrow-right', variant: 'primary', cls: 'btn-block', title: 'Запустить переход к следующей модели из списка', onClick: () => engine.morphNext() });
 const turnsRow = field('Закрутка', morphTurns.el);
 const intRow = field('Не чаще, чем раз в', morphInt.el);
-const morphBox = h('div', { class: 'sec-body', style: { padding: 0 } },
-formsBox,
-morphHint,
+const morphSettings = h('div', { class: 'sec-body', style: { padding: 0 } },
 h('div', { class: 'fx-sub' }, 'Вид перехода'),
 styleTiles,
 styleHint,
@@ -252,12 +278,14 @@ field('Какие точки первыми', morphSort.el, { wide: true }),
 field('Характер движения', morphEase.el, { wide: true }),
 field('Вспышка в пути', morphGlow.el),
 h('div', { class: 'fx-sub' }, 'Запуск'),
+field('Вручную', morphScrub.el),
 field('Переход', morphMode.el, { wide: true }),
 field('Порядок моделей', morphOrder.el, { wide: true }),
 intRow,
 field('Число точек у моделей', morphWeight.el, { wide: true }),
 morphGo
 );
+const morphBox = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, morphSettings);
 const morphNote = h('div', { class: 'fx-morph-note' }, h('b', {}, 'Морфинг между моделями'), h('span', {}, 'Если хотите, можно сделать плавный переход между двумя объектами: добавьте в сцену вторую модель, и здесь появятся виды перехода и их настройки.'));
 function syncMorph() {
 const cur = MORPH_STYLES.find((x) => x.id === mc.style) || MORPH_STYLES[0];
@@ -276,7 +304,10 @@ morphEase.set(mc.ease);
 }
 renderForms();
 syncMorph();
-const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
+const refreshForms = () => {
+if (formsSigNow() !== formsSig) renderForms();
+};
+const secSource = section('Форма', { key: 'fx-source' }, addModel, addMedia, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
 const secMorph = section('Морфинг', { key: 'fx-morph' }, morphNote, morphBox);
 const pickers = new Set();
 function levelMeter(L, onThr, onSave) {
@@ -1543,10 +1574,28 @@ el.addEventListener('pointercancel', onUp);
 }
 bindScrubbing(rulerBody);
 bindScrubbing(camTrackBody);
-toggleAnim = function (on = animPanel.hidden) {
-animPanel.hidden = !on;
+let animCloseT = 0;
+toggleAnim = function (on = animPanel.hidden || animPanel.classList.contains('is-out')) {
+on = !!on;
+clearTimeout(animCloseT);
+if (on) {
+animPanel.classList.remove('is-out');
+animPanel.hidden = false;
+} else if (!animPanel.hidden && !animPanel.classList.contains('is-out')) {
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) animPanel.hidden = true;
+else {
+animPanel.classList.add('is-out');
+animCloseT = setTimeout(() => {
+animPanel.hidden = true;
+animPanel.classList.remove('is-out');
+}, 300);
+}
+}
 engine.timelineOpen = !!on;
-if (!on) inspector.hidden = true;
+if (!on) {
+inspector.hidden = true;
+placeInspector();
+}
 keyAnimBtn.classList.toggle('is-active', on);
 animQuickBtn.classList.toggle('is-active', on);
 appEl.classList.toggle('fx-anim-active', on);
@@ -1930,6 +1979,10 @@ placeInspector();
 function buildInspector() {
 clipBody.textContent = '';
 clipActs.textContent = '';
+if (animPanel.hidden || animPanel.classList.contains('is-out')) {
+inspector.hidden = true;
+return;
+}
 const mkSlider = (label, min, max, step, value, fmt, onInput) => {
 const inp = h('input', { type: 'range', class: 'range fx-anim-insp-range', min, max, step, value });
 const val = h('span', { class: 'fx-anim-insp-val' }, fmt(value));
@@ -2740,9 +2793,13 @@ recBtn.classList.toggle('is-rec', engine.recording);
 recBtn.dataset.tip = engine.recording ? 'Остановить запись и сохранить' : 'Параметры записи видео';
 if (!engine.recording) recTime.textContent = '';
 }
-app.bus.on('fx', sync);
+app.bus.on('fx', () => {
+sync();
+refreshForms();
+});
 app.bus.on('media', () => {
 sync();
+refreshForms();
 setTimeout(sync, 700);
 });
 app.bus.on('device', () => {

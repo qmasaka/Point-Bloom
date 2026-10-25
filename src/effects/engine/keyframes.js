@@ -333,6 +333,8 @@ export class KeyframesPart {
 				const g = this.geometry;
 				const t = g.attributes.aTarget;
 				if (t && target.positions && target.positions.length === t.array.length) {
+					// прежнюю форму запоминаем: когда дорожка морфинга перестаёт работать (таймлайн закрыт, блок удалён), модель возвращается в неё
+					this._morphTrackBackup = new Float32Array(t.array);
 					t.array.set(target.positions);
 					t.needsUpdate = true;
 					this._morphTrackReady = true;
@@ -342,6 +344,21 @@ export class KeyframesPart {
 			/* не критично */
 		} finally {
 			this._morphTrackLoading = false;
+		}
+	}
+
+	/** Дорожка морфинга больше не управляет сценой: модель снова в своей настоящей форме, а не застывает на полпути к чужой */
+	_releaseMorphTrack() {
+		const t = this.geometry?.attributes.aTarget;
+		if (t && this._morphTrackBackup && this._morphTrackBackup.length === t.array.length) {
+			t.array.set(this._morphTrackBackup);
+			t.needsUpdate = true;
+		}
+		this._morphTrackBackup = null;
+		this._morphTrackReady = false;
+		if (!this.morphing) {
+			this.morph = 1;
+			if (this.shared?.uMorph) this.shared.uMorph.value = 1;
 		}
 	}
 

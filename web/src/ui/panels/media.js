@@ -40,7 +40,7 @@ const sizeRow = field('Размер точек', sizeSl.el);
 sizeRow.hidden = fx;
 const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recInfo);
 const saveBox = h('div', { class: 'fx-save-row' }, fx ? bScene : '', bPly, bPcv, bZip);
-const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, ptsRow, sizeRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), filtersBox, recBox, h('div', { class: 'fx-sub' }, 'Сохранить'), saveBox, closeBtn, note);
+const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, ptsRow, sizeRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), filtersBox, recBox, fx ? '' : h('div', { class: 'fx-sub' }, 'Сохранить'), fx ? '' : saveBox, closeBtn, note);
 if (root) root.append(sec.el);
 function sync() {
 const ready = pm.ready;

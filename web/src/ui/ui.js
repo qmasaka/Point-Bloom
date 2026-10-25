@@ -202,8 +202,23 @@ this.fpsTimer = null;
 }
 }
 setExportLabel() {}
-openFiles(mode = 'auto') {
+async openFiles(mode = 'auto') {
+if (mode === 'auto' && this.workspace === 'fx' && (this.app.model.renderables().length || this.app.media.pm.ready)) {
+const choice = await this.choose({
+title: 'Что открыть',
+text: 'Всё это можно добавить к тому, что уже есть, и потом делать между ними морфинг. Видео или фото одно: новое заменит прежнее.',
+buttons: [
+{ label: 'Отмена', value: null },
+{ label: 'Модель', value: 'add', icon: 'cube' },
+{ label: 'Видео или фото', value: 'media', icon: 'film-strip' },
+{ label: 'Начать заново', value: 'replace', icon: 'arrows-clockwise' },
+],
+});
+if (!choice) return;
+mode = choice;
+}
 this.openMode = mode;
+this.fileInput.accept = mode === 'media' ? ['image/*', 'video/*', '.mp4', '.webm', '.mov', '.pcv'].join(',') : ACCEPT_ALL;
 this.fileInput.click();
 }
 openTextures() {
@@ -907,6 +922,14 @@ this.idle();
 async handleFiles(files, { mode = 'auto', point = null } = {}) {
 const app = this.app;
 const isMedia = (f) => (f.type || '').startsWith('video') || ['mp4', 'webm', 'mov', 'm4v', 'ogv', 'pcv'].includes(extOf(f.name));
+if (mode === 'media') {
+const f = files.find(isMedia) || files.find((x) => IMAGE_EXT.includes(extOf(x.name)));
+if (!f) {
+this.toast('Нужно видео или фото', 'warn');
+return;
+}
+return this.openMedia(f);
+}
 const vid = files.find(isMedia);
 if (vid && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) return this.openMedia(vid);
 if (files.length === 1 && IMAGE_EXT.includes(extOf(files[0].name)) && !app.model.meshes().length) return this.openMedia(files[0]);

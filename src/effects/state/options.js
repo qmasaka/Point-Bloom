@@ -70,6 +70,9 @@ export const MORPH_STYLES = [
 	{ id: 'dust', name: 'Пыль', icon: 'wind', hint: 'Старая форма поднимается облаком пыли, новая оседает из него', v: { scatter: 0.9, stagger: 0.55, turns: 1, sort: 'random', ease: 'soft', glow: 0.3 } },
 	{ id: 'sand', name: 'Осыпание', icon: 'drop', hint: 'Точки осыпаются вниз, как песок, и снизу вырастает новая форма', v: { scatter: 0.9, stagger: 0.5, turns: 1, sort: 'down', ease: 'smooth', glow: 0.2 } },
 	{ id: 'hyper', name: 'Через 4D', icon: 'intersect', hint: 'Модель выворачивается через четвёртое измерение и бесконечность, на изнанке подменяется новой и возвращается уже ею. Больше одного оборота: путь по расслоению Хопфа', v: { scatter: 1, stagger: 0.3, turns: 1, sort: 'out', ease: 'smooth', glow: 0.6 } },
+	{ id: 'sphere', name: 'Через сферу', icon: 'sphere', hint: 'Форма стягивается в шар, шар перетекает и раскрывается уже новой формой', v: { scatter: 1, stagger: 0.25, turns: 1, sort: 'out', ease: 'soft', glow: 0.5 } },
+	{ id: 'cubes', name: 'Кубики', icon: 'cube', hint: 'Форма распадается на блоки, блоки подпрыгивают и уходят по очереди, каждый в свой момент', v: { scatter: 0.6, stagger: 1.2, turns: 1, sort: 'random', ease: 'smooth', glow: 0.3 } },
+	{ id: 'flat', name: 'Сплющивание', icon: 'flip-horizontal', hint: 'Форма схлопывается в плоскость, плоскость перетекает в новую и расправляется', v: { scatter: 0.5, stagger: 0.15, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 } },
 ];
 
 export const MORPH_SORTS = [

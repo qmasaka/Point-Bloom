@@ -255,6 +255,8 @@ float growK(vec3 b, float idx) {
 // Местное время морфинга точки 0..1: расслоение задаёт, насколько позже стартуют точки, порядок задаёт, какие первыми
 float morphLocal(vec3 A, vec3 B, float idx) {
 	float h = hash11(idx * 3.17);
+	// «Кубики»: время старта одно на весь кубик пространства, поэтому точки уходят блоками
+	if (int(uMorphS.x + 0.5) == 8) h = hash11(dot(floor((A - uCen) * 5.0), vec3(17.13, 31.71, 57.29)));
 	float ord = h;
 	int so = int(uMorphO.x + 0.5);
 	float yN = clamp((A.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
@@ -585,6 +587,45 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			float cs = cos(ang);
 			float sn = sin(ang);
 			base.xz = vec2(base.x * cs - base.z * sn, base.x * sn + base.z * cs);
+		}
+		if (sty == 7) {
+			// через сферу: форма стягивается в оболочку, оболочка перетекает в направления новой формы и раскрывается ею
+			vec3 co7 = aOrigin - uCen;
+			vec3 ct7 = aTarget - uCen;
+			vec3 d17 = normalize(co7 + vec3(1e-3));
+			vec3 d27 = normalize(ct7 + vec3(1e-3));
+			float R7 = 0.7 + 0.5 * sc;
+			float k1 = clamp(e / 0.35, 0.0, 1.0);
+			float k2 = clamp((e - 0.35) / 0.3, 0.0, 1.0);
+			float k3 = clamp((e - 0.65) / 0.35, 0.0, 1.0);
+			k1 = k1 * k1 * (3.0 - 2.0 * k1);
+			k2 = k2 * k2 * (3.0 - 2.0 * k2);
+			k3 = k3 * k3 * (3.0 - 2.0 * k3);
+			if (e < 0.35) base = mix(aOrigin, uCen + d17 * R7, k1);
+			else if (e < 0.65) base = uCen + normalize(mix(d17, d27, k2) + vec3(1e-3)) * R7;
+			else base = mix(uCen + d27 * R7, aTarget, k3);
+		}
+		if (sty == 8) {
+			// кубики: блоки точек подпрыгивают и уходят вместе, каждый блок в свой момент
+			float ch8 = hash11(dot(floor((aOrigin - uCen) * 5.0), vec3(17.13, 31.71, 57.29)));
+			vec3 c8 = mid + vec3(0.0, (0.35 + 0.8 * ch8) * sc, 0.0);
+			base = om * om * aOrigin + 2.0 * om * e * c8 + e * e * aTarget;
+		}
+		if (sty == 9) {
+			// сплющивание: форма схлопывается в плоскость, плоскость перетекает в плоскость новой формы и расправляется
+			vec3 q9a = aOrigin - uCen;
+			vec3 q9b = aTarget - uCen;
+			float k1 = clamp(e / 0.4, 0.0, 1.0);
+			float k2 = clamp((e - 0.4) / 0.2, 0.0, 1.0);
+			float k3 = clamp((e - 0.6) / 0.4, 0.0, 1.0);
+			k1 = k1 * k1 * (3.0 - 2.0 * k1);
+			k2 = k2 * k2 * (3.0 - 2.0 * k2);
+			k3 = k3 * k3 * (3.0 - 2.0 * k3);
+			vec3 fa = vec3(0.0, q9a.y, q9a.z);
+			vec3 fb = vec3(0.0, q9b.y, q9b.z);
+			if (e < 0.4) base = uCen + mix(q9a, fa, k1);
+			else if (e < 0.6) base = uCen + mix(fa, fb, k2);
+			else base = uCen + mix(fb, q9b, k3);
 		}
 	}
 	if (uDepth.x > 0.001) base = depthShape(base);

@@ -69,7 +69,7 @@ export class LoopPart {
 			}
 			this._analyse(dt);
 			if (!this.material) return;
-			if (this.morphing) {
+			if (this.morphing && !this._morphHold) {
 				this.morph = Math.min(1, this.morph + dt / Math.max(0.3, st0.morphCfg.time));
 				if (this.morph >= 1) {
 					this.morphing = false;
@@ -383,6 +383,8 @@ export class LoopPart {
 			u.uGlyph.value.set(gm === 'off' ? 0 : 1, gm === 'off' ? 1 : 2.3, u.uAtlas.value.userData?.n || 8);
 			u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
 
+			// блоков морфинга на таймлайне больше нет или таймлайн закрыт: прежняя форма возвращается
+			if (this._morphTrackReady && !(this.timelineOpen && (this.state.anim.clips || []).some((c) => c.layerId === 'morph'))) this._releaseMorphTrack();
 			// курсор стоит на таймлайне: эффекты с блоками включены только там, где под курсором есть их блок
 			if (!this.animPlaying && !this.animRec && (this.state.anim.clips?.length || (this.state.anim.saved && Object.keys(this.state.anim.saved).length))) this._animGate(this.animT);
 			// персонаж идёт по времени таймлайна, пока таймлайн играет: дорожка «Персонаж» совпадает с тем, что видно в сцене

@@ -2,6 +2,17 @@ import * as THREE from 'three';
 import { fitCount, mortonSort, normalizeCloud } from '../shapes/cloud-utils.js';
 import { generateShapePoints } from '../shapes/shapes.js';
 
+/** Готовые фигуры, которые можно добавить в морфинг */
+const SHAPE_FORMS = [
+	{ key: 'sphere', name: 'Сфера', icon: 'sphere' },
+	{ key: 'torus', name: 'Тор', icon: 'circle' },
+	{ key: 'cube', name: 'Куб', icon: 'cube' },
+	{ key: 'helix', name: 'Спираль', icon: 'tornado' },
+	{ key: 'saturn', name: 'Сатурн', icon: 'planet' },
+	{ key: 'galaxy', name: 'Галактика', icon: 'sparkle' },
+	{ key: 'plane', name: 'Плоскость', icon: 'stack' },
+];
+
 /** Источник облака точек: модель, фото, видео, формы, морфинг, число частиц. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class SourcePart {
 	// ------------------------------------------------------------ фото и видео
@@ -38,6 +49,14 @@ export class SourcePart {
 		return out;
 	}
 
+	/** Все формы, между которыми можно делать морфинг: объекты сцены, открытое видео или фото и готовые фигуры */
+	uiForms() {
+		const out = this.forms().map((f) => ({ ...f, group: 'scene' }));
+		if (this.pm.ready) out.push({ key: 'media', name: this.pm.name || (this.pm.kind === 'video' ? 'Видео' : 'Фото'), icon: this.pm.kind === 'video' || this.pm.kind === 'rec' ? 'film-strip' : 'image', group: 'scene' });
+		for (const s of SHAPE_FORMS) out.push({ key: s.key, name: s.name, icon: s.icon, group: 'shape' });
+		return out;
+	}
+
 	/** Доля видимых точек у формы: у модели с меньшим числом точек видна только их часть */
 	_fracFor(key) {
 		if (!key.startsWith('obj:') || this.state.morphCfg.weight === 'equal') return 1;
@@ -57,20 +76,100 @@ export class SourcePart {
 		this.playlist = keys;
 		this._pi = Math.max(-1, keys.indexOf(this.curKey || this.state.source));
 		this.emit();
-		this._prefetch(keys);
+		this._syncMorphCount().then(() => this._prefetch(keys));
+	}
+
+	/** Видео вошло в список морфинга или вышло из него: у облака меняется число точек, поэтому один раз собираем его заново */
+	async _syncMorphCount() {
+		if (!this.active || !this.geometry || this.morphing) return;
+		if (this.geometry.attributes.position.count === this._n()) return;
+		this.app.ui.busy('Готовлю формы к морфингу', 0.2);
+		try {
+			await this._build();
+		} catch (e) {
+			console.error(e);
+		} finally {
+			this.app.ui.idle();
+		}
+		this.emit();
 	}
 
 	morphNext() {
 		const list = this.playlist || [];
+		if (this._morphHold) {
+			// переход стоит на ползунке: кнопка доводит его до конца
+			this._morphHold = false;
+			return;
+		}
 		if (list.length < 2 || !this.active || this.morphing) return;
 		let i;
 		if (this.state.morphCfg.order === 'random') {
 			do i = Math.floor(Math.random() * list.length);
 			while (i === this._pi && list.length > 1);
+		} else if (this.state.morphCfg.order === 'pingpong') {
+			// вперёд до конца списка, потом назад до начала
+			let d = this._pd || 1;
+			let j = (this._pi ?? -1) + d;
+			if (j >= list.length || j < 0) {
+				d = -d;
+				j = (this._pi ?? 0) + d;
+			}
+			this._pd = d;
+			i = Math.max(0, Math.min(list.length - 1, j));
 		} else i = ((this._pi ?? -1) + 1) % list.length;
 		this._pi = i;
 		this._lastMorph = this._time;
 		this.setSource(list[i]).catch(() => {});
+	}
+
+	/** Переход к выбранной форме прямо сейчас, в какой бы последовательности она ни стояла */
+	morphTo(key) {
+		if (this._morphHold) {
+			this._morphHold = false;
+			return;
+		}
+		if (!this.active || this.morphing || !key) return;
+		if (key === (this.curKey || this.state.source)) return;
+		const list = this.playlist || [];
+		const i = list.indexOf(key);
+		if (i >= 0) this._pi = i;
+		this._lastMorph = this._time;
+		this.setSource(key).catch(() => {});
+	}
+
+	/**
+	 * Переход вручную: ползунок ведёт форму от текущей к следующей в списке. Пока ползунок не вернулся на ноль, переход стоит там, где его оставили,
+	 * на 100% он завершается. Форма посередине это живое состояние: обе модели вперемешку.
+	 */
+	async morphScrub(v) {
+		v = Math.max(0, Math.min(1, v));
+		this._scrubV = v;
+		if (!this.active || !this.geometry) return;
+		if (!this._morphHold) {
+			const list = this.playlist || [];
+			if (list.length < 2 || this.morphing || this._scrubBusy || v <= 0) return;
+			this._scrubBusy = true;
+			const from = this._pi ?? -1;
+			const next = this.state.morphCfg.order === 'random' ? list[Math.floor(Math.random() * list.length)] : list[(from + 1) % list.length];
+			this._morphHold = true;
+			try {
+				await this.setSource(next);
+				this._pi = Math.max(0, list.indexOf(next));
+			} finally {
+				this._scrubBusy = false;
+			}
+			if (!this.morphing) {
+				this._morphHold = false;
+				return;
+			}
+		}
+		this.morph = this._scrubV;
+		if (this.morph >= 1) this._morphHold = false; // дальше обычный конец перехода
+	}
+
+	/** Ползунок перехода отпущен: до конца дотягивается, если ушёл за половину, и стоит на месте, если нет */
+	morphScrubEnd() {
+		if (this._morphHold && this.morph > 0.5) this._morphHold = false;
 	}
 
 	toggleDissolve() {
@@ -153,8 +252,8 @@ export class SourcePart {
 			this.app.toast('Нет модели: добавьте её кнопкой «Добавить модель» или откройте в редакторе', 'info');
 			return;
 		}
-		const real = !key.startsWith('obj:');
-		if (real) st.source = key;
+		// объект сцены и вся сцена это источник «модель»; видео, фото и готовые фигуры сами называют источник
+		st.source = key.startsWith('obj:') ? 'model' : key;
 		this.touch();
 		if (!this.active || !this.geometry) return this.emit();
 		let target;
@@ -172,6 +271,11 @@ export class SourcePart {
 		const g = this.geometry;
 		const o = g.attributes.aOrigin;
 		const t = g.attributes.aTarget;
+		// видео убрало с точек часть (фильтры): при уходе с видео все точки снова видны
+		if (key !== 'media' && this.cloudKey === 'media' && g.attributes.aHide) {
+			g.attributes.aHide.array.fill(0);
+			g.attributes.aHide.needsUpdate = true;
+		}
 		// если новый переход начался до конца прежнего, считаем прежний завершённым: пути у видов сложные, середину по прямой не посчитать
 		const k = this.morphing ? 1 : this.morph * this.morph * (3 - 2 * this.morph);
 		for (let i = 0; i < o.array.length; i++) {

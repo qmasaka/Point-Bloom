@@ -429,6 +429,9 @@ fn morphLocal(A_in: vec3f, B_in: vec3f, idx_in: f32) -> f32 {
 	var B: vec3f = B_in;
 	var idx: f32 = idx_in;
 	var h: f32 = hash11((idx * 3.17));
+	if ((i32((fr.uMorphS.x + 0.5)) == 8)) {
+		h = hash11(dot(floor((((A - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));
+	}
 	var ord: f32 = h;
 	var so: i32 = i32((fr.uMorphO.x + 0.5));
 	var yN: f32 = clamp((((A.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
@@ -758,6 +761,50 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var cs: f32 = cos(ang);
 			var sn: f32 = sin(ang);
 			{ let _sw12 = vec2f((((*base).x * cs) - ((*base).z * sn)), (((*base).x * sn) + ((*base).z * cs))); (*base) = vec3f(_sw12.x, (*base).y, _sw12.y); }
+		}
+		if ((sty == 7)) {
+			var co7: vec3f = (aOrigin - fr.uCen);
+			var ct7: vec3f = (aTarget - fr.uCen);
+			var d17: vec3f = normalize((co7 + vec3f(1e-3)));
+			var d27: vec3f = normalize((ct7 + vec3f(1e-3)));
+			var R7: f32 = (0.7 + (0.5 * sc));
+			var k1: f32 = clamp((e / 0.35), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.35)) / 0.3), 0.0, 1.0);
+			var k3: f32 = clamp((((e - 0.65)) / 0.35), 0.0, 1.0);
+			k1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));
+			k2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));
+			k3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));
+			if ((e < 0.35)) {
+				(*base) = mix(aOrigin, (fr.uCen + (d17 * R7)), k1);
+			} else if ((e < 0.65)) {
+				(*base) = (fr.uCen + (normalize((mix(d17, d27, k2) + vec3f(1e-3))) * R7));
+			} else {
+				(*base) = mix((fr.uCen + (d27 * R7)), aTarget, k3);
+			}
+		}
+		if ((sty == 8)) {
+			var ch8: f32 = hash11(dot(floor((((aOrigin - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));
+			var c8: vec3f = (mid + vec3f(0.0, (((0.35 + (0.8 * ch8))) * sc), 0.0));
+			(*base) = ((((om * om) * aOrigin) + (((2.0 * om) * e) * c8)) + ((e * e) * aTarget));
+		}
+		if ((sty == 9)) {
+			var q9a: vec3f = (aOrigin - fr.uCen);
+			var q9b: vec3f = (aTarget - fr.uCen);
+			var k1: f32 = clamp((e / 0.4), 0.0, 1.0);
+			var k2: f32 = clamp((((e - 0.4)) / 0.2), 0.0, 1.0);
+			var k3: f32 = clamp((((e - 0.6)) / 0.4), 0.0, 1.0);
+			k1 = ((k1 * k1) * ((3.0 - (2.0 * k1))));
+			k2 = ((k2 * k2) * ((3.0 - (2.0 * k2))));
+			k3 = ((k3 * k3) * ((3.0 - (2.0 * k3))));
+			var fa: vec3f = vec3f(0.0, q9a.y, q9a.z);
+			var fb: vec3f = vec3f(0.0, q9b.y, q9b.z);
+			if ((e < 0.4)) {
+				(*base) = (fr.uCen + mix(q9a, fa, k1));
+			} else if ((e < 0.6)) {
+				(*base) = (fr.uCen + mix(fa, fb, k2));
+			} else {
+				(*base) = (fr.uCen + mix(fb, q9b, k3));
+			}
 		}
 	}
 	if ((fr.uDepth.x > 0.001)) {

@@ -6820,3 +6820,108 @@ html.perf-flat .busy-card, html.perf-flat .toast, html.perf-flat .dlg { -webkit-
 
 html.perf-lite .custom-select-pop { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); background: rgba(20, 22, 27, 0.8); }
 html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filter: none; background: #15181d; }
+
+/* плавное открытие и закрытие секвенсора: панель выезжает снизу и гаснет, окружающие панели едут за ней в том же темпе */
+.fx-mode .fx-anim:not([hidden]) {
+	animation: fx-anim-in 0.44s cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+.fx-mode .fx-anim.is-out {
+	animation: fx-anim-out 0.3s cubic-bezier(0.4, 0, 0.8, 0.4) forwards;
+	pointer-events: none;
+}
+@keyframes fx-anim-in {
+	from {
+		opacity: 0;
+		transform: translateY(34px) scale(0.985);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+@keyframes fx-anim-out {
+	from {
+		opacity: 1;
+		transform: none;
+	}
+	to {
+		opacity: 0;
+		transform: translateY(34px) scale(0.985);
+	}
+}
+.fx-mode .fx-bar {
+	transition: bottom 0.42s cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+.fx-mode .fx-left {
+	transition: opacity 0.3s var(--ease), visibility 0s linear 0s, bottom 0.42s cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+.fx-mode .sidebar {
+	transition: opacity 0.3s var(--ease), visibility 0s linear 0s, max-height 0.42s cubic-bezier(0.2, 0.85, 0.25, 1), bottom 0.42s cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+.fx-mode.fx-anim-active .fx-bar {
+	transition: bottom 0.42s cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+	.fx-mode .fx-anim:not([hidden]),
+	.fx-mode .fx-anim.is-out {
+		animation: none;
+	}
+	.fx-mode .fx-bar,
+	.fx-mode .fx-left,
+	.fx-mode .sidebar {
+		transition: none;
+	}
+}
+
+/* форма в морфинге: плашка с номером и кнопкой «перейти сейчас» */
+.fx-forms-wrap .fx-sub {
+	margin-top: 6px;
+}
+.chip-split {
+	display: inline-flex;
+	align-items: stretch;
+	border-radius: var(--r-ctl);
+}
+.chip-split .chip-btn {
+	gap: 5px;
+}
+.chip-split.is-on .chip-btn {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+.chip-split:not(.is-on) .chip-btn,
+.chip-split.is-on:not(:has(.chip-go)) .chip-btn {
+	border-radius: var(--r-ctl);
+}
+.chip-split.is-cur .chip-btn {
+	box-shadow: inset 0 0 0 1px var(--accent);
+}
+.chip-n {
+	display: inline-grid;
+	place-items: center;
+	min-width: 15px;
+	height: 15px;
+	padding: 0 3px;
+	border-radius: 8px;
+	background: var(--accent);
+	color: var(--accent-ink);
+	font-family: var(--mono);
+	font-size: 10px;
+	font-weight: 600;
+}
+.chip-go {
+	display: inline-grid;
+	place-items: center;
+	width: 26px;
+	border: 1px solid var(--accent-line);
+	border-left: 0;
+	border-radius: 0 var(--r-ctl) var(--r-ctl) 0;
+	background: var(--accent-soft);
+	color: var(--accent-text);
+	cursor: pointer;
+	transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.chip-go:hover {
+	background: var(--accent);
+	color: var(--accent-ink);
+}

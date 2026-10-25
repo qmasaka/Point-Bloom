@@ -90,6 +90,8 @@ this.linkObj.userData.helper = true;
 this.linkObj.visible = false;
 pts.add(this.linkObj);
 this.geometry = g;
+this._morphTrackReady = false;
+this._morphTrackBackup = null;
 this.material = mat;
 this.shared = shared;
 this.points = pts;

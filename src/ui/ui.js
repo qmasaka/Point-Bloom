@@ -226,8 +226,24 @@ export class UI {
 	/** Подпись кнопки в шапке теперь всегда «Экспорт»: что именно скачивать, выбирается в окне настроек */
 	setExportLabel() {}
 
-	openFiles(mode = 'auto') {
+	async openFiles(mode = 'auto') {
+		// в режиме эффектов «Открыть» сразу спрашивает, что делать с файлом: дополнить сцену (ещё модель, видео, фото) или начать с чистого листа
+		if (mode === 'auto' && this.workspace === 'fx' && (this.app.model.renderables().length || this.app.media.pm.ready)) {
+			const choice = await this.choose({
+				title: 'Что открыть',
+				text: 'Всё это можно добавить к тому, что уже есть, и потом делать между ними морфинг. Видео или фото одно: новое заменит прежнее.',
+				buttons: [
+					{ label: 'Отмена', value: null },
+					{ label: 'Модель', value: 'add', icon: 'cube' },
+					{ label: 'Видео или фото', value: 'media', icon: 'film-strip' },
+					{ label: 'Начать заново', value: 'replace', icon: 'arrows-clockwise' },
+				],
+			});
+			if (!choice) return;
+			mode = choice;
+		}
 		this.openMode = mode;
+		this.fileInput.accept = mode === 'media' ? ['image/*', 'video/*', '.mp4', '.webm', '.mov', '.pcv'].join(',') : ACCEPT_ALL;
 		this.fileInput.click();
 	}
 	openTextures() {
@@ -1013,6 +1029,15 @@ export class UI {
 	async handleFiles(files, { mode = 'auto', point = null } = {}) {
 		const app = this.app;
 		const isMedia = (f) => (f.type || '').startsWith('video') || ['mp4', 'webm', 'mov', 'm4v', 'ogv', 'pcv'].includes(extOf(f.name));
+		// выбрано «Видео или фото»: берём первый подходящий файл как источник точек, не трогая модели сцены
+		if (mode === 'media') {
+			const f = files.find(isMedia) || files.find((x) => IMAGE_EXT.includes(extOf(x.name)));
+			if (!f) {
+				this.toast('Нужно видео или фото', 'warn');
+				return;
+			}
+			return this.openMedia(f);
+		}
 		const vid = files.find(isMedia);
 		if (vid && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) return this.openMedia(vid);
 		// одиночная картинка без модели в сцене: текстуре некуда ложиться, поэтому делаем из неё точки
