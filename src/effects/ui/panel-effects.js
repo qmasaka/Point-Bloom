@@ -194,8 +194,8 @@ export function createEffectsPanel(app, root, engine) {
 		onChange: (v) => engine.setCount(v),
 	});
 	const countHint = h('div', { class: 'field-hint' });
-	const addModel = button({ label: 'Добавить модель…', icon: 'folder-open', variant: 'secondary', cls: 'btn-block', title: 'Открыть модель, облако точек (PLY, PCD, XYZ) или архив и сразу использовать их здесь', onClick: () => app.ui.openFiles('add') });
-	const addMedia = button({ label: 'Добавить видео или фото…', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Видео или фото станет формой из точек: к ней применяются все эффекты, и с ней можно делать морфинг. Можно добавить несколько штук', onClick: () => app.ui.openFiles('media') });
+	// одна кнопка: «Открыть» в эффектах сам спрашивает, что добавить (модель, видео или фото)
+	const addModel = button({ label: 'Добавить…', icon: 'plus', variant: 'secondary', cls: 'btn-block', title: 'Добавить модель, облако точек, видео или фото: всё это сразу встаёт в морфинг', onClick: () => app.ui.openFiles('fxadd') });
 	const modelNote = h('div', { class: 'field-hint' });
 	// ------------------------------------------------------------ морфинг между моделями
 	const mc = st.morphCfg;
@@ -395,7 +395,7 @@ export function createEffectsPanel(app, root, engine) {
 			syncAI();
 		}
 	};
-	const secSource = section('Форма', { key: 'fx-source' }, addModel, addMedia, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
+	const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
 	const secMorph = section('Морфинг', { key: 'fx-morph' }, morphBox);
 
 	// ------------------------------------------------------------ живое число звука: полоска уровня и порог

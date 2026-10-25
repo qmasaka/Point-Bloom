@@ -87,7 +87,24 @@ export class AudioPart {
 	_audioVideo() {
 		const own = this._vidEl;
 		if (own && own !== this.pm.el && own === this._scrFile?.media) return own;
-		return this.pm.ready && this.pm.kind === 'video' ? this.pm.el : null;
+		const sp = this._soundPm();
+		return sp.ready && sp.kind === 'video' ? sp.el : null;
+	}
+
+	/** Медиа, чей звук слушают: при нескольких видео его выбирают в «Фото и видео», по умолчанию это показанное сейчас */
+	_soundPm() {
+		return this.app.media.soundEntry?.()?.pm || this.pm;
+	}
+
+	/** Сменилось показанное видео или выбор «Звук из»: звук переключается на нужное видео, если сейчас слушают звук видео */
+	_resyncVideoAudio() {
+		if (this.sourceType !== 'video' || !this.playing || !this.ctx) return;
+		const el = this._audioVideo();
+		if (el && el !== this._vidEl) {
+			const old = this._vidPm;
+			if (old && old.onMute) old.onMute = null;
+			this._connectVideo();
+		}
 	}
 
 	/** Звук видео: один раз заводим в аудиограф, дальше он идёт либо в анализатор (режим эффектов), либо прямо в колонки */
@@ -113,13 +130,15 @@ export class AudioPart {
 		gate.connect(this.bus);
 		this._vidGate = gate;
 		this._vidEl = el;
-		if (el === this.pm.el) {
+		const sp = this._soundPm();
+		if (el === sp.el) {
 			// выключение звука видео в эффектах гасит только вывод: анализ продолжает работать
-			this.pm.onMute = (m) => {
+			this._vidPm = sp;
+			sp.onMute = (m) => {
 				if (this.out) this.out.gain.value = m ? 0 : this.state.audio.volume;
 			};
-			this.pm.onMute(this.pm.muted);
-			this.pm.play();
+			sp.onMute(sp.muted);
+			sp.play();
 		} else {
 			// своё видео «Экрана»: играет само по себе, звук идёт через анализатор в колонки
 			if (this.out) this.out.gain.value = this.state.audio.volume;
@@ -148,7 +167,7 @@ export class AudioPart {
 				/* уже отключён */
 			}
 			this._vidGate = null;
-			if (this._vidEl === this.pm.el) this.pm.onMute = null;
+			if (this._vidPm && this._vidEl === this._vidPm.el) this._vidPm.onMute = null;
 			if (this.out) this.out.gain.value = this.state.audio.volume;
 		}
 	}

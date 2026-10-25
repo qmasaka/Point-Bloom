@@ -1,5 +1,5 @@
 import { h, formatInt } from '../../core/util.js';
-import { section, field, fxSlider as slider, segmented, switchRow, button, colorField } from '../ui-kit.js';
+import { section, field, fxSlider as slider, segmented, switchRow, button, colorField, select } from '../ui-kit.js';
 export function createMediaPanel(app, root, { fx = false } = {}) {
 const mc = app.media;
 const pm = mc.live;
@@ -7,7 +7,11 @@ const md = app.settings.media;
 const save = () => app.saveSettings();
 const eng = () => app.ui.effectsEngine;
 const info = h('div', { class: 'field-hint' });
-const sound = switchRow('Звук видео', { value: !pm.muted, onChange: (v) => { pm.setMuted(!v); mc.emit(); } });
+const soundPm = () => mc.soundEntry?.()?.pm || pm;
+const sound = switchRow('Звук видео', { value: !soundPm().muted, onChange: (v) => { soundPm().setMuted(!v); mc.emit(); } });
+let soundSrc = null;
+const soundSrcRow = h('div', { class: 'field-wrap' });
+const soundSig = { v: '' };
 const pts = slider({ noNorm: true, log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
 const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
 const depth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; mc.styleChanged(); }, onChange: save });
@@ -40,15 +44,25 @@ const sizeRow = field('Размер точек', sizeSl.el);
 sizeRow.hidden = fx;
 const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recInfo);
 const saveBox = h('div', { class: 'fx-save-row' }, fx ? bScene : '', bPly, bPcv, bZip);
-const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, ptsRow, sizeRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), filtersBox, recBox, fx ? '' : h('div', { class: 'fx-sub' }, 'Сохранить'), fx ? '' : saveBox, closeBtn, note);
+const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, soundSrcRow, ptsRow, sizeRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), filtersBox, recBox, fx ? '' : h('div', { class: 'fx-sub' }, 'Сохранить'), fx ? '' : saveBox, closeBtn, note);
 if (root) root.append(sec.el);
 function sync() {
 const ready = pm.ready;
 if (fx) sec.el.classList.toggle('is-empty', !ready);
 const hasRec = !!pm.rec;
 info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : '';
-sound.el.hidden = pm.kind !== 'video';
-sound.set(!pm.muted);
+const vids = (mc.lib || []).filter((e) => e.pm.ready && e.pm.kind === 'video');
+const sig = vids.map((e) => e.id + e.pm.name).join('|') + '#' + mc.soundKey;
+if (fx && sig !== soundSig.v) {
+soundSig.v = sig;
+soundSrcRow.textContent = '';
+if (vids.length > 1) {
+soundSrc = select({ options: [{ value: 'follow', label: 'Показанного сейчас' }, ...vids.map((e) => ({ value: e.id, label: e.pm.name || 'Видео', icon: 'film-strip' }))], value: mc.soundKey, onChange: (v) => mc.setSoundKey(v) });
+soundSrcRow.append(field('Звук из', soundSrc.el, { wide: true }));
+}
+}
+sound.el.hidden = !vids.length && pm.kind !== 'video';
+sound.set(!soundPm().muted);
 ptsRow.hidden = !ready || pm.isRec;
 pts.set(md.pts);
 sizeSl.set(pset.size);

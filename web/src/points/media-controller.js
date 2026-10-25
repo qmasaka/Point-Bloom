@@ -9,6 +9,7 @@ this.pm = new PointMedia();
 Object.defineProperty(this.pm, 'adjust', { get: () => app.settings.media });
 this.lib = [{ id: 'media', pm: this.pm, want: true }];
 this._mid = 1;
+this.soundKey = 'follow';
 this.live = new Proxy(
 {},
 {
@@ -47,6 +48,20 @@ return this.pm.ready && (this._rebuilding || (!!this.obj && !!this.obj.parent) |
 }
 entry(keyOrPm) {
 return this.lib.find((e) => e.id === keyOrPm || e.pm === keyOrPm) || null;
+}
+soundEntry() {
+const e = this.soundKey !== 'follow' ? this.entry(this.soundKey) : null;
+return e && e.pm.ready ? e : this.entry(this.pm);
+}
+keepsSound(e) {
+return !!e && this.soundKey !== 'follow' && e.id === this.soundKey;
+}
+setSoundKey(k) {
+this.soundKey = k;
+const e = this.soundEntry();
+if (e && this.keepsSound(e) && !e.pm.playing) e.pm.play();
+this.app.ui?.effectsEngine?._resyncVideoAudio?.();
+this.emit();
 }
 activeKey() {
 return this.entry(this.pm)?.id || 'media';

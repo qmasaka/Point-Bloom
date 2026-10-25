@@ -14,6 +14,8 @@ export class MediaController {
 		// все открытые фото и видео: первое «media», остальные «media:2», «media:3»... Текущее (то, что показано и управляется с таймлайна) лежит в this.pm
 		this.lib = [{ id: 'media', pm: this.pm, want: true }];
 		this._mid = 1;
+		// чей звук слышно, когда открыто несколько видео: 'follow' это показанное сейчас, иначе ключ конкретного видео
+		this.soundKey = 'follow';
 		// постоянная ссылка на текущее медиа: панели и таймлайн берут её один раз, а она сама следует за переключением
 		this.live = new Proxy(
 			{},
@@ -60,6 +62,25 @@ export class MediaController {
 	/** Запись библиотеки по ключу формы или по самому медиа */
 	entry(keyOrPm) {
 		return this.lib.find((e) => e.id === keyOrPm || e.pm === keyOrPm) || null;
+	}
+
+	/** Видео, чей звук слышно: выбранное или (по умолчанию) показанное сейчас */
+	soundEntry() {
+		const e = this.soundKey !== 'follow' ? this.entry(this.soundKey) : null;
+		return e && e.pm.ready ? e : this.entry(this.pm);
+	}
+
+	/** Это видео держит звук: при переходах оно не встаёт на паузу */
+	keepsSound(e) {
+		return !!e && this.soundKey !== 'follow' && e.id === this.soundKey;
+	}
+
+	setSoundKey(k) {
+		this.soundKey = k;
+		const e = this.soundEntry();
+		if (e && this.keepsSound(e) && !e.pm.playing) e.pm.play();
+		this.app.ui?.effectsEngine?._resyncVideoAudio?.();
+		this.emit();
 	}
 
 	/** Ключ текущего медиа в библиотеке */

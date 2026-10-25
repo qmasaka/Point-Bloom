@@ -66231,7 +66231,7 @@ __defs['src/ui/panels/media.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'createMediaPanel', () => createMediaPanel);
 const { h, formatInt } = __req('src/core/util.js');
-const { section, field, fxSlider: slider, segmented, switchRow, button, colorField } = __req('src/ui/ui-kit.js');
+const { section, field, fxSlider: slider, segmented, switchRow, button, colorField, select } = __req('src/ui/ui-kit.js');
 function createMediaPanel(app, root, { fx = false } = {}) {
 const mc = app.media;
 const pm = mc.live;
@@ -66239,7 +66239,11 @@ const md = app.settings.media;
 const save = () => app.saveSettings();
 const eng = () => app.ui.effectsEngine;
 const info = h('div', { class: 'field-hint' });
-const sound = switchRow('Звук видео', { value: !pm.muted, onChange: (v) => { pm.setMuted(!v); mc.emit(); } });
+const soundPm = () => mc.soundEntry?.()?.pm || pm;
+const sound = switchRow('Звук видео', { value: !soundPm().muted, onChange: (v) => { soundPm().setMuted(!v); mc.emit(); } });
+let soundSrc = null;
+const soundSrcRow = h('div', { class: 'field-wrap' });
+const soundSig = { v: '' };
 const pts = slider({ noNorm: true, log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
 const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоско' }, { value: 'bright', label: 'Светлое выше' }, { value: 'dark', label: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
 const depth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; mc.styleChanged(); }, onChange: save });
@@ -66272,15 +66276,25 @@ const sizeRow = field('Размер точек', sizeSl.el);
 sizeRow.hidden = fx;
 const recBox = h('div', { class: 'sec-body', style: { padding: 0 } }, h('div', { class: 'fx-sub' }, 'Запись в точки'), field('Кадров в секунду', recFps.el), field('Не длиннее', recSec.el), recInfo);
 const saveBox = h('div', { class: 'fx-save-row' }, fx ? bScene : '', bPly, bPcv, bZip);
-const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, ptsRow, sizeRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), filtersBox, recBox, fx ? '' : h('div', { class: 'fx-sub' }, 'Сохранить'), fx ? '' : saveBox, closeBtn, note);
+const sec = section(fx ? 'Фото и видео' : 'Фото и видео в точки', { key: fx ? 'fx-media' : 'ed-media' }, info, sound.el, soundSrcRow, ptsRow, sizeRow, field('Рельеф', relief.el, { wide: true }), field('Глубина рельефа', depth.el), filtersBox, recBox, fx ? '' : h('div', { class: 'fx-sub' }, 'Сохранить'), fx ? '' : saveBox, closeBtn, note);
 if (root) root.append(sec.el);
 function sync() {
 const ready = pm.ready;
 if (fx) sec.el.classList.toggle('is-empty', !ready);
 const hasRec = !!pm.rec;
 info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : '';
-sound.el.hidden = pm.kind !== 'video';
-sound.set(!pm.muted);
+const vids = (mc.lib || []).filter((e) => e.pm.ready && e.pm.kind === 'video');
+const sig = vids.map((e) => e.id + e.pm.name).join('|') + '#' + mc.soundKey;
+if (fx && sig !== soundSig.v) {
+soundSig.v = sig;
+soundSrcRow.textContent = '';
+if (vids.length > 1) {
+soundSrc = select({ options: [{ value: 'follow', label: 'Показанного сейчас' }, ...vids.map((e) => ({ value: e.id, label: e.pm.name || 'Видео', icon: 'film-strip' }))], value: mc.soundKey, onChange: (v) => mc.setSoundKey(v) });
+soundSrcRow.append(field('Звук из', soundSrc.el, { wide: true }));
+}
+}
+sound.el.hidden = !vids.length && pm.kind !== 'video';
+sound.set(!soundPm().muted);
 ptsRow.hidden = !ready || pm.isRec;
 pts.set(md.pts);
 sizeSl.set(pset.size);
@@ -81669,6 +81683,11 @@ en: {
 'нет': 'none',
 'об.': 'turns',
 'Переход': 'Transition',
+'Добавить…': 'Add…',
+'Добавить модель, облако точек, видео или фото: всё это сразу встаёт в морфинг': 'Add a model, point cloud, video or photo: it joins the morph right away',
+'Что добавить': 'What to add',
+'Звук из': 'Sound from',
+'Показанного сейчас': 'The one on screen',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -82651,6 +82670,11 @@ uk: {
 'нет': 'немає',
 'об.': 'об.',
 'Переход': 'Перехід',
+'Добавить…': 'Додати…',
+'Добавить модель, облако точек, видео или фото: всё это сразу встаёт в морфинг': 'Додати модель, хмару точок, відео або фото: усе це одразу стає в морфінг',
+'Что добавить': 'Що додати',
+'Звук из': 'Звук з',
+'Показанного сейчас': 'Показаного зараз',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -83633,6 +83657,11 @@ es: {
 'нет': 'no',
 'об.': 'vueltas',
 'Переход': 'Transición',
+'Добавить…': 'Añadir…',
+'Добавить модель, облако точек, видео или фото: всё это сразу встаёт в морфинг': 'Añade un modelo, nube de puntos, vídeo o foto: entra en el morphing al instante',
+'Что добавить': 'Qué añadir',
+'Звук из': 'Sonido de',
+'Показанного сейчас': 'El que se muestra',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -84615,6 +84644,11 @@ de: {
 'нет': 'keine',
 'об.': 'Umdr.',
 'Переход': 'Übergang',
+'Добавить…': 'Hinzufügen…',
+'Добавить модель, облако точек, видео или фото: всё это сразу встаёт в морфинг': 'Modell, Punktwolke, Video oder Foto hinzufügen: alles kommt sofort in den Morph',
+'Что добавить': 'Was hinzufügen',
+'Звук из': 'Ton von',
+'Показанного сейчас': 'Dem gezeigten',
 },
 };
 };
@@ -87560,7 +87594,7 @@ _endMediaMorph() {
 const mm = this._mm;
 if (!mm) return;
 this._mm = null;
-if (mm.out && mm.out.pm.playing) mm.out.pm.pause();
+if (mm.out && mm.out.pm.playing && !this.app.media.keepsSound(mm.out)) mm.out.pm.pause();
 if (mm.in && mm.in.want !== false && !mm.in.pm.playing) mm.in.pm.play();
 }
 _mediaMorphTick(dt) {
@@ -87573,7 +87607,7 @@ const set = this.app.settings.media;
 const side = (e, outSide) => {
 const pm = e.pm;
 const active = outSide ? m < 0.45 : m >= 0.4;
-const play = active && e.want !== false;
+const play = (active && e.want !== false) || this.app.media.keepsSound(e);
 if (play && !pm.playing) pm.play();
 else if (!play && pm.playing) pm.pause();
 if (!active || g.attributes.position.count !== pm.count) return;
@@ -87630,11 +87664,12 @@ this.curKey = key;
 if (isMedia && this.app.media.pm !== mEntry.pm) {
 this.app.media.pm = mEntry.pm;
 this.app.media.emit();
+this._resyncVideoAudio?.();
 }
 this._endMediaMorph();
 if (!target || target.count !== this.geometry.attributes.position.count) {
 const was = prevKey && prevKey !== key && prevKey.startsWith('media') ? this.app.media.entry(prevKey) : null;
-if (was && was.pm.playing) was.pm.pause();
+if (was && was.pm.playing && !this.app.media.keepsSound(was)) was.pm.pause();
 await this._build();
 if (mEntry && mEntry.want !== false && !mEntry.pm.playing) mEntry.pm.play();
 return this.emit();
@@ -92707,7 +92742,20 @@ this.emit();
 _audioVideo() {
 const own = this._vidEl;
 if (own && own !== this.pm.el && own === this._scrFile?.media) return own;
-return this.pm.ready && this.pm.kind === 'video' ? this.pm.el : null;
+const sp = this._soundPm();
+return sp.ready && sp.kind === 'video' ? sp.el : null;
+}
+_soundPm() {
+return this.app.media.soundEntry?.()?.pm || this.pm;
+}
+_resyncVideoAudio() {
+if (this.sourceType !== 'video' || !this.playing || !this.ctx) return;
+const el = this._audioVideo();
+if (el && el !== this._vidEl) {
+const old = this._vidPm;
+if (old && old.onMute) old.onMute = null;
+this._connectVideo();
+}
 }
 _videoGate(el = this.pm.kind === 'video' ? this.pm.el : null) {
 if (!el || el.tagName !== 'VIDEO') return null;
@@ -92730,12 +92778,14 @@ gate.gain.value = 1;
 gate.connect(this.bus);
 this._vidGate = gate;
 this._vidEl = el;
-if (el === this.pm.el) {
-this.pm.onMute = (m) => {
+const sp = this._soundPm();
+if (el === sp.el) {
+this._vidPm = sp;
+sp.onMute = (m) => {
 if (this.out) this.out.gain.value = m ? 0 : this.state.audio.volume;
 };
-this.pm.onMute(this.pm.muted);
-this.pm.play();
+sp.onMute(sp.muted);
+sp.play();
 } else {
 if (this.out) this.out.gain.value = this.state.audio.volume;
 el.play().catch(() => {});
@@ -92759,7 +92809,7 @@ gate.connect(this._vidSink());
 } catch (e) {
 }
 this._vidGate = null;
-if (this._vidEl === this.pm.el) this.pm.onMute = null;
+if (this._vidPm && this._vidEl === this._vidPm.el) this._vidPm.onMute = null;
 if (this.out) this.out.gain.value = this.state.audio.volume;
 }
 }
@@ -96494,8 +96544,7 @@ onInput: () => {},
 onChange: (v) => engine.setCount(v),
 });
 const countHint = h('div', { class: 'field-hint' });
-const addModel = button({ label: 'Добавить модель…', icon: 'folder-open', variant: 'secondary', cls: 'btn-block', title: 'Открыть модель, облако точек (PLY, PCD, XYZ) или архив и сразу использовать их здесь', onClick: () => app.ui.openFiles('add') });
-const addMedia = button({ label: 'Добавить видео или фото…', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Видео или фото станет формой из точек: к ней применяются все эффекты, и с ней можно делать морфинг. Можно добавить несколько штук', onClick: () => app.ui.openFiles('media') });
+const addModel = button({ label: 'Добавить…', icon: 'plus', variant: 'secondary', cls: 'btn-block', title: 'Добавить модель, облако точек, видео или фото: всё это сразу встаёт в морфинг', onClick: () => app.ui.openFiles('fxadd') });
 const modelNote = h('div', { class: 'field-hint' });
 const mc = st.morphCfg;
 const formsList = h('div', { class: 'mf-list', role: 'list' });
@@ -96684,7 +96733,7 @@ renderForms();
 syncAI();
 }
 };
-const secSource = section('Форма', { key: 'fx-source' }, addModel, addMedia, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
+const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
 const secMorph = section('Морфинг', { key: 'fx-morph' }, morphBox);
 const pickers = new Set();
 function levelMeter(L, onThr, onSave) {
@@ -99508,15 +99557,17 @@ this.fpsTimer = null;
 }
 setExportLabel() {}
 async openFiles(mode = 'auto') {
-if (mode === 'auto' && this.workspace === 'fx' && (this.app.model.renderables().length || this.app.media.pm.ready)) {
+const fxAdd = mode === 'fxadd';
+if (fxAdd) mode = 'auto';
+if (mode === 'auto' && this.workspace === 'fx' && (fxAdd || this.app.model.renderables().length || this.app.media.pm.ready)) {
 const choice = await this.choose({
-title: 'Что открыть',
+title: fxAdd ? 'Что добавить' : 'Что открыть',
 text: 'Модели, видео и фото можно добавлять к тому, что уже есть, и потом делать между ними морфинг.',
 buttons: [
 { label: 'Отмена', value: null },
 { label: 'Модель', value: 'add', icon: 'cube' },
 { label: 'Видео или фото', value: 'media', icon: 'film-strip' },
-{ label: 'Начать заново', value: 'replace', icon: 'arrows-clockwise' },
+...(fxAdd ? [] : [{ label: 'Начать заново', value: 'replace', icon: 'arrows-clockwise' }]),
 ],
 });
 if (!choice) return;
@@ -101197,6 +101248,7 @@ this.pm = new PointMedia();
 Object.defineProperty(this.pm, 'adjust', { get: () => app.settings.media });
 this.lib = [{ id: 'media', pm: this.pm, want: true }];
 this._mid = 1;
+this.soundKey = 'follow';
 this.live = new Proxy(
 {},
 {
@@ -101235,6 +101287,20 @@ return this.pm.ready && (this._rebuilding || (!!this.obj && !!this.obj.parent) |
 }
 entry(keyOrPm) {
 return this.lib.find((e) => e.id === keyOrPm || e.pm === keyOrPm) || null;
+}
+soundEntry() {
+const e = this.soundKey !== 'follow' ? this.entry(this.soundKey) : null;
+return e && e.pm.ready ? e : this.entry(this.pm);
+}
+keepsSound(e) {
+return !!e && this.soundKey !== 'follow' && e.id === this.soundKey;
+}
+setSoundKey(k) {
+this.soundKey = k;
+const e = this.soundEntry();
+if (e && this.keepsSound(e) && !e.pm.playing) e.pm.play();
+this.app.ui?.effectsEngine?._resyncVideoAudio?.();
+this.emit();
 }
 activeKey() {
 return this.entry(this.pm)?.id || 'media';

@@ -228,15 +228,18 @@ export class UI {
 
 	async openFiles(mode = 'auto') {
 		// в режиме эффектов «Открыть» сразу спрашивает, что делать с файлом: дополнить сцену (ещё модель, видео, фото) или начать с чистого листа
-		if (mode === 'auto' && this.workspace === 'fx' && (this.app.model.renderables().length || this.app.media.pm.ready)) {
+		// «Добавить…» в эффектах: тот же выбор, но без «Начать заново»
+		const fxAdd = mode === 'fxadd';
+		if (fxAdd) mode = 'auto';
+		if (mode === 'auto' && this.workspace === 'fx' && (fxAdd || this.app.model.renderables().length || this.app.media.pm.ready)) {
 			const choice = await this.choose({
-				title: 'Что открыть',
+				title: fxAdd ? 'Что добавить' : 'Что открыть',
 				text: 'Модели, видео и фото можно добавлять к тому, что уже есть, и потом делать между ними морфинг.',
 				buttons: [
 					{ label: 'Отмена', value: null },
 					{ label: 'Модель', value: 'add', icon: 'cube' },
 					{ label: 'Видео или фото', value: 'media', icon: 'film-strip' },
-					{ label: 'Начать заново', value: 'replace', icon: 'arrows-clockwise' },
+					...(fxAdd ? [] : [{ label: 'Начать заново', value: 'replace', icon: 'arrows-clockwise' }]),
 				],
 			});
 			if (!choice) return;
