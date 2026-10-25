@@ -9,7 +9,7 @@ return `${m}:${s.toFixed(1).padStart(4, '0')}`;
 };
 export function createMediaBar(app, host) {
 const mc = app.media;
-const pm = mc.pm;
+const pm = mc.live;
 const isOn = () => (pm.kind === 'video' && pm.el ? pm.playing && !pm.el.paused : pm.playing);
 const toggle = () => {
 if (isOn()) pm.pause();

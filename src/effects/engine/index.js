@@ -104,7 +104,6 @@ export class EffectsEngine {
 		this._lastT = 0;
 		this.recording = false;
 		this.modelProvider = null; // { available(), kind(), total(), get(n) }
-		this.pm = app.media.pm;
 		// карта глубины для фото и видео: нейросеть работает в отдельном потоке, результат переносится на сетку точек
 		this.depthAI = new DepthAI();
 		this._dListeners = new Set();
@@ -200,9 +199,22 @@ export class EffectsEngine {
 
 	// ------------------------------------------------------------ геометрия
 	/** Сколько частиц реально используем: если в сцене есть готовое облако точек, не больше, чем в нём */
+	/** Текущее фото или видео (оно же в таймлайне и в панели «Фото и видео»); их может быть несколько, переключается при переходе */
+	get pm() {
+		return this.app.media.pm;
+	}
+
 	_n() {
 		// видео или фото участвует в морфинге или показано сейчас: у всех форм столько же точек, сколько у видео, иначе переход превращается в резкую подмену
-		if (this.pm.ready && (this.state.source === 'media' || (this.playlist || []).includes('media'))) return this.pm.count;
+		const mc = this.app.media;
+		const inList = (this.playlist || []).map((k) => mc.entry(k)).find((e) => e && e.pm.ready);
+		if (this.state.source === 'media' || inList) {
+			const pm = this.state.source === 'media' && this.pm.ready ? this.pm : inList?.pm;
+			if (pm && pm.ready) {
+				mc.applyGrid(pm);
+				return pm.count;
+			}
+		}
 		const mp = this.modelProvider;
 		if (mp && mp.kind() === 'cloud') return Math.max(1000, Math.min(this.state.count, mp.total()));
 		return this.state.count;

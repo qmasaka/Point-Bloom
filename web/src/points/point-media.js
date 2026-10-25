@@ -230,6 +230,15 @@ this._xy = null;
 this.dirty = true;
 }
 }
+setGridExact(cols, rows) {
+if (this.isRec) return;
+if (cols !== this.cols || rows !== this.rows) {
+this.cols = cols;
+this.rows = rows;
+this._xy = null;
+this.dirty = true;
+}
+}
 get count() {
 return this.cols * this.rows;
 }

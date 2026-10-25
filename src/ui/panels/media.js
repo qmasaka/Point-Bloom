@@ -5,7 +5,8 @@ import { section, field, fxSlider as slider, segmented, switchRow, button, color
 
 export function createMediaPanel(app, root, { fx = false } = {}) {
 	const mc = app.media;
-	const pm = mc.pm;
+	// постоянная ссылка на текущее фото или видео: их может быть несколько, и текущее меняется
+	const pm = mc.live;
 	const md = app.settings.media;
 	const save = () => app.saveSettings();
 	const eng = () => app.ui.effectsEngine;

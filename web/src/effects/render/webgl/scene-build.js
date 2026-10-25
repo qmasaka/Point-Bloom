@@ -6,7 +6,12 @@ export class BuildPart {
 async _build() {
 const st = this.state;
 if (st.source === 'model' && !this.hasModel) st.source = 'sphere';
-let c = await this._cloudFor(st.source);
+let bKey = st.source === 'media' && this.curKey && this.curKey.startsWith('media') ? this.curKey : st.source;
+if (st.source === 'media' && !this.app.media.entry(bKey)?.pm.ready) {
+bKey = this.app.media.lib.find((e) => e.pm.ready)?.id || bKey;
+this.curKey = bKey;
+}
+let c = await this._cloudFor(bKey);
 if (!c) {
 st.source = 'sphere';
 c = await this._cloudFor('sphere');
@@ -96,7 +101,7 @@ this.material = mat;
 this.shared = shared;
 this.points = pts;
 if (rot) pts.rotation.copy(rot);
-this.cloudKey = st.source;
+this.cloudKey = st.source === 'media' ? bKey : st.source;
 this.morph = 1;
 this.morphing = false;
 this.app.viewport.scene.add(pts);

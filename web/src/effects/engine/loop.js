@@ -401,6 +401,7 @@ if (L.links.on && (this._alk = ((this._alk || 0) + 1) % 4) === 0) this._syncLink
 }
 if (this._linksStale && L.links.on) this._computeLinks();
 this._trailTick(L.trail);
+if (this._mm) this._mediaMorphTick(dt);
 let rgbNew = null;
 if (st.source === 'media' && this.pm.ready && this.geometry && !this.morphing && this.geometry.attributes.position.count === this.pm.count) {
 const rgb = this.pm.advance(dt);

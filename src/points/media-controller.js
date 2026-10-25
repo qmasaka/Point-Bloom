@@ -11,6 +11,24 @@ export class MediaController {
 		this.app = app;
 		this.pm = new PointMedia();
 		Object.defineProperty(this.pm, 'adjust', { get: () => app.settings.media });
+		// все открытые фото и видео: первое «media», остальные «media:2», «media:3»... Текущее (то, что показано и управляется с таймлайна) лежит в this.pm
+		this.lib = [{ id: 'media', pm: this.pm, want: true }];
+		this._mid = 1;
+		// постоянная ссылка на текущее медиа: панели и таймлайн берут её один раз, а она сама следует за переключением
+		this.live = new Proxy(
+			{},
+			{
+				get: (_, k) => {
+					const t = this.pm;
+					const v = t[k];
+					return typeof v === 'function' ? v.bind(t) : v;
+				},
+				set: (_, k, v) => {
+					this.pm[k] = v;
+					return true;
+				},
+			}
+		);
 		this.obj = null;
 		this.progress = null;
 		this._cancel = false;
@@ -36,7 +54,45 @@ export class MediaController {
 	/** Медиа открыто и его облако лежит в сцене (если объект удалили, вкладка и таймлайн прячутся) */
 	get present() {
 		// пока облако пересобирается (старое снято, новое ещё не добавлено), считаем, что медиа на месте: иначе вкладка «Медиа» закрывалась и кидала на «Сцену»
-		return this.pm.ready && (this._rebuilding || (!!this.obj && !!this.obj.parent));
+		return this.pm.ready && (this._rebuilding || (!!this.obj && !!this.obj.parent) || this.lib.length > 1);
+	}
+
+	/** Запись библиотеки по ключу формы или по самому медиа */
+	entry(keyOrPm) {
+		return this.lib.find((e) => e.id === keyOrPm || e.pm === keyOrPm) || null;
+	}
+
+	/** Ключ текущего медиа в библиотеке */
+	activeKey() {
+		return this.entry(this.pm)?.id || 'media';
+	}
+
+	/** Сколько фото и видео открыто */
+	count() {
+		return this.lib.filter((e) => e.pm.ready).length;
+	}
+
+	/** Сетка точек для медиа: у одного своя под пропорции кадра, у нескольких одинаковая квадратная, чтобы число точек совпало */
+	applyGrid(pm) {
+		if (pm.isRec) return;
+		const pts = this.cfg.pts;
+		const live = this.lib.filter((e) => e.pm.ready && !e.pm.isRec).length;
+		if (live > 1) {
+			const s = Math.max(8, Math.round(Math.sqrt(pts)));
+			pm.setGridExact(s, s);
+		} else pm.setGrid(pts);
+	}
+
+	/** Ещё одно фото или видео рядом с открытым (режим эффектов): прежнее остаётся, новое становится формой для морфинга */
+	async addExtra(file) {
+		const pm = new PointMedia();
+		Object.defineProperty(pm, 'adjust', { get: () => this.app.settings.media });
+		await pm.load(file);
+		pm.pause();
+		const id = 'media:' + ++this._mid;
+		this.lib.push({ id, pm, want: true });
+		this.emit();
+		return id;
 	}
 
 	emit() {
@@ -63,12 +119,22 @@ export class MediaController {
 
 	/** Убирает фото или видео и облако из сцены */
 	close() {
-		const o = this.obj;
-		this.obj = null;
-		this.pm.close();
-		if (o && o.parent) this.app.model.remove(o);
 		const eng = this.app.ui?.effectsEngine;
-		if (eng?.state.source === 'media') eng.setSource(eng.hasModel ? 'model' : 'sphere');
+		const cur = this.entry(this.pm);
+		const isPrimary = !cur || cur.id === 'media';
+		let o = null;
+		if (isPrimary) {
+			o = this.obj;
+			this.obj = null;
+		}
+		this.pm.close();
+		if (!isPrimary) this.lib = this.lib.filter((e) => e !== cur);
+		if (o && o.parent) this.app.model.remove(o);
+		// остались другие фото и видео: показываем следующее, а не пустую сцену
+		const next = this.lib.find((e) => e.pm.ready);
+		if (next) this.pm = next.pm;
+		else this.pm = this.lib[0].pm;
+		if (eng?.state.source === 'media') eng.setSource(next ? next.id : eng.hasModel ? 'model' : 'sphere');
 		this.emit();
 	}
 
@@ -77,7 +143,7 @@ export class MediaController {
 		const { app, pm } = this;
 		if (!pm.ready) return;
 		const c = this.cfg;
-		pm.setGrid(c.pts);
+		this.applyGrid(pm);
 		pm.dirty = true;
 		const cloud = pm.buildCloud(pm.sample(), c.relief, c.depth);
 		const pts = cloudToPoints(cloud, pm.kind === 'image' ? 'Фото в точках' : pm.kind === 'rec' ? 'Точечный ролик' : 'Видео в точках');

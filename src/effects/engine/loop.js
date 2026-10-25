@@ -447,6 +447,8 @@ export class LoopPart {
 			}
 			if (this._linksStale && L.links.on) this._computeLinks();
 		this._trailTick(L.trail);
+			// переход между видео и другими формами: видео играет, пока точки разлетаются, и запускается, когда они собираются
+			if (this._mm) this._mediaMorphTick(dt);
 			// фото и видео: обновляем цвета и высоту точек по текущему кадру
 			let rgbNew = null;
 			if (st.source === 'media' && this.pm.ready && this.geometry && !this.morphing && this.geometry.attributes.position.count === this.pm.count) {

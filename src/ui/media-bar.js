@@ -12,7 +12,7 @@ const fmt = (t) => {
 
 export function createMediaBar(app, host) {
 	const mc = app.media;
-	const pm = mc.pm;
+	const pm = mc.live;
 	// истина о воспроизведении: сам элемент видео, а не флаг (флаг мог разойтись с элементом, и пауза мышью не срабатывала)
 	const isOn = () => (pm.kind === 'video' && pm.el ? pm.playing && !pm.el.paused : pm.playing);
 	const toggle = () => {

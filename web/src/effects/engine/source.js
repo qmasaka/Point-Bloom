@@ -1,23 +1,16 @@
 import * as THREE from 'three';
 import { fitCount, mortonSort, normalizeCloud } from '../shapes/cloud-utils.js';
 import { generateShapePoints } from '../shapes/shapes.js';
-const SHAPE_FORMS = [
-{ key: 'sphere', name: 'Сфера', icon: 'sphere' },
-{ key: 'torus', name: 'Тор', icon: 'circle' },
-{ key: 'cube', name: 'Куб', icon: 'cube' },
-{ key: 'helix', name: 'Спираль', icon: 'tornado' },
-{ key: 'saturn', name: 'Сатурн', icon: 'planet' },
-{ key: 'galaxy', name: 'Галактика', icon: 'sparkle' },
-{ key: 'plane', name: 'Плоскость', icon: 'stack' },
-];
 export class SourcePart {
 async useMedia() {
 this.state.look.colorBy = 'model';
 for (const id of ['curl', 'blast']) this.state.layers[id].on = false;
+const mkey = this.app.media.activeKey();
+this.curKey = mkey;
 if (this.state.source === 'media') {
 this.cache.clear();
 await this._build();
-} else await this.setSource('media');
+} else await this.setSource(mkey);
 this.state.look.autoRotate = false;
 if (this.points) this.points.rotation.set(0, 0, 0);
 this.emit();
@@ -38,8 +31,10 @@ return out;
 }
 uiForms() {
 const out = this.forms().map((f) => ({ ...f, group: 'scene' }));
-if (this.pm.ready) out.push({ key: 'media', name: this.pm.name || (this.pm.kind === 'video' ? 'Видео' : 'Фото'), icon: this.pm.kind === 'video' || this.pm.kind === 'rec' ? 'film-strip' : 'image', group: 'scene' });
-for (const s of SHAPE_FORMS) out.push({ key: s.key, name: s.name, icon: s.icon, group: 'shape' });
+for (const e of this.app.media.lib) {
+if (!e.pm.ready) continue;
+out.push({ key: e.id, name: e.pm.name || (e.pm.kind === 'image' ? 'Фото' : 'Видео'), icon: e.pm.kind === 'image' ? 'image' : 'film-strip', group: 'scene' });
+}
 return out;
 }
 _fracFor(key) {
@@ -151,10 +146,10 @@ return !!(this.modelProvider && this.modelProvider.available());
 }
 async _cloudFor(key) {
 if (key === 'frames') return this._frameCloud || null;
-if (key === 'media') {
-const pm = this.pm;
-if (!pm.ready) return null;
-pm.setGrid(this.app.settings.media.pts);
+if (key === 'media' || key.startsWith('media:')) {
+const pm = this.app.media.entry(key)?.pm;
+if (!pm || !pm.ready) return null;
+this.app.media.applyGrid(pm);
 const m = this.app.settings.media;
 pm.dirty = true;
 return pm.buildCloud(pm.sample(), m.relief, m.depth);
@@ -202,9 +197,58 @@ this._quiet = false;
 await new Promise((r) => setTimeout(r, 30));
 }
 }
+_endMediaMorph() {
+const mm = this._mm;
+if (!mm) return;
+this._mm = null;
+if (mm.out && mm.out.pm.playing) mm.out.pm.pause();
+if (mm.in && mm.in.want !== false && !mm.in.pm.playing) mm.in.pm.play();
+}
+_mediaMorphTick(dt) {
+const mm = this._mm;
+const g = this.geometry;
+if (!mm || !g) return;
+if (!this.morphing) return this._endMediaMorph();
+const m = this.morph;
+const set = this.app.settings.media;
+const side = (e, outSide) => {
+const pm = e.pm;
+const active = outSide ? m < 0.45 : m >= 0.4;
+const play = active && e.want !== false;
+if (play && !pm.playing) pm.play();
+else if (!play && pm.playing) pm.pause();
+if (!active || g.attributes.position.count !== pm.count) return;
+const rgb = pm.advance(dt);
+if (!rgb) return;
+const n = pm.count;
+if (!this._zbuf || this._zbuf.length !== n * 3) this._zbuf = new Float32Array(n * 3);
+const z = this._zbuf;
+const colA = outSide ? g.attributes.aColor : g.attributes.aColorB;
+const zA = outSide ? g.attributes.aOrigin : g.attributes.aTarget;
+pm.applyTo({ positions: z, colors: colA.array, hide: outSide ? g.attributes.aHide.array : undefined }, rgb, set.relief, set.depth);
+const za = zA.array;
+for (let i = 2; i < n * 3; i += 3) za[i] = z[i];
+colA.needsUpdate = zA.needsUpdate = true;
+if (outSide) g.attributes.aHide.needsUpdate = true;
+};
+if (mm.out) side(mm.out, true);
+if (mm.in) side(mm.in, false);
+}
+async addMediaForm(id) {
+if (!this.active) return;
+const list = [...(this.playlist || [])];
+if (!list.includes(id)) list.push(id);
+this.playlist = list;
+this._pi = Math.max(-1, list.indexOf(this.curKey || this.state.source));
+await this._syncMorphCount();
+await this.setSource(id);
+this.emit();
+}
 async setSource(key) {
 const st = this.state;
-if (key === 'media' && !this.pm.ready) {
+const isMedia = key === 'media' || key.startsWith('media:');
+const mEntry = isMedia ? this.app.media.entry(key) : null;
+if (isMedia && !(mEntry && mEntry.pm.ready)) {
 this.app.toast('Сначала загрузите фото или видео в разделе «Фото и видео»', 'info');
 return;
 }
@@ -212,7 +256,8 @@ if (key === 'model' && !this.hasModel) {
 this.app.toast('Нет модели: добавьте её кнопкой «Добавить модель» или откройте в редакторе', 'info');
 return;
 }
-st.source = key.startsWith('obj:') ? 'model' : key;
+const prevKey = this.cloudKey;
+st.source = key.startsWith('obj:') ? 'model' : isMedia ? 'media' : key;
 this.touch();
 if (!this.active || !this.geometry) return this.emit();
 let target;
@@ -223,14 +268,22 @@ this.app.ui.idle();
 }
 if (!target) return this.emit();
 this.curKey = key;
+if (isMedia && this.app.media.pm !== mEntry.pm) {
+this.app.media.pm = mEntry.pm;
+this.app.media.emit();
+}
+this._endMediaMorph();
 if (!target || target.count !== this.geometry.attributes.position.count) {
+const was = prevKey && prevKey !== key && prevKey.startsWith('media') ? this.app.media.entry(prevKey) : null;
+if (was && was.pm.playing) was.pm.pause();
 await this._build();
+if (mEntry && mEntry.want !== false && !mEntry.pm.playing) mEntry.pm.play();
 return this.emit();
 }
 const g = this.geometry;
 const o = g.attributes.aOrigin;
 const t = g.attributes.aTarget;
-if (key !== 'media' && this.cloudKey === 'media' && g.attributes.aHide) {
+if (!isMedia && prevKey && prevKey.startsWith('media') && g.attributes.aHide) {
 g.attributes.aHide.array.fill(0);
 g.attributes.aHide.needsUpdate = true;
 }
@@ -267,6 +320,9 @@ vis.needsUpdate = true;
 }
 o.needsUpdate = t.needsUpdate = true;
 this.cloudKey = key;
+const outE = prevKey && prevKey.startsWith('media') && prevKey !== key ? this.app.media.entry(prevKey) : null;
+if (outE) outE.want = outE.pm.playing;
+this._mm = outE || isMedia ? { out: outE, in: isMedia && prevKey !== key ? mEntry : null } : null;
 this.morph = 0;
 this.morphing = true;
 this._settleOn = false;

@@ -256,6 +256,17 @@ export class PointMedia {
 		}
 	}
 
+	/** Сетка точно заданного размера: у нескольких видео и фото одно число точек, поэтому между ними возможен плавный морфинг. Пропорции кадра держит расстановка точек */
+	setGridExact(cols, rows) {
+		if (this.isRec) return;
+		if (cols !== this.cols || rows !== this.rows) {
+			this.cols = cols;
+			this.rows = rows;
+			this._xy = null;
+			this.dirty = true;
+		}
+	}
+
 	get count() {
 		return this.cols * this.rows;
 	}

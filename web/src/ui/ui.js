@@ -206,7 +206,7 @@ async openFiles(mode = 'auto') {
 if (mode === 'auto' && this.workspace === 'fx' && (this.app.model.renderables().length || this.app.media.pm.ready)) {
 const choice = await this.choose({
 title: 'Что открыть',
-text: 'Всё это можно добавить к тому, что уже есть, и потом делать между ними морфинг. Видео или фото одно: новое заменит прежнее.',
+text: 'Модели, видео и фото можно добавлять к тому, что уже есть, и потом делать между ними морфинг.',
 buttons: [
 { label: 'Отмена', value: null },
 { label: 'Модель', value: 'add', icon: 'cube' },
@@ -911,7 +911,18 @@ $('#dropOverlay').hidden = true;
 async openMedia(file) {
 this.busy('Читаю файл', 0.3);
 try {
-await this.app.media.load(file);
+const mc = this.app.media;
+if (this.workspace === 'fx' && mc.pm.ready) {
+if (mc.count() >= 6) {
+this.toast('Можно открыть до шести фото и видео сразу. Уберите ненужное кнопкой «Убрать медиа»', 'warn');
+return;
+}
+const id = await mc.addExtra(file);
+await this.effectsEngine.addMediaForm(id);
+this.toast('Добавлено в морфинг', 'ok');
+return;
+}
+await mc.load(file);
 this.showTab('media');
 } catch (e) {
 this.toast(e.message || 'Не удалось открыть файл', 'error');

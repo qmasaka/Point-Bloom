@@ -7,6 +7,22 @@ constructor(app) {
 this.app = app;
 this.pm = new PointMedia();
 Object.defineProperty(this.pm, 'adjust', { get: () => app.settings.media });
+this.lib = [{ id: 'media', pm: this.pm, want: true }];
+this._mid = 1;
+this.live = new Proxy(
+{},
+{
+get: (_, k) => {
+const t = this.pm;
+const v = t[k];
+return typeof v === 'function' ? v.bind(t) : v;
+},
+set: (_, k, v) => {
+this.pm[k] = v;
+return true;
+},
+}
+);
 this.obj = null;
 this.progress = null;
 this._cancel = false;
@@ -27,7 +43,35 @@ get ready() {
 return this.pm.ready;
 }
 get present() {
-return this.pm.ready && (this._rebuilding || (!!this.obj && !!this.obj.parent));
+return this.pm.ready && (this._rebuilding || (!!this.obj && !!this.obj.parent) || this.lib.length > 1);
+}
+entry(keyOrPm) {
+return this.lib.find((e) => e.id === keyOrPm || e.pm === keyOrPm) || null;
+}
+activeKey() {
+return this.entry(this.pm)?.id || 'media';
+}
+count() {
+return this.lib.filter((e) => e.pm.ready).length;
+}
+applyGrid(pm) {
+if (pm.isRec) return;
+const pts = this.cfg.pts;
+const live = this.lib.filter((e) => e.pm.ready && !e.pm.isRec).length;
+if (live > 1) {
+const s = Math.max(8, Math.round(Math.sqrt(pts)));
+pm.setGridExact(s, s);
+} else pm.setGrid(pts);
+}
+async addExtra(file) {
+const pm = new PointMedia();
+Object.defineProperty(pm, 'adjust', { get: () => this.app.settings.media });
+await pm.load(file);
+pm.pause();
+const id = 'media:' + ++this._mid;
+this.lib.push({ id, pm, want: true });
+this.emit();
+return id;
 }
 emit() {
 this.app.bus.emit('media');
@@ -47,19 +91,28 @@ this.app.toast(this.pm.kind === 'image' ? 'Фото превращено в то
 this.emit();
 }
 close() {
-const o = this.obj;
-this.obj = null;
-this.pm.close();
-if (o && o.parent) this.app.model.remove(o);
 const eng = this.app.ui?.effectsEngine;
-if (eng?.state.source === 'media') eng.setSource(eng.hasModel ? 'model' : 'sphere');
+const cur = this.entry(this.pm);
+const isPrimary = !cur || cur.id === 'media';
+let o = null;
+if (isPrimary) {
+o = this.obj;
+this.obj = null;
+}
+this.pm.close();
+if (!isPrimary) this.lib = this.lib.filter((e) => e !== cur);
+if (o && o.parent) this.app.model.remove(o);
+const next = this.lib.find((e) => e.pm.ready);
+if (next) this.pm = next.pm;
+else this.pm = this.lib[0].pm;
+if (eng?.state.source === 'media') eng.setSource(next ? next.id : eng.hasModel ? 'model' : 'sphere');
 this.emit();
 }
 rebuild({ frame = true } = {}) {
 const { app, pm } = this;
 if (!pm.ready) return;
 const c = this.cfg;
-pm.setGrid(c.pts);
+this.applyGrid(pm);
 pm.dirty = true;
 const cloud = pm.buildCloud(pm.sample(), c.relief, c.depth);
 const pts = cloudToPoints(cloud, pm.kind === 'image' ? 'Фото в точках' : pm.kind === 'rec' ? 'Точечный ролик' : 'Видео в точках');

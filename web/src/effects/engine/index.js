@@ -91,7 +91,6 @@ this._raf = null;
 this._lastT = 0;
 this.recording = false;
 this.modelProvider = null;
-this.pm = app.media.pm;
 this.depthAI = new DepthAI();
 this._dListeners = new Set();
 this.depthAI.onChange = () => this._depthEmit();
@@ -172,8 +171,19 @@ this._saveT = setTimeout(() => saveJSON(KEY, this.state), 250);
 emit() {
 this.app.bus.emit('fx');
 }
+get pm() {
+return this.app.media.pm;
+}
 _n() {
-if (this.pm.ready && (this.state.source === 'media' || (this.playlist || []).includes('media'))) return this.pm.count;
+const mc = this.app.media;
+const inList = (this.playlist || []).map((k) => mc.entry(k)).find((e) => e && e.pm.ready);
+if (this.state.source === 'media' || inList) {
+const pm = this.state.source === 'media' && this.pm.ready ? this.pm : inList?.pm;
+if (pm && pm.ready) {
+mc.applyGrid(pm);
+return pm.count;
+}
+}
 const mp = this.modelProvider;
 if (mp && mp.kind() === 'cloud') return Math.max(1000, Math.min(this.state.count, mp.total()));
 return this.state.count;

@@ -66230,7 +66230,7 @@ const { h, formatInt } = __req('src/core/util.js');
 const { section, field, fxSlider: slider, segmented, switchRow, button, colorField } = __req('src/ui/ui-kit.js');
 function createMediaPanel(app, root, { fx = false } = {}) {
 const mc = app.media;
-const pm = mc.pm;
+const pm = mc.live;
 const md = app.settings.media;
 const save = () => app.saveSettings();
 const eng = () => app.ui.effectsEngine;
@@ -66323,7 +66323,7 @@ return `${m}:${s.toFixed(1).padStart(4, '0')}`;
 };
 function createMediaBar(app, host) {
 const mc = app.media;
-const pm = mc.pm;
+const pm = mc.live;
 const isOn = () => (pm.kind === 'video' && pm.el ? pm.playing && !pm.el.paused : pm.playing);
 const toggle = () => {
 if (isOn()) pm.pause();
@@ -81298,6 +81298,12 @@ en: {
 'Начать заново': 'Start over',
 'Нужно видео или фото': 'A video or photo is needed',
 'Готовлю формы к морфингу': 'Preparing shapes for morphing',
+'Вид перехода': 'Transition style',
+'Модели, видео и фото можно добавлять к тому, что уже есть, и потом делать между ними морфинг.': 'You can add models, videos and photos to what is already there and then morph between them.',
+'Видео или фото станет формой из точек: к ней применяются все эффекты, и с ней можно делать морфинг. Можно добавить несколько штук': 'A video or photo becomes a point shape: all effects apply to it and you can morph with it. You can add several',
+'Можно открыть до шести фото и видео сразу. Уберите ненужное кнопкой «Убрать медиа»': 'You can open up to six photos and videos at once. Remove one with the “Remove media” button',
+'Добавлено в морфинг:': 'Added to the morph:',
+'Добавлено в морфинг': 'Added to the morph',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -82229,6 +82235,12 @@ uk: {
 'Начать заново': 'Почати заново',
 'Нужно видео или фото': 'Потрібне відео або фото',
 'Готовлю формы к морфингу': 'Готую форми до морфінгу',
+'Вид перехода': 'Вигляд переходу',
+'Модели, видео и фото можно добавлять к тому, что уже есть, и потом делать между ними морфинг.': 'Моделі, відео та фото можна додавати до того, що вже є, і потім робити між ними морфінг.',
+'Видео или фото станет формой из точек: к ней применяются все эффекты, и с ней можно делать морфинг. Можно добавить несколько штук': 'Відео або фото стає формою з точок: до нього застосовуються всі ефекти, і з ним можна робити морфінг. Можна додати кілька',
+'Можно открыть до шести фото и видео сразу. Уберите ненужное кнопкой «Убрать медиа»': 'Можна відкрити до шести фото і відео одночасно. Приберіть непотрібне кнопкою «Прибрати медіа»',
+'Добавлено в морфинг:': 'Додано до морфінгу:',
+'Добавлено в морфинг': 'Додано до морфінгу',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -83160,6 +83172,12 @@ es: {
 'Начать заново': 'Empezar de nuevo',
 'Нужно видео или фото': 'Se necesita un vídeo o una foto',
 'Готовлю формы к морфингу': 'Preparando formas para el morphing',
+'Вид перехода': 'Estilo de transición',
+'Модели, видео и фото можно добавлять к тому, что уже есть, и потом делать между ними морфинг.': 'Puedes añadir modelos, vídeos y fotos a lo que ya hay y luego hacer morphing entre ellos.',
+'Видео или фото станет формой из точек: к ней применяются все эффекты, и с ней можно делать морфинг. Можно добавить несколько штук': 'El vídeo o la foto se convierte en una forma de puntos: se le aplican todos los efectos y puedes hacer morphing con ella. Puedes añadir varios',
+'Можно открыть до шести фото и видео сразу. Уберите ненужное кнопкой «Убрать медиа»': 'Puedes abrir hasta seis fotos y vídeos a la vez. Quita uno con el botón «Quitar medios»',
+'Добавлено в морфинг:': 'Añadido al morphing:',
+'Добавлено в морфинг': 'Añadido al morphing',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -84091,6 +84109,12 @@ de: {
 'Начать заново': 'Neu beginnen',
 'Нужно видео или фото': 'Ein Video oder Foto ist nötig',
 'Готовлю формы к морфингу': 'Bereite Formen für das Morphing vor',
+'Вид перехода': 'Übergangsart',
+'Модели, видео и фото можно добавлять к тому, что уже есть, и потом делать между ними морфинг.': 'Modelle, Videos und Fotos lassen sich zum Vorhandenen hinzufügen und dann dazwischen morphen.',
+'Видео или фото станет формой из точек: к ней применяются все эффекты, и с ней можно делать морфинг. Можно добавить несколько штук': 'Video oder Foto wird zu einer Punktform: alle Effekte wirken darauf, und man kann damit morphen. Es lassen sich mehrere hinzufügen',
+'Можно открыть до шести фото и видео сразу. Уберите ненужное кнопкой «Убрать медиа»': 'Es lassen sich bis zu sechs Fotos und Videos gleichzeitig öffnen. Entfernen Sie eines mit der Schaltfläche «Medien entfernen»',
+'Добавлено в морфинг:': 'Zum Morph hinzugefügt:',
+'Добавлено в морфинг': 'Zum Morph hinzugefügt',
 },
 };
 };
@@ -86716,23 +86740,16 @@ __def(__exports, 'SourcePart', () => SourcePart);
 const THREE = __req('vendor/three/build/three.module.js');
 const { fitCount, mortonSort, normalizeCloud } = __req('src/effects/shapes/cloud-utils.js');
 const { generateShapePoints } = __req('src/effects/shapes/shapes.js');
-const SHAPE_FORMS = [
-{ key: 'sphere', name: 'Сфера', icon: 'sphere' },
-{ key: 'torus', name: 'Тор', icon: 'circle' },
-{ key: 'cube', name: 'Куб', icon: 'cube' },
-{ key: 'helix', name: 'Спираль', icon: 'tornado' },
-{ key: 'saturn', name: 'Сатурн', icon: 'planet' },
-{ key: 'galaxy', name: 'Галактика', icon: 'sparkle' },
-{ key: 'plane', name: 'Плоскость', icon: 'stack' },
-];
 class SourcePart {
 async useMedia() {
 this.state.look.colorBy = 'model';
 for (const id of ['curl', 'blast']) this.state.layers[id].on = false;
+const mkey = this.app.media.activeKey();
+this.curKey = mkey;
 if (this.state.source === 'media') {
 this.cache.clear();
 await this._build();
-} else await this.setSource('media');
+} else await this.setSource(mkey);
 this.state.look.autoRotate = false;
 if (this.points) this.points.rotation.set(0, 0, 0);
 this.emit();
@@ -86753,8 +86770,10 @@ return out;
 }
 uiForms() {
 const out = this.forms().map((f) => ({ ...f, group: 'scene' }));
-if (this.pm.ready) out.push({ key: 'media', name: this.pm.name || (this.pm.kind === 'video' ? 'Видео' : 'Фото'), icon: this.pm.kind === 'video' || this.pm.kind === 'rec' ? 'film-strip' : 'image', group: 'scene' });
-for (const s of SHAPE_FORMS) out.push({ key: s.key, name: s.name, icon: s.icon, group: 'shape' });
+for (const e of this.app.media.lib) {
+if (!e.pm.ready) continue;
+out.push({ key: e.id, name: e.pm.name || (e.pm.kind === 'image' ? 'Фото' : 'Видео'), icon: e.pm.kind === 'image' ? 'image' : 'film-strip', group: 'scene' });
+}
 return out;
 }
 _fracFor(key) {
@@ -86866,10 +86885,10 @@ return !!(this.modelProvider && this.modelProvider.available());
 }
 async _cloudFor(key) {
 if (key === 'frames') return this._frameCloud || null;
-if (key === 'media') {
-const pm = this.pm;
-if (!pm.ready) return null;
-pm.setGrid(this.app.settings.media.pts);
+if (key === 'media' || key.startsWith('media:')) {
+const pm = this.app.media.entry(key)?.pm;
+if (!pm || !pm.ready) return null;
+this.app.media.applyGrid(pm);
 const m = this.app.settings.media;
 pm.dirty = true;
 return pm.buildCloud(pm.sample(), m.relief, m.depth);
@@ -86917,9 +86936,58 @@ this._quiet = false;
 await new Promise((r) => setTimeout(r, 30));
 }
 }
+_endMediaMorph() {
+const mm = this._mm;
+if (!mm) return;
+this._mm = null;
+if (mm.out && mm.out.pm.playing) mm.out.pm.pause();
+if (mm.in && mm.in.want !== false && !mm.in.pm.playing) mm.in.pm.play();
+}
+_mediaMorphTick(dt) {
+const mm = this._mm;
+const g = this.geometry;
+if (!mm || !g) return;
+if (!this.morphing) return this._endMediaMorph();
+const m = this.morph;
+const set = this.app.settings.media;
+const side = (e, outSide) => {
+const pm = e.pm;
+const active = outSide ? m < 0.45 : m >= 0.4;
+const play = active && e.want !== false;
+if (play && !pm.playing) pm.play();
+else if (!play && pm.playing) pm.pause();
+if (!active || g.attributes.position.count !== pm.count) return;
+const rgb = pm.advance(dt);
+if (!rgb) return;
+const n = pm.count;
+if (!this._zbuf || this._zbuf.length !== n * 3) this._zbuf = new Float32Array(n * 3);
+const z = this._zbuf;
+const colA = outSide ? g.attributes.aColor : g.attributes.aColorB;
+const zA = outSide ? g.attributes.aOrigin : g.attributes.aTarget;
+pm.applyTo({ positions: z, colors: colA.array, hide: outSide ? g.attributes.aHide.array : undefined }, rgb, set.relief, set.depth);
+const za = zA.array;
+for (let i = 2; i < n * 3; i += 3) za[i] = z[i];
+colA.needsUpdate = zA.needsUpdate = true;
+if (outSide) g.attributes.aHide.needsUpdate = true;
+};
+if (mm.out) side(mm.out, true);
+if (mm.in) side(mm.in, false);
+}
+async addMediaForm(id) {
+if (!this.active) return;
+const list = [...(this.playlist || [])];
+if (!list.includes(id)) list.push(id);
+this.playlist = list;
+this._pi = Math.max(-1, list.indexOf(this.curKey || this.state.source));
+await this._syncMorphCount();
+await this.setSource(id);
+this.emit();
+}
 async setSource(key) {
 const st = this.state;
-if (key === 'media' && !this.pm.ready) {
+const isMedia = key === 'media' || key.startsWith('media:');
+const mEntry = isMedia ? this.app.media.entry(key) : null;
+if (isMedia && !(mEntry && mEntry.pm.ready)) {
 this.app.toast('Сначала загрузите фото или видео в разделе «Фото и видео»', 'info');
 return;
 }
@@ -86927,7 +86995,8 @@ if (key === 'model' && !this.hasModel) {
 this.app.toast('Нет модели: добавьте её кнопкой «Добавить модель» или откройте в редакторе', 'info');
 return;
 }
-st.source = key.startsWith('obj:') ? 'model' : key;
+const prevKey = this.cloudKey;
+st.source = key.startsWith('obj:') ? 'model' : isMedia ? 'media' : key;
 this.touch();
 if (!this.active || !this.geometry) return this.emit();
 let target;
@@ -86938,14 +87007,22 @@ this.app.ui.idle();
 }
 if (!target) return this.emit();
 this.curKey = key;
+if (isMedia && this.app.media.pm !== mEntry.pm) {
+this.app.media.pm = mEntry.pm;
+this.app.media.emit();
+}
+this._endMediaMorph();
 if (!target || target.count !== this.geometry.attributes.position.count) {
+const was = prevKey && prevKey !== key && prevKey.startsWith('media') ? this.app.media.entry(prevKey) : null;
+if (was && was.pm.playing) was.pm.pause();
 await this._build();
+if (mEntry && mEntry.want !== false && !mEntry.pm.playing) mEntry.pm.play();
 return this.emit();
 }
 const g = this.geometry;
 const o = g.attributes.aOrigin;
 const t = g.attributes.aTarget;
-if (key !== 'media' && this.cloudKey === 'media' && g.attributes.aHide) {
+if (!isMedia && prevKey && prevKey.startsWith('media') && g.attributes.aHide) {
 g.attributes.aHide.array.fill(0);
 g.attributes.aHide.needsUpdate = true;
 }
@@ -86982,6 +87059,9 @@ vis.needsUpdate = true;
 }
 o.needsUpdate = t.needsUpdate = true;
 this.cloudKey = key;
+const outE = prevKey && prevKey.startsWith('media') && prevKey !== key ? this.app.media.entry(prevKey) : null;
+if (outE) outE.want = outE.pm.playing;
+this._mm = outE || isMedia ? { out: outE, in: isMedia && prevKey !== key ? mEntry : null } : null;
 this.morph = 0;
 this.morphing = true;
 this._settleOn = false;
@@ -87253,7 +87333,12 @@ class BuildPart {
 async _build() {
 const st = this.state;
 if (st.source === 'model' && !this.hasModel) st.source = 'sphere';
-let c = await this._cloudFor(st.source);
+let bKey = st.source === 'media' && this.curKey && this.curKey.startsWith('media') ? this.curKey : st.source;
+if (st.source === 'media' && !this.app.media.entry(bKey)?.pm.ready) {
+bKey = this.app.media.lib.find((e) => e.pm.ready)?.id || bKey;
+this.curKey = bKey;
+}
+let c = await this._cloudFor(bKey);
 if (!c) {
 st.source = 'sphere';
 c = await this._cloudFor('sphere');
@@ -87343,7 +87428,7 @@ this.material = mat;
 this.shared = shared;
 this.points = pts;
 if (rot) pts.rotation.copy(rot);
-this.cloudKey = st.source;
+this.cloudKey = st.source === 'media' ? bKey : st.source;
 this.morph = 1;
 this.morphing = false;
 this.app.viewport.scene.add(pts);
@@ -93005,6 +93090,7 @@ if (L.links.on && (this._alk = ((this._alk || 0) + 1) % 4) === 0) this._syncLink
 }
 if (this._linksStale && L.links.on) this._computeLinks();
 this._trailTick(L.trail);
+if (this._mm) this._mediaMorphTick(dt);
 let rgbNew = null;
 if (st.source === 'media' && this.pm.ready && this.geometry && !this.morphing && this.geometry.attributes.position.count === this.pm.count) {
 const rgb = this.pm.advance(dt);
@@ -94648,7 +94734,6 @@ this._raf = null;
 this._lastT = 0;
 this.recording = false;
 this.modelProvider = null;
-this.pm = app.media.pm;
 this.depthAI = new DepthAI();
 this._dListeners = new Set();
 this.depthAI.onChange = () => this._depthEmit();
@@ -94729,8 +94814,19 @@ this._saveT = setTimeout(() => saveJSON(KEY, this.state), 250);
 emit() {
 this.app.bus.emit('fx');
 }
+get pm() {
+return this.app.media.pm;
+}
 _n() {
-if (this.pm.ready && (this.state.source === 'media' || (this.playlist || []).includes('media'))) return this.pm.count;
+const mc = this.app.media;
+const inList = (this.playlist || []).map((k) => mc.entry(k)).find((e) => e && e.pm.ready);
+if (this.state.source === 'media' || inList) {
+const pm = this.state.source === 'media' && this.pm.ready ? this.pm : inList?.pm;
+if (pm && pm.ready) {
+mc.applyGrid(pm);
+return pm.count;
+}
+}
 const mp = this.modelProvider;
 if (mp && mp.kind() === 'cloud') return Math.max(1000, Math.min(this.state.count, mp.total()));
 return this.state.count;
@@ -95618,12 +95714,11 @@ onChange: (v) => engine.setCount(v),
 });
 const countHint = h('div', { class: 'field-hint' });
 const addModel = button({ label: 'Добавить модель…', icon: 'folder-open', variant: 'secondary', cls: 'btn-block', title: 'Открыть модель, облако точек (PLY, PCD, XYZ) или архив и сразу использовать их здесь', onClick: () => app.ui.openFiles('add') });
-const addMedia = button({ label: 'Добавить видео или фото…', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Видео или фото станет формой из точек: к ней применяются все эффекты, и с ней можно делать морфинг. Видео или фото одно, новое заменит прежнее', onClick: () => app.ui.openFiles('media') });
+const addMedia = button({ label: 'Добавить видео или фото…', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Видео или фото станет формой из точек: к ней применяются все эффекты, и с ней можно делать морфинг. Можно добавить несколько штук', onClick: () => app.ui.openFiles('media') });
 const modelNote = h('div', { class: 'field-hint' });
 const mc = st.morphCfg;
 const sceneRow = h('div', { class: 'chip-row fx-forms' });
-const shapeRow = h('div', { class: 'chip-row fx-forms' });
-const formsBox = h('div', { class: 'fx-forms-wrap' }, h('div', { class: 'fx-sub' }, 'Что в морфинге'), sceneRow, h('div', { class: 'fx-sub' }, 'Готовые фигуры'), shapeRow);
+const formsBox = h('div', { class: 'fx-forms-wrap' }, h('div', { class: 'fx-sub' }, 'Что в морфинге'), sceneRow);
 const picked = [];
 const seenForms = new Set();
 let formsSig = '';
@@ -95648,7 +95743,7 @@ changed = true;
 }
 if (changed) engine.setPlaylist([...picked]);
 const cur = engine.curKey || (engine.state.source === 'model' ? picked[0] : engine.state.source);
-for (const row of [sceneRow, shapeRow]) row.textContent = '';
+sceneRow.textContent = '';
 for (const f of list) {
 const k = picked.indexOf(f.key);
 const on = k >= 0;
@@ -95667,7 +95762,7 @@ const go = h('button', { type: 'button', class: 'chip-go', 'data-tip': 'Пере
 go.addEventListener('click', () => engine.morphTo(f.key));
 wrap.append(go);
 }
-(f.group === 'shape' ? shapeRow : sceneRow).append(wrap);
+sceneRow.append(wrap);
 }
 const has = picked.length >= 2;
 morphBox.hidden = false;
@@ -95677,20 +95772,18 @@ morphSettings.hidden = !has;
 formsSig = formsSigNow();
 };
 const morphHint = h('div', { class: 'field-hint' });
-const styleTiles = h('div', { class: 'shape-grid fx-shapes morph-styles', role: 'radiogroup', 'aria-label': 'Вид перехода' });
-const styleBtns = new Map();
-const styleHint = h('div', { class: 'field-hint' });
-for (const ms of MORPH_STYLES) {
-const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'data-tip': ms.hint }, h('span', { class: 'fx-ic', html: icon(ms.icon, 22) }), h('span', { class: 'shape-name' }, ms.name));
-b.addEventListener('click', () => {
-mc.style = ms.id;
+const styleSel = select({
+options: MORPH_STYLES.map((ms) => ({ value: ms.id, label: ms.name, sub: ms.hint })),
+value: mc.style,
+onChange: (v) => {
+const ms = MORPH_STYLES.find((x) => x.id === v);
+if (!ms) return;
+mc.style = v;
 Object.assign(mc, ms.v);
 save();
 syncMorph();
+},
 });
-styleBtns.set(ms.id, b);
-styleTiles.append(b);
-}
 const morphMode = segmented({ cls: 'seg-tight', options: [{ value: 'manual', label: 'Кнопкой' }, { value: 'beat', label: 'По биту' }, { value: 'timer', label: 'По таймеру' }], value: mc.mode, onChange: (v) => { mc.mode = v; save(); syncMorph(); } });
 const morphOrder = segmented({ cls: 'seg-tight', options: [{ value: 'seq', label: 'По кругу' }, { value: 'pingpong', label: 'Туда и обратно' }, { value: 'random', label: 'Случайно' }], value: mc.order, onChange: (v) => { mc.order = v; save(); } });
 const morphScrub = slider({ noNorm: true, min: 0, max: 100, step: 1, value: 0, digits: 0, unit: '%', onInput: (v) => engine.morphScrub(v / 100), onChange: (v) => { engine.morphScrubEnd(); if (v >= 100) setTimeout(() => morphScrub.set(0), 250); } });
@@ -95707,9 +95800,7 @@ const morphGo = button({ label: 'Следующая модель', icon: 'arrow-
 const turnsRow = field('Закрутка', morphTurns.el);
 const intRow = field('Не чаще, чем раз в', morphInt.el);
 const morphSettings = h('div', { class: 'sec-body', style: { padding: 0 } },
-h('div', { class: 'fx-sub' }, 'Вид перехода'),
-styleTiles,
-styleHint,
+field('Вид перехода', styleSel.el, { wide: true }),
 field('Длительность', morphTime.el),
 field('Разлёт', morphScatter.el),
 field('Разнобой по времени', morphStagger.el),
@@ -95729,8 +95820,7 @@ const morphBox = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox
 const morphNote = h('div', { class: 'fx-morph-note' }, h('b', {}, 'Морфинг между моделями'), h('span', {}, 'Если хотите, можно сделать плавный переход между двумя объектами: добавьте в сцену вторую модель, и здесь появятся виды перехода и их настройки.'));
 function syncMorph() {
 const cur = MORPH_STYLES.find((x) => x.id === mc.style) || MORPH_STYLES[0];
-styleBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === cur.id)));
-styleHint.textContent = cur.hint;
+styleSel.set(cur.id);
 turnsRow.hidden = cur.id !== 'swirl' && cur.id !== 'hyper';
 intRow.hidden = mc.mode === 'manual';
 morphMode.set(mc.mode);
@@ -97028,7 +97118,7 @@ animPanel.classList.add('is-out');
 animCloseT = setTimeout(() => {
 animPanel.hidden = true;
 animPanel.classList.remove('is-out');
-}, 300);
+}, 540);
 }
 }
 engine.timelineOpen = !!on;
@@ -98499,7 +98589,7 @@ async openFiles(mode = 'auto') {
 if (mode === 'auto' && this.workspace === 'fx' && (this.app.model.renderables().length || this.app.media.pm.ready)) {
 const choice = await this.choose({
 title: 'Что открыть',
-text: 'Всё это можно добавить к тому, что уже есть, и потом делать между ними морфинг. Видео или фото одно: новое заменит прежнее.',
+text: 'Модели, видео и фото можно добавлять к тому, что уже есть, и потом делать между ними морфинг.',
 buttons: [
 { label: 'Отмена', value: null },
 { label: 'Модель', value: 'add', icon: 'cube' },
@@ -99204,7 +99294,18 @@ $('#dropOverlay').hidden = true;
 async openMedia(file) {
 this.busy('Читаю файл', 0.3);
 try {
-await this.app.media.load(file);
+const mc = this.app.media;
+if (this.workspace === 'fx' && mc.pm.ready) {
+if (mc.count() >= 6) {
+this.toast('Можно открыть до шести фото и видео сразу. Уберите ненужное кнопкой «Убрать медиа»', 'warn');
+return;
+}
+const id = await mc.addExtra(file);
+await this.effectsEngine.addMediaForm(id);
+this.toast('Добавлено в морфинг', 'ok');
+return;
+}
+await mc.load(file);
 this.showTab('media');
 } catch (e) {
 this.toast(e.message || 'Не удалось открыть файл', 'error');
@@ -99857,6 +99958,15 @@ this._xy = null;
 this.dirty = true;
 }
 }
+setGridExact(cols, rows) {
+if (this.isRec) return;
+if (cols !== this.cols || rows !== this.rows) {
+this.cols = cols;
+this.rows = rows;
+this._xy = null;
+this.dirty = true;
+}
+}
 get count() {
 return this.cols * this.rows;
 }
@@ -100163,6 +100273,22 @@ constructor(app) {
 this.app = app;
 this.pm = new PointMedia();
 Object.defineProperty(this.pm, 'adjust', { get: () => app.settings.media });
+this.lib = [{ id: 'media', pm: this.pm, want: true }];
+this._mid = 1;
+this.live = new Proxy(
+{},
+{
+get: (_, k) => {
+const t = this.pm;
+const v = t[k];
+return typeof v === 'function' ? v.bind(t) : v;
+},
+set: (_, k, v) => {
+this.pm[k] = v;
+return true;
+},
+}
+);
 this.obj = null;
 this.progress = null;
 this._cancel = false;
@@ -100183,7 +100309,35 @@ get ready() {
 return this.pm.ready;
 }
 get present() {
-return this.pm.ready && (this._rebuilding || (!!this.obj && !!this.obj.parent));
+return this.pm.ready && (this._rebuilding || (!!this.obj && !!this.obj.parent) || this.lib.length > 1);
+}
+entry(keyOrPm) {
+return this.lib.find((e) => e.id === keyOrPm || e.pm === keyOrPm) || null;
+}
+activeKey() {
+return this.entry(this.pm)?.id || 'media';
+}
+count() {
+return this.lib.filter((e) => e.pm.ready).length;
+}
+applyGrid(pm) {
+if (pm.isRec) return;
+const pts = this.cfg.pts;
+const live = this.lib.filter((e) => e.pm.ready && !e.pm.isRec).length;
+if (live > 1) {
+const s = Math.max(8, Math.round(Math.sqrt(pts)));
+pm.setGridExact(s, s);
+} else pm.setGrid(pts);
+}
+async addExtra(file) {
+const pm = new PointMedia();
+Object.defineProperty(pm, 'adjust', { get: () => this.app.settings.media });
+await pm.load(file);
+pm.pause();
+const id = 'media:' + ++this._mid;
+this.lib.push({ id, pm, want: true });
+this.emit();
+return id;
 }
 emit() {
 this.app.bus.emit('media');
@@ -100203,19 +100357,28 @@ this.app.toast(this.pm.kind === 'image' ? 'Фото превращено в то
 this.emit();
 }
 close() {
-const o = this.obj;
-this.obj = null;
-this.pm.close();
-if (o && o.parent) this.app.model.remove(o);
 const eng = this.app.ui?.effectsEngine;
-if (eng?.state.source === 'media') eng.setSource(eng.hasModel ? 'model' : 'sphere');
+const cur = this.entry(this.pm);
+const isPrimary = !cur || cur.id === 'media';
+let o = null;
+if (isPrimary) {
+o = this.obj;
+this.obj = null;
+}
+this.pm.close();
+if (!isPrimary) this.lib = this.lib.filter((e) => e !== cur);
+if (o && o.parent) this.app.model.remove(o);
+const next = this.lib.find((e) => e.pm.ready);
+if (next) this.pm = next.pm;
+else this.pm = this.lib[0].pm;
+if (eng?.state.source === 'media') eng.setSource(next ? next.id : eng.hasModel ? 'model' : 'sphere');
 this.emit();
 }
 rebuild({ frame = true } = {}) {
 const { app, pm } = this;
 if (!pm.ready) return;
 const c = this.cfg;
-pm.setGrid(c.pts);
+this.applyGrid(pm);
 pm.dirty = true;
 const cloud = pm.buildCloud(pm.sample(), c.relief, c.depth);
 const pts = cloudToPoints(cloud, pm.kind === 'image' ? 'Фото в точках' : pm.kind === 'rec' ? 'Точечный ролик' : 'Видео в точках');

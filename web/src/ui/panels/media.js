@@ -2,7 +2,7 @@ import { h, formatInt } from '../../core/util.js';
 import { section, field, fxSlider as slider, segmented, switchRow, button, colorField } from '../ui-kit.js';
 export function createMediaPanel(app, root, { fx = false } = {}) {
 const mc = app.media;
-const pm = mc.pm;
+const pm = mc.live;
 const md = app.settings.media;
 const save = () => app.saveSettings();
 const eng = () => app.ui.effectsEngine;
