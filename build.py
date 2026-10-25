@@ -463,10 +463,11 @@ def write_vercel_json():
     csp = "; ".join(
         [
             "default-src 'self'",
-            "script-src 'self' 'wasm-unsafe-eval' 'sha256-%s' https://cdn.jsdelivr.net" % digest,
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+            "script-src 'self' 'wasm-unsafe-eval' 'sha256-%s' https://cdn.jsdelivr.net https://*.plerdy.com" % digest,
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://*.plerdy.com",
             "font-src 'self' data: https://cdn.jsdelivr.net",
-            "img-src 'self' data: blob:",
+            "img-src 'self' data: blob: https://*.plerdy.com",
+            "frame-src 'self' https://*.plerdy.com",
             "media-src 'self' blob: mediastream:",
             "connect-src 'self' https: blob: data:",
             "worker-src 'self' blob:",
@@ -537,7 +538,7 @@ def build_web():
     if os.path.isdir(mp_src):
         shutil.copytree(mp_src, os.path.join(out, "vendor", "mediapipe"))
     # установка как приложения: манифест, иконки и сервис-воркер лежат в корне сайта
-    for f in ("manifest.webmanifest", "sw.js"):
+    for f in ("manifest.webmanifest", "sw.js", "plerdy.js"):
         shutil.copy(os.path.join(ROOT, f), os.path.join(out, f))
     shutil.copytree(os.path.join(ROOT, "assets", "pwa"), os.path.join(out, "assets", "pwa"))
     with open(os.path.join(ROOT, "assets", "style.css"), encoding="utf-8") as fh:
