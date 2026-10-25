@@ -461,7 +461,9 @@ export class SourcePart {
 		this.curKey = key;
 		// это фото или видео теперь текущее: на него переходят таймлайн и панель
 		if (isMedia && this.app.media.pm !== mEntry.pm) {
+			const prevHeard = this.app.media.soundEntry()?.pm;
 			this.app.media.pm = mEntry.pm;
+			this.app.media.passSound(prevHeard);
 			this.app.media.emit();
 			// звук «показанного видео» переходит на новое
 			this._resyncVideoAudio?.();

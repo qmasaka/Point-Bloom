@@ -389,7 +389,9 @@ this.app.ui.idle();
 if (!target) return this.emit();
 this.curKey = key;
 if (isMedia && this.app.media.pm !== mEntry.pm) {
+const prevHeard = this.app.media.soundEntry()?.pm;
 this.app.media.pm = mEntry.pm;
+this.app.media.passSound(prevHeard);
 this.app.media.emit();
 this._resyncVideoAudio?.();
 }

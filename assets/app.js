@@ -87690,7 +87690,9 @@ this.app.ui.idle();
 if (!target) return this.emit();
 this.curKey = key;
 if (isMedia && this.app.media.pm !== mEntry.pm) {
+const prevHeard = this.app.media.soundEntry()?.pm;
 this.app.media.pm = mEntry.pm;
+this.app.media.passSound(prevHeard);
 this.app.media.emit();
 this._resyncVideoAudio?.();
 }
@@ -92783,11 +92785,6 @@ if (el && el !== this._vidEl) {
 const old = this._vidPm;
 if (old && old.onMute) old.onMute = null;
 this._connectVideo();
-const sp = this._soundPm();
-if (old && sp !== old) {
-sp.setMuted(old.muted);
-old.muted = true;
-}
 }
 }
 _videoGate(el = this.pm.kind === 'video' ? this.pm.el : null) {
@@ -101342,8 +101339,17 @@ return e && e.pm.ready ? e : this.entry(this.pm);
 keepsSound(e) {
 return !!e && this.soundKey !== 'follow' && e.id === this.soundKey;
 }
+passSound(prevPm) {
+const heard = this.soundEntry()?.pm;
+if (!heard || !prevPm || heard === prevPm) return;
+const on = !prevPm.muted;
+if (heard.muted === on) heard.setMuted(!on);
+if (!prevPm.muted) prevPm.setMuted(true);
+}
 setSoundKey(k) {
+const prev = this.soundEntry()?.pm;
 this.soundKey = k;
+this.passSound(prev);
 const e = this.soundEntry();
 if (e && this.keepsSound(e) && !e.pm.playing) e.pm.play();
 this.app.ui?.effectsEngine?._resyncVideoAudio?.();

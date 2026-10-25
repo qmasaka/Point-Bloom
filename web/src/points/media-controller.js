@@ -56,8 +56,17 @@ return e && e.pm.ready ? e : this.entry(this.pm);
 keepsSound(e) {
 return !!e && this.soundKey !== 'follow' && e.id === this.soundKey;
 }
+passSound(prevPm) {
+const heard = this.soundEntry()?.pm;
+if (!heard || !prevPm || heard === prevPm) return;
+const on = !prevPm.muted;
+if (heard.muted === on) heard.setMuted(!on);
+if (!prevPm.muted) prevPm.setMuted(true);
+}
 setSoundKey(k) {
+const prev = this.soundEntry()?.pm;
 this.soundKey = k;
+this.passSound(prev);
 const e = this.soundEntry();
 if (e && this.keepsSound(e) && !e.pm.playing) e.pm.play();
 this.app.ui?.effectsEngine?._resyncVideoAudio?.();
