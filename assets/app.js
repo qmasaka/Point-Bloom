@@ -66293,7 +66293,7 @@ soundSrc = select({ options: [{ value: 'follow', label: 'Показанного 
 soundSrcRow.append(field('Звук из', soundSrc.el, { wide: true }));
 }
 }
-sound.el.hidden = !vids.length && pm.kind !== 'video';
+sound.el.hidden = fx || (!vids.length && pm.kind !== 'video');
 sound.set(!soundPm().muted);
 ptsRow.hidden = !ready || pm.isRec;
 pts.set(md.pts);
@@ -73947,9 +73947,9 @@ const MORPH_STYLES = [
 { id: 'cubes', name: 'Кубики', icon: 'cube', hint: 'Форма распадается на блоки, блоки подпрыгивают и уходят по очереди, каждый в свой момент', v: { scatter: 0.6, stagger: 1.2, turns: 1, sort: 'random', ease: 'smooth', glow: 0.3 } },
 { id: 'flat', name: 'Сплющивание', icon: 'flip-horizontal', hint: 'Форма схлопывается в плоскость, плоскость перетекает в новую и расправляется', v: { scatter: 0.5, stagger: 0.15, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 } },
 { id: 'relief', name: 'Рельеф (нейросеть)', icon: 'mountains', hint: 'Для видео и фото: кадр вспухает объёмом по карте глубины от нейросети, слои отслаиваются от ближних к дальним', v: { scatter: 0.9, stagger: 0.8, turns: 1, sort: 'depthnear', ease: 'soft', glow: 0.5 } },
-{ id: 'print', name: '3D-печать', icon: 'stack', hint: 'Старая форма стекает в печатающую головку, новая печатается слой за слоем снизу вверх', v: { scatter: 0.5, stagger: 2.4, turns: 1, sort: 'up', ease: 'smooth', glow: 0.9 } },
+{ id: 'print', hidden: true, name: '3D-печать', icon: 'stack', hint: 'Старая форма стекает в печатающую головку, новая печатается слой за слоем снизу вверх', v: { scatter: 0.5, stagger: 2.4, turns: 1, sort: 'up', ease: 'smooth', glow: 0.9 } },
 { id: 'portal', name: 'Портал', icon: 'circle', hint: 'Точки по спирали затягивает в светящееся кольцо, и из него же выходит новая форма', v: { scatter: 0.8, stagger: 0.5, turns: 1, sort: 'out', ease: 'soft', glow: 1.0 } },
-{ id: 'shatter', name: 'Стекло', icon: 'polygon', hint: 'Форма трескается на осколки, они кувыркаются и падают, потом осколки новой формы складываются в неё', v: { scatter: 0.8, stagger: 0.6, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 } },
+{ id: 'shatter', hidden: true, name: 'Стекло', icon: 'polygon', hint: 'Форма трескается на осколки, они кувыркаются и падают, потом осколки новой формы складываются в неё', v: { scatter: 0.8, stagger: 0.6, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 } },
 { id: 'magnet', name: 'Магнит', icon: 'magnet', hint: 'Точки идут пучками по дугам силовых линий, как железные опилки', v: { scatter: 0.9, stagger: 0.4, turns: 1, sort: 'random', ease: 'soft', glow: 0.5 } },
 ];
 const MORPH_SORTS = [
@@ -87308,6 +87308,7 @@ async useMedia() {
 this.state.look.colorBy = 'model';
 for (const id of ['curl', 'blast']) this.state.layers[id].on = false;
 const mkey = this.app.media.activeKey();
+this.app.media.passSound(null);
 this.curKey = mkey;
 if (this.state.source === 'media') {
 this.cache.clear();
@@ -87657,6 +87658,7 @@ if (mm.in) side(mm.in, false);
 }
 async addMediaForm(id) {
 if (!this.active) return;
+this.app.media.passSound(null);
 const list = [...(this.playlist || [])];
 if (!list.includes(id)) list.push(id);
 this.playlist = list;
@@ -93617,7 +93619,7 @@ if (this.morphing && !this._morphHold) {
 this.morph = Math.min(1, this.morph + dt / Math.max(0.3, st0.morphCfg.time));
 if (this.morph >= 1) {
 this.morphing = false;
-this._settleOn = true;
+this._settleOn = false;
 this._settleT = this._time;
 }
 }
@@ -93649,7 +93651,7 @@ u.uMorph.value = this.morph;
 {
 const mcf = st.morphCfg;
 u.uMorphS.value.set(Math.max(0, MORPH_STYLES.findIndex((x) => x.id === mcf.style)), mcf.scatter, mcf.stagger, mcf.turns);
-u.uMorphO.value.set(Math.max(0, MORPH_SORTS.findIndex((x) => x[0] === mcf.sort)), Math.max(0, MORPH_EASES.findIndex((x) => x[0] === mcf.ease)), mcf.glow, mcf.lift || 0);
+u.uMorphO.value.set(Math.max(0, MORPH_SORTS.findIndex((x) => x[0] === mcf.sort)), Math.max(0, MORPH_EASES.findIndex((x) => x[0] === mcf.ease)), mcf.glow, 0);
 u.uMorphD.value.set(this._mm?.out ? 1 : 0, this._mm?.in ? 1 : 0, Math.round(mcf.spin || 0), mcf.fsize ?? 1);
 }
 const pset = this.app.settings.point;
@@ -96646,12 +96648,11 @@ formsList.append(row);
 const has = picked.length >= 2;
 morphHint.textContent = has ? '' : 'Отметьте минимум две формы: модели, видео или фото. Добавить их можно выше, в разделе «Форма».';
 morphSettings.hidden = !has;
-liftRow.hidden = !picked.some(isMediaKey);
 formsSig = formsSigNow();
 };
 const morphHint = h('div', { class: 'field-hint' });
 const styleSel = select({
-options: MORPH_STYLES.map((ms) => ({ value: ms.id, label: ms.name, icon: ms.icon })),
+options: MORPH_STYLES.filter((ms) => !ms.hidden).map((ms) => ({ value: ms.id, label: ms.name, icon: ms.icon })),
 value: mc.style,
 onChange: (v) => {
 const ms = MORPH_STYLES.find((x) => x.id === v);
@@ -96738,11 +96739,11 @@ h('div', { class: 'fx-sub' }, 'Вид в пути'),
 field('Вспышка в пути', morphGlow.el),
 field('Размер точек в пути', morphFsize.el),
 field('Обороты всей формы', morphSpin.el),
-liftRow,
 morphGo
 );
 const morphBox = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, morphSettings);
 function syncMorph() {
+if (MORPH_STYLES.find((x) => x.id === mc.style)?.hidden) Object.assign(mc, MORPH_STYLES[0].v, { style: MORPH_STYLES[0].id });
 const cur = MORPH_STYLES.find((x) => x.id === mc.style) || MORPH_STYLES[0];
 styleSel.set(cur.id);
 styleHint.textContent = cur.hint;
@@ -96754,7 +96755,6 @@ scrubRow.hidden = false;
 const follow = mc.mode === 'music' && mc.amode === 'amp';
 timeRow.hidden = follow;
 scrubRow.querySelector('.field-label') && (scrubRow.querySelector('.field-label').textContent = follow ? 'Ход перехода (ведёт музыка)' : 'Вручную');
-liftRow.hidden = !picked.some(isMediaKey);
 morphLift.set(mc.lift || 0);
 morphSpin.set(mc.spin || 0);
 morphFsize.set(mc.fsize ?? 1);
@@ -101341,6 +101341,10 @@ return !!e && this.soundKey !== 'follow' && e.id === this.soundKey;
 }
 passSound(prevPm) {
 const heard = this.soundEntry()?.pm;
+if (this.app.ui?.workspace === 'fx') {
+for (const e of this.lib) if (e.pm.ready && e.pm.kind === 'video') e.pm.setMuted(e.pm !== heard);
+return;
+}
 if (!heard || !prevPm || heard === prevPm) return;
 const on = !prevPm.muted;
 if (heard.muted === on) heard.setMuted(!on);

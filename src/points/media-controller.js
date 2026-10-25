@@ -78,6 +78,11 @@ export class MediaController {
 	/** Звук переходит к другому видео: оно получает включён/выключен от прежнего, прежнее замолкает */
 	passSound(prevPm) {
 		const heard = this.soundEntry()?.pm;
+		// в эффектах звук видео всегда включён: слышно выбранное (или показанное) видео, остальные молчат
+		if (this.app.ui?.workspace === 'fx') {
+			for (const e of this.lib) if (e.pm.ready && e.pm.kind === 'video') e.pm.setMuted(e.pm !== heard);
+			return;
+		}
 		if (!heard || !prevPm || heard === prevPm) return;
 		const on = !prevPm.muted;
 		if (heard.muted === on) heard.setMuted(!on);

@@ -7,6 +7,7 @@ async useMedia() {
 this.state.look.colorBy = 'model';
 for (const id of ['curl', 'blast']) this.state.layers[id].on = false;
 const mkey = this.app.media.activeKey();
+this.app.media.passSound(null);
 this.curKey = mkey;
 if (this.state.source === 'media') {
 this.cache.clear();
@@ -356,6 +357,7 @@ if (mm.in) side(mm.in, false);
 }
 async addMediaForm(id) {
 if (!this.active) return;
+this.app.media.passSound(null);
 const list = [...(this.playlist || [])];
 if (!list.includes(id)) list.push(id);
 this.playlist = list;

@@ -12,6 +12,7 @@ export class SourcePart {
 		// стартовые вихри и пульс портят картинку: выключаем, включить можно слева
 		for (const id of ['curl', 'blast']) this.state.layers[id].on = false;
 		const mkey = this.app.media.activeKey();
+		this.app.media.passSound(null);
 		this.curKey = mkey;
 		if (this.state.source === 'media') {
 			this.cache.clear();
@@ -424,6 +425,7 @@ export class SourcePart {
 	/** Ещё одно фото или видео добавлено рядом с открытым: встаёт в список морфинга, и форма плавно переходит на него */
 	async addMediaForm(id) {
 		if (!this.active) return;
+		this.app.media.passSound(null);
 		const list = [...(this.playlist || [])];
 		if (!list.includes(id)) list.push(id);
 		this.playlist = list;

@@ -61,7 +61,7 @@ soundSrc = select({ options: [{ value: 'follow', label: 'Показанного 
 soundSrcRow.append(field('Звук из', soundSrc.el, { wide: true }));
 }
 }
-sound.el.hidden = !vids.length && pm.kind !== 'video';
+sound.el.hidden = fx || (!vids.length && pm.kind !== 'video');
 sound.set(!soundPm().muted);
 ptsRow.hidden = !ready || pm.isRec;
 pts.set(md.pts);

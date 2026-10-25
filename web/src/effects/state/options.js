@@ -57,9 +57,9 @@ export const MORPH_STYLES = [
 { id: 'cubes', name: 'Кубики', icon: 'cube', hint: 'Форма распадается на блоки, блоки подпрыгивают и уходят по очереди, каждый в свой момент', v: { scatter: 0.6, stagger: 1.2, turns: 1, sort: 'random', ease: 'smooth', glow: 0.3 } },
 { id: 'flat', name: 'Сплющивание', icon: 'flip-horizontal', hint: 'Форма схлопывается в плоскость, плоскость перетекает в новую и расправляется', v: { scatter: 0.5, stagger: 0.15, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 } },
 { id: 'relief', name: 'Рельеф (нейросеть)', icon: 'mountains', hint: 'Для видео и фото: кадр вспухает объёмом по карте глубины от нейросети, слои отслаиваются от ближних к дальним', v: { scatter: 0.9, stagger: 0.8, turns: 1, sort: 'depthnear', ease: 'soft', glow: 0.5 } },
-{ id: 'print', name: '3D-печать', icon: 'stack', hint: 'Старая форма стекает в печатающую головку, новая печатается слой за слоем снизу вверх', v: { scatter: 0.5, stagger: 2.4, turns: 1, sort: 'up', ease: 'smooth', glow: 0.9 } },
+{ id: 'print', hidden: true, name: '3D-печать', icon: 'stack', hint: 'Старая форма стекает в печатающую головку, новая печатается слой за слоем снизу вверх', v: { scatter: 0.5, stagger: 2.4, turns: 1, sort: 'up', ease: 'smooth', glow: 0.9 } },
 { id: 'portal', name: 'Портал', icon: 'circle', hint: 'Точки по спирали затягивает в светящееся кольцо, и из него же выходит новая форма', v: { scatter: 0.8, stagger: 0.5, turns: 1, sort: 'out', ease: 'soft', glow: 1.0 } },
-{ id: 'shatter', name: 'Стекло', icon: 'polygon', hint: 'Форма трескается на осколки, они кувыркаются и падают, потом осколки новой формы складываются в неё', v: { scatter: 0.8, stagger: 0.6, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 } },
+{ id: 'shatter', hidden: true, name: 'Стекло', icon: 'polygon', hint: 'Форма трескается на осколки, они кувыркаются и падают, потом осколки новой формы складываются в неё', v: { scatter: 0.8, stagger: 0.6, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 } },
 { id: 'magnet', name: 'Магнит', icon: 'magnet', hint: 'Точки идут пучками по дугам силовых линий, как железные опилки', v: { scatter: 0.9, stagger: 0.4, turns: 1, sort: 'random', ease: 'soft', glow: 0.5 } },
 ];
 export const MORPH_SORTS = [

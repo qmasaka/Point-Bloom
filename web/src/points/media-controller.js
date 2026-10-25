@@ -58,6 +58,10 @@ return !!e && this.soundKey !== 'follow' && e.id === this.soundKey;
 }
 passSound(prevPm) {
 const heard = this.soundEntry()?.pm;
+if (this.app.ui?.workspace === 'fx') {
+for (const e of this.lib) if (e.pm.ready && e.pm.kind === 'video') e.pm.setMuted(e.pm !== heard);
+return;
+}
 if (!heard || !prevPm || heard === prevPm) return;
 const on = !prevPm.muted;
 if (heard.muted === on) heard.setMuted(!on);

@@ -271,13 +271,12 @@ export function createEffectsPanel(app, root, engine) {
 		const has = picked.length >= 2;
 		morphHint.textContent = has ? '' : 'Отметьте минимум две формы: модели, видео или фото. Добавить их можно выше, в разделе «Форма».';
 		morphSettings.hidden = !has;
-		liftRow.hidden = !picked.some(isMediaKey);
 		formsSig = formsSigNow();
 	};
 	const morphHint = h('div', { class: 'field-hint' });
 	// вид перехода: выпадающий список со значками, у каждого вида свои настройки по умолчанию
 	const styleSel = select({
-		options: MORPH_STYLES.map((ms) => ({ value: ms.id, label: ms.name, icon: ms.icon })),
+		options: MORPH_STYLES.filter((ms) => !ms.hidden).map((ms) => ({ value: ms.id, label: ms.name, icon: ms.icon })),
 		value: mc.style,
 		onChange: (v) => {
 			const ms = MORPH_STYLES.find((x) => x.id === v);
@@ -368,11 +367,11 @@ export function createEffectsPanel(app, root, engine) {
 		field('Вспышка в пути', morphGlow.el),
 		field('Размер точек в пути', morphFsize.el),
 		field('Обороты всей формы', morphSpin.el),
-		liftRow,
 		morphGo
 	);
 	const morphBox = h('div', { class: 'sec-body', style: { padding: 0 } }, formsBox, morphHint, morphSettings);
 	function syncMorph() {
+		if (MORPH_STYLES.find((x) => x.id === mc.style)?.hidden) Object.assign(mc, MORPH_STYLES[0].v, { style: MORPH_STYLES[0].id });
 		const cur = MORPH_STYLES.find((x) => x.id === mc.style) || MORPH_STYLES[0];
 		styleSel.set(cur.id);
 		styleHint.textContent = cur.hint;
@@ -387,7 +386,6 @@ export function createEffectsPanel(app, root, engine) {
 		const follow = mc.mode === 'music' && mc.amode === 'amp';
 		timeRow.hidden = follow;
 		scrubRow.querySelector('.field-label') && (scrubRow.querySelector('.field-label').textContent = follow ? 'Ход перехода (ведёт музыка)' : 'Вручную');
-		liftRow.hidden = !picked.some(isMediaKey);
 		morphLift.set(mc.lift || 0);
 		morphSpin.set(mc.spin || 0);
 		morphFsize.set(mc.fsize ?? 1);

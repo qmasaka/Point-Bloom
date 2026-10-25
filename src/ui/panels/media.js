@@ -71,7 +71,8 @@ export function createMediaPanel(app, root, { fx = false } = {}) {
 				soundSrcRow.append(field('Звук из', soundSrc.el, { wide: true }));
 			}
 		}
-		sound.el.hidden = !vids.length && pm.kind !== 'video';
+		// в эффектах звук видео всегда включён, переключатель не нужен
+		sound.el.hidden = fx || (!vids.length && pm.kind !== 'video');
 		sound.set(!soundPm().muted);
 		ptsRow.hidden = !ready || pm.isRec;
 		pts.set(md.pts);
