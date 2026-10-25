@@ -81688,6 +81688,8 @@ en: {
 'Что добавить': 'What to add',
 'Звук из': 'Sound from',
 'Показанного сейчас': 'The one on screen',
+'Звук всегда из этого видео. Нажмите, чтобы звук шёл от показанного': 'Sound always from this video. Click to take sound from the shown one',
+'Брать звук всегда из этого видео': 'Always take sound from this video',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -82675,6 +82677,8 @@ uk: {
 'Что добавить': 'Що додати',
 'Звук из': 'Звук з',
 'Показанного сейчас': 'Показаного зараз',
+'Звук всегда из этого видео. Нажмите, чтобы звук шёл от показанного': 'Звук завжди з цього відео. Натисніть, щоб звук ішов від показаного',
+'Брать звук всегда из этого видео': 'Брати звук завжди з цього відео',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -83662,6 +83666,8 @@ es: {
 'Что добавить': 'Qué añadir',
 'Звук из': 'Sonido de',
 'Показанного сейчас': 'El que se muestra',
+'Звук всегда из этого видео. Нажмите, чтобы звук шёл от показанного': 'Sonido siempre de este vídeo. Pulsa para usar el que se muestra',
+'Брать звук всегда из этого видео': 'Tomar siempre el sonido de este vídeo',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -84649,6 +84655,8 @@ de: {
 'Что добавить': 'Was hinzufügen',
 'Звук из': 'Ton von',
 'Показанного сейчас': 'Dem gezeigten',
+'Звук всегда из этого видео. Нажмите, чтобы звук шёл от показанного': 'Ton immer von diesem Video. Klicken, um den Ton vom gezeigten zu nehmen',
+'Брать звук всегда из этого видео': 'Ton immer von diesem Video nehmen',
 },
 };
 };
@@ -96553,7 +96561,7 @@ const picked = [];
 const seenForms = new Set();
 let formsSig = '';
 const isMediaKey = (k) => k === 'media' || k.startsWith('media:');
-const formsSigNow = () => JSON.stringify([engine.uiForms().map((f) => f.key + f.name), picked, engine.curKey || engine.state.source]);
+const formsSigNow = () => JSON.stringify([engine.uiForms().map((f) => f.key + f.name), picked, engine.curKey || engine.state.source, app.media.soundKey, app.media.soundEntry?.()?.id]);
 const renderForms = () => {
 const list = engine.uiForms();
 let changed = false;
@@ -96594,10 +96602,20 @@ syncMorph();
 const go = iconButton({ icon: 'play', title: isCur ? 'Эта форма сейчас на экране' : 'Перейти к этой форме сейчас', onClick: () => engine.morphTo(f.key) });
 go.classList.add('mf-go');
 go.disabled = !on || isCur || picked.length < 2;
+const me = isMediaKey(f.key) ? app.media.entry(f.key) : null;
+let snd = '';
+if (me && me.pm.kind === 'video') {
+const fixed = app.media.soundKey === f.key;
+const heard = app.media.soundEntry?.() === me;
+snd = iconButton({ icon: heard ? 'speaker-high' : 'speaker-slash', title: fixed ? 'Звук всегда из этого видео. Нажмите, чтобы звук шёл от показанного' : 'Брать звук всегда из этого видео', onClick: () => { app.media.setSoundKey(fixed ? 'follow' : f.key); renderForms(); } });
+snd.classList.add('mf-snd');
+snd.classList.toggle('is-active', fixed);
+}
 const row = h('div', { class: 'mf-row' + (on ? ' is-on' : '') + (isCur ? ' is-cur' : ''), role: 'listitem' },
 h('span', { class: 'mf-ic', html: icon(f.icon, 16) }),
 h('span', { class: 'mf-name', title: f.name }, f.name),
 h('span', { class: 'mf-n' }, on ? String(k + 1) : ''),
+snd || h('span'),
 go,
 sw.el
 );

@@ -6911,7 +6911,7 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 }
 .mf-row {
 	display: grid;
-	grid-template-columns: 36px minmax(0, 1fr) auto auto auto;
+	grid-template-columns: 36px minmax(0, 1fr) auto auto auto auto;
 	align-items: center;
 	gap: 8px;
 	min-height: 40px;
@@ -7009,4 +7009,15 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 	-webkit-line-clamp: 2;
 	-webkit-box-orient: vertical;
 	line-height: 1.3;
+}
+
+.mf-snd.btn-icon {
+	width: 26px;
+	height: 26px;
+	border-radius: 999px;
+	color: var(--text-faint);
+}
+.mf-snd.btn-icon.is-active {
+	color: var(--accent-ink);
+	background: var(--accent);
 }

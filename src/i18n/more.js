@@ -987,6 +987,8 @@ export default {
 		'Что добавить': 'What to add',
 		'Звук из': 'Sound from',
 		'Показанного сейчас': 'The one on screen',
+		'Звук всегда из этого видео. Нажмите, чтобы звук шёл от показанного': 'Sound always from this video. Click to take sound from the shown one',
+		'Брать звук всегда из этого видео': 'Always take sound from this video',
 	},
 	uk: {
 		'Установить приложение': 'Встановити застосунок',
@@ -1975,6 +1977,8 @@ export default {
 		'Что добавить': 'Що додати',
 		'Звук из': 'Звук з',
 		'Показанного сейчас': 'Показаного зараз',
+		'Звук всегда из этого видео. Нажмите, чтобы звук шёл от показанного': 'Звук завжди з цього відео. Натисніть, щоб звук ішов від показаного',
+		'Брать звук всегда из этого видео': 'Брати звук завжди з цього відео',
 	},
 	es: {
 		'Установить приложение': 'Instalar la aplicación',
@@ -2963,6 +2967,8 @@ export default {
 		'Что добавить': 'Qué añadir',
 		'Звук из': 'Sonido de',
 		'Показанного сейчас': 'El que se muestra',
+		'Звук всегда из этого видео. Нажмите, чтобы звук шёл от показанного': 'Sonido siempre de este vídeo. Pulsa para usar el que se muestra',
+		'Брать звук всегда из этого видео': 'Tomar siempre el sonido de este vídeo',
 	},
 	de: {
 		'Установить приложение': 'App installieren',
@@ -3951,5 +3957,7 @@ export default {
 		'Что добавить': 'Was hinzufügen',
 		'Звук из': 'Ton von',
 		'Показанного сейчас': 'Dem gezeigten',
+		'Звук всегда из этого видео. Нажмите, чтобы звук шёл от показанного': 'Ton immer von diesem Video. Klicken, um den Ton vom gezeigten zu nehmen',
+		'Брать звук всегда из этого видео': 'Ton immer von diesem Video nehmen',
 	},
 };
