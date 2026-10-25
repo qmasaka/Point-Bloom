@@ -2,6 +2,7 @@
 // картинка только сдвигается вверх, в видимую часть над листом (viewport.setViewFrame).
 // На широких экранах модуль ничего не делает (стили работают только до 900 px).
 const MIN = 98; // ручка и вкладки целиком: отступ снизу 8, рамка, ручка 30 и ряд вкладок 58
+const MIN_FX = 81; // эффекты: отступ снизу 8, рамка и ручка с переключателем 71
 
 export function initMobile(app) {
 	const root = document.getElementById('app');
@@ -14,7 +15,9 @@ export function initMobile(app) {
 	const vh = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight);
 	// в альбомной ориентации телефона высоты мало: лист ниже и выше открывается почти на весь экран.
 	// В книжной над раскрытым листом остаётся место под верхнюю панель и нижнюю плашку режимов, чтобы они не наезжали друг на друга
-	const heights = () => (vh() < 520 ? { min: MIN, mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: MIN, mid: Math.round(vh() * 0.46), full: Math.round(vh() - 124) });
+	// в эффектах у свёрнутого листа только ручка с переключателем «Эффекты / Настройки», он ниже, чем у редактора (там ещё ряд вкладок)
+	const minH = () => (root.classList.contains('fx-mode') ? MIN_FX : MIN);
+	const heights = () => (vh() < 520 ? { min: minH(), mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: minH(), mid: Math.round(vh() * 0.46), full: Math.round(vh() - 124) });
 	let sheetPx = MIN;
 	// центр картинки посередине видимой части сцены; масштаб как у сцены над листом в обычном положении (в редакторе свёрнут, в эффектах наполовину),
 	// поэтому он не меняется, пока лист тянут. В «только сцене» листа нет: ни сдвига, ни своего масштаба

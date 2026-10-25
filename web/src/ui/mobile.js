@@ -1,4 +1,5 @@
 const MIN = 98;
+const MIN_FX = 81;
 export function initMobile(app) {
 const root = document.getElementById('app');
 const ws = document.querySelector('.workspace');
@@ -7,7 +8,8 @@ const fxLeft = document.getElementById('fxLeft');
 const mq = window.matchMedia('(max-width: 900px)');
 let state = 'min';
 const vh = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-const heights = () => (vh() < 520 ? { min: MIN, mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: MIN, mid: Math.round(vh() * 0.46), full: Math.round(vh() - 124) });
+const minH = () => (root.classList.contains('fx-mode') ? MIN_FX : MIN);
+const heights = () => (vh() < 520 ? { min: minH(), mid: Math.round(vh() * 0.58), full: Math.round(vh() - 56) } : { min: minH(), mid: Math.round(vh() * 0.46), full: Math.round(vh() - 124) });
 let sheetPx = MIN;
 const syncShift = () => {
 const on = mq.matches && !root.classList.contains('fx-focus');

@@ -6707,6 +6707,10 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 	.ui-float .toolrail { top: calc(var(--m-top) + 54px); left: var(--m-gap); border-radius: 14px; padding: 4px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); box-shadow: var(--fxg-shadow); max-height: calc(var(--vh) - var(--m-top) - 54px - var(--sheet-h, 98px) - 72px); }
 	/* полоски между группами инструментов от края до края, как на компьютере */
 	.ui-float .rail-sep { width: auto; align-self: stretch; margin: 5px -4px; }
+	/* лист открыт и по высоте мало места: инструменты в две колонки обычного размера, без сжатия и прокрутки внутри колонки */
+	.ui-float:not(.fx-mode):not([data-sheet='min']) .toolrail { display: grid; grid-template-columns: repeat(2, auto); width: auto; gap: 2px; overflow: visible; max-height: none; }
+	.ui-float:not(.fx-mode):not([data-sheet='min']) .toolrail .btn-tool { flex: none; }
+	.ui-float:not(.fx-mode):not([data-sheet='min']) .rail-sep { grid-column: 1 / -1; margin: 4px -4px; }
 	.ui-float .vp-top-right { top: calc(var(--m-top) + 54px); right: var(--m-gap); }
 	/* лист раскрыт на весь экран: над ним остаётся узкая полоса сцены, инструменты и оси в ней не помещаются и прячутся */
 	.ui-float[data-sheet='full'] .toolrail, .ui-float[data-sheet='full'] .vp-top-right { opacity: 0; visibility: hidden; pointer-events: none; }
@@ -6717,6 +6721,9 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 	.ui-float .seg, .ui-float .fx-card, .ui-float .field input[type='text'], .ui-float .select { background: rgba(255, 255, 255, 0.045); border-color: var(--fxg-line); }
 	.ui-float .select { border-radius: 10px; }
 	.ui-float .sidebar, .ui-float .fx-left { padding-bottom: 0; }
+	/* свёрнутый лист: содержимое под ручкой и вкладками плавно гаснет, а не выглядывает сплющенной полоской */
+	.ui-float .panels, .ui-float .fx-left-list { transition: opacity 0.2s var(--ease); }
+	.ui-float[data-sheet='min'] .panels, .ui-float[data-sheet='min'] .fx-left-list { opacity: 0; pointer-events: none; }
 	.ui-float .sheet-grab { width: 44px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.28); margin-bottom: 2px; }
 	/* вкладки листа и вкладки эффектов: отдельные плитки с мягкими углами, как на компьютере */
 	.ui-float .tabs { padding: 2px 10px 10px; gap: 6px; background: transparent; border-bottom: 0; }
