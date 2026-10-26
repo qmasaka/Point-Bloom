@@ -578,6 +578,8 @@ export function createEffectsPanel(app, root, engine) {
 	const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
 	let toggleAnim = () => {};
 	let animAddFromInspector = () => {};
+	// строка состояния выделения у «Шлейфа движения» (обновляется в sync)
+	let chronoStat = null;
 	const animQuickBtn = button({
 		label: 'Секвенсор анимации',
 		icon: 'film-strip',
@@ -636,6 +638,10 @@ export function createEffectsPanel(app, root, engine) {
 				body.append(collapseBtn);
 			} else if (def.id === 'frames') {
 				body.append(h('div', { class: 'field-hint' }, 'Видео раскладывается на кадры, кадры собираются в блок из точек. Текущий кадр рисуется густо, остальные реже. Что сейчас показано, задаёт таймлайн внизу: играйте и перематывайте видео, блок следует за ним. Остальные эффекты работают поверх блока, «Объём по глубине» выдавливает каждый кадр по его карте глубины.'), button({ label: 'Снять кадры заново', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Снять кадры с видео заново с текущими настройками', onClick: () => engine.rebuildFramesSoon() }));
+			} else if (def.id === 'chrono') {
+				// как сейчас выделяется объект: нейросеть загружается при первом включении, пока она грузится, выделяется движение
+				chronoStat = h('div', { class: 'field-hint fx-chrono-stat' });
+				body.append(chronoStat);
 			} else if (def.id === 'brush') {
 				const clearBtn = button({
 					label: 'Смыть всю краску',
@@ -700,8 +706,8 @@ export function createEffectsPanel(app, root, engine) {
 				body.append(button({ label: 'Вернуть форму после лепки', icon: 'broom', variant: 'secondary', cls: 'btn-block', onClick: () => engine.clearSculpt() }));
 				body.append(h('div', { class: 'field-hint' }, 'При первом включении загружается модель распознавания рук (около 10 МБ), нужен интернет. Видео с камеры никуда не отправляется.'));
 			}
-			// у раскадровки «Силы» нет: блок либо собран, либо нет, а степень задают число кадров, точки и глубина
-			if (def.id !== 'frames') body.append(field('Сила', amount.el));
+			// у раскадровки и шлейфа «Силы» нет: кольцо кадров либо собрано, либо нет, а степень задают число кадров, точки и глубина
+			if (def.id !== 'frames' && def.id !== 'chrono') body.append(field('Сила', amount.el));
 			const extraCtl = {};
 			const whenList = [];
 			// разделы с заголовками сворачиваются: открыт первый, остальные закрыты, чтобы настройки не занимали полэкрана
@@ -3311,6 +3317,23 @@ export function createEffectsPanel(app, root, engine) {
 
 	// ------------------------------------------------------------ синхронизация
 	function sync() {
+		if (chronoStat) {
+			const I = engine.chronoInfo();
+			const ai = I.mask === 'person' || I.mask === 'any';
+			chronoStat.textContent = !I.video
+				? 'Откройте видео: шлейф строится по его кадрам.'
+				: !ai
+					? I.mask === 'motion'
+						? 'Выделяется то, что движется в кадре. Подходит, когда камера в ролике стоит на месте.'
+						: 'Выделяется ближнее по карте глубины: чем выше чувствительность, тем дальше граница.'
+					: I.phase === 'ready'
+						? 'Нейросеть выделения работает: объект ищется на каждом кадре шлейфа.'
+						: I.phase === 'error'
+							? 'Нейросеть выделения не загрузилась (' + I.error + '). Пока выделяется то, что движется.'
+							: I.phase === 'loading'
+								? 'Загружаю нейросеть выделения (около 3 МБ, один раз). Пока выделяется то, что движется.'
+								: 'Нейросеть выделения загрузится при включении (около 3 МБ, нужен интернет). Кадры никуда не отправляются.';
+		}
 		const n = engine.geometry ? engine.geometry.attributes.position.count : st.count;
 		countHint.textContent = `Сейчас ${formatInt(n)} частиц, около ${Math.round((n * 128) / 1048576)} МБ памяти. Комфортно до ${formatCount(getDevice(app).limits.comfort)}.`;
 		const kind = engine.modelProvider ? engine.modelProvider.kind() : 'none';
@@ -3320,7 +3343,7 @@ export function createEffectsPanel(app, root, engine) {
 		for (const c of cards) {
 			if (c.def.group !== 'Видео') continue;
 			c.folder.hidden = !engine.pm.ready;
-			if (c.def.id === 'frames' || c.def.id === 'slitscan') c.card.hidden = !engine.videoLoaded;
+			if (c.def.id === 'frames' || c.def.id === 'slitscan' || c.def.id === 'chrono') c.card.hidden = !engine.videoLoaded;
 		}
 		{
 			const vc = cards.find((c) => c.def.group === 'Видео');

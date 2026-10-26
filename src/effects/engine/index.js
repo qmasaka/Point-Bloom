@@ -32,6 +32,7 @@ import { SlitPart } from './slitscan.js';
 import { ChladniPart } from './chladni.js';
 import { ShootsPart } from './shoots.js';
 import { ShadowPart } from './shadow.js';
+import { ChronoPart } from './chrono.js';
 import { PixelSortPart } from './pixelsort.js';
 import { TrackPickPart } from './track-pick.js';
 import { mixin } from './mixin.js';
@@ -226,7 +227,8 @@ export class EffectsEngine {
 		const app = this.app;
 		this.active = true;
 		this.state.look.autoRotate = false; // при входе форма не крутится сама, включается в «Вид»
-		this.state.layers.frames.on = false; // раскадровка включается вручную и только пока открыто видео
+		this.state.layers.frames.on = false; // раскадровка и шлейф движения включаются вручную и только пока открыто видео
+		if (this.state.layers.chrono) this.state.layers.chrono.on = false;
 		this._fxCur = new Set(); // начинаем с самого лёгкого шейдера: код эффектов добавляется, когда эффект включается
 		this._fxSeen = new Map();
 		this._fxBusy = false;
@@ -397,4 +399,4 @@ export class EffectsEngine {
 }
 
 // Остальные методы лежат в отдельных файлах рядом и подмешиваются в класс.
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, PixelSortPart, TrackPickPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, ChronoPart, PixelSortPart, TrackPickPart);

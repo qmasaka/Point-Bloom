@@ -7,6 +7,31 @@ export const FX_ACTIONS = [['none', 'Без действия'], ['push', 'Отт
 /** Слои-операторы. group: раздел в левой панели; extras: дополнительные параметры; relink: пересобрать связи; sound: false: эффект не слушает звук (блока «Реакция на звук» у него нет) */
 export const FX_LAYERS = [
 	{ id: 'frames', sound: false, group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Видео раскладывается на кадры из точек, кадры собираются в блок. Показ идёт за таймлайном', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, thin: 0, showMode: 'off', showLen: 0.12, hero: 150000, future: 'hide', gain: 1, sat: 0, bsize: 1.5, track: 'grow', tone: 'all', toneCut: 0.5, tail: 100, tailSoft: 0.6, dkeep: 0.5 }, extras: [{ type: 'title', label: 'Раскладка' }, { key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: слои вглубь'], ['wall', 'Стена: плоская сетка'], ['film', 'Киноплёнка: кадры в ряд'], ['tunnel', 'Туннель: перспектива вглубь']], relayout: true }, { key: 'track', label: 'Что в стопке', type: 'seg', options: [['grow', 'Пройденное'], ['full', 'Весь ряд']], when: ['layout', ['stack', 'tunnel']] }, { key: 'depth', label: 'Глубина', min: 0.2, max: 4, step: 0.1, relayout: true, when: ['layout', ['stack', 'tunnel']] }, { type: 'title', label: 'Показ' }, { key: 'showMode', label: 'Как показывать', type: 'select', options: [['off', 'Статично: все кадры как есть'], ['peel', 'Листание: слёт пройденных'], ['projector', 'Проектор: бегущий луч'], ['trail', 'Шлейф: затухающий след']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Редкие'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { key: 'thin', label: 'Прореживать остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { type: 'title', label: 'Объём' }, { type: 'note', text: 'Включите «Объём по глубине» в разделе «Фото и видео»: каждый кадр выдавится по своей карте глубины.' }, { key: 'dkeep', label: 'Объём остальных кадров', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Хвост' }, { key: 'tail', label: 'Длина хвоста, доля видео', min: 5, max: 100, step: 1, int: true, unit: '%' }, { key: 'tailSoft', label: 'Как гаснет хвост: резко ... плавно', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Цвет остальных кадров' }, { key: 'sat', label: 'Насыщенность (0 это цвета видео)', min: -1, max: 1, step: 0.05 }, { key: 'gain', label: 'Яркость', min: 0.4, max: 3, step: 0.05 }, { key: 'tone', label: 'Какие тона оставить', type: 'seg', options: [['all', 'Все'], ['light', 'Светлые'], ['dark', 'Тёмные']] }, { key: 'toneCut', label: 'Граница светлого и тёмного', min: 0.05, max: 0.95, step: 0.01, when: ['tone', ['light', 'dark']] }, { key: 'bsize', label: 'Размер точек', min: 0.5, max: 4, step: 0.1 }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
+	{ id: 'chrono', sound: false, group: 'Видео', name: 'Шлейф движения', icon: 'wind', hint: 'Только для видео: человек или другой движущийся объект выделяется, за ним тянется шлейф из прошлых кадров, а видео плавно едет в сторону. Работает вместе с «Объёмом по глубине»', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mask: 'person', sens: 0.5, live: 'full', count: 24, every: 0.08, fade: 0.45, bgKeep: 0.08, thin: 0.35, tint: 0.25, dir: 'left', drift: 0.9, follow: 'on', depthZ: 0.03, dkeep: 0.8, size: 1.2, hero: 150000, budget: 360000 }, extras: [
+		{ type: 'row', items: [{ label: 'Начать шлейф заново', icon: 'arrow-counter-clockwise', act: 'chronoReset' }] },
+		{ type: 'title', label: 'Кого выделять' },
+		{ key: 'mask', label: 'Что выделять', type: 'select', options: [['person', 'Человека: нейросеть'], ['any', 'Людей, животных, транспорт: нейросеть'], ['motion', 'Всё, что движется: камера в ролике стоит'], ['depth', 'Ближнее: по карте глубины']] },
+		{ key: 'sens', label: 'Чувствительность', min: 0, max: 1, step: 0.05, when: ['mask', ['motion', 'depth']] },
+		{ key: 'live', label: 'Фон текущего кадра', type: 'seg', options: [['full', 'Виден'], ['dim', 'Тусклее'], ['hide', 'Скрыт']] },
+		{ type: 'title', label: 'Шлейф' },
+		{ key: 'count', label: 'Кадров в шлейфе', min: 6, max: 60, step: 1, int: true, reframe: true },
+		{ key: 'every', label: 'Шаг между кадрами, с', min: 0.03, max: 0.4, step: 0.01, noNorm: true },
+		{ key: 'fade', label: 'Как гаснет: долго … быстро', min: 0, max: 1, step: 0.05 },
+		{ key: 'bgKeep', label: 'Фон в шлейфе', min: 0, max: 1, step: 0.05 },
+		{ key: 'thin', label: 'Редеет к концу', min: 0, max: 1, step: 0.05 },
+		{ key: 'tint', label: 'Подкраска палитрой', min: 0, max: 1, step: 0.05 },
+		{ type: 'title', label: 'Движение' },
+		{ key: 'dir', label: 'Видео едет', type: 'seg', options: [['left', 'Влево'], ['right', 'Вправо'], ['up', 'Вверх']] },
+		{ key: 'drift', label: 'Скорость сдвига', min: 0, max: 3, step: 0.05, noNorm: true },
+		{ key: 'follow', label: 'Камера', type: 'seg', options: [['on', 'Едет за видео'], ['off', 'Стоит']] },
+		{ key: 'depthZ', label: 'Уход шлейфа вглубь', min: 0, max: 0.15, step: 0.005, noNorm: true },
+		{ type: 'title', label: 'Объём и точки' },
+		{ type: 'note', text: '«Объём по глубине» включается вместе с шлейфом: каждый кадр выдавливается по своей карте глубины.' },
+		{ key: 'dkeep', label: 'Объём кадров шлейфа', min: 0, max: 1, step: 0.05 },
+		{ key: 'size', label: 'Размер точек шлейфа', min: 0.5, max: 4, step: 0.1 },
+		{ key: 'hero', label: 'Точек в текущем кадре', min: 20000, max: 300000, step: 10000, int: true },
+		{ key: 'budget', label: 'Точек во всём шлейфе', min: 60000, max: 1200000, step: 20000, int: true, reframe: true },
+	] },
 	{ id: 'pixelsort', group: 'Видео', name: 'Пиксельная сортировка', icon: 'rows', hint: 'Приём глитч-арта: в каждой строке кадра точки светлых (или тёмных) участков пересортировываются по яркости и стекают полосами. Сортировка живая: держится, бежит волной, дышит или вспыхивает на ударе', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0.5, dir: 'h', rule: 'bright', cut: 0.35, cut2: 0.85, order: 'up', minLen: 4, anim: 'wave', speed: 1, stretch: 1, glow: 0.3 }, extras: [
 		{ key: 'dir', label: 'Куда текут полосы', type: 'seg', options: [['h', 'По строкам'], ['v', 'По столбцам']] },
 		{ key: 'rule', label: 'Что сортируется', type: 'select', options: [['bright', 'Светлое', 'всё ярче порога'], ['dark', 'Тёмное', 'всё темнее порога'], ['band', 'Середина', 'между двумя порогами']] },
@@ -188,7 +213,7 @@ export const FX_LAYERS = [
 
 // разделы списка эффектов: логика по тому, что эффект делает
 export const FX_GROUPS = {
-	'Видео': ['depth', 'pixelsort', 'frames', 'slitscan'],
+	'Видео': ['depth', 'pixelsort', 'frames', 'chrono', 'slitscan'],
 	'Анимация': ['trail'],
 	'Движение': ['curl', 'gravity', 'twist'],
 	'Звук и ритм': ['spectrum', 'wave', 'blast', 'shoots', 'chladni', 'scope'],

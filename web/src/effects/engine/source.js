@@ -322,7 +322,7 @@ _endMediaMorph() {
 const mm = this._mm;
 if (!mm) return;
 this._mm = null;
-if (mm.out && mm.out.pm.playing && !this.app.media.keepsSound(mm.out)) mm.out.pm.pause();
+if (mm.out && mm.out.pm.playing && !this.app.media.keepsSound(mm.out) && !this._keepVideo) mm.out.pm.pause();
 if (mm.in && mm.in.want !== false && !mm.in.pm.playing) mm.in.pm.play();
 }
 _mediaMorphTick(dt) {
@@ -335,7 +335,7 @@ const set = this.app.settings.media;
 const side = (e, outSide) => {
 const pm = e.pm;
 const active = outSide ? m < 0.45 : m >= 0.4;
-const play = (active && e.want !== false) || this.app.media.keepsSound(e);
+const play = (active && e.want !== false) || this.app.media.keepsSound(e) || (outSide && this._keepVideo && e.want !== false);
 if (play && !pm.playing) pm.play();
 else if (!play && pm.playing) pm.pause();
 if (!active || g.attributes.position.count !== pm.count) return;
@@ -400,7 +400,7 @@ this._resyncVideoAudio?.();
 this._endMediaMorph();
 if (!target || target.count !== this.geometry.attributes.position.count) {
 const was = prevKey && prevKey !== key && prevKey.startsWith('media') ? this.app.media.entry(prevKey) : null;
-if (was && was.pm.playing && !this.app.media.keepsSound(was)) was.pm.pause();
+if (was && was.pm.playing && !this.app.media.keepsSound(was) && !this._keepVideo) was.pm.pause();
 await this._build();
 if (mEntry && mEntry.want !== false && !mEntry.pm.playing) mEntry.pm.play();
 return this.emit();

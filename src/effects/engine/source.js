@@ -382,7 +382,8 @@ export class SourcePart {
 		const mm = this._mm;
 		if (!mm) return;
 		this._mm = null;
-		if (mm.out && mm.out.pm.playing && !this.app.media.keepsSound(mm.out)) mm.out.pm.pause();
+		// живая лента кадров (раскадровка «по ходу видео», шлейф движения) снимает кадры с этого же видео: оно играет дальше
+		if (mm.out && mm.out.pm.playing && !this.app.media.keepsSound(mm.out) && !this._keepVideo) mm.out.pm.pause();
 		if (mm.in && mm.in.want !== false && !mm.in.pm.playing) mm.in.pm.play();
 	}
 
@@ -401,7 +402,7 @@ export class SourcePart {
 			const pm = e.pm;
 			const active = outSide ? m < 0.45 : m >= 0.4;
 			// видео, выбранное источником звука, играет всегда: звук не обрывается на переходе
-			const play = (active && e.want !== false) || this.app.media.keepsSound(e);
+			const play = (active && e.want !== false) || this.app.media.keepsSound(e) || (outSide && this._keepVideo && e.want !== false);
 			if (play && !pm.playing) pm.play();
 			else if (!play && pm.playing) pm.pause();
 			if (!active || g.attributes.position.count !== pm.count) return;
@@ -474,7 +475,7 @@ export class SourcePart {
 		if (!target || target.count !== this.geometry.attributes.position.count) {
 			// число точек другое: переход невозможен, форма собирается заново. Прежнее видео встаёт, новое играет
 			const was = prevKey && prevKey !== key && prevKey.startsWith('media') ? this.app.media.entry(prevKey) : null;
-			if (was && was.pm.playing && !this.app.media.keepsSound(was)) was.pm.pause();
+			if (was && was.pm.playing && !this.app.media.keepsSound(was) && !this._keepVideo) was.pm.pause();
 			await this._build();
 			if (mEntry && mEntry.want !== false && !mEntry.pm.playing) mEntry.pm.play();
 			return this.emit();

@@ -86,11 +86,17 @@ float frLayerDepth(float k, vec2 g) {
 	vec2 p0 = floor(p);
 	vec2 f = p - p0;
 	vec2 p1 = min(p0 + vec2(1.0), m);
-	float d00 = texelFetch(uFrTex, ivec3(int(p0.x), int(p0.y), layer), 0).a;
-	float d10 = texelFetch(uFrTex, ivec3(int(p1.x), int(p0.y), layer), 0).a;
-	float d01 = texelFetch(uFrTex, ivec3(int(p0.x), int(p1.y), layer), 0).a;
-	float d11 = texelFetch(uFrTex, ivec3(int(p1.x), int(p1.y), layer), 0).a;
+	float d00 = frDec(texelFetch(uFrTex, ivec3(int(p0.x), int(p0.y), layer), 0).a);
+	float d10 = frDec(texelFetch(uFrTex, ivec3(int(p1.x), int(p0.y), layer), 0).a);
+	float d01 = frDec(texelFetch(uFrTex, ivec3(int(p0.x), int(p1.y), layer), 0).a);
+	float d11 = frDec(texelFetch(uFrTex, ivec3(int(p1.x), int(p1.y), layer), 0).a);
 	return mix(mix(d00, d10, f.x), mix(d01, d11, f.x), f.y);
+}
+// шлейф движения: выделенное ли место g на кадре k (метка в альфа-канале, ближайшая клетка)
+float frLayerSubj(float k, vec2 g) {
+	int layer = int(mod(k + uFr5.x, uFr.y));
+	vec2 p = clamp(floor(g + 0.5), vec2(0.0), vec2(uFr2.x - 1.0, uFr2.y - 1.0));
+	return texelFetch(uFrTex, ivec3(int(p.x), int(p.y), layer), 0).a > 0.5 ? 1.0 : 0.0;
 }
 #else
 #define HEROSIZE uFr6.x
@@ -125,9 +131,22 @@ void main() {
 		vec4 sh = frShow(fk, tcol);
 #ifdef HERO
 		// главный кадр показывается как есть, без подсветки и затемнения
-		if (uFr4.y < 0.5) sh.x = 1.0;
+		if (uFr4.y < 0.5 || uFr8.x > 0.5) sh.x = 1.0;
 #endif
 		bool cull = sh.x < 0.02;
+		// шлейф движения: у прошлых кадров остаётся выделенное (человек), фон редеет до «доли фона»; у текущего кадра фон можно приглушить или скрыть
+		float frBg = 0.0;
+		if (uFr8.x > 0.5 && !cull) {
+#ifdef HERO
+			frBg = 1.0 - frLayerSubj(uFr.y - 1.0, (fcell + 0.5) / uHero.xy * uFr2.xy - 0.5);
+			if (frBg > 0.5 && uFr8.x > 2.5) cull = true;
+#else
+			// ещё не снятые слои кольца пустые
+			if (fk < uFr.y - uFr9.w - 0.5) cull = true;
+			frBg = texelFetch(uFrTex, ivec3(int(fcell.x), int(fcell.y), int(mod(fk + uFr5.x, uFr.y))), 0).a > 0.5 ? 0.0 : 1.0;
+			if (frBg > 0.5 && fract(sin(dot(fcell, vec2(7.13, 3.71)) + fk * 2.31) * 51731.7) > uFr8.w) cull = true;
+#endif
+		}
 		// без свечения затухание цветом дало бы чёрные точки: вместо этого точки гаснут рассыпаясь (часть выпадает), а цвет остаётся
 		if (uAdd < 0.5 && sh.x < 1.0) {
 			if (fract(sin(dot(fcell, vec2(39.346, 11.135)) + fk * 1.713) * 24634.6345) > sh.x) cull = true;
@@ -135,8 +154,8 @@ void main() {
 		// без свечения цвет точек всегда как в видео: яркость кадров здесь меняется только числом точек
 		if (uAdd < 0.5) sh.x = 1.0;
 #ifndef HERO
-		// текущий кадр рисуется густым набором точек, поэтому в блоке его место пустое
-		if (uHero.w > 0.5 && abs(fk - floor(uFr4.x + 0.5)) < 0.1) cull = true;
+		// текущий кадр рисуется густым набором точек, поэтому в блоке его место пустое (у шлейфа все снятые кадры уже прошлое)
+		if (uHero.w > 0.5 && uFr8.x < 0.5 && abs(fk - floor(uFr4.x + 0.5)) < 0.1) cull = true;
 		// прошлые и будущие кадры редеют с расстоянием от текущего: рядом все точки, далеко только часть
 		float dl = abs(fk - uFr4.x);
 		float keep = mix(1.0, clamp(1.0 / (1.0 + dl * 0.45), 0.08, 1.0), uFr5.y);
@@ -183,6 +202,12 @@ void main() {
 #endif
 		float l = dot(fc, vec3(0.3, 0.59, 0.11));
 		frCol = (fc * (1.0 - sh.z) + tcol * (0.35 + l * 1.6) * sh.z) * sh.x;
+		// фон в шлейфе и приглушённый фон текущего кадра тусклее выделенного
+#ifdef HERO
+		if (frBg > 0.5 && uFr8.x > 1.5) frCol *= 0.3;
+#else
+		if (frBg > 0.5) frCol *= 0.4;
+#endif
 		frLift = sh.y;
 		// «Объём по глубине» на раскадровке: у каждого кадра своя карта глубины в альфа-канале текстуры кадров
 		if (uDepth.x > 0.001) {
@@ -193,7 +218,7 @@ void main() {
 			float hk1 = min(hk0 + 1.0, uFr.y - 1.0);
 			frDep = mix(frLayerDepth(hk0, hg), frLayerDepth(hk1, hg), clamp(uFr4.x - hk0, 0.0, 1.0));
 #else
-			frDep = texelFetch(uFrTex, ivec3(int(fcell.x), int(fcell.y), layer), 0).a;
+			frDep = frDec(texelFetch(uFrTex, ivec3(int(fcell.x), int(fcell.y), layer), 0).a);
 #endif
 			// правка карты (яркость, контраст, тени) считается здесь, для каждого кадра
 			frDep = pow(max(clamp((frDep - 0.5) * uDepthQ.z + 0.5 + uDepthQ.y, 0.0, 1.0), 1e-4), uDepthQ.w);

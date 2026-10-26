@@ -102,6 +102,8 @@ struct Frame {
 	uHero: vec4f,
 	uFr6: vec4f,
 	uFr7: vec4f,
+	uFr8: vec4f,
+	uFr9: vec4f,
 	uShoot: vec4f,
 	uShootP: vec4f,
 	uShootD: vec4f,
@@ -495,6 +497,14 @@ fn morphEase(x_in: f32) -> f32 {
 	return ((x * x) * ((3.0 - (2.0 * x))));
 }
 
+fn frDec(a_in: f32) -> f32 {
+	var a: f32 = a_in;
+	if ((fr.uFr8.x < 0.5)) {
+		return a;
+	}
+	return (glsl_mod_f(floor(((a * 255.0) + 0.5)), 128.0) / 127.0);
+}
+
 fn frPlace(lay_in: f32, k_in: f32, n_in: f32, u_in: f32, v_in: f32, nrm: ptr<function, vec3f>) -> vec3f {
 	var lay: f32 = lay_in;
 	var k: f32 = k_in;
@@ -515,6 +525,10 @@ fn frPlace(lay_in: f32, k_in: f32, n_in: f32, u_in: f32, v_in: f32, nrm: ptr<fun
 		return vec3f(((((((cx - (((gx - 1.0)) * 0.5))) * W) * s) * 1.04) + ((u * W) * s)), (((((((((gy - 1.0)) * 0.5) - cy)) * H) * s) * 1.04) + ((v * H) * s)), 0.0);
 	}
 	var ad: f32 = (k - fr.uFr4.x);
+	if ((lay > 3.5)) {
+		var age: f32 = max(0.0, -ad);
+		return vec3f(((u * W) + (fr.uFr8.y * age)), ((v * H) + (fr.uFr8.z * age)), (-fr.uFr9.z * age));
+	}
 	if (((lay > 1.5) && (lay < 2.5))) {
 		var sc: f32 = 0.5;
 		var aa: f32 = abs(ad);
@@ -600,6 +614,12 @@ fn frShow(k_in: f32, tcol: ptr<function, vec3f>) -> vec4f {
 		w = select(max(0.0, (1.0 - (((ad - half_)) / fw))), 1.0, (ad <= half_));
 		lift = ((((1.0 - w)) * sign((d + 0.0001))) * 0.8);
 		w *= (1.0 + (0.25 * max(0.0, (1.0 - ad))));
+	} else if ((mode == 6)) {
+		var age: f32 = max(0.0, -d);
+		var a: f32 = clamp((age / max(1.0, fr.uFr9.w)), 0.0, 1.0);
+		w = pow((1.0 - a), (0.5 + (fr.uFr9.y * 3.0)));
+		(*tcol) = select(mix(fr.uP1, fr.uP2, (((a - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (a * 2.0)), (a < 0.5));
+		tint = (fr.uFr9.x * a);
 	} else {
 		var span: f32 = max(1.5, (n * max(0.02, fr.uFr4.z)));
 		if ((mode == 4)) {
@@ -1571,6 +1591,16 @@ fn main_() {
 		var tcol: vec3f;
 		var sh: vec4f = frShow(fk, &tcol);
 		var cull: bool = (sh.x < 0.02);
+		var frBg: f32 = 0.0;
+		if (((fr.uFr8.x > 0.5) && !cull)) {
+			if ((fk < ((fr.uFr.y - fr.uFr9.w) - 0.5))) {
+				cull = true;
+			}
+			frBg = select(1.0, 0.0, (textureLoad(frTex, vec3i(i32(fcell.x), i32(fcell.y), i32(glsl_mod_f((fk + fr.uFr5.x), fr.uFr.y))).xy, vec3i(i32(fcell.x), i32(fcell.y), i32(glsl_mod_f((fk + fr.uFr5.x), fr.uFr.y))).z, 0).a > 0.5));
+			if (((frBg > 0.5) && (fract((sin((dot(fcell, vec2f(7.13, 3.71)) + (fk * 2.31))) * 51731.7)) > fr.uFr8.w))) {
+				cull = true;
+			}
+		}
 		if (((fr.uAdd < 0.5) && (sh.x < 1.0))) {
 			if ((fract((sin((dot(fcell, vec2f(39.346, 11.135)) + (fk * 1.713))) * 24634.6345)) > sh.x)) {
 				cull = true;
@@ -1579,7 +1609,7 @@ fn main_() {
 		if ((fr.uAdd < 0.5)) {
 			sh.x = 1.0;
 		}
-		if (((fr.uHero.w > 0.5) && (abs((fk - floor((fr.uFr4.x + 0.5)))) < 0.1))) {
+		if ((((fr.uHero.w > 0.5) && (fr.uFr8.x < 0.5)) && (abs((fk - floor((fr.uFr4.x + 0.5)))) < 0.1))) {
 			cull = true;
 		}
 		var dl: f32 = abs((fk - fr.uFr4.x));
@@ -1623,9 +1653,12 @@ fn main_() {
 		}
 		var l: f32 = dot(fc, vec3f(0.3, 0.59, 0.11));
 		frCol = ((((fc * ((1.0 - sh.z))) + ((tcol * ((0.35 + (l * 1.6)))) * sh.z))) * sh.x);
+		if ((frBg > 0.5)) {
+			frCol *= vec3f(0.4);
+		}
 		frLift = sh.y;
 		if ((fr.uDepth.x > 0.001)) {
-			frDep = textureLoad(frTex, vec3i(i32(fcell.x), i32(fcell.y), layer).xy, vec3i(i32(fcell.x), i32(fcell.y), layer).z, 0).a;
+			frDep = frDec(textureLoad(frTex, vec3i(i32(fcell.x), i32(fcell.y), layer).xy, vec3i(i32(fcell.x), i32(fcell.y), layer).z, 0).a);
 			frDep = pow(max(clamp((((((frDep - 0.5)) * fr.uDepthQ.z) + 0.5) + fr.uDepthQ.y), 0.0, 1.0), 1e-4), fr.uDepthQ.w);
 			var dkeep: f32 = mix(fr.uFr7.w, 1.0, (1.0 - clamp(abs((fk - fr.uFr4.x)), 0.0, 1.0)));
 			frDep = mix(fr.uDepth.w, frDep, dkeep);

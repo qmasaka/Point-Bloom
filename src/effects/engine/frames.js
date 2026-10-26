@@ -20,7 +20,7 @@ export class FramesPart {
 
 	/** Номера раскладок для шейдера */
 	_layoutId(name) {
-		return Math.max(0, ['stack', 'wall', 'film', 'tunnel'].indexOf(name));
+		return Math.max(0, ['stack', 'wall', 'film', 'tunnel', 'chrono'].indexOf(name));
 	}
 
 	/** Снимок кадра видео в RGBA нужного размера: пишет прямо в out (кусок общего массива), лишних копий нет */
@@ -176,7 +176,7 @@ export class FramesPart {
 	/** Выставляет параметры блока в шейдер (размер, раскладка, глубина) */
 	_frameUniforms() {
 		const fr = this._frames;
-		const F = this.state.layers.frames;
+		const F = this._frP();
 		const u = this.shared;
 		if (!fr) return;
 		// материал точек пересоздаётся при смене источника и приносит заглушку вместо текстуры кадров: возвращаем настоящую
@@ -193,7 +193,8 @@ export class FramesPart {
 	async enableFrames() {
 		if (this._framesBusy || !this.videoReady || !this.active) return;
 		this._framesBusy = true;
-		const F = this.state.layers.frames;
+		// раскадровка или «Шлейф движения» (chrono.js): кольцо кадров одно, параметры у каждого свои
+		const F = this._frP();
 		try {
 			this.app.ui.busy('Раскладываю видео на кадры', 0.05);
 			const pm = this.pm;
@@ -210,7 +211,8 @@ export class FramesPart {
 			const data = new Uint8Array(per * n);
 			const frames = Array.from({ length: n }, (_, k) => data.subarray(k * per, (k + 1) * per));
 			// dAi, dOk: глубина кадров от нейросети и отметки «посчитано» (по слою текстуры); dSig: с какими настройками записан альфа-канал
-			const fr = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, gain: 1, ts: null, done: new Uint8Array(n), times: null, cap: null, take: null, dead: false, dAi: null, dOk: new Uint8Array(n), dSig: this._frDepthSig(), dJob: false };
+			// chrono: кольцо работает на «Шлейф движения»; valid: сколько кадров шлейфа уже снято (остальные слои пустые и не показываются)
+			const fr = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, gain: 1, ts: null, done: new Uint8Array(n), times: null, cap: null, take: null, dead: false, dAi: null, dOk: new Uint8Array(n), dSig: this._frDepthSig(), dJob: false, chrono: !!F.chrono, valid: 1 };
 			let refine = null;
 			if (F.source === 'whole') {
 				fr.times = Array.from({ length: n }, (_, k) => Math.min(Math.max(0.05, dur - 0.04), (k / Math.max(1, n - 1)) * dur));
@@ -242,6 +244,7 @@ export class FramesPart {
 			} else {
 				// бегущая лента начинается пустой и заполняется по ходу видео
 				this._frameTaker(cols, rows)(frames[n - 1]);
+				if (fr.chrono) this._chronoMask(fr, n - 1);
 				this._frDepthOne(fr, n - 1);
 				fr.done[n - 1] = 1;
 			}
@@ -268,6 +271,8 @@ export class FramesPart {
 			this.shared.uFr3.value.set(F.depth, this._layoutCur, this._layoutCur, 0);
 			this.cache.clear();
 			this.state.look.colorBy = 'model';
+			// живая лента снимает кадры с того же видео: переход к блоку его не останавливает
+			this._keepVideo = F.source === 'live';
 			await this.setSource('frames');
 			this._frameUniforms();
 			this.shared.uFr5.value.x = 0;
@@ -276,7 +281,8 @@ export class FramesPart {
 		} catch (e) {
 			console.error(e);
 			this.app.toast('Не удалось разложить видео на кадры: ' + (e.message || e), 'error');
-			F.on = false;
+			if (F.chrono) this.state.layers.chrono.on = false;
+			else F.on = false;
 			this.shared.uFr.value.x = 0;
 		} finally {
 			this.app.ui.idle();
@@ -305,9 +311,17 @@ export class FramesPart {
 			g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
 		}
 		this._framesOn = false;
+		this._keepVideo = false;
 		this.shared.uFr.value.x = 0;
+		this.shared.uFr8.value.x = 0;
 		this.shared.uHero.value.w = 0;
 		if (this.hero) this.hero.visible = false;
+		// шлейф со стоящей камерой мог увезти блок в сторону
+		if (this._chronoMoved && this.points) {
+			this.points.position.set(0, 0, 0);
+			this.points.updateMatrixWorld();
+			this._chronoMoved = false;
+		}
 		this._frames = null;
 		this._frameCloud = null;
 		this._frameTex?.dispose();
@@ -329,19 +343,29 @@ export class FramesPart {
 
 	/** Подъезжаем камерой так, чтобы весь блок помещался в кадр (для каждой раскладки свой размер) */
 	_framesFit() {
-		const F = this.state.layers.frames;
+		const F = this._frP();
 		const fr = this._frames;
 		const nav = this.app.nav;
 		if (!fr || !nav) return;
 		const W = fr.aspect >= 1 ? 2.2 : 2.2 * fr.aspect;
 		const H = W / fr.aspect;
+		if (F.chrono) {
+			// шлейф: в кадре текущее видео и начало шлейфа, центр чуть сдвинут в его сторону
+			const C = this.state.layers.chrono;
+			const len = Math.min(3, (C.drift || 0) * F.step * fr.n);
+			const sx = C.dir === 'right' ? -1 : C.dir === 'up' ? 0 : 1;
+			const sy = C.dir === 'up' ? -1 : 0;
+			// видео смотрит прямо на зрителя, лишь чуть сверху: так видны и шлейф, и объём
+			nav.animateTo({ yaw: 0, pitch: -0.06, distance: nav.fitDistance(Math.hypot(W / 2, H / 2) + len * 0.3), target: new THREE.Vector3(sx * len * 0.25, sy * len * 0.25, 0) }, 450);
+			return;
+		}
 		const R = { stack: Math.hypot(W / 2, H / 2, F.depth / 2), tunnel: Math.hypot(W / 2, H / 2, F.depth / 2), wall: 1.45, film: W * 1.35 }[F.layout] ?? 2;
 		nav.animateTo({ distance: nav.fitDistance(R * 0.85), target: new THREE.Vector3(0, 0, 0) }, 450);
 	}
 
 	/** Поменялась раскладка или глубина: шейдер плавно перестраивает листы, а положения для переходов обновляются в фоне */
 	relayoutFrames() {
-		const F = this.state.layers.frames;
+		const F = this._frP();
 		const fr = this._frames;
 		if (!this._framesOn || !fr) return;
 		const target = this._layoutId(F.layout);
@@ -368,11 +392,19 @@ export class FramesPart {
 
 	/** Каждый кадр: следим за видео, ведём показ, двигаем бегущую ленту. Данные точек не трогаем, только числа для шейдера */
 	_framesTick() {
-		const F = this.state.layers.frames;
+		this._chronoExclusive();
+		const F = this._frP();
 		// настройки из прошлых версий: исчезнувшие раскладки и режимы заменяем на ближайшие
-		if (!['stack', 'wall', 'film', 'tunnel'].includes(F.layout)) F.layout = 'stack';
-		if (!['off', 'peel', 'projector', 'trail'].includes(F.showMode)) F.showMode = 'off';
-		F.follow = 'off';
+		if (!F.chrono) {
+			if (!['stack', 'wall', 'film', 'tunnel'].includes(F.layout)) F.layout = 'stack';
+			if (!['off', 'peel', 'projector', 'trail'].includes(F.showMode)) F.showMode = 'off';
+			F.follow = 'off';
+		}
+		// раскадровку сменил шлейф (или наоборот): кольцо кадров собирается заново под новые параметры
+		if (this._framesOn && !this._framesBusy && this._frames && !!this._frames.chrono !== !!F.chrono && F.on) {
+			this.rebuildFramesSoon();
+			return;
+		}
 		const wantOn = F.on && this.videoReady && this.state.source !== 'sphere';
 		if (wantOn && !this._framesOn && !this._framesBusy) {
 			this.enableFrames();
@@ -404,10 +436,11 @@ export class FramesPart {
 				this._layoutAnim = null;
 			}
 		}
-		// текущий кадр (дробный, поэтому показ идёт плавно, а не шагами). Его задаёт видео: крутите таймлайн, и блок следует за ним
-		const idx = F.source === 'live' ? this._liveIdx(fr) : Math.max(0, Math.min(1, (this.pm.el.currentTime || 0) / Math.max(0.1, fr.dur))) * (fr.n - 1);
-		fr.cur = Math.round(idx);
-		const modeId = { off: 0, peel: 1, projector: 4, trail: 5 }[F.showMode] ?? 0;
+		// текущий кадр (дробный, поэтому показ идёт плавно, а не шагами). Его задаёт видео: крутите таймлайн, и блок следует за ним.
+		// У шлейфа «текущий» уходит от последнего снятого кадра по времени до следующего снимка: прошлые кадры съезжают плавно, без рывка на каждом снимке
+		const idx = F.chrono ? fr.n - 1 + Math.min(1, Math.max(0, (this._time - fr.last) / F.step)) : F.source === 'live' ? this._liveIdx(fr) : Math.max(0, Math.min(1, (this.pm.el.currentTime || 0) / Math.max(0.1, fr.dur))) * (fr.n - 1);
+		fr.cur = Math.min(fr.n - 1, Math.round(idx));
+		const modeId = { off: 0, peel: 1, projector: 4, trail: 5, chrono: 6 }[F.showMode] ?? 0;
 		u.uFr4.value.set(idx, modeId, F.showLen, F.thin ?? 0);
 		// листы рядом друг с другом не перекрываются, их разреживать незачем
 		u.uFr6.value.set(F.bsize ?? 1.5, F.track === 'full' && F.source === 'whole' ? 1 : 0, { all: 0, light: 1, dark: 2 }[F.tone] ?? 0, F.toneCut ?? 0.5);
@@ -416,6 +449,7 @@ export class FramesPart {
 		u.uFr5.value.z = { show: 0, dim: 1, hide: 2 }[F.future] ?? 1;
 		u.uFr5.value.w = (fr.gain || 1) * (F.gain ?? 1);
 		u.uFr7.value.w = F.dkeep ?? 0.5;
+		this._chronoUniforms(F, fr);
 		this._ensureHero(F, fr);
 		this._framesFollow(F, fr);
 		if (F.source === 'live') this._framesLive(F, fr);
@@ -453,7 +487,9 @@ export class FramesPart {
 		const r = Math.round((Dp.blur || 0) * 0.4);
 		if (r > 0) map = adjustDepth(map, { blur: r });
 		const d = map.data;
-		for (let i = 0; i < per; i++) f[i * 4 + 3] = (d[i] * 255 + 0.5) | 0;
+		// у шлейфа движения в альфа-канале вместе с глубиной метка выделенного (chrono.js)
+		if (fr.chrono) this._chronoAlpha(fr, k, d);
+		else for (let i = 0; i < per; i++) f[i * 4 + 3] = (d[i] * 255 + 0.5) | 0;
 	}
 
 	/** Переписывает глубину всех кадров и отправляет текстуру целиком */
@@ -579,7 +615,7 @@ export class FramesPart {
 		const f = fr.frames[layer];
 		const per = fr.cols * fr.rows;
 		const data = new Float32Array(per);
-		for (let i = 0; i < per; i++) data[i] = f[i * 4 + 3] / 255;
+		for (let i = 0; i < per; i++) data[i] = fr.chrono ? (f[i * 4 + 3] & 127) / 127 : f[i * 4 + 3] / 255;
 		// яркость, контраст и тени шейдер применяет сам: на превью то же, что на точках
 		const Dp = this.state.layers.depth;
 		return adjustDepth({ w: fr.cols, h: fr.rows, data }, { bright: Dp.bright, contrast: Dp.contrast, gamma: Dp.gamma });
@@ -724,6 +760,10 @@ export class FramesPart {
 		const tex = this._frameTex;
 		take(fr.frames[layer]);
 		fr.dOk[layer] = 0;
+		if (fr.chrono) {
+			this._chronoMask(fr, layer);
+			fr.valid = Math.min(fr.n, (fr.valid || 1) + 1);
+		}
 		this._frDepthOne(fr, layer);
 		tex.addLayerUpdate && tex.addLayerUpdate(layer);
 		tex.needsUpdate = true;

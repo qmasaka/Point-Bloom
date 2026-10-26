@@ -218,6 +218,19 @@ const y = Math.sin(t * 2.2) * 8;
 for (const [x, yy] of ring(30, 9)) dot(c, x * 1.2, yy, Math.abs(yy - y) < 2 ? 2.6 : 1.4, Math.abs(yy - y) < 2 ? 1 : 0.35);
 for (let i = -6; i <= 6; i++) dot(c, i * 1.8, y, 1.6, 0.9);
 },
+chrono: (c, t) => {
+const fig = (x, ph, a) => {
+dot(c, x, -7, 2.2, a);
+for (let i = 0; i < 4; i++) dot(c, x + 0.2 * i, -4.6 + i * 1.5, 1.6, a);
+const s = Math.sin(ph) * 2.2;
+for (let i = 1; i <= 3; i++) {
+dot(c, x + (s * i) / 3, 1.4 + i * 1.5, 1.4, a);
+dot(c, x - (s * i) / 3, 1.4 + i * 1.5, 1.4, a);
+dot(c, x - (s * i) / 4 + 0.4, -4 + i, 1.2, a * 0.8);
+}
+};
+for (let k = 6; k >= 0; k--) fig(-5 + k * 2.4 - ((t * 3) % 2.4) * (k ? 1 : 0), t * 9 - k * 0.9, k ? 0.55 * Math.pow(0.72, k) : 1);
+},
 shoots: (c, t) => {
 for (let k = 0; k < 120; k++) {
 const a = (k / 120) * Math.PI * 2;

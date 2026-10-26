@@ -27,6 +27,7 @@ import { SlitPart } from './slitscan.js';
 import { ChladniPart } from './chladni.js';
 import { ShootsPart } from './shoots.js';
 import { ShadowPart } from './shadow.js';
+import { ChronoPart } from './chrono.js';
 import { PixelSortPart } from './pixelsort.js';
 import { TrackPickPart } from './track-pick.js';
 import { mixin } from './mixin.js';
@@ -194,6 +195,7 @@ const app = this.app;
 this.active = true;
 this.state.look.autoRotate = false;
 this.state.layers.frames.on = false;
+if (this.state.layers.chrono) this.state.layers.chrono.on = false;
 this._fxCur = new Set();
 this._fxSeen = new Map();
 this._fxBusy = false;
@@ -343,4 +345,4 @@ nav.paintLock = want;
 this.app.viewport.container.classList.toggle('paint-lock', want);
 }
 }
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, PixelSortPart, TrackPickPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, ChronoPart, PixelSortPart, TrackPickPart);

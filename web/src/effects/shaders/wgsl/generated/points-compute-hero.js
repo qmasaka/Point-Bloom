@@ -102,6 +102,8 @@ struct Frame {
 	uHero: vec4f,
 	uFr6: vec4f,
 	uFr7: vec4f,
+	uFr8: vec4f,
+	uFr9: vec4f,
 	uShoot: vec4f,
 	uShootP: vec4f,
 	uShootD: vec4f,
@@ -495,6 +497,14 @@ fn morphEase(x_in: f32) -> f32 {
 	return ((x * x) * ((3.0 - (2.0 * x))));
 }
 
+fn frDec(a_in: f32) -> f32 {
+	var a: f32 = a_in;
+	if ((fr.uFr8.x < 0.5)) {
+		return a;
+	}
+	return (glsl_mod_f(floor(((a * 255.0) + 0.5)), 128.0) / 127.0);
+}
+
 fn frPlace(lay_in: f32, k_in: f32, n_in: f32, u_in: f32, v_in: f32, nrm: ptr<function, vec3f>) -> vec3f {
 	var lay: f32 = lay_in;
 	var k: f32 = k_in;
@@ -516,6 +526,10 @@ fn frPlace(lay_in: f32, k_in: f32, n_in: f32, u_in: f32, v_in: f32, nrm: ptr<fun
 	}
 	var ad: f32 = (k - fr.uFr4.x);
 	ad = 0.0;
+	if ((lay > 3.5)) {
+		var age: f32 = max(0.0, -ad);
+		return vec3f(((u * W) + (fr.uFr8.y * age)), ((v * H) + (fr.uFr8.z * age)), (-fr.uFr9.z * age));
+	}
 	if (((lay > 1.5) && (lay < 2.5))) {
 		var sc: f32 = 0.5;
 		var aa: f32 = abs(ad);
@@ -599,6 +613,12 @@ fn frShow(k_in: f32, tcol: ptr<function, vec3f>) -> vec4f {
 		w = select(max(0.0, (1.0 - (((ad - half_)) / fw))), 1.0, (ad <= half_));
 		lift = ((((1.0 - w)) * sign((d + 0.0001))) * 0.8);
 		w *= (1.0 + (0.25 * max(0.0, (1.0 - ad))));
+	} else if ((mode == 6)) {
+		var age: f32 = max(0.0, -d);
+		var a: f32 = clamp((age / max(1.0, fr.uFr9.w)), 0.0, 1.0);
+		w = pow((1.0 - a), (0.5 + (fr.uFr9.y * 3.0)));
+		(*tcol) = select(mix(fr.uP1, fr.uP2, (((a - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (a * 2.0)), (a < 0.5));
+		tint = (fr.uFr9.x * a);
 	} else {
 		var span: f32 = max(1.5, (n * max(0.02, fr.uFr4.z)));
 		if ((mode == 4)) {
@@ -1556,11 +1576,19 @@ fn frLayerDepth(k_in: f32, g_in: vec2f) -> f32 {
 	var p0: vec2f = floor(p);
 	var f: vec2f = (p - p0);
 	var p1: vec2f = min((p0 + vec2f(1.0)), m);
-	var d00: f32 = textureLoad(frTex, vec3i(i32(p0.x), i32(p0.y), layer).xy, vec3i(i32(p0.x), i32(p0.y), layer).z, 0).a;
-	var d10: f32 = textureLoad(frTex, vec3i(i32(p1.x), i32(p0.y), layer).xy, vec3i(i32(p1.x), i32(p0.y), layer).z, 0).a;
-	var d01: f32 = textureLoad(frTex, vec3i(i32(p0.x), i32(p1.y), layer).xy, vec3i(i32(p0.x), i32(p1.y), layer).z, 0).a;
-	var d11: f32 = textureLoad(frTex, vec3i(i32(p1.x), i32(p1.y), layer).xy, vec3i(i32(p1.x), i32(p1.y), layer).z, 0).a;
+	var d00: f32 = frDec(textureLoad(frTex, vec3i(i32(p0.x), i32(p0.y), layer).xy, vec3i(i32(p0.x), i32(p0.y), layer).z, 0).a);
+	var d10: f32 = frDec(textureLoad(frTex, vec3i(i32(p1.x), i32(p0.y), layer).xy, vec3i(i32(p1.x), i32(p0.y), layer).z, 0).a);
+	var d01: f32 = frDec(textureLoad(frTex, vec3i(i32(p0.x), i32(p1.y), layer).xy, vec3i(i32(p0.x), i32(p1.y), layer).z, 0).a);
+	var d11: f32 = frDec(textureLoad(frTex, vec3i(i32(p1.x), i32(p1.y), layer).xy, vec3i(i32(p1.x), i32(p1.y), layer).z, 0).a);
 	return mix(mix(d00, d10, f.x), mix(d01, d11, f.x), f.y);
+}
+
+fn frLayerSubj(k_in: f32, g_in: vec2f) -> f32 {
+	var k: f32 = k_in;
+	var g: vec2f = g_in;
+	var layer: i32 = i32(glsl_mod_f((k + fr.uFr5.x), fr.uFr.y));
+	var p: vec2f = clamp(floor((g + 0.5)), vec2f(0.0), vec2f((fr.uFr2.x - 1.0), (fr.uFr2.y - 1.0)));
+	return select(0.0, 1.0, (textureLoad(frTex, vec3i(i32(p.x), i32(p.y), layer).xy, vec3i(i32(p.x), i32(p.y), layer).z, 0).a > 0.5));
 }
 
 fn main_() {
@@ -1585,10 +1613,17 @@ fn main_() {
 		frAp = (((fcell.y + (fcell.x / fr.uHero.x))) / fr.uHero.y);
 		var tcol: vec3f;
 		var sh: vec4f = frShow(fk, &tcol);
-		if ((fr.uFr4.y < 0.5)) {
+		if (((fr.uFr4.y < 0.5) || (fr.uFr8.x > 0.5))) {
 			sh.x = 1.0;
 		}
 		var cull: bool = (sh.x < 0.02);
+		var frBg: f32 = 0.0;
+		if (((fr.uFr8.x > 0.5) && !cull)) {
+			frBg = (1.0 - frLayerSubj((fr.uFr.y - 1.0), (((((fcell + 0.5)) / fr.uHero.xy) * fr.uFr2.xy) - 0.5)));
+			if (((frBg > 0.5) && (fr.uFr8.x > 2.5))) {
+				cull = true;
+			}
+		}
 		if (((fr.uAdd < 0.5) && (sh.x < 1.0))) {
 			if ((fract((sin((dot(fcell, vec2f(39.346, 11.135)) + (fk * 1.713))) * 24634.6345)) > sh.x)) {
 				cull = true;
@@ -1610,6 +1645,9 @@ fn main_() {
 		var fc: vec3f = textureSampleLevel(heroTex, linSamp, vec2f((((fcell.x + 0.5)) / fr.uHero.x), (1.0 - (((fcell.y + 0.5)) / fr.uHero.y))), 0.0).rgb;
 		var l: f32 = dot(fc, vec3f(0.3, 0.59, 0.11));
 		frCol = ((((fc * ((1.0 - sh.z))) + ((tcol * ((0.35 + (l * 1.6)))) * sh.z))) * sh.x);
+		if (((frBg > 0.5) && (fr.uFr8.x > 1.5))) {
+			frCol *= vec3f(0.3);
+		}
 		frLift = sh.y;
 		if ((fr.uDepth.x > 0.001)) {
 			var hg: vec2f = (((((fcell + 0.5)) / fr.uHero.xy) * fr.uFr2.xy) - 0.5);

@@ -534,6 +534,7 @@ const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id 
 const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
+let chronoStat = null;
 const animQuickBtn = button({
 label: 'Секвенсор анимации',
 icon: 'film-strip',
@@ -590,6 +591,9 @@ collapseBtn.querySelector('.btn-label').textContent = engine.isCollapsed ? 'Со
 body.append(collapseBtn);
 } else if (def.id === 'frames') {
 body.append(h('div', { class: 'field-hint' }, 'Видео раскладывается на кадры, кадры собираются в блок из точек. Текущий кадр рисуется густо, остальные реже. Что сейчас показано, задаёт таймлайн внизу: играйте и перематывайте видео, блок следует за ним. Остальные эффекты работают поверх блока, «Объём по глубине» выдавливает каждый кадр по его карте глубины.'), button({ label: 'Снять кадры заново', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Снять кадры с видео заново с текущими настройками', onClick: () => engine.rebuildFramesSoon() }));
+} else if (def.id === 'chrono') {
+chronoStat = h('div', { class: 'field-hint fx-chrono-stat' });
+body.append(chronoStat);
 } else if (def.id === 'brush') {
 const clearBtn = button({
 label: 'Смыть всю краску',
@@ -653,7 +657,7 @@ body.append(camBtn);
 body.append(button({ label: 'Вернуть форму после лепки', icon: 'broom', variant: 'secondary', cls: 'btn-block', onClick: () => engine.clearSculpt() }));
 body.append(h('div', { class: 'field-hint' }, 'При первом включении загружается модель распознавания рук (около 10 МБ), нужен интернет. Видео с камеры никуда не отправляется.'));
 }
-if (def.id !== 'frames') body.append(field('Сила', amount.el));
+if (def.id !== 'frames' && def.id !== 'chrono') body.append(field('Сила', amount.el));
 const extraCtl = {};
 const whenList = [];
 let cur = body;
@@ -3043,6 +3047,23 @@ recBtn.setAttribute('aria-expanded', 'false');
 const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
 bar.append(leftBtn, playBtn, camBtn, paintBtn, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgWrap, orthoBtn, focusBtn, h('span', { class: 'fx-bar-sep' }), recBtn, keyAnimBtn, recTime);
 function sync() {
+if (chronoStat) {
+const I = engine.chronoInfo();
+const ai = I.mask === 'person' || I.mask === 'any';
+chronoStat.textContent = !I.video
+? 'Откройте видео: шлейф строится по его кадрам.'
+: !ai
+? I.mask === 'motion'
+? 'Выделяется то, что движется в кадре. Подходит, когда камера в ролике стоит на месте.'
+: 'Выделяется ближнее по карте глубины: чем выше чувствительность, тем дальше граница.'
+: I.phase === 'ready'
+? 'Нейросеть выделения работает: объект ищется на каждом кадре шлейфа.'
+: I.phase === 'error'
+? 'Нейросеть выделения не загрузилась (' + I.error + '). Пока выделяется то, что движется.'
+: I.phase === 'loading'
+? 'Загружаю нейросеть выделения (около 3 МБ, один раз). Пока выделяется то, что движется.'
+: 'Нейросеть выделения загрузится при включении (около 3 МБ, нужен интернет). Кадры никуда не отправляются.';
+}
 const n = engine.geometry ? engine.geometry.attributes.position.count : st.count;
 countHint.textContent = `Сейчас ${formatInt(n)} частиц, около ${Math.round((n * 128) / 1048576)} МБ памяти. Комфортно до ${formatCount(getDevice(app).limits.comfort)}.`;
 const kind = engine.modelProvider ? engine.modelProvider.kind() : 'none';
@@ -3051,7 +3072,7 @@ countActive();
 for (const c of cards) {
 if (c.def.group !== 'Видео') continue;
 c.folder.hidden = !engine.pm.ready;
-if (c.def.id === 'frames' || c.def.id === 'slitscan') c.card.hidden = !engine.videoLoaded;
+if (c.def.id === 'frames' || c.def.id === 'slitscan' || c.def.id === 'chrono') c.card.hidden = !engine.videoLoaded;
 }
 {
 const vc = cards.find((c) => c.def.group === 'Видео');
