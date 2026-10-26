@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { h } from '../core/util.js';
+import { h, screenRect } from '../core/util.js';
 export class PointEditor {
 constructor(app) {
 this.app = app;
@@ -102,7 +102,7 @@ cam.updateMatrixWorld();
 o.updateWorldMatrix(true, false);
 const m = new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse).multiply(o.matrixWorld);
 const e = m.elements;
-const r = vp.canvas.getBoundingClientRect();
+const r = screenRect(vp.canvas);
 const W = r.width;
 const H = r.height;
 const pos = o.geometry.attributes.position;
@@ -168,7 +168,7 @@ return this._cursor?.currentCSSZoom || parseFloat(document.documentElement.style
 }
 _move(e) {
 if (!this.active) return;
-const r = this.app.viewport.canvas.getBoundingClientRect();
+const r = screenRect(this.app.viewport.canvas);
 const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
 const scale = this._scale();
 if (this.tool === 'brush' && this.obj && !e.altKey) {
@@ -230,7 +230,7 @@ this._apply((x, y) => x >= Math.min(d.x0, e.clientX) && x <= Math.max(d.x0, e.cl
 }
 _lassoDraw(path, remove) {
 const cv = this._lasso;
-const vp = document.getElementById('viewport').getBoundingClientRect();
+const vp = screenRect(document.getElementById('viewport'));
 if (cv.width !== Math.round(vp.width) || cv.height !== Math.round(vp.height)) {
 cv.width = Math.round(vp.width);
 cv.height = Math.round(vp.height);
@@ -253,10 +253,10 @@ _lassoOff() {
 this._lasso.hidden = true;
 }
 _vpLeft() {
-return document.getElementById('viewport').getBoundingClientRect().left;
+return screenRect(document.getElementById('viewport')).left;
 }
 _vpTop() {
-return document.getElementById('viewport').getBoundingClientRect().top;
+return screenRect(document.getElementById('viewport')).top;
 }
 _brush(cx, cy, remove) {
 const scale = this._scale();

@@ -1,4 +1,4 @@
-import { h } from '../core/util.js';
+import { h, screenRect } from '../core/util.js';
 import { section, field, slider, segmented, switchRow, button, colorField } from '../ui/ui-kit.js';
 import { cloudToPoints } from './pointcloud.js';
 import { icon } from '../ui/icons.js';
@@ -132,7 +132,7 @@ if (cur && !q) cur.scrollIntoView({ block: 'center' });
 }
 function placeMenu() {
 const z = parseFloat(document.documentElement.style.zoom) || 1;
-const r = fontBox.getBoundingClientRect();
+const r = screenRect(fontBox);
 menu.style.width = r.width / z + 'px';
 menu.style.left = r.left / z + 'px';
 const below = window.innerHeight / z - r.bottom / z - 12;

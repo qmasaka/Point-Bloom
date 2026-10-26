@@ -75,22 +75,25 @@ export function formatInt(n) {
 
 /** Ставит всплывающее меню над кнопкой. Меню лежит прямо в сцене, а не внутри панели с размытием: вложенное размытие не видит сцену за собой. align: 'center' | 'right' */
 export function placeAbove(pop, btn, host, align = 'center', gap = 14) {
-	const hr = host.getBoundingClientRect();
-	const br = btn.getBoundingClientRect();
+	// замеры в экранных пикселях, положение в пикселях вёрстки: при масштабе интерфейса они различаются
+	const z = uiZoom();
+	const hr = screenRect(host);
+	const br = screenRect(btn);
 	pop.style.top = 'auto';
-	pop.style.bottom = Math.round(hr.bottom - br.top + gap) + 'px';
+	pop.style.bottom = Math.round((hr.bottom - br.top) / z + gap) + 'px';
 	if (align === 'right') {
 		pop.style.left = 'auto';
 		pop.style.transform = 'none';
-		pop.style.right = Math.round(hr.right - br.right - 6) + 'px';
+		pop.style.right = Math.round((hr.right - br.right) / z - 6) + 'px';
 	} else {
 		pop.style.right = 'auto';
 		pop.style.transform = 'translateX(-50%)';
 		// на узком экране меню у крайней кнопки не уходит за край: центр сдвигается внутрь, отступ 8 px
 		const half = pop.offsetWidth / 2;
-		const x = br.left + br.width / 2 - hr.left;
-		const lo = half + 8, hi = hr.width - half - 8;
-		pop.style.left = Math.round(hi >= lo ? clamp(x, lo, hi) : hr.width / 2) + 'px';
+		const x = (br.left + br.width / 2 - hr.left) / z;
+		const W = hr.width / z;
+		const lo = half + 8, hi = W - half - 8;
+		pop.style.left = Math.round(hi >= lo ? clamp(x, lo, hi) : W / 2) + 'px';
 	}
 }
 

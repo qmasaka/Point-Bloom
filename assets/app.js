@@ -33274,21 +33274,23 @@ function formatInt(n) {
 return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 function placeAbove(pop, btn, host, align = 'center', gap = 14) {
-const hr = host.getBoundingClientRect();
-const br = btn.getBoundingClientRect();
+const z = uiZoom();
+const hr = screenRect(host);
+const br = screenRect(btn);
 pop.style.top = 'auto';
-pop.style.bottom = Math.round(hr.bottom - br.top + gap) + 'px';
+pop.style.bottom = Math.round((hr.bottom - br.top) / z + gap) + 'px';
 if (align === 'right') {
 pop.style.left = 'auto';
 pop.style.transform = 'none';
-pop.style.right = Math.round(hr.right - br.right - 6) + 'px';
+pop.style.right = Math.round((hr.right - br.right) / z - 6) + 'px';
 } else {
 pop.style.right = 'auto';
 pop.style.transform = 'translateX(-50%)';
 const half = pop.offsetWidth / 2;
-const x = br.left + br.width / 2 - hr.left;
-const lo = half + 8, hi = hr.width - half - 8;
-pop.style.left = Math.round(hi >= lo ? clamp(x, lo, hi) : hr.width / 2) + 'px';
+const x = (br.left + br.width / 2 - hr.left) / z;
+const W = hr.width / z;
+const lo = half + 8, hi = W - half - 8;
+pop.style.left = Math.round(hi >= lo ? clamp(x, lo, hi) : W / 2) + 'px';
 }
 }
 function fmt(n, digits = 3) {
@@ -33367,7 +33369,7 @@ __defs['src/points/point-edit.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'PointEditor', () => PointEditor);
 const THREE = __req('vendor/three/build/three.module.js');
-const { h } = __req('src/core/util.js');
+const { h, screenRect } = __req('src/core/util.js');
 class PointEditor {
 constructor(app) {
 this.app = app;
@@ -33470,7 +33472,7 @@ cam.updateMatrixWorld();
 o.updateWorldMatrix(true, false);
 const m = new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse).multiply(o.matrixWorld);
 const e = m.elements;
-const r = vp.canvas.getBoundingClientRect();
+const r = screenRect(vp.canvas);
 const W = r.width;
 const H = r.height;
 const pos = o.geometry.attributes.position;
@@ -33536,7 +33538,7 @@ return this._cursor?.currentCSSZoom || parseFloat(document.documentElement.style
 }
 _move(e) {
 if (!this.active) return;
-const r = this.app.viewport.canvas.getBoundingClientRect();
+const r = screenRect(this.app.viewport.canvas);
 const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
 const scale = this._scale();
 if (this.tool === 'brush' && this.obj && !e.altKey) {
@@ -33598,7 +33600,7 @@ this._apply((x, y) => x >= Math.min(d.x0, e.clientX) && x <= Math.max(d.x0, e.cl
 }
 _lassoDraw(path, remove) {
 const cv = this._lasso;
-const vp = document.getElementById('viewport').getBoundingClientRect();
+const vp = screenRect(document.getElementById('viewport'));
 if (cv.width !== Math.round(vp.width) || cv.height !== Math.round(vp.height)) {
 cv.width = Math.round(vp.width);
 cv.height = Math.round(vp.height);
@@ -33621,10 +33623,10 @@ _lassoOff() {
 this._lasso.hidden = true;
 }
 _vpLeft() {
-return document.getElementById('viewport').getBoundingClientRect().left;
+return screenRect(document.getElementById('viewport')).left;
 }
 _vpTop() {
-return document.getElementById('viewport').getBoundingClientRect().top;
+return screenRect(document.getElementById('viewport')).top;
 }
 _brush(cx, cy, remove) {
 const scale = this._scale();
@@ -35196,6 +35198,7 @@ const { TransformControls } = __req('vendor/three/addons/controls/TransformContr
 const { RoomEnvironment } = __req('vendor/three/addons/environments/RoomEnvironment.js');
 const { Grid } = __req('src/scene/grid.js');
 const { perf } = __req('src/core/perf.js');
+const { screenRect, uiZoom } = __req('src/core/util.js');
 const LAYER = { MESH: 1, POINTS: 2, WIRE: 3, FACES: 4 };
 const BACKGROUNDS = {
 dark: { label: 'Тёмный градиент', css: 'radial-gradient(ellipse at 50% 25%, #3d4149 0%, #24272d 62%, #1b1d22 100%)', solid: '#2a2d33', light: false, paint: { type: 'radial', at: [0.5, 0.25], stops: [[0, '#3d4149'], [0.62, '#24272d'], [1, '#1b1d22']] } },
@@ -35358,6 +35361,8 @@ this.invalidate();
 }
 resize() {
 if (this.recLock) return;
+const pr = this._pr();
+if (Math.abs(this.renderer.getPixelRatio() - pr) > 1e-6) this.renderer.setPixelRatio(pr);
 const w = Math.max(1, this.stage.clientWidth);
 const h = Math.max(1, this.stage.clientHeight);
 this.size = { width: w, height: h };
@@ -35413,7 +35418,7 @@ for (let p = o; p; p = p.parent) if (!p.visible) return false;
 return true;
 }
 pick(clientX, clientY) {
-const rect = this.canvas.getBoundingClientRect();
+const rect = screenRect(this.canvas);
 const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -(((clientY - rect.top) / rect.height) * 2 - 1));
 this.raycaster.setFromCamera(ndc, this.camera);
 const nav = this.app.nav;
@@ -35482,9 +35487,11 @@ this.setScale(Math.max(0.6, this._qs * 0.85));
 document.documentElement.classList.add('perf-flat');
 } else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 20000) this.setScale(Math.min(1, this._qs * 1.15));
 }
+_pr() {
+return Math.min(this._basePR * uiZoom(), Math.max(this._basePR, perf.maxPR)) * this._qs;
+}
 setScale(v) {
 this._qs = v;
-this.renderer.setPixelRatio(this._basePR * v);
 this.resize();
 if (!this._rescaling) {
 this._rescaling = true;
@@ -37565,7 +37572,7 @@ __defs['src/scene/nav.js'] = function (__exports, __req) {
 __def(__exports, 'VIEWS', () => VIEWS);
 __def(__exports, 'Nav', () => Nav);
 const THREE = __req('vendor/three/build/three.module.js');
-const { clamp } = __req('src/core/util.js');
+const { clamp, screenRect } = __req('src/core/util.js');
 const HALF_PI = Math.PI / 2;
 const VIEWS = {
 front: { yaw: 0, pitch: 0, label: 'Спереди' },
@@ -37784,7 +37791,7 @@ const d0 = this.distance;
 const d1 = clamp(d0 * factor, min, max);
 const k = d1 / d0;
 if (this.settings.zoomToCursor && cx !== undefined) {
-const rect = this.dom.getBoundingClientRect();
+const rect = screenRect(this.dom);
 const nx = ((cx - rect.left) / rect.width) * 2 - 1;
 const ny = -(((cy - rect.top) / rect.height) * 2 - 1);
 const fov = THREE.MathUtils.degToRad(this.app.settings.render.fov);
@@ -39995,7 +40002,7 @@ __def(__exports, 'fxSlider', () => fxSlider);
 __def(__exports, 'numberField', () => numberField);
 __def(__exports, 'colorField', () => colorField);
 __def(__exports, 'empty', () => empty);
-const { h, clamp, fmt } = __req('src/core/util.js');
+const { h, clamp, fmt, screenRect } = __req('src/core/util.js');
 const { icon } = __req('src/ui/icons.js');
 const svg = (name, size = 16) => {
 const t = document.createElement('span');
@@ -40171,7 +40178,7 @@ document.removeEventListener('keydown', onKeyDown, true);
 function placePop() {
 if (!pop) return;
 const z = parseFloat(document.documentElement.style.zoom) || 1;
-const r = trigger.getBoundingClientRect();
+const r = screenRect(trigger);
 const w = Math.max(r.width / z, 160);
 pop.style.width = Math.min(w, (window.innerWidth / z) - 16) + 'px';
 let left = r.left / z;
@@ -40619,7 +40626,7 @@ const drag = (el, fn) => {
 el.addEventListener('pointerdown', (e) => {
 el.setPointerCapture(e.pointerId);
 const move = (ev) => {
-const r = el.getBoundingClientRect();
+const r = screenRect(el);
 fn(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height)));
 apply(true, false);
 refresh();
@@ -40650,7 +40657,7 @@ if (e.key === 'Enter') hexIn.blur();
 });
 document.body.append(pop);
 const z = parseFloat(document.documentElement.style.zoom) || 1;
-const r = dot.getBoundingClientRect();
+const r = screenRect(dot);
 const pw = pop.offsetWidth;
 const ph = pop.offsetHeight;
 let left = r.left / z;
@@ -40681,6 +40688,7 @@ return h('div', { class: 'empty-note' }, h('strong', {}, text), sub ? h('span', 
 __defs['src/scene/gizmo.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'AxisGizmo', () => AxisGizmo);
+const { screenRect } = __req('src/core/util.js');
 const THREE = __req('vendor/three/build/three.module.js');
 const AXES = [
 { id: '+x', v: [1, 0, 0], color: '#86c85a', label: 'Y', view: 'right' },
@@ -40788,7 +40796,7 @@ ctx.globalAlpha = 1;
 }
 }
 hit(e) {
-const rect = this.canvas.getBoundingClientRect();
+const rect = screenRect(this.canvas);
 const x = e.clientX - rect.left;
 const y = e.clientY - rect.top;
 for (let i = this.items.length - 1; i >= 0; i--) {
@@ -68407,7 +68415,7 @@ __defs['src/points/text-points.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'buildTextCloud', () => buildTextCloud);
 __def(__exports, 'createTextSection', () => createTextSection);
-const { h } = __req('src/core/util.js');
+const { h, screenRect } = __req('src/core/util.js');
 const { section, field, slider, segmented, switchRow, button, colorField } = __req('src/ui/ui-kit.js');
 const { cloudToPoints } = __req('src/points/pointcloud.js');
 const { icon } = __req('src/ui/icons.js');
@@ -68541,7 +68549,7 @@ if (cur && !q) cur.scrollIntoView({ block: 'center' });
 }
 function placeMenu() {
 const z = parseFloat(document.documentElement.style.zoom) || 1;
-const r = fontBox.getBoundingClientRect();
+const r = screenRect(fontBox);
 menu.style.width = r.width / z + 'px';
 menu.style.left = r.left / z + 'px';
 const below = window.innerHeight / z - r.bottom / z - 12;
@@ -68660,7 +68668,7 @@ return sec;
 __defs['src/ui/panels/point-edit.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'createPointEditSection', () => createPointEditSection);
-const { h, formatInt } = __req('src/core/util.js');
+const { h, formatInt, screenRect } = __req('src/core/util.js');
 const { icon } = __req('src/ui/icons.js');
 const { section, field, fxSlider: slider, segmented, switchRow, colorField, button, iconButton } = __req('src/ui/ui-kit.js');
 function createPointEditSection(app) {
@@ -68724,11 +68732,11 @@ keys
 function place() {
 if (panel.hidden) return;
 const scale = panel.currentCSSZoom || parseFloat(document.documentElement.style.zoom) || parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
-const ws = panel.parentElement.getBoundingClientRect();
+const ws = screenRect(panel.parentElement);
 const rail = document.querySelector('.toolrail');
 const side = document.getElementById('sidebar');
-const rr = rail ? rail.getBoundingClientRect() : { right: 52, top: 50, width: 44, height: 200 };
-const sr = side ? side.getBoundingClientRect() : null;
+const rr = rail ? screenRect(rail) : { right: 52, top: 50, width: 44, height: 200 };
+const sr = side ? screenRect(side) : null;
 const gap = 8;
 const isMobile = window.matchMedia('(max-width: 900px)').matches;
 if (isMobile) {
@@ -95946,6 +95954,7 @@ this.bg = null;
 __defs['src/effects/ui/fx-cam-float.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'makeCamMovable', () => makeCamMovable);
+const { screenRect, toCss } = __req('src/core/util.js');
 const KEY = 'objglb.fxcam.v1';
 function makeCamMovable(box, appEl, viewport) {
 let st = {};
@@ -95967,12 +95976,12 @@ grip.title = 'Потяните, чтобы изменить размер';
 box.append(grip);
 const clamp = () => {
 if (box.style.left === '') return;
-const v = viewport.getBoundingClientRect();
-const r = box.getBoundingClientRect();
-let x = r.left - v.left;
-let y = r.top - v.top;
-x = Math.max(8, Math.min(v.width - r.width - 8, x));
-y = Math.max(8, Math.min(v.height - r.height - 8, y));
+const v = screenRect(viewport);
+const r = screenRect(box);
+let x = toCss(r.left - v.left);
+let y = toCss(r.top - v.top);
+x = Math.max(8, Math.min(toCss(v.width - r.width) - 8, x));
+y = Math.max(8, Math.min(toCss(v.height - r.height) - 8, y));
 box.style.left = x + 'px';
 box.style.top = y + 'px';
 };
@@ -95992,15 +96001,15 @@ apply();
 box.addEventListener('pointerdown', (e) => {
 if (e.button !== 0 || e.target === grip) return;
 e.preventDefault();
-const v = viewport.getBoundingClientRect();
-const r = box.getBoundingClientRect();
+const v = screenRect(viewport);
+const r = screenRect(box);
 const dx = e.clientX - r.left;
 const dy = e.clientY - r.top;
 box.setPointerCapture(e.pointerId);
 box.classList.add('is-dragging');
 const move = (ev) => {
-box.style.left = ev.clientX - dx - v.left + 'px';
-box.style.top = ev.clientY - dy - v.top + 'px';
+box.style.left = toCss(ev.clientX - dx - v.left) + 'px';
+box.style.top = toCss(ev.clientY - dy - v.top) + 'px';
 box.style.bottom = 'auto';
 clamp();
 };
@@ -96020,12 +96029,12 @@ grip.addEventListener('pointerdown', (e) => {
 if (e.button !== 0) return;
 e.preventDefault();
 e.stopPropagation();
-const v = viewport.getBoundingClientRect();
-const startW = box.getBoundingClientRect().width;
+const v = screenRect(viewport);
+const startW = toCss(screenRect(box).width);
 const sx = e.clientX;
 grip.setPointerCapture(e.pointerId);
 const move = (ev) => {
-const w = Math.max(160, Math.min(720, v.width - 40, startW + (ev.clientX - sx)));
+const w = Math.max(160, Math.min(720, toCss(v.width) - 40, startW + toCss(ev.clientX - sx)));
 box.style.width = w + 'px';
 clamp();
 };
@@ -96033,7 +96042,7 @@ const up = () => {
 grip.removeEventListener('pointermove', move);
 grip.removeEventListener('pointerup', up);
 grip.removeEventListener('pointercancel', up);
-st.focusW = box.getBoundingClientRect().width;
+st.focusW = toCss(screenRect(box).width);
 const p = st[mode()];
 if (p) {
 p.x = parseFloat(box.style.left);
@@ -100322,7 +100331,7 @@ __defs['src/effects/engine/interaction.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'InteractionPart', () => InteractionPart);
 const THREE = __req('vendor/three/build/three.module.js');
-const { clamp } = __req('src/core/util.js');
+const { clamp, screenRect } = __req('src/core/util.js');
 class InteractionPart {
 addShock(pos) {
 if (!pos) return;
@@ -100356,7 +100365,7 @@ v.y += (e.clientY - mp.y - v.y) * 0.35;
 }
 this._mScr = { x: e.clientX, y: e.clientY };
 const vp = this.app.viewport;
-const r = vp.canvas.getBoundingClientRect();
+const r = screenRect(vp.canvas);
 const ndc = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -(((e.clientY - r.top) / r.height) * 2 - 1));
 this._ray.setFromCamera(ndc, vp.camera);
 this._plane.setFromNormalAndCoplanarPoint(vp.camera.getWorldDirection(new THREE.Vector3()).negate(), new THREE.Vector3());
@@ -103736,7 +103745,7 @@ lab.textContent = !engine.soundActive ? 'Нет звука: включите м�
 }
 bar.addEventListener('pointerdown', (e) => {
 if (L.amode !== 'gate') return;
-const r = bar.getBoundingClientRect();
+const r = screenRect(bar);
 const set = (ev) => {
 L.thr = Math.max(0.05, Math.min(0.95, (ev.clientX - r.left) / r.width));
 onThr(L.thr);
@@ -104959,7 +104968,7 @@ clampAnimH();
 });
 let charDrag = false;
 const charSeek = (e) => {
-const r = charBody.getBoundingClientRect();
+const r = screenRect(charBody);
 const dur = st.anim.dur || 8;
 engine.animT = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * dur;
 engine.animApply(engine.animT);
@@ -105004,7 +105013,7 @@ stage.addEventListener(
 if (!(e.ctrlKey || e.metaKey)) return;
 e.preventDefault();
 const dur = st.anim.dur || 8;
-const r = scroller.getBoundingClientRect();
+const r = screenRect(scroller);
 const viewW = scroller.clientWidth;
 const x = Math.max(0, Math.min(viewW, e.clientX - r.left));
 const t = Math.max(0, Math.min(dur, ((scroller.scrollLeft + x) / (viewW * animZoom)) * dur));
@@ -105027,7 +105036,7 @@ const animMain = h('div', { class: 'fx-anim-main' }, inspector, body);
 animPanel.append(resizeHandle, topBar, animMain);
 document.getElementById('viewport').append(animPanel);
 function timeFromPointer(e, targetEl, cachedRect) {
-const r = cachedRect || targetEl.getBoundingClientRect();
+const r = cachedRect || screenRect(targetEl);
 const frac = Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(1, r.width)));
 return frac * (st.anim.dur || 8);
 }
@@ -105080,7 +105089,7 @@ e.preventDefault();
 engine.animPause();
 isScrubbing = true;
 el.setPointerCapture(e.pointerId);
-const rect = el.getBoundingClientRect();
+const rect = screenRect(el);
 const t = timeFromPointer(e, el, rect);
 engine.animSeek(t);
 animSync();
@@ -105180,7 +105189,7 @@ if (!ANIM_LAYERS.includes(id)) return;
 const wasHidden = animPanel.hidden;
 let start;
 if (!wasHidden && e.target.closest('.fx-anim')) {
-const r = rulerBody.getBoundingClientRect();
+const r = screenRect(rulerBody);
 if (r.width > 0) start = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (st.anim.dur || 8) - 0.5;
 }
 if (wasHidden) toggleAnim(true);
@@ -105484,7 +105493,7 @@ clipBar.setPointerCapture(e.pointerId);
 const x0 = e.clientX;
 let moved = false;
 const target = (ev) => {
-const r = animMain.getBoundingClientRect();
+const r = screenRect(animMain);
 return ev.clientX < r.left + r.width / 2 ? 'left' : 'right';
 };
 const mv = (ev) => {
@@ -105951,7 +105960,7 @@ const startX = e.clientX;
 const orig = new Map(moving.map((c) => [c.id, c.start]));
 const minS = Math.min(...moving.map((c) => c.start));
 const maxE = Math.max(...moving.map((c) => c.start + c.dur));
-const r = laneBody.getBoundingClientRect();
+const r = screenRect(laneBody);
 let moved = false;
 const mv = (ev) => {
 const dx = ev.clientX - startX;
@@ -105997,7 +106006,7 @@ const startX = e.clientX;
 const origStart = clip.start;
 const origDur = clip.dur;
 const origEnd = origStart + origDur;
-const r = laneBody.getBoundingClientRect();
+const r = screenRect(laneBody);
 const mv = (ev) => {
 const dx = ev.clientX - startX;
 const dt = (dx / Math.max(1, r.width)) * durTotal;
@@ -106036,7 +106045,7 @@ handleR.setPointerCapture(e.pointerId);
 animSync();
 const startX = e.clientX;
 const origDur = clip.dur;
-const r = laneBody.getBoundingClientRect();
+const r = screenRect(laneBody);
 const mv = (ev) => {
 const dx = ev.clientX - startX;
 const dt = (dx / Math.max(1, r.width)) * durTotal;
@@ -106082,7 +106091,7 @@ const RULER_MINOR = { 0.05: 5, 0.1: 5, 0.2: 4, 0.5: 5, 1: 5, 2: 4, 5: 5, 10: 5, 
 function renderRuler() {
 const durTotal = st.anim.dur || 8;
 rulerTicks.textContent = '';
-const w = rulerBody.getBoundingClientRect().width || 600;
+const w = screenRect(rulerBody).width || 600;
 const pxPerSec = w / durTotal;
 const major = RULER_STEPS.find((x) => x * pxPerSec >= 84) || 120;
 const div = RULER_MINOR[major];
@@ -106119,7 +106128,7 @@ e.stopPropagation();
 e.preventDefault();
 isDraggingItem = true;
 hd.setPointerCapture(e.pointerId);
-const rect = rulerBody.getBoundingClientRect();
+const rect = screenRect(rulerBody);
 const cur = { a: w.a, b: w.b };
 const mv = (ev) => {
 const t = Math.max(0, Math.min(durTotal, snapTime(timeFromPointer(ev, rulerBody, rect), rect.width, null, ev)));
@@ -106520,7 +106529,7 @@ __defs['src/ui/ui.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'UI', () => UI);
 const THREE = __req('vendor/three/build/three.module.js');
-const { h, $, $$, extOf, formatInt, downloadBlob, placeAbove } = __req('src/core/util.js');
+const { h, $, $$, extOf, formatInt, downloadBlob, placeAbove, screenRect } = __req('src/core/util.js');
 const { icon, hydrateIcons, iconsReady } = __req('src/ui/icons.js');
 const { initFloatingPanels } = __req('src/effects/ui/fx-float.js');
 const { segmented, switchRow, button } = __req('src/ui/ui-kit.js');
@@ -106631,8 +106640,8 @@ pop.hidden = !pop.hidden;
 btn.setAttribute('aria-expanded', String(!pop.hidden));
 if (!pop.hidden) {
 const hb = document.querySelector('header.topbar, .topbar');
-const bottom = hb ? hb.getBoundingClientRect().bottom : btn.getBoundingClientRect().bottom;
-pop.style.top = Math.round(bottom + 12) + 'px';
+const bottom = hb ? screenRect(hb).bottom : screenRect(btn).bottom;
+pop.style.top = Math.round(bottom / uiZoom() + 12) + 'px';
 pop.style.right = '12px';
 }
 });
@@ -106970,12 +106979,29 @@ currentScale = val;
 }
 }
 } catch (_) {}
+let shownScale = 1;
+const fitScale = (s) => {
+const w = window.innerWidth;
+const hh = window.innerHeight;
+if (w <= 900) return 1;
+return Math.round(Math.max(0.6, Math.min(s, w / 960, hh / 600)) * 100) / 100;
+};
+const setZoom = () => {
+const eff = fitScale(currentScale);
+if (eff === shownScale && document.documentElement.style.zoom) return false;
+shownScale = eff;
+document.documentElement.style.zoom = String(eff);
+document.documentElement.style.setProperty('--ui-scale', String(eff));
+const label = $('#scaleValue');
+if (label) {
+label.textContent = `${Math.round(eff * 100)}%`;
+label.title = eff < currentScale - 0.005 ? `Окно небольшое: масштаб ${Math.round(currentScale * 100)}% уменьшен, чтобы панели помещались` : '';
+}
+return true;
+};
 const applyScale = (s, persist = true) => {
 currentScale = Math.round(s * 100) / 100;
-document.documentElement.style.zoom = String(currentScale);
-document.documentElement.style.setProperty('--ui-scale', String(currentScale));
-const label = $('#scaleValue');
-if (label) label.textContent = `${Math.round(currentScale * 100)}%`;
+setZoom();
 if (persist) {
 try {
 localStorage.setItem('objglb.ui-scale', currentScale);
@@ -106987,10 +107013,18 @@ window.dispatchEvent(new Event('resize'));
 }, 50);
 };
 applyScale(currentScale, false);
+let fitT = 0;
+window.addEventListener('resize', () => {
+clearTimeout(fitT);
+fitT = setTimeout(() => {
+if (setZoom() && this.app?.viewport) this.app.viewport.resize();
+}, 120);
+});
 this.changeUiScale = (dir) => {
-let idx = SCALES.findIndex((v) => Math.abs(v - currentScale) < 0.04);
+const cur = shownScale;
+let idx = SCALES.findIndex((v) => Math.abs(v - cur) < 0.04);
 if (idx === -1) {
-idx = SCALES.reduce((closest, v, i) => Math.abs(v - currentScale) < Math.abs(SCALES[closest] - currentScale) ? i : closest, 0);
+idx = SCALES.reduce((closest, v, i) => Math.abs(v - cur) < Math.abs(SCALES[closest] - cur) ? i : closest, 0);
 }
 const nextIdx = Math.max(0, Math.min(SCALES.length - 1, idx + dir));
 applyScale(SCALES[nextIdx], true);
@@ -107072,7 +107106,7 @@ const onPointerDown = (e) => {
 if (e.button !== 0) return;
 isResizing = true;
 startX = e.clientX;
-startW = sidebar.getBoundingClientRect().width;
+startW = screenRect(sidebar).width;
 ws.classList.add('is-resizing');
 document.body.style.cursor = 'col-resize';
 try {
@@ -107099,7 +107133,7 @@ document.body.style.cursor = '';
 try {
 resizer.releasePointerCapture(e.pointerId);
 } catch (_) {}
-const currentW = Math.round(sidebar.getBoundingClientRect().width);
+const currentW = Math.round(screenRect(sidebar).width / uiZoom());
 try {
 localStorage.setItem('objglb.sidebar-w', currentW);
 } catch (_) {}
@@ -107206,7 +107240,7 @@ tip.append(h('span', { class: 'tip-text' }, m[1]), ...m[2].split('+').map((k) =>
 } else tip.append(h('span', { class: 'tip-text' }, text));
 tip.hidden = false;
 const z = uiZoom();
-const br = el.getBoundingClientRect();
+const br = screenRect(el);
 const r = { left: br.left / z, right: br.right / z, top: br.top / z, bottom: br.bottom / z, width: br.width / z, height: br.height / z };
 const pos = el.dataset.tipPos || 'bottom';
 const tw = tip.offsetWidth;
@@ -107216,7 +107250,7 @@ const EDGE = 12;
 const sr = (sel) => {
 const sf = el.closest(sel);
 if (!sf) return r;
-const b2 = sf.getBoundingClientRect();
+const b2 = screenRect(sf);
 return { left: b2.left / z, right: b2.right / z, top: b2.top / z, bottom: b2.bottom / z };
 };
 let x, y;
@@ -107477,7 +107511,7 @@ return;
 }
 let material = null;
 if (point) {
-const rect = app.viewport.canvas.getBoundingClientRect();
+const rect = screenRect(app.viewport.canvas);
 if (point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom) {
 const hit = app.viewport.pick(point.x, point.y);
 if (hit && hit.object.isMesh) {

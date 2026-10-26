@@ -1,3 +1,4 @@
+import { screenRect } from '../core/util.js';
 import * as THREE from 'three';
 const AXES = [
 { id: '+x', v: [1, 0, 0], color: '#86c85a', label: 'Y', view: 'right' },
@@ -105,7 +106,7 @@ ctx.globalAlpha = 1;
 }
 }
 hit(e) {
-const rect = this.canvas.getBoundingClientRect();
+const rect = screenRect(this.canvas);
 const x = e.clientX - rect.left;
 const y = e.clientY - rect.top;
 for (let i = this.items.length - 1; i >= 0; i--) {

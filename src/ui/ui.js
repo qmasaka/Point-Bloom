@@ -1,7 +1,7 @@
 // Оболочка интерфейса: шапка, панель инструментов, оверлеи вьюпорта, вкладки, подсказки, тосты,
 // перетаскивание файлов, горячие клавиши, справка.
 import * as THREE from 'three';
-import { h, $, $$, extOf, formatInt, downloadBlob, placeAbove } from '../core/util.js';
+import { h, $, $$, extOf, formatInt, downloadBlob, placeAbove, screenRect } from '../core/util.js';
 import { icon, hydrateIcons, iconsReady } from './icons.js';
 import { initFloatingPanels } from '../effects/ui/fx-float.js';
 import { segmented, switchRow, button } from './ui-kit.js';
@@ -124,8 +124,8 @@ export class UI {
 				if (!pop.hidden) {
 					// отступ от шапки такой же, как у боковых панелей, и тот же правый край
 					const hb = document.querySelector('header.topbar, .topbar');
-					const bottom = hb ? hb.getBoundingClientRect().bottom : btn.getBoundingClientRect().bottom;
-					pop.style.top = Math.round(bottom + 12) + 'px';
+					const bottom = hb ? screenRect(hb).bottom : screenRect(btn).bottom;
+					pop.style.top = Math.round(bottom / uiZoom() + 12) + 'px';
 					pop.style.right = '12px';
 				}
 			});
@@ -509,12 +509,31 @@ export class UI {
 			}
 		} catch (_) {}
 
+		// Масштаб не даёт вёрстке стать уже 960 и ниже 600 px: иначе на ноутбуке при 135% панели не помещались и налезали друг на друга
+		// (раскладка для телефона включается по ширине окна, а не по ширине вёрстки). На телефоне масштаба нет вовсе
+		let shownScale = 1;
+		const fitScale = (s) => {
+			const w = window.innerWidth;
+			const hh = window.innerHeight;
+			if (w <= 900) return 1;
+			return Math.round(Math.max(0.6, Math.min(s, w / 960, hh / 600)) * 100) / 100;
+		};
+		const setZoom = () => {
+			const eff = fitScale(currentScale);
+			if (eff === shownScale && document.documentElement.style.zoom) return false;
+			shownScale = eff;
+			document.documentElement.style.zoom = String(eff);
+			document.documentElement.style.setProperty('--ui-scale', String(eff));
+			const label = $('#scaleValue');
+			if (label) {
+				label.textContent = `${Math.round(eff * 100)}%`;
+				label.title = eff < currentScale - 0.005 ? `Окно небольшое: масштаб ${Math.round(currentScale * 100)}% уменьшен, чтобы панели помещались` : '';
+			}
+			return true;
+		};
 		const applyScale = (s, persist = true) => {
 			currentScale = Math.round(s * 100) / 100;
-			document.documentElement.style.zoom = String(currentScale);
-			document.documentElement.style.setProperty('--ui-scale', String(currentScale));
-			const label = $('#scaleValue');
-			if (label) label.textContent = `${Math.round(currentScale * 100)}%`;
+			setZoom();
 			if (persist) {
 				try {
 					localStorage.setItem('objglb.ui-scale', currentScale);
@@ -527,11 +546,21 @@ export class UI {
 		};
 
 		applyScale(currentScale, false);
+		// окно поменяло размер: масштаб пересчитывается под него (выбранное значение помнится)
+		let fitT = 0;
+		window.addEventListener('resize', () => {
+			clearTimeout(fitT);
+			fitT = setTimeout(() => {
+				if (setZoom() && this.app?.viewport) this.app.viewport.resize();
+			}, 120);
+		});
 
 		this.changeUiScale = (dir) => {
-			let idx = SCALES.findIndex((v) => Math.abs(v - currentScale) < 0.04);
+			// шаг идёт от того, что сейчас на экране (выбранное могло быть урезано размером окна)
+			const cur = shownScale;
+			let idx = SCALES.findIndex((v) => Math.abs(v - cur) < 0.04);
 			if (idx === -1) {
-				idx = SCALES.reduce((closest, v, i) => Math.abs(v - currentScale) < Math.abs(SCALES[closest] - currentScale) ? i : closest, 0);
+				idx = SCALES.reduce((closest, v, i) => Math.abs(v - cur) < Math.abs(SCALES[closest] - cur) ? i : closest, 0);
 			}
 			const nextIdx = Math.max(0, Math.min(SCALES.length - 1, idx + dir));
 			applyScale(SCALES[nextIdx], true);
@@ -624,7 +653,7 @@ export class UI {
 			if (e.button !== 0) return;
 			isResizing = true;
 			startX = e.clientX;
-			startW = sidebar.getBoundingClientRect().width;
+			startW = screenRect(sidebar).width;
 			ws.classList.add('is-resizing');
 			document.body.style.cursor = 'col-resize';
 			try {
@@ -654,7 +683,7 @@ export class UI {
 			try {
 				resizer.releasePointerCapture(e.pointerId);
 			} catch (_) {}
-			const currentW = Math.round(sidebar.getBoundingClientRect().width);
+			const currentW = Math.round(screenRect(sidebar).width / uiZoom());
 			try {
 				localStorage.setItem('objglb.sidebar-w', currentW);
 			} catch (_) {}
@@ -776,7 +805,7 @@ export class UI {
 			} else tip.append(h('span', { class: 'tip-text' }, text));
 			tip.hidden = false;
 			const z = uiZoom();
-			const br = el.getBoundingClientRect();
+			const br = screenRect(el);
 			const r = { left: br.left / z, right: br.right / z, top: br.top / z, bottom: br.bottom / z, width: br.width / z, height: br.height / z };
 			const pos = el.dataset.tipPos || 'bottom';
 			const tw = tip.offsetWidth;
@@ -788,7 +817,7 @@ export class UI {
 			const sr = (sel) => {
 				const sf = el.closest(sel);
 				if (!sf) return r;
-				const b2 = sf.getBoundingClientRect();
+				const b2 = screenRect(sf);
 				return { left: b2.left / z, right: b2.right / z, top: b2.top / z, bottom: b2.bottom / z };
 			};
 			let x, y;
@@ -1067,7 +1096,7 @@ export class UI {
 				}
 				let material = null;
 				if (point) {
-					const rect = app.viewport.canvas.getBoundingClientRect();
+					const rect = screenRect(app.viewport.canvas);
 					if (point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom) {
 						const hit = app.viewport.pick(point.x, point.y);
 						if (hit && hit.object.isMesh) {

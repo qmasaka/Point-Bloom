@@ -1,5 +1,5 @@
 // Набор компонентов интерфейса. Каждый возвращает { el, set(value) }, где set не вызывает onChange.
-import { h, clamp, fmt } from '../core/util.js';
+import { h, clamp, fmt, screenRect } from '../core/util.js';
 import { icon } from './icons.js';
 
 const svg = (name, size = 16) => {
@@ -199,7 +199,7 @@ export function select({ options = [], value, onChange, placeholder = 'Выбр�
 	function placePop() {
 		if (!pop) return;
 		const z = parseFloat(document.documentElement.style.zoom) || 1;
-		const r = trigger.getBoundingClientRect();
+		const r = screenRect(trigger);
 		const w = Math.max(r.width / z, 160);
 		pop.style.width = Math.min(w, (window.innerWidth / z) - 16) + 'px';
 
@@ -677,7 +677,7 @@ export function colorField({ value = '#ffffff', onInput, onChange }) {
 			el.addEventListener('pointerdown', (e) => {
 				el.setPointerCapture(e.pointerId);
 				const move = (ev) => {
-					const r = el.getBoundingClientRect();
+					const r = screenRect(el);
 					fn(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height)));
 					apply(true, false);
 					refresh();
@@ -708,7 +708,7 @@ export function colorField({ value = '#ffffff', onInput, onChange }) {
 		});
 		document.body.append(pop);
 		const z = parseFloat(document.documentElement.style.zoom) || 1;
-		const r = dot.getBoundingClientRect();
+		const r = screenRect(dot);
 		const pw = pop.offsetWidth;
 		const ph = pop.offsetHeight;
 		let left = r.left / z;

@@ -3,6 +3,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Grid } from './grid.js';
 import { perf } from '../core/perf.js';
+import { screenRect, uiZoom } from '../core/util.js';
 export const LAYER = { MESH: 1, POINTS: 2, WIRE: 3, FACES: 4 };
 export const BACKGROUNDS = {
 dark: { label: 'Тёмный градиент', css: 'radial-gradient(ellipse at 50% 25%, #3d4149 0%, #24272d 62%, #1b1d22 100%)', solid: '#2a2d33', light: false, paint: { type: 'radial', at: [0.5, 0.25], stops: [[0, '#3d4149'], [0.62, '#24272d'], [1, '#1b1d22']] } },
@@ -165,6 +166,8 @@ this.invalidate();
 }
 resize() {
 if (this.recLock) return;
+const pr = this._pr();
+if (Math.abs(this.renderer.getPixelRatio() - pr) > 1e-6) this.renderer.setPixelRatio(pr);
 const w = Math.max(1, this.stage.clientWidth);
 const h = Math.max(1, this.stage.clientHeight);
 this.size = { width: w, height: h };
@@ -220,7 +223,7 @@ for (let p = o; p; p = p.parent) if (!p.visible) return false;
 return true;
 }
 pick(clientX, clientY) {
-const rect = this.canvas.getBoundingClientRect();
+const rect = screenRect(this.canvas);
 const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -(((clientY - rect.top) / rect.height) * 2 - 1));
 this.raycaster.setFromCamera(ndc, this.camera);
 const nav = this.app.nav;
@@ -289,9 +292,11 @@ this.setScale(Math.max(0.6, this._qs * 0.85));
 document.documentElement.classList.add('perf-flat');
 } else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 20000) this.setScale(Math.min(1, this._qs * 1.15));
 }
+_pr() {
+return Math.min(this._basePR * uiZoom(), Math.max(this._basePR, perf.maxPR)) * this._qs;
+}
 setScale(v) {
 this._qs = v;
-this.renderer.setPixelRatio(this._basePR * v);
 this.resize();
 if (!this._rescaling) {
 this._rescaling = true;

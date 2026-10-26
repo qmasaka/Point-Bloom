@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { clamp } from '../core/util.js';
+import { clamp, screenRect } from '../core/util.js';
 const HALF_PI = Math.PI / 2;
 export const VIEWS = {
 front: { yaw: 0, pitch: 0, label: 'Спереди' },
@@ -218,7 +218,7 @@ const d0 = this.distance;
 const d1 = clamp(d0 * factor, min, max);
 const k = d1 / d0;
 if (this.settings.zoomToCursor && cx !== undefined) {
-const rect = this.dom.getBoundingClientRect();
+const rect = screenRect(this.dom);
 const nx = ((cx - rect.left) / rect.width) * 2 - 1;
 const ny = -(((cy - rect.top) / rect.height) * 2 - 1);
 const fov = THREE.MathUtils.degToRad(this.app.settings.render.fov);

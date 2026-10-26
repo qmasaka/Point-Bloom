@@ -445,7 +445,7 @@ export function createEffectsPanel(app, root, engine) {
 		}
 		bar.addEventListener('pointerdown', (e) => {
 			if (L.amode !== 'gate') return;
-			const r = bar.getBoundingClientRect();
+			const r = screenRect(bar);
 			const set = (ev) => {
 				L.thr = Math.max(0.05, Math.min(0.95, (ev.clientX - r.left) / r.width));
 				onThr(L.thr);
@@ -1755,7 +1755,7 @@ export function createEffectsPanel(app, root, engine) {
 	// клик и протяжка по полосе двигают общий курсор таймлайна
 	let charDrag = false;
 	const charSeek = (e) => {
-		const r = charBody.getBoundingClientRect();
+		const r = screenRect(charBody);
 		const dur = st.anim.dur || 8;
 		engine.animT = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * dur;
 		engine.animApply(engine.animT);
@@ -1808,7 +1808,7 @@ export function createEffectsPanel(app, root, engine) {
 			if (!(e.ctrlKey || e.metaKey)) return;
 			e.preventDefault();
 			const dur = st.anim.dur || 8;
-			const r = scroller.getBoundingClientRect();
+			const r = screenRect(scroller);
 			const viewW = scroller.clientWidth;
 			const x = Math.max(0, Math.min(viewW, e.clientX - r.left));
 			const t = Math.max(0, Math.min(dur, ((scroller.scrollLeft + x) / (viewW * animZoom)) * dur));
@@ -1836,7 +1836,7 @@ export function createEffectsPanel(app, root, engine) {
 	document.getElementById('viewport').append(animPanel);
 
 	function timeFromPointer(e, targetEl, cachedRect) {
-		const r = cachedRect || targetEl.getBoundingClientRect();
+		const r = cachedRect || screenRect(targetEl);
 		const frac = Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(1, r.width)));
 		return frac * (st.anim.dur || 8);
 	}
@@ -1892,7 +1892,7 @@ export function createEffectsPanel(app, root, engine) {
 			engine.animPause();
 			isScrubbing = true;
 			el.setPointerCapture(e.pointerId);
-			const rect = el.getBoundingClientRect();
+			const rect = screenRect(el);
 			const t = timeFromPointer(e, el, rect);
 			engine.animSeek(t);
 			animSync();
@@ -1999,7 +1999,7 @@ export function createEffectsPanel(app, root, engine) {
 			const wasHidden = animPanel.hidden;
 			let start;
 			if (!wasHidden && e.target.closest('.fx-anim')) {
-				const r = rulerBody.getBoundingClientRect();
+				const r = screenRect(rulerBody);
 				if (r.width > 0) start = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (st.anim.dur || 8) - 0.5;
 			}
 			if (wasHidden) toggleAnim(true);
@@ -2323,7 +2323,7 @@ export function createEffectsPanel(app, root, engine) {
 		const x0 = e.clientX;
 		let moved = false;
 		const target = (ev) => {
-			const r = animMain.getBoundingClientRect();
+			const r = screenRect(animMain);
 			return ev.clientX < r.left + r.width / 2 ? 'left' : 'right';
 		};
 		const mv = (ev) => {
@@ -2832,7 +2832,7 @@ export function createEffectsPanel(app, root, engine) {
 					const orig = new Map(moving.map((c) => [c.id, c.start]));
 					const minS = Math.min(...moving.map((c) => c.start));
 					const maxE = Math.max(...moving.map((c) => c.start + c.dur));
-					const r = laneBody.getBoundingClientRect();
+					const r = screenRect(laneBody);
 					let moved = false;
 
 					const mv = (ev) => {
@@ -2885,7 +2885,7 @@ export function createEffectsPanel(app, root, engine) {
 					const origStart = clip.start;
 					const origDur = clip.dur;
 					const origEnd = origStart + origDur;
-					const r = laneBody.getBoundingClientRect();
+					const r = screenRect(laneBody);
 
 					const mv = (ev) => {
 						const dx = ev.clientX - startX;
@@ -2930,7 +2930,7 @@ export function createEffectsPanel(app, root, engine) {
 
 					const startX = e.clientX;
 					const origDur = clip.dur;
-					const r = laneBody.getBoundingClientRect();
+					const r = screenRect(laneBody);
 
 					const mv = (ev) => {
 						const dx = ev.clientX - startX;
@@ -2983,7 +2983,7 @@ export function createEffectsPanel(app, root, engine) {
 	function renderRuler() {
 		const durTotal = st.anim.dur || 8;
 		rulerTicks.textContent = '';
-		const w = rulerBody.getBoundingClientRect().width || 600;
+		const w = screenRect(rulerBody).width || 600;
 		const pxPerSec = w / durTotal;
 		// главный шаг подбирается по ширине: подписи не слипаются при любом зуме
 		const major = RULER_STEPS.find((x) => x * pxPerSec >= 84) || 120;
@@ -3024,7 +3024,7 @@ export function createEffectsPanel(app, root, engine) {
 					e.preventDefault();
 					isDraggingItem = true;
 					hd.setPointerCapture(e.pointerId);
-					const rect = rulerBody.getBoundingClientRect();
+					const rect = screenRect(rulerBody);
 					const cur = { a: w.a, b: w.b };
 					const mv = (ev) => {
 						const t = Math.max(0, Math.min(durTotal, snapTime(timeFromPointer(ev, rulerBody, rect), rect.width, null, ev)));

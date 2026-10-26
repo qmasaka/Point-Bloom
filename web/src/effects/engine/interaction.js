@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { clamp } from '../../core/util.js';
+import { clamp, screenRect } from '../../core/util.js';
 export class InteractionPart {
 addShock(pos) {
 if (!pos) return;
@@ -33,7 +33,7 @@ v.y += (e.clientY - mp.y - v.y) * 0.35;
 }
 this._mScr = { x: e.clientX, y: e.clientY };
 const vp = this.app.viewport;
-const r = vp.canvas.getBoundingClientRect();
+const r = screenRect(vp.canvas);
 const ndc = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -(((e.clientY - r.top) / r.height) * 2 - 1));
 this._ray.setFromCamera(ndc, vp.camera);
 this._plane.setFromNormalAndCoplanarPoint(vp.camera.getWorldDirection(new THREE.Vector3()).negate(), new THREE.Vector3());

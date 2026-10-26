@@ -55,21 +55,23 @@ export function formatInt(n) {
 return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 export function placeAbove(pop, btn, host, align = 'center', gap = 14) {
-const hr = host.getBoundingClientRect();
-const br = btn.getBoundingClientRect();
+const z = uiZoom();
+const hr = screenRect(host);
+const br = screenRect(btn);
 pop.style.top = 'auto';
-pop.style.bottom = Math.round(hr.bottom - br.top + gap) + 'px';
+pop.style.bottom = Math.round((hr.bottom - br.top) / z + gap) + 'px';
 if (align === 'right') {
 pop.style.left = 'auto';
 pop.style.transform = 'none';
-pop.style.right = Math.round(hr.right - br.right - 6) + 'px';
+pop.style.right = Math.round((hr.right - br.right) / z - 6) + 'px';
 } else {
 pop.style.right = 'auto';
 pop.style.transform = 'translateX(-50%)';
 const half = pop.offsetWidth / 2;
-const x = br.left + br.width / 2 - hr.left;
-const lo = half + 8, hi = hr.width - half - 8;
-pop.style.left = Math.round(hi >= lo ? clamp(x, lo, hi) : hr.width / 2) + 'px';
+const x = (br.left + br.width / 2 - hr.left) / z;
+const W = hr.width / z;
+const lo = half + 8, hi = W - half - 8;
+pop.style.left = Math.round(hi >= lo ? clamp(x, lo, hi) : W / 2) + 'px';
 }
 }
 export function fmt(n, digits = 3) {

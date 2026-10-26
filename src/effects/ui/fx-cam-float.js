@@ -1,4 +1,7 @@
 // Окно с камерой в эффектах: его можно двигать по сцене, а в режиме «только сцена» ещё и менять размер. Положение запоминается отдельно для каждого режима.
+// Положения и размеры хранятся в пикселях вёрстки; мышь и замеры приходят в экранных, при масштабе интерфейса они делятся на него (toCss)
+import { screenRect, toCss } from '../../core/util.js';
+
 const KEY = 'objglb.fxcam.v1';
 
 export function makeCamMovable(box, appEl, viewport) {
@@ -23,12 +26,12 @@ export function makeCamMovable(box, appEl, viewport) {
 
 	const clamp = () => {
 		if (box.style.left === '') return;
-		const v = viewport.getBoundingClientRect();
-		const r = box.getBoundingClientRect();
-		let x = r.left - v.left;
-		let y = r.top - v.top;
-		x = Math.max(8, Math.min(v.width - r.width - 8, x));
-		y = Math.max(8, Math.min(v.height - r.height - 8, y));
+		const v = screenRect(viewport);
+		const r = screenRect(box);
+		let x = toCss(r.left - v.left);
+		let y = toCss(r.top - v.top);
+		x = Math.max(8, Math.min(toCss(v.width - r.width) - 8, x));
+		y = Math.max(8, Math.min(toCss(v.height - r.height) - 8, y));
 		box.style.left = x + 'px';
 		box.style.top = y + 'px';
 	};
@@ -49,15 +52,15 @@ export function makeCamMovable(box, appEl, viewport) {
 	box.addEventListener('pointerdown', (e) => {
 		if (e.button !== 0 || e.target === grip) return;
 		e.preventDefault();
-		const v = viewport.getBoundingClientRect();
-		const r = box.getBoundingClientRect();
+		const v = screenRect(viewport);
+		const r = screenRect(box);
 		const dx = e.clientX - r.left;
 		const dy = e.clientY - r.top;
 		box.setPointerCapture(e.pointerId);
 		box.classList.add('is-dragging');
 		const move = (ev) => {
-			box.style.left = ev.clientX - dx - v.left + 'px';
-			box.style.top = ev.clientY - dy - v.top + 'px';
+			box.style.left = toCss(ev.clientX - dx - v.left) + 'px';
+			box.style.top = toCss(ev.clientY - dy - v.top) + 'px';
 			box.style.bottom = 'auto';
 			clamp();
 		};
@@ -78,12 +81,12 @@ export function makeCamMovable(box, appEl, viewport) {
 		if (e.button !== 0) return;
 		e.preventDefault();
 		e.stopPropagation();
-		const v = viewport.getBoundingClientRect();
-		const startW = box.getBoundingClientRect().width;
+		const v = screenRect(viewport);
+		const startW = toCss(screenRect(box).width);
 		const sx = e.clientX;
 		grip.setPointerCapture(e.pointerId);
 		const move = (ev) => {
-			const w = Math.max(160, Math.min(720, v.width - 40, startW + (ev.clientX - sx)));
+			const w = Math.max(160, Math.min(720, toCss(v.width) - 40, startW + toCss(ev.clientX - sx)));
 			box.style.width = w + 'px';
 			clamp();
 		};
@@ -91,7 +94,7 @@ export function makeCamMovable(box, appEl, viewport) {
 			grip.removeEventListener('pointermove', move);
 			grip.removeEventListener('pointerup', up);
 			grip.removeEventListener('pointercancel', up);
-			st.focusW = box.getBoundingClientRect().width;
+			st.focusW = toCss(screenRect(box).width);
 			const p = st[mode()];
 			if (p) {
 				p.x = parseFloat(box.style.left);

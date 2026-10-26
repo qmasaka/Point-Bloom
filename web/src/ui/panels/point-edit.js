@@ -1,4 +1,4 @@
-import { h, formatInt } from '../../core/util.js';
+import { h, formatInt, screenRect } from '../../core/util.js';
 import { icon } from '../icons.js';
 import { section, field, fxSlider as slider, segmented, switchRow, colorField, button, iconButton } from '../ui-kit.js';
 export function createPointEditSection(app) {
@@ -62,11 +62,11 @@ keys
 function place() {
 if (panel.hidden) return;
 const scale = panel.currentCSSZoom || parseFloat(document.documentElement.style.zoom) || parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
-const ws = panel.parentElement.getBoundingClientRect();
+const ws = screenRect(panel.parentElement);
 const rail = document.querySelector('.toolrail');
 const side = document.getElementById('sidebar');
-const rr = rail ? rail.getBoundingClientRect() : { right: 52, top: 50, width: 44, height: 200 };
-const sr = side ? side.getBoundingClientRect() : null;
+const rr = rail ? screenRect(rail) : { right: 52, top: 50, width: 44, height: 200 };
+const sr = side ? screenRect(side) : null;
 const gap = 8;
 const isMobile = window.matchMedia('(max-width: 900px)').matches;
 if (isMobile) {

@@ -1,4 +1,4 @@
-import { h, clamp, fmt } from '../core/util.js';
+import { h, clamp, fmt, screenRect } from '../core/util.js';
 import { icon } from './icons.js';
 const svg = (name, size = 16) => {
 const t = document.createElement('span');
@@ -174,7 +174,7 @@ document.removeEventListener('keydown', onKeyDown, true);
 function placePop() {
 if (!pop) return;
 const z = parseFloat(document.documentElement.style.zoom) || 1;
-const r = trigger.getBoundingClientRect();
+const r = screenRect(trigger);
 const w = Math.max(r.width / z, 160);
 pop.style.width = Math.min(w, (window.innerWidth / z) - 16) + 'px';
 let left = r.left / z;
@@ -622,7 +622,7 @@ const drag = (el, fn) => {
 el.addEventListener('pointerdown', (e) => {
 el.setPointerCapture(e.pointerId);
 const move = (ev) => {
-const r = el.getBoundingClientRect();
+const r = screenRect(el);
 fn(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height)));
 apply(true, false);
 refresh();
@@ -653,7 +653,7 @@ if (e.key === 'Enter') hexIn.blur();
 });
 document.body.append(pop);
 const z = parseFloat(document.documentElement.style.zoom) || 1;
-const r = dot.getBoundingClientRect();
+const r = screenRect(dot);
 const pw = pop.offsetWidth;
 const ph = pop.offsetHeight;
 let left = r.left / z;

@@ -1,5 +1,5 @@
 // Текст в точки: любой шрифт, в том числе установленный на компьютере, превращается в облако точек в сцене.
-import { h } from '../core/util.js';
+import { h, screenRect } from '../core/util.js';
 import { section, field, slider, segmented, switchRow, button, colorField } from '../ui/ui-kit.js';
 import { cloudToPoints } from './pointcloud.js';
 import { icon } from '../ui/icons.js';
@@ -142,7 +142,7 @@ export function createTextSection(app) {
 	}
 	function placeMenu() {
 		const z = parseFloat(document.documentElement.style.zoom) || 1;
-		const r = fontBox.getBoundingClientRect();
+		const r = screenRect(fontBox);
 		menu.style.width = r.width / z + 'px';
 		menu.style.left = r.left / z + 'px';
 		const below = window.innerHeight / z - r.bottom / z - 12;
