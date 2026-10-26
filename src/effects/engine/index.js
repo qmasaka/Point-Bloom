@@ -63,6 +63,13 @@ export class EffectsEngine {
 			this.state.layers.brush.dry = 3;
 		}
 		this.state._m5 = 1;
+		// раскадровка снова выглядит как раньше: рамки и прореживание, включённые по умолчанию в прошлой версии, выключаются (включить можно в настройках)
+		if (!this.state._m7 && this.state.layers.frames) {
+			Object.assign(this.state.layers.frames, { edge: 0, curEdge: 0, thin: 0 });
+			// у шлейфа движения новые значения по умолчанию: копии реже и плотнее, без фона в шлейфе
+			if (this.state.layers.chrono) Object.assign(this.state.layers.chrono, { count: 14, every: 0.12, fade: 0.4, bgKeep: 0, thin: 0.15, tint: 0.15, drift: 1.1, depthZ: 0.04, dkeep: 0.5, size: 1.4, budget: 480000 });
+			this.state._m7 = 1;
+		}
 		if (!this.state._m4) {
 			if (this.state.layers.slice) this.state.layers.slice.color = 'model';
 			this.state._m4 = 1;

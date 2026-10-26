@@ -626,7 +626,7 @@ fn frShow(k_in: f32, tcol: ptr<function, vec3f>) -> vec4f {
 	} else if ((mode == 6)) {
 		var age: f32 = max(0.0, -d);
 		var a: f32 = clamp((age / max(1.0, fr.uFr9.w)), 0.0, 1.0);
-		w = pow((1.0 - a), (0.5 + (fr.uFr9.y * 3.0)));
+		w = (pow((1.0 - a), (0.5 + (fr.uFr9.y * 3.0))) * smoothstep(0.15, 1.0, age));
 		(*tcol) = select(mix(fr.uP1, fr.uP2, (((a - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (a * 2.0)), (a < 0.5));
 		tint = (fr.uFr9.x * a);
 	} else {
@@ -1185,8 +1185,13 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		}
 	}
 	if ((fr.uExp.x > 0.001)) {
-		var pid: f32 = floor((aIdx * fr.uExp.y));
-		var pc: vec3f = textureLoad(pieceTex, vec2i(vec2f((((pid + 0.5)) / 256.0), 0.5) * vec2f(textureDimensions(pieceTex))), 0).xyz;
+		var eg: f32 = max(1.0, floor((pow(fr.uExp.y, (1.0 / 3.0)) + 0.5)));
+		var ecs: f32 = ((max((fr.uYR.y - fr.uYR.x), 0.5) * 1.15) / eg);
+		var eq: vec3f = ((((*base) - fr.uCen)) / ecs);
+		eq += (vec3f(sin(((eq.y * 2.1) + 1.3)), sin(((eq.z * 1.7) + 0.4)), sin(((eq.x * 2.3) + 2.1))) * 0.22);
+		var ecell: vec3f = floor(eq);
+		var pid: f32 = glsl_mod_f(abs(dot(ecell, vec3f(17.0, 59.0, 131.0))), 4093.0);
+		var pc: vec3f = (fr.uCen + (((ecell + 0.5)) * ecs));
 		var h1: f32 = hash11((pid * 1.7));
 		var h2: f32 = hash11((pid * 2.9));
 		var h3: f32 = hash11((pid * 4.1));

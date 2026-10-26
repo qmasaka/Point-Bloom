@@ -3195,66 +3195,31 @@ export function createEffectsPanel(app, root, engine) {
 		onChange: (v) => { recOpts.res = v; saveRecOpts(); }
 	});
 
+	// частота и длительность: короткие варианты в ряд; формат (MP4, где браузер умеет), качество (высокое) и покадровая запись таймлайна выбираются сами
 	const recFpsSeg = segmented({
-		cls: 'seg-tight',
 		options: [
-			{ value: '60', label: '60 к/с' },
-			{ value: '30', label: '30 к/с' },
-			{ value: '24', label: '24 к/с' }
+			{ value: '60', label: '60' },
+			{ value: '30', label: '30' },
+			{ value: '24', label: '24' }
 		],
 		value: String(recOpts.fps),
 		onChange: (v) => { recOpts.fps = v; saveRecOpts(); }
 	});
 
-	const recFmtSeg = segmented({
-		cls: 'seg-tight',
-		options: [
-			{ value: 'auto', label: 'Авто' },
-			{ value: 'mp4', label: 'MP4' },
-			{ value: 'webm', label: 'WebM' }
-		],
-		value: recOpts.format,
-		onChange: (v) => { recOpts.format = v; saveRecOpts(); }
-	});
-
-	const recQualSeg = segmented({
-		cls: 'seg-tight',
-		options: [
-			{ value: 'standard', label: 'Обычное' },
-			{ value: 'high', label: 'Высокое' },
-			{ value: 'max', label: 'Максимум' }
-		],
-		value: recOpts.quality || 'high',
-		onChange: (v) => { recOpts.quality = v; saveRecOpts(); }
-	});
-
-	const recSoundSw = switchRow('Записывать звук', {
-		value: recOpts.sound,
-		onChange: (v) => { recOpts.sound = v; saveRecOpts(); }
-	});
-
-	// кнопка «Записать» на таймлайне: покадрово кадры не теряются ни в каком разрешении, но звука нет
-	const recTlSeg = segmented({
-		cls: 'seg-tight',
-		options: [
-			{ value: 'frames', label: 'Покадрово' },
-			{ value: 'live', label: 'Со звуком' }
-		],
-		value: recOpts.tlMode === 'live' ? 'live' : 'frames',
-		onChange: (v) => { recOpts.tlMode = v; saveRecOpts(); }
-	});
-
 	const recDurSeg = segmented({
-		cls: 'seg-tight',
 		options: [
 			{ value: '0', label: 'Вручную' },
 			{ value: '5', label: '5 с' },
 			{ value: '10', label: '10 с' },
-			{ value: '15', label: '15 с' },
 			{ value: '30', label: '30 с' }
 		],
-		value: String(recOpts.dur),
+		value: ['0', '5', '10', '30'].includes(String(recOpts.dur)) ? String(recOpts.dur) : '0',
 		onChange: (v) => { recOpts.dur = v; saveRecOpts(); }
+	});
+
+	const recSoundSw = switchRow('Звук', {
+		value: recOpts.sound,
+		onChange: (v) => { recOpts.sound = v; saveRecOpts(); }
 	});
 
 	const startRecBtn = button({
@@ -3268,28 +3233,23 @@ export function createEffectsPanel(app, root, engine) {
 			engine.startRecording({
 				resolution: recOpts.res,
 				fps: parseInt(recOpts.fps, 10) || 60,
-				format: recOpts.format,
+				format: 'auto',
 				sound: !!recOpts.sound,
 				duration: parseInt(recOpts.dur, 10) || 0,
-				quality: recOpts.quality || 'high'
+				quality: 'high'
 			});
 		}
 	});
 
+	const recRow = (label, el) => h('div', { class: 'fx-rec-row' }, h('span', { class: 'fx-rec-lab' }, label), el);
 	recPop.append(
-		h('div', { class: 'fx-rec-head' },
-			h('div', { class: 'fx-rec-title' }, h('span', { class: 'ic-wrap', html: icon('video-camera', 16) }), 'Параметры записи')
-		),
-		field('Разрешение', recResSel.el),
-		field('Частота кадров', recFpsSeg.el),
-		field('Качество', recQualSeg.el, { hint: 'Выше качество: чище мелкие точки, но файл больше' }),
-		field('Формат', recFmtSeg.el),
+		h('div', { class: 'fx-rec-title' }, 'Запись видео'),
+		recRow('Размер', recResSel.el),
+		recRow('Кадров в секунду', recFpsSeg.el),
+		recRow('Длительность', recDurSeg.el),
 		recSoundSw.el,
-		field('Длительность', recDurSeg.el),
-		field('Запись таймлайна', recTlSeg.el, { hint: 'Покадрово: без пропусков кадров, но без звука' }),
 		startRecBtn
 	);
-
 	recBtn.addEventListener('click', (e) => {
 		e.stopPropagation();
 		if (engine.recording) {

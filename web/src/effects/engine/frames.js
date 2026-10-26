@@ -307,7 +307,7 @@ nav.animateTo({ yaw: 0, pitch: -0.06, distance: nav.fitDistance(Math.hypot(W / 2
 return;
 }
 const R = { stack: Math.hypot(W / 2, H / 2, F.depth / 2), tunnel: Math.hypot(W / 2, H / 2, F.depth / 2), wall: 1.45, film: W * 1.35, fan: 2.7 }[F.layout] ?? 2;
-const view = { stack: { yaw: 0.55, pitch: -0.24 }, tunnel: { yaw: 0.35, pitch: -0.14 }, wall: { yaw: 0, pitch: 0 }, film: { yaw: 0, pitch: -0.05 }, fan: { yaw: 0, pitch: -0.22 } }[F.layout] || {};
+const view = F.layout === 'fan' ? { pitch: -0.22 } : {};
 const target = F.layout === 'fan' ? new THREE.Vector3(0, 0, -0.7) : new THREE.Vector3(0, 0, 0);
 nav.animateTo({ ...view, distance: nav.fitDistance(R * 0.85), target }, 450);
 }

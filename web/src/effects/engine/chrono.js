@@ -1,5 +1,5 @@
 import { lumaDepth } from '../input/depth-ai.js';
-import { SEG_CLASSES, SubjectSegmenter, dilateMask } from '../input/segmenter.js';
+import { SEG_CLASSES, SubjectSegmenter, dilateMask, erodeMask } from '../input/segmenter.js';
 export class ChronoPart {
 _frP() {
 const L = this.state.layers;
@@ -92,7 +92,7 @@ this._segInit();
 if (this.segmenter.ready) m = this.segmenter.mask(this.pm.el, fr.cols, fr.rows, SEG_CLASSES[C.mask]);
 }
 if (!m) m = this._chronoMotion(fr, k, C);
-dst.set(dilateMask(m, fr.cols, fr.rows));
+dst.set(dilateMask(dilateMask(erodeMask(m, fr.cols, fr.rows), fr.cols, fr.rows), fr.cols, fr.rows));
 }
 _chronoMotion(fr, k, C) {
 const per = fr.cols * fr.rows;
@@ -133,9 +133,9 @@ return;
 const sp = (C.drift || 0) * F.step;
 const dir = C.dir === 'right' ? [-1, 0] : C.dir === 'up' ? [0, -1] : [1, 0];
 const live = { full: 1, dim: 2, hide: 3 }[C.live] ?? 1;
-u.uFr8.value.set(live, dir[0] * sp, dir[1] * sp, C.bgKeep ?? 0.08);
-u.uFr9.value.set(C.tint ?? 0.25, C.fade ?? 0.5, (C.depthZ ?? 0.03), Math.min(fr.n, fr.valid || 1));
-u.uFr5.value.y = C.thin ?? 0.35;
+u.uFr8.value.set(live, dir[0] * sp, dir[1] * sp, C.bgKeep ?? 0);
+u.uFr9.value.set(C.tint ?? 0.15, C.fade ?? 0.5, (C.depthZ ?? 0.03), Math.min(fr.n, fr.valid || 1));
+u.uFr5.value.y = C.thin ?? 0.15;
 u.uFr7.value.x = 1;
 const pts = this.points;
 if (!pts) return;

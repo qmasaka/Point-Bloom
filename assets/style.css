@@ -6213,50 +6213,19 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-bg-title { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
 .fx-bg-chip { border-color: rgba(255, 255, 255, 0.16); }
 
-.fx-rec-pop {
-	width: 290px;
-	max-width: calc(100% - 16px);
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-}
-/* компактная панель записи: узкие строки, мелкие переключатели, без лишних подсказок */
-.ui-float .fx-rec-pop { padding: 10px 12px 12px; border-radius: 16px; }
-.fx-rec-pop .field { display: grid; grid-template-columns: 74px minmax(0, 1fr); align-items: center; gap: 8px; margin: 0; min-height: 0; }
-.fx-rec-pop .field > label, .fx-rec-pop .field .field-label { font-size: 12px; }
-.fx-rec-pop .seg { padding: 2px; }
-.fx-rec-pop .seg-btn { height: 24px; padding: 0 4px; font-size: 11px; }
-.fx-rec-pop .select { height: 28px; font-size: 12px; }
-.fx-rec-pop .switch-row { padding: 2px 0; min-height: 0; }
-.fx-rec-pop .field-hint { display: none; }
-.fx-start-rec-btn { height: 32px !important; margin-top: 2px !important; }
-.fx-rec-pop[hidden] {
-	display: none !important;
-}
-.fx-rec-head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding-bottom: 2px;
-}
-.fx-rec-title {
-	display: inline-flex;
-	align-items: center;
-	gap: 7px;
-	font-size: 11px;
-	font-weight: 600;
-	letter-spacing: 0.06em;
-	text-transform: uppercase;
-	color: var(--text-faint);
-}
-.fx-rec-title .ic-wrap {
-	color: var(--accent);
-}
-.fx-start-rec-btn {
-	margin-top: 4px;
-	height: 36px;
-	font-weight: 600;
-}
+/* окно записи: заголовок, три строки «подпись сверху, выбор под ней», выключатель звука и главная кнопка; ничего лишнего */
+.fx-rec-pop { width: 272px; max-width: calc(100% - 16px); display: flex; flex-direction: column; gap: 12px; }
+.ui-float .fx-rec-pop { padding: 14px; border-radius: 16px; }
+.fx-rec-pop[hidden] { display: none !important; }
+.fx-rec-title { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
+.fx-rec-row { display: flex; flex-direction: column; gap: 6px; }
+.fx-rec-lab { font-size: 11.5px; color: var(--text-dim); }
+.fx-rec-pop .select, .fx-rec-pop .custom-select-wrap { width: 100%; }
+.fx-rec-pop .seg { width: 100%; }
+.fx-rec-pop .seg-btn { flex: 1 1 0; }
+.fx-rec-pop .switch-row { padding: 0; min-height: 0; }
+.fx-rec-pop .switch-label { font-size: 13px; }
+.fx-start-rec-btn { height: 36px; font-weight: 600; margin-top: 2px; }
 .fx-rec.is-rec {
 	color: #fff !important;
 	background: var(--danger) !important;

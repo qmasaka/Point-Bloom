@@ -3,7 +3,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Grid } from './grid.js';
 import { perf } from '../core/perf.js';
-import { screenRect, uiZoom } from '../core/util.js';
+import { screenRect } from '../core/util.js';
 
 /** Слои: чем рисуется. 0 — служебное (сетка, гизмо), остальное — содержимое сцены. */
 export const LAYER = { MESH: 1, POINTS: 2, WIRE: 3, FACES: 4 };
@@ -201,7 +201,7 @@ export class Viewport {
 	resize() {
 		// идёт запись видео: холст держит размер кадра записи, окно его не трогает (см. engine/recording.js)
 		if (this.recLock) return;
-		// масштаб интерфейса (CSS zoom) растягивает холст на экране: разрешение отрисовки растёт вместе с ним, иначе сцена мутнеет
+		// плотность пикселей: экран и авто-качество (см. _pr)
 		const pr = this._pr();
 		if (Math.abs(this.renderer.getPixelRatio() - pr) > 1e-6) this.renderer.setPixelRatio(pr);
 		const w = Math.max(1, this.stage.clientWidth);
@@ -354,13 +354,16 @@ export class Viewport {
 			this.setScale(Math.max(0.6, this._qs * 0.85));
 			// размытие под панелями тоже стоит кадров: при просадке интерфейс переходит на плоское стекло
 			document.documentElement.classList.add('perf-flat');
-		} else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 20000) this.setScale(Math.min(1, this._qs * 1.15));
+		} else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 20000) {
+			this.setScale(Math.min(1, this._qs * 1.15));
+			// кадров снова хватает: матовое стекло панелей возвращается
+			if (this._qs >= 0.999) document.documentElement.classList.remove('perf-flat');
+		}
 	}
 
-	/** Меняет разрешение отрисовки и тут же перерисовывает кадр: иначе после смены размера холст на миг оставался пустым и сцена мигала */
-	/** Плотность пикселей холста: экран, масштаб интерфейса (не выше потолка для этой видеокарты) и авто-качество */
+	/** Плотность пикселей холста: экран и авто-качество. Масштаб интерфейса в неё не входит: лишние пиксели роняли частоту кадров, и панели теряли матовое стекло */
 	_pr() {
-		return Math.min(this._basePR * uiZoom(), Math.max(this._basePR, perf.maxPR)) * this._qs;
+		return this._basePR * this._qs;
 	}
 
 	setScale(v) {

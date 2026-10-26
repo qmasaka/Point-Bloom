@@ -105,6 +105,16 @@ this._ready = null;
 this.phase = 'idle';
 }
 }
+export function erodeMask(m, cols, rows) {
+const out = new Uint8Array(m.length);
+for (let r = 1; r < rows - 1; r++) {
+for (let c = 1; c < cols - 1; c++) {
+const i = r * cols + c;
+if (m[i] && m[i - 1] && m[i + 1] && m[i - cols] && m[i + cols]) out[i] = 1;
+}
+}
+return out;
+}
 export function dilateMask(m, cols, rows) {
 const out = new Uint8Array(m.length);
 for (let r = 0; r < rows; r++) {

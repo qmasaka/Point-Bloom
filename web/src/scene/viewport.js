@@ -3,7 +3,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Grid } from './grid.js';
 import { perf } from '../core/perf.js';
-import { screenRect, uiZoom } from '../core/util.js';
+import { screenRect } from '../core/util.js';
 export const LAYER = { MESH: 1, POINTS: 2, WIRE: 3, FACES: 4 };
 export const BACKGROUNDS = {
 dark: { label: 'Тёмный градиент', css: 'radial-gradient(ellipse at 50% 25%, #3d4149 0%, #24272d 62%, #1b1d22 100%)', solid: '#2a2d33', light: false, paint: { type: 'radial', at: [0.5, 0.25], stops: [[0, '#3d4149'], [0.62, '#24272d'], [1, '#1b1d22']] } },
@@ -290,10 +290,13 @@ this._qLow = 0;
 this._qDown = now;
 this.setScale(Math.max(0.6, this._qs * 0.85));
 document.documentElement.classList.add('perf-flat');
-} else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 20000) this.setScale(Math.min(1, this._qs * 1.15));
+} else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 20000) {
+this.setScale(Math.min(1, this._qs * 1.15));
+if (this._qs >= 0.999) document.documentElement.classList.remove('perf-flat');
+}
 }
 _pr() {
-return Math.min(this._basePR * uiZoom(), Math.max(this._basePR, perf.maxPR)) * this._qs;
+return this._basePR * this._qs;
 }
 setScale(v) {
 this._qs = v;

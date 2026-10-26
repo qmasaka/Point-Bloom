@@ -1,5 +1,5 @@
 import { lumaDepth } from '../input/depth-ai.js';
-import { SEG_CLASSES, SubjectSegmenter, dilateMask } from '../input/segmenter.js';
+import { SEG_CLASSES, SubjectSegmenter, dilateMask, erodeMask } from '../input/segmenter.js';
 
 /**
  * «Шлейф движения» (только для видео): человек или другой движущийся объект выделяется, за ним тянется шлейф из прошлых кадров,
@@ -117,7 +117,8 @@ export class ChronoPart {
 			if (this.segmenter.ready) m = this.segmenter.mask(this.pm.el, fr.cols, fr.rows, SEG_CLASSES[C.mask]);
 		}
 		if (!m) m = this._chronoMotion(fr, k, C);
-		dst.set(dilateMask(m, fr.cols, fr.rows));
+		// чистка: сначала сужение (уходят одиночные ложные клетки), потом расширение на две клетки (края фигуры не обрываются)
+		dst.set(dilateMask(dilateMask(erodeMask(m, fr.cols, fr.rows), fr.cols, fr.rows), fr.cols, fr.rows));
 	}
 
 	/** Движение: яркость кадра против медленно обновляемого фона (работает, когда камера в ролике стоит) */
@@ -165,9 +166,9 @@ export class ChronoPart {
 		const sp = (C.drift || 0) * F.step;
 		const dir = C.dir === 'right' ? [-1, 0] : C.dir === 'up' ? [0, -1] : [1, 0];
 		const live = { full: 1, dim: 2, hide: 3 }[C.live] ?? 1;
-		u.uFr8.value.set(live, dir[0] * sp, dir[1] * sp, C.bgKeep ?? 0.08);
-		u.uFr9.value.set(C.tint ?? 0.25, C.fade ?? 0.5, (C.depthZ ?? 0.03), Math.min(fr.n, fr.valid || 1));
-		u.uFr5.value.y = C.thin ?? 0.35;
+		u.uFr8.value.set(live, dir[0] * sp, dir[1] * sp, C.bgKeep ?? 0);
+		u.uFr9.value.set(C.tint ?? 0.15, C.fade ?? 0.5, (C.depthZ ?? 0.03), Math.min(fr.n, fr.valid || 1));
+		u.uFr5.value.y = C.thin ?? 0.15;
 		u.uFr7.value.x = 1;
 		// камера стоит: видео уезжает по сцене (шлейф остаётся там, где кадры были сняты), дойдя до края, возвращается
 		const pts = this.points;

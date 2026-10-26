@@ -434,7 +434,8 @@ vec4 frShow(float k, out vec3 tcol) {
 		// шлейф движения: копии гаснут с возрастом (чем больше «как быстро гаснет», тем короче видимая часть) и к концу подкрашиваются палитрой
 		float age = max(0.0, -d);
 		float a = clamp(age / max(1.0, uFr9.w), 0.0, 1.0);
-		w = pow(1.0 - a, 0.5 + uFr9.y * 3.0);
+		// самая свежая копия лежит прямо на живом кадре и двоила бы его: она проявляется, только отойдя от него
+		w = pow(1.0 - a, 0.5 + uFr9.y * 3.0) * smoothstep(0.15, 1.0, age);
 		tcol = a < 0.5 ? mix(uP0, uP1, a * 2.0) : mix(uP1, uP2, (a - 0.5) * 2.0);
 		tint = uFr9.x * a;
 	} else {
@@ -1003,8 +1004,15 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	}
 	// разбор на части: куски двигаются и вращаются целиком вокруг своего центра
 	if (uExp.x > 0.001) {
-		float pid = floor(aIdx * uExp.y);
-		vec3 pc = texture2D(uPieceTex, vec2((pid + 0.5) / 256.0, 0.5)).xyz;
+		// кусок это ячейка пространства вокруг формы (а не подряд идущие точки: облако перемешано для морфинга, и куски выходили кашей).
+		// Сетка чуть искривлена шумом, чтобы края кусков были неровными, а не кубиками
+		float eg = max(1.0, floor(pow(uExp.y, 1.0 / 3.0) + 0.5));
+		float ecs = max(uYR.y - uYR.x, 0.5) * 1.15 / eg;
+		vec3 eq = (base - uCen) / ecs;
+		eq += vec3(sin(eq.y * 2.1 + 1.3), sin(eq.z * 1.7 + 0.4), sin(eq.x * 2.3 + 2.1)) * 0.22;
+		vec3 ecell = floor(eq);
+		float pid = mod(abs(dot(ecell, vec3(17.0, 59.0, 131.0))), 4093.0);
+		vec3 pc = uCen + (ecell + 0.5) * ecs;
 		float h1 = hash11(pid * 1.7);
 		float h2 = hash11(pid * 2.9);
 		float h3 = hash11(pid * 4.1);
