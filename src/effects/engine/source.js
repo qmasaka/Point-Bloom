@@ -423,16 +423,18 @@ export class SourcePart {
 		if (mm.in) side(mm.in, false);
 	}
 
-	/** Ещё одно фото или видео добавлено рядом с открытым: встаёт в список морфинга, и форма плавно переходит на него */
-	async addMediaForm(id) {
+	/** Ещё одно фото или видео добавлено рядом с открытым: встаёт в список морфинга; go: форма сразу плавно переходит на него («Открыть»), иначе остаётся текущая («Добавить») */
+	async addMediaForm(id, { go = true } = {}) {
 		if (!this.active) return;
-		this.app.media.passSound(null);
 		const list = [...(this.playlist || [])];
 		if (!list.includes(id)) list.push(id);
 		this.playlist = list;
 		this._pi = Math.max(-1, list.indexOf(this.curKey || this.state.source));
 		await this._syncMorphCount();
-		await this.setSource(id);
+		if (go) {
+			this.app.media.passSound(null);
+			await this.setSource(id);
+		}
 		this.emit();
 	}
 

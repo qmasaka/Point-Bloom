@@ -1055,19 +1055,20 @@ export class UI {
 
 	/** Единая точка входа для файлов: модели, текстуры, архивы */
 	/** Фото, видео или точечный ролик: открываем во вкладке «Медиа» и превращаем в облако точек */
-	async openMedia(file) {
+	async openMedia(file, { add = false } = {}) {
 		this.busy('Читаю файл', 0.3);
 		try {
 			const mc = this.app.media;
 			if (this.workspace === 'fx' && mc.pm.ready) {
-				// в эффектах второе, третье и дальше фото или видео добавляются рядом: между ними можно делать морфинг
+				// в эффектах второе, третье и дальше фото или видео добавляются рядом: между ними можно делать морфинг.
+				// «Добавить» только ставит файл в список форм, «Открыть» сразу показывает его
 				if (mc.count() >= 6) {
 					this.toast('Можно открыть до шести фото и видео сразу. Уберите ненужное кнопкой «Убрать медиа»', 'warn');
 					return;
 				}
 				const id = await mc.addExtra(file);
-				await this.effectsEngine.addMediaForm(id);
-				this.toast('Добавлено в морфинг', 'ok');
+				await this.effectsEngine.addMediaForm(id, { go: !add });
+				if (add) this.toast('Добавлено в список форм: перейти к нему можно во вкладке «Форма»', 'ok');
 				return;
 			}
 			await mc.load(file);
@@ -1092,11 +1093,11 @@ export class UI {
 			return this.openMedia(f);
 		}
 		const vid = files.find(isMedia);
-		if (vid && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) return this.openMedia(vid);
+		if (vid && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) return this.openMedia(vid, { add: mode === 'add' });
 		// «Добавить…» в эффектах: фото без модели в выборе тоже становится точками, а не текстурой
 		if (mode === 'add' && this.workspace === 'fx' && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) {
 			const img = files.find((x) => IMAGE_EXT.includes(extOf(x.name)));
-			if (img) return this.openMedia(img);
+			if (img) return this.openMedia(img, { add: true });
 		}
 		// одиночная картинка без модели в сцене: текстуре некуда ложиться, поэтому делаем из неё точки
 		if (files.length === 1 && IMAGE_EXT.includes(extOf(files[0].name)) && !app.model.meshes().length) return this.openMedia(files[0]);

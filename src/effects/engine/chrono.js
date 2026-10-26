@@ -1,5 +1,5 @@
 import { lumaDepth } from '../input/depth-ai.js';
-import { SEG_CLASSES, SubjectSegmenter, dilateMask, erodeMask } from '../input/segmenter.js';
+import { SEG_CLASSES, SubjectSegmenter, dilateMask, dropSpecks, erodeMask } from '../input/segmenter.js';
 
 /**
  * «Шлейф движения» (только для видео): человек или другой движущийся объект выделяется, за ним тянется шлейф из прошлых кадров,
@@ -114,11 +114,16 @@ export class ChronoPart {
 		let m = null;
 		if (C.mask === 'person' || C.mask === 'any') {
 			this._segInit();
-			if (this.segmenter.ready) m = this.segmenter.mask(this.pm.el, fr.cols, fr.rows, SEG_CLASSES[C.mask]);
-		}
-		if (!m) m = this._chronoMotion(fr, k, C);
-		// чистка: сначала сужение (уходят одиночные ложные клетки), потом расширение на две клетки (края фигуры не обрываются)
-		dst.set(dilateMask(dilateMask(erodeMask(m, fr.cols, fr.rows), fr.cols, fr.rows), fr.cols, fr.rows));
+			// пока нейросеть грузится (или не загрузилась), шлейфа нет: подмена «всем, что движется» при едущей камере красила бы весь фон
+			m = this.segmenter.ready ? this.segmenter.mask(this.pm.el, fr.cols, fr.rows, SEG_CLASSES[C.mask]) : null;
+			if (!m) {
+				dst.fill(0);
+				return;
+			}
+		} else m = this._chronoMotion(fr, k, C);
+		// чистка: сужение и расширение на одну клетку (уходят одиночные ложные клетки, фигура остаётся своего размера, без ореола фона),
+		// потом отбрасываются мелкие обрывки: в шлейфе они висели бы отдельными лишними точками
+		dst.set(dropSpecks(dilateMask(erodeMask(m, fr.cols, fr.rows), fr.cols, fr.rows), fr.cols, fr.rows, Math.max(12, (fr.cols * fr.rows) / 1500)));
 	}
 
 	/** Движение: яркость кадра против медленно обновляемого фона (работает, когда камера в ролике стоит) */
@@ -133,11 +138,18 @@ export class ChronoPart {
 		}
 		const thr = 0.025 + (1 - (C.sens ?? 0.5)) * 0.16;
 		const bg = fr.bgL;
+		let moved = 0;
 		for (let i = 0; i < per; i++) {
 			const d = Math.abs(l[i] - bg[i]);
 			out[i] = d > thr ? 1 : 0;
+			moved += out[i];
 			// фон подстраивается медленно, а там, где сейчас объект, почти стоит: иначе неподвижный человек растворялся бы в фоне
 			bg[i] += (l[i] - bg[i]) * (out[i] ? 0.01 : 0.08);
+		}
+		// «движется» больше трети кадра: это едет сама камера, а не объект. Фон берётся заново, кадр в шлейф не идёт
+		if (moved > per / 3) {
+			fr.bgL.set(l);
+			out.fill(0);
 		}
 		return out;
 	}

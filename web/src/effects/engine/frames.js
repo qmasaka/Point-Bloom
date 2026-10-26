@@ -411,7 +411,13 @@ depthToGrid(file, cols, rows, fr.dFile);
 fr.dFileId = file.id;
 }
 map = { w: cols, h: rows, data: fr.dFile };
-} else map = Dp.src === 'ai' && fr.dOk[k] && fr.dAi ? { w: cols, h: rows, data: fr.dAi.subarray(k * per, (k + 1) * per) } : lumaDepth(f, cols, rows, 4);
+} else {
+let kd = Dp.src === 'ai' && fr.dAi ? (fr.dOk[k] ? k : -1) : -1;
+if (kd < 0 && fr.chrono && Dp.src === 'ai' && fr.dAi) {
+for (let s = 1; s < fr.n && kd < 0; s++) if (fr.dOk[(k - s + fr.n) % fr.n]) kd = (k - s + fr.n) % fr.n;
+}
+map = kd >= 0 ? { w: cols, h: rows, data: fr.dAi.subarray(kd * per, (kd + 1) * per) } : lumaDepth(f, cols, rows, 4);
+}
 const r = Math.round((Dp.blur || 0) * 0.4);
 if (r > 0) map = adjustDepth(map, { blur: r });
 const d = map.data;

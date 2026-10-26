@@ -1,5 +1,5 @@
 import { lumaDepth } from '../input/depth-ai.js';
-import { SEG_CLASSES, SubjectSegmenter, dilateMask, erodeMask } from '../input/segmenter.js';
+import { SEG_CLASSES, SubjectSegmenter, dilateMask, dropSpecks, erodeMask } from '../input/segmenter.js';
 export class ChronoPart {
 _frP() {
 const L = this.state.layers;
@@ -89,10 +89,13 @@ if (C.mask === 'depth') return;
 let m = null;
 if (C.mask === 'person' || C.mask === 'any') {
 this._segInit();
-if (this.segmenter.ready) m = this.segmenter.mask(this.pm.el, fr.cols, fr.rows, SEG_CLASSES[C.mask]);
+m = this.segmenter.ready ? this.segmenter.mask(this.pm.el, fr.cols, fr.rows, SEG_CLASSES[C.mask]) : null;
+if (!m) {
+dst.fill(0);
+return;
 }
-if (!m) m = this._chronoMotion(fr, k, C);
-dst.set(dilateMask(dilateMask(erodeMask(m, fr.cols, fr.rows), fr.cols, fr.rows), fr.cols, fr.rows));
+} else m = this._chronoMotion(fr, k, C);
+dst.set(dropSpecks(dilateMask(erodeMask(m, fr.cols, fr.rows), fr.cols, fr.rows), fr.cols, fr.rows, Math.max(12, (fr.cols * fr.rows) / 1500)));
 }
 _chronoMotion(fr, k, C) {
 const per = fr.cols * fr.rows;
@@ -105,10 +108,16 @@ return out;
 }
 const thr = 0.025 + (1 - (C.sens ?? 0.5)) * 0.16;
 const bg = fr.bgL;
+let moved = 0;
 for (let i = 0; i < per; i++) {
 const d = Math.abs(l[i] - bg[i]);
 out[i] = d > thr ? 1 : 0;
+moved += out[i];
 bg[i] += (l[i] - bg[i]) * (out[i] ? 0.01 : 0.08);
+}
+if (moved > per / 3) {
+fr.bgL.set(l);
+out.fill(0);
 }
 return out;
 }

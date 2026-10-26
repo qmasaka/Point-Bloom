@@ -942,7 +942,7 @@ hideDrop() {
 this.dragDepth = 0;
 $('#dropOverlay').hidden = true;
 }
-async openMedia(file) {
+async openMedia(file, { add = false } = {}) {
 this.busy('Читаю файл', 0.3);
 try {
 const mc = this.app.media;
@@ -952,8 +952,8 @@ this.toast('Можно открыть до шести фото и видео с�
 return;
 }
 const id = await mc.addExtra(file);
-await this.effectsEngine.addMediaForm(id);
-this.toast('Добавлено в морфинг', 'ok');
+await this.effectsEngine.addMediaForm(id, { go: !add });
+if (add) this.toast('Добавлено в список форм: перейти к нему можно во вкладке «Форма»', 'ok');
 return;
 }
 await mc.load(file);
@@ -976,10 +976,10 @@ return;
 return this.openMedia(f);
 }
 const vid = files.find(isMedia);
-if (vid && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) return this.openMedia(vid);
+if (vid && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) return this.openMedia(vid, { add: mode === 'add' });
 if (mode === 'add' && this.workspace === 'fx' && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) {
 const img = files.find((x) => IMAGE_EXT.includes(extOf(x.name)));
-if (img) return this.openMedia(img);
+if (img) return this.openMedia(img, { add: true });
 }
 if (files.length === 1 && IMAGE_EXT.includes(extOf(files[0].name)) && !app.model.meshes().length) return this.openMedia(files[0]);
 const hasModel = files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip');

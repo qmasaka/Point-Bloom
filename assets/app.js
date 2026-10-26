@@ -79962,7 +79962,7 @@ const { perf } = __req('src/core/perf.js');
 const FX_ACTIONS = [['none', 'Без действия'], ['push', 'Отталкивание: от ладони'], ['pull', 'Притягивание: к ладони'], ['swirl', 'Вихрь: вращение пальцами'], ['rotate', 'Вращение: поворот модели'], ['sculpt', 'Лепка: изменение формы'], ['gravity', 'Гравитация: притяжение к руке'], ['wave', 'Ударная волна: фронт от руки'], ['break', 'Распад: пока держишь жест'], ['dissolve', 'Растворение: пока держишь жест'], ['brush', 'Световой штрих: след в воздухе'], ['slicecut', 'Срез рукой: секущая плоскость'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:twist', 'Эффект: Деформация'], ['fx:blast', 'Эффект: Взрыв по биту'], ['fx:flow', 'Эффект: Течение'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф'], ['fx:hyper', 'Эффект: Гиперпространство']];
 const FX_LAYERS = [
 { id: 'frames', sound: false, group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Видео раскладывается на кадры из точек, кадры собираются в блок. Показ идёт за таймлайном', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, thin: 0, edge: 0, edgeW: 1.5, edgeCol: 'pal', curEdge: 0, showMode: 'off', showLen: 0.12, hero: 150000, future: 'hide', gain: 1, sat: 0, bsize: 1.5, track: 'grow', tone: 'all', toneCut: 0.5, tail: 100, tailSoft: 0.6, dkeep: 0.5 }, extras: [{ type: 'title', label: 'Раскладка' }, { key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: слои вглубь'], ['wall', 'Стена: плоская сетка'], ['film', 'Киноплёнка: кадры в ряд'], ['tunnel', 'Туннель: перспектива вглубь'], ['fan', 'Веер: кадры на дуге барабана']], relayout: true }, { key: 'track', label: 'Что в стопке', type: 'seg', options: [['grow', 'Пройденное'], ['full', 'Весь ряд']], when: ['layout', ['stack', 'tunnel']] }, { key: 'depth', label: 'Глубина', min: 0.2, max: 4, step: 0.1, relayout: true, when: ['layout', ['stack', 'tunnel']] }, { type: 'title', label: 'Показ' }, { key: 'showMode', label: 'Как показывать', type: 'select', options: [['off', 'Статично: все кадры как есть'], ['peel', 'Листание: слёт пройденных'], ['projector', 'Проектор: бегущий луч'], ['trail', 'Шлейф: затухающий след']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Редкие'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { key: 'thin', label: 'Прореживать остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { key: 'edge', label: 'Рамки кадров', min: 0, max: 1, step: 0.05 }, { key: 'curEdge', label: 'Рамка текущего кадра', min: 0, max: 1, step: 0.05 }, { key: 'edgeW', label: 'Толщина рамок', min: 0.5, max: 4, step: 0.5, noNorm: true }, { key: 'edgeCol', label: 'Цвет рамок', type: 'seg', options: [['pal', 'Палитра'], ['white', 'Белый']] }, { type: 'title', label: 'Объём' }, { type: 'note', text: 'Включите «Объём по глубине» в разделе «Фото и видео»: каждый кадр выдавится по своей карте глубины.' }, { key: 'dkeep', label: 'Объём остальных кадров', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Хвост' }, { key: 'tail', label: 'Длина хвоста, доля видео', min: 5, max: 100, step: 1, int: true, unit: '%' }, { key: 'tailSoft', label: 'Как гаснет хвост: резко ... плавно', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Цвет остальных кадров' }, { key: 'sat', label: 'Насыщенность (0 это цвета видео)', min: -1, max: 1, step: 0.05 }, { key: 'gain', label: 'Яркость', min: 0.4, max: 3, step: 0.05 }, { key: 'tone', label: 'Какие тона оставить', type: 'seg', options: [['all', 'Все'], ['light', 'Светлые'], ['dark', 'Тёмные']] }, { key: 'toneCut', label: 'Граница светлого и тёмного', min: 0.05, max: 0.95, step: 0.01, when: ['tone', ['light', 'dark']] }, { key: 'bsize', label: 'Размер точек', min: 0.5, max: 4, step: 0.1 }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
-{ id: 'chrono', sound: false, group: 'Видео', name: 'Шлейф движения', icon: 'wind', hint: 'Только для видео: человек или другой движущийся объект выделяется, за ним тянется шлейф из прошлых кадров, а видео плавно едет в сторону. Работает вместе с «Объёмом по глубине»', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mask: 'person', sens: 0.5, live: 'full', count: 14, every: 0.12, fade: 0.4, bgKeep: 0, thin: 0.15, tint: 0.15, dir: 'left', drift: 1.1, follow: 'on', depthZ: 0.04, dkeep: 0.5, size: 1.4, hero: 150000, budget: 480000 }, extras: [
+{ id: 'chrono', sound: false, group: 'Видео', name: 'Шлейф движения', icon: 'wind', hint: 'Только для видео: человек или другой движущийся объект выделяется, за ним тянется шлейф из прошлых кадров, а видео плавно едет в сторону. Работает вместе с «Объёмом по глубине»', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mask: 'person', sens: 0.5, live: 'full', count: 14, every: 0.12, fade: 0.4, bgKeep: 0, thin: 0.15, tint: 0.15, dir: 'left', drift: 1.1, follow: 'on', depthZ: 0.04, dkeep: 0.5, size: 1.4, hero: 220000, budget: 900000 }, extras: [
 { type: 'row', items: [{ label: 'Начать шлейф заново', icon: 'arrow-counter-clockwise', act: 'chronoReset' }] },
 { type: 'title', label: 'Кого выделять' },
 { key: 'mask', label: 'Что выделять', type: 'select', options: [['person', 'Человека: нейросеть'], ['any', 'Людей, животных, транспорт: нейросеть'], ['motion', 'Всё, что движется: камера в ролике стоит'], ['depth', 'Ближнее: по карте глубины']] },
@@ -93002,7 +93002,13 @@ depthToGrid(file, cols, rows, fr.dFile);
 fr.dFileId = file.id;
 }
 map = { w: cols, h: rows, data: fr.dFile };
-} else map = Dp.src === 'ai' && fr.dOk[k] && fr.dAi ? { w: cols, h: rows, data: fr.dAi.subarray(k * per, (k + 1) * per) } : lumaDepth(f, cols, rows, 4);
+} else {
+let kd = Dp.src === 'ai' && fr.dAi ? (fr.dOk[k] ? k : -1) : -1;
+if (kd < 0 && fr.chrono && Dp.src === 'ai' && fr.dAi) {
+for (let s = 1; s < fr.n && kd < 0; s++) if (fr.dOk[(k - s + fr.n) % fr.n]) kd = (k - s + fr.n) % fr.n;
+}
+map = kd >= 0 ? { w: cols, h: rows, data: fr.dAi.subarray(kd * per, (kd + 1) * per) } : lumaDepth(f, cols, rows, 4);
+}
 const r = Math.round((Dp.blur || 0) * 0.4);
 if (r > 0) map = adjustDepth(map, { blur: r });
 const d = map.data;
@@ -95665,15 +95671,17 @@ if (outSide) g.attributes.aHide.needsUpdate = true;
 if (mm.out) side(mm.out, true);
 if (mm.in) side(mm.in, false);
 }
-async addMediaForm(id) {
+async addMediaForm(id, { go = true } = {}) {
 if (!this.active) return;
-this.app.media.passSound(null);
 const list = [...(this.playlist || [])];
 if (!list.includes(id)) list.push(id);
 this.playlist = list;
 this._pi = Math.max(-1, list.indexOf(this.curKey || this.state.source));
 await this._syncMorphCount();
+if (go) {
+this.app.media.passSound(null);
 await this.setSource(id);
+}
 this.emit();
 }
 async setSource(key) {
@@ -103110,6 +103118,7 @@ __defs['src/effects/input/segmenter.js'] = function (__exports, __req) {
 __def(__exports, 'SEG_CLASSES', () => SEG_CLASSES);
 __def(__exports, 'SubjectSegmenter', () => SubjectSegmenter);
 __def(__exports, 'erodeMask', () => erodeMask);
+__def(__exports, 'dropSpecks', () => dropSpecks);
 __def(__exports, 'dilateMask', () => dilateMask);
 const VISION = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21';
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite';
@@ -103174,6 +103183,46 @@ if (!this._seg) return null;
 const sw = source.videoWidth || source.naturalWidth || source.width;
 const sh = source.videoHeight || source.naturalHeight || source.height;
 if (!sw || !sh) return null;
+const full = this._run(source, 0, 0, sw, sh, classes);
+if (!full) return null;
+const { m, w, h } = full;
+let x0 = w, y0 = h, x1 = -1, y1 = -1;
+for (let y = 0; y < h; y++) {
+for (let x = 0; x < w; x++) {
+if (!m[y * w + x]) continue;
+if (x < x0) x0 = x;
+if (x > x1) x1 = x;
+if (y < y0) y0 = y;
+if (y > y1) y1 = y;
+}
+}
+const out = new Uint8Array(cols * rows);
+if (x1 < 0) return out;
+let src = { m, w, h, x: 0, y: 0, cw: sw, ch: sh };
+const bw = (x1 - x0 + 1) / w;
+const bh = (y1 - y0 + 1) / h;
+if (bw * bh < 0.35) {
+const pad = 0.25;
+const cx0 = Math.max(0, (x0 / w - bw * pad) * sw);
+const cy0 = Math.max(0, (y0 / h - bh * pad) * sh);
+const cx1 = Math.min(sw, ((x1 + 1) / w + bw * pad) * sw);
+const cy1 = Math.min(sh, ((y1 + 1) / h + bh * pad) * sh);
+const crop = this._run(source, cx0, cy0, cx1 - cx0, cy1 - cy0, classes);
+if (crop) src = { ...crop, x: cx0, y: cy0, cw: cx1 - cx0, ch: cy1 - cy0 };
+}
+for (let r = 0; r < rows; r++) {
+const py = ((r + 0.5) / rows) * sh;
+const y = Math.floor(((py - src.y) / src.ch) * src.h);
+if (y < 0 || y >= src.h) continue;
+for (let c = 0; c < cols; c++) {
+const px = ((c + 0.5) / cols) * sw;
+const x = Math.floor(((px - src.x) / src.cw) * src.w);
+if (x >= 0 && x < src.w) out[r * cols + c] = src.m[y * src.w + x];
+}
+}
+return out;
+}
+_run(source, sx, sy, sw, sh, classes) {
 const k = Math.min(1, 320 / Math.max(sw, sh));
 const w = Math.max(16, Math.round(sw * k));
 const h = Math.max(16, Math.round(sh * k));
@@ -103182,7 +103231,7 @@ if (this._cv.width !== w || this._cv.height !== h) {
 this._cv.width = w;
 this._cv.height = h;
 }
-this._cv.getContext('2d').drawImage(source, 0, 0, w, h);
+this._cv.getContext('2d').drawImage(source, sx, sy, sw, sh, 0, 0, w, h);
 let res;
 try {
 res = this._seg.segment(this._cv);
@@ -103197,16 +103246,10 @@ return null;
 const cat = cm.getAsUint8Array();
 const mw = cm.width;
 const mh = cm.height;
-const out = new Uint8Array(cols * rows);
-for (let r = 0; r < rows; r++) {
-const y = Math.min(mh - 1, Math.floor(((r + 0.5) / rows) * mh));
-for (let c = 0; c < cols; c++) {
-const x = Math.min(mw - 1, Math.floor(((c + 0.5) / cols) * mw));
-out[r * cols + c] = classes.has(cat[y * mw + x]) ? 1 : 0;
-}
-}
+const m = new Uint8Array(mw * mh);
+for (let i = 0; i < m.length; i++) m[i] = classes.has(cat[i]) ? 1 : 0;
 res.close?.();
-return out;
+return { m, w: mw, h: mh };
 }
 dispose() {
 try {
@@ -103228,6 +103271,32 @@ if (m[i] && m[i - 1] && m[i + 1] && m[i - cols] && m[i + cols]) out[i] = 1;
 }
 return out;
 }
+function dropSpecks(m, cols, rows, min) {
+const seen = new Uint8Array(m.length);
+const stack = new Int32Array(m.length);
+const comp = [];
+for (let s = 0; s < m.length; s++) {
+if (!m[s] || seen[s]) continue;
+let top = 0;
+stack[top++] = s;
+seen[s] = 1;
+comp.length = 0;
+while (top) {
+const i = stack[--top];
+comp.push(i);
+const c = i % cols;
+const nb = [c > 0 ? i - 1 : -1, c < cols - 1 ? i + 1 : -1, i >= cols ? i - cols : -1, i + cols < m.length ? i + cols : -1];
+for (const j of nb) {
+if (j >= 0 && m[j] && !seen[j]) {
+seen[j] = 1;
+stack[top++] = j;
+}
+}
+}
+if (comp.length < min) for (const i of comp) m[i] = 0;
+}
+return m;
+}
 function dilateMask(m, cols, rows) {
 const out = new Uint8Array(m.length);
 for (let r = 0; r < rows; r++) {
@@ -103243,7 +103312,7 @@ __defs['src/effects/engine/chrono.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'ChronoPart', () => ChronoPart);
 const { lumaDepth } = __req('src/effects/input/depth-ai.js');
-const { SEG_CLASSES, SubjectSegmenter, dilateMask, erodeMask } = __req('src/effects/input/segmenter.js');
+const { SEG_CLASSES, SubjectSegmenter, dilateMask, dropSpecks, erodeMask } = __req('src/effects/input/segmenter.js');
 class ChronoPart {
 _frP() {
 const L = this.state.layers;
@@ -103333,10 +103402,13 @@ if (C.mask === 'depth') return;
 let m = null;
 if (C.mask === 'person' || C.mask === 'any') {
 this._segInit();
-if (this.segmenter.ready) m = this.segmenter.mask(this.pm.el, fr.cols, fr.rows, SEG_CLASSES[C.mask]);
+m = this.segmenter.ready ? this.segmenter.mask(this.pm.el, fr.cols, fr.rows, SEG_CLASSES[C.mask]) : null;
+if (!m) {
+dst.fill(0);
+return;
 }
-if (!m) m = this._chronoMotion(fr, k, C);
-dst.set(dilateMask(dilateMask(erodeMask(m, fr.cols, fr.rows), fr.cols, fr.rows), fr.cols, fr.rows));
+} else m = this._chronoMotion(fr, k, C);
+dst.set(dropSpecks(dilateMask(erodeMask(m, fr.cols, fr.rows), fr.cols, fr.rows), fr.cols, fr.rows, Math.max(12, (fr.cols * fr.rows) / 1500)));
 }
 _chronoMotion(fr, k, C) {
 const per = fr.cols * fr.rows;
@@ -103349,10 +103421,16 @@ return out;
 }
 const thr = 0.025 + (1 - (C.sens ?? 0.5)) * 0.16;
 const bg = fr.bgL;
+let moved = 0;
 for (let i = 0; i < per; i++) {
 const d = Math.abs(l[i] - bg[i]);
 out[i] = d > thr ? 1 : 0;
+moved += out[i];
 bg[i] += (l[i] - bg[i]) * (out[i] ? 0.01 : 0.08);
+}
+if (moved > per / 3) {
+fr.bgL.set(l);
+out.fill(0);
 }
 return out;
 }
@@ -108616,7 +108694,7 @@ hideDrop() {
 this.dragDepth = 0;
 $('#dropOverlay').hidden = true;
 }
-async openMedia(file) {
+async openMedia(file, { add = false } = {}) {
 this.busy('Читаю файл', 0.3);
 try {
 const mc = this.app.media;
@@ -108626,8 +108704,8 @@ this.toast('Можно открыть до шести фото и видео с�
 return;
 }
 const id = await mc.addExtra(file);
-await this.effectsEngine.addMediaForm(id);
-this.toast('Добавлено в морфинг', 'ok');
+await this.effectsEngine.addMediaForm(id, { go: !add });
+if (add) this.toast('Добавлено в список форм: перейти к нему можно во вкладке «Форма»', 'ok');
 return;
 }
 await mc.load(file);
@@ -108650,10 +108728,10 @@ return;
 return this.openMedia(f);
 }
 const vid = files.find(isMedia);
-if (vid && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) return this.openMedia(vid);
+if (vid && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) return this.openMedia(vid, { add: mode === 'add' });
 if (mode === 'add' && this.workspace === 'fx' && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) {
 const img = files.find((x) => IMAGE_EXT.includes(extOf(x.name)));
-if (img) return this.openMedia(img);
+if (img) return this.openMedia(img, { add: true });
 }
 if (files.length === 1 && IMAGE_EXT.includes(extOf(files[0].name)) && !app.model.meshes().length) return this.openMedia(files[0]);
 const hasModel = files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip');

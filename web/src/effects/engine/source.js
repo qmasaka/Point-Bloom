@@ -355,15 +355,17 @@ if (outSide) g.attributes.aHide.needsUpdate = true;
 if (mm.out) side(mm.out, true);
 if (mm.in) side(mm.in, false);
 }
-async addMediaForm(id) {
+async addMediaForm(id, { go = true } = {}) {
 if (!this.active) return;
-this.app.media.passSound(null);
 const list = [...(this.playlist || [])];
 if (!list.includes(id)) list.push(id);
 this.playlist = list;
 this._pi = Math.max(-1, list.indexOf(this.curKey || this.state.source));
 await this._syncMorphCount();
+if (go) {
+this.app.media.passSound(null);
 await this.setSource(id);
+}
 this.emit();
 }
 async setSource(key) {

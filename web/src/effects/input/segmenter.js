@@ -61,6 +61,46 @@ if (!this._seg) return null;
 const sw = source.videoWidth || source.naturalWidth || source.width;
 const sh = source.videoHeight || source.naturalHeight || source.height;
 if (!sw || !sh) return null;
+const full = this._run(source, 0, 0, sw, sh, classes);
+if (!full) return null;
+const { m, w, h } = full;
+let x0 = w, y0 = h, x1 = -1, y1 = -1;
+for (let y = 0; y < h; y++) {
+for (let x = 0; x < w; x++) {
+if (!m[y * w + x]) continue;
+if (x < x0) x0 = x;
+if (x > x1) x1 = x;
+if (y < y0) y0 = y;
+if (y > y1) y1 = y;
+}
+}
+const out = new Uint8Array(cols * rows);
+if (x1 < 0) return out;
+let src = { m, w, h, x: 0, y: 0, cw: sw, ch: sh };
+const bw = (x1 - x0 + 1) / w;
+const bh = (y1 - y0 + 1) / h;
+if (bw * bh < 0.35) {
+const pad = 0.25;
+const cx0 = Math.max(0, (x0 / w - bw * pad) * sw);
+const cy0 = Math.max(0, (y0 / h - bh * pad) * sh);
+const cx1 = Math.min(sw, ((x1 + 1) / w + bw * pad) * sw);
+const cy1 = Math.min(sh, ((y1 + 1) / h + bh * pad) * sh);
+const crop = this._run(source, cx0, cy0, cx1 - cx0, cy1 - cy0, classes);
+if (crop) src = { ...crop, x: cx0, y: cy0, cw: cx1 - cx0, ch: cy1 - cy0 };
+}
+for (let r = 0; r < rows; r++) {
+const py = ((r + 0.5) / rows) * sh;
+const y = Math.floor(((py - src.y) / src.ch) * src.h);
+if (y < 0 || y >= src.h) continue;
+for (let c = 0; c < cols; c++) {
+const px = ((c + 0.5) / cols) * sw;
+const x = Math.floor(((px - src.x) / src.cw) * src.w);
+if (x >= 0 && x < src.w) out[r * cols + c] = src.m[y * src.w + x];
+}
+}
+return out;
+}
+_run(source, sx, sy, sw, sh, classes) {
 const k = Math.min(1, 320 / Math.max(sw, sh));
 const w = Math.max(16, Math.round(sw * k));
 const h = Math.max(16, Math.round(sh * k));
@@ -69,7 +109,7 @@ if (this._cv.width !== w || this._cv.height !== h) {
 this._cv.width = w;
 this._cv.height = h;
 }
-this._cv.getContext('2d').drawImage(source, 0, 0, w, h);
+this._cv.getContext('2d').drawImage(source, sx, sy, sw, sh, 0, 0, w, h);
 let res;
 try {
 res = this._seg.segment(this._cv);
@@ -84,16 +124,10 @@ return null;
 const cat = cm.getAsUint8Array();
 const mw = cm.width;
 const mh = cm.height;
-const out = new Uint8Array(cols * rows);
-for (let r = 0; r < rows; r++) {
-const y = Math.min(mh - 1, Math.floor(((r + 0.5) / rows) * mh));
-for (let c = 0; c < cols; c++) {
-const x = Math.min(mw - 1, Math.floor(((c + 0.5) / cols) * mw));
-out[r * cols + c] = classes.has(cat[y * mw + x]) ? 1 : 0;
-}
-}
+const m = new Uint8Array(mw * mh);
+for (let i = 0; i < m.length; i++) m[i] = classes.has(cat[i]) ? 1 : 0;
 res.close?.();
-return out;
+return { m, w: mw, h: mh };
 }
 dispose() {
 try {
@@ -114,6 +148,32 @@ if (m[i] && m[i - 1] && m[i + 1] && m[i - cols] && m[i + cols]) out[i] = 1;
 }
 }
 return out;
+}
+export function dropSpecks(m, cols, rows, min) {
+const seen = new Uint8Array(m.length);
+const stack = new Int32Array(m.length);
+const comp = [];
+for (let s = 0; s < m.length; s++) {
+if (!m[s] || seen[s]) continue;
+let top = 0;
+stack[top++] = s;
+seen[s] = 1;
+comp.length = 0;
+while (top) {
+const i = stack[--top];
+comp.push(i);
+const c = i % cols;
+const nb = [c > 0 ? i - 1 : -1, c < cols - 1 ? i + 1 : -1, i >= cols ? i - cols : -1, i + cols < m.length ? i + cols : -1];
+for (const j of nb) {
+if (j >= 0 && m[j] && !seen[j]) {
+seen[j] = 1;
+stack[top++] = j;
+}
+}
+}
+if (comp.length < min) for (const i of comp) m[i] = 0;
+}
+return m;
 }
 export function dilateMask(m, cols, rows) {
 const out = new Uint8Array(m.length);
