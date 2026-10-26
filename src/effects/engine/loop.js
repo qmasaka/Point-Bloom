@@ -384,7 +384,7 @@ export class LoopPart {
 			u.uSliceC.value.set(sl.color && sl.color !== 'auto' && sl.color !== 'model' ? sl.color : pal.c[2]);
 
 			// Look P2 & DoF
-			u.uLookP2.value.set(look.sizeNoise || 0, look.sizeAudio || 0, 0, 0);
+			u.uLookP2.value.set(0, 0, 0, 0); // размер по шуму и по звуку убраны из настроек: старые сохранённые значения не действуют
 			u.uShade.value = look.shade || 0;
 			const gm = GLYPH_SETS[look.glyph] ? look.glyph : 'off';
 			if (gm !== this._glyphMode) {

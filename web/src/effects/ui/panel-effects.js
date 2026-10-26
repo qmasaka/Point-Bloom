@@ -1055,8 +1055,6 @@ const perfHint = h('div', { class: 'field-hint' }, 'Авто-качество с
 const hudSw = switchRow('Индикаторы уровней звука', { value: st.look.hud, onChange: (v) => { st.look.hud = v; save(); } });
 const hudSpec = switchRow('Спектр внизу', { value: st.look.hudSpectrum, onChange: (v) => { st.look.hudSpectrum = v; save(); } });
 const attSw = switchRow('Мельче вдали', { value: pset.attenuate, onChange: (v) => { pset.attenuate = v; app.saveSettings(); } });
-const sizeNoise = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeNoise || 0, digits: 2, onInput: (v) => { st.look.sizeNoise = v; }, onChange: save });
-const sizeAudio = slider({ min: 0, max: 2, step: 0.05, value: st.look.sizeAudio || 0, digits: 2, onInput: (v) => { st.look.sizeAudio = v; }, onChange: save });
 const shade = slider({ min: 0, max: 1, step: 0.05, value: st.look.shade || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.shade = v; }, onChange: save });
 const glow = slider({ min: 0, max: 1, step: 0.05, value: st.look.glow, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.glow = v; }, onChange: save });
 const bright = slider({ min: 0, max: 2, step: 0.05, value: st.look.bright, digits: 2, onInput: (v) => { st.look.bright = v; }, onChange: save });
@@ -1083,7 +1081,7 @@ onClick: () => toggleAnim(true)
 });
 const fovFx = slider({ noNorm: true, min: 10, max: 100, step: 1, value: rset.fov, digits: 0, unit: '°', onInput: (v) => { rset.fov = v; app.nav.applyCamera(); }, onChange: () => app.saveSettings() });
 const fpsFx = switchRow('Показывать FPS', { value: rset.fps, onChange: (v) => { rset.fps = v; app.ui.refreshFps(); app.saveSettings(); } });
-const secLookPts = section('Цвет и форма точек', { key: 'fx-look-pts' }, palettes, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Цвет точек', colorBy.el), solidRow, field('Размер по шуму', sizeNoise.el), field('Размер по звуку', sizeAudio.el), field('Точки', blend.el, { wide: true }));
+const secLookPts = section('Цвет и форма точек', { key: 'fx-look-pts' }, palettes, field('Цвет точек', colorBy.el), solidRow, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Точки', blend.el, { wide: true }));
 const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el));
 const secLookCam = section('Камера', { key: 'fx-look-cam' }, field('Поле зрения', fovFx.el), dofOn.el, dofBody, rotate.el, rotSpeedRow);
 const secLookShow = section('Отображение', { key: 'fx-look-show' }, hudSw.el, hudSpec.el);
@@ -3076,8 +3074,6 @@ solidPick.set(pset.solidColor);
 solidRow.hidden = st.look.colorBy !== 'solid';
 shapeBtns.forEach((b, k) => b.setAttribute('aria-checked', String((st.look.glyph && st.look.glyph !== 'off') ? k === st.look.glyph : k === pset.shape)));
 shade.set(st.look.shade || 0);
-sizeNoise.set(st.look.sizeNoise || 0);
-sizeAudio.set(st.look.sizeAudio || 0);
 glow.set(st.look.glow);
 bright.set(st.look.bright);
 bloom.set(st.look.bloom || 0);

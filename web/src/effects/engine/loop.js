@@ -341,7 +341,7 @@ u.uSlice.value.set(1, clamp((c + 1.2) / 2.4, 0, 1), Math.max(0.03, sl.width), ax
 u.uSliceM.value.set(2, sl.lift, sl.color === 'model' ? 1 : 0, 0);
 }
 u.uSliceC.value.set(sl.color && sl.color !== 'auto' && sl.color !== 'model' ? sl.color : pal.c[2]);
-u.uLookP2.value.set(look.sizeNoise || 0, look.sizeAudio || 0, 0, 0);
+u.uLookP2.value.set(0, 0, 0, 0);
 u.uShade.value = look.shade || 0;
 const gm = GLYPH_SETS[look.glyph] ? look.glyph : 'off';
 if (gm !== this._glyphMode) {
