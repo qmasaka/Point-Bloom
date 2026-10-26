@@ -203,9 +203,22 @@ void main() {
 		// фон в шлейфе и приглушённый фон текущего кадра тусклее выделенного
 #ifdef HERO
 		if (frBg > 0.5 && uFr8.x > 1.5) frCol *= 0.3;
+		vec2 frGs = uHero.xy;
+		float frEw = uFrE.y * uHero.x / max(uFr2.x, 1.0);
+		float frEk = uFrE.w;
 #else
 		if (frBg > 0.5) frCol *= 0.4;
+		vec2 frGs = uFr2.xy;
+		float frEw = uFrE.y;
+		float frEk = uFrE.x;
 #endif
+		// рамки кадров: точки у края листа светятся, и кадры читаются отдельными пластинами (у шлейфа движения рамок нет)
+		if (frEk > 0.001 && uFr8.x < 0.5) {
+			vec2 ce = min(fcell, frGs - 1.0 - fcell);
+			float edge = 1.0 - smoothstep(frEw * 0.5, frEw + 0.5, min(ce.x, ce.y));
+			vec3 ecol = uFrE.z > 0.5 ? vec3(1.0) : uP2;
+			frCol = mix(frCol, ecol * (0.9 + 0.5 * sh.x), edge * min(frEk, 1.0));
+		}
 		frLift = sh.y;
 		// «Объём по глубине» на раскадровке: у каждого кадра своя карта глубины в альфа-канале текстуры кадров
 		if (uDepth.x > 0.001) {

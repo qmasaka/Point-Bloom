@@ -20,7 +20,7 @@ export class FramesPart {
 
 	/** Номера раскладок для шейдера */
 	_layoutId(name) {
-		return Math.max(0, ['stack', 'wall', 'film', 'tunnel', 'chrono'].indexOf(name));
+		return Math.max(0, ['stack', 'wall', 'film', 'tunnel', 'chrono', 'fan'].indexOf(name));
 	}
 
 	/** Снимок кадра видео в RGBA нужного размера: пишет прямо в out (кусок общего массива), лишних копий нет */
@@ -359,8 +359,11 @@ export class FramesPart {
 			nav.animateTo({ yaw: 0, pitch: -0.06, distance: nav.fitDistance(Math.hypot(W / 2, H / 2) + len * 0.3), target: new THREE.Vector3(sx * len * 0.25, sy * len * 0.25, 0) }, 450);
 			return;
 		}
-		const R = { stack: Math.hypot(W / 2, H / 2, F.depth / 2), tunnel: Math.hypot(W / 2, H / 2, F.depth / 2), wall: 1.45, film: W * 1.35 }[F.layout] ?? 2;
-		nav.animateTo({ distance: nav.fitDistance(R * 0.85), target: new THREE.Vector3(0, 0, 0) }, 450);
+		const R = { stack: Math.hypot(W / 2, H / 2, F.depth / 2), tunnel: Math.hypot(W / 2, H / 2, F.depth / 2), wall: 1.45, film: W * 1.35, fan: 2.7 }[F.layout] ?? 2;
+		// ракурс под раскладку: стопку и туннель видно в три четверти (спереди глубины не видно), стену и плёнку прямо, барабан веера чуть сверху
+		const view = { stack: { yaw: 0.55, pitch: -0.24 }, tunnel: { yaw: 0.35, pitch: -0.14 }, wall: { yaw: 0, pitch: 0 }, film: { yaw: 0, pitch: -0.05 }, fan: { yaw: 0, pitch: -0.22 } }[F.layout] || {};
+		const target = F.layout === 'fan' ? new THREE.Vector3(0, 0, -0.7) : new THREE.Vector3(0, 0, 0);
+		nav.animateTo({ ...view, distance: nav.fitDistance(R * 0.85), target }, 450);
 	}
 
 	/** Поменялась раскладка или глубина: шейдер плавно перестраивает листы, а положения для переходов обновляются в фоне */
@@ -396,7 +399,7 @@ export class FramesPart {
 		const F = this._frP();
 		// настройки из прошлых версий: исчезнувшие раскладки и режимы заменяем на ближайшие
 		if (!F.chrono) {
-			if (!['stack', 'wall', 'film', 'tunnel'].includes(F.layout)) F.layout = 'stack';
+			if (!['stack', 'wall', 'film', 'tunnel', 'fan'].includes(F.layout)) F.layout = 'stack';
 			if (!['off', 'peel', 'projector', 'trail'].includes(F.showMode)) F.showMode = 'off';
 			F.follow = 'off';
 		}
@@ -449,6 +452,8 @@ export class FramesPart {
 		u.uFr5.value.z = { show: 0, dim: 1, hide: 2 }[F.future] ?? 1;
 		u.uFr5.value.w = (fr.gain || 1) * (F.gain ?? 1);
 		u.uFr7.value.w = F.dkeep ?? 0.5;
+		// рамки кадров: у остальных кадров и отдельно у текущего
+		u.uFrE.value.set(F.edge ?? 0, F.edgeW ?? 1.5, F.edgeCol === 'white' ? 1 : 0, F.curEdge ?? 0);
 		this._chronoUniforms(F, fr);
 		this._ensureHero(F, fr);
 		this._framesFollow(F, fr);

@@ -105,6 +105,7 @@ struct Frame {
 	uFr7: vec4f,
 	uFr8: vec4f,
 	uFr9: vec4f,
+	uFrE: vec4f,
 	uShoot: vec4f,
 	uShootP: vec4f,
 	uShootD: vec4f,
@@ -527,6 +528,14 @@ fn frPlace(lay_in: f32, k_in: f32, n_in: f32, u_in: f32, v_in: f32, nrm: ptr<fun
 	}
 	var ad: f32 = (k - fr.uFr4.x);
 	ad = 0.0;
+	if ((lay > 4.5)) {
+		var R: f32 = 2.4;
+		var sc: f32 = mix(1.0, 0.7, min(abs(ad), 1.0));
+		var da: f32 = min(((W * 0.6) / R), (2.2 / max(1.0, (((n - 1.0)) * 0.5))));
+		var a: f32 = (sign(ad) * (((min(abs(ad), 1.0) * (((W * 0.86) / R))) + (max((abs(ad) - 1.0), 0.0) * da))));
+		(*nrm) = vec3f(sin(a), 0.0, cos(a));
+		return ((vec3f((R * sin(a)), 0.0, ((R * cos(a)) - R)) + (((vec3f(cos(a), 0.0, -sin(a)) * u) * W) * sc)) + vec3f(0.0, ((v * H) * sc), 0.0));
+	}
 	if ((lay > 3.5)) {
 		var age: f32 = max(0.0, -ad);
 		return vec3f(((u * W) + (fr.uFr8.y * age)), ((v * H) + (fr.uFr8.z * age)), (-fr.uFr9.z * age));
@@ -593,7 +602,7 @@ fn frShow(k_in: f32, tcol: ptr<function, vec3f>) -> vec4f {
 		if ((d < -0.5)) {
 			w *= (0.45 + (0.55 / ((1.0 + (0.2 * (-d))))));
 		}
-		if ((((d > 0.5) && (fr.uFr6.y < 0.5)) && (abs((fr.uFr3.y - 2.0)) > 0.5))) {
+		if (((((d > 0.5) && (fr.uFr6.y < 0.5)) && (abs((fr.uFr3.y - 2.0)) > 0.5)) && (abs((fr.uFr3.y - 5.0)) > 0.5))) {
 			w *= select(select(1.0, 0.4, (fr.uFr5.z > 0.5)), 0.0, (fr.uFr5.z > 1.5));
 		}
 	} else if ((mode == 1)) {
@@ -1648,6 +1657,15 @@ fn main_() {
 		frCol = ((((fc * ((1.0 - sh.z))) + ((tcol * ((0.35 + (l * 1.6)))) * sh.z))) * sh.x);
 		if (((frBg > 0.5) && (fr.uFr8.x > 1.5))) {
 			frCol *= vec3f(0.3);
+		}
+		var frGs: vec2f = fr.uHero.xy;
+		var frEw: f32 = ((fr.uFrE.y * fr.uHero.x) / max(fr.uFr2.x, 1.0));
+		var frEk: f32 = fr.uFrE.w;
+		if (((frEk > 0.001) && (fr.uFr8.x < 0.5))) {
+			var ce: vec2f = min(fcell, ((frGs - 1.0) - fcell));
+			var edge: f32 = (1.0 - smoothstep((frEw * 0.5), (frEw + 0.5), min(ce.x, ce.y)));
+			var ecol: vec3f = select(fr.uP2, vec3f(1.0), (fr.uFrE.z > 0.5));
+			frCol = mix(frCol, (ecol * ((0.9 + (0.5 * sh.x)))), (edge * min(frEk, 1.0)));
 		}
 		frLift = sh.y;
 		if ((fr.uDepth.x > 0.001)) {

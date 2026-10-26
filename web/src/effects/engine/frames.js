@@ -11,7 +11,7 @@ get videoReady() {
 return this.videoLoaded && this.pm.el.readyState >= 2;
 }
 _layoutId(name) {
-return Math.max(0, ['stack', 'wall', 'film', 'tunnel', 'chrono'].indexOf(name));
+return Math.max(0, ['stack', 'wall', 'film', 'tunnel', 'chrono', 'fan'].indexOf(name));
 }
 _frameTaker(cols, rows, el) {
 const cv = document.createElement('canvas');
@@ -306,8 +306,10 @@ const sy = C.dir === 'up' ? -1 : 0;
 nav.animateTo({ yaw: 0, pitch: -0.06, distance: nav.fitDistance(Math.hypot(W / 2, H / 2) + len * 0.3), target: new THREE.Vector3(sx * len * 0.25, sy * len * 0.25, 0) }, 450);
 return;
 }
-const R = { stack: Math.hypot(W / 2, H / 2, F.depth / 2), tunnel: Math.hypot(W / 2, H / 2, F.depth / 2), wall: 1.45, film: W * 1.35 }[F.layout] ?? 2;
-nav.animateTo({ distance: nav.fitDistance(R * 0.85), target: new THREE.Vector3(0, 0, 0) }, 450);
+const R = { stack: Math.hypot(W / 2, H / 2, F.depth / 2), tunnel: Math.hypot(W / 2, H / 2, F.depth / 2), wall: 1.45, film: W * 1.35, fan: 2.7 }[F.layout] ?? 2;
+const view = { stack: { yaw: 0.55, pitch: -0.24 }, tunnel: { yaw: 0.35, pitch: -0.14 }, wall: { yaw: 0, pitch: 0 }, film: { yaw: 0, pitch: -0.05 }, fan: { yaw: 0, pitch: -0.22 } }[F.layout] || {};
+const target = F.layout === 'fan' ? new THREE.Vector3(0, 0, -0.7) : new THREE.Vector3(0, 0, 0);
+nav.animateTo({ ...view, distance: nav.fitDistance(R * 0.85), target }, 450);
 }
 relayoutFrames() {
 const F = this._frP();
@@ -338,7 +340,7 @@ _framesTick() {
 this._chronoExclusive();
 const F = this._frP();
 if (!F.chrono) {
-if (!['stack', 'wall', 'film', 'tunnel'].includes(F.layout)) F.layout = 'stack';
+if (!['stack', 'wall', 'film', 'tunnel', 'fan'].includes(F.layout)) F.layout = 'stack';
 if (!['off', 'peel', 'projector', 'trail'].includes(F.showMode)) F.showMode = 'off';
 F.follow = 'off';
 }
@@ -384,6 +386,7 @@ u.uFr5.value.y = 0;
 u.uFr5.value.z = { show: 0, dim: 1, hide: 2 }[F.future] ?? 1;
 u.uFr5.value.w = (fr.gain || 1) * (F.gain ?? 1);
 u.uFr7.value.w = F.dkeep ?? 0.5;
+u.uFrE.value.set(F.edge ?? 0, F.edgeW ?? 1.5, F.edgeCol === 'white' ? 1 : 0, F.curEdge ?? 0);
 this._chronoUniforms(F, fr);
 this._ensureHero(F, fr);
 this._framesFollow(F, fr);
