@@ -200,6 +200,8 @@ var<private> gScopeG: f32 = 0.0;
 var<private> gScopeT: f32 = 0.0;
 var<private> gScopeD: f32 = 0.0;
 var<private> gDepth: f32 = 0.5;
+var<private> gMorphLT: f32 = 1.0;
+var<private> gDisK: f32 = 0.0;
 var<private> gDepthG: f32 = 0.0;
 var<private> gNormal: vec3f = vec3f(0.0);
 var<private> gLum: f32 = 0.5;
@@ -761,14 +763,15 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 	var t: f32 = (fr.uTime - fr.uTOff);
 	var m: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));
 	(*base) = aTarget;
+	gMorphLT = select(1.0, morphLocal(aOrigin, aTarget, aIdx), (fr.uMorph < 0.9999));
 	if (((fr.uFr.x > 0.5) && (fr.uMorph > 0.9999))) {
 		var fnrm: vec3f;
 		var fk: f32;
 		var fcell: vec2f;
 		(*base) = frBlockPos(aIdx, &fnrm, &fk, &fcell);
 	}
-	if ((fr.uMorph < 0.9999)) {
-		var lt: f32 = morphLocal(aOrigin, aTarget, aIdx);
+	if (((fr.uMorphO.w > 0.5) && (fr.uMorph < 0.9999))) {
+		var lt: f32 = gMorphLT;
 		var e: f32 = morphEase(lt);
 		var sc: f32 = fr.uMorphS.y;
 		var sty: i32 = i32((fr.uMorphS.x + 0.5));
@@ -1006,9 +1009,6 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			(*base) = (fr.uCen + vec3f(((q.x * cos(ra)) - (q.z * sin(ra))), q.y, ((q.x * sin(ra)) + (q.z * cos(ra)))));
 		}
 	}
-	if (((fr.uMorph < 0.9999) && (fr.uMorphO.w > 0.001))) {
-		(*base).z += ((((((gDepth - 0.5)) * 2.0) * fr.uMorphO.w) * sin((morphEase(morphLocal(aOrigin, aTarget, aIdx)) * 3.1415926535))) * ((0.6 + (0.4 * hash11((aIdx * 4.1))))));
-	}
 	if ((fr.uDepth.x > 0.001)) {
 		(*base) = depthShape((*base));
 	}
@@ -1140,6 +1140,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		pos += ((rad * sliceK((*base))) * fr.uSliceM.y);
 	}
 	var dk: f32 = disK((*base), aIdx);
+	gDisK = dk;
 	if ((dk > 0.0)) {
 		var sc: f32 = fr.uDisQ.y;
 		var ds: f32 = fr.uDisP.x;
@@ -1722,7 +1723,7 @@ fn main_() {
 	if ((fr.uFr.x > 0.5)) {
 		pos += ((frNrm * frLift) * 0.7);
 	}
-	var dkv: f32 = disK(base, aIdx);
+	var dkv: f32 = gDisK;
 	vDk = max(max(dkv, gDrop), (1.0 - gGrow));
 	var t: f32 = (fr.uTime - fr.uTOff);
 	var disp: f32 = clamp((length((pos - base)) * 1.5), 0.0, 1.0);
@@ -1735,7 +1736,7 @@ fn main_() {
 		k = fract(((aIdx * 3.0) + (t * 0.03)));
 	}
 	var col: vec3f = select(mix(fr.uP1, fr.uP2, (((k - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (k * 2.0)), (k < 0.5));
-	var ltC: f32 = select(1.0, morphLocal(aOrigin, aTarget, aIdx), (fr.uMorph < 0.9999));
+	var ltC: f32 = select(1.0, gMorphLT, (fr.uMorph < 0.9999));
 	var eC: f32 = select(1.0, (select(morphEase(ltC), smoothstep(0.5, 0.9, ltC), (i32((fr.uMorphS.x + 0.5)) == 2))), (fr.uMorph < 0.9999));
 	var colM: vec3f = mix(aColor, aColorB, eC);
 	if ((fr.uFr.x > 0.5)) {
@@ -1935,10 +1936,10 @@ fn main_() {
 	}
 	var mkm: f32 = 0.0;
 	if (((fr.uMorph < 0.9999) && (fr.uMorphO.z > 0.001))) {
-		mkm = (sin((morphLocal(aOrigin, aTarget, aIdx) * 3.1415926535)) * fr.uMorphO.z);
+		mkm = (sin((gMorphLT * 3.1415926535)) * fr.uMorphO.z);
 		vColor += (((vColor * mkm) * 1.1) + ((fr.uP2 * mkm) * 0.25));
 	}
-	var mfs: f32 = select(1.0, mix(1.0, fr.uMorphD.w, sin((morphLocal(aOrigin, aTarget, aIdx) * 3.1415926535))), (fr.uMorph < 0.9999));
+	var mfs: f32 = select(1.0, mix(1.0, fr.uMorphD.w, sin((gMorphLT * 3.1415926535))), (fr.uMorph < 0.9999));
 	if (((fr.uSettle >= 0.0) && (fr.uSettle < 1.0))) {
 		var yS: f32 = clamp((((base.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
 		var dd: f32 = (((yS - (((fr.uSettle * 1.35) - 0.15)))) / 0.14);
@@ -2134,7 +2135,7 @@ fn main_() {
 	s *= ((1.0 + (coc * 2.4)));
 	s *= (1.0 - (0.85 * gHypF));
 	s *= (((((1.0 + (gScopeT * fr.uScopeQ.y)) + ((gScopeG * fr.uScopeQ.z) * 2.5)) + (gDepthG * 0.8))) * ((1.0 - gScopeD)));
-	s *= select(0.73, (3.8 / max(-mv.z, 0.4)), (fr.uAtt > 0.5));
+	s *= select(0.73, ((0.73 * fr.uAtt) / max(-mv.z, (fr.uAtt * 0.1))), (fr.uAtt > 0.001));
 	gl_PointSize = clamp(s, 1.0, 95.0);
 	if ((((((gScopeD > 0.97) || (dkv > 0.97)) || (gDrop > 0.5)) || (gGrow < 0.03)) || (gHypF > 0.97))) {
 		gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);

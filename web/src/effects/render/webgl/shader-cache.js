@@ -23,7 +23,8 @@ cache.set(ck, v);
 return v;
 }
 _fxCheck() {
-if (!this.shared || !this.points || this._fxBusy || this._glDormant) return;
+if (!this.shared || !this.points || this._glDormant) return;
+if (this._fxBusy && !(this._fxBusy === 'drop' && !this._fxCovered(true))) return;
 const cur = this._fxCur || (this._fxCur = new Set());
 const now = performance.now();
 const seen = this._fxSeen || (this._fxSeen = new Map());
@@ -45,8 +46,8 @@ if (now - this._fxDeb < 250) return;
 this._fxDeb = 0;
 this._fxApply(add || new Set(), add ? null : stale);
 }
-_fxCovered() {
-if (!this.shared || this._fxBusy) return false;
+_fxCovered(evenBusy = false) {
+if (!this.shared || (this._fxBusy && !evenBusy)) return false;
 const cur = this._fxCur;
 if (!cur) return false;
 for (const [key, [name, comp, thr]] of FX_GUARDS) {
@@ -55,16 +56,21 @@ if (this.shared[name]?.value?.[comp] > thr * 0.5 && !cur.has(key)) return false;
 return true;
 }
 async _fxApply(add, drop) {
-this._fxBusy = true;
+this._fxBusy = add.size ? 'add' : 'drop';
+const gen = (this._fxGen = (this._fxGen || 0) + 1);
 const next = new Set([...(this._fxCur || [])].filter((k) => !(drop && drop.has(k))));
 for (const k of add) next.add(k);
 try {
 await Promise.all(this._warmKinds().map((k) => this._warmKind(k, next)));
 } catch (e) {
 }
+if (gen !== this._fxGen) return;
 this._fxCur = next;
 this._fxSwap();
 this._fxBusy = false;
+}
+fxPreparing() {
+return !this._glDormant && !!this.shared && !!this._fxCur && !this._fxCovered(true);
 }
 _postOn() {
 const L = this.state.layers;

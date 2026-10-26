@@ -64,6 +64,7 @@ if (this.state.layers.slice) this.state.layers.slice.color = 'model';
 this.state._m4 = 1;
 }
 if (this.state.look.colorBy === 'height' || this.state.look.colorBy === 'index') this.state.look.colorBy = 'disp';
+if (this.state.look.palette === 'brand') this.state.look.palette = 'cyber';
 this.ctx = null;
 this.analyser = null;
 this.bus = null;

@@ -1118,6 +1118,9 @@ en: {
 'Небольшой файл, хорошо для соцсетей': 'Small file, good for social media',
 'Чисто и без ряби, файл средний': 'Clean with no shimmer, medium file',
 'Почти без потерь, файл очень большой': 'Nearly lossless, very large file',
+'Готовлю эффект…': 'Preparing the effect…',
+'Палитра выше': 'Palette above',
+'Добавлено в список форм: перейти к нему можно во вкладке «Форма»': 'Added to the forms list: you can switch to it in the Shape tab',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -2238,6 +2241,9 @@ uk: {
 'Небольшой файл, хорошо для соцсетей': 'Невеликий файл, добре для соцмереж',
 'Чисто и без ряби, файл средний': 'Чисто й без брижів, файл середній',
 'Почти без потерь, файл очень большой': 'Майже без втрат, файл дуже великий',
+'Готовлю эффект…': 'Готую ефект…',
+'Палитра выше': 'Палітра вище',
+'Добавлено в список форм: перейти к нему можно во вкладке «Форма»': 'Додано до списку форм: перейти до нього можна у вкладці «Форма»',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -3358,6 +3364,9 @@ es: {
 'Небольшой файл, хорошо для соцсетей': 'Archivo pequeño, bueno para redes sociales',
 'Чисто и без ряби, файл средний': 'Limpio y sin parpadeo, archivo mediano',
 'Почти без потерь, файл очень большой': 'Casi sin pérdidas, archivo muy grande',
+'Готовлю эффект…': 'Preparando el efecto…',
+'Палитра выше': 'Paleta de arriba',
+'Добавлено в список форм: перейти к нему можно во вкладке «Форма»': 'Añadido a la lista de formas: puedes pasar a él en la pestaña Forma',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -4478,5 +4487,8 @@ de: {
 'Небольшой файл, хорошо для соцсетей': 'Kleine Datei, gut für soziale Netzwerke',
 'Чисто и без ряби, файл средний': 'Sauber ohne Flimmern, mittlere Datei',
 'Почти без потерь, файл очень большой': 'Nahezu verlustfrei, sehr große Datei',
+'Готовлю эффект…': 'Effekt wird vorbereitet…',
+'Палитра выше': 'Palette oben',
+'Добавлено в список форм: перейти к нему можно во вкладке «Форма»': 'Zur Formenliste hinzugefügt: in der Registerkarte „Form“ kannst du dazu wechseln',
 },
 };

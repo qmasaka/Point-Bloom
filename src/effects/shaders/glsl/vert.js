@@ -269,7 +269,7 @@ void main() {
 	pos += aSculpt;
 	if (gScopeG > 0.01) pos += (vec3(hash11(aIdx * 13.1), hash11(aIdx * 7.7), hash11(aIdx * 3.3)) - 0.5) * gScopeG * uScopeQ.w * 0.4;
 	if (uFr.x > 0.5) pos += frNrm * frLift * 0.7;
-	float dkv = disK(base, aIdx);
+	float dkv = gDisK;
 	vDk = max(max(dkv, gDrop), 1.0 - gGrow);
 	float t = uTime - uTOff;
 	float disp = clamp(length(pos - base) * 1.5, 0.0, 1.0);
@@ -279,7 +279,7 @@ void main() {
 	else k = fract(aIdx * 3.0 + t * 0.03);
 	vec3 col = k < 0.5 ? mix(uP0, uP1, k * 2.0) : mix(uP1, uP2, (k - 0.5) * 2.0);
 	// цвет и нормаль плавно перетекают вместе с формой
-	float ltC = uMorph < 0.9999 ? morphLocal(aOrigin, aTarget, aIdx) : 1.0;
+	float ltC = uMorph < 0.9999 ? gMorphLT : 1.0;
 	float eC = uMorph < 0.9999 ? (int(uMorphS.x + 0.5) == 2 ? smoothstep(0.5, 0.9, ltC) : morphEase(ltC)) : 1.0;
 	vec3 colM = mix(aColor, aColorB, eC);
 	if (uFr.x > 0.5) colM = frCol;
@@ -464,11 +464,11 @@ void main() {
 	// вспышка в момент перехода: точки в пути ярче и крупнее
 	float mkm = 0.0;
 	if (uMorph < 0.9999 && uMorphO.z > 0.001) {
-		mkm = sin(morphLocal(aOrigin, aTarget, aIdx) * PI) * uMorphO.z;
+		mkm = sin(gMorphLT * PI) * uMorphO.z;
 		vColor += vColor * mkm * 1.1 + uP2 * mkm * 0.25;
 	}
 	// размер точек в пути: в полёте они крупнее или мельче, на месте прежние
-	float mfs = uMorph < 0.9999 ? mix(1.0, uMorphD.w, sin(morphLocal(aOrigin, aTarget, aIdx) * PI)) : 1.0;
+	float mfs = uMorph < 0.9999 ? mix(1.0, uMorphD.w, sin(gMorphLT * PI)) : 1.0;
 	// после сборки по форме снизу вверх пробегает мягкая волна света и лёгкий «вздох», как будто модель села на место
 	if (uSettle >= 0.0 && uSettle < 1.0) {
 		float yS = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
@@ -707,7 +707,8 @@ void main() {
 	s *= (1.0 + coc * 2.4);
 	s *= 1.0 - 0.85 * gHypF;
 	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD);
-	s *= uAtt > 0.5 ? 3.8 / max(-mv.z, 0.4) : 0.73;
+	// «Мельче вдали»: uAtt это расстояние камеры до точки, вокруг которой она вращается. Там точки своего обычного размера, дальше мельче, ближе крупнее
+	s *= uAtt > 0.001 ? 0.73 * uAtt / max(-mv.z, uAtt * 0.1) : 0.73;
 #ifdef SHADOW
 	s *= mix(1.0, 2.8, uShd.y);
 #endif

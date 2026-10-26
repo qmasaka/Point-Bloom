@@ -14,7 +14,7 @@ look: {
 bg: '',
 grid: false,
 vignette: true,
-palette: 'brand',
+palette: 'cyber',
 colorBy: 'disp',
 size: 3.5,
 glow: 0.8,

@@ -33,7 +33,9 @@ export class ShaderCachePart {
 	 * (а он собирается десятки секунд и может убить видеопроцесс браузера).
 	 */
 	_fxCheck() {
-		if (!this.shared || !this.points || this._fxBusy || this._glDormant) return;
+		if (!this.shared || !this.points || this._glDormant) return;
+		// идёт сборка с новым эффектом: ждём её. Идёт только уборка давно выключенных эффектов: новый эффект её не ждёт (иначе он появлялся бы на секунды позже)
+		if (this._fxBusy && !(this._fxBusy === 'drop' && !this._fxCovered(true))) return;
 		const cur = this._fxCur || (this._fxCur = new Set());
 		const now = performance.now();
 		const seen = this._fxSeen || (this._fxSeen = new Map()); // когда эффект был включён в последний раз
@@ -59,8 +61,8 @@ export class ShaderCachePart {
 	}
 
 	/** Все ли включённые сейчас эффекты уже есть в собранном шейдере (иначе картинка WebGL отстаёт от настроек) */
-	_fxCovered() {
-		if (!this.shared || this._fxBusy) return false;
+	_fxCovered(evenBusy = false) {
+		if (!this.shared || (this._fxBusy && !evenBusy)) return false;
 		const cur = this._fxCur;
 		if (!cur) return false;
 		for (const [key, [name, comp, thr]] of FX_GUARDS) {
@@ -70,7 +72,9 @@ export class ShaderCachePart {
 	}
 
 	async _fxApply(add, drop) {
-		this._fxBusy = true;
+		// _fxBusy: 'add' (собирается шейдер с новым эффектом) или 'drop' (только уборка); у каждой сборки свой номер, и подставляется только последняя
+		this._fxBusy = add.size ? 'add' : 'drop';
+		const gen = (this._fxGen = (this._fxGen || 0) + 1);
 		const next = new Set([...(this._fxCur || [])].filter((k) => !(drop && drop.has(k))));
 		for (const k of add) next.add(k);
 		try {
@@ -78,9 +82,15 @@ export class ShaderCachePart {
 		} catch (e) {
 			/* если фоновая сборка не удалась, шейдер соберётся при подстановке */
 		}
+		if (gen !== this._fxGen) return;
 		this._fxCur = next;
 		this._fxSwap();
 		this._fxBusy = false;
+	}
+
+	/** Включённый эффект ещё не попал в шейдер (WebGL собирает его в фоне): панель показывает, что он готовится */
+	fxPreparing() {
+		return !this._glDormant && !!this.shared && !!this._fxCur && !this._fxCovered(true);
 	}
 
 	// ------------------------------------------------------------ фоновая сборка шейдеров

@@ -119,7 +119,9 @@ export class LoopPart {
 				const ms = this._mtStyle;
 				const mcf = ms ? { ...st.morphCfg, style: MORPH_STYLES[ms.idx].id, scatter: ms.scatter, stagger: ms.stagger, turns: ms.turns, sort: ms.sort, ease: ms.ease, glow: ms.glow } : st.morphCfg;
 				u.uMorphS.value.set(Math.max(0, MORPH_STYLES.findIndex((x) => x.id === mcf.style)), mcf.scatter, mcf.stagger, mcf.turns);
-				u.uMorphO.value.set(Math.max(0, MORPH_SORTS.findIndex((x) => x[0] === mcf.sort)), Math.max(0, MORPH_EASES.findIndex((x) => x[0] === mcf.ease)), mcf.glow, 0);
+				// w: морфинг возможен (больше одной формы или переход уже идёт). Пока нет, WebGL держит шейдер без кода морфинга: он собирается в разы быстрее,
+				// а вариант с морфингом собирается в фоне, как только появилась вторая форма
+				u.uMorphO.value.set(Math.max(0, MORPH_SORTS.findIndex((x) => x[0] === mcf.sort)), Math.max(0, MORPH_EASES.findIndex((x) => x[0] === mcf.ease)), mcf.glow, (this.playlist?.length || 0) > 1 || this.morphing ? 1 : 0);
 				u.uMorphD.value.set(this._mm?.out ? 1 : 0, this._mm?.in ? 1 : 0, Math.round(mcf.spin || 0), mcf.fsize ?? 1);
 			}
 			// вид точек общий с вкладкой «Точки» редактора: форма, размер, цвет, затухание вдали
@@ -127,7 +129,7 @@ export class LoopPart {
 			u.uSize.value = pset.size;
 			u.uShape.value = this._eff(L.voxel) > 0.25 ? 0 : Math.max(0, ['square', 'circle', 'sphere', 'ring', 'diamond', 'plus'].indexOf(pset.shape));
 			u.uSolid.value.set(pset.solidColor);
-			u.uAtt.value = pset.attenuate ? 1 : 0;
+			u.uAtt.value = pset.attenuate ? Math.max(0.05, this.app.nav.distance || 5) : 0;
 			u.uPR.value = this.app.viewport.renderer.getPixelRatio();
 			u.uBeat.value = this.levels.beat;
 			// чем плотнее точки ложатся на пиксели (мелкий экран, близкая камера), тем больше они выгорают: приглушаем

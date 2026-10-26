@@ -1077,7 +1077,8 @@ export function createEffectsPanel(app, root, engine) {
 		palettes.append(b);
 	}
 	// вид точек общий с вкладкой «Точки»: одни и те же настройки, без дублей
-	const colorBy = select({ options: COLOR_BY_UI.map((c) => ({ value: c.id, label: c.label, sub: c.title })), value: st.look.colorBy, onChange: (v) => { engine.setColorBy(v); } });
+	// палитра выбирается плашками выше; пока она действует, в списке видна подсказка вместо пункта
+	const colorBy = select({ options: COLOR_BY_UI.map((c) => ({ value: c.id, label: c.label, sub: c.title })), value: st.look.colorBy, placeholder: 'Палитра выше', onChange: (v) => { engine.setColorBy(v); } });
 	const shapeTiles = h('div', { class: 'shape-grid shape-row', role: 'radiogroup', 'aria-label': 'Форма точек' });
 	const shapeBtns = new Map();
 	for (const sh of POINT_SHAPE_LIST) {
@@ -3177,6 +3178,16 @@ export function createEffectsPanel(app, root, engine) {
 
 	const recOpts = recDefaults();
 	const saveRecOpts = () => saveRecDefaults(recOpts);
+
+	// включённый эффект ещё готовится (WebGL собирает шейдер в фоне): плашка появляется, если ждать дольше трети секунды
+	const prepChip = h('div', { class: 'fx-prep', role: 'status' }, 'Готовлю эффект…');
+	document.getElementById('viewport').append(prepChip);
+	let prepT = 0;
+	setInterval(() => {
+		const busy = engine.active && engine.fxPreparing?.();
+		prepT = busy ? prepT || performance.now() : 0;
+		prepChip.classList.toggle('is-on', !!busy && performance.now() - prepT > 330);
+	}, 120);
 
 	const recPop = h('div', { class: 'fx-rec-pop popover', hidden: true });
 	document.getElementById('viewport').append(recPop);

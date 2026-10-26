@@ -1012,7 +1012,7 @@ save();
 palBtns.set(p.id, b);
 palettes.append(b);
 }
-const colorBy = select({ options: COLOR_BY_UI.map((c) => ({ value: c.id, label: c.label, sub: c.title })), value: st.look.colorBy, onChange: (v) => { engine.setColorBy(v); } });
+const colorBy = select({ options: COLOR_BY_UI.map((c) => ({ value: c.id, label: c.label, sub: c.title })), value: st.look.colorBy, placeholder: 'Палитра выше', onChange: (v) => { engine.setColorBy(v); } });
 const shapeTiles = h('div', { class: 'shape-grid shape-row', role: 'radiogroup', 'aria-label': 'Форма точек' });
 const shapeBtns = new Map();
 for (const sh of POINT_SHAPE_LIST) {
@@ -2922,6 +2922,14 @@ const REC_RES = [
 ];
 const recOpts = recDefaults();
 const saveRecOpts = () => saveRecDefaults(recOpts);
+const prepChip = h('div', { class: 'fx-prep', role: 'status' }, 'Готовлю эффект…');
+document.getElementById('viewport').append(prepChip);
+let prepT = 0;
+setInterval(() => {
+const busy = engine.active && engine.fxPreparing?.();
+prepT = busy ? prepT || performance.now() : 0;
+prepChip.classList.toggle('is-on', !!busy && performance.now() - prepT > 330);
+}, 120);
 const recPop = h('div', { class: 'fx-rec-pop popover', hidden: true });
 document.getElementById('viewport').append(recPop);
 const recResSel = select({

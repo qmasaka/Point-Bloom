@@ -32,7 +32,6 @@ export const BAND_RANGE = { bass: [0.05, 0.144], mid: [0.144, 0.574], high: [0.5
 export const FREQ_QUICK = [['Бочка', 40, 130], ['Бас', 60, 300], ['Голос', 300, 3400], ['Тарелки', 5000, 14000]];
 
 export const FX_PALETTES = [
-	{ id: 'brand', name: 'Янтарь', c: ['#e58a45', '#f4b27a', '#fff0dc'] },
 	{ id: 'cyber', name: 'Неон', c: ['#00f0ff', '#ff1fcb', '#ffd90f'] },
 	{ id: 'plasma', name: 'Плазма', c: ['#1a2bff', '#ff4010', '#fff2cc'] },
 	{ id: 'aurora', name: 'Аврора', c: ['#00f2a0', '#6d2bff', '#2bb3ff'] },
@@ -50,8 +49,8 @@ export const COLOR_BY = [
 	{ id: 'normal', label: 'Нормали', title: 'Цвет по вектору нормали' },
 ];
 
-/** Что показываем в списке: «Высота» и «Разброс» дублировали палитры, поэтому убраны из интерфейса */
-export const COLOR_BY_UI = COLOR_BY.filter((c) => ['disp', 'model', 'solid', 'normal'].includes(c.id));
+/** Что показываем в списке: «Высота» и «Разброс» дублировали палитры, а сама палитра выбирается плашками над списком, поэтому они убраны из интерфейса */
+export const COLOR_BY_UI = COLOR_BY.filter((c) => ['model', 'solid', 'normal'].includes(c.id));
 
 export const MASK_MODES = [
 	{ id: 'none', label: 'Везде', title: 'Эффекты действуют на всю форму' },

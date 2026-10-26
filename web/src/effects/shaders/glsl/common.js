@@ -27,6 +27,10 @@ float gScopeD = 0.0;
 uniform vec4 uScope, uScopeP, uScopeQ;
 uniform vec3 uScopeC;
 float gDepth = 0.5;
+// местное время морфинга и доля распада точки: считаются один раз в fxDisplace. Видеодрайвер вставляет тело функции в каждое место вызова,
+// и шесть вызовов morphLocal и два disK делали шейдер вдвое-втрое дольше в сборке (на Windows секунды при включении каждого эффекта)
+float gMorphLT = 1.0;
+float gDisK = 0.0;
 float gDepthG = 0.0;
 vec3 gNormal = vec3(0.0);
 uniform vec4 uDepth, uDepthP, uDepthQ;
@@ -565,15 +569,17 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	float t = uTime - uTOff;
 	float m = uMorph * uMorph * (3.0 - 2.0 * uMorph);
 	base = aTarget;
+	gMorphLT = uMorph < 0.9999 ? morphLocal(aOrigin, aTarget, aIdx) : 1.0;
 	if (uFr.x > 0.5 && uMorph > 0.9999) {
 		vec3 fnrm;
 		float fk;
 		vec2 fcell;
 		base = frBlockPos(aIdx, fnrm, fk, fcell);
 	}
-	if (uMorph < 0.9999) {
+	// uMorphO.w: морфинг возможен (в списке форм больше одной). Иначе весь этот блок вырезается из шейдера WebGL: он самый тяжёлый в сборке (секунды на Windows)
+	if (uMorphO.w > 0.5 && uMorph < 0.9999) {
 		// морфинг: у каждой точки своё время старта (порядок и расслоение), а путь идёт по дуге через опорную точку, форма которой зависит от вида перехода
-		float lt = morphLocal(aOrigin, aTarget, aIdx);
+		float lt = gMorphLT;
 		float e = morphEase(lt);
 		float sc = uMorphS.y;
 		int sty = int(uMorphS.x + 0.5);
@@ -815,8 +821,6 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			base = uCen + vec3(q.x * cos(ra) - q.z * sin(ra), q.y, q.x * sin(ra) + q.z * cos(ra));
 		}
 	}
-	// выдавливание по карте глубины видео или фото в пути: ближние части кадра летят к зрителю, дальние уходят назад, поэтому кадр распадается на слои
-	if (uMorph < 0.9999 && uMorphO.w > 0.001) base.z += (gDepth - 0.5) * 2.0 * uMorphO.w * sin(morphEase(morphLocal(aOrigin, aTarget, aIdx)) * PI) * (0.6 + 0.4 * hash11(aIdx * 4.1));
 	if (uDepth.x > 0.001) base = depthShape(base);
 	vec3 rad = normalize(base + vec3(1e-4));
 	// у плоских источников (фото, видео, блок кадров) направление «наружу» это взгляд на кадр, иначе волны и импульсы лишь двигают картинку в её плоскости и почти не видны
@@ -947,6 +951,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	}
 	if (uSliceM.x > 0.5 && uSliceM.x < 1.5) pos += rad * sliceK(base) * uSliceM.y;
 	float dk = disK(base, aIdx);
+	gDisK = dk;
 	if (dk > 0.0) {
 		float sc = uDisQ.y;
 		float ds = uDisP.x;

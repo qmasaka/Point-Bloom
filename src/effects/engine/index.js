@@ -75,6 +75,8 @@ export class EffectsEngine {
 			this.state._m4 = 1;
 		}
 		if (this.state.look.colorBy === 'height' || this.state.look.colorBy === 'index') this.state.look.colorBy = 'disp';
+		// палитру «Янтарь» убрали: сохранённая сцена с ней берёт «Неон»
+		if (this.state.look.palette === 'brand') this.state.look.palette = 'cyber';
 
 		// звук
 		this.ctx = null;
