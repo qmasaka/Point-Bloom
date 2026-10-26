@@ -91722,10 +91722,15 @@ const CY = /[А-Яа-яЁё]/;
 const ATTRS = ['title', 'aria-label', 'placeholder', 'alt', 'data-tip'];
 const RU_TITLE = 'Point Bloom: студия 3D-облаков точек';
 const RU_DESC = 'Превращайте 3D-модели, фото, видео и текст в живые облака точек. Добавляйте эффекты, правьте точки и экспортируйте в GLB, PLY или веб-страницу прямо в браузере.';
+const LANG_KEY = 'pointbloom.lang';
 function detect() {
 try {
 const tl = new URLSearchParams(location.search).get('_x_tr_tl');
 if (tl && SUPPORTED.includes(tl.slice(0, 2).toLowerCase())) return tl.slice(0, 2).toLowerCase();
+} catch (_) {}
+try {
+const saved = localStorage.getItem(LANG_KEY);
+if (saved === 'en' || SUPPORTED.includes(saved)) return saved;
 } catch (_) {}
 try {
 for (const l of navigator.languages || [navigator.language]) {
@@ -91951,9 +91956,26 @@ document.documentElement.removeAttribute('translate');
 document.querySelector('meta[name="google"][content="notranslate"]')?.remove();
 setLang('en');
 }
+function sceneEmpty() {
+try {
+const app = window.__app;
+return !app || (!app.model.renderables().length && !app.media?.pm?.ready);
+} catch (_) {
+return false;
+}
+}
 function watchTranslator() {
 const check = () => {
 const code = translatorOn() ? (document.documentElement.lang || '').slice(0, 2).toLowerCase() : '';
+if (code && (code === 'en' || SUPPORTED.includes(code)) && code !== lang) {
+try {
+localStorage.setItem(LANG_KEY, code);
+} catch (_) {}
+if (sceneEmpty()) {
+location.reload();
+return;
+}
+}
 if (SUPPORTED.includes(code)) {
 if (forced !== code) forceLang(code);
 } else if (forced) revertEn();

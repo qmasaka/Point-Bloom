@@ -22,10 +22,16 @@ const RU_DESC = 'Превращайте 3D-модели, фото, видео и
  * Раньше сайт всегда открывался английским, и русскому или украинскому браузеру Chrome предлагал перевод. Его переводчик потом следил за каждым
  * изменением страницы (счётчики, панели, подсказки), а с украинским перезаписывал текст наперегонки с нашим словарём: интерфейс подтормаживал
  */
+const LANG_KEY = 'pointbloom.lang';
 function detect() {
 	try {
 		const tl = new URLSearchParams(location.search).get('_x_tr_tl');
 		if (tl && SUPPORTED.includes(tl.slice(0, 2).toLowerCase())) return tl.slice(0, 2).toLowerCase();
+	} catch (_) {}
+	// язык, на который страницу однажды перевели браузером: дальше сайт сразу открывается на нём, без переводчика Chrome
+	try {
+		const saved = localStorage.getItem(LANG_KEY);
+		if (saved === 'en' || SUPPORTED.includes(saved)) return saved;
 	} catch (_) {}
 	try {
 		for (const l of navigator.languages || [navigator.language]) {
@@ -275,9 +281,31 @@ function revertEn() {
 	setLang('en');
 }
 
+/** В сцене ещё ничего не открыто: страницу можно перезагрузить, ничего не потеряв */
+function sceneEmpty() {
+	try {
+		const app = window.__app;
+		return !app || (!app.model.renderables().length && !app.media?.pm?.ready);
+	} catch (_) {
+		return false;
+	}
+}
+
 function watchTranslator() {
 	const check = () => {
 		const code = translatorOn() ? (document.documentElement.lang || '').slice(0, 2).toLowerCase() : '';
+		// переводчик Chrome остаётся в странице и обрабатывает каждое обновление интерфейса (поэтому переведённый сайт подтормаживал).
+		// Если для языка есть наш словарь, язык запоминается и страница открывается заново уже на нём, без переводчика.
+		// Перевод на английский возвращает английский. Пока в сцене что-то открыто, не перезагружаем, а просто подставляем свой перевод
+		if (code && (code === 'en' || SUPPORTED.includes(code)) && code !== lang) {
+			try {
+				localStorage.setItem(LANG_KEY, code);
+			} catch (_) {}
+			if (sceneEmpty()) {
+				location.reload();
+				return;
+			}
+		}
 		if (SUPPORTED.includes(code)) {
 			if (forced !== code) forceLang(code);
 		} else if (forced) revertEn();
