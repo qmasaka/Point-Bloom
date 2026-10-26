@@ -17,11 +17,22 @@ const ATTRS = ['title', 'aria-label', 'placeholder', 'alt', 'data-tip'];
 const RU_TITLE = 'Point Bloom: студия 3D-облаков точек';
 const RU_DESC = 'Превращайте 3D-модели, фото, видео и текст в живые облака точек. Добавляйте эффекты, правьте точки и экспортируйте в GLB, PLY или веб-страницу прямо в браузере.';
 
-/** Интерфейс всегда английский. Другой язык выбирается, только если страницу перевели через Google Translate (адрес с _x_tr_tl) */
+/**
+ * Язык при открытии: страница, переведённая через Google Translate (адрес с _x_tr_tl), или язык браузера, если для него есть наш перевод; иначе английский.
+ * Раньше сайт всегда открывался английским, и русскому или украинскому браузеру Chrome предлагал перевод. Его переводчик потом следил за каждым
+ * изменением страницы (счётчики, панели, подсказки), а с украинским перезаписывал текст наперегонки с нашим словарём: интерфейс подтормаживал
+ */
 function detect() {
 	try {
 		const tl = new URLSearchParams(location.search).get('_x_tr_tl');
 		if (tl && SUPPORTED.includes(tl.slice(0, 2).toLowerCase())) return tl.slice(0, 2).toLowerCase();
+	} catch (_) {}
+	try {
+		for (const l of navigator.languages || [navigator.language]) {
+			const c = String(l || '').slice(0, 2).toLowerCase();
+			if (c === 'en') return 'en';
+			if (SUPPORTED.includes(c)) return c;
+		}
 	} catch (_) {}
 	return 'en';
 }

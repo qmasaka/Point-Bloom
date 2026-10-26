@@ -17,6 +17,13 @@ try {
 const tl = new URLSearchParams(location.search).get('_x_tr_tl');
 if (tl && SUPPORTED.includes(tl.slice(0, 2).toLowerCase())) return tl.slice(0, 2).toLowerCase();
 } catch (_) {}
+try {
+for (const l of navigator.languages || [navigator.language]) {
+const c = String(l || '').slice(0, 2).toLowerCase();
+if (c === 'en') return 'en';
+if (SUPPORTED.includes(c)) return c;
+}
+} catch (_) {}
 return 'en';
 }
 export let lang = 'en';
