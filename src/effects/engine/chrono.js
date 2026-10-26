@@ -80,6 +80,8 @@ export class ChronoPart {
 			this.segmenter = new SubjectSegmenter();
 			this.segmenter.onChange = () => this.emit();
 		}
+		// «Человека» выделяет модель позы, «Людей, животных, транспорт» DeepLab
+		this.segmenter.setMode(this.state.layers.chrono?.mask);
 		if (this.segmenter.phase === 'idle') this.segmenter.init().catch(() => {});
 	}
 
@@ -87,7 +89,7 @@ export class ChronoPart {
 	chronoInfo() {
 		const C = this.state.layers.chrono;
 		const s = this.segmenter;
-		return { video: this.videoLoaded, mask: C?.mask, phase: s ? s.phase : 'idle', error: s?.error || '' };
+		return { video: this.videoLoaded, mask: C?.mask, kind: s?.kind || (C?.mask === 'person' ? 'pose' : 'deeplab'), phase: s ? s.phase : 'idle', error: s?.error || '' };
 	}
 
 	/** Шлейф начинается заново: прошлые кадры забываются */

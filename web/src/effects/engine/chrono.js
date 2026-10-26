@@ -65,12 +65,13 @@ if (!this.segmenter) {
 this.segmenter = new SubjectSegmenter();
 this.segmenter.onChange = () => this.emit();
 }
+this.segmenter.setMode(this.state.layers.chrono?.mask);
 if (this.segmenter.phase === 'idle') this.segmenter.init().catch(() => {});
 }
 chronoInfo() {
 const C = this.state.layers.chrono;
 const s = this.segmenter;
-return { video: this.videoLoaded, mask: C?.mask, phase: s ? s.phase : 'idle', error: s?.error || '' };
+return { video: this.videoLoaded, mask: C?.mask, kind: s?.kind || (C?.mask === 'person' ? 'pose' : 'deeplab'), phase: s ? s.phase : 'idle', error: s?.error || '' };
 }
 chronoReset() {
 const fr = this._frames;
