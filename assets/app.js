@@ -88131,6 +88131,11 @@ en: {
 'Рамка текущего кадра': 'Current frame edge',
 'Толщина рамок': 'Edge thickness',
 'Цвет рамок': 'Edge color',
+'Кодек': 'Codec',
+'Открывается везде': 'Plays everywhere',
+'Чище мелкие точки при том же размере, но открывается не везде': 'Cleaner fine points at the same size, but does not play everywhere',
+'Этот браузер не умеет записывать H.265: видео пишется в H.264': 'This browser cannot record H.265: the video is recorded in H.264',
+'кодер не отдал описание видео (avcC/hvcC)': 'the encoder gave no video description (avcC/hvcC)',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -89243,6 +89248,11 @@ uk: {
 'Рамка текущего кадра': 'Рамка поточного кадру',
 'Толщина рамок': 'Товщина рамок',
 'Цвет рамок': 'Колір рамок',
+'Кодек': 'Кодек',
+'Открывается везде': 'Відкривається скрізь',
+'Чище мелкие точки при том же размере, но открывается не везде': 'Чистіші дрібні точки при тому ж розмірі, але відкривається не скрізь',
+'Этот браузер не умеет записывать H.265: видео пишется в H.264': 'Цей браузер не вміє записувати H.265: відео пишеться в H.264',
+'кодер не отдал описание видео (avcC/hvcC)': 'кодер не віддав опис відео (avcC/hvcC)',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -90355,6 +90365,11 @@ es: {
 'Рамка текущего кадра': 'Borde del fotograma actual',
 'Толщина рамок': 'Grosor de los bordes',
 'Цвет рамок': 'Color de los bordes',
+'Кодек': 'Códec',
+'Открывается везде': 'Se abre en todas partes',
+'Чище мелкие точки при том же размере, но открывается не везде': 'Puntos finos más limpios con el mismo tamaño, pero no se abre en todas partes',
+'Этот браузер не умеет записывать H.265: видео пишется в H.264': 'Este navegador no puede grabar H.265: el vídeo se graba en H.264',
+'кодер не отдал описание видео (avcC/hvcC)': 'el codificador no entregó la descripción del vídeo (avcC/hvcC)',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -91467,6 +91482,11 @@ de: {
 'Рамка текущего кадра': 'Rand des aktuellen Bilds',
 'Толщина рамок': 'Randstärke',
 'Цвет рамок': 'Randfarbe',
+'Кодек': 'Codec',
+'Открывается везде': 'Läuft überall',
+'Чище мелкие точки при том же размере, но открывается не везде': 'Sauberere feine Punkte bei gleicher Größe, läuft aber nicht überall',
+'Этот браузер не умеет записывать H.265: видео пишется в H.264': 'Dieser Browser kann kein H.265 aufnehmen: das Video wird in H.264 aufgenommen',
+'кодер не отдал описание видео (avcC/hvcC)': 'der Encoder lieferte keine Videobeschreibung (avcC/hvcC)',
 },
 };
 };
@@ -93631,7 +93651,7 @@ return !!(this.audio && this.audio.samples.length && this.audio.desc);
 finish() {
 const v = this.video;
 if (!v.samples.length) throw new Error('кадров нет');
-if (!v.desc) throw new Error('кодер не отдал описание видео (avcC)');
+if (!v.desc) throw new Error('кодер не отдал описание видео (avcC/hvcC)');
 const tracks = [v];
 if (this.hasAudio) tracks.push(this.audio);
 const base = Math.min(...v.samples.map((s) => s.ts));
@@ -93640,7 +93660,7 @@ for (const s of t.samples) s.ts -= base;
 if (t !== v) t.samples = t.samples.filter((s) => s.ts >= 0);
 }
 if (tracks.length > 1 && !tracks[1].samples.length) tracks.pop();
-const ftyp = box('ftyp', enc.encode('isom'), u32(512), enc.encode('isomiso2avc1mp41'));
+const ftyp = box('ftyp', enc.encode('isom'), u32(512), enc.encode(v.codec === 'hevc' ? 'isomiso2hvc1mp41' : 'isomiso2avc1mp41'));
 let mdatSize = 0;
 for (const t of tracks) for (const s of t.samples) mdatSize += s.data.length;
 const big = mdatSize + 16 > 0xffffffff;
@@ -93731,7 +93751,8 @@ return { box: box('trak', tkhd, edts, mdia), movieDur };
 }
 _avc1(t) {
 const name = zeros(32);
-return box('avc1', zeros(6), u16(1), zeros(16), u16(t.width), u16(t.height), u32(0x00480000), u32(0x00480000), u32(0), u16(1), name, u16(0x18), u16(0xffff), box('avcC', t.desc));
+const hevc = t.codec === 'hevc';
+return box(hevc ? 'hvc1' : 'avc1', zeros(6), u16(1), zeros(16), u16(t.width), u16(t.height), u32(0x00480000), u32(0x00480000), u32(0), u16(1), name, u16(0x18), u16(0xffff), box(hevc ? 'hvcC' : 'avcC', t.desc));
 }
 _mp4a(t) {
 const asc = t.desc;
@@ -93755,14 +93776,22 @@ __def(__exports, 'pickAudioConfig', () => pickAudioConfig);
 __def(__exports, 'WebCodecsRecorder', () => WebCodecsRecorder);
 const { Mp4Muxer } = __req('src/io/mp4-muxer.js');
 const AVC = ['avc1.640034', 'avc1.640033', 'avc1.64002a', 'avc1.640028', 'avc1.4d0034', 'avc1.4d0028', 'avc1.42e034', 'avc1.42e01f'];
-async function pickVideoConfig({ width, height, fps, bitrate }) {
+const HEVC = ['hvc1.1.6.L183.B0', 'hvc1.1.6.L153.B0', 'hvc1.1.6.L123.B0'];
+const QP = { avc: 16, hevc: 18 };
+async function pickVideoConfig({ width, height, fps, bitrate, codec = 'h264', lossless = false }) {
 if (typeof VideoEncoder === 'undefined' || typeof VideoFrame === 'undefined') return null;
-for (const codec of AVC) {
-const cfg = { codec, width, height, bitrate, framerate: fps, latencyMode: 'quality', bitrateMode: 'variable', avc: { format: 'avc' } };
+const fams = codec === 'h265' ? ['hevc', 'avc'] : ['avc'];
+for (const fam of fams) {
+for (const mode of lossless ? ['quantizer', 'variable'] : ['variable']) {
+for (const c of fam === 'hevc' ? HEVC : AVC) {
+const cfg = { codec: c, width, height, framerate: fps, latencyMode: 'quality', bitrateMode: mode, [fam]: { format: fam } };
+if (mode !== 'quantizer') cfg.bitrate = bitrate;
 try {
 const r = await VideoEncoder.isConfigSupported(cfg);
-if (r && r.supported) return r.config || cfg;
+if (r && r.supported) return { config: r.config || cfg, fam, quant: mode === 'quantizer' ? QP[fam] : 0 };
 } catch (e) {
+}
+}
 }
 }
 return null;
@@ -93841,15 +93870,18 @@ mute.disconnect();
 };
 }
 class WebCodecsRecorder {
-static async create({ width, height, fps, bitrate, audio = null, perf0 = performance.now() }) {
-const vcfg = await pickVideoConfig({ width, height, fps, bitrate });
-if (!vcfg) return null;
+static async create({ width, height, fps, bitrate, codec = 'h264', lossless = false, audio = null, perf0 = performance.now() }) {
+const pick = await pickVideoConfig({ width, height, fps, bitrate, codec, lossless });
+if (!pick) return null;
+const vcfg = pick.config;
 let acfg = null;
 if (audio) {
 acfg = await pickAudioConfig(audio.ctx.sampleRate);
 if (!acfg && audio.required) return null;
 }
 const r = new WebCodecsRecorder();
+r.fam = pick.fam;
+r.quant = pick.quant;
 await r._init(vcfg, acfg, audio, fps, perf0);
 return r;
 }
@@ -93860,7 +93892,7 @@ this.error = null;
 this.frames = 0;
 this.dropped = 0;
 this.lastKey = -Infinity;
-this.mux = new Mp4Muxer({ video: { width: vcfg.width, height: vcfg.height }, audio: acfg ? { sampleRate: acfg.sampleRate, channels: 2 } : null });
+this.mux = new Mp4Muxer({ video: { width: vcfg.width, height: vcfg.height, codec: this.fam || 'avc' }, audio: acfg ? { sampleRate: acfg.sampleRate, channels: 2 } : null });
 this.venc = new VideoEncoder({ output: (c, m) => this.mux.addVideo(c, m), error: (e) => (this.error ||= e) });
 this.venc.configure(vcfg);
 this.codec = vcfg.codec;
@@ -93898,7 +93930,7 @@ return false;
 const key = t - this.lastKey >= 2e6;
 const f = new VideoFrame(canvas, { timestamp: t, duration: Math.round(1e6 / this.fps) });
 try {
-this.venc.encode(f, { keyFrame: key });
+this.venc.encode(f, this.quant ? { keyFrame: key, [this.fam]: { quantizer: this.quant } } : { keyFrame: key });
 } finally {
 f.close();
 }
@@ -93959,7 +93991,7 @@ reels: { w: 1080, h: 1920 },
 };
 const QUALITY_BPP = { standard: 0.12, high: 0.22, max: 0.36 };
 function recDefaults() {
-const o = { res: 'viewport', fps: '60', format: 'auto', sound: true, dur: '0', quality: 'high', tlMode: 'frames' };
+const o = { res: 'viewport', fps: '60', format: 'auto', sound: true, dur: '0', quality: 'max', codec: 'h264', tlMode: 'frames' };
 try {
 const saved = JSON.parse(localStorage.getItem(REC_KEY) || '{}');
 if (saved && typeof saved === 'object') Object.assign(o, saved);
@@ -93990,31 +94022,37 @@ const vp = this.app.viewport;
 const W = cv.width;
 const H = cv.height;
 paintBackground(ctx, W, H, bg);
+ctx.imageSmoothingEnabled = true;
+ctx.imageSmoothingQuality = 'high';
+const ss = this._recSS || 1;
 const draw = (src) => {
 if (!src || !src.width || !src.height) return;
-if (src.width >= W && src.height >= H) ctx.drawImage(src, 0, 0, W, H, 0, 0, W, H);
-else ctx.drawImage(src, 0, 0, W, H);
+const sw = Math.min(src.width, Math.round(W * ss));
+const sh = Math.min(src.height, Math.round(H * ss));
+ctx.drawImage(src, 0, 0, sw, sh, 0, 0, W, H);
 };
 draw(vp.canvas);
 const ov = vp.fxOverlay;
 if (ov && ov.style.visibility !== 'hidden') draw(ov);
 }
-_recSize(target) {
+_recSize(target, maxSS = 1) {
 const vp = this.app.viewport;
 this._recSaved = { pr: vp.renderer.getPixelRatio(), shift: vp.viewShift || 0, ref: vp.viewRef || 0 };
 vp.recLock = true;
-if (target) {
-const k = target.h / Math.max(1, vp.stage.clientHeight);
+const t = target || { w: even(vp.canvas.width), h: even(vp.canvas.height) };
+let ss = Math.min(maxSS, 4096 / Math.max(t.w, t.h));
+if (ss < 1.1) ss = 1;
+this._recSS = ss;
+const k = t.h / Math.max(1, vp.stage.clientHeight);
 vp.viewShift = 0;
 vp.viewRef = 0;
-vp.size = { width: (target.w + 0.01) / k, height: (target.h + 0.01) / k };
-vp.renderer.setPixelRatio(k);
+vp.size = { width: (t.w + 0.01) / k, height: (t.h + 0.01) / k };
+vp.renderer.setPixelRatio(k * ss);
 vp.renderer.setSize(vp.size.width, vp.size.height, false);
 vp.stage.classList.add('is-rec-frame');
 this.app.nav?.applyCamera();
-}
 vp.invalidate();
-return { w: even(vp.canvas.width), h: even(vp.canvas.height) };
+return { w: even(t.w), h: even(t.h) };
 }
 _recRestore() {
 const vp = this.app.viewport;
@@ -94111,7 +94149,8 @@ fps: opts.fps > 0 ? opts.fps : parseInt(d.fps, 10) || 60,
 format: opts.format ?? d.format,
 sound: opts.sound ?? d.sound !== false,
 duration: opts.duration ?? (parseInt(d.dur, 10) || 0),
-quality: opts.quality ?? d.quality ?? 'high',
+quality: opts.quality ?? 'max',
+codec: opts.codec ?? d.codec ?? 'h264',
 offline: !!opts.offline,
 onStart: opts.onStart || null,
 };
@@ -94131,7 +94170,8 @@ this._recAbort('Не удалось начать запись видео: ' + (e
 async _recStart(o) {
 this._ensureCtx();
 const fps = o.fps;
-const { w, h } = this._recSize(RES_MAP[o.resolution] || null);
+const maxSS = o.quality === 'max' ? (o.offline ? 2 : 1.5) : 1;
+const { w, h } = this._recSize(RES_MAP[o.resolution] || null, maxSS);
 const cv = document.createElement('canvas');
 cv.width = w;
 cv.height = h;
@@ -94139,12 +94179,12 @@ const ctx = cv.getContext('2d', { alpha: false });
 this._recCv = cv;
 this._recCtx = ctx;
 this._recBg = this._recBgSpec();
-const bitrate = Math.round(Math.min(150e6, Math.max(8e6, w * h * fps * (QUALITY_BPP[o.quality] || QUALITY_BPP.high))));
+const bitrate = Math.round(Math.min(o.quality === 'max' ? 250e6 : 150e6, Math.max(8e6, w * h * fps * (QUALITY_BPP[o.quality] || QUALITY_BPP.high))));
 const wantSound = o.sound && !o.offline && !!this.bus;
 let rec = null;
 if (o.format !== 'webm') {
 try {
-rec = await WebCodecsRecorder.create({ width: w, height: h, fps, bitrate, audio: wantSound ? { ctx: this.ctx, node: this.bus, required: true } : null, perf0: this._recT0 });
+rec = await WebCodecsRecorder.create({ width: w, height: h, fps, bitrate, codec: o.codec, lossless: o.quality === 'max', audio: wantSound ? { ctx: this.ctx, node: this.bus, required: true } : null, perf0: this._recT0 });
 } catch (e) {
 rec = null;
 }
@@ -94156,6 +94196,7 @@ return;
 if (rec) {
 this._recEnc = rec;
 this._recKind = 'mp4';
+if (o.codec === 'h265' && rec.fam !== 'hevc') this.app.toast('Этот браузер не умеет записывать H.265: видео пишется в H.264', 'info', 3500);
 } else {
 this._recMediaRecorder(o, cv, bitrate, wantSound);
 if (!this._rec) return;
@@ -107393,6 +107434,14 @@ options: [
 value: ['0', '5', '10', '30'].includes(String(recOpts.dur)) ? String(recOpts.dur) : '0',
 onChange: (v) => { recOpts.dur = v; saveRecOpts(); }
 });
+const recCodecSeg = segmented({
+options: [
+{ value: 'h264', label: 'H.264', title: 'Открывается везде' },
+{ value: 'h265', label: 'H.265', title: 'Чище мелкие точки при том же размере, но открывается не везде' }
+],
+value: recOpts.codec === 'h265' ? 'h265' : 'h264',
+onChange: (v) => { recOpts.codec = v; saveRecOpts(); }
+});
 const recSoundSw = switchRow('Звук', {
 value: recOpts.sound,
 onChange: (v) => { recOpts.sound = v; saveRecOpts(); }
@@ -107411,7 +107460,7 @@ fps: parseInt(recOpts.fps, 10) || 60,
 format: 'auto',
 sound: !!recOpts.sound,
 duration: parseInt(recOpts.dur, 10) || 0,
-quality: 'high'
+codec: recOpts.codec || 'h264'
 });
 }
 });
@@ -107421,6 +107470,7 @@ h('div', { class: 'fx-rec-title' }, 'Запись видео'),
 recRow('Размер', recResSel.el),
 recRow('Кадров в секунду', recFpsSeg.el),
 recRow('Длительность', recDurSeg.el),
+recRow('Кодек', recCodecSeg.el),
 recSoundSw.el,
 startRecBtn
 );

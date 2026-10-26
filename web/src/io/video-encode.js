@@ -1,13 +1,21 @@
 import { Mp4Muxer } from './mp4-muxer.js';
 const AVC = ['avc1.640034', 'avc1.640033', 'avc1.64002a', 'avc1.640028', 'avc1.4d0034', 'avc1.4d0028', 'avc1.42e034', 'avc1.42e01f'];
-export async function pickVideoConfig({ width, height, fps, bitrate }) {
+const HEVC = ['hvc1.1.6.L183.B0', 'hvc1.1.6.L153.B0', 'hvc1.1.6.L123.B0'];
+const QP = { avc: 16, hevc: 18 };
+export async function pickVideoConfig({ width, height, fps, bitrate, codec = 'h264', lossless = false }) {
 if (typeof VideoEncoder === 'undefined' || typeof VideoFrame === 'undefined') return null;
-for (const codec of AVC) {
-const cfg = { codec, width, height, bitrate, framerate: fps, latencyMode: 'quality', bitrateMode: 'variable', avc: { format: 'avc' } };
+const fams = codec === 'h265' ? ['hevc', 'avc'] : ['avc'];
+for (const fam of fams) {
+for (const mode of lossless ? ['quantizer', 'variable'] : ['variable']) {
+for (const c of fam === 'hevc' ? HEVC : AVC) {
+const cfg = { codec: c, width, height, framerate: fps, latencyMode: 'quality', bitrateMode: mode, [fam]: { format: fam } };
+if (mode !== 'quantizer') cfg.bitrate = bitrate;
 try {
 const r = await VideoEncoder.isConfigSupported(cfg);
-if (r && r.supported) return r.config || cfg;
+if (r && r.supported) return { config: r.config || cfg, fam, quant: mode === 'quantizer' ? QP[fam] : 0 };
 } catch (e) {
+}
+}
 }
 }
 return null;
@@ -86,15 +94,18 @@ mute.disconnect();
 };
 }
 export class WebCodecsRecorder {
-static async create({ width, height, fps, bitrate, audio = null, perf0 = performance.now() }) {
-const vcfg = await pickVideoConfig({ width, height, fps, bitrate });
-if (!vcfg) return null;
+static async create({ width, height, fps, bitrate, codec = 'h264', lossless = false, audio = null, perf0 = performance.now() }) {
+const pick = await pickVideoConfig({ width, height, fps, bitrate, codec, lossless });
+if (!pick) return null;
+const vcfg = pick.config;
 let acfg = null;
 if (audio) {
 acfg = await pickAudioConfig(audio.ctx.sampleRate);
 if (!acfg && audio.required) return null;
 }
 const r = new WebCodecsRecorder();
+r.fam = pick.fam;
+r.quant = pick.quant;
 await r._init(vcfg, acfg, audio, fps, perf0);
 return r;
 }
@@ -105,7 +116,7 @@ this.error = null;
 this.frames = 0;
 this.dropped = 0;
 this.lastKey = -Infinity;
-this.mux = new Mp4Muxer({ video: { width: vcfg.width, height: vcfg.height }, audio: acfg ? { sampleRate: acfg.sampleRate, channels: 2 } : null });
+this.mux = new Mp4Muxer({ video: { width: vcfg.width, height: vcfg.height, codec: this.fam || 'avc' }, audio: acfg ? { sampleRate: acfg.sampleRate, channels: 2 } : null });
 this.venc = new VideoEncoder({ output: (c, m) => this.mux.addVideo(c, m), error: (e) => (this.error ||= e) });
 this.venc.configure(vcfg);
 this.codec = vcfg.codec;
@@ -143,7 +154,7 @@ return false;
 const key = t - this.lastKey >= 2e6;
 const f = new VideoFrame(canvas, { timestamp: t, duration: Math.round(1e6 / this.fps) });
 try {
-this.venc.encode(f, { keyFrame: key });
+this.venc.encode(f, this.quant ? { keyFrame: key, [this.fam]: { quantizer: this.quant } } : { keyFrame: key });
 } finally {
 f.close();
 }

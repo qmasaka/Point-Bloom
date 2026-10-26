@@ -2950,6 +2950,14 @@ options: [
 value: ['0', '5', '10', '30'].includes(String(recOpts.dur)) ? String(recOpts.dur) : '0',
 onChange: (v) => { recOpts.dur = v; saveRecOpts(); }
 });
+const recCodecSeg = segmented({
+options: [
+{ value: 'h264', label: 'H.264', title: 'Открывается везде' },
+{ value: 'h265', label: 'H.265', title: 'Чище мелкие точки при том же размере, но открывается не везде' }
+],
+value: recOpts.codec === 'h265' ? 'h265' : 'h264',
+onChange: (v) => { recOpts.codec = v; saveRecOpts(); }
+});
 const recSoundSw = switchRow('Звук', {
 value: recOpts.sound,
 onChange: (v) => { recOpts.sound = v; saveRecOpts(); }
@@ -2968,7 +2976,7 @@ fps: parseInt(recOpts.fps, 10) || 60,
 format: 'auto',
 sound: !!recOpts.sound,
 duration: parseInt(recOpts.dur, 10) || 0,
-quality: 'high'
+codec: recOpts.codec || 'h264'
 });
 }
 });
@@ -2978,6 +2986,7 @@ h('div', { class: 'fx-rec-title' }, 'Запись видео'),
 recRow('Размер', recResSel.el),
 recRow('Кадров в секунду', recFpsSeg.el),
 recRow('Длительность', recDurSeg.el),
+recRow('Кодек', recCodecSeg.el),
 recSoundSw.el,
 startRecBtn
 );

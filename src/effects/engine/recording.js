@@ -17,7 +17,7 @@ const QUALITY_BPP = { standard: 0.12, high: 0.22, max: 0.36 };
 
 /** Сохранённые параметры записи (панель «Параметры записи»): ими же пользуется кнопка «Записать» на таймлайне */
 export function recDefaults() {
-	const o = { res: 'viewport', fps: '60', format: 'auto', sound: true, dur: '0', quality: 'high', tlMode: 'frames' };
+	const o = { res: 'viewport', fps: '60', format: 'auto', sound: true, dur: '0', quality: 'max', codec: 'h264', tlMode: 'frames' };
 	try {
 		const saved = JSON.parse(localStorage.getItem(REC_KEY) || '{}');
 		if (saved && typeof saved === 'object') Object.assign(o, saved);
@@ -56,16 +56,24 @@ export class RecordingPart {
 		return B.paint || { type: 'solid', c: B.solid || '#2a2d33' };
 	}
 
-	/** Складывает фон и оба холста сцены в cv (размер cv чётный, источник может быть на пиксель больше: лишнее обрезается) */
+	/**
+	 * Складывает фон и оба холста сцены в cv. Сцена при записи может быть нарисована крупнее кадра (суперсэмплинг, см. _recSize):
+	 * она плавно уменьшается до размера видео, и мелкие точки выходят гладкими, без зубцов и мерцания, которые кодер превращал в шум
+	 */
 	_recCompose(cv, ctx, bg = this._recBgSpec()) {
 		const vp = this.app.viewport;
 		const W = cv.width;
 		const H = cv.height;
 		paintBackground(ctx, W, H, bg);
+		ctx.imageSmoothingEnabled = true;
+		ctx.imageSmoothingQuality = 'high';
+		const ss = this._recSS || 1;
 		const draw = (src) => {
 			if (!src || !src.width || !src.height) return;
-			if (src.width >= W && src.height >= H) ctx.drawImage(src, 0, 0, W, H, 0, 0, W, H);
-			else ctx.drawImage(src, 0, 0, W, H);
+			// источник размером кадр × суперсэмплинг (или на пиксель больше из-за округления): берём ровно эту область
+			const sw = Math.min(src.width, Math.round(W * ss));
+			const sh = Math.min(src.height, Math.round(H * ss));
+			ctx.drawImage(src, 0, 0, sw, sh, 0, 0, W, H);
 		};
 		draw(vp.canvas);
 		const ov = vp.fxOverlay;
@@ -77,24 +85,28 @@ export class RecordingPart {
 	 * Холст сцены переводится ровно в размер видео. Масштаб пикселей подбирается так, чтобы кадр выглядел как на экране
 	 * (те же размер точек, свечение и обрезка по высоте), только чётче. Пока идёт запись, окно не меняет размер холста.
 	 */
-	_recSize(target) {
+	_recSize(target, maxSS = 1) {
 		const vp = this.app.viewport;
 		this._recSaved = { pr: vp.renderer.getPixelRatio(), shift: vp.viewShift || 0, ref: vp.viewRef || 0 };
 		vp.recLock = true;
-		if (target) {
-			const k = target.h / Math.max(1, vp.stage.clientHeight);
-			vp.viewShift = 0;
-			vp.viewRef = 0;
-			// +0.01: после умножения на масштаб и округления вниз получается ровно нужное число пикселей
-			vp.size = { width: (target.w + 0.01) / k, height: (target.h + 0.01) / k };
-			vp.renderer.setPixelRatio(k);
-			vp.renderer.setSize(vp.size.width, vp.size.height, false);
-			// на экране кадр записи показывается целиком, с полями, а не растянутым на всю сцену
-			vp.stage.classList.add('is-rec-frame');
-			this.app.nav?.applyCamera();
-		}
+		// «как на экране»: кадр размером с текущий холст
+		const t = target || { w: even(vp.canvas.width), h: even(vp.canvas.height) };
+		// суперсэмплинг: сцена рисуется крупнее кадра (не больше 4096 px по длинной стороне, это предел видеокарт без риска)
+		let ss = Math.min(maxSS, 4096 / Math.max(t.w, t.h));
+		if (ss < 1.1) ss = 1;
+		this._recSS = ss;
+		const k = t.h / Math.max(1, vp.stage.clientHeight);
+		vp.viewShift = 0;
+		vp.viewRef = 0;
+		// +0.01: после умножения на масштаб и округления вниз получается ровно нужное число пикселей; масштаб пикселей k·ss сохраняет вид как на экране
+		vp.size = { width: (t.w + 0.01) / k, height: (t.h + 0.01) / k };
+		vp.renderer.setPixelRatio(k * ss);
+		vp.renderer.setSize(vp.size.width, vp.size.height, false);
+		// на экране кадр записи показывается целиком, с полями, а не растянутым на всю сцену
+		vp.stage.classList.add('is-rec-frame');
+		this.app.nav?.applyCamera();
 		vp.invalidate();
-		return { w: even(vp.canvas.width), h: even(vp.canvas.height) };
+		return { w: even(t.w), h: even(t.h) };
 	}
 
 	_recRestore() {
@@ -203,7 +215,8 @@ export class RecordingPart {
 			format: opts.format ?? d.format,
 			sound: opts.sound ?? d.sound !== false,
 			duration: opts.duration ?? (parseInt(d.dur, 10) || 0),
-			quality: opts.quality ?? d.quality ?? 'high',
+			quality: opts.quality ?? 'max',
+			codec: opts.codec ?? d.codec ?? 'h264',
 			offline: !!opts.offline,
 			onStart: opts.onStart || null,
 		};
@@ -224,7 +237,9 @@ export class RecordingPart {
 	async _recStart(o) {
 		this._ensureCtx();
 		const fps = o.fps;
-		const { w, h } = this._recSize(RES_MAP[o.resolution] || null);
+		// при максимальном качестве сцена рисуется крупнее кадра: покадрово вдвое, в реальном времени в полтора раза (иначе слабый компьютер не успевает)
+		const maxSS = o.quality === 'max' ? (o.offline ? 2 : 1.5) : 1;
+		const { w, h } = this._recSize(RES_MAP[o.resolution] || null, maxSS);
 		const cv = document.createElement('canvas');
 		cv.width = w;
 		cv.height = h;
@@ -232,12 +247,12 @@ export class RecordingPart {
 		this._recCv = cv;
 		this._recCtx = ctx;
 		this._recBg = this._recBgSpec();
-		const bitrate = Math.round(Math.min(150e6, Math.max(8e6, w * h * fps * (QUALITY_BPP[o.quality] || QUALITY_BPP.high))));
+		const bitrate = Math.round(Math.min(o.quality === 'max' ? 250e6 : 150e6, Math.max(8e6, w * h * fps * (QUALITY_BPP[o.quality] || QUALITY_BPP.high))));
 		const wantSound = o.sound && !o.offline && !!this.bus;
 		let rec = null;
 		if (o.format !== 'webm') {
 			try {
-				rec = await WebCodecsRecorder.create({ width: w, height: h, fps, bitrate, audio: wantSound ? { ctx: this.ctx, node: this.bus, required: true } : null, perf0: this._recT0 });
+				rec = await WebCodecsRecorder.create({ width: w, height: h, fps, bitrate, codec: o.codec, lossless: o.quality === 'max', audio: wantSound ? { ctx: this.ctx, node: this.bus, required: true } : null, perf0: this._recT0 });
 			} catch (e) {
 				rec = null;
 			}
@@ -249,6 +264,7 @@ export class RecordingPart {
 		if (rec) {
 			this._recEnc = rec;
 			this._recKind = 'mp4';
+			if (o.codec === 'h265' && rec.fam !== 'hevc') this.app.toast('Этот браузер не умеет записывать H.265: видео пишется в H.264', 'info', 3500);
 		} else {
 			this._recMediaRecorder(o, cv, bitrate, wantSound);
 			if (!this._rec) return;

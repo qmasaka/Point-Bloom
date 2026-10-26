@@ -4,17 +4,31 @@ import { Mp4Muxer } from './mp4-muxer.js';
 
 // H.264 High: уровни 5.2, 5.1, 4.2, 4.0 (чем выше уровень, тем больше разрешение и частота), затем Main и Baseline для слабых кодеров
 const AVC = ['avc1.640034', 'avc1.640033', 'avc1.64002a', 'avc1.640028', 'avc1.4d0034', 'avc1.4d0028', 'avc1.42e034', 'avc1.42e01f'];
+// H.265 Main: уровни 6.1, 5.1, 4.1. При том же размере файла лучше держит мелкие детали, но открывается не везде
+const HEVC = ['hvc1.1.6.L183.B0', 'hvc1.1.6.L153.B0', 'hvc1.1.6.L123.B0'];
+// постоянное качество кадра (режим «quantizer»): чем меньше число, тем чище. 16 у H.264 и 18 у H.265 на глаз почти без потерь
+const QP = { avc: 16, hevc: 18 };
 
-/** Подбирает настройки кодера H.264, которые этот браузер умеет; null, если WebCodecs нет или нужный размер не поддерживается */
-export async function pickVideoConfig({ width, height, fps, bitrate }) {
+/**
+ * Подбирает настройки кодера, которые этот браузер умеет; null, если WebCodecs нет или размер не поддерживается.
+ * codec: 'h264' или 'h265' (если H.265 не умеет, берётся H.264). lossless: сначала пробуется постоянное качество кадра вместо битрейта
+ */
+export async function pickVideoConfig({ width, height, fps, bitrate, codec = 'h264', lossless = false }) {
 	if (typeof VideoEncoder === 'undefined' || typeof VideoFrame === 'undefined') return null;
-	for (const codec of AVC) {
-		const cfg = { codec, width, height, bitrate, framerate: fps, latencyMode: 'quality', bitrateMode: 'variable', avc: { format: 'avc' } };
-		try {
-			const r = await VideoEncoder.isConfigSupported(cfg);
-			if (r && r.supported) return r.config || cfg;
-		} catch (e) {
-			/* такой кодек этот браузер не знает: пробуем следующий */
+	const fams = codec === 'h265' ? ['hevc', 'avc'] : ['avc'];
+	for (const fam of fams) {
+		for (const mode of lossless ? ['quantizer', 'variable'] : ['variable']) {
+			for (const c of fam === 'hevc' ? HEVC : AVC) {
+				const cfg = { codec: c, width, height, framerate: fps, latencyMode: 'quality', bitrateMode: mode, [fam]: { format: fam } };
+				// в режиме постоянного качества битрейт не задаётся; иначе при «максимуме» он выше обычного
+				if (mode !== 'quantizer') cfg.bitrate = bitrate;
+				try {
+					const r = await VideoEncoder.isConfigSupported(cfg);
+					if (r && r.supported) return { config: r.config || cfg, fam, quant: mode === 'quantizer' ? QP[fam] : 0 };
+				} catch (e) {
+					/* такой кодек или режим этот браузер не знает: пробуем следующий */
+				}
+			}
 		}
 	}
 	return null;
@@ -107,9 +121,10 @@ async function tapAudio(ctx, node, onData) {
  * addFrame(canvas, µs) каждый кадр; finish() возвращает Blob. Если кодер не успевает, лишние кадры пропускаются (время остаётся верным).
  */
 export class WebCodecsRecorder {
-	static async create({ width, height, fps, bitrate, audio = null, perf0 = performance.now() }) {
-		const vcfg = await pickVideoConfig({ width, height, fps, bitrate });
-		if (!vcfg) return null;
+	static async create({ width, height, fps, bitrate, codec = 'h264', lossless = false, audio = null, perf0 = performance.now() }) {
+		const pick = await pickVideoConfig({ width, height, fps, bitrate, codec, lossless });
+		if (!pick) return null;
+		const vcfg = pick.config;
 		let acfg = null;
 		if (audio) {
 			acfg = await pickAudioConfig(audio.ctx.sampleRate);
@@ -117,6 +132,8 @@ export class WebCodecsRecorder {
 			if (!acfg && audio.required) return null;
 		}
 		const r = new WebCodecsRecorder();
+		r.fam = pick.fam;
+		r.quant = pick.quant;
 		await r._init(vcfg, acfg, audio, fps, perf0);
 		return r;
 	}
@@ -128,7 +145,7 @@ export class WebCodecsRecorder {
 		this.frames = 0;
 		this.dropped = 0;
 		this.lastKey = -Infinity;
-		this.mux = new Mp4Muxer({ video: { width: vcfg.width, height: vcfg.height }, audio: acfg ? { sampleRate: acfg.sampleRate, channels: 2 } : null });
+		this.mux = new Mp4Muxer({ video: { width: vcfg.width, height: vcfg.height, codec: this.fam || 'avc' }, audio: acfg ? { sampleRate: acfg.sampleRate, channels: 2 } : null });
 		this.venc = new VideoEncoder({ output: (c, m) => this.mux.addVideo(c, m), error: (e) => (this.error ||= e) });
 		this.venc.configure(vcfg);
 		this.codec = vcfg.codec;
@@ -169,7 +186,8 @@ export class WebCodecsRecorder {
 		const key = t - this.lastKey >= 2e6;
 		const f = new VideoFrame(canvas, { timestamp: t, duration: Math.round(1e6 / this.fps) });
 		try {
-			this.venc.encode(f, { keyFrame: key });
+			// постоянное качество: каждому кадру задаётся одно и то же число квантования
+			this.venc.encode(f, this.quant ? { keyFrame: key, [this.fam]: { quantizer: this.quant } } : { keyFrame: key });
 		} finally {
 			f.close();
 		}

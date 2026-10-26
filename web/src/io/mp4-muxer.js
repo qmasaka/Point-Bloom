@@ -79,7 +79,7 @@ return !!(this.audio && this.audio.samples.length && this.audio.desc);
 finish() {
 const v = this.video;
 if (!v.samples.length) throw new Error('кадров нет');
-if (!v.desc) throw new Error('кодер не отдал описание видео (avcC)');
+if (!v.desc) throw new Error('кодер не отдал описание видео (avcC/hvcC)');
 const tracks = [v];
 if (this.hasAudio) tracks.push(this.audio);
 const base = Math.min(...v.samples.map((s) => s.ts));
@@ -88,7 +88,7 @@ for (const s of t.samples) s.ts -= base;
 if (t !== v) t.samples = t.samples.filter((s) => s.ts >= 0);
 }
 if (tracks.length > 1 && !tracks[1].samples.length) tracks.pop();
-const ftyp = box('ftyp', enc.encode('isom'), u32(512), enc.encode('isomiso2avc1mp41'));
+const ftyp = box('ftyp', enc.encode('isom'), u32(512), enc.encode(v.codec === 'hevc' ? 'isomiso2hvc1mp41' : 'isomiso2avc1mp41'));
 let mdatSize = 0;
 for (const t of tracks) for (const s of t.samples) mdatSize += s.data.length;
 const big = mdatSize + 16 > 0xffffffff;
@@ -179,7 +179,8 @@ return { box: box('trak', tkhd, edts, mdia), movieDur };
 }
 _avc1(t) {
 const name = zeros(32);
-return box('avc1', zeros(6), u16(1), zeros(16), u16(t.width), u16(t.height), u32(0x00480000), u32(0x00480000), u32(0), u16(1), name, u16(0x18), u16(0xffff), box('avcC', t.desc));
+const hevc = t.codec === 'hevc';
+return box(hevc ? 'hvc1' : 'avc1', zeros(6), u16(1), zeros(16), u16(t.width), u16(t.height), u32(0x00480000), u32(0x00480000), u32(0), u16(1), name, u16(0x18), u16(0xffff), box(hevc ? 'hvcC' : 'avcC', t.desc));
 }
 _mp4a(t) {
 const asc = t.desc;
