@@ -12,14 +12,25 @@ const RES_MAP = {
 	square: { w: 1080, h: 1080 },
 	reels: { w: 1080, h: 1920 },
 };
-// бит на пиксель кадра: точки дают много мелких деталей, и низкий битрейт превращает их в кашу и шум
-const QUALITY_BPP = { standard: 0.12, high: 0.22, max: 0.36 };
+// уровни качества записи: qp постоянного качества кадра (меньше: чище и тяжелее файл), bpp бит на пиксель для браузеров без такого режима,
+// ss во сколько раз крупнее кадра рисуется сцена (покадрово / в реальном времени), чтобы мелкие точки не рябили
+const QUALITY = {
+	light: { qp: 28, bpp: 0.06, ss: [1, 1] },
+	good: { qp: 24, bpp: 0.1, ss: [1.5, 1] },
+	high: { qp: 20, bpp: 0.18, ss: [2, 1.25] },
+	max: { qp: 16, bpp: 0.36, ss: [2, 1.5] },
+};
 
 /** Сохранённые параметры записи (панель «Параметры записи»): ими же пользуется кнопка «Записать» на таймлайне */
 export function recDefaults() {
-	const o = { res: 'viewport', fps: '60', format: 'auto', sound: true, dur: '0', quality: 'max', codec: 'h264', tlMode: 'frames' };
+	const o = { res: 'viewport', fps: '60', format: 'auto', sound: true, dur: '0', quality: 'high', tlMode: 'frames' };
 	try {
 		const saved = JSON.parse(localStorage.getItem(REC_KEY) || '{}');
+		// у старых сохранений качество было всегда максимальным (и был выбор кодека): берём новое значение по умолчанию
+		if (saved && typeof saved === 'object' && 'codec' in saved) {
+			delete saved.codec;
+			delete saved.quality;
+		}
 		if (saved && typeof saved === 'object') Object.assign(o, saved);
 	} catch (e) {
 		/* без хранилища берутся значения по умолчанию */
@@ -204,7 +215,7 @@ export class RecordingPart {
 	// ------------------------------------------------------------ запись видео
 	/**
 	 * opts: resolution ('viewport', '1080p', '4k', ...), fps, format ('auto', 'mp4', 'webm'), sound, duration (с, 0: вручную),
-	 * quality ('standard', 'high', 'max'), offline (покадрово: время сцены идёт ровно на кадр за кадром, без пропусков и без звука).
+	 * quality ('light', 'good', 'high', 'max'), offline (покадрово: время сцены идёт ровно на кадр за кадром, без пропусков и без звука).
 	 */
 	startRecording(opts = {}) {
 		if (this.recording) return;
@@ -215,8 +226,7 @@ export class RecordingPart {
 			format: opts.format ?? d.format,
 			sound: opts.sound ?? d.sound !== false,
 			duration: opts.duration ?? (parseInt(d.dur, 10) || 0),
-			quality: opts.quality ?? 'max',
-			codec: opts.codec ?? d.codec ?? 'h264',
+			quality: QUALITY[opts.quality] ? opts.quality : QUALITY[d.quality] ? d.quality : 'high',
 			offline: !!opts.offline,
 			onStart: opts.onStart || null,
 		};
@@ -237,9 +247,9 @@ export class RecordingPart {
 	async _recStart(o) {
 		this._ensureCtx();
 		const fps = o.fps;
-		// при максимальном качестве сцена рисуется крупнее кадра: покадрово вдвое, в реальном времени в полтора раза (иначе слабый компьютер не успевает)
-		const maxSS = o.quality === 'max' ? (o.offline ? 2 : 1.5) : 1;
-		const { w, h } = this._recSize(RES_MAP[o.resolution] || null, maxSS);
+		// в реальном времени сцена рисуется не так крупно, как покадрово (иначе слабый компьютер не успевает)
+		const q = QUALITY[o.quality];
+		const { w, h } = this._recSize(RES_MAP[o.resolution] || null, q.ss[o.offline ? 0 : 1]);
 		const cv = document.createElement('canvas');
 		cv.width = w;
 		cv.height = h;
@@ -247,12 +257,12 @@ export class RecordingPart {
 		this._recCv = cv;
 		this._recCtx = ctx;
 		this._recBg = this._recBgSpec();
-		const bitrate = Math.round(Math.min(o.quality === 'max' ? 250e6 : 150e6, Math.max(8e6, w * h * fps * (QUALITY_BPP[o.quality] || QUALITY_BPP.high))));
+		const bitrate = Math.round(Math.min(250e6, Math.max(4e6, w * h * fps * q.bpp)));
 		const wantSound = o.sound && !o.offline && !!this.bus;
 		let rec = null;
 		if (o.format !== 'webm') {
 			try {
-				rec = await WebCodecsRecorder.create({ width: w, height: h, fps, bitrate, codec: o.codec, lossless: o.quality === 'max', audio: wantSound ? { ctx: this.ctx, node: this.bus, required: true } : null, perf0: this._recT0 });
+				rec = await WebCodecsRecorder.create({ width: w, height: h, fps, bitrate, qp: q.qp, audio: wantSound ? { ctx: this.ctx, node: this.bus, required: true } : null, perf0: this._recT0 });
 			} catch (e) {
 				rec = null;
 			}
@@ -264,7 +274,6 @@ export class RecordingPart {
 		if (rec) {
 			this._recEnc = rec;
 			this._recKind = 'mp4';
-			if (o.codec === 'h265' && rec.fam !== 'hevc') this.app.toast('Этот браузер не умеет записывать H.265: видео пишется в H.264', 'info', 3500);
 		} else {
 			this._recMediaRecorder(o, cv, bitrate, wantSound);
 			if (!this._rec) return;

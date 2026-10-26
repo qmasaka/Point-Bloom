@@ -3210,14 +3210,16 @@ export function createEffectsPanel(app, root, engine) {
 		onChange: (v) => { recOpts.dur = v; saveRecOpts(); }
 	});
 
-	// кодек: H.264 открывается везде, H.265 чище держит мелкие точки, но не всякий плеер и не всякая соцсеть его откроют
-	const recCodecSeg = segmented({
+	// качество: чем выше, тем чище мелкие точки и тяжелее файл
+	const recQualSeg = segmented({
 		options: [
-			{ value: 'h264', label: 'H.264', title: 'Открывается везде' },
-			{ value: 'h265', label: 'H.265', title: 'Чище мелкие точки при том же размере, но открывается не везде' }
+			{ value: 'light', label: 'Лёгкое', title: 'Самый маленький файл, мелкие точки чуть мягче' },
+			{ value: 'good', label: 'Среднее', title: 'Небольшой файл, хорошо для соцсетей' },
+			{ value: 'high', label: 'Высокое', title: 'Чисто и без ряби, файл средний' },
+			{ value: 'max', label: 'Макс.', title: 'Почти без потерь, файл очень большой' }
 		],
-		value: recOpts.codec === 'h265' ? 'h265' : 'h264',
-		onChange: (v) => { recOpts.codec = v; saveRecOpts(); }
+		value: ['light', 'good', 'high', 'max'].includes(recOpts.quality) ? recOpts.quality : 'high',
+		onChange: (v) => { recOpts.quality = v; saveRecOpts(); }
 	});
 
 	const recSoundSw = switchRow('Звук', {
@@ -3239,7 +3241,7 @@ export function createEffectsPanel(app, root, engine) {
 				format: 'auto',
 				sound: !!recOpts.sound,
 				duration: parseInt(recOpts.dur, 10) || 0,
-				codec: recOpts.codec || 'h264'
+				quality: recOpts.quality
 			});
 		}
 	});
@@ -3250,7 +3252,7 @@ export function createEffectsPanel(app, root, engine) {
 		recRow('Размер', recResSel.el),
 		recRow('Кадров в секунду', recFpsSeg.el),
 		recRow('Длительность', recDurSeg.el),
-		recRow('Кодек', recCodecSeg.el),
+		recRow('Качество', recQualSeg.el),
 		recSoundSw.el,
 		startRecBtn
 	);

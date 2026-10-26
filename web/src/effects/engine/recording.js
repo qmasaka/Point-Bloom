@@ -11,11 +11,20 @@ const RES_MAP = {
 square: { w: 1080, h: 1080 },
 reels: { w: 1080, h: 1920 },
 };
-const QUALITY_BPP = { standard: 0.12, high: 0.22, max: 0.36 };
+const QUALITY = {
+light: { qp: 28, bpp: 0.06, ss: [1, 1] },
+good: { qp: 24, bpp: 0.1, ss: [1.5, 1] },
+high: { qp: 20, bpp: 0.18, ss: [2, 1.25] },
+max: { qp: 16, bpp: 0.36, ss: [2, 1.5] },
+};
 export function recDefaults() {
-const o = { res: 'viewport', fps: '60', format: 'auto', sound: true, dur: '0', quality: 'max', codec: 'h264', tlMode: 'frames' };
+const o = { res: 'viewport', fps: '60', format: 'auto', sound: true, dur: '0', quality: 'high', tlMode: 'frames' };
 try {
 const saved = JSON.parse(localStorage.getItem(REC_KEY) || '{}');
+if (saved && typeof saved === 'object' && 'codec' in saved) {
+delete saved.codec;
+delete saved.quality;
+}
 if (saved && typeof saved === 'object') Object.assign(o, saved);
 } catch (e) {
 }
@@ -171,8 +180,7 @@ fps: opts.fps > 0 ? opts.fps : parseInt(d.fps, 10) || 60,
 format: opts.format ?? d.format,
 sound: opts.sound ?? d.sound !== false,
 duration: opts.duration ?? (parseInt(d.dur, 10) || 0),
-quality: opts.quality ?? 'max',
-codec: opts.codec ?? d.codec ?? 'h264',
+quality: QUALITY[opts.quality] ? opts.quality : QUALITY[d.quality] ? d.quality : 'high',
 offline: !!opts.offline,
 onStart: opts.onStart || null,
 };
@@ -192,8 +200,8 @@ this._recAbort('Не удалось начать запись видео: ' + (e
 async _recStart(o) {
 this._ensureCtx();
 const fps = o.fps;
-const maxSS = o.quality === 'max' ? (o.offline ? 2 : 1.5) : 1;
-const { w, h } = this._recSize(RES_MAP[o.resolution] || null, maxSS);
+const q = QUALITY[o.quality];
+const { w, h } = this._recSize(RES_MAP[o.resolution] || null, q.ss[o.offline ? 0 : 1]);
 const cv = document.createElement('canvas');
 cv.width = w;
 cv.height = h;
@@ -201,12 +209,12 @@ const ctx = cv.getContext('2d', { alpha: false });
 this._recCv = cv;
 this._recCtx = ctx;
 this._recBg = this._recBgSpec();
-const bitrate = Math.round(Math.min(o.quality === 'max' ? 250e6 : 150e6, Math.max(8e6, w * h * fps * (QUALITY_BPP[o.quality] || QUALITY_BPP.high))));
+const bitrate = Math.round(Math.min(250e6, Math.max(4e6, w * h * fps * q.bpp)));
 const wantSound = o.sound && !o.offline && !!this.bus;
 let rec = null;
 if (o.format !== 'webm') {
 try {
-rec = await WebCodecsRecorder.create({ width: w, height: h, fps, bitrate, codec: o.codec, lossless: o.quality === 'max', audio: wantSound ? { ctx: this.ctx, node: this.bus, required: true } : null, perf0: this._recT0 });
+rec = await WebCodecsRecorder.create({ width: w, height: h, fps, bitrate, qp: q.qp, audio: wantSound ? { ctx: this.ctx, node: this.bus, required: true } : null, perf0: this._recT0 });
 } catch (e) {
 rec = null;
 }
@@ -218,7 +226,6 @@ return;
 if (rec) {
 this._recEnc = rec;
 this._recKind = 'mp4';
-if (o.codec === 'h265' && rec.fam !== 'hevc') this.app.toast('Этот браузер не умеет записывать H.265: видео пишется в H.264', 'info', 3500);
 } else {
 this._recMediaRecorder(o, cv, bitrate, wantSound);
 if (!this._rec) return;

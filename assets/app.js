@@ -88131,11 +88131,14 @@ en: {
 'Рамка текущего кадра': 'Current frame edge',
 'Толщина рамок': 'Edge thickness',
 'Цвет рамок': 'Edge color',
-'Кодек': 'Codec',
-'Открывается везде': 'Plays everywhere',
-'Чище мелкие точки при том же размере, но открывается не везде': 'Cleaner fine points at the same size, but does not play everywhere',
-'Этот браузер не умеет записывать H.265: видео пишется в H.264': 'This browser cannot record H.265: the video is recorded in H.264',
 'кодер не отдал описание видео (avcC/hvcC)': 'the encoder gave no video description (avcC/hvcC)',
+'Лёгкое': 'Light',
+'Среднее': 'Medium',
+'Макс.': 'Max',
+'Самый маленький файл, мелкие точки чуть мягче': 'Smallest file, fine points a little softer',
+'Небольшой файл, хорошо для соцсетей': 'Small file, good for social media',
+'Чисто и без ряби, файл средний': 'Clean with no shimmer, medium file',
+'Почти без потерь, файл очень большой': 'Nearly lossless, very large file',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -89248,11 +89251,14 @@ uk: {
 'Рамка текущего кадра': 'Рамка поточного кадру',
 'Толщина рамок': 'Товщина рамок',
 'Цвет рамок': 'Колір рамок',
-'Кодек': 'Кодек',
-'Открывается везде': 'Відкривається скрізь',
-'Чище мелкие точки при том же размере, но открывается не везде': 'Чистіші дрібні точки при тому ж розмірі, але відкривається не скрізь',
-'Этот браузер не умеет записывать H.265: видео пишется в H.264': 'Цей браузер не вміє записувати H.265: відео пишеться в H.264',
 'кодер не отдал описание видео (avcC/hvcC)': 'кодер не віддав опис відео (avcC/hvcC)',
+'Лёгкое': 'Легка',
+'Среднее': 'Середня',
+'Макс.': 'Макс.',
+'Самый маленький файл, мелкие точки чуть мягче': 'Найменший файл, дрібні точки трохи мʼякші',
+'Небольшой файл, хорошо для соцсетей': 'Невеликий файл, добре для соцмереж',
+'Чисто и без ряби, файл средний': 'Чисто й без брижів, файл середній',
+'Почти без потерь, файл очень большой': 'Майже без втрат, файл дуже великий',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -90365,11 +90371,14 @@ es: {
 'Рамка текущего кадра': 'Borde del fotograma actual',
 'Толщина рамок': 'Grosor de los bordes',
 'Цвет рамок': 'Color de los bordes',
-'Кодек': 'Códec',
-'Открывается везде': 'Se abre en todas partes',
-'Чище мелкие точки при том же размере, но открывается не везде': 'Puntos finos más limpios con el mismo tamaño, pero no se abre en todas partes',
-'Этот браузер не умеет записывать H.265: видео пишется в H.264': 'Este navegador no puede grabar H.265: el vídeo se graba en H.264',
 'кодер не отдал описание видео (avcC/hvcC)': 'el codificador no entregó la descripción del vídeo (avcC/hvcC)',
+'Лёгкое': 'Ligera',
+'Среднее': 'Media',
+'Макс.': 'Máx.',
+'Самый маленький файл, мелкие точки чуть мягче': 'Archivo más pequeño, puntos finos un poco más suaves',
+'Небольшой файл, хорошо для соцсетей': 'Archivo pequeño, bueno para redes sociales',
+'Чисто и без ряби, файл средний': 'Limpio y sin parpadeo, archivo mediano',
+'Почти без потерь, файл очень большой': 'Casi sin pérdidas, archivo muy grande',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -91482,11 +91491,14 @@ de: {
 'Рамка текущего кадра': 'Rand des aktuellen Bilds',
 'Толщина рамок': 'Randstärke',
 'Цвет рамок': 'Randfarbe',
-'Кодек': 'Codec',
-'Открывается везде': 'Läuft überall',
-'Чище мелкие точки при том же размере, но открывается не везде': 'Sauberere feine Punkte bei gleicher Größe, läuft aber nicht überall',
-'Этот браузер не умеет записывать H.265: видео пишется в H.264': 'Dieser Browser kann kein H.265 aufnehmen: das Video wird in H.264 aufgenommen',
 'кодер не отдал описание видео (avcC/hvcC)': 'der Encoder lieferte keine Videobeschreibung (avcC/hvcC)',
+'Лёгкое': 'Leicht',
+'Среднее': 'Mittel',
+'Макс.': 'Max.',
+'Самый маленький файл, мелкие точки чуть мягче': 'Kleinste Datei, feine Punkte etwas weicher',
+'Небольшой файл, хорошо для соцсетей': 'Kleine Datei, gut für soziale Netzwerke',
+'Чисто и без ряби, файл средний': 'Sauber ohne Flimmern, mittlere Datei',
+'Почти без потерь, файл очень большой': 'Nahezu verlustfrei, sehr große Datei',
 },
 };
 };
@@ -93776,21 +93788,16 @@ __def(__exports, 'pickAudioConfig', () => pickAudioConfig);
 __def(__exports, 'WebCodecsRecorder', () => WebCodecsRecorder);
 const { Mp4Muxer } = __req('src/io/mp4-muxer.js');
 const AVC = ['avc1.640034', 'avc1.640033', 'avc1.64002a', 'avc1.640028', 'avc1.4d0034', 'avc1.4d0028', 'avc1.42e034', 'avc1.42e01f'];
-const HEVC = ['hvc1.1.6.L183.B0', 'hvc1.1.6.L153.B0', 'hvc1.1.6.L123.B0'];
-const QP = { avc: 16, hevc: 18 };
-async function pickVideoConfig({ width, height, fps, bitrate, codec = 'h264', lossless = false }) {
+async function pickVideoConfig({ width, height, fps, bitrate, qp = 0 }) {
 if (typeof VideoEncoder === 'undefined' || typeof VideoFrame === 'undefined') return null;
-const fams = codec === 'h265' ? ['hevc', 'avc'] : ['avc'];
-for (const fam of fams) {
-for (const mode of lossless ? ['quantizer', 'variable'] : ['variable']) {
-for (const c of fam === 'hevc' ? HEVC : AVC) {
-const cfg = { codec: c, width, height, framerate: fps, latencyMode: 'quality', bitrateMode: mode, [fam]: { format: fam } };
+for (const mode of qp ? ['quantizer', 'variable'] : ['variable']) {
+for (const c of AVC) {
+const cfg = { codec: c, width, height, framerate: fps, latencyMode: 'quality', bitrateMode: mode, avc: { format: 'avc' } };
 if (mode !== 'quantizer') cfg.bitrate = bitrate;
 try {
 const r = await VideoEncoder.isConfigSupported(cfg);
-if (r && r.supported) return { config: r.config || cfg, fam, quant: mode === 'quantizer' ? QP[fam] : 0 };
+if (r && r.supported) return { config: r.config || cfg, quant: mode === 'quantizer' ? qp : 0 };
 } catch (e) {
-}
 }
 }
 }
@@ -93870,8 +93877,8 @@ mute.disconnect();
 };
 }
 class WebCodecsRecorder {
-static async create({ width, height, fps, bitrate, codec = 'h264', lossless = false, audio = null, perf0 = performance.now() }) {
-const pick = await pickVideoConfig({ width, height, fps, bitrate, codec, lossless });
+static async create({ width, height, fps, bitrate, qp = 0, audio = null, perf0 = performance.now() }) {
+const pick = await pickVideoConfig({ width, height, fps, bitrate, qp });
 if (!pick) return null;
 const vcfg = pick.config;
 let acfg = null;
@@ -93880,7 +93887,6 @@ acfg = await pickAudioConfig(audio.ctx.sampleRate);
 if (!acfg && audio.required) return null;
 }
 const r = new WebCodecsRecorder();
-r.fam = pick.fam;
 r.quant = pick.quant;
 await r._init(vcfg, acfg, audio, fps, perf0);
 return r;
@@ -93892,7 +93898,7 @@ this.error = null;
 this.frames = 0;
 this.dropped = 0;
 this.lastKey = -Infinity;
-this.mux = new Mp4Muxer({ video: { width: vcfg.width, height: vcfg.height, codec: this.fam || 'avc' }, audio: acfg ? { sampleRate: acfg.sampleRate, channels: 2 } : null });
+this.mux = new Mp4Muxer({ video: { width: vcfg.width, height: vcfg.height, codec: 'avc' }, audio: acfg ? { sampleRate: acfg.sampleRate, channels: 2 } : null });
 this.venc = new VideoEncoder({ output: (c, m) => this.mux.addVideo(c, m), error: (e) => (this.error ||= e) });
 this.venc.configure(vcfg);
 this.codec = vcfg.codec;
@@ -93930,7 +93936,7 @@ return false;
 const key = t - this.lastKey >= 2e6;
 const f = new VideoFrame(canvas, { timestamp: t, duration: Math.round(1e6 / this.fps) });
 try {
-this.venc.encode(f, this.quant ? { keyFrame: key, [this.fam]: { quantizer: this.quant } } : { keyFrame: key });
+this.venc.encode(f, this.quant ? { keyFrame: key, avc: { quantizer: this.quant } } : { keyFrame: key });
 } finally {
 f.close();
 }
@@ -93989,11 +93995,20 @@ const RES_MAP = {
 square: { w: 1080, h: 1080 },
 reels: { w: 1080, h: 1920 },
 };
-const QUALITY_BPP = { standard: 0.12, high: 0.22, max: 0.36 };
+const QUALITY = {
+light: { qp: 28, bpp: 0.06, ss: [1, 1] },
+good: { qp: 24, bpp: 0.1, ss: [1.5, 1] },
+high: { qp: 20, bpp: 0.18, ss: [2, 1.25] },
+max: { qp: 16, bpp: 0.36, ss: [2, 1.5] },
+};
 function recDefaults() {
-const o = { res: 'viewport', fps: '60', format: 'auto', sound: true, dur: '0', quality: 'max', codec: 'h264', tlMode: 'frames' };
+const o = { res: 'viewport', fps: '60', format: 'auto', sound: true, dur: '0', quality: 'high', tlMode: 'frames' };
 try {
 const saved = JSON.parse(localStorage.getItem(REC_KEY) || '{}');
+if (saved && typeof saved === 'object' && 'codec' in saved) {
+delete saved.codec;
+delete saved.quality;
+}
 if (saved && typeof saved === 'object') Object.assign(o, saved);
 } catch (e) {
 }
@@ -94149,8 +94164,7 @@ fps: opts.fps > 0 ? opts.fps : parseInt(d.fps, 10) || 60,
 format: opts.format ?? d.format,
 sound: opts.sound ?? d.sound !== false,
 duration: opts.duration ?? (parseInt(d.dur, 10) || 0),
-quality: opts.quality ?? 'max',
-codec: opts.codec ?? d.codec ?? 'h264',
+quality: QUALITY[opts.quality] ? opts.quality : QUALITY[d.quality] ? d.quality : 'high',
 offline: !!opts.offline,
 onStart: opts.onStart || null,
 };
@@ -94170,8 +94184,8 @@ this._recAbort('Не удалось начать запись видео: ' + (e
 async _recStart(o) {
 this._ensureCtx();
 const fps = o.fps;
-const maxSS = o.quality === 'max' ? (o.offline ? 2 : 1.5) : 1;
-const { w, h } = this._recSize(RES_MAP[o.resolution] || null, maxSS);
+const q = QUALITY[o.quality];
+const { w, h } = this._recSize(RES_MAP[o.resolution] || null, q.ss[o.offline ? 0 : 1]);
 const cv = document.createElement('canvas');
 cv.width = w;
 cv.height = h;
@@ -94179,12 +94193,12 @@ const ctx = cv.getContext('2d', { alpha: false });
 this._recCv = cv;
 this._recCtx = ctx;
 this._recBg = this._recBgSpec();
-const bitrate = Math.round(Math.min(o.quality === 'max' ? 250e6 : 150e6, Math.max(8e6, w * h * fps * (QUALITY_BPP[o.quality] || QUALITY_BPP.high))));
+const bitrate = Math.round(Math.min(250e6, Math.max(4e6, w * h * fps * q.bpp)));
 const wantSound = o.sound && !o.offline && !!this.bus;
 let rec = null;
 if (o.format !== 'webm') {
 try {
-rec = await WebCodecsRecorder.create({ width: w, height: h, fps, bitrate, codec: o.codec, lossless: o.quality === 'max', audio: wantSound ? { ctx: this.ctx, node: this.bus, required: true } : null, perf0: this._recT0 });
+rec = await WebCodecsRecorder.create({ width: w, height: h, fps, bitrate, qp: q.qp, audio: wantSound ? { ctx: this.ctx, node: this.bus, required: true } : null, perf0: this._recT0 });
 } catch (e) {
 rec = null;
 }
@@ -94196,7 +94210,6 @@ return;
 if (rec) {
 this._recEnc = rec;
 this._recKind = 'mp4';
-if (o.codec === 'h265' && rec.fam !== 'hevc') this.app.toast('Этот браузер не умеет записывать H.265: видео пишется в H.264', 'info', 3500);
 } else {
 this._recMediaRecorder(o, cv, bitrate, wantSound);
 if (!this._rec) return;
@@ -107434,13 +107447,15 @@ options: [
 value: ['0', '5', '10', '30'].includes(String(recOpts.dur)) ? String(recOpts.dur) : '0',
 onChange: (v) => { recOpts.dur = v; saveRecOpts(); }
 });
-const recCodecSeg = segmented({
+const recQualSeg = segmented({
 options: [
-{ value: 'h264', label: 'H.264', title: 'Открывается везде' },
-{ value: 'h265', label: 'H.265', title: 'Чище мелкие точки при том же размере, но открывается не везде' }
+{ value: 'light', label: 'Лёгкое', title: 'Самый маленький файл, мелкие точки чуть мягче' },
+{ value: 'good', label: 'Среднее', title: 'Небольшой файл, хорошо для соцсетей' },
+{ value: 'high', label: 'Высокое', title: 'Чисто и без ряби, файл средний' },
+{ value: 'max', label: 'Макс.', title: 'Почти без потерь, файл очень большой' }
 ],
-value: recOpts.codec === 'h265' ? 'h265' : 'h264',
-onChange: (v) => { recOpts.codec = v; saveRecOpts(); }
+value: ['light', 'good', 'high', 'max'].includes(recOpts.quality) ? recOpts.quality : 'high',
+onChange: (v) => { recOpts.quality = v; saveRecOpts(); }
 });
 const recSoundSw = switchRow('Звук', {
 value: recOpts.sound,
@@ -107460,7 +107475,7 @@ fps: parseInt(recOpts.fps, 10) || 60,
 format: 'auto',
 sound: !!recOpts.sound,
 duration: parseInt(recOpts.dur, 10) || 0,
-codec: recOpts.codec || 'h264'
+quality: recOpts.quality
 });
 }
 });
@@ -107470,7 +107485,7 @@ h('div', { class: 'fx-rec-title' }, 'Запись видео'),
 recRow('Размер', recResSel.el),
 recRow('Кадров в секунду', recFpsSeg.el),
 recRow('Длительность', recDurSeg.el),
-recRow('Кодек', recCodecSeg.el),
+recRow('Качество', recQualSeg.el),
 recSoundSw.el,
 startRecBtn
 );
