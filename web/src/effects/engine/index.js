@@ -65,6 +65,14 @@ this.state._m4 = 1;
 }
 if (this.state.look.colorBy === 'height' || this.state.look.colorBy === 'index') this.state.look.colorBy = 'disp';
 if (this.state.look.palette === 'brand') this.state.look.palette = 'cyber';
+const Ch = this.state.layers.chrono;
+if (Ch && Ch.mask === 'any') Ch.mask = 'person';
+const Dp = this.state.layers.depth;
+if (Dp && !this.state._m8) {
+if (['wave', 'ripple', 'twist', 'burst'].includes(Dp.mode)) Dp.mode = 'relief';
+if (Dp.sway === 0.35) Dp.sway = 0;
+this.state._m8 = 1;
+}
 this.ctx = null;
 this.analyser = null;
 this.bus = null;

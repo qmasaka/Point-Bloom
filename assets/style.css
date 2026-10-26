@@ -6391,7 +6391,7 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-clip-wres::after { content: ''; position: absolute; top: 50%; right: 2px; width: 3px; height: 36px; margin-top: -18px; border-radius: 2px; background: var(--accent); opacity: 0; transition: opacity 0.14s var(--ease); }
 .fx-anim.insp-right .fx-clip-wres::after { right: auto; left: 2px; }
 .fx-clip-wres:hover::after, .fx-clip-panel.is-resizing .fx-clip-wres::after { opacity: 0.9; }
-.fx-clip-body { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 16px; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.fx-clip-body { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 16px; min-height: 0; overflow-y: auto; overflow-x: hidden; }
 .fx-clip-body .fx-sub { margin: 4px 0 -2px; font-size: 11px; font-weight: 600; letter-spacing: 1.1px; text-transform: uppercase; color: var(--text-faint); }
 .fx-clip-body .field { margin: 0; }
 .fx-clip-panel .fx-anim-insp-slider { display: grid; grid-template-columns: 82px minmax(0, 1fr) 46px; align-items: center; gap: 10px; font-size: 12px; }
@@ -6622,7 +6622,7 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 
 
 /* панель правки точек: справа от кнопки инструмента, стекло как у боковых панелей */
-.pe-panel { position: absolute; z-index: 24; display: flex; flex-direction: column; gap: 10px; padding: 14px; overflow-y: auto; border-radius: 20px; background: var(--fxg-bg, rgba(18, 20, 24, 0.82)); backdrop-filter: blur(22px) saturate(1.25); -webkit-backdrop-filter: blur(22px) saturate(1.25); border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.1)); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05); scrollbar-width: thin; }
+.pe-panel { position: absolute; z-index: 24; display: flex; flex-direction: column; gap: 10px; padding: 14px; overflow-y: auto; border-radius: 20px; background: var(--fxg-bg, rgba(18, 20, 24, 0.82)); backdrop-filter: blur(22px) saturate(1.25); -webkit-backdrop-filter: blur(22px) saturate(1.25); border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.1)); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
 .pe-panel[hidden] { display: none; }
 .fx-mode .pe-panel { display: none; }
 .pe-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -6652,10 +6652,15 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 .export-card, .pe-panel, .support-pop { transform: translateZ(0); contain: paint; }
 
 /* тонкие полосы прокрутки без прыжков вёрстки: на Windows классические полосы по 17px сдвигают содержимое панелей */
+/* scrollbar-width только для Firefox: в Chrome оно отключает свою полосу (тонкую, оранжевую при перетаскивании) и возвращает системную */
 .panel, .fx-left-list, .pe-panel, .exp-right, .exp-left, .dlg-body, .fx-clip-panel {
-	scrollbar-width: thin;
-	scrollbar-color: var(--line-strong, rgba(255, 255, 255, 0.22)) transparent;
 	scrollbar-gutter: stable;
+}
+@supports (-moz-appearance: none) {
+	.panel, .fx-left-list, .pe-panel, .exp-right, .exp-left, .dlg-body, .fx-clip-panel, .fx-clip-body {
+		scrollbar-width: thin;
+		scrollbar-color: var(--line-strong, rgba(255, 255, 255, 0.22)) transparent;
+	}
 }
 .ui-float .fx-left-list, .ui-float .panel { scrollbar-gutter: auto; }
 

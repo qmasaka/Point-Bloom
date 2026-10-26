@@ -3,24 +3,49 @@
 /** Сколько буферов хранения нужно одному проходу расчёта (точки: 4 входа и 3 выхода, линии до 8). Это минимум, который WebGPU гарантирует любой видеокарте */
 export const NEED_STORAGE_BUFFERS = 8;
 
-const BAD_KEY = 'pointbloom.gpu.bad';
+// раньше здесь лежала просто причина, и один сбой (сон компьютера, сброс драйвера) навсегда переводил «Авто» на WebGL. Теперь { n, t, why }: сколько сбоев и когда последний
+const BAD_KEY = 'pointbloom.gpu.bad2';
+// после одного-двух сбоев WebGPU пробуется снова через 10 минут; после трёх подряд «Авто» неделю берёт WebGL
+const RETRY_MS = 10 * 60 * 1000;
+const GIVE_UP_MS = 7 * 24 * 3600 * 1000;
 
-/** Запоминает, что WebGPU на этом компьютере не заработал: выбор «Авто» больше не будет его пробовать (ручной выбор в настройках остаётся в силе) */
-export function markGpuBad(reason) {
-	console.warn('WebGPU отключён для режима «Авто»:', reason);
+function readBad() {
 	try {
-		localStorage.setItem(BAD_KEY, String(reason || '1').slice(0, 200));
+		// старая вечная отметка больше не действует
+		if (localStorage.getItem('pointbloom.gpu.bad')) localStorage.removeItem('pointbloom.gpu.bad');
+		const v = JSON.parse(localStorage.getItem(BAD_KEY) || 'null');
+		return v && typeof v === 'object' ? v : null;
+	} catch (e) {
+		return null;
+	}
+}
+
+/** Запоминает сбой WebGPU: «Авто» какое-то время берёт WebGL (ручной выбор в настройках остаётся в силе). hard: сбой не случайный (шейдер не собрался), сразу на неделю */
+export function markGpuBad(reason, hard = false) {
+	console.warn('WebGPU отключён для режима «Авто» на время:', reason);
+	const prev = readBad();
+	const n = (prev?.n || 0) + 1;
+	try {
+		localStorage.setItem(BAD_KEY, JSON.stringify({ n: hard ? Math.max(3, n) : n, t: Date.now(), why: String(reason || '').slice(0, 200) }));
 	} catch (e) {
 		/* без хранилища отключение действует до перезагрузки страницы */
 	}
 }
 
-export function gpuMarkedBad() {
+/** WebGPU заработал: счётчик сбоев обнуляется */
+export function markGpuGood() {
 	try {
-		return !!localStorage.getItem(BAD_KEY);
+		if (localStorage.getItem(BAD_KEY)) localStorage.removeItem(BAD_KEY);
 	} catch (e) {
-		return false;
+		/* не страшно */
 	}
+}
+
+export function gpuMarkedBad() {
+	const v = readBad();
+	if (!v) return false;
+	const age = Date.now() - (v.t || 0);
+	return v.n >= 3 ? age < GIVE_UP_MS : age < RETRY_MS;
 }
 
 /** Есть ли WebGPU в браузере (предварительный признак, без запроса адаптера) */

@@ -677,25 +677,12 @@ fn depthShape(b_in: vec3f) -> vec3f {
 		var x: f32 = (dn * N);
 		var dq: f32 = (((floor(x) + smoothstep(0.38, 0.62, fract(x)))) / N);
 		b.z += ((dzone((dq - fo)) * A) * 1.5);
-	} else if ((md == 2)) {
-		b.z += (((dd * A) * 1.3) * ((0.5 + (0.5 * sin(((t * sp) * 0.9))))));
-	} else if ((md == 3)) {
-		b.z += (((dd * A) * 1.4) * ((0.55 + (0.45 * sin(((b.x * 3.2) - ((t * sp) * 1.6)))))));
-	} else if ((md == 4)) {
-		b.z += ((((dd * 0.6) + ((sin(((length(b.xy) * 9.0) - ((t * sp) * 2.2))) * 0.25) * ((0.35 + dn))))) * A);
-	} else if ((md == 5)) {
-		var a: f32 = (((dd * A) * 1.6) * sin(((t * sp) * 0.7)));
-		var cs: f32 = cos(a);
-		var sn: f32 = sin(a);
-		{ let _sw1 = (mat2x2f(cs, -sn, sn, cs) * b.xz); b = vec3f(_sw1.x, b.y, _sw1.y); }
-		b.z += ((dd * A) * 0.5);
 	} else {
-		var p: f32 = (0.5 + (0.5 * sin((((t * sp) * 0.8) - 1.5708))));
-		b.z += ((dd * A) * ((0.4 + ((1.8 * p) * p))));
-		{ let _sw2 = (b.xy * vec2f((1.0 + ((((dd * A) * 0.5) * p) * p)))); b = vec3f(_sw2.x, _sw2.y, b.z); }
+		var p: f32 = (0.5 - (0.5 * cos(((t * sp) * 0.6))));
+		b.z += (((dd * A) * 1.2) * ((0.6 + (((0.4 * p) * p) * ((3.0 - (2.0 * p)))))));
 	}
 	var a: f32 = ((t * sp) * 0.8);
-	{ let _sw3 = (b.xy + ((((vec2f(cos(a), (sin(a) * 0.55)) * dd) * fr.uDepthP.z) * A) * 0.4)); b = vec3f(_sw3.x, _sw3.y, b.z); }
+	{ let _sw1 = (b.xy + ((((vec2f(cos(a), (sin(a) * 0.55)) * dd) * fr.uDepthP.z) * A) * 0.4)); b = vec3f(_sw1.x, _sw1.y, b.z); }
 	return b;
 }
 
@@ -711,20 +698,20 @@ fn hyperWarp(p_in: vec3f, c_in: vec3f, R_in: f32, md_in: f32, a_in: f32, w4: ptr
 	var ca: f32 = cos(a);
 	var sa: f32 = sin(a);
 	if ((md < 0.5)) {
-		{ let _sw4 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw4.x, _sw4.y); }
+		{ let _sw2 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw2.x, _sw2.y); }
 	} else if ((md < 1.5)) {
-		{ let _sw5 = vec2f(((h.x * ca) - (h.y * sa)), ((h.x * sa) + (h.y * ca))); h = vec4f(_sw5.x, _sw5.y, h.z, h.w); }
-		{ let _sw6 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw6.x, _sw6.y); }
+		{ let _sw3 = vec2f(((h.x * ca) - (h.y * sa)), ((h.x * sa) + (h.y * ca))); h = vec4f(_sw3.x, _sw3.y, h.z, h.w); }
+		{ let _sw4 = vec2f(((h.z * ca) - (h.w * sa)), ((h.z * sa) + (h.w * ca))); h = vec4f(h.x, h.y, _sw4.x, _sw4.y); }
 	} else if ((md < 2.5)) {
-		{ let _sw7 = vec2f(((h.x * ca) - (h.w * sa)), ((h.x * sa) + (h.w * ca))); h = vec4f(_sw7.x, h.y, h.z, _sw7.y); }
+		{ let _sw5 = vec2f(((h.x * ca) - (h.w * sa)), ((h.x * sa) + (h.w * ca))); h = vec4f(_sw5.x, h.y, h.z, _sw5.y); }
 		var cb: f32 = cos((a * 0.618));
 		var sb: f32 = sin((a * 0.618));
-		{ let _sw8 = vec2f(((h.y * cb) - (h.z * sb)), ((h.y * sb) + (h.z * cb))); h = vec4f(h.x, _sw8.x, _sw8.y, h.w); }
+		{ let _sw6 = vec2f(((h.y * cb) - (h.z * sb)), ((h.y * sb) + (h.z * cb))); h = vec4f(h.x, _sw6.x, _sw6.y, h.w); }
 	} else {
 		var b: f32 = (2.4 * sin(a));
 		var cb: f32 = cos(b);
 		var sb: f32 = sin(b);
-		{ let _sw9 = vec2f(((h.z * cb) - (h.w * sb)), ((h.z * sb) + (h.w * cb))); h = vec4f(h.x, h.y, _sw9.x, _sw9.y); }
+		{ let _sw7 = vec2f(((h.z * cb) - (h.w * sb)), ((h.z * sb) + (h.w * cb))); h = vec4f(h.x, h.y, _sw7.x, _sw7.y); }
 	}
 	(*w4) = h.w;
 	var o: vec3f = ((h.xyz / max((1.0 - h.w), 0.03)) * R);
@@ -800,7 +787,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var vsn: f32 = sin(vang);
 			vxz = vec2f(((vxz.x * vcs) - (vxz.y * vsn)), ((vxz.x * vsn) + (vxz.y * vcs)));
 			vxz *= vec2f((1.0 - ((0.38 * flightK) * smoothstep(0.0, 1.1, vr))));
-			{ let _sw10 = (fr.uCen.xz + vxz); (*base) = vec3f(_sw10.x, (*base).y, _sw10.y); }
+			{ let _sw8 = (fr.uCen.xz + vxz); (*base) = vec3f(_sw8.x, (*base).y, _sw8.y); }
 			(*base).y += ((((((hB - 0.3)) * 0.35) * sc) * flightK) * flightK);
 		}
 		if ((sty == 3)) {
@@ -832,7 +819,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var fall: f32 = (k1 * k1);
 			var slide: f32 = (1.0 - pow((1.0 - k1), 2.0));
 			var p1: vec3f = vec3f(mix(aOrigin.x, heap.x, slide), mix(aOrigin.y, heap.y, fall), mix(aOrigin.z, heap.z, slide));
-			{ let _sw11 = (p1.xz + ((((vec2f(hA, hC) - 0.5)) * 0.06) * sin((k1 * 3.1415926535)))); p1 = vec3f(_sw11.x, p1.y, _sw11.y); }
+			{ let _sw9 = (p1.xz + ((((vec2f(hA, hC) - 0.5)) * 0.06) * sin((k1 * 3.1415926535)))); p1 = vec3f(_sw9.x, p1.y, _sw9.y); }
 			var gr: f32 = ((k2 * k2) * ((3.0 - (2.0 * k2))));
 			var p2: vec3f = mix(heap, aTarget, gr);
 			p2.y += (((0.3 * sc) * sin((k2 * 3.1415926535))) * ((0.4 + hA)));
@@ -851,10 +838,10 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var tau: f32 = (te * 1.6);
 			var gy: f32 = (fl + (h1 * 0.03));
 			var pl: vec3f = aOrigin;
-			{ let _sw12 = (pl.xz + (((dx.xz * spd) * ((1.0 - exp(-3.52)))) * 1.4)); pl = vec3f(_sw12.x, pl.y, _sw12.y); }
+			{ let _sw10 = (pl.xz + (((dx.xz * spd) * ((1.0 - exp(-3.52)))) * 1.4)); pl = vec3f(_sw10.x, pl.y, _sw10.y); }
 			pl.y = gy;
 			var pf: vec3f = aOrigin;
-			{ let _sw13 = (pf.xz + (((dx.xz * spd) * ((1.0 - exp((-2.2 * tau))))) * 1.4)); pf = vec3f(_sw13.x, pf.y, _sw13.y); }
+			{ let _sw11 = (pf.xz + (((dx.xz * spd) * ((1.0 - exp((-2.2 * tau))))) * 1.4)); pf = vec3f(_sw11.x, pf.y, _sw11.y); }
 			var g2: f32 = 2.1;
 			var disc: f32 = ((vy0 * vy0) + ((4.0 * g2) * max((aOrigin.y - gy), 0.0)));
 			var tL: f32 = (((vy0 + sqrt(disc))) / ((2.0 * g2)));
@@ -1046,18 +1033,18 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var a: f32 = ((pos.y * tw) * 1.6);
 			var c: f32 = cos(a);
 			var s: f32 = sin(a);
-			{ let _sw14 = (mat2x2f(c, -s, s, c) * pos.xz); pos = vec3f(_sw14.x, pos.y, _sw14.y); }
+			{ let _sw12 = (mat2x2f(c, -s, s, c) * pos.xz); pos = vec3f(_sw12.x, pos.y, _sw12.y); }
 		} else if ((fr.uTwist.y < 1.5)) {
 			pos.x += (((y01t * y01t) * tw) * 0.9);
 			pos.y -= ((((y01t * y01t) * y01t) * tw) * 0.16);
 		} else if ((fr.uTwist.y < 2.5)) {
-			{ let _sw15 = (pos.xz * vec2f((1.0 + (((tw * 0.6) * ((0.5 - y01t))) * 2.0)))); pos = vec3f(_sw15.x, pos.y, _sw15.y); }
+			{ let _sw13 = (pos.xz * vec2f((1.0 + (((tw * 0.6) * ((0.5 - y01t))) * 2.0)))); pos = vec3f(_sw13.x, pos.y, _sw13.y); }
 		} else if ((fr.uTwist.y < 3.5)) {
 			var sw: f32 = sin(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z)))));
 			pos.x += ((sw * tw) * 0.2);
 			pos.z += ((cos(((pos.y * 3.2) - (t * ((0.9 + fr.uTwist.z))))) * tw) * 0.12);
 		} else {
-			{ let _sw16 = (pos.xz * vec2f((1.0 + ((tw * 0.3) * sin(((y01t * 6.2831) - (t * ((1.2 + fr.uTwist.z))))))))); pos = vec3f(_sw16.x, pos.y, _sw16.y); }
+			{ let _sw14 = (pos.xz * vec2f((1.0 + ((tw * 0.3) * sin(((y01t * 6.2831) - (t * ((1.2 + fr.uTwist.z))))))))); pos = vec3f(_sw14.x, pos.y, _sw14.y); }
 		}
 	}
 	if ((fr.uWave.x > 0.001)) {
@@ -1105,7 +1092,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		pe = ((fr.uPulse.x * env) * 1.6);
 		if ((fr.uPulseP.x > 1.5)) {
 			pos.y *= (1.0 + (pe * 0.2));
-			{ let _sw17 = (pos.xz * vec2f((1.0 - (pe * 0.11)))); pos = vec3f(_sw17.x, pos.y, _sw17.y); }
+			{ let _sw15 = (pos.xz * vec2f((1.0 - (pe * 0.11)))); pos = vec3f(_sw15.x, pos.y, _sw15.y); }
 			pe = 0.0;
 		}
 	}
@@ -1157,7 +1144,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			pos += (((((wv * dk) * dk) * 1.5) * sp) * sc);
 		} else if ((ds < 1.5)) {
 			pos.y += (((dk * dk) * ((0.7 + (0.5 * ch)))) * sc);
-			{ let _sw18 = (pos.xz + ((((vec2f(sin(((t * 1.5) + (ch * 6.0))), cos(((t * 1.3) + (ch * 5.0)))) * dk) * 0.1) * sc) + ((vec2f((fr.uDis.w * 0.5), 0.0) * dk) * sc))); pos = vec3f(_sw18.x, pos.y, _sw18.y); }
+			{ let _sw16 = (pos.xz + ((((vec2f(sin(((t * 1.5) + (ch * 6.0))), cos(((t * 1.3) + (ch * 5.0)))) * dk) * 0.1) * sc) + ((vec2f((fr.uDis.w * 0.5), 0.0) * dk) * sc))); pos = vec3f(_sw16.x, pos.y, _sw16.y); }
 		} else if ((ds < 2.5)) {
 			pos += ((((outd * dk) * 0.12) * sc) + vec3f(0.0, ((dk * 0.05) * sc), 0.0));
 		} else if ((ds < 3.5)) {
@@ -1177,7 +1164,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var ang: f32 = (((dk * dk) * ((3.2 + (fr.uDis.w * 1.2)))) * sc);
 			var cs: f32 = cos(ang);
 			var sn: f32 = sin(ang);
-			{ let _sw19 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw19.x, q.y, _sw19.y); }
+			{ let _sw17 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw17.x, q.y, _sw17.y); }
 			q *= vec3f((1.0 - ((0.9 * dk) * dk)));
 			pos = ((fr.uCen + q) + vec3f(0.0, (((dk * dk) * 0.45) * sc), 0.0));
 		} else {
@@ -1211,7 +1198,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		gGrowE = ((gGrow * ((1.0 - gGrow))) * 4.0);
 		pos += (((rad * gGrowE) * fr.uGrowP.x) * 0.12);
 		var yG: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
-		{ let _sw20 = (pos.xz + ((((vec2f(sin(((t * 1.2) + (yG * 5.0))), cos(((t * 0.9) + (yG * 4.0)))) * 0.018) * fr.uGrowP.y) * gGrow) * ((0.3 + yG)))); pos = vec3f(_sw20.x, pos.y, _sw20.y); }
+		{ let _sw18 = (pos.xz + ((((vec2f(sin(((t * 1.2) + (yG * 5.0))), cos(((t * 0.9) + (yG * 4.0)))) * 0.018) * fr.uGrowP.y) * gGrow) * ((0.3 + yG)))); pos = vec3f(_sw18.x, pos.y, _sw18.y); }
 	}
 	{
 		for (var ji: i32 = 0; (ji < 3); ji++) {
@@ -1328,7 +1315,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var q: vec3f = (pos - fr.uCen);
 			var cs: f32 = cos(ang);
 			var sn: f32 = sin(ang);
-			{ let _sw21 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw21.x, q.y, _sw21.y); }
+			{ let _sw19 = vec2f(((q.x * cs) - (q.z * sn)), ((q.x * sn) + (q.z * cs))); q = vec3f(_sw19.x, q.y, _sw19.y); }
 			pos = (fr.uCen + q);
 			cn = vec3f(0.0);
 		} else if ((fr.uCurlP.z > 0.5)) {
@@ -1523,7 +1510,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		var sq: vec2f = pPhys.xz;
 		var cs: f32 = cos(spinA);
 		var sn: f32 = sin(spinA);
-		{ let _sw22 = vec2f(((sq.x * cs) - (sq.y * sn)), ((sq.x * sn) + (sq.y * cs))); pPhys = vec3f(_sw22.x, pPhys.y, _sw22.y); }
+		{ let _sw20 = vec2f(((sq.x * cs) - (sq.y * sn)), ((sq.x * sn) + (sq.y * cs))); pPhys = vec3f(_sw20.x, pPhys.y, _sw20.y); }
 		var strength: f32 = min(1.0, fr.uPhysics.x);
 		var target_: vec3f = mix(pos, pPhys, strength);
 		if ((fr.uAsm > 0.0)) {
@@ -1555,7 +1542,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 					var ca: f32 = cos(a);
 					var sa: f32 = sin(a);
 					var q: vec2f = (pos.xz - fr.uHand[i].xz);
-					{ let _sw23 = (fr.uHand[i].xz + vec2f(((q.x * ca) - (q.y * sa)), ((q.x * sa) + (q.y * ca)))); pos = vec3f(_sw23.x, pos.y, _sw23.y); }
+					{ let _sw21 = (fr.uHand[i].xz + vec2f(((q.x * ca) - (q.y * sa)), ((q.x * sa) + (q.y * ca)))); pos = vec3f(_sw21.x, pos.y, _sw21.y); }
 					pos.y += (((f * hs) * fr.uHandP.x) * 0.12);
 				} else {
 					pos += ((((normalize((hd + vec3f(1e-3))) * f) * hs) * fr.uHandP.x) * 0.75);

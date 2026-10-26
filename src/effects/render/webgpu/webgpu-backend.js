@@ -6,7 +6,7 @@ import { WebGPUPost } from './webgpu-post.js';
 import { WebGPUMesh } from './webgpu-mesh.js';
 import { WebGPUTrail } from './webgpu-trail.js';
 import { WebGPUSurface } from './webgpu-surface.js';
-import { markGpuBad } from './device.js';
+import { markGpuBad, markGpuGood } from './device.js';
 
 // атрибуты облака (имена как в GLSL), которые движок эффектов хранит в геометрии three.js
 const ATTRS = ['aOrigin', 'aTarget', 'aNormal', 'aNormalB', 'aPaint', 'aColor', 'aColorB', 'aHide', 'aDepth', 'aPath', 'aSculpt', 'aVis', 'aIdx'];
@@ -84,9 +84,13 @@ export class WebGPUBackend extends RenderBackend {
 		} catch (e) {
 			// шейдер не собрался: кадры пойдут через WebGL (gpuReady ниже), а режим «Авто» больше не будет пробовать WebGPU
 			this.lost = true;
-			markGpuBad('не собрались шейдеры: ' + (e && e.message ? e.message : e));
+			markGpuBad('не собрались шейдеры: ' + (e && e.message ? e.message : e), true);
 			return;
 		}
+		// минута без сбоев: прежние сбои (сон компьютера, сброс драйвера) забываются
+		setTimeout(() => {
+			if (!this.lost) markGpuGood();
+		}, 60000);
 		this._syncCloud();
 	}
 

@@ -298,7 +298,7 @@ export class LoopPart {
 				// объём по глубине работает на фото и видео, а также на блоке раскадровки (у каждого кадра своя карта)
 				const onFr = st.source === 'frames' && this._framesOn && u.uFr.value.x > 0.5;
 				const on = Dp.on && ((st.source === 'media' && this.pm.ready) || onFr);
-				u.uDepth.value.set(on ? clamp(this._eff(Dp), 0, 1.5) : 0, { relief: 0, layers: 1, breath: 2, wave: 3, ripple: 4, twist: 5, burst: 6 }[Dp.mode] ?? 0, Dp.speed, Dp.focus);
+				u.uDepth.value.set(on ? clamp(this._eff(Dp), 0, 1.5) : 0, { relief: 0, layers: 1, breath: 2 }[Dp.mode] ?? 0, Dp.speed, Dp.focus);
 				// у фото и видео карта правится заранее (яркость, контраст, тени), у кадров раскадровки в шейдере
 				if (onFr) u.uDepthQ.value.set(Dp.zone ?? 0.12, Dp.bright ?? 0, Dp.contrast ?? 1, Dp.gamma ?? 1);
 				else u.uDepthQ.value.set(Dp.zone ?? 0.12, 0, 1, 1);

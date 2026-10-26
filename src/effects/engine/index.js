@@ -77,6 +77,15 @@ export class EffectsEngine {
 		if (this.state.look.colorBy === 'height' || this.state.look.colorBy === 'index') this.state.look.colorBy = 'disp';
 		// палитру «Янтарь» убрали: сохранённая сцена с ней берёт «Неон»
 		if (this.state.look.palette === 'brand') this.state.look.palette = 'cyber';
+		// у шлейфа убран режим «Людей, животных, транспорт», у объёма по глубине движущиеся виды (волна, рябь, карусель, выброс); покачивание по умолчанию выключено
+		const Ch = this.state.layers.chrono;
+		if (Ch && Ch.mask === 'any') Ch.mask = 'person';
+		const Dp = this.state.layers.depth;
+		if (Dp && !this.state._m8) {
+			if (['wave', 'ripple', 'twist', 'burst'].includes(Dp.mode)) Dp.mode = 'relief';
+			if (Dp.sway === 0.35) Dp.sway = 0;
+			this.state._m8 = 1;
+		}
 
 		// звук
 		this.ctx = null;

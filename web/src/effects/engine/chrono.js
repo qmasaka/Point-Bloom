@@ -54,7 +54,7 @@ D.on = true;
 D.amount = Math.max(D.amount || 0, 0.6);
 }
 this._chronoX = 0;
-if (C.mask === 'person' || C.mask === 'any') this._segInit();
+if (C.mask === 'person') this._segInit();
 this.emit();
 }
 p.c = !!C.on;
@@ -88,7 +88,7 @@ fr.mask ||= new Uint8Array(fr.n * per);
 const dst = fr.mask.subarray(k * per, (k + 1) * per);
 if (C.mask === 'depth') return;
 let m = null;
-if (C.mask === 'person' || C.mask === 'any') {
+if (C.mask === 'person') {
 this._segInit();
 m = this.segmenter.ready ? this.segmenter.mask(this.pm.el, fr.cols, fr.rows, SEG_CLASSES[C.mask]) : null;
 if (!m) {

@@ -3295,7 +3295,7 @@ export function createEffectsPanel(app, root, engine) {
 	function sync() {
 		if (chronoStat) {
 			const I = engine.chronoInfo();
-			const ai = I.mask === 'person' || I.mask === 'any';
+			const ai = I.mask === 'person';
 			chronoStat.textContent = !I.video
 				? 'Откройте видео: шлейф строится по его кадрам.'
 				: !ai

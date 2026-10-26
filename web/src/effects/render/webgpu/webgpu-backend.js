@@ -6,7 +6,7 @@ import { WebGPUPost } from './webgpu-post.js';
 import { WebGPUMesh } from './webgpu-mesh.js';
 import { WebGPUTrail } from './webgpu-trail.js';
 import { WebGPUSurface } from './webgpu-surface.js';
-import { markGpuBad } from './device.js';
+import { markGpuBad, markGpuGood } from './device.js';
 const ATTRS = ['aOrigin', 'aTarget', 'aNormal', 'aNormalB', 'aPaint', 'aColor', 'aColorB', 'aHide', 'aDepth', 'aPath', 'aSculpt', 'aVis', 'aIdx'];
 const _mv = new THREE.Matrix4();
 const _pm = new THREE.Matrix4();
@@ -62,9 +62,12 @@ try {
 await Promise.all([this.pts.prepare(), this.post.prepare()]);
 } catch (e) {
 this.lost = true;
-markGpuBad('не собрались шейдеры: ' + (e && e.message ? e.message : e));
+markGpuBad('не собрались шейдеры: ' + (e && e.message ? e.message : e), true);
 return;
 }
+setTimeout(() => {
+if (!this.lost) markGpuGood();
+}, 60000);
 this._syncCloud();
 }
 install() {

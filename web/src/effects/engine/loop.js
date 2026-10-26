@@ -267,7 +267,7 @@ u.uYR.value.set(-hh, hh);
 const Dp = L.depth;
 const onFr = st.source === 'frames' && this._framesOn && u.uFr.value.x > 0.5;
 const on = Dp.on && ((st.source === 'media' && this.pm.ready) || onFr);
-u.uDepth.value.set(on ? clamp(this._eff(Dp), 0, 1.5) : 0, { relief: 0, layers: 1, breath: 2, wave: 3, ripple: 4, twist: 5, burst: 6 }[Dp.mode] ?? 0, Dp.speed, Dp.focus);
+u.uDepth.value.set(on ? clamp(this._eff(Dp), 0, 1.5) : 0, { relief: 0, layers: 1, breath: 2 }[Dp.mode] ?? 0, Dp.speed, Dp.focus);
 if (onFr) u.uDepthQ.value.set(Dp.zone ?? 0.12, Dp.bright ?? 0, Dp.contrast ?? 1, Dp.gamma ?? 1);
 else u.uDepthQ.value.set(Dp.zone ?? 0.12, 0, 1, 1);
 u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, map: 1, heat: 2 }[Dp.view] ?? 0);
