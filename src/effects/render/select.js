@@ -1,6 +1,8 @@
 import { WebGLBackend } from './webgl/webgl-backend.js';
 import { WebGPUBackend } from './webgpu/webgpu-backend.js';
 import { requestGpu, markGpuBad, gpuMarkedBad } from './webgpu/device.js';
+import { WebGPUPoints } from './webgpu/webgpu-points.js';
+import { WebGPUPost } from './webgpu/webgpu-post.js';
 import { perf } from '../../core/perf.js';
 
 /** Есть ли в браузере WebGPU (API есть, но проверка адаптера асинхронная, поэтому это лишь предварительный признак) */
@@ -40,6 +42,25 @@ export function pickBackendKind(setting = 'auto') {
 }
 
 let gpuPromise = null;
+let warm = null;
+
+/**
+ * Тихий прогрев WebGPU, пока человек ещё в редакторе: устройство и главные конвейеры (точки, пост-обработка) собираются в фоне.
+ * Без него при первом входе в «Эффекты» облако несколько секунд не появлялось (шейдеры собирались с нуля), а со второго раза всё было быстро
+ */
+export function prewarmEffects(kind) {
+	if (kind !== 'webgpu' || warm) return;
+	warm = (async () => {
+		gpuPromise ||= requestGpu({ allowFallback: forcedOn() }).catch(() => null);
+		const gpu = await gpuPromise;
+		if (!gpu) return null;
+		const cv = document.createElement('canvas');
+		const pts = new WebGPUPoints(gpu, cv);
+		const post = new WebGPUPost(gpu.device, gpu.format);
+		await Promise.all([pts.prepare(), post.prepare()]);
+		return { gpu, cv, pts, post };
+	})().catch(() => null);
+}
 
 /** Создаёт рендер-движок указанного вида для движка эффектов. Если WebGPU не заработал, возвращает WebGL */
 export async function createBackend(kind, engine) {
@@ -55,7 +76,15 @@ export async function createBackend(kind, engine) {
 					gpuPromise = null;
 				});
 			}
-			return new WebGPUBackend(engine, gpu);
+			const b = new WebGPUBackend(engine, gpu);
+			// прогретые заранее холст и конвейеры достаются первому входу (если прогрев ещё идёт, он не ждётся)
+			const w = warm;
+			warm = null;
+			if (w) {
+				const got = await Promise.race([w, new Promise((r) => setTimeout(() => r(null), 0))]);
+				if (got && got.gpu === gpu) b.warm = got;
+			}
+			return b;
 		}
 		gpuPromise = null;
 		kind = 'webgl';

@@ -2337,11 +2337,6 @@ return h('div', { class: 'fx-clip-group' }, h('span', { class: 'fx-anim-insp-lab
 const shapeRow = mkSeg('Профиль', [['plateau', 'Ровная', 'Сила держится на одном уровне весь блок'], ['ramp', 'Растёт', 'Сила растёт от нуля к концу блока'], ['fall', 'Спадает', 'Сила падает от максимума к концу блока'], ['peak', 'Пик', 'Сила растёт к середине блока и падает']], c.shape || 'plateau', (v) => engine.animUpdateClip(c.id, { shape: v }));
 const easeRow = mkSeg('Кривая', [['smooth', 'Плавно', 'Мягкий вход и выход'], ['linear', 'Ровно', 'Линейное нарастание и спад'], ['sharp', 'Резко', 'Быстрый вход, резкий спад']], c.ease || 'smooth', (v) => engine.animUpdateClip(c.id, { ease: v }));
 const revSw = switchRow('Задом наперёд', { value: !!c.rev, onChange: (v) => { engine.animUpdateClip(c.id, { rev: v }); } });
-const quick = h('div', { class: 'fx-clip-quick' },
-button({ label: 'Начало здесь', variant: 'secondary', cls: 'btn-sm', title: 'Блок начнётся там, где стоит курсор времени, длина сохранится', onClick: () => { engine.animUpdateClip(c.id, { start: engine.animT }); animSync(); } }),
-button({ label: 'Конец здесь', variant: 'secondary', cls: 'btn-sm', title: 'Блок закончится там, где стоит курсор времени', onClick: () => { const d = engine.animT - c.start; if (d < 0.2) { app.toast('Курсор должен стоять правее начала блока', 'info'); return; } engine.animUpdateClip(c.id, { dur: d }); animSync(); } }),
-button({ label: 'На всю длину', variant: 'secondary', cls: 'btn-sm', title: 'Растянуть блок на весь таймлайн', onClick: () => { engine.animUpdateClip(c.id, { start: 0 }); engine.animUpdateClip(c.id, { dur: st.anim.dur || 8 }); animSync(); } })
-);
 const openFx = button({ label: 'Настройки эффекта', icon: 'gear-six', variant: 'secondary', cls: 'btn-sm fx-clip-open-fx', title: 'Открыть параметры этого эффекта в правой панели', onClick: () => { select_(c.layerId); sync(); } });
 clipActs.append(
 iconButton({ icon: 'scissors', title: 'Разрезать блок по курсору времени (S)', onClick: () => splitSelected() }),
@@ -2350,7 +2345,7 @@ iconButton({ icon: c.off ? 'eye' : 'eye-slash', title: c.off ? 'Включить
 iconButton({ icon: 'trash', title: 'Удалить блок (Delete)', cls: 'is-danger', onClick: () => { engine.animRemoveClip(c.id); selectOnly(null); animSync(); } }),
 iconButton({ icon: 'x', title: 'Снять выбор (Esc)', onClick: () => { selectOnly(null); animSync(); } })
 );
-clipBody.append(graph, sAmt.row, sFadeIn.row, sFadeOut.row, sRep.row, shapeRow, easeRow, revSw.el, quick, openFx);
+clipBody.append(graph, sAmt.row, sFadeIn.row, sFadeOut.row, sRep.row, shapeRow, easeRow, revSw.el, openFx);
 } else if (selKey) {
 buildKeyInspector(selKey, mkSlider);
 } else {
@@ -2414,9 +2409,7 @@ sDur.row.dataset.tip = 'Сколько секунд идёт переход: б�
 const tf = timeField(c.start, st.anim.dur || 8, (v) => { engine.animUpdateClip(c.id, { start: v }); animSync(); });
 const easeRow = iconSeg('Ход', [['smooth', 'Плавно', 'Мягко трогается и мягко собирается', rampIcon('smooth')], ['linear', 'Ровно', 'С одной скоростью от начала до конца', rampIcon('linear')], ['sharp', 'Рывком', 'Резко срывается и долго собирается', rampIcon('sharp')]], c.ease || 'smooth', (v) => { engine.animUpdateClip(c.id, { ease: v }); engine.animSeek(engine.animT); });
 const revSw = switchRow('Задом наперёд', { value: !!c.rev, onChange: (v) => { engine.animUpdateClip(c.id, { rev: v }); engine.animSeek(engine.animT); } });
-const quick = h('div', { class: 'fx-clip-quick' },
-button({ label: 'Начало здесь', variant: 'secondary', cls: 'btn-sm', title: 'Переход начнётся там, где стоит курсор времени', onClick: () => { engine.animUpdateClip(c.id, { start: engine.animT }); animSync(); } }),
-button({ label: 'Конец здесь', variant: 'secondary', cls: 'btn-sm', title: 'Переход закончится там, где стоит курсор времени', onClick: () => { const d = engine.animT - c.start; if (d < 0.2) { app.toast('Курсор должен стоять правее начала блока', 'info'); return; } engine.animUpdateClip(c.id, { dur: d }); animSync(); } }),
+const quick = h('div', { class: 'fx-clip-quick is-one' },
 button({ label: 'Следующий', icon: 'plus', variant: 'secondary', cls: 'btn-sm', title: 'Добавить следующий переход сразу после этого: форма пойдёт дальше по цепочке', onClick: () => { const n = engine.animAddClip('morph', { start: Math.min((st.anim.dur || 8) - 0.3, c.start + c.dur + 0.5), dur: c.dur, ease: c.ease, style: c.style }); selectOnly(n); animSync(); } })
 );
 inspRefs = { update: () => { sDur.set(c.dur, Math.max(0.5, (st.anim.dur || 8) - c.start)); tf.set(c.start); } };

@@ -1,6 +1,8 @@
 import { WebGLBackend } from './webgl/webgl-backend.js';
 import { WebGPUBackend } from './webgpu/webgpu-backend.js';
 import { requestGpu, markGpuBad, gpuMarkedBad } from './webgpu/device.js';
+import { WebGPUPoints } from './webgpu/webgpu-points.js';
+import { WebGPUPost } from './webgpu/webgpu-post.js';
 import { perf } from '../../core/perf.js';
 export function webgpuAvailable() {
 return typeof navigator !== 'undefined' && !!navigator.gpu;
@@ -25,6 +27,20 @@ if (setting === 'webgl') return 'webgl';
 return !gpuMarkedBad() && !perf.isApple && !perf.software ? 'webgpu' : 'webgl';
 }
 let gpuPromise = null;
+let warm = null;
+export function prewarmEffects(kind) {
+if (kind !== 'webgpu' || warm) return;
+warm = (async () => {
+gpuPromise ||= requestGpu({ allowFallback: forcedOn() }).catch(() => null);
+const gpu = await gpuPromise;
+if (!gpu) return null;
+const cv = document.createElement('canvas');
+const pts = new WebGPUPoints(gpu, cv);
+const post = new WebGPUPost(gpu.device, gpu.format);
+await Promise.all([pts.prepare(), post.prepare()]);
+return { gpu, cv, pts, post };
+})().catch(() => null);
+}
 export async function createBackend(kind, engine) {
 if (kind === 'webgpu') {
 gpuPromise ||= requestGpu({ allowFallback: forcedOn() }).catch(() => null);
@@ -37,7 +53,14 @@ gpu.device.lost.then(() => {
 gpuPromise = null;
 });
 }
-return new WebGPUBackend(engine, gpu);
+const b = new WebGPUBackend(engine, gpu);
+const w = warm;
+warm = null;
+if (w) {
+const got = await Promise.race([w, new Promise((r) => setTimeout(() => r(null), 0))]);
+if (got && got.gpu === gpu) b.warm = got;
+}
+return b;
 }
 gpuPromise = null;
 kind = 'webgl';

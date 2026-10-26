@@ -7057,3 +7057,18 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 .fx-anim-cam-label .fx-anim-cam-preset.btn-icon { width: 22px; height: 22px; padding: 0; margin-left: auto; border-radius: 50%; color: var(--text-faint); flex: none; }
 .fx-anim-cam-label .fx-anim-cam-preset.btn-icon:hover { color: var(--accent-text); background: var(--bg-hover); }
 .fx-anim-block-ic { display: inline-grid; vertical-align: -2px; margin-right: 4px; }
+
+/* настройки выключенного эффекта не серые: ползунки и выбор горят акцентом, как везде; выключенность видна по лёгкой прозрачности */
+.fx-insp.is-off { opacity: 0.72; filter: none; }
+.fx-insp.is-off:hover, .fx-insp.is-off:focus-within { opacity: 1; }
+/* колонка свойств в таймлайне: матовое полупрозрачное стекло, как у панелей сайта */
+.fx-mode .fx-anim .fx-clip-panel:not(.is-shut) { background: color-mix(in srgb, var(--bg-raised) 55%, transparent); border-color: var(--fxg-line, var(--line)); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+/* ручки длины блоков: тонкая светлая черта у края, видна при наведении на блок и ярче под курсором */
+.fx-mode .fx-anim-block .fx-anim-handle { width: 12px; cursor: ew-resize; }
+.fx-mode .fx-anim-block .fx-anim-handle::after { content: ''; position: absolute; top: 50% !important; bottom: auto !important; width: 3px !important; height: 14px; margin-top: -7px; border-radius: 999px; background: rgba(255, 255, 255, 0.7) !important; box-shadow: none !important; opacity: 0 !important; transition: opacity 0.15s var(--ease), height 0.15s var(--ease), margin 0.15s var(--ease) !important; }
+.fx-mode .fx-anim-block .fx-anim-handle.is-left::after { left: 4px !important; }
+.fx-mode .fx-anim-block .fx-anim-handle.is-right::after { right: 4px !important; left: auto !important; }
+.fx-mode .fx-anim-block:hover .fx-anim-handle::after, .fx-mode .fx-anim-block.is-sel .fx-anim-handle::after { opacity: 0.55 !important; }
+.fx-mode .fx-anim-block .fx-anim-handle:hover::after, .fx-mode .fx-anim-block .fx-anim-handle:active::after { opacity: 1 !important; height: 20px; margin-top: -10px; background: #fff !important; }
+
+.fx-clip-quick.is-one { grid-template-columns: minmax(0, 1fr); }

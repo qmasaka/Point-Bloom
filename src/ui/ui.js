@@ -19,6 +19,7 @@ import { EffectsEngine } from '../effects/engine/index.js';
 import { createEffectsPanel, makeModelProvider } from '../effects/ui/panel-effects.js';
 import { importFiles, assignTextureFiles, ACCEPT_ALL, MODEL_FORMATS, IMAGE_EXT } from '../io/importers.js';
 import { BACKGROUNDS } from '../scene/viewport.js';
+import { pickBackendKind, prewarmEffects } from '../effects/render/select.js';
 
 const TOAST_ICON = { ok: 'check-circle', warn: 'warning', error: 'warning-circle', info: 'info' };
 
@@ -229,17 +230,22 @@ export class UI {
 	async openFiles(mode = 'auto') {
 		// в режиме эффектов «Открыть» сразу спрашивает, что делать с файлом: дополнить сцену (ещё модель, видео, фото) или начать с чистого листа
 		// «Добавить…» в эффектах: тот же выбор, но без «Начать заново»
-		const fxAdd = mode === 'fxadd';
-		if (fxAdd) mode = 'auto';
-		if (mode === 'auto' && this.workspace === 'fx' && (fxAdd || this.app.model.renderables().length || this.app.media.pm.ready)) {
+		// «Добавить…» в эффектах сразу открывает выбор файла: модель дополняет сцену, видео или фото становится точками (без лишнего окна с вопросом)
+		if (mode === 'fxadd') {
+			this.openMode = 'add';
+			this.fileInput.accept = ACCEPT_ALL;
+			this.fileInput.click();
+			return;
+		}
+		if (mode === 'auto' && this.workspace === 'fx' && (this.app.model.renderables().length || this.app.media.pm.ready)) {
 			const choice = await this.choose({
-				title: fxAdd ? 'Что добавить' : 'Что открыть',
+				title: 'Что открыть',
 				text: 'Модели, видео и фото можно добавлять к тому, что уже есть, и потом делать между ними морфинг.',
 				buttons: [
 					{ label: 'Отмена', value: null },
 					{ label: 'Модель', value: 'add', icon: 'cube' },
 					{ label: 'Видео или фото', value: 'media', icon: 'film-strip' },
-					...(fxAdd ? [] : [{ label: 'Начать заново', value: 'replace', icon: 'arrows-clockwise' }]),
+					{ label: 'Начать заново', value: 'replace', icon: 'arrows-clockwise' },
 				],
 			});
 			if (!choice) return;
@@ -490,6 +496,9 @@ export class UI {
 		this.buildExportPop();
 		this.makeSidebarResizable();
 		initMobile(app);
+		// пока человек в редакторе, видеокарта в фоне готовит шейдеры «Эффектов»: первый вход туда без долгой паузы
+		const warmFx = () => prewarmEffects(pickBackendKind(app.settings.render.backend));
+		setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(warmFx, { timeout: 4000 }) : warmFx()), 2500);
 	}
 
 	buildUiScale() {
@@ -1084,6 +1093,11 @@ export class UI {
 		}
 		const vid = files.find(isMedia);
 		if (vid && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) return this.openMedia(vid);
+		// «Добавить…» в эффектах: фото без модели в выборе тоже становится точками, а не текстурой
+		if (mode === 'add' && this.workspace === 'fx' && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) {
+			const img = files.find((x) => IMAGE_EXT.includes(extOf(x.name)));
+			if (img) return this.openMedia(img);
+		}
 		// одиночная картинка без модели в сцене: текстуре некуда ложиться, поэтому делаем из неё точки
 		if (files.length === 1 && IMAGE_EXT.includes(extOf(files[0].name)) && !app.model.meshes().length) return this.openMedia(files[0]);
 		const hasModel = files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip');
@@ -1235,7 +1249,9 @@ export class UI {
 	reportImport(r) {
 		const app = this.app;
 		if (r.models.length) {
-			app.nav.frameAll(true);
+			// первая модель в пустой сцене сразу стоит в кадре: раньше она появлялась вплотную, и камера отъезжала, пока модель проявлялась
+			const first = !$('#emptyState').hidden;
+			app.nav.frameAll(!first);
 			// персонаж с анимацией: камера охватывает всё его движение, а не позу привязки
 			if (app.anim.has) {
 				const ab = app.anim.animatedBounds();

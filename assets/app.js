@@ -79460,15 +79460,17 @@ create() {
 const e = this.engine;
 const vp = e.app.viewport;
 this.gl.create();
-const cv = document.createElement('canvas');
+const w = this.warm;
+this.warm = null;
+const cv = w ? w.cv : document.createElement('canvas');
 cv.className = 'gl fx-gpu';
 cv.style.cssText = 'position:absolute;inset:0;pointer-events:none';
 vp.canvas.after(cv);
 this.canvas = cv;
 vp.fxOverlay = cv;
 vp.fxCompose = () => this.captureCanvas();
-this.pts = new WebGPUPoints(this.gpu, cv);
-this.post = new WebGPUPost(this.gpu.device, this.gpu.format);
+this.pts = w ? w.pts : new WebGPUPoints(this.gpu, cv);
+this.post = w ? w.post : new WebGPUPost(this.gpu.device, this.gpu.format);
 this.trail = new WebGPUTrail(this.gpu.device, this.gpu.format);
 this.surface = new WebGPUSurface(this.gpu.device, this.gpu.format);
 this.meshes = { links: new WebGPUMesh(this.pts, 'links'), scope: new WebGPUMesh(this.pts, 'scope') };
@@ -79877,10 +79879,13 @@ __defs['src/effects/render/select.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'webgpuAvailable', () => webgpuAvailable);
 __def(__exports, 'pickBackendKind', () => pickBackendKind);
+__def(__exports, 'prewarmEffects', () => prewarmEffects);
 __def(__exports, 'createBackend', () => createBackend);
 const { WebGLBackend } = __req('src/effects/render/webgl/webgl-backend.js');
 const { WebGPUBackend } = __req('src/effects/render/webgpu/webgpu-backend.js');
 const { requestGpu, markGpuBad, gpuMarkedBad } = __req('src/effects/render/webgpu/device.js');
+const { WebGPUPoints } = __req('src/effects/render/webgpu/webgpu-points.js');
+const { WebGPUPost } = __req('src/effects/render/webgpu/webgpu-post.js');
 const { perf } = __req('src/core/perf.js');
 function webgpuAvailable() {
 return typeof navigator !== 'undefined' && !!navigator.gpu;
@@ -79905,6 +79910,20 @@ if (setting === 'webgl') return 'webgl';
 return !gpuMarkedBad() && !perf.isApple && !perf.software ? 'webgpu' : 'webgl';
 }
 let gpuPromise = null;
+let warm = null;
+function prewarmEffects(kind) {
+if (kind !== 'webgpu' || warm) return;
+warm = (async () => {
+gpuPromise ||= requestGpu({ allowFallback: forcedOn() }).catch(() => null);
+const gpu = await gpuPromise;
+if (!gpu) return null;
+const cv = document.createElement('canvas');
+const pts = new WebGPUPoints(gpu, cv);
+const post = new WebGPUPost(gpu.device, gpu.format);
+await Promise.all([pts.prepare(), post.prepare()]);
+return { gpu, cv, pts, post };
+})().catch(() => null);
+}
 async function createBackend(kind, engine) {
 if (kind === 'webgpu') {
 gpuPromise ||= requestGpu({ allowFallback: forcedOn() }).catch(() => null);
@@ -79917,7 +79936,14 @@ gpu.device.lost.then(() => {
 gpuPromise = null;
 });
 }
-return new WebGPUBackend(engine, gpu);
+const b = new WebGPUBackend(engine, gpu);
+const w = warm;
+warm = null;
+if (w) {
+const got = await Promise.race([w, new Promise((r) => setTimeout(() => r(null), 0))]);
+if (got && got.gpu === gpu) b.warm = got;
+}
+return b;
 }
 gpuPromise = null;
 kind = 'webgl';
@@ -106754,11 +106780,6 @@ return h('div', { class: 'fx-clip-group' }, h('span', { class: 'fx-anim-insp-lab
 const shapeRow = mkSeg('Профиль', [['plateau', 'Ровная', 'Сила держится на одном уровне весь блок'], ['ramp', 'Растёт', 'Сила растёт от нуля к концу блока'], ['fall', 'Спадает', 'Сила падает от максимума к концу блока'], ['peak', 'Пик', 'Сила растёт к середине блока и падает']], c.shape || 'plateau', (v) => engine.animUpdateClip(c.id, { shape: v }));
 const easeRow = mkSeg('Кривая', [['smooth', 'Плавно', 'Мягкий вход и выход'], ['linear', 'Ровно', 'Линейное нарастание и спад'], ['sharp', 'Резко', 'Быстрый вход, резкий спад']], c.ease || 'smooth', (v) => engine.animUpdateClip(c.id, { ease: v }));
 const revSw = switchRow('Задом наперёд', { value: !!c.rev, onChange: (v) => { engine.animUpdateClip(c.id, { rev: v }); } });
-const quick = h('div', { class: 'fx-clip-quick' },
-button({ label: 'Начало здесь', variant: 'secondary', cls: 'btn-sm', title: 'Блок начнётся там, где стоит курсор времени, длина сохранится', onClick: () => { engine.animUpdateClip(c.id, { start: engine.animT }); animSync(); } }),
-button({ label: 'Конец здесь', variant: 'secondary', cls: 'btn-sm', title: 'Блок закончится там, где стоит курсор времени', onClick: () => { const d = engine.animT - c.start; if (d < 0.2) { app.toast('Курсор должен стоять правее начала блока', 'info'); return; } engine.animUpdateClip(c.id, { dur: d }); animSync(); } }),
-button({ label: 'На всю длину', variant: 'secondary', cls: 'btn-sm', title: 'Растянуть блок на весь таймлайн', onClick: () => { engine.animUpdateClip(c.id, { start: 0 }); engine.animUpdateClip(c.id, { dur: st.anim.dur || 8 }); animSync(); } })
-);
 const openFx = button({ label: 'Настройки эффекта', icon: 'gear-six', variant: 'secondary', cls: 'btn-sm fx-clip-open-fx', title: 'Открыть параметры этого эффекта в правой панели', onClick: () => { select_(c.layerId); sync(); } });
 clipActs.append(
 iconButton({ icon: 'scissors', title: 'Разрезать блок по курсору времени (S)', onClick: () => splitSelected() }),
@@ -106767,7 +106788,7 @@ iconButton({ icon: c.off ? 'eye' : 'eye-slash', title: c.off ? 'Включить
 iconButton({ icon: 'trash', title: 'Удалить блок (Delete)', cls: 'is-danger', onClick: () => { engine.animRemoveClip(c.id); selectOnly(null); animSync(); } }),
 iconButton({ icon: 'x', title: 'Снять выбор (Esc)', onClick: () => { selectOnly(null); animSync(); } })
 );
-clipBody.append(graph, sAmt.row, sFadeIn.row, sFadeOut.row, sRep.row, shapeRow, easeRow, revSw.el, quick, openFx);
+clipBody.append(graph, sAmt.row, sFadeIn.row, sFadeOut.row, sRep.row, shapeRow, easeRow, revSw.el, openFx);
 } else if (selKey) {
 buildKeyInspector(selKey, mkSlider);
 } else {
@@ -106831,9 +106852,7 @@ sDur.row.dataset.tip = 'Сколько секунд идёт переход: б�
 const tf = timeField(c.start, st.anim.dur || 8, (v) => { engine.animUpdateClip(c.id, { start: v }); animSync(); });
 const easeRow = iconSeg('Ход', [['smooth', 'Плавно', 'Мягко трогается и мягко собирается', rampIcon('smooth')], ['linear', 'Ровно', 'С одной скоростью от начала до конца', rampIcon('linear')], ['sharp', 'Рывком', 'Резко срывается и долго собирается', rampIcon('sharp')]], c.ease || 'smooth', (v) => { engine.animUpdateClip(c.id, { ease: v }); engine.animSeek(engine.animT); });
 const revSw = switchRow('Задом наперёд', { value: !!c.rev, onChange: (v) => { engine.animUpdateClip(c.id, { rev: v }); engine.animSeek(engine.animT); } });
-const quick = h('div', { class: 'fx-clip-quick' },
-button({ label: 'Начало здесь', variant: 'secondary', cls: 'btn-sm', title: 'Переход начнётся там, где стоит курсор времени', onClick: () => { engine.animUpdateClip(c.id, { start: engine.animT }); animSync(); } }),
-button({ label: 'Конец здесь', variant: 'secondary', cls: 'btn-sm', title: 'Переход закончится там, где стоит курсор времени', onClick: () => { const d = engine.animT - c.start; if (d < 0.2) { app.toast('Курсор должен стоять правее начала блока', 'info'); return; } engine.animUpdateClip(c.id, { dur: d }); animSync(); } }),
+const quick = h('div', { class: 'fx-clip-quick is-one' },
 button({ label: 'Следующий', icon: 'plus', variant: 'secondary', cls: 'btn-sm', title: 'Добавить следующий переход сразу после этого: форма пойдёт дальше по цепочке', onClick: () => { const n = engine.animAddClip('morph', { start: Math.min((st.anim.dur || 8) - 0.3, c.start + c.dur + 0.5), dur: c.dur, ease: c.ease, style: c.style }); selectOnly(n); animSync(); } })
 );
 inspRefs = { update: () => { sDur.set(c.dur, Math.max(0.5, (st.anim.dur || 8) - c.start)); tf.set(c.start); } };
@@ -107611,6 +107630,7 @@ const { EffectsEngine } = __req('src/effects/engine/index.js');
 const { createEffectsPanel, makeModelProvider } = __req('src/effects/ui/panel-effects.js');
 const { importFiles, assignTextureFiles, ACCEPT_ALL, MODEL_FORMATS, IMAGE_EXT } = __req('src/io/importers.js');
 const { BACKGROUNDS } = __req('src/scene/viewport.js');
+const { pickBackendKind, prewarmEffects } = __req('src/effects/render/select.js');
 const TOAST_ICON = { ok: 'check-circle', warn: 'warning', error: 'warning-circle', info: 'info' };
 const uiZoom = () => parseFloat(document.documentElement.style.zoom) || 1;
 class UI {
@@ -107797,17 +107817,21 @@ this.fpsTimer = null;
 }
 setExportLabel() {}
 async openFiles(mode = 'auto') {
-const fxAdd = mode === 'fxadd';
-if (fxAdd) mode = 'auto';
-if (mode === 'auto' && this.workspace === 'fx' && (fxAdd || this.app.model.renderables().length || this.app.media.pm.ready)) {
+if (mode === 'fxadd') {
+this.openMode = 'add';
+this.fileInput.accept = ACCEPT_ALL;
+this.fileInput.click();
+return;
+}
+if (mode === 'auto' && this.workspace === 'fx' && (this.app.model.renderables().length || this.app.media.pm.ready)) {
 const choice = await this.choose({
-title: fxAdd ? 'Что добавить' : 'Что открыть',
+title: 'Что открыть',
 text: 'Модели, видео и фото можно добавлять к тому, что уже есть, и потом делать между ними морфинг.',
 buttons: [
 { label: 'Отмена', value: null },
 { label: 'Модель', value: 'add', icon: 'cube' },
 { label: 'Видео или фото', value: 'media', icon: 'film-strip' },
-...(fxAdd ? [] : [{ label: 'Начать заново', value: 'replace', icon: 'arrows-clockwise' }]),
+{ label: 'Начать заново', value: 'replace', icon: 'arrows-clockwise' },
 ],
 });
 if (!choice) return;
@@ -108028,6 +108052,8 @@ this.effectsPanel = createEffectsPanel(app, $('#panel-effects'), this.effectsEng
 this.buildExportPop();
 this.makeSidebarResizable();
 initMobile(app);
+const warmFx = () => prewarmEffects(pickBackendKind(app.settings.render.backend));
+setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(warmFx, { timeout: 4000 }) : warmFx()), 2500);
 }
 buildUiScale() {
 const SCALES = [0.75, 0.85, 0.92, 1.0, 1.1, 1.2, 1.35];
@@ -108564,6 +108590,10 @@ return this.openMedia(f);
 }
 const vid = files.find(isMedia);
 if (vid && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) return this.openMedia(vid);
+if (mode === 'add' && this.workspace === 'fx' && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) {
+const img = files.find((x) => IMAGE_EXT.includes(extOf(x.name)));
+if (img) return this.openMedia(img);
+}
 if (files.length === 1 && IMAGE_EXT.includes(extOf(files[0].name)) && !app.model.meshes().length) return this.openMedia(files[0]);
 const hasModel = files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip');
 try {
@@ -108704,7 +108734,8 @@ requestAnimationFrame(step);
 reportImport(r) {
 const app = this.app;
 if (r.models.length) {
-app.nav.frameAll(true);
+const first = !$('#emptyState').hidden;
+app.nav.frameAll(!first);
 if (app.anim.has) {
 const ab = app.anim.animatedBounds();
 if (!ab.isEmpty()) app.nav.frameBox(ab, true, true);

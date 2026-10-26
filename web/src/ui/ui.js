@@ -17,6 +17,7 @@ import { EffectsEngine } from '../effects/engine/index.js';
 import { createEffectsPanel, makeModelProvider } from '../effects/ui/panel-effects.js';
 import { importFiles, assignTextureFiles, ACCEPT_ALL, MODEL_FORMATS, IMAGE_EXT } from '../io/importers.js';
 import { BACKGROUNDS } from '../scene/viewport.js';
+import { pickBackendKind, prewarmEffects } from '../effects/render/select.js';
 const TOAST_ICON = { ok: 'check-circle', warn: 'warning', error: 'warning-circle', info: 'info' };
 const uiZoom = () => parseFloat(document.documentElement.style.zoom) || 1;
 export class UI {
@@ -203,17 +204,21 @@ this.fpsTimer = null;
 }
 setExportLabel() {}
 async openFiles(mode = 'auto') {
-const fxAdd = mode === 'fxadd';
-if (fxAdd) mode = 'auto';
-if (mode === 'auto' && this.workspace === 'fx' && (fxAdd || this.app.model.renderables().length || this.app.media.pm.ready)) {
+if (mode === 'fxadd') {
+this.openMode = 'add';
+this.fileInput.accept = ACCEPT_ALL;
+this.fileInput.click();
+return;
+}
+if (mode === 'auto' && this.workspace === 'fx' && (this.app.model.renderables().length || this.app.media.pm.ready)) {
 const choice = await this.choose({
-title: fxAdd ? 'Что добавить' : 'Что открыть',
+title: 'Что открыть',
 text: 'Модели, видео и фото можно добавлять к тому, что уже есть, и потом делать между ними морфинг.',
 buttons: [
 { label: 'Отмена', value: null },
 { label: 'Модель', value: 'add', icon: 'cube' },
 { label: 'Видео или фото', value: 'media', icon: 'film-strip' },
-...(fxAdd ? [] : [{ label: 'Начать заново', value: 'replace', icon: 'arrows-clockwise' }]),
+{ label: 'Начать заново', value: 'replace', icon: 'arrows-clockwise' },
 ],
 });
 if (!choice) return;
@@ -434,6 +439,8 @@ this.effectsPanel = createEffectsPanel(app, $('#panel-effects'), this.effectsEng
 this.buildExportPop();
 this.makeSidebarResizable();
 initMobile(app);
+const warmFx = () => prewarmEffects(pickBackendKind(app.settings.render.backend));
+setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(warmFx, { timeout: 4000 }) : warmFx()), 2500);
 }
 buildUiScale() {
 const SCALES = [0.75, 0.85, 0.92, 1.0, 1.1, 1.2, 1.35];
@@ -970,6 +977,10 @@ return this.openMedia(f);
 }
 const vid = files.find(isMedia);
 if (vid && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) return this.openMedia(vid);
+if (mode === 'add' && this.workspace === 'fx' && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) {
+const img = files.find((x) => IMAGE_EXT.includes(extOf(x.name)));
+if (img) return this.openMedia(img);
+}
 if (files.length === 1 && IMAGE_EXT.includes(extOf(files[0].name)) && !app.model.meshes().length) return this.openMedia(files[0]);
 const hasModel = files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip');
 try {
@@ -1110,7 +1121,8 @@ requestAnimationFrame(step);
 reportImport(r) {
 const app = this.app;
 if (r.models.length) {
-app.nav.frameAll(true);
+const first = !$('#emptyState').hidden;
+app.nav.frameAll(!first);
 if (app.anim.has) {
 const ab = app.anim.animatedBounds();
 if (!ab.isEmpty()) app.nav.frameBox(ab, true, true);
