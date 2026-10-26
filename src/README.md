@@ -32,6 +32,8 @@ src/
     exporters.js          GLB, glTF, USDZ, OBJ, PLY, STL
     web-export.js         готовая веб-страница с моделью
     gif-encoder.js
+    video-encode.js       запись видео через WebCodecs: H.264 и звук AAC
+    mp4-muxer.js          упаковка закодированных кадров и звука в MP4
   ui/                     интерфейс
     ui.js ui-kit.js       основной интерфейс и набор компонентов
     panels/               панели редактора (по файлу на панель)
@@ -52,15 +54,17 @@ effects/
   engine/                 движок эффектов (не знает про WebGL)
     index.js              класс EffectsEngine: конструктор, вход и выход из режима
     mixin.js              подмешивает методы частей в класс
-    frames.js             раскадровка видео
-    keyframes.js          анимация по ключам
+    frames.js             раскадровка видео (кольцо кадров, общее с «Шлейфом движения»)
+    chrono.js             «Шлейф движения»: выделенный объект оставляет шлейф прошлых кадров
+    keyframes.js          анимация по ключам: гладкий путь камеры, цепочка блоков морфинга
+    recording.js          запись видео: прозрачные холсты сцены собираются на непрозрачном с фоном, точный размер кадра, покадровая запись таймлайна
     source.js             что показывает облако: модель, фото, видео, формы, морфинг
     links.js tools.js tracking.js history.js scope-trail.js
-    depth.js audio.js interaction.js loop.js recording.js
+    depth.js audio.js interaction.js loop.js
   state/                  данные: список эффектов (layers), справочники (options), начальное состояние (defaults)
   shapes/                 готовые формы и подготовка облака
   audio/                  встроенный синтезатор
-  input/                  руки, камера движения, карта глубины
+  input/                  руки, камера движения, карта глубины, выделение человека (segmenter.js)
   frames/                 блок кадров раскадровки
   ui/                     панель эффектов, превью, HUD
   shaders/glsl/           шейдеры GLSL, по файлу на шейдер

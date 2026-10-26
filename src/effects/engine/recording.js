@@ -265,8 +265,8 @@ export class RecordingPart {
 		this.app.viewport.invalidate();
 		o.onStart?.();
 		this.emit();
-		const what = o.offline ? 'покадрово, без звука' : `${fps} к/с`;
-		this.app.toast(o.duration > 0 && !o.offline ? `Запись началась (${o.duration} с, ${what})` : `Запись началась (${what}, ${w}×${h})`, 'info', 2200);
+		const msg = o.offline ? `Покадровая запись началась: ${w}×${h}, без звука` : o.duration > 0 ? `Запись началась: ${o.duration} с, ${fps} к/с, ${w}×${h}` : `Запись началась: ${fps} к/с, ${w}×${h}. Нажмите стоп, чтобы сохранить`;
+		this.app.toast(msg, 'info', 2200);
 	}
 
 	/** Запасной путь, если WebCodecs нет: MediaRecorder с того же непрозрачного холста */
@@ -421,8 +421,8 @@ export class RecordingPart {
 		const filename = `pointbloom-${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}.${ext}`;
 		downloadBlob(blob, filename);
 		const mb = (blob.size / 1048576).toFixed(1);
-		const lost = enc && enc.dropped > enc.frames * 0.1 ? ' Компьютер не успевал: часть кадров пропущена, для таймлайна включите покадровую запись' : '';
-		this.app.toast(`Видео сохранено: ${filename} (${mb} МБ).${lost}`, lost ? 'warn' : 'ok', lost ? 5000 : 3000);
+		if (enc && enc.dropped > enc.frames * 0.1) this.app.toast(`Видео сохранено: ${filename} (${mb} МБ). Компьютер не успевал, часть кадров пропущена: для таймлайна включите покадровую запись`, 'warn', 5000);
+		else this.app.toast(`Видео сохранено: ${filename} (${mb} МБ)`, 'ok', 3000);
 	}
 
 	/** Запись не началась или сломалась: всё возвращается как было */
