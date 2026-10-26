@@ -3,7 +3,8 @@
   "configurations": [
     {
       "name": "point-bloom",
-      "url": "http://localhost:8765",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8765", "--bind", "127.0.0.1"],
       "port": 8765
     }
   ]

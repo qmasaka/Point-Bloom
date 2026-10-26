@@ -111,9 +111,6 @@ struct Frame {
 	uShootS: array<vec4f, 24>,
 	uShootN: array<vec4f, 24>,
 	uShootB: array<vec4f, 6>,
-	uSig: vec4f,
-	uSigP: vec4f,
-	uSigQ: vec4f,
 	uScr: vec4f,
 	uScrP: vec4f,
 	uScrD: vec4f,
@@ -1551,50 +1548,6 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 	return pos;
 }
 
-fn sigBez(k_in: f32, s_in: f32, seed_in: f32) -> vec2f {
-	var k: f32 = k_in;
-	var s: f32 = s_in;
-	var seed: f32 = seed_in;
-	var r1: f32 = hash11(((k * 12.9898) + (seed * 7.233)));
-	var r2: f32 = hash11(((k * 39.346) + (seed * 1.135)));
-	var r3: f32 = hash11(((k * 73.156) + (seed * 5.235)));
-	var r4: f32 = hash11(((k * 94.673) + (seed * 2.731)));
-	var P0: vec2f = vec2f((0.02 + (0.06 * r1)), ((((r2 * 2.0) - 1.0)) * 0.8));
-	var P3: vec2f = vec2f((0.28 + (0.62 * r3)), clamp((P0.y + ((((r4 * 2.0) - 1.0)) * 1.0)), -1.25, 1.25));
-	var P1: vec2f = (P0 + vec2f((0.08 + (0.3 * r4)), (((r1 - 0.5)) * 0.9)));
-	var P2: vec2f = (P3 + vec2f((0.05 + (0.25 * r2)), (((r3 - 0.5)) * 1.1)));
-	var o: f32 = (1.0 - s);
-	return ((((((o * o) * o) * P0) + ((((3.0 * o) * o) * s) * P1)) + ((((3.0 * o) * s) * s) * P2)) + (((s * s) * s) * P3));
-}
-
-fn sigStroke(k_in: f32, s_in: f32, seed_in: f32, cyber_in: f32) -> vec2f {
-	var k: f32 = k_in;
-	var s: f32 = s_in;
-	var seed: f32 = seed_in;
-	var cyber: f32 = cyber_in;
-	if ((cyber > 0.5)) {
-		var N: f32 = (4.0 + floor((hash11(((k * 3.7) + seed)) * 4.0)));
-		var s0: f32 = (floor((s * N)) / N);
-		var s1: f32 = min(1.0, (s0 + (1.0 / N)));
-		var v0: vec2f = sigBez(k, s0, seed);
-		var v1: vec2f = sigBez(k, s1, seed);
-		v0.x *= (1.0 + (0.22 * glsl_mod_f((s0 * N), 2.0)));
-		v1.x *= (1.0 + (0.22 * glsl_mod_f((s1 * N), 2.0)));
-		return mix(v0, v1, fract((s * N)));
-	}
-	var p: vec2f = sigBez(k, s, seed);
-	var hk: f32 = smoothstep(0.72, 1.0, s);
-	if ((hk > 0.0)) {
-		var r1: f32 = hash11(((k * 12.9898) + (seed * 7.233)));
-		var side: f32 = select(-1.0, 1.0, (r1 < 0.5));
-		var e: vec2f = sigBez(k, 0.72, seed);
-		var ang: f32 = ((hk * 3.6) * side);
-		var d: vec2f = (p - e);
-		p = (e + (vec2f(((d.x * cos(ang)) - (d.y * sin(ang))), ((d.x * sin(ang)) + (d.y * cos(ang)))) * ((1.0 - (0.45 * hk)))));
-	}
-	return p;
-}
-
 fn frLayerDepth(k_in: f32, g_in: vec2f) -> f32 {
 	var k: f32 = k_in;
 	var g: vec2f = g_in;
@@ -1975,106 +1928,6 @@ fn main_() {
 		}
 		pos += (shOff * min(fr.uShoot.x, 1.0));
 		vColor += ((((((fr.uP2 * 1.4) + (vColor * 0.3))) * shK) * fr.uShootP.x) * min(fr.uShoot.x, 1.0));
-	}
-	if ((fr.uSig.x > 0.001)) {
-		var sg1: f32 = hash11((aIdx * 1.371));
-		var sg2: f32 = hash11((aIdx * 2.913));
-		var sg3: f32 = hash11((aIdx * 4.177));
-		var sg4: f32 = hash11((aIdx * 6.731));
-		var sg5: f32 = hash11((aIdx * 8.219));
-		var sgMode: f32 = glsl_mod_f(fr.uSig.y, 3.0);
-		var sgCyber: f32 = select(0.0, 1.0, (fr.uSig.y > 2.5));
-		var part: f32 = step(sg5, fr.uSig.w);
-		if ((sgMode > 1.5)) {
-			var cs: f32 = ((max((fr.uYR.y - fr.uYR.x), 0.5) * 0.07) * fr.uSig.z);
-			var cid: vec3f = floor((((base - fr.uCen)) / cs));
-			var ch: f32 = hash11((dot(cid, vec3f(12.9898, 78.233, 37.719)) + (fr.uSigP.y * 0.37)));
-			var period: f32 = max(fr.uSigP.x, 0.5);
-			var ph: f32 = fract(((fr.uSigQ.z / period) + (ch * 7.13)));
-			var cyc: f32 = floor(((fr.uSigQ.z / period) + (ch * 7.13)));
-			var on: f32 = step(hash11(((ch * 91.7) + (cyc * 3.31))), fr.uSig.w);
-			var root: vec3f = ((((cid + 0.5)) * cs) + fr.uCen);
-			var n: vec3f = normalize(mix(((root - fr.uCen) + vec3f(1e-3)), vec3f(0.0, 0.0, 1.0), fr.uFlat));
-			var rh: vec3f = (vec3f(hash11((ch * 3.1)), hash11((ch * 5.7)), hash11((ch * 8.3))) - 0.5);
-			var tt: vec3f = normalize((cross(n, normalize((rh + vec3f(0.0, 0.31, 0.0)))) + vec3f(1e-4)));
-			var tw: f32 = (((fr.uSigQ.z * 0.35) * fr.uSigQ.y) + (ch * 6.28));
-			var bb: vec3f = cross(n, tt);
-			tt = ((tt * cos((tw * 0.3))) + (bb * sin((tw * 0.3))));
-			bb = cross(n, tt);
-			var k2: f32 = (ch * 31.7);
-			var p0: vec2f = sigBez(k2, 0.0, fr.uSigP.y);
-			var pl: vec2f = (sigStroke(k2, sg2, fr.uSigP.y, sgCyber) - p0);
-			var side: f32 = select(1.0, -1.0, (sg3 < 0.5));
-			var L: f32 = (cs * 2.6);
-			var sway: f32 = ((sin(((fr.uSigQ.z * 1.4) + (ch * 20.0))) * 0.35) * fr.uSigQ.y);
-			var lr: vec2f = vec2f(((pl.x * cos(sway)) - (pl.y * sin(sway))), ((pl.x * sin(sway)) + (pl.y * cos(sway))));
-			var grow: f32 = smoothstep(0.0, 0.45, ph);
-			var fade: f32 = (1.0 - smoothstep(0.78, 1.0, ph));
-			var wv: f32 = (((fr.uSigP.z * 3.0) * L) * pow((1.0 - sg2), 1.2));
-			var o3: f32 = ((sg4 * 2.0) - 1.0);
-			var tgt: vec3f = ((root + ((((n * max(lr.x, 0.0)) + ((tt * lr.y) * side))) * L)) + ((((bb * o3) * o3) * o3) * wv));
-			tgt += ((((((n * 0.8) + ((tt * side) * 0.4))) * L) * ((1.0 - fade))) * ((0.4 + sg2)));
-			var drawn: f32 = smoothstep((grow + 0.03), (grow - 0.03), sg2);
-			var m: f32 = ((((on * step(sg5, 0.75)) * drawn) * fade) * min(fr.uSig.x, 1.0));
-			pos = mix(pos, tgt, m);
-			var tip: f32 = ((((exp(-pow((((sg2 - grow)) / 0.04), 2.0)) * on) * step(sg5, 0.75)) * step(grow, 0.999)) * fade);
-			vColor = (mix(vColor, ((vColor * 0.7) + (fr.uP2 * 0.6)), (m * min(fr.uSigP.w, 1.0))) + (fr.uP2 * ((((m * max((fr.uSigP.w - 1.0), 0.0)) * 0.6) + (tip * 1.4)))));
-			shSzMul *= ((1.0 - (m * 0.25)) + (tip * 0.35));
-		} else {
-			var K: f32 = 6.0;
-			var sS: f32 = sg2;
-			var q: vec2f;
-			var w: f32;
-			if ((sg1 < 0.1)) {
-				q = vec2f(0.0, ((((sS * 2.0) - 1.0)) * 1.15));
-				w = (((fr.uSigP.z * 0.9) * ((0.4 + (0.6 * pow(abs(sin(((sS * 21.0) + fr.uSigP.y))), 4.0))))) * ((1.0 - pow(abs(((sS * 2.0) - 1.0)), 3.0))));
-				var o0: f32 = ((sg4 * 2.0) - 1.0);
-				q.x += (((o0 * o0) * o0) * w);
-			} else if ((sg1 < 0.72)) {
-				var k: f32 = floor(((((sg1 - 0.1)) / 0.62) * K));
-				q = sigStroke(k, sS, fr.uSigP.y, sgCyber);
-				var q2: vec2f = sigStroke(k, min(1.0, (sS + 0.01)), fr.uSigP.y, sgCyber);
-				var tg: vec2f = normalize(((q2 - q) + vec2f(1e-5)));
-				var nr: vec2f = vec2f(-tg.y, tg.x);
-				w = select((((fr.uSigP.z * 2.2) * pow(sin((sS * 3.14159)), 0.8)) * pow((1.0 - sS), 0.6)), ((fr.uSigP.z * 0.7) * pow((1.0 - sS), 0.8)), (sgCyber > 0.5));
-				var o1: f32 = ((sg4 * 2.0) - 1.0);
-				q += ((((nr * o1) * o1) * o1) * w);
-			} else {
-				var k: f32 = floor(((((sg1 - 0.72)) / 0.28) * K));
-				var j: f32 = floor((sg3 * 4.0));
-				var sb: f32 = (0.15 + (0.7 * hash11((((k * 5.1) + (j * 1.7)) + fr.uSigP.y))));
-				var b0: vec2f = sigStroke(k, sb, fr.uSigP.y, sgCyber);
-				var b1: vec2f = sigStroke(k, min(1.0, (sb + 0.01)), fr.uSigP.y, sgCyber);
-				var tg: vec2f = normalize(((b1 - b0) + vec2f(1e-5)));
-				var ang: f32 = (select(-0.85, 0.85, (glsl_mod_f(j, 2.0) < 0.5)));
-				var d: vec2f = vec2f(((tg.x * cos(ang)) - (tg.y * sin(ang))), ((tg.x * sin(ang)) + (tg.y * cos(ang))));
-				var L: f32 = (0.08 + (0.16 * hash11((((k * 9.3) + (j * 3.1)) + fr.uSigP.y))));
-				q = (b0 + ((d * L) * sS));
-				w = ((fr.uSigP.z * 1.1) * pow((1.0 - sS), 1.6));
-				var o2: f32 = ((sg4 * 2.0) - 1.0);
-				q += ((((vec2f(-d.y, d.x) * o2) * o2) * o2) * w);
-				sS = (sb + ((sS * ((1.0 - sb))) * 0.5));
-			}
-			if ((((sg1 >= 0.1) && (sg1 < 0.72)) && (sg3 < 0.5))) {
-				q.x = -q.x;
-			}
-			if (((sg1 >= 0.72) && (hash11((aIdx * 9.91)) < 0.5))) {
-				q.x = -q.x;
-			}
-			q.y *= 1.15;
-			q += ((vec2f(sin(((fr.uSigQ.z * 1.7) + (sg1 * 30.0))), cos(((fr.uSigQ.z * 1.3) + (sg2 * 30.0)))) * 0.01) * fr.uSigQ.y);
-			var H: f32 = (((max((fr.uYR.y - fr.uYR.x), 0.5) * 0.5) * fr.uSig.z) * (select(1.0, 1.25, (sgMode > 0.5))));
-			var tgt: vec3f = vec3f((fr.uCen.x + (q.x * H)), (fr.uCen.y + (q.y * H)), select(((fr.uCen.z + (((pos.z - fr.uCen.z)) * 0.2)) + (0.15 * H)), (fr.uCen.z + ((((sg4 - 0.5)) * 0.04) * H)), (sgMode > 0.5)));
-			var drawn: f32 = smoothstep((fr.uSigP.x + 0.02), (fr.uSigP.x - 0.02), sS);
-			var m: f32 = (((part * drawn) * fr.uSigQ.w) * min(fr.uSig.x, 1.0));
-			pos = mix(pos, tgt, m);
-			var tip: f32 = (((exp(-pow((((sS - fr.uSigP.x)) / 0.025), 2.0)) * part) * fr.uSigQ.w) * step(fr.uSigP.x, 0.999));
-			vColor = (mix(vColor, ((vColor * 0.75) + (fr.uP2 * 0.55)), (m * min(fr.uSigP.w, 1.0))) + (fr.uP2 * ((((m * max((fr.uSigP.w - 1.0), 0.0)) * 0.6) + (tip * 1.2)))));
-			shSzMul *= ((1.0 + (m * 0.35)) + tip);
-			if ((sgMode < 0.5)) {
-				vColor *= vec3f(mix(1.0, (1.0 - fr.uSigQ.x), ((((1.0 - (part * drawn))) * fr.uSigQ.w) * min(fr.uSig.x, 1.0))));
-			}
-		}
 	}
 	if ((fr.uScr.x > 0.001)) {
 		var bsx: vec3f = (base - fr.uCen);

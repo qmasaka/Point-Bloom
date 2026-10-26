@@ -35,7 +35,7 @@ const GLOBALS = new Set(
 		'GPUBufferUsage GPUShaderStage GPUTextureUsage GPUColorWrite GPUMapMode GPUDevice NodeFilter TreeWalker Range Selection HTMLElement HTMLCanvasElement HTMLVideoElement HTMLImageElement HTMLInputElement HTMLAudioElement HTMLMediaElement Element Node NodeList Image ImageData ImageBitmap OffscreenCanvas Path2D DOMParser XMLSerializer DOMMatrix DOMRect DOMException ' +
 		'MutationObserver ResizeObserver IntersectionObserver PerformanceObserver PointerEvent MouseEvent KeyboardEvent TouchEvent WheelEvent DragEvent ClipboardEvent DataTransfer ' +
 		'createImageBitmap matchMedia getComputedStyle alert confirm prompt open close focus blur ' +
-		'WebGLRenderingContext WebGL2RenderingContext WebGLTexture WebGLProgram AudioContext webkitAudioContext OfflineAudioContext AudioBuffer AudioNode GainNode AnalyserNode MediaStream MediaStreamTrack MediaRecorder MediaDevices Audio ' +
+		'WebGLRenderingContext WebGL2RenderingContext WebGLTexture WebGLProgram AudioContext webkitAudioContext OfflineAudioContext AudioBuffer AudioNode GainNode AnalyserNode AudioWorkletNode MediaStream MediaStreamTrack MediaRecorder MediaDevices Audio ' +
 		'Worker SharedWorker ServiceWorker VideoFrame VideoEncoder VideoDecoder AudioData AudioEncoder ImageDecoder CompressionStream DecompressionStream ReadableStream WritableStream TransformStream ' +
 		'XMLHttpRequest WebSocket Notification speechSynthesis FontFace CSS CSSStyleSheet ' +
 		'process require module exports __dirname __filename arguments'

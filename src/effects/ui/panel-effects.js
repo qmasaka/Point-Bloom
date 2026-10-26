@@ -13,6 +13,7 @@ import { attachPreview } from './fx-previews.js';
 import { SHAPES as POINT_SHAPE_LIST } from '../../ui/panels/points.js';
 import { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS } from '../state/layers.js';
 import { FX_PALETTES, BANDS, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } from '../state/options.js';
+import { recDefaults, saveRecDefaults } from '../engine/recording.js';
 
 /**
  * Источник «Модель» для эффектов: если в сцене редактора есть облако точек (оно создаётся на вкладке «Точки»),
@@ -574,7 +575,7 @@ export function createEffectsPanel(app, root, engine) {
 		bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 	};
 	const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-	const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'shoots', 'sigil', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
+	const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
 	let toggleAnim = () => {};
 	let animAddFromInspector = () => {};
 	const animQuickBtn = button({
@@ -2973,21 +2974,8 @@ export function createEffectsPanel(app, root, engine) {
 		{ value: 'reels', label: '9:16 Вертикальное', sub: '1080 × 1920 (Reels / Shorts)' }
 	];
 
-	let recOpts = {
-		res: 'viewport',
-		fps: '60',
-		format: 'auto',
-		sound: true,
-		dur: '0'
-	};
-	try {
-		const saved = JSON.parse(localStorage.getItem('objglb.fx.rec') || '{}');
-		if (saved && typeof saved === 'object') Object.assign(recOpts, saved);
-	} catch (_) {}
-
-	const saveRecOpts = () => {
-		try { localStorage.setItem('objglb.fx.rec', JSON.stringify(recOpts)); } catch (_) {}
-	};
+	const recOpts = recDefaults();
+	const saveRecOpts = () => saveRecDefaults(recOpts);
 
 	const recPop = h('div', { class: 'fx-rec-pop popover', hidden: true });
 	document.getElementById('viewport').append(recPop);
@@ -3020,9 +3008,31 @@ export function createEffectsPanel(app, root, engine) {
 		onChange: (v) => { recOpts.format = v; saveRecOpts(); }
 	});
 
+	const recQualSeg = segmented({
+		cls: 'seg-tight',
+		options: [
+			{ value: 'standard', label: 'Обычное' },
+			{ value: 'high', label: 'Высокое' },
+			{ value: 'max', label: 'Максимум' }
+		],
+		value: recOpts.quality || 'high',
+		onChange: (v) => { recOpts.quality = v; saveRecOpts(); }
+	});
+
 	const recSoundSw = switchRow('Записывать звук', {
 		value: recOpts.sound,
 		onChange: (v) => { recOpts.sound = v; saveRecOpts(); }
+	});
+
+	// кнопка «Записать» на таймлайне: покадрово кадры не теряются ни в каком разрешении, но звука нет
+	const recTlSeg = segmented({
+		cls: 'seg-tight',
+		options: [
+			{ value: 'frames', label: 'Покадрово' },
+			{ value: 'live', label: 'Со звуком' }
+		],
+		value: recOpts.tlMode === 'live' ? 'live' : 'frames',
+		onChange: (v) => { recOpts.tlMode = v; saveRecOpts(); }
 	});
 
 	const recDurSeg = segmented({
@@ -3051,7 +3061,8 @@ export function createEffectsPanel(app, root, engine) {
 				fps: parseInt(recOpts.fps, 10) || 60,
 				format: recOpts.format,
 				sound: !!recOpts.sound,
-				duration: parseInt(recOpts.dur, 10) || 0
+				duration: parseInt(recOpts.dur, 10) || 0,
+				quality: recOpts.quality || 'high'
 			});
 		}
 	});
@@ -3062,9 +3073,11 @@ export function createEffectsPanel(app, root, engine) {
 		),
 		field('Разрешение', recResSel.el),
 		field('Частота кадров', recFpsSeg.el),
+		field('Качество', recQualSeg.el, { hint: 'Выше качество: чище мелкие точки, но файл больше' }),
 		field('Формат', recFmtSeg.el),
 		recSoundSw.el,
 		field('Длительность', recDurSeg.el),
+		field('Запись таймлайна', recTlSeg.el, { hint: 'Покадрово: без пропусков кадров, но без звука' }),
 		startRecBtn
 	);
 

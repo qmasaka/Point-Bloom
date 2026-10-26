@@ -1,8 +1,9 @@
 import { saveJSON } from '../../core/util.js';
 import { KEY } from '../state/defaults.js';
+import { recDefaults } from './recording.js';
 export class KeyframesPart {
 _animLayers() {
-return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'shoots', 'sigil', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
+return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
 }
 animCapture() {
 const nav = this.app.nav;
@@ -596,11 +597,20 @@ animRecord() {
 const hasKeys = this.state.anim.keys && this.state.anim.keys.length >= 2;
 const hasClips = this.state.anim.clips && this.state.anim.clips.length >= 1;
 if ((!hasKeys && !hasClips) || this.recording) return false;
+this.animPause();
 this.animT = this._animRange()[0];
 this.animApply(this.animT);
 this.animRec = true;
-this.startRecording();
+const d = recDefaults();
+this.startRecording({
+offline: d.tlMode !== 'live',
+duration: 0,
+onStart: () => {
 this.animPlaying = true;
+this.app.bus.emit('fxanim');
+},
+});
+if (!this.recording) this.animRec = false;
 this.app.bus.emit('fxanim');
 return true;
 }

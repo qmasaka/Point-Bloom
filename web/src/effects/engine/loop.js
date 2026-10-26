@@ -40,9 +40,14 @@ if (document.hidden) {
 this._lastT = now;
 return;
 }
+const off = this._recOff;
+if (off && off.busy) {
+this._lastT = now;
+return;
+}
 const capFps = this.app.settings.render.fpsCap || (perf.windows ? 60 : 0);
-if (capFps && now - this._lastT < 1000 / capFps - 2) return;
-const dt = this.frozen ? 0 : Math.min(0.1, (now - this._lastT) / 1000);
+if (!off && capFps && now - this._lastT < 1000 / capFps - 2) return;
+const dt = this.frozen ? 0 : off ? 1 / off.fps : Math.min(0.1, (now - this._lastT) / 1000);
 this._lastT = now;
 this._lastDt = dt;
 const st0 = this.state;
@@ -269,7 +274,6 @@ u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, m
 this._screenTick(u);
 this._chladniTick(dt, L.chladni, u);
 this._shootTick(dt, L.shoots, u);
-if (L.sigil) this._sigilTick(dt, L.sigil, u);
 this._shadowTick(dt, L.shadow, u);
 {
 const H = L.hyper;
@@ -669,6 +673,7 @@ else sh[i].set(0, 0, 0, -1);
 u.uShockP.value.set(shE, 1.2, u.uShockP.value.z, 0);
 this.onFrame && this.onFrame(this.levels);
 this._fxCheck();
+if (off) off.fresh = true;
 this.app.viewport.invalidate();
 };
 this._raf = requestAnimationFrame(tick);

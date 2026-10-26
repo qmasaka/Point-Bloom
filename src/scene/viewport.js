@@ -7,11 +7,12 @@ import { perf } from '../core/perf.js';
 /** Слои: чем рисуется. 0 — служебное (сетка, гизмо), остальное — содержимое сцены. */
 export const LAYER = { MESH: 1, POINTS: 2, WIRE: 3, FACES: 4 };
 
+// paint: тот же фон для холста (запись видео, GIF, скриншот), где CSS-градиент не нарисовать
 export const BACKGROUNDS = {
-	dark: { label: 'Тёмный градиент', css: 'radial-gradient(ellipse at 50% 25%, #3d4149 0%, #24272d 62%, #1b1d22 100%)', solid: '#2a2d33', light: false },
-	blender: { label: 'Серый (Blender)', css: 'linear-gradient(#4d4d4d, #323232)', solid: '#3d3d3d', light: false },
+	dark: { label: 'Тёмный градиент', css: 'radial-gradient(ellipse at 50% 25%, #3d4149 0%, #24272d 62%, #1b1d22 100%)', solid: '#2a2d33', light: false, paint: { type: 'radial', at: [0.5, 0.25], stops: [[0, '#3d4149'], [0.62, '#24272d'], [1, '#1b1d22']] } },
+	blender: { label: 'Серый (Blender)', css: 'linear-gradient(#4d4d4d, #323232)', solid: '#3d3d3d', light: false, paint: { type: 'linear', stops: [[0, '#4d4d4d'], [1, '#323232']] } },
 	mid: { label: 'Средне-серый', css: '#6b7079', solid: '#6b7079', light: false },
-	light: { label: 'Светлый градиент', css: 'radial-gradient(ellipse at 50% 25%, #eef0f3 0%, #c3c8d0 85%)', solid: '#d6d9df', light: true },
+	light: { label: 'Светлый градиент', css: 'radial-gradient(ellipse at 50% 25%, #eef0f3 0%, #c3c8d0 85%)', solid: '#d6d9df', light: true, paint: { type: 'radial', at: [0.5, 0.25], stops: [[0, '#eef0f3'], [0.85, '#c3c8d0'], [1, '#c3c8d0']] } },
 	white: { label: 'Белый', css: '#ffffff', solid: '#ffffff', light: true },
 	black: { label: 'Чёрный', css: '#000000', solid: '#000000', light: false },
 	checker: {
@@ -21,6 +22,38 @@ export const BACKGROUNDS = {
 		light: false,
 	},
 };
+
+/**
+ * Рисует фон на 2D-холсте так же, как его рисует CSS под сценой. spec: { type: 'solid', c } | { type: 'linear', stops } (сверху вниз)
+ * | { type: 'radial', at: [x, y] доли, stops } (эллипс до дальнего угла, как «radial-gradient(ellipse at …)»)
+ */
+export function paintBackground(ctx, w, h, spec) {
+	ctx.save();
+	ctx.setTransform(1, 0, 0, 1, 0, 0);
+	if (!spec || spec.type === 'solid' || !spec.stops) {
+		ctx.fillStyle = spec?.c || '#2a2d33';
+		ctx.fillRect(0, 0, w, h);
+	} else if (spec.type === 'linear') {
+		const g = ctx.createLinearGradient(0, 0, 0, h);
+		for (const [o, c] of spec.stops) g.addColorStop(o, c);
+		ctx.fillStyle = g;
+		ctx.fillRect(0, 0, w, h);
+	} else {
+		const cx = spec.at[0] * w;
+		const cy = spec.at[1] * h;
+		const rx = Math.max(cx, w - cx) * Math.SQRT2;
+		const ry = Math.max(cy, h - cy) * Math.SQRT2;
+		// круговой градиент, сжатый по вертикали в эллипс
+		ctx.translate(cx, cy);
+		ctx.scale(1, ry / Math.max(rx, 1e-6));
+		const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+		for (const [o, c] of spec.stops) g.addColorStop(o, c);
+		ctx.fillStyle = g;
+		const k = rx / Math.max(ry, 1e-6);
+		ctx.fillRect(-cx, -cy * k, w, h * k);
+	}
+	ctx.restore();
+}
 
 const TONE = {
 	none: THREE.NoToneMapping,
@@ -165,6 +198,8 @@ export class Viewport {
 	}
 
 	resize() {
+		// идёт запись видео: холст держит размер кадра записи, окно его не трогает (см. engine/recording.js)
+		if (this.recLock) return;
 		const w = Math.max(1, this.stage.clientWidth);
 		const h = Math.max(1, this.stage.clientHeight);
 		this.size = { width: w, height: h };
@@ -334,8 +369,9 @@ export class Viewport {
 	}
 
 	frame(now) {
-		// анимация персонажа идёт своим временем: поза обновляется до отрисовки
-		const dtA = Math.min(0.1, (now - (this._animT || now)) / 1000);
+		// анимация персонажа идёт своим временем: поза обновляется до отрисовки. При покадровой записи время идёт ровно на кадр за кадром
+		const off = this.app.ui?.effectsEngine?._recOff;
+		const dtA = off ? (off.busy ? 0 : 1 / off.fps) : Math.min(0.1, (now - (this._animT || now)) / 1000);
 		this._animT = now;
 		this.app.anim?.tick(dtA);
 		const animating = this.app.nav.tick(now);
@@ -383,11 +419,10 @@ export class Viewport {
 		out.width = src.width;
 		out.height = src.height;
 		const ctx = out.getContext('2d');
+		const fx = this.app.ui?.effectsEngine;
 		const bg = BACKGROUNDS[this.app.settings.render.bg] || BACKGROUNDS.dark;
-		if (!transparent) {
-			ctx.fillStyle = bg.solid || '#2a2d33';
-			ctx.fillRect(0, 0, out.width, out.height);
-		}
+		// фон как на экране: в эффектах свой цвет и затемнение к краям, в редакторе градиент
+		if (!transparent) paintBackground(ctx, out.width, out.height, fx ? fx._recBgSpec() : bg.paint || { type: 'solid', c: bg.solid || '#2a2d33' });
 		ctx.drawImage(src, 0, 0);
 		// облако WebGPU лежит на втором холсте поверх основного (кадр ещё не ушёл на экран, поэтому читается сразу)
 		if (this.fxOverlay && this.fxOverlay.style.visibility !== 'hidden') ctx.drawImage(this.fxOverlay, 0, 0, out.width, out.height);

@@ -46,11 +46,17 @@ export class LoopPart {
 				this._lastT = now;
 				return;
 			}
+			// покадровая запись: пока прошлый кадр кодируется (и видео перематывается на следующий), время сцены стоит
+			const off = this._recOff;
+			if (off && off.busy) {
+				this._lastT = now;
+				return;
+			}
 			// в режиме эффектов на Windows (где дисплеи 120-165+ Гц) ограничиваем 60 к/с, чтобы видеокарта не раскалялась и вентиляторы не шумели
 			const capFps = this.app.settings.render.fpsCap || (perf.windows ? 60 : 0);
-			if (capFps && now - this._lastT < 1000 / capFps - 2) return;
-			// пока открыто окно экспорта, время эффектов стоит на месте
-			const dt = this.frozen ? 0 : Math.min(0.1, (now - this._lastT) / 1000);
+			if (!off && capFps && now - this._lastT < 1000 / capFps - 2) return;
+			// пока открыто окно экспорта, время эффектов стоит на месте; при покадровой записи шаг ровно в один кадр видео
+			const dt = this.frozen ? 0 : off ? 1 / off.fps : Math.min(0.1, (now - this._lastT) / 1000);
 			this._lastT = now;
 			this._lastDt = dt;
 			const st0 = this.state;
@@ -297,7 +303,6 @@ export class LoopPart {
 			this._screenTick(u);
 			this._chladniTick(dt, L.chladni, u);
 			this._shootTick(dt, L.shoots, u);
-			if (L.sigil) this._sigilTick(dt, L.sigil, u);
 			this._shadowTick(dt, L.shadow, u);
 			// гиперпространство: угол поворота в 4D копится (смена скорости не дёргает форму), удар звука даёт рывок
 			{
@@ -742,6 +747,8 @@ export class LoopPart {
 			u.uShockP.value.set(shE, 1.2, u.uShockP.value.z, 0);
 			this.onFrame && this.onFrame(this.levels);
 			this._fxCheck();
+			// кадр с новым временем готов к отрисовке: запись возьмёт именно его (recording.js, _recFrame)
+			if (off) off.fresh = true;
 			this.app.viewport.invalidate();
 		};
 		this._raf = requestAnimationFrame(tick);

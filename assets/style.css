@@ -7048,3 +7048,8 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 	color: var(--accent-ink);
 	background: var(--accent);
 }
+
+/* запись видео: холст сцены держит размер и пропорции кадра записи, на экране он показан целиком, с полями (engine/recording.js) */
+.stage.is-rec-frame > canvas.gl {
+	object-fit: contain;
+}

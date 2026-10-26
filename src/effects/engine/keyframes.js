@@ -1,12 +1,13 @@
 import { saveJSON } from '../../core/util.js';
 import { KEY } from '../state/defaults.js';
+import { recDefaults } from './recording.js';
 
 /** Анимация по ключам: дорожки, клипы, маркеры, воспроизведение. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class KeyframesPart {
 	// ------------------------------------------------------------ анимация по ключам и блокам эффектов (секвенсор)
 	/** Слои, которыми можно анимировать: эффекты формы, звука и графики */
 	_animLayers() {
-		return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'shoots', 'sigil', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
+		return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
 	}
 
 	/** Снимок того, что можно анимировать: камера, размер, яркость, свечение и сила каждого эффекта (выключенный = 0) */
@@ -680,16 +681,30 @@ export class KeyframesPart {
 		this.app.bus.emit('fxanim');
 	}
 
-	/** Проигрывает анимацию один раз с начала и записывает видео со звуком */
+	/**
+	 * Проигрывает анимацию один раз с начала и записывает видео с параметрами из «Параметров записи».
+	 * Покадрово (по умолчанию): время сцены идёт ровно на кадр за кадром, видео без пропусков в любом разрешении, но без звука.
+	 * В реальном времени: со звуком, но слабый компьютер может пропускать кадры
+	 */
 	animRecord() {
 		const hasKeys = this.state.anim.keys && this.state.anim.keys.length >= 2;
 		const hasClips = this.state.anim.clips && this.state.anim.clips.length >= 1;
 		if ((!hasKeys && !hasClips) || this.recording) return false;
+		this.animPause();
 		this.animT = this._animRange()[0];
 		this.animApply(this.animT);
 		this.animRec = true;
-		this.startRecording();
-		this.animPlaying = true;
+		const d = recDefaults();
+		// анимация пойдёт, когда кодер готов: иначе начало ролика проигрывалось бы до записи
+		this.startRecording({
+			offline: d.tlMode !== 'live',
+			duration: 0,
+			onStart: () => {
+				this.animPlaying = true;
+				this.app.bus.emit('fxanim');
+			},
+		});
+		if (!this.recording) this.animRec = false;
 		this.app.bus.emit('fxanim');
 		return true;
 	}
