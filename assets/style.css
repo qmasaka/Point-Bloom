@@ -27,6 +27,9 @@
 	--accent-text: #f0a066;
 	--accent-soft: rgba(229, 138, 69, 0.14);
 	--accent-line: rgba(229, 138, 69, 0.55);
+	/* заливка ползунка-капсулы до значения: заметнее --accent-soft, но не спорит с подписью внутри */
+	--accent-fill: rgba(229, 138, 69, 0.22);
+	--accent-fill-hover: rgba(229, 138, 69, 0.3);
 
 	--ok: #62bb8c;
 	--warn: #e2b04a;
@@ -66,6 +69,8 @@
 	--text-faint: #7a8290;
 	--accent-text: #a4501a;
 	--accent-soft: rgba(229, 138, 69, 0.18);
+	--accent-fill: rgba(229, 138, 69, 0.26);
+	--accent-fill-hover: rgba(229, 138, 69, 0.34);
 	--ok: #2f8a5c;
 	--warn: #a97a12;
 	--danger: #c8402f;
@@ -7108,4 +7113,135 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 	border-radius: 50%;
 	background: var(--accent);
 	animation: fx-pulse 1s ease-in-out infinite;
+}
+
+/* ───────── ползунок-капсула (DESIGN.md, раздел 4): подпись и число внутри полосы, полоса заливается до значения.
+   Тянуть за любое место, двойной щелчок открывает число для ввода. Целые значения до 20 вариантов: ступени внизу капсулы ───────── */
+.field.field-cap { gap: 0; }
+.slider.cap {
+	--fill: var(--accent-fill);
+	position: relative;
+	display: block;
+	height: 28px;
+	border-radius: var(--r-ctl);
+	background: linear-gradient(90deg, var(--fill) var(--p, 0%), var(--bg-raised) var(--p, 0%));
+	overflow: hidden;
+	grid-template-columns: none;
+}
+.slider.cap:hover,
+.slider.cap:active { --fill: var(--accent-fill-hover); }
+.slider.cap:has(.range:focus-visible) { box-shadow: 0 0 0 1px var(--accent-line); }
+.slider.cap .range {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	z-index: 1;
+	background: transparent;
+	cursor: ew-resize;
+	/* на телефоне вертикальный жест прокручивает панель, а не двигает ползунок */
+	touch-action: pan-y;
+}
+.slider.cap .range::-webkit-slider-runnable-track { height: 100%; border-radius: 0; background: none; }
+.slider.cap .range::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	width: 2px;
+	height: 28px;
+	margin-top: 0;
+	border: 0;
+	border-radius: 0;
+	background: var(--accent);
+	box-shadow: none;
+	transform: none;
+}
+.slider.cap .range:hover::-webkit-slider-thumb,
+.slider.cap .range:active::-webkit-slider-thumb { transform: none; background: var(--accent-hover); }
+.slider.cap .range::-moz-range-track { height: 100%; background: none; }
+.slider.cap .range::-moz-range-progress { background: none; }
+.slider.cap .range::-moz-range-thumb { width: 2px; height: 28px; border: 0; border-radius: 0; background: var(--accent); }
+.slider.cap .cap-label {
+	position: absolute;
+	left: 10px;
+	right: 66px;
+	top: 0;
+	z-index: 2;
+	line-height: 28px;
+	font-size: 12px;
+	color: var(--text-dim);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	pointer-events: none;
+}
+.slider.cap .cap-label:empty { display: none; }
+html .slider.cap input.num-out {
+	position: absolute;
+	right: 4px;
+	top: 4px;
+	z-index: 2;
+	width: 62px;
+	height: 20px;
+	padding: 0 6px;
+	border: 0;
+	border-radius: var(--r-sm);
+	background: transparent;
+	text-align: right;
+	font-size: 12px;
+	color: var(--text);
+	font-variant-numeric: tabular-nums;
+	pointer-events: none;
+}
+html .slider.cap.is-edit input.num-out { pointer-events: auto; background: var(--bg-sunken); box-shadow: 0 0 0 1px var(--accent-line); }
+.slider.cap .cap-ticks { display: none; }
+.slider.cap.cap-steps { height: 30px; background: var(--bg-raised); }
+.slider.cap.cap-steps .range::-webkit-slider-thumb { opacity: 0; }
+.slider.cap.cap-steps .range::-moz-range-thumb { opacity: 0; }
+.slider.cap.cap-steps .cap-label { line-height: 24px; }
+html .slider.cap.cap-steps input.num-out { top: 2px; color: var(--accent-text); }
+.slider.cap.cap-steps .cap-ticks {
+	position: absolute;
+	left: 10px;
+	right: 10px;
+	bottom: 4px;
+	z-index: 2;
+	height: 5px;
+	display: flex;
+	align-items: flex-end;
+	gap: 2px;
+	pointer-events: none;
+}
+.slider.cap .cap-ticks > span { flex: 1; height: 2px; border-radius: 1px; background: var(--line-strong); transition: height 0.12s var(--ease), background-color 0.12s; }
+.slider.cap .cap-ticks > span.on { background: var(--accent-line); }
+.slider.cap .cap-ticks > span.cur { height: 5px; background: var(--accent); }
+
+/* ───────── крутилки для звуковых настроек: до трёх в ряд ───────── */
+.knob-row { display: flex; justify-content: space-around; gap: 6px; padding: 4px 0 2px; }
+.knob { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.knob-face { position: relative; width: 48px; height: 48px; border-radius: 50%; cursor: ns-resize; touch-action: none; outline: none; }
+.knob-face:focus-visible { box-shadow: 0 0 0 1px var(--accent-line); }
+.knob-dial { width: 48px; height: 48px; display: block; }
+.knob-dial circle { fill: none; stroke-width: 3.5; stroke-linecap: round; }
+.knob-track { stroke: var(--line-strong); stroke-dasharray: 80.1 106.8; }
+.knob-fill { stroke: var(--accent); transition: stroke 0.12s; }
+.knob-face:hover .knob-fill { stroke: var(--accent-hover); }
+.knob-val {
+	position: absolute;
+	left: 6px;
+	right: 6px;
+	top: 16px;
+	height: 16px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	text-align: center;
+	font-size: 10.5px;
+	color: var(--text);
+	font-variant-numeric: tabular-nums;
+	pointer-events: none;
+}
+.knob.is-edit .knob-val { pointer-events: auto; left: -8px; right: -8px; border-radius: var(--r-sm); background: var(--bg-sunken); box-shadow: 0 0 0 1px var(--accent-line); }
+.knob-label { max-width: 100%; font-size: 11px; line-height: 1.25; color: var(--text-dim); text-align: center; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) {
+	.slider.cap .cap-ticks > span, .knob-fill { transition: none; }
 }

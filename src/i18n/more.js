@@ -1133,6 +1133,8 @@ export default {
 		'объём мягко нарастает и спадает': 'the volume gently grows and settles',
 		'Скорость дыхания': 'Breathing speed',
 		'Покачивание (параллакс)': 'Sway (parallax)',
+		'Интервал': 'Interval',
+		'Спад': 'Decay',
 	},
 	uk: {
 		'Установить приложение': 'Встановити застосунок',
@@ -2267,6 +2269,8 @@ export default {
 		'объём мягко нарастает и спадает': 'обʼєм мʼяко наростає і спадає',
 		'Скорость дыхания': 'Швидкість дихання',
 		'Покачивание (параллакс)': 'Погойдування (паралакс)',
+		'Интервал': 'Інтервал',
+		'Спад': 'Спад',
 	},
 	es: {
 		'Установить приложение': 'Instalar la aplicación',
@@ -3401,6 +3405,8 @@ export default {
 		'объём мягко нарастает и спадает': 'el volumen crece y baja suavemente',
 		'Скорость дыхания': 'Velocidad de respiración',
 		'Покачивание (параллакс)': 'Balanceo (paralaje)',
+		'Интервал': 'Intervalo',
+		'Спад': 'Caída',
 	},
 	de: {
 		'Установить приложение': 'App installieren',
@@ -4535,5 +4541,7 @@ export default {
 		'объём мягко нарастает и спадает': 'das Volumen wächst und sinkt sanft',
 		'Скорость дыхания': 'Atemtempo',
 		'Покачивание (параллакс)': 'Wiegen (Parallaxe)',
+		'Интервал': 'Intervall',
+		'Спад': 'Abfall',
 	},
 };

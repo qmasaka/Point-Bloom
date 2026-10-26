@@ -36,7 +36,12 @@ export function section(title, { actions = null, open = true, key } = {}, ...chi
 }
 
 export function field(label, control, { hint, wide = false } = {}) {
-	return h('div', { class: 'field' + (wide ? ' field-wide' : '') }, h('label', { class: 'field-label' }, label), h('div', { class: 'field-control' }, control), hint ? h('div', { class: 'field-hint' }, hint) : null);
+	// ползунок-капсула: подпись ложится внутрь полосы, поле занимает одну строку (DESIGN.md, раздел 4)
+	if (control && control.__capLabel) {
+		control.__capLabel(label);
+		return h('div', { class: 'field field-cap' }, h('div', { class: 'field-control' }, control), hint ? h('div', { class: 'field-hint' }, hint) : null);
+	}
+	return h('div',{ class: 'field' + (wide ? ' field-wide' : '') }, h('label', { class: 'field-label' }, label), h('div', { class: 'field-control' }, control), hint ? h('div', { class: 'field-hint' }, hint) : null);
 }
 
 export function toggle({ value = false, onChange, label }) {
@@ -397,7 +402,7 @@ export function parseHuman(s) {
 	return parseFloat(m[1]) * mult;
 }
 
-export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, digits = 2, unit = '', format, log = false, norm = false }) {
+export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, digits = 2, unit = '', format, parse, log = false, norm = false }) {
 	let lo = min;
 	let hi = max;
 	// log: бегунок работает по шкале 0..1000, значение растёт по степенному закону (для больших диапазонов)
@@ -421,18 +426,51 @@ export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onCh
 		return clamp(Math.round(v / step) * step, lo, hi);
 	};
 	const show = () => (out.value = norm ? fmt(Math.round(parseFloat(range.value) / 10) / 100, 2) : format ? format(cur()) : fmt(cur(), digits) + unit);
+	// капсула: подпись слева и число справа лежат внутри полосы, полоса заливается до значения; тянуть можно за любое место,
+	// двойной щелчок открывает число для ввода. Целые значения с небольшим числом вариантов (до 20) показываются ступенями
+	const lab = h('span', { class: 'field-label cap-label' });
+	const ticks = h('span', { class: 'cap-ticks', 'aria-hidden': 'true' });
+	const wrap = h('div', { class: 'slider cap' }, range, lab, out, ticks);
+	const stepCount = () => (!scaled && step >= 1 ? Math.round((hi - lo) / step) : 0);
+	const paintTicks = () => {
+		const n = stepCount();
+		const on = n >= 2 && n <= 20;
+		wrap.classList.toggle('cap-steps', on);
+		if (!on) return;
+		if (ticks.childElementCount !== n + 1) {
+			ticks.textContent = '';
+			for (let i = 0; i <= n; i++) ticks.append(h('span'));
+		}
+		const k = Math.round((cur() - lo) / step);
+		[...ticks.children].forEach((t, i) => {
+			t.classList.toggle('on', i <= k);
+			t.classList.toggle('cur', i === k);
+		});
+	};
 	const paint = () => {
 		const p = scaled ? parseFloat(range.value) / 10 : ((parseFloat(range.value) - lo) / (hi - lo)) * 100;
 		range.style.setProperty('--p', clamp(p, 0, 100) + '%');
+		wrap.style.setProperty('--p', clamp(p, 0, 100) + '%');
 		show();
+		paintTicks();
 	};
+	wrap.__capLabel = (t) => {
+		lab.append(t);
+		lab.title = lab.textContent;
+		range.setAttribute('aria-label', lab.textContent);
+	};
+	range.addEventListener('dblclick', () => {
+		wrap.classList.add('is-edit');
+		out.focus();
+	});
+	out.addEventListener('blur', () => wrap.classList.remove('is-edit'));
 	range.addEventListener('input', () => {
 		paint();
 		onInput && onInput(cur());
 	});
 	range.addEventListener('change', () => onChange && onChange(cur()));
 	const commitText = () => {
-		const t = parseHuman(out.value);
+		const t = parse ? parse(out.value) : parseHuman(out.value);
 		const v = norm && isFinite(t) ? unfrac(clamp(t, 0, 1)) : t;
 		if (isFinite(v)) {
 			range.value = toPos(clamp(v, lo, hi));
@@ -448,7 +486,7 @@ export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onCh
 	out.addEventListener('focus', () => out.select());
 	paint();
 	return {
-		el: h('div', { class: 'slider' }, range, out),
+		el: wrap,
 		get: cur,
 		set(v) {
 			range.value = toPos(v);
@@ -467,6 +505,134 @@ export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onCh
 		},
 	};
 }
+/**
+ * Регулятор-крутилка для звуковых настроек: дуга 270°, число в центре, подпись снизу. Тянуть вверх-вниз (или вбок), Shift точнее,
+ * стрелки с клавиатуры, двойной щелчок открывает число для ввода. Те же get/set, что у slider(), поэтому подставляется вместо него
+ */
+export function knob({ label, min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, digits = 2, unit = '', format, parse, log = false }) {
+	let v = clamp(value, min, max);
+	const frac = (x) => clamp(log ? Math.log(Math.max(x, min) / min) / Math.log(max / min) : (x - min) / (max - min), 0, 1);
+	const unfrac = (f) => {
+		const x = log ? min * Math.pow(max / min, clamp(f, 0, 1)) : min + clamp(f, 0, 1) * (max - min);
+		return clamp(Math.round(x / step) * step, min, max);
+	};
+	const text = (x) => (format ? format(x) : fmt(x, digits) + unit);
+	const NS = 'http://www.w3.org/2000/svg';
+	const arc = (cls) => {
+		const c = document.createElementNS(NS, 'circle');
+		c.setAttribute('cx', '22');
+		c.setAttribute('cy', '22');
+		c.setAttribute('r', '17');
+		c.setAttribute('class', cls);
+		c.setAttribute('transform', 'rotate(135 22 22)');
+		return c;
+	};
+	const svgEl = document.createElementNS(NS, 'svg');
+	svgEl.setAttribute('viewBox', '0 0 44 44');
+	svgEl.setAttribute('class', 'knob-dial');
+	const fill = arc('knob-fill');
+	svgEl.append(arc('knob-track'), fill);
+	const out = h('input', { type: 'text', class: 'knob-val', inputmode: 'decimal', tabindex: '-1', 'aria-hidden': 'true' });
+	const face = h('div', { class: 'knob-face', role: 'slider', tabindex: '0', 'aria-label': label || 'Значение', 'aria-valuemin': String(min), 'aria-valuemax': String(max) }, svgEl, out);
+	const el = h('div', { class: 'knob' }, face, label ? h('span', { class: 'knob-label', title: label }, label) : null);
+	// полная дуга 270° из окружности 2π·17 ≈ 106.8
+	const paint = () => {
+		fill.setAttribute('stroke-dasharray', (80.1 * frac(v)).toFixed(2) + ' 106.8');
+		out.value = text(v);
+		face.setAttribute('aria-valuenow', String(v));
+		face.setAttribute('aria-valuetext', out.value);
+	};
+	const put = (nv, done) => {
+		nv = clamp(nv, min, max);
+		const changed = nv !== v;
+		v = nv;
+		paint();
+		if (changed) onInput && onInput(v);
+		if (done) onChange && onChange(v);
+	};
+	face.addEventListener('pointerdown', (e) => {
+		if (el.classList.contains('is-edit')) return;
+		e.preventDefault();
+		face.focus();
+		face.setPointerCapture(e.pointerId);
+		const f0 = frac(v);
+		const x0 = e.clientX;
+		const y0 = e.clientY;
+		const move = (ev) => {
+			const d = (y0 - ev.clientY + (ev.clientX - x0)) / (ev.shiftKey ? 600 : 150);
+			put(unfrac(f0 + d), false);
+		};
+		const up = () => {
+			face.removeEventListener('pointermove', move);
+			face.removeEventListener('pointerup', up);
+			face.removeEventListener('pointercancel', up);
+			onChange && onChange(v);
+		};
+		face.addEventListener('pointermove', move);
+		face.addEventListener('pointerup', up);
+		face.addEventListener('pointercancel', up);
+	});
+	face.addEventListener('keydown', (e) => {
+		const d = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[e.key];
+		if (!d) return;
+		e.preventDefault();
+		put(unfrac(frac(v) + d * (e.shiftKey ? 0.1 : 0.02)), true);
+	});
+	face.addEventListener('dblclick', () => {
+		el.classList.add('is-edit');
+		out.tabIndex = 0;
+		out.focus();
+		out.select();
+	});
+	const commit = () => {
+		// parse: своё чтение введённого текста (проценты, мс и с); иначе обычное число
+		const t = parse ? parse(out.value) : parseHuman(out.value);
+		el.classList.remove('is-edit');
+		out.tabIndex = -1;
+		if (isFinite(t)) put(t, true);
+		else paint();
+	};
+	out.addEventListener('change', commit);
+	out.addEventListener('blur', () => {
+		if (el.classList.contains('is-edit')) commit();
+	});
+	out.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter') out.blur();
+		else if (e.key === 'Escape') {
+			paint();
+			el.classList.remove('is-edit');
+			face.focus();
+		}
+	});
+	paint();
+	return {
+		el,
+		get: () => v,
+		set(x) {
+			v = clamp(x, min, max);
+			paint();
+		},
+	};
+}
+
+/** Чтение процентов: «60», «60%» и «0.6» дают 0.6 */
+export function parsePct(s) {
+	const t = parseFloat(String(s).replace(',', '.'));
+	return !isFinite(t) ? NaN : /%/.test(s) || t > 1 ? t / 100 : t;
+}
+
+/** Чтение времени в секундах: «120 мс», «0.5 с», «0.5» */
+export function parseSec(s) {
+	const str = String(s).replace(',', '.');
+	const t = parseFloat(str);
+	return !isFinite(t) ? NaN : /мс|ms/i.test(str) ? t / 1000 : t;
+}
+
+/** Ряд крутилок (до трёх в строку) */
+export function knobRow(...items) {
+	return h('div', { class: 'knob-row' }, ...items.map((k) => k.el || k));
+}
+
 /** Ползунок настроек эффектов: числа читаются одинаково, шкала до 1 (до 2, если так задумано). noNorm оставляет реальные величины: число точек, секунды, кадры */
 export function fxSlider(o) {
 	if (o.noNorm) return slider(o);

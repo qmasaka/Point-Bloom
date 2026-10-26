@@ -40001,6 +40001,10 @@ __def(__exports, 'segmented', () => segmented);
 __def(__exports, 'select', () => select);
 __def(__exports, 'parseHuman', () => parseHuman);
 __def(__exports, 'slider', () => slider);
+__def(__exports, 'knob', () => knob);
+__def(__exports, 'parsePct', () => parsePct);
+__def(__exports, 'parseSec', () => parseSec);
+__def(__exports, 'knobRow', () => knobRow);
 __def(__exports, 'fxSlider', () => fxSlider);
 __def(__exports, 'numberField', () => numberField);
 __def(__exports, 'colorField', () => colorField);
@@ -40036,7 +40040,11 @@ head.setAttribute('aria-expanded', String(!closed));
 return { el, body };
 }
 function field(label, control, { hint, wide = false } = {}) {
-return h('div', { class: 'field' + (wide ? ' field-wide' : '') }, h('label', { class: 'field-label' }, label), h('div', { class: 'field-control' }, control), hint ? h('div', { class: 'field-hint' }, hint) : null);
+if (control && control.__capLabel) {
+control.__capLabel(label);
+return h('div', { class: 'field field-cap' }, h('div', { class: 'field-control' }, control), hint ? h('div', { class: 'field-hint' }, hint) : null);
+}
+return h('div',{ class: 'field' + (wide ? ' field-wide' : '') }, h('label', { class: 'field-label' }, label), h('div', { class: 'field-control' }, control), hint ? h('div', { class: 'field-hint' }, hint) : null);
 }
 function toggle({ value = false, onChange, label }) {
 const b = h('button', { type: 'button', class: 'switch', role: 'switch', 'aria-checked': String(!!value), 'aria-label': label || 'Переключатель' }, h('span', { class: 'switch-knob' }));
@@ -40357,7 +40365,7 @@ if (!m) return NaN;
 const mult = !m[2] ? 1 : /^(млн|м|m)$/.test(m[2]) ? 1e6 : 1e3;
 return parseFloat(m[1]) * mult;
 }
-function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, digits = 2, unit = '', format, log = false, norm = false }) {
+function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, digits = 2, unit = '', format, parse, log = false, norm = false }) {
 let lo = min;
 let hi = max;
 const scaled = log || norm;
@@ -40378,18 +40386,49 @@ const v = log ? lo * Math.pow(hi / lo, f) : lo + f * (hi - lo);
 return clamp(Math.round(v / step) * step, lo, hi);
 };
 const show = () => (out.value = norm ? fmt(Math.round(parseFloat(range.value) / 10) / 100, 2) : format ? format(cur()) : fmt(cur(), digits) + unit);
+const lab = h('span', { class: 'field-label cap-label' });
+const ticks = h('span', { class: 'cap-ticks', 'aria-hidden': 'true' });
+const wrap = h('div', { class: 'slider cap' }, range, lab, out, ticks);
+const stepCount = () => (!scaled && step >= 1 ? Math.round((hi - lo) / step) : 0);
+const paintTicks = () => {
+const n = stepCount();
+const on = n >= 2 && n <= 20;
+wrap.classList.toggle('cap-steps', on);
+if (!on) return;
+if (ticks.childElementCount !== n + 1) {
+ticks.textContent = '';
+for (let i = 0; i <= n; i++) ticks.append(h('span'));
+}
+const k = Math.round((cur() - lo) / step);
+[...ticks.children].forEach((t, i) => {
+t.classList.toggle('on', i <= k);
+t.classList.toggle('cur', i === k);
+});
+};
 const paint = () => {
 const p = scaled ? parseFloat(range.value) / 10 : ((parseFloat(range.value) - lo) / (hi - lo)) * 100;
 range.style.setProperty('--p', clamp(p, 0, 100) + '%');
+wrap.style.setProperty('--p', clamp(p, 0, 100) + '%');
 show();
+paintTicks();
 };
+wrap.__capLabel = (t) => {
+lab.append(t);
+lab.title = lab.textContent;
+range.setAttribute('aria-label', lab.textContent);
+};
+range.addEventListener('dblclick', () => {
+wrap.classList.add('is-edit');
+out.focus();
+});
+out.addEventListener('blur', () => wrap.classList.remove('is-edit'));
 range.addEventListener('input', () => {
 paint();
 onInput && onInput(cur());
 });
 range.addEventListener('change', () => onChange && onChange(cur()));
 const commitText = () => {
-const t = parseHuman(out.value);
+const t = parse ? parse(out.value) : parseHuman(out.value);
 const v = norm && isFinite(t) ? unfrac(clamp(t, 0, 1)) : t;
 if (isFinite(v)) {
 range.value = toPos(clamp(v, lo, hi));
@@ -40405,7 +40444,7 @@ if (e.key === 'Enter') out.blur();
 out.addEventListener('focus', () => out.select());
 paint();
 return {
-el: h('div', { class: 'slider' }, range, out),
+el: wrap,
 get: cur,
 set(v) {
 range.value = toPos(v);
@@ -40423,6 +40462,121 @@ range.value = toPos(clamp(v, lo, hi));
 paint();
 },
 };
+}
+function knob({ label, min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, digits = 2, unit = '', format, parse, log = false }) {
+let v = clamp(value, min, max);
+const frac = (x) => clamp(log ? Math.log(Math.max(x, min) / min) / Math.log(max / min) : (x - min) / (max - min), 0, 1);
+const unfrac = (f) => {
+const x = log ? min * Math.pow(max / min, clamp(f, 0, 1)) : min + clamp(f, 0, 1) * (max - min);
+return clamp(Math.round(x / step) * step, min, max);
+};
+const text = (x) => (format ? format(x) : fmt(x, digits) + unit);
+const NS = 'http://www.w3.org/2000/svg';
+const arc = (cls) => {
+const c = document.createElementNS(NS, 'circle');
+c.setAttribute('cx', '22');
+c.setAttribute('cy', '22');
+c.setAttribute('r', '17');
+c.setAttribute('class', cls);
+c.setAttribute('transform', 'rotate(135 22 22)');
+return c;
+};
+const svgEl = document.createElementNS(NS, 'svg');
+svgEl.setAttribute('viewBox', '0 0 44 44');
+svgEl.setAttribute('class', 'knob-dial');
+const fill = arc('knob-fill');
+svgEl.append(arc('knob-track'), fill);
+const out = h('input', { type: 'text', class: 'knob-val', inputmode: 'decimal', tabindex: '-1', 'aria-hidden': 'true' });
+const face = h('div', { class: 'knob-face', role: 'slider', tabindex: '0', 'aria-label': label || 'Значение', 'aria-valuemin': String(min), 'aria-valuemax': String(max) }, svgEl, out);
+const el = h('div', { class: 'knob' }, face, label ? h('span', { class: 'knob-label', title: label }, label) : null);
+const paint = () => {
+fill.setAttribute('stroke-dasharray', (80.1 * frac(v)).toFixed(2) + ' 106.8');
+out.value = text(v);
+face.setAttribute('aria-valuenow', String(v));
+face.setAttribute('aria-valuetext', out.value);
+};
+const put = (nv, done) => {
+nv = clamp(nv, min, max);
+const changed = nv !== v;
+v = nv;
+paint();
+if (changed) onInput && onInput(v);
+if (done) onChange && onChange(v);
+};
+face.addEventListener('pointerdown', (e) => {
+if (el.classList.contains('is-edit')) return;
+e.preventDefault();
+face.focus();
+face.setPointerCapture(e.pointerId);
+const f0 = frac(v);
+const x0 = e.clientX;
+const y0 = e.clientY;
+const move = (ev) => {
+const d = (y0 - ev.clientY + (ev.clientX - x0)) / (ev.shiftKey ? 600 : 150);
+put(unfrac(f0 + d), false);
+};
+const up = () => {
+face.removeEventListener('pointermove', move);
+face.removeEventListener('pointerup', up);
+face.removeEventListener('pointercancel', up);
+onChange && onChange(v);
+};
+face.addEventListener('pointermove', move);
+face.addEventListener('pointerup', up);
+face.addEventListener('pointercancel', up);
+});
+face.addEventListener('keydown', (e) => {
+const d = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[e.key];
+if (!d) return;
+e.preventDefault();
+put(unfrac(frac(v) + d * (e.shiftKey ? 0.1 : 0.02)), true);
+});
+face.addEventListener('dblclick', () => {
+el.classList.add('is-edit');
+out.tabIndex = 0;
+out.focus();
+out.select();
+});
+const commit = () => {
+const t = parse ? parse(out.value) : parseHuman(out.value);
+el.classList.remove('is-edit');
+out.tabIndex = -1;
+if (isFinite(t)) put(t, true);
+else paint();
+};
+out.addEventListener('change', commit);
+out.addEventListener('blur', () => {
+if (el.classList.contains('is-edit')) commit();
+});
+out.addEventListener('keydown', (e) => {
+if (e.key === 'Enter') out.blur();
+else if (e.key === 'Escape') {
+paint();
+el.classList.remove('is-edit');
+face.focus();
+}
+});
+paint();
+return {
+el,
+get: () => v,
+set(x) {
+v = clamp(x, min, max);
+paint();
+},
+};
+}
+function parsePct(s) {
+const t = parseFloat(String(s).replace(',', '.'));
+return !isFinite(t) ? NaN : /%/.test(s) || t > 1 ? t / 100 : t;
+}
+function parseSec(s) {
+const str = String(s).replace(',', '.');
+const t = parseFloat(str);
+return !isFinite(t) ? NaN : /мс|ms/i.test(str) ? t / 1000 : t;
+}
+function knobRow(...items) {
+return h('div', { class: 'knob-row' }, ...items.map((k) => k.el || k));
 }
 function fxSlider(o) {
 if (o.noNorm) return slider(o);
@@ -88137,6 +88291,8 @@ en: {
 'объём мягко нарастает и спадает': 'the volume gently grows and settles',
 'Скорость дыхания': 'Breathing speed',
 'Покачивание (параллакс)': 'Sway (parallax)',
+'Интервал': 'Interval',
+'Спад': 'Decay',
 },
 uk: {
 'Установить приложение': 'Встановити застосунок',
@@ -89270,6 +89426,8 @@ uk: {
 'объём мягко нарастает и спадает': 'обʼєм мʼяко наростає і спадає',
 'Скорость дыхания': 'Швидкість дихання',
 'Покачивание (параллакс)': 'Погойдування (паралакс)',
+'Интервал': 'Інтервал',
+'Спад': 'Спад',
 },
 es: {
 'Установить приложение': 'Instalar la aplicación',
@@ -90403,6 +90561,8 @@ es: {
 'объём мягко нарастает и спадает': 'el volumen crece y baja suavemente',
 'Скорость дыхания': 'Velocidad de respiración',
 'Покачивание (параллакс)': 'Balanceo (paralaje)',
+'Интервал': 'Intervalo',
+'Спад': 'Caída',
 },
 de: {
 'Установить приложение': 'App installieren',
@@ -91536,6 +91696,8 @@ de: {
 'объём мягко нарастает и спадает': 'das Volumen wächst und sinkt sanft',
 'Скорость дыхания': 'Atemtempo',
 'Покачивание (параллакс)': 'Wiegen (Parallaxe)',
+'Интервал': 'Intervall',
+'Спад': 'Abfall',
 },
 };
 };
@@ -104681,7 +104843,7 @@ __def(__exports, 'makeModelProvider', () => makeModelProvider);
 __def(__exports, 'createEffectsPanel', () => createEffectsPanel);
 const { h, formatInt, placeAbove, uiZoom, screenRect, toCss } = __req('src/core/util.js');
 const { icon } = __req('src/ui/icons.js');
-const { section, field, fxSlider: slider, segmented, switchRow, toggle, button, iconButton, select, colorField } = __req('src/ui/ui-kit.js');
+const { section, field, fxSlider: slider, segmented, switchRow, toggle, button, iconButton, select, colorField, knob, knobRow, parsePct, parseSec } = __req('src/ui/ui-kit.js');
 const THREE = __req('vendor/three/build/three.module.js');
 const { sampleSurface, overrideMats } = __req('src/points/pointcloud.js');
 const { getDevice } = __req('src/ui/device-card.js');
@@ -105122,11 +105284,11 @@ requestAnimationFrame(tick);
 {
 const pct = (v) => Math.round(v * 100);
 const tm = (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с');
-const thr = slider({ noNorm: true, min: 0.05, max: 0.95, step: 0.01, value: mc.thr, format: (v) => String(pct(v)), onInput: (v) => { mc.thr = v; }, onChange: save });
-const gap = slider({ noNorm: true, min: 0.2, max: 12, step: 0.1, value: mc.gap ?? 1, digits: 1, unit: ' с', onInput: (v) => { mc.gap = v; }, onChange: save });
-const react = slider({ min: 0, max: 1, step: 0.05, value: mc.react ?? 0.6, format: (v) => pct(v) + '%', onInput: (v) => { mc.react = v; }, onChange: save });
-const atk = slider({ log: true, min: 0.01, max: 2, step: 0.005, value: mc.atk, format: tm, onInput: (v) => { mc.atk = v; }, onChange: save });
-const rel = slider({ log: true, min: 0.03, max: 4, step: 0.01, value: mc.rel, format: tm, onInput: (v) => { mc.rel = v; }, onChange: save });
+const thr = knob({ label: 'Порог', min: 0.05, max: 0.95, step: 0.01, value: mc.thr, format: (v) => pct(v) + '%', parse: parsePct, onInput: (v) => { mc.thr = v; }, onChange: save });
+const gap = knob({ label: 'Интервал', min: 0.2, max: 12, step: 0.1, value: mc.gap ?? 1, log: true, format: (v) => v.toFixed(1) + ' с', parse: parseSec, onInput: (v) => { mc.gap = v; }, onChange: save });
+const react = knob({ label: 'Сила', min: 0, max: 1, step: 0.01, value: mc.react ?? 0.6, format: (v) => pct(v) + '%', parse: parsePct, onInput: (v) => { mc.react = v; }, onChange: save });
+const atk = knob({ label: 'Нарастание', log: true, min: 0.01, max: 2, step: 0.005, value: mc.atk, format: tm, parse: parseSec, onInput: (v) => { mc.atk = v; }, onChange: save });
+const rel = knob({ label: 'Спад', log: true, min: 0.03, max: 4, step: 0.01, value: mc.rel, format: tm, parse: parseSec, onInput: (v) => { mc.rel = v; }, onChange: save });
 const autoThr = button({
 label: 'Подобрать порог по музыке',
 icon: 'lightning',
@@ -105170,8 +105332,8 @@ syncMorph();
 },
 });
 const note = h('div', { class: 'field-hint' });
-const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Порог срабатывания', thr.el), autoThr, field('Не чаще, чем раз в', gap.el));
-const ampBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Чувствительность', react.el), field('Отклик вверх', atk.el), field('Отклик вниз', rel.el));
+const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, knobRow(thr, gap), autoThr);
+const ampBox = h('div', { class: 'sec-body', style: { padding: 0 } }, knobRow(react, atk, rel));
 morphMusic.append(field('Слушает', band.el, { wide: true }), meter.el, field('Как реагирует', mode.el, { wide: true }), gateBox, ampBox, note);
 morphMusic.sync = () => {
 if (mc.band === 'none' || mc.band === 'custom') mc.band = 'bass';
@@ -105443,8 +105605,8 @@ put(field(ex.label, sl.el), ex);
 }
 }
 applyWhen();
-const react = slider({ min: 0, max: 1, step: 0.05, value: L.react, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { L.react = v; }, onChange: save });
-const reactRow = field('Сила реакции', react.el);
+const react = knob({ label: 'Сила реакции', min: 0, max: 1, step: 0.01, value: L.react, format: (v) => Math.round(v * 100) + '%', parse: parsePct, onInput: (v) => { L.react = v; }, onChange: save });
+const reactRow = knobRow(react);
 const modeSeg = segmented({
 cls: 'seg-tight',
 options: [{ value: 'gate', label: 'Резко', title: 'Эффект включается, когда число звука выше порога, и гаснет после' }, { value: 'amp', label: 'Плавно', title: 'Сила эффекта плавно следует за числом звука' }],
@@ -105456,9 +105618,8 @@ save();
 },
 });
 const pct = (v) => Math.round(v * 100);
-const thr = slider({ noNorm: true, min: 0.05, max: 0.95, step: 0.01, value: L.thr, format: (v) => String(pct(v)), onInput: (v) => { L.thr = v; }, onChange: save });
-const atk = slider({ log: true, min: 0.005, max: 1, step: 0.005, value: L.atk, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), onInput: (v) => { L.atk = v; }, onChange: save });
-const rel = slider({ log: true, min: 0.03, max: 4, step: 0.01, value: L.rel, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), onInput: (v) => { L.rel = v; }, onChange: save });
+const thr = knob({ label: 'Порог', min: 0.05, max: 0.95, step: 0.01, value: L.thr, format: (v) => pct(v) + '%', parse: parsePct, onInput: (v) => { L.thr = v; }, onChange: save });
+const rel = knob({ label: 'Гаснет за', log: true, min: 0.03, max: 4, step: 0.01, value: L.rel, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), parse: parseSec, onInput: (v) => { L.rel = v; }, onChange: save });
 const autoThr = button({
 label: 'Подобрать порог по музыке',
 icon: 'lightning',
@@ -105476,7 +105637,7 @@ thr.set(t);
 save();
 },
 });
-const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Порог срабатывания', thr.el), autoThr, field('Гаснет за', rel.el));
+const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, knobRow(thr, rel), autoThr);
 const picker = levelMeter(L, (v) => thr.set(v), save);
 const band = segmented({
 cls: 'seg-tight',
@@ -105540,7 +105701,7 @@ fxTabHook();
 fbody.append(card);
 attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
 inspBox.append(insp);
-cards.push({ folder, def, L, sw, amount, react, band, reactRow, modeSeg, thr, atk, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
+cards.push({ folder, def, L, sw, amount, react, band, reactRow, modeSeg, thr, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
 }
 }
 const inspEmpty = h('div', { class: 'empty-note' }, h('strong', {}, 'Выберите эффект'), h('span', {}, 'Нажмите на строку в списке слева, чтобы настроить его здесь'));
@@ -107752,7 +107913,6 @@ c.react.set(c.L.react);
 c.band.set(c.L.band);
 c.modeSeg.set(c.L.amode);
 c.thr.set(c.L.thr);
-c.atk.set(c.L.atk);
 c.rel.set(c.L.rel);
 c.audioUi();
 c.syncHead();

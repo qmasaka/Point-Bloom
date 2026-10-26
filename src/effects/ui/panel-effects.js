@@ -1,7 +1,7 @@
 // Режим «Эффекты»: боковая панель (источник, эффекты, звук, вид) и нижняя панель управления в сцене.
 import { h, formatInt, placeAbove, uiZoom, screenRect, toCss } from '../../core/util.js';
 import { icon } from '../../ui/icons.js';
-import { section, field, fxSlider as slider, segmented, switchRow, toggle, button, iconButton, select, colorField } from '../../ui/ui-kit.js';
+import { section, field, fxSlider as slider, segmented, switchRow, toggle, button, iconButton, select, colorField, knob, knobRow, parsePct, parseSec } from '../../ui/ui-kit.js';
 import * as THREE from 'three';
 import { sampleSurface, overrideMats } from '../../points/pointcloud.js';
 import { getDevice } from '../../ui/device-card.js';
@@ -483,11 +483,12 @@ export function createEffectsPanel(app, root, engine) {
 	{
 		const pct = (v) => Math.round(v * 100);
 		const tm = (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с');
-		const thr = slider({ noNorm: true, min: 0.05, max: 0.95, step: 0.01, value: mc.thr, format: (v) => String(pct(v)), onInput: (v) => { mc.thr = v; }, onChange: save });
-		const gap = slider({ noNorm: true, min: 0.2, max: 12, step: 0.1, value: mc.gap ?? 1, digits: 1, unit: ' с', onInput: (v) => { mc.gap = v; }, onChange: save });
-		const react = slider({ min: 0, max: 1, step: 0.05, value: mc.react ?? 0.6, format: (v) => pct(v) + '%', onInput: (v) => { mc.react = v; }, onChange: save });
-		const atk = slider({ log: true, min: 0.01, max: 2, step: 0.005, value: mc.atk, format: tm, onInput: (v) => { mc.atk = v; }, onChange: save });
-		const rel = slider({ log: true, min: 0.03, max: 4, step: 0.01, value: mc.rel, format: tm, onInput: (v) => { mc.rel = v; }, onChange: save });
+		// звуковые настройки: крутилки в ряд, а не ползунок на каждую (панель вдвое короче)
+		const thr = knob({ label: 'Порог', min: 0.05, max: 0.95, step: 0.01, value: mc.thr, format: (v) => pct(v) + '%', parse: parsePct, onInput: (v) => { mc.thr = v; }, onChange: save });
+		const gap = knob({ label: 'Интервал', min: 0.2, max: 12, step: 0.1, value: mc.gap ?? 1, log: true, format: (v) => v.toFixed(1) + ' с', parse: parseSec, onInput: (v) => { mc.gap = v; }, onChange: save });
+		const react = knob({ label: 'Сила', min: 0, max: 1, step: 0.01, value: mc.react ?? 0.6, format: (v) => pct(v) + '%', parse: parsePct, onInput: (v) => { mc.react = v; }, onChange: save });
+		const atk = knob({ label: 'Нарастание', log: true, min: 0.01, max: 2, step: 0.005, value: mc.atk, format: tm, parse: parseSec, onInput: (v) => { mc.atk = v; }, onChange: save });
+		const rel = knob({ label: 'Спад', log: true, min: 0.03, max: 4, step: 0.01, value: mc.rel, format: tm, parse: parseSec, onInput: (v) => { mc.rel = v; }, onChange: save });
 		const autoThr = button({
 			label: 'Подобрать порог по музыке',
 			icon: 'lightning',
@@ -531,8 +532,8 @@ export function createEffectsPanel(app, root, engine) {
 			},
 		});
 		const note = h('div', { class: 'field-hint' });
-		const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Порог срабатывания', thr.el), autoThr, field('Не чаще, чем раз в', gap.el));
-		const ampBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Чувствительность', react.el), field('Отклик вверх', atk.el), field('Отклик вниз', rel.el));
+		const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, knobRow(thr, gap), autoThr);
+		const ampBox = h('div', { class: 'sec-body', style: { padding: 0 } }, knobRow(react, atk, rel));
 		morphMusic.append(field('Слушает', band.el, { wide: true }), meter.el, field('Как реагирует', mode.el, { wide: true }), gateBox, ampBox, note);
 		morphMusic.sync = () => {
 			if (mc.band === 'none' || mc.band === 'custom') mc.band = 'bass';
@@ -815,8 +816,8 @@ export function createEffectsPanel(app, root, engine) {
 				}
 			}
 			applyWhen();
-			const react = slider({ min: 0, max: 1, step: 0.05, value: L.react, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { L.react = v; }, onChange: save });
-			const reactRow = field('Сила реакции', react.el);
+			const react = knob({ label: 'Сила реакции', min: 0, max: 1, step: 0.01, value: L.react, format: (v) => Math.round(v * 100) + '%', parse: parsePct, onInput: (v) => { L.react = v; }, onChange: save });
+			const reactRow = knobRow(react);
 			const modeSeg = segmented({
 				cls: 'seg-tight',
 				options: [{ value: 'gate', label: 'Резко', title: 'Эффект включается, когда число звука выше порога, и гаснет после' }, { value: 'amp', label: 'Плавно', title: 'Сила эффекта плавно следует за числом звука' }],
@@ -828,9 +829,8 @@ export function createEffectsPanel(app, root, engine) {
 				},
 			});
 			const pct = (v) => Math.round(v * 100);
-			const thr = slider({ noNorm: true, min: 0.05, max: 0.95, step: 0.01, value: L.thr, format: (v) => String(pct(v)), onInput: (v) => { L.thr = v; }, onChange: save });
-			const atk = slider({ log: true, min: 0.005, max: 1, step: 0.005, value: L.atk, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), onInput: (v) => { L.atk = v; }, onChange: save });
-			const rel = slider({ log: true, min: 0.03, max: 4, step: 0.01, value: L.rel, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), onInput: (v) => { L.rel = v; }, onChange: save });
+			const thr = knob({ label: 'Порог', min: 0.05, max: 0.95, step: 0.01, value: L.thr, format: (v) => pct(v) + '%', parse: parsePct, onInput: (v) => { L.thr = v; }, onChange: save });
+			const rel = knob({ label: 'Гаснет за', log: true, min: 0.03, max: 4, step: 0.01, value: L.rel, format: (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с'), parse: parseSec, onInput: (v) => { L.rel = v; }, onChange: save });
 			const autoThr = button({
 				label: 'Подобрать порог по музыке',
 				icon: 'lightning',
@@ -848,7 +848,7 @@ export function createEffectsPanel(app, root, engine) {
 					save();
 				},
 			});
-			const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Порог срабатывания', thr.el), autoThr, field('Гаснет за', rel.el));
+			const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, knobRow(thr, rel), autoThr);
 			const picker = levelMeter(L, (v) => thr.set(v), save);
 			// частоты: четыре понятные полосы; «Своя» остаётся только у старых проектов, где она уже выбрана
 			const band = segmented({
@@ -916,7 +916,7 @@ export function createEffectsPanel(app, root, engine) {
 			fbody.append(card);
 			attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
 			inspBox.append(insp);
-			cards.push({ folder, def, L, sw, amount, react, band, reactRow, modeSeg, thr, atk, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
+			cards.push({ folder, def, L, sw, amount, react, band, reactRow, modeSeg, thr, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
 		}
 	}
 	const inspEmpty = h('div', { class: 'empty-note' }, h('strong', {}, 'Выберите эффект'), h('span', {}, 'Нажмите на строку в списке слева, чтобы настроить его здесь'));
@@ -3346,7 +3346,6 @@ export function createEffectsPanel(app, root, engine) {
 			c.band.set(c.L.band);
 			c.modeSeg.set(c.L.amode);
 			c.thr.set(c.L.thr);
-			c.atk.set(c.L.atk);
 			c.rel.set(c.L.rel);
 			c.audioUi();
 			c.syncHead();
