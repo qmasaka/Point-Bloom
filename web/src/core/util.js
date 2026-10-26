@@ -17,6 +17,29 @@ el.append(c.nodeType ? c : document.createTextNode(String(c)));
 }
 return el;
 }
+export function uiZoom() {
+return parseFloat(document.documentElement.style.zoom) || 1;
+}
+let _rz = { zoom: 0, k: 1 };
+function rectZoom() {
+const z = uiZoom();
+if (_rz.zoom !== z && document.body) {
+const d = document.createElement('div');
+d.style.cssText = 'position:fixed;left:0;top:0;width:100px;height:1px;visibility:hidden;pointer-events:none';
+document.body.append(d);
+const w = d.getBoundingClientRect().width;
+d.remove();
+_rz = { zoom: z, k: w > 0 ? w / 100 : z };
+}
+return _rz.k;
+}
+export function screenRect(el) {
+const r = el.getBoundingClientRect();
+const k = uiZoom() / rectZoom();
+if (Math.abs(k - 1) < 1e-4) return r;
+return { left: r.left * k, top: r.top * k, right: r.right * k, bottom: r.bottom * k, width: r.width * k, height: r.height * k, x: r.left * k, y: r.top * k };
+}
+export const toCss = (v) => v / uiZoom();
 export const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 export const lerp = (a, b, t) => a + (b - a) * t;
 export const deg = (r) => (r * 180) / Math.PI;

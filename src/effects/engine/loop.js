@@ -115,7 +115,9 @@ export class LoopPart {
 			}
 			u.uMorph.value = this.morph;
 			{
-				const mcf = st.morphCfg;
+				// блок морфинга на таймлайне может задать свой вид перехода (keyframes.js, _morphTrackApply)
+				const ms = this._mtStyle;
+				const mcf = ms ? { ...st.morphCfg, style: MORPH_STYLES[ms.idx].id, scatter: ms.scatter, stagger: ms.stagger, turns: ms.turns, sort: ms.sort, ease: ms.ease, glow: ms.glow } : st.morphCfg;
 				u.uMorphS.value.set(Math.max(0, MORPH_STYLES.findIndex((x) => x.id === mcf.style)), mcf.scatter, mcf.stagger, mcf.turns);
 				u.uMorphO.value.set(Math.max(0, MORPH_SORTS.findIndex((x) => x[0] === mcf.sort)), Math.max(0, MORPH_EASES.findIndex((x) => x[0] === mcf.ease)), mcf.glow, 0);
 				u.uMorphD.value.set(this._mm?.out ? 1 : 0, this._mm?.in ? 1 : 0, Math.round(mcf.spin || 0), mcf.fsize ?? 1);
@@ -396,7 +398,9 @@ export class LoopPart {
 			u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
 
 			// блоков морфинга на таймлайне больше нет или таймлайн закрыт: прежняя форма возвращается
-			if (this._morphTrackReady && !(this.timelineOpen && (this.state.anim.clips || []).some((c) => c.layerId === 'morph'))) this._releaseMorphTrack();
+			if (this._mtActive && !(this.timelineOpen && this._morphChain(this.state.anim.clips || []).length)) this._releaseMorphTrack();
+			// пока курсор таймлайна стоит, дорожка морфинга всё равно держит свою форму (её могли только что дорисовать в фоне)
+			else if (this.timelineOpen && !this.animPlaying && !this.morphing && this._morphChain(this.state.anim.clips || []).length) this._morphTrackApply(this.state.anim.clips, this.animT);
 			// курсор стоит на таймлайне: эффекты с блоками включены только там, где под курсором есть их блок
 			if (!this.animPlaying && !this.animRec && (this.state.anim.clips?.length || (this.state.anim.saved && Object.keys(this.state.anim.saved).length))) this._animGate(this.animT);
 			// персонаж идёт по времени таймлайна, пока таймлайн играет: дорожка «Персонаж» совпадает с тем, что видно в сцене

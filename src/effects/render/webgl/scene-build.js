@@ -106,9 +106,10 @@ export class BuildPart {
 		this.linkObj.visible = false;
 		pts.add(this.linkObj);
 		this.geometry = g;
-		// дорожка морфинга на таймлайне готовит цель заново для нового облака
-		this._morphTrackReady = false;
-		this._morphTrackBackup = null;
+		// дорожка морфинга на таймлайне запоминает исходную форму заново уже для нового облака
+		this._mtB = null;
+		this._mtPair = '';
+		this._mtActive = false;
 		this.material = mat;
 		this.shared = shared;
 		this.points = pts;

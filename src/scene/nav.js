@@ -21,8 +21,10 @@ const tmpV = new THREE.Vector3();
 const tmpQ = new THREE.Quaternion();
 const qYaw = new THREE.Quaternion();
 const qPitch = new THREE.Quaternion();
+const qRoll = new THREE.Quaternion();
 const AX_Y = new THREE.Vector3(0, 1, 0);
 const AX_X = new THREE.Vector3(1, 0, 0);
+const AX_Z = new THREE.Vector3(0, 0, 1);
 
 export class Nav {
 	constructor(app) {
@@ -34,6 +36,9 @@ export class Nav {
 		this.pitch = -0.45;
 		this.distance = 4;
 		this.refDistance = 4;
+		// наклон горизонта (радианы) и угол обзора (градусы, 0: из настроек): задают ключи камеры на таймлайне эффектов, в редакторе их нет
+		this.roll = 0;
+		this.fovOverride = 0;
 		this.ortho = !!app.settings.nav.ortho;
 		this.autoOrtho = false;
 		this.enabled = true;
@@ -61,10 +66,13 @@ export class Nav {
 		qPitch.setFromAxisAngle(AX_X, this.pitch);
 		this.q.copy(qYaw).multiply(qPitch);
 		cam.quaternion.copy(this.q);
+		if (this.roll) cam.quaternion.multiply(qRoll.setFromAxisAngle(AX_Z, this.roll));
 		cam.position.set(0, 0, this.distance).applyQuaternion(this.q).add(this.target);
 		const R = this.vp.sceneRadius;
 		const d = this.distance;
-		const fov = THREE.MathUtils.degToRad(this.app.settings.render.fov);
+		// угол обзора может задавать ключ камеры на таймлайне эффектов (fovOverride), иначе он из настроек вида
+		const fovDeg = this.fovOverride || this.app.settings.render.fov;
+		const fov = THREE.MathUtils.degToRad(fovDeg);
 		if (this.ortho) {
 			const halfH = d * Math.tan(fov / 2);
 			cam.left = -halfH * aspect;
@@ -75,7 +83,7 @@ export class Nav {
 			cam.near = -S * 50;
 			cam.far = S * 50 + d;
 		} else {
-			cam.fov = this.app.settings.render.fov;
+			cam.fov = fovDeg;
 			cam.aspect = aspect;
 			cam.near = Math.max(d * 0.01, 1e-6);
 			cam.far = Math.max(d * 100, (d + R) * 20);

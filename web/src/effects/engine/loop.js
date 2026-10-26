@@ -102,7 +102,8 @@ if (p >= 1) this._settleOn = false;
 }
 u.uMorph.value = this.morph;
 {
-const mcf = st.morphCfg;
+const ms = this._mtStyle;
+const mcf = ms ? { ...st.morphCfg, style: MORPH_STYLES[ms.idx].id, scatter: ms.scatter, stagger: ms.stagger, turns: ms.turns, sort: ms.sort, ease: ms.ease, glow: ms.glow } : st.morphCfg;
 u.uMorphS.value.set(Math.max(0, MORPH_STYLES.findIndex((x) => x.id === mcf.style)), mcf.scatter, mcf.stagger, mcf.turns);
 u.uMorphO.value.set(Math.max(0, MORPH_SORTS.findIndex((x) => x[0] === mcf.sort)), Math.max(0, MORPH_EASES.findIndex((x) => x[0] === mcf.ease)), mcf.glow, 0);
 u.uMorphD.value.set(this._mm?.out ? 1 : 0, this._mm?.in ? 1 : 0, Math.round(mcf.spin || 0), mcf.fsize ?? 1);
@@ -352,7 +353,8 @@ u.uAtlas.value = glyphAtlas(gm);
 }
 u.uGlyph.value.set(gm === 'off' ? 0 : 1, gm === 'off' ? 1 : 2.3, u.uAtlas.value.userData?.n || 8);
 u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
-if (this._morphTrackReady && !(this.timelineOpen && (this.state.anim.clips || []).some((c) => c.layerId === 'morph'))) this._releaseMorphTrack();
+if (this._mtActive && !(this.timelineOpen && this._morphChain(this.state.anim.clips || []).length)) this._releaseMorphTrack();
+else if (this.timelineOpen && !this.animPlaying && !this.morphing && this._morphChain(this.state.anim.clips || []).length) this._morphTrackApply(this.state.anim.clips, this.animT);
 if (!this.animPlaying && !this.animRec && (this.state.anim.clips?.length || (this.state.anim.saved && Object.keys(this.state.anim.saved).length))) this._animGate(this.animT);
 {
 const A = this.app.anim;

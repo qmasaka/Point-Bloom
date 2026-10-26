@@ -1,5 +1,7 @@
 import { saveJSON } from '../../core/util.js';
 import { KEY } from '../state/defaults.js';
+import { FX_SHAPES, MORPH_STYLES } from '../state/options.js';
+import { fitCount } from '../shapes/cloud-utils.js';
 import { recDefaults } from './recording.js';
 
 /** Анимация по ключам: дорожки, клипы, маркеры, воспроизведение. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
@@ -10,13 +12,130 @@ export class KeyframesPart {
 		return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
 	}
 
-	/** Снимок того, что можно анимировать: камера, размер, яркость, свечение и сила каждого эффекта (выключенный = 0) */
+	/** Снимок того, что можно анимировать: камера (с углом обзора и креном), размер, яркость, свечение и сила каждого эффекта (выключенный = 0) */
 	animCapture() {
 		const nav = this.app.nav;
 		const L = this.state.layers;
 		const layers = {};
 		for (const id of this._animLayers()) layers[id] = L[id]?.on ? L[id].amount : 0;
-		return { cam: { yaw: nav.yaw, pitch: nav.pitch, dist: nav.distance, tx: nav.target.x, ty: nav.target.y, tz: nav.target.z }, size: this.app.settings.point.size, bright: this.state.look.bright, glow: this.state.look.glow, layers };
+		return { cam: { yaw: nav.yaw, pitch: nav.pitch, dist: nav.distance, tx: nav.target.x, ty: nav.target.y, tz: nav.target.z }, fov: nav.fovOverride || this.app.settings.render.fov, roll: nav.roll || 0, size: this.app.settings.point.size, bright: this.state.look.bright, glow: this.state.look.glow, layers };
+	}
+
+	/** Правка одного значения ключа камеры из панели (поворот, наклон, расстояние, угол обзора, крен, переход) и показ ракурса */
+	animSetKey(key, patch) {
+		if (!key) return;
+		for (const k of ['yaw', 'pitch', 'dist', 'tx', 'ty', 'tz']) if (patch[k] !== undefined) key.cam[k] = patch[k];
+		if (patch.fov !== undefined) key.fov = Math.max(10, Math.min(120, patch.fov));
+		if (patch.roll !== undefined) key.roll = patch.roll;
+		if (patch.ease !== undefined && ['smooth', 'stop', 'linear', 'hold'].includes(patch.ease)) key.ease = patch.ease;
+		this.touch();
+		this.animSeek(key.t);
+		this.emit();
+	}
+
+	/**
+	 * Готовые движения камеры от текущего ракурса на всю длину (или рабочую область): облёт, наезд, отъезд, подъём.
+	 * Прежние ключи камеры заменяются, блоки эффектов не трогаются
+	 */
+	animCamPreset(id) {
+		this._histFlush();
+		const A = this.state.anim;
+		const nav = this.app.nav;
+		const [a, b] = this._animRange();
+		const base = this.animCapture();
+		const key = (t, cam, extra = {}) => ({ ...base, ...extra, t: Math.round(t * 100) / 100, cam: { ...base.cam, ...cam }, ease: extra.ease || 'smooth' });
+		const d = nav.distance;
+		let keys;
+		if (id === 'orbit') {
+			// полный оборот: пять ключей через четверть круга, путь без остановок
+			keys = [0, 1, 2, 3, 4].map((i) => key(a + ((b - a) * i) / 4, { yaw: nav.yaw + (i * Math.PI) / 2 }));
+		} else if (id === 'push') keys = [key(a, { dist: d * 1.45 }), key(b, { dist: d * 0.72 }, { ease: 'stop' })];
+		else if (id === 'pull') keys = [key(a, { dist: d * 0.72 }), key(b, { dist: d * 1.45 }, { ease: 'stop' })];
+		else if (id === 'rise') keys = [key(a, { pitch: Math.max(-1.35, nav.pitch + 0.55), dist: d * 1.15 }), key(b, { pitch: Math.min(0.35, nav.pitch - 0.35), dist: d * 0.9 }, { ease: 'stop' })];
+		else if (id === 'arc') keys = [key(a, { yaw: nav.yaw - 0.7 }), key((a + b) / 2, { yaw: nav.yaw, dist: d * 0.85 }), key(b, { yaw: nav.yaw + 0.7 }, { ease: 'stop' })];
+		else return;
+		A.keys = keys;
+		this.touch();
+		this.animSeek(a);
+		this.emit();
+		this.app.bus.emit('fxanim');
+	}
+
+	/** Таймлайн закрыт: угол обзора и крен камеры возвращаются к обычным */
+	animCamRelease() {
+		const nav = this.app.nav;
+		if (!nav || (!nav.roll && !nav.fovOverride)) return;
+		nav.roll = 0;
+		nav.fovOverride = 0;
+		nav.applyCamera();
+	}
+
+	/**
+	 * Камера по ключам. Путь гладкий (кривая Эрмита по времени ключей): камера проходит ключи без остановок, на первом и последнем
+	 * плавно трогается и тормозит. У ключа свой проход: «Плавно», «Стоп» (замирает в ключе), «Ровно» (по прямой), «Скачок» (резкая смена ракурса)
+	 */
+	_camApply(keys, t) {
+		const n = keys.length;
+		const fov0 = this.app.settings.render.fov;
+		const vec = (k) => [k.cam.yaw, k.cam.pitch, Math.log(Math.max(1e-4, k.cam.dist)), k.cam.tx, k.cam.ty, k.cam.tz, k.fov ?? fov0, k.roll ?? 0];
+		const V = keys.map(vec);
+		const D = V[0].length;
+		let out;
+		let a = 0;
+		let u = 0;
+		if (n === 1 || t <= keys[0].t) out = V[0].slice();
+		else if (t >= keys[n - 1].t) {
+			out = V[n - 1].slice();
+			a = n - 1;
+		} else {
+			while (a < n - 2 && t > keys[a + 1].t) a++;
+			const b = a + 1;
+			const h = Math.max(1e-6, keys[b].t - keys[a].t);
+			u = (t - keys[a].t) / h;
+			const ease = keys[b].ease || 'smooth';
+			if (ease === 'hold') out = V[a].slice();
+			else if (ease === 'linear') out = V[a].map((x, i) => x + (V[b][i] - x) * u);
+			else {
+				// касательная в ключе: средняя скорость между соседями; в крайних ключах и в ключах «Стоп» камера стоит
+				const tan = (i) => {
+					if (i <= 0 || i >= n - 1 || keys[i].ease === 'stop') return new Array(D).fill(0);
+					const dt = Math.max(1e-6, keys[i + 1].t - keys[i - 1].t);
+					return V[i].map((_, c) => (V[i + 1][c] - V[i - 1][c]) / dt);
+				};
+				const ma = tan(a);
+				const mb = tan(b);
+				const s = u, s2 = s * s, s3 = s2 * s;
+				const h00 = 2 * s3 - 3 * s2 + 1, h10 = s3 - 2 * s2 + s, h01 = -2 * s3 + 3 * s2, h11 = s3 - s2;
+				out = V[a].map((x, c) => h00 * x + h10 * h * ma[c] + h01 * V[b][c] + h11 * h * mb[c]);
+			}
+		}
+		// живая камера: лёгкое покачивание, как будто снимают с рук
+		const sh = this.state.anim.camShake || 0;
+		if (sh > 0.001) {
+			const w = (f, p) => Math.sin(t * f + p) * 0.6 + Math.sin(t * f * 2.31 + p * 1.7) * 0.4;
+			out[0] += sh * 0.035 * w(0.9, 1.3);
+			out[1] += sh * 0.025 * w(1.1, 4.1);
+			out[7] += sh * 0.018 * w(0.7, 2.2);
+		}
+		const nav = this.app.nav;
+		nav.cancelTween?.();
+		nav.yaw = out[0];
+		nav.pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, out[1]));
+		nav.distance = Math.exp(out[2]);
+		nav.target.set(out[3], out[4], out[5]);
+		const fov = Math.max(10, Math.min(120, out[6]));
+		nav.fovOverride = Math.abs(fov - fov0) > 0.01 ? fov : 0;
+		nav.roll = out[7];
+		nav.applyCamera();
+		// размер, яркость и свечение точек плавно между ключами (без резких рывков)
+		const ka = keys[a];
+		const kb = keys[Math.min(n - 1, a + 1)];
+		const m = kb === ka || (kb.ease || 'smooth') === 'hold' ? 0 : u * u * (3 - 2 * u);
+		const mix = (x, y) => x + (y - x) * m;
+		if (ka.size !== undefined && kb.size !== undefined) this.app.settings.point.size = mix(ka.size, kb.size);
+		if (ka.bright !== undefined && kb.bright !== undefined) this.state.look.bright = mix(ka.bright, kb.bright);
+		if (ka.glow !== undefined && kb.glow !== undefined) this.state.look.glow = mix(ka.glow, kb.glow);
+		return { a: ka, b: kb, m };
 	}
 
 	get animKeys() {
@@ -100,6 +219,11 @@ export class KeyframesPart {
 			repeat: Math.max(1, Math.min(12, Math.round(opts.repeat || 1))),
 			rev: !!opts.rev,
 		};
+		// блок морфинга: в какую форму и каким видом перехода (пусто: как в разделе «Морфинг»)
+		if (layerId === 'morph') {
+			clip.form = opts.form || this._morphDefaultForm(clip.start);
+			clip.style = opts.style || '';
+		}
 		A.clips.push(clip);
 		this.touch();
 		this.emit();
@@ -143,6 +267,8 @@ export class KeyframesPart {
 		if (patch.off !== undefined) clip.off = !!patch.off;
 		if (patch.repeat !== undefined) clip.repeat = Math.max(1, Math.min(12, Math.round(patch.repeat)));
 		if (patch.rev !== undefined) clip.rev = !!patch.rev;
+		if (patch.form !== undefined && clip.layerId === 'morph') clip.form = String(patch.form);
+		if (patch.style !== undefined && clip.layerId === 'morph') clip.style = MORPH_STYLES.some((s) => s.id === patch.style) ? patch.style : '';
 		if (patch.layerId !== undefined && (this.state.layers[patch.layerId] || ['morph', 'rotate', 'bloom'].includes(patch.layerId))) {
 			clip.layerId = patch.layerId;
 		}
@@ -232,7 +358,7 @@ export class KeyframesPart {
 		const t0 = Math.min(...list.map((c) => c.start));
 		const out = [];
 		for (const c of list) {
-			out.push(this.animAddClip(c.layerId, { start: t + (c.start - t0), dur: c.dur, fadeIn: c.fadeIn, fadeOut: c.fadeOut, amount: c.amount, shape: c.shape, ease: c.ease, off: c.off, repeat: c.repeat, rev: c.rev }));
+			out.push(this.animAddClip(c.layerId, { start: t + (c.start - t0), dur: c.dur, fadeIn: c.fadeIn, fadeOut: c.fadeOut, amount: c.amount, shape: c.shape, ease: c.ease, off: c.off, repeat: c.repeat, rev: c.rev, form: c.form, style: c.style }));
 		}
 		return out;
 	}
@@ -278,6 +404,8 @@ export class KeyframesPart {
 			off: clip.off,
 			repeat: clip.repeat,
 			rev: clip.rev,
+			form: clip.form,
+			style: clip.style,
 		});
 	}
 
@@ -317,46 +445,145 @@ export class KeyframesPart {
 		this.app.bus.emit('fxanim');
 	}
 
-	/** Подготавливает целевое облако точек для дорожки морфинга на таймлайне */
-	async _prepareMorphTrack() {
-		if (!this.geometry || this._morphTrackReady || this._morphTrackLoading) return;
-		this._morphTrackLoading = true;
-		try {
-			const forms = this.forms();
-			let targetKey = null;
-			if (forms.length >= 2) {
-				targetKey = forms.find((f) => f.key !== (this.curKey || this.state.source))?.key || forms[1].key;
-			} else {
-				targetKey = this.state.source === 'sphere' ? 'torus' : 'sphere';
-			}
-			const target = await this._cloudFor(targetKey);
-			if (target && this.geometry) {
-				const g = this.geometry;
-				const t = g.attributes.aTarget;
-				if (t && target.positions && target.positions.length === t.array.length) {
-					// прежнюю форму запоминаем: когда дорожка морфинга перестаёт работать (таймлайн закрыт, блок удалён), модель возвращается в неё
-					this._morphTrackBackup = new Float32Array(t.array);
-					t.array.set(target.positions);
-					t.needsUpdate = true;
-					this._morphTrackReady = true;
-				}
-			}
-		} catch (e) {
-			/* не критично */
-		} finally {
-			this._morphTrackLoading = false;
-		}
+	// ------------------------------------------------------------ дорожка морфинга
+	// Блоки морфинга идут цепочкой: каждый ведёт облако из формы предыдущего блока (у первого из исходной формы сцены) в свою форму.
+	// Между блоками держится форма последнего прошедшего. У блока свой вид перехода (как в разделе «Морфинг») и свой ход.
+
+	/** Формы, в которые может уходить блок морфинга: формы сцены (объекты, фото, видео) и готовые фигуры */
+	animMorphForms() {
+		const out = this.uiForms().map((f) => ({ key: f.key, name: f.name, icon: f.icon }));
+		for (const s of FX_SHAPES) if (s.id !== 'model' && s.id !== 'media') out.push({ key: s.id, name: s.name, icon: s.icon });
+		return out;
 	}
 
-	/** Дорожка морфинга больше не управляет сценой: модель снова в своей настоящей форме, а не застывает на полпути к чужой */
-	_releaseMorphTrack() {
-		const t = this.geometry?.attributes.aTarget;
-		if (t && this._morphTrackBackup && this._morphTrackBackup.length === t.array.length) {
-			t.array.set(this._morphTrackBackup);
-			t.needsUpdate = true;
+	/** Форма для нового блока: следующая готовая фигура после формы прошлого блока, чтобы цепочка сразу была разной (свою форму выбирают в панели) */
+	_morphDefaultForm(start) {
+		const shapes = FX_SHAPES.filter((s) => s.id !== 'model' && s.id !== 'media').map((s) => s.id);
+		const prev = (this.state.anim.clips || []).filter((c) => c.layerId === 'morph' && c.start <= start && c.form).sort((a, b) => a.start - b.start).pop();
+		const from = prev ? prev.form : this.curKey || this.state.source;
+		const i = shapes.indexOf(from);
+		return shapes[(i + 1) % shapes.length];
+	}
+
+	/** Блоки морфинга по порядку времени (выключенные и заглушённая дорожка не работают) */
+	_morphChain(clips) {
+		if (this._laneOff('morph')) return [];
+		return clips.filter((c) => c.layerId === 'morph' && !c.off).sort((a, b) => a.start - b.start);
+	}
+
+	/** Облако формы для дорожки (положения, нормали, цвета) с нужным числом точек. Пока считается в фоне, возвращает null */
+	_mtCloud(key) {
+		const M = (this._mt ||= { clouds: new Map(), loading: new Set(), bad: new Set() });
+		const n = this.geometry.attributes.position.count;
+		const ck = key + ':' + n;
+		if (M.clouds.has(ck)) return M.clouds.get(ck);
+		if (!M.loading.has(ck) && !M.bad.has(ck)) {
+			M.loading.add(ck);
+			this._cloudFor(key)
+				.then((c) => {
+					if (!c || !c.count) return M.bad.add(ck);
+					const f = fitCount(c, n);
+					// у готовых фигур своего цвета нет (они белые): точки несут в них цвет прежней формы
+					const shape = FX_SHAPES.some((s) => s.id === key);
+					M.clouds.set(ck, { pos: f.positions, nrm: f.normals, col: !shape && f.colors && f.colors.length === n * 3 ? f.colors : null });
+				})
+				.catch(() => M.bad.add(ck))
+				.finally(() => {
+					M.loading.delete(ck);
+					// форма готова: кадр на паузе тоже должен её показать
+					if (this.timelineOpen) this.animApply(this.animT);
+				});
 		}
-		this._morphTrackBackup = null;
-		this._morphTrackReady = false;
+		return null;
+	}
+
+	/** Исходная форма сцены: запоминается при первом включении дорожки, к ней облако возвращается, когда дорожка перестаёт работать */
+	_mtBase() {
+		const g = this.geometry;
+		if (!this._mtB || this._mtB.geo !== g) {
+			const A = g.attributes;
+			this._mtB = { geo: g, pos: new Float32Array(A.aTarget.array), nrm: new Float32Array(A.aNormalB.array), col: new Float32Array(A.aColorB.array) };
+			this._mtPair = '';
+		}
+		return this._mtB;
+	}
+
+	/** Выставляет форму дорожки морфинга на время t: какие две формы смешиваются и насколько */
+	_morphTrackApply(clips, t) {
+		const g = this.geometry;
+		if (!g) return;
+		const chain = this._morphChain(clips);
+		// блоки из прежних версий и готовых сценариев без формы: форма выбирается по порядку
+		for (const c of chain) if (!c.form) c.form = this._morphDefaultForm(c.start);
+		const base = this._mtBase();
+		// последний блок, который уже начался
+		let i = -1;
+		for (let k = 0; k < chain.length; k++) if (chain[k].start <= t + 1e-4) i = k;
+		const formOf = (k) => (k < 0 ? base : chain[k].form ? this._mtCloud(chain[k].form) : null);
+		let from = i < 0 ? -1 : i - 1;
+		let to = i;
+		let p = 1;
+		const c = chain[i];
+		if (c && t < c.start + c.dur) {
+			let u = Math.min(1, Math.max(0, (t - c.start) / Math.max(0.05, c.dur)));
+			if (c.rev) u = 1 - u;
+			p = c.ease === 'linear' ? u : c.ease === 'sharp' ? Math.pow(u, 0.35) : u * u * (3 - 2 * u);
+		} else from = to;
+		let A = formOf(from);
+		let B = formOf(to);
+		// форма ещё считается: стоим на предыдущей готовой
+		if (!B) {
+			B = A || base;
+			p = 1;
+			to = from;
+		}
+		if (!A) A = B;
+		const pair = from + '>' + to + ':' + (chain[from]?.form || 'base') + '>' + (chain[to]?.form || 'base');
+		if (pair !== this._mtPair) {
+			this._mtPair = pair;
+			const at = g.attributes;
+			// цвет формы без своего цвета: от ближайшей прежней формы с цветом (в конце цепочки это исходная форма)
+			const colOf = (k) => {
+				for (let j = k; j >= 0; j--) {
+					const f = formOf(j);
+					if (f && f.col) return f.col;
+				}
+				return base.col;
+			};
+			at.aOrigin.array.set(A.pos);
+			at.aTarget.array.set(B.pos);
+			at.aNormal.array.set(A.nrm);
+			at.aNormalB.array.set(B.nrm);
+			at.aColor.array.set(colOf(from));
+			at.aColorB.array.set(colOf(to));
+			at.aOrigin.needsUpdate = at.aTarget.needsUpdate = at.aNormal.needsUpdate = at.aNormalB.needsUpdate = at.aColor.needsUpdate = at.aColorB.needsUpdate = true;
+			this._mtActive = true;
+		}
+		// вид перехода блока: те же стили, что в разделе «Морфинг»; пусто это как там настроено
+		const sty = c && from !== to && c.style ? MORPH_STYLES.find((s) => s.id === c.style) : null;
+		this._mtStyle = sty ? { idx: MORPH_STYLES.indexOf(sty), ...sty.v } : null;
+		this.morph = from === to ? 1 : p;
+		if (this.shared?.uMorph) this.shared.uMorph.value = this.morph;
+	}
+
+	/** Дорожка морфинга больше не управляет сценой: облако возвращается в исходную форму, а не застывает на полпути к чужой */
+	_releaseMorphTrack() {
+		const g = this.geometry;
+		const B = this._mtB;
+		if (g && B && B.geo === g && this._mtActive) {
+			const at = g.attributes;
+			at.aOrigin.array.set(B.pos);
+			at.aTarget.array.set(B.pos);
+			at.aNormal.array.set(B.nrm);
+			at.aNormalB.array.set(B.nrm);
+			at.aColor.array.set(B.col);
+			at.aColorB.array.set(B.col);
+			at.aOrigin.needsUpdate = at.aTarget.needsUpdate = at.aNormal.needsUpdate = at.aNormalB.needsUpdate = at.aColor.needsUpdate = at.aColorB.needsUpdate = true;
+		}
+		this._mtB = null;
+		this._mtPair = '';
+		this._mtActive = false;
+		this._mtStyle = null;
 		if (!this.morphing) {
 			this.morph = 1;
 			if (this.shared?.uMorph) this.shared.uMorph.value = 1;
@@ -556,42 +783,10 @@ export class KeyframesPart {
 			return;
 		}
 
-		// 1. Плавная интерполяция камеры и вида из ключей
+		// 1. Камера и вид из ключей: гладкий путь через все ключи
 		if (keys.length > 0) {
-			let a = keys[0];
-			let b = keys[keys.length - 1];
-			let u = 0;
-			if (t <= keys[0].t) b = a;
-			else if (t >= b.t) a = b;
-			else {
-				for (let i = 0; i < keys.length - 1; i++) {
-					if (t >= keys[i].t && t <= keys[i + 1].t) {
-						a = keys[i];
-						b = keys[i + 1];
-						break;
-					}
-				}
-				const span = Math.max(1e-6, b.t - a.t);
-				u = (t - a.t) / span;
-				u = u * u * (3 - 2 * u);
-			}
+			const { a, b, m: u } = this._camApply(keys, t);
 			const mix = (x, y) => x + (y - x) * u;
-			const nav = this.app.nav;
-			nav.cancelTween?.();
-			nav.yaw = mix(a.cam.yaw, b.cam.yaw);
-			nav.pitch = mix(a.cam.pitch, b.cam.pitch);
-			nav.distance = Math.exp(mix(Math.log(a.cam.dist), Math.log(b.cam.dist)));
-			nav.target.set(mix(a.cam.tx, b.cam.tx), mix(a.cam.ty, b.cam.ty), mix(a.cam.tz, b.cam.tz));
-			nav.applyCamera();
-			if (a.size !== undefined && b.size !== undefined) {
-				this.app.settings.point.size = mix(a.size, b.size);
-			}
-			if (a.bright !== undefined && b.bright !== undefined) {
-				this.state.look.bright = mix(a.bright, b.bright);
-			}
-			if (a.glow !== undefined && b.glow !== undefined) {
-				this.state.look.glow = mix(a.glow, b.glow);
-			}
 
 			// Если блоков эффектов нет, используем старые снимки слоёв в ключах
 			if (clips.length === 0 && a.layers && b.layers) {
@@ -616,26 +811,8 @@ export class KeyframesPart {
 
 			this._animGate(t);
 
-			// Дорожка морфинга
-			if (clipLayerIds.has('morph')) {
-				if (!this._morphTrackReady && !this._morphTrackLoading) {
-					this._prepareMorphTrack();
-				}
-				let mVal = 0;
-				const mOff = this._laneOff('morph');
-				for (const c of clips) {
-					if (c.layerId !== 'morph' || c.off || mOff) continue;
-					if (t <= c.start) continue;
-					if (t >= c.start + c.dur) {
-						mVal = 1.0;
-						continue;
-					}
-					const p = (t - c.start) / Math.max(0.01, c.dur);
-					mVal = Math.max(mVal, p * (c.amount ?? 1.0));
-				}
-				this.morph = Math.max(0, Math.min(1, mVal));
-				if (this.shared?.uMorph) this.shared.uMorph.value = this.morph;
-			}
+			// Дорожка морфинга: цепочка форм, у каждого блока своя форма и свой вид перехода
+			if (clipLayerIds.has('morph') && this.timelineOpen && !this.morphing && this._morphChain(clips).length) this._morphTrackApply(clips, t);
 
 			// Дорожка вращения: угол копится по огибающим блоков, поэтому на входе и выходе форма плавно разгоняется и тормозит, а не крутится назад
 			// поворот добавляется к текущему (а не ставится заново), поэтому автовращение и вращение руками продолжают работать

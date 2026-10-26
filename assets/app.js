@@ -33194,6 +33194,9 @@ __defs['src/core/util.js'] = function (__exports, __req) {
 __def(__exports, '$', () => $);
 __def(__exports, '$$', () => $$);
 __def(__exports, 'h', () => h);
+__def(__exports, 'uiZoom', () => uiZoom);
+__def(__exports, 'screenRect', () => screenRect);
+__def(__exports, 'toCss', () => toCss);
 __def(__exports, 'clamp', () => clamp);
 __def(__exports, 'lerp', () => lerp);
 __def(__exports, 'deg', () => deg);
@@ -33233,6 +33236,29 @@ el.append(c.nodeType ? c : document.createTextNode(String(c)));
 }
 return el;
 }
+function uiZoom() {
+return parseFloat(document.documentElement.style.zoom) || 1;
+}
+let _rz = { zoom: 0, k: 1 };
+function rectZoom() {
+const z = uiZoom();
+if (_rz.zoom !== z && document.body) {
+const d = document.createElement('div');
+d.style.cssText = 'position:fixed;left:0;top:0;width:100px;height:1px;visibility:hidden;pointer-events:none';
+document.body.append(d);
+const w = d.getBoundingClientRect().width;
+d.remove();
+_rz = { zoom: z, k: w > 0 ? w / 100 : z };
+}
+return _rz.k;
+}
+function screenRect(el) {
+const r = el.getBoundingClientRect();
+const k = uiZoom() / rectZoom();
+if (Math.abs(k - 1) < 1e-4) return r;
+return { left: r.left * k, top: r.top * k, right: r.right * k, bottom: r.bottom * k, width: r.width * k, height: r.height * k, x: r.left * k, y: r.top * k };
+}
+const toCss = (v) => v / uiZoom();
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 const deg = (r) => (r * 180) / Math.PI;
@@ -37554,8 +37580,10 @@ const tmpV = new THREE.Vector3();
 const tmpQ = new THREE.Quaternion();
 const qYaw = new THREE.Quaternion();
 const qPitch = new THREE.Quaternion();
+const qRoll = new THREE.Quaternion();
 const AX_Y = new THREE.Vector3(0, 1, 0);
 const AX_X = new THREE.Vector3(1, 0, 0);
+const AX_Z = new THREE.Vector3(0, 0, 1);
 class Nav {
 constructor(app) {
 this.app = app;
@@ -37566,6 +37594,8 @@ this.yaw = 0.7;
 this.pitch = -0.45;
 this.distance = 4;
 this.refDistance = 4;
+this.roll = 0;
+this.fovOverride = 0;
 this.ortho = !!app.settings.nav.ortho;
 this.autoOrtho = false;
 this.enabled = true;
@@ -37590,10 +37620,12 @@ qYaw.setFromAxisAngle(AX_Y, this.yaw);
 qPitch.setFromAxisAngle(AX_X, this.pitch);
 this.q.copy(qYaw).multiply(qPitch);
 cam.quaternion.copy(this.q);
+if (this.roll) cam.quaternion.multiply(qRoll.setFromAxisAngle(AX_Z, this.roll));
 cam.position.set(0, 0, this.distance).applyQuaternion(this.q).add(this.target);
 const R = this.vp.sceneRadius;
 const d = this.distance;
-const fov = THREE.MathUtils.degToRad(this.app.settings.render.fov);
+const fovDeg = this.fovOverride || this.app.settings.render.fov;
+const fov = THREE.MathUtils.degToRad(fovDeg);
 if (this.ortho) {
 const halfH = d * Math.tan(fov / 2);
 cam.left = -halfH * aspect;
@@ -37604,7 +37636,7 @@ const S = Math.max(R, d);
 cam.near = -S * 50;
 cam.far = S * 50 + d;
 } else {
-cam.fov = this.app.settings.render.fov;
+cam.fov = fovDeg;
 cam.aspect = aspect;
 cam.near = Math.max(d * 0.01, 1e-6);
 cam.far = Math.max(d * 100, (d + R) * 20);
@@ -39748,6 +39780,7 @@ const ICON_PATHS = {
 'arrow-right': '<path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"/>',
 'arrows-clockwise': '<path d="M224,48V96a8,8,0,0,1-8,8H168a8,8,0,0,1,0-16h28.69L182.06,73.37a79.56,79.56,0,0,0-56.13-23.43h-.45A79.52,79.52,0,0,0,69.59,72.71,8,8,0,0,1,58.41,61.27a96,96,0,0,1,135,.79L208,76.69V48a8,8,0,0,1,16,0ZM186.41,183.29a80,80,0,0,1-112.47-.66L59.31,168H88a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V179.31l14.63,14.63A95.43,95.43,0,0,0,130,222.06h.53a95.36,95.36,0,0,0,67.07-27.33,8,8,0,0,0-11.18-11.44Z"/>',
 'arrows-in-simple': '<path d="M213.66,53.66,163.31,104H192a8,8,0,0,1,0,16H144a8,8,0,0,1-8-8V64a8,8,0,0,1,16,0V92.69l50.34-50.35a8,8,0,0,1,11.32,11.32ZM112,136H64a8,8,0,0,0,0,16H92.69L42.34,202.34a8,8,0,0,0,11.32,11.32L104,163.31V192a8,8,0,0,0,16,0V144A8,8,0,0,0,112,136Z"/>',
+'arrows-in': '<path d="M144,104V64a8,8,0,0,1,16,0V84.69l42.34-42.35a8,8,0,0,1,11.32,11.32L171.31,96H192a8,8,0,0,1,0,16H152A8,8,0,0,1,144,104Zm-40,40H64a8,8,0,0,0,0,16H84.69L42.34,202.34a8,8,0,0,0,11.32,11.32L96,171.31V192a8,8,0,0,0,16,0V152A8,8,0,0,0,104,144Zm67.31,16H192a8,8,0,0,0,0-16H152a8,8,0,0,0-8,8v40a8,8,0,0,0,16,0V171.31l42.34,42.35a8,8,0,0,0,11.32-11.32ZM104,56a8,8,0,0,0-8,8V84.69L53.66,42.34A8,8,0,0,0,42.34,53.66L84.69,96H64a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V64A8,8,0,0,0,104,56Z"/>',
 'arrows-left-right': '<path d="M213.66,181.66l-32,32a8,8,0,0,1-11.32-11.32L188.69,184H48a8,8,0,0,1,0-16H188.69l-18.35-18.34a8,8,0,0,1,11.32-11.32l32,32A8,8,0,0,1,213.66,181.66Zm-139.32-64a8,8,0,0,0,11.32-11.32L67.31,88H208a8,8,0,0,0,0-16H67.31L85.66,53.66A8,8,0,0,0,74.34,42.34l-32,32a8,8,0,0,0,0,11.32Z"/>',
 'arrows-merge': '<path d="M192,40v64a8,8,0,0,1-2.34,5.66L136,163.31v49.38l18.34-18.35a8,8,0,0,1,11.32,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L120,212.69V163.31L66.34,109.66A8,8,0,0,1,64,104V40a8,8,0,0,1,16,0v60.69l48,48,48-48V40a8,8,0,0,1,16,0Z"/>',
 'arrows-out-cardinal': '<path d="M90.34,61.66a8,8,0,0,1,0-11.32l32-32a8,8,0,0,1,11.32,0l32,32a8,8,0,0,1-11.32,11.32L136,43.31V96a8,8,0,0,1-16,0V43.31L101.66,61.66A8,8,0,0,1,90.34,61.66Zm64,132.68L136,212.69V160a8,8,0,0,0-16,0v52.69l-18.34-18.35a8,8,0,0,0-11.32,11.32l32,32a8,8,0,0,0,11.32,0l32-32a8,8,0,0,0-11.32-11.32Zm83.32-72-32-32a8,8,0,0,0-11.32,11.32L212.69,120H160a8,8,0,0,0,0,16h52.69l-18.35,18.34a8,8,0,0,0,11.32,11.32l32-32A8,8,0,0,0,237.66,122.34ZM43.31,136H96a8,8,0,0,0,0-16H43.31l18.35-18.34A8,8,0,0,0,50.34,90.34l-32,32a8,8,0,0,0,0,11.32l32,32a8,8,0,0,0,11.32-11.32Z"/>',
@@ -39807,6 +39840,7 @@ const ICON_PATHS = {
 'list': '<path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"/>',
 'lock-simple-open': '<path d="M208,80H96V56a32,32,0,0,1,32-32c15.37,0,29.2,11,32.16,25.59a8,8,0,0,0,15.68-3.18C171.32,24.15,151.2,8,128,8A48.05,48.05,0,0,0,80,56V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80Zm0,128H48V96H208V208Z"/>',
 'lock-simple': '<path d="M208,80H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,56a32,32,0,0,1,64,0V80H96ZM208,208H48V96H208V208Z"/>',
+'magic-wand': '<path d="M48,64a8,8,0,0,1,8-8H72V40a8,8,0,0,1,16,0V56h16a8,8,0,0,1,0,16H88V88a8,8,0,0,1-16,0V72H56A8,8,0,0,1,48,64ZM184,192h-8v-8a8,8,0,0,0-16,0v8h-8a8,8,0,0,0,0,16h8v8a8,8,0,0,0,16,0v-8h8a8,8,0,0,0,0-16Zm56-48H224V128a8,8,0,0,0-16,0v16H192a8,8,0,0,0,0,16h16v16a8,8,0,0,0,16,0V160h16a8,8,0,0,0,0-16ZM219.31,80,80,219.31a16,16,0,0,1-22.62,0L36.68,198.63a16,16,0,0,1,0-22.63L176,36.69a16,16,0,0,1,22.63,0l20.68,20.68A16,16,0,0,1,219.31,80Zm-54.63,32L144,91.31l-96,96L68.68,208ZM208,68.69,187.31,48l-32,32L176,100.69Z"/>',
 'magnet': '<path d="M207,50.25A87.46,87.46,0,0,0,144.6,24h-.33A87.48,87.48,0,0,0,82,49.81L20.61,112a16,16,0,0,0,.06,22.56l28.66,28.66a15.92,15.92,0,0,0,11.32,4.69h.09a16,16,0,0,0,11.36-4.82L133,100.69a16.08,16.08,0,0,1,22.41-.21,15.6,15.6,0,0,1,4.73,11.19,16.89,16.89,0,0,1-4.85,12L93,183.88a16,16,0,0,0-.17,22.79l28.66,28.66a16.06,16.06,0,0,0,22.52.12L205.81,175C240.26,140.5,240.79,84.56,207,50.25ZM60.65,151.89,32,123.24,55.8,99.12l28.52,28.52ZM132.79,224l-28.68-28.65,24.38-23.57L157,200.32Zm61.76-60.44-26.11,25.54L140,160.68l26.44-25.57.1-.09a33,33,0,0,0,9.57-23.5A31.44,31.44,0,0,0,166.47,89a32.2,32.2,0,0,0-44.9.5L95.49,116.18,67,87.74,93.35,61.09A71.51,71.51,0,0,1,144.27,40h.27a71.55,71.55,0,0,1,51.05,21.48C223.25,89.55,222.75,135.38,194.55,163.58Z"/>',
 'minus': '<path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128Z"/>',
 'monitor': '<path d="M208,40H48A24,24,0,0,0,24,64V176a24,24,0,0,0,24,24H208a24,24,0,0,0,24-24V64A24,24,0,0,0,208,40Zm8,136a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V64a8,8,0,0,1,8-8H208a8,8,0,0,1,8,8Zm-48,48a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,224Z"/>',
@@ -39829,6 +39863,7 @@ const ICON_PATHS = {
 'scan': '<path d="M224,40V80a8,8,0,0,1-16,0V48H176a8,8,0,0,1,0-16h40A8,8,0,0,1,224,40ZM80,208H48V176a8,8,0,0,0-16,0v40a8,8,0,0,0,8,8H80a8,8,0,0,0,0-16Zm136-40a8,8,0,0,0-8,8v32H176a8,8,0,0,0,0,16h40a8,8,0,0,0,8-8V176A8,8,0,0,0,216,168ZM40,88a8,8,0,0,0,8-8V48H80a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8V80A8,8,0,0,0,40,88ZM80,72h96a8,8,0,0,1,8,8v96a8,8,0,0,1-8,8H80a8,8,0,0,1-8-8V80A8,8,0,0,1,80,72Zm8,96h80V88H88Z"/>',
 'scissors': '<path d="M157.73,113.13A8,8,0,0,1,159.82,102L227.48,55.7a8,8,0,0,1,9,13.21l-67.67,46.3a7.92,7.92,0,0,1-4.51,1.4A8,8,0,0,1,157.73,113.13Zm80.87,85.09a8,8,0,0,1-11.12,2.08L136,137.7,93.49,166.78a36,36,0,1,1-9-13.19L121.83,128,84.44,102.41a35.86,35.86,0,1,1,9-13.19l143,97.87A8,8,0,0,1,238.6,198.22ZM80,180a20,20,0,1,0-5.86,14.14A19.85,19.85,0,0,0,80,180ZM74.14,90.13a20,20,0,1,0-28.28,0A19.85,19.85,0,0,0,74.14,90.13Z"/>',
 'selection': '<path d="M152,40a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h32A8,8,0,0,1,152,40Zm-8,168H112a8,8,0,0,0,0,16h32a8,8,0,0,0,0-16ZM208,32H184a8,8,0,0,0,0,16h24V72a8,8,0,0,0,16,0V48A16,16,0,0,0,208,32Zm8,72a8,8,0,0,0-8,8v32a8,8,0,0,0,16,0V112A8,8,0,0,0,216,104Zm0,72a8,8,0,0,0-8,8v24H184a8,8,0,0,0,0,16h24a16,16,0,0,0,16-16V184A8,8,0,0,0,216,176ZM40,152a8,8,0,0,0,8-8V112a8,8,0,0,0-16,0v32A8,8,0,0,0,40,152Zm32,56H48V184a8,8,0,0,0-16,0v24a16,16,0,0,0,16,16H72a8,8,0,0,0,0-16ZM72,32H48A16,16,0,0,0,32,48V72a8,8,0,0,0,16,0V48H72a8,8,0,0,0,0-16Z"/>',
+'shapes': '<path d="M71.59,61.47a8,8,0,0,0-15.18,0l-40,120A8,8,0,0,0,24,192h80a8,8,0,0,0,7.59-10.53ZM35.1,176,64,89.3,92.9,176ZM208,76a52,52,0,1,0-52,52A52.06,52.06,0,0,0,208,76Zm-88,0a36,36,0,1,1,36,36A36,36,0,0,1,120,76Zm104,68H136a8,8,0,0,0-8,8v56a8,8,0,0,0,8,8h88a8,8,0,0,0,8-8V152A8,8,0,0,0,224,144Zm-8,56H144V160h72Z"/>',
 'share-network': '<path d="M176,160a39.89,39.89,0,0,0-28.62,12.09l-46.1-29.63a39.8,39.8,0,0,0,0-28.92l46.1-29.63a40,40,0,1,0-8.66-13.45l-46.1,29.63a40,40,0,1,0,0,55.82l46.1,29.63A40,40,0,1,0,176,160Zm0-128a24,24,0,1,1-24,24A24,24,0,0,1,176,32ZM64,152a24,24,0,1,1,24-24A24,24,0,0,1,64,152Zm112,72a24,24,0,1,1,24-24A24,24,0,0,1,176,224Z"/>',
 'sliders-horizontal': '<path d="M40,88H73a32,32,0,0,0,62,0h81a8,8,0,0,0,0-16H135a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16Zm64-24A16,16,0,1,1,88,80,16,16,0,0,1,104,64ZM216,168H199a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16h97a32,32,0,0,0,62,0h17a8,8,0,0,0,0-16Zm-48,24a16,16,0,1,1,16-16A16,16,0,0,1,168,192Z"/>',
 'snowflake': '<path d="M223.77,150.09a8,8,0,0,1-5.86,9.68l-24.64,6,6.46,24.11a8,8,0,0,1-5.66,9.8A8.25,8.25,0,0,1,192,200a8,8,0,0,1-7.72-5.93l-7.72-28.8L136,141.86v46.83l21.66,21.65a8,8,0,0,1-11.32,11.32L128,203.31l-18.34,18.35a8,8,0,0,1-11.32-11.32L120,188.69V141.86L79.45,165.27l-7.72,28.8A8,8,0,0,1,64,200a8.25,8.25,0,0,1-2.08-.27,8,8,0,0,1-5.66-9.8l6.46-24.11-24.64-6a8,8,0,0,1,3.82-15.54l29.45,7.23L112,128,71.36,104.54l-29.45,7.23A7.85,7.85,0,0,1,40,112a8,8,0,0,1-1.91-15.77l24.64-6L56.27,66.07a8,8,0,0,1,15.46-4.14l7.72,28.8L120,114.14V67.31L98.34,45.66a8,8,0,0,1,11.32-11.32L128,52.69l18.34-18.35a8,8,0,0,1,11.32,11.32L136,67.31v46.83l40.55-23.41,7.72-28.8a8,8,0,0,1,15.46,4.14l-6.46,24.11,24.64,6A8,8,0,0,1,216,112a7.85,7.85,0,0,1-1.91-.23l-29.45-7.23L144,128l40.64,23.46,29.45-7.23A8,8,0,0,1,223.77,150.09Z"/>',
@@ -39840,6 +39875,7 @@ const ICON_PATHS = {
 'square-half': '<path d="M200,40H56A16,16,0,0,0,40,56V200a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm-64,80h64v16H136Zm0-16V88h64v16Zm0,48h64v16H136Zm64-80H136V56h64ZM56,56h64V200H56ZM200,200H136V184h64v16Z"/>',
 'squares-four': '<path d="M104,40H56A16,16,0,0,0,40,56v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,104,40Zm0,64H56V56h48v48Zm96-64H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,64H152V56h48v48Zm-96,32H56a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,104,136Zm0,64H56V152h48v48Zm96-64H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,200,136Zm0,64H152V152h48v48Z"/>',
 'stack': '<path d="M230.91,172A8,8,0,0,1,228,182.91l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,36,169.09l92,53.65,92-53.65A8,8,0,0,1,230.91,172ZM220,121.09l-92,53.65L36,121.09A8,8,0,0,0,28,134.91l96,56a8,8,0,0,0,8.06,0l96-56A8,8,0,1,0,220,121.09ZM24,80a8,8,0,0,1,4-6.91l96-56a8,8,0,0,1,8.06,0l96,56a8,8,0,0,1,0,13.82l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,24,80Zm23.88,0L128,126.74,208.12,80,128,33.26Z"/>',
+'stop': '<path d="M208,40H48A16,16,0,0,0,32,56V200a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V56A16,16,0,0,0,208,40Zm0,160H48V56H208Z"/>',
 'swatches': '<path d="M88,180a12,12,0,1,1-12-12A12,12,0,0,1,88,180Zm152-23.81V208a16,16,0,0,1-16,16H76a46.36,46.36,0,0,1-7.94-.68,44,44,0,0,1-35.43-50.95l25-143.13a15.94,15.94,0,0,1,18.47-13L130.84,26a16,16,0,0,1,12.92,18.52l-12.08,69L199.49,89a16,16,0,0,1,20.45,9.52L239,150.69A18.35,18.35,0,0,1,240,156.19ZM103,184.87,128,41.74,73.46,32l-25,143.1A28,28,0,0,0,70.9,207.57,27.29,27.29,0,0,0,91.46,203,27.84,27.84,0,0,0,103,184.87ZM116.78,195,224,156.11,204.92,104,128.5,131.7l-9.78,55.92A44.63,44.63,0,0,1,116.78,195ZM224,173.12,127.74,208H224Z"/>',
 'target': '<path d="M221.87,83.16A104.1,104.1,0,1,1,195.67,49l22.67-22.68a8,8,0,0,1,11.32,11.32l-96,96a8,8,0,0,1-11.32-11.32l27.72-27.72a40,40,0,1,0,17.87,31.09,8,8,0,1,1,16-.9,56,56,0,1,1-22.38-41.65L184.3,60.39a87.88,87.88,0,1,0,23.13,29.67,8,8,0,0,1,14.44-6.9Z"/>',
 'text-aa': '<path d="M87.24,52.59a8,8,0,0,0-14.48,0l-64,136a8,8,0,1,0,14.48,6.81L39.9,160h80.2l16.66,35.4a8,8,0,1,0,14.48-6.81ZM47.43,144,80,74.79,112.57,144ZM200,96c-12.76,0-22.73,3.47-29.63,10.32a8,8,0,0,0,11.26,11.36c3.8-3.77,10-5.68,18.37-5.68,13.23,0,24,9,24,20v3.22A42.76,42.76,0,0,0,200,128c-22.06,0-40,16.15-40,36s17.94,36,40,36a42.73,42.73,0,0,0,24-7.25,8,8,0,0,0,16-.75V132C240,112.15,222.06,96,200,96Zm0,88c-13.23,0-24-9-24-20s10.77-20,24-20,24,9,24,20S213.23,184,200,184Z"/>',
@@ -92501,6 +92537,136 @@ return a;
 }
 }
 };
+__defs['src/effects/shapes/cloud-utils.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'reorderAnim', () => reorderAnim);
+__def(__exports, 'fitCount', () => fitCount);
+__def(__exports, 'normalizeCloud', () => normalizeCloud);
+__def(__exports, 'shuffleCloud', () => shuffleCloud);
+__def(__exports, 'mortonSort', () => mortonSort);
+function reorderAnim(a, src) {
+if (!a) return null;
+const n = src.length;
+const out = { parts: a.parts, part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4), bn: a.bn ? new Float32Array(n * 3) : null };
+for (let i = 0; i < n; i++) {
+const j = src[i];
+out.part[i] = a.part[j];
+for (let k = 0; k < 3; k++) {
+out.bp[i * 3 + k] = a.bp[j * 3 + k];
+if (out.bn) out.bn[i * 3 + k] = a.bn[j * 3 + k];
+}
+for (let k = 0; k < 4; k++) {
+out.bi[i * 4 + k] = a.bi[j * 4 + k];
+out.bw[i * 4 + k] = a.bw[j * 4 + k];
+}
+}
+return out;
+}
+function fitCount(c, n) {
+if (c.count === n) return c;
+const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+const src = new Int32Array(n);
+for (let i = 0; i < n; i++) {
+const j = Math.min(c.count - 1, Math.floor((i * c.count) / n));
+src[i] = j;
+for (let k = 0; k < 3; k++) {
+pos[i * 3 + k] = c.positions[j * 3 + k];
+nor[i * 3 + k] = c.normals[j * 3 + k];
+col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
+}
+}
+return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm };
+}
+function normalizeCloud(c) {
+const p = c.positions;
+let minx = Infinity, miny = Infinity, minz = Infinity, maxx = -Infinity, maxy = -Infinity, maxz = -Infinity;
+for (let i = 0; i < p.length; i += 3) {
+if (p[i] < minx) minx = p[i]; if (p[i] > maxx) maxx = p[i];
+if (p[i + 1] < miny) miny = p[i + 1]; if (p[i + 1] > maxy) maxy = p[i + 1];
+if (p[i + 2] < minz) minz = p[i + 2]; if (p[i + 2] > maxz) maxz = p[i + 2];
+}
+if (c.animBox && !c.animBox.isEmpty()) {
+const B = c.animBox;
+minx = B.min.x; miny = B.min.y; minz = B.min.z; maxx = B.max.x; maxy = B.max.y; maxz = B.max.z;
+}
+const cx = (minx + maxx) / 2, cy = (miny + maxy) / 2, cz = (minz + maxz) / 2;
+const k = 2.2 / Math.max(maxx - minx, maxy - miny, maxz - minz, 1e-9);
+const out = new Float32Array(p.length);
+for (let i = 0; i < p.length; i += 3) {
+out[i] = (p[i] - cx) * k;
+out[i + 1] = (p[i + 1] - cy) * k;
+out[i + 2] = (p[i + 2] - cz) * k;
+}
+return { positions: out, normals: c.normals, colors: c.colors, count: c.count, anim: c.anim, norm: { cx, cy, cz, k, floorY: (miny - cy) * k } };
+}
+function shuffleCloud(c) {
+const n = c.count;
+const src = new Int32Array(n);
+for (let i = 0; i < n; i++) src[i] = i;
+let s = (Math.random() * 4294967295) >>> 0 || 0x9e3779b9;
+const rnd = () => {
+s ^= s << 13;
+s ^= s >>> 17;
+s ^= s << 5;
+return (s >>> 0) / 4294967296;
+};
+for (let i = n - 1; i > 0; i--) {
+const j = Math.floor(rnd() * (i + 1));
+const t = src[i];
+src[i] = src[j];
+src[j] = t;
+}
+const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+for (let i = 0; i < n; i++) {
+const j = src[i];
+for (let k = 0; k < 3; k++) {
+pos[i * 3 + k] = c.positions[j * 3 + k];
+nor[i * 3 + k] = c.normals[j * 3 + k];
+col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
+}
+}
+return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm, animBox: c.animBox };
+}
+function mortonSort(c) {
+const n = c.count;
+const P = c.positions;
+let mnx = Infinity, mny = Infinity, mnz = Infinity, mxx = -Infinity, mxy = -Infinity, mxz = -Infinity;
+for (let i = 0; i < n; i++) {
+const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2];
+if (x < mnx) mnx = x; if (x > mxx) mxx = x;
+if (y < mny) mny = y; if (y > mxy) mxy = y;
+if (z < mnz) mnz = z; if (z > mxz) mxz = z;
+}
+const sx = 1023 / Math.max(1e-9, mxx - mnx), sy = 1023 / Math.max(1e-9, mxy - mny), sz = 1023 / Math.max(1e-9, mxz - mnz);
+const spread = (v) => {
+v &= 0x3ff;
+v = (v | (v << 16)) & 0x030000ff;
+v = (v | (v << 8)) & 0x0300f00f;
+v = (v | (v << 4)) & 0x030c30c3;
+v = (v | (v << 2)) & 0x09249249;
+return v;
+};
+const M = 4194304;
+const keys = new Float64Array(n);
+for (let i = 0; i < n; i++) {
+const code = ((spread(((P[i * 3] - mnx) * sx) | 0) << 2) | (spread(((P[i * 3 + 1] - mny) * sy) | 0) << 1) | spread(((P[i * 3 + 2] - mnz) * sz) | 0)) >>> 0;
+keys[i] = code * M + i;
+}
+keys.sort();
+const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+const src = new Int32Array(n);
+for (let i = 0; i < n; i++) {
+const j = keys[i] % M;
+src[i] = j;
+for (let k = 0; k < 3; k++) {
+pos[i * 3 + k] = P[j * 3 + k];
+nor[i * 3 + k] = c.normals[j * 3 + k];
+col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
+}
+}
+return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm };
+}
+};
 __defs['src/io/gif-encoder.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'encodeGIF', () => encodeGIF);
@@ -93457,6 +93623,8 @@ __defs['src/effects/engine/keyframes.js'] = function (__exports, __req) {
 __def(__exports, 'KeyframesPart', () => KeyframesPart);
 const { saveJSON } = __req('src/core/util.js');
 const { KEY } = __req('src/effects/state/defaults.js');
+const { FX_SHAPES, MORPH_STYLES } = __req('src/effects/state/options.js');
+const { fitCount } = __req('src/effects/shapes/cloud-utils.js');
 const { recDefaults } = __req('src/effects/engine/recording.js');
 class KeyframesPart {
 _animLayers() {
@@ -93467,7 +93635,106 @@ const nav = this.app.nav;
 const L = this.state.layers;
 const layers = {};
 for (const id of this._animLayers()) layers[id] = L[id]?.on ? L[id].amount : 0;
-return { cam: { yaw: nav.yaw, pitch: nav.pitch, dist: nav.distance, tx: nav.target.x, ty: nav.target.y, tz: nav.target.z }, size: this.app.settings.point.size, bright: this.state.look.bright, glow: this.state.look.glow, layers };
+return { cam: { yaw: nav.yaw, pitch: nav.pitch, dist: nav.distance, tx: nav.target.x, ty: nav.target.y, tz: nav.target.z }, fov: nav.fovOverride || this.app.settings.render.fov, roll: nav.roll || 0, size: this.app.settings.point.size, bright: this.state.look.bright, glow: this.state.look.glow, layers };
+}
+animSetKey(key, patch) {
+if (!key) return;
+for (const k of ['yaw', 'pitch', 'dist', 'tx', 'ty', 'tz']) if (patch[k] !== undefined) key.cam[k] = patch[k];
+if (patch.fov !== undefined) key.fov = Math.max(10, Math.min(120, patch.fov));
+if (patch.roll !== undefined) key.roll = patch.roll;
+if (patch.ease !== undefined && ['smooth', 'stop', 'linear', 'hold'].includes(patch.ease)) key.ease = patch.ease;
+this.touch();
+this.animSeek(key.t);
+this.emit();
+}
+animCamPreset(id) {
+this._histFlush();
+const A = this.state.anim;
+const nav = this.app.nav;
+const [a, b] = this._animRange();
+const base = this.animCapture();
+const key = (t, cam, extra = {}) => ({ ...base, ...extra, t: Math.round(t * 100) / 100, cam: { ...base.cam, ...cam }, ease: extra.ease || 'smooth' });
+const d = nav.distance;
+let keys;
+if (id === 'orbit') {
+keys = [0, 1, 2, 3, 4].map((i) => key(a + ((b - a) * i) / 4, { yaw: nav.yaw + (i * Math.PI) / 2 }));
+} else if (id === 'push') keys = [key(a, { dist: d * 1.45 }), key(b, { dist: d * 0.72 }, { ease: 'stop' })];
+else if (id === 'pull') keys = [key(a, { dist: d * 0.72 }), key(b, { dist: d * 1.45 }, { ease: 'stop' })];
+else if (id === 'rise') keys = [key(a, { pitch: Math.max(-1.35, nav.pitch + 0.55), dist: d * 1.15 }), key(b, { pitch: Math.min(0.35, nav.pitch - 0.35), dist: d * 0.9 }, { ease: 'stop' })];
+else if (id === 'arc') keys = [key(a, { yaw: nav.yaw - 0.7 }), key((a + b) / 2, { yaw: nav.yaw, dist: d * 0.85 }), key(b, { yaw: nav.yaw + 0.7 }, { ease: 'stop' })];
+else return;
+A.keys = keys;
+this.touch();
+this.animSeek(a);
+this.emit();
+this.app.bus.emit('fxanim');
+}
+animCamRelease() {
+const nav = this.app.nav;
+if (!nav || (!nav.roll && !nav.fovOverride)) return;
+nav.roll = 0;
+nav.fovOverride = 0;
+nav.applyCamera();
+}
+_camApply(keys, t) {
+const n = keys.length;
+const fov0 = this.app.settings.render.fov;
+const vec = (k) => [k.cam.yaw, k.cam.pitch, Math.log(Math.max(1e-4, k.cam.dist)), k.cam.tx, k.cam.ty, k.cam.tz, k.fov ?? fov0, k.roll ?? 0];
+const V = keys.map(vec);
+const D = V[0].length;
+let out;
+let a = 0;
+let u = 0;
+if (n === 1 || t <= keys[0].t) out = V[0].slice();
+else if (t >= keys[n - 1].t) {
+out = V[n - 1].slice();
+a = n - 1;
+} else {
+while (a < n - 2 && t > keys[a + 1].t) a++;
+const b = a + 1;
+const h = Math.max(1e-6, keys[b].t - keys[a].t);
+u = (t - keys[a].t) / h;
+const ease = keys[b].ease || 'smooth';
+if (ease === 'hold') out = V[a].slice();
+else if (ease === 'linear') out = V[a].map((x, i) => x + (V[b][i] - x) * u);
+else {
+const tan = (i) => {
+if (i <= 0 || i >= n - 1 || keys[i].ease === 'stop') return new Array(D).fill(0);
+const dt = Math.max(1e-6, keys[i + 1].t - keys[i - 1].t);
+return V[i].map((_, c) => (V[i + 1][c] - V[i - 1][c]) / dt);
+};
+const ma = tan(a);
+const mb = tan(b);
+const s = u, s2 = s * s, s3 = s2 * s;
+const h00 = 2 * s3 - 3 * s2 + 1, h10 = s3 - 2 * s2 + s, h01 = -2 * s3 + 3 * s2, h11 = s3 - s2;
+out = V[a].map((x, c) => h00 * x + h10 * h * ma[c] + h01 * V[b][c] + h11 * h * mb[c]);
+}
+}
+const sh = this.state.anim.camShake || 0;
+if (sh > 0.001) {
+const w = (f, p) => Math.sin(t * f + p) * 0.6 + Math.sin(t * f * 2.31 + p * 1.7) * 0.4;
+out[0] += sh * 0.035 * w(0.9, 1.3);
+out[1] += sh * 0.025 * w(1.1, 4.1);
+out[7] += sh * 0.018 * w(0.7, 2.2);
+}
+const nav = this.app.nav;
+nav.cancelTween?.();
+nav.yaw = out[0];
+nav.pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, out[1]));
+nav.distance = Math.exp(out[2]);
+nav.target.set(out[3], out[4], out[5]);
+const fov = Math.max(10, Math.min(120, out[6]));
+nav.fovOverride = Math.abs(fov - fov0) > 0.01 ? fov : 0;
+nav.roll = out[7];
+nav.applyCamera();
+const ka = keys[a];
+const kb = keys[Math.min(n - 1, a + 1)];
+const m = kb === ka || (kb.ease || 'smooth') === 'hold' ? 0 : u * u * (3 - 2 * u);
+const mix = (x, y) => x + (y - x) * m;
+if (ka.size !== undefined && kb.size !== undefined) this.app.settings.point.size = mix(ka.size, kb.size);
+if (ka.bright !== undefined && kb.bright !== undefined) this.state.look.bright = mix(ka.bright, kb.bright);
+if (ka.glow !== undefined && kb.glow !== undefined) this.state.look.glow = mix(ka.glow, kb.glow);
+return { a: ka, b: kb, m };
 }
 get animKeys() {
 return this.state.anim.keys || (this.state.anim.keys = []);
@@ -93540,6 +93807,10 @@ off: !!opts.off,
 repeat: Math.max(1, Math.min(12, Math.round(opts.repeat || 1))),
 rev: !!opts.rev,
 };
+if (layerId === 'morph') {
+clip.form = opts.form || this._morphDefaultForm(clip.start);
+clip.style = opts.style || '';
+}
 A.clips.push(clip);
 this.touch();
 this.emit();
@@ -93580,6 +93851,8 @@ if (patch.ease !== undefined && ['smooth', 'linear', 'sharp'].includes(patch.eas
 if (patch.off !== undefined) clip.off = !!patch.off;
 if (patch.repeat !== undefined) clip.repeat = Math.max(1, Math.min(12, Math.round(patch.repeat)));
 if (patch.rev !== undefined) clip.rev = !!patch.rev;
+if (patch.form !== undefined && clip.layerId === 'morph') clip.form = String(patch.form);
+if (patch.style !== undefined && clip.layerId === 'morph') clip.style = MORPH_STYLES.some((s) => s.id === patch.style) ? patch.style : '';
 if (patch.layerId !== undefined && (this.state.layers[patch.layerId] || ['morph', 'rotate', 'bloom'].includes(patch.layerId))) {
 clip.layerId = patch.layerId;
 }
@@ -93656,7 +93929,7 @@ _animPasteClips(list, t) {
 const t0 = Math.min(...list.map((c) => c.start));
 const out = [];
 for (const c of list) {
-out.push(this.animAddClip(c.layerId, { start: t + (c.start - t0), dur: c.dur, fadeIn: c.fadeIn, fadeOut: c.fadeOut, amount: c.amount, shape: c.shape, ease: c.ease, off: c.off, repeat: c.repeat, rev: c.rev }));
+out.push(this.animAddClip(c.layerId, { start: t + (c.start - t0), dur: c.dur, fadeIn: c.fadeIn, fadeOut: c.fadeOut, amount: c.amount, shape: c.shape, ease: c.ease, off: c.off, repeat: c.repeat, rev: c.rev, form: c.form, style: c.style }));
 }
 return out;
 }
@@ -93697,6 +93970,8 @@ ease: clip.ease,
 off: clip.off,
 repeat: clip.repeat,
 rev: clip.rev,
+form: clip.form,
+style: clip.style,
 });
 }
 animSplitClip(clipId, t) {
@@ -93731,41 +94006,121 @@ this.touch();
 this.emit();
 this.app.bus.emit('fxanim');
 }
-async _prepareMorphTrack() {
-if (!this.geometry || this._morphTrackReady || this._morphTrackLoading) return;
-this._morphTrackLoading = true;
-try {
-const forms = this.forms();
-let targetKey = null;
-if (forms.length >= 2) {
-targetKey = forms.find((f) => f.key !== (this.curKey || this.state.source))?.key || forms[1].key;
-} else {
-targetKey = this.state.source === 'sphere' ? 'torus' : 'sphere';
+animMorphForms() {
+const out = this.uiForms().map((f) => ({ key: f.key, name: f.name, icon: f.icon }));
+for (const s of FX_SHAPES) if (s.id !== 'model' && s.id !== 'media') out.push({ key: s.id, name: s.name, icon: s.icon });
+return out;
 }
-const target = await this._cloudFor(targetKey);
-if (target && this.geometry) {
+_morphDefaultForm(start) {
+const shapes = FX_SHAPES.filter((s) => s.id !== 'model' && s.id !== 'media').map((s) => s.id);
+const prev = (this.state.anim.clips || []).filter((c) => c.layerId === 'morph' && c.start <= start && c.form).sort((a, b) => a.start - b.start).pop();
+const from = prev ? prev.form : this.curKey || this.state.source;
+const i = shapes.indexOf(from);
+return shapes[(i + 1) % shapes.length];
+}
+_morphChain(clips) {
+if (this._laneOff('morph')) return [];
+return clips.filter((c) => c.layerId === 'morph' && !c.off).sort((a, b) => a.start - b.start);
+}
+_mtCloud(key) {
+const M = (this._mt ||= { clouds: new Map(), loading: new Set(), bad: new Set() });
+const n = this.geometry.attributes.position.count;
+const ck = key + ':' + n;
+if (M.clouds.has(ck)) return M.clouds.get(ck);
+if (!M.loading.has(ck) && !M.bad.has(ck)) {
+M.loading.add(ck);
+this._cloudFor(key)
+.then((c) => {
+if (!c || !c.count) return M.bad.add(ck);
+const f = fitCount(c, n);
+const shape = FX_SHAPES.some((s) => s.id === key);
+M.clouds.set(ck, { pos: f.positions, nrm: f.normals, col: !shape && f.colors && f.colors.length === n * 3 ? f.colors : null });
+})
+.catch(() => M.bad.add(ck))
+.finally(() => {
+M.loading.delete(ck);
+if (this.timelineOpen) this.animApply(this.animT);
+});
+}
+return null;
+}
+_mtBase() {
 const g = this.geometry;
-const t = g.attributes.aTarget;
-if (t && target.positions && target.positions.length === t.array.length) {
-this._morphTrackBackup = new Float32Array(t.array);
-t.array.set(target.positions);
-t.needsUpdate = true;
-this._morphTrackReady = true;
+if (!this._mtB || this._mtB.geo !== g) {
+const A = g.attributes;
+this._mtB = { geo: g, pos: new Float32Array(A.aTarget.array), nrm: new Float32Array(A.aNormalB.array), col: new Float32Array(A.aColorB.array) };
+this._mtPair = '';
 }
+return this._mtB;
 }
-} catch (e) {
-} finally {
-this._morphTrackLoading = false;
+_morphTrackApply(clips, t) {
+const g = this.geometry;
+if (!g) return;
+const chain = this._morphChain(clips);
+for (const c of chain) if (!c.form) c.form = this._morphDefaultForm(c.start);
+const base = this._mtBase();
+let i = -1;
+for (let k = 0; k < chain.length; k++) if (chain[k].start <= t + 1e-4) i = k;
+const formOf = (k) => (k < 0 ? base : chain[k].form ? this._mtCloud(chain[k].form) : null);
+let from = i < 0 ? -1 : i - 1;
+let to = i;
+let p = 1;
+const c = chain[i];
+if (c && t < c.start + c.dur) {
+let u = Math.min(1, Math.max(0, (t - c.start) / Math.max(0.05, c.dur)));
+if (c.rev) u = 1 - u;
+p = c.ease === 'linear' ? u : c.ease === 'sharp' ? Math.pow(u, 0.35) : u * u * (3 - 2 * u);
+} else from = to;
+let A = formOf(from);
+let B = formOf(to);
+if (!B) {
+B = A || base;
+p = 1;
+to = from;
 }
+if (!A) A = B;
+const pair = from + '>' + to + ':' + (chain[from]?.form || 'base') + '>' + (chain[to]?.form || 'base');
+if (pair !== this._mtPair) {
+this._mtPair = pair;
+const at = g.attributes;
+const colOf = (k) => {
+for (let j = k; j >= 0; j--) {
+const f = formOf(j);
+if (f && f.col) return f.col;
+}
+return base.col;
+};
+at.aOrigin.array.set(A.pos);
+at.aTarget.array.set(B.pos);
+at.aNormal.array.set(A.nrm);
+at.aNormalB.array.set(B.nrm);
+at.aColor.array.set(colOf(from));
+at.aColorB.array.set(colOf(to));
+at.aOrigin.needsUpdate = at.aTarget.needsUpdate = at.aNormal.needsUpdate = at.aNormalB.needsUpdate = at.aColor.needsUpdate = at.aColorB.needsUpdate = true;
+this._mtActive = true;
+}
+const sty = c && from !== to && c.style ? MORPH_STYLES.find((s) => s.id === c.style) : null;
+this._mtStyle = sty ? { idx: MORPH_STYLES.indexOf(sty), ...sty.v } : null;
+this.morph = from === to ? 1 : p;
+if (this.shared?.uMorph) this.shared.uMorph.value = this.morph;
 }
 _releaseMorphTrack() {
-const t = this.geometry?.attributes.aTarget;
-if (t && this._morphTrackBackup && this._morphTrackBackup.length === t.array.length) {
-t.array.set(this._morphTrackBackup);
-t.needsUpdate = true;
+const g = this.geometry;
+const B = this._mtB;
+if (g && B && B.geo === g && this._mtActive) {
+const at = g.attributes;
+at.aOrigin.array.set(B.pos);
+at.aTarget.array.set(B.pos);
+at.aNormal.array.set(B.nrm);
+at.aNormalB.array.set(B.nrm);
+at.aColor.array.set(B.col);
+at.aColorB.array.set(B.col);
+at.aOrigin.needsUpdate = at.aTarget.needsUpdate = at.aNormal.needsUpdate = at.aNormalB.needsUpdate = at.aColor.needsUpdate = at.aColorB.needsUpdate = true;
 }
-this._morphTrackBackup = null;
-this._morphTrackReady = false;
+this._mtB = null;
+this._mtPair = '';
+this._mtActive = false;
+this._mtStyle = null;
 if (!this.morphing) {
 this.morph = 1;
 if (this.shared?.uMorph) this.shared.uMorph.value = 1;
@@ -93944,40 +94299,8 @@ this._animBloom = 0;
 return;
 }
 if (keys.length > 0) {
-let a = keys[0];
-let b = keys[keys.length - 1];
-let u = 0;
-if (t <= keys[0].t) b = a;
-else if (t >= b.t) a = b;
-else {
-for (let i = 0; i < keys.length - 1; i++) {
-if (t >= keys[i].t && t <= keys[i + 1].t) {
-a = keys[i];
-b = keys[i + 1];
-break;
-}
-}
-const span = Math.max(1e-6, b.t - a.t);
-u = (t - a.t) / span;
-u = u * u * (3 - 2 * u);
-}
+const { a, b, m: u } = this._camApply(keys, t);
 const mix = (x, y) => x + (y - x) * u;
-const nav = this.app.nav;
-nav.cancelTween?.();
-nav.yaw = mix(a.cam.yaw, b.cam.yaw);
-nav.pitch = mix(a.cam.pitch, b.cam.pitch);
-nav.distance = Math.exp(mix(Math.log(a.cam.dist), Math.log(b.cam.dist)));
-nav.target.set(mix(a.cam.tx, b.cam.tx), mix(a.cam.ty, b.cam.ty), mix(a.cam.tz, b.cam.tz));
-nav.applyCamera();
-if (a.size !== undefined && b.size !== undefined) {
-this.app.settings.point.size = mix(a.size, b.size);
-}
-if (a.bright !== undefined && b.bright !== undefined) {
-this.state.look.bright = mix(a.bright, b.bright);
-}
-if (a.glow !== undefined && b.glow !== undefined) {
-this.state.look.glow = mix(a.glow, b.glow);
-}
 if (clips.length === 0 && a.layers && b.layers) {
 const L = this.state.layers;
 for (const id of this._animLayers()) {
@@ -93996,25 +94319,7 @@ if (clips.length > 0) {
 const L = this.state.layers;
 const clipLayerIds = new Set(clips.map((c) => c.layerId));
 this._animGate(t);
-if (clipLayerIds.has('morph')) {
-if (!this._morphTrackReady && !this._morphTrackLoading) {
-this._prepareMorphTrack();
-}
-let mVal = 0;
-const mOff = this._laneOff('morph');
-for (const c of clips) {
-if (c.layerId !== 'morph' || c.off || mOff) continue;
-if (t <= c.start) continue;
-if (t >= c.start + c.dur) {
-mVal = 1.0;
-continue;
-}
-const p = (t - c.start) / Math.max(0.01, c.dur);
-mVal = Math.max(mVal, p * (c.amount ?? 1.0));
-}
-this.morph = Math.max(0, Math.min(1, mVal));
-if (this.shared?.uMorph) this.shared.uMorph.value = this.morph;
-}
+if (clipLayerIds.has('morph') && this.timelineOpen && !this.morphing && this._morphChain(clips).length) this._morphTrackApply(clips, t);
 if (clipLayerIds.has('rotate') && this.points) {
 const area = this._trackArea(clips, 'rotate', t);
 const d = area - (this._rotArea ?? area);
@@ -94103,136 +94408,6 @@ this._animEmitT = 0;
 this.app.bus.emit('fxanim');
 }
 }
-}
-};
-__defs['src/effects/shapes/cloud-utils.js'] = function (__exports, __req) {
-'use strict';
-__def(__exports, 'reorderAnim', () => reorderAnim);
-__def(__exports, 'fitCount', () => fitCount);
-__def(__exports, 'normalizeCloud', () => normalizeCloud);
-__def(__exports, 'shuffleCloud', () => shuffleCloud);
-__def(__exports, 'mortonSort', () => mortonSort);
-function reorderAnim(a, src) {
-if (!a) return null;
-const n = src.length;
-const out = { parts: a.parts, part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4), bn: a.bn ? new Float32Array(n * 3) : null };
-for (let i = 0; i < n; i++) {
-const j = src[i];
-out.part[i] = a.part[j];
-for (let k = 0; k < 3; k++) {
-out.bp[i * 3 + k] = a.bp[j * 3 + k];
-if (out.bn) out.bn[i * 3 + k] = a.bn[j * 3 + k];
-}
-for (let k = 0; k < 4; k++) {
-out.bi[i * 4 + k] = a.bi[j * 4 + k];
-out.bw[i * 4 + k] = a.bw[j * 4 + k];
-}
-}
-return out;
-}
-function fitCount(c, n) {
-if (c.count === n) return c;
-const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
-const src = new Int32Array(n);
-for (let i = 0; i < n; i++) {
-const j = Math.min(c.count - 1, Math.floor((i * c.count) / n));
-src[i] = j;
-for (let k = 0; k < 3; k++) {
-pos[i * 3 + k] = c.positions[j * 3 + k];
-nor[i * 3 + k] = c.normals[j * 3 + k];
-col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
-}
-}
-return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm };
-}
-function normalizeCloud(c) {
-const p = c.positions;
-let minx = Infinity, miny = Infinity, minz = Infinity, maxx = -Infinity, maxy = -Infinity, maxz = -Infinity;
-for (let i = 0; i < p.length; i += 3) {
-if (p[i] < minx) minx = p[i]; if (p[i] > maxx) maxx = p[i];
-if (p[i + 1] < miny) miny = p[i + 1]; if (p[i + 1] > maxy) maxy = p[i + 1];
-if (p[i + 2] < minz) minz = p[i + 2]; if (p[i + 2] > maxz) maxz = p[i + 2];
-}
-if (c.animBox && !c.animBox.isEmpty()) {
-const B = c.animBox;
-minx = B.min.x; miny = B.min.y; minz = B.min.z; maxx = B.max.x; maxy = B.max.y; maxz = B.max.z;
-}
-const cx = (minx + maxx) / 2, cy = (miny + maxy) / 2, cz = (minz + maxz) / 2;
-const k = 2.2 / Math.max(maxx - minx, maxy - miny, maxz - minz, 1e-9);
-const out = new Float32Array(p.length);
-for (let i = 0; i < p.length; i += 3) {
-out[i] = (p[i] - cx) * k;
-out[i + 1] = (p[i + 1] - cy) * k;
-out[i + 2] = (p[i + 2] - cz) * k;
-}
-return { positions: out, normals: c.normals, colors: c.colors, count: c.count, anim: c.anim, norm: { cx, cy, cz, k, floorY: (miny - cy) * k } };
-}
-function shuffleCloud(c) {
-const n = c.count;
-const src = new Int32Array(n);
-for (let i = 0; i < n; i++) src[i] = i;
-let s = (Math.random() * 4294967295) >>> 0 || 0x9e3779b9;
-const rnd = () => {
-s ^= s << 13;
-s ^= s >>> 17;
-s ^= s << 5;
-return (s >>> 0) / 4294967296;
-};
-for (let i = n - 1; i > 0; i--) {
-const j = Math.floor(rnd() * (i + 1));
-const t = src[i];
-src[i] = src[j];
-src[j] = t;
-}
-const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
-for (let i = 0; i < n; i++) {
-const j = src[i];
-for (let k = 0; k < 3; k++) {
-pos[i * 3 + k] = c.positions[j * 3 + k];
-nor[i * 3 + k] = c.normals[j * 3 + k];
-col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
-}
-}
-return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm, animBox: c.animBox };
-}
-function mortonSort(c) {
-const n = c.count;
-const P = c.positions;
-let mnx = Infinity, mny = Infinity, mnz = Infinity, mxx = -Infinity, mxy = -Infinity, mxz = -Infinity;
-for (let i = 0; i < n; i++) {
-const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2];
-if (x < mnx) mnx = x; if (x > mxx) mxx = x;
-if (y < mny) mny = y; if (y > mxy) mxy = y;
-if (z < mnz) mnz = z; if (z > mxz) mxz = z;
-}
-const sx = 1023 / Math.max(1e-9, mxx - mnx), sy = 1023 / Math.max(1e-9, mxy - mny), sz = 1023 / Math.max(1e-9, mxz - mnz);
-const spread = (v) => {
-v &= 0x3ff;
-v = (v | (v << 16)) & 0x030000ff;
-v = (v | (v << 8)) & 0x0300f00f;
-v = (v | (v << 4)) & 0x030c30c3;
-v = (v | (v << 2)) & 0x09249249;
-return v;
-};
-const M = 4194304;
-const keys = new Float64Array(n);
-for (let i = 0; i < n; i++) {
-const code = ((spread(((P[i * 3] - mnx) * sx) | 0) << 2) | (spread(((P[i * 3 + 1] - mny) * sy) | 0) << 1) | spread(((P[i * 3 + 2] - mnz) * sz) | 0)) >>> 0;
-keys[i] = code * M + i;
-}
-keys.sort();
-const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
-const src = new Int32Array(n);
-for (let i = 0; i < n; i++) {
-const j = keys[i] % M;
-src[i] = j;
-for (let k = 0; k < 3; k++) {
-pos[i * 3 + k] = P[j * 3 + k];
-nor[i * 3 + k] = c.normals[j * 3 + k];
-col[i * 3 + k] = c.colors[j * 3 + k] ?? 1;
-}
-}
-return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm };
 }
 };
 __defs['src/effects/shapes/shapes.js'] = function (__exports, __req) {
@@ -95171,8 +95346,9 @@ this.linkObj.userData.helper = true;
 this.linkObj.visible = false;
 pts.add(this.linkObj);
 this.geometry = g;
-this._morphTrackReady = false;
-this._morphTrackBackup = null;
+this._mtB = null;
+this._mtPair = '';
+this._mtActive = false;
 this.material = mat;
 this.shared = shared;
 this.points = pts;
@@ -100720,7 +100896,8 @@ if (p >= 1) this._settleOn = false;
 }
 u.uMorph.value = this.morph;
 {
-const mcf = st.morphCfg;
+const ms = this._mtStyle;
+const mcf = ms ? { ...st.morphCfg, style: MORPH_STYLES[ms.idx].id, scatter: ms.scatter, stagger: ms.stagger, turns: ms.turns, sort: ms.sort, ease: ms.ease, glow: ms.glow } : st.morphCfg;
 u.uMorphS.value.set(Math.max(0, MORPH_STYLES.findIndex((x) => x.id === mcf.style)), mcf.scatter, mcf.stagger, mcf.turns);
 u.uMorphO.value.set(Math.max(0, MORPH_SORTS.findIndex((x) => x[0] === mcf.sort)), Math.max(0, MORPH_EASES.findIndex((x) => x[0] === mcf.ease)), mcf.glow, 0);
 u.uMorphD.value.set(this._mm?.out ? 1 : 0, this._mm?.in ? 1 : 0, Math.round(mcf.spin || 0), mcf.fsize ?? 1);
@@ -100970,7 +101147,8 @@ u.uAtlas.value = glyphAtlas(gm);
 }
 u.uGlyph.value.set(gm === 'off' ? 0 : 1, gm === 'off' ? 1 : 2.3, u.uAtlas.value.userData?.n || 8);
 u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
-if (this._morphTrackReady && !(this.timelineOpen && (this.state.anim.clips || []).some((c) => c.layerId === 'morph'))) this._releaseMorphTrack();
+if (this._mtActive && !(this.timelineOpen && this._morphChain(this.state.anim.clips || []).length)) this._releaseMorphTrack();
+else if (this.timelineOpen && !this.animPlaying && !this.morphing && this._morphChain(this.state.anim.clips || []).length) this._morphTrackApply(this.state.anim.clips, this.animT);
 if (!this.animPlaying && !this.animRec && (this.state.anim.clips?.length || (this.state.anim.saved && Object.keys(this.state.anim.saved).length))) this._animGate(this.animT);
 {
 const A = this.app.anim;
@@ -103149,7 +103327,7 @@ __defs['src/effects/ui/panel-effects.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'makeModelProvider', () => makeModelProvider);
 __def(__exports, 'createEffectsPanel', () => createEffectsPanel);
-const { h, formatInt, placeAbove } = __req('src/core/util.js');
+const { h, formatInt, placeAbove, uiZoom, screenRect, toCss } = __req('src/core/util.js');
 const { icon } = __req('src/ui/icons.js');
 const { section, field, fxSlider: slider, segmented, switchRow, toggle, button, iconButton, select, colorField } = __req('src/ui/ui-kit.js');
 const THREE = __req('vendor/three/build/three.module.js');
@@ -104296,14 +104474,34 @@ const kids = [...body.children].filter((el) => !el.hidden && el.offsetHeight > 0
 const gap = parseFloat(getComputedStyle(body).rowGap) || 0;
 const natural = kids.reduce((a, el) => a + el.offsetHeight, 0) + gap * Math.max(0, kids.length - 1);
 const chrome = animPanel.offsetHeight - body.clientHeight;
-return Math.max(150, Math.min(480, Math.ceil(chrome + natural)));
+return Math.max(150, Math.min(480, Math.ceil(chrome + Math.max(natural, inspNatural()))));
 }
+function inspNatural() {
+const insp = animPanel.querySelector('.fx-clip-panel');
+if (!insp || insp.classList.contains('is-shut')) return 0;
+const bar = insp.querySelector('.fxf-bar');
+const bd = insp.querySelector('.fx-clip-body');
+return (bar ? bar.offsetHeight : 0) + (bd ? bd.scrollHeight : 0) + 2;
+}
+let shownH = curH;
+const setShownH = (v) => {
+shownH = v;
+document.documentElement.style.setProperty('--fx-anim-h', v + 'px');
+};
 function clampAnimH() {
 const m = maxAnimH();
-if (curH > m) {
-curH = m;
-document.documentElement.style.setProperty('--fx-anim-h', curH + 'px');
+if (curH > m) curH = m;
+if (shownH > m) setShownH(m);
 }
+function growForInspector(open) {
+if (!open) {
+if (shownH !== curH) setShownH(curH);
+return;
+}
+const main = animPanel.querySelector('.fx-anim-main');
+const chrome = animPanel.offsetHeight - (main ? main.clientHeight : 0);
+const want = Math.min(360, Math.round((window.innerHeight / uiZoom()) * 0.45), inspNatural() + chrome);
+if (want > shownH) setShownH(want);
 }
 let isResizingH = false;
 let resizeStartY = 0;
@@ -104312,15 +104510,15 @@ resizeHandle.addEventListener('pointerdown', (e) => {
 e.preventDefault();
 isResizingH = true;
 resizeStartY = e.clientY;
-resizeStartH = curH;
+resizeStartH = shownH;
 resizeHandle.setPointerCapture(e.pointerId);
 document.body.classList.add('is-resizing-h');
 const onMove = (ev) => {
 if (!isResizingH) return;
-const dy = resizeStartY - ev.clientY;
+const dy = (resizeStartY - ev.clientY) / uiZoom();
 curH = Math.max(150, Math.min(480, Math.round(resizeStartH + dy)));
 curH = Math.min(curH, maxAnimH());
-document.documentElement.style.setProperty('--fx-anim-h', curH + 'px');
+setShownH(curH);
 };
 const onUp = () => {
 isResizingH = false;
@@ -104336,7 +104534,7 @@ resizeHandle.addEventListener('pointercancel', onUp);
 });
 resizeHandle.addEventListener('dblclick', () => {
 curH = 245;
-document.documentElement.style.setProperty('--fx-anim-h', '245px');
+setShownH(245);
 try { localStorage.setItem('objglb.fx.anim.h', 245); } catch (_) {}
 });
 const keyAnimBtn = button({
@@ -104573,7 +104771,7 @@ label: 'Записать',
 icon: 'record',
 variant: 'secondary',
 cls: 'btn-sm fx-anim-rec-btn',
-title: 'Проиграет анимацию один раз и запишет чистое MP4-видео со звуком',
+title: 'Проиграет анимацию один раз и запишет MP4. Разрешение, качество и покадровая запись берутся из параметров записи (кнопка записи внизу)',
 size: 14,
 onClick: () => {
 if (!engine.animRecord()) app.toast('Добавьте минимум один блок эффекта или два ключа камеры', 'info');
@@ -104638,10 +104836,32 @@ const rulerNeedle = h('div', { class: 'fx-anim-playhead-needle' });
 const rulerWork = h('div', { class: 'fx-anim-work', hidden: true });
 const rulerBody = h('div', { class: 'fx-anim-ruler-body' }, rulerWork, rulerTicks, rulerNeedle);
 const rulerRow = h('div', { class: 'fx-anim-ruler-row' }, rulerBody);
+const camMenu = (x, y) =>
+openCtx(x, y, [
+{ label: 'Облёт вокруг', icon: 'arrows-clockwise', onClick: () => camPreset('orbit') },
+{ label: 'Наезд', icon: 'arrows-in', onClick: () => camPreset('push') },
+{ label: 'Отъезд', icon: 'arrows-out-simple', onClick: () => camPreset('pull') },
+{ label: 'Подъём над сценой', icon: 'arrows-vertical', onClick: () => camPreset('rise') },
+{ label: 'Дуга', icon: 'path', onClick: () => camPreset('arc') },
+'-',
+{ label: 'Удалить ключи камеры', icon: 'trash', danger: true, disabled: !(st.anim.keys || []).length, onClick: () => { st.anim.keys = []; selKey = null; engine.touch(); animSync(); } },
+]);
+const camPreset = (id) => {
+engine.animCamPreset(id);
+selKey = null;
+app.toast('Ключи камеры расставлены от текущего ракурса: ' + { orbit: 'облёт', push: 'наезд', pull: 'отъезд', rise: 'подъём', arc: 'дуга' }[id], 'info', 1800);
+animSync();
+};
+const camPresetBtn = iconButton({ icon: 'magic-wand', title: 'Готовые движения камеры', size: 13, cls: 'fx-anim-cam-preset', onClick: (e) => { e.stopPropagation(); const r = screenRect(e.currentTarget); camMenu(r.left, r.bottom + 4); } });
 const camTitle = h('div', { class: 'fx-anim-track-label fx-anim-cam-label' },
 h('span', { class: 'ic-wrap', html: icon('video-camera', 14) }),
-h('span', { class: 'fx-anim-lane-name' }, 'Камера')
+h('span', { class: 'fx-anim-lane-name' }, 'Камера'),
+camPresetBtn
 );
+camTitle.addEventListener('contextmenu', (e) => {
+e.preventDefault();
+camMenu(e.clientX, e.clientY);
+});
 const camKeysWrap = h('div', { class: 'fx-anim-keys' });
 const camLine = h('div', { class: 'fx-anim-cam-line' });
 const camTrackBody = h('div', { class: 'fx-anim-lane-body fx-anim-cam-body' }, camLine, camKeysWrap);
@@ -104792,11 +105012,20 @@ setZoom(animZoom * Math.exp(-e.deltaY * 0.0022), { t, x });
 },
 { passive: false }
 );
-const inspector = h('div', { class: 'fx-clip-panel', hidden: true });
+const inspector = h('div', { class: 'fx-clip-panel is-shut', inert: true });
+Object.defineProperty(inspector, 'hidden', {
+get() {
+return this.classList.contains('is-shut');
+},
+set(v) {
+this.classList.toggle('is-shut', !!v);
+this.inert = !!v;
+},
+});
 const body = h('div', { class: 'fx-anim-body' }, shelf, stage);
-animPanel.append(resizeHandle, topBar, body);
+const animMain = h('div', { class: 'fx-anim-main' }, inspector, body);
+animPanel.append(resizeHandle, topBar, animMain);
 document.getElementById('viewport').append(animPanel);
-(document.getElementById('viewport').parentElement || document.body).append(inspector);
 function timeFromPointer(e, targetEl, cachedRect) {
 const r = cachedRect || targetEl.getBoundingClientRect();
 const frac = Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(1, r.width)));
@@ -104811,11 +105040,11 @@ const q = h('div', { class: 'fx-marquee' });
 document.body.append(q);
 const hit = (ev) => {
 const l = Math.min(x0, ev.clientX), t = Math.min(y0, ev.clientY), r = Math.max(x0, ev.clientX), b = Math.max(y0, ev.clientY);
-q.style.cssText = `left:${l}px;top:${t}px;width:${r - l}px;height:${b - t}px`;
+q.style.cssText = `left:${toCss(l)}px;top:${toCss(t)}px;width:${toCss(r - l)}px;height:${toCss(b - t)}px`;
 selSet.clear();
 base.forEach((id) => selSet.add(id));
 for (const [id, el2] of blockEls) {
-const br = el2.getBoundingClientRect();
+const br = screenRect(el2);
 if (br.right >= l && br.left <= r && br.bottom >= t && br.top <= b) selSet.add(id);
 el2.classList.toggle('is-sel', selSet.has(id));
 }
@@ -104895,6 +105124,7 @@ engine.timelineOpen = !!on;
 if (!on) {
 inspector.hidden = true;
 placeInspector();
+engine.animCamRelease();
 }
 keyAnimBtn.classList.toggle('is-active', on);
 animQuickBtn.classList.toggle('is-active', on);
@@ -105129,9 +105359,10 @@ it.onClick && it.onClick();
 m.append(b);
 }
 document.body.append(m);
+const z = uiZoom();
 const w = m.offsetWidth, hh = m.offsetHeight;
-m.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x)) + 'px';
-m.style.top = Math.max(8, Math.min(window.innerHeight - hh - 8, y)) + 'px';
+m.style.left = Math.max(8, Math.min(window.innerWidth / z - w - 8, x / z)) + 'px';
+m.style.top = Math.max(8, Math.min(window.innerHeight / z - hh - 8, y / z)) + 'px';
 const close = (e) => {
 if (e && m.contains(e.target)) return;
 m.remove();
@@ -105199,17 +105430,13 @@ animSync();
 }
 let inspSig = '';
 let inspRefs = null;
-let clipCollapsed = false;
 const clipTitle = h('span', { class: 'fxf-title' }, 'Блок эффекта');
-const clipToggle = h('button', { type: 'button', class: 'fxf-toggle', 'aria-label': 'Свернуть или развернуть панель', html: icon('caret-down', 14) });
-clipToggle.addEventListener('click', () => {
-clipCollapsed = !clipCollapsed;
-inspector.classList.toggle('fxf-collapsed', clipCollapsed);
-placeInspector();
-});
+const clipIcon = h('span', { class: 'fx-clip-ic' });
+const clipSideBtn = iconButton({ icon: 'arrows-left-right', title: 'Перенести панель на другую сторону таймлайна', cls: 'fx-clip-side', onClick: () => setClipSide(clipSide === 'left' ? 'right' : 'left') });
 const clipBody = h('div', { class: 'fx-clip-body' });
 const clipActs = h('div', { class: 'fx-clip-acts' });
-inspector.append(h('div', { class: 'fxf-bar' }, clipTitle, clipActs, clipToggle), clipBody);
+const clipBar = h('div', { class: 'fxf-bar', 'data-tip': 'Потяните влево или вправо, чтобы перенести панель', 'data-tip-pos': 'top' }, clipIcon, clipTitle, clipActs, clipSideBtn);
+inspector.append(clipBar, clipBody);
 function renderInspector() {
 const sig = selSet.size > 1 ? 'm:' + [...selSet].join(',') : selClip ? 'c:' + selClip.id : selKey ? 'k:' + selKey.t : '';
 if (sig === inspSig && inspRefs) {
@@ -105222,60 +105449,98 @@ inspRefs = null;
 buildInspector();
 placeInspector();
 }
-const CLIP_H_KEY = 'objglb.fx.clip.h';
-let clipUserH = 0;
+const CLIP_SIDE_KEY = 'objglb.fx.clip.side';
+const CLIP_W_KEY = 'objglb.fx.clip.w';
+let clipSide = 'left';
+let clipW = 300;
 try {
-clipUserH = Number(localStorage.getItem(CLIP_H_KEY)) || 0;
+clipSide = localStorage.getItem(CLIP_SIDE_KEY) === 'right' ? 'right' : 'left';
+const w = Number(localStorage.getItem(CLIP_W_KEY));
+if (w >= 240 && w <= 440) clipW = w;
 } catch (_) {}
+let growRaf = 0;
 function placeInspector() {
+animPanel.classList.toggle('insp-right', clipSide === 'right');
+animPanel.style.setProperty('--fx-clip-w', clipW + 'px');
 const open = !inspector.hidden;
 appEl.classList.toggle('fx-clip-open', open);
-if (!open) {
-appEl.style.removeProperty('--fx-clip-h');
-inspector.style.removeProperty('--fx-clip-ph');
-return;
+cancelAnimationFrame(growRaf);
+growRaf = requestAnimationFrame(() => growForInspector(open && !animPanel.hidden));
 }
-const natural = Math.min(420, clipBody.scrollHeight + 36);
-const room = Math.max(150, window.innerHeight - 68 - animPanel.offsetHeight - 50 - 150);
-const hh = clipCollapsed ? 34 : Math.min(room, clipUserH || natural);
-inspector.style.setProperty('--fx-clip-ph', hh + 'px');
-const fl = document.getElementById('fxLeft');
-if (window.innerWidth > 900 && fl && fl.offsetWidth) inspector.style.width = fl.offsetWidth + 'px';
-else inspector.style.width = '';
-appEl.style.setProperty('--fx-clip-h', Math.round(inspector.offsetHeight || hh) + 10 + 'px');
+function setClipSide(side) {
+if (side === clipSide) return;
+clipSide = side;
+try {
+localStorage.setItem(CLIP_SIDE_KEY, side);
+} catch (_) {}
+inspector.classList.add('is-moving');
+placeInspector();
+requestAnimationFrame(() => requestAnimationFrame(() => inspector.classList.remove('is-moving')));
 }
-window.addEventListener('resize', () => placeInspector());
-const clipResize = h('div', { class: 'fx-clip-resize', title: 'Потяните, чтобы изменить высоту (двойной клик вернёт по содержимому)' });
-inspector.prepend(clipResize);
-clipResize.addEventListener('pointerdown', (e) => {
+clipBar.addEventListener('pointerdown', (e) => {
+if (e.button !== 0 || e.target.closest('button, input')) return;
 e.preventDefault();
-if (clipCollapsed) return;
-clipResize.setPointerCapture(e.pointerId);
-const y0 = e.clientY;
-const h0 = inspector.offsetHeight;
+clipBar.setPointerCapture(e.pointerId);
+const x0 = e.clientX;
+let moved = false;
+const target = (ev) => {
+const r = animMain.getBoundingClientRect();
+return ev.clientX < r.left + r.width / 2 ? 'left' : 'right';
+};
 const mv = (ev) => {
-clipUserH = Math.max(150, Math.min(640, Math.round(h0 + (y0 - ev.clientY))));
+if (!moved && Math.abs(ev.clientX - x0) < 6) return;
+moved = true;
+animPanel.classList.add('is-insp-drag');
+const t = target(ev);
+animPanel.classList.toggle('drop-left', t === 'left' && t !== clipSide);
+animPanel.classList.toggle('drop-right', t === 'right' && t !== clipSide);
+};
+const up = (ev) => {
+clipBar.removeEventListener('pointermove', mv);
+clipBar.removeEventListener('pointerup', up);
+clipBar.removeEventListener('pointercancel', up);
+animPanel.classList.remove('is-insp-drag', 'drop-left', 'drop-right');
+if (moved && ev.type === 'pointerup') setClipSide(target(ev));
+};
+clipBar.addEventListener('pointermove', mv);
+clipBar.addEventListener('pointerup', up);
+clipBar.addEventListener('pointercancel', up);
+});
+const clipWRes = h('div', { class: 'fx-clip-wres', title: 'Потяните, чтобы изменить ширину (двойной клик вернёт обычную)' });
+inspector.append(clipWRes);
+clipWRes.addEventListener('pointerdown', (e) => {
+e.preventDefault();
+clipWRes.setPointerCapture(e.pointerId);
+const x0 = e.clientX;
+const w0 = clipW;
+const z = uiZoom();
+inspector.classList.add('is-resizing');
+const mv = (ev) => {
+const dx = (ev.clientX - x0) / z;
+clipW = Math.round(Math.max(240, Math.min(440, w0 + (clipSide === 'left' ? dx : -dx))));
 placeInspector();
 };
 const up = () => {
-clipResize.removeEventListener('pointermove', mv);
-clipResize.removeEventListener('pointerup', up);
-clipResize.removeEventListener('pointercancel', up);
+clipWRes.removeEventListener('pointermove', mv);
+clipWRes.removeEventListener('pointerup', up);
+clipWRes.removeEventListener('pointercancel', up);
+inspector.classList.remove('is-resizing');
 try {
-localStorage.setItem(CLIP_H_KEY, String(clipUserH));
+localStorage.setItem(CLIP_W_KEY, String(clipW));
 } catch (_) {}
 };
-clipResize.addEventListener('pointermove', mv);
-clipResize.addEventListener('pointerup', up);
-clipResize.addEventListener('pointercancel', up);
+clipWRes.addEventListener('pointermove', mv);
+clipWRes.addEventListener('pointerup', up);
+clipWRes.addEventListener('pointercancel', up);
 });
-clipResize.addEventListener('dblclick', () => {
-clipUserH = 0;
+clipWRes.addEventListener('dblclick', () => {
+clipW = 300;
 try {
-localStorage.removeItem(CLIP_H_KEY);
+localStorage.removeItem(CLIP_W_KEY);
 } catch (_) {}
 placeInspector();
 });
+placeInspector();
 function buildInspector() {
 clipBody.textContent = '';
 clipActs.textContent = '';
@@ -105308,6 +105573,7 @@ const lst = selList();
 const allOff = lst.every((c) => c.off);
 inspector.hidden = false;
 clipTitle.textContent = `Выбрано блоков: ${lst.length}`;
+clipIcon.innerHTML = icon('stack', 14);
 inspRefs = {};
 clipBody.append(h('p', { class: 'fx-clip-note' }, 'Тяните любой из них, и сдвинется весь выбор.'));
 clipActs.append(
@@ -105318,11 +105584,17 @@ iconButton({ icon: 'x', title: 'Снять выбор', onClick: () => { selectO
 );
 return;
 }
+clipIcon.innerHTML = '';
+if (selClip && selClip.layerId === 'morph') {
+buildMorphInspector(selClip, mkSlider);
+return;
+}
 if (selClip) {
 const c = selClip;
 const layerDef = getLayerDef(c.layerId);
 inspector.hidden = false;
 clipTitle.textContent = layerDef.name;
+clipIcon.innerHTML = icon(layerDef.icon || 'sparkle', 14);
 const secFmt = (v) => v.toFixed(2) + ' с';
 const sFadeIn = mkSlider('Нарастание', 0, c.dur, 0.05, c.fadeIn, secFmt, (v) => engine.animUpdateClip(c.id, { fadeIn: v }));
 const sFadeOut = mkSlider('Затухание', 0, c.dur, 0.05, c.fadeOut, secFmt, (v) => engine.animUpdateClip(c.id, { fadeOut: v }));
@@ -105405,34 +105677,113 @@ iconButton({ icon: 'x', title: 'Снять выбор (Esc)', onClick: () => { s
 );
 clipBody.append(graph, sAmt.row, sFadeIn.row, sFadeOut.row, sRep.row, shapeRow, easeRow, revSw.el, quick, openFx);
 } else if (selKey) {
-const k = selKey;
+buildKeyInspector(selKey, mkSlider);
+} else {
+inspector.hidden = true;
+}
+}
+function timeField(value, max, onSet) {
+const inp = h('input', { type: 'number', class: 'num-in', min: 0, max, step: 0.1, value: Math.round(value * 100) / 100 });
+inp.addEventListener('change', () => onSet(Math.max(0, Math.min(max, Number(inp.value) || 0))));
+return { el: h('label', { class: 'fx-anim-insp-field' }, h('span', { class: 'fx-anim-insp-lab' }, 'Время'), inp, h('span', { class: 'fx-anim-insp-unit' }, 'с')), set: (v) => document.activeElement !== inp && (inp.value = Math.round(v * 100) / 100) };
+}
+const PASS_ICONS = {
+smooth: 'M2 18 C 12 18, 14 4, 20 4 S 30 4, 38 2',
+stop: 'M2 18 C 12 18, 14 6, 20 6 C 26 6, 28 6, 38 2',
+linear: 'M2 18 L20 6 L38 2',
+hold: 'M2 18 L20 18 L20 4 L38 4',
+};
+const passIcon = (k) => `<svg viewBox="0 0 40 22" width="40" height="22"><path class="ml" d="${PASS_ICONS[k]}"/><circle cx="20" cy="${k === 'hold' ? 4 : k === 'linear' ? 6 : k === 'stop' ? 6 : 4}" r="2.2" class="mk"/></svg>`;
+const rampIcon = (ease) => {
+let d = '';
+for (let i = 0; i <= 30; i++) {
+const u = i / 30;
+const v = ease === 'linear' ? u : ease === 'sharp' ? Math.pow(u, 0.35) : u * u * (3 - 2 * u);
+d += (i ? 'L' : 'M') + (2 + u * 36).toFixed(1) + ' ' + (19 - v * 15).toFixed(1) + ' ';
+}
+return `<svg viewBox="0 0 40 22" width="40" height="22"><path class="mf" d="${d}L38 19 L2 19 Z"/><path class="ml" d="${d}"/></svg>`;
+};
+function iconSeg(label, opts, cur, onPick) {
+const wrap = h('div', { class: 'fx-anim-insp-seg is-icons' });
+const btns = opts.map(([v, name, tip, art]) => {
+const b = h('button', { type: 'button', class: 'fx-anim-insp-segbtn' + (cur === v ? ' is-on' : ''), 'data-tip': tip, 'aria-label': tip, html: art + `<span>${name}</span>` });
+b.addEventListener('click', () => {
+onPick(v);
+btns.forEach(([vv, bb]) => bb.classList.toggle('is-on', vv === v));
+});
+wrap.append(b);
+return [v, b];
+});
+return h('div', { class: 'fx-clip-group' }, h('span', { class: 'fx-anim-insp-lab' }, label), wrap);
+}
+function buildMorphInspector(c, mkSlider) {
+inspector.hidden = false;
+clipTitle.textContent = 'Морфинг';
+clipIcon.innerHTML = icon('shapes', 14);
+const forms = engine.animMorphForms();
+const chain = engine._morphChain(st.anim.clips || []);
+const idx = chain.indexOf(c);
+const prev = idx > 0 ? chain[idx - 1] : null;
+const nameOf = (key) => forms.find((f) => f.key === key)?.name || (key ? key : 'Исходная форма');
+const fromEl = h('span', { class: 'fx-morph-from' }, prev ? nameOf(prev.form) : 'Исходная форма');
+const toSel = select({ options: forms.map((f) => ({ value: f.key, label: f.name, icon: f.icon })), value: c.form, onChange: (v) => { engine.animUpdateClip(c.id, { form: v }); engine.animSeek(engine.animT); animSync(); } });
+const route = h('div', { class: 'fx-morph-route' },
+h('div', { class: 'fx-anim-insp-row' }, h('span', { class: 'fx-anim-insp-lab' }, 'Откуда'), fromEl),
+h('div', { class: 'fx-anim-insp-row' }, h('span', { class: 'fx-anim-insp-lab' }, 'Куда'), toSel.el)
+);
+const styles = [{ value: '', label: 'Как в «Морфинге»', sub: 'Вид и настройки из раздела «Морфинг» на вкладке «Форма»', icon: 'sliders-horizontal' }, ...MORPH_STYLES.filter((s) => !s.hidden).map((s) => ({ value: s.id, label: s.name, sub: s.hint, icon: s.icon }))];
+const stySel = select({ options: styles, value: c.style || '', onChange: (v) => { engine.animUpdateClip(c.id, { style: v }); animSync(); } });
+const secFmt = (v) => v.toFixed(1) + ' с';
+const sDur = mkSlider('Длина', 0.3, Math.max(0.5, (st.anim.dur || 8) - c.start), 0.1, c.dur, secFmt, (v) => engine.animUpdateClip(c.id, { dur: v }));
+sDur.row.dataset.tip = 'Сколько секунд идёт переход: блок на дорожке растягивается вместе с ней';
+const tf = timeField(c.start, st.anim.dur || 8, (v) => { engine.animUpdateClip(c.id, { start: v }); animSync(); });
+const easeRow = iconSeg('Ход', [['smooth', 'Плавно', 'Мягко трогается и мягко собирается', rampIcon('smooth')], ['linear', 'Ровно', 'С одной скоростью от начала до конца', rampIcon('linear')], ['sharp', 'Рывком', 'Резко срывается и долго собирается', rampIcon('sharp')]], c.ease || 'smooth', (v) => { engine.animUpdateClip(c.id, { ease: v }); engine.animSeek(engine.animT); });
+const revSw = switchRow('Задом наперёд', { value: !!c.rev, onChange: (v) => { engine.animUpdateClip(c.id, { rev: v }); engine.animSeek(engine.animT); } });
+const quick = h('div', { class: 'fx-clip-quick' },
+button({ label: 'Начало здесь', variant: 'secondary', cls: 'btn-sm', title: 'Переход начнётся там, где стоит курсор времени', onClick: () => { engine.animUpdateClip(c.id, { start: engine.animT }); animSync(); } }),
+button({ label: 'Конец здесь', variant: 'secondary', cls: 'btn-sm', title: 'Переход закончится там, где стоит курсор времени', onClick: () => { const d = engine.animT - c.start; if (d < 0.2) { app.toast('Курсор должен стоять правее начала блока', 'info'); return; } engine.animUpdateClip(c.id, { dur: d }); animSync(); } }),
+button({ label: 'Следующий', icon: 'plus', variant: 'secondary', cls: 'btn-sm', title: 'Добавить следующий переход сразу после этого: форма пойдёт дальше по цепочке', onClick: () => { const n = engine.animAddClip('morph', { start: Math.min((st.anim.dur || 8) - 0.3, c.start + c.dur + 0.5), dur: c.dur, ease: c.ease, style: c.style }); selectOnly(n); animSync(); } })
+);
+inspRefs = { update: () => { sDur.set(c.dur, Math.max(0.5, (st.anim.dur || 8) - c.start)); tf.set(c.start); } };
+clipActs.append(
+iconButton({ icon: 'copy', title: 'Дублировать блок (Ctrl+D)', onClick: () => { const cloned = engine.animDuplicateClip(c.id); if (cloned) selectOnly(cloned); animSync(); } }),
+iconButton({ icon: c.off ? 'eye' : 'eye-slash', title: c.off ? 'Включить блок' : 'Выключить блок: он останется на дорожке, но не работает', onClick: () => { engine.animUpdateClip(c.id, { off: !c.off }); animSync(); } }),
+iconButton({ icon: 'trash', title: 'Удалить блок (Delete)', cls: 'is-danger', onClick: () => { engine.animRemoveClip(c.id); selectOnly(null); animSync(); } }),
+iconButton({ icon: 'x', title: 'Снять выбор (Esc)', onClick: () => { selectOnly(null); animSync(); } })
+);
+clipBody.append(route, field('Вид перехода', stySel.el), tf.el, sDur.row, easeRow, revSw.el, quick);
+}
+function buildKeyInspector(k, mkSlider) {
 inspector.hidden = false;
 clipTitle.textContent = 'Ракурс камеры';
-const inT = h('input', { type: 'number', class: 'num-in', min: 0, max: st.anim.dur || 8, step: 0.1, value: k.t });
-inT.addEventListener('change', () => {
-engine.animMoveKey(k, Number(inT.value) || 0);
-animSync();
-});
-const updBtn = button({
-label: 'Обновить ракурс',
-icon: 'arrow-clockwise',
-variant: 'secondary',
-cls: 'btn-sm',
-title: 'Перезаписать ключ текущим положением камеры',
-onClick: () => {
-engine.animUpdateKey(k);
-app.toast('Ключ обновлён', 'info');
-animSync();
-}
-});
-clipBody.append(h('label', { class: 'fx-anim-insp-field' }, h('span', {}, 'Время'), inT, h('span', { class: 'fx-anim-insp-unit' }, 'с')), updBtn);
+clipIcon.innerHTML = icon('video-camera', 14);
+const D2R = Math.PI / 180;
+const fov0 = app.settings.render.fov;
+const tf = timeField(k.t, st.anim.dur || 8, (v) => { engine.animMoveKey(k, v); engine.animSeek(k.t); animSync(); });
+const pass = iconSeg('Как проходит ключ', [['smooth', 'Плавно', 'Камера проходит ключ без остановки, путь гладкий', passIcon('smooth')], ['stop', 'Стоп', 'Камера мягко замирает в этом ракурсе и трогается дальше', passIcon('stop')], ['linear', 'Ровно', 'К ключу по прямой с постоянной скоростью', passIcon('linear')], ['hold', 'Скачок', 'Резкая смена ракурса в момент ключа, как монтажная склейка', passIcon('hold')]], k.ease || 'smooth', (v) => engine.animSetKey(k, { ease: v }));
+const deg = (v) => Math.round(v) + '°';
+const sYaw = mkSlider('Поворот', -360, 360, 1, k.cam.yaw / D2R, deg, (v) => engine.animSetKey(k, { yaw: v * D2R }));
+const sPitch = mkSlider('Наклон', -85, 85, 1, -k.cam.pitch / D2R, deg, (v) => engine.animSetKey(k, { pitch: -v * D2R }));
+const sDist = mkSlider('Дальность', -2, 2.5, 0.01, Math.log(k.cam.dist), (v) => Math.exp(v).toFixed(2), (v) => engine.animSetKey(k, { dist: Math.exp(v) }));
+const sFov = mkSlider('Обзор', 10, 120, 1, k.fov ?? fov0, deg, (v) => engine.animSetKey(k, { fov: v }));
+const sRoll = mkSlider('Крен', -45, 45, 1, (k.roll || 0) / D2R, deg, (v) => engine.animSetKey(k, { roll: v * D2R }));
+sYaw.row.dataset.tip = 'Поворот камеры вокруг сцены';
+sPitch.row.dataset.tip = 'Камера выше или ниже: плюс смотрит сверху';
+sDist.row.dataset.tip = 'Расстояние до центра сцены';
+sFov.row.dataset.tip = 'Угол обзора: меньше это телеобъектив (сжатая перспектива), больше это широкий угол';
+sRoll.row.dataset.tip = 'Наклон горизонта';
+const shake = mkSlider('Покачивание', 0, 1, 0.01, st.anim.camShake || 0, (v) => Math.round(v * 100) + '%', (v) => { st.anim.camShake = v; engine.touch(); engine.animSeek(engine.animT); });
+shake.row.dataset.tip = 'Живая камера для всей анимации: лёгкое покачивание, как при съёмке с рук';
+const acts = h('div', { class: 'fx-clip-quick is-two' },
+button({ label: 'С камеры', icon: 'arrow-clockwise', variant: 'secondary', cls: 'btn-sm', title: 'Записать в ключ ракурс, который сейчас в сцене', onClick: () => { engine.animUpdateKey(k); app.toast('Ракурс записан в ключ', 'info', 1400); animSync(); } }),
+button({ label: 'Показать', icon: 'eye', variant: 'secondary', cls: 'btn-sm', title: 'Поставить курсор времени на ключ и показать его ракурс', onClick: () => { engine.animPause(); engine.animSeek(k.t); animSync(); } })
+);
+inspRefs = { update: () => { tf.set(k.t); sYaw.set(k.cam.yaw / D2R); sPitch.set(-k.cam.pitch / D2R); sDist.set(Math.log(k.cam.dist)); sFov.set(k.fov ?? fov0); sRoll.set((k.roll || 0) / D2R); } };
 clipActs.append(
 iconButton({ icon: 'trash', title: 'Удалить ключ (Delete)', cls: 'is-danger', onClick: () => { engine.animRemoveKey(k); selKey = null; animSync(); } }),
 iconButton({ icon: 'x', title: 'Снять выбор (Esc)', onClick: () => { selKey = null; animSync(); } })
 );
-} else {
-inspector.hidden = true;
-}
+clipBody.append(tf.el, pass, h('div', { class: 'fx-sub' }, 'Ракурс'), sYaw.row, sPitch.row, sDist.row, sFov.row, sRoll.row, acts, h('div', { class: 'fx-sub' }, 'Вся камера'), shake.row);
 }
 function renderKeys() {
 const A = st.anim;
@@ -105440,9 +105791,10 @@ const durTotal = A.dur || 8;
 camKeysWrap.textContent = '';
 if (!A.keys) A.keys = [];
 for (const k of A.keys) {
+const pass = k.ease || 'smooth';
 const b = h('button', {
 type: 'button',
-class: 'fx-anim-key' + (k === selKey ? ' is-sel' : ''),
+class: 'fx-anim-key is-' + pass + (k === selKey ? ' is-sel' : ''),
 style: { left: (k.t / durTotal) * 100 + '%' },
 'data-tip': `Ключ камеры, ${k.t.toFixed(1)} с. Тяните для сдвига`,
 'aria-label': 'Ключ камеры'
@@ -105545,20 +105897,26 @@ width: Math.max(2, (clip.dur / durTotal) * 100) + '%'
 'data-tip': `${layerDef.name}: ${clip.start.toFixed(1)}с – ${(clip.start + clip.dur).toFixed(1)}с. Тяните для сдвига`,
 'aria-label': `${layerDef.name} блок`
 });
-const fadeInPct = clip.dur > 0 ? Math.min(50, (clip.fadeIn / clip.dur) * 100) : 0;
-const fadeOutPct = clip.dur > 0 ? Math.min(50, (clip.fadeOut / clip.dur) * 100) : 0;
+const fades = clip.layerId !== 'morph' && clip.dur > 0;
+const fadeInPct = fades ? Math.min(50, (clip.fadeIn / clip.dur) * 100) : 0;
+const fadeOutPct = fades ? Math.min(50, (clip.fadeOut / clip.dur) * 100) : 0;
 const fadeInEl = h('div', { class: 'fx-anim-fade-in', style: { width: fadeInPct + '%' } });
 const fadeOutEl = h('div', { class: 'fx-anim-fade-out', style: { width: fadeOutPct + '%' } });
+const morphTo = clip.layerId === 'morph' ? engine.animMorphForms().find((f) => f.key === clip.form) : null;
 const blockContent = h('div', { class: 'fx-anim-block-content' },
-h('span', { class: 'fx-anim-block-title' }, layerDef.name),
+morphTo ? h('span', { class: 'fx-anim-block-title' }, h('span', { class: 'fx-anim-block-ic', html: icon(morphTo.icon || 'shapes', 12) }), morphTo.name) : h('span', { class: 'fx-anim-block-title' }, layerDef.name),
 h('span', { class: 'fx-anim-block-time' }, `${clip.dur.toFixed(1)}с`)
 );
 const handleL = h('div', { class: 'fx-anim-handle is-left', title: 'Тяните, чтобы изменить начало блока' });
 const handleR = h('div', { class: 'fx-anim-handle is-right', title: 'Тяните, чтобы изменить длину блока' });
+const morphV = (u) => {
+if (clip.rev) u = 1 - u;
+return clip.ease === 'linear' ? u : clip.ease === 'sharp' ? Math.pow(u, 0.35) : u * u * (3 - 2 * u);
+};
 let envPath = '';
 for (let i = 0; i <= 28; i++) {
 const tt = clip.start + (clip.dur * i) / 28;
-const v = engine._clipEnv(clip, Math.min(clip.start + clip.dur - 1e-4, tt));
+const v = clip.layerId === 'morph' ? morphV(i / 28) : engine._clipEnv(clip, Math.min(clip.start + clip.dur - 1e-4, tt));
 envPath += (i ? 'L' : 'M') + ((i / 28) * 100).toFixed(1) + ' ' + (92 - v * 80).toFixed(1) + ' ';
 }
 const envEl = h('div', { class: 'fx-anim-env', html: `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="${envPath}" /></svg>` });
@@ -105826,8 +106184,8 @@ lastCharDur = durTotal;
 drawChar();
 }
 if (isDraggingItem) return;
-const keysStr = (A.keys || []).map((k) => `${k.t}`).join(',');
-const clipsStr = (A.clips || []).map((c) => `${c.id}:${c.layerId}:${c.start}:${c.dur}:${c.fadeIn}:${c.fadeOut}:${c.amount}:${c.shape}:${c.ease}:${c.off ? 1 : 0}:${c.repeat || 1}:${c.rev ? 1 : 0}`).join(',');
+const keysStr = (A.keys || []).map((k) => `${k.t}:${k.ease || ''}`).join(',');
+const clipsStr = (A.clips || []).map((c) => `${c.id}:${c.layerId}:${c.start}:${c.dur}:${c.fadeIn}:${c.fadeOut}:${c.amount}:${c.shape}:${c.ease}:${c.off ? 1 : 0}:${c.repeat || 1}:${c.rev ? 1 : 0}:${c.form || ''}:${c.style || ''}`).join(',');
 const marksStr = (A.work ? `${A.work.a}-${A.work.b}` : '') + '|' + JSON.stringify(A.lanes || {});
 const sig = `${durTotal}|${keysStr}|${clipsStr}|${marksStr}|${selKey ? A.keys.indexOf(selKey) : -1}|${[...selSet].join(',')}`;
 if (sig !== lastRenderSig) {
