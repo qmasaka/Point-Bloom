@@ -1,4 +1,3 @@
-// Отмена / повтор. Команда: { label, redo(), undo() }
 export class History {
 	constructor(app) {
 		this.app = app;
@@ -7,7 +6,6 @@ export class History {
 		this.limit = 200;
 	}
 
-	/** Записывает команду. execute=true — сразу выполнить redo(). */
 	push(cmd, execute = false) {
 		if (execute) cmd.redo();
 		this.undoStack.push(cmd);

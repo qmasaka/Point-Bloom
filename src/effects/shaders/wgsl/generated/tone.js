@@ -1,5 +1,4 @@
-// Сгенерировано dev/gen-wgsl.mjs из шейдеров GLSL. Не править руками: правьте GLSL и запустите node dev/gen-wgsl.mjs.
-export const TONE_WGSL = /* wgsl */ `
+export const TONE_WGSL =  `
 fn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {
 	let startCompression = 0.8 - 0.04;
 	let desaturation = 0.15;

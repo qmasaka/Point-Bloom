@@ -9,9 +9,7 @@ import { scopeFrag } from '../../shaders/glsl/scope-frag.js';
 import { scopeVert } from '../../shaders/glsl/scope-vert.js';
 import { vert } from '../../shaders/glsl/vert.js';
 
-/** Управление шейдерами WebGL: урезание под включённые эффекты, фоновая сборка, «шлюз» показа тяжёлых объектов, переключение вывода. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class ShaderCachePart {
-	// ------------------------------------------------------------ специализация шейдеров (см. specializeFx)
 	_fxSource(kind, on) {
 		const cache = this._fxCache || (this._fxCache = new Map());
 		const sig = [...on].sort().join(',');
@@ -20,25 +18,18 @@ export class ShaderCachePart {
 		if (!v) {
 			const base = kind === 'line' ? lineVert : kind === 'scope' ? scopeVert : vert;
 			v = specializeFx(base, (name, comp, thr) => (FX_GUARDS.has(name + '.' + comp + '>' + thr) ? on.has(name + '.' + comp + '>' + thr) : undefined));
-			// «Экран» и «Рост на ритме»: блоки #ifdef VSCREEN и VSHOOT включаются здесь (в WGSL их включает dev/gen-wgsl.mjs)
 			if (kind === 'vert') v = '#define VSCREEN 1\n#define VSHOOT 1\n' + v;
 			cache.set(ck, v);
 		}
 		return v;
 	}
 
-	/**
-	 * Каждый кадр: если включился эффект, которого нет в текущем шейдере, в фоне собирается шейдер побольше и подставляется, когда готов.
-	 * И наоборот: эффекты, которые давно выключены, из шейдера убираются. Иначе за долгую сессию набор только растёт, шейдер приближается к полному
-	 * (а он собирается десятки секунд и может убить видеопроцесс браузера).
-	 */
 	_fxCheck() {
 		if (!this.shared || !this.points || this._glDormant) return;
-		// идёт сборка с новым эффектом: ждём её. Идёт только уборка давно выключенных эффектов: новый эффект её не ждёт (иначе он появлялся бы на секунды позже)
 		if (this._fxBusy && !(this._fxBusy === 'drop' && !this._fxCovered(true))) return;
 		const cur = this._fxCur || (this._fxCur = new Set());
 		const now = performance.now();
-		const seen = this._fxSeen || (this._fxSeen = new Map()); // когда эффект был включён в последний раз
+		const seen = this._fxSeen || (this._fxSeen = new Map());
 		let add = null;
 		for (const [key, [name, comp, thr]] of FX_GUARDS) {
 			const v = this.shared[name]?.value?.[comp];
@@ -46,21 +37,18 @@ export class ShaderCachePart {
 			if (on) seen.set(key, now);
 			if (on && !cur.has(key)) (add || (add = new Set())).add(key);
 		}
-		// эффекты, которые не использовались больше 20 секунд: их код из шейдера убирается, когда накопилось хотя бы два таких
 		let stale = null;
 		for (const key of cur) if (now - (seen.get(key) || 0) > 20000) (stale || (stale = new Set())).add(key);
 		if (!add && !(stale && stale.size >= 2)) {
 			this._fxDeb = 0;
 			return;
 		}
-		// несколько эффектов, включённых подряд, собираются одним шейдером: каждая сборка это короткое подвисание драйвера, и лучше пережить его один раз
 		if (!this._fxDeb) this._fxDeb = now;
 		if (now - this._fxDeb < 250) return;
 		this._fxDeb = 0;
 		this._fxApply(add || new Set(), add ? null : stale);
 	}
 
-	/** Все ли включённые сейчас эффекты уже есть в собранном шейдере (иначе картинка WebGL отстаёт от настроек) */
 	_fxCovered(evenBusy = false) {
 		if (!this.shared || (this._fxBusy && !evenBusy)) return false;
 		const cur = this._fxCur;
@@ -72,7 +60,6 @@ export class ShaderCachePart {
 	}
 
 	async _fxApply(add, drop) {
-		// _fxBusy: 'add' (собирается шейдер с новым эффектом) или 'drop' (только уборка); у каждой сборки свой номер, и подставляется только последняя
 		this._fxBusy = add.size ? 'add' : 'drop';
 		const gen = (this._fxGen = (this._fxGen || 0) + 1);
 		const next = new Set([...(this._fxCur || [])].filter((k) => !(drop && drop.has(k))));
@@ -80,7 +67,6 @@ export class ShaderCachePart {
 		try {
 			await Promise.all(this._warmKinds().map((k) => this._warmKind(k, next)));
 		} catch (e) {
-			/* если фоновая сборка не удалась, шейдер соберётся при подстановке */
 		}
 		if (gen !== this._fxGen) return;
 		this._fxCur = next;
@@ -88,18 +74,10 @@ export class ShaderCachePart {
 		this._fxBusy = false;
 	}
 
-	/** Включённый эффект ещё не попал в шейдер (WebGL собирает его в фоне): панель показывает, что он готовится */
 	fxPreparing() {
 		return !this._glDormant && !!this.shared && !!this._fxCur && !this._fxCovered(true);
 	}
 
-	// ------------------------------------------------------------ фоновая сборка шейдеров
-	// На Windows (ANGLE и Direct3D 11) компиляция большого шейдера идёт секунды, и если она случается в кадре, браузер замирает целиком.
-	// Поэтому каждая программа собирается заранее и в фоне, под тот вариант вывода, который сейчас используется (в экран или в буфер для свечения и обратной связи):
-	// у three.js это две разные программы, и сборка «не того» варианта при первом кадре случалась бы прямо в потоке интерфейса.
-	// Второй вариант собирается только когда он понадобится (включилось свечение или выключилось), а вывод переключается, когда он готов: так на каждый новый эффект собирается одна программа, а не две, и подвисание вдвое короче.
-
-	/** Включена ли пост-обработка: тогда сцена рисуется не на экран, а в промежуточный буфер */
 	_postOn() {
 		const L = this.state.layers;
 		const fb = L.feedback;
@@ -107,18 +85,15 @@ export class ShaderCachePart {
 		return (this.state.look.bloom || 0) > 0.01 || (this.state.look.aberration || 0) > 0.01 || !!(fb && fb.on && fb.amount > 0.01) || !!(dm && dm.on);
 	}
 
-	/** Подпись набора включённых эффектов: от неё зависит текст шейдеров */
 	_fxSig(set) {
 		return [...(set || this._fxCur || [])].sort().join(',');
 	}
 
-	/** Вид главного шейдера точек: режим смешивания входит в ключ программы (у three.js прозрачный и непрозрачный материал это разные программы) */
 	_vertKind() {
 		const add = this.material ? this.material.blending === THREE.AdditiveBlending : this.state.look.blend === 'add';
 		return add ? 'vert|add' : 'vert|norm';
 	}
 
-	/** Виды шейдеров, которые сейчас в сцене и должны быть готовы до подстановки нового текста */
 	_warmKinds() {
 		const kinds = [this._vertKind()];
 		const now = performance.now();
@@ -131,20 +106,16 @@ export class ShaderCachePart {
 		return kinds;
 	}
 
-	/** Куда рисует сцена сейчас: в промежуточный буфер (true) или прямо на экран (false) */
 	_curTgt() {
 		return this.active ? !!this._tgtRT : this._postOn();
 	}
 
-	/** Собирает программы объектов сцены под один вариант вывода и ждёт их готовности, не блокируя поток */
 	async _warmScene(scene, camera, rt = this._curTgt()) {
 		const r = this.app.viewport.renderer;
 		const prev = r.getRenderTarget();
 		const mats = new Set();
 		try {
-			// у three.js для вывода в буфер своя программа; буфер для сборки берётся любой, важно только, что это не экран
 			const target = rt ? this._warmRT || (this._warmRT = new THREE.WebGLRenderTarget(4, 4)) : null;
-			// свет берётся из настоящей сцены: число источников света входит в ключ программы, и без «фонаря» камеры программа получалась бы другой, чем в кадре
 			r.setRenderTarget(target);
 			r.compile(scene, camera, this.app.viewport.scene).forEach((m) => mats.add(m));
 		} catch (e) {
@@ -165,7 +136,6 @@ export class ShaderCachePart {
 			const bl = this._shadow?.pts.material.blending ?? THREE.NormalBlending;
 			return new THREE.Points(g, new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: bl, uniforms: {}, defines: { SHADOW: 1 }, vertexShader: this._fxSource('vert', set), fragmentShader: shadowFrag }));
 		}
-		// точки: параметры материала такие же, как у настоящего (смешивание, прозрачность, запись глубины), иначе ключ программы другой и прогрев не помогает
 		const hero = kind === 'hero';
 		const add = hero ? !this.hero || this.hero.material.blending === THREE.AdditiveBlending : kind !== 'vert|norm';
 		const par = { transparent: add, depthWrite: !add, blending: add ? THREE.AdditiveBlending : THREE.NormalBlending, uniforms: {}, vertexShader: this._fxSource('vert', set), fragmentShader: frag };
@@ -173,10 +143,6 @@ export class ShaderCachePart {
 		return new THREE.Points(g, new THREE.ShaderMaterial(par));
 	}
 
-	/**
-	 * Собирает шейдер одного вида под набор эффектов и держит программу живой: иначе three.js выбросит её вместе с временным материалом, и первый кадр соберёт её заново.
-	 * Держатся последние несколько наборов: если эффект выключили и включили снова, программа уже есть и подстановка мгновенна.
-	 */
 	async _warmKind(kind, set, rt = this._curTgt()) {
 		set = set || this._fxCur || new Set();
 		const sig = this._fxSig(set);
@@ -188,9 +154,8 @@ export class ShaderCachePart {
 		want[id] = sig;
 		const prev = keep.get(kid);
 		if (prev) {
-			keep.delete(kid); // обновляем «свежесть»
+			keep.delete(kid);
 			keep.set(kid, prev);
-			// уже собран или собирается: ждём тот же результат
 			if (prev.job) await prev.job;
 			if (want[id] === sig) warm.set(id, sig);
 			return;
@@ -200,7 +165,6 @@ export class ShaderCachePart {
 		sc.add(obj);
 		const rec = { sig, mat: obj.material, job: null };
 		keep.set(kid, rec);
-		// старые наборы выбрасываются, когда их накопилось больше десяти (сам материал освобождается чуть позже)
 		for (const [k, r] of keep) {
 			if (keep.size <= 10) break;
 			if (r.job || k === kid) continue;
@@ -208,11 +172,10 @@ export class ShaderCachePart {
 			setTimeout(() => r.mat.dispose(), 1500);
 		}
 		rec.job = (async () => {
-			await null; // сборка начинается после текущего кадра, а не посреди него
+			await null;
 			try {
 				await this._warmScene(sc, this.app.viewport.camera, rt);
 			} catch (e) {
-				/* не обязательно: при первом показе программа соберётся как раньше */
 			}
 			if (want[id] === sig) warm.set(id, sig);
 			rec.job = null;
@@ -221,14 +184,9 @@ export class ShaderCachePart {
 		await rec.job;
 	}
 
-	/**
-	 * Объект с тяжёлым собственным шейдером (связи, осциллограф) показывается только когда его программа уже собрана: пока она собирается в фоне, он скрыт, а интерфейс не замирает.
-	 * Раньше такой объект появлялся сразу, и первый кадр с ним ждал драйвер секундами.
-	 */
 	_gate(kind, want) {
 		if (!want) return false;
 		if (this._glDormant) {
-			// пока облако рисует WebGPU, шейдер точек WebGL не нужен; всё остальное будит WebGL
 			if (kind.startsWith('vert')) return true;
 			const g = this.backend?.gpuMesh?.(kind);
 			if (g !== undefined) return g;
@@ -245,16 +203,11 @@ export class ShaderCachePart {
 		return true;
 	}
 
-	/**
-	 * Переход между выводом на экран и в буфер (включили или выключили свечение, обратную связь и т. п.): сцена продолжает рисоваться по-старому,
-	 * пока в фоне собираются программы нового варианта, и переключается, когда они готовы.
-	 */
 	_tgtSync() {
 		const want = this._postOn();
 		if (want === !!this._tgtRT) return;
 		const sig = this._fxSig();
 		let ready = true;
-		// остальные объекты сцены (сетка, оси и т. п.) тоже имеют свою программу под каждый вариант вывода
 		const tw = this._tgtWarm || (this._tgtWarm = {});
 		const sk = want ? 'r' : 's';
 		if (tw[sk] !== 2) {
@@ -286,15 +239,12 @@ export class ShaderCachePart {
 		this.app.viewport.invalidate();
 	}
 
-	/** Заранее собирает шейдер эффектов, пока вы работаете в редакторе: первый вход в «Эффекты» не подвисает на компиляции (на Windows она идёт секунды) */
 	async prewarm() {
 		if (this.active) return;
-		// облако точек модели тоже считаем заранее: при входе остаётся только построить буферы
 		try {
 			if (this.hasModel && !this.pm.ready) {
 				const saved = this.state.count;
 				this.state.count = Math.max(20000, Math.min(2000000, this.app.settings.point.surfaceCount));
-				// тихий режим: подготовка идёт в фоне и не должна показывать окно загрузки (раньше оно оставалось на экране навсегда)
 				this._quiet = true;
 				try {
 					await this._cloudFor('model');
@@ -304,13 +254,10 @@ export class ShaderCachePart {
 				}
 			}
 		} catch (e) {
-			/* не обязательно */
 		}
 		try {
-			// материал остаётся в списке удерживаемых: программа не выбрасывается из кеша, и настоящий материал берёт её готовой (в экран и в буфер)
 			await this._warmKind(this._vertKind(), this._fxCur || new Set(), this._postOn());
 		} catch (e) {
-			/* подготовка не обязательна */
 		}
 	}
 }

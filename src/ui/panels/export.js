@@ -1,4 +1,3 @@
-// Вкладка «Экспорт»: формат, страница для сайта, единицы, оси, данные, облако точек, запуск и результат.
 import { h, formatBytes, formatInt, downloadBlob } from '../../core/util.js';
 import { icon } from '../icons.js';
 import { section, field, segmented, select, slider, switchRow, numberField, button } from '../ui-kit.js';
@@ -18,7 +17,7 @@ export function createExportPanel(app, root) {
 	const s = app.settings.exportOpts;
 	const w = s.web;
 	const save = () => app.saveSettings();
-	let last = null; // последний результат (для повторного скачивания)
+	let last = null;
 	let running = false;
 
 	const fmtInfo = () => EXPORT_FORMATS.find((f) => f.id === s.format) || EXPORT_FORMATS[0];
@@ -27,7 +26,6 @@ export function createExportPanel(app, root) {
 		updateEstimate();
 	};
 
-	// ------------------------------------------------------------------ формат
 	const fmtDesc = h('div', { class: 'fmt-desc' });
 	const ext = h('span', { class: 'ext' });
 	const nameInput = h('input', { type: 'text', spellcheck: 'false', 'aria-label': 'Имя файла', placeholder: 'model' });
@@ -38,7 +36,6 @@ export function createExportPanel(app, root) {
 		e.stopPropagation();
 		if (e.key === 'Enter') run();
 	});
-	// форматы плитками с короткой подписью, по группам
 	const FMT_CAPTION = { glb: 'Веб, AR, игры', gltf: 'Текстовый, читаемый', usdz: 'AR на iPhone и iPad', obj: 'Универсальный', ply: 'Цвет вершин', stl: 'Для 3D-печати', splat: 'Гауссовы сплаты', splatzip: 'Видео в сплатах', web: 'Страница и код' };
 	const FMT_GROUPS = [['3D-модель', ['glb', 'gltf', 'usdz', 'obj', 'ply', 'stl']], ['Облака точек и сайт', ['splat', 'splatzip', 'web']]];
 	const tiles = new Map();
@@ -67,7 +64,6 @@ export function createExportPanel(app, root) {
 	};
 	const secFormat = section('Формат', { key: 'e-format' }, fmt.el, fmtDesc, field('Имя файла', h('div', { class: 'name-field' }, nameInput, ext), { wide: true }));
 
-	// -------------------------------------------------------- страница для сайта
 	const webTitle = h('input', { type: 'text', class: 'num-in', style: { textAlign: 'left', fontFamily: 'var(--font)', fontSize: '13px', height: '32px' }, spellcheck: 'false', placeholder: 'Название страницы', 'aria-label': 'Название страницы' });
 	webTitle.value = w.title || '';
 	webTitle.addEventListener('input', () => {
@@ -80,7 +76,6 @@ export function createExportPanel(app, root) {
 	const webOpt = switchRow('Облегчить для сайта', { value: w.optimize, onChange: (v) => { w.optimize = v; touch(); } }, 'Текстуры до 2048 px, быстрая загрузка');
 	const webMode = segmented({ options: [{ value: 'zip', label: 'ZIP с файлами' }, { value: 'single', label: 'Один HTML' }], value: w.single ? 'single' : 'zip', onChange: (v) => { w.single = v === 'single'; save(); syncFormat(); } });
 	const webModeHint = h('div', { class: 'field-hint' });
-	// готовый код для вставки показываем сразу, до скачивания: он зависит только от названия и имён файлов
 	const embedBox = h('textarea', { class: 'code-box', readonly: true, rows: 5, spellcheck: 'false', 'aria-label': 'Код для вставки на сайт' });
 	embedBox.addEventListener('focus', () => embedBox.select());
 	const embedCopy = button({ label: 'Скопировать код', icon: 'copy', variant: 'secondary', cls: 'btn-block', onClick: async () => {
@@ -115,7 +110,6 @@ export function createExportPanel(app, root) {
 			: 'Архив для хостинга: страница, модель, постер и код для вставки.';
 	}
 
-	// ------------------------------------------------------------- что и как
 	const only = segmented({ options: [{ value: 'all', label: 'Вся сцена' }, { value: 'selected', label: 'Выбранное' }], value: s.only, onChange: (v) => { s.only = v; touch(); } });
 	const scale = numberField({ value: s.scale, step: 0.1, digits: 6, min: 1e-9, onChange: (v) => { s.scale = v; save(); markPresets(); } });
 	const presets = h('div', { class: 'presets' });
@@ -141,7 +135,6 @@ export function createExportPanel(app, root) {
 		field('Положение', place.el, {})
 	);
 
-	// ------------------------------------------------------------------ данные
 	const weld = switchRow('Склеить одинаковые вершины', { value: s.weld, onChange: (v) => { s.weld = v; touch(); } }, 'Файл меньше в 2-3 раза');
 	const texFmt = segmented({ options: [{ value: 'auto', label: 'Как у файла' }, { value: 'png', label: 'PNG' }, { value: 'jpeg', label: 'JPEG' }], value: s.texFormat, onChange: (v) => { s.texFormat = v; touch(); } });
 	const maxTex = select({
@@ -159,7 +152,6 @@ export function createExportPanel(app, root) {
 	const rowMaxTex = field('Размер текстур', maxTex.el);
 	const secData = section('Данные', { key: 'e-data' }, weld.el, rowTexFmt, rowMaxTex);
 
-	// ------------------------------------------------------------ облако точек
 	const dev = getDevice(app);
 	s.cloudCount = Math.min(s.cloudCount, Math.max(100000, dev.limits.cap));
 	const cloud = segmented({ options: [{ value: 'mesh', label: 'Меш' }, { value: 'vertices', label: 'Вершины' }, { value: 'surface', label: 'Поверхность' }], value: s.cloud, onChange: (v) => { s.cloud = v; touch(); syncFormat(); } });
@@ -181,14 +173,12 @@ export function createExportPanel(app, root) {
 	const cloudExtra = h('div', { class: 'sec-body', style: { padding: 0 } }, rowCloudCount, cloudHint);
 	const secCloud = section('Облако точек', { key: 'e-cloud', open: false }, field('Экспортировать как', cloud.el), cloudExtra);
 
-	// ------------------------------------------------------------ запуск и результат
 	const resultBox = h('div');
 	const estimate = h('div', { class: 'estimate' });
 	const cta = h('div', { class: 'export-cta' });
 	const goBtn = button({ label: 'Скачать GLB', icon: 'download-simple', variant: 'primary', cls: 'btn-lg', onClick: () => run() });
 	cta.append(estimate, goBtn);
 
-	// слева выбор формата и имя файла (для сайта ещё и страница), справа параметры преобразования
 	const colL = h('div', { class: 'exp-col exp-left' }, secFormat.el, secWeb.el);
 	const colR = h('div', { class: 'exp-col exp-right' }, secWhat.el, secData.el, secCloud.el);
 	root.append(h('div', { class: 'result-slot' }, resultBox), h('div', { class: 'exp-grid' }, colL, colR), cta);
@@ -201,11 +191,10 @@ export function createExportPanel(app, root) {
 		}
 		const web = f.id === 'web';
 		let bytes = estimateExportSize(app, { ...s, cloud: web ? 'mesh' : s.cloud, texFormat: web && w.optimize ? 'jpeg' : s.texFormat, maxTex: web && w.optimize ? Math.min(s.maxTex || 2048, 2048) : s.maxTex });
-		if (f.id === 'gltf') bytes *= 1.34; // base64 внутри JSON
+		if (f.id === 'gltf') bytes *= 1.34;
 		estimate.textContent = `Примерный размер файла: около ${formatBytes(bytes)}`;
 	}
 
-	// ---------------------------------------------------------------- синхронизация
 	function syncFormat() {
 		const f = fmtInfo();
 		fmtDesc.innerHTML = `<b>${f.title}.</b> ${f.hint}`;
@@ -256,7 +245,6 @@ export function createExportPanel(app, root) {
 	syncFormat();
 	syncSelection();
 
-	// --------------------------------------------------------------------- результат
 	const copy = async (text) => {
 		try {
 			await navigator.clipboard.writeText(text);

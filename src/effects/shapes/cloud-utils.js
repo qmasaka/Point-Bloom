@@ -1,7 +1,3 @@
-// Подготовка облака точек: порядок, число точек, нормализация, сортировка по Мортону.
-
-/** Растягивает или прореживает облако до ровно n точек */
-/** Переставляет данные анимации точек (кость, вес, положение в позе привязки) вслед за перестановкой самих точек: src[i] это номер исходной точки */
 export function reorderAnim(a, src) {
 	if (!a) return null;
 	const n = src.length;
@@ -37,7 +33,6 @@ export function fitCount(c, n) {
 	return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm };
 }
 
-/** Приводит облако к единичному размеру и центру: все формы получаются сопоставимого масштаба */
 export function normalizeCloud(c) {
 	const p = c.positions;
 	let minx = Infinity, miny = Infinity, minz = Infinity, maxx = -Infinity, maxy = -Infinity, maxz = -Infinity;
@@ -46,7 +41,6 @@ export function normalizeCloud(c) {
 		if (p[i + 1] < miny) miny = p[i + 1]; if (p[i + 1] > maxy) maxy = p[i + 1];
 		if (p[i + 2] < minz) minz = p[i + 2]; if (p[i + 2] > maxz) maxz = p[i + 2];
 	}
-	// у анимированного персонажа размер берётся по всему движению клипа
 	if (c.animBox && !c.animBox.isEmpty()) {
 		const B = c.animBox;
 		minx = B.min.x; miny = B.min.y; minz = B.min.z; maxx = B.max.x; maxy = B.max.y; maxz = B.max.z;
@@ -62,16 +56,10 @@ export function normalizeCloud(c) {
 	return { positions: out, normals: c.normals, colors: c.colors, count: c.count, anim: c.anim, norm: { cx, cy, cz, k, floorY: (miny - cy) * k } };
 }
 
-/**
- * Перемешивает порядок точек. У двух моделей i-я точка оказывается
- * в случайном месте формы, поэтому при морфинге модель собирается вперемешку по всей поверхности, а не квадратами-участками,
- * которые давала сортировка по кривой Мортона.
- */
 export function shuffleCloud(c) {
 	const n = c.count;
 	const src = new Int32Array(n);
 	for (let i = 0; i < n; i++) src[i] = i;
-	// своё зерно у каждого облака: при одинаковом зерне две модели перемешались бы одинаково и снова совпали бы по участкам
 	let s = (Math.random() * 4294967295) >>> 0 || 0x9e3779b9;
 	const rnd = () => {
 		s ^= s << 13;
@@ -97,11 +85,6 @@ export function shuffleCloud(c) {
 	return { positions: pos, normals: nor, colors: col, count: n, anim: reorderAnim(c.anim, src), norm: c.norm, animBox: c.animBox };
 }
 
-/**
- * Упорядочивает точки облака вдоль кривой Мортона по его собственным габаритам. У двух моделей i-я точка оказывается
- * примерно в «том же месте» формы, поэтому при морфинге точки идут к ближайшим родственным местам, а не разлетаются
- * через всю сцену, и переход выглядит как перетекание, а не как перемешивание.
- */
 export function mortonSort(c) {
 	const n = c.count;
 	const P = c.positions;
@@ -121,7 +104,7 @@ export function mortonSort(c) {
 		v = (v | (v << 2)) & 0x09249249;
 		return v;
 	};
-	const M = 4194304; // 2^22: хватает на 4 млн точек
+	const M = 4194304;
 	const keys = new Float64Array(n);
 	for (let i = 0; i < n; i++) {
 		const code = ((spread(((P[i * 3] - mnx) * sx) | 0) << 2) | (spread(((P[i * 3 + 1] - mny) * sy) | 0) << 1) | spread(((P[i * 3 + 2] - mnz) * sz) | 0)) >>> 0;

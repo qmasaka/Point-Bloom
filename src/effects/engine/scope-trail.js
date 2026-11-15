@@ -2,10 +2,7 @@ import * as THREE from 'three';
 import { clamp } from '../../core/util.js';
 import { scopeFrag } from '../shaders/glsl/scope-frag.js';
 
-/** Эффекты «Осциллограф» (бегущая линия) и «Шлейф» (призрачные копии персонажа). Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class ScopeTrailPart {
-	// ------------------------------------------------------------ осциллограф: перо бежит от точки к точке по координатам модели
-	/** Строит путь пера: берёт часть точек и обходит их «ближайшим соседом», каждой точке облака даёт место на пути (aPath), а линию собирает из отрезков между соседями по пути. Остальные порядки: развёртка по высоте или по кругу */
 	_scopeBuild(S, order, chaosV = 0.5) {
 		const g = this.geometry;
 		const T = g.attributes.aTarget.array;
@@ -45,13 +42,11 @@ export class ScopeTrailPart {
 			if (a) a.push(i);
 			else grid.set(k, [i]);
 		}
-		// обход вычёркивает посещённые точки из ячеек, поэтому для раздачи мест всем точкам облака оставляем целую копию
 		const full = new Map();
 		for (const [k, v] of grid) full.set(k, v.slice());
 		const used = new Uint8Array(sc);
 		const ord = new Int32Array(sc);
 		const d2 = (i, p) => (T[ids[i] * 3] - p[0]) ** 2 + (T[ids[i] * 3 + 1] - p[1]) ** 2 + (T[ids[i] * 3 + 2] - p[2]) ** 2;
-		// «хаос»: путь режется на штрихи, каждый штрих стартует в случайном месте и идёт по ближайшим точкам, с лёгкой случайностью в выборе шага
 		let seed = 1234567;
 		const rnd = () => {
 			seed = (seed + 0x6d2b79f5) | 0;
@@ -109,7 +104,6 @@ export class ScopeTrailPart {
 				}
 				if (!cand.length) break;
 				cand.sort((x, y) => x[0] - y[0]);
-				// чем больше хаос, тем чаще перо выбирает не самую близкую из трёх ближайших
 				let pick = 0;
 				if (cand.length > 1 && rnd() < chaos * 0.75) pick = 1 + (cand.length > 2 && rnd() < 0.4 ? 1 : 0);
 				const best = cand[pick][1];
@@ -146,7 +140,6 @@ export class ScopeTrailPart {
 				path.array[i] = 0;
 				continue;
 			}
-			// между двумя соседними точками пути место считаем плавно, иначе проявление идёт квадратиками по ячейкам
 			const rk = rank[best];
 			const P = (j) => ids[ord[j]] * 3;
 			let bt = 0, bj = -1;
@@ -165,7 +158,6 @@ export class ScopeTrailPart {
 			path.array[i] = (rk + (bj < 0 ? 0 : (bj - rk) * bt)) / (sc - 1);
 		}
 		path.needsUpdate = true;
-		// линия: четырёхугольник на каждый отрезок между соседями по пути; её концы идут через те же эффекты, что и сами точки
 		const L = sc - 1;
 		const V = L * 4;
 		const O = g.attributes.aOrigin.array;
@@ -218,7 +210,6 @@ export class ScopeTrailPart {
 		this._scopePath = { ids, ord, L };
 	}
 
-	/** Анимированный персонаж: концы отрезков линии берут текущие положения своих точек, и линия идёт по телу в любой позе */
 	_scopeSyncLine() {
 		const sp = this._scopePath;
 		const lg = this._scopeLine?.geometry;
@@ -270,7 +261,6 @@ export class ScopeTrailPart {
 		const gk = this.geometry.uuid + ':' + order + ':' + (order === 'walk' ? Math.round(S.detail) + '/' + Math.round(S.chaos * 20) : 0);
 		const lost = this._scopeLine && this._scopeLine.parent !== this.points;
 		if (this._scopeKey !== gk || lost) {
-			// пока двигают ползунок, путь пересчитывается не чаще раза в четверть секунды
 			const sameGeo = this._scopeKey && this._scopeKey.split(':')[0] === this.geometry.uuid;
 			if (!sameGeo || lost || !this._scopeWait || performance.now() - this._scopeWait > 250) {
 				this._scopeKey = gk;
@@ -284,7 +274,6 @@ export class ScopeTrailPart {
 			this._scopeSyncLine();
 		}
 		this._scopeT = (this._scopeT || 0) + dt * S.speed * 0.07;
-		// круг: 0..0.5 перо рисует, до 0.6 готовая форма держится, затем перо идёт по ней вторым проходом и стирает; «Остаётся» замирает на готовой форме
 		const once = S.loop === 'once';
 		const c = once ? Math.min(this._scopeT, 0.55) : this._scopeT % 1;
 		const head = Math.min(c / 0.5, 1.05);
@@ -306,7 +295,6 @@ export class ScopeTrailPart {
 		return !!this._animCloud;
 	}
 
-	/** Шлейф персонажа: копии прошлых поз остаются на месте и гаснут. Снимки берутся из уже посчитанных положений точек, поэтому это почти бесплатно */
 	_trailTick(T) {
 		const ac = this._animCloud;
 		const tr0 = this._trail;
@@ -363,8 +351,6 @@ export class ScopeTrailPart {
 			tr = this._trail = { group, snaps, ghosts, mm, n, stride, last: this._time, geo: this.geometry };
 		}
 		tr.group.visible = true;
-		// новый снимок раз в «шаг» времени, пока идёт анимация; остановили анимацию, шлейф замирает
-		// пока играет таймлайн, персонаж идёт по его времени (сам плеер анимации стоит), и шлейф тоже должен копиться
 		const moving = this.app.anim.playing || (this._charSync && this.animPlaying);
 		if (moving && this._time - tr.last >= T.step) {
 			tr.last = this._time;

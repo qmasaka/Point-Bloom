@@ -43,18 +43,18 @@ void main() {
 	vStrain = strain;
 	vec3 col = mix(uP0, uP2, 0.35 + uBeat * 0.4) * uBright;
 	if (uLinkP.y > 0.5 && uLinkP.y < 1.5) {
-		// Натяжение (tension): бирюзовый -> золотой -> раскаленный оранжево-рубиновый
+
 		vec3 cyan = vec3(0.12, 0.88, 0.9);
 		vec3 gold = vec3(1.0, 0.76, 0.18);
 		vec3 ruby = vec3(1.0, 0.22, 0.28);
 		col = strain < 0.5 ? mix(cyan, gold, strain * 2.0) : mix(gold, ruby, (strain - 0.5) * 2.0);
 		col *= uBright * (1.1 + uBeat * 0.35);
 	} else if (uLinkP.y > 1.5 && uLinkP.y < 2.5) {
-		// Неон (neon): электрический кибер-градиент
+
 		col = mix(vec3(0.08, 0.72, 1.0), vec3(1.0, 0.08, 0.76), fract(aIdx * 7.13 + aEnd * 0.5));
 		col *= uBright * 1.35;
 	} else if (uLinkP.y > 2.5) {
-		// Радуга (rainbow): спектральная волна
+
 		col = (0.5 + 0.5 * cos(6.2831853 * (aIdx + aEnd * 0.35 + uTime * 0.18 + vec3(0.0, 0.33, 0.67)))) * uBright * 1.25;
 	}
 	vC = col;
@@ -82,7 +82,7 @@ void main() {
 		flare += (1.0 - smoothstep(0.0, 0.18, endDist)) * 1.9;
 	}
 	float baseW = uLinkW;
-	if (uLinkP.x > 1.5 && uLinkP.x < 2.5) baseW = max(0.65, uLinkW * 0.6); // созвездия — тонкие нити
+	if (uLinkP.x > 1.5 && uLinkP.x < 2.5) baseW = max(0.65, uLinkW * 0.6);
 	c.xy += nrm * aSide * (baseW * flare + 1.0) / uRes.y * c.w;
 	gl_Position = c;
 }

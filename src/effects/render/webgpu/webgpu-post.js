@@ -1,17 +1,9 @@
 import { makeLayout, packLayout } from './frame-layout.js';
 import { POST_PASSES } from '../../shaders/wgsl/generated/post-passes.js';
 
-/**
- * Пост-обработка на WebGPU: обратная связь, свечение, хроматическая аберрация, датамош.
- * Шейдеры не написаны руками: их генерирует dev/gen-wgsl.mjs из тех же GLSL (shaders/glsl/post.js), что использует WebGL.
- * Каждый проход это полноэкранный треугольник: читает текстуры, пишет в цель (текстуру или холст).
- */
-
-/** Формат промежуточных текстур: с запасом по яркости (свечение складывается выше единицы) */
 export const RT_FORMAT = 'rgba16float';
 
-// следующий уровень мип-цепочки: каждый пиксель берёт среднее четырёх пикселей предыдущего уровня (границы нечётных размеров прижимаются к краю)
-const MIP_WGSL = /* wgsl */ `
+const MIP_WGSL = `
 @group(0) @binding(0) var src: texture_2d<f32>;
 @vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
 	let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));
@@ -28,7 +20,6 @@ const MIP_WGSL = /* wgsl */ `
 }`;
 
 export class WebGPUPost {
-	/** @param {GPUDevice} device @param {string} canvasFormat формат холста: в него пишет последний проход */
 	constructor(device, canvasFormat) {
 		this.device = device;
 		this.canvasFormat = canvasFormat;
@@ -47,7 +38,6 @@ export class WebGPUPost {
 		this.mipModule = device.createShaderModule({ code: MIP_WGSL });
 	}
 
-	/** Собирает конвейеры асинхронно (главный поток не ждёт драйвер) */
 	async prepare() {
 		const D = this.device;
 		const t0 = performance.now();
@@ -87,7 +77,6 @@ export class WebGPUPost {
 		return !!this.pipelines[name];
 	}
 
-	/** Создаёт (или пересоздаёт при смене размера) промежуточную текстуру с именем key */
 	rt(key, w, h, { mips = false } = {}) {
 		const cur = this.rts[key];
 		const levels = mips ? Math.floor(Math.log2(Math.max(w, h))) + 1 : 1;
@@ -103,7 +92,6 @@ export class WebGPUPost {
 		return t;
 	}
 
-	/** Дозаполняет мип-уровни текстуры (нужны датамошу: он ищет движение по уменьшенным копиям кадра) */
 	generateMips(enc, tex) {
 		if (!this.mipPipeline) return false;
 		for (let l = 1; l < tex.mipLevelCount; l++) {
@@ -120,16 +108,6 @@ export class WebGPUPost {
 		return true;
 	}
 
-	/**
-	 * Выполняет проход.
-	 * @param {GPUCommandEncoder} enc
-	 * @param {string} name fb | out | mv | mosh
-	 * @param {GPUTextureView} target куда рисовать
-	 * @param {[number, number]} targetSize размер цели в пикселях
-	 * @param {object} values значения uniform: { uDecay: 0.9, uTint: [r,g,b], ... }
-	 * @param {Record<string, GPUTextureView>} textures текстуры по именам из шейдера (uScene, uPrev, ...)
-	 * @param {boolean} [clear] очистить цель перед рисованием
-	 */
 	run(enc, name, target, targetSize, values, textures, clear = true) {
 		const pass = POST_PASSES[name];
 		const pipeline = this.pipelines[name];
@@ -151,10 +129,6 @@ export class WebGPUPost {
 		return true;
 	}
 
-	/**
-	 * Один шаг датамоша: поле движения по блокам, затем «декодирование без опорного кадра» (те же шейдеры, что в WebGL, см. PostPipeline._moshStep).
-	 * Ждёт, что сцена уже нарисована в this.rts.scene (с мип-уровнями, см. rt(..., { mips: true })). Возвращает вид текстуры кадра после «сбоя».
-	 */
 	moshStep(enc, m, size) {
 		const post = this;
 		const [w, h] = size;
@@ -226,14 +200,12 @@ export class WebGPUPost {
 		);
 		post.rts.moshA = moshB;
 		post.rts.moshB = moshA;
-		// текущий кадр становится «прошлым» для следующего шага
 		post.rts.scene = sceneB;
 		post.rts.sceneB = scene;
 		this.moshHist = true;
 		return moshB.createView();
 	}
 
-	/** Датамош выключен: его буферы не нужны, история сбрасывается */
 	moshOff() {
 		if (!this.moshHist && !this.rts.sceneB) return;
 		this.moshHist = false;

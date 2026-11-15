@@ -1,9 +1,6 @@
-// Фото и видео в точки: каждая точка берёт цвет пикселя (и, по желанию, высоту по яркости).
-// Видео можно записать в точечный ролик и сохранить: .pcv (повторно открывается здесь) или PLY-кадры в ZIP.
 import { zlibSync, unzlibSync, zipSync } from 'three/addons/libs/fflate.module.js';
 import { TGALoader } from 'three/addons/loaders/TGALoader.js';
 
-/** Читает картинку: сначала обычным путём браузера, затем запасными (TGA своим разбором, остальное через createImageBitmap и холст) */
 async function decodeImageFile(file, url, ext) {
 	const img = new Image();
 	img.src = url;
@@ -11,7 +8,6 @@ async function decodeImageFile(file, url, ext) {
 		await img.decode();
 		if (img.naturalWidth) return { el: img, url };
 	} catch (e) {
-		/* пробуем запасные пути */
 	}
 	let canvas = null;
 	if (ext === 'tga') {
@@ -52,7 +48,6 @@ async function decodeImageFile(file, url, ext) {
 	return { el: out, url: nurl };
 }
 
-// sRGB-байт в линейное значение: шейдер сам вернёт цвет в sRGB
 const LUT = new Float32Array(256);
 for (let i = 0; i < 256; i++) {
 	const c = i / 255;
@@ -74,15 +69,15 @@ const wait = (el, ev, ms = 2000) =>
 
 export class PointMedia {
 	constructor() {
-		this.kind = null; // 'image' | 'video' | 'rec'
-		this.view = 'live'; // 'live': исходник, 'rec': записанный точечный ролик
+		this.kind = null;
+		this.view = 'live';
 		this.el = null;
 		this.url = null;
 		this.name = '';
 		this.aspect = 1;
 		this.cols = 0;
 		this.rows = 0;
-		this.rec = null; // { cols, rows, aspect, fps, frames: Uint8Array[] }
+		this.rec = null;
 		this.playing = true;
 		this.loop = true;
 		this.t = 0;
@@ -92,7 +87,7 @@ export class PointMedia {
 		this._lastKey = -1;
 		this._xy = null;
 		this.recording = false;
-		this.muted = true; // звук видео по умолчанию выключен, включается в «Медиа» или на таймлайне
+		this.muted = true;
 		this.onMute = null;
 	}
 
@@ -122,7 +117,6 @@ export class PointMedia {
 			const v = this.el;
 			const target = Math.max(0, Math.min(this.duration, t));
 			this.dirty = true;
-			// пока предыдущая перемотка не закончилась, запоминаем только последнее значение
 			if (v.seeking) {
 				this._pendingSeek = target;
 				if (!this._seekHook) {
@@ -217,7 +211,6 @@ export class PointMedia {
 		if (this.kind === 'video' && !this.isRec) this._tryPlay();
 	}
 
-	/** Запуск со звуком; если браузер не разрешил, играем без звука */
 	_tryPlay() {
 		const el = this.el;
 		if (!el) return;
@@ -243,7 +236,6 @@ export class PointMedia {
 		if (this.kind === 'video' && this.el) this.el.loop = v;
 	}
 
-	/** Сетка точек под нужное число и пропорции кадра */
 	setGrid(n) {
 		if (this.isRec) return;
 		const cols = Math.max(8, Math.round(Math.sqrt(n * this.aspect)));
@@ -256,7 +248,6 @@ export class PointMedia {
 		}
 	}
 
-	/** Сетка точно заданного размера: у нескольких видео и фото одно число точек, поэтому между ними возможен плавный морфинг. Пропорции кадра держит расстановка точек */
 	setGridExact(cols, rows) {
 		if (this.isRec) return;
 		if (cols !== this.cols || rows !== this.rows) {
@@ -288,7 +279,6 @@ export class PointMedia {
 		return xy;
 	}
 
-	/** Цвета текущего кадра: Uint8Array RGB */
 	sample() {
 		if (this.isRec) {
 			const f = this.rec.frames;
@@ -310,7 +300,6 @@ export class PointMedia {
 		return out;
 	}
 
-	/** Идёт время: возвращает новый кадр, если он поменялся, иначе null */
 	advance(dt) {
 		if (!this.ready || this.recording) return null;
 		if (this.isRec) {
@@ -344,7 +333,6 @@ export class PointMedia {
 		return this.sample();
 	}
 
-	/** Облако для движка */
 	buildCloud(rgb, relief, depth) {
 		const n = this.cols * this.rows;
 		const xy = this._grid();
@@ -361,7 +349,6 @@ export class PointMedia {
 		return cloud;
 	}
 
-	/** Записывает цвета (и высоту по яркости) в облако: объект с positions/colors */
 	applyTo(cloud, rgb, relief, depth) {
 		const n = this.cols * this.rows;
 		const pos = cloud.positions;
@@ -369,7 +356,6 @@ export class PointMedia {
 		const k = relief === 'bright' ? 1 : relief === 'dark' ? -1 : 0;
 		const A = this.adjust;
 		const hide = cloud.hide;
-		// фильтры: коррекция цвета и скрытие точек по яркости, цвету или краям
 		const act = !!A && (A.cutDark > 0 || A.cutLight < 1 || A.keyTol > 0 || A.edges > 0 || A.contrast !== 1 || A.sat !== 1 || A.post > 0 || A.invert);
 		if (!act) {
 			if (hide) hide.fill(0);
@@ -443,7 +429,6 @@ export class PointMedia {
 		}
 	}
 
-	/** Записывает ролик кадр за кадром: перематываем видео и снимаем цвета, без привязки к скорости воспроизведения */
 	async record({ fps = 15, seconds = 10, onProgress, cancel } = {}) {
 		if (this.kind !== 'video' || !this.el) throw new Error('Запись доступна для видео');
 		this.recording = true;
@@ -496,8 +481,6 @@ export class PointMedia {
 		this._lastKey = -1;
 	}
 
-	// ------------------------------------------------------------ сохранение
-	/** .pcv: заголовок JSON + кадры RGB, всё сжато zlib */
 	toPCV() {
 		const r = this.rec;
 		const head = new TextEncoder().encode(JSON.stringify({ v: 1, cols: r.cols, rows: r.rows, aspect: r.aspect, fps: r.fps, frames: r.frames.length }));
@@ -510,7 +493,6 @@ export class PointMedia {
 		return new Blob([zlibSync(out, { level: 6 })], { type: 'application/octet-stream' });
 	}
 
-	/** Один кадр как бинарный PLY с цветом */
 	framePLY(rgb, relief, depth) {
 		const n = this.cols * this.rows;
 		const xy = this._grid();
@@ -532,7 +514,6 @@ export class PointMedia {
 		return out;
 	}
 
-	/** Все кадры записи как PLY в ZIP (не больше maxFrames, равномерно) */
 	toPLYZip(relief, depth, maxFrames = 150) {
 		const r = this.rec;
 		const total = r.frames.length;
@@ -550,7 +531,6 @@ export class PointMedia {
 		return { blob: new Blob([zipSync(files)], { type: 'application/zip' }), frames: k, step };
 	}
 
-	/** Закрывает медиа: освобождает файл и возвращает объект в исходное состояние */
 	close() {
 		this.pause();
 		this._revoke();

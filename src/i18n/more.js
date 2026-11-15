@@ -1,4 +1,3 @@
-// Новые строки интерфейса для всех языков (правка точек и другое). Ключ это русский текст, {} это подставляемое значение.
 export default {
 	en: {
 		'Установить приложение': 'Install app',
@@ -97,7 +96,6 @@ export default {
 		'Разрушение': 'Destruction',
 		'Цифровые': 'Digital',
 		'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)': 'Points drift. Modes: swirls (points break away from the shape), stream with return, rings (layers rotate in opposite directions), flow (points slide along the shape and the silhouette stays)',
-		// Выпадающие списки и подсказки эффектов
 		'полосы эквалайзера': 'equalizer bars',
 		'звуковой ландшафт': 'sound landscape',
 		'по кругу': 'around circle',
@@ -1233,7 +1231,6 @@ export default {
 		'Разрушение': 'Руйнування',
 		'Цифровые': 'Цифрові',
 		'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)': 'Точки пливуть. Види: вихори (точки відриваються від форми), потік із поверненням, кільця (шари обертаються в різні боки), течія (точки ковзають уздовж форми, а силует не змінюється)',
-		// Випадаючі списки та підказки ефектів
 		'полосы эквалайзера': 'смуги еквалайзера',
 		'звуковой ландшафт': 'звуковий ландшафт',
 		'по кругу': 'по колу',
@@ -2369,7 +2366,6 @@ export default {
 		'Разрушение': 'Destrucción',
 		'Цифровые': 'Digitales',
 		'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)': 'Los puntos fluyen. Modos: remolinos (los puntos se separan de la forma), corriente con retorno, anillos (las capas giran en sentidos opuestos), flujo (los puntos se deslizan sobre la forma y la silueta no cambia)',
-		// Выпадающие списки и подсказки эффектов
 		'полосы эквалайзера': 'barras de ecualizador',
 		'звуковой ландшафт': 'paisaje sonoro',
 		'по кругу': 'en círculo',
@@ -3505,7 +3501,6 @@ export default {
 		'Разрушение': 'Zerstörung',
 		'Цифровые': 'Digital',
 		'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)': 'Punkte treiben. Arten: Wirbel (Punkte lösen sich von der Form), Strom mit Rückkehr, Ringe (Schichten drehen gegenläufig), Strömung (Punkte gleiten an der Form entlang, die Silhouette bleibt)',
-		// Выпадающие списки и подсказки эффектов
 		'полосы эквалайзера': 'Equalizer-Balken',
 		'звуковой ландшафт': 'Klanglandschaft',
 		'по кругу': 'im Kreis',

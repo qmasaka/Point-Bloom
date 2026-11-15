@@ -1,18 +1,13 @@
 import { RT_FORMAT } from './webgpu-post.js';
 import { TONE_WGSL } from '../../shaders/wgsl/generated/tone.js';
 
-/**
- * Шлейф анимированного персонажа на WebGPU: копии прошлых поз остаются на месте и гаснут (engine/scope-trail.js, _trailTick).
- * Шейдер маленький и написан руками: он повторяет шейдер WebGL из _trailTick (круглые точки, цвет подмешивается к оттенку палитры).
- */
-
-const WGSL = /* wgsl */ `
+const WGSL = `
 struct U {
 	mv: mat4x4f,
 	proj: mat4x4f,
-	tintC: vec4f,   // rgb: цвет подмеса, w: доля подмеса
-	params: vec4f,  // x: размер точки в пикселях (до сжатия по расстоянию), y: прозрачность, zw: размер холста
-	out: vec4f,     // x: экспозиция, y: тональная компрессия (0 нет, 1 Neutral, 2 ACES, 3 AgX)
+	tintC: vec4f,
+	params: vec4f,
+	out: vec4f,
 }
 @group(0) @binding(0) var<uniform> u: U;
 
@@ -59,7 +54,6 @@ fn fs_raw(in: VOut) -> @location(0) vec4f {
 `;
 
 export class WebGPUTrail {
-	/** @param {GPUDevice} device @param {string} canvasFormat */
 	constructor(device, canvasFormat) {
 		this.device = device;
 		this.format = canvasFormat;
@@ -93,7 +87,6 @@ export class WebGPUTrail {
 					fragment: {
 						module,
 						entryPoint: rt ? 'fs_raw' : 'fs',
-						// как NormalBlending у three.js: SRC_ALPHA / ONE_MINUS_SRC_ALPHA для цвета, ONE / ONE_MINUS_SRC_ALPHA для альфы
 						targets: [{ format: rt ? RT_FORMAT : this.format, blend: { color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' } } }],
 					},
 					primitive: { topology: 'triangle-strip' },
@@ -124,7 +117,6 @@ export class WebGPUTrail {
 		this.colorBuf = null;
 	}
 
-	/** Приводит буферы в соответствие со шлейфом движка (tr: { ghosts: Points[], mm }). Возвращает число точек в копии */
 	sync(tr) {
 		const D = this.device;
 		const first = tr.ghosts[0];
@@ -155,12 +147,6 @@ export class WebGPUTrail {
 		return n;
 	}
 
-	/**
-	 * Рисует копии шлейфа (дальняя копия первой). Цель очищается этим проходом (шлейф идёт раньше облака, как renderOrder -1 в WebGL), если не задан ctx.load:
-	 * тогда до него уже нарисована поверхность под тенью.
-	 * @param {GPUCommandEncoder} enc @param {GPUTextureView} view @param {GPUTextureView} depthView @param {boolean} rt
-	 * @param {object} tr шлейф движка @param {{proj: object, camera: object, size: number[], exposure: number, tone: number, load?: boolean}} ctx
-	 */
 	draw(enc, view, depthView, rt, tr, ctx) {
 		const D = this.device;
 		const pipe = this.pipelines[rt ? 'rt' : 'screen'];
@@ -171,7 +157,6 @@ export class WebGPUTrail {
 		if (pipe && this.count) {
 			rp.setPipeline(pipe);
 			const data = new Float32Array(44);
-			// старые копии первыми: у three.js порядок и так задан renderOrder, а при одинаковом он идёт от дальнего к ближнему
 			for (let k = tr.ghosts.length - 1; k >= 0; k--) {
 				const p = tr.ghosts[k];
 				const g = this.ghosts[k];

@@ -12,8 +12,6 @@ const RES_MAP = {
 	square: { w: 1080, h: 1080 },
 	reels: { w: 1080, h: 1920 },
 };
-// уровни качества записи: qp постоянного качества кадра (меньше: чище и тяжелее файл), bpp бит на пиксель для браузеров без такого режима,
-// ss во сколько раз крупнее кадра рисуется сцена (покадрово / в реальном времени), чтобы мелкие точки не рябили
 const QUALITY = {
 	light: { qp: 28, bpp: 0.06, ss: [1, 1] },
 	good: { qp: 24, bpp: 0.1, ss: [1.5, 1] },
@@ -21,19 +19,16 @@ const QUALITY = {
 	max: { qp: 16, bpp: 0.36, ss: [2, 1.5] },
 };
 
-/** Сохранённые параметры записи (панель «Параметры записи»): ими же пользуется кнопка «Записать» на таймлайне */
 export function recDefaults() {
 	const o = { res: 'viewport', fps: '60', format: 'auto', sound: true, dur: '0', quality: 'high', tlMode: 'frames' };
 	try {
 		const saved = JSON.parse(localStorage.getItem(REC_KEY) || '{}');
-		// у старых сохранений качество было всегда максимальным (и был выбор кодека): берём новое значение по умолчанию
 		if (saved && typeof saved === 'object' && 'codec' in saved) {
 			delete saved.codec;
 			delete saved.quality;
 		}
 		if (saved && typeof saved === 'object') Object.assign(o, saved);
 	} catch (e) {
-		/* без хранилища берутся значения по умолчанию */
 	}
 	return o;
 }
@@ -42,20 +37,13 @@ export function saveRecDefaults(o) {
 	try {
 		localStorage.setItem(REC_KEY, JSON.stringify(o));
 	} catch (e) {
-		/* без хранилища настройки просто не запомнятся */
 	}
 }
 
 const even = (v) => Math.max(2, Math.floor(v / 2) * 2);
 
-/** Запись видео и сохранение анимации. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class RecordingPart {
-	// ------------------------------------------------------------ кадр для записи
-	// Холсты сцены прозрачные (фон рисует CSS под ними), а видео прозрачным не бывает: кадр собирается на непрозрачном холсте,
-	// сначала фон сцены, потом холст WebGL и слой WebGPU поверх. Без этого полупрозрачное свечение уходило в кодер «как есть»
-	// и превращалось в шум и пятна, а фон становился чёрным.
 
-	/** Как нарисовать фон: цвет эффектов (с затемнением к краям) или фон редактора */
 	_recBgSpec() {
 		const { bg, vignette } = this.state.look;
 		if (this.active && bg) {
@@ -67,10 +55,6 @@ export class RecordingPart {
 		return B.paint || { type: 'solid', c: B.solid || '#2a2d33' };
 	}
 
-	/**
-	 * Складывает фон и оба холста сцены в cv. Сцена при записи может быть нарисована крупнее кадра (суперсэмплинг, см. _recSize):
-	 * она плавно уменьшается до размера видео, и мелкие точки выходят гладкими, без зубцов и мерцания, которые кодер превращал в шум
-	 */
 	_recCompose(cv, ctx, bg = this._recBgSpec()) {
 		const vp = this.app.viewport;
 		const W = cv.width;
@@ -81,7 +65,6 @@ export class RecordingPart {
 		const ss = this._recSS || 1;
 		const draw = (src) => {
 			if (!src || !src.width || !src.height) return;
-			// источник размером кадр × суперсэмплинг (или на пиксель больше из-за округления): берём ровно эту область
 			const sw = Math.min(src.width, Math.round(W * ss));
 			const sh = Math.min(src.height, Math.round(H * ss));
 			ctx.drawImage(src, 0, 0, sw, sh, 0, 0, W, H);
@@ -91,29 +74,20 @@ export class RecordingPart {
 		if (ov && ov.style.visibility !== 'hidden') draw(ov);
 	}
 
-	// ------------------------------------------------------------ размер кадра
-	/**
-	 * Холст сцены переводится ровно в размер видео. Масштаб пикселей подбирается так, чтобы кадр выглядел как на экране
-	 * (те же размер точек, свечение и обрезка по высоте), только чётче. Пока идёт запись, окно не меняет размер холста.
-	 */
 	_recSize(target, maxSS = 1) {
 		const vp = this.app.viewport;
 		this._recSaved = { pr: vp.renderer.getPixelRatio(), shift: vp.viewShift || 0, ref: vp.viewRef || 0 };
 		vp.recLock = true;
-		// «как на экране»: кадр размером с текущий холст
 		const t = target || { w: even(vp.canvas.width), h: even(vp.canvas.height) };
-		// суперсэмплинг: сцена рисуется крупнее кадра (не больше 4096 px по длинной стороне, это предел видеокарт без риска)
 		let ss = Math.min(maxSS, 4096 / Math.max(t.w, t.h));
 		if (ss < 1.1) ss = 1;
 		this._recSS = ss;
 		const k = t.h / Math.max(1, vp.stage.clientHeight);
 		vp.viewShift = 0;
 		vp.viewRef = 0;
-		// +0.01: после умножения на масштаб и округления вниз получается ровно нужное число пикселей; масштаб пикселей k·ss сохраняет вид как на экране
 		vp.size = { width: (t.w + 0.01) / k, height: (t.h + 0.01) / k };
 		vp.renderer.setPixelRatio(k * ss);
 		vp.renderer.setSize(vp.size.width, vp.size.height, false);
-		// на экране кадр записи показывается целиком, с полями, а не растянутым на всю сцену
 		vp.stage.classList.add('is-rec-frame');
 		this.app.nav?.applyCamera();
 		vp.invalidate();
@@ -133,8 +107,6 @@ export class RecordingPart {
 		vp.resize();
 	}
 
-	// ------------------------------------------------------------ сохранение анимации
-	/** Зацикленная анимация: GIF (кадры снимаются сразу после отрисовки) или MP4 со звуком */
 	async saveAnimation({ format = 'gif', seconds = 4, fps = 15, maxW = 480 }) {
 		if (this.animBusy) return;
 		this.animBusy = true;
@@ -142,7 +114,6 @@ export class RecordingPart {
 		this.emit();
 		try {
 			if (format === 'mp4' || format === 'webm') {
-				// запись сама остановится через seconds после первого кадра
 				this.startRecording({ duration: seconds, format });
 				const t0 = performance.now();
 				while (this.recording && performance.now() - t0 < seconds * 1000 + 15000) {
@@ -166,7 +137,6 @@ export class RecordingPart {
 			let W = 0;
 			let H = 0;
 			await new Promise((resolve) => {
-				// вкладку свернули, и кадры перестали рисоваться: не ждём вечно, кодируем то, что успели снять
 				const guard = setTimeout(() => {
 					off && off();
 					resolve();
@@ -212,11 +182,6 @@ export class RecordingPart {
 		}
 	}
 
-	// ------------------------------------------------------------ запись видео
-	/**
-	 * opts: resolution ('viewport', '1080p', '4k', ...), fps, format ('auto', 'mp4', 'webm'), sound, duration (с, 0: вручную),
-	 * quality ('light', 'good', 'high', 'max'), offline (покадрово: время сцены идёт ровно на кадр за кадром, без пропусков и без звука).
-	 */
 	startRecording(opts = {}) {
 		if (this.recording) return;
 		const d = recDefaults();
@@ -247,7 +212,6 @@ export class RecordingPart {
 	async _recStart(o) {
 		this._ensureCtx();
 		const fps = o.fps;
-		// в реальном времени сцена рисуется не так крупно, как покадрово (иначе слабый компьютер не успевает)
 		const q = QUALITY[o.quality];
 		const { w, h } = this._recSize(RES_MAP[o.resolution] || null, q.ss[o.offline ? 0 : 1]);
 		const cv = document.createElement('canvas');
@@ -285,7 +249,6 @@ export class RecordingPart {
 		this._recOff = this._recOffPending || null;
 		this._recOffPending = null;
 		this._recUnsub = this.app.bus.on('rendered', () => this._recFrame());
-		// первый кадр записи это сцена как есть, до первого шага времени
 		if (this._recOff) this._recOff.fresh = true;
 		this.app.viewport.invalidate();
 		o.onStart?.();
@@ -294,13 +257,11 @@ export class RecordingPart {
 		this.app.toast(msg, 'info', 2200);
 	}
 
-	/** Запасной путь, если WebCodecs нет: MediaRecorder с того же непрозрачного холста */
 	_recMediaRecorder(o, cv, bitrate, wantSound) {
 		if (!window.MediaRecorder) {
 			this._recAbort('Этот браузер не умеет записывать видео');
 			return;
 		}
-		// кадр отдаётся вручную сразу после отрисовки (requestFrame); где так нельзя, холст снимается с заданной частотой
 		let stream = cv.captureStream(0);
 		this._recTrack = stream.getVideoTracks()[0];
 		if (!this._recTrack || typeof this._recTrack.requestFrame !== 'function') {
@@ -332,20 +293,16 @@ export class RecordingPart {
 		this._recKind = ext;
 	}
 
-	/** Кадр сразу после отрисовки сцены (пока картинка WebGL ещё в холсте): собрать, отдать кодеру */
 	_recFrame() {
 		if (!this.recording || this._recStarting || !this._recCv) return;
 		const off = this._recOff;
 		let ts;
 		if (off) {
-			// покадрово: каждый шаг времени сцены даёт ровно один кадр
 			if (!off.fresh || off.busy) return;
 			off.fresh = false;
 			ts = Math.round((off.frame * 1e6) / off.fps);
 			off.frame++;
 		} else {
-			// в реальном времени: кадр попадает в свою ячейку сетки частоты кадров; лишние кадры между ячейками пропускаются.
-			// Шкала общая со звуком (от нажатия «Запись»), а длительность считается от первого снятого кадра: после смены размера холста он рисуется дольше
 			const now = performance.now();
 			const iv = 1000 / this.recOpts.fps;
 			const slot = Math.round((now - this._recT0) / iv);
@@ -376,11 +333,9 @@ export class RecordingPart {
 		}
 	}
 
-	// ------------------------------------------------------------ покадровая запись
 	_recOffStart(fps) {
 		const pm = this.pm;
 		const vid = pm && pm.kind === 'video' && pm.el ? pm.el : null;
-		// видео сцены идёт не само, а шагами по кадру: иначе за долгий кадр оно убегало бы вперёд
 		if (vid) vid.pause();
 		this._recOffPending = { fps, frame: 0, fresh: false, busy: false, vid };
 	}
@@ -395,7 +350,6 @@ export class RecordingPart {
 				await this._seekTo(v, t);
 			}
 		} catch (e) {
-			/* кадр всё равно пойдёт дальше */
 		}
 		off.busy = false;
 	}
@@ -406,7 +360,6 @@ export class RecordingPart {
 		if (off?.vid && this.pm?.playing) this.pm.play();
 	}
 
-	// ------------------------------------------------------------ конец записи
 	stopRecording() {
 		if (!this.recording) return;
 		this.recording = false;
@@ -435,7 +388,6 @@ export class RecordingPart {
 			try {
 				mr.stop();
 			} catch (e) {
-				/* уже остановлена */
 			}
 		}
 	}
@@ -450,7 +402,6 @@ export class RecordingPart {
 		else this.app.toast(`Видео сохранено: ${filename} (${mb} МБ)`, 'ok', 3000);
 	}
 
-	/** Запись не началась или сломалась: всё возвращается как было */
 	_recAbort(msg) {
 		this.recording = false;
 		this._recStarting = false;
@@ -470,7 +421,6 @@ export class RecordingPart {
 				this._rec.stop();
 			}
 		} catch (e) {
-			/* уже остановлена */
 		}
 		this._rec = null;
 		this._recCv = this._recCtx = null;

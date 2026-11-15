@@ -4,15 +4,11 @@ import { FX_SHAPES, MORPH_STYLES } from '../state/options.js';
 import { fitCount } from '../shapes/cloud-utils.js';
 import { recDefaults } from './recording.js';
 
-/** Анимация по ключам: дорожки, клипы, маркеры, воспроизведение. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class KeyframesPart {
-	// ------------------------------------------------------------ анимация по ключам и блокам эффектов (секвенсор)
-	/** Слои, которыми можно анимировать: эффекты формы, звука и графики */
 	_animLayers() {
 		return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
 	}
 
-	/** Снимок того, что можно анимировать: камера (с углом обзора и креном), размер, яркость, свечение и сила каждого эффекта (выключенный = 0) */
 	animCapture() {
 		const nav = this.app.nav;
 		const L = this.state.layers;
@@ -21,7 +17,6 @@ export class KeyframesPart {
 		return { cam: { yaw: nav.yaw, pitch: nav.pitch, dist: nav.distance, tx: nav.target.x, ty: nav.target.y, tz: nav.target.z }, fov: nav.fovOverride || this.app.settings.render.fov, roll: nav.roll || 0, size: this.app.settings.point.size, bright: this.state.look.bright, glow: this.state.look.glow, layers };
 	}
 
-	/** Правка одного значения ключа камеры из панели (поворот, наклон, расстояние, угол обзора, крен, переход) и показ ракурса */
 	animSetKey(key, patch) {
 		if (!key) return;
 		for (const k of ['yaw', 'pitch', 'dist', 'tx', 'ty', 'tz']) if (patch[k] !== undefined) key.cam[k] = patch[k];
@@ -33,10 +28,6 @@ export class KeyframesPart {
 		this.emit();
 	}
 
-	/**
-	 * Готовые движения камеры от текущего ракурса на всю длину (или рабочую область): облёт, наезд, отъезд, подъём.
-	 * Прежние ключи камеры заменяются, блоки эффектов не трогаются
-	 */
 	animCamPreset(id) {
 		this._histFlush();
 		const A = this.state.anim;
@@ -47,7 +38,6 @@ export class KeyframesPart {
 		const d = nav.distance;
 		let keys;
 		if (id === 'orbit') {
-			// полный оборот: пять ключей через четверть круга, путь без остановок
 			keys = [0, 1, 2, 3, 4].map((i) => key(a + ((b - a) * i) / 4, { yaw: nav.yaw + (i * Math.PI) / 2 }));
 		} else if (id === 'push') keys = [key(a, { dist: d * 1.45 }), key(b, { dist: d * 0.72 }, { ease: 'stop' })];
 		else if (id === 'pull') keys = [key(a, { dist: d * 0.72 }), key(b, { dist: d * 1.45 }, { ease: 'stop' })];
@@ -61,7 +51,6 @@ export class KeyframesPart {
 		this.app.bus.emit('fxanim');
 	}
 
-	/** Таймлайн закрыт: угол обзора и крен камеры возвращаются к обычным */
 	animCamRelease() {
 		const nav = this.app.nav;
 		if (!nav || (!nav.roll && !nav.fovOverride)) return;
@@ -70,10 +59,6 @@ export class KeyframesPart {
 		nav.applyCamera();
 	}
 
-	/**
-	 * Камера по ключам. Путь гладкий (кривая Эрмита по времени ключей): камера проходит ключи без остановок, на первом и последнем
-	 * плавно трогается и тормозит. У ключа свой проход: «Плавно», «Стоп» (замирает в ключе), «Ровно» (по прямой), «Скачок» (резкая смена ракурса)
-	 */
 	_camApply(keys, t) {
 		const n = keys.length;
 		const fov0 = this.app.settings.render.fov;
@@ -96,7 +81,6 @@ export class KeyframesPart {
 			if (ease === 'hold') out = V[a].slice();
 			else if (ease === 'linear') out = V[a].map((x, i) => x + (V[b][i] - x) * u);
 			else {
-				// касательная в ключе: средняя скорость между соседями; в крайних ключах и в ключах «Стоп» камера стоит
 				const tan = (i) => {
 					if (i <= 0 || i >= n - 1 || keys[i].ease === 'stop') return new Array(D).fill(0);
 					const dt = Math.max(1e-6, keys[i + 1].t - keys[i - 1].t);
@@ -109,7 +93,6 @@ export class KeyframesPart {
 				out = V[a].map((x, c) => h00 * x + h10 * h * ma[c] + h01 * V[b][c] + h11 * h * mb[c]);
 			}
 		}
-		// живая камера: лёгкое покачивание, как будто снимают с рук
 		const sh = this.state.anim.camShake || 0;
 		if (sh > 0.001) {
 			const w = (f, p) => Math.sin(t * f + p) * 0.6 + Math.sin(t * f * 2.31 + p * 1.7) * 0.4;
@@ -127,7 +110,6 @@ export class KeyframesPart {
 		nav.fovOverride = Math.abs(fov - fov0) > 0.01 ? fov : 0;
 		nav.roll = out[7];
 		nav.applyCamera();
-		// размер, яркость и свечение точек плавно между ключами (без резких рывков)
 		const ka = keys[a];
 		const kb = keys[Math.min(n - 1, a + 1)];
 		const m = kb === ka || (kb.ease || 'smooth') === 'hold' ? 0 : u * u * (3 - 2 * u);
@@ -150,7 +132,6 @@ export class KeyframesPart {
 		this.animKeys.sort((a, b) => a.t - b.t);
 	}
 
-	/** Ключ камеры и сцены на текущем времени: если рядом уже есть, обновляем его */
 	animAddKey(t = this.animT) {
 		this._histFlush();
 		const A = this.state.anim;
@@ -190,7 +171,6 @@ export class KeyframesPart {
 		this.app.bus.emit('fxanim');
 	}
 
-	/** Добавить клип эффекта на дорожку времени */
 	animAddClip(layerId, opts = {}) {
 		if (!this._batch) this._histFlush();
 		const A = this.state.anim;
@@ -219,7 +199,6 @@ export class KeyframesPart {
 			repeat: Math.max(1, Math.min(12, Math.round(opts.repeat || 1))),
 			rev: !!opts.rev,
 		};
-		// блок морфинга: в какую форму и каким видом перехода (пусто: как в разделе «Морфинг»)
 		if (layerId === 'morph') {
 			clip.form = opts.form || this._morphDefaultForm(clip.start);
 			clip.style = opts.style || '';
@@ -231,7 +210,6 @@ export class KeyframesPart {
 		return clip;
 	}
 
-	/** Изменить параметры клипа эффекта */
 	animUpdateClip(clipId, patch = {}) {
 		const A = this.state.anim;
 		if (!A.clips) return null;
@@ -285,7 +263,6 @@ export class KeyframesPart {
 		return clip;
 	}
 
-	/** Метки на линейке времени: быстрые переходы и прилипание блоков */
 	animAddMarker(t, name = '') {
 		const A = this.state.anim;
 		(A.markers ||= []).push({ t: Math.round(Math.max(0, Math.min(A.dur, t)) * 100) / 100, name });
@@ -315,7 +292,6 @@ export class KeyframesPart {
 		this.app.bus.emit('fxanim');
 	}
 
-	/** Рабочая область: воспроизведение, повтор и запись идут только внутри неё. null снимает */
 	animSetWork(a, b) {
 		this._histFlush();
 		const A = this.state.anim;
@@ -330,7 +306,6 @@ export class KeyframesPart {
 		this.app.bus.emit('fxanim');
 	}
 
-	/** Состояние дорожки эффекта: заглушить, соло, закрепить */
 	animSetLane(layerId, patch = {}) {
 		this._histFlush();
 		const A = this.state.anim;
@@ -342,7 +317,6 @@ export class KeyframesPart {
 		this.app.bus.emit('fxanim');
 	}
 
-	/** Вставляет копии блоков так, что самый ранний начинается в момент t. Возвращает новые блоки */
 	animPasteClips(list, t) {
 		if (!list || !list.length) return [];
 		this._histFlush();
@@ -363,7 +337,6 @@ export class KeyframesPart {
 		return out;
 	}
 
-	/** Удалить клип эффекта */
 	animRemoveClip(clipId) {
 		this._histFlush();
 		const A = this.state.anim;
@@ -374,7 +347,6 @@ export class KeyframesPart {
 		this.app.bus.emit('fxanim');
 	}
 
-	/** Продублировать клип эффекта со сдвигом по времени */
 	animDuplicateClip(clipId, batch) {
 		if (!batch) this._histFlush();
 		this._batch = true;
@@ -409,7 +381,6 @@ export class KeyframesPart {
 		});
 	}
 
-	/** Разрезать клип по времени t на два: у первого остаётся вход, у второго выход. Возвращает правую часть или null */
 	animSplitClip(clipId, t) {
 		this._histFlush();
 		const A = this.state.anim;
@@ -430,7 +401,6 @@ export class KeyframesPart {
 		return right;
 	}
 
-	/** Очистить всю дорожку анимации */
 	animClear() {
 		this._histFlush();
 		const A = this.state.anim;
@@ -445,18 +415,12 @@ export class KeyframesPart {
 		this.app.bus.emit('fxanim');
 	}
 
-	// ------------------------------------------------------------ дорожка морфинга
-	// Блоки морфинга идут цепочкой: каждый ведёт облако из формы предыдущего блока (у первого из исходной формы сцены) в свою форму.
-	// Между блоками держится форма последнего прошедшего. У блока свой вид перехода (как в разделе «Морфинг») и свой ход.
-
-	/** Формы, в которые может уходить блок морфинга: формы сцены (объекты, фото, видео) и готовые фигуры */
 	animMorphForms() {
 		const out = this.uiForms().map((f) => ({ key: f.key, name: f.name, icon: f.icon }));
 		for (const s of FX_SHAPES) if (s.id !== 'model' && s.id !== 'media') out.push({ key: s.id, name: s.name, icon: s.icon });
 		return out;
 	}
 
-	/** Форма для нового блока: следующая готовая фигура после формы прошлого блока, чтобы цепочка сразу была разной (свою форму выбирают в панели) */
 	_morphDefaultForm(start) {
 		const shapes = FX_SHAPES.filter((s) => s.id !== 'model' && s.id !== 'media').map((s) => s.id);
 		const prev = (this.state.anim.clips || []).filter((c) => c.layerId === 'morph' && c.start <= start && c.form).sort((a, b) => a.start - b.start).pop();
@@ -465,13 +429,11 @@ export class KeyframesPart {
 		return shapes[(i + 1) % shapes.length];
 	}
 
-	/** Блоки морфинга по порядку времени (выключенные и заглушённая дорожка не работают) */
 	_morphChain(clips) {
 		if (this._laneOff('morph')) return [];
 		return clips.filter((c) => c.layerId === 'morph' && !c.off).sort((a, b) => a.start - b.start);
 	}
 
-	/** Облако формы для дорожки (положения, нормали, цвета) с нужным числом точек. Пока считается в фоне, возвращает null */
 	_mtCloud(key) {
 		const M = (this._mt ||= { clouds: new Map(), loading: new Set(), bad: new Set() });
 		const n = this.geometry.attributes.position.count;
@@ -483,21 +445,18 @@ export class KeyframesPart {
 				.then((c) => {
 					if (!c || !c.count) return M.bad.add(ck);
 					const f = fitCount(c, n);
-					// у готовых фигур своего цвета нет (они белые): точки несут в них цвет прежней формы
 					const shape = FX_SHAPES.some((s) => s.id === key);
 					M.clouds.set(ck, { pos: f.positions, nrm: f.normals, col: !shape && f.colors && f.colors.length === n * 3 ? f.colors : null });
 				})
 				.catch(() => M.bad.add(ck))
 				.finally(() => {
 					M.loading.delete(ck);
-					// форма готова: кадр на паузе тоже должен её показать
 					if (this.timelineOpen) this.animApply(this.animT);
 				});
 		}
 		return null;
 	}
 
-	/** Исходная форма сцены: запоминается при первом включении дорожки, к ней облако возвращается, когда дорожка перестаёт работать */
 	_mtBase() {
 		const g = this.geometry;
 		if (!this._mtB || this._mtB.geo !== g) {
@@ -508,15 +467,12 @@ export class KeyframesPart {
 		return this._mtB;
 	}
 
-	/** Выставляет форму дорожки морфинга на время t: какие две формы смешиваются и насколько */
 	_morphTrackApply(clips, t) {
 		const g = this.geometry;
 		if (!g) return;
 		const chain = this._morphChain(clips);
-		// блоки из прежних версий и готовых сценариев без формы: форма выбирается по порядку
 		for (const c of chain) if (!c.form) c.form = this._morphDefaultForm(c.start);
 		const base = this._mtBase();
-		// последний блок, который уже начался
 		let i = -1;
 		for (let k = 0; k < chain.length; k++) if (chain[k].start <= t + 1e-4) i = k;
 		const formOf = (k) => (k < 0 ? base : chain[k].form ? this._mtCloud(chain[k].form) : null);
@@ -531,7 +487,6 @@ export class KeyframesPart {
 		} else from = to;
 		let A = formOf(from);
 		let B = formOf(to);
-		// форма ещё считается: стоим на предыдущей готовой
 		if (!B) {
 			B = A || base;
 			p = 1;
@@ -542,7 +497,6 @@ export class KeyframesPart {
 		if (pair !== this._mtPair) {
 			this._mtPair = pair;
 			const at = g.attributes;
-			// цвет формы без своего цвета: от ближайшей прежней формы с цветом (в конце цепочки это исходная форма)
 			const colOf = (k) => {
 				for (let j = k; j >= 0; j--) {
 					const f = formOf(j);
@@ -559,14 +513,12 @@ export class KeyframesPart {
 			at.aOrigin.needsUpdate = at.aTarget.needsUpdate = at.aNormal.needsUpdate = at.aNormalB.needsUpdate = at.aColor.needsUpdate = at.aColorB.needsUpdate = true;
 			this._mtActive = true;
 		}
-		// вид перехода блока: те же стили, что в разделе «Морфинг»; пусто это как там настроено
 		const sty = c && from !== to && c.style ? MORPH_STYLES.find((s) => s.id === c.style) : null;
 		this._mtStyle = sty ? { idx: MORPH_STYLES.indexOf(sty), ...sty.v } : null;
 		this.morph = from === to ? 1 : p;
 		if (this.shared?.uMorph) this.shared.uMorph.value = this.morph;
 	}
 
-	/** Дорожка морфинга больше не управляет сценой: облако возвращается в исходную форму, а не застывает на полпути к чужой */
 	_releaseMorphTrack() {
 		const g = this.geometry;
 		const B = this._mtB;
@@ -590,7 +542,6 @@ export class KeyframesPart {
 		}
 	}
 
-	/** Загрузить готовый режиссерский сценарий */
 	animLoadPreset(id) {
 		const nav = this.app?.nav;
 		const baseDist = nav?.distance || 5.2;
@@ -670,9 +621,7 @@ export class KeyframesPart {
 		this.app.bus.emit('fxanim');
 	}
 
-	/** Огибающая блока в момент t: вход и выход по выбранной кривой, умноженные на форму (плато, нарастание, спад, пик) */
 	_clipEnv(c, t) {
-		// пульсация: блок повторяет свою форму несколько раз подряд; реверс читает её с конца
 		const n = Math.max(1, c.repeat || 1);
 		if (c.rev) t = c.start + c.dur - (t - c.start);
 		if (n > 1) {
@@ -699,15 +648,10 @@ export class KeyframesPart {
 		return env * k;
 	}
 
-	/** Выставляет сцену по времени t: интерполяция ключей камеры + огибающие блоков эффектов */
-	/** Эффекты, у которых есть блоки на таймлайне, работают только внутри своих блоков (с плавными входом и выходом); где блока нет, эффект выключен */
 	_animGate(t) {
-		// блоки управляют эффектами, только пока таймлайн открыт; при закрытом таймлайне эффекты работают вручную и не выключаются сами
 		const clips = this.timelineOpen ? this.state.anim.clips || [] : [];
 		const L = this.state.layers;
 		const clipLayerIds = new Set(clips.map((c) => c.layerId));
-		// как только у эффекта появляется первый блок, его ручные значения запоминаются, а сила падает до нуля: дальше им управляет только таймлайн.
-		// Когда последний блок удалён, прежние значения возвращаются
 		const S = (this.state.anim.saved ||= {});
 		let changed = false;
 		for (const id of clipLayerIds) {
@@ -742,14 +686,12 @@ export class KeyframesPart {
 		}
 	}
 
-	/** Дорожка заглушена, или включено соло у другой дорожки: её блоки не работают */
 	_laneOff(layerId) {
 		const lanes = this.state.anim.lanes || {};
 		const anySolo = Object.values(lanes).some((x) => x && x.solo);
 		return !!(lanes[layerId] && lanes[layerId].mute) || (anySolo && !(lanes[layerId] && lanes[layerId].solo));
 	}
 
-	/** Сила дорожки в момент t: самый сильный из блоков под курсором (огибающая, форма, повтор, реверс) */
 	_trackVal(clips, layerId, t) {
 		if (this._laneOff(layerId)) return 0;
 		let v = 0;
@@ -760,7 +702,6 @@ export class KeyframesPart {
 		return v;
 	}
 
-	/** Накопленная сила дорожки от начала до t (интеграл огибающих): угол вращения растёт плавно и не откатывается назад на затухании */
 	_trackArea(clips, layerId, t) {
 		if (this._laneOff(layerId)) return 0;
 		let s = 0;
@@ -783,12 +724,10 @@ export class KeyframesPart {
 			return;
 		}
 
-		// 1. Камера и вид из ключей: гладкий путь через все ключи
 		if (keys.length > 0) {
 			const { a, b, m: u } = this._camApply(keys, t);
 			const mix = (x, y) => x + (y - x) * u;
 
-			// Если блоков эффектов нет, используем старые снимки слоёв в ключах
 			if (clips.length === 0 && a.layers && b.layers) {
 				const L = this.state.layers;
 				for (const id of this._animLayers()) {
@@ -804,18 +743,14 @@ export class KeyframesPart {
 			}
 		}
 
-		// 2. Расчёт силы эффектов по блокам дорожки (с огибающими fade-in / fade-out)
 		if (clips.length > 0) {
 			const L = this.state.layers;
 			const clipLayerIds = new Set(clips.map((c) => c.layerId));
 
 			this._animGate(t);
 
-			// Дорожка морфинга: цепочка форм, у каждого блока своя форма и свой вид перехода
 			if (clipLayerIds.has('morph') && this.timelineOpen && !this.morphing && this._morphChain(clips).length) this._morphTrackApply(clips, t);
 
-			// Дорожка вращения: угол копится по огибающим блоков, поэтому на входе и выходе форма плавно разгоняется и тормозит, а не крутится назад
-			// поворот добавляется к текущему (а не ставится заново), поэтому автовращение и вращение руками продолжают работать
 			if (clipLayerIds.has('rotate') && this.points) {
 				const area = this._trackArea(clips, 'rotate', t);
 				const d = area - (this._rotArea ?? area);
@@ -826,7 +761,6 @@ export class KeyframesPart {
 				}
 			} else this._rotArea = undefined;
 
-			// Дорожка блума и вспышки: добавка к свечению и яркости поверх ваших настроек (сами настройки не меняются)
 			this._animBloom = clipLayerIds.has('bloom') ? this._trackVal(clips, 'bloom', t) : 0;
 		} else this._animBloom = 0;
 
@@ -858,11 +792,6 @@ export class KeyframesPart {
 		this.app.bus.emit('fxanim');
 	}
 
-	/**
-	 * Проигрывает анимацию один раз с начала и записывает видео с параметрами из «Параметров записи».
-	 * Покадрово (по умолчанию): время сцены идёт ровно на кадр за кадром, видео без пропусков в любом разрешении, но без звука.
-	 * В реальном времени: со звуком, но слабый компьютер может пропускать кадры
-	 */
 	animRecord() {
 		const hasKeys = this.state.anim.keys && this.state.anim.keys.length >= 2;
 		const hasClips = this.state.anim.clips && this.state.anim.clips.length >= 1;
@@ -872,7 +801,6 @@ export class KeyframesPart {
 		this.animApply(this.animT);
 		this.animRec = true;
 		const d = recDefaults();
-		// анимация пойдёт, когда кодер готов: иначе начало ролика проигрывалось бы до записи
 		this.startRecording({
 			offline: d.tlMode !== 'live',
 			duration: 0,
@@ -886,7 +814,6 @@ export class KeyframesPart {
 		return true;
 	}
 
-	/** Диапазон воспроизведения: рабочая область между метками «начало» и «конец», а без неё вся длина */
 	_animRange() {
 		const A = this.state.anim;
 		const w = A.work;

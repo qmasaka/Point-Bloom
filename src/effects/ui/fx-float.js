@@ -1,4 +1,3 @@
-// Стеклянные панели режима «Эффекты» закреплены по краям; каждую можно свернуть до полоски. Свёрнутость запоминается.
 import { icon } from '../../ui/icons.js';
 
 const KEY = 'objglb.fxfloat.v1';
@@ -14,7 +13,6 @@ export function initFloatingPanels() {
 		try {
 			localStorage.setItem(KEY, JSON.stringify(st));
 		} catch {
-			/* без хранилища панели просто не запомнят положение */
 		}
 	};
 	const cards = [
@@ -37,7 +35,6 @@ export function initFloatingPanels() {
 		bar.append(label, toggle);
 		el.prepend(bar);
 		if (id === 'sidebar') {
-			// вкладки и панели лежат в одной прокручиваемой области: при прокрутке вкладки уезжают вместе с содержимым, а не стоят на месте
 			const wrap = document.createElement('div');
 			wrap.className = 'fxf-scroll';
 			const tabs = el.querySelector(':scope > .tabs');

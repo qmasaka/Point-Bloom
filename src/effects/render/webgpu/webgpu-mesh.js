@@ -1,13 +1,7 @@
 import { RT_FORMAT } from './webgpu-post.js';
 import { MESH_PROGRAMS } from '../../shaders/wgsl/generated/mesh-programs.js';
 
-/**
- * Линии из треугольников (связи, осциллограф) на WebGPU. Шейдеры порождает dev/gen-wgsl.mjs из боевого GLSL (shaders/glsl/line-*.js, scope-*.js):
- * проход расчёта обрабатывает каждую вершину (весь вершинный шейдер GLSL), затем треугольники рисуются по индексам.
- * Буферы и значения кадра общие с облаком точек (WebGPUPoints): линии двигаются теми же эффектами и теми же значениями.
- */
 export class WebGPUMesh {
-	/** @param {import('./webgpu-points.js').WebGPUPoints} points @param {'links'|'scope'} name */
 	constructor(points, name) {
 		this.pts = points;
 		this.device = points.device;
@@ -18,7 +12,6 @@ export class WebGPUMesh {
 		this.geo = null;
 		this.bufs = null;
 		this.drawCount = 0;
-		// свои привязки: столько буферов хранения, сколько нужно этой линии (вместе с выходами не больше 8, см. dev/gen-wgsl.mjs)
 		const C = GPUShaderStage.COMPUTE;
 		const ro = { type: 'read-only-storage' };
 		const outs = 1 + this.prog.vslots;
@@ -32,7 +25,6 @@ export class WebGPUMesh {
 		});
 	}
 
-	/** Собирает конвейеры асинхронно (один раз, по первому требованию) */
 	prepare() {
 		if (this.started) return this.job;
 		this.started = true;
@@ -100,7 +92,6 @@ export class WebGPUMesh {
 		this.geo = geo;
 	}
 
-	/** Привязки зависят от общих текстур облака: пересоздаются, когда те меняются (см. WebGPUPoints.texVersion) */
 	_groups() {
 		const D = this.device;
 		const pts = this.pts;
@@ -119,10 +110,6 @@ export class WebGPUMesh {
 		this.frameBufUsed = b.frameBuf;
 	}
 
-	/**
-	 * Приводит буферы в соответствие с геометрией three.js (атрибуты и индексы по версиям). Возвращает число индексов к рисованию.
-	 * @param {import('three').BufferGeometry} geo
-	 */
 	sync(geo) {
 		const pos = geo.attributes.position;
 		const index = geo.index;
@@ -166,10 +153,6 @@ export class WebGPUMesh {
 		return this.drawCount;
 	}
 
-	/**
-	 * Дописывает проходы в список команд: расчёт вершин и рисование поверх уже нарисованного (цель и глубина загружаются как есть).
-	 * Значения кадра берутся из буфера первого экземпляра облака: вызывать после WebGPUPoints.frame.
-	 */
 	draw(enc, view, rt) {
 		if (!this.bufs || !this.drawCount || !this.ready(rt)) return;
 		const pts = this.pts;

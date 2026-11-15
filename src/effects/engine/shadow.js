@@ -5,10 +5,6 @@ const _box = new THREE.Box3();
 const _m = new THREE.Matrix4();
 const _inv = new THREE.Matrix4();
 
-/**
- * Эффект «Тень на стене»: вторая копия облака с тем же шейдером эффектов (define SHADOW) проецируется по лучу света на пол или стену в мировых координатах.
- * Рядом рисуется поверхность, на которую тень падает: тёмную тень иначе не видно на тёмном фоне. В WebGPU это вариант расчёта SHADOW и render/webgpu/webgpu-surface.js. Методы подмешиваются в EffectsEngine.
- */
 export class ShadowPart {
 	_shadowTick(dt, C, u) {
 		const se = this._eff(C);
@@ -20,14 +16,12 @@ export class ShadowPart {
 		let S = sh;
 		if (!S || S.pts.parent !== this.points || S.pts.geometry !== this.geometry) S = this._shadowMake();
 		const U = S.pts.material.uniforms;
-		// свет: высота над горизонтом и направление по кругу; «Свет ходит» крутит его вокруг формы
 		this._shdAz = (this._shdAz || 0) + dt * (C.spin || 0) * 0.6;
 		const el = ((C.el ?? 45) * Math.PI) / 180;
 		const az = ((C.az ?? 30) * Math.PI) / 180 + this._shdAz;
 		const wall = C.plane === 'wall';
 		U.uShdL.value.set(Math.cos(el) * Math.sin(az), Math.sin(el), Math.cos(el) * Math.cos(az), wall ? 1 : 0);
 		if (wall && U.uShdL.value.z < 0.15) U.uShdL.value.z = 0.15;
-		// где плоскость: пол под формой, стена за ней (по мировой рамке формы)
 		const g = this.geometry;
 		if (!g.boundingBox) g.computeBoundingBox();
 		_box.copy(g.boundingBox).applyMatrix4(this.points.matrixWorld);
@@ -43,7 +37,6 @@ export class ShadowPart {
 			S.pts.material.needsUpdate = true;
 		}
 		S.pts.visible = this._gate('shadow', true);
-		// поверхность: стоит в мире, поэтому её матрица считается мимо вращения формы
 		const P = S.plane;
 		P.visible = C.surface !== 'off';
 		const size = Math.max(_box.max.x - _box.min.x, _box.max.y - _box.min.y, _box.max.z - _box.min.z) * 3.2 + 2;

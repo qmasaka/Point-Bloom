@@ -1,4 +1,3 @@
-// Экспорт сцены: GLB / glTF / OBJ(+MTL+текстуры, ZIP) / PLY / STL, с проверкой результата.
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
@@ -25,18 +24,11 @@ export const EXPORT_FORMATS = [
 	{ id: 'splatzip', label: 'Сплаты 4D', ext: 'zip', title: 'Последовательность сплатов', hint: 'Нужно открытое видео. ZIP с файлом PLY на каждый кадр (плоская картинка из сплатов) и описанием последовательности. Для программ, которые проигрывают сплаты по кадрам.' },
 ];
 
-// ------------------------------------------------------------ подготовка
 function pairUp(a, b, out) {
 	out.push([a, b]);
 	for (let i = 0; i < a.children.length; i++) pairUp(a.children[i], b.children[i], out);
 }
 
-/** Клонирует сцену для экспорта: исходные материалы, без служебных объектов, с нужными преобразованиями */
-/**
- * Размер точки в мировых единицах сцены: такой, какой она видна в редакторе.
- * В редакторе точка занимает «размер» пикселей на опорном расстоянии камеры, поэтому в мире это
- * размер × опорное расстояние × 2·tan(fov/2) / высота окна. Так размер не зависит от экрана, на котором смотрят файл.
- */
 export function pointWorldSize(app) {
 	const s = app.settings.point;
 	const vp = app.viewport;
@@ -56,7 +48,6 @@ export async function buildExportScene(app, o, progress) {
 	vp.root.updateMatrixWorld(true);
 	let group = new THREE.Group();
 	const pairs = [];
-	// персонажи со скелетом клонируются вместе с костями (обычное клонирование оставило бы меш привязанным к чужому скелету)
 	const clips = [];
 	const hasSkin = (r) => {
 		let f = false;
@@ -71,11 +62,10 @@ export async function buildExportScene(app, o, progress) {
 		const c = skinned ? SkeletonUtils.clone(r) : r.clone(true);
 		if (skinned) {
 			c.traverse((n) => {
-				if (n.isSkinnedMesh && n.skeleton) n.skeleton.pose(); // в файл идёт поза привязки, движение задают клипы
+				if (n.isSkinnedMesh && n.skeleton) n.skeleton.pose();
 			});
 		}
 		pairUp(r, c, pairs);
-		// положение «как в сцене» (на случай, если выбран вложенный объект)
 		r.updateWorldMatrix(true, false);
 		const parentWorld = r.parent ? r.parent.matrixWorld : new THREE.Matrix4();
 		c.applyMatrix4(parentWorld);
@@ -87,7 +77,6 @@ export async function buildExportScene(app, o, progress) {
 	Display.stripHelpers(group);
 	group.updateMatrixWorld(true);
 
-	// Облако точек вместо сетки
 	if (o.cloud && o.cloud !== 'mesh') {
 		const entries = [];
 		const keep = [];
@@ -108,7 +97,7 @@ export async function buildExportScene(app, o, progress) {
 		const g2 = new THREE.Group();
 		if (cloud && cloud.count) {
 			const pts = cloudToPoints(cloud, o.name || 'Облако точек');
-			if (o.format === 'glb' || o.format === 'gltf') pts.geometry.deleteAttribute('normal'); // в glTF нормали точек не нужны
+			if (o.format === 'glb' || o.format === 'gltf') pts.geometry.deleteAttribute('normal');
 			g2.add(pts);
 		}
 		for (const p of keep) {
@@ -126,9 +115,8 @@ export async function buildExportScene(app, o, progress) {
 		group.updateMatrixWorld(true);
 	}
 
-	// Масштаб, ориентация осей, положение
 	group.scale.setScalar(o.scale || 1);
-	if (o.up === 'z') group.rotation.x = -Math.PI / 2; // Z-вверх → Y-вверх
+	if (o.up === 'z') group.rotation.x = -Math.PI / 2;
 	group.updateMatrixWorld(true);
 	if (o.place && o.place !== 'keep') {
 		const box = new THREE.Box3().setFromObject(group);
@@ -147,7 +135,6 @@ export async function buildExportScene(app, o, progress) {
 	const scene = new THREE.Scene();
 	scene.name = o.name || 'Scene';
 	for (const child of [...group.children]) scene.add(child);
-	// размер и форма точек из редактора записываются в файл (glTF не хранит размер точки, поэтому это extras узла)
 	{
 		const ws = pointWorldSize(app) * (o.scale || 1);
 		scene.traverse((n) => {
@@ -157,7 +144,6 @@ export async function buildExportScene(app, o, progress) {
 			}
 		});
 	}
-	// клипы анимации: при смене масштаба сдвиги костей масштабируются так же, как модель
 	if (clips.length && !(o.cloud && o.cloud !== 'mesh')) {
 		const k = o.scale || 1;
 		scene.userData.exportClips = clips.map((cl) => {
@@ -168,7 +154,6 @@ export async function buildExportScene(app, o, progress) {
 	}
 	scene.updateMatrixWorld(true);
 
-	// UV нужны только мешам с текстурами: у остальных убираем, файл станет чуть легче
 	if (o.dropUnusedUV !== false) {
 		const cache = new Map();
 		scene.traverse((n) => {
@@ -187,7 +172,6 @@ export async function buildExportScene(app, o, progress) {
 		});
 	}
 
-	// Склейка вершин (OBJ приходит «суповым»: файл станет в разы меньше)
 	if (o.weld) {
 		const cache = new Map();
 		scene.traverse((n) => {
@@ -230,7 +214,6 @@ function sceneStats(scene) {
 	return { verts, tris, points, meshes };
 }
 
-// ---------------------------------------------------------------- glTF
 async function exportGLTF(scene, o, binary) {
 	const textures = collectTextures(scene);
 	for (const t of textures) {
@@ -249,7 +232,6 @@ async function exportGLTF(scene, o, binary) {
 	return { blob: new Blob([json], { type: 'model/gltf+json' }), buffer: null };
 }
 
-/** Проверка GLB: структура, границы буферов, подсчёт, и реальная загрузка загрузчиком */
 export async function verifyGLB(buffer) {
 	const problems = [];
 	const dv = new DataView(buffer);
@@ -284,7 +266,6 @@ export async function verifyGLB(buffer) {
 		counts.tris = Math.round(tris);
 		counts.verts = verts;
 	}
-	// реальная загрузка
 	let loadOk = false;
 	if (!problems.length) {
 		try {
@@ -306,14 +287,13 @@ export async function verifyGLB(buffer) {
 	return { ok: problems.length === 0 && loadOk, problems, counts };
 }
 
-// ----------------------------------------------------------------- PLY
 function srgbByte(v) {
 	const c = v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
 	return Math.max(0, Math.min(255, Math.round(c * 255)));
 }
 
 function exportPLY(scene, o) {
-	const parts = []; // { positions, normals, colors, indices }
+	const parts = [];
 	scene.updateMatrixWorld(true);
 	scene.traverse((n) => {
 		if (!(n.isMesh || n.isPoints)) return;
@@ -415,7 +395,6 @@ function exportPLY(scene, o) {
 	return new Blob([head, body.slice(0, off)], { type: 'application/octet-stream' });
 }
 
-// ------------------------------------------------------------------ STL
 function exportSTL(scene) {
 	const meshes = new THREE.Scene();
 	scene.updateMatrixWorld(true);
@@ -431,7 +410,6 @@ function exportSTL(scene) {
 	return new Blob([data], { type: 'model/stl' });
 }
 
-// ----------------------------------------------------------------- USDZ
 async function exportUSDZ(scene, o) {
 	let meshes = 0;
 	scene.traverse((n) => {
@@ -442,7 +420,6 @@ async function exportUSDZ(scene, o) {
 	return new Blob([data], { type: 'model/vnd.usdz+zip' });
 }
 
-// ------------------------------------------------------------------ ZIP
 const CRC_TABLE = (() => {
 	const t = new Uint32Array(256);
 	for (let n = 0; n < 256; n++) {
@@ -458,7 +435,6 @@ function crc32(bytes) {
 	return (c ^ 0xffffffff) >>> 0;
 }
 
-/** ZIP без сжатия. files: [{ name, bytes: Uint8Array }] */
 export function makeZip(files) {
 	const enc = new TextEncoder();
 	const chunks = [];
@@ -470,7 +446,7 @@ export function makeZip(files) {
 		const local = new DataView(new ArrayBuffer(30));
 		local.setUint32(0, 0x04034b50, true);
 		local.setUint16(4, 20, true);
-		local.setUint16(6, 0x0800, true); // UTF-8 имена
+		local.setUint16(6, 0x0800, true);
 		local.setUint16(8, 0, true);
 		local.setUint16(10, 0, true);
 		local.setUint16(12, 0x21, true);
@@ -506,7 +482,6 @@ export function makeZip(files) {
 	return new Blob([...chunks, ...central, end.buffer], { type: 'application/zip' });
 }
 
-// ------------------------------------------------------------------ OBJ
 async function textureBytes(tex, usedNames) {
 	let name = (tex.userData && tex.userData.fileName) || (tex.name || 'texture') + '.png';
 	name = safeName(name);
@@ -529,7 +504,7 @@ async function textureBytes(tex, usedNames) {
 async function exportOBJ(scene, o, baseName) {
 	scene.updateMatrixWorld(true);
 	const out = [`# Point Bloom\nmtllib ${baseName}.mtl\n`];
-	const mats = new Map(); // Material → имя
+	const mats = new Map();
 	const usedMtlNames = new Set();
 	const matName = (m) => {
 		if (!mats.has(m)) {
@@ -550,7 +525,7 @@ async function exportOBJ(scene, o, baseName) {
 		const uv = g.attributes.uv;
 		const nr = g.attributes.normal;
 		const mlist = Array.isArray(n.material) ? n.material : [n.material];
-		const gltfUV = mlist[0] && mlist[0].map && mlist[0].map.flipY === false; // UV в стиле glTF (V вниз)
+		const gltfUV = mlist[0] && mlist[0].map && mlist[0].map.flipY === false;
 		const e = n.matrixWorld.elements;
 		const nm = new THREE.Matrix3().getNormalMatrix(n.matrixWorld).elements;
 		const flip = n.matrixWorld.determinant() < 0;
@@ -585,7 +560,7 @@ async function exportOBJ(scene, o, baseName) {
 			const a = v + vOff;
 			if (uv && nr) return `${a}/${v + tOff}/${v + nOff}`;
 			if (uv) return `${a}/${v + tOff}`;
-			if (nr) return `${a}//${v + nOff}`;
+			if (nr) return `${a}${v + nOff}`;
 			return `${a}`;
 		};
 		for (const grp of groups) {
@@ -607,7 +582,6 @@ async function exportOBJ(scene, o, baseName) {
 		if (nr) nOff += nr.count;
 	});
 
-	// MTL и текстуры
 	const files = [];
 	const usedNames = new Set();
 	const texNames = new Map();
@@ -641,7 +615,6 @@ async function exportOBJ(scene, o, baseName) {
 	}
 	const objBlob = new Blob(out, { type: 'text/plain' });
 	if (!files.length) {
-		// без текстур достаточно одного .obj, но .mtl всё равно нужен для цветов, поэтому кладём ZIP
 		const enc = new TextEncoder();
 		const objBytes = new Uint8Array(await objBlob.arrayBuffer());
 		return { blob: makeZip([{ name: baseName + '.obj', bytes: objBytes }, { name: baseName + '.mtl', bytes: enc.encode(mtl.join('')) }]), ext: 'zip' };
@@ -652,11 +625,8 @@ async function exportOBJ(scene, o, baseName) {
 	return { blob: makeZip(files), ext: 'zip' };
 }
 
-
-// ------------------------------------------------------------ сплаты (гауссово представление)
 const SH0 = 0.28209479177387814;
 
-/** Среднее расстояние до ближайшего соседа по выборке точек: по нему подбирается размер сплата, чтобы пятна смыкались без дыр */
 function estimateSpacing(pos, count) {
 	let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
 	for (let i = 0; i < count; i++) {
@@ -697,7 +667,6 @@ function estimateSpacing(pos, count) {
 	return d[Math.floor(d.length / 2)];
 }
 
-/** Бинарный PLY в формате 3D Gaussian Splatting: положение, цвет (SH0), прозрачность, масштаб и поворот. rgb: sRGB 0..1, flat: плоские пятна (тонкие по нормали) */
 function splatPLY(pos, rgb, count, radius, flat = false) {
 	const header =
 		'ply\nformat binary_little_endian 1.0\ncomment Point Bloom splats\n' +
@@ -734,7 +703,6 @@ function splatPLY(pos, rgb, count, radius, flat = false) {
 	return new Blob([head, body], { type: 'application/octet-stream' });
 }
 
-/** Сплаты из облака точек сцены */
 function exportSplats(scene) {
 	scene.updateMatrixWorld(true);
 	const P = [];
@@ -770,7 +738,6 @@ function exportSplats(scene) {
 		rgb.set(C[k], o);
 		o += P[k].length;
 	}
-	// радиус пятна берётся из размера точки в редакторе; если его нет (старые данные), по густоте облака
 	let ps = 0;
 	scene.traverse((n) => {
 		if (n.isPoints && n.userData.pointSize > ps) ps = n.userData.pointSize;
@@ -779,7 +746,6 @@ function exportSplats(scene) {
 	return { blob: splatPLY(pos, rgb, total, radius), count: total };
 }
 
-/** Последовательность сплатов из видео: на каждый кадр свой PLY (плоская картинка из пятен), плюс описание последовательности */
 export async function exportSplatSequence(app, o, progress) {
 	const eng = app.ui.effectsEngine;
 	if (!eng.videoLoaded) throw new Error('Для этого формата откройте видео: кнопка «Фото или видео» на стартовом экране');
@@ -787,7 +753,6 @@ export async function exportSplatSequence(app, o, progress) {
 	const dur = eng.pm.el.duration || 1;
 	const n = Math.max(2, F.all === 'on' ? Math.min(120, Math.round(dur * 12)) : Math.round(F.frames));
 	const aspect = (eng.pm.el.videoWidth || 16) / (eng.pm.el.videoHeight || 9);
-	// около 120 МБ на всю последовательность: чем больше кадров, тем меньше точек в каждом
 	const perFrame = Math.max(4000, Math.min(60000, Math.floor(120e6 / (68 * n))));
 	const { cols, rows } = frameGrid(perFrame, aspect);
 	const frames = await eng.captureFramesForExport(n, cols, rows, (p) => progress && progress('Снимаю кадры', 0.05 + p * 0.55));
@@ -832,7 +797,6 @@ export async function exportSplatSequence(app, o, progress) {
 	return { blob, filename: `${name}_splats.zip`, info: { bytes: blob.size, tris: 0, verts: count, points: count, meshes: n, textures: 0, ms: 0, verify: null, format: 'splatzip' } };
 }
 
-// -------------------------------------------------------------- главная
 export function defaultExportName(app) {
 	const sel = app.model.selected;
 	if (sel && sel.name) return safeName(sel.name);
@@ -850,7 +814,6 @@ export async function exportModel(app, o, progress) {
 		r.info.ms = Math.round(performance.now() - t0);
 		return r;
 	}
-	// сплаты строятся из облака точек: у сетки сначала берётся поверхность
 	if (o.format === 'splat' && (!o.cloud || o.cloud === 'mesh')) opts.cloud = 'surface';
 	progress && progress('Готовлю сцену', 0.05);
 	await yieldUI();
@@ -902,7 +865,6 @@ export async function exportModel(app, o, progress) {
 		verify = await verifyGLB(buffer);
 	}
 	scene.traverse((n) => {
-		// клонированные геометрии после склейки больше не нужны
 		if (n.geometry && !app.model.meshes().some((m) => m.geometry === n.geometry) && n.isMesh) n.geometry.dispose();
 	});
 	return {
@@ -912,7 +874,6 @@ export async function exportModel(app, o, progress) {
 	};
 }
 
-/** Примерный размер файла до экспорта (грубая оценка, чтобы понимать порядок величины) */
 export function estimateExportSize(app, o) {
 	const st = app.model.stats();
 	let bytes = 0;

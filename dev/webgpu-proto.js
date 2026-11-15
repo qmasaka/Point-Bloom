@@ -1,8 +1,3 @@
-// Стенд сравнения WebGL и WebGPU. Результаты кладёт в window.__proto и в окно на странице.
-//  compare(opts)  попиксельное сравнение картинок на одних и тех же значениях;
-//  fuzz()         проверка каждого семейства эффектов на случайных значениях (ловит ошибки перевода GLSL → WGSL);
-//  bench()        скорость;
-//  cold()         холодная сборка шейдеров и подвисания.
 import * as THREE from 'three';
 import { generateShapePoints } from '../src/effects/shapes/shapes.js';
 import { createFrameUniforms } from '../src/effects/render/shared/frame-uniforms.js';
@@ -28,8 +23,6 @@ const H = 640;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 window.__proto = { results: {} };
 
-// Проверка перевода шейдера: хеш fract(sin(x)*43758) хаотичен, и 1 бит разницы округления между компиляторами даёт совсем другое число.
-// Для сравнения картинок он подменяется в обоих шейдерах на устойчивый, чтобы расхождения означали ошибки перевода, а не шум.
 let stableHash = false;
 const GLSL_HASH = 'float hash11(float p) { return fract(sin(p * 127.1) * 43758.5453); }';
 const GLSL_HASH_STABLE = 'float hash11(float p) { return fract(p * 0.7548776662 + 0.5); }';
@@ -37,10 +30,9 @@ const wgslStable = (code) => code.replace('fract((sin((p * 127.1)) * 43758.5453)
 const prepOpts = (extra = {}) => ({ ...extra, mapShader: stableHash ? wgslStable : null });
 
 let gpu = null;
-let webgl = null; // { renderer, scene, camera, material, pts, shared, N, geometry }
+let webgl = null;
 let webgpu = null;
 
-// ---------------------------------------------------------------- общая сцена
 function makeShared(N, cloud, add) {
 	const specTex = new THREE.DataTexture(new Uint8Array(64), 64, 1, THREE.RedFormat, THREE.UnsignedByteType);
 	specTex.minFilter = specTex.magFilter = THREE.LinearFilter;
@@ -67,7 +59,6 @@ function makeShared(N, cloud, add) {
 	return shared;
 }
 
-/** Исходник вершинного шейдера: целиком, или урезанный под указанные условия (как в боевом движке) */
 function glslSource(salt, onKeys = null) {
 	let v = vert;
 	if (stableHash) {
@@ -130,7 +121,6 @@ function makeWebGL(cloud, add, shared, { salt = 0, onKeys = null, renderer = nul
 	return { renderer, scene, camera, material, pts, shared, N: n, geometry: g };
 }
 
-/** Матрицы так, как их считает three.js для объекта */
 function matrices() {
 	const p = webgl.pts;
 	p.updateMatrixWorld();
@@ -159,7 +149,6 @@ async function setup(N, add, { salt = 0, onKeys = null } = {}) {
 	return { cloud, shared };
 }
 
-// ---------------------------------------------------------------- сравнение картинок
 const snap = (cv) => {
 	const c = document.createElement('canvas');
 	c.width = W;
@@ -171,9 +160,7 @@ const snap = (cv) => {
 	return x.getImageData(0, 0, W, H);
 };
 
-/** Рисует кадр в оба рендера и возвращает метрики расхождения */
 async function renderAndDiff() {
-	// у WebGPU содержимое холста живёт только до конца задачи: снимок берётся сразу после отправки кадра, без пауз
 	webgl.renderer.render(webgl.scene, webgl.camera);
 	webgpu.frame(webgl.shared, matrices());
 	const a = snap($('gl'));
@@ -207,7 +194,6 @@ async function compare(opts = {}) {
 	stableHash = !!opts.stableHash;
 	await setup(N, add, { onKeys: opts.values ? null : ['uTwist.x>0.001', 'uWave.x>0.001'] });
 	if (opts.values) {
-		// заданные значения: { uFlow: [1, 2, 1, 0.5], uTrk: [[x, y, z, w], ...] }; шейдер WebGL берётся целиком
 		for (const [name, v] of Object.entries(opts.values)) {
 			const t = webgl.shared[name].value;
 			if (Array.isArray(t)) v.forEach((x, i) => t[i].set(...x));
@@ -215,7 +201,6 @@ async function compare(opts = {}) {
 			else t.set(...(Array.isArray(v) ? v : [v]));
 		}
 	} else {
-		// по умолчанию два включённых эффекта: деформация и волны
 		webgl.shared.uTwist.value.set(0.8, 0, 0.5, 0);
 		webgl.shared.uWave.value.set(1.0, 4.0, 0, 0);
 		webgl.shared.uWaveP.value.set(1.0, 0, 0.8, 0);
@@ -229,7 +214,6 @@ async function compare(opts = {}) {
 	return res;
 }
 
-// ---------------------------------------------------------------- случайные значения по семействам эффектов
 const FAMILIES = {
 	twist: ['uTwist'],
 	wave: ['uWave', 'uWaveP', 'uWaveSrc'],
@@ -260,13 +244,11 @@ const FAMILIES = {
 	morph: ['uMorph', 'uMorphS', 'uMorphO', 'uSettle'],
 	look: ['uLookP2', 'uDof', 'uPaintP', 'uShade', 'uBeat'],
 };
-// небольшой детерминированный генератор случайных чисел: результат можно повторить
 let seed = 12345;
 const rnd = () => {
 	seed = (seed * 1664525 + 1013904223) >>> 0;
 	return seed / 4294967296;
 };
-// 'wild': любые значения, в том числе огромные; 'tame': правдоподобные, как в приложении; 'mode': правдоподобные, но один компонент вектора пробегает режимы 0..6
 let style = 'tame';
 const randComp = () => (style === 'wild' ? (rnd() < 0.45 ? Math.floor(rnd() * 7) : +(rnd() * 1.6).toFixed(3)) : +(rnd() * 1.2).toFixed(3));
 
@@ -304,7 +286,6 @@ function randomize(shared, names) {
 	}
 }
 
-/** Возвращает значения кадра в исходное состояние (нули и значения по умолчанию) */
 function resetShared(N, cloud) {
 	const fresh = makeShared(N, cloud, true);
 	for (const k of Object.keys(fresh)) {
@@ -316,10 +297,6 @@ function resetShared(N, cloud) {
 	}
 }
 
-/**
- * Для каждого семейства эффектов несколько раз: случайные значения → картинки WebGL и WebGPU → расхождение.
- * Ошибка перевода шейдера проявляется как большое расхождение в одном из семейств.
- */
 async function fuzz(opts = {}) {
 	const trials = opts.trials ?? 3;
 	const only = opts.only;
@@ -327,7 +304,7 @@ async function fuzz(opts = {}) {
 	const rows = [];
 	stableHash = !opts.realHash;
 	style = opts.style ?? 'tame';
-	await setup(N, true); // полный GLSL без урезания: он выполняет все ветви
+	await setup(N, true);
 	await webgpu.prepare(prepOpts());
 	const cloud = generateShapePoints('torus', N);
 	const miss = missingFrameValues(webgl.shared, { modelMatrix: 1, modelViewMatrix: 1, projectionMatrix: 1, viewMatrix: 1, normalMatrix: 1, uRes: 1, uPx: 1, uExposure: 1, uTone: 1, uTOff: 1, uGhost: 1 });
@@ -361,8 +338,6 @@ async function fuzz(opts = {}) {
 	return rows;
 }
 
-
-// ---------------------------------------------------------------- пост-обработка: сравнение проходов
 function makeInputCanvas(seedShift = 0) {
 	const c = document.createElement('canvas');
 	c.width = W;
@@ -387,7 +362,6 @@ function makeInputCanvas(seedShift = 0) {
 	return c;
 }
 
-/** Цепочка «обратная связь → вывод со свечением и аберрацией» в WebGL и WebGPU на одном и том же входе */
 async function postCompare(opts = {}) {
 	if (!gpu) gpu = await requestGpu();
 	if (!webgl) await setup(1000, true);
@@ -396,7 +370,6 @@ async function postCompare(opts = {}) {
 	const fb = opts.fb === undefined ? { decay: 0.9, zoom: 1.02, twist: 0.05, tint: [1, 0.6, 0.3], tintK: 0.5, hasPrev: 1 } : opts.fb;
 	const cur = makeInputCanvas(0);
 	const prev = makeInputCanvas(40);
-	// ---- WebGL
 	const R = webgl.renderer;
 	const tex = (cv) => {
 		const t = new THREE.CanvasTexture(cv);
@@ -430,7 +403,6 @@ async function postCompare(opts = {}) {
 	R.setClearColor(0x000000, 0);
 	R.clear();
 	R.render(quad(outMat), cam);
-	// ---- WebGPU
 	const D = gpu.device;
 	const ctx = $('gpu').getContext('webgpu');
 	ctx.configure({ device: D, format: gpu.format, alphaMode: 'premultiplied' });
@@ -440,7 +412,6 @@ async function postCompare(opts = {}) {
 	await post.prepare();
 	const upload = (cv) => {
 		const t = D.createTexture({ size: [W, H], format: RT_FORMAT, usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST });
-		// копирование из холста в 16-битную текстуру идёт через 8-битную промежуточную
 		const t8 = D.createTexture({ size: [W, H], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST });
 		D.queue.copyExternalImageToTexture({ source: cv }, { texture: t8 }, [W, H]);
 		return t8;
@@ -476,8 +447,6 @@ async function postCompare(opts = {}) {
 	return res;
 }
 
-
-/** Датамош: несколько кадров с историей в WebGL (боевой PostPipeline) и в WebGPU (WebGPUPost.moshStep) на одном и том же движущемся входе */
 async function moshCompare(opts = {}) {
 	if (!gpu) gpu = await requestGpu();
 	if (!webgl) await setup(1000, true);
@@ -486,7 +455,6 @@ async function moshCompare(opts = {}) {
 	const hashGl = 'fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453)';
 	const hashGlStable = 'fract(dot(p, vec2(0.7548776662, 0.569840291)) + 0.5)';
 	const hashWg = 'fract((sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453))';
-	// ---- WebGL
 	const R = webgl.renderer;
 	const pp = new PostPipeline(R);
 	pp.setSize(W, H, 1);
@@ -524,7 +492,6 @@ async function moshCompare(opts = {}) {
 	R.setClearColor(0x000000, 0);
 	R.clear();
 	R.render(quadOf(outMat), cam);
-	// ---- WebGPU
 	const D = gpu.device;
 	const ctx = $('gpu').getContext('webgpu');
 	ctx.configure({ device: D, format: gpu.format, alphaMode: 'premultiplied' });
@@ -578,7 +545,6 @@ async function moshCompare(opts = {}) {
 	return res;
 }
 
-/** Шлейф персонажа: те же точки рисует боевой материал WebGL (копия из engine/scope-trail.js) и WebGPUTrail */
 async function trailCompare(opts = {}) {
 	if (!gpu) gpu = await requestGpu();
 	if (!webgl) await setup(1000, true);
@@ -637,7 +603,6 @@ async function trailCompare(opts = {}) {
 	R.setClearColor(0x000000, 0);
 	R.clear();
 	R.render(scene, cam);
-	// ---- WebGPU
 	const D = gpu.device;
 	const ctx = $('gpu').getContext('webgpu');
 	ctx.configure({ device: D, format: gpu.format, alphaMode: 'premultiplied' });
@@ -673,7 +638,6 @@ async function trailCompare(opts = {}) {
 	return res;
 }
 
-// ---------------------------------------------------------------- скорость
 async function bench() {
 	const rows = [];
 	for (const N of [50000, 200000, 1000000, 2000000]) {
@@ -719,7 +683,6 @@ async function bench() {
 	return rows;
 }
 
-// ---------------------------------------------------------------- холодная сборка и подвисания
 async function cold() {
 	const N = +$('n').value;
 	const add = $('mode').value === 'add';
@@ -741,7 +704,6 @@ async function cold() {
 	const shared = makeShared(N, cloud, add);
 	webgl.geometry.dispose();
 	webgl.material.dispose();
-	// боевой шейдер, как в движке: урезанный под два эффекта
 	const w2 = makeWebGL(cloud, add, shared, { salt, onKeys: ['uTwist.x>0.001', 'uWave.x>0.001'], renderer: webgl.renderer });
 	const t0 = performance.now();
 	w2.renderer.compile(w2.scene, w2.camera);

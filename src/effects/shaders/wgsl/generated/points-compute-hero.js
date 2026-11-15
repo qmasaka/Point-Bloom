@@ -1,5 +1,4 @@
-// Сгенерировано dev/gen-wgsl.mjs из шейдеров GLSL. Не править руками: правьте GLSL и запустите node dev/gen-wgsl.mjs.
-export const pointsComputeHeroWGSL = /* wgsl */ `
+export const pointsComputeHeroWGSL =  `
 struct Frame {
 	@size(16) uAdd: f32,
 	@size(16) uSolid: vec3f,
@@ -148,11 +147,11 @@ struct Frame {
 	@size(16) uScopeLB: f32,
 }
 @group(0) @binding(0) var<uniform> fr: Frame;
-// данные точек: по два набора в буфере (первая половина и вторая), чтобы проходу хватало 8 буферов хранения (минимум, который WebGPU гарантирует)
-@group(0) @binding(1) var<storage, read> inP0: array<vec4f>; // положение и скрытие | цель морфинга и глубина
-@group(0) @binding(2) var<storage, read> inP1: array<vec4f>; // цвет A и путь | цвет B и видимость
-@group(0) @binding(3) var<storage, read> inP2: array<vec4f>; // нормаль A и видимость | нормаль B
-@group(0) @binding(4) var<storage, read> inP3: array<vec4f>; // лепка и номер точки | краска
+
+@group(0) @binding(1) var<storage, read> inP0: array<vec4f>;
+@group(0) @binding(2) var<storage, read> inP1: array<vec4f>;
+@group(0) @binding(3) var<storage, read> inP2: array<vec4f>;
+@group(0) @binding(4) var<storage, read> inP3: array<vec4f>;
 @group(0) @binding(9) var<storage, read_write> outA: array<vec4f>;
 @group(0) @binding(10) var<storage, read_write> outB: array<vec4f>;
 @group(0) @binding(11) var<storage, read_write> outC: array<vec4f>;
@@ -2082,7 +2081,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 	aNormal = na.xyz;
 	aNormalB = inP2[count + i].xyz;
 	aSculpt = sc.xyz;
-	// индекс точки берётся из массива движка (aIdx = i / число точек, округлённое до float32 на CPU): хеши вида fract(sin(aIdx * k)) раздувают разницу в последнем бите до полного расхождения
+
 	aIdx = sc.w;
 	aPaint = inP3[count + i];
 	main_();

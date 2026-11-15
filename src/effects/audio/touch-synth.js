@@ -1,8 +1,3 @@
-// Встроенный синтезатор звука для эффектов.
-
-// ───────────────────────────────────────────────────────────── звуковой синтезатор
-
-// ── Встроенный синтезатор музыки ─────────────────────────────────────────────
 export class TouchSynth {
 	constructor(ctx, dest) {
 		this.ctx = ctx;
@@ -17,7 +12,6 @@ export class TouchSynth {
 		this._noise = null;
 	}
 
-	/** Все источники регистрируются, чтобы при смене трека их можно было сразу остановить */
 	_reg(node) {
 		(this._nodes ||= new Set()).add(node);
 		node.addEventListener('ended', () => this._nodes.delete(node));
@@ -50,7 +44,6 @@ export class TouchSynth {
 		this.gain = c.createGain();
 		this.gain.gain.value = P.master;
 		this.gain.connect(this.dest);
-		// эхо-«реверб»: точечная восьмая с затухающей обратной связью и срезом верха
 		this.send = c.createGain();
 		const dl = c.createDelay(2);
 		dl.delayTime.value = (60 / this.bpm) * 0.75;
@@ -67,7 +60,6 @@ export class TouchSynth {
 		fb.connect(dl);
 		lp.connect(wet);
 		wet.connect(this.gain);
-		// барабаны идут через общую шину, в брейккоре с перегрузом
 		this.drums = c.createGain();
 		if (P.drive) {
 			const ws = c.createWaveShaper();
@@ -107,7 +99,6 @@ export class TouchSynth {
 			}, 300);
 			this.gain = null;
 		}
-		// все ещё звучащие голоса прежнего трека останавливаем, чтобы они не накладывались на новый
 		for (const n of this._nodes || []) {
 			try {
 				n.stop(now + 0.12);
@@ -129,7 +120,6 @@ export class TouchSynth {
 		if (this.next < this.ctx.currentTime - 0.5) this.next = this.ctx.currentTime + 0.05;
 	}
 
-	// ---- голоса
 	_kick(t, vol = 1, f0 = 150, f1 = 42, len = 0.2) {
 		const c = this.ctx;
 		const o = this._osc();
@@ -269,7 +259,6 @@ export class TouchSynth {
 			o.stop(t + 2.7);
 		}
 	}
-	/** Мягкая щипковая нота (как арфа в зале): короткая атака, длинный затухающий хвост с эхом */
 	_pluck(t, f, vol) {
 		const c = this.ctx;
 		const g = c.createGain();
@@ -311,7 +300,6 @@ export class TouchSynth {
 		o.stop(t + len + 0.01);
 	}
 
-
 	_sched(step, t, spb) {
 		const s = step % 32;
 		const bar = Math.floor(step / 32);
@@ -332,7 +320,6 @@ export class TouchSynth {
 			return;
 		}
 		if (this.mode === 'deep') {
-			// тихая глубина: длинные пады на ладу ре минор, мягкая бегущая нота и редкие капли с эхом
 			const chords = [
 				[73.42, 110, 146.83, 174.61, 220, 329.63],
 				[58.27, 87.31, 146.83, 220, 261.63, 392],
@@ -343,10 +330,8 @@ export class TouchSynth {
 			if (s === 0) {
 				this._pad(t, ch, 32 * spb + 3, 0.03);
 				this._sub(t, ch[0] / 2, 32 * spb, 0.16);
-				// высокое «сияние»: две тихие октавы, плывущие над аккордом
 				this._pad(t + 1.5, [ch[4] * 2, ch[5] * 2], 32 * spb, 0.012);
 			}
-			// неспешное арпеджио по тонам аккорда: каждый такт чуть иначе, поэтому не надоедает
 			const arp = [0, 3, 6, 10, 13, 16, 19, 22, 26, 29];
 			const ai = arp.indexOf(s);
 			if (ai >= 0 && !(bar % 2 === 1 && ai % 3 === 2)) {
@@ -357,7 +342,6 @@ export class TouchSynth {
 			if (s % 4 === 0 && Math.random() < 0.1) this._bell(t, ch[3 + Math.floor(Math.random() * 3)] * (Math.random() < 0.5 ? 2 : 1), 0.045);
 			return;
 		}
-		// мягкий джангл
 		const roots = [41.2, 43.65, 36.71, 49];
 		const root = roots[bar % 4];
 		if ([0, 10, 16, 26].includes(s)) this._kick(t, 0.7, 120, 48, 0.22);

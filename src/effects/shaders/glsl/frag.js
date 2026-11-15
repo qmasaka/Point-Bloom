@@ -1,6 +1,4 @@
-// GLSL: фрагментный шейдер точек.
-
-export const frag = /* glsl */ `
+export const frag = `
 precision highp float;
 uniform float uGlow;
 uniform float uAdd;
@@ -17,7 +15,7 @@ varying float vCoc;
 varying float vGl;
 void main() {
 	vec2 c = gl_PointCoord - 0.5;
-	// форма точки как на вкладке «Точки»: 0 квадрат, 1 круг, 2 шар, 3 кольцо, 4 ромб, 5 плюс
+
 	float dm = length(c);
 	float gA = 1.0;
 	if (uGlyph.x > 0.5) {
@@ -48,11 +46,11 @@ void main() {
 		float aura = pow(core, mix(1.8, 0.7, uGlow));
 		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha * sph * (1.0 - vDk);
 		float ga = core * uGhost * dofAlpha * (1.0 - vDk);
-		// тёмные места видео должны быть прозрачными, а не чёрными: яркость точки определяет и её непрозрачность
+
 		if (uFr.x > 0.5) ga *= clamp(dot(vColor, vec3(0.3, 0.59, 0.11)) * 5.0, 0.0, 1.0);
 		gl_FragColor = vec4(col, ga);
 	} else {
-		// у кадров видео точка плоская, без затемнения к краю: цвет остаётся точным
+
 		gl_FragColor = vec4(vColor * (uFr.x > 0.5 ? 1.0 : 0.55 + 0.45 * core) * sph, dofAlpha * (1.0 - vDk));
 	}
 	#include <tonemapping_fragment>

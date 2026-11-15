@@ -1,4 +1,3 @@
-// Режим «Эффекты»: боковая панель (источник, эффекты, звук, вид) и нижняя панель управления в сцене.
 import { h, formatInt, placeAbove, uiZoom, screenRect, toCss } from '../../core/util.js';
 import { icon } from '../../ui/icons.js';
 import { section, field, fxSlider as slider, segmented, switchRow, toggle, button, iconButton, select, colorField, knob, knobRow, parsePct, parseSec } from '../../ui/ui-kit.js';
@@ -15,10 +14,6 @@ import { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS } from '../state/layers.js';
 import { FX_PALETTES, BANDS, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } from '../state/options.js';
 import { recDefaults, saveRecDefaults } from '../engine/recording.js';
 
-/**
- * Источник «Модель» для эффектов: если в сцене редактора есть облако точек (оно создаётся на вкладке «Точки»),
- * берём его целиком, иначе набираем точки с поверхности видимых мешей.
- */
 export function makeModelProvider(app) {
 	const root = app.viewport.root;
 	const shown = (o) => {
@@ -44,7 +39,6 @@ export function makeModelProvider(app) {
 		let k = 0;
 		let seen = 0;
 		let next = 0;
-		// облака, посаженные на персонажа, сохраняют связь со скелетом: в эффектах точки продолжат двигаться по анимации
 		const animated = list.some((o) => o.userData.animPts);
 		const A = animated ? { parts: [], part: new Uint8Array(n), bp: new Float32Array(n * 3), bi: new Uint16Array(n * 4), bw: new Float32Array(n * 4), bn: new Float32Array(n * 3) } : null;
 		for (const o of list) {
@@ -94,7 +88,6 @@ export function makeModelProvider(app) {
 	};
 	const topObjects = () => root.children.filter((o) => !o.userData.helper && !o.userData.media && o.name !== '__fx' && (() => { let ok = false; o.traverse((c) => { if (!c.userData.helper && (c.isMesh || c.isPoints)) ok = true; }); return ok; })());
 	return {
-		/** Объекты верхнего уровня сцены: каждый можно взять отдельной формой для морфинга */
 		sizeOf: (obj) => {
 			let n = 0;
 			obj.traverse((c) => {
@@ -115,7 +108,6 @@ export function makeModelProvider(app) {
 			const list = app.model.meshesOf(obj);
 			if (!list.length) return null;
 			const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
-			// персонаж с анимацией и как отдельная форма морфинга остаётся живым: точки помнят кости и масштаб берётся по всему движению
 			const sc = await sampleSurface(entries, count, { anim: app.anim.has });
 			if (sc && sc.anim && app.anim.has) sc.animBox = app.anim.animatedBounds();
 			return sc;
@@ -130,10 +122,8 @@ export function makeModelProvider(app) {
 			if (!list.length) return null;
 			const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
 			const cl = await sampleSurface(entries, count, { anim: app.anim.has, onProgress: (p) => {
-				// фоновая подготовка к морфингу не показывает окно загрузки: иначе оно зависает поверх сцены
 				if (!app.ui.effectsEngine?._quiet) app.ui.busy('Беру точки с модели', 0.2 + p * 0.7);
 			} });
-			// масштаб сцены эффектов берётся по всему движению клипа, иначе прыгающий или бегущий персонаж уходит за кадр
 			if (cl.anim && app.anim.has) cl.animBox = app.anim.animatedBounds();
 			return cl;
 		},
@@ -142,7 +132,6 @@ export function makeModelProvider(app) {
 
 const TRACK_COLORS = ['#ffffff', '#00f0ff', '#ff1fcb', '#ffd90f', '#7cff6b', '#ff4d4d'];
 
-/** Выбор цвета: «по палитре» или один из готовых цветов, плюс свой */
 function colorChoice(L, key, done, natural = false) {
 	const chips = [];
 	const wrap = h('div', { class: 'fx-color' });
@@ -153,7 +142,6 @@ function colorChoice(L, key, done, natural = false) {
 		chips.push([val, b]);
 		row.append(b);
 	};
-	// сначала естественные цвета модели, они выбраны по умолчанию; как только меняется палитра, цвет переходит на цвета палитры
 	if (natural) mkChip('model', 'Естественные цвета модели', { background: 'conic-gradient(#ff3d6e, #ffd90f, #7cff6b, #00f0ff, #b06bff, #ff3d6e)' });
 	mkChip('auto', 'Цвета палитры');
 	for (const c of TRACK_COLORS) mkChip(c, c, { background: c });
@@ -182,7 +170,6 @@ export function createEffectsPanel(app, root, engine) {
 	const st = engine.state;
 	const save = () => engine.touch();
 
-	// ------------------------------------------------------------ пресеты
 	const pset = app.settings.point;
 	const size = slider({ min: 1, max: 24, step: 0.5, value: pset.size, digits: 1, unit: ' px', onInput: (v) => { pset.size = v; }, onChange: () => app.saveSettings() });
 	const dev = getDevice(app);
@@ -198,12 +185,9 @@ export function createEffectsPanel(app, root, engine) {
 		onChange: (v) => engine.setCount(v),
 	});
 	const countHint = h('div', { class: 'field-hint' });
-	// одна кнопка: «Открыть» в эффектах сам спрашивает, что добавить (модель, видео или фото)
 	const addModel = button({ label: 'Добавить…', icon: 'plus', variant: 'secondary', cls: 'btn-block', title: 'Добавить модель, облако точек, видео или фото: всё это сразу встаёт в морфинг', onClick: () => app.ui.openFiles('fxadd') });
 	const modelNote = h('div', { class: 'field-hint' });
-	// ------------------------------------------------------------ морфинг между моделями
 	const mc = st.morphCfg;
-	// список форм: строки в том же виде, что эффекты слева (значок в плитке, имя, переключатель)
 	const formsList = h('div', { class: 'mf-list', role: 'list' });
 	const formsBox = h('div', { class: 'mf-forms' }, formsList);
 	const picked = [];
@@ -220,7 +204,6 @@ export function createEffectsPanel(app, root, engine) {
 				changed = true;
 			}
 		}
-		// новая модель или видео сразу встаёт в список морфинга; убранную вручную обратно не возвращаем
 		for (const f of list) {
 			if (!seenForms.has(f.key)) {
 				seenForms.add(f.key);
@@ -252,7 +235,6 @@ export function createEffectsPanel(app, root, engine) {
 			const go = iconButton({ icon: 'play', title: isCur ? 'Эта форма сейчас на экране' : 'Перейти к этой форме сейчас', onClick: () => engine.morphTo(f.key) });
 			go.classList.add('mf-go');
 			go.disabled = !on || isCur || picked.length < 2;
-			// у видео кнопка звука: нажатая значит «звук всегда из этого видео», отжатая значит звук от показанного сейчас
 			const me = isMediaKey(f.key) ? app.media.entry(f.key) : null;
 			let snd = '';
 			if (me && me.pm.kind === 'video') {
@@ -278,7 +260,6 @@ export function createEffectsPanel(app, root, engine) {
 		formsSig = formsSigNow();
 	};
 	const morphHint = h('div', { class: 'field-hint' });
-	// вид перехода: выпадающий список со значками, у каждого вида свои настройки по умолчанию
 	const styleSel = select({
 		options: MORPH_STYLES.filter((ms) => !ms.hidden).map((ms) => ({ value: ms.id, label: ms.name, icon: ms.icon })),
 		value: mc.style,
@@ -289,12 +270,10 @@ export function createEffectsPanel(app, root, engine) {
 			Object.assign(mc, ms.v);
 			save();
 			syncMorph();
-			// «Рельеф» сразу готовит карты глубины нейросетью
 			if (v === 'relief' && picked.some(isMediaKey)) engine.morphAIDepth();
 		},
 	});
 	const styleHint = h('div', { class: 'field-hint mf-style-hint' });
-	// глубина нейросетью: кнопка и состояние, видны у «Рельефа» и при порядке по глубине
 	const aiState = h('div', { class: 'field-hint' });
 	const aiBtn = button({ label: 'Построить глубину нейросетью', icon: 'mountains', variant: 'secondary', cls: 'btn-block', title: 'Нейросеть строит карту глубины для каждого видео и фото из списка. Первый раз загружается модель', onClick: () => engine.morphAIDepth() });
 	const aiBox = h('div', { class: 'sec-body', style: { padding: 0 } }, aiBtn, aiState);
@@ -316,7 +295,6 @@ export function createEffectsPanel(app, root, engine) {
 	engine.onDepthChange(syncAI);
 	const morphMode = segmented({ cls: 'seg-tight', options: [{ value: 'manual', label: 'Кнопкой' }, { value: 'timer', label: 'По таймеру' }, { value: 'music', label: 'По музыке' }], value: mc.mode === 'beat' ? 'music' : mc.mode, onChange: (v) => { mc.mode = v; save(); syncMorph(); } });
 	const morphOrder = segmented({ cls: 'seg-tight', options: [{ value: 'seq', label: 'По кругу' }, { value: 'pingpong', label: 'Туда и обратно' }, { value: 'random', label: 'Случайно' }], value: mc.order, onChange: (v) => { mc.order = v; save(); } });
-	// переход вручную: ползунок ведёт форму к следующей в списке, на половине можно остановиться и получить обе формы вперемешку
 	const morphScrub = slider({ noNorm: true, min: 0, max: 100, step: 1, value: 0, digits: 0, unit: '%', onInput: (v) => engine.morphScrub(v / 100), onChange: (v) => { engine.morphScrubEnd(); if (v >= 100) setTimeout(() => morphScrub.set(0), 250); } });
 	const morphInt = slider({ noNorm: true, min: 1, max: 20, step: 0.5, value: mc.interval, digits: 1, unit: ' с', onInput: (v) => { mc.interval = v; }, onChange: save });
 	morphScrub.el.addEventListener('pointerdown', () => {
@@ -332,7 +310,6 @@ export function createEffectsPanel(app, root, engine) {
 	const morphLift = slider({ min: 0, max: 1.5, step: 0.05, value: mc.lift || 0, digits: 2, onInput: (v) => { mc.lift = v; }, onChange: save });
 	const morphSpin = slider({ noNorm: true, min: -3, max: 3, step: 1, value: mc.spin || 0, digits: 0, format: (v) => (v ? (v > 0 ? '+' : '') + v + ' об.' : 'нет'), onInput: (v) => { mc.spin = v; }, onChange: save });
 	const morphFsize = slider({ noNorm: true, min: 0.2, max: 3, step: 0.05, value: mc.fsize ?? 1, digits: 2, format: (v) => '×' + v.toFixed(2), onInput: (v) => { mc.fsize = v; }, onChange: save });
-	// всё, что настраивает морфинг под музыку, собирается ниже, когда готов живой индикатор уровня
 	const morphMusic = h('div', { class: 'sec-body morph-music', style: { padding: 0 } });
 	const morphTime = slider({ noNorm: true, min: 0.4, max: 8, step: 0.1, value: mc.time, digits: 1, unit: ' с', onInput: (v) => { mc.time = v; }, onChange: save });
 	const morphScatter = slider({ min: 0, max: 2, step: 0.05, value: mc.scatter, digits: 2, onInput: (v) => { mc.scatter = v; }, onChange: save });
@@ -379,14 +356,11 @@ export function createEffectsPanel(app, root, engine) {
 		const cur = MORPH_STYLES.find((x) => x.id === mc.style) || MORPH_STYLES[0];
 		styleSel.set(cur.id);
 		styleHint.textContent = cur.hint;
-		// у «Через 4D» больше одного оборота включает путь по расслоению Хопфа
 		turnsRow.hidden = cur.id !== 'swirl' && cur.id !== 'hyper';
 		if (mc.mode === 'beat') Object.assign(mc, { mode: 'music', band: 'beat', amode: 'gate' });
 		intRow.hidden = mc.mode === 'music';
 		morphMusic.hidden = mc.mode !== 'music';
-		// под музыкой «Плавно» ползунок двигает сама музыка, но его можно перехватить рукой
 		scrubRow.hidden = false;
-		// под музыкой «Плавно» ходом правит громкость, длительность ничего не значит
 		const follow = mc.mode === 'music' && mc.amode === 'amp';
 		timeRow.hidden = follow;
 		scrubRow.querySelector('.field-label') && (scrubRow.querySelector('.field-label').textContent = follow ? 'Ход перехода (ведёт музыка)' : 'Вручную');
@@ -406,7 +380,6 @@ export function createEffectsPanel(app, root, engine) {
 	}
 	renderForms();
 	syncMorph();
-	// список форм перерисовывается, только если что-то в нём поменялось (видео, модель, выбор, текущая форма): так подсказки и нажатия не сбиваются
 	const refreshForms = () => {
 		if (formsSigNow() !== formsSig) {
 			renderForms();
@@ -416,11 +389,6 @@ export function createEffectsPanel(app, root, engine) {
 	const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
 	const secMorph = section('Морфинг', { key: 'fx-morph' }, morphBox);
 
-	// ------------------------------------------------------------ живое число звука: полоска уровня и порог
-	/**
-	 * Полоска с текущим уровнем звука эффекта (число 0-100) и порогом срабатывания. Порог ставится кликом или протяжкой по полоске.
-	 * @param {object} L слой эффекта @param {(v: number) => void} onThr порог изменён @param {() => void} onSave
-	 */
 	const pickers = new Set();
 	function levelMeter(L, onThr, onSave) {
 		const fill = h('div', { class: 'fx-lvl-fill' });
@@ -465,25 +433,21 @@ export function createEffectsPanel(app, root, engine) {
 		pickers.add(api);
 		return api;
 	}
-	// живое обновление всех видимых полосок один раз за кадр, пока открыты эффекты
 	(function pickerLoop() {
 		let last = 0;
 		const tick = (now) => {
 			requestAnimationFrame(tick);
-			if (!engine.active || now - last < 40) return; // около 25 кадров в секунду достаточно для полоски спектра
+			if (!engine.active || now - last < 40) return;
 			last = now;
 			for (const p of pickers) p.draw();
-			// ползунок «Вручную» показывает ход перехода: его двигает музыка, кнопка или таймер; пока его тянут рукой, он не трогается
 			if (!engine._scrubUser) morphScrub.set(engine.morphing ? Math.round(engine.morph * 100) : 0);
 		};
 		requestAnimationFrame(tick);
 	})();
 
-	// ------------------------------------------------------------ морфинг под музыку: те же настройки звука, что у эффектов
 	{
 		const pct = (v) => Math.round(v * 100);
 		const tm = (v) => (v < 0.1 ? Math.round(v * 1000) + ' мс' : v.toFixed(2) + ' с');
-		// звуковые настройки: крутилки в ряд, а не ползунок на каждую (панель вдвое короче)
 		const thr = knob({ label: 'Порог', min: 0.05, max: 0.95, step: 0.01, value: mc.thr, format: (v) => pct(v) + '%', parse: parsePct, onInput: (v) => { mc.thr = v; }, onChange: save });
 		const gap = knob({ label: 'Интервал', min: 0.2, max: 12, step: 0.1, value: mc.gap ?? 1, log: true, format: (v) => v.toFixed(1) + ' с', parse: parseSec, onInput: (v) => { mc.gap = v; }, onChange: save });
 		const react = knob({ label: 'Сила', min: 0, max: 1, step: 0.01, value: mc.react ?? 0.6, format: (v) => pct(v) + '%', parse: parsePct, onInput: (v) => { mc.react = v; }, onChange: save });
@@ -556,7 +520,6 @@ export function createEffectsPanel(app, root, engine) {
 		syncMorph();
 	}
 
-	// ------------------------------------------------------------ слои
 	const cards = [];
 	const left = document.getElementById('fxList');
 	const leftCount = document.getElementById('fxActive');
@@ -579,7 +542,6 @@ export function createEffectsPanel(app, root, engine) {
 	const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
 	let toggleAnim = () => {};
 	let animAddFromInspector = () => {};
-	// строка состояния выделения у «Шлейфа движения» (обновляется в sync)
 	let chronoStat = null;
 	const animQuickBtn = button({
 		label: 'Секвенсор анимации',
@@ -589,7 +551,6 @@ export function createEffectsPanel(app, root, engine) {
 		title: 'Открыть таймлайн для анимации эффектов и камеры',
 		onClick: () => toggleAnim()
 	});
-	// эффекты только для открытого видео, фото или персонажа с анимацией стоят вверху списка и отделены линией; без такого материала их нет
 	const SPECIAL = { 'Видео': 1, 'Анимация': 1 };
 	const special = h('div', { class: 'fx-special', hidden: true });
 	left.append(special);
@@ -623,7 +584,6 @@ export function createEffectsPanel(app, root, engine) {
 			});
 			const amount = slider({ noNorm: true, min: 0, max: def.max, step: 0.05, value: L.amount, digits: 2, onInput: (v) => { L.amount = v; }, onChange: save });
 			const body = h('div', { class: 'fx-layer-body' });
-			// направление сноса датамоша теперь стрелками по 45°: старые значения прилипают к ближайшей стрелке
 			if (def.id === 'datamosh' && typeof L.angle === 'number') L.angle = (((Math.round(L.angle / 45) * 45) % 360) + 360) % 360;
 			if (def.id === 'physics') {
 				const collapseBtn = button({
@@ -640,7 +600,6 @@ export function createEffectsPanel(app, root, engine) {
 			} else if (def.id === 'frames') {
 				body.append(h('div', { class: 'field-hint' }, 'Видео раскладывается на кадры, кадры собираются в блок из точек. Текущий кадр рисуется густо, остальные реже. Что сейчас показано, задаёт таймлайн внизу: играйте и перематывайте видео, блок следует за ним. Остальные эффекты работают поверх блока, «Объём по глубине» выдавливает каждый кадр по его карте глубины.'), button({ label: 'Снять кадры заново', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Снять кадры с видео заново с текущими настройками', onClick: () => engine.rebuildFramesSoon() }));
 			} else if (def.id === 'chrono') {
-				// как сейчас выделяется объект: нейросеть загружается при первом включении, пока она грузится, выделяется движение
 				chronoStat = h('div', { class: 'field-hint fx-chrono-stat' });
 				body.append(chronoStat);
 			} else if (def.id === 'brush') {
@@ -674,7 +633,6 @@ export function createEffectsPanel(app, root, engine) {
 					else t = I.hasMap ? 'Пока видна быстрая карта по яркости. Нажмите кнопку или включите эффект, чтобы загрузить нейросеть.' : 'Нейросеть загрузится при включении эффекта (около 50 МБ один раз, нужен интернет).';
 					stat.textContent = t;
 					map.hidden = !I.hasMap;
-					// превью карты перерисовываем не чаще нескольких раз в секунду: у видео карта приходит десятки раз в секунду
 					const now = performance.now();
 					if (I.hasMap && now - (depthUpd.t || 0) > 160) {
 						depthUpd.t = now;
@@ -707,11 +665,9 @@ export function createEffectsPanel(app, root, engine) {
 				body.append(button({ label: 'Вернуть форму после лепки', icon: 'broom', variant: 'secondary', cls: 'btn-block', onClick: () => engine.clearSculpt() }));
 				body.append(h('div', { class: 'field-hint' }, 'При первом включении загружается модель распознавания рук (около 10 МБ), нужен интернет. Видео с камеры никуда не отправляется.'));
 			}
-			// у раскадровки и шлейфа «Силы» нет: кольцо кадров либо собрано, либо нет, а степень задают число кадров, точки и глубина
 			if (def.id !== 'frames' && def.id !== 'chrono') body.append(field('Сила', amount.el));
 			const extraCtl = {};
 			const whenList = [];
-			// разделы с заголовками сворачиваются: открыт первый, остальные закрыты, чтобы настройки не занимали полэкрана
 			let cur = body;
 			const groups = [];
 			const put = (el, ex) => {
@@ -730,7 +686,6 @@ export function createEffectsPanel(app, root, engine) {
 				body.append(g.head, g.box);
 				cur = g.box;
 			};
-			// у эффекта много настроек и нет своих разделов: первые пять на виду, остальные сворачиваются в «Ещё настройки»
 			const autoSplit = !def.extras.some((x) => x.type === 'title') && def.extras.filter((x) => x.key).length > 7;
 			let ctlN = 0;
 			const applyWhen = () => {
@@ -774,7 +729,6 @@ export function createEffectsPanel(app, root, engine) {
 					});
 					put(bt, ex);
 				} else if (ex.type === 'row') {
-					// несколько кнопок в один ряд: действия или готовые настройки (чипы)
 					const row = h('div', { class: 'fx-btn-row' + (ex.chips ? ' is-chips' : '') });
 					for (const it of ex.items) {
 						const bt = button({
@@ -850,7 +804,6 @@ export function createEffectsPanel(app, root, engine) {
 			});
 			const gateBox = h('div', { class: 'sec-body', style: { padding: 0 } }, knobRow(thr, rel), autoThr);
 			const picker = levelMeter(L, (v) => thr.set(v), save);
-			// частоты: четыре понятные полосы; «Своя» остаётся только у старых проектов, где она уже выбрана
 			const band = segmented({
 				cls: 'seg-tight',
 				options: BANDS.filter((b) => b.id !== 'custom' || L.band === 'custom').map((b) => ({ value: b.id, label: b.label, title: b.title })),
@@ -874,7 +827,6 @@ export function createEffectsPanel(app, root, engine) {
 				gateBox.hidden = !on || L.amode !== 'gate';
 				picker.draw();
 			};
-			// блок звука сворачивается: если эффект не слушает звук, он по умолчанию закрыт и не загромождает панель
 			const audioWrap = h('div', { class: 'fx-grp-body' }, field('Слушает', band.el, { wide: true }), picker.el, modeRow, reactRow, gateBox);
 			let audioOpen = L.band !== 'none';
 			const audioHead = h('button', { type: 'button', class: 'fx-sub fx-sub-toggle', 'aria-expanded': String(audioOpen) }, h('span', { class: 'ic-wrap', html: icon('caret-down', 12) }), 'Реакция на звук');
@@ -891,7 +843,6 @@ export function createEffectsPanel(app, root, engine) {
 				picker.draw();
 			});
 			band.el.addEventListener('click', () => requestAnimationFrame(syncAudioHead));
-			// у эффектов, которые звук не слушают (распад, раскадровка, руки, следы времени), блока нет: раньше он был, но ничего не делал
 			if (def.sound !== false) body.append(audioHead, audioWrap);
 			syncAudioHead();
 			audioUiFull();
@@ -899,7 +850,6 @@ export function createEffectsPanel(app, root, engine) {
 			const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
 			const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right', 'data-tip-delay': '1300' }, row);
 			const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, body);
-			// у выключенного эффекта настройки приглушены: их можно менять, но видно, что эффект сейчас не работает
 			insp.classList.toggle('is-off', !L.on);
 			row.addEventListener('click', (e) => {
 				if (!e.target.closest('.switch')) {
@@ -933,7 +883,6 @@ export function createEffectsPanel(app, root, engine) {
 	}
 	const hiddenGrp = (c) => c.def.group === 'Видео' || c.def.group === 'Анимация';
 	select_((cards.find((c) => c.L.on && !hiddenGrp(c)) || cards.find((c) => !hiddenGrp(c)) || cards[0]).def.id);
-	// ------------------------------------------------------------ звук
 	const sourceSeg = segmented({
 		options: [
 			{ value: 'synth', label: 'Музыка', title: 'Встроенная музыка: эмбиент, джангл, брейккор' },
@@ -975,15 +924,12 @@ export function createEffectsPanel(app, root, engine) {
 	const volume = slider({ min: 0, max: 1, step: 0.05, value: st.audio.volume, format: (v) => Math.round(v * 100) + '%', onInput: (v) => engine.setVolume(v) });
 	const idle = switchRow('Живая сцена без звука', { value: st.audio.idle, onChange: (v) => { st.audio.idle = v; st.audio.idleSet = true; save(); } });
 	const meters = makeMeters();
-	// какие эффекты сейчас слушают звук: клик по строке открывает настройки эффекта
 	const reactList = h('div', { class: 'fx-react-list' });
 	const reactTitle = h('div', { class: 'fx-sub' }, 'Что реагирует на звук');
-	// реакция всей сцены: яркость пульсирует в такт выбранным частотам
 	const sceneBand = segmented({ cls: 'seg-tight', options: BANDS.filter((x) => ['bass', 'mid', 'high', 'beat'].includes(x.id)).map((x) => ({ value: x.id, label: x.label, title: x.title })), value: st.look.audioBand || 'bass', onChange: (v) => { st.look.audioBand = v; save(); } });
 	const sceneBright = slider({ min: 0, max: 1, step: 0.05, value: st.look.brightAudio || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.brightAudio = v; }, onChange: save });
 	const sceneTitle = h('div', { class: 'fx-sub' }, 'Вся сцена');
 	const secAudio = section('Звук', { key: 'fx-audio' }, idle.el, sourceSeg.el, styleRow, meters.el, field('Чувствительность', gain.el), field('Громкость', volume.el), reactTitle, reactList, sceneTitle, field('Слушает', sceneBand.el, { wide: true }), field('Яркость в такт', sceneBright.el));
-	/** Список эффектов, которые слушают звук: у каждого свои частоты и сила реакции, эффекты можно добавлять и убирать прямо здесь */
 	function renderReactList() {
 		sceneBand.set(st.look.audioBand || 'bass');
 		sceneBright.set(st.look.brightAudio || 0);
@@ -1054,7 +1000,6 @@ export function createEffectsPanel(app, root, engine) {
 		}
 	}
 
-	// ------------------------------------------------------------ вид
 	const palettes = h('div', { class: 'fx-palettes', role: 'radiogroup', 'aria-label': 'Палитра' });
 	const palBtns = new Map();
 	for (const p of FX_PALETTES) {
@@ -1063,7 +1008,6 @@ export function createEffectsPanel(app, root, engine) {
 			st.look.palette = p.id;
 			if (st.look.colorBy === 'model') st.look.colorBy = 'disp';
 			engine._userColor = true;
-			// линии и срезы, окрашенные естественным цветом модели, берут цвет новой палитры
 			for (const c of cards) {
 				if (c.def.extras.some((x) => x.type === 'color' && x.natural) && c.L.color === 'model') {
 					c.L.color = 'auto';
@@ -1076,8 +1020,6 @@ export function createEffectsPanel(app, root, engine) {
 		palBtns.set(p.id, b);
 		palettes.append(b);
 	}
-	// вид точек общий с вкладкой «Точки»: одни и те же настройки, без дублей
-	// палитра выбирается плашками выше; пока она действует, в списке видна подсказка вместо пункта
 	const colorBy = select({ options: COLOR_BY_UI.map((c) => ({ value: c.id, label: c.label, sub: c.title })), value: st.look.colorBy, placeholder: 'Палитра выше', onChange: (v) => { engine.setColorBy(v); } });
 	const shapeTiles = h('div', { class: 'shape-grid shape-row', role: 'radiogroup', 'aria-label': 'Форма точек' });
 	const shapeBtns = new Map();
@@ -1094,7 +1036,6 @@ export function createEffectsPanel(app, root, engine) {
 		shapeBtns.set(sh.value, b);
 		shapeTiles.append(b);
 	}
-	// символы вместо точек: те же плитки, что и формы
 	for (const g of [{ id: 'ascii', label: 'Символы ASCII: знаки и буквы', ch: '#@' }, { id: 'letters', label: 'Латинские буквы', ch: 'Aa' }, { id: 'digits', label: 'Цифры', ch: '01' }, { id: 'blocks', label: 'Блоки', ch: '▒█' }]) {
 		const b = h('button', { type: 'button', class: 'shape-tile', role: 'radio', 'data-shape': g.id, 'data-tip': g.label }, h('span', { class: 'shape-glyph shape-char' }, g.ch), h('span', { class: 'shape-name' }, g.label));
 		b.addEventListener('click', () => {
@@ -1108,7 +1049,6 @@ export function createEffectsPanel(app, root, engine) {
 	const solidPick = colorField({ value: pset.solidColor, onInput: (v) => { pset.solidColor = v; }, onChange: () => app.saveSettings() });
 	const solidRow = field('Свой цвет', solidPick.el);
 	const origBtn = button({ label: 'Исходный цвет модели', icon: 'arrow-counter-clockwise', variant: 'secondary', cls: 'btn-block', title: 'Вернуть настоящие цвета и текстуру модели вместо палитры', onClick: () => engine.setColorBy('model') });
-	// сохранение зацикленной анимации
 	const anim = { format: 'gif', seconds: 4 };
 	const animFmt = segmented({ options: [{ value: 'gif', label: 'GIF', title: 'Зацикленная анимация, открывается везде' }, { value: 'mp4', label: 'MP4 со звуком', title: 'Видео в хорошем качестве, открывается везде' }], value: anim.format, onChange: (v) => { anim.format = v; } });
 	const animSec = slider({ noNorm: true, min: 1, max: 15, step: 1, value: anim.seconds, digits: 0, unit: ' с', onInput: (v) => { anim.seconds = v; } });
@@ -1147,11 +1087,8 @@ export function createEffectsPanel(app, root, engine) {
 		title: 'Открыть мультитрековый таймлайн анимации',
 		onClick: () => toggleAnim(true)
 	});
-	// общие с редактором настройки: поле зрения и показ FPS читаются и работают там же одинаково
 	const fovFx = slider({ noNorm: true, min: 10, max: 100, step: 1, value: rset.fov, digits: 0, unit: '°', onInput: (v) => { rset.fov = v; app.nav.applyCamera(); }, onChange: () => app.saveSettings() });
 	const fpsFx = switchRow('Показывать FPS', { value: rset.fps, onChange: (v) => { rset.fps = v; app.ui.refreshFps(); app.saveSettings(); } });
-	// те же блоки и названия, что во вкладке «Вид» редактора
-	// сначала всё про цвет (палитра, чем красить, свой цвет, исходный), потом всё про форму
 	const secLookPts = section('Цвет и форма точек', { key: 'fx-look-pts' }, palettes, field('Цвет точек', colorBy.el), solidRow, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Точки', blend.el, { wide: true }));
 	const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el));
 	const secLookCam = section('Камера', { key: 'fx-look-cam' }, field('Поле зрения', fovFx.el), dofOn.el, dofBody, rotate.el, rotSpeedRow);
@@ -1160,7 +1097,6 @@ export function createEffectsPanel(app, root, engine) {
 	const secLookRec = section('Запись анимации', { key: 'fx-look-rec', open: false }, animTimelineOpenBtn, field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
-	// вкладки-плашки вместо длинного списка: Эффект, Форма, Медиа, Зона, Звук, Вид
 	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookPts, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
@@ -1186,14 +1122,11 @@ export function createEffectsPanel(app, root, engine) {
 	}
 	root.append(tabBar, ...FX_TABS.flatMap((t) => t[3].map((x) => x.el)));
 	showFxTab(curTab);
-	// при выборе эффекта слева сразу показываем его настройки
 	fxTabHook = () => showFxTab('insp');
 
-	// ------------------------------------------------------------ нижняя панель в сцене
 	const bar = $bar();
 	const playBtn = iconButton({ icon: 'speaker-high', title: 'Звук: включить или выключить (Пробел)', onClick: () => engine.toggle().catch(() => {}) });
 	const collapseBtn = iconButton({ icon: 'atom', title: 'Разрушить / собрать форму («Распад»)', onClick: () => { engine.toggleCollapse(); sync(); } });
-	// режим «только сцена»: прячет всё, кроме самой анимации и этой панели; Esc возвращает интерфейс
 	const appEl = document.getElementById('app');
 	const focusBtn = iconButton({ icon: 'corners-out', title: 'Только сцена: скрыть интерфейс (Esc вернёт)', onClick: () => setFocus(!appEl.classList.contains('fx-focus')) });
 	function setFocus(on) {
@@ -1203,14 +1136,12 @@ export function createEffectsPanel(app, root, engine) {
 	}
 	app.ui.exitFxFocus = () => setFocus(false);
 	const orthoBtn = iconButton({ icon: 'perspective', title: 'Проекция: перспектива или ортогональная', onClick: () => { app.nav.toggleOrtho(); sync(); } });
-	// кисть: кнопка фиксирует камеру, чтобы протяжка рисовала, а не вращала сцену
 	const paintBtn = iconButton({ icon: 'paint-brush', title: '', cls: 'fx-paint-lock-btn', onClick: () => { const B = st.layers.brush; B.lock = B.lock === 'off' ? 'on' : 'off'; engine.touch(); engine.emit(); sync(); app.toast(B.lock === 'off' ? 'Камера снова крутится протяжкой' : 'Камера зафиксирована: протяжка рисует. Alt + протяжка вращает сцену', 'info', 2400); } });
 	paintBtn.hidden = true;
 	const camBtn = iconButton({ icon: 'video-camera', title: 'Камера: управление руками и пальцами', onClick: () => engine.toggleMotionCam().then(sync) });
 	const barMeters = makeMeters(true);
 	const recBtn = iconButton({ icon: 'record', title: 'Параметры записи видео', cls: 'fx-rec' });
 	const recTime = h('span', { class: 'fx-rec-time' });
-	// ------------------------------------------------------------ анимация по ключам и блокам эффектов (секвенсор)
 	const animPanel = h('div', { class: 'fx-anim vp-pill', hidden: true, role: 'region', 'aria-label': 'Секвенсор анимации' });
 	const resizeHandle = h('div', { class: 'fx-anim-resize-handle', title: 'Потяните для изменения высоты таймлайна (двойной клик сбросит)' });
 	let curH = 245;
@@ -1220,8 +1151,6 @@ export function createEffectsPanel(app, root, engine) {
 	} catch (_) {}
 	document.documentElement.style.setProperty('--fx-anim-h', curH + 'px');
 
-	/** Выше естественной высоты содержимого таймлайн тянуть нельзя: иначе внизу остаётся пустая серая зона */
-	/** Естественная высота: дорожки или колонка свойств (что выше), но не больше 480 */
 	function maxAnimH() {
 		const body = animPanel.querySelector('.fx-anim-body');
 		if (!body || animPanel.hidden) return 480;
@@ -1231,7 +1160,6 @@ export function createEffectsPanel(app, root, engine) {
 		const chrome = animPanel.offsetHeight - body.clientHeight;
 		return Math.max(150, Math.min(480, Math.ceil(chrome + Math.max(natural, inspNatural()))));
 	}
-	/** Сколько нужно колонке свойств, чтобы поместиться без прокрутки (0, если она закрыта) */
 	function inspNatural() {
 		const insp = animPanel.querySelector('.fx-clip-panel');
 		if (!insp || insp.classList.contains('is-shut')) return 0;
@@ -1239,7 +1167,6 @@ export function createEffectsPanel(app, root, engine) {
 		const bd = insp.querySelector('.fx-clip-body');
 		return (bar ? bar.offsetHeight : 0) + (bd ? bd.scrollHeight : 0) + 2;
 	}
-	// высота на экране: выбранная пользователем (curH), но когда открывается колонка свойств, таймлайн подрастает под неё (не выше 360 px и 45% окна)
 	let shownH = curH;
 	const setShownH = (v) => {
 		shownH = v;
@@ -1306,7 +1233,6 @@ export function createEffectsPanel(app, root, engine) {
 
 	let selKey = null;
 	let selClip = null;
-	// выбор нескольких блоков: selClip это главный (последний) блок, selSet хранит все выбранные
 	const selSet = new Set();
 	const selList = () => (st.anim.clips || []).filter((c) => selSet.has(c.id));
 	const selectOnly = (c) => {
@@ -1341,7 +1267,6 @@ export function createEffectsPanel(app, root, engine) {
 		return `${mm}:${ss}`;
 	};
 
-	// 1. Верхняя панель управления (Header Toolbar)
 	const aPlay = iconButton({
 		icon: 'play',
 		title: 'Воспроизведение / Пауза (Пробел)',
@@ -1365,7 +1290,6 @@ export function createEffectsPanel(app, root, engine) {
 	const aTimeTotal = h('span', { class: 'fx-anim-t-total' }, '00:08.0');
 	const aTimecode = h('div', { class: 'fx-anim-timecode' }, aTimeCur, aTimeSep, aTimeTotal);
 
-	// Зум времени: шкала растягивается шире окна и прокручивается по горизонтали; Ctrl или Cmd + колесо (и щипок на тачпаде) тоже зумят
 	let animZoom = 1;
 	const ZMIN = 1;
 	const ZMAX = 24;
@@ -1387,7 +1311,6 @@ export function createEffectsPanel(app, root, engine) {
 	const zoomBox = h('div', { class: 'fx-anim-zoom-box', title: 'Масштаб шкалы времени. Двойной клик возвращает 1x' }, zoomBtnOut, zoomVal, zoomBtnIn);
 	zoomVal.addEventListener('dblclick', () => setZoom(1));
 
-	/** Масштаб шкалы. anchor: { t, x } время и положение курсора мыши в окне шкалы, которые должны остаться на месте (по умолчанию курсор времени) */
 	function setZoom(z, anchor) {
 		z = Math.max(ZMIN, Math.min(ZMAX, z));
 		const dur = st.anim.dur || 8;
@@ -1398,13 +1321,11 @@ export function createEffectsPanel(app, root, engine) {
 		zoomVal.textContent = (Math.round(z * 10) / 10) + 'x';
 		scroller.style.setProperty('--fx-anim-zoom', z);
 		stage.classList.toggle('is-zoomed', z > 1);
-		// время под курсором остаётся под курсором
 		scroller.scrollLeft = Math.max(0, (t / dur) * viewW * z - xInView);
 		renderRuler();
 		animSync();
 	}
 
-	// скорость воспроизведения таймлайна: каждый клик берёт следующее значение по кругу
 	const SPEEDS_A = [0.5, 1, 1.5, 2];
 	const aSpeed = h('button', { type: 'button', class: 'fx-anim-speed', 'data-tip': 'Скорость воспроизведения: нажмите, чтобы переключить' }, '1×');
 	aSpeed.addEventListener('click', () => {
@@ -1415,7 +1336,6 @@ export function createEffectsPanel(app, root, engine) {
 	});
 	const aTransport = h('div', { class: 'fx-anim-transport' }, aPlay, aTimecode, aSpeed, zoomBox);
 
-	// Встроенная интерактивная полка сценариев и добавления эффектов
 	const shelf = h('div', { class: 'fx-anim-shelf', hidden: true });
 	let currentShelf = null;
 
@@ -1473,7 +1393,6 @@ export function createEffectsPanel(app, root, engine) {
 		}
 	});
 
-	// понятная кнопка камеры: повернули сцену как нужно, нажали, и ракурс записан в текущий момент времени
 	const addCamKey = () => {
 		selKey = engine.animAddKey();
 		selClip = null;
@@ -1493,7 +1412,6 @@ export function createEffectsPanel(app, root, engine) {
 	});
 	const quickWrap = h('div', { class: 'fx-anim-quick' }, addClipBtn, camKeyBtn);
 
-	// Настройки справа: loop, dur, record, close
 	const aLoop = iconButton({
 		icon: 'repeat',
 		title: 'Повторять по кругу',
@@ -1519,7 +1437,6 @@ export function createEffectsPanel(app, root, engine) {
 		animSync();
 	});
 	const aDurBox = h('div', { class: 'fx-anim-dur-box' }, aDur, h('span', { class: 'fx-anim-dur-unit' }, 'с'));
-	// свои кнопки «больше / меньше» справа от секунд: клик меняет на 1, Shift на 5, удержание повторяет
 	const stepDur = (dir, big) => {
 		const v = Math.max(1, Math.min(120, Math.round((Number(aDur.value) || 8) + dir * (big ? 5 : 1))));
 		aDur.value = v;
@@ -1546,7 +1463,6 @@ export function createEffectsPanel(app, root, engine) {
 		return b;
 	};
 	aDurBox.append(h('span', { class: 'fx-anim-stepper' }, mkStep(1, 'caret-up'), mkStep(-1, 'caret-down')));
-	// ширина поля по числу цифр: «с» всегда стоит сразу после числа
 	const fitDur = () => aDurBox.style.setProperty('--dur-w', Math.max(1, String(aDur.value || '').length) + 'ch');
 	aDur.addEventListener('input', fitDur);
 	fitDur();
@@ -1567,7 +1483,6 @@ export function createEffectsPanel(app, root, engine) {
 		cls: 'fx-anim-close',
 		onClick: () => toggleAnim(false)
 	});
-	// магнит: блоки прилипают к маркеру, краям соседних блоков и целым секундам; Alt при перетаскивании отключает на время
 	const aSnap = iconButton({
 		icon: 'magnet',
 		title: 'Магнит: блоки прилипают к курсору, краям других блоков и целым секундам (Alt при перетаскивании отключает)',
@@ -1578,7 +1493,6 @@ export function createEffectsPanel(app, root, engine) {
 			save();
 		}
 	});
-	/** Ближайшая «точка притяжения» к времени t; ignoreId исключает свой блок. Возвращает t без изменений, если рядом ничего нет */
 	function snapTime(t, widthPx, ignoreId, ev) {
 		if (st.anim.snap === false || (ev && ev.altKey)) return t;
 		const dur = st.anim.dur || 8;
@@ -1617,10 +1531,8 @@ export function createEffectsPanel(app, root, engine) {
 
 	const topBar = h('div', { class: 'fx-anim-topbar' }, aTransport, quickWrap, aSettings);
 
-	// 2. Область дорожек (Stage)
 	const stage = h('div', { class: 'fx-anim-stage' });
 
-	// Линейка времени
 	const rulerTitle = h('div', { class: 'fx-anim-track-label fx-anim-ruler-title' }, 'Время');
 	const rulerTicks = h('div', { class: 'fx-anim-ruler-ticks' });
 	const rulerNeedle = h('div', { class: 'fx-anim-playhead-needle' });
@@ -1628,8 +1540,6 @@ export function createEffectsPanel(app, root, engine) {
 	const rulerBody = h('div', { class: 'fx-anim-ruler-body' }, rulerWork, rulerTicks, rulerNeedle);
 	const rulerRow = h('div', { class: 'fx-anim-ruler-row' }, rulerBody);
 
-	// Дорожка камеры
-	// готовые движения камеры: меню у подписи дорожки (и по правой кнопке на ней)
 	const camMenu = (x, y) =>
 		openCtx(x, y, [
 			{ label: 'Облёт вокруг', icon: 'arrows-clockwise', onClick: () => camPreset('orbit') },
@@ -1661,7 +1571,6 @@ export function createEffectsPanel(app, root, engine) {
 	const camTrackBody = h('div', { class: 'fx-anim-lane-body fx-anim-cam-body' }, camLine, camKeysWrap);
 	const camLane = h('div', { class: 'fx-anim-lane fx-anim-cam-lane' }, camTrackBody);
 
-	// Дорожка персонажа: когда в клипе какие кости двигаются. Клип повторяется по кругу на всю длину таймлайна, поэтому полоса стоит под общей линейкой времени
 	const charArrow = h('span', { class: 'ic-wrap fx-anim-char-arrow', html: icon('caret-right', 12) });
 	const charSub = h('span', { class: 'fx-anim-char-sub' });
 	const charTitle = h('div', { class: 'fx-anim-track-label fx-anim-char-label', role: 'button', tabindex: '0', 'data-tip': 'Яркость показывает, как сильно движется модель. Нажмите, чтобы увидеть отдельные кости и настройки анимации', 'data-tip-pos': 'right' }, charArrow, h('span', { class: 'fx-anim-char-names' }, h('span', { class: 'fx-anim-lane-name' }, 'Анимация'), charSub));
@@ -1673,7 +1582,6 @@ export function createEffectsPanel(app, root, engine) {
 	const charLane = h('div', { class: 'fx-anim-lane fx-anim-char-lane' }, charBody);
 	charLane.hidden = true;
 	charTitle.hidden = true;
-	// подпись слева стоит в своей колонке и должна быть той же высоты, что и полоса справа
 	const charSetSpacer = h('div', { class: 'fx-anim-char-spacer' });
 	charSetSpacer.hidden = true;
 	const syncCharHeads = () => {
@@ -1696,7 +1604,6 @@ export function createEffectsPanel(app, root, engine) {
 		} catch (e) {
 			act = null;
 		}
-		// если по клипу нечего показать (нет дорожек костей), рисуем ровную полосу
 		if (!act || !act.bones.length) act = { n: 2, total: new Float32Array([0.35, 0.35]), bones: [] };
 		const rows = charOpen ? act.bones.slice(0, 12).map((b) => [b.name, b.vals]) : [['', act.total]];
 		const rh = charOpen ? 15 : 22;
@@ -1712,7 +1619,6 @@ export function createEffectsPanel(app, root, engine) {
 		g.clearRect(0, 0, charCanvas.width, charCanvas.height);
 		rows.forEach(([name, vals], r) => {
 			const y0 = Math.round(r * rh * dpr), hh = Math.round((rh - 3) * dpr);
-			// фон строки со скруглением и лёгким свечением активных мест
 			g.save();
 			g.beginPath();
 			g.roundRect(0, y0, W, hh, Math.min(6 * dpr, hh / 2));
@@ -1727,11 +1633,9 @@ export function createEffectsPanel(app, root, engine) {
 				const v = Math.pow(vals[Math.min(act.n - 1, Math.floor(ph * (act.n - 1)))], 0.75);
 				if (v < 0.04) continue;
 				g.globalAlpha = 0.18 + 0.82 * v;
-				// выше активность, выше столбик: полоса читается и без цвета
 				const bh = hh * (0.35 + 0.65 * v);
 				g.fillRect(x, y0 + (hh - bh) / 2, 2.2, bh);
 			}
-			// начало каждого повтора клипа
 			g.globalAlpha = 0.28;
 			g.fillStyle = '#fff';
 			for (let k = 1; k * period < durTotal; k++) g.fillRect(Math.round((k * period / durTotal) * W), y0, Math.max(1, dpr * 0.8), hh);
@@ -1758,7 +1662,6 @@ export function createEffectsPanel(app, root, engine) {
 		syncCharHeads();
 		clampAnimH();
 	});
-	// клик и протяжка по полосе двигают общий курсор таймлайна
 	let charDrag = false;
 	const charSeek = (e) => {
 		const r = screenRect(charBody);
@@ -1779,10 +1682,8 @@ export function createEffectsPanel(app, root, engine) {
 	new ResizeObserver(() => drawChar()).observe(charBody);
 	let lastCharDur = 0;
 
-	// Дорожки эффектов
 	const fxLanesWrap = h('div', { class: 'fx-anim-fx-lanes' });
 
-	// Пустой баннер
 	const emptyHint = h('div', { class: 'fx-anim-empty-hint' },
 		h('span', { class: 'fx-anim-empty-text' }, 'На таймлайне пока нет блоков. Перетащите эффект из списка слева сюда или нажмите «Эффект».'),
 		h('div', { class: 'fx-anim-empty-actions' },
@@ -1792,7 +1693,6 @@ export function createEffectsPanel(app, root, engine) {
 
 	const lanesScroll = h('div', { class: 'fx-anim-lanes-scroll' }, camLane, charLane, charSetRow, fxLanesWrap, emptyHint);
 	const playheadLine = h('div', { class: 'fx-anim-playhead-line' });
-	// колонка подписей без фона стоит на месте, зумится и прокручивается только шкала справа
 	const headsFx = h('div', { class: 'fx-anim-fx-heads' });
 	const headsCol = h('div', { class: 'fx-anim-heads' }, rulerTitle, camTitle, charTitle, charSetSpacer, headsFx);
 	const inner = h('div', { class: 'fx-anim-inner' }, rulerRow, lanesScroll, playheadLine);
@@ -1801,13 +1701,11 @@ export function createEffectsPanel(app, root, engine) {
 	scroller.addEventListener('scroll', () => scroller.classList.toggle('is-scrolled', scroller.scrollLeft > 2), { passive: true });
 	new ResizeObserver(() => syncCharHeads()).observe(charLane);
 	new ResizeObserver(() => syncCharHeads()).observe(charSetRow);
-	// шаг и подписи линейки подбираются по реальной ширине: пересчёт при зуме, смене размера окна и открытии панели
 	let rulerRaf = 0;
 	new ResizeObserver(() => {
 		cancelAnimationFrame(rulerRaf);
 		rulerRaf = requestAnimationFrame(() => renderRuler());
 	}).observe(rulerBody);
-	// Ctrl или Cmd + колесо (на тачпаде это щипок) зумит шкалу вокруг курсора; без Ctrl колесо листает как обычно
 	stage.addEventListener(
 		'wheel',
 		(e) => {
@@ -1823,9 +1721,7 @@ export function createEffectsPanel(app, root, engine) {
 		{ passive: false }
 	);
 
-	// 3. Инспектор выбранного элемента (Inspector): колонка внутри таймлайна сбоку от дорожек. Пока ничего не выбрано, её нет и дорожки во всю ширину
 	const inspector = h('div', { class: 'fx-clip-panel is-shut', inert: true });
-	// колонка не исчезает из раскладки, а сжимается до нуля (атрибут hidden убрал бы её сразу, без выезда): inspector.hidden управляет классом
 	Object.defineProperty(inspector, 'hidden', {
 		get() {
 			return this.classList.contains('is-shut');
@@ -1889,7 +1785,6 @@ export function createEffectsPanel(app, root, engine) {
 		el.addEventListener('pointerdown', (e) => {
 			if (e.target.closest('.fx-anim-key, .fx-anim-block, .fx-anim-work-h, button, input')) return;
 			if (e.button === 2) return;
-			// Shift и протяжка по пустому месту дорожки выбирают блоки рамкой
 			if (e.shiftKey && el.classList.contains('fx-anim-fx-body')) {
 				startMarquee(e);
 				return;
@@ -1926,7 +1821,6 @@ export function createEffectsPanel(app, root, engine) {
 	let animCloseT = 0;
 	toggleAnim = function (on = animPanel.hidden || animPanel.classList.contains('is-out')) {
 		on = !!on;
-		// закрывается не мгновенно: панель уходит вниз и гаснет, а потом прячется; новое открытие во время ухода отменяет его
 		clearTimeout(animCloseT);
 		if (on) {
 			animPanel.classList.remove('is-out');
@@ -1945,7 +1839,6 @@ export function createEffectsPanel(app, root, engine) {
 		if (!on) {
 			inspector.hidden = true;
 			placeInspector();
-			// угол обзора и крен из ключей камеры работают только на таймлайне
 			engine.animCamRelease();
 		}
 		keyAnimBtn.classList.toggle('is-active', on);
@@ -1970,7 +1863,6 @@ export function createEffectsPanel(app, root, engine) {
 		animSync();
 	};
 
-	// Перетаскивание эффекта из списка на таймлайн: блок встаёт туда, куда отпустили. Если таймлайн закрыт, он открывается, а блок встаёт на текущий момент
 	{
 		const MIME = 'application/x-fx-layer';
 		for (const c of cards) {
@@ -2017,14 +1909,12 @@ export function createEffectsPanel(app, root, engine) {
 		});
 	}
 
-	// Пауза анимации при вращении камеры в 3D
 	document.getElementById('viewport').addEventListener('pointerdown', (e) => {
 		if (engine.animPlaying && !engine.animRec && !e.target.closest('.fx-anim, .fx-bar, .popover')) {
 			engine.animPause();
 		}
 	}, true);
 
-	// Горячие клавиши (Space, Delete, Backspace, Escape)
 	const jumpTo = (dir) => {
 		const A = st.anim;
 		const pts = [0, A.dur];
@@ -2037,7 +1927,6 @@ export function createEffectsPanel(app, root, engine) {
 			animSync();
 		}
 	};
-	// расширенные клавиши секвенсора; true, если нажатие обработано
 	function extraKeys(e) {
 		const mod = e.ctrlKey || e.metaKey;
 		if (mod && e.code === 'KeyA') {
@@ -2101,7 +1990,6 @@ export function createEffectsPanel(app, root, engine) {
 		return false;
 	}
 
-	// клавиши секвенсора перехватываются раньше общих (O, X, S и другие значат в редакторе своё)
 	const isInputTarget = (t) => t && (t.closest ? !!t.closest('input, textarea, select, .custom-select-wrap, .custom-select-pop, .select') : false);
 	window.addEventListener(
 		'keydown',
@@ -2163,7 +2051,6 @@ export function createEffectsPanel(app, root, engine) {
 		}
 	});
 
-	/** Разрезает выбранный блок по маркеру времени на два: у первого остаётся вход, у второго выход */
 	function splitSelected() {
 		if (!selClip) {
 			app.toast('Выберите блок на дорожке, потом поставьте курсор времени там, где резать', 'info');
@@ -2178,7 +2065,6 @@ export function createEffectsPanel(app, root, engine) {
 		animSync();
 	}
 
-	// маленькое контекстное меню в стиле остальных панелей
 	function openCtx(x, y, items) {
 		document.querySelectorAll('.fx-ctx').forEach((n) => n.remove());
 		const m = h('div', { class: 'fx-ctx popover' });
@@ -2195,7 +2081,6 @@ export function createEffectsPanel(app, root, engine) {
 			m.append(b);
 		}
 		document.body.append(m);
-		// x, y в экранных пикселях (мышь), меню ставится в пикселях вёрстки: при масштабе интерфейса они различаются
 		const z = uiZoom();
 		const w = m.offsetWidth, hh = m.offsetHeight;
 		m.style.left = Math.max(8, Math.min(window.innerWidth / z - w - 8, x / z)) + 'px';
@@ -2271,7 +2156,6 @@ export function createEffectsPanel(app, root, engine) {
 	let inspRefs = null;
 	const clipTitle = h('span', { class: 'fxf-title' }, 'Блок эффекта');
 	const clipIcon = h('span', { class: 'fx-clip-ic' });
-	// сторона колонки: кнопкой или перетаскиванием за заголовок на другую половину таймлайна
 	const clipSideBtn = iconButton({ icon: 'arrows-left-right', title: 'Перенести панель на другую сторону таймлайна', cls: 'fx-clip-side', onClick: () => setClipSide(clipSide === 'left' ? 'right' : 'left') });
 	const clipBody = h('div', { class: 'fx-clip-body' });
 	const clipActs = h('div', { class: 'fx-clip-acts' });
@@ -2279,7 +2163,6 @@ export function createEffectsPanel(app, root, engine) {
 	inspector.append(clipBar, clipBody);
 	function renderInspector() {
 		const sig = selSet.size > 1 ? 'm:' + [...selSet].join(',') : selClip ? 'c:' + selClip.id : selKey ? 'k:' + selKey.t : '';
-		// панель свойств пересобирается только при смене выбора: при каждом кадре воспроизведения и при перетаскивании ползунка трогаем лишь значения
 		if (sig === inspSig && inspRefs) {
 			inspRefs.update && inspRefs.update();
 			placeInspector();
@@ -2290,7 +2173,6 @@ export function createEffectsPanel(app, root, engine) {
 		buildInspector();
 		placeInspector();
 	}
-	// колонка свойств: слева или справа от дорожек (запоминается), ширину можно тянуть за кромку со стороны дорожек
 	const CLIP_SIDE_KEY = 'objglb.fx.clip.side';
 	const CLIP_W_KEY = 'objglb.fx.clip.w';
 	let clipSide = 'left';
@@ -2306,7 +2188,6 @@ export function createEffectsPanel(app, root, engine) {
 		animPanel.style.setProperty('--fx-clip-w', clipW + 'px');
 		const open = !inspector.hidden;
 		appEl.classList.toggle('fx-clip-open', open);
-		// таймлайн подрастает под содержимое колонки после раскладки (закрылась: возвращается к своей высоте)
 		cancelAnimationFrame(growRaf);
 		growRaf = requestAnimationFrame(() => growForInspector(open && !animPanel.hidden));
 	}
@@ -2316,12 +2197,10 @@ export function createEffectsPanel(app, root, engine) {
 		try {
 			localStorage.setItem(CLIP_SIDE_KEY, side);
 		} catch (_) {}
-		// колонка переезжает: на миг гаснет и проявляется уже на другой стороне, дорожки сдвигаются следом
 		inspector.classList.add('is-moving');
 		placeInspector();
 		requestAnimationFrame(() => requestAnimationFrame(() => inspector.classList.remove('is-moving')));
 	}
-	// перетаскивание за заголовок: отпустили на другой половине таймлайна, и колонка переехала туда
 	clipBar.addEventListener('pointerdown', (e) => {
 		if (e.button !== 0 || e.target.closest('button, input')) return;
 		e.preventDefault();
@@ -2389,7 +2268,6 @@ export function createEffectsPanel(app, root, engine) {
 	function buildInspector() {
 		clipBody.textContent = '';
 		clipActs.textContent = '';
-		// таймлайн закрыт или закрывается: плашка выбранного блока или ракурса не должна оставаться на экране
 		if (animPanel.hidden || animPanel.classList.contains('is-out')) {
 			inspector.hidden = true;
 			return;
@@ -2415,7 +2293,6 @@ export function createEffectsPanel(app, root, engine) {
 			};
 		};
 		if (selSet.size > 1) {
-			// несколько блоков: общие действия
 			const lst = selList();
 			const allOff = lst.every((c) => c.off);
 			inspector.hidden = false;
@@ -2452,7 +2329,6 @@ export function createEffectsPanel(app, root, engine) {
 			sFadeIn.row.dataset.tip = 'Сколько секунд сила эффекта растёт от нуля до полной';
 			sFadeOut.row.dataset.tip = 'Сколько секунд сила эффекта спадает до нуля в конце блока';
 			sAmt.row.dataset.tip = '1.00: как в настройках эффекта. Больше: сильнее, меньше: слабее';
-			// график силы эффекта по времени внутри блока: сразу видно, как он нарастает и затихает
 			const graphSvg = () => {
 				let d = '';
 				for (let i = 0; i <= 40; i++) {
@@ -2478,7 +2354,6 @@ export function createEffectsPanel(app, root, engine) {
 				},
 			};
 
-			// профиль и кривая: мини-графики силы со своей подписью. Рисуются той же функцией, что и сама анимация
 			const miniPath = (spec) => {
 				const clipM = { start: 0, dur: 1, fadeIn: 0, fadeOut: 0, shape: 'plateau', ease: 'smooth', ...spec };
 				let d = '';
@@ -2529,14 +2404,12 @@ export function createEffectsPanel(app, root, engine) {
 		}
 	}
 
-	/** Строка «Время» блока или ключа: число с единицей */
 	function timeField(value, max, onSet) {
 		const inp = h('input', { type: 'number', class: 'num-in', min: 0, max, step: 0.1, value: Math.round(value * 100) / 100 });
 		inp.addEventListener('change', () => onSet(Math.max(0, Math.min(max, Number(inp.value) || 0))));
 		return { el: h('label', { class: 'fx-anim-insp-field' }, h('span', { class: 'fx-anim-insp-lab' }, 'Время'), inp, h('span', { class: 'fx-anim-insp-unit' }, 'с')), set: (v) => document.activeElement !== inp && (inp.value = Math.round(v * 100) / 100) };
 	}
 
-	/** Мини-графики проходов: как меняется значение до ключа и после него */
 	const PASS_ICONS = {
 		smooth: 'M2 18 C 12 18, 14 4, 20 4 S 30 4, 38 2',
 		stop: 'M2 18 C 12 18, 14 6, 20 6 C 26 6, 28 6, 38 2',
@@ -2553,7 +2426,6 @@ export function createEffectsPanel(app, root, engine) {
 		}
 		return `<svg viewBox="0 0 40 22" width="40" height="22"><path class="mf" d="${d}L38 19 L2 19 Z"/><path class="ml" d="${d}"/></svg>`;
 	};
-	/** Ряд кнопок с картинками (как «Профиль» и «Кривая» у блока эффекта) */
 	function iconSeg(label, opts, cur, onPick) {
 		const wrap = h('div', { class: 'fx-anim-insp-seg is-icons' });
 		const btns = opts.map(([v, name, tip, art]) => {
@@ -2568,7 +2440,6 @@ export function createEffectsPanel(app, root, engine) {
 		return h('div', { class: 'fx-clip-group' }, h('span', { class: 'fx-anim-insp-lab' }, label), wrap);
 	}
 
-	/** Блок морфинга: откуда и куда идёт форма, каким видом перехода и с каким ходом */
 	function buildMorphInspector(c, mkSlider) {
 		inspector.hidden = false;
 		clipTitle.textContent = 'Морфинг';
@@ -2578,7 +2449,6 @@ export function createEffectsPanel(app, root, engine) {
 		const idx = chain.indexOf(c);
 		const prev = idx > 0 ? chain[idx - 1] : null;
 		const nameOf = (key) => forms.find((f) => f.key === key)?.name || (key ? key : 'Исходная форма');
-		// откуда: форма прошлого блока или исходная форма сцены (её выбрать нельзя, она задаётся предыдущим блоком)
 		const fromEl = h('span', { class: 'fx-morph-from' }, prev ? nameOf(prev.form) : 'Исходная форма');
 		const toSel = select({ options: forms.map((f) => ({ value: f.key, label: f.name, icon: f.icon })), value: c.form, onChange: (v) => { engine.animUpdateClip(c.id, { form: v }); engine.animSeek(engine.animT); animSync(); } });
 		const route = h('div', { class: 'fx-morph-route' },
@@ -2606,7 +2476,6 @@ export function createEffectsPanel(app, root, engine) {
 		clipBody.append(route, field('Вид перехода', stySel.el), tf.el, sDur.row, easeRow, revSw.el, quick);
 	}
 
-	/** Ключ камеры: время, как камера проходит ключ, точные значения ракурса и общее покачивание */
 	function buildKeyInspector(k, mkSlider) {
 		inspector.hidden = false;
 		clipTitle.textContent = 'Ракурс камеры';
@@ -2618,7 +2487,6 @@ export function createEffectsPanel(app, root, engine) {
 		const deg = (v) => Math.round(v) + '°';
 		const sYaw = mkSlider('Поворот', -360, 360, 1, k.cam.yaw / D2R, deg, (v) => engine.animSetKey(k, { yaw: v * D2R }));
 		const sPitch = mkSlider('Наклон', -85, 85, 1, -k.cam.pitch / D2R, deg, (v) => engine.animSetKey(k, { pitch: -v * D2R }));
-		// расстояние ползунком в логарифме: ближе и дальше двигаются одинаково удобно
 		const sDist = mkSlider('Дальность', -2, 2.5, 0.01, Math.log(k.cam.dist), (v) => Math.exp(v).toFixed(2), (v) => engine.animSetKey(k, { dist: Math.exp(v) }));
 		const sFov = mkSlider('Обзор', 10, 120, 1, k.fov ?? fov0, deg, (v) => engine.animSetKey(k, { fov: v }));
 		const sRoll = mkSlider('Крен', -45, 45, 1, (k.roll || 0) / D2R, deg, (v) => engine.animSetKey(k, { roll: v * D2R }));
@@ -2648,7 +2516,6 @@ export function createEffectsPanel(app, root, engine) {
 		if (!A.keys) A.keys = [];
 
 		for (const k of A.keys) {
-			// форма ключа говорит, как камера его проходит: ромб плавно, круг с остановкой, квадрат скачком
 			const pass = k.ease || 'smooth';
 			const b = h('button', {
 				type: 'button',
@@ -2734,7 +2601,6 @@ export function createEffectsPanel(app, root, engine) {
 			const laneTitle = h('div', { class: 'fx-anim-track-label fx-anim-fx-label' },
 				h('span', { class: 'ic-wrap', html: icon(layerDef.icon || 'sparkle', 14) }),
 				h('span', { class: 'fx-anim-lane-name' }, layerDef.name),
-				// состояние дорожки показано значками; переключается через меню по правой кнопке
 				h('div', { class: 'fx-anim-lane-tools' },
 					ls.mute ? h('span', { class: 'fx-lane-flag', html: icon('eye-slash', 12), 'data-tip': 'Дорожка заглушена' }) : null,
 					ls.solo ? h('span', { class: 'fx-lane-flag', html: icon('target', 12), 'data-tip': 'Соло' }) : null,
@@ -2775,7 +2641,6 @@ export function createEffectsPanel(app, root, engine) {
 				const fadeInEl = h('div', { class: 'fx-anim-fade-in', style: { width: fadeInPct + '%' } });
 				const fadeOutEl = h('div', { class: 'fx-anim-fade-out', style: { width: fadeOutPct + '%' } });
 
-				// у блока морфинга видно, в какую форму он ведёт
 				const morphTo = clip.layerId === 'morph' ? engine.animMorphForms().find((f) => f.key === clip.form) : null;
 				const blockContent = h('div', { class: 'fx-anim-block-content' },
 					morphTo ? h('span', { class: 'fx-anim-block-title' }, h('span', { class: 'fx-anim-block-ic', html: icon(morphTo.icon || 'shapes', 12) }), morphTo.name) : h('span', { class: 'fx-anim-block-title' }, layerDef.name),
@@ -2785,8 +2650,6 @@ export function createEffectsPanel(app, root, engine) {
 				const handleL = h('div', { class: 'fx-anim-handle is-left', title: 'Тяните, чтобы изменить начало блока' });
 				const handleR = h('div', { class: 'fx-anim-handle is-right', title: 'Тяните, чтобы изменить длину блока' });
 
-				// контур огибающей: видно, как блок нарастает и затихает (форма и кривая блока)
-				// у морфинга вместо силы показан ход перехода: от прежней формы к новой
 				const morphV = (u) => {
 					if (clip.rev) u = 1 - u;
 					return clip.ease === 'linear' ? u : clip.ease === 'sharp' ? Math.pow(u, 0.35) : u * u * (3 - 2 * u);
@@ -2806,7 +2669,6 @@ export function createEffectsPanel(app, root, engine) {
 					clipMenu(clip, e.clientX, e.clientY);
 				});
 
-				// Перетаскивание блока: тянется весь выбор целиком, закреплённые дорожки стоят на месте
 				block.addEventListener('pointerdown', (e) => {
 					if (e.target.closest('.fx-anim-handle') || e.button === 2) return;
 					e.stopPropagation();
@@ -2841,7 +2703,6 @@ export function createEffectsPanel(app, root, engine) {
 						const dt = (dx / Math.max(1, r.width)) * durTotal;
 						const base = orig.get(clip.id);
 						let newStart = base + dt;
-						// к чему ближе прилипнуть: к началу или к концу главного блока
 						const sS = snapTime(newStart, r.width, clip.id, ev);
 						const sE = snapTime(newStart + clip.dur, r.width, clip.id, ev) - clip.dur;
 						if (Math.abs(sS - newStart) <= Math.abs(sE - newStart) && sS !== newStart) newStart = sS;
@@ -2868,7 +2729,6 @@ export function createEffectsPanel(app, root, engine) {
 					block.addEventListener('pointercancel', up);
 				});
 
-								// Ручка слева (trim start)
 				handleL.addEventListener('pointerdown', (e) => {
 					e.stopPropagation();
 					e.preventDefault();
@@ -2915,7 +2775,6 @@ export function createEffectsPanel(app, root, engine) {
 					handleL.addEventListener('pointercancel', up);
 				});
 
-				// Ручка справа (trim end)
 				handleR.addEventListener('pointerdown', (e) => {
 					e.stopPropagation();
 					e.preventDefault();
@@ -2969,7 +2828,6 @@ export function createEffectsPanel(app, root, engine) {
 		}
 	}
 
-	/** Подпись времени: минуты:секунды, при мелком шаге ещё доли секунды */
 	function fmtRuler(t, step) {
 		const m = Math.floor(t / 60);
 		const sec = t - m * 60;
@@ -2984,7 +2842,6 @@ export function createEffectsPanel(app, root, engine) {
 		rulerTicks.textContent = '';
 		const w = screenRect(rulerBody).width || 600;
 		const pxPerSec = w / durTotal;
-		// главный шаг подбирается по ширине: подписи не слипаются при любом зуме
 		const major = RULER_STEPS.find((x) => x * pxPerSec >= 84) || 120;
 		const div = RULER_MINOR[major];
 		const minor = major / div;
@@ -3000,7 +2857,6 @@ export function createEffectsPanel(app, root, engine) {
 			if (isMajor) tick.append(h('span', { class: 'fx-anim-tick-label' }, fmtRuler(t, major)));
 			frag.append(tick);
 		}
-		// конец анимации отмечен отдельной чертой и подписью
 		const end = h('div', { class: 'fx-anim-tick is-end-mark', style: { left: '100%' } }, h('span', { class: 'fx-anim-tick-label is-end' }, fmtRuler(durTotal, Math.min(major, 1))));
 		frag.append(end);
 		rulerTicks.append(frag);
@@ -3009,7 +2865,6 @@ export function createEffectsPanel(app, root, engine) {
 	function renderWork() {
 		const A = st.anim;
 		const durTotal = A.dur || 8;
-		// рабочая область: полоса на линейке с двумя ручками, воспроизведение и запись идут только внутри
 		const w = A.work;
 		rulerWork.hidden = !w;
 		rulerWork.textContent = '';
@@ -3055,9 +2910,7 @@ export function createEffectsPanel(app, root, engine) {
 		const frac = durTotal ? Math.min(1, Math.max(0, engine.animT / durTotal)) : 0;
 		const pct = (frac * 100).toFixed(2) + '%';
 
-		// Положение иглы на линейке и вертикальной линии плейхеда
 		rulerNeedle.style.left = pct;
-		// при зуме во время воспроизведения шкала едет вслед за курсором, чтобы он не уходил за край
 		if (animZoom > 1 && !isScrubbing && !isDraggingItem && engine.animPlaying) {
 			const viewW = scroller.clientWidth;
 			const x = frac * viewW * animZoom;
@@ -3065,11 +2918,9 @@ export function createEffectsPanel(app, root, engine) {
 		}
 		playheadLine.style.left = pct;
 
-		// Таймкод
 		aTimeCur.textContent = formatTimecode(engine.animT);
 		aTimeTotal.textContent = formatTimecode(durTotal);
 
-		// Кнопки
 		aPlay.textContent = '';
 		aPlay.append(h('span', { class: 'ic-wrap', html: icon(engine.animPlaying ? 'pause' : 'play', 18) }));
 		aPlay.classList.toggle('is-active', engine.animPlaying);
@@ -3118,7 +2969,6 @@ export function createEffectsPanel(app, root, engine) {
 	}
 	app.bus.on('fxanim', animSync);
 	app.bus.on('fx', animSync);
-	// фон сцены: кнопка в нижней панели открывает палитру
 	const BGS = [['', 'Как в редакторе'], ['#0b0d11', 'Чёрный'], ['#14161b', 'Графит'], ['#0d1b2a', 'Ночь'], ['#1a0f2e', 'Сумерки'], ['#2a1208', 'Янтарь'], ['#0f2a1f', 'Хвоя'], ['#ffffff', 'Белый']];
 	const bgBtn = h('button', { type: 'button', class: 'btn btn-icon fx-bg-btn', 'aria-label': 'Цвет фона', 'data-tip': 'Цвет фона сцены', 'aria-expanded': 'false' }, h('span', { class: 'fx-bg-dot' }));
 	const bgPop = h('div', { class: 'fx-bg-pop popover', hidden: true });
@@ -3166,7 +3016,6 @@ export function createEffectsPanel(app, root, engine) {
 	});
 	syncBg();
 
-	// ------------------------------------------------------------ запись видео
 	const REC_RES = [
 		{ value: 'viewport', label: 'Как на экране', sub: 'Текущий размер сцены' },
 		{ value: '1080p', label: '1080p Full HD', sub: '1920 × 1080 (16:9)' },
@@ -3179,7 +3028,6 @@ export function createEffectsPanel(app, root, engine) {
 	const recOpts = recDefaults();
 	const saveRecOpts = () => saveRecDefaults(recOpts);
 
-	// включённый эффект ещё готовится (WebGL собирает шейдер в фоне): плашка появляется, если ждать дольше трети секунды
 	const prepChip = h('div', { class: 'fx-prep', role: 'status' }, 'Готовлю эффект…');
 	document.getElementById('viewport').append(prepChip);
 	let prepT = 0;
@@ -3198,7 +3046,6 @@ export function createEffectsPanel(app, root, engine) {
 		onChange: (v) => { recOpts.res = v; saveRecOpts(); }
 	});
 
-	// частота и длительность: короткие варианты в ряд; формат (MP4, где браузер умеет), качество (высокое) и покадровая запись таймлайна выбираются сами
 	const recFpsSeg = segmented({
 		options: [
 			{ value: '60', label: '60' },
@@ -3220,7 +3067,6 @@ export function createEffectsPanel(app, root, engine) {
 		onChange: (v) => { recOpts.dur = v; saveRecOpts(); }
 	});
 
-	// качество: чем выше, тем чище мелкие точки и тяжелее файл
 	const recQualSeg = segmented({
 		options: [
 			{ value: 'light', label: 'Лёгкое', title: 'Самый маленький файл, мелкие точки чуть мягче' },
@@ -3291,7 +3137,6 @@ export function createEffectsPanel(app, root, engine) {
 	const leftBtn = iconButton({ icon: 'stack', title: 'Список эффектов', cls: 'fx-left-btn', onClick: () => document.getElementById('fxLeft').classList.toggle('fx-left-open') });
 	bar.append(leftBtn, playBtn, camBtn, paintBtn, barMeters.el, h('span', { class: 'fx-bar-sep' }), bgWrap, orthoBtn, focusBtn, h('span', { class: 'fx-bar-sep' }), recBtn, keyAnimBtn, recTime);
 
-	// ------------------------------------------------------------ синхронизация
 	function sync() {
 		if (chronoStat) {
 			const I = engine.chronoInfo();
@@ -3319,7 +3164,6 @@ export function createEffectsPanel(app, root, engine) {
 		const kind = engine.modelProvider ? engine.modelProvider.kind() : 'none';
 		modelNote.textContent = kind === 'cloud' ? `Берётся облако точек из редактора (${formatInt(engine.modelProvider.total())} точек). Больше этого частиц не будет.` : kind === 'mesh' ? 'Берутся точки с поверхности вашей модели.' : 'Модели в сцене нет: показана готовая форма. Добавьте модель, и она заменит её.';
 		countActive();
-		// раздел «Видео» есть, пока открыто фото или видео; раскадровка и слит-скан только у видео, у фото раздел называется «Фото»
 		for (const c of cards) {
 			if (c.def.group !== 'Видео') continue;
 			c.folder.hidden = !engine.pm.ready;
@@ -3330,10 +3174,8 @@ export function createEffectsPanel(app, root, engine) {
 			const nm = vc?.fhead.querySelector('.fx-folder-name');
 			if (nm) nm.textContent = engine.pm.ready && !engine.videoLoaded ? 'Фото' : 'Видео';
 		}
-		// шлейф персонажа есть только у персонажа с анимацией
 		for (const c of cards) if (c.def.group === 'Анимация') c.folder.hidden = !engine.animReady;
 		special.hidden = !cards.some((c) => SPECIAL[c.def.group] && !c.folder.hidden);
-		// настройки скрытого эффекта (глубина без фото, раскадровка без видео) не показываем: выбираем первый видимый
 		const cur = cards.find((c) => c.def.id === selected);
 		if (cur && (cur.folder.hidden || cur.card.hidden)) select_((cards.find((c) => !c.folder.hidden && c.L.on) || cards.find((c) => !c.folder.hidden) || cards[0]).def.id);
 		renderReactList();
@@ -3381,7 +3223,6 @@ export function createEffectsPanel(app, root, engine) {
 		styleRow.hidden = engine.sourceType !== 'synth';
 		style.set(st.audio.style);
 		count.set(Math.min(st.count, cap()));
-		// у открытого видео своя кнопка звука на таймлайне: вторую здесь не показываем
 		playBtn.hidden = !!engine.videoLoaded;
 		playBtn.textContent = '';
 		playBtn.append(h('span', { class: 'ic-wrap', html: icon(engine.playing ? 'speaker-high' : 'speaker-slash', 18) }));
@@ -3445,7 +3286,6 @@ function $bar() {
 	return document.getElementById('fxBar');
 }
 
-/** Индикатор уровней: бас, середина, верх, бит */
 function makeMeters(small = false) {
 	const items = [['bass', 'Бас'], ['mid', 'Сер.'], ['high', 'Верх'], ['beat', 'Бит']];
 	const bars = {};

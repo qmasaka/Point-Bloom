@@ -2,9 +2,7 @@ import * as THREE from 'three';
 import { clamp } from '../../core/util.js';
 import { grabFrame, loadDepthImage, normalizeDepth, pickImageFile } from '../input/depth-ai.js';
 
-/** Эффект «Экран»: видео (или фото) играет на форме облака. Источник: открытое в «Медиа» или отдельный файл. Шейдерная часть в shaders/glsl/vert.js (блок VSCREEN). Методы подмешиваются в EffectsEngine. */
 export class ScreenPart {
-	/** Текстура для «Экрана» и соотношение сторон кадра; null, пока источника нет */
 	_screenSource() {
 		const L = this.state.layers.vscreen;
 		if (L.source === 'file') {
@@ -36,7 +34,6 @@ export class ScreenPart {
 		return t;
 	}
 
-	/** Выбор отдельного видео или картинки для «Экрана» */
 	screenPick() {
 		const inp = document.createElement('input');
 		inp.type = 'file';
@@ -50,7 +47,6 @@ export class ScreenPart {
 
 	screenLoad(file) {
 		const url = URL.createObjectURL(file);
-		// звук слушал прежнее видео «Экрана»: новое видео сразу подхватывает его (ниже), а картинка возвращает звук видео из «Медиа»
 		const hadAudio = this.sourceType === 'video' && this._vidEl && this._vidEl === this._scrFile?.media;
 		if (hadAudio) this._disconnectVideo();
 		this._scrFile?.dispose();
@@ -91,7 +87,6 @@ export class ScreenPart {
 		});
 	}
 
-	/** Каждый кадр: значения «Экрана» для шейдера */
 	_screenTick(u) {
 		const L = this.state.layers.vscreen;
 		const eff = L.on ? clamp(this._eff(L), 0, 2) : 0;
@@ -102,7 +97,6 @@ export class ScreenPart {
 			return;
 		}
 		if (u.uScrTex.value !== src.tex) u.uScrTex.value = src.tex;
-		// прежний вид «Рельеф» стал объёмом по яркости поверх вида «Приклеено»
 		if (L.mode === 'relief') {
 			L.mode = 'stick';
 			if (!L.dsrc || L.dsrc === 'off') L.dsrc = 'bright';
@@ -110,19 +104,15 @@ export class ScreenPart {
 		const mode = { wrap: 0, stick: 1, project: 2 }[L.mode] ?? 1;
 		u.uScr.value.set(Math.min(eff, 1), mode, Math.max(0.1, L.scale), L.bright);
 		u.uScrP.value.set((L.rotate * Math.PI) / 180, L.depth, L.mix, src.ar);
-		// объём по глубине: 0 нет, 1 по яркости кадра (в шейдере), 2 по карте (нейросеть или своя картинка); пока карты нет, работает яркость
 		const ds = L.dsrc || 'off';
 		const hasMap = ds !== 'off' && ds !== 'bright' && this._screenDepth(ds, src.media);
 		u.uScrD.value.set(ds === 'off' ? 0 : hasMap ? 2 : 1, L.depth ?? 0.5, L.dinv === 'far' ? -1 : 1, L.dcon ?? 1);
 		u.uScrQ.value.set(L.dshow === 'map' && ds !== 'off' ? 1 : 0, 0, 0, 0);
 		if (hasMap && u.uScrDep.value !== this._scrDepTex) u.uScrDep.value = this._scrDepTex;
 		u.uScrQ.value.y = this._screenMemTick(L, src) ? 1 : 0;
-		// фото не обновляется само, видео обновляет three.js; видео из «Медиа» на паузе остаётся кадром
 		if (this._scrFile && L.source === 'file' && this._scrFile.el.paused && this._scrFile.el.play) this._scrFile.el.play().catch(() => {});
 	}
 
-	// ------------------------------------------------------------ объём по глубине для «Экрана»
-	/** Готовит карту глубины кадра «Экрана» (нейросеть или своя картинка) в текстуре; true, если карта есть */
 	_screenDepth(ds, el) {
 		const S = (this._scrD ||= { busy: false, key: null, t: -1, cur: '', st: {} });
 		if (ds === 'file') {
@@ -134,7 +124,6 @@ export class ScreenPart {
 			}
 			return true;
 		}
-		// нейросеть: карта пересчитывается, когда у видео сменился кадр или сменился сам источник
 		if (S.cur.startsWith('file')) {
 			S.cur = '';
 			S.key = null;
@@ -172,7 +161,6 @@ export class ScreenPart {
 		return S.cur === 'ai' && !!this._scrDepTex;
 	}
 
-	/** Карта глубины в текстуру (один канал): строки переворачиваются, как у текстуры видео */
 	_scrDepWrite(m) {
 		let t = this._scrDepTex;
 		if (!t || t.image.width !== m.w || t.image.height !== m.h) {
@@ -187,7 +175,6 @@ export class ScreenPart {
 		t.needsUpdate = true;
 	}
 
-	/** Кнопка «Звук из видео»: эффекты слушают звук видео, которое играет на «Экране» */
 	async screenAudio() {
 		const L = this.state.layers.vscreen;
 		const el = L.source === 'file' ? this._scrFile?.media : this.pm.ready ? this.pm.el : null;
@@ -204,7 +191,6 @@ export class ScreenPart {
 		this.emit();
 	}
 
-	/** Кнопка «Загрузить карту глубины» у «Экрана» */
 	async screenDepthPick() {
 		const f = await pickImageFile();
 		if (!f) return;
@@ -218,19 +204,11 @@ export class ScreenPart {
 		this.emit();
 	}
 
-	// ------------------------------------------------------------ память цвета: точки помнят кадр, который на них попал, и он медленно гаснет
-	/**
-	 * Каждая точка держит у себя цвет кадра (rgb и сколько его осталось, текстура uScrMTex). Где кадр сейчас на точке, цвет берётся «светлейший из старого и нового»,
-	 * как при длинной выдержке; где кадра нет, он гаснет за заданное время. В «Проекторе» вращающаяся форма так раскрашивается видео, а в остальных видах за движением в кадре тянутся следы.
-	 * Положения точек берутся без смещений эффектов: память считается на процессоре, по частям, если точек много. true, если память включена.
-	 */
 	_screenMemTick(L, src) {
 		const T = L.mem || 0;
 		const g = this.geometry;
-		// пока на форме показана карта глубины, память не нужна
 		if (T <= 0.01 || !g || !src.media || (L.dshow === 'map' && L.dsrc && L.dsrc !== 'off')) return false;
 		const n = g.attributes.position.count;
-		// память лежит в текстуре по номеру точки (строки по 2048 точек): атрибутов у шейдера точек и так почти предел
 		let tex = this._scrMTex;
 		if (!tex || tex.userData.n !== n) {
 			tex?.dispose();
@@ -245,7 +223,6 @@ export class ScreenPart {
 		if (this.shared.uScrMTex.value !== tex) this.shared.uScrMTex.value = tex;
 		this.shared.uScrMN.value = n;
 		const M = (this._scrM ||= { ptr: 0, tGrab: -1, frame: null, chunkT: new Float64Array(Math.ceil(n / 200000)).fill(this._time) });
-		// кадр видео в маленьком разрешении: для цвета памяти больше и не нужно
 		if (this._time - M.tGrab > 1 / 30) {
 			M.tGrab = this._time;
 			M.frame = grabFrame(src.media, 160);
@@ -308,7 +285,6 @@ export class ScreenPart {
 					x = (((mvp[0] * px + mvp[4] * py + mvp[8] * pz + mvp[12]) / w) * 0.5 * scrAsp) / ar;
 					y = ((mvp[1] * px + mvp[5] * py + mvp[9] * pz + mvp[13]) / w) * 0.5;
 				} else {
-					// приклеено: точка должна смотреть к зрителю кадра, как в шейдере
 					if (N3[i * 3 + 2] < -0.05) continue;
 					x = bx / (hy * ar);
 					y = (by - ym) / hy;
@@ -328,7 +304,6 @@ export class ScreenPart {
 			if (b > m[o + 2]) m[o + 2] = b;
 			m[o + 3] = 1;
 		}
-		// в текстуру: корень из цвета / 4 (тёмные оттенки не теряются в восьми битах)
 		for (let o = i0 * 4, e = i1 * 4; o < e; o += 4) {
 			out[o] = Math.min(255, Math.sqrt(m[o] * 0.25) * 255 + 0.5);
 			out[o + 1] = Math.min(255, Math.sqrt(m[o + 1] * 0.25) * 255 + 0.5);
@@ -336,7 +311,6 @@ export class ScreenPart {
 			out[o + 3] = Math.min(255, m[o + 3] * 255 + 0.5);
 		}
 		tex.needsUpdate = true;
-		// какие точки изменились с прошлой загрузки: WebGPU загружает только их строки (WebGL загружает текстуру целиком)
 		const dd = tex.userData.dirty;
 		tex.userData.dirty = dd ? [Math.min(dd[0], i0), Math.max(dd[1], i1)] : [i0, i1];
 		return true;

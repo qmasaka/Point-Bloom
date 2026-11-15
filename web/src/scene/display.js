@@ -16,7 +16,7 @@ attribute float aSel;
 varying vec3 vColor;
 
 vec3 ramp(float t) {
-	// синий → голубой → зелёный → жёлтый → красный
+
 	vec3 c = vec3(0.0);
 	if (t < 0.25) c = mix(vec3(0.10, 0.20, 0.85), vec3(0.05, 0.80, 0.95), t / 0.25);
 	else if (t < 0.5) c = mix(vec3(0.05, 0.80, 0.95), vec3(0.30, 0.90, 0.25), (t - 0.25) / 0.25);
@@ -27,7 +27,7 @@ vec3 ramp(float t) {
 
 void main() {
 	if (aHide > 0.5) {
-		// точка скрыта фильтром «Медиа»: уводим за пределы экрана
+
 		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;
 		vColor = vec3(0.0);
@@ -53,7 +53,7 @@ void main() {
 		float wy = (modelMatrix * vec4(position, 1.0)).y;
 		vColor = ramp(clamp((wy - uYRange.x) / max(uYRange.y - uYRange.x, 1e-9), 0.0, 1.0));
 	}
-	// точки, выбранные при правке, светятся оранжевым и чуть крупнее
+
 	if (aSel > 0.5) {
 		vColor = vec3(1.0, 0.42, 0.08);
 		gl_PointSize = max(gl_PointSize, 3.0) + 1.5;
@@ -67,11 +67,11 @@ void main() {
 	float r2 = dot(c, c);
 	vec3 col = vColor;
 	if (uShape < 0.5) {
-		// квадрат
+
 	} else if (uShape < 1.5) {
 		if (r2 > 0.25) discard;
 	} else if (uShape < 2.5) {
-		// шар: круг с объёмной подсветкой
+
 		if (r2 > 0.25) discard;
 		vec3 n = vec3(c.x * 2.0, -c.y * 2.0, sqrt(max(0.0, 1.0 - 4.0 * r2)));
 		float l = max(dot(n, normalize(vec3(-0.4, 0.6, 0.7))), 0.0);

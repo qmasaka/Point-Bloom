@@ -1,6 +1,3 @@
-// Готовые формы облака точек (сфера, тор, ДНК и т. д.).
-
-// ───────────────────────────────────────────────────────────── формы
 export function baseShape(type, count = 100000) {
   const pos = new Float32Array(count * 3);
   const nor = new Float32Array(count * 3);

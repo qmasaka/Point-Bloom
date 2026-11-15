@@ -1,9 +1,6 @@
-// Мелкие утилиты, не зависящие от three.js
-
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-/** Мини-конструктор DOM: h('div', {class:'a', onclick: fn}, 'текст', childEl) */
 export function h(tag, attrs, ...children) {
 	const el = document.createElement(tag);
 	for (const [k, v] of Object.entries(attrs || {})) {
@@ -22,16 +19,11 @@ export function h(tag, attrs, ...children) {
 	return el;
 }
 
-/**
- * Масштаб интерфейса (CSS zoom на корне страницы, см. ui.js buildUiScale). Координаты мыши приходят в экранных пикселях,
- * а left, top, width внутри страницы задаются в пикселях вёрстки: экранные значения делятся на uiZoom() (см. toCss)
- */
 export function uiZoom() {
 	return parseFloat(document.documentElement.style.zoom) || 1;
 }
 
 let _rz = { zoom: 0, k: 1 };
-/** Во сколько раз getBoundingClientRect увеличен масштабом: в Chrome и Firefox он в экранных пикселях (= uiZoom), в Safari в пикселях вёрстки (= 1) */
 function rectZoom() {
 	const z = uiZoom();
 	if (_rz.zoom !== z && document.body) {
@@ -45,7 +37,6 @@ function rectZoom() {
 	return _rz.k;
 }
 
-/** Прямоугольник элемента в экранных пикселях, как координаты мыши (clientX, clientY), при любом масштабе интерфейса и в любом браузере */
 export function screenRect(el) {
 	const r = el.getBoundingClientRect();
 	const k = uiZoom() / rectZoom();
@@ -53,7 +44,6 @@ export function screenRect(el) {
 	return { left: r.left * k, top: r.top * k, right: r.right * k, bottom: r.bottom * k, width: r.width * k, height: r.height * k, x: r.left * k, y: r.top * k };
 }
 
-/** Экранные пиксели (мышь, screenRect) в пиксели вёрстки (style.left, top, width) */
 export const toCss = (v) => v / uiZoom();
 
 export const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -73,9 +63,7 @@ export function formatInt(n) {
 	return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
-/** Ставит всплывающее меню над кнопкой. Меню лежит прямо в сцене, а не внутри панели с размытием: вложенное размытие не видит сцену за собой. align: 'center' | 'right' */
 export function placeAbove(pop, btn, host, align = 'center', gap = 14) {
-	// замеры в экранных пикселях, положение в пикселях вёрстки: при масштабе интерфейса они различаются
 	const z = uiZoom();
 	const hr = screenRect(host);
 	const br = screenRect(btn);
@@ -88,7 +76,6 @@ export function placeAbove(pop, btn, host, align = 'center', gap = 14) {
 	} else {
 		pop.style.right = 'auto';
 		pop.style.transform = 'translateX(-50%)';
-		// на узком экране меню у крайней кнопки не уходит за край: центр сдвигается внутрь, отступ 8 px
 		const half = pop.offsetWidth / 2;
 		const x = (br.left + br.width / 2 - hr.left) / z;
 		const W = hr.width / z;
@@ -97,7 +84,6 @@ export function placeAbove(pop, btn, host, align = 'center', gap = 14) {
 	}
 }
 
-/** Число без хвоста нулей, до `digits` знаков */
 export function fmt(n, digits = 3) {
 	if (!isFinite(n)) return '-';
 	const s = n.toFixed(digits);
@@ -138,7 +124,6 @@ export function createEmitter() {
 }
 
 export const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
-/** Отдаёт управление браузеру, чтобы успел перерисоваться индикатор загрузки */
 export const yieldUI = () => new Promise((r) => setTimeout(r, 16));
 
 export function debounce(fn, ms) {
@@ -149,7 +134,6 @@ export function debounce(fn, ms) {
 	};
 }
 
-/** Глубокое слияние простых объектов настроек */
 export function mergeDeep(base, extra) {
 	const out = Array.isArray(base) ? [...base] : { ...base };
 	for (const k of Object.keys(extra || {})) {
@@ -172,11 +156,9 @@ export function saveJSON(key, value) {
 	try {
 		localStorage.setItem(key, JSON.stringify(value));
 	} catch (e) {
-		/* приватный режим / нет доступа — не страшно */
 	}
 }
 
-/** Безопасное имя файла */
 export function safeName(s, fallback = 'model') {
 	const t = (s || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '_').trim();
 	return t || fallback;

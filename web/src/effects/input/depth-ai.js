@@ -29,7 +29,7 @@ self.onmessage = async (e) => {
 			for (const dev of order) {
 				try {
 					depther = await make(dev);
-					// пробный прогон: на некоторых видеокартах сессия создаётся, но считает мусор
+
 					const probe = new Uint8ClampedArray(56 * 56 * 4);
 					for (let i = 0; i < probe.length; i += 4) probe[i] = probe[i + 1] = probe[i + 2] = (i / 4) % 56 * 4, probe[i + 3] = 255;
 					const r = await run({ data: probe, w: 56, h: 56 });

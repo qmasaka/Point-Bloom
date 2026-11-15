@@ -1,6 +1,4 @@
-// GLSL: фрагментный шейдер линии «Осциллограф».
-
-export const scopeFrag = /* glsl */ `
+export const scopeFrag = `
 precision highp float;
 varying vec3 vC;
 varying float vA;

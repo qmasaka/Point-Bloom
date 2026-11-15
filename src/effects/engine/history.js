@@ -1,22 +1,18 @@
 import { FX_LAYERS } from '../state/layers.js';
 
-/** История изменений: отмена и повтор. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class HistoryPart {
-	// ------------------------------------------------------------ состояние
-	// ------------------------------------------------------------ отмена и повтор в режиме эффектов
 	_snap() {
 		const st = this.state;
 		const layers = {};
 		for (const id of Object.keys(st.layers)) {
 			const l = { ...st.layers[id] };
-			if (this._handFx?.has(id)) l.on = this._handFx.get(id); // временное включение жестом не считается правкой
+			if (this._handFx?.has(id)) l.on = this._handFx.get(id);
 			layers[id] = l;
 		}
 		const p = this.app.settings.point;
 		return JSON.stringify({ anim: st.anim, source: st.source, count: st.count, layers, look: st.look, mask: st.mask, morphCfg: st.morphCfg, pt: { shape: p.shape, size: p.size, color: p.color, solidColor: p.solidColor, attenuate: p.attenuate } });
 	}
 
-	/** Дискретные правки таймлайна (добавить, удалить, разрезать) сохраняются отдельным шагом отмены, а не сливаются с соседними */
 	_histFlush() {
 		if (!this.active || this._histBusy) return;
 		clearTimeout(this._histT);
@@ -55,7 +51,6 @@ export class HistoryPart {
 			if (JSON.stringify(A.morphCfg) !== JSON.stringify(B.morphCfg)) return 'морфинг';
 			if (JSON.stringify(A.look) !== JSON.stringify(B.look) || JSON.stringify(A.pt) !== JSON.stringify(B.pt)) return 'вид';
 		} catch (e) {
-			/* не критично */
 		}
 		return 'настройки';
 	}
@@ -81,7 +76,6 @@ export class HistoryPart {
 		const st = this.state;
 		this._histBusy = true;
 		try {
-			// таймлайн подменяется на месте: панель держит ссылки на st.anim
 			if (d.anim) {
 				for (const k of Object.keys(st.anim)) delete st.anim[k];
 				Object.assign(st.anim, d.anim);

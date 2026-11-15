@@ -1,14 +1,10 @@
-// Сплаты из PLY живут в сцене как облако цветных точек. Здесь хранится исходный набор и пересборка по настройкам:
-// сколько точек оставить, какие прозрачные отбросить, насколько растянуть глубину.
 import * as THREE from 'three';
 
-/** Запоминает исходные данные и применяет настройки по умолчанию */
 export function initSplat(pts, src) {
 	pts.userData.splat = { total: src.total, src, cfg: { count: src.pos.length / 3, minOp: 0.05, depth: 1 } };
 	applySplat(pts);
 }
 
-/** Пересобирает геометрию по pts.userData.splat.cfg */
 export function applySplat(pts) {
 	const S = pts.userData.splat;
 	const { pos, col, op } = S.src;

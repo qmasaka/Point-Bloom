@@ -1,4 +1,3 @@
-// Облака точек: цвет вершин из текстуры, равномерная выборка точек по поверхности.
 import * as THREE from 'three';
 import { yieldUI } from '../core/util.js';
 import { weldExact } from '../core/geom.js';
@@ -35,7 +34,6 @@ function pixelData(tex) {
 	return rec;
 }
 
-/** Функция (u, v, out, o) → записывает линейный RGB текстуры в out[o..o+2] (билинейно) */
 export function makeTextureSampler(tex) {
 	const rec = pixelData(tex);
 	if (!rec) return null;
@@ -73,7 +71,6 @@ export function makeTextureSampler(tex) {
 	};
 }
 
-/** Цвет материала в точке: base color * текстура * цвет вершины */
 function makeColorFn(material) {
 	const tex = material && material.map ? makeTextureSampler(material.map) : null;
 	const base = material && material.color ? material.color : new THREE.Color(1, 1, 1);
@@ -92,7 +89,6 @@ function makeColorFn(material) {
 	};
 }
 
-/** Цвета всех вершин меша (Float32Array, линейный RGB) — с учётом текстур и групп материалов */
 export function bakeVertexColors(geometry, mats) {
 	const g = geometry;
 	const pos = g.attributes.position;
@@ -122,7 +118,6 @@ export function bakeVertexColors(geometry, mats) {
 	return out;
 }
 
-/** Подпись состояния (материалы + текстуры), чтобы понимать, когда нужно перезапечь цвета */
 export function colorSignature(mesh, mats) {
 	const list = Array.isArray(mats) ? mats : [mats];
 	return list
@@ -144,10 +139,6 @@ function mulberry32(a) {
 	};
 }
 
-/**
- * Равномерная выборка точек по поверхности мешей (в мировых координатах).
- * entries: [{ mesh, mats }]; возвращает { positions, colors, normals, count }
- */
 export async function sampleSurface(entries, count, { seed = 1337, onProgress, anim = false } = {}) {
 	const rng = mulberry32(seed);
 	const parts = [];
@@ -195,7 +186,6 @@ export async function sampleSurface(entries, count, { seed = 1337, onProgress, a
 	}
 	if (!parts.length) return { positions: new Float32Array(0), colors: new Float32Array(0), normals: new Float32Array(0), count: 0 };
 
-	// сколько точек достанется каждому мешу
 	let remaining = count;
 	parts.forEach((p, i) => {
 		p.n = i === parts.length - 1 ? remaining : Math.min(remaining, Math.round((count * p.area) / totalArea));
@@ -205,7 +195,6 @@ export async function sampleSurface(entries, count, { seed = 1337, onProgress, a
 	const positions = new Float32Array(count * 3);
 	const colors = new Float32Array(count * 3);
 	const normals = new Float32Array(count * 3);
-	// для анимации: к какому мешу относится точка, где она в «позе привязки» и какие кости её ведут
 	const A_ = anim ? { parts: parts.map((q) => ({ mesh: q.mesh, skinned: q.skinned })), part: new Uint8Array(count), bp: new Float32Array(count * 3), bi: new Uint16Array(count * 4), bw: new Float32Array(count * 4), bn: new Float32Array(count * 3) } : null;
 	let w = 0;
 	const vc = [1, 1, 1];
@@ -213,7 +202,6 @@ export async function sampleSurface(entries, count, { seed = 1337, onProgress, a
 	for (const p of parts) {
 		const { wp, tri, cum, T, uv, nrm, vcol, nm } = p;
 		for (let s = 0; s < p.n; s++, w++) {
-			// бинарный поиск треугольника по площади
 			const r = rng() * p.area;
 			let lo = 0, hi = T - 1;
 			while (lo < hi) {
@@ -231,7 +219,6 @@ export async function sampleSurface(entries, count, { seed = 1337, onProgress, a
 			positions[o] = A * wp[a] + B * wp[b] + C * wp[c];
 			positions[o + 1] = A * wp[a + 1] + B * wp[b + 1] + C * wp[c + 1];
 			positions[o + 2] = A * wp[a + 2] + B * wp[b + 2] + C * wp[c + 2];
-			// нормаль
 			let nx, ny, nz;
 			if (nrm) {
 				const lx = A * nrm.getX(i0) + B * nrm.getX(i1) + C * nrm.getX(i2);
@@ -247,7 +234,6 @@ export async function sampleSurface(entries, count, { seed = 1337, onProgress, a
 			}
 			const nl = Math.hypot(nx, ny, nz) || 1;
 			normals[o] = nx / nl; normals[o + 1] = ny / nl; normals[o + 2] = nz / nl;
-			// цвет
 			const u = uv ? A * uv.getX(i0) + B * uv.getX(i1) + C * uv.getX(i2) : 0;
 			const v = uv ? A * uv.getY(i0) + B * uv.getY(i1) + C * uv.getY(i2) : 0;
 			if (vcol) {
@@ -261,7 +247,6 @@ export async function sampleSurface(entries, count, { seed = 1337, onProgress, a
 				const ly = A * pa.getY(i0) + B * pa.getY(i1) + C * pa.getY(i2);
 				const lz = A * pa.getZ(i0) + B * pa.getZ(i1) + C * pa.getZ(i2);
 				A_.part[w] = p.pi;
-				// нормаль в том же пространстве, что и положение в позе привязки: по ней эффекты с направлением следуют за поворотом модели
 				if (nrm) {
 					const nx0 = A * nrm.getX(i0) + B * nrm.getX(i1) + C * nrm.getX(i2), ny0 = A * nrm.getY(i0) + B * nrm.getY(i1) + C * nrm.getY(i2), nz0 = A * nrm.getZ(i0) + B * nrm.getZ(i1) + C * nrm.getZ(i2);
 					let bx = nx0, by = ny0, bz = nz0;
@@ -301,16 +286,14 @@ export async function sampleSurface(entries, count, { seed = 1337, onProgress, a
 	return { positions, colors, normals, count: w, anim: A_ && A_.parts.some((q) => q.skinned) ? A_ : null };
 }
 
-/** Вершины мешей как облако точек (мировые координаты, цвета из текстур) */
 export function verticesToCloud(entries, { anim = false } = {}) {
 	const P = [], C = [], N = [];
-	const AN = []; // данные анимации по мешам
+	const AN = [];
 	const animParts = [];
 	let total = 0;
 	for (const { mesh, mats } of entries) {
 		let g = mesh.geometry;
 		if (!g.attributes.position) continue;
-		// у меша со скелетом вершины не склеиваем: порядок вершин связан с костями
 		if (!g.index && !mesh.isSkinnedMesh) g = weldExact(g);
 		mesh.updateWorldMatrix(true, false);
 		const colors = bakeVertexColors(g, mats);
@@ -393,7 +376,6 @@ export function verticesToCloud(entries, { anim = false } = {}) {
 	return out;
 }
 
-/** Собирает THREE.Points из результата sampleSurface/verticesToCloud */
 export function cloudToPoints(cloud, name = 'Облако точек') {
 	const g = new THREE.BufferGeometry();
 	g.setAttribute('position', new THREE.BufferAttribute(cloud.positions, 3));
@@ -407,7 +389,6 @@ export function cloudToPoints(cloud, name = 'Облако точек') {
 	return pts;
 }
 
-/** Своя текстура для цвета точек: вместо материала модели берётся выбранная картинка (по UV модели) */
 export function overrideMats(tex, mats) {
 	if (!tex) return mats;
 	const m = new THREE.MeshBasicMaterial({ map: tex });

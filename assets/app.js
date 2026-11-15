@@ -35049,8 +35049,8 @@ void main() {
 	float g = max(a * 0.5, b * 0.85);
 
 	vec2 fw = max(fwidth(p), vec2(1e-6));
-	float axU = (1.0 - smoothstep(0.0, 1.6, abs(p.y) / fw.y)) * uAxes;  // линия вдоль оси U (V = 0)
-	float axV = (1.0 - smoothstep(0.0, 1.6, abs(p.x) / fw.x)) * uAxes;  // линия вдоль оси V (U = 0)
+	float axU = (1.0 - smoothstep(0.0, 1.6, abs(p.y) / fw.y)) * uAxes;
+	float axV = (1.0 - smoothstep(0.0, 1.6, abs(p.x) / fw.x)) * uAxes;
 
 	float dist = length(p - pc);
 	float fade = 1.0 - smoothstep(uRadius * 0.3, uRadius, dist);
@@ -37189,7 +37189,7 @@ attribute float aSel;
 varying vec3 vColor;
 
 vec3 ramp(float t) {
-	// синий → голубой → зелёный → жёлтый → красный
+
 	vec3 c = vec3(0.0);
 	if (t < 0.25) c = mix(vec3(0.10, 0.20, 0.85), vec3(0.05, 0.80, 0.95), t / 0.25);
 	else if (t < 0.5) c = mix(vec3(0.05, 0.80, 0.95), vec3(0.30, 0.90, 0.25), (t - 0.25) / 0.25);
@@ -37200,7 +37200,7 @@ vec3 ramp(float t) {
 
 void main() {
 	if (aHide > 0.5) {
-		// точка скрыта фильтром «Медиа»: уводим за пределы экрана
+
 		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;
 		vColor = vec3(0.0);
@@ -37226,7 +37226,7 @@ void main() {
 		float wy = (modelMatrix * vec4(position, 1.0)).y;
 		vColor = ramp(clamp((wy - uYRange.x) / max(uYRange.y - uYRange.x, 1e-9), 0.0, 1.0));
 	}
-	// точки, выбранные при правке, светятся оранжевым и чуть крупнее
+
 	if (aSel > 0.5) {
 		vColor = vec3(1.0, 0.42, 0.08);
 		gl_PointSize = max(gl_PointSize, 3.0) + 1.5;
@@ -37240,11 +37240,11 @@ void main() {
 	float r2 = dot(c, c);
 	vec3 col = vColor;
 	if (uShape < 0.5) {
-		// квадрат
+
 	} else if (uShape < 1.5) {
 		if (r2 > 0.25) discard;
 	} else if (uShape < 2.5) {
-		// шар: круг с объёмной подсветкой
+
 		if (r2 > 0.25) discard;
 		vec3 n = vec3(c.x * 2.0, -c.y * 2.0, sqrt(max(0.0, 1.0 - 4.0 * r2)));
 		float l = max(dot(n, normalize(vec3(-0.4, 0.6, 0.7))), 0.0);
@@ -49933,316 +49933,6 @@ a[ j ] = b[ i ];
 return a;
 }
 };
-__defs['vendor/three/addons/loaders/TGALoader.js'] = function (__exports, __req) {
-'use strict';
-__def(__exports, 'TGALoader', () => TGALoader);
-const { DataTextureLoader, LinearMipmapLinearFilter } = __req('vendor/three/build/three.module.js');
-class TGALoader extends DataTextureLoader {
-constructor( manager ) {
-super( manager );
-}
-parse( buffer ) {
-function tgaCheckHeader( header ) {
-switch ( header.image_type ) {
-case TGA_TYPE_INDEXED:
-case TGA_TYPE_RLE_INDEXED:
-if ( header.colormap_length > 256 || header.colormap_size !== 24 || header.colormap_type !== 1 ) {
-throw new Error( 'THREE.TGALoader: Invalid type colormap data for indexed type.' );
-}
-break;
-case TGA_TYPE_RGB:
-case TGA_TYPE_GREY:
-case TGA_TYPE_RLE_RGB:
-case TGA_TYPE_RLE_GREY:
-if ( header.colormap_type ) {
-throw new Error( 'THREE.TGALoader: Invalid type colormap data for colormap type.' );
-}
-break;
-case TGA_TYPE_NO_DATA:
-throw new Error( 'THREE.TGALoader: No data.' );
-default:
-throw new Error( 'THREE.TGALoader: Invalid type ' + header.image_type );
-}
-if ( header.width <= 0 || header.height <= 0 ) {
-throw new Error( 'THREE.TGALoader: Invalid image size.' );
-}
-if ( header.pixel_size !== 8 && header.pixel_size !== 16 &&
-header.pixel_size !== 24 && header.pixel_size !== 32 ) {
-throw new Error( 'THREE.TGALoader: Invalid pixel size ' + header.pixel_size );
-}
-}
-function tgaParse( use_rle, use_pal, header, offset, data ) {
-let pixel_data,
-palettes;
-const pixel_size = header.pixel_size >> 3;
-const pixel_total = header.width * header.height * pixel_size;
-if ( use_pal ) {
-palettes = data.subarray( offset, offset += header.colormap_length * ( header.colormap_size >> 3 ) );
-}
-if ( use_rle ) {
-pixel_data = new Uint8Array( pixel_total );
-let c, count, i;
-let shift = 0;
-const pixels = new Uint8Array( pixel_size );
-while ( shift < pixel_total ) {
-c = data[ offset ++ ];
-count = ( c & 0x7f ) + 1;
-if ( c & 0x80 ) {
-for ( i = 0; i < pixel_size; ++ i ) {
-pixels[ i ] = data[ offset ++ ];
-}
-for ( i = 0; i < count; ++ i ) {
-pixel_data.set( pixels, shift + i * pixel_size );
-}
-shift += pixel_size * count;
-} else {
-count *= pixel_size;
-for ( i = 0; i < count; ++ i ) {
-pixel_data[ shift + i ] = data[ offset ++ ];
-}
-shift += count;
-}
-}
-} else {
-pixel_data = data.subarray(
-offset, offset += ( use_pal ? header.width * header.height : pixel_total )
-);
-}
-return {
-pixel_data: pixel_data,
-palettes: palettes
-};
-}
-function tgaGetImageData8bits( imageData, y_start, y_step, y_end, x_start, x_step, x_end, image, palettes ) {
-const colormap = palettes;
-let color, i = 0, x, y;
-const width = header.width;
-for ( y = y_start; y !== y_end; y += y_step ) {
-for ( x = x_start; x !== x_end; x += x_step, i ++ ) {
-color = image[ i ];
-imageData[ ( x + width * y ) * 4 + 3 ] = 255;
-imageData[ ( x + width * y ) * 4 + 2 ] = colormap[ ( color * 3 ) + 0 ];
-imageData[ ( x + width * y ) * 4 + 1 ] = colormap[ ( color * 3 ) + 1 ];
-imageData[ ( x + width * y ) * 4 + 0 ] = colormap[ ( color * 3 ) + 2 ];
-}
-}
-return imageData;
-}
-function tgaGetImageData16bits( imageData, y_start, y_step, y_end, x_start, x_step, x_end, image ) {
-let color, i = 0, x, y;
-const width = header.width;
-for ( y = y_start; y !== y_end; y += y_step ) {
-for ( x = x_start; x !== x_end; x += x_step, i += 2 ) {
-color = image[ i + 0 ] + ( image[ i + 1 ] << 8 );
-imageData[ ( x + width * y ) * 4 + 0 ] = ( color & 0x7C00 ) >> 7;
-imageData[ ( x + width * y ) * 4 + 1 ] = ( color & 0x03E0 ) >> 2;
-imageData[ ( x + width * y ) * 4 + 2 ] = ( color & 0x001F ) << 3;
-imageData[ ( x + width * y ) * 4 + 3 ] = ( color & 0x8000 ) ? 0 : 255;
-}
-}
-return imageData;
-}
-function tgaGetImageData24bits( imageData, y_start, y_step, y_end, x_start, x_step, x_end, image ) {
-let i = 0, x, y;
-const width = header.width;
-for ( y = y_start; y !== y_end; y += y_step ) {
-for ( x = x_start; x !== x_end; x += x_step, i += 3 ) {
-imageData[ ( x + width * y ) * 4 + 3 ] = 255;
-imageData[ ( x + width * y ) * 4 + 2 ] = image[ i + 0 ];
-imageData[ ( x + width * y ) * 4 + 1 ] = image[ i + 1 ];
-imageData[ ( x + width * y ) * 4 + 0 ] = image[ i + 2 ];
-}
-}
-return imageData;
-}
-function tgaGetImageData32bits( imageData, y_start, y_step, y_end, x_start, x_step, x_end, image ) {
-let i = 0, x, y;
-const width = header.width;
-for ( y = y_start; y !== y_end; y += y_step ) {
-for ( x = x_start; x !== x_end; x += x_step, i += 4 ) {
-imageData[ ( x + width * y ) * 4 + 2 ] = image[ i + 0 ];
-imageData[ ( x + width * y ) * 4 + 1 ] = image[ i + 1 ];
-imageData[ ( x + width * y ) * 4 + 0 ] = image[ i + 2 ];
-imageData[ ( x + width * y ) * 4 + 3 ] = image[ i + 3 ];
-}
-}
-return imageData;
-}
-function tgaGetImageDataGrey8bits( imageData, y_start, y_step, y_end, x_start, x_step, x_end, image ) {
-let color, i = 0, x, y;
-const width = header.width;
-for ( y = y_start; y !== y_end; y += y_step ) {
-for ( x = x_start; x !== x_end; x += x_step, i ++ ) {
-color = image[ i ];
-imageData[ ( x + width * y ) * 4 + 0 ] = color;
-imageData[ ( x + width * y ) * 4 + 1 ] = color;
-imageData[ ( x + width * y ) * 4 + 2 ] = color;
-imageData[ ( x + width * y ) * 4 + 3 ] = 255;
-}
-}
-return imageData;
-}
-function tgaGetImageDataGrey16bits( imageData, y_start, y_step, y_end, x_start, x_step, x_end, image ) {
-let i = 0, x, y;
-const width = header.width;
-for ( y = y_start; y !== y_end; y += y_step ) {
-for ( x = x_start; x !== x_end; x += x_step, i += 2 ) {
-imageData[ ( x + width * y ) * 4 + 0 ] = image[ i + 0 ];
-imageData[ ( x + width * y ) * 4 + 1 ] = image[ i + 0 ];
-imageData[ ( x + width * y ) * 4 + 2 ] = image[ i + 0 ];
-imageData[ ( x + width * y ) * 4 + 3 ] = image[ i + 1 ];
-}
-}
-return imageData;
-}
-function getTgaRGBA( data, width, height, image, palette ) {
-let x_start,
-y_start,
-x_step,
-y_step,
-x_end,
-y_end;
-switch ( ( header.flags & TGA_ORIGIN_MASK ) >> TGA_ORIGIN_SHIFT ) {
-default:
-case TGA_ORIGIN_UL:
-x_start = 0;
-x_step = 1;
-x_end = width;
-y_start = 0;
-y_step = 1;
-y_end = height;
-break;
-case TGA_ORIGIN_BL:
-x_start = 0;
-x_step = 1;
-x_end = width;
-y_start = height - 1;
-y_step = - 1;
-y_end = - 1;
-break;
-case TGA_ORIGIN_UR:
-x_start = width - 1;
-x_step = - 1;
-x_end = - 1;
-y_start = 0;
-y_step = 1;
-y_end = height;
-break;
-case TGA_ORIGIN_BR:
-x_start = width - 1;
-x_step = - 1;
-x_end = - 1;
-y_start = height - 1;
-y_step = - 1;
-y_end = - 1;
-break;
-}
-if ( use_grey ) {
-switch ( header.pixel_size ) {
-case 8:
-tgaGetImageDataGrey8bits( data, y_start, y_step, y_end, x_start, x_step, x_end, image );
-break;
-case 16:
-tgaGetImageDataGrey16bits( data, y_start, y_step, y_end, x_start, x_step, x_end, image );
-break;
-default:
-throw new Error( 'THREE.TGALoader: Format not supported.' );
-}
-} else {
-switch ( header.pixel_size ) {
-case 8:
-tgaGetImageData8bits( data, y_start, y_step, y_end, x_start, x_step, x_end, image, palette );
-break;
-case 16:
-tgaGetImageData16bits( data, y_start, y_step, y_end, x_start, x_step, x_end, image );
-break;
-case 24:
-tgaGetImageData24bits( data, y_start, y_step, y_end, x_start, x_step, x_end, image );
-break;
-case 32:
-tgaGetImageData32bits( data, y_start, y_step, y_end, x_start, x_step, x_end, image );
-break;
-default:
-throw new Error( 'THREE.TGALoader: Format not supported.' );
-}
-}
-return data;
-}
-const TGA_TYPE_NO_DATA = 0,
-TGA_TYPE_INDEXED = 1,
-TGA_TYPE_RGB = 2,
-TGA_TYPE_GREY = 3,
-TGA_TYPE_RLE_INDEXED = 9,
-TGA_TYPE_RLE_RGB = 10,
-TGA_TYPE_RLE_GREY = 11,
-TGA_ORIGIN_MASK = 0x30,
-TGA_ORIGIN_SHIFT = 0x04,
-TGA_ORIGIN_BL = 0x00,
-TGA_ORIGIN_BR = 0x01,
-TGA_ORIGIN_UL = 0x02,
-TGA_ORIGIN_UR = 0x03;
-if ( buffer.length < 19 ) throw new Error( 'THREE.TGALoader: Not enough data to contain header.' );
-let offset = 0;
-const content = new Uint8Array( buffer ),
-header = {
-id_length: content[ offset ++ ],
-colormap_type: content[ offset ++ ],
-image_type: content[ offset ++ ],
-colormap_index: content[ offset ++ ] | content[ offset ++ ] << 8,
-colormap_length: content[ offset ++ ] | content[ offset ++ ] << 8,
-colormap_size: content[ offset ++ ],
-origin: [
-content[ offset ++ ] | content[ offset ++ ] << 8,
-content[ offset ++ ] | content[ offset ++ ] << 8
-],
-width: content[ offset ++ ] | content[ offset ++ ] << 8,
-height: content[ offset ++ ] | content[ offset ++ ] << 8,
-pixel_size: content[ offset ++ ],
-flags: content[ offset ++ ]
-};
-tgaCheckHeader( header );
-if ( header.id_length + offset > buffer.length ) {
-throw new Error( 'THREE.TGALoader: No data.' );
-}
-offset += header.id_length;
-let use_rle = false,
-use_pal = false,
-use_grey = false;
-switch ( header.image_type ) {
-case TGA_TYPE_RLE_INDEXED:
-use_rle = true;
-use_pal = true;
-break;
-case TGA_TYPE_INDEXED:
-use_pal = true;
-break;
-case TGA_TYPE_RLE_RGB:
-use_rle = true;
-break;
-case TGA_TYPE_RGB:
-break;
-case TGA_TYPE_RLE_GREY:
-use_rle = true;
-use_grey = true;
-break;
-case TGA_TYPE_GREY:
-use_grey = true;
-break;
-}
-const imageData = new Uint8Array( header.width * header.height * 4 );
-const result = tgaParse( use_rle, use_pal, header, offset, content );
-getTgaRGBA( imageData, header.width, header.height, result.pixel_data, result.palettes );
-return {
-data: imageData,
-width: header.width,
-height: header.height,
-flipY: true,
-generateMipmaps: true,
-minFilter: LinearMipmapLinearFilter,
-};
-}
-}
-};
 __defs['vendor/three/addons/loaders/collada/ColladaParser.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'ColladaParser', () => ColladaParser);
@@ -60472,2200 +60162,6 @@ return target;
 };
 })();
 };
-__defs['vendor/three/addons/libs/fflate.module.js'] = function (__exports, __req) {
-'use strict';
-__def(__exports, 'FlateErrorCode', () => FlateErrorCode);
-__def(__exports, 'Deflate', () => Deflate);
-__def(__exports, 'AsyncDeflate', () => AsyncDeflate);
-__def(__exports, 'deflate', () => deflate);
-__def(__exports, 'deflateSync', () => deflateSync);
-__def(__exports, 'Inflate', () => Inflate);
-__def(__exports, 'AsyncInflate', () => AsyncInflate);
-__def(__exports, 'inflate', () => inflate);
-__def(__exports, 'inflateSync', () => inflateSync);
-__def(__exports, 'Gzip', () => Gzip);
-__def(__exports, 'AsyncGzip', () => AsyncGzip);
-__def(__exports, 'gzip', () => gzip);
-__def(__exports, 'gzipSync', () => gzipSync);
-__def(__exports, 'Gunzip', () => Gunzip);
-__def(__exports, 'AsyncGunzip', () => AsyncGunzip);
-__def(__exports, 'gunzip', () => gunzip);
-__def(__exports, 'gunzipSync', () => gunzipSync);
-__def(__exports, 'Zlib', () => Zlib);
-__def(__exports, 'AsyncZlib', () => AsyncZlib);
-__def(__exports, 'zlib', () => zlib);
-__def(__exports, 'zlibSync', () => zlibSync);
-__def(__exports, 'Unzlib', () => Unzlib);
-__def(__exports, 'AsyncUnzlib', () => AsyncUnzlib);
-__def(__exports, 'unzlib', () => unzlib);
-__def(__exports, 'unzlibSync', () => unzlibSync);
-__def(__exports, 'compress', () => gzip);
-__def(__exports, 'AsyncCompress', () => AsyncGzip);
-__def(__exports, 'compressSync', () => gzipSync);
-__def(__exports, 'Compress', () => Gzip);
-__def(__exports, 'Decompress', () => Decompress);
-__def(__exports, 'AsyncDecompress', () => AsyncDecompress);
-__def(__exports, 'decompress', () => decompress);
-__def(__exports, 'decompressSync', () => decompressSync);
-__def(__exports, 'DecodeUTF8', () => DecodeUTF8);
-__def(__exports, 'EncodeUTF8', () => EncodeUTF8);
-__def(__exports, 'strToU8', () => strToU8);
-__def(__exports, 'strFromU8', () => strFromU8);
-__def(__exports, 'ZipPassThrough', () => ZipPassThrough);
-__def(__exports, 'ZipDeflate', () => ZipDeflate);
-__def(__exports, 'AsyncZipDeflate', () => AsyncZipDeflate);
-__def(__exports, 'Zip', () => Zip);
-__def(__exports, 'zip', () => zip);
-__def(__exports, 'zipSync', () => zipSync);
-__def(__exports, 'UnzipPassThrough', () => UnzipPassThrough);
-__def(__exports, 'UnzipInflate', () => UnzipInflate);
-__def(__exports, 'AsyncUnzipInflate', () => AsyncUnzipInflate);
-__def(__exports, 'Unzip', () => Unzip);
-__def(__exports, 'unzip', () => unzip);
-__def(__exports, 'unzipSync', () => unzipSync);
-var ch2 = {};
-var wk = (function (c, id, msg, transfer, cb) {
-var w = new Worker(ch2[id] || (ch2[id] = URL.createObjectURL(new Blob([
-c + ';addEventListener("error",function(e){e=e.error;postMessage({$e$:[e.message,e.code,e.stack]})})'
-], { type: 'text/javascript' }))));
-w.onmessage = function (e) {
-var d = e.data, ed = d.$e$;
-if (ed) {
-var err = new Error(ed[0]);
-err['code'] = ed[1];
-err.stack = ed[2];
-cb(err, null);
-}
-else
-cb(null, d);
-};
-w.postMessage(msg, transfer);
-return w;
-});
-var u8 = Uint8Array, u16 = Uint16Array, i32 = Int32Array;
-var fleb = new u8([0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 0, 0, 0]);
-var fdeb = new u8([0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 0, 0]);
-var clim = new u8([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]);
-var freb = function (eb, start) {
-var b = new u16(31);
-for (var i = 0; i < 31; ++i) {
-b[i] = start += 1 << eb[i - 1];
-}
-var r = new i32(b[30]);
-for (var i = 1; i < 30; ++i) {
-for (var j = b[i]; j < b[i + 1]; ++j) {
-r[j] = ((j - b[i]) << 5) | i;
-}
-}
-return { b: b, r: r };
-};
-var _a = freb(fleb, 2), fl = _a.b, revfl = _a.r;
-fl[28] = 258, revfl[258] = 28;
-var _b = freb(fdeb, 0), fd = _b.b, revfd = _b.r;
-var rev = new u16(32768);
-for (var i = 0; i < 32768; ++i) {
-var x = ((i & 0xAAAA) >> 1) | ((i & 0x5555) << 1);
-x = ((x & 0xCCCC) >> 2) | ((x & 0x3333) << 2);
-x = ((x & 0xF0F0) >> 4) | ((x & 0x0F0F) << 4);
-rev[i] = (((x & 0xFF00) >> 8) | ((x & 0x00FF) << 8)) >> 1;
-}
-var hMap = (function (cd, mb, r) {
-var s = cd.length;
-var i = 0;
-var l = new u16(mb);
-for (; i < s; ++i) {
-if (cd[i])
-++l[cd[i] - 1];
-}
-var le = new u16(mb);
-for (i = 1; i < mb; ++i) {
-le[i] = (le[i - 1] + l[i - 1]) << 1;
-}
-var co;
-if (r) {
-co = new u16(1 << mb);
-var rvb = 15 - mb;
-for (i = 0; i < s; ++i) {
-if (cd[i]) {
-var sv = (i << 4) | cd[i];
-var r_1 = mb - cd[i];
-var v = le[cd[i] - 1]++ << r_1;
-for (var m = v | ((1 << r_1) - 1); v <= m; ++v) {
-co[rev[v] >> rvb] = sv;
-}
-}
-}
-}
-else {
-co = new u16(s);
-for (i = 0; i < s; ++i) {
-if (cd[i]) {
-co[i] = rev[le[cd[i] - 1]++] >> (15 - cd[i]);
-}
-}
-}
-return co;
-});
-var flt = new u8(288);
-for (var i = 0; i < 144; ++i)
-flt[i] = 8;
-for (var i = 144; i < 256; ++i)
-flt[i] = 9;
-for (var i = 256; i < 280; ++i)
-flt[i] = 7;
-for (var i = 280; i < 288; ++i)
-flt[i] = 8;
-var fdt = new u8(32);
-for (var i = 0; i < 32; ++i)
-fdt[i] = 5;
-var flm = hMap(flt, 9, 0), flrm = hMap(flt, 9, 1);
-var fdm = hMap(fdt, 5, 0), fdrm = hMap(fdt, 5, 1);
-var max = function (a) {
-var m = a[0];
-for (var i = 1; i < a.length; ++i) {
-if (a[i] > m)
-m = a[i];
-}
-return m;
-};
-var bits = function (d, p, m) {
-var o = (p / 8) | 0;
-return ((d[o] | (d[o + 1] << 8)) >> (p & 7)) & m;
-};
-var bits16 = function (d, p) {
-var o = (p / 8) | 0;
-return ((d[o] | (d[o + 1] << 8) | (d[o + 2] << 16)) >> (p & 7));
-};
-var shft = function (p) { return ((p + 7) / 8) | 0; };
-var slc = function (v, s, e) {
-if (s == null || s < 0)
-s = 0;
-if (e == null || e > v.length)
-e = v.length;
-return new u8(v.subarray(s, e));
-};
-var FlateErrorCode = {
-UnexpectedEOF: 0,
-InvalidBlockType: 1,
-InvalidLengthLiteral: 2,
-InvalidDistance: 3,
-StreamFinished: 4,
-NoStreamHandler: 5,
-InvalidHeader: 6,
-NoCallback: 7,
-InvalidUTF8: 8,
-ExtraFieldTooLong: 9,
-InvalidDate: 10,
-FilenameTooLong: 11,
-StreamFinishing: 12,
-InvalidZipData: 13,
-UnknownCompressionMethod: 14
-};
-var ec = [
-'unexpected EOF',
-'invalid block type',
-'invalid length/literal',
-'invalid distance',
-'stream finished',
-'no stream handler',
-,
-'no callback',
-'invalid UTF-8 data',
-'extra field too long',
-'date not in range 1980-2099',
-'filename too long',
-'stream finishing',
-'invalid zip data'
-];
-;
-var err = function (ind, msg, nt) {
-var e = new Error(msg || ec[ind]);
-e.code = ind;
-if (Error.captureStackTrace)
-Error.captureStackTrace(e, err);
-if (!nt)
-throw e;
-return e;
-};
-var inflt = function (dat, st, buf, dict) {
-var sl = dat.length, dl = dict ? dict.length : 0;
-if (!sl || st.f && !st.l)
-return buf || new u8(0);
-var noBuf = !buf;
-var resize = noBuf || st.i != 2;
-var noSt = st.i;
-if (noBuf)
-buf = new u8(sl * 3);
-var cbuf = function (l) {
-var bl = buf.length;
-if (l > bl) {
-var nbuf = new u8(Math.max(bl * 2, l));
-nbuf.set(buf);
-buf = nbuf;
-}
-};
-var final = st.f || 0, pos = st.p || 0, bt = st.b || 0, lm = st.l, dm = st.d, lbt = st.m, dbt = st.n;
-var tbts = sl * 8;
-do {
-if (!lm) {
-final = bits(dat, pos, 1);
-var type = bits(dat, pos + 1, 3);
-pos += 3;
-if (!type) {
-var s = shft(pos) + 4, l = dat[s - 4] | (dat[s - 3] << 8), t = s + l;
-if (t > sl) {
-if (noSt)
-err(0);
-break;
-}
-if (resize)
-cbuf(bt + l);
-buf.set(dat.subarray(s, t), bt);
-st.b = bt += l, st.p = pos = t * 8, st.f = final;
-continue;
-}
-else if (type == 1)
-lm = flrm, dm = fdrm, lbt = 9, dbt = 5;
-else if (type == 2) {
-var hLit = bits(dat, pos, 31) + 257, hcLen = bits(dat, pos + 10, 15) + 4;
-var tl = hLit + bits(dat, pos + 5, 31) + 1;
-pos += 14;
-var ldt = new u8(tl);
-var clt = new u8(19);
-for (var i = 0; i < hcLen; ++i) {
-clt[clim[i]] = bits(dat, pos + i * 3, 7);
-}
-pos += hcLen * 3;
-var clb = max(clt), clbmsk = (1 << clb) - 1;
-var clm = hMap(clt, clb, 1);
-for (var i = 0; i < tl;) {
-var r = clm[bits(dat, pos, clbmsk)];
-pos += r & 15;
-var s = r >> 4;
-if (s < 16) {
-ldt[i++] = s;
-}
-else {
-var c = 0, n = 0;
-if (s == 16)
-n = 3 + bits(dat, pos, 3), pos += 2, c = ldt[i - 1];
-else if (s == 17)
-n = 3 + bits(dat, pos, 7), pos += 3;
-else if (s == 18)
-n = 11 + bits(dat, pos, 127), pos += 7;
-while (n--)
-ldt[i++] = c;
-}
-}
-var lt = ldt.subarray(0, hLit), dt = ldt.subarray(hLit);
-lbt = max(lt);
-dbt = max(dt);
-lm = hMap(lt, lbt, 1);
-dm = hMap(dt, dbt, 1);
-}
-else
-err(1);
-if (pos > tbts) {
-if (noSt)
-err(0);
-break;
-}
-}
-if (resize)
-cbuf(bt + 131072);
-var lms = (1 << lbt) - 1, dms = (1 << dbt) - 1;
-var lpos = pos;
-for (;; lpos = pos) {
-var c = lm[bits16(dat, pos) & lms], sym = c >> 4;
-pos += c & 15;
-if (pos > tbts) {
-if (noSt)
-err(0);
-break;
-}
-if (!c)
-err(2);
-if (sym < 256)
-buf[bt++] = sym;
-else if (sym == 256) {
-lpos = pos, lm = null;
-break;
-}
-else {
-var add = sym - 254;
-if (sym > 264) {
-var i = sym - 257, b = fleb[i];
-add = bits(dat, pos, (1 << b) - 1) + fl[i];
-pos += b;
-}
-var d = dm[bits16(dat, pos) & dms], dsym = d >> 4;
-if (!d)
-err(3);
-pos += d & 15;
-var dt = fd[dsym];
-if (dsym > 3) {
-var b = fdeb[dsym];
-dt += bits16(dat, pos) & (1 << b) - 1, pos += b;
-}
-if (pos > tbts) {
-if (noSt)
-err(0);
-break;
-}
-if (resize)
-cbuf(bt + 131072);
-var end = bt + add;
-if (bt < dt) {
-var shift = dl - dt, dend = Math.min(dt, end);
-if (shift + bt < 0)
-err(3);
-for (; bt < dend; ++bt)
-buf[bt] = dict[shift + bt];
-}
-for (; bt < end; ++bt)
-buf[bt] = buf[bt - dt];
-}
-}
-st.l = lm, st.p = lpos, st.b = bt, st.f = final;
-if (lm)
-final = 1, st.m = lbt, st.d = dm, st.n = dbt;
-} while (!final);
-return bt != buf.length && noBuf ? slc(buf, 0, bt) : buf.subarray(0, bt);
-};
-var wbits = function (d, p, v) {
-v <<= p & 7;
-var o = (p / 8) | 0;
-d[o] |= v;
-d[o + 1] |= v >> 8;
-};
-var wbits16 = function (d, p, v) {
-v <<= p & 7;
-var o = (p / 8) | 0;
-d[o] |= v;
-d[o + 1] |= v >> 8;
-d[o + 2] |= v >> 16;
-};
-var hTree = function (d, mb) {
-var t = [];
-for (var i = 0; i < d.length; ++i) {
-if (d[i])
-t.push({ s: i, f: d[i] });
-}
-var s = t.length;
-var t2 = t.slice();
-if (!s)
-return { t: et, l: 0 };
-if (s == 1) {
-var v = new u8(t[0].s + 1);
-v[t[0].s] = 1;
-return { t: v, l: 1 };
-}
-t.sort(function (a, b) { return a.f - b.f; });
-t.push({ s: -1, f: 25001 });
-var l = t[0], r = t[1], i0 = 0, i1 = 1, i2 = 2;
-t[0] = { s: -1, f: l.f + r.f, l: l, r: r };
-while (i1 != s - 1) {
-l = t[t[i0].f < t[i2].f ? i0++ : i2++];
-r = t[i0 != i1 && t[i0].f < t[i2].f ? i0++ : i2++];
-t[i1++] = { s: -1, f: l.f + r.f, l: l, r: r };
-}
-var maxSym = t2[0].s;
-for (var i = 1; i < s; ++i) {
-if (t2[i].s > maxSym)
-maxSym = t2[i].s;
-}
-var tr = new u16(maxSym + 1);
-var mbt = ln(t[i1 - 1], tr, 0);
-if (mbt > mb) {
-var i = 0, dt = 0;
-var lft = mbt - mb, cst = 1 << lft;
-t2.sort(function (a, b) { return tr[b.s] - tr[a.s] || a.f - b.f; });
-for (; i < s; ++i) {
-var i2_1 = t2[i].s;
-if (tr[i2_1] > mb) {
-dt += cst - (1 << (mbt - tr[i2_1]));
-tr[i2_1] = mb;
-}
-else
-break;
-}
-dt >>= lft;
-while (dt > 0) {
-var i2_2 = t2[i].s;
-if (tr[i2_2] < mb)
-dt -= 1 << (mb - tr[i2_2]++ - 1);
-else
-++i;
-}
-for (; i >= 0 && dt; --i) {
-var i2_3 = t2[i].s;
-if (tr[i2_3] == mb) {
---tr[i2_3];
-++dt;
-}
-}
-mbt = mb;
-}
-return { t: new u8(tr), l: mbt };
-};
-var ln = function (n, l, d) {
-return n.s == -1
-? Math.max(ln(n.l, l, d + 1), ln(n.r, l, d + 1))
-: (l[n.s] = d);
-};
-var lc = function (c) {
-var s = c.length;
-while (s && !c[--s])
-;
-var cl = new u16(++s);
-var cli = 0, cln = c[0], cls = 1;
-var w = function (v) { cl[cli++] = v; };
-for (var i = 1; i <= s; ++i) {
-if (c[i] == cln && i != s)
-++cls;
-else {
-if (!cln && cls > 2) {
-for (; cls > 138; cls -= 138)
-w(32754);
-if (cls > 2) {
-w(cls > 10 ? ((cls - 11) << 5) | 28690 : ((cls - 3) << 5) | 12305);
-cls = 0;
-}
-}
-else if (cls > 3) {
-w(cln), --cls;
-for (; cls > 6; cls -= 6)
-w(8304);
-if (cls > 2)
-w(((cls - 3) << 5) | 8208), cls = 0;
-}
-while (cls--)
-w(cln);
-cls = 1;
-cln = c[i];
-}
-}
-return { c: cl.subarray(0, cli), n: s };
-};
-var clen = function (cf, cl) {
-var l = 0;
-for (var i = 0; i < cl.length; ++i)
-l += cf[i] * cl[i];
-return l;
-};
-var wfblk = function (out, pos, dat) {
-var s = dat.length;
-var o = shft(pos + 2);
-out[o] = s & 255;
-out[o + 1] = s >> 8;
-out[o + 2] = out[o] ^ 255;
-out[o + 3] = out[o + 1] ^ 255;
-for (var i = 0; i < s; ++i)
-out[o + i + 4] = dat[i];
-return (o + 4 + s) * 8;
-};
-var wblk = function (dat, out, final, syms, lf, df, eb, li, bs, bl, p) {
-wbits(out, p++, final);
-++lf[256];
-var _a = hTree(lf, 15), dlt = _a.t, mlb = _a.l;
-var _b = hTree(df, 15), ddt = _b.t, mdb = _b.l;
-var _c = lc(dlt), lclt = _c.c, nlc = _c.n;
-var _d = lc(ddt), lcdt = _d.c, ndc = _d.n;
-var lcfreq = new u16(19);
-for (var i = 0; i < lclt.length; ++i)
-++lcfreq[lclt[i] & 31];
-for (var i = 0; i < lcdt.length; ++i)
-++lcfreq[lcdt[i] & 31];
-var _e = hTree(lcfreq, 7), lct = _e.t, mlcb = _e.l;
-var nlcc = 19;
-for (; nlcc > 4 && !lct[clim[nlcc - 1]]; --nlcc)
-;
-var flen = (bl + 5) << 3;
-var ftlen = clen(lf, flt) + clen(df, fdt) + eb;
-var dtlen = clen(lf, dlt) + clen(df, ddt) + eb + 14 + 3 * nlcc + clen(lcfreq, lct) + 2 * lcfreq[16] + 3 * lcfreq[17] + 7 * lcfreq[18];
-if (bs >= 0 && flen <= ftlen && flen <= dtlen)
-return wfblk(out, p, dat.subarray(bs, bs + bl));
-var lm, ll, dm, dl;
-wbits(out, p, 1 + (dtlen < ftlen)), p += 2;
-if (dtlen < ftlen) {
-lm = hMap(dlt, mlb, 0), ll = dlt, dm = hMap(ddt, mdb, 0), dl = ddt;
-var llm = hMap(lct, mlcb, 0);
-wbits(out, p, nlc - 257);
-wbits(out, p + 5, ndc - 1);
-wbits(out, p + 10, nlcc - 4);
-p += 14;
-for (var i = 0; i < nlcc; ++i)
-wbits(out, p + 3 * i, lct[clim[i]]);
-p += 3 * nlcc;
-var lcts = [lclt, lcdt];
-for (var it = 0; it < 2; ++it) {
-var clct = lcts[it];
-for (var i = 0; i < clct.length; ++i) {
-var len = clct[i] & 31;
-wbits(out, p, llm[len]), p += lct[len];
-if (len > 15)
-wbits(out, p, (clct[i] >> 5) & 127), p += clct[i] >> 12;
-}
-}
-}
-else {
-lm = flm, ll = flt, dm = fdm, dl = fdt;
-}
-for (var i = 0; i < li; ++i) {
-var sym = syms[i];
-if (sym > 255) {
-var len = (sym >> 18) & 31;
-wbits16(out, p, lm[len + 257]), p += ll[len + 257];
-if (len > 7)
-wbits(out, p, (sym >> 23) & 31), p += fleb[len];
-var dst = sym & 31;
-wbits16(out, p, dm[dst]), p += dl[dst];
-if (dst > 3)
-wbits16(out, p, (sym >> 5) & 8191), p += fdeb[dst];
-}
-else {
-wbits16(out, p, lm[sym]), p += ll[sym];
-}
-}
-wbits16(out, p, lm[256]);
-return p + ll[256];
-};
-var deo = new i32([65540, 131080, 131088, 131104, 262176, 1048704, 1048832, 2114560, 2117632]);
-var et = new u8(0);
-var dflt = function (dat, lvl, plvl, pre, post, st) {
-var s = st.z || dat.length;
-var o = new u8(pre + s + 5 * (1 + Math.ceil(s / 7000)) + post);
-var w = o.subarray(pre, o.length - post);
-var lst = st.l;
-var pos = (st.r || 0) & 7;
-if (lvl) {
-if (pos)
-w[0] = st.r >> 3;
-var opt = deo[lvl - 1];
-var n = opt >> 13, c = opt & 8191;
-var msk_1 = (1 << plvl) - 1;
-var prev = st.p || new u16(32768), head = st.h || new u16(msk_1 + 1);
-var bs1_1 = Math.ceil(plvl / 3), bs2_1 = 2 * bs1_1;
-var hsh = function (i) { return (dat[i] ^ (dat[i + 1] << bs1_1) ^ (dat[i + 2] << bs2_1)) & msk_1; };
-var syms = new i32(25000);
-var lf = new u16(288), df = new u16(32);
-var lc_1 = 0, eb = 0, i = st.i || 0, li = 0, wi = st.w || 0, bs = 0;
-for (; i + 2 < s; ++i) {
-var hv = hsh(i);
-var imod = i & 32767, pimod = head[hv];
-prev[imod] = pimod;
-head[hv] = imod;
-if (wi <= i) {
-var rem = s - i;
-if ((lc_1 > 7000 || li > 24576) && (rem > 423 || !lst)) {
-pos = wblk(dat, w, 0, syms, lf, df, eb, li, bs, i - bs, pos);
-li = lc_1 = eb = 0, bs = i;
-for (var j = 0; j < 286; ++j)
-lf[j] = 0;
-for (var j = 0; j < 30; ++j)
-df[j] = 0;
-}
-var l = 2, d = 0, ch_1 = c, dif = imod - pimod & 32767;
-if (rem > 2 && hv == hsh(i - dif)) {
-var maxn = Math.min(n, rem) - 1;
-var maxd = Math.min(32767, i);
-var ml = Math.min(258, rem);
-while (dif <= maxd && --ch_1 && imod != pimod) {
-if (dat[i + l] == dat[i + l - dif]) {
-var nl = 0;
-for (; nl < ml && dat[i + nl] == dat[i + nl - dif]; ++nl)
-;
-if (nl > l) {
-l = nl, d = dif;
-if (nl > maxn)
-break;
-var mmd = Math.min(dif, nl - 2);
-var md = 0;
-for (var j = 0; j < mmd; ++j) {
-var ti = i - dif + j & 32767;
-var pti = prev[ti];
-var cd = ti - pti & 32767;
-if (cd > md)
-md = cd, pimod = ti;
-}
-}
-}
-imod = pimod, pimod = prev[imod];
-dif += imod - pimod & 32767;
-}
-}
-if (d) {
-syms[li++] = 268435456 | (revfl[l] << 18) | revfd[d];
-var lin = revfl[l] & 31, din = revfd[d] & 31;
-eb += fleb[lin] + fdeb[din];
-++lf[257 + lin];
-++df[din];
-wi = i + l;
-++lc_1;
-}
-else {
-syms[li++] = dat[i];
-++lf[dat[i]];
-}
-}
-}
-for (i = Math.max(i, wi); i < s; ++i) {
-syms[li++] = dat[i];
-++lf[dat[i]];
-}
-pos = wblk(dat, w, lst, syms, lf, df, eb, li, bs, i - bs, pos);
-if (!lst) {
-st.r = (pos & 7) | w[(pos / 8) | 0] << 3;
-pos -= 7;
-st.h = head, st.p = prev, st.i = i, st.w = wi;
-}
-}
-else {
-for (var i = st.w || 0; i < s + lst; i += 65535) {
-var e = i + 65535;
-if (e >= s) {
-w[(pos / 8) | 0] = lst;
-e = s;
-}
-pos = wfblk(w, pos + 1, dat.subarray(i, e));
-}
-st.i = s;
-}
-return slc(o, 0, pre + shft(pos) + post);
-};
-var crct = (function () {
-var t = new Int32Array(256);
-for (var i = 0; i < 256; ++i) {
-var c = i, k = 9;
-while (--k)
-c = ((c & 1) && -306674912) ^ (c >>> 1);
-t[i] = c;
-}
-return t;
-})();
-var crc = function () {
-var c = -1;
-return {
-p: function (d) {
-var cr = c;
-for (var i = 0; i < d.length; ++i)
-cr = crct[(cr & 255) ^ d[i]] ^ (cr >>> 8);
-c = cr;
-},
-d: function () { return ~c; }
-};
-};
-var adler = function () {
-var a = 1, b = 0;
-return {
-p: function (d) {
-var n = a, m = b;
-var l = d.length | 0;
-for (var i = 0; i != l;) {
-var e = Math.min(i + 2655, l);
-for (; i < e; ++i)
-m += n += d[i];
-n = (n & 65535) + 15 * (n >> 16), m = (m & 65535) + 15 * (m >> 16);
-}
-a = n, b = m;
-},
-d: function () {
-a %= 65521, b %= 65521;
-return (a & 255) << 24 | (a & 0xFF00) << 8 | (b & 255) << 8 | (b >> 8);
-}
-};
-};
-;
-var dopt = function (dat, opt, pre, post, st) {
-if (!st) {
-st = { l: 1 };
-if (opt.dictionary) {
-var dict = opt.dictionary.subarray(-32768);
-var newDat = new u8(dict.length + dat.length);
-newDat.set(dict);
-newDat.set(dat, dict.length);
-dat = newDat;
-st.w = dict.length;
-}
-}
-return dflt(dat, opt.level == null ? 6 : opt.level, opt.mem == null ? (st.l ? Math.ceil(Math.max(8, Math.min(13, Math.log(dat.length))) * 1.5) : 20) : (12 + opt.mem), pre, post, st);
-};
-var mrg = function (a, b) {
-var o = {};
-for (var k in a)
-o[k] = a[k];
-for (var k in b)
-o[k] = b[k];
-return o;
-};
-var wcln = function (fn, fnStr, td) {
-var dt = fn();
-var st = fn.toString();
-var ks = st.slice(st.indexOf('[') + 1, st.lastIndexOf(']')).replace(/\s+/g, '').split(',');
-for (var i = 0; i < dt.length; ++i) {
-var v = dt[i], k = ks[i];
-if (typeof v == 'function') {
-fnStr += ';' + k + '=';
-var st_1 = v.toString();
-if (v.prototype) {
-if (st_1.indexOf('[native code]') != -1) {
-var spInd = st_1.indexOf(' ', 8) + 1;
-fnStr += st_1.slice(spInd, st_1.indexOf('(', spInd));
-}
-else {
-fnStr += st_1;
-for (var t in v.prototype)
-fnStr += ';' + k + '.prototype.' + t + '=' + v.prototype[t].toString();
-}
-}
-else
-fnStr += st_1;
-}
-else
-td[k] = v;
-}
-return fnStr;
-};
-var ch = [];
-var cbfs = function (v) {
-var tl = [];
-for (var k in v) {
-if (v[k].buffer) {
-tl.push((v[k] = new v[k].constructor(v[k])).buffer);
-}
-}
-return tl;
-};
-var wrkr = function (fns, init, id, cb) {
-if (!ch[id]) {
-var fnStr = '', td_1 = {}, m = fns.length - 1;
-for (var i = 0; i < m; ++i)
-fnStr = wcln(fns[i], fnStr, td_1);
-ch[id] = { c: wcln(fns[m], fnStr, td_1), e: td_1 };
-}
-var td = mrg({}, ch[id].e);
-return wk(ch[id].c + ';onmessage=function(e){for(var k in e.data)self[k]=e.data[k];onmessage=' + init.toString() + '}', id, td, cbfs(td), cb);
-};
-var bInflt = function () { return [u8, u16, i32, fleb, fdeb, clim, fl, fd, flrm, fdrm, rev, ec, hMap, max, bits, bits16, shft, slc, err, inflt, inflateSync, pbf, gopt]; };
-var bDflt = function () { return [u8, u16, i32, fleb, fdeb, clim, revfl, revfd, flm, flt, fdm, fdt, rev, deo, et, hMap, wbits, wbits16, hTree, ln, lc, clen, wfblk, wblk, shft, slc, dflt, dopt, deflateSync, pbf]; };
-var gze = function () { return [gzh, gzhl, wbytes, crc, crct]; };
-var guze = function () { return [gzs, gzl]; };
-var zle = function () { return [zlh, wbytes, adler]; };
-var zule = function () { return [zls]; };
-var pbf = function (msg) { return postMessage(msg, [msg.buffer]); };
-var gopt = function (o) { return o && {
-out: o.size && new u8(o.size),
-dictionary: o.dictionary
-}; };
-var cbify = function (dat, opts, fns, init, id, cb) {
-var w = wrkr(fns, init, id, function (err, dat) {
-w.terminate();
-cb(err, dat);
-});
-w.postMessage([dat, opts], opts.consume ? [dat.buffer] : []);
-return function () { w.terminate(); };
-};
-var astrm = function (strm) {
-strm.ondata = function (dat, final) { return postMessage([dat, final], [dat.buffer]); };
-return function (ev) {
-if (ev.data.length) {
-strm.push(ev.data[0], ev.data[1]);
-postMessage([ev.data[0].length]);
-}
-else
-strm.flush();
-};
-};
-var astrmify = function (fns, strm, opts, init, id, flush, ext) {
-var t;
-var w = wrkr(fns, init, id, function (err, dat) {
-if (err)
-w.terminate(), strm.ondata.call(strm, err);
-else if (!Array.isArray(dat))
-ext(dat);
-else if (dat.length == 1) {
-strm.queuedSize -= dat[0];
-if (strm.ondrain)
-strm.ondrain(dat[0]);
-}
-else {
-if (dat[1])
-w.terminate();
-strm.ondata.call(strm, err, dat[0], dat[1]);
-}
-});
-w.postMessage(opts);
-strm.queuedSize = 0;
-strm.push = function (d, f) {
-if (!strm.ondata)
-err(5);
-if (t)
-strm.ondata(err(4, 0, 1), null, !!f);
-strm.queuedSize += d.length;
-w.postMessage([d, t = f], [d.buffer]);
-};
-strm.terminate = function () { w.terminate(); };
-if (flush) {
-strm.flush = function () { w.postMessage([]); };
-}
-};
-var b2 = function (d, b) { return d[b] | (d[b + 1] << 8); };
-var b4 = function (d, b) { return (d[b] | (d[b + 1] << 8) | (d[b + 2] << 16) | (d[b + 3] << 24)) >>> 0; };
-var b8 = function (d, b) { return b4(d, b) + (b4(d, b + 4) * 4294967296); };
-var wbytes = function (d, b, v) {
-for (; v; ++b)
-d[b] = v, v >>>= 8;
-};
-var gzh = function (c, o) {
-var fn = o.filename;
-c[0] = 31, c[1] = 139, c[2] = 8, c[8] = o.level < 2 ? 4 : o.level == 9 ? 2 : 0, c[9] = 3;
-if (o.mtime != 0)
-wbytes(c, 4, Math.floor(new Date(o.mtime || Date.now()) / 1000));
-if (fn) {
-c[3] = 8;
-for (var i = 0; i <= fn.length; ++i)
-c[i + 10] = fn.charCodeAt(i);
-}
-};
-var gzs = function (d) {
-if (d[0] != 31 || d[1] != 139 || d[2] != 8)
-err(6, 'invalid gzip data');
-var flg = d[3];
-var st = 10;
-if (flg & 4)
-st += (d[10] | d[11] << 8) + 2;
-for (var zs = (flg >> 3 & 1) + (flg >> 4 & 1); zs > 0; zs -= !d[st++])
-;
-return st + (flg & 2);
-};
-var gzl = function (d) {
-var l = d.length;
-return (d[l - 4] | d[l - 3] << 8 | d[l - 2] << 16 | d[l - 1] << 24) >>> 0;
-};
-var gzhl = function (o) { return 10 + (o.filename ? o.filename.length + 1 : 0); };
-var zlh = function (c, o) {
-var lv = o.level, fl = lv == 0 ? 0 : lv < 6 ? 1 : lv == 9 ? 3 : 2;
-c[0] = 120, c[1] = (fl << 6) | (o.dictionary && 32);
-c[1] |= 31 - ((c[0] << 8) | c[1]) % 31;
-if (o.dictionary) {
-var h = adler();
-h.p(o.dictionary);
-wbytes(c, 2, h.d());
-}
-};
-var zls = function (d, dict) {
-if ((d[0] & 15) != 8 || (d[0] >> 4) > 7 || ((d[0] << 8 | d[1]) % 31))
-err(6, 'invalid zlib data');
-if ((d[1] >> 5 & 1) == +!dict)
-err(6, 'invalid zlib data: ' + (d[1] & 32 ? 'need' : 'unexpected') + ' dictionary');
-return (d[1] >> 3 & 4) + 2;
-};
-function StrmOpt(opts, cb) {
-if (typeof opts == 'function')
-cb = opts, opts = {};
-this.ondata = cb;
-return opts;
-}
-var Deflate = (function () {
-function Deflate(opts, cb) {
-if (typeof opts == 'function')
-cb = opts, opts = {};
-this.ondata = cb;
-this.o = opts || {};
-this.s = { l: 0, i: 32768, w: 32768, z: 32768 };
-this.b = new u8(98304);
-if (this.o.dictionary) {
-var dict = this.o.dictionary.subarray(-32768);
-this.b.set(dict, 32768 - dict.length);
-this.s.i = 32768 - dict.length;
-}
-}
-Deflate.prototype.p = function (c, f) {
-this.ondata(dopt(c, this.o, 0, 0, this.s), f);
-};
-Deflate.prototype.push = function (chunk, final) {
-if (!this.ondata)
-err(5);
-if (this.s.l)
-err(4);
-var endLen = chunk.length + this.s.z;
-if (endLen > this.b.length) {
-if (endLen > 2 * this.b.length - 32768) {
-var newBuf = new u8(endLen & -32768);
-newBuf.set(this.b.subarray(0, this.s.z));
-this.b = newBuf;
-}
-var split = this.b.length - this.s.z;
-this.b.set(chunk.subarray(0, split), this.s.z);
-this.s.z = this.b.length;
-this.p(this.b, false);
-this.b.set(this.b.subarray(-32768));
-this.b.set(chunk.subarray(split), 32768);
-this.s.z = chunk.length - split + 32768;
-this.s.i = 32766, this.s.w = 32768;
-}
-else {
-this.b.set(chunk, this.s.z);
-this.s.z += chunk.length;
-}
-this.s.l = final & 1;
-if (this.s.z > this.s.w + 8191 || final) {
-this.p(this.b, final || false);
-this.s.w = this.s.i, this.s.i -= 2;
-}
-};
-Deflate.prototype.flush = function () {
-if (!this.ondata)
-err(5);
-if (this.s.l)
-err(4);
-this.p(this.b, false);
-this.s.w = this.s.i, this.s.i -= 2;
-};
-return Deflate;
-}());
-var AsyncDeflate = (function () {
-function AsyncDeflate(opts, cb) {
-astrmify([
-bDflt,
-function () { return [astrm, Deflate]; }
-], this, StrmOpt.call(this, opts, cb), function (ev) {
-var strm = new Deflate(ev.data);
-onmessage = astrm(strm);
-}, 6, 1);
-}
-return AsyncDeflate;
-}());
-function deflate(data, opts, cb) {
-if (!cb)
-cb = opts, opts = {};
-if (typeof cb != 'function')
-err(7);
-return cbify(data, opts, [
-bDflt,
-], function (ev) { return pbf(deflateSync(ev.data[0], ev.data[1])); }, 0, cb);
-}
-function deflateSync(data, opts) {
-return dopt(data, opts || {}, 0, 0);
-}
-var Inflate = (function () {
-function Inflate(opts, cb) {
-if (typeof opts == 'function')
-cb = opts, opts = {};
-this.ondata = cb;
-var dict = opts && opts.dictionary && opts.dictionary.subarray(-32768);
-this.s = { i: 0, b: dict ? dict.length : 0 };
-this.o = new u8(32768);
-this.p = new u8(0);
-if (dict)
-this.o.set(dict);
-}
-Inflate.prototype.e = function (c) {
-if (!this.ondata)
-err(5);
-if (this.d)
-err(4);
-if (!this.p.length)
-this.p = c;
-else if (c.length) {
-var n = new u8(this.p.length + c.length);
-n.set(this.p), n.set(c, this.p.length), this.p = n;
-}
-};
-Inflate.prototype.c = function (final) {
-this.s.i = +(this.d = final || false);
-var bts = this.s.b;
-var dt = inflt(this.p, this.s, this.o);
-this.ondata(slc(dt, bts, this.s.b), this.d);
-this.o = slc(dt, this.s.b - 32768), this.s.b = this.o.length;
-this.p = slc(this.p, (this.s.p / 8) | 0), this.s.p &= 7;
-};
-Inflate.prototype.push = function (chunk, final) {
-this.e(chunk), this.c(final);
-};
-return Inflate;
-}());
-var AsyncInflate = (function () {
-function AsyncInflate(opts, cb) {
-astrmify([
-bInflt,
-function () { return [astrm, Inflate]; }
-], this, StrmOpt.call(this, opts, cb), function (ev) {
-var strm = new Inflate(ev.data);
-onmessage = astrm(strm);
-}, 7, 0);
-}
-return AsyncInflate;
-}());
-function inflate(data, opts, cb) {
-if (!cb)
-cb = opts, opts = {};
-if (typeof cb != 'function')
-err(7);
-return cbify(data, opts, [
-bInflt
-], function (ev) { return pbf(inflateSync(ev.data[0], gopt(ev.data[1]))); }, 1, cb);
-}
-function inflateSync(data, opts) {
-return inflt(data, { i: 2 }, opts && opts.out, opts && opts.dictionary);
-}
-var Gzip = (function () {
-function Gzip(opts, cb) {
-this.c = crc();
-this.l = 0;
-this.v = 1;
-Deflate.call(this, opts, cb);
-}
-Gzip.prototype.push = function (chunk, final) {
-this.c.p(chunk);
-this.l += chunk.length;
-Deflate.prototype.push.call(this, chunk, final);
-};
-Gzip.prototype.p = function (c, f) {
-var raw = dopt(c, this.o, this.v && gzhl(this.o), f && 8, this.s);
-if (this.v)
-gzh(raw, this.o), this.v = 0;
-if (f)
-wbytes(raw, raw.length - 8, this.c.d()), wbytes(raw, raw.length - 4, this.l);
-this.ondata(raw, f);
-};
-Gzip.prototype.flush = function () {
-Deflate.prototype.flush.call(this);
-};
-return Gzip;
-}());
-var AsyncGzip = (function () {
-function AsyncGzip(opts, cb) {
-astrmify([
-bDflt,
-gze,
-function () { return [astrm, Deflate, Gzip]; }
-], this, StrmOpt.call(this, opts, cb), function (ev) {
-var strm = new Gzip(ev.data);
-onmessage = astrm(strm);
-}, 8, 1);
-}
-return AsyncGzip;
-}());
-function gzip(data, opts, cb) {
-if (!cb)
-cb = opts, opts = {};
-if (typeof cb != 'function')
-err(7);
-return cbify(data, opts, [
-bDflt,
-gze,
-function () { return [gzipSync]; }
-], function (ev) { return pbf(gzipSync(ev.data[0], ev.data[1])); }, 2, cb);
-}
-function gzipSync(data, opts) {
-if (!opts)
-opts = {};
-var c = crc(), l = data.length;
-c.p(data);
-var d = dopt(data, opts, gzhl(opts), 8), s = d.length;
-return gzh(d, opts), wbytes(d, s - 8, c.d()), wbytes(d, s - 4, l), d;
-}
-var Gunzip = (function () {
-function Gunzip(opts, cb) {
-this.v = 1;
-this.r = 0;
-Inflate.call(this, opts, cb);
-}
-Gunzip.prototype.push = function (chunk, final) {
-Inflate.prototype.e.call(this, chunk);
-this.r += chunk.length;
-if (this.v) {
-var p = this.p.subarray(this.v - 1);
-var s = p.length > 3 ? gzs(p) : 4;
-if (s > p.length) {
-if (!final)
-return;
-}
-else if (this.v > 1 && this.onmember) {
-this.onmember(this.r - p.length);
-}
-this.p = p.subarray(s), this.v = 0;
-}
-Inflate.prototype.c.call(this, final);
-if (this.s.f && !this.s.l && !final) {
-this.v = shft(this.s.p) + 9;
-this.s = { i: 0 };
-this.o = new u8(0);
-this.push(new u8(0), final);
-}
-};
-return Gunzip;
-}());
-var AsyncGunzip = (function () {
-function AsyncGunzip(opts, cb) {
-var _this = this;
-astrmify([
-bInflt,
-guze,
-function () { return [astrm, Inflate, Gunzip]; }
-], this, StrmOpt.call(this, opts, cb), function (ev) {
-var strm = new Gunzip(ev.data);
-strm.onmember = function (offset) { return postMessage(offset); };
-onmessage = astrm(strm);
-}, 9, 0, function (offset) { return _this.onmember && _this.onmember(offset); });
-}
-return AsyncGunzip;
-}());
-function gunzip(data, opts, cb) {
-if (!cb)
-cb = opts, opts = {};
-if (typeof cb != 'function')
-err(7);
-return cbify(data, opts, [
-bInflt,
-guze,
-function () { return [gunzipSync]; }
-], function (ev) { return pbf(gunzipSync(ev.data[0], ev.data[1])); }, 3, cb);
-}
-function gunzipSync(data, opts) {
-var st = gzs(data);
-if (st + 8 > data.length)
-err(6, 'invalid gzip data');
-return inflt(data.subarray(st, -8), { i: 2 }, opts && opts.out || new u8(gzl(data)), opts && opts.dictionary);
-}
-var Zlib = (function () {
-function Zlib(opts, cb) {
-this.c = adler();
-this.v = 1;
-Deflate.call(this, opts, cb);
-}
-Zlib.prototype.push = function (chunk, final) {
-this.c.p(chunk);
-Deflate.prototype.push.call(this, chunk, final);
-};
-Zlib.prototype.p = function (c, f) {
-var raw = dopt(c, this.o, this.v && (this.o.dictionary ? 6 : 2), f && 4, this.s);
-if (this.v)
-zlh(raw, this.o), this.v = 0;
-if (f)
-wbytes(raw, raw.length - 4, this.c.d());
-this.ondata(raw, f);
-};
-Zlib.prototype.flush = function () {
-Deflate.prototype.flush.call(this);
-};
-return Zlib;
-}());
-var AsyncZlib = (function () {
-function AsyncZlib(opts, cb) {
-astrmify([
-bDflt,
-zle,
-function () { return [astrm, Deflate, Zlib]; }
-], this, StrmOpt.call(this, opts, cb), function (ev) {
-var strm = new Zlib(ev.data);
-onmessage = astrm(strm);
-}, 10, 1);
-}
-return AsyncZlib;
-}());
-function zlib(data, opts, cb) {
-if (!cb)
-cb = opts, opts = {};
-if (typeof cb != 'function')
-err(7);
-return cbify(data, opts, [
-bDflt,
-zle,
-function () { return [zlibSync]; }
-], function (ev) { return pbf(zlibSync(ev.data[0], ev.data[1])); }, 4, cb);
-}
-function zlibSync(data, opts) {
-if (!opts)
-opts = {};
-var a = adler();
-a.p(data);
-var d = dopt(data, opts, opts.dictionary ? 6 : 2, 4);
-return zlh(d, opts), wbytes(d, d.length - 4, a.d()), d;
-}
-var Unzlib = (function () {
-function Unzlib(opts, cb) {
-Inflate.call(this, opts, cb);
-this.v = opts && opts.dictionary ? 2 : 1;
-}
-Unzlib.prototype.push = function (chunk, final) {
-Inflate.prototype.e.call(this, chunk);
-if (this.v) {
-if (this.p.length < 6 && !final)
-return;
-this.p = this.p.subarray(zls(this.p, this.v - 1)), this.v = 0;
-}
-if (final) {
-if (this.p.length < 4)
-err(6, 'invalid zlib data');
-this.p = this.p.subarray(0, -4);
-}
-Inflate.prototype.c.call(this, final);
-};
-return Unzlib;
-}());
-var AsyncUnzlib = (function () {
-function AsyncUnzlib(opts, cb) {
-astrmify([
-bInflt,
-zule,
-function () { return [astrm, Inflate, Unzlib]; }
-], this, StrmOpt.call(this, opts, cb), function (ev) {
-var strm = new Unzlib(ev.data);
-onmessage = astrm(strm);
-}, 11, 0);
-}
-return AsyncUnzlib;
-}());
-function unzlib(data, opts, cb) {
-if (!cb)
-cb = opts, opts = {};
-if (typeof cb != 'function')
-err(7);
-return cbify(data, opts, [
-bInflt,
-zule,
-function () { return [unzlibSync]; }
-], function (ev) { return pbf(unzlibSync(ev.data[0], gopt(ev.data[1]))); }, 5, cb);
-}
-function unzlibSync(data, opts) {
-return inflt(data.subarray(zls(data, opts && opts.dictionary), -4), { i: 2 }, opts && opts.out, opts && opts.dictionary);
-}
-var Decompress = (function () {
-function Decompress(opts, cb) {
-this.o = StrmOpt.call(this, opts, cb) || {};
-this.G = Gunzip;
-this.I = Inflate;
-this.Z = Unzlib;
-}
-Decompress.prototype.i = function () {
-var _this = this;
-this.s.ondata = function (dat, final) {
-_this.ondata(dat, final);
-};
-};
-Decompress.prototype.push = function (chunk, final) {
-if (!this.ondata)
-err(5);
-if (!this.s) {
-if (this.p && this.p.length) {
-var n = new u8(this.p.length + chunk.length);
-n.set(this.p), n.set(chunk, this.p.length);
-}
-else
-this.p = chunk;
-if (this.p.length > 2) {
-this.s = (this.p[0] == 31 && this.p[1] == 139 && this.p[2] == 8)
-? new this.G(this.o)
-: ((this.p[0] & 15) != 8 || (this.p[0] >> 4) > 7 || ((this.p[0] << 8 | this.p[1]) % 31))
-? new this.I(this.o)
-: new this.Z(this.o);
-this.i();
-this.s.push(this.p, final);
-this.p = null;
-}
-}
-else
-this.s.push(chunk, final);
-};
-return Decompress;
-}());
-var AsyncDecompress = (function () {
-function AsyncDecompress(opts, cb) {
-Decompress.call(this, opts, cb);
-this.queuedSize = 0;
-this.G = AsyncGunzip;
-this.I = AsyncInflate;
-this.Z = AsyncUnzlib;
-}
-AsyncDecompress.prototype.i = function () {
-var _this = this;
-this.s.ondata = function (err, dat, final) {
-_this.ondata(err, dat, final);
-};
-this.s.ondrain = function (size) {
-_this.queuedSize -= size;
-if (_this.ondrain)
-_this.ondrain(size);
-};
-};
-AsyncDecompress.prototype.push = function (chunk, final) {
-this.queuedSize += chunk.length;
-Decompress.prototype.push.call(this, chunk, final);
-};
-return AsyncDecompress;
-}());
-function decompress(data, opts, cb) {
-if (!cb)
-cb = opts, opts = {};
-if (typeof cb != 'function')
-err(7);
-return (data[0] == 31 && data[1] == 139 && data[2] == 8)
-? gunzip(data, opts, cb)
-: ((data[0] & 15) != 8 || (data[0] >> 4) > 7 || ((data[0] << 8 | data[1]) % 31))
-? inflate(data, opts, cb)
-: unzlib(data, opts, cb);
-}
-function decompressSync(data, opts) {
-return (data[0] == 31 && data[1] == 139 && data[2] == 8)
-? gunzipSync(data, opts)
-: ((data[0] & 15) != 8 || (data[0] >> 4) > 7 || ((data[0] << 8 | data[1]) % 31))
-? inflateSync(data, opts)
-: unzlibSync(data, opts);
-}
-var fltn = function (d, p, t, o) {
-for (var k in d) {
-var val = d[k], n = p + k, op = o;
-if (Array.isArray(val))
-op = mrg(o, val[1]), val = val[0];
-if (val instanceof u8)
-t[n] = [val, op];
-else {
-t[n += '/'] = [new u8(0), op];
-fltn(val, n, t, o);
-}
-}
-};
-var te = typeof TextEncoder != 'undefined' && new TextEncoder();
-var td = typeof TextDecoder != 'undefined' && new TextDecoder();
-var tds = 0;
-try {
-td.decode(et, { stream: true });
-tds = 1;
-}
-catch (e) { }
-var dutf8 = function (d) {
-for (var r = '', i = 0;;) {
-var c = d[i++];
-var eb = (c > 127) + (c > 223) + (c > 239);
-if (i + eb > d.length)
-return { s: r, r: slc(d, i - 1) };
-if (!eb)
-r += String.fromCharCode(c);
-else if (eb == 3) {
-c = ((c & 15) << 18 | (d[i++] & 63) << 12 | (d[i++] & 63) << 6 | (d[i++] & 63)) - 65536,
-r += String.fromCharCode(55296 | (c >> 10), 56320 | (c & 1023));
-}
-else if (eb & 1)
-r += String.fromCharCode((c & 31) << 6 | (d[i++] & 63));
-else
-r += String.fromCharCode((c & 15) << 12 | (d[i++] & 63) << 6 | (d[i++] & 63));
-}
-};
-var DecodeUTF8 = (function () {
-function DecodeUTF8(cb) {
-this.ondata = cb;
-if (tds)
-this.t = new TextDecoder();
-else
-this.p = et;
-}
-DecodeUTF8.prototype.push = function (chunk, final) {
-if (!this.ondata)
-err(5);
-final = !!final;
-if (this.t) {
-this.ondata(this.t.decode(chunk, { stream: true }), final);
-if (final) {
-if (this.t.decode().length)
-err(8);
-this.t = null;
-}
-return;
-}
-if (!this.p)
-err(4);
-var dat = new u8(this.p.length + chunk.length);
-dat.set(this.p);
-dat.set(chunk, this.p.length);
-var _a = dutf8(dat), s = _a.s, r = _a.r;
-if (final) {
-if (r.length)
-err(8);
-this.p = null;
-}
-else
-this.p = r;
-this.ondata(s, final);
-};
-return DecodeUTF8;
-}());
-var EncodeUTF8 = (function () {
-function EncodeUTF8(cb) {
-this.ondata = cb;
-}
-EncodeUTF8.prototype.push = function (chunk, final) {
-if (!this.ondata)
-err(5);
-if (this.d)
-err(4);
-this.ondata(strToU8(chunk), this.d = final || false);
-};
-return EncodeUTF8;
-}());
-function strToU8(str, latin1) {
-if (latin1) {
-var ar_1 = new u8(str.length);
-for (var i = 0; i < str.length; ++i)
-ar_1[i] = str.charCodeAt(i);
-return ar_1;
-}
-if (te)
-return te.encode(str);
-var l = str.length;
-var ar = new u8(str.length + (str.length >> 1));
-var ai = 0;
-var w = function (v) { ar[ai++] = v; };
-for (var i = 0; i < l; ++i) {
-if (ai + 5 > ar.length) {
-var n = new u8(ai + 8 + ((l - i) << 1));
-n.set(ar);
-ar = n;
-}
-var c = str.charCodeAt(i);
-if (c < 128 || latin1)
-w(c);
-else if (c < 2048)
-w(192 | (c >> 6)), w(128 | (c & 63));
-else if (c > 55295 && c < 57344)
-c = 65536 + (c & 1023 << 10) | (str.charCodeAt(++i) & 1023),
-w(240 | (c >> 18)), w(128 | ((c >> 12) & 63)), w(128 | ((c >> 6) & 63)), w(128 | (c & 63));
-else
-w(224 | (c >> 12)), w(128 | ((c >> 6) & 63)), w(128 | (c & 63));
-}
-return slc(ar, 0, ai);
-}
-function strFromU8(dat, latin1) {
-if (latin1) {
-var r = '';
-for (var i = 0; i < dat.length; i += 16384)
-r += String.fromCharCode.apply(null, dat.subarray(i, i + 16384));
-return r;
-}
-else if (td) {
-return td.decode(dat);
-}
-else {
-var _a = dutf8(dat), s = _a.s, r = _a.r;
-if (r.length)
-err(8);
-return s;
-}
-}
-;
-var dbf = function (l) { return l == 1 ? 3 : l < 6 ? 2 : l == 9 ? 1 : 0; };
-var slzh = function (d, b) { return b + 30 + b2(d, b + 26) + b2(d, b + 28); };
-var zh = function (d, b, z) {
-var fnl = b2(d, b + 28), fn = strFromU8(d.subarray(b + 46, b + 46 + fnl), !(b2(d, b + 8) & 2048)), es = b + 46 + fnl, bs = b4(d, b + 20);
-var _a = z && bs == 4294967295 ? z64e(d, es) : [bs, b4(d, b + 24), b4(d, b + 42)], sc = _a[0], su = _a[1], off = _a[2];
-return [b2(d, b + 10), sc, su, fn, es + b2(d, b + 30) + b2(d, b + 32), off];
-};
-var z64e = function (d, b) {
-for (; b2(d, b) != 1; b += 4 + b2(d, b + 2))
-;
-return [b8(d, b + 12), b8(d, b + 4), b8(d, b + 20)];
-};
-var exfl = function (ex) {
-var le = 0;
-if (ex) {
-for (var k in ex) {
-var l = ex[k].length;
-if (l > 65535)
-err(9);
-le += l + 4;
-}
-}
-return le;
-};
-var wzh = function (d, b, f, fn, u, c, ce, co) {
-var fl = fn.length, ex = f.extra, col = co && co.length;
-var exl = exfl(ex);
-wbytes(d, b, ce != null ? 0x2014B50 : 0x4034B50), b += 4;
-if (ce != null)
-d[b++] = 20, d[b++] = f.os;
-d[b] = 20, b += 2;
-d[b++] = (f.flag << 1) | (c < 0 && 8), d[b++] = u && 8;
-d[b++] = f.compression & 255, d[b++] = f.compression >> 8;
-var dt = new Date(f.mtime == null ? Date.now() : f.mtime), y = dt.getFullYear() - 1980;
-if (y < 0 || y > 119)
-err(10);
-wbytes(d, b, (y << 25) | ((dt.getMonth() + 1) << 21) | (dt.getDate() << 16) | (dt.getHours() << 11) | (dt.getMinutes() << 5) | (dt.getSeconds() >> 1)), b += 4;
-if (c != -1) {
-wbytes(d, b, f.crc);
-wbytes(d, b + 4, c < 0 ? -c - 2 : c);
-wbytes(d, b + 8, f.size);
-}
-wbytes(d, b + 12, fl);
-wbytes(d, b + 14, exl), b += 16;
-if (ce != null) {
-wbytes(d, b, col);
-wbytes(d, b + 6, f.attrs);
-wbytes(d, b + 10, ce), b += 14;
-}
-d.set(fn, b);
-b += fl;
-if (exl) {
-for (var k in ex) {
-var exf = ex[k], l = exf.length;
-wbytes(d, b, +k);
-wbytes(d, b + 2, l);
-d.set(exf, b + 4), b += 4 + l;
-}
-}
-if (col)
-d.set(co, b), b += col;
-return b;
-};
-var wzf = function (o, b, c, d, e) {
-wbytes(o, b, 0x6054B50);
-wbytes(o, b + 8, c);
-wbytes(o, b + 10, c);
-wbytes(o, b + 12, d);
-wbytes(o, b + 16, e);
-};
-var ZipPassThrough = (function () {
-function ZipPassThrough(filename) {
-this.filename = filename;
-this.c = crc();
-this.size = 0;
-this.compression = 0;
-}
-ZipPassThrough.prototype.process = function (chunk, final) {
-this.ondata(null, chunk, final);
-};
-ZipPassThrough.prototype.push = function (chunk, final) {
-if (!this.ondata)
-err(5);
-this.c.p(chunk);
-this.size += chunk.length;
-if (final)
-this.crc = this.c.d();
-this.process(chunk, final || false);
-};
-return ZipPassThrough;
-}());
-var ZipDeflate = (function () {
-function ZipDeflate(filename, opts) {
-var _this = this;
-if (!opts)
-opts = {};
-ZipPassThrough.call(this, filename);
-this.d = new Deflate(opts, function (dat, final) {
-_this.ondata(null, dat, final);
-});
-this.compression = 8;
-this.flag = dbf(opts.level);
-}
-ZipDeflate.prototype.process = function (chunk, final) {
-try {
-this.d.push(chunk, final);
-}
-catch (e) {
-this.ondata(e, null, final);
-}
-};
-ZipDeflate.prototype.push = function (chunk, final) {
-ZipPassThrough.prototype.push.call(this, chunk, final);
-};
-return ZipDeflate;
-}());
-var AsyncZipDeflate = (function () {
-function AsyncZipDeflate(filename, opts) {
-var _this = this;
-if (!opts)
-opts = {};
-ZipPassThrough.call(this, filename);
-this.d = new AsyncDeflate(opts, function (err, dat, final) {
-_this.ondata(err, dat, final);
-});
-this.compression = 8;
-this.flag = dbf(opts.level);
-this.terminate = this.d.terminate;
-}
-AsyncZipDeflate.prototype.process = function (chunk, final) {
-this.d.push(chunk, final);
-};
-AsyncZipDeflate.prototype.push = function (chunk, final) {
-ZipPassThrough.prototype.push.call(this, chunk, final);
-};
-return AsyncZipDeflate;
-}());
-var Zip = (function () {
-function Zip(cb) {
-this.ondata = cb;
-this.u = [];
-this.d = 1;
-}
-Zip.prototype.add = function (file) {
-var _this = this;
-if (!this.ondata)
-err(5);
-if (this.d & 2)
-this.ondata(err(4 + (this.d & 1) * 8, 0, 1), null, false);
-else {
-var f = strToU8(file.filename), fl_1 = f.length;
-var com = file.comment, o = com && strToU8(com);
-var u = fl_1 != file.filename.length || (o && (com.length != o.length));
-var hl_1 = fl_1 + exfl(file.extra) + 30;
-if (fl_1 > 65535)
-this.ondata(err(11, 0, 1), null, false);
-var header = new u8(hl_1);
-wzh(header, 0, file, f, u, -1);
-var chks_1 = [header];
-var pAll_1 = function () {
-for (var _i = 0, chks_2 = chks_1; _i < chks_2.length; _i++) {
-var chk = chks_2[_i];
-_this.ondata(null, chk, false);
-}
-chks_1 = [];
-};
-var tr_1 = this.d;
-this.d = 0;
-var ind_1 = this.u.length;
-var uf_1 = mrg(file, {
-f: f,
-u: u,
-o: o,
-t: function () {
-if (file.terminate)
-file.terminate();
-},
-r: function () {
-pAll_1();
-if (tr_1) {
-var nxt = _this.u[ind_1 + 1];
-if (nxt)
-nxt.r();
-else
-_this.d = 1;
-}
-tr_1 = 1;
-}
-});
-var cl_1 = 0;
-file.ondata = function (err, dat, final) {
-if (err) {
-_this.ondata(err, dat, final);
-_this.terminate();
-}
-else {
-cl_1 += dat.length;
-chks_1.push(dat);
-if (final) {
-var dd = new u8(16);
-wbytes(dd, 0, 0x8074B50);
-wbytes(dd, 4, file.crc);
-wbytes(dd, 8, cl_1);
-wbytes(dd, 12, file.size);
-chks_1.push(dd);
-uf_1.c = cl_1, uf_1.b = hl_1 + cl_1 + 16, uf_1.crc = file.crc, uf_1.size = file.size;
-if (tr_1)
-uf_1.r();
-tr_1 = 1;
-}
-else if (tr_1)
-pAll_1();
-}
-};
-this.u.push(uf_1);
-}
-};
-Zip.prototype.end = function () {
-var _this = this;
-if (this.d & 2) {
-this.ondata(err(4 + (this.d & 1) * 8, 0, 1), null, true);
-return;
-}
-if (this.d)
-this.e();
-else
-this.u.push({
-r: function () {
-if (!(_this.d & 1))
-return;
-_this.u.splice(-1, 1);
-_this.e();
-},
-t: function () { }
-});
-this.d = 3;
-};
-Zip.prototype.e = function () {
-var bt = 0, l = 0, tl = 0;
-for (var _i = 0, _a = this.u; _i < _a.length; _i++) {
-var f = _a[_i];
-tl += 46 + f.f.length + exfl(f.extra) + (f.o ? f.o.length : 0);
-}
-var out = new u8(tl + 22);
-for (var _b = 0, _c = this.u; _b < _c.length; _b++) {
-var f = _c[_b];
-wzh(out, bt, f, f.f, f.u, -f.c - 2, l, f.o);
-bt += 46 + f.f.length + exfl(f.extra) + (f.o ? f.o.length : 0), l += f.b;
-}
-wzf(out, bt, this.u.length, tl, l);
-this.ondata(null, out, true);
-this.d = 2;
-};
-Zip.prototype.terminate = function () {
-for (var _i = 0, _a = this.u; _i < _a.length; _i++) {
-var f = _a[_i];
-f.t();
-}
-this.d = 2;
-};
-return Zip;
-}());
-function zip(data, opts, cb) {
-if (!cb)
-cb = opts, opts = {};
-if (typeof cb != 'function')
-err(7);
-var r = {};
-fltn(data, '', r, opts);
-var k = Object.keys(r);
-var lft = k.length, o = 0, tot = 0;
-var slft = lft, files = new Array(lft);
-var term = [];
-var tAll = function () {
-for (var i = 0; i < term.length; ++i)
-term[i]();
-};
-var cbd = function (a, b) {
-mt(function () { cb(a, b); });
-};
-mt(function () { cbd = cb; });
-var cbf = function () {
-var out = new u8(tot + 22), oe = o, cdl = tot - o;
-tot = 0;
-for (var i = 0; i < slft; ++i) {
-var f = files[i];
-try {
-var l = f.c.length;
-wzh(out, tot, f, f.f, f.u, l);
-var badd = 30 + f.f.length + exfl(f.extra);
-var loc = tot + badd;
-out.set(f.c, loc);
-wzh(out, o, f, f.f, f.u, l, tot, f.m), o += 16 + badd + (f.m ? f.m.length : 0), tot = loc + l;
-}
-catch (e) {
-return cbd(e, null);
-}
-}
-wzf(out, o, files.length, cdl, oe);
-cbd(null, out);
-};
-if (!lft)
-cbf();
-var _loop_1 = function (i) {
-var fn = k[i];
-var _a = r[fn], file = _a[0], p = _a[1];
-var c = crc(), size = file.length;
-c.p(file);
-var f = strToU8(fn), s = f.length;
-var com = p.comment, m = com && strToU8(com), ms = m && m.length;
-var exl = exfl(p.extra);
-var compression = p.level == 0 ? 0 : 8;
-var cbl = function (e, d) {
-if (e) {
-tAll();
-cbd(e, null);
-}
-else {
-var l = d.length;
-files[i] = mrg(p, {
-size: size,
-crc: c.d(),
-c: d,
-f: f,
-m: m,
-u: s != fn.length || (m && (com.length != ms)),
-compression: compression
-});
-o += 30 + s + exl + l;
-tot += 76 + 2 * (s + exl) + (ms || 0) + l;
-if (!--lft)
-cbf();
-}
-};
-if (s > 65535)
-cbl(err(11, 0, 1), null);
-if (!compression)
-cbl(null, file);
-else if (size < 160000) {
-try {
-cbl(null, deflateSync(file, p));
-}
-catch (e) {
-cbl(e, null);
-}
-}
-else
-term.push(deflate(file, p, cbl));
-};
-for (var i = 0; i < slft; ++i) {
-_loop_1(i);
-}
-return tAll;
-}
-function zipSync(data, opts) {
-if (!opts)
-opts = {};
-var r = {};
-var files = [];
-fltn(data, '', r, opts);
-var o = 0;
-var tot = 0;
-for (var fn in r) {
-var _a = r[fn], file = _a[0], p = _a[1];
-var compression = p.level == 0 ? 0 : 8;
-var f = strToU8(fn), s = f.length;
-var com = p.comment, m = com && strToU8(com), ms = m && m.length;
-var exl = exfl(p.extra);
-if (s > 65535)
-err(11);
-var d = compression ? deflateSync(file, p) : file, l = d.length;
-var c = crc();
-c.p(file);
-files.push(mrg(p, {
-size: file.length,
-crc: c.d(),
-c: d,
-f: f,
-m: m,
-u: s != fn.length || (m && (com.length != ms)),
-o: o,
-compression: compression
-}));
-o += 30 + s + exl + l;
-tot += 76 + 2 * (s + exl) + (ms || 0) + l;
-}
-var out = new u8(tot + 22), oe = o, cdl = tot - o;
-for (var i = 0; i < files.length; ++i) {
-var f = files[i];
-wzh(out, f.o, f, f.f, f.u, f.c.length);
-var badd = 30 + f.f.length + exfl(f.extra);
-out.set(f.c, f.o + badd);
-wzh(out, o, f, f.f, f.u, f.c.length, f.o, f.m), o += 16 + badd + (f.m ? f.m.length : 0);
-}
-wzf(out, o, files.length, cdl, oe);
-return out;
-}
-var UnzipPassThrough = (function () {
-function UnzipPassThrough() {
-}
-UnzipPassThrough.prototype.push = function (data, final) {
-this.ondata(null, data, final);
-};
-UnzipPassThrough.compression = 0;
-return UnzipPassThrough;
-}());
-var UnzipInflate = (function () {
-function UnzipInflate() {
-var _this = this;
-this.i = new Inflate(function (dat, final) {
-_this.ondata(null, dat, final);
-});
-}
-UnzipInflate.prototype.push = function (data, final) {
-try {
-this.i.push(data, final);
-}
-catch (e) {
-this.ondata(e, null, final);
-}
-};
-UnzipInflate.compression = 8;
-return UnzipInflate;
-}());
-var AsyncUnzipInflate = (function () {
-function AsyncUnzipInflate(_, sz) {
-var _this = this;
-if (sz < 320000) {
-this.i = new Inflate(function (dat, final) {
-_this.ondata(null, dat, final);
-});
-}
-else {
-this.i = new AsyncInflate(function (err, dat, final) {
-_this.ondata(err, dat, final);
-});
-this.terminate = this.i.terminate;
-}
-}
-AsyncUnzipInflate.prototype.push = function (data, final) {
-if (this.i.terminate)
-data = slc(data, 0);
-this.i.push(data, final);
-};
-AsyncUnzipInflate.compression = 8;
-return AsyncUnzipInflate;
-}());
-var Unzip = (function () {
-function Unzip(cb) {
-this.onfile = cb;
-this.k = [];
-this.o = {
-0: UnzipPassThrough
-};
-this.p = et;
-}
-Unzip.prototype.push = function (chunk, final) {
-var _this = this;
-if (!this.onfile)
-err(5);
-if (!this.p)
-err(4);
-if (this.c > 0) {
-var len = Math.min(this.c, chunk.length);
-var toAdd = chunk.subarray(0, len);
-this.c -= len;
-if (this.d)
-this.d.push(toAdd, !this.c);
-else
-this.k[0].push(toAdd);
-chunk = chunk.subarray(len);
-if (chunk.length)
-return this.push(chunk, final);
-}
-else {
-var f = 0, i = 0, is = void 0, buf = void 0;
-if (!this.p.length)
-buf = chunk;
-else if (!chunk.length)
-buf = this.p;
-else {
-buf = new u8(this.p.length + chunk.length);
-buf.set(this.p), buf.set(chunk, this.p.length);
-}
-var l = buf.length, oc = this.c, add = oc && this.d;
-var _loop_2 = function () {
-var _a;
-var sig = b4(buf, i);
-if (sig == 0x4034B50) {
-f = 1, is = i;
-this_1.d = null;
-this_1.c = 0;
-var bf = b2(buf, i + 6), cmp_1 = b2(buf, i + 8), u = bf & 2048, dd = bf & 8, fnl = b2(buf, i + 26), es = b2(buf, i + 28);
-if (l > i + 30 + fnl + es) {
-var chks_3 = [];
-this_1.k.unshift(chks_3);
-f = 2;
-var sc_1 = b4(buf, i + 18), su_1 = b4(buf, i + 22);
-var fn_1 = strFromU8(buf.subarray(i + 30, i += 30 + fnl), !u);
-if (sc_1 == 4294967295) {
-_a = dd ? [-2] : z64e(buf, i), sc_1 = _a[0], su_1 = _a[1];
-}
-else if (dd)
-sc_1 = -1;
-i += es;
-this_1.c = sc_1;
-var d_1;
-var file_1 = {
-name: fn_1,
-compression: cmp_1,
-start: function () {
-if (!file_1.ondata)
-err(5);
-if (!sc_1)
-file_1.ondata(null, et, true);
-else {
-var ctr = _this.o[cmp_1];
-if (!ctr)
-file_1.ondata(err(14, 'unknown compression type ' + cmp_1, 1), null, false);
-d_1 = sc_1 < 0 ? new ctr(fn_1) : new ctr(fn_1, sc_1, su_1);
-d_1.ondata = function (err, dat, final) { file_1.ondata(err, dat, final); };
-for (var _i = 0, chks_4 = chks_3; _i < chks_4.length; _i++) {
-var dat = chks_4[_i];
-d_1.push(dat, false);
-}
-if (_this.k[0] == chks_3 && _this.c)
-_this.d = d_1;
-else
-d_1.push(et, true);
-}
-},
-terminate: function () {
-if (d_1 && d_1.terminate)
-d_1.terminate();
-}
-};
-if (sc_1 >= 0)
-file_1.size = sc_1, file_1.originalSize = su_1;
-this_1.onfile(file_1);
-}
-return "break";
-}
-else if (oc) {
-if (sig == 0x8074B50) {
-is = i += 12 + (oc == -2 && 8), f = 3, this_1.c = 0;
-return "break";
-}
-else if (sig == 0x2014B50) {
-is = i -= 4, f = 3, this_1.c = 0;
-return "break";
-}
-}
-};
-var this_1 = this;
-for (; i < l - 4; ++i) {
-var state_1 = _loop_2();
-if (state_1 === "break")
-break;
-}
-this.p = et;
-if (oc < 0) {
-var dat = f ? buf.subarray(0, is - 12 - (oc == -2 && 8) - (b4(buf, is - 16) == 0x8074B50 && 4)) : buf.subarray(0, i);
-if (add)
-add.push(dat, !!f);
-else
-this.k[+(f == 2)].push(dat);
-}
-if (f & 2)
-return this.push(buf.subarray(i), final);
-this.p = buf.subarray(i);
-}
-if (final) {
-if (this.c)
-err(13);
-this.p = null;
-}
-};
-Unzip.prototype.register = function (decoder) {
-this.o[decoder.compression] = decoder;
-};
-return Unzip;
-}());
-var mt = typeof queueMicrotask == 'function' ? queueMicrotask : typeof setTimeout == 'function' ? setTimeout : function (fn) { fn(); };
-function unzip(data, opts, cb) {
-if (!cb)
-cb = opts, opts = {};
-if (typeof cb != 'function')
-err(7);
-var term = [];
-var tAll = function () {
-for (var i = 0; i < term.length; ++i)
-term[i]();
-};
-var files = {};
-var cbd = function (a, b) {
-mt(function () { cb(a, b); });
-};
-mt(function () { cbd = cb; });
-var e = data.length - 22;
-for (; b4(data, e) != 0x6054B50; --e) {
-if (!e || data.length - e > 65558) {
-cbd(err(13, 0, 1), null);
-return tAll;
-}
-}
-;
-var lft = b2(data, e + 8);
-if (lft) {
-var c = lft;
-var o = b4(data, e + 16);
-var z = o == 4294967295 || c == 65535;
-if (z) {
-var ze = b4(data, e - 12);
-z = b4(data, ze) == 0x6064B50;
-if (z) {
-c = lft = b4(data, ze + 32);
-o = b4(data, ze + 48);
-}
-}
-var fltr = opts && opts.filter;
-var _loop_3 = function (i) {
-var _a = zh(data, o, z), c_1 = _a[0], sc = _a[1], su = _a[2], fn = _a[3], no = _a[4], off = _a[5], b = slzh(data, off);
-o = no;
-var cbl = function (e, d) {
-if (e) {
-tAll();
-cbd(e, null);
-}
-else {
-if (d)
-files[fn] = d;
-if (!--lft)
-cbd(null, files);
-}
-};
-if (!fltr || fltr({
-name: fn,
-size: sc,
-originalSize: su,
-compression: c_1
-})) {
-if (!c_1)
-cbl(null, slc(data, b, b + sc));
-else if (c_1 == 8) {
-var infl = data.subarray(b, b + sc);
-if (su < 524288 || sc > 0.8 * su) {
-try {
-cbl(null, inflateSync(infl, { out: new u8(su) }));
-}
-catch (e) {
-cbl(e, null);
-}
-}
-else
-term.push(inflate(infl, { size: su }, cbl));
-}
-else
-cbl(err(14, 'unknown compression type ' + c_1, 1), null);
-}
-else
-cbl(null, null);
-};
-for (var i = 0; i < c; ++i) {
-_loop_3(i);
-}
-}
-else
-cbd(null, {});
-return tAll;
-}
-function unzipSync(data, opts) {
-var files = {};
-var e = data.length - 22;
-for (; b4(data, e) != 0x6054B50; --e) {
-if (!e || data.length - e > 65558)
-err(13);
-}
-;
-var c = b2(data, e + 8);
-if (!c)
-return {};
-var o = b4(data, e + 16);
-var z = o == 4294967295 || c == 65535;
-if (z) {
-var ze = b4(data, e - 12);
-z = b4(data, ze) == 0x6064B50;
-if (z) {
-c = b4(data, ze + 32);
-o = b4(data, ze + 48);
-}
-}
-var fltr = opts && opts.filter;
-for (var i = 0; i < c; ++i) {
-var _a = zh(data, o, z), c_2 = _a[0], sc = _a[1], su = _a[2], fn = _a[3], no = _a[4], off = _a[5], b = slzh(data, off);
-o = no;
-if (!fltr || fltr({
-name: fn,
-size: sc,
-originalSize: su,
-compression: c_2
-})) {
-if (!c_2)
-files[fn] = slc(data, b, b + sc);
-else if (c_2 == 8)
-files[fn] = inflateSync(data.subarray(b, b + sc), { out: new u8(su) });
-else
-err(14, 'unknown compression type ' + c_2);
-}
-}
-return files;
-}
-};
 __defs['src/io/importers.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'MODEL_FORMATS', () => MODEL_FORMATS);
@@ -65518,241 +63014,6 @@ return dstAttribute;
 }
 };
 };
-__defs['vendor/three/addons/utils/SkeletonUtils.js'] = function (__exports, __req) {
-'use strict';
-__def(__exports, 'retarget', () => retarget);
-__def(__exports, 'retargetClip', () => retargetClip);
-__def(__exports, 'clone', () => clone);
-const { AnimationClip, AnimationMixer, Matrix4, Quaternion, QuaternionKeyframeTrack, SkeletonHelper, Vector3, VectorKeyframeTrack } = __req('vendor/three/build/three.module.js');
-function getBoneName( bone, options ) {
-if ( options.getBoneName !== undefined ) {
-return options.getBoneName( bone );
-}
-return options.names[ bone.name ];
-}
-function retarget( target, source, options = {} ) {
-const quat = new Quaternion(),
-scale = new Vector3(),
-relativeMatrix = new Matrix4(),
-globalMatrix = new Matrix4();
-options.preserveBoneMatrix = options.preserveBoneMatrix !== undefined ? options.preserveBoneMatrix : true;
-options.preserveBonePositions = options.preserveBonePositions !== undefined ? options.preserveBonePositions : true;
-options.useTargetMatrix = options.useTargetMatrix !== undefined ? options.useTargetMatrix : false;
-options.hip = options.hip !== undefined ? options.hip : 'hip';
-options.hipInfluence = options.hipInfluence !== undefined ? options.hipInfluence : new Vector3( 1, 1, 1 );
-options.scale = options.scale !== undefined ? options.scale : 1;
-options.names = options.names || {};
-const sourceBones = source.isObject3D ? source.skeleton.bones : getBones( source ),
-bones = target.isObject3D ? target.skeleton.bones : getBones( target );
-let bone, name, boneTo,
-bonesPosition;
-if ( target.isObject3D ) {
-target.skeleton.pose();
-} else {
-options.useTargetMatrix = true;
-options.preserveBoneMatrix = false;
-}
-if ( options.preserveBonePositions ) {
-bonesPosition = [];
-for ( let i = 0; i < bones.length; i ++ ) {
-bonesPosition.push( bones[ i ].position.clone() );
-}
-}
-if ( options.preserveBoneMatrix ) {
-target.updateMatrixWorld();
-target.matrixWorld.identity();
-for ( let i = 0; i < target.children.length; ++ i ) {
-target.children[ i ].updateMatrixWorld( true );
-}
-}
-for ( let i = 0; i < bones.length; ++ i ) {
-bone = bones[ i ];
-name = getBoneName( bone, options );
-boneTo = getBoneByName( name, sourceBones );
-globalMatrix.copy( bone.matrixWorld );
-if ( boneTo ) {
-boneTo.updateMatrixWorld();
-if ( options.useTargetMatrix ) {
-relativeMatrix.copy( boneTo.matrixWorld );
-} else {
-relativeMatrix.copy( target.matrixWorld ).invert();
-relativeMatrix.multiply( boneTo.matrixWorld );
-}
-scale.setFromMatrixScale( relativeMatrix );
-relativeMatrix.scale( scale.set( 1 / scale.x, 1 / scale.y, 1 / scale.z ) );
-globalMatrix.makeRotationFromQuaternion( quat.setFromRotationMatrix( relativeMatrix ) );
-if ( target.isObject3D ) {
-if ( options.localOffsets ) {
-if ( options.localOffsets[ bone.name ] ) {
-globalMatrix.multiply( options.localOffsets[ bone.name ] );
-}
-}
-}
-globalMatrix.copyPosition( relativeMatrix );
-}
-if ( name === options.hip ) {
-globalMatrix.elements[ 12 ] *= options.scale * options.hipInfluence.x;
-globalMatrix.elements[ 13 ] *= options.scale * options.hipInfluence.y;
-globalMatrix.elements[ 14 ] *= options.scale * options.hipInfluence.z;
-if ( options.hipPosition !== undefined ) {
-globalMatrix.elements[ 12 ] += options.hipPosition.x * options.scale;
-globalMatrix.elements[ 13 ] += options.hipPosition.y * options.scale;
-globalMatrix.elements[ 14 ] += options.hipPosition.z * options.scale;
-}
-}
-if ( bone.parent ) {
-bone.matrix.copy( bone.parent.matrixWorld ).invert();
-bone.matrix.multiply( globalMatrix );
-} else {
-bone.matrix.copy( globalMatrix );
-}
-bone.matrix.decompose( bone.position, bone.quaternion, bone.scale );
-bone.updateMatrixWorld();
-}
-if ( options.preserveBonePositions ) {
-for ( let i = 0; i < bones.length; ++ i ) {
-bone = bones[ i ];
-name = getBoneName( bone, options ) || bone.name;
-if ( name !== options.hip ) {
-bone.position.copy( bonesPosition[ i ] );
-}
-}
-}
-if ( options.preserveBoneMatrix ) {
-target.updateMatrixWorld( true );
-}
-}
-function retargetClip( target, source, clip, options = {} ) {
-options.useFirstFramePosition = options.useFirstFramePosition !== undefined ? options.useFirstFramePosition : false;
-options.fps = options.fps !== undefined ? options.fps : ( Math.max( ...clip.tracks.map( track => track.times.length ) ) / clip.duration );
-options.names = options.names || [];
-if ( ! source.isObject3D ) {
-source = getHelperFromSkeleton( source );
-}
-const numFrames = Math.round( clip.duration * ( options.fps / 1000 ) * 1000 ),
-delta = clip.duration / ( numFrames - 1 ),
-convertedTracks = [],
-mixer = new AnimationMixer( source ),
-bones = getBones( target.skeleton ),
-boneDatas = [];
-let positionOffset,
-bone, boneTo, boneData,
-name;
-mixer.clipAction( clip ).play();
-let start = 0, end = numFrames;
-if ( options.trim !== undefined ) {
-start = Math.round( options.trim[ 0 ] * options.fps );
-end = Math.min( Math.round( options.trim[ 1 ] * options.fps ), numFrames ) - start;
-mixer.update( options.trim[ 0 ] );
-} else {
-mixer.update( 0 );
-}
-source.updateMatrixWorld();
-for ( let frame = 0; frame < end; ++ frame ) {
-const time = frame * delta;
-retarget( target, source, options );
-for ( let j = 0; j < bones.length; ++ j ) {
-bone = bones[ j ];
-name = getBoneName( bone, options ) || bone.name;
-boneTo = getBoneByName( name, source.skeleton );
-if ( boneTo ) {
-boneData = boneDatas[ j ] = boneDatas[ j ] || { bone: bone };
-if ( options.hip === name ) {
-if ( ! boneData.pos ) {
-boneData.pos = {
-times: new Float32Array( end ),
-values: new Float32Array( end * 3 )
-};
-}
-if ( options.useFirstFramePosition ) {
-if ( frame === 0 ) {
-positionOffset = bone.position.clone();
-}
-bone.position.sub( positionOffset );
-}
-boneData.pos.times[ frame ] = time;
-bone.position.toArray( boneData.pos.values, frame * 3 );
-}
-if ( ! boneData.quat ) {
-boneData.quat = {
-times: new Float32Array( end ),
-values: new Float32Array( end * 4 )
-};
-}
-boneData.quat.times[ frame ] = time;
-bone.quaternion.toArray( boneData.quat.values, frame * 4 );
-}
-}
-if ( frame === end - 2 ) {
-mixer.update( delta - 0.0000001 );
-} else {
-mixer.update( delta );
-}
-source.updateMatrixWorld();
-}
-for ( let i = 0; i < boneDatas.length; ++ i ) {
-boneData = boneDatas[ i ];
-if ( boneData ) {
-if ( boneData.pos ) {
-convertedTracks.push( new VectorKeyframeTrack(
-'.bones[' + boneData.bone.name + '].position',
-boneData.pos.times,
-boneData.pos.values
-) );
-}
-convertedTracks.push( new QuaternionKeyframeTrack(
-'.bones[' + boneData.bone.name + '].quaternion',
-boneData.quat.times,
-boneData.quat.values
-) );
-}
-}
-mixer.uncacheAction( clip );
-return new AnimationClip( clip.name, - 1, convertedTracks );
-}
-function clone( source ) {
-const sourceLookup = new Map();
-const cloneLookup = new Map();
-const clone = source.clone();
-parallelTraverse( source, clone, function ( sourceNode, clonedNode ) {
-sourceLookup.set( clonedNode, sourceNode );
-cloneLookup.set( sourceNode, clonedNode );
-} );
-clone.traverse( function ( node ) {
-if ( ! node.isSkinnedMesh ) return;
-const clonedMesh = node;
-const sourceMesh = sourceLookup.get( node );
-const sourceBones = sourceMesh.skeleton.bones;
-clonedMesh.skeleton = sourceMesh.skeleton.clone();
-clonedMesh.bindMatrix.copy( sourceMesh.bindMatrix );
-clonedMesh.skeleton.bones = sourceBones.map( function ( bone ) {
-return cloneLookup.get( bone );
-} );
-clonedMesh.bind( clonedMesh.skeleton, clonedMesh.bindMatrix );
-} );
-return clone;
-}
-function getBoneByName( name, skeleton ) {
-for ( let i = 0, bones = getBones( skeleton ); i < bones.length; i ++ ) {
-if ( name === bones[ i ].name )
-return bones[ i ];
-}
-}
-function getBones( skeleton ) {
-return Array.isArray( skeleton ) ? skeleton : skeleton.bones;
-}
-function getHelperFromSkeleton( skeleton ) {
-const source = new SkeletonHelper( skeleton.bones[ 0 ] );
-source.skeleton = skeleton;
-return source;
-}
-function parallelTraverse( a, b, callback ) {
-callback( a, b );
-for ( let i = 0; i < a.children.length; i ++ ) {
-parallelTraverse( a.children[ i ], b.children[ i ], callback );
-}
-}
-};
 __defs['vendor/three/addons/exporters/STLExporter.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'STLExporter', () => STLExporter);
@@ -67425,7 +64686,7 @@ const fv = (v) => {
 const a = v + vOff;
 if (uv && nr) return `${a}/${v + tOff}/${v + nOff}`;
 if (uv) return `${a}/${v + tOff}`;
-if (nr) return `${a}//${v + nOff}`;
+if (nr) return `${a}${v + nOff}`;
 return `${a}`;
 };
 for (const grp of groups) {
@@ -67865,7 +65126,7 @@ new GLTFLoader().load(${JSON.stringify(glb)}, (gltf) => {
 		if (!n.isPoints) return;
 		const size = (n.userData && n.userData.pointSize) || 0.01;
 		const tex = sprite((n.userData && n.userData.pointShape) || 'circle');
-		// у three.js размер точки с перспективой считается без учёта угла обзора, поэтому делится на tan(fov/2)
+
 		n.material = new THREE.PointsMaterial({ size: size * k, vertexColors: !!n.geometry.attributes.color, sizeAttenuation: true, map: tex, alphaTest: tex ? 0.5 : 0, transparent: false });
 	});
 	const box = new THREE.Box3().setFromObject(gltf.scene);
@@ -69539,7 +66800,7 @@ self.onmessage = async (e) => {
 			for (const dev of order) {
 				try {
 					depther = await make(dev);
-					// пробный прогон: на некоторых видеокартах сессия создаётся, но считает мусор
+
 					const probe = new Uint8ClampedArray(56 * 56 * 4);
 					for (let i = 0; i < probe.length; i += 4) probe[i] = probe[i + 1] = probe[i + 2] = (i / 4) % 56 * 4, probe[i + 3] = 255;
 					const r = await run({ data: probe, w: 56, h: 56 });
@@ -69907,7 +67168,7 @@ void main() {
 		vec2 pUv = (rot * p) / max(0.001, uZoom) + c;
 		if (pUv.x >= 0.0 && pUv.x <= 1.0 && pUv.y >= 0.0 && pUv.y <= 1.0) {
 			prev = texture2D(uPrev, pUv) * uDecay;
-			// хвост постепенно уходит в цвет палитры
+
 			prev.rgb = mix(prev.rgb, prev.rgb * uTint * 1.7, uTintK * 0.07);
 		}
 	}
@@ -69991,7 +67252,7 @@ void main() {
 	cuv = blockC / uRes;
 	vec2 mv = vec2(0.0);
 	if (uSceneMix > 0.001 && uHasPrev > 0.5) {
-		// у облака точек кадр редкий: точки сравниваются по размытой плотности, иначе поиск цепляется за случайные одинаковые точки и векторы скачут
+
 		lodL = log2(max(uBlock * 0.6, 1.0));
 		float q = uBlock * 0.28;
 		oo[0] = vec2(0.0); oo[1] = vec2(q, q); oo[2] = vec2(-q, q); oo[3] = vec2(q, -q); oo[4] = vec2(-q, -q);
@@ -70017,11 +67278,11 @@ void main() {
 				if (e < bestE) { bestE = e; best = c; }
 			}
 		}
-		// слабое совпадение считаем шумом, а не движением
+
 		if (e0 - bestE < 0.02) best = vec2(0.0);
 		mv = best * uSceneMix * uGain;
 	}
-	// искусственное движение: ровный снос и течение, чтобы эффект жил и на неподвижной картинке
+
 	vec2 g = cuv * 6.2832;
 	vec2 fl = vec2(sin(g.y * 1.2 + uTime * 0.9) + sin(g.x * 0.5 - uTime * 0.6), cos(g.x * 1.2 - uTime * 0.7) + cos(g.y * 0.7 + uTime * 0.5)) * 0.5;
 	mv += (uDrift + fl * uFlow) * uGain;
@@ -70059,7 +67320,7 @@ vec2 mvAt(vec2 px) {
 	vec2 d = fetchMV(i0 + vec2(1.0, 1.0));
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
-// слитность потоков: вектор блока усредняется с соседями, и потёки идут цельными струями, а не рябью
+
 vec2 mvCoh(vec2 px) {
 	vec2 m0 = mvAt(px);
 	if (uCoh < 0.01) return m0;
@@ -70082,13 +67343,13 @@ void main() {
 	vec2 mv = mvCoh(px);
 	float slot3 = floor(uTime * 3.0);
 	if (uStyle > 3.5 && uStyle < 4.5) {
-		// битый поток: целые ряды блоков съезжают вбок, как строка, прочитанная со сдвигом
+
 		float rowHit = step(0.82, h11(vec2(bid.y * 3.1, slot3)));
 		mv.x += (h11(vec2(bid.y, slot3)) - 0.5) * uBlock * 8.0 * rowHit;
 	}
 	vec2 suv = vUv;
 	if (uStyle > 4.5) {
-		// рассыпание: картинка крупными пикселями, каждый сползает и осыпается вниз сам по себе
+
 		vec2 cell = vec2(max(uBlock * 0.5, 2.0));
 		vec2 cid = floor(px / cell);
 		suv = (cid + 0.5) * cell / uRes;
@@ -70096,7 +67357,7 @@ void main() {
 	}
 	float stale = 0.0;
 	if (uStyle > 0.5 && uStyle < 1.5) {
-		// блоки: часть блоков залипает и сползает сама по себе
+
 		float slot = floor(uTime * 5.0);
 		float rs = h11(bid + slot * 7.13);
 		stale = step(1.0 - uStale, rs);
@@ -70110,34 +67371,34 @@ void main() {
 	vec4 pb = texture2D(uMoshPrev, suv - d * (1.0 - cs));
 	vec4 pred = vec4(pr.r, pg.g, pb.b, pg.a);
 	vec4 predSrc = texture2D(uPrevSrc, vUv - d);
-	// чистая картинка там, где точек нет: фон остаётся пустым, если потёки в пустоту выключены
+
 	float cLum = dot(cur.rgb, vec3(0.3, 0.59, 0.11));
 	float keepBg = (1.0 - uVoid) * (1.0 - smoothstep(0.012, 0.07, cLum));
 	if (uStyle > 2.5 && uStyle < 3.5) {
-		// световые потёки: прошлая картинка течёт по полю движения и медленно гаснет, точки рисуют поверх светящиеся следы
+
 		vec4 tr = max(pred * mix(0.82, 0.988, uTrail), cur);
 		gl_FragColor = clamp(mix(mix(cur, tr, hold), cur, keepBg), 0.0, 6.0);
 		return;
 	}
 	vec4 dec = pred + (cur - predSrc) * uResid;
 	float m = clamp((1.0 - hold) * 1.6 - r * 0.6, 0.0, 1.0) * (1.0 - stale);
-	// понемногу картинка всегда возвращается, иначе сдвиг копится и кадр уезжает за край
+
 	m = max(m, uLeak * (1.0 - stale));
 	vec4 o = mix(dec, cur, m);
 	if (uStyle > 3.5 && uStyle < 4.5) {
-		// битый поток: часть блоков без данных, от них остался только средний цвет, а цветовой сигнал сорван в зелёный или пурпурный
+
 		float rb = h11(bid * 1.37 + slot3 * 3.1);
 		vec4 dc = textureLod(uCur, (bid + 0.5) * uBlock / uRes, log2(uBlock));
 		float yy = dot(dc.rgb, vec3(0.299, 0.587, 0.114));
 		vec3 tint = rb > 0.5 ? vec3(0.15, 1.0, 0.35) : vec3(0.95, 0.2, 0.9);
-		// пустые блоки остаются тёмными: данные теряются только там, где есть точки
+
 		vec3 bad = mix(vec3(yy), tint * yy * 1.7, 0.6);
 		float lost = step(0.9 - uStale, rb) * hold;
 		o = mix(o, vec4(bad, dc.a), lost);
 	}
 	o = mix(o, cur, keepBg);
 	if (uQuant > 0.001) {
-		// грубое квантование цвета и сдвиг оттенка по блокам, как у перегруженного кодека
+
 		float q = mix(48.0, 5.0, uQuant);
 		vec3 qd = floor(o.rgb * q + 0.5) / q;
 		qd += (vec3(h11(bid + 1.7), h11(bid + 5.3), h11(bid + 8.9)) - 0.5) * 0.08 * uQuant;
@@ -70567,7 +67828,7 @@ this.post = null;
 __defs['src/effects/shaders/wgsl/generated/frame-spec.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'FRAME_SPEC', () => FRAME_SPEC);
-const FRAME_SPEC = [["uAdd","f32",0],["uSolid","vec3f",0],["uAtt","f32",0],["uSize","f32",0],["uPR","f32",0],["uGlyph","vec3f",0],["uColorBy","f32",0],["uBright","f32",0],["uMaskShow","f32",0],["uP0","vec3f",0],["uP1","vec3f",0],["uP2","vec3f",0],["uSliceC","vec3f",0],["uMarkC","vec3f",0],["uTime","f32",0],["uTOff","f32",0],["uMorph","f32",0],["uMorphS","vec4f",0],["uMorphO","vec4f",0],["uMorphD","vec4f",0],["uSettle","f32",0],["uBeat","f32",0],["uYR","vec2f",0],["uMouse","vec3f",0],["uMouseOn","f32",0],["uShade","f32",0],["uCurlP","vec4f",0],["uSpecP","vec4f",0],["uWaveP","vec4f",0],["uWaveSrc","vec4f",0],["uPulseP","vec4f",0],["uVoxelP","vec4f",0],["uGlitchP","vec4f",0],["uBlast","vec4f",0],["uFlow","vec4f",0],["uDisP","vec4f",0],["uScope","vec4f",0],["uScopeP","vec4f",0],["uScopeQ","vec4f",0],["uScopeC","vec3f",0],["uDepth","vec4f",0],["uDepthP","vec4f",0],["uDepthQ","vec4f",0],["uFlat","f32",0],["uCurl","vec4f",0],["uSpec","vec4f",0],["uWave","vec4f",0],["uTwist","vec4f",0],["uPulse","vec4f",0],["uVoxel","vec4f",0],["uJitter","vec4f",0],["uCursor","vec4f",0],["uMask","vec4f",0],["uMaskA","vec4f",0],["uGlitch","vec4f",0],["uContact","vec4f",0],["uShockP","vec4f",0],["uTrk","vec4f",16],["uHand","vec4f",12],["uGrav","vec4f",0],["uSlice","vec4f",0],["uSliceM","vec4f",0],["uMark","vec4f",0],["uGravT","vec4f",0],["uPhysP","vec4f",0],["uAsm","f32",0],["uDis","vec4f",0],["uDisT","f32",0],["uAnimN","f32",0],["uCen","vec3f",0],["uDisQ","vec4f",0],["uGravP","vec4f",0],["uHandP","vec4f",0],["uImp","vec4f",32],["uShock","vec4f",4],["uExp","vec4f",0],["uExpP","vec4f",0],["uGrow","vec4f",0],["uGrowP","vec4f",0],["uGrowSeed","vec3f",0],["uJel","vec4f",3],["uJelO","vec4f",3],["uJelP","vec4f",0],["uPhysics","vec4f",0],["uCollapseTime","f32",0],["uBrushHits","vec4f",20],["uPaintP","vec4f",0],["uBrushParam","vec4f",0],["uLookP2","vec4f",0],["uDof","vec4f",0],["uHyp","vec4f",0],["uHypP","vec4f",0],["uCh","vec4f",0],["uChA","vec4f",0],["uFr","vec4f",0],["uFr2","vec4f",0],["uFr3","vec4f",0],["uFr4","vec4f",0],["uFr5","vec4f",0],["uHero","vec4f",0],["uFr6","vec4f",0],["uFr7","vec4f",0],["uFr8","vec4f",0],["uFr9","vec4f",0],["uFrE","vec4f",0],["uShoot","vec4f",0],["uShootP","vec4f",0],["uShootD","vec4f",0],["uShootE","vec4f",0],["uShootC","vec4f",0],["uShootS","vec4f",24],["uShootN","vec4f",24],["uShootB","vec4f",6],["uScr","vec4f",0],["uScrP","vec4f",0],["uScrD","vec4f",0],["uScrQ","vec4f",0],["uScrMN","f32",0],["uSlit","vec4f",0],["uSlitP","vec4f",0],["uSlitG","vec4f",0],["uSort","vec4f",0],["uSortP","vec4f",0],["modelMatrix","mat4x4f",0],["modelViewMatrix","mat4x4f",0],["projectionMatrix","mat4x4f",0],["viewMatrix","mat4x4f",0],["normalMatrix","mat3x3f",0],["uRes","vec2f",0],["uPx","vec2f",0],["uExposure","f32",0],["uTone","f32",0],["uGlow","f32",0],["uDens","f32",0],["uGhost","f32",0],["uShape","f32",0],["uShd","vec4f",0],["uShdL","vec4f",0],["uShdP","vec4f",0],["uShdC","vec3f",0],["uLink","vec4f",0],["uLinkP","vec4f",0],["uLinkW","f32",0],["uScopeW","f32",0],["uScopeLB","f32",0]];
+const FRAME_SPEC =[["uAdd","f32",0],["uSolid","vec3f",0],["uAtt","f32",0],["uSize","f32",0],["uPR","f32",0],["uGlyph","vec3f",0],["uColorBy","f32",0],["uBright","f32",0],["uMaskShow","f32",0],["uP0","vec3f",0],["uP1","vec3f",0],["uP2","vec3f",0],["uSliceC","vec3f",0],["uMarkC","vec3f",0],["uTime","f32",0],["uTOff","f32",0],["uMorph","f32",0],["uMorphS","vec4f",0],["uMorphO","vec4f",0],["uMorphD","vec4f",0],["uSettle","f32",0],["uBeat","f32",0],["uYR","vec2f",0],["uMouse","vec3f",0],["uMouseOn","f32",0],["uShade","f32",0],["uCurlP","vec4f",0],["uSpecP","vec4f",0],["uWaveP","vec4f",0],["uWaveSrc","vec4f",0],["uPulseP","vec4f",0],["uVoxelP","vec4f",0],["uGlitchP","vec4f",0],["uBlast","vec4f",0],["uFlow","vec4f",0],["uDisP","vec4f",0],["uScope","vec4f",0],["uScopeP","vec4f",0],["uScopeQ","vec4f",0],["uScopeC","vec3f",0],["uDepth","vec4f",0],["uDepthP","vec4f",0],["uDepthQ","vec4f",0],["uFlat","f32",0],["uCurl","vec4f",0],["uSpec","vec4f",0],["uWave","vec4f",0],["uTwist","vec4f",0],["uPulse","vec4f",0],["uVoxel","vec4f",0],["uJitter","vec4f",0],["uCursor","vec4f",0],["uMask","vec4f",0],["uMaskA","vec4f",0],["uGlitch","vec4f",0],["uContact","vec4f",0],["uShockP","vec4f",0],["uTrk","vec4f",16],["uHand","vec4f",12],["uGrav","vec4f",0],["uSlice","vec4f",0],["uSliceM","vec4f",0],["uMark","vec4f",0],["uGravT","vec4f",0],["uPhysP","vec4f",0],["uAsm","f32",0],["uDis","vec4f",0],["uDisT","f32",0],["uAnimN","f32",0],["uCen","vec3f",0],["uDisQ","vec4f",0],["uGravP","vec4f",0],["uHandP","vec4f",0],["uImp","vec4f",32],["uShock","vec4f",4],["uExp","vec4f",0],["uExpP","vec4f",0],["uGrow","vec4f",0],["uGrowP","vec4f",0],["uGrowSeed","vec3f",0],["uJel","vec4f",3],["uJelO","vec4f",3],["uJelP","vec4f",0],["uPhysics","vec4f",0],["uCollapseTime","f32",0],["uBrushHits","vec4f",20],["uPaintP","vec4f",0],["uBrushParam","vec4f",0],["uLookP2","vec4f",0],["uDof","vec4f",0],["uHyp","vec4f",0],["uHypP","vec4f",0],["uCh","vec4f",0],["uChA","vec4f",0],["uFr","vec4f",0],["uFr2","vec4f",0],["uFr3","vec4f",0],["uFr4","vec4f",0],["uFr5","vec4f",0],["uHero","vec4f",0],["uFr6","vec4f",0],["uFr7","vec4f",0],["uFr8","vec4f",0],["uFr9","vec4f",0],["uFrE","vec4f",0],["uShoot","vec4f",0],["uShootP","vec4f",0],["uShootD","vec4f",0],["uShootE","vec4f",0],["uShootC","vec4f",0],["uShootS","vec4f",24],["uShootN","vec4f",24],["uShootB","vec4f",6],["uScr","vec4f",0],["uScrP","vec4f",0],["uScrD","vec4f",0],["uScrQ","vec4f",0],["uScrMN","f32",0],["uSlit","vec4f",0],["uSlitP","vec4f",0],["uSlitG","vec4f",0],["uSort","vec4f",0],["uSortP","vec4f",0],["modelMatrix","mat4x4f",0],["modelViewMatrix","mat4x4f",0],["projectionMatrix","mat4x4f",0],["viewMatrix","mat4x4f",0],["normalMatrix","mat3x3f",0],["uRes","vec2f",0],["uPx","vec2f",0],["uExposure","f32",0],["uTone","f32",0],["uGlow","f32",0],["uDens","f32",0],["uGhost","f32",0],["uShape","f32",0],["uShd","vec4f",0],["uShdL","vec4f",0],["uShdP","vec4f",0],["uShdC","vec3f",0],["uLink","vec4f",0],["uLinkP","vec4f",0],["uLinkW","f32",0],["uScopeW","f32",0],["uScopeLB","f32",0]];
 };
 __defs['src/effects/render/webgpu/frame-layout.js'] = function (__exports, __req) {
 'use strict';
@@ -70643,7 +67904,7 @@ __defs['src/effects/shaders/wgsl/generated/post-passes.js'] = function (__export
 __def(__exports, 'POST_PASSES', () => POST_PASSES);
 const POST_PASSES = {
 "fb": {
-"wgsl": "struct U {\n\t@size(16) uDecay: f32,\n\t@size(16) uZoom: f32,\n\t@size(16) uTwist: f32,\n\t@size(16) uHasPrev: f32,\n\t@size(16) uTint: vec3f,\n\t@size(16) uTintK: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uScene: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrev: texture_2d<f32>;\n@group(0) @binding(3) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn main_() {\n\tvar curr: vec4f = textureSampleLevel(t_uScene, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\tvar prev: vec4f = vec4f(0.0);\n\tif ((u.uHasPrev > 0.5)) {\n\t\tvar c: vec2f = vec2f(0.5);\n\t\tvar p: vec2f = (vUv - c);\n\t\tvar a: f32 = u.uTwist;\n\t\tvar rot: mat2x2f = mat2x2f(cos(a), -sin(a), sin(a), cos(a));\n\t\tvar pUv: vec2f = ((((rot * p)) / max(0.001, u.uZoom)) + c);\n\t\tif (((((pUv.x >= 0.0) && (pUv.x <= 1.0)) && (pUv.y >= 0.0)) && (pUv.y <= 1.0))) {\n\t\t\tprev = (textureSampleLevel(t_uPrev, samp, vec2f((pUv).x, 1.0 - (pUv).y), 0.0) * u.uDecay);\n\t\t\t{ let _sw0 = mix(prev.rgb, ((prev.rgb * u.uTint) * 1.7), (u.uTintK * 0.07)); prev = vec4f(_sw0.x, _sw0.y, _sw0.z, prev.w); }\n\t\t}\n\t}\n\tvar col: vec3f = max(curr.rgb, prev.rgb);\n\tvar a: f32 = max(curr.a, (prev.a * u.uDecay));\n\tgl_FragColor = vec4f(col, a);\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
+"wgsl": "struct U {\n\t@size(16) uDecay: f32,\n\t@size(16) uZoom: f32,\n\t@size(16) uTwist: f32,\n\t@size(16) uHasPrev: f32,\n\t@size(16) uTint: vec3f,\n\t@size(16) uTintK: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uScene: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrev: texture_2d<f32>;\n@group(0) @binding(3) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn main_() {\n\tvar curr: vec4f = textureSampleLevel(t_uScene, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\tvar prev: vec4f = vec4f(0.0);\n\tif ((u.uHasPrev > 0.5)) {\n\t\tvar c: vec2f = vec2f(0.5);\n\t\tvar p: vec2f = (vUv - c);\n\t\tvar a: f32 = u.uTwist;\n\t\tvar rot: mat2x2f = mat2x2f(cos(a), -sin(a), sin(a), cos(a));\n\t\tvar pUv: vec2f = ((((rot * p)) / max(0.001, u.uZoom)) + c);\n\t\tif (((((pUv.x >= 0.0) && (pUv.x <= 1.0)) && (pUv.y >= 0.0)) && (pUv.y <= 1.0))) {\n\t\t\tprev = (textureSampleLevel(t_uPrev, samp, vec2f((pUv).x, 1.0 - (pUv).y), 0.0) * u.uDecay);\n\t\t\t{ let _sw0 = mix(prev.rgb, ((prev.rgb * u.uTint) * 1.7), (u.uTintK * 0.07)); prev = vec4f(_sw0.x, _sw0.y, _sw0.z, prev.w); }\n\t\t}\n\t}\n\tvar col: vec3f = max(curr.rgb, prev.rgb);\n\tvar a: f32 = max(curr.a, (prev.a * u.uDecay));\n\tgl_FragColor = vec4f(col, a);\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
 "spec": [
 [
 "uDecay",
@@ -70697,7 +67958,7 @@ const POST_PASSES = {
 ]
 },
 "out": {
-"wgsl": "struct U {\n\t@size(16) uBloom: f32,\n\t@size(16) uAberration: f32,\n\t@size(16) uRes: vec2f,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uTex: texture_2d<f32>;\n@group(0) @binding(2) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn main_() {\n\tvar dir: vec2f = (vUv - vec2f(0.5));\n\tvar distSq: f32 = dot(dir, dir);\n\tvar shift: vec2f = (((dir * distSq) * u.uAberration) * 0.04);\n\tvar baseCol: vec4f;\n\tif ((u.uAberration > 0.001)) {\n\t\tvar r: f32 = textureSampleLevel(t_uTex, samp, vec2f(((vUv + shift)).x, 1.0 - ((vUv + shift)).y), 0.0).r;\n\t\tvar g: f32 = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).g;\n\t\tvar b: f32 = textureSampleLevel(t_uTex, samp, vec2f(((vUv - shift)).x, 1.0 - ((vUv - shift)).y), 0.0).b;\n\t\tvar a: f32 = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).a;\n\t\tbaseCol = vec4f(r, g, b, a);\n\t} else {\n\t\tbaseCol = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\t}\n\tif ((u.uBloom > 0.01)) {\n\t\tvar texel_: vec2f = (1.0 / u.uRes);\n\t\tvar bloom: vec4f = vec4f(0.0);\n\t\tvar rad: f32 = 3.2;\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(-rad, -rad) * texel_))).x, 1.0 - ((vUv + (vec2f(-rad, -rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(rad, -rad) * texel_))).x, 1.0 - ((vUv + (vec2f(rad, -rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(-rad, rad) * texel_))).x, 1.0 - ((vUv + (vec2f(-rad, rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(rad, rad) * texel_))).x, 1.0 - ((vUv + (vec2f(rad, rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(0.0, (-rad * 1.4)) * texel_))).x, 1.0 - ((vUv + (vec2f(0.0, (-rad * 1.4)) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(0.0, (rad * 1.4)) * texel_))).x, 1.0 - ((vUv + (vec2f(0.0, (rad * 1.4)) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f((-rad * 1.4), 0.0) * texel_))).x, 1.0 - ((vUv + (vec2f((-rad * 1.4), 0.0) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f((rad * 1.4), 0.0) * texel_))).x, 1.0 - ((vUv + (vec2f((rad * 1.4), 0.0) * texel_))).y), 0.0);\n\t\tbloom *= vec4f(0.125);\n\t\t{ let _sw0 = (baseCol.rgb + ((bloom.rgb * u.uBloom) * 0.85)); baseCol = vec4f(_sw0.x, _sw0.y, _sw0.z, baseCol.w); }\n\t}\n\tgl_FragColor = baseCol;\n}\n\n\nfn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {\n\tlet startCompression = 0.8 - 0.04;\n\tlet desaturation = 0.15;\n\tvar color = c0 * exposure;\n\tlet x = min(color.r, min(color.g, color.b));\n\tlet offset = select(0.04, x - 6.25 * x * x, x < 0.08);\n\tcolor = color - offset;\n\tlet peak = max(color.r, max(color.g, color.b));\n\tif (peak < startCompression) { return color; }\n\tlet d = 1.0 - startCompression;\n\tlet newPeak = 1.0 - d * d / (peak + d - startCompression);\n\tcolor = color * (newPeak / peak);\n\tlet g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);\n\treturn mix(color, vec3f(newPeak), g);\n}\nfn rrtAndOdtFit(v: vec3f) -> vec3f {\n\tlet a = v * (v + 0.0245786) - 0.000090537;\n\tlet b = v * (0.983729 * v + 0.4329510) + 0.238081;\n\treturn a / b;\n}\nfn toneAces(c0: vec3f, exposure: f32) -> vec3f {\n\tlet inM = mat3x3f(vec3f(0.59719, 0.07600, 0.02840), vec3f(0.35458, 0.90834, 0.13383), vec3f(0.04823, 0.01566, 0.83777));\n\tlet outM = mat3x3f(vec3f(1.60475, -0.10208, -0.00327), vec3f(-0.53108, 1.10813, -0.07276), vec3f(-0.07367, -0.00605, 1.07602));\n\tvar color = c0 * (exposure / 0.6);\n\tcolor = inM * color;\n\tcolor = rrtAndOdtFit(color);\n\tcolor = outM * color;\n\treturn saturate(color);\n}\nfn agxContrast(x: vec3f) -> vec3f {\n\tlet x2 = x * x;\n\tlet x4 = x2 * x2;\n\treturn 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;\n}\nfn toneAgx(c0: vec3f, exposure: f32) -> vec3f {\n\tlet rec2020ToSrgb = mat3x3f(vec3f(1.6605, -0.1246, -0.0182), vec3f(-0.5876, 1.1329, -0.1006), vec3f(-0.0728, -0.0083, 1.1187));\n\tlet srgbToRec2020 = mat3x3f(vec3f(0.6274, 0.0691, 0.0164), vec3f(0.3293, 0.9195, 0.0880), vec3f(0.0433, 0.0113, 0.8956));\n\tlet inset = mat3x3f(vec3f(0.856627153315983, 0.137318972929847, 0.11189821299995), vec3f(0.0951212405381588, 0.761241990602591, 0.0767994186031903), vec3f(0.0482516061458583, 0.101439036467562, 0.811302368396859));\n\tlet outset = mat3x3f(vec3f(1.1271005818144368, -0.1413297634984383, -0.14132976349843826), vec3f(-0.11060664309660323, 1.157823702216272, -0.11060664309660294), vec3f(-0.016493938717834573, -0.016493938717834257, 1.2519364065950405));\n\tlet minEv = -12.47393;\n\tlet maxEv = 4.026069;\n\tvar color = c0 * exposure;\n\tcolor = srgbToRec2020 * color;\n\tcolor = inset * color;\n\tcolor = max(color, vec3f(1e-10));\n\tcolor = log2(color);\n\tcolor = (color - minEv) / (maxEv - minEv);\n\tcolor = clamp(color, vec3f(0.0), vec3f(1.0));\n\tcolor = agxContrast(color);\n\tcolor = outset * color;\n\tcolor = pow(max(vec3f(0.0), color), vec3f(2.2));\n\tcolor = rec2020ToSrgb * color;\n\treturn clamp(color, vec3f(0.0), vec3f(1.0));\n}\nfn toneMap(c: vec3f, exposure: f32, mode: f32) -> vec3f {\n\tif (mode < 0.5) { return c; }\n\tif (mode < 1.5) { return toneNeutral(c, exposure); }\n\tif (mode < 2.5) { return toneAces(c, exposure); }\n\treturn toneAgx(c, exposure);\n}\nfn linearToSrgb(v: vec3f) -> vec3f {\n\treturn select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));\n}\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, u.uExposure, u.uTone)), gl_FragColor.a);\n}\n",
+"wgsl": "struct U {\n\t@size(16) uBloom: f32,\n\t@size(16) uAberration: f32,\n\t@size(16) uRes: vec2f,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uTex: texture_2d<f32>;\n@group(0) @binding(2) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn main_() {\n\tvar dir: vec2f = (vUv - vec2f(0.5));\n\tvar distSq: f32 = dot(dir, dir);\n\tvar shift: vec2f = (((dir * distSq) * u.uAberration) * 0.04);\n\tvar baseCol: vec4f;\n\tif ((u.uAberration > 0.001)) {\n\t\tvar r: f32 = textureSampleLevel(t_uTex, samp, vec2f(((vUv + shift)).x, 1.0 - ((vUv + shift)).y), 0.0).r;\n\t\tvar g: f32 = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).g;\n\t\tvar b: f32 = textureSampleLevel(t_uTex, samp, vec2f(((vUv - shift)).x, 1.0 - ((vUv - shift)).y), 0.0).b;\n\t\tvar a: f32 = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).a;\n\t\tbaseCol = vec4f(r, g, b, a);\n\t} else {\n\t\tbaseCol = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\t}\n\tif ((u.uBloom > 0.01)) {\n\t\tvar texel_: vec2f = (1.0 / u.uRes);\n\t\tvar bloom: vec4f = vec4f(0.0);\n\t\tvar rad: f32 = 3.2;\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(-rad, -rad) * texel_))).x, 1.0 - ((vUv + (vec2f(-rad, -rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(rad, -rad) * texel_))).x, 1.0 - ((vUv + (vec2f(rad, -rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(-rad, rad) * texel_))).x, 1.0 - ((vUv + (vec2f(-rad, rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(rad, rad) * texel_))).x, 1.0 - ((vUv + (vec2f(rad, rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(0.0, (-rad * 1.4)) * texel_))).x, 1.0 - ((vUv + (vec2f(0.0, (-rad * 1.4)) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(0.0, (rad * 1.4)) * texel_))).x, 1.0 - ((vUv + (vec2f(0.0, (rad * 1.4)) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f((-rad * 1.4), 0.0) * texel_))).x, 1.0 - ((vUv + (vec2f((-rad * 1.4), 0.0) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f((rad * 1.4), 0.0) * texel_))).x, 1.0 - ((vUv + (vec2f((rad * 1.4), 0.0) * texel_))).y), 0.0);\n\t\tbloom *= vec4f(0.125);\n\t\t{ let _sw0 = (baseCol.rgb + ((bloom.rgb * u.uBloom) * 0.85)); baseCol = vec4f(_sw0.x, _sw0.y, _sw0.z, baseCol.w); }\n\t}\n\tgl_FragColor = baseCol;\n}\n\n\nfn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {\n\tlet startCompression = 0.8 - 0.04;\n\tlet desaturation = 0.15;\n\tvar color = c0 * exposure;\n\tlet x = min(color.r, min(color.g, color.b));\n\tlet offset = select(0.04, x - 6.25 * x * x, x < 0.08);\n\tcolor = color - offset;\n\tlet peak = max(color.r, max(color.g, color.b));\n\tif (peak < startCompression) { return color; }\n\tlet d = 1.0 - startCompression;\n\tlet newPeak = 1.0 - d * d / (peak + d - startCompression);\n\tcolor = color * (newPeak / peak);\n\tlet g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);\n\treturn mix(color, vec3f(newPeak), g);\n}\nfn rrtAndOdtFit(v: vec3f) -> vec3f {\n\tlet a = v * (v + 0.0245786) - 0.000090537;\n\tlet b = v * (0.983729 * v + 0.4329510) + 0.238081;\n\treturn a / b;\n}\nfn toneAces(c0: vec3f, exposure: f32) -> vec3f {\n\tlet inM = mat3x3f(vec3f(0.59719, 0.07600, 0.02840), vec3f(0.35458, 0.90834, 0.13383), vec3f(0.04823, 0.01566, 0.83777));\n\tlet outM = mat3x3f(vec3f(1.60475, -0.10208, -0.00327), vec3f(-0.53108, 1.10813, -0.07276), vec3f(-0.07367, -0.00605, 1.07602));\n\tvar color = c0 * (exposure / 0.6);\n\tcolor = inM * color;\n\tcolor = rrtAndOdtFit(color);\n\tcolor = outM * color;\n\treturn saturate(color);\n}\nfn agxContrast(x: vec3f) -> vec3f {\n\tlet x2 = x * x;\n\tlet x4 = x2 * x2;\n\treturn 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;\n}\nfn toneAgx(c0: vec3f, exposure: f32) -> vec3f {\n\tlet rec2020ToSrgb = mat3x3f(vec3f(1.6605, -0.1246, -0.0182), vec3f(-0.5876, 1.1329, -0.1006), vec3f(-0.0728, -0.0083, 1.1187));\n\tlet srgbToRec2020 = mat3x3f(vec3f(0.6274, 0.0691, 0.0164), vec3f(0.3293, 0.9195, 0.0880), vec3f(0.0433, 0.0113, 0.8956));\n\tlet inset = mat3x3f(vec3f(0.856627153315983, 0.137318972929847, 0.11189821299995), vec3f(0.0951212405381588, 0.761241990602591, 0.0767994186031903), vec3f(0.0482516061458583, 0.101439036467562, 0.811302368396859));\n\tlet outset = mat3x3f(vec3f(1.1271005818144368, -0.1413297634984383, -0.14132976349843826), vec3f(-0.11060664309660323, 1.157823702216272, -0.11060664309660294), vec3f(-0.016493938717834573, -0.016493938717834257, 1.2519364065950405));\n\tlet minEv = -12.47393;\n\tlet maxEv = 4.026069;\n\tvar color = c0 * exposure;\n\tcolor = srgbToRec2020 * color;\n\tcolor = inset * color;\n\tcolor = max(color, vec3f(1e-10));\n\tcolor = log2(color);\n\tcolor = (color - minEv) / (maxEv - minEv);\n\tcolor = clamp(color, vec3f(0.0), vec3f(1.0));\n\tcolor = agxContrast(color);\n\tcolor = outset * color;\n\tcolor = pow(max(vec3f(0.0), color), vec3f(2.2));\n\tcolor = rec2020ToSrgb * color;\n\treturn clamp(color, vec3f(0.0), vec3f(1.0));\n}\nfn toneMap(c: vec3f, exposure: f32, mode: f32) -> vec3f {\n\tif (mode < 0.5) { return c; }\n\tif (mode < 1.5) { return toneNeutral(c, exposure); }\n\tif (mode < 2.5) { return toneAces(c, exposure); }\n\treturn toneAgx(c, exposure);\n}\nfn linearToSrgb(v: vec3f) -> vec3f {\n\treturn select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));\n}\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, u.uExposure, u.uTone)), gl_FragColor.a);\n}\n",
 "spec": [
 [
 "uBloom",
@@ -70735,7 +67996,7 @@ const POST_PASSES = {
 ]
 },
 "mv": {
-"wgsl": "struct U {\n\t@size(16) uRes: vec2f,\n\t@size(16) uDrift: vec2f,\n\t@size(16) uBlock: f32,\n\t@size(16) uRange: f32,\n\t@size(16) uGain: f32,\n\t@size(16) uInertia: f32,\n\t@size(16) uSceneMix: f32,\n\t@size(16) uHasPrev: f32,\n\t@size(16) uFlow: f32,\n\t@size(16) uTime: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uCur: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrev: texture_2d<f32>;\n@group(0) @binding(3) var t_uPrevMV: texture_2d<f32>;\n@group(0) @binding(4) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nvar<private> cc: array<f32, 5>;\nvar<private> oo: array<vec2f, 5>;\nvar<private> cuv: vec2f;\nvar<private> lodL: f32;\n\nfn featCur(uv_in: vec2f) -> f32 {\n\tvar uv: vec2f = uv_in;\n\tvar s: vec4f = textureSampleLevel(t_uCur, samp, vec2f((uv).x, 1.0 - (uv).y), lodL);\n\treturn (dot(s.rgb, vec3f(0.299, 0.587, 0.114)) + (0.5 * s.a));\n}\n\nfn featPrev(uv_in: vec2f) -> f32 {\n\tvar uv: vec2f = uv_in;\n\tvar s: vec4f = textureSampleLevel(t_uPrev, samp, vec2f((uv).x, 1.0 - (uv).y), lodL);\n\treturn (dot(s.rgb, vec3f(0.299, 0.587, 0.114)) + (0.5 * s.a));\n}\n\nfn sad(mv_in: vec2f) -> f32 {\n\tvar mv: vec2f = mv_in;\n\tvar e: f32 = 0.0;\n\tfor (var i: i32 = 0; (i < 5); i++) {\n\t\te += abs((cc[i] - featPrev((cuv + (((oo[i] - mv)) / u.uRes)))));\n\t}\n\treturn e;\n}\n\nfn main_() {\n\tvar blockC: vec2f = (((floor(gl_FragCoord.xy) + 0.5)) * u.uBlock);\n\tcuv = (blockC / u.uRes);\n\tvar mv: vec2f = vec2f(0.0);\n\tif (((u.uSceneMix > 0.001) && (u.uHasPrev > 0.5))) {\n\t\tlodL = log2(max((u.uBlock * 0.6), 1.0));\n\t\tvar q: f32 = (u.uBlock * 0.28);\n\t\too[0] = vec2f(0.0);\n\t\too[1] = vec2f(q, q);\n\t\too[2] = vec2f(-q, q);\n\t\too[3] = vec2f(q, -q);\n\t\too[4] = vec2f(-q, -q);\n\t\tfor (var i: i32 = 0; (i < 5); i++) {\n\t\t\tcc[i] = featCur((cuv + (oo[i] / u.uRes)));\n\t\t}\n\t\tvar step0: f32 = max(1.0, (u.uBlock * 0.5));\n\t\tvar e0: f32 = sad(vec2f(0.0));\n\t\tvar best: vec2f = vec2f(0.0);\n\t\tvar bestE: f32 = e0;\n\t\tfor (var j: i32 = -3; (j <= 3); j++) {\n\t\t\tfor (var i: i32 = -3; (i <= 3); i++) {\n\t\t\t\tif (((i == 0) && (j == 0))) {\n\t\t\t\t\tcontinue;\n\t\t\t\t}\n\t\t\t\tvar c: vec2f = (vec2f(f32(i), f32(j)) * step0);\n\t\t\t\tvar e: f32 = (sad(c) + (0.004 * length(vec2f(f32(i), f32(j)))));\n\t\t\t\tif ((e < bestE)) {\n\t\t\t\t\tbestE = e;\n\t\t\t\t\tbest = c;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tvar ctr: vec2f = best;\n\t\tfor (var j: i32 = -1; (j <= 1); j++) {\n\t\t\tfor (var i: i32 = -1; (i <= 1); i++) {\n\t\t\t\tif (((i == 0) && (j == 0))) {\n\t\t\t\t\tcontinue;\n\t\t\t\t}\n\t\t\t\tvar c: vec2f = (ctr + ((vec2f(f32(i), f32(j)) * step0) * 0.5));\n\t\t\t\tvar e: f32 = (sad(c) + ((0.004 * length(c)) / step0));\n\t\t\t\tif ((e < bestE)) {\n\t\t\t\t\tbestE = e;\n\t\t\t\t\tbest = c;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tif (((e0 - bestE) < 0.02)) {\n\t\t\tbest = vec2f(0.0);\n\t\t}\n\t\tmv = ((best * u.uSceneMix) * u.uGain);\n\t}\n\tvar g: vec2f = (cuv * 6.2832);\n\tvar fl: vec2f = (vec2f((sin(((g.y * 1.2) + (u.uTime * 0.9))) + sin(((g.x * 0.5) - (u.uTime * 0.6)))), (cos(((g.x * 1.2) - (u.uTime * 0.7))) + cos(((g.y * 0.7) + (u.uTime * 0.5))))) * 0.5);\n\tmv += (((u.uDrift + (fl * u.uFlow))) * u.uGain);\n\tif ((u.uHasPrev > 0.5)) {\n\t\tvar pm: vec2f = ((((textureSampleLevel(t_uPrevMV, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).xy * 2.0) - 1.0)) * u.uRange);\n\t\tmv = mix(mv, pm, u.uInertia);\n\t}\n\tmv = clamp(mv, vec2f((-u.uRange * 0.98)), vec2f((u.uRange * 0.98)));\n\tgl_FragColor = vec4f((((mv / u.uRange) * 0.5) + 0.5), 0.0, 1.0);\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
+"wgsl": "struct U {\n\t@size(16) uRes: vec2f,\n\t@size(16) uDrift: vec2f,\n\t@size(16) uBlock: f32,\n\t@size(16) uRange: f32,\n\t@size(16) uGain: f32,\n\t@size(16) uInertia: f32,\n\t@size(16) uSceneMix: f32,\n\t@size(16) uHasPrev: f32,\n\t@size(16) uFlow: f32,\n\t@size(16) uTime: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uCur: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrev: texture_2d<f32>;\n@group(0) @binding(3) var t_uPrevMV: texture_2d<f32>;\n@group(0) @binding(4) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nvar<private> cc: array<f32, 5>;\nvar<private> oo: array<vec2f, 5>;\nvar<private> cuv: vec2f;\nvar<private> lodL: f32;\n\nfn featCur(uv_in: vec2f) -> f32 {\n\tvar uv: vec2f = uv_in;\n\tvar s: vec4f = textureSampleLevel(t_uCur, samp, vec2f((uv).x, 1.0 - (uv).y), lodL);\n\treturn (dot(s.rgb, vec3f(0.299, 0.587, 0.114)) + (0.5 * s.a));\n}\n\nfn featPrev(uv_in: vec2f) -> f32 {\n\tvar uv: vec2f = uv_in;\n\tvar s: vec4f = textureSampleLevel(t_uPrev, samp, vec2f((uv).x, 1.0 - (uv).y), lodL);\n\treturn (dot(s.rgb, vec3f(0.299, 0.587, 0.114)) + (0.5 * s.a));\n}\n\nfn sad(mv_in: vec2f) -> f32 {\n\tvar mv: vec2f = mv_in;\n\tvar e: f32 = 0.0;\n\tfor (var i: i32 = 0; (i < 5); i++) {\n\t\te += abs((cc[i] - featPrev((cuv + (((oo[i] - mv)) / u.uRes)))));\n\t}\n\treturn e;\n}\n\nfn main_() {\n\tvar blockC: vec2f = (((floor(gl_FragCoord.xy) + 0.5)) * u.uBlock);\n\tcuv = (blockC / u.uRes);\n\tvar mv: vec2f = vec2f(0.0);\n\tif (((u.uSceneMix > 0.001) && (u.uHasPrev > 0.5))) {\n\t\tlodL = log2(max((u.uBlock * 0.6), 1.0));\n\t\tvar q: f32 = (u.uBlock * 0.28);\n\t\too[0] = vec2f(0.0);\n\t\too[1] = vec2f(q, q);\n\t\too[2] = vec2f(-q, q);\n\t\too[3] = vec2f(q, -q);\n\t\too[4] = vec2f(-q, -q);\n\t\tfor (var i: i32 = 0; (i < 5); i++) {\n\t\t\tcc[i] = featCur((cuv + (oo[i] / u.uRes)));\n\t\t}\n\t\tvar step0: f32 = max(1.0, (u.uBlock * 0.5));\n\t\tvar e0: f32 = sad(vec2f(0.0));\n\t\tvar best: vec2f = vec2f(0.0);\n\t\tvar bestE: f32 = e0;\n\t\tfor (var j: i32 = -3; (j <= 3); j++) {\n\t\t\tfor (var i: i32 = -3; (i <= 3); i++) {\n\t\t\t\tif (((i == 0) && (j == 0))) {\n\t\t\t\t\tcontinue;\n\t\t\t\t}\n\t\t\t\tvar c: vec2f = (vec2f(f32(i), f32(j)) * step0);\n\t\t\t\tvar e: f32 = (sad(c) + (0.004 * length(vec2f(f32(i), f32(j)))));\n\t\t\t\tif ((e < bestE)) {\n\t\t\t\t\tbestE = e;\n\t\t\t\t\tbest = c;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tvar ctr: vec2f = best;\n\t\tfor (var j: i32 = -1; (j <= 1); j++) {\n\t\t\tfor (var i: i32 = -1; (i <= 1); i++) {\n\t\t\t\tif (((i == 0) && (j == 0))) {\n\t\t\t\t\tcontinue;\n\t\t\t\t}\n\t\t\t\tvar c: vec2f = (ctr + ((vec2f(f32(i), f32(j)) * step0) * 0.5));\n\t\t\t\tvar e: f32 = (sad(c) + ((0.004 * length(c)) / step0));\n\t\t\t\tif ((e < bestE)) {\n\t\t\t\t\tbestE = e;\n\t\t\t\t\tbest = c;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tif (((e0 - bestE) < 0.02)) {\n\t\t\tbest = vec2f(0.0);\n\t\t}\n\t\tmv = ((best * u.uSceneMix) * u.uGain);\n\t}\n\tvar g: vec2f = (cuv * 6.2832);\n\tvar fl: vec2f = (vec2f((sin(((g.y * 1.2) + (u.uTime * 0.9))) + sin(((g.x * 0.5) - (u.uTime * 0.6)))), (cos(((g.x * 1.2) - (u.uTime * 0.7))) + cos(((g.y * 0.7) + (u.uTime * 0.5))))) * 0.5);\n\tmv += (((u.uDrift + (fl * u.uFlow))) * u.uGain);\n\tif ((u.uHasPrev > 0.5)) {\n\t\tvar pm: vec2f = ((((textureSampleLevel(t_uPrevMV, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).xy * 2.0) - 1.0)) * u.uRange);\n\t\tmv = mix(mv, pm, u.uInertia);\n\t}\n\tmv = clamp(mv, vec2f((-u.uRange * 0.98)), vec2f((u.uRange * 0.98)));\n\tgl_FragColor = vec4f((((mv / u.uRange) * 0.5) + 0.5), 0.0, 1.0);\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
 "spec": [
 [
 "uRes",
@@ -70810,7 +68071,7 @@ const POST_PASSES = {
 ]
 },
 "mosh": {
-"wgsl": "struct U {\n\t@size(16) uRes: vec2f,\n\t@size(16) uMVSize: vec2f,\n\t@size(16) uBlock: f32,\n\t@size(16) uRange: f32,\n\t@size(16) uSmooth: f32,\n\t@size(16) uHold: f32,\n\t@size(16) uResid: f32,\n\t@size(16) uChroma: f32,\n\t@size(16) uQuant: f32,\n\t@size(16) uStyle: f32,\n\t@size(16) uStale: f32,\n\t@size(16) uJit: f32,\n\t@size(16) uTime: f32,\n\t@size(16) uHasHist: f32,\n\t@size(16) uLeak: f32,\n\t@size(16) uCoh: f32,\n\t@size(16) uVoid: f32,\n\t@size(16) uTrail: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uCur: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrevSrc: texture_2d<f32>;\n@group(0) @binding(3) var t_uMoshPrev: texture_2d<f32>;\n@group(0) @binding(4) var t_uMV: texture_2d<f32>;\n@group(0) @binding(5) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn h11(p_in: vec2f) -> f32 {\n\tvar p: vec2f = p_in;\n\treturn fract((sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453));\n}\n\nfn fetchMV(ij_in: vec2f) -> vec2f {\n\tvar ij: vec2f = ij_in;\n\tvar sz: vec2i = vec2i(u.uMVSize);\n\tvar p: vec2i = clamp(vec2i(ij), vec2i(0), (sz - 1));\n\treturn ((((textureLoad(t_uMV, vec2i((p).x, i32(textureDimensions(t_uMV).y) - 1 - (p).y), 0).xy * 2.0) - 1.0)) * u.uRange);\n}\n\nfn mvAt(px_in: vec2f) -> vec2f {\n\tvar px: vec2f = px_in;\n\tvar g: vec2f = ((px / u.uBlock) - 0.5);\n\tvar i0: vec2f = floor(g);\n\tvar f: vec2f = fract(g);\n\tf = mix(step(vec2f(0.5), f), f, u.uSmooth);\n\tvar a: vec2f = fetchMV(i0);\n\tvar b: vec2f = fetchMV((i0 + vec2f(1.0, 0.0)));\n\tvar c: vec2f = fetchMV((i0 + vec2f(0.0, 1.0)));\n\tvar d: vec2f = fetchMV((i0 + vec2f(1.0, 1.0)));\n\treturn mix(mix(a, b, f.x), mix(c, d, f.x), f.y);\n}\n\nfn mvCoh(px_in: vec2f) -> vec2f {\n\tvar px: vec2f = px_in;\n\tvar m0: vec2f = mvAt(px);\n\tif ((u.uCoh < 0.01)) {\n\t\treturn m0;\n\t}\n\tvar bc: vec2f = floor((px / u.uBlock));\n\tvar s: vec2f = vec2f(0.0);\n\tfor (var j: i32 = -1; (j <= 1); j++) {\n\t\tfor (var i: i32 = -1; (i <= 1); i++) {\n\t\t\ts += fetchMV((bc + vec2f(f32(i), f32(j))));\n\t\t}\n\t}\n\treturn mix(m0, (s / 9.0), u.uCoh);\n}\n\nfn main_() {\n\tvar cur: vec4f = textureSampleLevel(t_uCur, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\tvar hold: f32 = (u.uHold * u.uHasHist);\n\tif ((hold < 0.002)) {\n\t\tgl_FragColor = cur;\n\t\treturn;\n\t}\n\tvar px: vec2f = (vUv * u.uRes);\n\tvar bid: vec2f = floor((px / u.uBlock));\n\tvar r: f32 = h11(bid);\n\tvar mv: vec2f = mvCoh(px);\n\tvar slot3: f32 = floor((u.uTime * 3.0));\n\tif (((u.uStyle > 3.5) && (u.uStyle < 4.5))) {\n\t\tvar rowHit: f32 = step(0.82, h11(vec2f((bid.y * 3.1), slot3)));\n\t\tmv.x += (((((h11(vec2f(bid.y, slot3)) - 0.5)) * u.uBlock) * 8.0) * rowHit);\n\t}\n\tvar suv: vec2f = vUv;\n\tif ((u.uStyle > 4.5)) {\n\t\tvar cell: vec2f = vec2f(max((u.uBlock * 0.5), 2.0));\n\t\tvar cid: vec2f = floor((px / cell));\n\t\tsuv = ((((cid + 0.5)) * cell) / u.uRes);\n\t\tmv += ((vec2f((((h11((cid + 2.3)) - 0.5)) * 0.6), (-0.4 - (h11(cid) * 1.6))) * cell.x) * 0.35);\n\t}\n\tvar stale: f32 = 0.0;\n\tif (((u.uStyle > 0.5) && (u.uStyle < 1.5))) {\n\t\tvar slot: f32 = floor((u.uTime * 5.0));\n\t\tvar rs: f32 = h11((bid + (slot * 7.13)));\n\t\tstale = step((1.0 - u.uStale), rs);\n\t\tvar jit: vec2f = (((((vec2f(h11(((bid + 3.1) + slot)), h11(((bid + 9.7) + slot))) - 0.5)) * 2.0) * u.uJit) * u.uBlock);\n\t\tmv += (jit * stale);\n\t}\n\tvar d: vec2f = (mv / u.uRes);\n\tvar cs: f32 = (u.uChroma * 0.6);\n\tvar pr: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - (d * ((1.0 + cs))))).x, 1.0 - ((suv - (d * ((1.0 + cs))))).y), 0.0);\n\tvar pg: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - d)).x, 1.0 - ((suv - d)).y), 0.0);\n\tvar pb: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - (d * ((1.0 - cs))))).x, 1.0 - ((suv - (d * ((1.0 - cs))))).y), 0.0);\n\tvar pred: vec4f = vec4f(pr.r, pg.g, pb.b, pg.a);\n\tvar predSrc: vec4f = textureSampleLevel(t_uPrevSrc, samp, vec2f(((vUv - d)).x, 1.0 - ((vUv - d)).y), 0.0);\n\tvar cLum: f32 = dot(cur.rgb, vec3f(0.3, 0.59, 0.11));\n\tvar keepBg: f32 = (((1.0 - u.uVoid)) * ((1.0 - smoothstep(0.012, 0.07, cLum))));\n\tif (((u.uStyle > 2.5) && (u.uStyle < 3.5))) {\n\t\tvar tr: vec4f = max((pred * mix(0.82, 0.988, u.uTrail)), cur);\n\t\tgl_FragColor = clamp(mix(mix(cur, tr, hold), cur, keepBg), vec4f(0.0), vec4f(6.0));\n\t\treturn;\n\t}\n\tvar dec: vec4f = (pred + (((cur - predSrc)) * u.uResid));\n\tvar m: f32 = (clamp(((((1.0 - hold)) * 1.6) - (r * 0.6)), 0.0, 1.0) * ((1.0 - stale)));\n\tm = max(m, (u.uLeak * ((1.0 - stale))));\n\tvar o: vec4f = mix(dec, cur, m);\n\tif (((u.uStyle > 3.5) && (u.uStyle < 4.5))) {\n\t\tvar rb: f32 = h11(((bid * 1.37) + (slot3 * 3.1)));\n\t\tvar dc: vec4f = textureSampleLevel(t_uCur, samp, vec2f((((((bid + 0.5)) * u.uBlock) / u.uRes)).x, 1.0 - (((((bid + 0.5)) * u.uBlock) / u.uRes)).y), log2(u.uBlock));\n\t\tvar yy: f32 = dot(dc.rgb, vec3f(0.299, 0.587, 0.114));\n\t\tvar tint: vec3f = select(vec3f(0.95, 0.2, 0.9), vec3f(0.15, 1.0, 0.35), (rb > 0.5));\n\t\tvar bad: vec3f = mix(vec3f(yy), ((tint * yy) * 1.7), 0.6);\n\t\tvar lost: f32 = (step((0.9 - u.uStale), rb) * hold);\n\t\to = mix(o, vec4f(bad, dc.a), lost);\n\t}\n\to = mix(o, cur, keepBg);\n\tif ((u.uQuant > 0.001)) {\n\t\tvar q: f32 = mix(48.0, 5.0, u.uQuant);\n\t\tvar qd: vec3f = (floor(((o.rgb * q) + 0.5)) / q);\n\t\tqd += ((((vec3f(h11((bid + 1.7)), h11((bid + 5.3)), h11((bid + 8.9))) - 0.5)) * 0.08) * u.uQuant);\n\t\t{ let _sw0 = mix(o.rgb, qd, (u.uQuant * ((1.0 - m)))); o = vec4f(_sw0.x, _sw0.y, _sw0.z, o.w); }\n\t}\n\tgl_FragColor = clamp(o, vec4f(0.0), vec4f(6.0));\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n// один большой треугольник на весь экран; uv идёт снизу вверх, как в GLSL\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
+"wgsl": "struct U {\n\t@size(16) uRes: vec2f,\n\t@size(16) uMVSize: vec2f,\n\t@size(16) uBlock: f32,\n\t@size(16) uRange: f32,\n\t@size(16) uSmooth: f32,\n\t@size(16) uHold: f32,\n\t@size(16) uResid: f32,\n\t@size(16) uChroma: f32,\n\t@size(16) uQuant: f32,\n\t@size(16) uStyle: f32,\n\t@size(16) uStale: f32,\n\t@size(16) uJit: f32,\n\t@size(16) uTime: f32,\n\t@size(16) uHasHist: f32,\n\t@size(16) uLeak: f32,\n\t@size(16) uCoh: f32,\n\t@size(16) uVoid: f32,\n\t@size(16) uTrail: f32,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uCur: texture_2d<f32>;\n@group(0) @binding(2) var t_uPrevSrc: texture_2d<f32>;\n@group(0) @binding(3) var t_uMoshPrev: texture_2d<f32>;\n@group(0) @binding(4) var t_uMV: texture_2d<f32>;\n@group(0) @binding(5) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn h11(p_in: vec2f) -> f32 {\n\tvar p: vec2f = p_in;\n\treturn fract((sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453));\n}\n\nfn fetchMV(ij_in: vec2f) -> vec2f {\n\tvar ij: vec2f = ij_in;\n\tvar sz: vec2i = vec2i(u.uMVSize);\n\tvar p: vec2i = clamp(vec2i(ij), vec2i(0), (sz - 1));\n\treturn ((((textureLoad(t_uMV, vec2i((p).x, i32(textureDimensions(t_uMV).y) - 1 - (p).y), 0).xy * 2.0) - 1.0)) * u.uRange);\n}\n\nfn mvAt(px_in: vec2f) -> vec2f {\n\tvar px: vec2f = px_in;\n\tvar g: vec2f = ((px / u.uBlock) - 0.5);\n\tvar i0: vec2f = floor(g);\n\tvar f: vec2f = fract(g);\n\tf = mix(step(vec2f(0.5), f), f, u.uSmooth);\n\tvar a: vec2f = fetchMV(i0);\n\tvar b: vec2f = fetchMV((i0 + vec2f(1.0, 0.0)));\n\tvar c: vec2f = fetchMV((i0 + vec2f(0.0, 1.0)));\n\tvar d: vec2f = fetchMV((i0 + vec2f(1.0, 1.0)));\n\treturn mix(mix(a, b, f.x), mix(c, d, f.x), f.y);\n}\n\nfn mvCoh(px_in: vec2f) -> vec2f {\n\tvar px: vec2f = px_in;\n\tvar m0: vec2f = mvAt(px);\n\tif ((u.uCoh < 0.01)) {\n\t\treturn m0;\n\t}\n\tvar bc: vec2f = floor((px / u.uBlock));\n\tvar s: vec2f = vec2f(0.0);\n\tfor (var j: i32 = -1; (j <= 1); j++) {\n\t\tfor (var i: i32 = -1; (i <= 1); i++) {\n\t\t\ts += fetchMV((bc + vec2f(f32(i), f32(j))));\n\t\t}\n\t}\n\treturn mix(m0, (s / 9.0), u.uCoh);\n}\n\nfn main_() {\n\tvar cur: vec4f = textureSampleLevel(t_uCur, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\tvar hold: f32 = (u.uHold * u.uHasHist);\n\tif ((hold < 0.002)) {\n\t\tgl_FragColor = cur;\n\t\treturn;\n\t}\n\tvar px: vec2f = (vUv * u.uRes);\n\tvar bid: vec2f = floor((px / u.uBlock));\n\tvar r: f32 = h11(bid);\n\tvar mv: vec2f = mvCoh(px);\n\tvar slot3: f32 = floor((u.uTime * 3.0));\n\tif (((u.uStyle > 3.5) && (u.uStyle < 4.5))) {\n\t\tvar rowHit: f32 = step(0.82, h11(vec2f((bid.y * 3.1), slot3)));\n\t\tmv.x += (((((h11(vec2f(bid.y, slot3)) - 0.5)) * u.uBlock) * 8.0) * rowHit);\n\t}\n\tvar suv: vec2f = vUv;\n\tif ((u.uStyle > 4.5)) {\n\t\tvar cell: vec2f = vec2f(max((u.uBlock * 0.5), 2.0));\n\t\tvar cid: vec2f = floor((px / cell));\n\t\tsuv = ((((cid + 0.5)) * cell) / u.uRes);\n\t\tmv += ((vec2f((((h11((cid + 2.3)) - 0.5)) * 0.6), (-0.4 - (h11(cid) * 1.6))) * cell.x) * 0.35);\n\t}\n\tvar stale: f32 = 0.0;\n\tif (((u.uStyle > 0.5) && (u.uStyle < 1.5))) {\n\t\tvar slot: f32 = floor((u.uTime * 5.0));\n\t\tvar rs: f32 = h11((bid + (slot * 7.13)));\n\t\tstale = step((1.0 - u.uStale), rs);\n\t\tvar jit: vec2f = (((((vec2f(h11(((bid + 3.1) + slot)), h11(((bid + 9.7) + slot))) - 0.5)) * 2.0) * u.uJit) * u.uBlock);\n\t\tmv += (jit * stale);\n\t}\n\tvar d: vec2f = (mv / u.uRes);\n\tvar cs: f32 = (u.uChroma * 0.6);\n\tvar pr: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - (d * ((1.0 + cs))))).x, 1.0 - ((suv - (d * ((1.0 + cs))))).y), 0.0);\n\tvar pg: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - d)).x, 1.0 - ((suv - d)).y), 0.0);\n\tvar pb: vec4f = textureSampleLevel(t_uMoshPrev, samp, vec2f(((suv - (d * ((1.0 - cs))))).x, 1.0 - ((suv - (d * ((1.0 - cs))))).y), 0.0);\n\tvar pred: vec4f = vec4f(pr.r, pg.g, pb.b, pg.a);\n\tvar predSrc: vec4f = textureSampleLevel(t_uPrevSrc, samp, vec2f(((vUv - d)).x, 1.0 - ((vUv - d)).y), 0.0);\n\tvar cLum: f32 = dot(cur.rgb, vec3f(0.3, 0.59, 0.11));\n\tvar keepBg: f32 = (((1.0 - u.uVoid)) * ((1.0 - smoothstep(0.012, 0.07, cLum))));\n\tif (((u.uStyle > 2.5) && (u.uStyle < 3.5))) {\n\t\tvar tr: vec4f = max((pred * mix(0.82, 0.988, u.uTrail)), cur);\n\t\tgl_FragColor = clamp(mix(mix(cur, tr, hold), cur, keepBg), vec4f(0.0), vec4f(6.0));\n\t\treturn;\n\t}\n\tvar dec: vec4f = (pred + (((cur - predSrc)) * u.uResid));\n\tvar m: f32 = (clamp(((((1.0 - hold)) * 1.6) - (r * 0.6)), 0.0, 1.0) * ((1.0 - stale)));\n\tm = max(m, (u.uLeak * ((1.0 - stale))));\n\tvar o: vec4f = mix(dec, cur, m);\n\tif (((u.uStyle > 3.5) && (u.uStyle < 4.5))) {\n\t\tvar rb: f32 = h11(((bid * 1.37) + (slot3 * 3.1)));\n\t\tvar dc: vec4f = textureSampleLevel(t_uCur, samp, vec2f((((((bid + 0.5)) * u.uBlock) / u.uRes)).x, 1.0 - (((((bid + 0.5)) * u.uBlock) / u.uRes)).y), log2(u.uBlock));\n\t\tvar yy: f32 = dot(dc.rgb, vec3f(0.299, 0.587, 0.114));\n\t\tvar tint: vec3f = select(vec3f(0.95, 0.2, 0.9), vec3f(0.15, 1.0, 0.35), (rb > 0.5));\n\t\tvar bad: vec3f = mix(vec3f(yy), ((tint * yy) * 1.7), 0.6);\n\t\tvar lost: f32 = (step((0.9 - u.uStale), rb) * hold);\n\t\to = mix(o, vec4f(bad, dc.a), lost);\n\t}\n\to = mix(o, cur, keepBg);\n\tif ((u.uQuant > 0.001)) {\n\t\tvar q: f32 = mix(48.0, 5.0, u.uQuant);\n\t\tvar qd: vec3f = (floor(((o.rgb * q) + 0.5)) / q);\n\t\tqd += ((((vec3f(h11((bid + 1.7)), h11((bid + 5.3)), h11((bid + 8.9))) - 0.5)) * 0.08) * u.uQuant);\n\t\t{ let _sw0 = mix(o.rgb, qd, (u.uQuant * ((1.0 - m)))); o = vec4f(_sw0.x, _sw0.y, _sw0.z, o.w); }\n\t}\n\tgl_FragColor = clamp(o, vec4f(0.0), vec4f(6.0));\n}\n\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn gl_FragColor;\n}\n",
 "spec": [
 [
 "uRes",
@@ -71296,11 +68557,11 @@ struct Frame {
 	@size(16) uScopeLB: f32,
 }
 @group(0) @binding(0) var<uniform> fr: Frame;
-// данные точек: по два набора в буфере (первая половина и вторая), чтобы проходу хватало 8 буферов хранения (минимум, который WebGPU гарантирует)
-@group(0) @binding(1) var<storage, read> inP0: array<vec4f>; // положение и скрытие | цель морфинга и глубина
-@group(0) @binding(2) var<storage, read> inP1: array<vec4f>; // цвет A и путь | цвет B и видимость
-@group(0) @binding(3) var<storage, read> inP2: array<vec4f>; // нормаль A и видимость | нормаль B
-@group(0) @binding(4) var<storage, read> inP3: array<vec4f>; // лепка и номер точки | краска
+
+@group(0) @binding(1) var<storage, read> inP0: array<vec4f>;
+@group(0) @binding(2) var<storage, read> inP1: array<vec4f>;
+@group(0) @binding(3) var<storage, read> inP2: array<vec4f>;
+@group(0) @binding(4) var<storage, read> inP3: array<vec4f>;
 @group(0) @binding(9) var<storage, read_write> outA: array<vec4f>;
 @group(0) @binding(10) var<storage, read_write> outB: array<vec4f>;
 @group(0) @binding(11) var<storage, read_write> outC: array<vec4f>;
@@ -73301,7 +70562,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 	aNormal = na.xyz;
 	aNormalB = inP2[count + i].xyz;
 	aSculpt = sc.xyz;
-	// индекс точки берётся из массива движка (aIdx = i / число точек, округлённое до float32 на CPU): хеши вида fract(sin(aIdx * k)) раздувают разницу в последнем бите до полного расхождения
+
 	aIdx = sc.w;
 	aPaint = inP3[count + i];
 	main_();
@@ -73463,11 +70724,11 @@ struct Frame {
 	@size(16) uScopeLB: f32,
 }
 @group(0) @binding(0) var<uniform> fr: Frame;
-// данные точек: по два набора в буфере (первая половина и вторая), чтобы проходу хватало 8 буферов хранения (минимум, который WebGPU гарантирует)
-@group(0) @binding(1) var<storage, read> inP0: array<vec4f>; // положение и скрытие | цель морфинга и глубина
-@group(0) @binding(2) var<storage, read> inP1: array<vec4f>; // цвет A и путь | цвет B и видимость
-@group(0) @binding(3) var<storage, read> inP2: array<vec4f>; // нормаль A и видимость | нормаль B
-@group(0) @binding(4) var<storage, read> inP3: array<vec4f>; // лепка и номер точки | краска
+
+@group(0) @binding(1) var<storage, read> inP0: array<vec4f>;
+@group(0) @binding(2) var<storage, read> inP1: array<vec4f>;
+@group(0) @binding(3) var<storage, read> inP2: array<vec4f>;
+@group(0) @binding(4) var<storage, read> inP3: array<vec4f>;
 @group(0) @binding(9) var<storage, read_write> outA: array<vec4f>;
 @group(0) @binding(10) var<storage, read_write> outB: array<vec4f>;
 @group(0) @binding(11) var<storage, read_write> outC: array<vec4f>;
@@ -75397,7 +72658,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 	aNormal = na.xyz;
 	aNormalB = inP2[count + i].xyz;
 	aSculpt = sc.xyz;
-	// индекс точки берётся из массива движка (aIdx = i / число точек, округлённое до float32 на CPU): хеши вида fract(sin(aIdx * k)) раздувают разницу в последнем бите до полного расхождения
+
 	aIdx = sc.w;
 	aPaint = inP3[count + i];
 	main_();
@@ -75559,11 +72820,11 @@ struct Frame {
 	@size(16) uScopeLB: f32,
 }
 @group(0) @binding(0) var<uniform> fr: Frame;
-// данные точек: по два набора в буфере (первая половина и вторая), чтобы проходу хватало 8 буферов хранения (минимум, который WebGPU гарантирует)
-@group(0) @binding(1) var<storage, read> inP0: array<vec4f>; // положение и скрытие | цель морфинга и глубина
-@group(0) @binding(2) var<storage, read> inP1: array<vec4f>; // цвет A и путь | цвет B и видимость
-@group(0) @binding(3) var<storage, read> inP2: array<vec4f>; // нормаль A и видимость | нормаль B
-@group(0) @binding(4) var<storage, read> inP3: array<vec4f>; // лепка и номер точки | краска
+
+@group(0) @binding(1) var<storage, read> inP0: array<vec4f>;
+@group(0) @binding(2) var<storage, read> inP1: array<vec4f>;
+@group(0) @binding(3) var<storage, read> inP2: array<vec4f>;
+@group(0) @binding(4) var<storage, read> inP3: array<vec4f>;
 @group(0) @binding(9) var<storage, read_write> outA: array<vec4f>;
 @group(0) @binding(10) var<storage, read_write> outB: array<vec4f>;
 @group(0) @binding(11) var<storage, read_write> outC: array<vec4f>;
@@ -77582,7 +74843,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 	aNormal = na.xyz;
 	aNormalB = inP2[count + i].xyz;
 	aSculpt = sc.xyz;
-	// индекс точки берётся из массива движка (aIdx = i / число точек, округлённое до float32 на CPU): хеши вида fract(sin(aIdx * k)) раздувают разницу в последнем бите до полного расхождения
+
 	aIdx = sc.w;
 	aPaint = inP3[count + i];
 	main_();
@@ -77895,7 +75156,7 @@ fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VOut 
 	let b = outB[ii];
 	let c = outC[ii];
 	var clip = a;
-	// в WebGL глубина клипа от -w до w, в WebGPU от 0 до w
+
 	clip.z = (clip.z + clip.w) * 0.5;
 	let off = corner * (b.w / fr.uPx);
 	clip = vec4f(clip.xy + off * clip.w, clip.z, clip.w);
@@ -77917,7 +75178,6 @@ fn setup_in(in: VOut) {
 	gl_PointCoord = in.pc;
 }
 
-// на экран: с тональной компрессией и переводом в sRGB
 @fragment
 fn fs(in: VOut) -> @location(0) vec4f {
 	setup_in(in);
@@ -77925,7 +75185,6 @@ fn fs(in: VOut) -> @location(0) vec4f {
 	return vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, fr.uExposure, fr.uTone)), gl_FragColor.a);
 }
 
-// в промежуточный буфер (дальше идёт пост-обработка): линейный цвет как есть
 @fragment
 fn fs_raw(in: VOut) -> @location(0) vec4f {
 	setup_in(in);
@@ -78191,7 +75450,7 @@ fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VOut 
 	let b = outB[ii];
 	let c = outC[ii];
 	var clip = a;
-	// в WebGL глубина клипа от -w до w, в WebGPU от 0 до w
+
 	clip.z = (clip.z + clip.w) * 0.5;
 	let off = corner * (b.w / fr.uPx);
 	clip = vec4f(clip.xy + off * clip.w, clip.z, clip.w);
@@ -78213,7 +75472,6 @@ fn setup_in(in: VOut) {
 	gl_PointCoord = in.pc;
 }
 
-// на экран: с тональной компрессией и переводом в sRGB
 @fragment
 fn fs(in: VOut) -> @location(0) vec4f {
 	setup_in(in);
@@ -78221,7 +75479,6 @@ fn fs(in: VOut) -> @location(0) vec4f {
 	return vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, fr.uExposure, fr.uTone)), gl_FragColor.a);
 }
 
-// в промежуточный буфер (дальше идёт пост-обработка): линейный цвет как есть
 @fragment
 fn fs_raw(in: VOut) -> @location(0) vec4f {
 	setup_in(in);
@@ -79195,9 +76452,9 @@ const WGSL = `
 struct U {
 	mv: mat4x4f,
 	proj: mat4x4f,
-	tintC: vec4f,   // rgb: цвет подмеса, w: доля подмеса
-	params: vec4f,  // x: размер точки в пикселях (до сжатия по расстоянию), y: прозрачность, zw: размер холста
-	out: vec4f,     // x: экспозиция, y: тональная компрессия (0 нет, 1 Neutral, 2 ACES, 3 AgX)
+	tintC: vec4f,
+	params: vec4f,
+	out: vec4f,
 }
 @group(0) @binding(0) var<uniform> u: U;
 
@@ -79375,8 +76632,8 @@ const { TONE_WGSL } = __req('src/effects/shaders/wgsl/generated/tone.js');
 const WGSL = `
 struct U {
 	mvp: mat4x4f,
-	col: vec4f, // rgb: цвет (uC), a: непрозрачность в центре (uA)
-	out: vec4f, // x: экспозиция, y: тональная компрессия (0 нет, 1 Neutral, 2 ACES, 3 AgX)
+	col: vec4f,
+	out: vec4f,
 }
 @group(0) @binding(0) var<uniform> u: U;
 
@@ -79385,13 +76642,12 @@ struct VOut {
 	@location(0) uv: vec2f,
 }
 
-// PlaneGeometry(1, 1): углы от -0.5 до 0.5, uv от 0 до 1
 @vertex
 fn vs(@builtin(vertex_index) vi: u32) -> VOut {
 	var uvs = array<vec2f, 4>(vec2f(0.0, 0.0), vec2f(1.0, 0.0), vec2f(0.0, 1.0), vec2f(1.0, 1.0));
 	let uv = uvs[vi];
 	var clip = u.mvp * vec4f(uv - 0.5, 0.0, 1.0);
-	// в WebGL глубина клипа от -w до w, в WebGPU от 0 до w
+
 	clip.z = (clip.z + clip.w) * 0.5;
 	var o: VOut;
 	o.clip = clip;
@@ -96146,7 +93402,7 @@ varying float vCoc;
 varying float vGl;
 void main() {
 	vec2 c = gl_PointCoord - 0.5;
-	// форма точки как на вкладке «Точки»: 0 квадрат, 1 круг, 2 шар, 3 кольцо, 4 ромб, 5 плюс
+
 	float dm = length(c);
 	float gA = 1.0;
 	if (uGlyph.x > 0.5) {
@@ -96177,11 +93433,11 @@ void main() {
 		float aura = pow(core, mix(1.8, 0.7, uGlow));
 		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha * sph * (1.0 - vDk);
 		float ga = core * uGhost * dofAlpha * (1.0 - vDk);
-		// тёмные места видео должны быть прозрачными, а не чёрными: яркость точки определяет и её непрозрачность
+
 		if (uFr.x > 0.5) ga *= clamp(dot(vColor, vec3(0.3, 0.59, 0.11)) * 5.0, 0.0, 1.0);
 		gl_FragColor = vec4(col, ga);
 	} else {
-		// у кадров видео точка плоская, без затемнения к краю: цвет остаётся точным
+
 		gl_FragColor = vec4(vColor * (uFr.x > 0.5 ? 1.0 : 0.55 + 0.45 * core) * sph, dofAlpha * (1.0 - vDk));
 	}
 	#include <tonemapping_fragment>
@@ -96211,13 +93467,13 @@ void main() {
 	if (uLink.w > 0.5) {
 		float spd = uLink.z;
 		if (mode == 0) {
-			// Классика: синусоидальный импульс с искрами
+
 			float p = sin(vEnd * 16.0 - uTime * spd * 3.5 + vIdx * 24.0);
 			float spark = smoothstep(0.45, 0.98, p) * 2.8;
 			pulseA = 0.5 + spark;
 			col += col * spark * 1.5;
 		} else if (mode == 1) {
-			// Нейросеть (синапсы): асимметричные спайки действия с резким фронтом в обоих направлениях
+
 			float t1 = fract(vEnd * 2.0 - uTime * spd * 0.95 + vIdx * 13.37);
 			float spike1 = exp(-t1 * 16.0) * 4.0;
 			float t2 = fract((1.0 - vEnd) * 2.0 - uTime * spd * 0.75 + vIdx * 29.11);
@@ -96226,24 +93482,24 @@ void main() {
 			pulseA = 0.35 + syn;
 			col = mix(col, vec3(1.0), clamp(syn * 0.55, 0.0, 0.85)) + col * syn * 1.8;
 		} else if (mode == 2) {
-			// Созвездия: мягкое мерцание звездного скопления
+
 			float shimmer = 0.65 + 0.35 * sin(uTime * 3.2 + vIdx * 43.0 + vEnd * 6.28);
 			pulseA = shimmer;
 			col = mix(col, vec3(0.9, 0.96, 1.0), 0.35 * shimmer);
 		} else if (mode == 3) {
-			// Киберпанк / Лазер: резкий луч с цифровыми пакетами данных
+
 			float core = 1.0 - smoothstep(0.0, 0.32, abs(vSide));
 			float bits = step(0.46, fract(vEnd * 10.0 - uTime * spd * 3.2 + vIdx * 19.3));
 			pulseA = 0.55 + bits * 2.2;
 			col = col * pulseA + vec3(1.0) * core * 1.6;
 		} else if (mode == 4) {
-			// Натяжение: волна накала с усилением от растяжения нити
+
 			float wave = 0.5 + 0.5 * sin(vEnd * 12.0 - uTime * spd * 2.6 + vStrain * 6.0);
 			pulseA = 0.5 + wave * (1.0 + vStrain * 2.2);
 			col += vec3(1.0, 0.45, 0.18) * vStrain * 2.0 * wave;
 		}
 	}
-	// Огоньки на узлах (сияющие бусины/маяки на стыках)
+
 	if (uLinkP.z > 0.5) {
 		float endDist = min(vEnd, 1.0 - vEnd);
 		float dNode = length(vec2(endDist * 7.5, vSide * 0.72));
@@ -97815,7 +95071,7 @@ uniform float uTOff;
 uniform float uMorph;
 uniform vec4 uMorphS;
 uniform vec4 uMorphO;
-// x: уходящая форма это видео или фото, y: приходящая это видео или фото, z: обороты всей формы за переход, w: размер точек в пути
+
 uniform vec4 uMorphD;
 uniform float uSettle;
 uniform float uBeat;
@@ -97837,8 +95093,7 @@ float gScopeD = 0.0;
 uniform vec4 uScope, uScopeP, uScopeQ;
 uniform vec3 uScopeC;
 float gDepth = 0.5;
-// местное время морфинга и доля распада точки: считаются один раз в fxDisplace. Видеодрайвер вставляет тело функции в каждое место вызова,
-// и шесть вызовов morphLocal и два disK делали шейдер вдвое-втрое дольше в сборке (на Windows секунды при включении каждого эффекта)
+
 float gMorphLT = 1.0;
 float gDisK = 0.0;
 float gDepthG = 0.0;
@@ -97859,33 +95114,33 @@ uniform float uAsm;
 uniform vec4 uDis;
 uniform float uDisT;
 uniform float uAnimN;
-uniform vec3 uCen; // центр облака (для распада, воронки и взрыва)
-uniform vec4 uDisQ; // x: ширина кромки, y: сила разлёта, z: свечение кромки, w: мельчание точек
+uniform vec3 uCen;
+uniform vec4 uDisQ;
 uniform vec4 uGravP;
 uniform vec4 uHandP;
 uniform vec4 uImp[32];
 uniform vec4 uShock[4];
-uniform vec4 uExp, uExpP; // разбор: x ход 0..1, y число кусков, z разброс по времени, w вращение; uExpP.x расстояние
-uniform sampler2D uPieceTex; // центры кусков
-uniform vec4 uGrow, uGrowP; // росток: x ход, y откуда, z усики, w ширина фронта; uGrowP: x почки, y покачивание, z включён
+uniform vec4 uExp, uExpP;
+uniform sampler2D uPieceTex;
+uniform vec4 uGrow, uGrowP;
 uniform vec3 uGrowSeed;
-uniform vec4 uJel[3]; // желе: удар (направление и сила xyz, время начала w)
-uniform vec4 uJelO[3]; // откуда пошла волна
-uniform vec4 uJelP; // частота, затухание, сила, сплющивание
+uniform vec4 uJel[3];
+uniform vec4 uJelO[3];
+uniform vec4 uJelP;
 uniform vec4 uPhysics;
 uniform float uCollapseTime;
 uniform vec4 uBrushHits[20];
-uniform vec4 uPaintP; // акварель: x включена, y зернистость, z режим (0 на бумагу, 1 прозрачно)
+uniform vec4 uPaintP;
 uniform vec4 uBrushParam;
 uniform vec4 uLookP2;
 uniform vec4 uDof;
-uniform vec4 uHyp; // гиперпространство: x сила, y угол поворота в 4D, z вид, w кривизна (1 / радиус 3-сферы)
-uniform vec4 uHypP; // y окраска по 4-й оси, z как гаснут улетевшие в бесконечность, w угловая скорость (для копий «Эха»)
-float gHypW = 0.0; // где точка на 3-сфере: -1 у центра, +1 на бесконечности
-float gHypF = 0.0; // насколько точка ушла в бесконечность (гаснет и мельчает)
-uniform vec4 uCh; // фигуры Хладни: x сила, y переход от узора A к B, z масштаб, w дрожь песка
-uniform vec4 uChA; // номера мод узора A (n, m) и узора B (n, m)
-float gChN = 0.0; // насколько точка легла на узловую линию (там она светится)
+uniform vec4 uHyp;
+uniform vec4 uHypP;
+float gHypW = 0.0;
+float gHypF = 0.0;
+uniform vec4 uCh;
+uniform vec4 uChA;
+float gChN = 0.0;
 #define PI 3.1415926535
 
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -97932,7 +95187,6 @@ float snoise(vec3 v) {
 	return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
 }
 
-// ротор поля шума: течение без сжатия, как дым
 vec3 curlNoise(vec3 p) {
 	const float e = 0.08;
 	float n1 = snoise(p + vec3(e, 0.0, 0.0));
@@ -97946,7 +95200,6 @@ vec3 curlNoise(vec3 p) {
 float hash11(float p) { return fract(sin(p * 127.1) * 43758.5453); }
 float hit2(bool b) { return b ? 1.0 : 0.0; }
 
-// одно касание: подъём, вихрь или втягивание вокруг точки c с силой st
 void contactAt(vec3 c, float st, vec3 base, vec3 rad, inout vec3 pos) {
 	vec3 dd = base - c;
 	float r = uContact.y;
@@ -97977,7 +95230,6 @@ void contactAt(vec3 c, float st, vec3 base, vec3 rad, inout vec3 pos) {
 	}
 }
 
-// сила касания в точке (для режима «Исчезновение»): ближайшие рамки и их следы
 float contactK(vec3 b) {
 	float m = 0.0;
 	float r = uContact.y * (1.0 + 0.12 * sin(uTime * 4.0));
@@ -97994,7 +95246,6 @@ float contactK(vec3 b) {
 	return clamp(m * uContact.x, 0.0, 1.0);
 }
 
-// область рамок трекинга: 0 вне, 1 в центре
 float markK(vec3 b) {
 	if (uMark.x < 0.5 || uContact.w < 0.5) return 0.0;
 	float m = 0.0;
@@ -98011,7 +95262,6 @@ vec3 hueRot(vec3 c, float a) {
 	return c * cos(a) + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - cos(a));
 }
 
-// Срез: интенсивность линии в точке (для рельефа)
 float sliceK(vec3 b) {
 	if (uSlice.x < 0.001) return 0.0;
 	float axCode = mod(uSlice.w, 10.0);
@@ -98022,19 +95272,18 @@ float sliceK(vec3 b) {
 	return (1.0 - smoothstep(uSlice.z * 0.4, uSlice.z, abs(coord - 0.5))) * uSlice.x;
 }
 
-// Растворение: 0 цела, 1 унесена. Порядок отрыва зависит от режима
 float disK(vec3 b, float idx) {
 	if (uDis.x < 0.001) return 0.0;
 	float st = uDisP.x;
 	float y01 = clamp((b.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
-	// слои: вся полоса по высоте уходит разом, поэтому высота квантуется
+
 	if (st > 2.5 && st < 3.5) y01 = floor(y01 * 12.0 + 0.001) / 12.0;
-	// блоки: соседние точки (индекс идёт по порядку обхода пространства) держатся вместе и уходят одним куском
+
 	float h = (st > 3.5 && st < 4.5) ? hash11(floor(idx * 1800.0) * 0.731) : hash11(idx * 37.3);
-	// чем слаженнее вид, тем меньше случайности в порядке отрыва
+
 	float jit = st < 0.5 ? 0.16 : st < 1.5 ? 0.28 : st < 2.5 ? 0.03 : st < 3.5 ? 0.0 : st < 4.5 ? 0.3 : st < 5.5 ? 0.18 : st < 6.5 ? 0.12 : 0.1;
 	float m = uDis.y;
-	// у анимированной модели положение в кадре меняется, поэтому порядки по оси X и пятнами берут устойчивый шум по номеру точки: иначе точки мерцали бы, пока модель движется
+
 	bool still = uAnimN < 0.5;
 	float ord;
 	if (m < 0.5) ord = 1.0 - y01;
@@ -98051,7 +95300,6 @@ float disK(vec3 b, float idx) {
 	return clamp((uDis.x * (1.0 + w) - ord) / w, 0.0, 1.0);
 }
 
-// Росток: 0 ещё не выросла, 1 выросла. Фронт идёт от «семени»: снизу вверх, от точки или от центра, с неровностью от шума
 float growK(vec3 b, float idx) {
 	float S = max(uYR.y - uYR.x, 0.5);
 	float y01 = clamp((b.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
@@ -98065,13 +95313,12 @@ float growK(vec3 b, float idx) {
 	return clamp((uGrow.x * (1.0 + w) - d) / w, 0.0, 1.0);
 }
 
-// Местное время морфинга точки 0..1: расслоение задаёт, насколько позже стартуют точки, порядок задаёт, какие первыми
 float morphLocal(vec3 A, vec3 B, float idx) {
 	float h = hash11(idx * 3.17);
-	// «Кубики»: время старта одно на весь кубик пространства, поэтому точки уходят блоками
+
 	int msty = int(uMorphS.x + 0.5);
 	if (msty == 8) h = hash11(dot(floor((A - uCen) * 5.0), vec3(17.13, 31.71, 57.29)));
-	// «Стекло»: осколок трогается целиком
+
 	if (msty == 13) h = hash11(dot(floor((A - uCen) * 3.0), vec3(12.9, 78.2, 37.7)));
 	float ord = h;
 	int so = int(uMorphO.x + 0.5);
@@ -98080,10 +95327,10 @@ float morphLocal(vec3 A, vec3 B, float idx) {
 	else if (so == 2) ord = (1.0 - yN) * 0.85 + h * 0.15;
 	else if (so == 3) ord = clamp(length(A) / 1.4, 0.0, 1.0) * 0.85 + h * 0.15;
 	else if (so == 4) ord = clamp((A.x + 1.2) / 2.4, 0.0, 1.0) * 0.85 + h * 0.15;
-	// по карте глубины видео или фото (gDepth: 1 ближе всего): точки уходят слоями, как будто кадр режут по глубине
+
 	else if (so == 5) ord = (1.0 - gDepth) * 0.85 + h * 0.15;
 	else if (so == 6) ord = gDepth * 0.85 + h * 0.15;
-	// «Рельеф (ИИ)» всегда идёт по глубине: ближние слои кадра первыми; «3D-печать» по высоте новой формы, снизу вверх
+
 	if (msty == 10) ord = (1.0 - gDepth) * 0.8 + h * 0.2;
 	if (msty == 11) ord = clamp((B.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0) * 0.92 + h * 0.08;
 	float sg = uMorphS.z;
@@ -98100,20 +95347,18 @@ float morphEase(float x) {
 	return x * x * (3.0 - 2.0 * x);
 }
 
+uniform vec4 uFr;
+uniform vec4 uFr2;
+uniform vec4 uFr3;
+uniform vec4 uFr4;
+uniform vec4 uFr5;
+uniform vec4 uHero;
+uniform vec4 uFr6;
+uniform vec4 uFr7;
+uniform vec4 uFr8;
+uniform vec4 uFr9;
+uniform vec4 uFrE;
 
-// ───── раскадровка видео: положения листов и показ считаются здесь, без перезаписи данных на каждом кадре
-uniform vec4 uFr;   // x: включено, y: кадров, z: точек в кадре, w: всего точек
-uniform vec4 uFr2;  // колонки, строки, ширина листа, высота листа
-uniform vec4 uFr3;  // глубина, раскладка A, раскладка B, переход A к B
-uniform vec4 uFr4;  // текущий кадр (дробный), режим показа, длина луча/шлейфа, подсветка
-uniform vec4 uFr5;  // x: голова кольцевого буфера (бегущая лента), y: сила редения прошлых кадров, z: будущие кадры (0 видны, 1 приглушены, 2 скрыты), w: усиление яркости
-uniform vec4 uHero; // колонки, строки, точек, включено
-uniform vec4 uFr6;  // x: размер точек остальных кадров, y: весь ряд кадров (1) или только пройденное (0), z: тона (0 все, 1 светлые, 2 тёмные), w: порог тонов
-uniform vec4 uFr7;  // x: длина хвоста (доля всех кадров), y: насыщенность, z: плавность гашения хвоста
-uniform vec4 uFr8;  // «Шлейф движения» (engine/chrono.js): x вид (0 выкл, 1 видео целиком, 2 фон текущего кадра тусклее, 3 только выделенное), y и z сдвиг шлейфа за кадр, w доля фона в шлейфе
-uniform vec4 uFr9;  // «Шлейф движения»: x подкраска палитрой, y как быстро гаснет, z уход вглубь за кадр, w сколько кадров уже снято
-uniform vec4 uFrE;  // рамки кадров раскадровки: x яркость рамок, y толщина (в клетках сетки кадра), z цвет (0 палитра, 1 белый), w рамка текущего кадра
-// глубина кадра из альфа-канала; у шлейфа там же метка выделенного: 128 и выше это объект, глубина в младших семи битах
 float frDec(float a) {
 	if (uFr8.x < 0.5) return a;
 	return mod(floor(a * 255.0 + 0.5), 128.0) / 127.0;
@@ -98132,13 +95377,13 @@ vec3 frPlace(float lay, float k, float n, float u, float v, out vec3 nrm) {
 		float cy = floor(k / gx);
 		return vec3((cx - (gx - 1.0) * 0.5) * W * s * 1.04 + u * W * s, ((gy - 1.0) * 0.5 - cy) * H * s * 1.04 + v * H * s, 0.0);
 	}
-	// расстояние от текущего кадра в кадрах (у главного кадра ноль)
+
 	float ad = k - uFr4.x;
 #ifdef HERO
 	ad = 0.0;
 #endif
 	if (lay > 4.5) {
-		// веер: кадры на дуге барабана, текущий спереди и крупнее, соседи уходят по дуге назад и ложатся внахлёст
+
 		float R = 2.4;
 		float sc = mix(1.0, 0.7, min(abs(ad), 1.0));
 		float da = min(W * 0.6 / R, 2.2 / max(1.0, (n - 1.0) * 0.5));
@@ -98147,12 +95392,12 @@ vec3 frPlace(float lay, float k, float n, float u, float v, out vec3 nrm) {
 		return vec3(R * sin(a), 0.0, R * cos(a) - R) + vec3(cos(a), 0.0, -sin(a)) * u * W * sc + vec3(0.0, v * H * sc, 0.0);
 	}
 	if (lay > 3.5) {
-		// шлейф движения: текущий кадр на месте, прошлые съезжают в сторону шлейфа и чуть уходят вглубь (у главного кадра возраст ноль)
+
 		float age = max(0.0, -ad);
 		return vec3(u * W + uFr8.y * age, v * H + uFr8.z * age, -uFr9.z * age);
 	}
 	if (lay > 1.5 && lay < 2.5) {
-		// плёнка: кадры в ряд, текущий в центре и крупнее, соседи мельче; при перемотке лента едет
+
 		float sc = 0.5;
 		float aa = abs(ad);
 		float c1 = W * 0.54 + W * sc * 0.53;
@@ -98160,20 +95405,19 @@ vec3 frPlace(float lay, float k, float n, float u, float v, out vec3 nrm) {
 		float s = mix(1.0, sc, min(aa, 1.0));
 		return vec3(sign(ad) * c + u * W * s, v * H * s, 0.0);
 	}
-	// текущий кадр стоит на месте (z = 0), прошлые уходят от него вглубь: чем дальше видео, тем длиннее стопка, при перемотке назад она укорачивается.
-	// при листании пройденные кадры лежат ближе к зрителю и улетают к нему, открывая текущий
+
 	float dz = (uFr4.y > 0.5 && uFr4.y < 1.5) ? -1.0 : 1.0;
 	float kz = k;
 #ifdef HERO
 	kz = uFr4.x;
 #endif
-	// весь ряд: кадры стоят на своих местах по времени, а текущий кадр идёт сквозь них; иначе стопка отсчитывается от текущего
+
 	float cen = uFr6.y > 0.5 ? (n - 1.0) * 0.5 : uFr4.x;
-	// туннель: то же, но прошлые кадры уменьшаются с глубиной
+
 	float ts = lay > 2.5 ? 1.0 - 0.72 * clamp(max(-ad, 0.0) / max(n - 1.0, 1.0), 0.0, 1.0) : 1.0;
 	return vec3(u * W * ts, v * H * ts, (kz - cen) * depth / max(n - 1.0, 1.0) * dz);
 }
-// Положение точки блока по её номеру; раскладки A и B плавно перетекают друг в друга
+
 vec3 frMix(float k, float u, float v, out vec3 nrm) {
 	vec3 nA;
 	vec3 nB;
@@ -98189,7 +95433,7 @@ vec3 frMix(float k, float u, float v, out vec3 nrm) {
 }
 vec3 frBlockPos(float aIdx, out vec3 nrm, out float kk, out vec2 cell) {
 #ifdef HERO
-	// «главный» кадр: свой густой набор точек на месте текущего кадра
+
 	float ip = floor(aIdx * uHero.z + 0.5);
 	float ci = mod(ip, uHero.x);
 	float cj = floor(ip / uHero.x);
@@ -98204,12 +95448,12 @@ vec3 frBlockPos(float aIdx, out vec3 nrm, out float kk, out vec2 cell) {
 	float cj = floor(loc / uFr2.x);
 	kk = k;
 	cell = vec2(ci, cj);
-	// у каждого листа сетка чуть сдвинута: точки разных кадров не выстраиваются в столбики, объём выглядит как облако
+
 	vec2 jt = vec2(fract(sin(k * 12.9898) * 43758.5453), fract(sin(k * 78.233 + 1.7) * 24634.6345)) - 0.5;
 	return frMix(k, (ci + 0.5 + jt.x * 0.9) / uFr2.x - 0.5, 0.5 - (cj + 0.5 + jt.y * 0.9) / uFr2.y, nrm);
 #endif
 }
-// Показ кадров: x яркость, y смещение вдоль нормали, z доля подкраски; tcol цвет подкраски
+
 vec4 frShow(float k, out vec3 tcol) {
 	float n = uFr.y;
 	float idx = uFr4.x;
@@ -98223,10 +95467,9 @@ vec4 frShow(float k, out vec3 tcol) {
 	if (mode == 0) {
 		float hl = uFr4.w;
 		if (hl > 0.001) w = 1.0 - 0.5 * hl + (0.5 + 1.4 * hl) * max(0.0, 1.0 - abs(d) / 2.5) * hl;
-			// кадры впереди текущего (из «будущего») закрывали бы его спереди: по умолчанию приглушаем
-			// прошлые кадры тускнеют с глубиной, чтобы стопка не сливалась в серую кашу
+
 			if (d < -0.5) w *= 0.45 + 0.55 / (1.0 + 0.2 * (-d));
-			// у плёнки и веера кадры впереди стоят сбоку и ничего не закрывают
+
 			if (d > 0.5 && uFr6.y < 0.5 && abs(uFr3.y - 2.0) > 0.5 && abs(uFr3.y - 5.0) > 0.5) w *= uFr5.z > 1.5 ? 0.0 : uFr5.z > 0.5 ? 0.4 : 1.0;
 	} else if (mode == 1) {
 		if (d < 0.0) w = max(0.0, 1.0 + d / fw);
@@ -98245,10 +95488,10 @@ vec4 frShow(float k, out vec3 tcol) {
 		lift = (1.0 - w) * sign(d + 0.0001) * 0.8;
 		w *= 1.0 + 0.25 * max(0.0, 1.0 - ad);
 	} else if (mode == 6) {
-		// шлейф движения: копии гаснут с возрастом (чем больше «как быстро гаснет», тем короче видимая часть) и к концу подкрашиваются палитрой
+
 		float age = max(0.0, -d);
 		float a = clamp(age / max(1.0, uFr9.w), 0.0, 1.0);
-		// самая свежая копия лежит прямо на живом кадре и двоила бы его: она проявляется, только отойдя от него
+
 		w = pow(1.0 - a, 0.5 + uFr9.y * 3.0) * smoothstep(0.15, 1.0, age);
 		tcol = a < 0.5 ? mix(uP0, uP1, a * 2.0) : mix(uP1, uP2, (a - 0.5) * 2.0);
 		tint = uFr9.x * a;
@@ -98275,9 +95518,6 @@ vec4 frShow(float k, out vec3 tcol) {
 	return vec4(w, lift, tint, 0.0);
 }
 
-
-// Выдавливание по карте глубины: gDepth 0..1 (1 ближе всего). uDepth: сила, режим, скорость, фокус; uDepthP: слоёв, знак, покачивание, вид
-// Зона на месте: точки вокруг выбранной глубины остаются плоскими, за её краями рельеф плавно нарастает
 float dzone(float x) {
 	float a = abs(x);
 	return sign(x) * max(a - uDepthQ.x, 0.0) / max(1.0 - uDepthQ.x, 0.25);
@@ -98292,28 +95532,25 @@ vec3 depthShape(vec3 b) {
 	float dd = dzone(dn - fo);
 	int md = int(uDepth.y + 0.5);
 	if (md == 0) {
-		// рельеф: ближнее выступает вперёд
+
 		b.z += dd * A * 1.2;
 	} else if (md == 1) {
-		// ступени: глубина режется на ровные плоскости
+
 		float N = max(2.0, floor(uDepthP.x + 0.5));
 		float x = dn * N;
 		float dq = (floor(x) + smoothstep(0.38, 0.62, fract(x))) / N;
 		b.z += dzone(dq - fo) * A * 1.5;
 	} else {
-		// дыхание: тот же барельеф, объём медленно и мягко нарастает и спадает, но никогда не сплющивается в плоскость
+
 		float p = 0.5 - 0.5 * cos(t * sp * 0.6);
 		b.z += dd * A * 1.2 * (0.6 + 0.4 * p * p * (3.0 - 2.0 * p));
 	}
-	// лёгкое покачивание: сдвиг по глубине даёт параллакс, плоский кадр оживает даже без вращения камеры
+
 	float a = t * sp * 0.8;
 	b.xy += vec2(cos(a), sin(a) * 0.55) * dd * uDepthP.z * A * 0.4;
 	return b;
 }
 
-// Гиперпространство: точка поднимается на 3-сферу в четырёхмерном пространстве (обратная стереографическая проекция),
-// там поворачивается и проецируется обратно. Повороты, задевающие четвёртую ось, выворачивают форму через бесконечность.
-// md: 0 выворот (плоскость ZW), 1 расслоение Хопфа (XY и ZW вместе: точки текут по сцепленным окружностям), 2 кувырок (XW и YZ с разной скоростью), 3 дыхание (ZW туда и обратно)
 vec3 hyperWarp(vec3 p, vec3 c, float R, float md, float a, out float w4) {
 	vec3 q = (p - c) / R;
 	float r2 = dot(q, q);
@@ -98337,15 +95574,14 @@ vec3 hyperWarp(vec3 p, vec3 c, float R, float md, float a, out float w4) {
 		h.zw = vec2(h.z * cb - h.w * sb, h.z * sb + h.w * cb);
 	}
 	w4 = h.w;
-	// у полюса проекция уходит в бесконечность: даль мягко сжимается к «небесной сфере» вокруг формы, иначе точки влетали бы в камеру
+
 	vec3 o = h.xyz / max(1.0 - h.w, 0.03) * R;
 	float ol = length(o);
-	// до радиуса 1.8 форма как есть, дальше расстояние плавно упирается в 2.8
+
 	float oc = ol < 1.8 ? ol : 1.8 + (1.0 - exp(-(ol - 1.8)));
 	return c + o * (oc / max(ol, 1e-4));
 }
 
-// Фигуры Хладни: поле стоячей волны на пластине (у плоских фото и видео) или в объёме; песок собирается там, где поле равно нулю
 float chF(vec3 q, float n, float m) {
 	float f = cos(n * q.x) * cos(m * q.y) - cos(m * q.x) * cos(n * q.y);
 	if (uFlat > 0.5) return f;
@@ -98357,7 +95593,6 @@ float chField(vec3 q) {
 	return mix(chF(q, uChA.x, uChA.y), chF(q, uChA.z, uChA.w), uCh.y);
 }
 
-// Положение одной точки после всех эффектов. base: форма без эффектов, maskV: доля эффектов в этой точке (зона)
 vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float maskV) {
 	float t = uTime - uTOff;
 	float m = uMorph * uMorph * (3.0 - 2.0 * uMorph);
@@ -98369,9 +95604,9 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		vec2 fcell;
 		base = frBlockPos(aIdx, fnrm, fk, fcell);
 	}
-	// uMorphO.w: морфинг возможен (в списке форм больше одной). Иначе весь этот блок вырезается из шейдера WebGL: он самый тяжёлый в сборке (секунды на Windows)
+
 	if (uMorphO.w > 0.5 && uMorph < 0.9999) {
-		// морфинг: у каждой точки своё время старта (порядок и расслоение), а путь идёт по дуге через опорную точку, форма которой зависит от вида перехода
+
 		float lt = gMorphLT;
 		float e = morphEase(lt);
 		float sc = uMorphS.y;
@@ -98382,20 +95617,20 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		float hB = hash11(aIdx * 7.77);
 		float hC = hash11(aIdx * 2.13);
 		float flightK = sin(e * PI);
-		// у «Течения», «Вихря» и «Сканера» путь это дуга через опорную точку; остальные виды ниже считают свой путь сами
+
 		vec3 ctrl = mid + cn * sc * 0.9;
 		if (sty == 3) ctrl = mid + cn * sc * 0.3;
 		float om = 1.0 - e;
 		base = om * om * aOrigin + 2.0 * om * e * ctrl + e * e * aTarget;
 		if (sty == 0) {
-			// течение: точки несёт живая жидкость, два масштаба вихрей (крупные завитки и мелкие нити), сильнее всего в середине пути; соседние точки текут вместе
+
 			float fq = pow(flightK, 1.2);
 			vec3 tb1 = curlNoise(base * 1.35 + vec3(0.0, 0.0, t * 0.35));
 			vec3 tb2 = curlNoise(base * 3.2 - vec3(t * 0.55, 0.0, 0.0));
 			base += (tb1 * 0.5 + tb2 * 0.18) * sc * fq;
 		}
 		if (sty == 1) {
-			// вихрь: форма закручивается воронкой. Ближе к оси угол больше (внутри быстрее), по пути форма сжимается к оси и точки чуть поднимаются, потом всё раскручивается
+
 			vec2 vxz = base.xz - uCen.xz;
 			float vr = length(vxz);
 			float vang = sin(e * PI) * uMorphS.w * 6.2831853 * (0.7 + 0.3 * hash11(aIdx * 1.3)) * pow(1.0 / (0.32 + vr), 0.5);
@@ -98407,14 +95642,14 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			base.y += (hB - 0.3) * 0.35 * sc * flightK * flightK;
 		}
 		if (sty == 3) {
-			// сканер: на фронте точки на миг «оцифровываются» (липнут к сетке), дрожат и светятся, за фронтом уже новая форма
+
 			float band = smoothstep(0.0, 0.3, lt) * (1.0 - smoothstep(0.6, 1.0, lt));
 			vec3 sq = (floor((base - uCen) * 20.0) + 0.5) / 20.0 + uCen;
 			base = mix(base, sq, band * 0.8);
 			base += (vec3(hA, hB, hC) - 0.5) * 0.045 * band;
 		}
 		if (sty == 4) {
-			// пыль: старая форма поднимается облаком (быстро в начале, потом сопротивление воздуха), по высоте всё шире расползается; новая медленно оседает из него
+
 			float H = (0.45 + 0.85 * hA) * sc;
 			vec3 cloud = aOrigin + vec3(0.0, H, 0.0) + (cn * (0.5 + 0.7 * hB) + (vec3(hA, hC, hB) - 0.5) * 0.45) * sc * 0.8;
 			float k1 = clamp(e / 0.5, 0.0, 1.0);
@@ -98426,7 +95661,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			base = e < 0.5 ? p1 : p2;
 		}
 		if (sty == 5) {
-			// осыпание: точки падают с ускорением и скользят в кучу на полу (конус, как у песка), потом из кучи вырастает новая форма
+
 			float fl5 = uYR.x - 0.02;
 			float R5 = 0.55 + 0.35 * sc;
 			float an5 = hA * 6.2831853;
@@ -98446,7 +95681,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			base = e < 0.5 ? p1 : p2;
 		}
 		if (sty == 2) {
-			// взрыв: частицы разлетаются по баллистике с сопротивлением, падают на пол, один раз подскакивают и лежат, затем поднимаются дугой в новую форму
+
 			float fl = uYR.x - 0.04;
 			float h1 = hA;
 			float h2 = hB;
@@ -98481,7 +95716,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			base = lt < 0.45 ? pf : (lt < 0.58 ? pl : pg);
 		}
 		if (sty == 6) {
-			// через 4D: старая форма выворачивается через бесконечность, на изнанке подменяется новой и возвращается уже ею
+
 			float hw4;
 			vec3 q4 = mix(aOrigin, aTarget, smoothstep(0.38, 0.62, e));
 			base = hyperWarp(q4, uCen, 1.3 * max(sc, 0.15), uMorphS.w > 1.05 ? 1.0 : 0.0, 2.4 * sin(e * PI) * (0.85 + 0.15 * hash11(aIdx * 2.7)), hw4);
@@ -98489,7 +95724,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			gHypF = max(gHypF, smoothstep(0.55, 0.97, hw4));
 		}
 		if (sty == 7) {
-			// через сферу: форма стягивается в оболочку, оболочка перетекает в направления новой формы и раскрывается ею
+
 			vec3 co7 = aOrigin - uCen;
 			vec3 ct7 = aTarget - uCen;
 			vec3 d17 = normalize(co7 + vec3(1e-3));
@@ -98504,17 +95739,17 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			if (e < 0.35) base = mix(aOrigin, uCen + d17 * R7, k1);
 			else if (e < 0.65) base = uCen + normalize(mix(d17, d27, k2) + vec3(1e-3)) * R7;
 			else base = mix(uCen + d27 * R7, aTarget, k3);
-			// по оболочке бегут волны, как по поверхности капли
+
 			base += normalize(base - uCen + vec3(1e-3)) * 0.05 * sin(dot(d17, vec3(5.0, 7.0, 3.0)) * 2.0 + t * 3.0) * sin(clamp(e, 0.0, 1.0) * PI);
 		}
 		if (sty == 8) {
-			// кубики: блоки точек подпрыгивают и уходят вместе, каждый блок в свой момент
+
 			float ch8 = hash11(dot(floor((aOrigin - uCen) * 5.0), vec3(17.13, 31.71, 57.29)));
 			vec3 c8 = mid + vec3(0.0, (0.35 + 0.8 * ch8) * sc, 0.0);
 			base = om * om * aOrigin + 2.0 * om * e * c8 + e * e * aTarget;
 		}
 		if (sty == 9) {
-			// сплющивание: форма схлопывается в плоскость, плоскость перетекает в плоскость новой формы и расправляется
+
 			vec3 q9a = aOrigin - uCen;
 			vec3 q9b = aTarget - uCen;
 			float k1 = clamp(e / 0.4, 0.0, 1.0);
@@ -98530,7 +95765,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			else base = uCen + mix(fb, q9b, k3);
 		}
 		if (sty == 10) {
-			// рельеф по глубине (нейросеть): плоский кадр сначала вспухает объёмом по своей карте глубины, слои отслаиваются от ближних к дальним и летят к новой форме; приходящее видео так же собирается из объёма и сплющивается в кадр
+
 			float dz = 1.6 * max(sc, 0.3);
 			vec3 RA = aOrigin + vec3(0.0, 0.0, (gDepth - 0.5) * dz * uMorphD.x);
 			vec3 RB = aTarget + vec3(0.0, 0.0, (gDepth - 0.5) * dz * uMorphD.y);
@@ -98548,7 +95783,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			else base = mix(RB, aTarget, k3);
 		}
 		if (sty == 11) {
-			// 3D-печать: старая форма стекает в печатающую головку над сценой, головка кладёт новую форму слой за слоем снизу вверх
+
 			vec3 head = vec3(uCen.x, uYR.y + 0.45, uCen.z);
 			vec3 nozzle = aTarget + vec3(0.0, 0.22, 0.0);
 			float k1 = clamp(e / 0.55, 0.0, 1.0);
@@ -98560,7 +95795,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			base = e < 0.55 ? g11 : p11;
 		}
 		if (sty == 12) {
-			// портал: точки по спирали затягивает в светящееся кольцо в центре, и из него же по спирали выходит новая форма
+
 			float a12 = hA * 6.2831853 + t * 2.4;
 			vec3 ring = uCen + vec3(cos(a12), sin(a12), 0.0) * (0.32 + 0.06 * hB) * (0.6 + 0.4 * sc);
 			float k1 = clamp(e / 0.5, 0.0, 1.0);
@@ -98576,7 +95811,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			base = e < 0.5 ? p1 : p2;
 		}
 		if (sty == 13) {
-			// стекло: форма трескается на осколки, они летят, кувыркаются и падают; потом осколки новой формы прилетают и складываются в неё
+
 			vec3 ca = (floor((aOrigin - uCen) * 3.0) + 0.5) / 3.0 + uCen;
 			vec3 cb = (floor((aTarget - uCen) * 3.0) + 0.5) / 3.0 + uCen;
 			float sa = hash11(dot(floor((aOrigin - uCen) * 3.0), vec3(12.9, 78.2, 37.7)));
@@ -98596,7 +95831,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			base = mix(P1, P2, smoothstep(0.42, 0.58, e));
 		}
 		if (sty == 14) {
-			// магнит: точки идут пучками по силовым линиям, дугами в стороны от прямого пути, как железные опилки у полюсов
+
 			vec3 ab = aTarget - aOrigin;
 			float L14 = length(ab);
 			vec3 ax = L14 > 1e-4 ? ab / L14 : vec3(0.0, 1.0, 0.0);
@@ -98606,7 +95841,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			vec3 nb = n1 * cos(bund) + n2 * sin(bund);
 			base = mix(aOrigin, aTarget, e) + nb * sin(e * PI) * (0.25 + 0.55 * L14) * sc * (0.85 + 0.3 * hB);
 		}
-		// вся форма поворачивается за переход на заданное число оборотов (целых, чтобы в конце не было скачка)
+
 		if (abs(uMorphD.z) > 0.001) {
 			float sm = uMorph * uMorph * (3.0 - 2.0 * uMorph);
 			float ra = uMorphD.z * 6.2831853 * sm;
@@ -98616,14 +95851,14 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	}
 	if (uDepth.x > 0.001) base = depthShape(base);
 	vec3 rad = normalize(base + vec3(1e-4));
-	// у плоских источников (фото, видео, блок кадров) направление «наружу» это взгляд на кадр, иначе волны и импульсы лишь двигают картинку в её плоскости и почти не видны
+
 	rad = normalize(mix(rad, vec3(0.0, 0.0, 1.0), 0.8 * uFlat));
-	// движущаяся анимированная модель: «наружу» это нормаль её поверхности, а не направление от центра сцены (оно смотрит не туда, когда модель далеко от центра)
+
 	if (uAnimN > 0.5 && dot(gNormal, gNormal) > 0.01) rad = normalize(gNormal);
 	vec3 pos = base;
 
 	if (uCh.x > 0.001) {
-		// песок скатывается к ближайшей узловой линии (шаги Ньютона по полю), двигаясь только вдоль поверхности формы
+
 		float chh = max(uYR.y - uYR.x, 0.5) * 0.5;
 		float chk = 1.5708 * uCh.z / chh;
 		vec3 chq = (pos - uCen) * chk;
@@ -98639,7 +95874,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		}
 		float cfe = abs(chField(chq));
 		gChN = exp(-cfe * 5.0);
-		// дрожь: песок, который ещё не улёгся, подпрыгивает (сильнее на ударе)
+
 		float ctk = floor(t * 30.0);
 		vec3 cbz = (vec3(hash11(aIdx * 3.1 + ctk), hash11(aIdx * 5.7 + ctk), hash11(aIdx * 1.3 + ctk)) - 0.5) * (1.0 - gChN) * uCh.w * (0.03 + uBeat * 0.05);
 		pos = mix(pos, uCen + chq / chk + cbz, min(uCh.x, 1.0));
@@ -98659,12 +95894,12 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		} else if (uTwist.y < 2.5) {
 			pos.xz *= 1.0 + tw * 0.6 * (0.5 - y01t) * 2.0;
 		} else if (uTwist.y < 3.5) {
-			// змейка: форма извивается по высоте, как лента
+
 			float sw = sin(pos.y * 3.2 - t * (0.9 + uTwist.z));
 			pos.x += sw * tw * 0.2;
 			pos.z += cos(pos.y * 3.2 - t * (0.9 + uTwist.z)) * tw * 0.12;
 		} else {
-			// дыхание: по высоте бегут расширения и сужения
+
 			pos.xz *= 1.0 + tw * 0.3 * sin(y01t * 6.2831 - t * (1.2 + uTwist.z));
 		}
 	}
@@ -98683,11 +95918,11 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			vec3 wd = vec3(cos(uWaveSrc.w), 0.0, sin(uWaveSrc.w));
 			wv = sin(dot(base, wd) * uWave.y * 2.0 - t * 3.0 * uWaveP.x);
 		} else if (uWaveP.y < 3.5) {
-			// спираль: гребень закручен вокруг формы и бежит вверх
+
 			float yw = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
 			wv = sin(atan(base.z - uCen.z, base.x - uCen.x) * 3.0 + yw * uWave.y * 1.3 - t * 3.0 * uWaveP.x);
 		} else {
-			// подъём: ровные горизонтальные гребни поднимаются снизу вверх
+
 			wv = sin(base.y * uWave.y * 2.0 - t * 3.0 * uWaveP.x);
 		}
 		pos += rad * wv * uWave.x * 0.14 * (1.0 + 1.5 * uFlat);
@@ -98749,44 +95984,44 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		float sc = uDisQ.y;
 		float ds = uDisP.x;
 		float y01d = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
-		// кусок: соседние точки делят номер и движутся вместе
+
 		float cl = floor(aIdx * 1800.0);
 		float ch = hash11(cl * 0.731);
 		float ch2 = hash11(cl * 1.913 + 3.1);
 		vec3 cd = base - uCen;
 		vec3 outd = cd / (length(cd) + 1e-3);
-		// лёгкая турбулентность одинакова у всех видов и по умолчанию едва заметна: форма уходит слаженно, а не шумом
+
 		vec3 dsp = uAnimN > 0.5 ? vec3(hash11(aIdx * 1.7), hash11(aIdx * 2.3), hash11(aIdx * 3.1)) * 8.0 : base * 1.8;
 		pos += curlNoise(dsp + vec3(0.0, -t * 0.6, t * 0.3)) * dk * uDisT * 0.22 * sc;
 		if (ds < 0.5) {
-			// ветер: вся масса тянется одним потоком в сторону, быстрее и медленнее по высоте, как полотно на ветру
+
 			vec3 wv = vec3(uDis.w * 1.4 + 0.2, -uDis.z * 0.5, 0.3);
 			float sp = 0.65 + 0.35 * sin(y01d * 7.0 + t * 0.8);
 			pos += wv * dk * dk * 1.5 * sp * sc;
 		} else if (ds < 1.5) {
-			// горение: пепел поднимается вверх, покачиваясь пачками, а не по одной точке
+
 			pos.y += dk * dk * (0.7 + 0.5 * ch) * sc;
 			pos.xz += vec2(sin(t * 1.5 + ch * 6.0), cos(t * 1.3 + ch * 5.0)) * dk * 0.1 * sc + vec2(uDis.w * 0.5, 0.0) * dk * sc;
 		} else if (ds < 2.5) {
-			// лазерный срез: пока фронт проходит, точки чуть приподнимаются над поверхностью и гаснут
+
 			pos += outd * dk * 0.12 * sc + vec3(0.0, dk * 0.05 * sc, 0.0);
 		} else if (ds < 3.5) {
-			// слои: полосы по высоте по очереди съезжают в стороны, чётные вправо, нечётные влево
+
 			float band = floor(y01d * 12.0 + 0.001);
 			float sg = mod(band, 2.0) < 0.5 ? 1.0 : -1.0;
 			pos.x += sg * dk * dk * 1.7 * sc + uDis.w * dk * 0.3;
 			pos.y -= dk * dk * uDis.z * 0.25 * sc;
 		} else if (ds < 4.5) {
-			// блоки: куски падают целиком, разваливаются в стороны и ложатся кучкой на пол
+
 			vec3 mv = vec3((ch - 0.5) * 0.9 + uDis.w * 0.3, 0.0, (ch2 - 0.5) * 0.9);
 			pos += mv * dk * sc;
 			pos.y = max(pos.y - dk * dk * (0.5 + uDis.z) * 1.8 * sc, uYR.x + ch * 0.05);
 		} else if (ds < 5.5) {
-			// песок: колонны точек осыпаются прямо вниз и ложатся на пол ровной кучей
+
 			pos.y = max(pos.y - dk * dk * (0.5 + uDis.z) * 2.2 * sc, uYR.x + hash11(aIdx * 5.1) * 0.05);
 			pos.x += uDis.w * dk * 0.25 * sc;
 		} else if (ds < 6.5) {
-			// воронка: форма закручивается и втягивается к центру, уходя вверх
+
 			vec3 q = base - uCen;
 			float ang = dk * dk * (3.2 + uDis.w * 1.2) * sc;
 			float cs = cos(ang);
@@ -98795,15 +96030,14 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			q *= 1.0 - 0.9 * dk * dk;
 			pos = uCen + q + vec3(0.0, dk * dk * 0.45 * sc, 0.0);
 		} else {
-			// взрыв: от центра идёт волна, всё за ней отлетает наружу и падает
+
 			pos += outd * pow(dk, 0.7) * (1.1 + 0.3 * ch) * sc;
 			pos.y -= dk * dk * uDis.z * 0.8 * sc;
 		}
 	}
-	// разбор на части: куски двигаются и вращаются целиком вокруг своего центра
+
 	if (uExp.x > 0.001) {
-		// кусок это ячейка пространства вокруг формы (а не подряд идущие точки: облако перемешано для морфинга, и куски выходили кашей).
-		// Сетка чуть искривлена шумом, чтобы края кусков были неровными, а не кубиками
+
 		float eg = max(1.0, floor(pow(uExp.y, 1.0 / 3.0) + 0.5));
 		float ecs = max(uYR.y - uYR.x, 0.5) * 1.15 / eg;
 		vec3 eq = (base - uCen) / ecs;
@@ -98824,7 +96058,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		qe = qe * cos(ang) + cross(ax, qe) * sin(ang) + ax * dot(ax, qe) * (1.0 - cos(ang));
 		pos = pc + qe + dr * ke * uExpP.x * (0.5 + 0.5 * h1);
 	}
-	// росток: фронт роста, почки на кромке и покачивание выросшей части
+
 	if (uGrowP.z > 0.5) {
 		gGrow = growK(base, aIdx);
 		gGrowE = gGrow * (1.0 - gGrow) * 4.0;
@@ -98832,7 +96066,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		float yG = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
 		pos.xz += vec2(sin(t * 1.2 + yG * 5.0), cos(t * 0.9 + yG * 4.0)) * 0.018 * uGrowP.y * gGrow * (0.3 + yG);
 	}
-	// желе: упругая дрожь расходится от места удара и затухает
+
 	{
 		for (int ji = 0; ji < 3; ji++) {
 			float jage = uTime - uJel[ji].w;
@@ -98850,7 +96084,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		float gr = length(gq) + 1e-3;
 		float gin = 1.0 - smoothstep(uGravP.w * 0.7, uGravP.w * 1.7, gr);
 		float ga = smoothstep(0.0, 1.0, clamp(uGrav.x * gin, 0.0, 1.0));
-		// ось диска: наклонена и медленно покачивается
+
 		vec3 up = normalize(vec3(sin(uGravT.x) * cos(uGravT.y), cos(uGravT.x), sin(uGravT.x) * sin(uGravT.y)));
 		vec3 ref = abs(up.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
 		vec3 e1 = normalize(cross(ref, up));
@@ -98859,8 +96093,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		float lh = dot(gq, up);
 		float lz = dot(gq, e2);
 		if (uGrav.y < 0.5) {
-			// галактика: у центра крутится быстрее, закручиваясь в рукава; диск слегка коробится
-			// вращение почти как у твёрдого диска, а разница скоростей между центром и краем ограничена и колеблется: рукава дышат, а не закручиваются в кашу со временем
+
 			float ph0 = t * uGrav.z * 0.45;
 			float ang = ga * (ph0 * 0.8 + 1.3 * sin(ph0 * 0.6) / (0.5 + gr));
 			float ca = cos(ang);
@@ -98869,13 +96102,13 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			float nz = lx * sa + lz * ca;
 			float az = atan(nz, nx);
 			lh = lh * (1.0 - uGrav.w * ga) + 0.07 * gr * sin(az * 2.0 + t * 0.4) * ga;
-			// спиральные рукава: плотность волной уходит от центра к краю
+
 			float arm = sin(2.0 * az - 3.4 * log(gr + 0.15) + t * 0.25);
 			float ar = 1.0 + 0.2 * arm * ga * uGrav.w;
 			lx = nx * ar;
 			lz = nz * ar;
 		} else if (uGrav.y < 1.5) {
-			// квазар: падение по спирали, сплющивание в диск, затем выброс вдоль оси двумя джетами
+
 			float h1 = hash11(aIdx * 91.7);
 			float ph = fract(t * 0.16 * uGrav.z + h1);
 			float sg = h1 > 0.5 ? 1.0 : -1.0;
@@ -98901,7 +96134,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 				lh = sg * (0.08 + len);
 			}
 		} else if (uGrav.y > 3.5) {
-			// кольца: форма делится на круглые дорожки, каждая вращается как твёрдая, соседние в разные стороны
+
 			float rr0 = length(vec2(lx, lz));
 			float ringN = floor(rr0 * 5.0);
 			float rr1 = mix(rr0, (ringN + 0.5) / 5.0, ga * 0.85);
@@ -98911,7 +96144,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			lz = sin(az1) * rr1;
 			lh = lh * (1.0 - uGrav.w * ga);
 		} else if (uGrav.y > 2.5) {
-			// рой: каждая точка вращается вокруг центра по своей наклонной орбите
+
 			vec3 q = e1 * lx + up * lh + e2 * lz;
 			vec3 ax = normalize(vec3(hash11(aIdx * 13.1) - 0.5, hash11(aIdx * 7.7) - 0.5, hash11(aIdx * 3.3) - 0.5) + vec3(1e-3));
 			float ang = t * uGrav.z * (0.7 + 1.6 / (gr + 0.3)) * ga * (0.6 + 0.8 * hash11(aIdx * 5.9));
@@ -98921,7 +96154,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			lh = dot(q, up);
 			lz = dot(q, e2);
 		} else {
-			// невесомость: медленное вращение, покачивание в трёх осях и мягкое «дыхание» облака
+
 			float sd = aIdx * 61.0;
 			float ang = 0.14 * uGrav.z * t * ga;
 			float ca = cos(ang);
@@ -98940,13 +96173,13 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		pos = uGravP.xyz + e1 * lx + up * lh + e2 * lz;
 	}
 	if (uCurl.x > 0.001) {
-		// сила растёт мягче линейной: на максимуме точки уходят заметно, но форма ещё читается
+
 		float ca = pow(uCurl.x, 1.45) * 0.055;
 		float thr = snoise(base * 1.8 + t * 0.3) * 0.5 + 0.5;
 		float det = smoothstep(0.35, 0.85, thr + min(uCurl.x, 1.0) * 0.12);
 		vec3 cn = curlNoise(base * uCurl.y + vec3(t * 0.4, t * 0.3, t * 0.5) * uCurlP.x) * det * ca;
 		if (uCurlP.z > 1.5) {
-			// кольца: горизонтальные слои вращаются вокруг формы, соседние в разные стороны
+
 			float yc = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
 			float band = floor(yc * 8.0 + 0.001);
 			float sg = mod(band, 2.0) < 0.5 ? 1.0 : -1.0;
@@ -98967,7 +96200,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	if (uGlitch.x > 0.001) {
 		float yg = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
 		float spd = uGlitchP.y;
-		// всплески: раз в секунду-две сбой резко усиливается на долю секунды, между ними лёгкая рябь
+
 		float cyc = t * spd * 1.1;
 		float bst = step(0.55, hash11(floor(cyc) * 3.17 + 1.3)) * (1.0 - smoothstep(0.0, 0.4, fract(cyc)));
 		gBurst = bst;
@@ -98976,7 +96209,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		float tick = floor(t * 10.0 * spd);
 		bool hit = false;
 		if (gm < 0.5) {
-			// полосы по высоте съезжают в стороны и в глубину
+
 			float band = floor(yg * uGlitch.y);
 			float r = hash11(band * 13.7 + tick);
 			if (r > 0.55) {
@@ -98986,7 +96219,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 				hit = true;
 			}
 		} else if (gm < 1.5) {
-			// блоки: куски объёма смещаются целиком
+
 			vec3 cell = floor(base * vec3(4.0, uGlitch.y * 0.35, 4.0));
 			float r = hash11(dot(cell, vec3(12.9, 78.2, 37.7)) + tick * 1.7);
 			if (r > 0.62) {
@@ -98995,7 +96228,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 				hit = true;
 			}
 		} else {
-			// развёртка: тонкие строки рвутся сильнее, остальное чуть дрожит
+
 			float row = floor(yg * uGlitch.y * 3.0);
 			float r = hash11(row * 5.3 + tick * 2.3);
 			if (r > 0.8) {
@@ -99012,7 +96245,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 				gCh = chn;
 			}
 		}
-		// выпадение: во время всплеска часть точек пропадает
+
 		gDrop = step(hash11(aIdx * 3.7 + tick), uGlitch.z * 0.4 * bst * uGlitch.x) * hit2(hit);
 	}
 	if (uVoxel.x > 0.01) {
@@ -99026,18 +96259,18 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			float h2 = hash11(dot(cell, vec3(12.9, 78.2, 37.7)));
 			q.y += (h2 - 0.5) * g * 2.0 * amp * sin(t * uVoxelP.y * 1.5 + h2 * 6.2831);
 		} else if (vm > 2.5 && vm < 3.5) {
-			// волна: высота кубов бежит по сетке
+
 			q.y += sin(dot(cell.xz, vec2(0.7, 0.5)) * 0.55 - t * uVoxelP.y * 2.0) * g * 1.6 * amp;
 		} else if (vm > 3.5 && vm < 4.5) {
-			// ступени: высота квантуется в террасы
+
 			float stp = g * 2.0 * max(amp, 0.3);
 			q.y = (floor((pos.y - uYR.x) / stp) + 0.5) * stp + uYR.x;
 		} else if (vm > 4.5) {
-			// разлёт: каждый куб дрожит вокруг своего места
+
 			vec3 hv = vec3(hash11(dot(cell, vec3(12.9, 78.2, 37.7))), hash11(dot(cell, vec3(39.3, 11.1, 52.7))), hash11(dot(cell, vec3(7.7, 91.3, 23.9)))) - 0.5;
 			q += hv * g * 3.0 * amp * (0.5 + 0.5 * sin(t * uVoxelP.y * 2.0 + hv.x * 12.0));
 		}
-		// на фото кубики получают высоту по яркости: мозаика из столбиков, видная под углом
+
 		q.z += uFlat * (gLum - 0.5) * g * 9.0;
 		pos = mix(pos, q, smoothstep(0.0, 0.25, uVoxel.x));
 	}
@@ -99090,7 +96323,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			pos += rad * exp(-x * x) * exp(-age * 0.9) * uShockP.x * 0.45;
 		}
 	}
-	// Кисть: рисование курсором
+
 	if (uBrushParam.x > 0.001) {
 		for (int i = 0; i < 20; i++) {
 			float age = uBrushHits[i].w;
@@ -99104,7 +96337,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			}
 		}
 	}
-	// Распад: раскол сверху вниз, взрыв с закруткой, отскоки от пола; сборка дугами снизу вверх
+
 	if (uPhysics.x > 0.001) {
 		float seed = hash11(aIdx * 1234.56 + 17.1);
 		float seed2 = hash11(aIdx * 2345.67 + 39.3);
@@ -99144,7 +96377,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			yy = floorY + max(hh, 0.0);
 		}
 		pPhys.y = max(yy, floorY);
-		// вращение осколков вокруг вертикали, пока летят
+
 		float spinA = (1.0 - exp(-pt * 1.2)) * uPhysP.z * (seed2 - 0.5) * 2.0;
 		vec2 sq = pPhys.xz;
 		float cs = cos(spinA);
@@ -99194,7 +96427,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		if (d2 < r2) {
 			float f = 1.0 - d2 / r2;
 			if (uCursor.z > 1.5) {
-				// вихрь: точки под курсором закручиваются вокруг оси взгляда (ось взгляда в координатах облака это третья строка modelView)
+
 				vec3 vax = normalize(vec3(modelViewMatrix[0][2], modelViewMatrix[1][2], modelViewMatrix[2][2]) + vec3(1e-5));
 				float ca = f * f * uCursor.x * 2.2;
 				float cc = cos(ca);
@@ -99255,18 +96488,18 @@ void main() {
 	vStrain = strain;
 	vec3 col = mix(uP0, uP2, 0.35 + uBeat * 0.4) * uBright;
 	if (uLinkP.y > 0.5 && uLinkP.y < 1.5) {
-		// Натяжение (tension): бирюзовый -> золотой -> раскаленный оранжево-рубиновый
+
 		vec3 cyan = vec3(0.12, 0.88, 0.9);
 		vec3 gold = vec3(1.0, 0.76, 0.18);
 		vec3 ruby = vec3(1.0, 0.22, 0.28);
 		col = strain < 0.5 ? mix(cyan, gold, strain * 2.0) : mix(gold, ruby, (strain - 0.5) * 2.0);
 		col *= uBright * (1.1 + uBeat * 0.35);
 	} else if (uLinkP.y > 1.5 && uLinkP.y < 2.5) {
-		// Неон (neon): электрический кибер-градиент
+
 		col = mix(vec3(0.08, 0.72, 1.0), vec3(1.0, 0.08, 0.76), fract(aIdx * 7.13 + aEnd * 0.5));
 		col *= uBright * 1.35;
 	} else if (uLinkP.y > 2.5) {
-		// Радуга (rainbow): спектральная волна
+
 		col = (0.5 + 0.5 * cos(6.2831853 * (aIdx + aEnd * 0.35 + uTime * 0.18 + vec3(0.0, 0.33, 0.67)))) * uBright * 1.25;
 	}
 	vC = col;
@@ -99294,7 +96527,7 @@ void main() {
 		flare += (1.0 - smoothstep(0.0, 0.18, endDist)) * 1.9;
 	}
 	float baseW = uLinkW;
-	if (uLinkP.x > 1.5 && uLinkP.x < 2.5) baseW = max(0.65, uLinkW * 0.6); // созвездия — тонкие нити
+	if (uLinkP.x > 1.5 && uLinkP.x < 2.5) baseW = max(0.65, uLinkW * 0.6);
 	c.xy += nrm * aSide * (baseW * flare + 1.0) / uRes.y * c.w;
 	gl_Position = c;
 }
@@ -99370,7 +96603,7 @@ attribute float aIdx;
 attribute vec3 aSculpt;
 attribute vec3 aNormal;
 attribute vec3 aNormalB;
-attribute vec4 aPaint; // акварель на точке: rgb цвет краски, w её количество
+attribute vec4 aPaint;
 attribute vec3 aColorB;
 attribute float aHide;
 attribute float aDepth;
@@ -99399,47 +96632,47 @@ varying float vCoc;
 varying float vGl;
 ` + common + `
 #ifdef VSHOOT
-// «Рост на ритме»: очаги роста на форме. uShootS это 24 очага (xyz место на форме, w сколько выросло)
+
 uniform vec4 uShoot;
 uniform vec4 uShootP;
 uniform vec4 uShootD;
 uniform vec4 uShootE;
 uniform vec4 uShootC;
 uniform vec4 uShootS[24];
-uniform vec4 uShootN[24]; // нормаль участка (xyz) и сколько его осталось видно (w: гаснет, когда участок отломился)
+uniform vec4 uShootN[24];
 uniform vec4 uShootB[6];
 #endif
 #ifdef VSCREEN
-// «Экран»: видео играет на форме. Блок включают WebGL (shader-cache.js) и генератор WGSL (dev/gen-wgsl.mjs)
+
 uniform vec4 uScr;
 uniform vec4 uScrP;
 uniform sampler2D uScrTex;
-uniform vec4 uScrD; // объём по глубине: x источник (0 нет, 1 яркость, 2 карта), y сила, z знак (-1 выступает дальнее), w контраст
-uniform vec4 uScrQ; // x: показывать карту глубины вместо видео
+uniform vec4 uScrD;
+uniform vec4 uScrQ;
 uniform sampler2D uScrDep;
-// память цвета «Экрана»: текстура по номеру точки (строки по 2048), rgb хранится как корень из цвета / 4, a: сколько его осталось. Считается на процессоре (screen.js)
+
 uniform sampler2D uScrMTex;
 uniform float uScrMN;
-// «Слит-скан»: x сила, y сколько прошлого (доля буфера), z голова буфера, w вид; uSlitP: направление, бегущий срез, время вглубь, ступени; uSlitG: колонки, строки, точек, кадров в буфере
+
 uniform vec4 uSlit;
 uniform vec4 uSlitP;
 uniform vec4 uSlitG;
 uniform highp sampler2DArray uSlitTex;
-// «Пиксельная сортировка»: x сила, y как движется (0 держит, 1 волна, 2 удар, 3 дыхание), z скорость, w направление (0 строки, 1 столбцы); uSortP: точек, колонок, растяжение, свечение
+
 uniform vec4 uSort;
 uniform vec4 uSortP;
 uniform highp sampler2D uSortTex;
 #endif
 #ifdef SHADOW
-// «Тень на стене»: копия облака проецируется по лучу света на пол или стену (объект в engine/shadow.js; в WebGPU свой вариант расчёта, см. dev/gen-wgsl.mjs)
-uniform vec4 uShd; // x непрозрачность, y мягкость, z цвет (0 тёмная, 1 свет палитры, 2 цвет модели), w живая тень (колыхание)
-uniform vec4 uShdL; // xyz направление на свет (в мире), w: 0 пол, 1 стена
-uniform vec4 uShdP; // x положение плоскости (y пола или z стены), y затухание с высотой над плоскостью
-uniform vec3 uShdC; // цвет тёмной тени
+
+uniform vec4 uShd;
+uniform vec4 uShdL;
+uniform vec4 uShdP;
+uniform vec3 uShdC;
 #endif
 #ifdef HERO
 #define HEROSIZE clamp(sqrt(uFr.z / max(uHero.z, 1.0)), 0.4, 1.0)
-// глубина кадра k (альфа-канал текстуры кадров) в точке g сетки кадра, билинейно: главный кадр гуще сетки кадров, и без сглаживания рельеф шёл бы ступеньками
+
 float frLayerDepth(float k, vec2 g) {
 	int layer = int(mod(k + uFr5.x, uFr.y));
 	vec2 m = vec2(uFr2.x - 1.0, uFr2.y - 1.0);
@@ -99453,7 +96686,7 @@ float frLayerDepth(float k, vec2 g) {
 	float d11 = frDec(texelFetch(uFrTex, ivec3(int(p1.x), int(p1.y), layer), 0).a);
 	return mix(mix(d00, d10, f.x), mix(d01, d11, f.x), f.y);
 }
-// шлейф движения: выделенное ли место g на кадре k (метка в альфа-канале, ближайшая клетка)
+
 float frLayerSubj(float k, vec2 g) {
 	int layer = int(mod(k + uFr5.x, uFr.y));
 	vec2 p = clamp(floor(g + 0.5), vec2(0.0), vec2(uFr2.x - 1.0, uFr2.y - 1.0));
@@ -99464,7 +96697,7 @@ float frLayerSubj(float k, vec2 g) {
 #endif
 void main() {
 	if (aHide > 0.5) {
-		// точка скрыта фильтром «Медиа»
+
 		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;
 		vColor = vec3(0.0);
@@ -99473,7 +96706,7 @@ void main() {
 		vGl = 0.0;
 		return;
 	}
-	// раскадровка: цвет берётся из текстуры кадров, невидимые кадры отсекаются сразу
+
 	vec3 frCol = vec3(1.0);
 	vec3 frNrm = vec3(0.0, 0.0, 1.0);
 	float frLift = 0.0;
@@ -99491,38 +96724,38 @@ void main() {
 		vec3 tcol;
 		vec4 sh = frShow(fk, tcol);
 #ifdef HERO
-		// главный кадр показывается как есть, без подсветки и затемнения
+
 		if (uFr4.y < 0.5 || uFr8.x > 0.5) sh.x = 1.0;
 #endif
 		bool cull = sh.x < 0.02;
-		// шлейф движения: у прошлых кадров остаётся выделенное (человек), фон редеет до «доли фона»; у текущего кадра фон можно приглушить или скрыть
+
 		float frBg = 0.0;
 		if (uFr8.x > 0.5 && !cull) {
 #ifdef HERO
 			frBg = 1.0 - frLayerSubj(uFr.y - 1.0, (fcell + 0.5) / uHero.xy * uFr2.xy - 0.5);
 			if (frBg > 0.5 && uFr8.x > 2.5) cull = true;
 #else
-			// ещё не снятые слои кольца пустые
+
 			if (fk < uFr.y - uFr9.w - 0.5) cull = true;
 			frBg = texelFetch(uFrTex, ivec3(int(fcell.x), int(fcell.y), int(mod(fk + uFr5.x, uFr.y))), 0).a > 0.5 ? 0.0 : 1.0;
 			if (frBg > 0.5 && fract(sin(dot(fcell, vec2(7.13, 3.71)) + fk * 2.31) * 51731.7) > uFr8.w) cull = true;
 #endif
 		}
-		// без свечения затухание цветом дало бы чёрные точки: вместо этого точки гаснут рассыпаясь (часть выпадает), а цвет остаётся
+
 		if (uAdd < 0.5 && sh.x < 1.0) {
 			if (fract(sin(dot(fcell, vec2(39.346, 11.135)) + fk * 1.713) * 24634.6345) > sh.x) cull = true;
 		}
-		// без свечения цвет точек всегда как в видео: яркость кадров здесь меняется только числом точек
+
 		if (uAdd < 0.5) sh.x = 1.0;
 #ifndef HERO
-		// текущий кадр рисуется густым набором точек, поэтому в блоке его место пустое (у шлейфа все снятые кадры уже прошлое)
+
 		if (uHero.w > 0.5 && uFr8.x < 0.5 && abs(fk - floor(uFr4.x + 0.5)) < 0.1) cull = true;
-		// прошлые и будущие кадры редеют с расстоянием от текущего: рядом все точки, далеко только часть
+
 		float dl = abs(fk - uFr4.x);
 		float keep = mix(1.0, clamp(1.0 / (1.0 + dl * 0.45), 0.08, 1.0), uFr5.y);
 		float hs = fract(sin(dot(fcell, vec2(12.9898, 78.233)) + fk * 0.731) * 43758.5453);
 		if (dl > 0.5 && hs > keep) cull = true;
-		// длина хвоста: за ней кадры пропадают, а перед ней точки редеют тем плавнее, чем больше «плавность»
+
 		if (uFr7.x < 0.999) {
 			float tx = dl / max(uFr7.x * uFr.y, 1.0);
 			if (tx >= 1.0 || hs > 1.0 - smoothstep(min(1.0 - uFr7.z, 0.999), 1.0, tx)) cull = true;
@@ -99545,9 +96778,9 @@ void main() {
 #endif
 #ifndef HERO
 		fc = min(fc * uFr5.w, vec3(1.6));
-		// насыщенность: ноль это цвета видео, плюс сочнее, минус ближе к серому
+
 		if (abs(uFr7.y) > 0.001) fc = max(mix(vec3(dot(fc, vec3(0.3, 0.59, 0.11))), fc, 1.0 + uFr7.y * (uFr7.y > 0.0 ? 2.0 : 1.0)), 0.0);
-		// отбор по тону: остаются только светлые или только тёмные точки остальных кадров
+
 		if (uFr6.z > 0.5) {
 			float lt = pow(dot(fc, vec3(0.3, 0.59, 0.11)), 0.4545);
 			if (uFr6.z < 1.5 ? lt < uFr6.w : lt > uFr6.w) {
@@ -99563,7 +96796,7 @@ void main() {
 #endif
 		float l = dot(fc, vec3(0.3, 0.59, 0.11));
 		frCol = (fc * (1.0 - sh.z) + tcol * (0.35 + l * 1.6) * sh.z) * sh.x;
-		// фон в шлейфе и приглушённый фон текущего кадра тусклее выделенного
+
 #ifdef HERO
 		if (frBg > 0.5 && uFr8.x > 1.5) frCol *= 0.3;
 		vec2 frGs = uHero.xy;
@@ -99575,7 +96808,7 @@ void main() {
 		float frEw = uFrE.y;
 		float frEk = uFrE.x;
 #endif
-		// рамки кадров: точки у края листа светятся, и кадры читаются отдельными пластинами (у шлейфа движения рамок нет)
+
 		if (frEk > 0.001 && uFr8.x < 0.5) {
 			vec2 ce = min(fcell, frGs - 1.0 - fcell);
 			float edge = 1.0 - smoothstep(frEw * 0.5, frEw + 0.5, min(ce.x, ce.y));
@@ -99583,10 +96816,10 @@ void main() {
 			frCol = mix(frCol, ecol * (0.9 + 0.5 * sh.x), edge * min(frEk, 1.0));
 		}
 		frLift = sh.y;
-		// «Объём по глубине» на раскадровке: у каждого кадра своя карта глубины в альфа-канале текстуры кадров
+
 		if (uDepth.x > 0.001) {
 #ifdef HERO
-			// главный кадр идёт за видео: глубина плавно перетекает между соседними снятыми кадрами
+
 			vec2 hg = (fcell + 0.5) / uHero.xy * uFr2.xy - 0.5;
 			float hk0 = clamp(floor(uFr4.x), 0.0, uFr.y - 1.0);
 			float hk1 = min(hk0 + 1.0, uFr.y - 1.0);
@@ -99594,10 +96827,10 @@ void main() {
 #else
 			frDep = frDec(texelFetch(uFrTex, ivec3(int(fcell.x), int(fcell.y), layer), 0).a);
 #endif
-			// правка карты (яркость, контраст, тени) считается здесь, для каждого кадра
+
 			frDep = pow(max(clamp((frDep - 0.5) * uDepthQ.z + 0.5 + uDepthQ.y, 0.0, 1.0), 1e-4), uDepthQ.w);
 #ifndef HERO
-			// остальные кадры выдавливаются слабее (настройка раскадровки), иначе в стопке они врезаются друг в друга
+
 			float dkeep = mix(uFr7.w, 1.0, 1.0 - clamp(abs(fk - uFr4.x), 0.0, 1.0));
 			frDep = mix(uDepth.w, frDep, dkeep);
 #endif
@@ -99609,10 +96842,10 @@ void main() {
 	gNormal = aNormal;
 	gLum = uFr.x > 0.5 ? dot(frCol, vec3(0.3, 0.59, 0.11)) : dot(aColor, vec3(0.3, 0.59, 0.11));
 	if (uScope.x > 0.001) {
-		// осциллограф: aPath это место точки на пути пера (0..1), uScope.z это положение пера, у ещё не нарисованных точек размер падает до нуля
+
 		bool rv = uScope.y > 1.5;
 		float cm = rv ? uScope.y - 2.0 : uScope.y;
-		// в раскадровке путь это строчная развёртка кадра (точки формы там не видны), иначе перо шло бы по невидимым точкам
+
 		float ap0 = frAp >= 0.0 ? frAp : aPath;
 		float ap = rv ? 1.0 - ap0 : ap0;
 		if (uScopeP.w > 1.5) ap = fract(ap * uScopeP.w);
@@ -99621,7 +96854,7 @@ void main() {
 		if (sAge >= 0.0) {
 			gScopeT = (cm < 0.5 ? 1.0 : exp(-sAge * 4.0 / max(uScope.w, 0.02))) * uScopeP.y;
 			gScopeG = exp(-sAge * 45.0) * uScopeP.y;
-			// стирание: перо идёт по следу второй раз и съедает нарисованное, на кромке светится
+
 			if (uScopeP.z > 0.0 && ap >= uScopeP.z) gScopeG = max(gScopeG, exp(-(ap - uScopeP.z) * 45.0));
 			gScopeD = hideAll;
 		} else gScopeD = max(clamp(uScopeP.x * uScope.x * 1.6, 0.0, 1.0), hideAll);
@@ -99639,14 +96872,14 @@ void main() {
 	else if (uColorBy < 1.5) k = clamp((pos.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
 	else k = fract(aIdx * 3.0 + t * 0.03);
 	vec3 col = k < 0.5 ? mix(uP0, uP1, k * 2.0) : mix(uP1, uP2, (k - 0.5) * 2.0);
-	// цвет и нормаль плавно перетекают вместе с формой
+
 	float ltC = uMorph < 0.9999 ? gMorphLT : 1.0;
 	float eC = uMorph < 0.9999 ? (int(uMorphS.x + 0.5) == 2 ? smoothstep(0.5, 0.9, ltC) : morphEase(ltC)) : 1.0;
 	vec3 colM = mix(aColor, aColorB, eC);
 	if (uFr.x > 0.5) colM = frCol;
 #ifdef VSCREEN
 #ifndef HERO
-	// слит-скан: у точки своя задержка во времени, цвет из кадра в прошлом (между соседними кадрами плавно)
+
 	if (uSlit.x > 0.001) {
 		float sip = floor(aIdx * uSlitG.z + 0.5);
 		float sci = mod(sip, uSlitG.x);
@@ -99670,10 +96903,10 @@ void main() {
 		vec3 scol = mix(texelFetch(uSlitTex, ivec3(int(sci), int(scj), sl0), 0).rgb, texelFetch(uSlitTex, ivec3(int(sci), int(scj), sl1), 0).rgb, sd - s0);
 		float sk = min(uSlit.x, 1.0);
 		colM = mix(colM, scol, sk);
-		// время вглубь: чем старше кадр точки, тем дальше она от зрителя
+
 		pos.z -= sf * uSlit.y * uSlitP.z * 1.2 * sk;
 	}
-	// пиксельная сортировка: точка едет к своему месту в отсортированной полосе, вместе со своим цветом
+
 	if (uSort.x > 0.001) {
 		float qi = floor(aIdx * uSortP.x + 0.5);
 		vec2 qd = texelFetch(uSortTex, ivec2(int(mod(qi, 2048.0)), int(floor(qi / 2048.0))), 0).xy;
@@ -99685,7 +96918,7 @@ void main() {
 		else if (qm == 3) qk = 0.5 + 0.5 * sin(uTime * uSort.z * 1.2);
 		qk = qk * qk * (3.0 - 2.0 * qk) * min(uSort.x, 1.0);
 		pos.xy += qd * qk * uSortP.z;
-		// сдвинутые точки светятся: видны полосы сортировки
+
 		colM *= 1.0 + min(length(qd) * 6.0, 1.0) * qk * uSortP.w;
 	}
 #endif
@@ -99698,11 +96931,11 @@ void main() {
 		wn = length(wn) > 0.0 ? normalize(wn) : vec3(0.0, 1.0, 0.0);
 		col = pow(wn * 0.5 + 0.5, vec3(2.2));
 	}
-	// видимость точки при морфинге между моделями с разным числом точек: лишние плавно гаснут, недостающие проявляются
+
 	float vm = uMorph * uMorph * (3.0 - 2.0 * uMorph);
 	float vis = mix(aVis.x, aVis.y, vm);
 	vColor = col * uBright * (1.0 + uBeat * 0.3) * vis;
-	// акварель: краска, нанесённая кистью, хранится на самой точке и остаётся после мазка
+
 	if (uPaintP.x > 0.5 && aPaint.w > 0.002) {
 		float pa = aPaint.w;
 		float cov = 1.0 - exp(-pa * 3.4);
@@ -99711,17 +96944,17 @@ void main() {
 		vColor = uPaintP.z > 0.5 ? vColor * mix(vec3(1.0), pig * 1.15, cov) : mix(vColor, pig * uBright, cov);
 	}
 	if (uMask.x > 0.5 && uMaskShow > 0.5) vColor = mix(vColor, uP2 * 1.4, maskV * 0.55);
-	// фигуры Хладни: песок на узловых линиях ярче, чем в пучностях
+
 	if (uCh.x > 0.001) vColor *= mix(1.0, 0.45 + 1.1 * gChN, min(uCh.x, 1.0));
-	// гиперпространство: цвет по четвёртой оси (у центра 3-сферы первый цвет палитры, у бесконечности последний), детали кадра сохраняются по яркости
+
 	if (uHyp.x > 0.001) {
 		float hk4 = clamp((gHypW + 1.0) * 0.5, 0.0, 1.0);
 		vec3 hc = hk4 < 0.5 ? mix(uP0, uP1, hk4 * 2.0) : mix(uP1, uP2, (hk4 - 0.5) * 2.0);
 		vColor = mix(vColor, hc * uBright * (0.55 + 0.9 * dot(vColor, vec3(0.3, 0.59, 0.11))), uHypP.y * min(uHyp.x, 1.0));
 	}
-	// точки, улетевшие в бесконечность (гиперпространство, переход «Через 4D»), тускнеют
+
 	vColor *= 1.0 - 0.6 * gHypF;
-	// объём: свет сверху слева по нормалям, обратная сторона формы темнее
+
 	if (uShade > 0.001 && dot(nrmM, nrmM) > 0.01) {
 		vec3 nv = normalize(normalMatrix * nrmM);
 		float lit = dot(nv, normalize(vec3(-0.45, 0.65, 0.6)));
@@ -99731,7 +96964,6 @@ void main() {
 	}
 	vGl = clamp(sqrt(max(dot(vColor, vec3(0.3, 0.59, 0.11)), 0.0)) * 0.85 + (hash11(aIdx * 1.7) - 0.5) * 0.35, 0.0, 1.0);
 
-	// Кисть: свечение в следе мазка
 	if (uBrushParam.x > 0.001) {
 		float bGlow = 0.0;
 		for (int i = 0; i < 20; i++) {
@@ -99746,7 +96978,6 @@ void main() {
 		if (bGlow > 0.001) vColor += uP2 * bGlow * 2.2 * uBrushParam.x;
 	}
 
-	// Руки: подсветка точек возле кончиков пальцев
 	if (uHandP.x > 0.001) {
 		float hg = 0.0;
 		for (int i = 0; i < 12; i++) {
@@ -99757,7 +96988,6 @@ void main() {
 		vColor += uP2 * hg * hg * 1.6 * uHandP.x;
 	}
 
-	// Область трекинга: негатив, радуга, дыра, лупа, пиксели или свет вокруг рамок
 	float mkv = markK(base);
 	if (mkv > 0.0) {
 		if (uMark.x < 1.5) vColor = mix(vColor, (vec3(1.0) - min(vColor, vec3(1.0))) * 1.3, mkv);
@@ -99768,14 +96998,13 @@ void main() {
 		} else if (uMark.x < 4.5) vColor *= 1.0 + mkv * 0.8;
 		else if (uMark.x > 5.5) vColor += uMarkC * mkv * 1.8;
 	}
-	// Исчезновение точек в местах касания: плавно гаснут без подсветки края
+
 	float cvan = 0.0;
 	if (uContact.z > 6.5 && uContact.x > 0.001) {
 		cvan = contactK(base);
 		vColor *= 1.0 - smoothstep(0.1, 0.8, cvan);
 	}
 
-	// Срез / Изолинии: лазеры, рельеф на линиях или развёртка за бегущей плоскостью
 	float sl = 0.0;
 	if (uSlice.x > 0.001) {
 		float axCode = mod(uSlice.w, 10.0);
@@ -99793,44 +97022,44 @@ void main() {
 			vColor += (uSliceM.z > 0.5 ? vColor * 0.25 : uSliceC) * sl * 2.2;
 		}
 	}
-	// глубина: показ карты или окраска по глубине, блики сканера и контуров
+
 	if (uDepth.x > 0.001) {
 		if (uDepthP.w > 1.5) {
-			// цвет глубины: от синего (далеко) через жёлтый к красному (близко), яркость берётся от кадра, чтобы не пропали детали
+
 			vec3 jet = clamp(vec3(1.5 - abs(4.0 * gDepth - 3.0), 1.5 - abs(4.0 * gDepth - 2.0), 1.5 - abs(4.0 * gDepth - 1.0)), 0.0, 1.0);
 			vColor = mix(vColor, jet * (0.4 + 0.95 * dot(vColor, vec3(0.3, 0.59, 0.11))), 0.88);
 		} else if (uDepthP.w > 0.5) vColor = vec3(gDepth);
 	}
-	// осциллограф: линия окрашивается, голова пера горит
+
 	if (uScope.x > 0.001) {
 		vColor = mix(vColor, uScopeC * 1.4, uScopeQ.x * gScopeT);
 		vColor += uScopeC * gScopeG * uScopeQ.z * 3.0;
 	}
-	// глитч: мерцание, строки-помехи и раздельные цветовые каналы
+
 	if (gGl > 0.0) {
 		vColor *= 0.55 + 0.45 * hash11(floor(uTime * 24.0) + floor(pos.y * 14.0));
 		vColor *= 1.0 - 0.45 * min(gGl, 1.0) * step(0.5, fract(pos.y * 38.0));
 		if (gCh > -0.5) vColor = mix(vColor, vColor * vec3(gCh < 0.5 ? 2.2 : 0.05, abs(gCh - 1.0) < 0.5 ? 2.2 : 0.05, gCh > 1.5 ? 2.2 : 0.05), min(1.0, gGl));
-		// в момент всплеска сбойные места вспыхивают
+
 		vColor += vec3(0.25, 0.3, 0.35) * gBurst * min(gGl, 1.0);
 	}
-	// росток: на фронте роста точки вспыхивают свежей зеленью в тон палитре
+
 	if (uGrowP.z > 0.5) vColor += mix(vec3(0.3, 0.95, 0.4), uP2, 0.3) * pow(gGrowE, 1.6) * 0.55;
-	// светящаяся кромка растворения: у горения огненная, у остальных цвета палитры, яркость задаёт настройка
+
 	if (dkv > 0.0) {
 		float edge = smoothstep(0.02, 0.25, dkv) * (1.0 - smoothstep(0.25, 0.75, dkv));
 		if (uDisP.x > 0.5 && uDisP.x < 1.5) vColor += vec3(1.0, 0.42, 0.08) * edge * 2.4;
 		else vColor += uP2 * edge * uDisQ.z * 2.0;
 	}
-	// вспышка в момент перехода: точки в пути ярче и крупнее
+
 	float mkm = 0.0;
 	if (uMorph < 0.9999 && uMorphO.z > 0.001) {
 		mkm = sin(gMorphLT * PI) * uMorphO.z;
 		vColor += vColor * mkm * 1.1 + uP2 * mkm * 0.25;
 	}
-	// размер точек в пути: в полёте они крупнее или мельче, на месте прежние
+
 	float mfs = uMorph < 0.9999 ? mix(1.0, uMorphD.w, sin(gMorphLT * PI)) : 1.0;
-	// после сборки по форме снизу вверх пробегает мягкая волна света и лёгкий «вздох», как будто модель села на место
+
 	if (uSettle >= 0.0 && uSettle < 1.0) {
 		float yS = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
 		float dd = (yS - (uSettle * 1.35 - 0.15)) / 0.14;
@@ -99840,10 +97069,7 @@ void main() {
 		pos += normalize(vec3(pos.x, 0.0, pos.z) + vec3(1e-4)) * band * 0.03;
 	}
 #ifdef VSHOOT
-	// «Рост на ритме»: uShoot = (сила, вид, радиус очага, предельная длина щупалец и шипов), uShootP = (свечение, дрожь, время, крупность оторвавшихся),
-	// uShootS = 24 очага (xyz место на форме, w: у шипов сколько выросло, у видов отрыва на сколько участок отошёл), uShootN = нормаль участка и его видимость,
-	// uShootD = (куда отходит: 0 наружу, 1 от центра, 2 вверх, 3 к зрителю; длина шага; особая настройка вида: ступени, размер осколков, слои, закрутка, разлёт), uShootE = (мягкость края участка, разброс длины, заострение столба).
-	// Виды: 0 шипы, 1 бугры, 3 щупальца растут из очагов; отрыв участков: 2 плита, 4 столб, 5 ступени, 6 осколки, 7 слои, 8 винт, 9 пыль
+
 	float shSzMul = 1.0;
 	if (uShoot.x > 0.001) {
 		vec3 bsh = base - uCen;
@@ -99852,7 +97078,7 @@ void main() {
 		float shK = 0.0;
 		float hsh = hash11(aIdx * 3.77);
 		bool shFam = (uShoot.y > 1.5 && uShoot.y < 2.5) || uShoot.y > 3.5;
-		// у видов отрыва точка принадлежит одному участку: тому, что сильнее всего её захватил
+
 		float bm = 0.0;
 		float bd = 1.0;
 		vec4 bs = vec4(0.0);
@@ -99889,7 +97115,7 @@ void main() {
 			shK = max(shK, pr * min(sd.w * 1.5, 1.0));
 		}
 		if (shFam && bm > 0.0) {
-			// участок отходит на bs.w (ступенями по ударам) в выбранную сторону, у каждого вида отрыва своя форма
+
 			float d = bs.w * (1.0 - uShootE.y * hsh);
 			float stp = max(uShootD.y, 0.005);
 			vec3 dn = length(bn.xyz) > 0.01 ? normalize(bn.xyz) : normalize(bs.xyz - uCen + vec3(1e-4));
@@ -99899,61 +97125,60 @@ void main() {
 			float md = uShoot.y;
 			vec3 off;
 			if (md < 2.5) {
-				// плита: участок целиком, ровным куском
+
 				off = dn * d * bm;
 			} else if (md < 4.5) {
-				// столб: точки участка растягиваются вдоль пути, участок вырастает колонной
+
 				float tt = hash11(aIdx * 5.13);
 				float pf = pow(tt, 0.75) * smoothstep(0.0, 0.6, bm);
 				vec3 prel = base - bs.xyz;
-				// заострение: боковые точки стягиваются к оси, чем дальше они вытянуты
+
 				off = dn * d * pf - (prel - dn * dot(dn, prel)) * uShootE.z * clamp(d * pf * 1.5 / uShoot.z, 0.0, 1.0);
 			} else if (md < 5.5) {
-				// ступени: кольца участка отходят на разную высоту, вырастает ступенчатая пирамида
+
 				float tiers = max(uShootD.z, 2.0);
 				float ring = min(floor((1.0 - bd) * tiers + 0.001), tiers - 1.0);
 				off = dn * d * mix(0.25, 1.0, ring / (tiers - 1.0)) * bm;
 			} else if (md < 6.5) {
-				// осколки: участок колется на куски, каждый отходит на свою длину и с наклоном
+
 				vec3 cl = floor(base / max(uShoot.z * (0.08 + 0.55 * uShootD.z), 0.01));
 				float hc = hash11(dot(cl, vec3(17.13, 31.71, 57.29)));
 				vec3 tilt = vec3(hash11(hc * 91.0), hash11(hc * 57.0), hash11(hc * 33.0)) - 0.5;
 				off = normalize(dn + tilt * 0.7) * d * (0.45 + hc * 1.1) * bm;
 			} else if (md < 7.5) {
-				// слои: участок расслаивается, как стопка листов: с каждым ударом поднимается ещё один слой
+
 				float layer = floor(hash11(aIdx * 9.71) * max(uShootD.z, 2.0));
 				off = dn * max(0.0, d - layer * stp * 0.75) * bm;
 			} else if (md < 8.5) {
-				// винт: участок выкручивается, поворачиваясь вокруг своей оси с каждым шагом
+
 				vec3 rel = base - bs.xyz;
 				float ang = d / stp * 0.6 * uShootD.z;
 				float ca = cos(ang), sa = sin(ang);
 				vec3 rr = rel * ca + cross(dn, rel) * sa + dn * dot(dn, rel) * (1.0 - ca);
 				off = (rr - rel + dn * d) * bm;
 			} else {
-				// пыль: участок рассыпается, каждая точка уходит своей дорогой, но тоже ступенями
+
 				vec3 rd = vec3(hash11(aIdx * 1.3), hash11(aIdx * 2.9), hash11(aIdx * 5.1)) - 0.5;
 				off = normalize(dn + rd * uShootD.z) * d * (0.35 + hash11(aIdx * 7.7) * 1.3) * bm;
 			}
-			// дрожь: отошедшие точки чуть живут на месте
+
 			off += vec3(sin(uShootP.z * 1.7 + hsh * 6.283), cos(uShootP.z * 1.3 + hsh * 4.1), sin(uShootP.z * 1.1 + hsh * 2.7)) * 0.03 * min(d, 1.0) * uShootP.y * bm;
 			shOff += off;
 			float stK = clamp(d / stp, 0.0, 1.0);
 			shK = max(shK, bm * stK);
 			shSzMul = 1.0 + bm * stK * uShootP.w;
-			// отломившийся участок гаснет и мельчает
+
 			vColor *= mix(1.0, bn.w, bm);
 			shSzMul *= mix(1.0, max(bn.w, 0.05), bm);
 		}
-		// дрожь: живое мерцание отросшего
+
 		if (!shFam) shOff *= 1.0 + uShootP.y * 0.1 * sin(uShootP.z * 3.0 + hsh * 6.283);
 		pos += shOff * min(uShoot.x, 1.0);
 		vColor += (uP2 * 1.4 + vColor * 0.3) * shK * uShootP.x * min(uShoot.x, 1.0);
 	}
 #endif
 #ifdef VSCREEN
-	// «Экран»: uScr = (сила, вид, масштаб, яркость), uScrP = (поворот, сила рельефа, смешивание с цветом формы, соотношение сторон кадра)
-	// виды: 0 обёртка вокруг формы, 1 приклеено (кадр на лице формы, вращается с ней), 2 проектор (кадр на экране, форма скользит сквозь него), 3 рельеф (как «приклеено», яркое выдавливается)
+
 	if (uScr.x > 0.001) {
 		vec3 bsx = base - uCen;
 		float hyx = max(uYR.y - uYR.x, 1e-4);
@@ -99961,11 +97186,11 @@ void main() {
 		vec2 suv;
 		float smask = 1.0;
 		if (uScr.y < 0.5) {
-			// обёртка: угол вокруг оси это горизонталь кадра, высота формы это вертикаль
+
 			suv = vec2(atan(bsx.z, bsx.x) / 6.2831853 + 0.5, clamp((base.y - uYR.x) / hyx, 0.0, 1.0));
 			suv.x = fract((suv.x - 0.5) / uScr.z + 0.5);
 		} else if (uScr.y < 1.5 || uScr.y > 2.5) {
-			// приклеено и рельеф: кадр лежит на форме спереди, высота формы это высота кадра
+
 			suv = vec2(0.5 + bsx.x / (hyx * arx), 0.5 + (base.y - (uYR.x + uYR.y) * 0.5) / hyx);
 			suv = (suv - 0.5) / uScr.z + 0.5;
 			float cr = cos(uScrP.x), sr = sin(uScrP.x);
@@ -99973,7 +97198,7 @@ void main() {
 			smask = step(0.0, suv.x) * step(suv.x, 1.0) * step(0.0, suv.y) * step(suv.y, 1.0);
 			if (dot(nrmM, nrmM) > 0.01) smask *= smoothstep(-0.35, 0.25, nrmM.z);
 		} else {
-			// проектор: кадр неподвижен на экране, точки получают цвет того места кадра, над которым оказались
+
 			vec4 cpx = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
 			vec2 nd = cpx.xy / max(cpx.w, 1e-4);
 			float scrAsp = projectionMatrix[1][1] / projectionMatrix[0][0];
@@ -99985,7 +97210,7 @@ void main() {
 		}
 		vec3 scr = texture2D(uScrTex, clamp(suv, 0.0, 1.0)).rgb * uScr.w;
 		float slum = dot(scr, vec3(0.3, 0.59, 0.11));
-		// объём по глубине: яркость кадра или карта глубины (нейросеть, своя картинка) выдавливают форму вдоль нормали
+
 		float sdv = 0.0;
 		if (uScrD.x > 0.5) {
 			sdv = uScrD.x < 1.5 ? clamp(slum / max(uScr.w, 0.05), 0.0, 1.0) : texture2D(uScrDep, clamp(suv, 0.0, 1.0)).r;
@@ -99994,7 +97219,7 @@ void main() {
 			if (uScrQ.x > 0.5) scr = vec3(sdv);
 		}
 #ifndef HERO
-		// память цвета: в кадре светлейшее из нового и запомненного (длинная выдержка), вне кадра запомненное гаснет
+
 		vec4 smem = vec4(0.0);
 		if (uScrQ.y > 0.5) {
 			float smi = floor(aIdx * uScrMN + 0.5);
@@ -100014,7 +97239,7 @@ void main() {
 	}
 #endif
 #ifdef SHADOW
-	// тень считается в мировых координатах: стена и пол стоят на месте, даже когда форма вращается
+
 	float shA = 0.0;
 	{
 		vec3 swp = (modelMatrix * vec4(pos, 1.0)).xyz;
@@ -100023,7 +97248,7 @@ void main() {
 		float shh = dot(swp, shN) - uShdP.x;
 		vec3 ssp = swp - shL * (shh / max(dot(shL, shN), 0.08));
 		if (uShd.w > 0.001) {
-			// живая тень: колышется, как от пламени свечи
+
 			vec3 st1 = vec3(1.0, 0.0, 0.0);
 			vec3 st2 = uShdL.w < 0.5 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
 			ssp += (st1 * snoise(ssp * 1.4 + vec3(0.0, uTime * 0.7, 0.0)) + st2 * snoise(ssp * 1.4 + vec3(5.0, -uTime * 0.6, 3.0))) * uShd.w * 0.12;
@@ -100041,7 +97266,6 @@ void main() {
 #endif
 	gl_Position = projectionMatrix * mv;
 
-	// Масштаб по шуму и спектру (Scale POP)
 	float szNoise = 1.0;
 	if (uLookP2.x > 0.001) {
 		szNoise = 1.0 + uLookP2.x * (snoise(base * 2.2 + uTime * 0.4) * 0.75);
@@ -100052,7 +97276,6 @@ void main() {
 		szAudio = 1.0 + uLookP2.y * (bandAudio * 1.2 * (0.6 + 0.4 * sin(aIdx * 62.8)));
 	}
 
-	// Глубина резкости (Depth of Field: CoC)
 	float coc = 0.0;
 	if (uDof.x > 0.5) {
 		float viewDist = -mv.z;
@@ -100068,7 +97291,7 @@ void main() {
 	s *= (1.0 + coc * 2.4);
 	s *= 1.0 - 0.85 * gHypF;
 	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD);
-	// «Мельче вдали»: uAtt это расстояние камеры до точки, вокруг которой она вращается. Там точки своего обычного размера, дальше мельче, ближе крупнее
+
 	s *= uAtt > 0.001 ? 0.73 * uAtt / max(-mv.z, uAtt * 0.1) : 0.73;
 #ifdef SHADOW
 	s *= mix(1.0, 2.8, uShd.y);
@@ -100079,7 +97302,7 @@ void main() {
 		gl_PointSize = 0.0;
 	}
 #ifdef TRACKPICK
-	// рамки слежения: итоговое положение точки (после всех эффектов) пишется в пиксель с её номером (engine/track-pick.js)
+
 	vColor = pos;
 	gl_Position = vec4((float(gl_VertexID) + 0.5) / 16.0 * 2.0 - 1.0, 0.0, 0.0, 1.0);
 	gl_PointSize = 1.0;
@@ -100167,7 +97390,7 @@ void main() {
 	vec2 c = gl_PointCoord - 0.5;
 	float r = length(c);
 	if (r > 0.5) discard;
-	// мягкая круглая точка; много точек друг на друге сгущаются в плотную тень
+
 	float a = (1.0 - smoothstep(mix(0.3, 0.0, uShd.y), 0.5, r)) * vD * (1.0 - vDk) * 0.4;
 	if (a < 0.002) discard;
 	gl_FragColor = vec4(vColor, a);

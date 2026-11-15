@@ -1,6 +1,3 @@
-// Настройки хранятся в браузере (localStorage), то есть уже на конкретном устройстве. Этот модуль нужен для случая, когда
-// профиль браузера оказался на другом компьютере (перенос, синхронизация, копия профиля): тогда прежние настройки не подходят
-// новой видеокарте, и сайт начинает с исходных. Отпечаток устройства: видеокарта, число ядер процессора и система.
 const FP_KEY = 'objglb.device';
 
 function gpuName() {
@@ -27,7 +24,6 @@ function hash(str) {
 	return (h >>> 0).toString(36);
 }
 
-/** Сбрасывает сохранённые настройки, если сайт открыт на другом устройстве, чем в прошлый раз */
 export function guardDevice() {
 	try {
 		const fp = hash([gpuName(), navigator.hardwareConcurrency || 0, navigator.platform || '', navigator.deviceMemory || 0].join('|'));
@@ -37,6 +33,5 @@ export function guardDevice() {
 		}
 		localStorage.setItem(FP_KEY, fp);
 	} catch (e) {
-		/* хранилище недоступно: работаем с исходными настройками */
 	}
 }

@@ -3,13 +3,9 @@ import { fitCount, normalizeCloud, shuffleCloud } from '../shapes/cloud-utils.js
 import { generateShapePoints } from '../shapes/shapes.js';
 import { depthToGrid, grabFrame, lumaDepth, normalizeDepth } from '../input/depth-ai.js';
 
-/** Источник облака точек: модель, фото, видео, формы, морфинг, число частиц. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class SourcePart {
-	// ------------------------------------------------------------ фото и видео
-	/** Загруженное в «Медиа» фото или видео становится источником «Фото» */
 	async useMedia() {
 		this.state.look.colorBy = 'model';
-		// стартовые вихри и пульс портят картинку: выключаем, включить можно слева
 		for (const id of ['curl', 'blast']) this.state.layers[id].on = false;
 		const mkey = this.app.media.activeKey();
 		this.app.media.passSound(null);
@@ -18,7 +14,6 @@ export class SourcePart {
 			this.cache.clear();
 			await this._build();
 		} else await this.setSource(mkey);
-		// картинка должна смотреть на зрителя, а не крутиться ребром
 		this.state.look.autoRotate = false;
 		if (this.points) this.points.rotation.set(0, 0, 0);
 		this.emit();
@@ -34,15 +29,12 @@ export class SourcePart {
 		this.emit();
 	}
 
-	// ------------------------------------------------------------ морфинг между формами
-	/** Список доступных форм: встроенные фигуры и объекты сцены редактора */
 	forms() {
 		const out = [];
 		for (const o of this.modelProvider?.objects() || []) out.push({ key: 'obj:' + o.id, name: o.name, icon: 'cube' });
 		return out;
 	}
 
-	/** Все формы, между которыми можно делать морфинг: объекты сцены, открытое видео или фото и готовые фигуры */
 	uiForms() {
 		const out = this.forms().map((f) => ({ ...f, group: 'scene' }));
 		for (const e of this.app.media.lib) {
@@ -52,7 +44,6 @@ export class SourcePart {
 		return out;
 	}
 
-	/** Доля видимых точек у формы: у модели с меньшим числом точек видна только их часть */
 	_fracFor(key) {
 		if (!key.startsWith('obj:') || this.state.morphCfg.weight === 'equal') return 1;
 		const mp = this.modelProvider;
@@ -74,7 +65,6 @@ export class SourcePart {
 		this._syncMorphCount().then(() => this._prefetch(keys));
 	}
 
-	/** Видео вошло в список морфинга или вышло из него: у облака меняется число точек, поэтому один раз собираем его заново */
 	async _syncMorphCount() {
 		if (!this.active || !this.geometry || this.morphing) return;
 		if (this.geometry.attributes.position.count === this._n()) return;
@@ -89,7 +79,6 @@ export class SourcePart {
 		this.emit();
 	}
 
-	/** Номер следующей формы в списке по выбранному порядку: по кругу, туда и обратно или случайно */
 	_pickNext() {
 		const list = this.playlist || [];
 		const order = this.state.morphCfg.order;
@@ -100,7 +89,6 @@ export class SourcePart {
 			return i;
 		}
 		if (order === 'pingpong') {
-			// вперёд до конца списка, потом назад до начала
 			let d = this._pd || 1;
 			let j = (this._pi ?? -1) + d;
 			if (j >= list.length || j < 0) {
@@ -116,7 +104,6 @@ export class SourcePart {
 	morphNext() {
 		const list = this.playlist || [];
 		if (this._morphHold) {
-			// переход стоит на ползунке: кнопка доводит его до конца
 			this._morphHold = false;
 			return;
 		}
@@ -127,7 +114,6 @@ export class SourcePart {
 		this.setSource(list[i]).catch(() => {});
 	}
 
-	/** Переход к выбранной форме прямо сейчас, в какой бы последовательности она ни стояла */
 	morphTo(key) {
 		if (this._morphHold) {
 			this._morphHold = false;
@@ -142,10 +128,6 @@ export class SourcePart {
 		this.setSource(key).catch(() => {});
 	}
 
-	/**
-	 * Переход вручную: ползунок ведёт форму от текущей к следующей в списке. Пока ползунок не вернулся на ноль, переход стоит там, где его оставили,
-	 * на 100% он завершается. Форма посередине это живое состояние: обе модели вперемешку.
-	 */
 	async morphScrub(v) {
 		v = Math.max(0, Math.min(1, v));
 		this._scrubV = v;
@@ -168,10 +150,9 @@ export class SourcePart {
 			}
 		}
 		this.morph = this._scrubV;
-		if (this.morph >= 1) this._morphHold = false; // дальше обычный конец перехода
+		if (this.morph >= 1) this._morphHold = false;
 	}
 
-	/** Ползунок перехода отпущен: до конца дотягивается, если ушёл за половину, и стоит на месте, если нет */
 	morphScrubEnd() {
 		if (this._morphHold && this.morph > 0.5) this._morphHold = false;
 	}
@@ -200,7 +181,6 @@ export class SourcePart {
 		const n = this._n();
 		const ck = key + ':' + n;
 		if (this.cache.has(ck)) return this.cache.get(ck);
-		// один и тот же расчёт не запускаем дважды (предзагрузка и нажатие кнопки)
 		const pend = (this._pend ||= new Map());
 		if (pend.has(ck)) return pend.get(ck);
 		const job = (async () => {
@@ -228,7 +208,6 @@ export class SourcePart {
 		}
 	}
 
-	/** Заранее готовит облака точек выбранных моделей, чтобы переход стартовал сразу, а не после паузы на расчёт */
 	async _prefetch(keys) {
 		const token = (this._pfT = (this._pfT || 0) + 1);
 		for (const k of keys || []) {
@@ -237,7 +216,6 @@ export class SourcePart {
 			try {
 				await this._cloudFor(k);
 			} catch (e) {
-				/* не критично: посчитаем при запуске */
 			} finally {
 				this._quiet = false;
 			}
@@ -245,19 +223,12 @@ export class SourcePart {
 		}
 	}
 
-	/**
-	 * Морфинг под музыку. «Скачок»: когда выбранная полоса частот выше порога, форма переходит к следующей (не чаще, чем раз в «паузу»).
-	 * «Плавно»: форма идёт за громкостью, как ползунок: тихо это прежняя форма, громко это следующая. Дошла до конца: форма закрепляется,
-	 * и после тишины (громкость упала) начинается путь к следующей.
-	 */
 	_morphMusicTick(dt) {
 		const mc = this.state.morphCfg;
-		// старое значение «По биту» теперь это «По музыке» с полосой «Удар»
 		if (mc.mode === 'beat') Object.assign(mc, { mode: 'music', band: 'beat', amode: 'gate' });
 		const S = (this._mf ||= { open: false, p: 0, holding: false, busy: false, cool: false });
 		const on = mc.mode === 'music' && mc.band !== 'none' && this.active && (this.playlist?.length || 0) >= 2;
 		if (!on || mc.amode !== 'amp') {
-			// плавное следование выключили: начатый переход доезжает до конца сам
 			if (S.holding) {
 				S.holding = false;
 				if (this._morphHold) this._morphHold = false;
@@ -273,7 +244,6 @@ export class SourcePart {
 			if (rise && !this.morphing && this._time - (this._lastMorph || 0) >= (mc.gap ?? 1)) this.morphNext();
 			return;
 		}
-		// плавно: громкость, сглаженная по скорости отклика, становится ходом перехода
 		const gain = 1 / Math.max(0.2, 1 - (mc.react ?? 0.6) * 0.8);
 		const target = Math.max(0, Math.min(1, v * gain));
 		const tc = Math.max(0.01, target > S.p ? mc.atk : mc.rel);
@@ -301,7 +271,6 @@ export class SourcePart {
 			S.holding = false;
 			return;
 		}
-		// ползунок «Вручную» тянут рукой: музыка ждёт, пока его отпустят
 		if (this._scrubUser) return;
 		this.morph = Math.min(1, S.p);
 		if (S.p >= 0.985) {
@@ -312,7 +281,6 @@ export class SourcePart {
 		}
 	}
 
-	/** Карта глубины для точек этого видео или фото (1 ближе всего): нейросетевая, если она уже построена для него, иначе быстрая по яркости */
 	_mediaDepth(pm) {
 		const D = this._D;
 		const key = pm.rec || pm.el;
@@ -324,10 +292,6 @@ export class SourcePart {
 		return out;
 	}
 
-	/**
-	 * Карты глубины нейросетью для всех видео и фото из списка морфинга (для вида «Рельеф (нейросеть)» и порядка по глубине).
-	 * Модель загружается один раз; у видео карта считается по текущему кадру. Пока нейросеть не готова, переход берёт глубину по яркости.
-	 */
 	async morphAIDepth({ quiet = false } = {}) {
 		if (this._aiBusy) return;
 		const mc = this.app.media;
@@ -358,12 +322,10 @@ export class SourcePart {
 		}
 	}
 
-	/** Перед переходом, где есть видео или фото: порядок и выдавливание по глубине берут её из aDepth */
 	_morphDepthSetup(outE, inE) {
 		const mc = this.state.morphCfg;
 		if (!outE && !inE) return;
 		if (!(mc.sort === 'depthnear' || mc.sort === 'depthfar' || mc.style === 'relief' || (mc.lift || 0) > 0.001)) return;
-		// «Рельеф» без готовой карты: в этот раз глубина по яркости, а нейросеть тем временем считает карту на следующие переходы
 		if (mc.style === 'relief' && [outE, inE].some((e) => e && !e.ai)) this.morphAIDepth({ quiet: true });
 		const a = this.geometry?.attributes.aDepth;
 		if (!a) return;
@@ -377,20 +339,14 @@ export class SourcePart {
 		a.needsUpdate = true;
 	}
 
-	/** Переход к другому видео или фото закончился или был прерван новым: у уходящего ставим паузу, у пришедшего запускаем, если оно играло */
 	_endMediaMorph() {
 		const mm = this._mm;
 		if (!mm) return;
 		this._mm = null;
-		// живая лента кадров (раскадровка «по ходу видео», шлейф движения) снимает кадры с этого же видео: оно играет дальше
 		if (mm.out && mm.out.pm.playing && !this.app.media.keepsSound(mm.out) && !this._keepVideo) mm.out.pm.pause();
 		if (mm.in && mm.in.want !== false && !mm.in.pm.playing) mm.in.pm.play();
 	}
 
-	/**
-	 * Видео во время перехода: пока точки уходят (первая часть пути), оно играет и кадры идут на уходящую форму. Когда точки разлетелись, видео встаёт.
-	 * Когда они начинают собираться в видео, оно запускается снова, и кадры идут на новую форму.
-	 */
 	_mediaMorphTick(dt) {
 		const mm = this._mm;
 		const g = this.geometry;
@@ -401,7 +357,6 @@ export class SourcePart {
 		const side = (e, outSide) => {
 			const pm = e.pm;
 			const active = outSide ? m < 0.45 : m >= 0.4;
-			// видео, выбранное источником звука, играет всегда: звук не обрывается на переходе
 			const play = (active && e.want !== false) || this.app.media.keepsSound(e) || (outSide && this._keepVideo && e.want !== false);
 			if (play && !pm.playing) pm.play();
 			else if (!play && pm.playing) pm.pause();
@@ -423,7 +378,6 @@ export class SourcePart {
 		if (mm.in) side(mm.in, false);
 	}
 
-	/** Ещё одно фото или видео добавлено рядом с открытым: встаёт в список морфинга; go: форма сразу плавно переходит на него («Открыть»), иначе остаётся текущая («Добавить») */
 	async addMediaForm(id, { go = true } = {}) {
 		if (!this.active) return;
 		const list = [...(this.playlist || [])];
@@ -438,7 +392,6 @@ export class SourcePart {
 		this.emit();
 	}
 
-	/** Меняет облако без разрыва: старая форма плавно перетекает в новую */
 	async setSource(key) {
 		const st = this.state;
 		const isMedia = key === 'media' || key.startsWith('media:');
@@ -451,7 +404,6 @@ export class SourcePart {
 			this.app.toast('Нет модели: добавьте её кнопкой «Добавить модель» или откройте в редакторе', 'info');
 			return;
 		}
-		// объект сцены и вся сцена это источник «модель»; все фото и видео это источник «media», какое именно говорит ключ формы
 		const prevKey = this.cloudKey;
 		st.source = key.startsWith('obj:') ? 'model' : isMedia ? 'media' : key;
 		this.touch();
@@ -460,22 +412,19 @@ export class SourcePart {
 		try {
 			target = await this._cloudFor(key);
 		} finally {
-			this.app.ui.idle(); // выбор формы мог показать окно загрузки: закрываем его в любом случае
+			this.app.ui.idle();
 		}
 		if (!target) return this.emit();
 		this.curKey = key;
-		// это фото или видео теперь текущее: на него переходят таймлайн и панель
 		if (isMedia && this.app.media.pm !== mEntry.pm) {
 			const prevHeard = this.app.media.soundEntry()?.pm;
 			this.app.media.pm = mEntry.pm;
 			this.app.media.passSound(prevHeard);
 			this.app.media.emit();
-			// звук «показанного видео» переходит на новое
 			this._resyncVideoAudio?.();
 		}
 		this._endMediaMorph();
 		if (!target || target.count !== this.geometry.attributes.position.count) {
-			// число точек другое: переход невозможен, форма собирается заново. Прежнее видео встаёт, новое играет
 			const was = prevKey && prevKey !== key && prevKey.startsWith('media') ? this.app.media.entry(prevKey) : null;
 			if (was && was.pm.playing && !this.app.media.keepsSound(was) && !this._keepVideo) was.pm.pause();
 			await this._build();
@@ -485,22 +434,18 @@ export class SourcePart {
 		const g = this.geometry;
 		const o = g.attributes.aOrigin;
 		const t = g.attributes.aTarget;
-		// видео убрало с точек часть (фильтры): при уходе с видео все точки снова видны
 		if (!isMedia && prevKey && prevKey.startsWith('media') && g.attributes.aHide) {
 			g.attributes.aHide.array.fill(0);
 			g.attributes.aHide.needsUpdate = true;
 		}
-		// если новый переход начался до конца прежнего, считаем прежний завершённым: пути у видов сложные, середину по прямой не посчитать
 		const k = this.morphing ? 1 : this.morph * this.morph * (3 - 2 * this.morph);
 		for (let i = 0; i < o.array.length; i++) {
 			o.array[i] = o.array[i] * (1 - k) + t.array[i] * k;
 			t.array[i] = target.positions[i];
 		}
-		// цвета и нормали тоже перетекают: прежние берём из «второго набора», новые кладём в него, а шейдер смешивает их по ходу перехода
 		g.attributes.aNormal.array.set(g.attributes.aNormalB.array);
 		g.attributes.aNormalB.array.set(target.normals);
 		{
-			// пол сетки переезжает под новую форму
 			let my = Infinity;
 			const tp = target.positions;
 			for (let i = 1; i < tp.length; i += 3) if (tp[i] < my) my = tp[i];
@@ -512,7 +457,6 @@ export class SourcePart {
 			g.attributes.aColorB.array.set(target.colors);
 			g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
 		}
-		// число точек у моделей разное: лишние точки гаснут, а при переходе к большей модели недостающие проявляются
 		const vis = g.attributes.aVis;
 		if (vis) {
 			const frac = this._fracFor(key);
@@ -527,11 +471,9 @@ export class SourcePart {
 		}
 		o.needsUpdate = t.needsUpdate = true;
 		this.cloudKey = key;
-		// анимированные модели живут и во время перехода: уходящая двигается, пока улетает, приходящая уже двигается, пока собирается, поэтому в конце нет скачка позы
 		this._animOut = this._animIn || this._animCloud || null;
 		this._animIn = (key === 'model' || key.startsWith('obj:')) && target.anim && target.norm ? target : null;
 		this._animCloud = null;
-		// видео играет, пока точки разлетаются, и снова запускается, когда собираются в видео: что именно, считает _mediaMorphTick
 		const outE = prevKey && prevKey.startsWith('media') && prevKey !== key ? this.app.media.entry(prevKey) : null;
 		if (outE) outE.want = outE.pm.playing;
 		this._mm = outE || isMedia ? { out: outE, in: isMedia && prevKey !== key ? mEntry : null } : null;
@@ -540,7 +482,7 @@ export class SourcePart {
 		this.morphing = true;
 		this._settleOn = false;
 		this.shared.uSettle.value = -1;
-		this.shared.uMorph.value = 0; // сразу, не дожидаясь кадра: иначе на один кадр мелькает новая модель
+		this.shared.uMorph.value = 0;
 		this._computeLinks();
 		this.emit();
 	}
@@ -564,7 +506,6 @@ export class SourcePart {
 		this.emit();
 	}
 
-	/** В сцене редактора что-то изменилось (например, добавили модель): пересобираем облако */
 	_onScene() {
 		if (!this.active || this._muteScene) return;
 		clearTimeout(this._sceneT);
@@ -577,13 +518,11 @@ export class SourcePart {
 			}
 			this.app.ui.busy('Готовлю частицы', 0.2);
 			try {
-				// новая модель плавно перетекает из прежней формы: полная пересборка точек гасила сцену на кадр, и экран мигал
 				if (this.geometry && this.hasModel && this.state.source === 'model') await this.setSource('model');
 				else await this._build();
 			} catch (e) {
 				console.error(e);
 			} finally {
-				// окно загрузки всегда закрываем: раньше оно оставалось поверх сцены после добавления модели
 				this.app.ui.idle();
 			}
 			this.app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 300);

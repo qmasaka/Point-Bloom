@@ -3,14 +3,11 @@ import { createFrameUniforms } from '../shared/frame-uniforms.js';
 import { frag } from '../../shaders/glsl/frag.js';
 import { lineFrag } from '../../shaders/glsl/line-frag.js';
 
-/** Сборка и удаление объектов сцены эффектов (точки, призраки, линии). Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class BuildPart {
 	async _build() {
 		const st = this.state;
 		if (st.source === 'model' && !this.hasModel) st.source = 'sphere';
-		// у фото и видео источник один («media»), а какое именно из них, говорит ключ формы
 		let bKey = st.source === 'media' && this.curKey && this.curKey.startsWith('media') ? this.curKey : st.source;
-		// это видео уже убрали: берём любое из оставшихся
 		if (st.source === 'media' && !this.app.media.entry(bKey)?.pm.ready) {
 			bKey = this.app.media.lib.find((e) => e.pm.ready)?.id || bKey;
 			this.curKey = bKey;
@@ -42,7 +39,6 @@ export class BuildPart {
 		g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
 		g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
 		this._grabs = new Map();
-		// облако посажено на персонажа с анимацией: каждый кадр точки пересчитываются по позе скелета
 		this._animCloud = st.source === 'model' && c.anim && c.norm ? c : null;
 		this._animVer = -1;
 		this._animIn = this._animOut = null;
@@ -58,9 +54,7 @@ export class BuildPart {
 			this._pieceKey = '';
 		}
 		const U = (v) => ({ value: v });
-		// общие униформы: точки, призраки и линии читают одни и те же значения
 		const shared = createFrameUniforms({ count, specTex: this.specTex, pieceTex: this.pieceTex });
-		// режим смешивания сразу такой, как в настройках: у three.js непрозрачный и прозрачный материал — разные программы, и переключение на первом кадре заставляло драйвер собирать шейдер ещё раз прямо в кадре
 		const addBlend = this.state.look.blend === 'add';
 		const mk = (extra) =>
 			new THREE.ShaderMaterial({
@@ -82,12 +76,10 @@ export class BuildPart {
 		shared.uYR.value.set(bb.min.y, bb.max.y);
 		shared.uCen.value.set((bb.min.x + bb.max.x) / 2, (bb.min.y + bb.max.y) / 2, (bb.min.z + bb.max.z) / 2);
 		this._yrBase = [bb.min.y, bb.max.y];
-		// сетка на полу: форма стоит на ней, а не проходит насквозь. У анимированной модели пол идёт по самой низкой точке всего движения
 		this.app.viewport.fxFloorY = c.norm && c.norm.floorY !== undefined ? c.norm.floorY : bb.min.y;
 		const old = this.points;
 		const rot = old ? old.rotation.clone() : null;
 		if (old) this._disposePoints();
-		// шлейф: до пяти призрачных копий (след, спираль, калейдоскоп), делят геометрию с основной
 		this.ghosts = [1, 2, 3, 4, 5].map((k) => {
 			const gm = mk({ uTOff: U(0), uGhost: U(0), uHero: U(new THREE.Vector4()) });
 			const gp = new THREE.Points(g, gm);
@@ -97,7 +89,6 @@ export class BuildPart {
 			pts.add(gp);
 			return gp;
 		});
-		// связи: линии между узлами
 		const lg = new THREE.BufferGeometry();
 		const lm = new THREE.ShaderMaterial({ vertexShader: this._fxSource('line', this._fxCur || (this._fxCur = new Set())), userData: { fxKind: 'line' }, fragmentShader: lineFrag, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, uniforms: { ...shared, uTOff: U(0) } });
 		this.linkObj = new THREE.Mesh(lg, lm);
@@ -106,7 +97,6 @@ export class BuildPart {
 		this.linkObj.visible = false;
 		pts.add(this.linkObj);
 		this.geometry = g;
-		// дорожка морфинга на таймлайне запоминает исходную форму заново уже для нового облака
 		this._mtB = null;
 		this._mtPair = '';
 		this._mtActive = false;
@@ -133,7 +123,6 @@ export class BuildPart {
 		this.ghosts = [];
 	}
 
-	/** Цвет фона сцены в режиме эффектов (пусто: как в редакторе) */
 	applyBg() {
 		const stage = document.querySelector('.stage');
 		const { bg, vignette } = this.state.look;

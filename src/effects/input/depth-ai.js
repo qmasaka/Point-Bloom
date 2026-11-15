@@ -1,7 +1,3 @@
-// Карта глубины по кадру. Нейросеть Depth Anything V2 Small (лицензия Apache 2.0) работает в Web Worker через Transformers.js:
-// на видеокарте (WebGPU), а если её нет, то на процессоре (WASM). Библиотека и модель (около 20-50 МБ) скачиваются один раз и остаются в кеше браузера.
-// Картинка никуда не отправляется: вычисления идут на вашем компьютере.
-
 const LIB = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
 const MODEL = 'onnx-community/depth-anything-v2-small';
 
@@ -34,7 +30,7 @@ self.onmessage = async (e) => {
 			for (const dev of order) {
 				try {
 					depther = await make(dev);
-					// пробный прогон: на некоторых видеокартах сессия создаётся, но считает мусор
+
 					const probe = new Uint8ClampedArray(56 * 56 * 4);
 					for (let i = 0; i < probe.length; i += 4) probe[i] = probe[i + 1] = probe[i + 2] = (i / 4) % 56 * 4, probe[i + 3] = 255;
 					const r = await run({ data: probe, w: 56, h: 56 });
@@ -60,7 +56,7 @@ self.onmessage = async (e) => {
 export class DepthAI {
 	constructor() {
 		this.worker = null;
-		this.phase = 'idle'; // idle | loading | ready | error
+		this.phase = 'idle';
 		this.prog = 0;
 		this.device = '';
 		this.error = '';
@@ -83,7 +79,6 @@ export class DepthAI {
 		if (this.onChange) this.onChange();
 	}
 
-	/** Запускает worker и загружает модель; повторные вызовы возвращают тот же промис */
 	init() {
 		if (this._ready) return this._ready;
 		this.phase = 'loading';
@@ -147,7 +142,6 @@ export class DepthAI {
 		try {
 			this.worker?.terminate();
 		} catch (e) {
-			/* worker уже закрыт */
 		}
 		this.worker = null;
 		this._ready = null;
@@ -155,7 +149,6 @@ export class DepthAI {
 		if (reject) reject(err);
 	}
 
-	/** Строит карту глубины для кадра {data: Uint8ClampedArray RGBA, w, h}; результат {w, h, data: Float32Array}, больше значит ближе (обратная глубина, масштаб произвольный) */
 	async estimate(img) {
 		await this.init();
 		const id = ++this._seq;
@@ -169,7 +162,6 @@ export class DepthAI {
 		try {
 			this.worker?.terminate();
 		} catch (e) {
-			/* worker уже закрыт */
 		}
 		this.worker = null;
 		this._ready = null;
@@ -178,7 +170,6 @@ export class DepthAI {
 }
 
 let grabCanvas = null;
-/** Снимает кадр с картинки, видео или холста в ограничении по длинной стороне; возвращает {data (RGBA), w, h} */
 export function grabFrame(el, maxSide = 518) {
 	const sw = el.videoWidth || el.naturalWidth || el.width;
 	const sh = el.videoHeight || el.naturalHeight || el.height;
@@ -194,7 +185,6 @@ export function grabFrame(el, maxSide = 518) {
 	return { data: g.getImageData(0, 0, w, h).data, w, h };
 }
 
-/** Своя карта глубины из картинки (светлое ближе): {w, h, data} со значениями 0..1, длинная сторона не больше maxSide */
 export async function loadDepthImage(file, maxSide = 640) {
 	const url = URL.createObjectURL(file);
 	try {
@@ -211,7 +201,6 @@ export async function loadDepthImage(file, maxSide = 640) {
 	}
 }
 
-/** Выбор файла картинки; возвращает File или null */
 export function pickImageFile() {
 	return new Promise((resolve) => {
 		const inp = document.createElement('input');
@@ -222,7 +211,6 @@ export function pickImageFile() {
 	});
 }
 
-/** Кадр из массива RGB (запись видео) в RGBA нужного размера */
 export function grabRGB(rgb, cols, rows) {
 	const data = new Uint8ClampedArray(cols * rows * 4);
 	for (let i = 0, j = 0, k = 0; i < cols * rows; i++, j += 3, k += 4) {
@@ -234,10 +222,6 @@ export function grabRGB(rgb, cols, rows) {
 	return { data, w: cols, h: rows };
 }
 
-/**
- * Приводит сырую глубину к 0..1 (1 = ближе всего). Границы берутся по 1% и 99% гистограммы и сглаживаются между кадрами видео, чтобы глубина не мерцала.
- * st: {lo, hi, init}, хранит прошлые границы; smooth: 0 для первой картинки.
- */
 export function normalizeDepth(raw, st, smooth = 0) {
 	const n = raw.length;
 	let mn = Infinity, mx = -Infinity;
@@ -282,7 +266,6 @@ export function normalizeDepth(raw, st, smooth = 0) {
 	return out;
 }
 
-/** Быстрая запасная карта без нейросети: светлое ближе, с лёгким размытием, чтобы не было зерна. rgb: Uint8Array из троек RGB размера w x h (stride 4 для RGBA) */
 export function lumaDepth(rgb, w, h, stride = 3) {
 	const l = new Float32Array(w * h);
 	for (let i = 0, k = 0; i < l.length; i++, k += stride) l[i] = (0.299 * rgb[k] + 0.587 * rgb[k + 1] + 0.114 * rgb[k + 2]) / 255;
@@ -303,7 +286,6 @@ export function lumaDepth(rgb, w, h, stride = 3) {
 	return { w, h, data: o };
 }
 
-/** Правка готовой карты: размытие (радиус в пикселях карты), яркость, контраст и тени (гамма). Возвращает новую карту, исходная не меняется */
 export function adjustDepth(map, o) {
 	const { w, h } = map;
 	const n = w * h;
@@ -318,7 +300,6 @@ export function adjustDepth(map, o) {
 			for (let l = 0; l < lines; l++) {
 				const base = horiz ? l * w : l;
 				let acc = 0;
-				// бегущая сумма по окну 2r+1, края повторяются
 				for (let k = -r; k <= r; k++) acc += src[base + Math.min(len - 1, Math.max(0, k)) * step];
 				for (let k = 0; k < len; k++) {
 					out[base + k * step] = acc / (2 * r + 1);
@@ -327,7 +308,6 @@ export function adjustDepth(map, o) {
 			}
 			return out;
 		};
-		// два прохода по каждой оси дают мягкое, почти гауссово размытие
 		d = box(box(box(box(d, true), false), true), false);
 	}
 	const c = o.contrast ?? 1, b = o.bright || 0, g = o.gamma ?? 1;
@@ -340,7 +320,6 @@ export function adjustDepth(map, o) {
 	return { w, h, data: out };
 }
 
-/** Переносит карту глубины на сетку точек cols x rows (билинейно); out получает по числу на точку */
 export function depthToGrid(map, cols, rows, out) {
 	const { w, h, data } = map;
 	for (let r = 0; r < rows; r++) {

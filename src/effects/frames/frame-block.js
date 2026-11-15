@@ -1,7 +1,3 @@
-// Экспериментальный режим «Раскадровка»: видео раскладывается на кадры, а кадры собираются в блок из точек.
-// Каждый кадр это плоский лист из точек, его цвета берутся из соответствующего момента видео. Листы расставляются по-разному:
-// стопкой (ось времени уходит вглубь), стеной, плёнкой (кадры в ряд) или туннелем.
-
 const LUT = new Float32Array(256);
 for (let i = 0; i < 256; i++) {
 	const c = i / 255;
@@ -15,14 +11,12 @@ export const FRAME_LAYOUTS = [
 	['tunnel', 'Туннель'],
 ];
 
-/** Размер сетки одного кадра по числу точек в кадре и пропорциям видео */
 export function frameGrid(density, aspect) {
 	const cols = Math.max(8, Math.round(Math.sqrt(density * aspect)));
 	const rows = Math.max(8, Math.round(cols / aspect));
 	return { cols, rows };
 }
 
-/** Положение точки листа в кадре k из n. u, v в -0.5..0.5: местные координаты листа (ширина и высота в единицах сцены) */
 function place(layout, k, n, u, v, W, H, depth, out) {
 	const t = n > 1 ? k / (n - 1) : 0.5;
 	let x = 0, y = 0, z = 0;
@@ -45,7 +39,6 @@ function place(layout, k, n, u, v, W, H, depth, out) {
 	out[0] = x; out[1] = y; out[2] = z; out[3] = nx; out[4] = ny; out[5] = nz;
 }
 
-/** Облако точек из кадров: frames это массив Uint8Array RGB размера cols*rows */
 export function buildFrameBlock(frames, cols, rows, aspect, layout = 'stack', depth = 1.6, positionsOnly = false) {
 	const n = frames.length;
 	const per = cols * rows;
@@ -85,7 +78,6 @@ export function buildFrameBlock(frames, cols, rows, aspect, layout = 'stack', de
 	return { positions, normals, colors, count };
 }
 
-/** Один кадр целиком в массив цветов блока: offset это номер первой точки кадра, w это яркость */
 export function writeOneFrame(frame, perFrame, target, firstPoint, w, tint = 0, rgb = null) {
 	let o = firstPoint * 3;
 	if (!tint || !rgb) {
@@ -96,7 +88,6 @@ export function writeOneFrame(frame, perFrame, target, firstPoint, w, tint = 0, 
 		}
 		return;
 	}
-	// подкраска кадра цветом луча или шлейфа: цвет кадра смешивается с заданным, яркость сохраняется
 	const k = 1 - tint;
 	for (let p = 0; p < perFrame * 3; p += 3) {
 		const r = LUT[frame[p]], g = LUT[frame[p + 1]], b = LUT[frame[p + 2]];
@@ -107,7 +98,6 @@ export function writeOneFrame(frame, perFrame, target, firstPoint, w, tint = 0, 
 	}
 }
 
-/** Записывает цвета кадров в уже построенный блок (когда меняются только кадры, а не раскладка) */
 export function writeFrameColors(frames, cols, rows, target, weights = null, stride = 3) {
 	const per = cols * rows;
 	let o = 0;

@@ -1,8 +1,3 @@
-/* Point Bloom: стили.
-   Дизайн-система: графит с холодным нейтральным оттенком + один акцент (тёплый оранжевый).
-   Скругления: 6 (вложенные элементы) / 8 (контролы) / 12 (контейнеры); переключатели и бегунки круглые.
-   Шрифт: Geist (кириллица встроена), числа: тот же Geist с цифрами одной ширины (без перечёркнутых нулей). */
-
 :root {
 	color-scheme: dark;
 	--font: 'Geist', 'Geist Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -27,7 +22,7 @@
 	--accent-text: #f0a066;
 	--accent-soft: rgba(229, 138, 69, 0.14);
 	--accent-line: rgba(229, 138, 69, 0.55);
-	/* заливка ползунка-капсулы до значения: заметнее --accent-soft, но не спорит с подписью внутри */
+
 	--accent-fill: rgba(229, 138, 69, 0.34);
 	--accent-fill-hover: rgba(229, 138, 69, 0.42);
 
@@ -131,7 +126,6 @@ button {
 	display: inline-flex;
 }
 
-/* ---------------------------------------------------------------- каркас */
 #app {
 	container: app / inline-size;
 	display: grid;
@@ -166,7 +160,6 @@ button {
 	display: none;
 }
 
-/* --------------------------------------------------------------- верхняя панель */
 .topbar {
 	display: flex;
 	align-items: center;
@@ -289,7 +282,6 @@ button {
 	font-weight: 600;
 }
 
-/* ---------------------------------------------------------------- кнопки */
 .btn {
 	display: inline-flex;
 	align-items: center;
@@ -369,7 +361,6 @@ button {
 	line-height: 1;
 }
 
-/* левая панель инструментов */
 .toolrail {
 	display: flex;
 	flex-direction: column;
@@ -401,7 +392,6 @@ button {
 	margin: 6px 0;
 }
 
-/* ------------------------------------------------------------- вьюпорт */
 .viewport {
 	position: relative;
 	min-width: 0;
@@ -532,7 +522,6 @@ button {
 	background: var(--bg-hover);
 }
 
-/* пустое состояние */
 .empty-state {
 	position: absolute;
 	inset: 0;
@@ -678,7 +667,6 @@ button {
 	}
 }
 
-/* ------------------------------------------------------------ боковая панель */
 .sidebar {
 	position: relative;
 	display: grid;
@@ -775,7 +763,6 @@ button {
 	background: var(--bg-panel);
 }
 
-/* секции */
 .sec {
 	border-bottom: 1px solid var(--line);
 }
@@ -818,7 +805,6 @@ button {
 	display: none;
 }
 
-/* поля */
 .field {
 	display: grid;
 	grid-template-columns: 112px minmax(0, 1fr);
@@ -1013,11 +999,10 @@ button {
 	clip: rect(0, 0, 0, 0) !important;
 }
 
-/* Glassmorphic custom select dropdown popover: идентичная матовость и прозрачность с остальными плавающими панелями */
 .custom-select-pop {
 	position: fixed;
 	z-index: var(--z-tip, 9999);
-	/* окно вне #app, поэтому значения стекла заданы прямо здесь: матовое и полупрозрачное, как остальные панели */
+
 	background: linear-gradient(180deg, rgba(34, 37, 44, 0.58), rgba(20, 22, 27, 0.62));
 	backdrop-filter: blur(24px) saturate(1.35);
 	-webkit-backdrop-filter: blur(24px) saturate(1.35);
@@ -1321,7 +1306,6 @@ button {
 	font-weight: 550;
 }
 
-/* ------------------------------------------------------------ структура сцены */
 .tree {
 	display: grid;
 	gap: 1px;
@@ -1443,7 +1427,6 @@ button {
 	font-variant-numeric: tabular-nums;
 }
 
-/* ------------------------------------------------------------- материал */
 .slot {
 	display: grid;
 	grid-template-columns: 48px minmax(0, 1fr) auto;
@@ -1527,7 +1510,6 @@ button {
 	display: block;
 }
 
-/* ------------------------------------------------------------------ экспорт */
 .fmt {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
@@ -1654,7 +1636,6 @@ button {
 	font-size: 12px;
 }
 
-/* ----------------------------------------------------------- статус-бар */
 .statusbar {
 	display: flex;
 	align-items: center;
@@ -1696,7 +1677,6 @@ button {
 	color: var(--text);
 }
 
-/* ------------------------------------------------------ тосты, подсказки, диалоги */
 .tooltip {
 	position: fixed;
 	z-index: var(--z-tip);
@@ -1853,7 +1833,6 @@ button {
 	justify-items: center;
 }
 
-/* ------------------------------------------------------------- адаптивность */
 body {
 	font-variant-numeric: tabular-nums;
 }
@@ -1977,7 +1956,6 @@ body {
 	}
 }
 
-/* ------------------------------------------------ экспорт: кнопка с панелью */
 .split-btn {
 	display: inline-flex;
 }
@@ -2021,7 +1999,6 @@ body {
 	overflow-x: hidden;
 }
 
-/* ------------------------------------------------ точки: плитки форм */
 .shape-grid {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2091,7 +2068,6 @@ body {
 	}
 }
 
-/* ---------------------------------------------------- доп. компоненты */
 .swatches {
 	display: grid;
 	grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -2139,7 +2115,6 @@ body {
 	min-width: 0;
 }
 
-/* пустые слоты текстур компактнее, чтобы вкладка не растягивалась */
 .slot.is-empty {
 	grid-template-columns: 34px minmax(0, 1fr) auto;
 	padding: 5px 8px 5px 5px;
@@ -2167,7 +2142,6 @@ body {
 	color: var(--text-dim);
 }
 
-/* ------------------------------------------- карточка устройства, облака точек, веб-экспорт */
 .device-card {
 	display: grid;
 	gap: 10px;
@@ -2372,7 +2346,7 @@ body {
 		display: none;
 	}
 }
-/* ─── Режим «Эффекты» (TouchDesigner Point Cloud) ─────────────────── */
+
 .tabs {
 	padding: 6px 4px 0;
 }
@@ -2400,7 +2374,6 @@ body {
 	padding: 0 2px;
 }
 
-/* ------------------------------------------------ переключатель режимов в шапке */
 .mode-switch {
 	display: inline-flex;
 	padding: 2px;
@@ -2432,7 +2405,6 @@ body {
 	color: var(--accent-ink);
 }
 
-/* ------------------------------------------------ нижняя панель: режимы отображения */
 .vp-dock {
 	position: absolute;
 	left: 50%;
@@ -2495,7 +2467,6 @@ body {
 	right: -6px;
 }
 
-/* ------------------------------------------------ режим «Эффекты» */
 .fx-mode .toolrail {
 	display: none;
 }
@@ -2790,7 +2761,7 @@ body {
 .fx-folder.is-closed .fx-folder-body {
 	display: none;
 }
-/* ряд кнопок в настройках эффекта: действия и готовые настройки */
+
 .fx-btn-row {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
@@ -2813,7 +2784,7 @@ body {
 	background: var(--accent-soft);
 	color: var(--accent-text);
 }
-/* эффекты под открытое видео, фото или анимацию: вверху списка, отделены линией */
+
 .fx-special {
 	margin-bottom: 8px;
 	padding-bottom: 8px;
@@ -3027,7 +2998,7 @@ body {
 }
 .fx-cam canvas {
 	width: 100%;
-	/* высота по пропорциям самого холста: они повторяют кадр камеры (у телефона он вертикальный) */
+
 	height: auto;
 	border-radius: var(--r-ctl);
 	background: #000;
@@ -3063,7 +3034,6 @@ body {
 	flex-wrap: wrap;
 }
 
-/* вкладки панелей: только подписи, чтобы 5-6 плашек помещались в узкую панель */
 .tabs .tab [data-icon],
 .tabs .tab .ic,
 .fx-tabs .tab [data-icon],
@@ -3080,7 +3050,6 @@ body {
 	padding: 0;
 }
 
-/* ------------------------------------------------ свой выбор цвета */
 .color-field {
 	display: flex;
 	align-items: center;
@@ -3155,7 +3124,6 @@ body {
 	outline-offset: 1px;
 }
 
-/* ------------------------------------------------ таймлайн медиа над нижней панелью */
 .media-bar {
 	position: absolute;
 	left: 50%;
@@ -3260,7 +3228,6 @@ body {
 	color: var(--danger);
 }
 
-/* ------------------------------------------------ сетки цветов и форм подстраиваются под ширину панели */
 .shape-grid {
 	grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
 }
@@ -3279,7 +3246,6 @@ body {
 	max-width: 36px;
 }
 
-/* узкая боковая панель: подпись над элементом, а не слева от него, чтобы слайдеры и кнопки не сжимались */
 @container (max-width: 275px) {
 	.field,
 	.field.field-wide {
@@ -3338,7 +3304,6 @@ body {
 	opacity: 1;
 }
 
-/* форма точек и символы: компактный ряд плиток без подписей, название в подсказке */
 .shape-grid.shape-row {
 	grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
 	gap: 5px;
@@ -3371,7 +3336,6 @@ body {
 	letter-spacing: -0.04em;
 }
 
-/* режим эффектов «только сцена»: интерфейс плавно уходит, остаётся вьюпорт и нижняя панель */
 #app {
 	transition: grid-template-rows 0.38s var(--ease);
 }
@@ -3406,7 +3370,6 @@ body {
 	display: none !important;
 }
 
-/* выбор шрифта для текста из точек */
 .font-pick {
 	position: relative;
 }
@@ -3467,7 +3430,6 @@ body {
 	color: var(--text-dim);
 }
 
-/* крестик закрытия в диалогах */
 .dlg-x {
 	position: sticky;
 	top: 0;
@@ -3476,10 +3438,6 @@ body {
 	margin: -10px -10px -34px 0;
 }
 
-/* дорожка анимации по ключам над нижней панелью эффектов */
-/* ============================================================ */
-/* FX-ANIM: Мультитрековый секвенсор анимации (Point Bloom Glass) */
-/* ============================================================ */
 .fx-anim {
 	--fx-head-w: 130px;
 	position: absolute;
@@ -3521,7 +3479,6 @@ body {
 	}
 }
 
-/* Ручка изменения высоты таймлайна */
 .fx-anim-resize-handle {
 	position: absolute;
 	top: 0;
@@ -3552,7 +3509,6 @@ body.is-resizing-h * {
 	user-select: none !important;
 }
 
-/* Поднятие нижней панели режимов эффектов над таймлайном при открытой анимации */
 .fx-mode.fx-anim-active .fx-bar {
 	bottom: calc(var(--fx-anim-h, 245px) + 20px) !important;
 	transition: bottom 0.35s var(--ease);
@@ -3566,7 +3522,6 @@ body.is-resizing-h * {
 	}
 }
 
-/* Плавное скрытие FPS, подсказок и статусных подписей при открытой анимации */
 .statusbar,
 .status-hint,
 .status-stats,
@@ -3587,7 +3542,6 @@ body.is-resizing-h * {
 	transition: opacity 0.32s var(--ease), transform 0.32s var(--ease), visibility 0s linear 0.32s !important;
 }
 
-/* Кнопка запуска секвенсора в нижнем баре */
 .fx-bar .fx-bar-anim-btn {
 	height: 32px;
 	padding: 0 12px;
@@ -3616,7 +3570,6 @@ body.is-resizing-h * {
 	box-shadow: 0 0 14px rgba(229, 138, 69, 0.4);
 }
 
-/* Кнопка быстрого запуска в левой панели эффектов */
 .fx-anim-quick-btn {
 	margin: 8px 10px 10px;
 	width: calc(100% - 20px);
@@ -3645,7 +3598,6 @@ body.is-resizing-h * {
 	border-color: var(--accent);
 }
 
-/* 1. Верхняя панель управления (Header Toolbar) */
 .fx-anim-topbar {
 	display: flex;
 	align-items: center;
@@ -3826,7 +3778,6 @@ body.is-resizing-h * {
 	background: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Меню сценариев и добавления эффекта — стеклянная плашка Point Bloom над кнопкой */
 .fx-anim-menu {
 	position: absolute;
 	top: auto !important;
@@ -3923,7 +3874,6 @@ body.is-resizing-h * {
 	margin: 4px 0;
 }
 
-/* Внутренний контейнер таймлайна с плавным вертикальным скроллом */
 .fx-anim-body {
 	flex: 1;
 	min-height: 0;
@@ -3948,7 +3898,6 @@ body.is-resizing-h * {
 	background: rgba(255, 255, 255, 0.35);
 }
 
-/* Встроенная стеклянная полка сценариев и эффектов (внутри таймлайна, не перекрывает 3D) */
 .fx-anim-shelf {
 	background: rgba(14, 16, 22, 0.78);
 	border: 1px solid rgba(255, 255, 255, 0.1);
@@ -4096,7 +4045,6 @@ body.is-resizing-h * {
 	color: var(--accent);
 }
 
-/* 2. Область дорожек (Stage) */
 .fx-anim-stage {
 	position: relative;
 	display: flex;
@@ -4179,7 +4127,6 @@ body.is-resizing-h * {
 	gap: 2px;
 }
 
-/* Линейка времени */
 .fx-anim-ruler-title {
 	font-size: 11px;
 	color: var(--text-dim);
@@ -4245,7 +4192,6 @@ body.is-resizing-h * {
 	filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
 }
 
-/* Вертикальная линия плейхеда через всю высоту */
 .fx-anim-playhead-line {
 	position: absolute;
 	top: 20px;
@@ -4258,7 +4204,6 @@ body.is-resizing-h * {
 	z-index: 8;
 }
 
-/* Тело дорожек */
 .fx-anim-lane-body {
 	flex: 1;
 	height: 28px;
@@ -4270,7 +4215,6 @@ body.is-resizing-h * {
 	touch-action: none;
 }
 
-/* Дорожка камеры */
 .fx-anim-cam-body {
 	background: rgba(229, 138, 69, 0.04);
 	border-color: rgba(229, 138, 69, 0.12);
@@ -4312,7 +4256,6 @@ body.is-resizing-h * {
 	box-shadow: 0 0 0 2px var(--accent), 0 0 8px rgba(229, 138, 69, 0.6);
 }
 
-/* Блоки эффектов */
 .fx-anim-block {
 	position: absolute;
 	top: 2px;
@@ -4363,7 +4306,6 @@ body.is-resizing-h * {
 	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
-/* Огибающие fade-in и fade-out */
 .fx-anim-fade-in {
 	position: absolute;
 	left: 0;
@@ -4385,7 +4327,6 @@ body.is-resizing-h * {
 	z-index: 1;
 }
 
-/* Ручки изменения размера блока (Handles) */
 .fx-anim-handle {
 	position: absolute;
 	top: 0;
@@ -4422,7 +4363,6 @@ body.is-resizing-h * {
 	right: 4px;
 }
 
-/* Пустой баннер */
 .fx-anim-empty-hint {
 	display: flex;
 	flex-direction: column;
@@ -4453,7 +4393,6 @@ body.is-resizing-h * {
 	padding: 0 8px;
 }
 
-/* 3. Панель параметров выбранного клипа/ключа (Inspector) */
 .fx-anim-inspector {
 	display: flex;
 	align-items: center;
@@ -4569,14 +4508,12 @@ body.is-resizing-h * {
 	border-radius: 6px !important;
 }
 
-/* Кнопка в карточке инспектора эффекта */
 .fx-to-timeline-btn {
 	margin-top: 8px !important;
 	border-radius: 999px !important;
 	font-size: 12px !important;
 }
 
-/* морфинг: виды перехода и подсказка, пока нет второй модели */
 .morph-styles {
 	grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -4596,7 +4533,6 @@ body.is-resizing-h * {
 	font-size: 13px;
 }
 
-/* полоска спектра для выбора частот эффекта */
 .fx-freq {
 	display: grid;
 	gap: 6px;
@@ -4694,17 +4630,11 @@ body.is-resizing-h * {
 	white-space: nowrap;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   Система «Прибор»: строгая техническая стилистика.
-   Один язык выбора (мягкий акцент + контур), насечки вместо круглых бегунков,
-   малые скругления, моноширинные цифры, заголовки капсом.
-   Этот блок идёт последним и перекрывает прежние значения.
-   ═══════════════════════════════════════════════════════════════════════ */
 :root {
 	--r-sm: 3px;
 	--r-ctl: 4px;
 	--r-box: 6px;
-	/* цифры: обычный Geist с равной шириной знаков (у Geist Mono нуль перечёркнут), настоящий моноширинный только для кода */
+
 	--mono: var(--font);
 	--code: 'Geist Mono', 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
 	--h-sm: 24px;
@@ -4713,7 +4643,6 @@ body.is-resizing-h * {
 	--tick: var(--text-faint);
 }
 
-/* вкладки панелей: плашки с иконкой и подписью, выбранная подсвечена мягким акцентом */
 .tabs,
 .fx-tabs {
 	padding: 10px 10px 10px;
@@ -4772,7 +4701,6 @@ body.is-resizing-h * {
 	display: none;
 }
 
-/* переключатели вариантов: выбранный не заливается оранжевым, а выделяется контуром, как вкладки */
 .seg {
 	padding: 2px;
 	gap: 0;
@@ -4791,7 +4719,6 @@ body.is-resizing-h * {
 	font-weight: 600;
 }
 
-/* ползунки: линия с насечками и узкая ручка-рейка, как на приборе */
 .slider {
 	grid-template-columns: minmax(0, 1fr) 62px;
 	gap: 10px;
@@ -4850,7 +4777,6 @@ body.is-resizing-h * {
 	color: var(--text);
 }
 
-/* выключатели: прямоугольные */
 .switch {
 	width: 30px;
 	height: 16px;
@@ -4867,7 +4793,6 @@ body.is-resizing-h * {
 	transform: translateX(14px);
 }
 
-/* заголовки секций и подзаголовки: мелкие, капсом, с линией */
 .sec-head {
 	font-size: 11px;
 	font-weight: 600;
@@ -4899,7 +4824,6 @@ body.is-resizing-h * {
 	font-size: 11px;
 }
 
-/* поля, списки, кнопки: единые высоты и скругления */
 .select {
 	height: var(--h-md);
 	border-radius: var(--r-ctl);
@@ -4919,7 +4843,6 @@ body.is-resizing-h * {
 	border-radius: var(--r-box);
 }
 
-/* поле с ползунком: подпись сверху, шкала на всю ширину панели, значение справа: так точнее попадать в нужное число */
 .field:has(> .field-control > .slider) {
 	grid-template-columns: minmax(0, 1fr);
 	gap: 2px;
@@ -4942,7 +4865,6 @@ body.is-resizing-h * {
 	display: none;
 }
 
-/* ползунок: тонкая линия и светящаяся точка («цветок» из названия), без насечек */
 .range {
 	height: 20px;
 }
@@ -4990,7 +4912,6 @@ body.is-resizing-h * {
 	box-shadow: 0 0 0 1px var(--accent-line), 0 0 10px rgba(229, 138, 69, 0.45);
 }
 
-/* панель эффекта: компактная шапка, сворачиваемый блок звука */
 .fx-insp-head {
 	grid-template-columns: 28px minmax(0, 1fr);
 	gap: 10px;
@@ -5082,7 +5003,6 @@ body.is-resizing-h * {
 	color: var(--text-faint);
 }
 
-/* ползунок: простая точка без свечения и колец */
 .range::-webkit-slider-thumb {
 	width: 12px;
 	height: 12px;
@@ -5111,7 +5031,7 @@ body.is-resizing-h * {
 	background: var(--text);
 	box-shadow: none;
 }
-/* окошко с числом: без рамки, пока на него не наведёшь */
+
 .num-out {
 	background: transparent;
 	border-color: transparent;
@@ -5125,7 +5045,6 @@ body.is-resizing-h * {
 	border-color: var(--accent);
 }
 
-/* экспорт: окно по центру экрана с настройками в две колонки */
 .export-pop {
 	position: fixed;
 	inset: 0;
@@ -5197,7 +5116,6 @@ body.is-resizing-h * {
 	}
 }
 
-/* ───────── полосы прокрутки: тонкие, под стиль сайта ───────── */
 * {
 	scrollbar-width: auto;
 }
@@ -5233,7 +5151,6 @@ body.is-resizing-h * {
 	}
 }
 
-/* выбранный эффект в списке: рамка и фон мягкого оранжевого */
 .fx-layer.is-selected {
 	background: var(--accent-soft);
 	border-color: var(--accent-line);
@@ -5242,7 +5159,6 @@ body.is-resizing-h * {
 	border-color: var(--accent);
 }
 
-/* переключатель режимов: подсветка скользит от кнопки к кнопке */
 .mode-switch {
 	position: relative;
 }
@@ -5268,7 +5184,6 @@ body.is-resizing-h * {
 	transition: color 0.2s;
 }
 
-/* переход между режимами: сцена гаснет и проявляется, панели выезжают */
 .stage canvas.gl {
 	transition: opacity 0.3s var(--ease);
 }
@@ -5309,7 +5224,6 @@ body.is-resizing-h * {
 	animation: ws-in-bar 0.45s var(--ease) 0.08s backwards;
 }
 
-/* левая панель инструментов редактора: значки чуть крупнее прежних (22 px вместо 20), ширина панели прежняя */
 .toolrail {
 	gap: 5px;
 	padding: 11px 0;
@@ -5332,7 +5246,6 @@ body.is-resizing-h * {
 	letter-spacing: 0;
 }
 
-/* список эффектов: ровная сетка. Одинаковые строки, плитка-превью фиксированного размера, выключатель у правого края */
 .fx-left-list,
 .panel {
 	scrollbar-gutter: stable;
@@ -5378,14 +5291,13 @@ body.is-resizing-h * {
 	font-feature-settings: 'tnum' 1, 'zero' 0;
 }
 
-/* пока нет модели, фото или видео: интерфейс заблокирован, доступна только стартовая карточка */
 #app.no-model *:is(.toolrail, .fx-left, .sidebar, .vp-dock, .fx-bar, .fx-hint, .vp-top-right, .mode-switch, #btnExport, #btnUndo, #btnRedo) {
 	opacity: 0.42;
 	filter: grayscale(0.9) brightness(0.92);
 	pointer-events: none;
 	user-select: none;
 }
-/* сцена за стартовой карточкой размыта сильнее, а сама карточка матовее: пока нет модели, внимание только на ней */
+
 #app.no-model .stage canvas.gl { filter: blur(9px) saturate(0.75) brightness(0.85); transform: scale(1.04); transition: filter 0.4s var(--ease), transform 0.4s var(--ease); }
 #app.no-model .empty-card { backdrop-filter: blur(30px) saturate(1.1); -webkit-backdrop-filter: blur(30px) saturate(1.1); }
 .stage canvas.gl { transition: filter 0.4s var(--ease), transform 0.4s var(--ease); }
@@ -5394,21 +5306,17 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	transition: opacity 0.3s var(--ease), filter 0.3s var(--ease);
 }
 
-/* строка состояния съёмки кадров в сцене */
 .fx-cap { position: absolute; left: 14px; bottom: 74px; z-index: 5; padding: 5px 10px; border-radius: 999px; background: rgba(20, 21, 24, 0.72); border: 1px solid var(--line, rgba(255, 255, 255, 0.1)); color: var(--text-dim, #a0a4ab); font-size: 12px; pointer-events: none; backdrop-filter: blur(6px); }
 
-/* ================================================================ плавающий стеклянный интерфейс (оба режима) */
 .fxf-bar { display: none; }
 @container app (min-width: 901px) {
 	.ui-float .workspace, .ui-float .workspace.sidebar-hidden { grid-row: 2; grid-template-columns: minmax(0, 1fr); position: relative; }
 	.ui-float .viewport { grid-column: 1; grid-row: 1; }
 
-	/* верхняя панель плавает над сценой */
 	.ui-float .topbar { position: absolute; top: 10px; left: 12px; right: 12px; height: 46px; z-index: 40; border: 1px solid var(--fxg-line); border-radius: 18px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
 	.ui-float .statusbar { position: absolute; left: 20px; bottom: 10px; z-index: 6; height: auto; padding: 0; background: none; border: 0; pointer-events: none; font-size: 11.5px; color: var(--text-faint); }
 	.fx-mode .status-hint { display: none; }
 
-	/* две стеклянные карточки по краям */
 	.ui-float .fx-left, .ui-float .sidebar { position: absolute; top: 68px; bottom: 20px; z-index: 20; margin: 0; overflow: hidden; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 20px; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05); transition: opacity 0.3s var(--ease), translate 0.28s var(--ease), height 0.3s var(--ease); }
 	.ui-float .fx-left { left: 12px; width: var(--fxl-w, 252px); }
 	.ui-float .sidebar { right: 12px; width: var(--sidebar-w, 300px); grid-template-rows: auto minmax(0, 1fr); }
@@ -5417,7 +5325,6 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	.ui-float .fx-left-head { padding: 4px 16px 8px; }
 	.ui-float .workspace.sidebar-hidden .sidebar { opacity: 0; transform: translateX(14px); }
 
-	/* шапка карточки: ручка, название, сворачивание */
 	.ui-float .fxf-bar { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 8px 0 12px; flex: none; }
 	.fxf-title { flex: 1; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
 	.fxf-toggle { display: grid; place-items: center; width: 26px; height: 26px; border: 0; border-radius: 8px; background: transparent; color: var(--text-dim); cursor: pointer; transition: background 0.15s, transform 0.25s var(--ease); }
@@ -5431,12 +5338,10 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	.ui-float .fx-left-head strong { display: none; }
 	.ui-float .vp-top-right { right: calc(var(--sidebar-w, 300px) + 32px); top: 66px; }
 
-	/* нижние плашки тоже стеклянные */
 	.ui-float .fx-bar, .ui-float .media-bar, .ui-float .fx-anim { background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 18px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
 	.ui-float .fx-bar { bottom: 30px; max-width: calc(100% - 2 * (var(--sidebar-w, 300px) + 40px)); }
 	.ui-float .media-bar { bottom: 82px; width: min(520px, calc(100% - 2 * (var(--sidebar-w, 300px) + 40px))); }
 
-	/* строка подсказок внизу по центру */
 	.ui-float .fx-hint { display: block; }
 }
 .fx-hint { display: none; position: absolute; left: 50%; bottom: 7px; transform: translateX(-50%); z-index: 5; font-size: 11.5px; color: var(--text-faint); white-space: nowrap; pointer-events: none; letter-spacing: 0.01em; }
@@ -5452,21 +5357,19 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	.ui-float .fx-tabs .tab[aria-selected='true'] { background: var(--accent-soft); border-color: var(--accent-line); }
 }
 
-/* контейнер app сам не может получать правила из @container, поэтому его настройки здесь */
 @media (min-width: 901px) {
 	#app.ui-float {
 		position: relative;
 		grid-template-rows: 0 minmax(0, 1fr) 0;
 		--fxg-line: rgba(255, 255, 255, 0.15);
 		--fxg-blur: blur(30px) saturate(1.75) brightness(1.04);
-		/* «жидкое стекло»: плотная тёмная основа, блик в левом верхнем углу и мягкий перелив */
+
 		--fxg-bg: radial-gradient(120% 75% at 0% 0%, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0) 58%), linear-gradient(165deg, rgba(58, 62, 72, 0.74), rgba(24, 26, 32, 0.84) 55%, rgba(30, 33, 40, 0.8));
 		--fxg-shadow: 0 26px 56px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 1.5px 0 rgba(255, 255, 255, 0.26), inset 0 -1px 0 rgba(0, 0, 0, 0.45), inset 1px 0 0 rgba(255, 255, 255, 0.07), inset -1px 0 0 rgba(255, 255, 255, 0.04);
 	}
 	.ui-float .topbar, .ui-float .fx-left, .ui-float .sidebar, .ui-float .fx-bar, .ui-float .media-bar, .ui-float .fx-anim { box-shadow: var(--fxg-shadow); }
 }
 
-/* вариант «Прибор»: прозрачный тёмный фон с лёгким размытием, строгие скругления, без блика, угловых меток и лишних разделителей */
 @media (min-width: 901px) {
 	#app.ui-float {
 		--fxg-line: rgba(255, 255, 255, 0.13);
@@ -5484,7 +5387,6 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	.ui-float .seg, .ui-float .select { border-radius: 5px; }
 }
 
-/* вариант «Матовое»: спокойное стекло с тонкой рамкой и мягкими скруглениями */
 @media (min-width: 901px) {
 	#app.ui-float {
 		--fxg-line: rgba(255, 255, 255, 0.09);
@@ -5503,7 +5405,6 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	.ui-float .fx-tabs .tab { background: rgba(255, 255, 255, 0.05); border-color: transparent; }
 	.ui-float .fx-tabs .tab[aria-selected='true'] { background: rgba(229, 138, 69, 0.14); border-color: rgba(229, 138, 69, 0.4); }
 
-	/* строка состояния отдельной полосой под панелями: панели ей больше не мешают */
 	.ui-float .fx-left, .ui-float .sidebar { bottom: 50px; }
 	.ui-float .fx-bar { bottom: 52px; }
 	.ui-float .media-bar { bottom: 104px; }
@@ -5515,18 +5416,14 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	.ui-float .fx-left, .ui-float .sidebar { bottom: 156px; }
 }
 
-/* ================================================================ мелкие элементы как в макете А: одинаковые на компьютере, планшете и телефоне */
-/* место под полосу прокрутки занимает только настоящая полоса: нет прокрутки, значит содержимое идёт до самого края */
 .ui-float .fx-left-list, .ui-float .panel { scrollbar-gutter: auto; }
 .ui-float .fx-left-list { padding: 0 8px 16px 8px; }
 
-/* выключатели: капсула и белый кружок */
 .ui-float .switch { width: 30px; height: 17px; border-radius: 999px; border: 0; background: rgba(255, 255, 255, 0.16); }
 .ui-float .switch-knob { top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; }
 .ui-float .switch[aria-checked='true'] { background: var(--accent); }
 .ui-float .switch[aria-checked='true'] .switch-knob { transform: translateX(13px); background: #fff; }
 
-/* ползунки: тонкая линия, белая точка с оранжевым ореолом */
 .ui-float .range { height: 18px; }
 .ui-float .range::-webkit-slider-runnable-track { height: 18px; border-radius: 0; background: linear-gradient(90deg, var(--accent) var(--p), rgba(255, 255, 255, 0.16) var(--p)) 0 50% / 100% 3px no-repeat; }
 .ui-float .range::-webkit-slider-thumb { width: 12px; height: 12px; margin-top: 3px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0 0 3px rgba(229, 138, 69, 0.35); }
@@ -5535,7 +5432,6 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 .ui-float .range::-moz-range-progress { height: 3px; border-radius: 2px; background: var(--accent); }
 .ui-float .range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; border: 0; background: #fff; box-shadow: 0 0 0 3px rgba(229, 138, 69, 0.35); }
 
-/* сегменты, поля, выпадающие списки, мелкие кнопки: капсулы */
 .fx-mode .sidebar .seg { border-radius: 999px; background: rgba(255, 255, 255, 0.05); border-color: transparent; }
 .fx-mode .sidebar .seg-btn { border-radius: 999px; border-color: transparent; }
 .fx-mode .sidebar .seg-btn[aria-checked='true'] { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 500; }
@@ -5548,12 +5444,10 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 .ui-float .split-btn .btn { border-radius: 0; }
 .fx-mode .fx-prev { border-radius: 9px; }
 
-/* вкладки Эффект / Форма / Звук / Вид: те же, рамка ровная у всех */
 .ui-float .fx-tabs, .ui-float .fx-tabs.tabs { gap: 6px; padding-inline: 14px; }
 .ui-float .fx-tabs .tab { border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; }
 .ui-float .fx-tabs .tab[aria-selected='true'] { border-color: rgba(229, 138, 69, 0.55); }
 
-/* общие правила для редактора и эффектов */
 @container app (min-width: 901px) {
 	.ui-float:not(.fx-mode) .sidebar { grid-template-rows: auto auto minmax(0, 1fr); }
 	.ui-float .fx-tabs { position: static; }
@@ -5562,13 +5456,13 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	.ui-float .tabs { background: transparent; border-bottom: 0; padding: 4px 12px 10px; gap: 6px; }
 	.ui-float .tabs .tab { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; }
 	.ui-float .tabs .tab[aria-selected='true'] { background: rgba(229, 138, 69, 0.14); border-color: rgba(229, 138, 69, 0.55); color: var(--accent-text); }
-	/* левая панель инструментов и нижняя панель режимов сцены: то же стекло */
+
 	.ui-float .toolrail { position: absolute; left: 12px; top: 68px; z-index: 20; width: auto; padding: 8px 6px; gap: 6px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 14px; box-shadow: var(--fxg-shadow); }
 	.ui-float .toolrail .btn-tool { border-radius: 8px; }
 	.ui-float .vp-dock { bottom: 52px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 14px; box-shadow: var(--fxg-shadow); }
 	.ui-float .dock-btn { border-radius: 8px; }
 	.ui-float .export-card { background: rgba(18, 20, 24, 0.86); backdrop-filter: blur(24px) saturate(1.25); -webkit-backdrop-filter: blur(24px) saturate(1.25); border: 1px solid var(--fxg-line); border-radius: 14px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5); }
-	/* строка состояния мельче */
+
 	.ui-float .statusbar { font-size: 11px; color: var(--text-faint); }
 	.ui-float .statusbar b { font-weight: 400; color: var(--text-dim); }
 }
@@ -5580,7 +5474,6 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 }
 .ui-float .status-stats { display: flex; gap: 14px; }
 
-/* подсказки внизу убраны, нижняя панель опущена */
 .fx-hint { display: none; }
 @container app (min-width: 901px) {
 	.ui-float .status-hint { display: none; }
@@ -5588,9 +5481,9 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	.fx-mode .media-bar { bottom: 90px; }
 	.ui-float .vp-dock { bottom: 36px; }
 	.fx-mode .fx-left, .fx-mode .sidebar, .ui-float .sidebar { bottom: 44px; }
-	/* индикатор выбранного режима в шапке: тоже капсула, а не квадрат */
+
 	.ui-float .mode-switch::before { border-radius: 999px; }
-	/* разделители: у всех линия одной длины и идёт от края до края своей панели */
+
 	.ui-float .rail-sep { width: auto; align-self: stretch; margin: 6px -6px; }
 	.ui-float .dock-sep, .ui-float .fx-bar-sep { height: auto; align-self: stretch; margin: -4px 3px; width: 1px; background: var(--line-strong); }
 	.ui-float .topbar-group { align-self: stretch; height: auto; }
@@ -5600,7 +5493,6 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	.fx-mode .media-bar { bottom: 90px; }
 }
 
-/* ================================================================ экспорт: одна рамка, без лишних линий, форматы плитками */
 .export-card { border: 1px solid var(--line-strong); }
 .export-pop-head { border-bottom: 0; padding: 16px 16px 4px 24px; }
 .export-pop-head strong { font-size: 16px; letter-spacing: 0; }
@@ -5616,7 +5508,6 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 .fmt .seg-btn[aria-checked='true'] { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
 .fmt-desc { border: 0; background: rgba(255, 255, 255, 0.04); border-radius: 8px; }
 
-/* режимы отображения внизу редактора: мягче и крупнее (на телефоне и планшете так же) */
 .ui-float .vp-dock { padding: 6px 8px; gap: 4px; border-radius: 16px; }
 .ui-float .vp-dock .dock-btn, .ui-float #modeBar .seg-btn { width: 40px; height: 38px; border-radius: 12px; }
 .ui-float #modeBar .seg-btn[aria-checked='true'] { background: var(--accent-soft); border-color: transparent; box-shadow: inset 0 0 0 1px var(--accent-line); color: var(--accent-text); }
@@ -5624,7 +5515,6 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 .ui-float .toolrail .btn-tool { border-radius: 10px; }
 .ui-float .export-card { background: #14171b; backdrop-filter: none; -webkit-backdrop-filter: none; }
 
-/* прокрутка правой панели целиком: вкладки не прилипают, последний пункт не упирается в край */
 .fxf-scroll { display: contents; }
 @container app (min-width: 901px) {
 	.ui-float .sidebar { grid-template-rows: auto minmax(0, 1fr) !important; }
@@ -5633,16 +5523,14 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	.ui-float .fxf-scroll .panels, .ui-float .fxf-scroll .panel { overflow: visible; height: auto; min-height: 0; }
 }
 
-/* ================================================================ камера рук, «скрыть интерфейс», ритм отступов, крупнее текст экспорта */
 @keyframes fxf-in { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
 @container app (min-width: 901px) {
-	/* окно с камерой и строка состояния съёмки не лежат под панелями */
+
 	.fx-mode .fx-cam { left: calc(var(--fxl-w, 252px) + 30px); bottom: 36px; width: 232px; padding: 8px; gap: 8px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 14px; box-shadow: var(--fxg-shadow); animation: fxf-in 0.34s var(--ease); }
 	.fx-mode .fx-cam canvas { border-radius: 10px; }
 	.fx-mode .fx-cam-text { padding: 0 4px 2px; font-size: 12px; }
 	.fx-mode .fx-cap { left: 50%; bottom: 140px; transform: translateX(-50%); background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); box-shadow: var(--fxg-shadow); animation: fxf-in 0.3s var(--ease); }
 
-	/* «только сцена»: панели уезжают к краям и гаснут, при возврате так же плавно появляются */
 	.ui-float .topbar, .ui-float .fx-left, .ui-float .sidebar, .ui-float .statusbar, .ui-float .toolrail { transition: opacity 0.38s var(--ease), transform 0.5s var(--ease), height 0.3s var(--ease), visibility 0s linear 0s; }
 	.fx-focus .topbar, .fx-focus .fx-left, .fx-focus .sidebar, .fx-focus .statusbar { transition: opacity 0.3s var(--ease), transform 0.45s var(--ease), visibility 0s linear 0.3s; }
 	.fx-focus .topbar { transform: translateY(-24px); }
@@ -5651,11 +5539,9 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	.fx-focus .statusbar { transform: translateY(14px); }
 	.fx-mode .fx-bar { transition: bottom 0.4s var(--ease); }
 
-	/* вкладки: одинаковый отступ сверху и снизу, у всех режимов */
 	.ui-float .fx-tabs, .ui-float .fx-tabs.tabs, .ui-float .tabs { padding: 14px 14px 2px; }
 }
 
-/* окно экспорта: заголовки и подписи крупнее */
 .export-pop-head strong { font-size: 19px; font-weight: 600; }
 .export-card .sec-head { font-size: 12.5px; letter-spacing: 0.08em; }
 .export-card .field-label, .export-card .switch-label { font-size: 14px; }
@@ -5673,7 +5559,6 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	.ui-float.fx-focus .vp-top-right { right: 18px; top: 16px; }
 }
 
-/* ================================================================ окно камеры: двигается и масштабируется; панель анимации в новом стиле */
 .fx-cam { cursor: grab; touch-action: none; }
 .fx-cam.is-dragging { cursor: grabbing; animation: none !important; }
 .fx-cam canvas { pointer-events: none; }
@@ -5687,10 +5572,9 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 @container (max-width: 470px) { .fx-anim-hint { display: none; } }
 .fx-mode .fx-cam { z-index: 25; }
 
-/* ================================================================ секвенсор анимации: единая типографика и формы под остальной интерфейс */
 .fx-mode .fx-anim { --seq-text: 12px; --seq-small: 11px; background: rgba(18, 20, 24, 0.86); border-radius: 16px; padding: 10px 16px 12px; font-family: var(--font); }
 .fx-mode .fx-anim .btn, .fx-mode .fx-anim .btn-label, .fx-mode .fx-anim label, .fx-mode .fx-anim input { font-family: var(--font); }
-/* шапка: счёт времени крупнее, остальное одним размером */
+
 .fx-mode .fx-anim-t-cur { font-size: 14px; font-weight: 500; color: var(--text); }
 .fx-mode .fx-anim-t-sep, .fx-mode .fx-anim-t-total { font-size: var(--seq-text); color: var(--text-faint); }
 .fx-mode .fx-anim-zoom-val { font-size: var(--seq-small); color: var(--text-dim); min-width: 22px; text-align: center; }
@@ -5698,20 +5582,20 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 .fx-mode .fx-anim .btn-sm { border-radius: 999px; height: 30px; padding-inline: 14px; }
 .fx-mode .fx-anim .fx-anim-dur, .fx-mode .fx-anim-insp-field .num-in { height: 28px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); border: 0; font-size: var(--seq-text); font-variant-numeric: tabular-nums; }
 .fx-mode .fx-anim-dur-unit, .fx-mode .fx-anim-insp-unit { font-size: var(--seq-small); color: var(--text-faint); }
-/* линейка и дорожки */
+
 .fx-mode .fx-anim-track-label { font-size: var(--seq-small); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
 .fx-mode .fx-anim-lane-name { font-size: var(--seq-text); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text); }
 .fx-mode .fx-anim-tick-label { font-size: var(--seq-small); color: var(--text-faint); font-variant-numeric: tabular-nums; }
 .fx-mode .fx-anim-block { border-radius: 8px; }
 .fx-mode .fx-anim-block-title { font-size: var(--seq-text); font-weight: 500; }
 .fx-mode .fx-anim-block-time { font-size: var(--seq-small); color: rgba(255, 255, 255, 0.6); }
-/* панель свойств выбранного блока */
+
 .fx-mode .fx-anim-inspector { gap: 14px; }
 .fx-mode .fx-anim-insp-field { font-size: var(--seq-text); gap: 6px; }
 .fx-mode .fx-anim-insp-badge { border-radius: 999px; font-size: var(--seq-text); font-weight: 500; }
 .fx-mode .fx-anim-insp-val { font-size: var(--seq-text); font-variant-numeric: tabular-nums; min-width: 32px; }
 .fx-mode .fx-anim-insp-actions .btn-icon { border-radius: 50%; }
-/* полки со сценариями и слоями */
+
 .fx-mode .fx-anim-shelf-title { font-size: 13px; font-weight: 600; letter-spacing: 0; }
 .fx-mode .fx-anim-shelf-hint { font-size: var(--seq-small); }
 .fx-mode .fx-anim-shelf-card { border-radius: 12px; }
@@ -5719,15 +5603,14 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 .fx-mode .fx-anim-shelf-card-hint { font-size: var(--seq-small); }
 .fx-mode .fx-anim-shelf-chip { font-size: var(--seq-text); border-radius: 999px; }
 .fx-mode .fx-anim-empty-text { font-size: var(--seq-text); color: var(--text-dim); }
-/* магнит: включённое состояние как у остальных переключателей */
+
 .fx-mode .fx-anim .fx-anim-snap { border-radius: 50%; }
 .fx-mode .fx-anim .fx-anim-snap.is-active { background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--accent-line); }
-/* при открытом секвенсоре боковые карточки не заезжают под нижнюю панель кнопок */
+
 @container app (min-width: 901px) and (max-width: 1360px) {
 	.fx-mode.fx-anim-active .fx-left, .fx-mode.fx-anim-active .sidebar { bottom: calc(var(--fx-anim-h, 245px) + 76px); }
 }
 
-/* ================================================================ секвенсор: панель свойств ползунками, линии до краёв, без лишнего фона, свой скролл */
 .fx-mode .fx-anim-insp-badge, .fx-mode .fx-anim-insp-field .fx-anim-insp-badge { display: none; }
 .fx-mode .fx-anim-topbar { margin-inline: -16px; padding-inline: 16px; padding-bottom: 8px; }
 .fx-mode .fx-anim-inspector { margin-inline: -16px; padding: 10px 16px 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 8px 28px; align-items: center; }
@@ -5748,7 +5631,7 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 .fx-mode .fx-anim-body::-webkit-scrollbar-thumb:hover { background: var(--text-faint); background-clip: padding-box; }
 .fx-mode .fx-anim-body::-webkit-scrollbar-thumb:active { background: var(--accent); background-clip: padding-box; }
 @supports (-moz-appearance: none) { .fx-mode .fx-anim-body { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; } }
-/* боковые карточки тянутся до самого таймлайна; под нижнюю панель кнопок отступают только в узких окнах */
+
 @container app (min-width: 901px) {
 	.fx-mode.fx-anim-active .fx-left, .fx-mode.fx-anim-active .sidebar { bottom: calc(var(--fx-anim-h, 245px) + 26px); }
 }
@@ -5756,12 +5639,10 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 	.fx-mode.fx-anim-active .fx-left, .fx-mode.fx-anim-active .sidebar { bottom: calc(var(--fx-anim-h, 245px) + 76px); }
 }
 
-/* время на таймлайне не прилипает при прокрутке; кнопка камеры в шапке */
 .fx-mode .fx-anim-ruler-row { position: static; }
 .fx-mode .fx-anim .fx-anim-cam-btn .btn-label { font-size: 12px; }
 .fx-mode .fx-anim .fx-anim-cam-btn svg { color: var(--accent); }
 
-/* ================================================================ шкала времени как в профессиональном редакторе, зум и спокойная кнопка «Анимация» */
 .fx-anim-stage { overflow-x: auto; overflow-y: hidden; }
 .fx-anim-lanes-scroll { overflow: visible; }
 .fx-anim-stage .fx-anim-track-label { position: sticky; left: 0; z-index: 12; background: #15171c; }
@@ -5779,18 +5660,16 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 .fx-mode .fx-anim-tick-label.is-end { left: auto !important; right: 5px !important; color: var(--accent-text); }
 .fx-mode .fx-anim-needle-tag { position: absolute; top: 4px; left: 7px; padding: 1px 6px; border-radius: 999px; background: #fff; color: #14161b; font: 600 11px var(--font); font-variant-numeric: tabular-nums; white-space: nowrap; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); }
 .fx-mode .fx-anim-playhead-line { top: 26px; }
-/* кнопка «Анимация» в нижней панели: спокойная, без оранжевой заливки */
+
 .fx-bar .fx-bar-anim-btn { background: rgba(255, 255, 255, 0.06); border: 1px solid transparent; color: var(--text-dim); }
 .fx-bar .fx-bar-anim-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: transparent; color: var(--text); }
 .fx-bar .fx-bar-anim-btn.is-active { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.18); color: var(--text); box-shadow: none; }
 .fx-bar .fx-bar-anim-btn.is-active svg { color: var(--accent); }
-/* строки шкалы шире окна при зуме: тогда подписи дорожек остаются на месте у левого края */
+
 .fx-anim-stage .fx-anim-lanes-scroll { width: calc(var(--fx-head-w, 130px) + (100% - var(--fx-head-w, 130px)) * var(--fx-anim-zoom, 1)); }
 
-/* шкала не сжимается в колонке: иначе высота таймлайна не растёт, а вертикальная прокрутка не доходит до родителя */
 .fx-anim-stage { flex: 0 0 auto; }
 
-/* ================================================================ секвенсор: чистая шкала без лишних подсветок, засечек и скролл-бара */
 .fx-mode .fx-anim { background: #14171b; }
 .fx-anim-stage .fx-anim-track-label, .fx-mode .fx-anim-ruler-title { background: #14171b; box-shadow: none; }
 .fx-anim-stage { scrollbar-width: none; }
@@ -5799,7 +5678,7 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 .fx-mode .fx-anim-playhead-needle { box-shadow: none; }
 .fx-mode .fx-anim-playhead-needle::before { filter: none; }
 .fx-mode .fx-anim-head { box-shadow: none; }
-/* блоки эффектов: вход и выход мягкими скосами без пунктирных линий, ручки только на самом краю и только при наведении */
+
 .fx-mode .fx-anim-fade-in { border-right: 0; background: linear-gradient(to right bottom, rgba(20, 23, 27, 0.35) 50%, transparent 50%); }
 .fx-mode .fx-anim-fade-out { border-left: 0; background: linear-gradient(to left bottom, rgba(20, 23, 27, 0.35) 50%, transparent 50%); }
 .fx-mode .fx-anim-handle { width: 7px; }
@@ -5809,12 +5688,11 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 .fx-mode .fx-anim-handle.is-left::after { left: 2px; }
 .fx-mode .fx-anim-handle.is-right::after { right: 2px; }
 .fx-mode .fx-anim-block.is-sel { background: rgba(229, 138, 69, 0.34); border-color: rgba(255, 255, 255, 0.45); box-shadow: none; }
-/* длина анимации: «с» стоит вплотную к числу */
+
 .fx-mode .fx-anim-dur-box { gap: 2px; padding: 0 11px 0 4px; background: rgba(255, 255, 255, 0.06); }
 .fx-mode .fx-anim .fx-anim-dur { width: 28px !important; padding: 0 !important; text-align: right !important; background: transparent !important; }
 .fx-mode .fx-anim-dur-unit { font-size: 12px; color: var(--text-dim); }
 
-/* ================================================================ секвенсор: матовая секция, у блоков своя плотность; «с» вплотную к числу */
 .fx-mode .fx-anim { background: rgba(19, 21, 26, 0.9); backdrop-filter: blur(34px) saturate(1.3); -webkit-backdrop-filter: blur(34px) saturate(1.3); border-color: rgba(255, 255, 255, 0.1); }
 .fx-mode .fx-anim .fx-anim-topbar { background: rgba(255, 255, 255, 0.025); border-radius: 12px 12px 0 0; }
 .fx-mode .fx-anim .fx-anim-shelf { background: rgba(14, 16, 20, 0.55); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-color: rgba(255, 255, 255, 0.08); }
@@ -5826,7 +5704,6 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 .fx-mode .fx-anim .fx-anim-dur::-webkit-inner-spin-button, .fx-mode .fx-anim .fx-anim-dur::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .fx-mode .fx-anim-dur-unit { font-size: 13px; color: var(--text-dim); }
 
-/* ================================================================ секвенсор: свои кнопки секунд, без лишней плашки под управлением, чуть прозрачнее */
 .fx-mode .fx-anim { background: rgba(19, 21, 26, 0.82); }
 .fx-mode .fx-anim .fx-anim-topbar { background: none; border-radius: 0; }
 .fx-mode .fx-anim-dur-box { padding-right: 6px; }
@@ -5835,11 +5712,10 @@ html.perf-lite #app.no-model .stage canvas.gl { filter: brightness(0.8); transfo
 .fx-anim-step:hover { background: rgba(255, 255, 255, 0.1); color: var(--text); }
 .fx-anim-step:active { background: var(--accent-soft); color: var(--accent-text); }
 .fx-anim-step svg { width: 10px; height: 10px; }
-/* родные стрелки числовых полей на всём сайте скрыты: вместо них свои кнопки или ввод с клавиатуры */
+
 input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
-/* поле длины: компактная капсула, число, «с» и кнопки на одной линии */
 .fx-mode .fx-anim .fx-anim-dur-box { display: inline-flex; align-items: center; gap: 0; height: 32px; padding: 0 5px 0 13px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); }
 .fx-mode .fx-anim .fx-anim-dur { line-height: 1; font-size: 13px !important; height: 100% !important; align-self: stretch; }
 .fx-mode .fx-anim .fx-anim-dur-unit { margin: 0 0 0 3px; font-size: 13px; line-height: 1; color: var(--text-dim); }
@@ -5848,7 +5724,6 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .fx-mode .fx-anim .fx-anim-dur-box { height: 28px; }
 .fx-mode .fx-anim .fx-anim-step { height: 12px; }
 
-/* ================================================================ правая панель подстраивается по высоте под свои настройки */
 .ui-float .sidebar { --sb-bottom: 50px; }
 @container app (min-width: 901px) and (max-width: 1250px) { .ui-float .sidebar { --sb-bottom: 156px; } }
 @container app (min-width: 901px) { .fx-mode.fx-anim-active .sidebar { --sb-bottom: calc(var(--fx-anim-h, 245px) + 26px); } }
@@ -5859,13 +5734,11 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 	.ui-float .fxf-scroll { flex: 0 1 auto; min-height: 0; }
 }
 
-/* низ правой панели: без хвостовой линии и пустого места, карточка заканчивается на последней настройке */
 @container app (min-width: 901px) {
 	.ui-float .fxf-scroll::after { height: 0; }
 	.ui-float .fxf-scroll { margin-bottom: -1px; }
 }
 
-/* ================================================================ плавное открытие сайта */
 .boot-inner { display: grid; justify-items: center; gap: 22px; color: #e8ebef; }
 .boot-mark { animation: boot-pulse 1.8s ease-in-out infinite; }
 .boot-bar { width: 116px; height: 2px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
@@ -5886,11 +5759,10 @@ html.booted .vp-dock, html.booted .fx-bar, html.booted .statusbar { animation: b
 html.booted .stage, html.booted .empty-state { animation: boot-fade 0.9s ease 0.1s backwards; }
 @media (prefers-reduced-motion: reduce) { .boot-mark, .boot-bar i, html.booted * { animation: none !important; } #boot { transition: opacity 0.2s linear; } }
 @container app (min-width: 901px) { .ui-float .fxf-scroll .panel { padding-bottom: 0; } }
-/* диалог «Как пользоваться»: прокручивается только внутренняя часть, снаружи второй полосы нет */
+
 .dlg { overflow: hidden; }
 .dlg-inner { max-height: calc(var(--vh) - 50px); }
 
-/* ================================================================ звук: управление реакцией эффектов прямо во вкладке */
 .fx-react-card { display: grid; gap: 8px; padding: 10px 12px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.035); }
 .fx-react-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .fx-react-name { padding: 0; border: 0; background: none; color: var(--text); font: 600 13px var(--font); cursor: pointer; text-align: left; }
@@ -5898,28 +5770,23 @@ html.booted .stage, html.booted .empty-state { animation: boot-fade 0.9s ease 0.
 .fx-react-off { width: 24px !important; height: 24px !important; color: var(--text-faint); }
 .fx-react-off:hover { color: var(--text); }
 
-/* ================================================================ подсказки в стиле сайта */
 .tooltip { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font: 500 12px/1.35 var(--font); border-radius: 10px; background: rgba(20, 22, 27, 0.92); backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3); color: var(--text); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45); max-width: 300px; transform: translateY(3px); transition: opacity 0.14s var(--ease), transform 0.18s var(--ease); }
 .tooltip.is-on { transform: none; }
 .tooltip[hidden] { display: none; }
 .tip-text { min-width: 0; }
 .tip-key { flex: none; padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-dim); font: 500 11px var(--font); letter-spacing: 0.02em; }
 
-/* окно загрузки: плавно проявляется и гаснет, без резкого затемнения и размытия сцены */
 .busy { opacity: 0; backdrop-filter: none; background: color-mix(in srgb, var(--bg-app) 38%, transparent); transition: opacity 0.26s var(--ease); }
 .busy.is-on { opacity: 1; }
 .busy[hidden] { display: none; }
 
-/* ================================================================ глубина: карта и статус в панели эффекта */
 .fx-depth-box { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.035); }
 .fx-depth-map { width: 100%; height: auto; max-height: 150px; object-fit: contain; border-radius: 8px; background: #000; image-rendering: auto; }
 .fx-depth-stat { font-size: 12px; line-height: 1.45; color: var(--text-dim); }
 
-/* стартовая карточка уходит плавно */
 .empty-state { transition: opacity 0.32s ease; }
 .empty-state.is-leaving { opacity: 0; pointer-events: none; }
 
-/* ================================================================ экспорт: матовое полупрозрачное окно, форматы плитками, параметры справа, кнопка внизу */
 .export-pop { background: rgba(6, 8, 11, 0.4); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .export-card, .ui-float .export-card {
 	width: min(1040px, 100%);
@@ -5959,7 +5826,6 @@ html.booted .stage, html.booted .empty-state { animation: boot-fade 0.9s ease 0.
 	.export-card .export-cta { flex-direction: column; align-items: stretch; }
 }
 
-/* ================================================================ лёгкий режим для слабых видеокарт: стекло без тяжёлых фильтров, при просадке совсем плоское */
 html.perf-lite #app.ui-float { --fxg-blur: blur(10px); }
 html.perf-flat #app.ui-float { --fxg-blur: none; --fxg-bg: rgba(19, 21, 26, 0.92); }
 html.perf-lite .export-pop { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(6, 8, 11, 0.55); }
@@ -5967,7 +5833,6 @@ html.perf-lite .export-card, html.perf-lite .ui-float .export-card { backdrop-fi
 html.perf-flat .export-card, html.perf-flat .ui-float .export-card, html.perf-flat .empty-card, html.perf-flat .popover, html.perf-flat .dlg { backdrop-filter: none; -webkit-backdrop-filter: none; background: #15181d; }
 html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px); }
 
-/* окно экспорта плотнее и матовее: сквозь него сцена почти не читается, остаётся только мягкий свет */
 .export-pop, html.perf-lite .export-pop { background: rgba(6, 8, 11, 0.45); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .export-card, .ui-float .export-card, html.perf-lite .export-card, html.perf-lite .ui-float .export-card {
 	background: linear-gradient(180deg, rgba(32, 35, 42, 0.8), rgba(20, 22, 27, 0.84));
@@ -5975,12 +5840,10 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 	-webkit-backdrop-filter: blur(28px) saturate(1.1);
 }
 
-/* анимация персонажа */
 .anim-row { display: flex; align-items: center; gap: 10px; padding: 2px 0 6px; }
 .anim-time { flex: 1; min-width: 0; }
 .anim-play { flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-text); }
 
-/* дорожка персонажа на таймлайне */
 .fx-anim-char-body { position: relative; height: auto; min-height: 26px; cursor: ew-resize; }
 .fx-anim-char-canvas { display: block; width: 100%; border-radius: 6px; }
 .fx-anim-char-mark { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, 0.7); pointer-events: none; }
@@ -5990,7 +5853,6 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 .fx-anim-char-lane .fx-anim-track-label { align-self: stretch; height: auto; min-height: 30px; }
 .fx-anim-char-lane .fx-anim-lane-body { padding: 3px 0; }
 
-/* ================================================================ телефоны и планшеты: сцена сверху, панель настроек нижним листом */
 .sheet-handle { display: none; }
 @media (max-width: 900px) {
 	#app { grid-template-rows: 44px minmax(0, 1fr) 0; }
@@ -6005,9 +5867,9 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 		transition: grid-template-rows 0.28s var(--ease);
 	}
 	.workspace.dragging { transition: none !important; }
-	/* сцена на весь экран и под листом: лист выдвигается поверх неё, а сама сцена не меняет размер (раньше при каждом движении листа она пересчитывалась и масштабировалась) */
+
 	#viewport { grid-area: 1 / 1 / 3 / 2; min-height: 0; }
-	/* инструменты плавают поверх сцены слева сверху */
+
 	.toolrail { position: absolute; z-index: 14; left: 8px; top: 8px; width: 44px; height: auto; max-height: calc(var(--vh) - 44px - var(--sheet-h, 98px) - 16px); overflow-y: auto; flex-direction: column; padding: 4px; gap: 2px; border: 1px solid var(--line); border-radius: 14px; background: rgba(18, 20, 24, 0.82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); scrollbar-width: none; }
 	.fx-mode .toolrail { display: none; }
 	.sidebar, .workspace.sidebar-hidden .sidebar {
@@ -6060,13 +5922,12 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 	.sheet-switch button:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
 	.sheet-switch button.is-on { background: var(--accent); color: var(--accent-ink); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35); font-weight: 600; }
 	.fx-left-head { display: none; }
-	/* нижняя панель эффектов и режимы вида живут над листом, шире экрана не выходят */
-	/* нижние плашки стоят над листом и едут вместе с его краем */
+
 	.fx-bar, .vp-dock { max-width: calc(100% - 16px); overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; bottom: calc(var(--sheet-h, 98px) + 8px); transition: bottom 0.28s var(--ease); }
 	.workspace.dragging .fx-bar, .workspace.dragging .vp-dock, .workspace.dragging .media-bar { transition: none; }
 	.fx-mode .fx-anim { display: none !important; }
 	.media-bar { max-width: calc(100% - 16px); }
-	/* стартовая карточка и окно экспорта по размеру экрана */
+
 	.empty-state { padding: 12px 12px 12px 62px; }
 	.empty-card { padding: 18px 16px 16px; }
 	.empty-card .empty-text { font-size: 13px; }
@@ -6094,18 +5955,15 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 	}
 }
 
-/* панель клипа внизу таймлайна: без фоновой полосы и рамки */
 .fx-anim-inspector, .fx-mode .fx-anim-inspector { background: transparent !important; border: 0 !important; box-shadow: none !important; }
-/* отметка времени персонажа с точкой сверху */
+
 .fx-anim-char-mark::before { content: ''; position: absolute; top: -3px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px rgba(255, 255, 255, 0.9); }
 
-/* дорожка персонажа: название клипа под заголовком, без отдельного бегунка */
 .fx-anim-char-mark { display: none !important; }
 .fx-anim-char-names { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
 .fx-anim-char-sub { font-size: 11px; font-weight: 400; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; }
 .fx-anim-char-body { cursor: pointer; }
 
-/* ------------------------------------------------ управление анимацией модели */
 .anim-bar { width: min(640px, calc(100% - 140px)); }
 .anim-bar .mb-seek { flex: 1; min-width: 60px; }
 .anim-settings { display: flex; align-items: center; gap: 6px; flex: none; }
@@ -6120,17 +5978,14 @@ html.perf-lite .fx-bar, html.perf-lite .media-bar { backdrop-filter: blur(10px);
 	.anim-bar .mb-seek { order: 5; flex-basis: 100%; }
 }
 
-/* разделители внутри стеклянных блоков такие же прозрачные, как рамки блоков: непрозрачная линия просвечивала тёмной полосой */
 .ui-float .sidebar, .ui-float .fx-left, .ui-float .fx-bar, .ui-float .media-bar, .ui-float .fx-anim, .ui-float .topbar, .ui-float .popover { --line: var(--fxg-line); }
 
-/* перетаскивание эффекта на таймлайн */
 .fx-anim.is-drop { outline: 2px dashed var(--accent); outline-offset: -4px; }
 .is-fx-dragging .fx-anim:not([hidden]) { box-shadow: 0 0 0 2px var(--accent-soft, rgba(229, 138, 69, 0.4)); }
 .anim-settings .as-speed { min-width: 44px; height: 28px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.05); color: var(--text); font: inherit; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
 .anim-settings .as-speed:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--accent); }
 .anim-settings .as-speed:active { transform: scale(0.96); }
 
-/* ручки изменения размера: тонкий скруглённый грип по центру края, а не оранжевая линия во всю высоту */
 .sidebar-resizer::after {
 	top: 50%;
 	bottom: auto;
@@ -6169,33 +6024,29 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 	box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
-/* настройки не уже 280 px, это шире списка эффектов слева (252 px) */
 @container app (min-width: 901px) {
 	.ui-float .sidebar { width: max(280px, var(--sidebar-w, 300px)); }
 }
 
-/* настройки выключенного эффекта приглушены: их можно менять заранее, но видно, что эффект сейчас не работает */
 .fx-insp { transition: opacity 0.2s var(--ease, ease), filter 0.2s var(--ease, ease); }
 .fx-insp.is-off { opacity: 0.45; filter: grayscale(0.85); }
 .fx-insp.is-off:hover, .fx-insp.is-off:focus-within { opacity: 0.7; }
 
-/* меню «Сетка, оси, каркас» открывается вверх и лежит поверх полосы анимации и таймлайна, а не прячется под ними */
 .vp-dock { z-index: 30; }
 #overlayPop { min-width: 270px; }
-/* полоски между кнопками слева и в нижней панели такие же прозрачные, как рамки блоков */
+
 .ui-float .toolrail, .ui-float .vp-dock, .ui-float .fx-cam, .ui-float .export-pop, .ui-float .export-card { --line: var(--fxg-line); }
 .ui-float .rail-sep, .ui-float .dock-sep { background: var(--fxg-line); opacity: 1; }
 .ui-float .fx-bar-sep { background: var(--fxg-line); }
 
-/* ширина боковой панели ограничена: не меньше 280 и не больше 420 px (и не больше 38% окна), чтобы она не занимала пол-экрана */
 @container app (min-width: 901px) {
 	.ui-float .sidebar { width: clamp(280px, var(--sidebar-w, 300px), min(420px, 38vw)); }
-	/* нижние панели (режимы, полоса анимации, видео, панель эффектов) живут в свободной области между левой и правой панелями и не наезжают на настройки */
+
 	.ui-float .viewport { --lft-res: 60px; --sb-res: calc(clamp(280px, var(--sidebar-w, 300px), min(420px, 38vw)) + 24px); }
 	.ui-float.fx-mode .viewport { --lft-res: calc(var(--fxl-w, 252px) + 24px); }
 	.ui-float .workspace.sidebar-hidden .viewport { --sb-res: 0px; }
 	.ui-float.fx-focus .viewport { --lft-res: 0px; --sb-res: 0px; }
-	/* панели по центру окна; ширина симметрична, чтобы не заходить ни на левую, ни на правую панель */
+
 	.ui-float .vp-dock, .ui-float .fx-bar, .ui-float .media-bar, .ui-float .anim-bar, .ui-float .fx-hint { left: 50%; }
 	.ui-float .media-bar { width: min(520px, calc(100% - 2 * max(var(--lft-res), var(--sb-res)))); min-width: min(360px, calc(100% - 24px)); }
 	.ui-float .anim-bar { width: min(640px, calc(100% - 2 * max(var(--lft-res), var(--sb-res)))); min-width: min(360px, calc(100% - 24px)); }
@@ -6203,7 +6054,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 }
 .shape-grid.shape-six { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 
-/* меню над нижними панелями выглядят как остальные панели сайта: то же стекло, размытие, рамка, скругление и тень */
 .ui-float #overlayPop, .ui-float .fx-bg-pop, .ui-float .fx-rec-pop {
 	z-index: 50;
 	background: var(--fxg-bg);
@@ -6218,7 +6068,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-bg-title { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
 .fx-bg-chip { border-color: rgba(255, 255, 255, 0.16); }
 
-/* окно записи: заголовок, три строки «подпись сверху, выбор под ней», выключатель звука и главная кнопка; ничего лишнего */
 .fx-rec-pop { width: 272px; max-width: calc(100% - 16px); display: flex; flex-direction: column; gap: 12px; }
 .ui-float .fx-rec-pop { padding: 14px; border-radius: 16px; }
 .fx-rec-pop[hidden] { display: none !important; }
@@ -6248,7 +6097,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 	min-width: 44px;
 }
 
-/* панели не выделяются случайно при перетаскивании ползунков и кликах по подписям: выделяется текст только в полях ввода */
 .sidebar, .fx-left, .fx-bar, .fx-anim, .topbar, .toolrail, .vp-dock, .media-bar, .anim-bar, #overlayPop, .fx-bg-pop, .fx-rec-pop {
 	-webkit-user-select: none;
 	user-select: none;
@@ -6261,7 +6109,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .range:focus:not(:focus-visible), .switch:focus:not(:focus-visible), .btn:focus:not(:focus-visible), .tab:focus:not(:focus-visible), .fx-layer-head:focus:not(:focus-visible) { outline: none; box-shadow: none; }
 ::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); color: inherit; }
 
-/* уведомления: то же стекло, что у панелей сайта, аккуратный отступ от верхней панели, значок в цветном кружке */
 .toasts {
 	top: 74px;
 	gap: 10px;
@@ -6296,7 +6143,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 	.toasts { top: 62px; }
 }
 
-/* значок в уведомлении без круглой подложки */
 .toast .ic {
 	width: auto;
 	height: auto;
@@ -6312,7 +6158,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .toast { align-items: flex-start; }
 .toast .ic { margin-top: -1px; }
 
-/* ------------------------------------------------ секвенсор: метки, рабочая область, выбор нескольких блоков, меню */
 .fx-anim-work { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--accent) 14%, transparent); border-top: 2px solid var(--accent); z-index: 2; pointer-events: none; }
 .fx-anim-work[hidden] { display: none; }
 .fx-anim-work-h { position: absolute; top: -2px; bottom: 0; width: 8px; background: color-mix(in srgb, var(--accent) 70%, transparent); border-radius: 3px; cursor: ew-resize; pointer-events: auto; }
@@ -6359,12 +6204,10 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-anim-fx-label:hover .fx-anim-lane-add, .fx-anim-fx-label:hover .fx-anim-lane-del { display: inline-grid; }
 .fx-anim-fx-label .fx-anim-lane-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .fx-anim-lane-tools .btn-icon { width: 22px; height: 22px; }
-/* кнопки дорожки видны при наведении, а включённые (заглушено, соло, закреплено) всегда: так названию остаётся место */
+
 .fx-anim-lane-tools .btn-icon:not(.is-on) { display: none; }
 .fx-anim-fx-label:hover .fx-anim-lane-tools .btn-icon { display: inline-grid; }
 
-/* колонка свойств блока или ключа: внутри таймлайна сбоку от дорожек (слева или справа, см. panel-effects.js placeInspector).
-   Пока ничего не выбрано, у колонки нулевая ширина и дорожки идут во всю ширину; при выборе она выезжает, дорожки сдвигаются */
 .fx-anim-main { flex: 1 1 auto; min-height: 0; display: flex; align-items: stretch; gap: 12px; }
 .fx-anim-main > .fx-anim-body { flex: 1 1 auto; min-width: 0; }
 .fx-clip-panel { display: none; }
@@ -6374,7 +6217,7 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-mode .fx-anim.insp-right .fx-clip-panel.is-shut { margin-right: 0; margin-left: -12px; }
 .fx-mode .fx-anim .fx-clip-panel.is-moving { transition: none; opacity: 0; }
 .fx-mode .fx-anim .fx-clip-panel.is-resizing { transition: none; }
-/* содержимое колонки держит свою ширину, пока колонка выезжает: ничего не переносится на ходу */
+
 .fx-clip-panel > .fxf-bar, .fx-clip-panel > .fx-clip-body { width: var(--fx-clip-w, 300px); flex-shrink: 0; }
 .fx-clip-panel > .fx-clip-body { flex: 1 1 auto; }
 .fx-focus .fx-clip-panel { display: none !important; }
@@ -6385,12 +6228,12 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-clip-ic:empty { display: none; }
 .fx-clip-side.btn-icon { width: 26px; height: 26px; padding: 0; border-radius: 50%; color: var(--text-faint); }
 .fx-clip-side.btn-icon:hover { color: var(--text); }
-/* перетаскивание колонки: подсвечивается половина таймлайна, куда она переедет */
+
 .fx-anim.is-insp-drag .fx-anim-main { position: relative; }
 .fx-anim.drop-left .fx-anim-main::after, .fx-anim.drop-right .fx-anim-main::after { content: ''; position: absolute; top: 0; bottom: 0; width: var(--fx-clip-w, 300px); border: 2px dashed var(--accent-line); border-radius: 12px; background: var(--accent-soft); pointer-events: none; z-index: 30; }
 .fx-anim.drop-left .fx-anim-main::after { left: 0; }
 .fx-anim.drop-right .fx-anim-main::after { right: 0; }
-/* ширина колонки: кромка со стороны дорожек */
+
 .fx-clip-wres { position: absolute; top: 10px; bottom: 10px; right: 0; width: 8px; cursor: ew-resize; touch-action: none; z-index: 3; }
 .fx-anim.insp-right .fx-clip-wres { right: auto; left: 0; }
 .fx-clip-wres::after { content: ''; position: absolute; top: 50%; right: 2px; width: 3px; height: 36px; margin-top: -18px; border-radius: 2px; background: var(--accent); opacity: 0; transition: opacity 0.14s var(--ease); }
@@ -6419,33 +6262,30 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-clip-open-fx { align-self: flex-start; }
 .fx-clip-panel .mk { fill: var(--text-dim); stroke: none; }
 .fx-clip-panel .is-on .mk { fill: var(--accent-text); }
-/* блок морфинга: откуда и куда идёт форма */
+
 .fx-morph-route { display: flex; flex-direction: column; gap: 8px; }
 .fx-morph-end { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .fx-morph-from { display: flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 999px; background: var(--bg-sunken); color: var(--text-dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fx-morph-arrow { display: grid; place-items: center; height: 28px; color: var(--accent-text); }
 .fx-clip-quick.is-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-/* узкий таймлайн: колонка уже, подписи ползунков короче */
+
 @container (max-width: 760px) {
 	.fx-mode .fx-anim .fx-clip-panel { --fx-clip-w: 250px; }
 	.fx-clip-panel .fx-anim-insp-slider, .fx-clip-panel .fx-anim-insp-row, .fx-clip-panel .fx-anim-insp-field { grid-template-columns: 66px minmax(0, 1fr) 42px; }
 }
 
-/* фокус от клавиатуры на кнопках и ползунках таймлайна не рисует контур: пробел только запускает воспроизведение */
 .fx-anim :focus, .fx-anim :focus-visible, .media-bar :focus, .media-bar :focus-visible, .fx-bar :focus, .fx-bar :focus-visible, .fx-clip-panel :focus:not(input[type=number]), .fx-clip-panel :focus-visible:not(input[type=number]) { outline: none !important; box-shadow: none; }
 .fx-anim .btn-icon:focus-visible, .media-bar .btn-icon:focus-visible { box-shadow: none; }
 .viewport.paint-lock .stage { cursor: crosshair; }
 .viewport.paint-lock.nav-orbit .stage { cursor: grabbing; }
 .fx-bar .fx-paint-lock-btn.is-active { background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--accent-line); }
 
-/* плашка блока: компактно, профиль и кривая картинками */
 .fx-clip-body { gap: 10px; }
 .fx-clip-panel .fx-anim-insp-seg.is-icons { gap: 2px; }
 .fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn { display: grid; place-items: center; height: 26px; padding: 0; }
 .fx-clip-panel .fx-anim-insp-seg.is-icons svg { display: block; }
 .fx-clip-open-fx { align-self: stretch; justify-content: center; }
 
-/* профиль и кривая: мини-графики с подписью */
 .fx-clip-group { display: flex; flex-direction: column; gap: 5px; }
 .fx-clip-panel .fx-anim-insp-seg.is-icons { display: flex; gap: 4px; padding: 0; background: none; border: 0; }
 .fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 2px; height: auto; padding: 5px 2px 4px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.07); background: rgba(255, 255, 255, 0.035); color: var(--text-dim); }
@@ -6460,7 +6300,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-clip-quick .btn { padding-inline: 4px; min-width: 0; height: 28px; }
 .fx-clip-quick .btn .btn-label { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* ручки изменения блока: скрыты, появляются под курсором оранжевой полоской, при нажатии горят ярче */
 .fx-mode .fx-anim-handle { width: 10px; }
 .fx-mode .fx-anim-block .fx-anim-handle::after { opacity: 0; background: var(--accent); width: 4px; top: 6px; bottom: 6px; border-radius: 3px; transition: opacity 0.12s var(--ease), box-shadow 0.12s var(--ease); }
 .fx-mode .fx-anim-block:hover .fx-anim-handle::after, .fx-mode .fx-anim-block.is-sel .fx-anim-handle::after { opacity: 0; }
@@ -6469,7 +6308,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-mode .fx-anim-handle.is-left::after { left: 3px; }
 .fx-mode .fx-anim-handle.is-right::after { right: 3px; }
 
-/* ================================================================ таймлайн: колонка подписей без фона стоит на месте, зумится только шкала справа */
 .fx-anim { --fx-head-w: 100px; }
 .fx-anim-stage { position: relative; display: grid; grid-template-columns: var(--fx-head-w) minmax(0, 1fr); align-items: start; overflow: visible; width: 100%; }
 .fx-anim-heads { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -6486,7 +6324,7 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-anim-inner .fx-anim-char-lane { height: auto; min-height: 30px; }
 .fx-anim-inner .fx-anim-char-set { width: 100%; padding-left: 0; justify-content: flex-start; }
 .fx-anim-inner .fx-anim-playhead-line { top: 28px; z-index: 8; margin-left: -0.5px; }
-/* подписи: без фона, одной высоты со строками справа */
+
 .fx-anim-heads .fx-anim-track-label { position: static; width: 100%; height: 30px; background: none; box-shadow: none; padding: 0 4px 0 2px; gap: 6px; overflow: hidden; }
 .fx-anim-heads .fx-anim-ruler-title { height: 32px; padding-top: 3px; }
 .fx-anim-heads .fx-anim-char-label { height: auto; min-height: 30px; align-items: flex-start; padding-top: 6px; }
@@ -6499,12 +6337,10 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .fx-anim-lane-tools .fx-lane-flag svg { width: 11px; height: 11px; }
 .fx-anim-fx-label .fx-anim-lane-name { padding-right: 18px; }
 
-/* ручки изменения размера панелей: не видны, пока курсор не рядом; под курсором оранжевые, при нажатии горят ярче */
 .sidebar-resizer::after, .fx-anim-resize-handle::after, .fx-clip-resize::after { opacity: 0 !important; background: var(--accent) !important; box-shadow: none !important; transition: opacity 0.14s var(--ease, ease), box-shadow 0.14s, width 0.18s var(--ease, ease), height 0.18s var(--ease, ease), margin 0.18s var(--ease, ease) !important; }
 .sidebar-resizer:hover::after, .fx-anim-resize-handle:hover::after, .fx-clip-resize:hover::after { opacity: 0.9 !important; }
 .sidebar-resizer:active::after, .workspace.is-resizing .sidebar-resizer::after, .fx-anim-resize-handle:active::after, body.is-resizing-h .fx-anim-resize-handle::after, .fx-clip-resize:active::after { opacity: 1 !important; background: var(--accent-text, var(--accent)) !important; box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent) !important; }
 
-/* сенсорные экраны: зона нажатия не меньше 44 px, а сами кнопки выглядят как прежде (область растёт невидимо) */
 @media (pointer: coarse), (max-width: 700px) {
 	:where(.btn, .mode-btn, .btn-icon, .btn-tool, .seg-btn, .dock-btn, .sec-head, .tab, .fxf-toggle, .fx-anim-insp-segbtn, .fx-anim-zoom-btn, .fx-anim-speed) { position: relative; }
 	:where(.btn, .mode-btn, .btn-icon, .btn-tool, .seg-btn, .dock-btn, .sec-head, .tab, .fxf-toggle, .fx-anim-insp-segbtn, .fx-anim-zoom-btn, .fx-anim-speed)::before {
@@ -6518,7 +6354,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 	}
 }
 
-/* стартовая карточка: стекло как у панелей, мягкое оранжевое свечение сверху, одна главная кнопка, без значка */
 .empty-card { position: relative; width: min(460px, 100%); padding: 36px 32px 24px; gap: 14px; justify-items: center; text-align: center; border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.1); background: var(--fxg-bg, rgba(18, 20, 24, 0.7)); backdrop-filter: blur(22px) saturate(1.25); -webkit-backdrop-filter: blur(22px) saturate(1.25); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05); overflow-x: hidden; }
 .empty-card::before { content: ''; position: absolute; left: 50%; top: -30%; width: 120%; height: 70%; translate: -50% 0; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 20%, transparent), transparent); pointer-events: none; }
 .empty-card > * { position: relative; }
@@ -6543,7 +6378,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .empty-card .empty-row .btn { min-width: 0; }
 @media (max-width: 480px) { .empty-card .empty-row { grid-template-columns: minmax(0, 1fr); } }
 
-/* поддержка автора: кнопка-сердце в шапке, плашка и строка на стартовой карточке */
 .btn-support { color: var(--accent-text); }
 .btn-support:hover { background: var(--accent-soft); }
 .support-pop { position: fixed; z-index: 90; width: min(340px, calc(100vw - 24px)); padding: 18px; display: grid; gap: 12px; border-radius: 20px; background: var(--fxg-bg, rgba(18, 20, 24, 0.82)); backdrop-filter: blur(22px) saturate(1.25); -webkit-backdrop-filter: blur(22px) saturate(1.25); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05); overflow: hidden; }
@@ -6565,7 +6399,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .empty-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-faint); }
 @media (max-height: 700px) { .empty-card .empty-hint { display: none; } }
 
-/* горячие клавиши: стеклянное окно, группы карточками, клавиши отдельными кнопками */
 .dlg:has(.kd-inner) { width: min(980px, calc(var(--vw) - 32px)); border-radius: 24px; background: var(--fxg-bg, rgba(18, 20, 24, 0.9)); backdrop-filter: blur(26px) saturate(1.25); -webkit-backdrop-filter: blur(26px) saturate(1.25); border-color: rgba(255, 255, 255, 0.1); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
 .kd-inner { gap: 18px; padding: 22px 24px 24px; }
 .kd-head { display: flex; align-items: center; justify-content: space-between; }
@@ -6586,34 +6419,27 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .kd-keys { max-width: 64%; }
 .kd-label { flex: 1 1 auto; }
 
-/* таймлайн во всю ширину, строки в несколько колонок: справа не остаётся пустоты */
 .kd-wide { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); column-gap: 28px; }
 .kd-wide h3 { grid-column: 1 / -1; }
 .kd-wide .kd-row, .kd-wide h3 + .kd-row { border-top: 1px solid rgba(255, 255, 255, 0.05); }
 
-/* переключатель языка */
 .lang-switch { display: inline-flex; padding: 2px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); }
 .lang-switch button { height: 28px; min-width: 32px; padding: 0 9px; border: 0; border-radius: 999px; background: transparent; color: var(--text-dim); font: 600 11.5px var(--font); letter-spacing: 0.04em; cursor: pointer; transition: background 0.15s, color 0.15s; }
 .lang-switch button:hover { color: var(--text); }
 .lang-switch button.is-on { background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--accent-line); }
 @media (max-width: 700px) { .lang-switch button { min-width: 28px; padding: 0 6px; } }
 
-/* окно экспорта: плотный матовый фон, почти без просвета */
 .export-pop { background: rgba(6, 8, 11, 0.58); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .export-card, .ui-float .export-card { background: rgba(20, 23, 28, 0.95); backdrop-filter: blur(44px) saturate(1.1); -webkit-backdrop-filter: blur(44px) saturate(1.1); }
 
-/* окно экспорта и горячие клавиши: непрозрачность 85 %, размытие 33 px */
 .export-card, .ui-float .export-card, .dlg:has(.kd-inner) { background: rgba(20, 23, 28, 0.85); backdrop-filter: blur(33px) saturate(1.1); -webkit-backdrop-filter: blur(33px) saturate(1.1); }
-/* длинные подписи в других языках не ломают кнопки профиля и кривой */
+
 .fx-clip-panel .fx-anim-insp-seg.is-icons .fx-anim-insp-segbtn span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* мигание при прокрутке окон со стеклом: размытие в два слоя поверх живой 3D-сцены перерисовывалось рывками.
-   Подложка без собственного размытия, у окон свой слой композитора */
 .export-pop { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(6, 8, 11, 0.66); }
 .export-card, .ui-float .export-card, .dlg, .support-pop { transform: translateZ(0); backface-visibility: hidden; isolation: isolate; }
 .export-card .export-body, #panel-export.export-body, .dlg-inner { overscroll-behavior: contain; }
 
-/* правка точек: курсор кисти, рамка, элементы раздела */
 .pe-cursor { position: absolute; z-index: 30; border-radius: 50%; border: 1.5px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); pointer-events: none; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
 .pe-cursor[hidden], .pe-rect[hidden] { display: none; }
 .pe-rect { position: absolute; z-index: 30; border: 1.5px dashed var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); pointer-events: none; }
@@ -6625,8 +6451,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .pe-del:not(:disabled):hover { color: var(--danger); }
 .pe-keys { margin-top: 2px; }
 
-
-/* панель правки точек: справа от кнопки инструмента, стекло как у боковых панелей */
 .pe-panel { position: absolute; z-index: 24; display: flex; flex-direction: column; gap: 10px; padding: 14px; overflow-y: auto; border-radius: 20px; background: var(--fxg-bg, rgba(18, 20, 24, 0.82)); backdrop-filter: blur(22px) saturate(1.25); -webkit-backdrop-filter: blur(22px) saturate(1.25); border: 1px solid var(--fxg-line, rgba(255, 255, 255, 0.1)); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05); }
 .pe-panel[hidden] { display: none; }
 .fx-mode .pe-panel { display: none; }
@@ -6647,7 +6471,6 @@ body.is-resizing-h .fx-anim-resize-handle::after {
 .pe-lasso[hidden] { display: none; }
 @media (max-width: 900px) { .pe-panel { left: 64px !important; right: 12px; width: auto !important; } }
 
-/* ================================================================ Windows: Chrome считает размытие через Direct3D 11, поэтому радиус там меньше, а панели получают собственный слой */
 html.os-win .export-card, html.os-win .ui-float .export-card,
 html.os-win .dlg:has(.kd-inner), html.os-win .support-pop { backdrop-filter: blur(14px) saturate(1.1); -webkit-backdrop-filter: blur(14px) saturate(1.1); }
 html.os-win .pe-panel, html.os-win .fx-clip-panel { backdrop-filter: blur(14px) saturate(1.15); -webkit-backdrop-filter: blur(14px) saturate(1.15); }
@@ -6656,8 +6479,6 @@ html.perf-lite .pe-panel, html.perf-lite .fx-clip-panel, html.perf-lite .support
 html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support-pop { backdrop-filter: none; -webkit-backdrop-filter: none; background: #15181d; }
 .export-card, .pe-panel, .support-pop { transform: translateZ(0); contain: paint; }
 
-/* тонкие полосы прокрутки без прыжков вёрстки: на Windows классические полосы по 17px сдвигают содержимое панелей */
-/* scrollbar-width только для Firefox: в Chrome оно отключает свою полосу (тонкую, оранжевую при перетаскивании) и возвращает системную */
 .panel, .fx-left-list, .pe-panel, .exp-right, .exp-left, .dlg-body, .fx-clip-panel {
 	scrollbar-gutter: stable;
 }
@@ -6669,7 +6490,6 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 }
 .ui-float .fx-left-list, .ui-float .panel { scrollbar-gutter: auto; }
 
-/* ================================================================ переключатели: скругление выбранной кнопки концентрично рамке блока (радиус рамки минус поле минус линия), углы совпадают */
 .seg { --seg-r: var(--r-box); --seg-pad: 2px; padding: var(--seg-pad); border-radius: var(--seg-r); }
 .seg-btn { border-radius: max(2px, calc(var(--seg-r) - var(--seg-pad) - 1px)); }
 .ui-float .seg { --seg-r: 10px; border-radius: var(--seg-r); }
@@ -6677,13 +6497,12 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 .fx-mode .sidebar .seg-btn { border-radius: 999px; }
 #modeBar.seg { --seg-pad: 3px; }
 .pe-panel > * { flex-shrink: 0; }
-/* нижняя плашка режимов: рамка 16px, поле 6px, линия 1px, значит у кнопок 9px */
+
 .ui-float .vp-dock .dock-btn, .ui-float #modeBar .seg-btn { border-radius: 9px; }
 
-/* ================================================================ телефоны и планшеты: тот же стеклянный язык, что на компьютере (плавающие карточки, мягкие скругления, лёгкие вкладки) */
 @media (max-width: 900px) {
 	#app.ui-float {
-		/* стекло то же, что у варианта «Матовое» на компьютере */
+
 		--fxg-line: rgba(255, 255, 255, 0.09);
 		--fxg-blur: blur(22px) saturate(1.25);
 		--fxg-bg: rgba(18, 20, 24, 0.62);
@@ -6692,11 +6511,11 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 		--m-top: calc(var(--m-gap) + env(safe-area-inset-top, 0px));
 		grid-template-rows: 0 minmax(0, 1fr) 0;
 	}
-	/* верхняя панель: плавающая полоса над сценой, скругление как на компьютере */
+
 	.ui-float .topbar { position: absolute; top: var(--m-top); left: var(--m-gap); right: var(--m-gap); height: 46px; z-index: 40; padding: 0 6px; border: 1px solid var(--fxg-line); border-radius: 14px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); box-shadow: var(--fxg-shadow); }
 	.ui-float .workspace, .ui-float .fx-mode .workspace { grid-row: 2; }
 	.ui-float .topbar .btn-icon { border-radius: 50%; }
-	/* ровные отступы: поля по краям одинаковые, разделитель посередине между группами, кнопки последней группы распределяются до правого края (на широких телефонах справа не остаётся пустого места) */
+
 	.ui-float .topbar { padding: 0 8px; gap: 0; }
 	.ui-float .topbar .brand { margin-right: 6px; }
 	.ui-float .topbar-group { padding-left: 6px; margin-left: 6px; }
@@ -6707,36 +6526,36 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 	.ui-float .topbar .btn:not(.btn-icon):not(.split-chev) { border-radius: 999px; }
 	.ui-float .topbar .mode-switch { border-radius: 999px; }
 	.ui-float .mode-switch::before { border-radius: 999px; }
-	/* левая колонка инструментов и оси ниже панели; колонка кончается над нижней плашкой режимов, а не уходит под неё */
+
 	.ui-float .toolrail { top: calc(var(--m-top) + 54px); left: var(--m-gap); border-radius: 14px; padding: 4px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); box-shadow: var(--fxg-shadow); max-height: calc(var(--vh) - var(--m-top) - 54px - var(--sheet-h, 98px) - 72px); }
-	/* полоски между группами инструментов от края до края, как на компьютере */
+
 	.ui-float .rail-sep { width: auto; align-self: stretch; margin: 5px -4px; }
-	/* колонка инструментов листается, если по высоте мало места: кнопки обычного размера (раньше они сжимались), прокрутка плавная и не уходит на сцену */
+
 	.ui-float .toolrail { overscroll-behavior: contain; scroll-snap-type: y proximity; scroll-padding: 4px; }
 	.ui-float .toolrail .btn-tool { flex: none; scroll-snap-align: start; }
-	/* ширина под кнопку 38 px: отступ выделенной кнопки до края колонки 4 px со всех сторон, скругления концентрические (14 = 10 + 4) */
+
 	.ui-float .toolrail { width: 48px; }
-	/* таймлайн анимации открыт: колонка кончается над ним, а не заходит под него */
+
 	.ui-float .workspace:has(.anim-bar:not([hidden])) .toolrail { max-height: calc(var(--vh) - var(--m-top) - 54px - var(--sheet-h, 98px) - 152px); }
-	/* таймлайн на телефоне: сверху кнопка, время и настройки клипа (прижаты вправо), снизу полоса перемотки во всю ширину */
+
 	.ui-float .anim-bar { padding: 6px 10px 8px 6px; row-gap: 4px; }
 	.ui-float .anim-bar .anim-settings { margin-left: auto; }
 	.ui-float .anim-bar .mb-seek { margin: 0 4px; }
 	.ui-float .vp-top-right { top: calc(var(--m-top) + 54px); right: var(--m-gap); }
-	/* лист раскрыт на весь экран: над ним остаётся узкая полоса сцены, инструменты и оси в ней не помещаются и прячутся */
+
 	.ui-float[data-sheet='full'] .toolrail, .ui-float[data-sheet='full'] .vp-top-right { opacity: 0; visibility: hidden; pointer-events: none; }
-	/* нижний лист: плавающая карточка с отступами, матовое стекло (плотнее и сильнее размыто, чем у плашек) и скругление как у боковых панелей на компьютере; сцена видна сквозь него */
+
 	.ui-float .sidebar, .ui-float .workspace.sidebar-hidden .sidebar, .ui-float.fx-mode .fx-left, .ui-float.fx-mode .fx-left.fx-left-open { margin: 0 var(--m-gap) calc(var(--m-gap) + env(safe-area-inset-bottom, 0px)); border: 1px solid var(--fxg-line); border-radius: 14px; background: linear-gradient(rgba(21, 23, 28, 0.6), rgba(21, 23, 28, 0.6)), var(--fxg-bg); backdrop-filter: blur(48px) saturate(1.6); -webkit-backdrop-filter: blur(48px) saturate(1.6); box-shadow: var(--fxg-shadow); }
 	.ui-float .panels, .ui-float .panel, .ui-float .fx-left-list { background: transparent; }
-	/* поля, переключатели вариантов и списки: та же полупрозрачная подложка и скругление, что на компьютере */
+
 	.ui-float .seg, .ui-float .fx-card, .ui-float .field input[type='text'], .ui-float .select { background: rgba(255, 255, 255, 0.045); border-color: var(--fxg-line); }
 	.ui-float .select { border-radius: 10px; }
 	.ui-float .sidebar, .ui-float .fx-left { padding-bottom: 0; }
-	/* свёрнутый лист: содержимое под ручкой и вкладками плавно гаснет, а не выглядывает сплющенной полоской */
+
 	.ui-float .panels, .ui-float .fx-left-list { transition: opacity 0.2s var(--ease); }
 	.ui-float[data-sheet='min'] .panels, .ui-float[data-sheet='min'] .fx-left-list { opacity: 0; pointer-events: none; }
 	.ui-float .sheet-grab { width: 44px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.28); margin-bottom: 2px; }
-	/* вкладки листа и вкладки эффектов: отдельные плитки с мягкими углами, как на компьютере */
+
 	.ui-float .tabs { padding: 2px 10px 10px; gap: 6px; background: transparent; border-bottom: 0; }
 	.ui-float .tabs .tab { border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; background: rgba(255, 255, 255, 0.05); }
 	.ui-float .tabs .tab[aria-selected='true'] { background: rgba(229, 138, 69, 0.14); border-color: rgba(229, 138, 69, 0.55); color: var(--accent-text); }
@@ -6745,21 +6564,21 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 	.ui-float .sheet-switch button { flex: 1; height: 32px; border: 0; border-radius: 999px; background: transparent; color: var(--text-dim); font: 600 13px var(--font); letter-spacing: -0.01em; cursor: pointer; transition: all 0.18s var(--ease); }
 	.ui-float .sheet-switch button:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
 	.ui-float .sheet-switch button.is-on { background: var(--accent); color: var(--accent-ink); box-shadow: none; font-weight: 600; }
-	/* нижние плашки режимов и эффектов: те же скругления, что на компьютере (режимы 16 px, остальные 14 px); кнопки в одну строку, при нехватке места плашка прокручивается */
+
 	.ui-float .vp-dock, .ui-float .fx-bar, .ui-float .media-bar { background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 14px; box-shadow: var(--fxg-shadow); }
 	.ui-float .vp-dock { width: max-content; border-radius: 16px; }
 	.ui-float #modeBar.seg { flex-wrap: nowrap; }
 	.ui-float .dock-sep, .ui-float .fx-bar-sep { height: auto; align-self: stretch; margin: -4px 3px; width: 1px; }
 	.ui-float .fx-bar { width: max-content; height: 48px; padding: 4px 8px; gap: 6px; bottom: calc(var(--sheet-h, 98px) + 10px); }
 	.ui-float .media-bar { bottom: calc(var(--sheet-h, 98px) + 64px); transition: bottom 0.28s var(--ease); }
-	/* «только сцена»: листа нет, плашки у нижнего края */
+
 	.ui-float.fx-focus .fx-bar { bottom: 10px; }
 	.ui-float.fx-focus .media-bar { bottom: 66px; }
 	.ui-float .fx-bar .fx-bar-anim-btn, .ui-float .fx-bar .fx-left-btn { display: none !important; }
-	/* «только сцена»: лист уходит, сцена занимает весь экран (общее правило с тремя колонками сжимало сцену до нуля) */
+
 	.ui-float.fx-focus .workspace, .ui-float.fx-focus .workspace.sidebar-hidden { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 0; }
 	.ui-float.fx-focus .sidebar, .ui-float.fx-focus .fx-left { margin: 0; border: 0; }
-	/* окно камеры рук: то же стекло, что на компьютере, маленькое под левым краем верхней панели; его можно перетащить */
+
 	.fx-mode .fx-cam { left: var(--m-gap); top: calc(var(--m-top) + 54px); bottom: auto; width: 150px; padding: 6px; gap: 6px; background: var(--fxg-bg); backdrop-filter: var(--fxg-blur); -webkit-backdrop-filter: var(--fxg-blur); border: 1px solid var(--fxg-line); border-radius: 14px; box-shadow: var(--fxg-shadow); }
 	.fx-mode .fx-cam canvas { border-radius: 10px; }
 	.fx-mode .fx-cam-text { padding: 0 2px 2px; font-size: 11px; }
@@ -6787,14 +6606,13 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 	.ui-float .vp-dock { max-width: calc(100% - 24px); overflow-x: auto; scrollbar-width: none; }
 }
 
-/* ================================================================ плашки: загрузка, уведомления, окна и подсказка перетаскивания в стекле сайта */
 :root {
 	--glass-bg: rgba(20, 22, 27, 0.78);
 	--glass-line: rgba(255, 255, 255, 0.1);
 	--glass-blur: blur(20px) saturate(1.25);
 	--glass-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
-/* окно загрузки */
+
 .busy { background: rgba(8, 10, 13, 0.34); }
 .busy-card {
 	width: min(340px, calc(100% - 32px));
@@ -6810,7 +6628,7 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 .busy-text { font-size: 13px; font-weight: 600; letter-spacing: -0.005em; color: var(--text); }
 .busy-card .progress { height: 4px; background: rgba(255, 255, 255, 0.1); }
 .busy-card .progress-bar { background: linear-gradient(90deg, var(--accent), var(--accent-text)); box-shadow: 0 0 10px rgba(229, 138, 69, 0.45); }
-/* уведомления: капсулы того же стекла, значок цвета бренда */
+
 .toast {
 	align-items: center;
 	padding: 10px 16px 10px 12px;
@@ -6827,7 +6645,7 @@ html.perf-flat .pe-panel, html.perf-flat .fx-clip-panel, html.perf-flat .support
 .toast.warn .ic { color: #f0bc72; }
 .toast.error .ic { color: #f48a8a; }
 .toast.info .ic { color: var(--accent-text); }
-/* диалоги и подсказка при перетаскивании файла */
+
 .dlg {
 	border: 1px solid var(--glass-line);
 	border-radius: 22px;
@@ -6852,7 +6670,6 @@ html.perf-flat .busy-card, html.perf-flat .toast, html.perf-flat .dlg { -webkit-
 html.perf-lite .custom-select-pop { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); background: rgba(20, 22, 27, 0.8); }
 html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filter: none; background: #15181d; }
 
-/* плавное открытие и закрытие секвенсора: панель просто выезжает снизу и так же уходит вниз, а окружающие панели едут в том же темпе и по той же кривой */
 .fx-mode .fx-anim:not([hidden]) {
 	animation: fx-anim-in 0.46s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -6900,7 +6717,6 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 	}
 }
 
-/* переключатели вариантов в узкой панели: если подписи не помещаются в одну строку, кнопки переносятся, а не наезжают друг на друга */
 .seg {
 	flex-wrap: wrap;
 	row-gap: 2px;
@@ -6934,7 +6750,6 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 	display: none;
 }
 
-/* морфинг: список форм строками, как эффекты в левой панели (плитка со значком, имя, номер в очереди, «перейти», переключатель) */
 .mf-list {
 	display: grid;
 	gap: 2px;
@@ -7003,7 +6818,7 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 .mf-style-hint {
 	margin-top: -2px;
 }
-/* выпадающий список со значками у пунктов */
+
 .custom-select-cur-ic {
 	display: inline-grid;
 	place-items: center;
@@ -7033,7 +6848,7 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 	flex: 1;
 	min-width: 0;
 }
-/* описание пункта в выпадающем списке: до двух строк, а не обрезка на первой */
+
 .custom-select-item-desc {
 	white-space: normal;
 	display: -webkit-box;
@@ -7053,12 +6868,10 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 	background: var(--accent);
 }
 
-/* запись видео: холст сцены держит размер и пропорции кадра записи, на экране он показан целиком, с полями (engine/recording.js) */
 .stage.is-rec-frame > canvas.gl {
 	object-fit: contain;
 }
 
-/* ключи камеры: форма говорит, как камера проходит ключ (ромб плавно, круг с остановкой, квадрат скачком, пустой ромб по прямой) */
 .fx-anim-key.is-stop { border-radius: 50%; transform: none; }
 .fx-anim-key.is-stop:hover { transform: scale(1.2); }
 .fx-anim-key.is-hold { border-radius: 2px; transform: none; }
@@ -7068,12 +6881,11 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 .fx-anim-cam-label .fx-anim-cam-preset.btn-icon:hover { color: var(--accent-text); background: var(--bg-hover); }
 .fx-anim-block-ic { display: inline-grid; vertical-align: -2px; margin-right: 4px; }
 
-/* настройки выключенного эффекта не серые: ползунки и выбор горят акцентом, как везде; выключенность видна по лёгкой прозрачности */
 .fx-insp.is-off { opacity: 0.72; filter: none; }
 .fx-insp.is-off:hover, .fx-insp.is-off:focus-within { opacity: 1; }
-/* колонка свойств в таймлайне: матовое полупрозрачное стекло, как у панелей сайта */
+
 .fx-mode .fx-anim .fx-clip-panel:not(.is-shut) { background: color-mix(in srgb, var(--bg-raised) 55%, transparent); border-color: var(--fxg-line, var(--line)); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05); }
-/* ручки длины блоков: тонкая светлая черта у края, видна при наведении на блок и ярче под курсором */
+
 .fx-mode .fx-anim-block .fx-anim-handle { width: 12px; cursor: ew-resize; }
 .fx-mode .fx-anim-block .fx-anim-handle::after { content: ''; position: absolute; top: 50% !important; bottom: auto !important; width: 3px !important; height: 14px; margin-top: -7px; border-radius: 999px; background: rgba(255, 255, 255, 0.7) !important; box-shadow: none !important; opacity: 0 !important; transition: opacity 0.15s var(--ease), height 0.15s var(--ease), margin 0.15s var(--ease) !important; }
 .fx-mode .fx-anim-block .fx-anim-handle.is-left::after { left: 4px !important; }
@@ -7083,7 +6895,6 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 
 .fx-clip-quick.is-one { grid-template-columns: minmax(0, 1fr); }
 
-/* эффект включён, а WebGL ещё собирает под него шейдер: тихая плашка вверху сцены вместо «ничего не происходит» */
 .fx-prep {
 	position: absolute;
 	top: 14px;
@@ -7115,8 +6926,6 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 	animation: fx-pulse 1s ease-in-out infinite;
 }
 
-/* ───────── ползунок-капсула (DESIGN.md, раздел 4): подпись и число внутри полосы, полоса заливается до значения.
-   Тянуть за любое место, двойной щелчок открывает число для ввода. Целые значения до 20 вариантов: ступени внизу капсулы ───────── */
 .field.field-cap { gap: 0; }
 .slider.cap {
 	--fill: var(--accent-fill);
@@ -7140,7 +6949,7 @@ html.perf-flat .custom-select-pop { backdrop-filter: none; -webkit-backdrop-filt
 	z-index: 1;
 	background: transparent;
 	cursor: ew-resize;
-	/* на телефоне вертикальный жест прокручивает панель, а не двигает ползунок */
+
 	touch-action: pan-y;
 }
 .slider.cap .range::-webkit-slider-runnable-track { height: 100%; border-radius: 0; background: none; }
@@ -7216,7 +7025,6 @@ html .slider.cap.cap-steps input.num-out { top: 2px; color: var(--accent-text); 
 .slider.cap .cap-ticks > span.on { background: var(--accent-line); }
 .slider.cap .cap-ticks > span.cur { height: 5px; background: var(--accent); }
 
-/* ───────── крутилки для звуковых настроек: до трёх в ряд ───────── */
 .knob-row { display: flex; justify-content: space-around; gap: 6px; padding: 4px 0 2px; }
 .knob { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .knob-face { position: relative; width: 48px; height: 48px; border-radius: 50%; cursor: ns-resize; touch-action: none; outline: none; }

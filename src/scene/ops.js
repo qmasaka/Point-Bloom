@@ -1,4 +1,3 @@
-// Операции редактирования с отменой: геометрия, трансформации, удаление, дублирование.
 import * as THREE from 'three';
 import * as G from '../core/geom.js';
 import { triangleCount } from '../core/geom.js';
@@ -38,7 +37,6 @@ export class Ops {
 		this.app.bus.emit('geometry');
 	}
 
-	// -------------------------------------------------------- геометрия
 	geometryOp(label, fn) {
 		const meshes = this.targets();
 		if (!meshes.length) {
@@ -86,7 +84,6 @@ export class Ops {
 		return this.geometryOp('UV перевёрнуты по V', (g) => G.flipUVV(g));
 	}
 
-	/** Упрощение сетки: оставляет примерно keepPercent % граней, сохраняя UV и нормали */
 	async simplify(keepPercent) {
 		const all = this.targets();
 		if (!all.length) {
@@ -135,8 +132,6 @@ export class Ops {
 		return true;
 	}
 
-	// ------------------------------------------------------ трансформации
-	/** Одна запись отмены на всю группу объектов: list = [{ obj, before, after }] */
 	commitMulti(list, label = 'Трансформация группы') {
 		const changed = list.filter((i) => !sameSnap(i.before, i.after));
 		if (!changed.length) return;
@@ -162,7 +157,6 @@ export class Ops {
 		const h = this.app.history;
 		const last = h.undoStack[h.undoStack.length - 1];
 		const now = performance.now();
-		// подряд идущие правки одного поля объединяем в один шаг отмены
 		if (key && last && last.key === key && now - last.t < 900) {
 			last.state.after = after;
 			last.t = now;
@@ -191,7 +185,6 @@ export class Ops {
 		this.afterChange({ display: false });
 	}
 
-	/** Задаёт положение / поворот (в градусах) / масштаб из полей ввода */
 	setTransform(obj, { position, rotation, scale }, label = 'Трансформация') {
 		const before = snapOf(obj);
 		if (position) obj.position.set(...position);
@@ -202,7 +195,6 @@ export class Ops {
 		this.commitTransform(obj, before, snapOf(obj), label, 'xf:' + obj.uuid);
 	}
 
-	/** Ось (origin) объекта → центр его геометрии */
 	centerOrigin() {
 		const s = this.sel;
 		if (!s) return this.app.toast('Выберите объект', 'warn');
@@ -239,7 +231,6 @@ export class Ops {
 		this.app.toast('Ось перенесена в центр объекта', 'ok');
 	}
 
-	/** Поставить выбранное (или всю модель) на пол: минимум по Y = 0 */
 	toGround() {
 		const target = this.sel || null;
 		const vp = this.app.viewport;
@@ -267,7 +258,6 @@ export class Ops {
 		this.app.toast('Объект поставлен на пол', 'ok');
 	}
 
-	/** Запекает трансформацию объекта в вершины (масштаб/поворот становятся «чистыми») */
 	applyTransform() {
 		const s = this.sel;
 		if (!s) return this.app.toast('Выберите объект', 'warn');
@@ -300,7 +290,6 @@ export class Ops {
 		this.app.toast('Трансформация применена к вершинам', 'ok');
 	}
 
-	// ----------------------------------------------- объекты: удалить и др.
 	addObject(obj, label = 'Добавить объект', { select = true } = {}) {
 		const parent = this.model.root;
 		const cmd = {

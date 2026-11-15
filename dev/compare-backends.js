@@ -1,24 +1,9 @@
-// Сравнение WebGPU и WebGL на одном и том же кадре: для каждого эффекта (или своей настройки) кадр рисуется обоими путями подряд, в одной задаче,
-// из одного и того же состояния, и картинки сравниваются попиксельно. Заодно видно, не уходил ли кадр в WebGL, пока эффект работал на WebGPU.
-//
-// Как запускать: открыть приложение с WebGPU (http://localhost:8765/index.html?gpu=1), загрузить модель, войти в «Эффекты», затем в консоли:
-//     const s = document.createElement('script'); s.src = '/dev/compare-backends.js'; document.head.appendChild(s);
-//     await __compare.run()                       // все эффекты по очереди (около минуты); итог в __compare.report
-//     await __compare.one('мой случай', (fx) => { fx.state.layers.shadow.on = true; })   // одна своя настройка
-//     await __compare.loadTestVideo(); await __compare.run({ only: ['vscreen', 'slitscan', 'pixelsort', 'frames', 'depth'] })   // эффекты видео
-//
-// В отчёте на каждый случай:
-//   glFrames  сколько кадров ушло в WebGL, пока эффект работал (должно быть 0: всё рисует WebGPU);
-//   badPct    доля пикселей, где цвет отличается больше чем на 12 из 255; maxDiff самая большая разница.
-// Сравнение идёт в режиме со свечением (точки складываются, порядок не важен). В непрозрачном режиме точки на одной глубине WebGL и WebGPU
-// перекрывают немного по-разному (круглые точки WebGL против квадратов WebGPU), и около 0,5% пикселей различаются всегда.
 (() => {
 	const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 	const errors = [];
 	window.addEventListener('error', (e) => errors.push('error: ' + e.message));
 	window.addEventListener('unhandledrejection', (e) => errors.push('rejection: ' + (e.reason && (e.reason.message || e.reason))));
 
-	/** Холсты поверх фона приложения (у холстов прозрачный фон: без подложки тусклые точки при чтении пикселей растягиваются до яркого цвета) */
 	function compose(vp, canvases) {
 		const c = document.createElement('canvas');
 		c.width = vp.canvas.width;
@@ -45,11 +30,9 @@
 		await sleep(opts.warm ?? 1800);
 		const gpuFrames = B.stats.gpu - g0;
 		const glFrames = B.stats.gl - l0;
-		// время стоит: дальше оба пути рисуют одно и то же
 		fx.frozen = true;
 		B.wakeGl();
 		for (let i = 0; i < 400 && !(B.glWarm && fx._fxCovered()); i++) await sleep(50);
-		// объекты со своими программами WebGL (связи, тень, осциллограф) собираются, пока кадры идут через WebGL
 		B._glOnly = () => true;
 		await sleep(opts.glWarm ?? 1500);
 		delete B._glOnly;
@@ -83,7 +66,6 @@
 		return res;
 	}
 
-	/** Все эффекты из списка слева: по одному включается, сравнивается и выключается */
 	async function run({ only = null } = {}) {
 		const fx = window.__app.ui.effectsEngine;
 		const report = [];
@@ -102,10 +84,6 @@
 		return report;
 	}
 
-	/**
-	 * Открывает в «Медиа» синтетическое видео (цветные полосы и круги, несколько секунд): без открытого видео «Экран», «Слит-скан»,
-	 * «Пиксельная сортировка», «Раскадровка» и «Объём по глубине» ничего не рисуют, и сравнивать нечего
-	 */
 	async function loadTestVideo({ seconds = 3, w = 320, h = 180 } = {}) {
 		const cv = document.createElement('canvas');
 		cv.width = w;

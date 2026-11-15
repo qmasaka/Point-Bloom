@@ -1,34 +1,23 @@
-// Запись видео через WebCodecs: кадры холста кодируются в H.264 с заданным битрейтом, звук из графа WebAudio в AAC, всё упаковывается в MP4 (mp4-muxer.js).
-// В отличие от MediaRecorder здесь качество не режется ради «живой» передачи: битрейт держится, ключевой кадр раз в две секунды, время кадров точное.
 import { Mp4Muxer } from './mp4-muxer.js';
 
-// H.264 High: уровни 5.2, 5.1, 4.2, 4.0 (чем выше уровень, тем больше разрешение и частота), затем Main и Baseline для слабых кодеров
 const AVC = ['avc1.640034', 'avc1.640033', 'avc1.64002a', 'avc1.640028', 'avc1.4d0034', 'avc1.4d0028', 'avc1.42e034', 'avc1.42e01f'];
 
-/**
- * Подбирает настройки кодера, которые этот браузер умеет; null, если WebCodecs нет или размер не поддерживается.
- * qp: постоянное качество кадра (режим «quantizer»; чем меньше число, тем чище и тяжелее файл, 16 на глаз почти без потерь).
- * Если браузер такой режим не умеет, берётся обычный битрейт bitrate
- */
 export async function pickVideoConfig({ width, height, fps, bitrate, qp = 0 }) {
 	if (typeof VideoEncoder === 'undefined' || typeof VideoFrame === 'undefined') return null;
 	for (const mode of qp ? ['quantizer', 'variable'] : ['variable']) {
 		for (const c of AVC) {
 			const cfg = { codec: c, width, height, framerate: fps, latencyMode: 'quality', bitrateMode: mode, avc: { format: 'avc' } };
-			// в режиме постоянного качества битрейт не задаётся
 			if (mode !== 'quantizer') cfg.bitrate = bitrate;
 			try {
 				const r = await VideoEncoder.isConfigSupported(cfg);
 				if (r && r.supported) return { config: r.config || cfg, quant: mode === 'quantizer' ? qp : 0 };
 			} catch (e) {
-				/* такой кодек или режим этот браузер не знает: пробуем следующий */
 			}
 		}
 	}
 	return null;
 }
 
-/** Настройки AAC для звука, или null (тогда звук пишет MediaRecorder) */
 export async function pickAudioConfig(sampleRate) {
 	if (typeof AudioEncoder === 'undefined' || typeof AudioData === 'undefined') return null;
 	const cfg = { codec: 'mp4a.40.2', sampleRate, numberOfChannels: 2, bitrate: 192000 };
@@ -40,7 +29,6 @@ export async function pickAudioConfig(sampleRate) {
 	}
 }
 
-// снимает звук с узла WebAudio кусками по ~2048 отсчётов; при тишине (нет входа) отдаёт нули, чтобы звуковая дорожка не сжималась по времени
 const TAP_SRC = `class PbTap extends AudioWorkletProcessor {
 	constructor() { super(); this.l = []; this.r = []; this.n = 0; this.z = new Float32Array(128); }
 	process(inputs) {
@@ -60,7 +48,6 @@ const TAP_SRC = `class PbTap extends AudioWorkletProcessor {
 }
 registerProcessor('pb-tap', PbTap);`;
 
-/** Подключает «отвод» к узлу графа: onData(l, r, contextTime) на каждый кусок. Возвращает функцию отключения */
 async function tapAudio(ctx, node, onData) {
 	const mute = ctx.createGain();
 	mute.gain.value = 0;
@@ -77,14 +64,12 @@ async function tapAudio(ctx, node, onData) {
 				try {
 					node.disconnect(w);
 				} catch (e) {
-					/* уже отключён */
 				}
 				w.port.onmessage = null;
 				w.disconnect();
 				mute.disconnect();
 			};
 		} catch (e) {
-			/* без AudioWorklet (старые браузеры, запрет модулей): ниже запасной путь */
 		} finally {
 			URL.revokeObjectURL(url);
 		}
@@ -102,7 +87,6 @@ async function tapAudio(ctx, node, onData) {
 		try {
 			node.disconnect(sp);
 		} catch (e) {
-			/* уже отключён */
 		}
 		sp.onaudioprocess = null;
 		sp.disconnect();
@@ -110,10 +94,6 @@ async function tapAudio(ctx, node, onData) {
 	};
 }
 
-/**
- * Кодирует кадры холста и звук в MP4. Создавать через WebCodecsRecorder.create(...).
- * addFrame(canvas, µs) каждый кадр; finish() возвращает Blob. Если кодер не успевает, лишние кадры пропускаются (время остаётся верным).
- */
 export class WebCodecsRecorder {
 	static async create({ width, height, fps, bitrate, qp = 0, audio = null, perf0 = performance.now() }) {
 		const pick = await pickVideoConfig({ width, height, fps, bitrate, qp });
@@ -122,7 +102,6 @@ export class WebCodecsRecorder {
 		let acfg = null;
 		if (audio) {
 			acfg = await pickAudioConfig(audio.ctx.sampleRate);
-			// звук нужен, а AAC браузер кодировать не умеет: пусть запись идёт через MediaRecorder
 			if (!acfg && audio.required) return null;
 		}
 		const r = new WebCodecsRecorder();
@@ -146,7 +125,6 @@ export class WebCodecsRecorder {
 			this.aenc = new AudioEncoder({ output: (c, m) => this.mux.addAudio(c, m), error: () => (this.aenc = null) });
 			this.aenc.configure(acfg);
 			const ctx = audio.ctx;
-			// перевод времени звука (секунды контекста) во время страницы: так звук и кадры лежат на одной шкале
 			const ts = ctx.getOutputTimestamp ? ctx.getOutputTimestamp() : null;
 			const ctx0 = ts && ts.contextTime ? ts.contextTime : ctx.currentTime;
 			const pf0 = ts && ts.performanceTime ? ts.performanceTime : performance.now();
@@ -169,7 +147,6 @@ export class WebCodecsRecorder {
 		}
 	}
 
-	/** Кадр с холста; t: время от начала записи в микросекундах. false: кадр пропущен (кодер занят) */
 	addFrame(canvas, t) {
 		if (this.closed || this.error) return false;
 		if (this.venc.encodeQueueSize > 6) {
@@ -179,7 +156,6 @@ export class WebCodecsRecorder {
 		const key = t - this.lastKey >= 2e6;
 		const f = new VideoFrame(canvas, { timestamp: t, duration: Math.round(1e6 / this.fps) });
 		try {
-			// постоянное качество: каждому кадру задаётся одно и то же число квантования
 			this.venc.encode(f, this.quant ? { keyFrame: key, avc: { quantizer: this.quant } } : { keyFrame: key });
 		} finally {
 			f.close();
@@ -189,7 +165,6 @@ export class WebCodecsRecorder {
 		return true;
 	}
 
-	/** Ждём, пока кодер разгребёт очередь (покадровая запись не спешит, но и не копит кадры в памяти) */
 	async drain(max = 2) {
 		while (!this.closed && !this.error && this.venc.encodeQueueSize > max) await new Promise((r) => setTimeout(r, 4));
 	}
@@ -203,14 +178,12 @@ export class WebCodecsRecorder {
 			try {
 				await this.aenc.flush();
 			} catch (e) {
-				/* без звука файл всё равно соберётся */
 			}
 		}
 		this.venc.close();
 		try {
 			this.aenc?.close();
 		} catch (e) {
-			/* уже закрыт */
 		}
 		if (this.error) throw this.error;
 		return this.mux.finish();
@@ -223,7 +196,6 @@ export class WebCodecsRecorder {
 			this.venc.close();
 			this.aenc?.close();
 		} catch (e) {
-			/* уже закрыт */
 		}
 	}
 }

@@ -1,9 +1,7 @@
 import * as THREE from 'three';
 import { clamp, screenRect } from '../../core/util.js';
 
-/** Взаимодействие: курсор, ударные волны, параметры и управление датамошем. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class InteractionPart {
-	/** Запускает волну из точки pos (в локальных координатах облака) */
 	addShock(pos) {
 		if (!pos) return;
 		this.shocks.unshift({ pos: pos.clone(), t0: this._time });
@@ -31,7 +29,6 @@ export class InteractionPart {
 
 	_onMove(e) {
 		if (!this.points) return;
-		// скорость курсора на экране (для датамоша «Мышью»)
 		const mp = this._mScr;
 		if (mp) {
 			const v = (this._mVel ||= { x: 0, y: 0 });
@@ -55,7 +52,6 @@ export class InteractionPart {
 		}
 	}
 
-	/** Параметры датамоша на этот кадр: когда случился сбой, насколько кадр ещё «держится» и все числа для шейдеров */
 	_moshParams(L) {
 		const S = this._mosh || (this._mosh = { kickAt: -1e9, nextKick: 0, lastT: 0, lastBeat: -9, above: false, cleanUntil: -1, wasOn: false });
 		const t = this._time;
@@ -66,7 +62,6 @@ export class InteractionPart {
 		}
 		const period = Math.max(0.3, +L.period || 4);
 		if (!S.wasOn || t < S.lastT - 0.4) {
-			// включили или таймлайн перемотали: первый сбой сразу, чтобы эффект был виден
 			S.wasOn = true;
 			S.kickAt = t;
 			S.nextKick = t + period;
@@ -85,7 +80,6 @@ export class InteractionPart {
 			}
 			S.above = lvl > 0.55;
 		}
-		// мышью: сбой держится, пока курсор движется по сцене, и гаснет за «Сколько держится сбой»
 		if (trig === 'cursor') {
 			const moving = this.mouseOn && this._time - (this._moveT ?? -9) < 0.12;
 			const tc = moving ? 0.08 : Math.max(0.1, +L.recover || 1.2);
@@ -113,7 +107,6 @@ export class InteractionPart {
 			stale: L.stale,
 			jit: L.jit,
 			drift: L.drift,
-			// мышью: картинка размазывается туда, куда ведёте курсор
 			angle: trig === 'cursor' && this._mVel && Math.hypot(this._mVel.x, this._mVel.y) > 0.5 ? Math.atan2(-this._mVel.y, this._mVel.x) : ((L.angle || 0) * Math.PI) / 180,
 			flow: style === 2 ? Math.max(L.flow, 0.4) : L.flow,
 			inertia: L.inertia,
@@ -140,7 +133,6 @@ export class InteractionPart {
 		this.app.viewport.invalidate();
 	}
 
-	/** Готовые наборы настроек датамоша */
 	moshPreset(L, name) {
 		const P = {
 			classic: { style: 'bleed', trigger: 'timer', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0 },

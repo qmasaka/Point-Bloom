@@ -1,5 +1,3 @@
-// Фото и видео в точки как часть редактора: облако точек живёт в сцене, видео обновляет его каждый кадр.
-// Тот же PointMedia используют и «Эффекты» (источник «Фото»).
 import { PointMedia } from './point-media.js';
 import { cloudToPoints } from './pointcloud.js';
 import { downloadBlob } from '../core/util.js';
@@ -11,12 +9,9 @@ export class MediaController {
 		this.app = app;
 		this.pm = new PointMedia();
 		Object.defineProperty(this.pm, 'adjust', { get: () => app.settings.media });
-		// все открытые фото и видео: первое «media», остальные «media:2», «media:3»... Текущее (то, что показано и управляется с таймлайна) лежит в this.pm
 		this.lib = [{ id: 'media', pm: this.pm, want: true }];
 		this._mid = 1;
-		// чей звук слышно, когда открыто несколько видео: 'follow' это показанное сейчас, иначе ключ конкретного видео
 		this.soundKey = 'follow';
-		// постоянная ссылка на текущее медиа: панели и таймлайн берут её один раз, а она сама следует за переключением
 		this.live = new Proxy(
 			{},
 			{
@@ -53,32 +48,25 @@ export class MediaController {
 		return this.pm.ready;
 	}
 
-	/** Медиа открыто и его облако лежит в сцене (если объект удалили, вкладка и таймлайн прячутся) */
 	get present() {
-		// пока облако пересобирается (старое снято, новое ещё не добавлено), считаем, что медиа на месте: иначе вкладка «Медиа» закрывалась и кидала на «Сцену»
 		return this.pm.ready && (this._rebuilding || (!!this.obj && !!this.obj.parent) || this.lib.length > 1);
 	}
 
-	/** Запись библиотеки по ключу формы или по самому медиа */
 	entry(keyOrPm) {
 		return this.lib.find((e) => e.id === keyOrPm || e.pm === keyOrPm) || null;
 	}
 
-	/** Видео, чей звук слышно: выбранное или (по умолчанию) показанное сейчас */
 	soundEntry() {
 		const e = this.soundKey !== 'follow' ? this.entry(this.soundKey) : null;
 		return e && e.pm.ready ? e : this.entry(this.pm);
 	}
 
-	/** Это видео держит звук: при переходах оно не встаёт на паузу */
 	keepsSound(e) {
 		return !!e && this.soundKey !== 'follow' && e.id === this.soundKey;
 	}
 
-	/** Звук переходит к другому видео: оно получает включён/выключен от прежнего, прежнее замолкает */
 	passSound(prevPm) {
 		const heard = this.soundEntry()?.pm;
-		// в эффектах звук видео всегда включён: слышно выбранное (или показанное) видео, остальные молчат
 		if (this.app.ui?.workspace === 'fx') {
 			for (const e of this.lib) if (e.pm.ready && e.pm.kind === 'video') e.pm.setMuted(e.pm !== heard);
 			return;
@@ -99,17 +87,14 @@ export class MediaController {
 		this.emit();
 	}
 
-	/** Ключ текущего медиа в библиотеке */
 	activeKey() {
 		return this.entry(this.pm)?.id || 'media';
 	}
 
-	/** Сколько фото и видео открыто */
 	count() {
 		return this.lib.filter((e) => e.pm.ready).length;
 	}
 
-	/** Сетка точек для медиа: у одного своя под пропорции кадра, у нескольких одинаковая квадратная, чтобы число точек совпало */
 	applyGrid(pm) {
 		if (pm.isRec) return;
 		const pts = this.cfg.pts;
@@ -120,7 +105,6 @@ export class MediaController {
 		} else pm.setGrid(pts);
 	}
 
-	/** Ещё одно фото или видео рядом с открытым (режим эффектов): прежнее остаётся, новое становится формой для морфинга */
 	async addExtra(file) {
 		const pm = new PointMedia();
 		Object.defineProperty(pm, 'adjust', { get: () => this.app.settings.media });
@@ -143,18 +127,15 @@ export class MediaController {
 		setTimeout(() => (eng._muteScene = false), 1500);
 	}
 
-	/** Открывает фото, видео или сохранённый ролик .pcv и собирает облако точек в сцене */
 	async load(file) {
 		await this.pm.load(file);
 		this.rebuild();
-		// открыли новое фото или видео прямо в режиме эффектов: частицы должны перейти на него, а не остаться от прежнего
 		const eng = this.app.ui?.effectsEngine;
 		if (eng?.active) await eng.useMedia();
 		this.app.toast(this.pm.kind === 'image' ? 'Фото превращено в точки' : this.pm.kind === 'video' ? 'Видео превращено в точки. Его можно записать в точечный ролик' : 'Точечный ролик открыт', 'ok');
 		this.emit();
 	}
 
-	/** Убирает фото или видео и облако из сцены */
 	close() {
 		const eng = this.app.ui?.effectsEngine;
 		const cur = this.entry(this.pm);
@@ -167,7 +148,6 @@ export class MediaController {
 		this.pm.close();
 		if (!isPrimary) this.lib = this.lib.filter((e) => e !== cur);
 		if (o && o.parent) this.app.model.remove(o);
-		// остались другие фото и видео: показываем следующее, а не пустую сцену
 		const next = this.lib.find((e) => e.pm.ready);
 		if (next) this.pm = next.pm;
 		else this.pm = this.lib[0].pm;
@@ -175,7 +155,6 @@ export class MediaController {
 		this.emit();
 	}
 
-	/** Пересобирает облако в сцене под текущие настройки (плотность, рельеф) */
 	rebuild({ frame = true } = {}) {
 		const { app, pm } = this;
 		if (!pm.ready) return;
@@ -200,7 +179,6 @@ export class MediaController {
 		app.viewport.invalidate();
 	}
 
-	/** Цвета и высота точек по новому кадру */
 	_apply(rgb) {
 		const o = this.obj;
 		const g = o.geometry;
@@ -267,7 +245,6 @@ export class MediaController {
 		this.emit();
 	}
 
-	/** Копия текущего кадра в сцену (для экспорта): облако остаётся живым, а кадр замораживается */
 	snapshot() {
 		const { pm, app } = this;
 		if (!pm.ready) return;

@@ -1,4 +1,3 @@
-// Таймлайн над нижней панелью: управление видео и точечным роликом в редакторе и в режиме «Эффекты».
 import { h } from '../core/util.js';
 import { iconButton } from './ui-kit.js';
 import { icon } from './icons.js';
@@ -13,9 +12,7 @@ const fmt = (t) => {
 export function createMediaBar(app, host) {
 	const mc = app.media;
 	const pm = mc.live;
-	// истина о воспроизведении: сам элемент видео, а не флаг (флаг мог разойтись с элементом, и пауза мышью не срабатывала)
 	const isOn = () => (pm.kind === 'video' && pm.el ? pm.playing && !pm.el.paused : pm.playing);
-	// режим морфинга: полоса показывает весь круг форм (секунд на форму × число форм), а не одно видео, поэтому не скачет при смене видео
 	const eng = () => app.ui.effectsEngine;
 	const morphOn = () => app.ui.workspace === 'fx' && eng()?.active && (eng().playlist?.length || 0) >= 2;
 	const mcfg = () => eng().state.morphCfg;
@@ -50,7 +47,6 @@ export function createMediaBar(app, host) {
 	const play = iconButton({ icon: 'pause', title: 'Играть или пауза (Пробел)', onClick: toggle });
 	const time = h('span', { class: 'mb-time' }, '0:00.0');
 	const seek = h('input', { type: 'range', class: 'range mb-seek', min: 0, max: 1, step: 0.01, value: 0, 'aria-label': 'Перемотка' });
-	// перемотка: на время перетаскивания видео ставится на паузу, а запросы сливаются в один, чтобы кадры не копились в очереди
 	let scrubbing = false;
 	let wasPlaying = false;
 	seek.addEventListener('pointerdown', () => {
@@ -111,7 +107,6 @@ export function createMediaBar(app, host) {
 			total.textContent = fmt(T);
 			seek.max = T;
 			seek.style.setProperty('--p', Math.min(100, (mTime() / T) * 100) + '%');
-			// метки границ форм
 			const n = eng().playlist.length;
 			seek.style.setProperty('--ticks', n);
 			el.classList.add('is-morph');
@@ -157,7 +152,6 @@ export function createMediaBar(app, host) {
 		sync();
 		watch();
 	});
-	// таймер перемотки работает только пока панель видна
 	let timer = 0;
 	const tick = () => {
 		if (pm.recording) return;

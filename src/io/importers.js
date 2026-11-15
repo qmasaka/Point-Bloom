@@ -1,4 +1,3 @@
-// Импорт: OBJ(+MTL), GLB/glTF, FBX, DAE, STL, PLY, 3DS, 3MF, PCD, XYZ, AMF, USDZ, OFF, ZIP + отдельные текстуры.
 import * as THREE from 'three';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
@@ -41,10 +40,8 @@ export const IMAGE_EXT = ['png', 'apng', 'jpg', 'jpeg', 'jpe', 'jfif', 'pjpeg', 
 const isModelFile = (f) => extOf(f.name) in MODEL_FORMATS;
 const isImageFile = (f) => IMAGE_EXT.includes(extOf(f.name));
 
-/** Принимаемые расширения для <input type=file> */
 export const ACCEPT_ALL = ['.zip', '.mtl', '.bin', ...Object.keys(MODEL_FORMATS).map((e) => '.' + e), ...IMAGE_EXT.map((e) => '.' + e), '.mp4', '.webm', '.mov', '.pcv'].join(',');
 
-// ------------------------------------------------------------- ресурсы
 class ResourceMap {
 	constructor(files) {
 		this.files = files;
@@ -62,7 +59,6 @@ class ResourceMap {
 		try {
 			s = decodeURIComponent(s);
 		} catch (e) {
-			/* оставляем как есть */
 		}
 		return baseName(s.replace(/^\.\//, '')).toLowerCase();
 	}
@@ -71,7 +67,6 @@ class ResourceMap {
 		if (!n) return null;
 		return this.byName.get(n) || this.byStem.get(stripExt(n)) || null;
 	}
-	/** blob-URL для загрузчиков, которым нужны адреса */
 	urlFor(path) {
 		if (/^(data|blob|https?):/i.test(path)) return path;
 		const f = this.find(path);
@@ -91,7 +86,7 @@ function makeManager(res, ctx) {
 		if (u) return u;
 		if (!/^(data|blob|https?):/i.test(url)) {
 			ctx.missing.add(baseName(url));
-			return 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA='; // пустая картинка, чтобы загрузка не зависла
+			return 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
 		}
 		return url;
 	});
@@ -99,7 +94,6 @@ function makeManager(res, ctx) {
 	return m;
 }
 
-/** Ждёт, пока менеджер загрузит все свои ресурсы (текстуры из FBX/DAE/3DS/glTF) */
 function waitManager(manager, ms = 20000) {
 	return new Promise((resolve) => {
 		let started = false;
@@ -122,8 +116,6 @@ function waitManager(manager, ms = 20000) {
 	});
 }
 
-// ----------------------------------------------------------- загрузчики
-/** Текст файла: сначала строго UTF-8, а если не получилось (однобайтовая Windows-1251 из русских 3ds Max, CAD), то windows-1251 */
 async function readTextSmart(file) {
 	const buf = await file.arrayBuffer();
 	try {
@@ -149,7 +141,6 @@ async function loadOBJ(file, res, ctx) {
 	}
 	if (mtlFile) {
 		const creator = new MTLLoader().parse(await readTextSmart(mtlFile), '');
-		// Подставляем собственную загрузку текстур: так мы знаем исходные файлы и ловим ошибки
 		creator.loadTexture = (url) => {
 			const tex = new THREE.Texture();
 			const f = res.find(url);
@@ -181,7 +172,6 @@ async function loadGLTF(file, res, ctx) {
 	const wait = waitManager(manager);
 	const gltf = await new Promise((resolve, reject) => loader.parse(data, '', resolve, (e) => reject(e && e.message ? e : new Error(String(e)))));
 	await wait;
-	// клипы анимации едут вместе с моделью: проигрывает их контроллер анимации
 	gltf.scene.userData.clips = gltf.animations || [];
 	return gltf.scene;
 }
@@ -249,7 +239,6 @@ async function loadSTL(file) {
 	return new THREE.Mesh(g, mat);
 }
 
-/** PLY со сплатами (3D Gaussian Splatting): читаем положение, цвет из SH0 и прозрачность, получаем облако цветных точек */
 function parseSplatPLY(buf, name, isOwn) {
 	const bytes = new Uint8Array(buf);
 	const text = new TextDecoder('latin1').decode(bytes.subarray(0, Math.min(bytes.length, 8192)));
@@ -275,13 +264,11 @@ function parseSplatPLY(buf, name, isOwn) {
 	const rd = (q, i) => (q.type === 'double' || q.type === 'float64' ? dv.getFloat64(i * stride + q.off, true) : dv.getFloat32(i * stride + q.off, true));
 	const SH0 = 0.28209479177387814;
 	const lin = (c) => Math.pow(Math.max(0, Math.min(1, c)), 2.2);
-	// слишком большие облака прореживаем равномерно: остальное всё равно не нарисуется в реальном времени
 	const cap = 1500000;
 	const step = Math.max(1, count / cap);
 	const pos = new Float32Array(Math.min(count, cap + 1) * 3);
 	const col = new Float32Array(pos.length);
 	const opa = new Float32Array(pos.length / 3);
-	// сплаты из 3DGS обычно в системе «y вниз», собственные экспорты Point Bloom в «y вверх»
 	const flip = isOwn ? 1 : -1;
 	let k = 0;
 	for (let f = 0; f < count && k * 3 < pos.length; f += step) {
@@ -332,7 +319,6 @@ async function loadXYZ(file) {
 	return new THREE.Points(g, new THREE.PointsMaterial({ size: 0.01, vertexColors: hasColor, color: hasColor ? 0xffffff : 0xdddddd }));
 }
 
-/** OFF / COFF: самый простой формат сеток */
 async function loadOFF(file) {
 	const lines = (await file.text()).split(/\r?\n/).map((s) => s.trim()).filter((s) => s && !s.startsWith('#'));
 	let i = 0;
@@ -383,7 +369,6 @@ const LOADERS = {
 	off: loadOFF,
 };
 
-// ------------------------------------------------------- постобработка
 function centerObject(obj) {
 	const box = new THREE.Box3().setFromObject(obj);
 	if (box.isEmpty()) return;
@@ -402,7 +387,6 @@ function centerObject(obj) {
 function processImported(root, fileName, ctx, opts) {
 	const name = stripExt(fileName);
 	const clips = root.userData.clips || [];
-	// лишнее (свет, камеры) убираем, структура и позиции сохраняются
 	const junk = [];
 	root.traverse((o) => {
 		if (o.isLight || o.isCamera) junk.push(o);
@@ -429,7 +413,6 @@ function processImported(root, fileName, ctx, opts) {
 	});
 	for (const m of matCache.values()) finalizeMaterial(m);
 
-	// Контейнер = файл. Если внутри один объект, показываем сразу его.
 	let top = root;
 	if (!(root.isMesh || root.isPoints)) {
 		const kids = root.children.filter((c) => !c.userData.helper);
@@ -444,7 +427,6 @@ function processImported(root, fileName, ctx, opts) {
 	}
 	top.name = name || top.name || 'Модель';
 	if (clips.length) top.userData.clips = clips;
-	// персонажи со скелетом не сдвигаем: смещение меша и костей по отдельности ломает привязку к скелету
 	let rigged = false;
 	top.traverse((o) => {
 		if (o.isSkinnedMesh) rigged = true;
@@ -456,7 +438,6 @@ function processImported(root, fileName, ctx, opts) {
 	return top;
 }
 
-// -------------------------------------------------------------- ZIP
 async function expandZips(files, ctx) {
 	const out = [];
 	for (const f of files) {
@@ -468,7 +449,6 @@ async function expandZips(files, ctx) {
 			const entries = unzipSync(new Uint8Array(await f.arrayBuffer()));
 			let n = 0;
 			for (const [rawPath, bytes] of Object.entries(entries)) {
-				// архивы, собранные на Windows, хранят пути с обратным слешем: «models\\textures\\»
 				const path = rawPath.replace(/\\/g, '/');
 				if (path.endsWith('/') || !baseName(path) || path.includes('__MACOSX') || baseName(path).startsWith('.')) continue;
 				out.push(new File([bytes], baseName(path), { type: '' }));
@@ -482,11 +462,6 @@ async function expandZips(files, ctx) {
 	return out;
 }
 
-// --------------------------------------------------------------- главная
-/**
- * Загружает файлы в сцену.
- * @returns {Promise<{models: string[], warnings: string[], assigned: string[]}>}
- */
 export async function importFiles(app, fileList, { mode = 'auto', opts } = {}) {
 	const ctx = { pending: [], warnings: [], missing: new Set(), notes: [], report: {} };
 	const options = opts || app.settings.importOpts;
@@ -529,12 +504,10 @@ export async function importFiles(app, fileList, { mode = 'auto', opts } = {}) {
 
 	if (!loaded.length) return result;
 
-	// Заменить сцену или добавить?
 	let replace = mode === 'replace';
 	if (mode === 'auto') replace = app.model.renderables().length === 0;
 	if (replace) app.model.clear();
 	app.display.apply();
-	// при добавлении ставим новую модель рядом со старой, чтобы они не слипались в одной точке
 	const placed = replace ? new THREE.Box3() : app.viewport.getBounds(app.viewport.root);
 	for (const { object } of loaded) {
 		app.model.add(object, app.viewport.root);
@@ -552,7 +525,6 @@ export async function importFiles(app, fileList, { mode = 'auto', opts } = {}) {
 	result.models = loaded.map((l) => l.file.name);
 	app.model.select(loaded.length === 1 ? loaded[0].object : null);
 
-	// Если у модели нет ни одной текстуры, а вместе с ней перетащили картинки: назначаем их
 	if (images.length) {
 		const hasTextures = app.model.materials().some((m) => SLOTS.some((s) => m[s.key]));
 		if (!hasTextures || !models.some((f) => extOf(f.name) === 'obj')) {
@@ -564,10 +536,6 @@ export async function importFiles(app, fileList, { mode = 'auto', opts } = {}) {
 	return result;
 }
 
-/**
- * Назначает файлы-изображения в слоты материала.
- * material=null → активный материал (или единственный в сцене).
- */
 export async function assignTextureFiles(app, imageFiles, material, { forceSlot = null, quiet = false } = {}) {
 	const mats = app.model.materials();
 	if (!mats.length) {

@@ -1,5 +1,3 @@
-// Сервис-воркер: делает сайт устанавливаемым и держит копию оболочки на случай обрыва сети.
-// Сеть всегда в приоритете, поэтому после обновления сайта открывается новая версия, а не старая из кэша.
 const CACHE = 'point-bloom-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
@@ -16,7 +14,6 @@ self.addEventListener('fetch', (e) => {
 	const r = e.request;
 	if (r.method !== 'GET' || r.headers.has('range')) return;
 	const u = new URL(r.url);
-	// чужие адреса (библиотеки с CDN) и тяжёлые файлы распознавания рук не кэшируем
 	if (u.origin !== location.origin || u.pathname.startsWith('/vendor/mediapipe/')) return;
 	e.respondWith(
 		(async () => {

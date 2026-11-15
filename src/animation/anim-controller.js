@@ -1,18 +1,16 @@
-// Анимация персонажей: клипы из файла проигрываются на модели в сцене, скелет можно показать.
-// Анимацию сайт не создаёт: она приходит готовой вместе с моделью (GLB, glTF, FBX).
 import * as THREE from 'three';
 
 export class AnimController {
 	constructor(app) {
 		this.app = app;
-		this.models = []; // { obj, mixer, clips, helper }
+		this.models = [];
 		this.playing = false;
 		this.speed = 1;
 		this.loop = true;
 		this.clipIndex = 0;
 		this.time = 0;
 		this.skeletonOn = false;
-		this.version = 0; // растёт при каждой смене позы: по нему точки понимают, что пора пересчитаться
+		this.version = 0;
 		this._listeners = new Set();
 	}
 
@@ -38,7 +36,6 @@ export class AnimController {
 		return c ? Math.max(c.duration, 0.01) : 1;
 	}
 
-	/** Находит в сцене модели с клипами; новые получают проигрыватель, удалённые отпускаются */
 	scan() {
 		const root = this.app.viewport.root;
 		const found = [];
@@ -53,7 +50,6 @@ export class AnimController {
 		}
 		for (const obj of found) {
 			if (keep.some((m) => m.obj === obj)) continue;
-			// у меша со скелетом ограничивающая сфера считается один раз по позе привязки: когда анимация уносит его далеко (прыжки, бег), его бы отсекло как невидимый
 			obj.traverse((o) => {
 				if (o.isSkinnedMesh) o.frustumCulled = false;
 			});
@@ -80,7 +76,6 @@ export class AnimController {
 			m.mixer.stopAllAction();
 			m.mixer.uncacheRoot(m.obj);
 		} catch (e) {
-			/* уже снято */
 		}
 		if (m.helper) {
 			m.helper.removeFromParent();
@@ -122,7 +117,6 @@ export class AnimController {
 				m.helper.material.toneMapped = false;
 				m.helper.material.vertexColors = false;
 				m.helper.material.color.set('#ffd27a');
-				// суставы крупными точками: одиночные линии в один пиксель на экране почти не видны
 				m.bones = [];
 				m.obj.traverse((o) => o.isBone && m.bones.push(o));
 				const jg = new THREE.BufferGeometry();
@@ -188,7 +182,6 @@ export class AnimController {
 		this._emit();
 	}
 
-	/** Время клипа берётся со стороны (таймлайн эффектов): клип повторяется по кругу */
 	syncTime(t) {
 		if (!this.has) return;
 		const d = this.duration;
@@ -196,7 +189,6 @@ export class AnimController {
 		this.apply();
 	}
 
-	/** Охват всего движения клипа: камера ставится так, чтобы персонаж не уезжал за кадр (прыжки, бег) */
 	animatedBounds(samples = 14) {
 		const box = new THREE.Box3();
 		const saved = this.time;
@@ -205,7 +197,6 @@ export class AnimController {
 			this.apply();
 			for (const m of this.models) {
 				m.obj.updateWorldMatrix(true, true);
-				// у меша со скелетом габариты кешируются: пересчитываем по текущей позе
 				m.obj.traverse((o) => o.isSkinnedMesh && o.computeBoundingBox());
 				box.union(new THREE.Box3().setFromObject(m.obj));
 			}
@@ -215,7 +206,6 @@ export class AnimController {
 		return box;
 	}
 
-	/** Каждый кадр: время идёт, поза обновляется */
 	tick(dt) {
 		if (!this.has || !this.playing) return false;
 		this.time += dt * this.speed;
@@ -233,7 +223,6 @@ export class AnimController {
 		return true;
 	}
 
-	/** Облака точек, посаженные на персонажа в редакторе, идут за его позой */
 	_movePoints() {
 		for (const o of this.app.viewport.root.children) {
 			const a = o.userData.animPts;
@@ -247,7 +236,6 @@ export class AnimController {
 		}
 	}
 
-	/** Ставит позу на текущее время; кости и матрицы обновляются, даже если сцена скрыта (режим эффектов) */
 	apply() {
 		for (const m of this.models) {
 			if (!m.action) continue;
@@ -270,7 +258,6 @@ export class AnimController {
 			}
 		}
 		this._movePoints();
-		// рамка выделения идёт за движущейся моделью
 		if (this.app.model?.selection?.length) this.app.viewport.updateSelectionBox();
 		else this.app.viewport.invalidate();
 		this.version++;
@@ -278,10 +265,6 @@ export class AnimController {
 	}
 }
 
-/**
- * Положение точек, посаженных на персонажа, в текущей позе. anim: { parts, part, bp, bi, bw } (см. sampleSurface),
- * norm: приведение к размеру сцены эффектов. Записывает по три числа на точку в out.
- */
 export function evalAnimPoints(anim, norm, out, outN = null) {
 	const { parts, part, bp, bi, bw, bn } = anim;
 	const n = part.length;
@@ -326,7 +309,6 @@ export function evalAnimPoints(anim, norm, out, outN = null) {
 		out[i * 3 + 1] = (wy - cy) * k;
 		out[i * 3 + 2] = (wz - cz) * k;
 		if (outN && bn) {
-			// нормаль: та же кость и тот же поворот, без сдвига
 			const nx = bn[i * 3], ny = bn[i * 3 + 1], nz = bn[i * 3 + 2];
 			let tx = nx, ty = ny, tz = nz;
 			if (P.bones && (nx || ny || nz)) {

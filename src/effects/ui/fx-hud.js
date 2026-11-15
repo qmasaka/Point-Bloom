@@ -1,4 +1,3 @@
-// Трекинг-рамки поверх сцены: «захваченные» подвижные области облака и кибер-телеметрия (HUD).
 import * as THREE from 'three';
 import { HAND_LINKS, TIPS } from '../input/hand-tracker.js';
 import { tr } from '../../i18n/index.js';
@@ -23,7 +22,6 @@ export class TrackerHud {
 		this._dirty = true;
 		const c = this.canvas;
 		const dpr = Math.min(window.devicePixelRatio || 1, 2);
-		// размер холста читаем из кэша, который обновляет ResizeObserver: чтение clientWidth каждый кадр заставляло браузер пересчитывать раскладку
 		if (!this._ro) {
 			this._size = { w: c.clientWidth, h: c.clientHeight };
 			this._ro = new ResizeObserver(() => {
@@ -42,7 +40,6 @@ export class TrackerHud {
 	}
 
 	clear() {
-		// холст чистим только если на нём что-то рисовали: пустой слой не нужно пересобирать каждый кадр
 		if (!this._dirty) return;
 		this._dirty = false;
 		const c = this.canvas;
@@ -56,7 +53,6 @@ export class TrackerHud {
 	}
 
 	_pick(geometry, morph) {
-		// в раскадровке точки формы не видны: рамки выбирают места на текущем кадре блока
 		if (this.pickOverride) return this.pickOverride();
 		const o = geometry.attributes.aOrigin.array;
 		const t = geometry.attributes.aTarget.array;
@@ -66,7 +62,6 @@ export class TrackerHud {
 		return new THREE.Vector3(o[i] + (t[i] - o[i]) * m, o[i + 1] + (t[i + 1] - o[i + 1]) * m, o[i + 2] + (t[i + 2] - o[i + 2]) * m);
 	}
 
-	/** Выбирает точку по всей форме: из нескольких случайных берём самую далёкую от уже занятых, чтобы рамки не скапливались */
 	_pickHotspot(geometry, morph, levels) {
 		const o = geometry.attributes.aOrigin.array;
 		const t = geometry.attributes.aTarget.array;
@@ -85,17 +80,14 @@ export class TrackerHud {
 			if (score > bestScore) {
 				bestScore = score;
 				best = p;
-				// номер точки запоминаем: рамка держится за неё и идёт следом, когда форма двигается
 				this.lastIdx = this.pickOverride ? null : idx;
 			}
 		}
 		return best;
 	}
 
-	/** Симуляция «захваченных» точек: рамки динамически следуют за зонами активности */
 	update(want, geometry, morph, levels, dt, targets) {
 		this.t += dt;
-		// скорость перемещения рамок по форме: как часто выбирают новое место и как быстро к нему идут
 		const sp = Math.max(0.1, this.speed || 1);
 		while (this.items.length < want) {
 			const p = this._pickHotspot(geometry, morph, levels);
@@ -119,18 +111,15 @@ export class TrackerHud {
 				it.id = Math.floor(rnd(1, 99));
 				it.conf = rnd(0.82, 0.99);
 			}
-			// рамка закреплена за своей точкой: цель каждый кадр берётся с её текущего места (видео, анимация, морфинг), и рамка едет вместе с ней без догоняния
 			if (it.idx != null && !(targets && targets.length) && !this.pickOverride) {
 				const i3 = it.idx * 3;
 				if (i3 + 2 < tArr.length) {
 					const nx = oArr[i3] + (tArr[i3] - oArr[i3]) * mm, ny = oArr[i3 + 1] + (tArr[i3 + 1] - oArr[i3 + 1]) * mm, nz = oArr[i3 + 2] + (tArr[i3 + 2] - oArr[i3 + 2]) * mm;
-					// рамка едет вместе с точкой, а плавность только дотягивает остаток
 					if (it.carry) it.pos.set(it.pos.x + nx - it.target.x, it.pos.y + ny - it.target.y, it.pos.z + nz - it.target.z);
 					it.target.set(nx, ny, nz);
 					it.carry = true;
 				}
 			}
-			// смещение точки эффектами (с видеокарты): рамка рисуется там, где точку видно
 			const off = (it.off ||= new THREE.Vector3());
 			const G = this.gpu;
 			let gk = -1;
@@ -153,7 +142,6 @@ export class TrackerHud {
 		});
 	}
 
-	/** Отрисовка трекинг-рамок */
 	draw(cfg, alpha, info) {
 		this.drawTracking(cfg, alpha, info);
 	}
@@ -183,7 +171,6 @@ export class TrackerHud {
 		ctx.font = `${fs}px Geist, "Geist Variable", system-ui, sans-serif`;
 		ctx.textBaseline = 'top';
 
-		// связи между рамками: кто с кем, какой линией, толщина и яркость настраиваются
 		if (cfg.lines === 'on' && dpx.length > 1) {
 			const mode = cfg.lineMode || 'nearest';
 			const style = cfg.lineStyle || 'dashed';
@@ -227,7 +214,6 @@ export class TrackerHud {
 			ctx.strokeStyle = rgba(c0, (cfg.lineAlpha ?? 0.5) * alpha);
 			ctx.lineWidth = style === 'dots' ? lwn * 1.8 : lwn;
 			ctx.setLineDash(style === 'dashed' ? [3 * lwn + 1, 4 * lwn + 1] : style === 'dots' ? [0.1, 6 + lwn * 2] : []);
-			// все линии одним путём и одним вызовом stroke: так быстрее, чем по линии на вызов
 			ctx.beginPath();
 			for (const [A, B] of pairs) {
 				ctx.moveTo(A.x, A.y);
@@ -243,7 +229,6 @@ export class TrackerHud {
 			}
 			ctx.stroke();
 			if (style === 'pulse') {
-				// огонёк бежит по линии от одной рамки к другой, у каждой пары свой ритм
 				const tnow = performance.now() / 1000;
 				ctx.fillStyle = rgba(c2, 0.95 * Math.min(1, alpha));
 				for (const [A, B] of pairs) {
@@ -262,7 +247,6 @@ export class TrackerHud {
 			const y0 = y - s / 2;
 			const x1 = x + s / 2;
 			const y1 = y + s / 2;
-			// заливка области рамки: тон или штриховка
 			if (cfg.fill && cfg.fill !== 'none') {
 				ctx.save();
 				ctx.beginPath();
@@ -314,7 +298,6 @@ export class TrackerHud {
 				const tx = x1 + 8;
 				const id = String(it.id).padStart(2, '0');
 				const pc = Math.round(it.conf * 100);
-				// что написано: набор строк зависит от выбранного вида подписи
 				const kind = cfg.labelInfo || 'full';
 				const lines = {
 					full: [`ТОЧКА ${id}  ${pc}%`, `X ${it.pos.x.toFixed(2)}  Y ${it.pos.y.toFixed(2)}`, `V ${it.speed.toFixed(2)}  Z ${it.pos.z.toFixed(2)}`],
@@ -354,7 +337,6 @@ export class TrackerHud {
 		}
 	}
 
-	/** Руки с веб-камеры: скелет и кольца на кончиках пальцев поверх сцены */
 	drawHands(hands, w, hgt, color, skeleton) {
 		this._fit();
 		const ctx = this.ctx;
@@ -401,7 +383,6 @@ export class TrackerHud {
 		ctx.restore();
 	}
 
-	/** Курсор, которым управляет веб-камера: кольцо с прицелом на форме */
 	drawCursor(x, y, alpha, color) {
 		this._fit();
 		const ctx = this.ctx;
@@ -432,7 +413,6 @@ export class TrackerHud {
 		ctx.restore();
 	}
 
-	/** Приборная накладка: три шкалы уровней слева сверху и спектр над нижней панелью */
 	drawTelemetry(cfg, alpha, info) {
 		const { w, h } = this._fit();
 		const ctx = this.ctx;
@@ -442,7 +422,6 @@ export class TrackerHud {
 		ctx.font = '500 10.5px Geist, "Geist Variable", ui-monospace, monospace';
 		ctx.textBaseline = 'middle';
 
-		// шкалы уровней: слева сверху, в стороне от оси-гизмо
 		const rx = 16;
 		const ry = 18;
 		const rw = 84;
@@ -461,7 +440,6 @@ export class TrackerHud {
 			ctx.fillRect(rx + 38, y - 3, Math.max(1, Math.min(rw, val * rw)), 6);
 		});
 
-		// спектр: над нижней панелью управления
 		if (cfg.audioWave !== 'off' && info.spec && info.spec.length) {
 			const ow = Math.min(420, w - 48);
 			const ox = (w - ow) / 2;

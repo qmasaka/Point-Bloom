@@ -1,5 +1,4 @@
-// Сгенерировано dev/gen-wgsl.mjs из шейдеров GLSL. Не править руками: правьте GLSL и запустите node dev/gen-wgsl.mjs.
-export const pointsRenderWGSL = /* wgsl */ `
+export const pointsRenderWGSL =  `
 struct Frame {
 	@size(16) uAdd: f32,
 	@size(16) uSolid: vec3f,
@@ -298,7 +297,7 @@ fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VOut 
 	let b = outB[ii];
 	let c = outC[ii];
 	var clip = a;
-	// в WebGL глубина клипа от -w до w, в WebGPU от 0 до w
+
 	clip.z = (clip.z + clip.w) * 0.5;
 	let off = corner * (b.w / fr.uPx);
 	clip = vec4f(clip.xy + off * clip.w, clip.z, clip.w);
@@ -320,7 +319,6 @@ fn setup_in(in: VOut) {
 	gl_PointCoord = in.pc;
 }
 
-// на экран: с тональной компрессией и переводом в sRGB
 @fragment
 fn fs(in: VOut) -> @location(0) vec4f {
 	setup_in(in);
@@ -328,7 +326,6 @@ fn fs(in: VOut) -> @location(0) vec4f {
 	return vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, fr.uExposure, fr.uTone)), gl_FragColor.a);
 }
 
-// в промежуточный буфер (дальше идёт пост-обработка): линейный цвет как есть
 @fragment
 fn fs_raw(in: VOut) -> @location(0) vec4f {
 	setup_in(in);
@@ -336,7 +333,7 @@ fn fs_raw(in: VOut) -> @location(0) vec4f {
 	return gl_FragColor;
 }
 `;
-export const shadowRenderWGSL = /* wgsl */ `
+export const shadowRenderWGSL =  `
 struct Frame {
 	@size(16) uAdd: f32,
 	@size(16) uSolid: vec3f,
@@ -594,7 +591,7 @@ fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VOut 
 	let b = outB[ii];
 	let c = outC[ii];
 	var clip = a;
-	// в WebGL глубина клипа от -w до w, в WebGPU от 0 до w
+
 	clip.z = (clip.z + clip.w) * 0.5;
 	let off = corner * (b.w / fr.uPx);
 	clip = vec4f(clip.xy + off * clip.w, clip.z, clip.w);
@@ -616,7 +613,6 @@ fn setup_in(in: VOut) {
 	gl_PointCoord = in.pc;
 }
 
-// на экран: с тональной компрессией и переводом в sRGB
 @fragment
 fn fs(in: VOut) -> @location(0) vec4f {
 	setup_in(in);
@@ -624,7 +620,6 @@ fn fs(in: VOut) -> @location(0) vec4f {
 	return vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, fr.uExposure, fr.uTone)), gl_FragColor.a);
 }
 
-// в промежуточный буфер (дальше идёт пост-обработка): линейный цвет как есть
 @fragment
 fn fs_raw(in: VOut) -> @location(0) vec4f {
 	setup_in(in);

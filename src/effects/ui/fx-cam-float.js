@@ -1,5 +1,3 @@
-// Окно с камерой в эффектах: его можно двигать по сцене, а в режиме «только сцена» ещё и менять размер. Положение запоминается отдельно для каждого режима.
-// Положения и размеры хранятся в пикселях вёрстки; мышь и замеры приходят в экранных, при масштабе интерфейса они делятся на него (toCss)
 import { screenRect, toCss } from '../../core/util.js';
 
 const KEY = 'objglb.fxcam.v1';
@@ -15,7 +13,6 @@ export function makeCamMovable(box, appEl, viewport) {
 		try {
 			localStorage.setItem(KEY, JSON.stringify(st));
 		} catch {
-			/* без хранилища положение просто не запомнится */
 		}
 	};
 	const mode = () => (appEl.classList.contains('fx-focus') ? 'focus' : 'normal');
@@ -107,7 +104,6 @@ export function makeCamMovable(box, appEl, viewport) {
 		grip.addEventListener('pointercancel', up);
 	});
 
-	// при входе и выходе из режима «только сцена» окно переезжает на сохранённое для него место
 	const mo = new MutationObserver(apply);
 	mo.observe(appEl, { attributes: true, attributeFilter: ['class'] });
 	window.addEventListener('resize', clamp);

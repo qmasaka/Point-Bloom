@@ -1,10 +1,8 @@
-// Карточка «Ваш компьютер»: сведения об устройстве, замер мощности и рекомендуемое число точек.
 import { h } from '../core/util.js';
 import { icon } from './icons.js';
 import { button } from './ui-kit.js';
 import { deviceInfo, guessLimits, loadCachedBench, runBenchmark, formatCount, pointMemoryMB } from '../core/capabilities.js';
 
-/** Общее состояние устройства на всё приложение */
 export function getDevice(app) {
 	if (!app.device) {
 		const info = deviceInfo(app);
@@ -13,7 +11,6 @@ export function getDevice(app) {
 	return app.device;
 }
 
-/** Подсказка по выбранному количеству точек: { level: 'ok' | 'warn' | 'bad', text } */
 export function hintForCount(app, n) {
 	const { limits } = getDevice(app);
 	const mem = Math.round(pointMemoryMB(n));
@@ -29,9 +26,6 @@ export function hintForCount(app, n) {
 	return { level: 'bad', text: `Больше безопасного лимита по памяти (${formatCount(limits.cap)}). Вкладка может не выдержать.` };
 }
 
-/**
- * @param {object} opts { onPick(count) }: выбор готового значения
- */
 export function createDeviceCard(app, { onPick, compact = false } = {}) {
 	const dev = getDevice(app);
 	const el = h('div', { class: 'device-card' });

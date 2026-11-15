@@ -1,28 +1,21 @@
-// Операции над BufferGeometry: быстрая склейка вершин, нормали, зеркалирование и т. д.
 import * as THREE from 'three';
 
 const isPlain = (a) => a && !a.isInterleavedBufferAttribute && a.array;
 
-/**
- * Точная (побитовая) склейка одинаковых вершин. В отличие от mergeVertices из three
- * не использует строки, поэтому на миллионах вершин в разы быстрее и ничего не «округляет».
- * Возвращает НОВУЮ геометрию (исходная не меняется).
- */
 export function weldExact(geometry) {
 	const pos = geometry.attributes.position;
 	if (!pos) return geometry;
 	const names = Object.keys(geometry.attributes);
-	for (const n of names) if (!isPlain(geometry.attributes[n])) return geometry; // чересстрочные — не трогаем
+	for (const n of names) if (!isPlain(geometry.attributes[n])) return geometry;
 	const n = pos.count;
 	const attrs = names.map((name) => geometry.attributes[name]);
-	// Для float-массивов сравниваем битовые представления
 	const views = attrs.map((a) => (a.array instanceof Float32Array ? new Uint32Array(a.array.buffer, a.array.byteOffset, a.array.length) : a.array));
 	const sizes = attrs.map((a) => a.itemSize);
 
 	const size = 1 << Math.ceil(Math.log2(Math.max(16, n * 2)));
 	const mask = size - 1;
 	const table = new Int32Array(size).fill(-1);
-	const rep = new Uint32Array(n); // индекс-представитель для каждой вершины
+	const rep = new Uint32Array(n);
 	const newId = new Int32Array(n).fill(-1);
 	let unique = 0;
 
@@ -68,7 +61,7 @@ export function weldExact(geometry) {
 			slot = (slot + 1) & mask;
 		}
 	}
-	if (unique === n) return geometry; // склеивать нечего
+	if (unique === n) return geometry;
 
 	const out = new THREE.BufferGeometry();
 	out.name = geometry.name;
@@ -97,7 +90,6 @@ export function weldExact(geometry) {
 	return out;
 }
 
-/** Обратный порядок вершин у каждого треугольника (разворот граней) */
 export function flipWinding(geometry) {
 	const g = geometry.clone();
 	if (g.index) {
@@ -126,7 +118,6 @@ export function flipWinding(geometry) {
 	return g;
 }
 
-/** Разворот нормалей: развернуть грани и инвертировать векторы нормалей */
 export function flipNormals(geometry) {
 	const g = flipWinding(geometry);
 	const n = g.attributes.normal;
@@ -137,7 +128,6 @@ export function flipNormals(geometry) {
 	return g;
 }
 
-/** Зеркалирование по оси ('x' | 'y' | 'z') в локальных координатах */
 export function mirrorGeometry(geometry, axis) {
 	const g = geometry.clone();
 	const m = new THREE.Matrix4().makeScale(axis === 'x' ? -1 : 1, axis === 'y' ? -1 : 1, axis === 'z' ? -1 : 1);
@@ -146,7 +136,6 @@ export function mirrorGeometry(geometry, axis) {
 	return f;
 }
 
-/** Нормали для плоского затенения (каждая грань — своя нормаль). Геометрия станет неиндексированной. */
 export function flatNormals(geometry) {
 	const g = geometry.index ? geometry.toNonIndexed() : geometry.clone();
 	g.deleteAttribute('normal');
@@ -154,10 +143,6 @@ export function flatNormals(geometry) {
 	return g;
 }
 
-/**
- * Сглаживание по углу (как «Auto Smooth» в Blender): соседние грани сглаживаются,
- * если угол между ними не больше angleDeg. UV-швы сохраняются.
- */
 export function smoothNormals(geometry, angleDeg = 60) {
 	const g = geometry.index ? geometry.toNonIndexed() : geometry.clone();
 	if (!(g.attributes.position.array instanceof Float32Array)) {
@@ -174,7 +159,6 @@ export function smoothNormals(geometry, angleDeg = 60) {
 	const n = pos.count;
 	const T = Math.floor(n / 3);
 	const p = pos.array;
-	// 1. нормали и площади граней
 	const fn = new Float32Array(T * 3);
 	const fa = new Float32Array(T);
 	for (let t = 0; t < T; t++) {
@@ -189,7 +173,6 @@ export function smoothNormals(geometry, angleDeg = 60) {
 		}
 		fn[t * 3] = nx; fn[t * 3 + 1] = ny; fn[t * 3 + 2] = nz;
 	}
-	// 2. группы вершин с одинаковым положением (хеш по битам позиции)
 	const bits = new Uint32Array(p.buffer, p.byteOffset, p.length);
 	const size = 1 << Math.ceil(Math.log2(Math.max(16, n * 2)));
 	const mask = size - 1;
@@ -198,7 +181,6 @@ export function smoothNormals(geometry, angleDeg = 60) {
 	let groups = 0;
 	for (let i = 0; i < n; i++) {
 		const o = i * 3;
-		// -0 → +0, чтобы «нули» совпадали
 		const bx = bits[o] === 0x80000000 ? 0 : bits[o];
 		const by = bits[o + 1] === 0x80000000 ? 0 : bits[o + 1];
 		const bz = bits[o + 2] === 0x80000000 ? 0 : bits[o + 2];
@@ -225,14 +207,12 @@ export function smoothNormals(geometry, angleDeg = 60) {
 			slot = (slot + 1) & mask;
 		}
 	}
-	// 3. CSR: грани, примыкающие к каждой группе
 	const counts = new Uint32Array(groups + 1);
 	for (let i = 0; i < T * 3; i++) counts[group[i] + 1]++;
 	for (let i = 0; i < groups; i++) counts[i + 1] += counts[i];
 	const fill = counts.slice(0, groups);
 	const faces = new Uint32Array(T * 3);
 	for (let i = 0; i < T * 3; i++) faces[fill[group[i]]++] = (i / 3) | 0;
-	// 4. нормаль в каждом углу
 	const cosT = Math.cos((angleDeg * Math.PI) / 180) - 1e-6;
 	const out = new Float32Array(n * 3);
 	for (let t = 0; t < T; t++) {
@@ -257,7 +237,6 @@ export function smoothNormals(geometry, angleDeg = 60) {
 	return weldExact(g);
 }
 
-/** Развернуть V-координату UV (v → 1 − v) */
 export function flipUVV(geometry) {
 	const g = geometry.clone();
 	const uv = g.attributes.uv;
@@ -276,7 +255,6 @@ export function triangleCount(geometry) {
 	return Math.floor(n / 3);
 }
 
-/** Геометрия для точек: те же атрибуты, но без индекса (иначе точки рисуются по нескольку раз) */
 export function pointsGeometryFrom(geometry) {
 	const g = new THREE.BufferGeometry();
 	for (const name of ['position', 'normal', 'uv', 'color']) {
@@ -285,7 +263,6 @@ export function pointsGeometryFrom(geometry) {
 	return g;
 }
 
-/** Размер диагонали ограничивающего бокса */
 export function diagonal(box) {
 	return box.isEmpty() ? 0 : box.min.distanceTo(box.max);
 }

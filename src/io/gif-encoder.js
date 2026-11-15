@@ -1,6 +1,3 @@
-// Кодировщик анимированного GIF: палитра методом медианного сечения и сжатие LZW. Без зависимостей.
-
-/** Палитра до 256 цветов из выборки пикселей (Uint8Array RGBA) */
 function buildPalette(samples) {
 	const px = [];
 	for (let i = 0; i < samples.length; i += 4) px.push((samples[i] << 16) | (samples[i + 1] << 8) | samples[i + 2]);
@@ -94,9 +91,7 @@ function lzw(indices) {
 	return out;
 }
 
-/** frames: [ImageData], delay в сотых долях секунды. onProgress(0..1). Возвращает Blob image/gif */
 export async function encodeGIF(frames, w, h, delay, onProgress) {
-	// палитра по выборке из нескольких кадров
 	const step = Math.max(1, Math.floor(frames.length / 8));
 	const sample = [];
 	for (let f = 0; f < frames.length; f += step) {

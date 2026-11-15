@@ -99,7 +99,7 @@ new GLTFLoader().load(${JSON.stringify(glb)}, (gltf) => {
 		if (!n.isPoints) return;
 		const size = (n.userData && n.userData.pointSize) || 0.01;
 		const tex = sprite((n.userData && n.userData.pointShape) || 'circle');
-		// у three.js размер точки с перспективой считается без учёта угла обзора, поэтому делится на tan(fov/2)
+
 		n.material = new THREE.PointsMaterial({ size: size * k, vertexColors: !!n.geometry.attributes.color, sizeAttenuation: true, map: tex, alphaTest: tex ? 0.5 : 0, transparent: false });
 	});
 	const box = new THREE.Box3().setFromObject(gltf.scene);

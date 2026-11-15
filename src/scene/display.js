@@ -1,11 +1,9 @@
-// Режимы отображения: материал / сплошной / каркас / точки / нормали / UV-сетка + оверлеи.
-// Исходные материалы мешей всегда хранятся в this.orig — именно они уходят в экспорт.
 import * as THREE from 'three';
 import { LAYER, BACKGROUNDS } from './viewport.js';
 import { pointsGeometryFrom } from '../core/geom.js';
 import { bakeVertexColors, colorSignature } from '../points/pointcloud.js';
 
-const pointVert = /* glsl */ `
+const pointVert = `
 uniform float uSize;
 uniform float uAttenuate;
 uniform float uRef;
@@ -19,7 +17,7 @@ attribute float aSel;
 varying vec3 vColor;
 
 vec3 ramp(float t) {
-	// синий → голубой → зелёный → жёлтый → красный
+
 	vec3 c = vec3(0.0);
 	if (t < 0.25) c = mix(vec3(0.10, 0.20, 0.85), vec3(0.05, 0.80, 0.95), t / 0.25);
 	else if (t < 0.5) c = mix(vec3(0.05, 0.80, 0.95), vec3(0.30, 0.90, 0.25), (t - 0.25) / 0.25);
@@ -30,7 +28,7 @@ vec3 ramp(float t) {
 
 void main() {
 	if (aHide > 0.5) {
-		// точка скрыта фильтром «Медиа»: уводим за пределы экрана
+
 		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;
 		vColor = vec3(0.0);
@@ -56,14 +54,14 @@ void main() {
 		float wy = (modelMatrix * vec4(position, 1.0)).y;
 		vColor = ramp(clamp((wy - uYRange.x) / max(uYRange.y - uYRange.x, 1e-9), 0.0, 1.0));
 	}
-	// точки, выбранные при правке, светятся оранжевым и чуть крупнее
+
 	if (aSel > 0.5) {
 		vColor = vec3(1.0, 0.42, 0.08);
 		gl_PointSize = max(gl_PointSize, 3.0) + 1.5;
 	}
 }`;
 
-const pointFrag = /* glsl */ `
+const pointFrag = `
 uniform float uShape;
 varying vec3 vColor;
 void main() {
@@ -71,11 +69,11 @@ void main() {
 	float r2 = dot(c, c);
 	vec3 col = vColor;
 	if (uShape < 0.5) {
-		// квадрат
+
 	} else if (uShape < 1.5) {
 		if (r2 > 0.25) discard;
 	} else if (uShape < 2.5) {
-		// шар: круг с объёмной подсветкой
+
 		if (r2 > 0.25) discard;
 		vec3 n = vec3(c.x * 2.0, -c.y * 2.0, sqrt(max(0.0, 1.0 - 4.0 * r2)));
 		float l = max(dot(n, normalize(vec3(-0.4, 0.6, 0.7))), 0.0);
@@ -131,8 +129,8 @@ const COLOR_MODE = { texture: 0, solid: 1, normal: 2, height: 3 };
 export class Display {
 	constructor(app) {
 		this.app = app;
-		this.orig = new WeakMap(); // Mesh | Points → исходный материал (или массив)
-		this.overlays = new WeakMap(); // Mesh → { wire, faceF, faceB, points, sig }
+		this.orig = new WeakMap();
+		this.overlays = new WeakMap();
 		this.checker = makeUVChecker();
 
 		this.mats = {
@@ -169,7 +167,6 @@ export class Display {
 		return this.app.settings.display;
 	}
 
-	// ----------------------------------------------------- регистрация объектов
 	attach(obj) {
 		if (obj.userData.helper) return;
 		if (obj.isMesh) {
@@ -199,7 +196,6 @@ export class Display {
 		this.orig.set(obj, material);
 	}
 
-	/** Убирает служебные дочерние объекты (при клонировании) */
 	static stripHelpers(root) {
 		const drop = [];
 		root.traverse((o) => {
@@ -208,7 +204,6 @@ export class Display {
 		for (const o of drop) o.removeFromParent();
 	}
 
-	// ----------------------------------------------------------- применение
 	syncCameraLayers() {
 		const vp = this.app.viewport;
 		const s = this.app.settings;
@@ -258,7 +253,6 @@ export class Display {
 		this.scheduleWarmup();
 	}
 
-	/** Прогрев шейдеров остальных режимов отображения в фоне: переключение режима потом идёт без запинки компиляции */
 	scheduleWarmup() {
 		const r = this.app.viewport.renderer;
 		if (!r || !r.compileAsync) return;
@@ -283,7 +277,6 @@ export class Display {
 				await r.compileAsync(g, vp.camera, vp.scene);
 				dummy.dispose();
 			} catch (e) {
-				/* прогрев необязателен: при ошибке шейдеры просто скомпилируются при первом переключении */
 			}
 		};
 		const idle = window.requestIdleCallback || ((f) => setTimeout(f, 300));
@@ -350,7 +343,6 @@ export class Display {
 		ov.geometryRef = mesh.geometry;
 	}
 
-	/** Униформы шейдера точек — каждый кадр (зависят от камеры и окна) */
 	updateUniforms(camera, size, nav) {
 		const s = this.app.settings.point;
 		const u = this.pointMat.uniforms;

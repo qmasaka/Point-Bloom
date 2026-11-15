@@ -1,8 +1,3 @@
-/**
- * Движок эффектов для облака точек. Идея взята из TouchDesigner (POP): цепочка независимых «операторов»
- * (шум, спектр, волны, скручивание, пульс, воксели, дрожь, курсор), каждый из которых можно включить,
- * настроить и привязать к полосе звука (бас, середина, верх, бит). Вся геометрия считается на видеокарте.
- */
 import * as THREE from 'three';
 import { perf } from '../../core/perf.js';
 import { loadJSON, mergeDeep, saveJSON } from '../../core/util.js';
@@ -42,11 +37,9 @@ export class EffectsEngine {
 		this.app = app;
 		this.active = false;
 		this.state = mergeDeep(defaultState(), loadJSON(KEY, {}));
-		// «Живая сцена без звука» по умолчанию выключена; у тех, кто её не трогал сам, прежнее сохранённое «включено» сбрасываем
 		if (!this.state.audio.idleSet) this.state.audio.idle = false;
-		this.state.mask = { ...defaultState().mask }; // зона действия убрана из интерфейса: эффекты всегда работают на всей форме
+		this.state.mask = { ...defaultState().mask };
 		for (const l of FX_LAYERS) this.state.layers[l.id] = { ...AUDIO_DEF, ...l.def, ...this.state.layers[l.id] };
-		// старое «Течение» стало видом эффекта «Вихри и течение»: включённый слой переезжает
 		{
 			const fl = this.state.layers.flow;
 			const cl = this.state.layers.curl;
@@ -57,16 +50,13 @@ export class EffectsEngine {
 			this.state._m6 = true;
 		}
 		this.state.look = { ...defaultState().look, ...this.state.look };
-		// у срезов, сохранённых раньше, линии теперь по умолчанию естественного цвета модели
 		if (this.state.layers.brush && this.state.layers.brush.radius > 0.3 && !this.state._m5) {
 			this.state.layers.brush.radius = 0.14;
 			this.state.layers.brush.dry = 3;
 		}
 		this.state._m5 = 1;
-		// раскадровка снова выглядит как раньше: рамки и прореживание, включённые по умолчанию в прошлой версии, выключаются (включить можно в настройках)
 		if (!this.state._m7 && this.state.layers.frames) {
 			Object.assign(this.state.layers.frames, { edge: 0, curEdge: 0, thin: 0 });
-			// у шлейфа движения новые значения по умолчанию: копии реже и плотнее, без фона в шлейфе
 			if (this.state.layers.chrono) Object.assign(this.state.layers.chrono, { count: 14, every: 0.12, fade: 0.4, bgKeep: 0, thin: 0.15, tint: 0.15, drift: 1.1, depthZ: 0.04, dkeep: 0.5, size: 1.4, budget: 480000 });
 			this.state._m7 = 1;
 		}
@@ -75,9 +65,7 @@ export class EffectsEngine {
 			this.state._m4 = 1;
 		}
 		if (this.state.look.colorBy === 'height' || this.state.look.colorBy === 'index') this.state.look.colorBy = 'disp';
-		// палитру «Янтарь» убрали: сохранённая сцена с ней берёт «Неон»
 		if (this.state.look.palette === 'brand') this.state.look.palette = 'cyber';
-		// у шлейфа убран режим «Людей, животных, транспорт», у объёма по глубине движущиеся виды (волна, рябь, карусель, выброс); покачивание по умолчанию выключено
 		const Ch = this.state.layers.chrono;
 		if (Ch && Ch.mask === 'any') Ch.mask = 'person';
 		const Dp = this.state.layers.depth;
@@ -87,7 +75,6 @@ export class EffectsEngine {
 			this.state._m8 = 1;
 		}
 
-		// звук
 		this.ctx = null;
 		this.analyser = null;
 		this.bus = null;
@@ -107,7 +94,6 @@ export class EffectsEngine {
 		this._beatIdx = 0;
 		this._lastBeat = 0;
 
-		// сцена
 		this.points = null;
 		this.geometry = null;
 		this.material = null;
@@ -122,20 +108,17 @@ export class EffectsEngine {
 		this._raf = null;
 		this._lastT = 0;
 		this.recording = false;
-		this.modelProvider = null; // { available(), kind(), total(), get(n) }
-		// карта глубины для фото и видео: нейросеть работает в отдельном потоке, результат переносится на сетку точек
+		this.modelProvider = null;
 		this.depthAI = new DepthAI();
 		this._dListeners = new Set();
 		this.depthAI.onChange = () => this._depthEmit();
 		this._D = { key: null, map: null, mapSrc: '', aiHas: false, st: {}, tgt: null, geo: null, dirty: false, snap: false, moving: false, busy: false, rgb: null, rgbN: 0, lumaN: -1, reqT: -1e9, force: false, err: '', n: 0 };
 		app.bus.on('settings', () => this._histSoon());
-		// как только в сцене что-то появилось, в паузу готовим шейдеры эффектов
 		app.bus.on('scene', () => {
 			clearTimeout(this._warmT);
 			if (!this.active) this.cache.clear();
 			this._warmT = setTimeout(() => (window.requestIdleCallback || ((f) => setTimeout(f, 60)))(() => this.prewarm()), 1200);
 		});
-		// новая текстура, цвет материала или правка сетки в редакторе: готовое облако устарело, при входе в «Эффекты» оно соберётся заново с новыми цветами
 		const stale = () => {
 			if (this.active) return;
 			this.cache.clear();
@@ -170,7 +153,7 @@ export class EffectsEngine {
 		this.animPlaying = false;
 		this.animRec = false;
 		this.brushHits = [];
-		this.backend = null; // рендер-движок (WebGL сейчас): создаётся при входе в режим
+		this.backend = null;
 		this.camTracker = null;
 		this._pointerDown = false;
 	}
@@ -186,8 +169,6 @@ export class EffectsEngine {
 		this.emit();
 	}
 
-	// ------------------------------------------------------------ вид точек, общий с редактором
-	/** Режим цвета «Модель, Один цвет, Нормали, Высота» хранится в настройках вкладки «Точки»: один источник правды */
 	setColorBy(v) {
 		const pt = this.app.settings.point;
 		this._userColor = true;
@@ -199,7 +180,6 @@ export class EffectsEngine {
 		this.emit();
 	}
 
-	/** Подтягивает режим цвета из вкладки «Точки»: для модели по умолчанию видна её текстура */
 	syncLookFromPoints() {
 		const m = { texture: 'model', solid: 'solid', normal: 'normal' }[this.app.settings.point.color];
 		const cur = this.state.look.colorBy;
@@ -216,15 +196,11 @@ export class EffectsEngine {
 		this.app.bus.emit('fx');
 	}
 
-	// ------------------------------------------------------------ геометрия
-	/** Сколько частиц реально используем: если в сцене есть готовое облако точек, не больше, чем в нём */
-	/** Текущее фото или видео (оно же в таймлайне и в панели «Фото и видео»); их может быть несколько, переключается при переходе */
 	get pm() {
 		return this.app.media.pm;
 	}
 
 	_n() {
-		// видео или фото участвует в морфинге или показано сейчас: у всех форм столько же точек, сколько у видео, иначе переход превращается в резкую подмену
 		const mc = this.app.media;
 		const inList = (this.playlist || []).map((k) => mc.entry(k)).find((e) => e && e.pm.ready);
 		if (this.state.source === 'media' || inList) {
@@ -239,22 +215,20 @@ export class EffectsEngine {
 		return this.state.count;
 	}
 
-	// ------------------------------------------------------------ вход и выход
 	async enter() {
 		if (this.active) return;
 		const app = this.app;
 		this.active = true;
-		this.state.look.autoRotate = false; // при входе форма не крутится сама, включается в «Вид»
-		this.state.layers.frames.on = false; // раскадровка и шлейф движения включаются вручную и только пока открыто видео
+		this.state.look.autoRotate = false;
+		this.state.layers.frames.on = false;
 		if (this.state.layers.chrono) this.state.layers.chrono.on = false;
-		this._fxCur = new Set(); // начинаем с самого лёгкого шейдера: код эффектов добавляется, когда эффект включается
+		this._fxCur = new Set();
 		this._fxSeen = new Map();
 		this._fxBusy = false;
-		this._warm = new Map(); // какие шейдеры уже собраны: у новой сцены новые материалы, готовность проверяется заново
-		this._tgtWarm = {}; // готовность прочих объектов сцены под каждый вариант вывода
-		this._tgtRT = this._postOn(); // сначала собирается тот вариант вывода (в экран или в буфер), который нужен сейчас
+		this._warm = new Map();
+		this._tgtWarm = {};
+		this._tgtRT = this._postOn();
 		this._framesOn = false;
-		// число частиц: на Mac с единой памятью тянет до 2 млн; на Windows для защиты от перегрева и зависания драйвера ставим комфортный потолок (до 450 тыс. на мощных GPU, до 250 тыс. на встроенных)
 		const maxFxCount = perf.isApple ? 2000000 : perf.windows ? (perf.tier === 'high' ? 450000 : perf.tier === 'mid' ? 160000 : 100000) : perf.tier === 'high' ? 1000000 : 250000;
 		this.state.count = Math.max(20000, Math.min(maxFxCount, app.settings.point.surfaceCount));
 		const vp = app.viewport;
@@ -264,9 +238,7 @@ export class EffectsEngine {
 		vp.fxHide = true;
 		if (app.nav.ortho) app.nav.setOrtho(false);
 		document.getElementById('app').classList.add('fx-mode');
-		// модель из редактора (меш или облако точек) важнее любого примитива
 		this.state.source = this.pm.ready ? 'media' : this.hasModel ? 'model' : this.state.source === 'model' ? 'sphere' : this.state.source;
-		// окна загрузки при переключении режимов нет: сцена на это время плавно гаснет, а облако уже готово заранее
 		try {
 			await this._build();
 		} catch (e) {
@@ -278,23 +250,18 @@ export class EffectsEngine {
 			document.getElementById('app').classList.remove('fx-mode', 'fx-focus');
 			throw e;
 		}
-		// шейдеры эффектов большие: на Windows (ANGLE и D3D11) их компиляция идёт секунды, поэтому готовим их заранее, пока виден экран загрузки, а не на первом кадре
 		this.backend = await createBackend(pickBackendKind(app.settings.render.backend), this);
 		this.backend.create();
-		// пока шейдеры собираются, облако скрыто: редактор продолжает рисовать сцену, и первый же кадр с облаком упёрся бы в ещё не собранную программу
 		const buildPts = this.points;
 		if (buildPts) buildPts.visible = false;
 		try {
 			const kinds = [this._vertKind()];
-			// шейдер связей собирается только если эффект «Связи» включён: это вторая большая программа, и без неё вход быстрее
 			if (this.linkObj && this.state.layers.links.on) kinds.push('line');
 			await this.backend.prepare(kinds);
 		} catch (e) {
-			/* подготовка не обязательна */
 		}
 		if (buildPts && this.points === buildPts) buildPts.visible = true;
 		app.ui.idle();
-		// облака выбранных для морфинга моделей считаем заранее, пока вы смотрите на сцену
 		setTimeout(() => this._prefetch(this.playlist), 400);
 		const stage = document.querySelector('.stage');
 		stage.addEventListener('pointermove', this._move);
@@ -306,14 +273,11 @@ export class EffectsEngine {
 		this.app.viewport.fxGrid = !!this.state.look.grid;
 		this.applyBg();
 		this.backend.install();
-		// камера встаёт на место мгновенно, пока сцена скрыта переходом: плавный подъезд был виден как «разбухание» модели
 		app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 0);
 		this.syncLookFromPoints();
-		// открытое видео сразу становится источником и продолжает играть
 		if (this.pm.ready) {
 			this.state.look.colorBy = 'model';
 			this.pm.play();
-			// звук видео сразу идёт в анализатор, и эффекты реагируют на него
 			if (this.pm.kind === 'video') this.useVideoAudio().catch(() => {});
 		}
 		this._hist = { undo: [], redo: [], last: null };
@@ -367,7 +331,6 @@ export class EffectsEngine {
 		if (l.band === 'none') return l.amount * g;
 		const b = this._bandLevel(l);
 		if (l.amode === 'gate') {
-			// включение по порогу: эффект появляется, когда в выбранных частотах громче порога, и плавно гаснет после
 			const envs = (this._envs ||= new WeakMap());
 			let e = envs.get(l);
 			if (!e) {
@@ -384,12 +347,10 @@ export class EffectsEngine {
 			return l.amount * e.v * g;
 		}
 		if (!l.react) return l.amount * g;
-		// пока звука нет, эффект держится на своей обычной силе (середина шкалы), а не затихает: иначе без музыки кажется, что он сломан
 		const lvl = this.soundActive ? b : 0.5;
 		return l.amount * (1 - l.react + l.react * lvl * 2) * g;
 	}
 
-	/** Заморозка: время эффектов и звук стоят, пока открыто окно экспорта или справка; после них всё продолжается с того же места */
 	setFrozen(v) {
 		v = !!v;
 		if (v === !!this.frozen) return;
@@ -405,7 +366,6 @@ export class EffectsEngine {
 		this.app.viewport.invalidate();
 	}
 
-	/** Пока кисть включена, протяжка левой кнопкой рисует и не вращает сцену (вращение по Alt, сдвиг правой кнопкой) */
 	_syncPaintLock(off) {
 		const B = this.state.layers.brush;
 		const want = !off && this.active && !!B && B.on && B.lock !== 'off';
@@ -416,5 +376,4 @@ export class EffectsEngine {
 	}
 }
 
-// Остальные методы лежат в отдельных файлах рядом и подмешиваются в класс.
 mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, ChronoPart, PixelSortPart, TrackPickPart);

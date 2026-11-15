@@ -10,7 +10,7 @@ void main() {
 	vec2 c = gl_PointCoord - 0.5;
 	float r = length(c);
 	if (r > 0.5) discard;
-	// мягкая круглая точка; много точек друг на друге сгущаются в плотную тень
+
 	float a = (1.0 - smoothstep(mix(0.3, 0.0, uShd.y), 0.5, r)) * vD * (1.0 - vDk) * 0.4;
 	if (a < 0.002) discard;
 	gl_FragColor = vec4(vColor, a);

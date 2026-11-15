@@ -1,7 +1,5 @@
-/** Узоры по высоте тона: от низких (мало линий) к высоким (много). Пары номеров мод стоячей волны (n, m) */
 const PATTERNS = [[1, 2], [1, 3], [2, 3], [1, 4], [2, 5], [3, 4], [1, 5], [3, 5], [2, 7], [4, 5], [3, 7], [5, 6], [4, 7], [5, 8]];
 
-/** Эффект «Фигуры Хладни»: точки ложатся на узловые линии стоячей волны, узор меняется от звука, ударов или таймера. Методы подмешиваются в EffectsEngine. */
 export class ChladniPart {
 	_chladniTick(dt, C, u) {
 		const ce = this._eff(C);
@@ -18,7 +16,6 @@ export class ChladniPart {
 			const beatNew = this.levels.beat > 0.9 && S.beat <= 0.9;
 			if (beatNew && this._time - S.last > 0.35) want = (S.b + 1 + Math.floor(Math.random() * (N - 1))) % N;
 		} else if (mode === 'sound' && this.playing && this.analyser) {
-			// высота звука: центр тяжести спектра; узор меняется, когда новая высота держится четверть секунды
 			let s = 0, w = 0;
 			for (let i = 0; i < 64; i++) {
 				s += this.spec[i] * i;

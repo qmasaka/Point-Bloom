@@ -1,8 +1,7 @@
-// Иконки эффектов в списке слева: у каждого своя маленькая «картинка из точек», которая оживает при наведении.
 const TAU = Math.PI * 2;
 const W = 30;
 const H = 24;
-const K = 1.2; // значки в списке чуть крупнее: рисуем в прежней системе координат, а холст растягиваем
+const K = 1.2;
 
 const dot = (c, x, y, r, a = 1) => {
 	c.globalAlpha = Math.max(0, Math.min(1, a));
@@ -15,10 +14,8 @@ const grid = (cols, rows, sx, sy) => {
 	return out;
 };
 
-/** t в секундах; рисуем в системе координат с центром в середине иконки, единица = 1 px */
 const DRAW = {
 	curl: (c, t) => {
-		// три рукава спирали: точки закручиваются к центру
 		for (let k = 0; k < 3; k++) for (let i = 0; i < 9; i++) {
 			const a = k * 2.09 + i * 0.5 - t * 1.4;
 			const r = 1.5 + i * 1.25;
@@ -26,7 +23,6 @@ const DRAW = {
 		}
 	},
 	flow: (c, t) => {
-		// линии потока: яркие штрихи бегут по волнистым линиям в одну сторону
 		for (let j = 0; j < 4; j++) {
 			const y0 = (j - 1.5) * 5.2;
 			for (let i = 0; i < 14; i++) {
@@ -41,7 +37,6 @@ const DRAW = {
 		}
 	},
 	gravity: (c, t) => {
-		// центр тяжести и орбиты, по которым кружат точки
 		dot(c, 0, 0, 3.6);
 		for (const [rx, ry, n, sp] of [[5, 2, 4, 1.8], [8.5, 3.6, 6, 1.2], [12, 5.2, 8, 0.8]]) {
 			for (let i = 0; i < 28; i++) {
@@ -61,14 +56,12 @@ const DRAW = {
 		}
 	},
 	wave: (c, t) => {
-		// бегущие волны воды
 		for (let j = 0; j < 3; j++) for (let i = 0; i < 12; i++) {
 			const x = (i - 5.5) * 2.4;
 			dot(c, x, (j - 1) * 6 + Math.sin(i * 0.8 - t * 4 + j) * 2.6, 1.6, 0.5 + j * 0.25);
 		}
 	},
 	pulse: (c, t) => {
-		// кардиограмма: линия бежит, и на каждом ударе острый всплеск
 		c.strokeStyle = c.fillStyle;
 		c.lineWidth = 1.5;
 		c.lineJoin = 'round';
@@ -95,7 +88,6 @@ const DRAW = {
 		}
 	},
 	twist: (c, t) => {
-		// лента, закрученная вдоль вертикали
 		for (let j = 0; j < 9; j++) {
 			const w = Math.cos(j * 0.55 + t * 1.6) * 8;
 			const y = (j - 4) * 2.5;
@@ -106,7 +98,6 @@ const DRAW = {
 		for (const [x, y, i, j] of grid(4, 4, 5.2, 4.8)) dot(c, x, y, 3.4 + Math.sin(t * 3 + i + j) * 0.9, 0.55 + 0.45 * Math.sin(t * 2 + i * j));
 	},
 	depth: (c, t) => {
-		// плоский ряд точек то выдавливается рельефом, то втягивается обратно
 		const k = 0.55 + 0.45 * Math.sin(t * 2);
 		for (let j = 0; j < 5; j++) {
 			for (let i = 0; i < 9; i++) {
@@ -116,7 +107,6 @@ const DRAW = {
 		}
 	},
 	trail: (c, t) => {
-		// фигурка идёт вправо, за ней гаснут копии
 		const x0 = ((t * 0.5) % 1) * 22 - 11;
 		for (let k = 0; k < 5; k++) {
 			const x = x0 - k * 4.2;
@@ -130,7 +120,6 @@ const DRAW = {
 		}
 	},
 	scope: (c, t) => {
-		// перо бежит по точкам фигуры: за ним остаётся линия, ещё не нарисованное тусклее
 		const P = [[-11, 7], [-6, -2], [-9, -8], [-1, -4], [3, -9], [10, -4], [6, 3], [11, 8], [2, 5], [-3, 9]];
 		const k = (t * 0.5) % 1;
 		const seg = k * (P.length - 1);
@@ -178,7 +167,6 @@ const DRAW = {
 		}
 	},
 	explode: (c, t) => {
-		// схема сборки: четыре куска разъезжаются от центра, поворачиваются и возвращаются на место
 		const k = 0.5 - 0.5 * Math.cos(t * 2.2);
 		const parts = [[-1, -1, 0.5], [1, -1, -0.4], [-1, 1, -0.6], [1, 1, 0.3]];
 		for (const [sx, sy, rot] of parts) {
@@ -192,7 +180,6 @@ const DRAW = {
 		}
 	},
 	links: (c, t) => {
-		// шесть точек, нити между соседними: точки плавно качаются, а нить тускнеет, когда растягивается
 		const home = [[-10, -2], [-4, -7], [4, -6], [10, 0], [3, 7], [-5, 6]];
 		const pts = home.map(([x, y], i) => [x + Math.sin(t * 1.9 + i * 1.7) * 2.6, y + Math.cos(t * 1.6 + i * 2.3) * 2.6]);
 		const e = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [1, 5], [2, 4]];
@@ -210,7 +197,6 @@ const DRAW = {
 		pts.forEach((p) => dot(c, p[0], p[1], 3, 1));
 	},
 	frames: (c, t) => {
-		// плёнка из пяти кадров: яркий кадр едет по ленте, позади него остаётся тающий шлейф, дырочки перфорации бегут вместе с лентой
 		const n = 5;
 		const cur = (t * 1.1) % n;
 		const fw = 5.2;
@@ -223,7 +209,6 @@ const DRAW = {
 			const x0 = (k - 2) * 6.1 - fw / 2 + 1;
 			for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) dot(c, x0 + i * 1.9, (j - 1) * 2.4, 1.5, a);
 		}
-		// перфорация сверху и снизу
 		const off = (t * 5) % 3;
 		for (let i = -6; i <= 6; i++) {
 			dot(c, i * 2.6 - off + 0.6, -7.4, 1, 0.38);
@@ -236,7 +221,6 @@ const DRAW = {
 		for (let i = -6; i <= 6; i++) dot(c, i * 1.8, y, 1.6, 0.9);
 	},
 	chrono: (c, t) => {
-		// фигурка из точек бежит на месте, за ней тянется шлейф гаснущих копий
 		const fig = (x, ph, a) => {
 			dot(c, x, -7, 2.2, a);
 			for (let i = 0; i < 4; i++) dot(c, x + 0.2 * i, -4.6 + i * 1.5, 1.6, a);
@@ -250,7 +234,6 @@ const DRAW = {
 		for (let k = 6; k >= 0; k--) fig(-5 + k * 2.4 - ((t * 3) % 2.4) * (k ? 1 : 0), t * 9 - k * 0.9, k ? 0.55 * Math.pow(0.72, k) : 1);
 	},
 	shoots: (c, t) => {
-		// шар из точек, из которого на ритм вырастают шипы
 		for (let k = 0; k < 120; k++) {
 			const a = (k / 120) * Math.PI * 2;
 			dot(c, Math.cos(a) * 7.5, Math.sin(a) * 6, 1.4, 0.35);
@@ -266,7 +249,6 @@ const DRAW = {
 		}
 	},
 	vscreen: (c, t) => {
-		// шар из точек, по которому бежит полоса кадра: видео играет на форме
 		for (let j = -5; j <= 5; j++) for (let i = -6; i <= 6; i++) {
 			const x = i * 2.1, y = j * 2.1;
 			const r = Math.hypot(x / 12, y / 10);
@@ -277,7 +259,6 @@ const DRAW = {
 		}
 	},
 	datamosh: (c, t) => {
-		// сетка блоков: часть блоков залипает и сползает шагами, за ними тянется смазанный хвост
 		const hash = (i, j, k) => {
 			const v = Math.sin(i * 127.1 + j * 311.7 + k * 74.7) * 43758.5453;
 			return v - Math.floor(v);
@@ -297,14 +278,12 @@ const DRAW = {
 		}
 	},
 	feedback: (c, t) => {
-		// яркая точка и длинный гаснущий хвост за ней
 		for (let k = 16; k >= 0; k--) {
 			const tt = t * 1.8 - k * 0.09;
 			dot(c, Math.cos(tt) * 10, Math.sin(tt * 1.3) * 6, k === 0 ? 3.4 : 2.6 - k * 0.12, k === 0 ? 1 : 0.7 - k * 0.04);
 		}
 	},
 	chladni: (c, t) => {
-		// песок на пластине: точки стягиваются к узловым линиям, узор плавно сменяется
 		const k = (Math.sin(t * 0.8) + 1) * 0.5;
 		const f = (x, y) => (1 - k) * (Math.cos(1 * x) * Math.cos(3 * y) - Math.cos(3 * x) * Math.cos(1 * y)) + k * (Math.cos(2 * x) * Math.cos(3 * y) - Math.cos(3 * x) * Math.cos(2 * y));
 		for (let j = 0; j < 15; j++) for (let i = 0; i < 15; i++) {
@@ -315,7 +294,6 @@ const DRAW = {
 		}
 	},
 	shadow: (c, t) => {
-		// шар из точек и его тень на полу, свет ходит по кругу
 		const lx = Math.cos(t * 0.8) * 6;
 		for (let i = 0; i < 26; i++) {
 			const a = (i / 26) * Math.PI * 2;
@@ -325,7 +303,6 @@ const DRAW = {
 		for (let i = -12; i <= 12; i += 2) dot(c, i, 10.6, 0.8, 0.18);
 	},
 	pixelsort: (c, t) => {
-		// строки точек: внутри полосы точки разъезжаются по яркости, полоса то собирается, то рассыпается
 		const k = 0.5 + 0.5 * Math.sin(t * 1.6);
 		for (let j = 0; j < 8; j++) {
 			const y = (j - 3.5) * 2.7;
@@ -341,7 +318,6 @@ const DRAW = {
 		}
 	},
 	slitscan: (c, t) => {
-		// сетка точек, по которой идёт яркая волна; каждая строка отстаёт от верхней во времени, поэтому волна изгибается
 		for (let j = 0; j < 8; j++) for (let i = 0; i < 12; i++) {
 			const x = (i - 5.5) * 2.4;
 			const y = (j - 3.5) * 2.6;
@@ -352,7 +328,6 @@ const DRAW = {
 		}
 	},
 	hyper: (c, t) => {
-		// тессеракт: шестнадцать вершин четырёхмерного куба вращаются в плоскостях XW и YZ и проецируются с перспективой; по рёбрам бегут точки
 		const a = t * 0.9;
 		const b = t * 0.55;
 		const P = [];
@@ -378,7 +353,6 @@ const DRAW = {
 		for (let k = 3; k >= 0; k--) for (const [x, y] of ring(14, 5.5)) dot(c, x * 1.15 + (k - 1.5) * 4 * Math.cos(t * 1.4), y * 0.9 + Math.sin(t * 1.4 + k) * 0.8, 1.5, 0.95 - k * 0.22);
 	},
 	cursor: (c, t) => {
-		// поле точек и курсор: вокруг него образуется пустое место, точки отодвигаются
 		const mx = Math.cos(t * 1.1) * 4;
 		const my = Math.sin(t * 1.4) * 2.5;
 		for (let j = 0; j < 7; j++) for (let i = 0; i < 11; i++) {
@@ -430,7 +404,6 @@ const DRAW = {
 		c.stroke();
 	},
 	holo: (c, t) => {
-		// строки развёртки бегут вверх, по краям свечение
 		for (let j = 0; j < 8; j++) {
 			const y = j * 2.6 - 9;
 			const k = 0.35 + 0.65 * Math.max(0, Math.sin(y * 0.9 - t * 4));
@@ -438,14 +411,12 @@ const DRAW = {
 		}
 	},
 	shock: (c, t) => {
-		// клик и круговая волна по форме
 		const r = ((t * 5) % 15) + 1;
 		for (const [x, y] of ring(30, 10)) dot(c, x * 1.25, y * 0.9, 1.2, 0.3);
 		for (const [x, y] of ring(26, r)) dot(c, x * 1.25, y * 0.9, 1.7, 1 - r / 17);
 		dot(c, 0, 0, 2.4, 1);
 	},
 	camTrack: (c, t) => {
-		// ладонь и пять пальцев: пальцы по очереди сгибаются и разгибаются
 		c.strokeStyle = c.fillStyle;
 		c.lineCap = 'round';
 		c.lineJoin = 'round';
@@ -453,7 +424,6 @@ const DRAW = {
 		c.beginPath();
 		c.ellipse(0, 5.5, 6.6, 5.4, 0, 0, TAU);
 		c.fill();
-		// основание, угол от вертикали, длина двух фаланг
 		const fingers = [[-5.5, 7, -1.0, 3.8, 3], [-4, 2.2, -0.22, 4.6, 3.6], [-1.4, 1, -0.07, 5, 4], [1.4, 1, 0.07, 4.6, 3.8], [4, 2.4, 0.24, 3.8, 3]];
 		fingers.forEach(([bx, by, a, l1, l2], i) => {
 			const k = 0.5 + 0.5 * Math.sin(t * 2.4 - i * 0.6);
@@ -486,7 +456,6 @@ export function drawPreview(ctx, id, t, color, w = W, h = H) {
 	ctx.globalAlpha = 1;
 }
 
-/** Подключает иконку к canvas: движется при наведении на строку, иначе показывает один кадр */
 export function attachPreview(canvas, id, card, getColor) {
 	const dpr = Math.min(2, window.devicePixelRatio || 1);
 	canvas.width = W * K * dpr;

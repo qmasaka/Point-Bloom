@@ -3,8 +3,8 @@ import { TONE_WGSL } from '../../shaders/wgsl/generated/tone.js';
 const WGSL = `
 struct U {
 	mvp: mat4x4f,
-	col: vec4f, // rgb: цвет (uC), a: непрозрачность в центре (uA)
-	out: vec4f, // x: экспозиция, y: тональная компрессия (0 нет, 1 Neutral, 2 ACES, 3 AgX)
+	col: vec4f,
+	out: vec4f,
 }
 @group(0) @binding(0) var<uniform> u: U;
 
@@ -13,13 +13,12 @@ struct VOut {
 	@location(0) uv: vec2f,
 }
 
-// PlaneGeometry(1, 1): углы от -0.5 до 0.5, uv от 0 до 1
 @vertex
 fn vs(@builtin(vertex_index) vi: u32) -> VOut {
 	var uvs = array<vec2f, 4>(vec2f(0.0, 0.0), vec2f(1.0, 0.0), vec2f(0.0, 1.0), vec2f(1.0, 1.0));
 	let uv = uvs[vi];
 	var clip = u.mvp * vec4f(uv - 0.5, 0.0, 1.0);
-	// в WebGL глубина клипа от -w до w, в WebGPU от 0 до w
+
 	clip.z = (clip.z + clip.w) * 0.5;
 	var o: VOut;
 	o.clip = clip;

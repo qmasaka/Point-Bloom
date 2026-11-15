@@ -3,7 +3,6 @@ import { clamp } from '../../core/util.js';
 import { TouchSynth } from '../audio/touch-synth.js';
 import { SYNTH_STYLES } from '../state/options.js';
 
-/** Звук: синтезатор, файл, микрофон, звук видео, анализ полос и бит. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class AudioPart {
 	_markBeat() {
 		this._tb = this._time;
@@ -53,7 +52,6 @@ export class AudioPart {
 			try {
 				await this.ctx.resume();
 			} catch (e) {
-				/* браузер может блокировать автоплей звука до клика пользователя */
 			}
 		}
 		if (this.sourceType === 'synth') {
@@ -83,7 +81,6 @@ export class AudioPart {
 		this.emit();
 	}
 
-	/** Видео, чей звук слушают эффекты: открытое в «Медиа» или своё видео «Экрана» */
 	_audioVideo() {
 		const own = this._vidEl;
 		if (own && own !== this.pm.el && own === this._scrFile?.media) return own;
@@ -91,12 +88,10 @@ export class AudioPart {
 		return sp.ready && sp.kind === 'video' ? sp.el : null;
 	}
 
-	/** Медиа, чей звук слушают: при нескольких видео его выбирают в «Фото и видео», по умолчанию это показанное сейчас */
 	_soundPm() {
 		return this.app.media.soundEntry?.()?.pm || this.pm;
 	}
 
-	/** Сменилось показанное видео или выбор «Звук из»: звук переключается на нужное видео, если сейчас слушают звук видео */
 	_resyncVideoAudio() {
 		if (this.sourceType !== 'video' || !this.playing || !this.ctx) return;
 		const el = this._audioVideo();
@@ -107,7 +102,6 @@ export class AudioPart {
 		}
 	}
 
-	/** Звук видео: один раз заводим в аудиограф, дальше он идёт либо в анализатор (режим эффектов), либо прямо в колонки */
 	_videoGate(el = this.pm.kind === 'video' ? this.pm.el : null) {
 		if (!el || el.tagName !== 'VIDEO') return null;
 		this._ensureCtx();
@@ -132,7 +126,6 @@ export class AudioPart {
 		this._vidEl = el;
 		const sp = this._soundPm();
 		if (el === sp.el) {
-			// выключение звука видео в эффектах гасит только вывод: анализ продолжает работать
 			this._vidPm = sp;
 			sp.onMute = (m) => {
 				if (this.out) this.out.gain.value = m ? 0 : this.state.audio.volume;
@@ -140,14 +133,12 @@ export class AudioPart {
 			sp.onMute(sp.muted);
 			sp.play();
 		} else {
-			// своё видео «Экрана»: играет само по себе, звук идёт через анализатор в колонки
 			if (this.out) this.out.gain.value = this.state.audio.volume;
 			el.play().catch(() => {});
 		}
 		return true;
 	}
 
-	/** Беззвучный приёмник: если узел видео ни к чему не подключён, браузер перестаёт его читать и видео зависает */
 	_vidSink() {
 		if (!this._sink) {
 			this._sink = this.ctx.createGain();
@@ -164,7 +155,6 @@ export class AudioPart {
 				gate.disconnect();
 				gate.connect(this._vidSink());
 			} catch (e) {
-				/* уже отключён */
 			}
 			this._vidGate = null;
 			if (this._vidPm && this._vidEl === this._vidPm.el) this._vidPm.onMute = null;
@@ -172,7 +162,6 @@ export class AudioPart {
 		}
 	}
 
-	/** В редакторе видео играет напрямую в колонки, минуя анализатор */
 	_videoToEditor() {
 		this._disconnectVideo();
 		const gate = this.pm.el?._fxGate;
@@ -185,7 +174,6 @@ export class AudioPart {
 		};
 	}
 
-	/** Звук видео. el: какое видео слушать (по умолчанию открытое в «Медиа», а если его нет, своё видео «Экрана») */
 	async useVideoAudio(el) {
 		const scr = this._scrFile?.media?.tagName === 'VIDEO' ? this._scrFile.media : null;
 		el = el || (this.pm.ready && this.pm.kind === 'video' ? this.pm.el : scr);
@@ -209,7 +197,6 @@ export class AudioPart {
 			try {
 				this.source.stop();
 			} catch (e) {
-				/* уже остановлен */
 			}
 			this.source.disconnect();
 			this.source = null;
@@ -263,25 +250,19 @@ export class AudioPart {
 		try {
 			this.micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
 		} catch (e) {
-			// доступа нет: прежний звук уже остановлен, поэтому сцена не должна считать, что что-то играет
 			this.playing = false;
 			this.emit();
 			throw e;
 		}
 		this.micNode = this.ctx.createMediaStreamSource(this.micStream);
 		this.micNode.connect(this.bus);
-		this.out.gain.value = 0; // не выводим микрофон в колонки: будет свист
+		this.out.gain.value = 0;
 		this.sourceType = 'mic';
 		this.playing = true;
 		if (this.ctx.state === 'suspended') await this.ctx.resume();
 		this.emit();
 	}
 
-	/**
-	 * Анализ звука за кадр: уровни полос (бас, середина, верх), удар и спектр из 64 полос.
-	 * Уровни автоматически подстраиваются под громкость трека (см. _follow): тихая и громкая музыка дают одинаковый размах 0..1,
-	 * поэтому порог срабатывания не нужно подбирать заново под каждый трек.
-	 */
 	_analyse(dt) {
 		const a = this.state.audio;
 		let bass = 0, mid = 0, high = 0;
@@ -296,7 +277,6 @@ export class AudioPart {
 				for (let i = i0; i < i1; i++) s += this.freqData[i];
 				return s / (Math.max(1, i1 - i0) * 255);
 			};
-			// настоящие границы: бас 30-250 Гц, середина 250-4000 Гц, верх 4-12 кГц
 			const bRaw = mean(bin(30), Math.max(bin(30) + 1, bin(250)));
 			const mRaw = mean(bin(250), bin(4000));
 			const hRaw = mean(bin(4000), bin(12000));
@@ -307,7 +287,6 @@ export class AudioPart {
 			const bN = norm('bass', bRaw);
 			const mN = norm('mid', mRaw);
 			const hN = norm('high', hRaw);
-			// удар: всплеск энергии в басах (положительная разность спектра) выше скользящего порога
 			const b0 = bin(30), b1 = Math.max(b0 + 2, bin(220));
 			const prev = (this._prevBass ||= new Float32Array(n));
 			let flux = 0;
@@ -332,13 +311,12 @@ export class AudioPart {
 				this.levels.beat = clamp(0.65 + (flux - thr) / Math.max(thr, 0.02), 0.65, 1);
 				this._markBeat();
 			}
-			const kA = 1 - Math.pow(0.001, dt * 9); // быстрая атака
-			const kR = 1 - Math.pow(0.001, dt * 2.6); // плавный спад
+			const kA = 1 - Math.pow(0.001, dt * 9);
+			const kR = 1 - Math.pow(0.001, dt * 2.6);
 			const lag = (cur, raw) => cur + (raw - cur) * (raw > cur ? kA : kR);
 			bass = lag(this.levels.bass, bN);
 			mid = lag(this.levels.mid, mN);
 			high = lag(this.levels.high, hN);
-			// спектр: 64 полосы по квадратичной шкале частот (та же ось, что у полоски выбора частот)
 			const gs = a.gain * 1.15;
 			for (let i = 0; i < 64; i++) {
 				const f0 = Math.floor(Math.pow(i / 64, 2) * n * 0.55);
@@ -369,27 +347,15 @@ export class AudioPart {
 		this.specTex.needsUpdate = true;
 	}
 
-	/**
-	 * Автоподстройка громкости: уровень делится на удвоенное скользящее среднее (около 5 секунд). Ровный звук даёт середину шкалы,
-	 * а удары и всплески, вдвое громче среднего, дотягиваются до единицы, на любой громкости трека.
-	 * Нижняя граница floor не даёт раздувать тишину и шипение до полной силы.
-	 * @param {object} store где хранятся средние, key: имя в нём
-	 */
 	_follow(store, key, raw, dt, floor) {
 		let m = store[key];
 		if (m === undefined || m === null) m = raw;
-		// первые секунды среднее подтягивается быстрее: иначе после начала музыки уровень долго зашкаливает
 		const age = (store[key + '#'] = (store[key + '#'] || 0) + dt);
 		m += (raw - m) * Math.min(1, dt / (age < 4 ? 0.7 : 5));
 		store[key] = m;
 		return raw / Math.max(floor, m * 1.8);
 	}
 
-	/**
-	 * Текущий уровень звука в полосе эффекта 0..1: готовая полоса или свой диапазон спектра.
-	 * Свой диапазон тоже автоподстраивается: узкая полоса в верхах даёт тот же размах, что и бас.
-	 * Считается раз за кадр (повторные вызовы возвращают то же значение) и копит историю для автопорога.
-	 */
 	_bandLevel(l) {
 		const envs = (this._bandEnvs ||= new WeakMap());
 		let e = envs.get(l);
@@ -422,10 +388,6 @@ export class AudioPart {
 		return v;
 	}
 
-	/**
-	 * Порог «по порогу» из недавней истории уровня этого эффекта: между фоновым уровнем и пиками.
-	 * Возвращает null, если звука было мало (эффект не слушал или музыка не играла).
-	 */
 	autoThreshold(l) {
 		const e = this._bandEnvs?.get(l);
 		if (!e || e.n < 60) return null;
@@ -437,12 +399,10 @@ export class AudioPart {
 		return clamp(lo + (hi - lo) * 0.6, 0.12, 0.9);
 	}
 
-	/** Идёт ли сейчас звук, который слышат эффекты (иначе реакция «не работает»: включите музыку или микрофон) */
 	get soundActive() {
 		return !!(this.playing && this.analyser) || !!this.state.audio.idle;
 	}
 
-	/** Частота (Гц) для положения на оси спектра 0..1 */
 	hzAt(x) {
 		const sr = this.ctx?.sampleRate || 44100;
 		return Math.round(x * x * 0.275 * sr);

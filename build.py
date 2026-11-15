@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""
-Мини-сборщик: превращает ES-модули (src/**/*.js + vendor/three/**) в ОДИН обычный
-скрипт assets/app.js, который открывается двойным кликом по index.html
-(без локального сервера и без Node.js).
-
-Использование:
-    python3 build.py            # собрать один раз
-    python3 build.py --watch    # пересобирать при изменении файлов в src/
-    python3 build.py --dev      # читаемый бандл без минификации (для отладки)
-python3 build.py --web      # лёгкая веб-версия для публикации в папку web/
-"""
 import os
 import re
 import sys
@@ -17,15 +6,12 @@ import time
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
-# на Windows консоль может быть не в UTF-8: русские сообщения сборщика не должны её ронять
 try:
     sys.stdout.reconfigure(encoding="utf-8")
 except Exception:
     pass
 
-
 def rel(p):
-    """Путь модуля относительно корня с прямыми слешами (на Windows os.path.relpath даёт обратные, и модули не находились бы)"""
     return os.path.relpath(p, ROOT).replace(os.sep, "/")
 
 ENTRY = os.path.join(ROOT, "src", "main.js")
@@ -38,7 +24,6 @@ DECL_RE = re.compile(r"^export\s+(?:async\s+)?(const|let|var|function\*?|class)\
 DEFAULT_RE = re.compile(r"^export\s+default\s+")
 NAME_RE = re.compile(r"^[A-Za-z_$][\w$]*$")
 
-
 def resolve(spec, importer):
     if spec == "three":
         return THREE
@@ -48,15 +33,12 @@ def resolve(spec, importer):
         return os.path.normpath(os.path.join(os.path.dirname(importer), spec))
     raise SystemExit("Не могу разрешить импорт %r из %s" % (spec, importer))
 
-
 def collect_statement(lines, i):
-    """Склеивает многострочный import/export до символа ';'. Возвращает (текст, следующая_строка)."""
     buf = [lines[i]]
     while not re.search(r";\s*(//.*)?$", buf[-1]) and i + 1 < len(lines):
         i += 1
         buf.append(lines[i])
     return "\n".join(buf), i + 1
-
 
 def split_names(body):
     items = []
@@ -70,11 +52,10 @@ def split_names(body):
         items.append((m.group(1), m.group(2) or m.group(1)))
     return items
 
-
 def transform(path, src):
     lines = src.split("\n")
     out = []
-    head = []          # геттеры и реэкспорты — помещаем в начало
+    head = []
     deps = []
     i = 0
     n_req = 0
@@ -82,7 +63,6 @@ def transform(path, src):
     while i < len(lines):
         line = lines[i]
         stripped = line.lstrip()
-        # не трогаем содержимое блочных комментариев
         if in_block_comment:
             out.append(line)
             if "*/" in line:
@@ -177,10 +157,7 @@ def transform(path, src):
         i += 1
     return "\n".join(head + out), deps
 
-
-
 def gen_icons():
-    """Собирает иконки Phosphor (vendor/phosphor/regular/*.svg) в src/ui/icons.generated.js"""
     d = os.path.join(ROOT, "vendor", "phosphor", "regular")
     items = {}
     for f in sorted(os.listdir(d)):
@@ -188,7 +165,6 @@ def gen_icons():
             with open(os.path.join(d, f), encoding="utf-8") as fh:
                 m = re.search(r"<svg[^>]*>(.*)</svg>", fh.read(), re.S)
             items[f[:-4]] = m.group(1).strip()
-    # в сборку попадают только иконки, имена которых встречаются в коде или в index.html
     corpus = ""
     for base, _, files in os.walk(os.path.join(ROOT, "src")):
         for name in files:
@@ -198,7 +174,7 @@ def gen_icons():
     with open(os.path.join(ROOT, "index.html"), encoding="utf-8") as fh:
         corpus += fh.read()
     items = {k: v for k, v in items.items() if re.search(r"['\"]" + re.escape(k) + r"['\"]", corpus)}
-    out = ["// Сгенерировано build.py из vendor/phosphor (MIT). Не редактировать.", "export const ICON_PATHS = {"]
+    out = ["export const ICON_PATHS = {"]
     for k, v in items.items():
         out.append("\t%r: %r," % (k, v))
     out.append("};")
@@ -207,9 +183,7 @@ def gen_icons():
         fh.write("\n".join(out) + "\n")
     return sorted(items.keys())
 
-
 def gen_fonts_css():
-    """Встраивает шрифты Geist в assets/fonts.css (base64) — работает и с file://, без сети."""
     import base64
     fonts = os.path.join(ROOT, "assets", "fonts")
     faces = [
@@ -217,7 +191,7 @@ def gen_fonts_css():
         ("Geist", "geist-cyrillic-wght-normal.woff2", "U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116"),
         ("Geist Mono", "geist-mono-latin-wght-normal.woff2", "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"),
     ]
-    css = ["/* Сгенерировано build.py. Шрифты Geist (SIL OFL), встроены как base64. */"]
+    css = []
     for fam, fn, rng in faces:
         with open(os.path.join(fonts, fn), "rb") as fh:
             b64 = base64.b64encode(fh.read()).decode()
@@ -227,7 +201,6 @@ def gen_fonts_css():
         )
     with open(os.path.join(ROOT, "assets", "fonts.css"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(css) + "\n")
-
 
 def bundle():
     gen_icons()
@@ -247,7 +220,6 @@ def bundle():
 
     visit(ENTRY)
     parts = [
-        "/* OBJ → GLB Studio — собрано build.py, не редактируйте руками (правьте src/ и запустите build.py) */",
         "(function () {",
         "'use strict';",
         "const __defs = Object.create(null), __cache = Object.create(null);",
@@ -268,7 +240,6 @@ def bundle():
     parts.append("})();")
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     text = "\n".join(parts)
-    # по умолчанию бандл минифицируется (три раза быстрее парсится и грузится); для отладки есть флаг --dev
     if "--dev" not in sys.argv and "--watch" not in sys.argv:
         text = minify_js(text)
     with open(OUT, "w", encoding="utf-8") as f:
@@ -276,19 +247,15 @@ def bundle():
     size = os.path.getsize(OUT) / 1024
     print("Собрано %s (%d модулей, %.0f КБ)" % (os.path.relpath(OUT, ROOT), len(order), size))
 
-
-# ------------------------------------------------------------------ веб-версия
 JS_REGEX_PREV = set("(,=:[!&|?{};+-*%<>~^")
 JS_REGEX_KW = {"return", "typeof", "case", "in", "of", "void", "delete", "throw", "new", "else", "do"}
 
-
 def minify_js(src):
-    """Осторожная минификация: убирает комментарии, отступы и пустые строки. Строки, шаблоны и regex не трогает."""
     out = []
     i, n = 0, len(src)
-    prev_sig = ""      # последний значащий символ кода
-    word = ""          # текущий/последний идентификатор
-    stack = []         # счётчики скобок для ${...} внутри шаблонов
+    prev_sig = ""
+    word = ""
+    stack = []
     depth = 0
     at_line_start = True
 
@@ -298,7 +265,6 @@ def minify_js(src):
     while i < n:
         c = src[i]
         nxt = src[i + 1] if i + 1 < n else ""
-        # --- комментарии
         if c == "/" and nxt == "/":
             while i < n and src[i] != "\n":
                 i += 1
@@ -309,7 +275,6 @@ def minify_js(src):
             if last_char() not in " \n\t":
                 out.append(" ")
             continue
-        # --- строки
         if c in "'\"":
             q = c
             j = i + 1
@@ -319,7 +284,6 @@ def minify_js(src):
             i = j + 1
             prev_sig, word, at_line_start = q, "", False
             continue
-        # --- шаблонные строки (с вложенными ${})
         if c == "`":
             j = i + 1
             out.append("`")
@@ -334,7 +298,6 @@ def minify_js(src):
                     j += 1
                     break
                 if ch == "$" and src[j + 1] == "{":
-                    # вложенное выражение: минифицируем рекурсивно по балансу скобок
                     k = j + 2
                     level = 1
                     while level:
@@ -345,7 +308,6 @@ def minify_js(src):
                             while src[k] != qq:
                                 k += 2 if src[k] == "\\" else 1
                         elif ck == "`":
-                            # вложенный шаблон внутри выражения
                             k += 1
                             while src[k] != "`":
                                 k += 2 if src[k] == "\\" else 1
@@ -362,7 +324,6 @@ def minify_js(src):
             i = j
             prev_sig, word, at_line_start = "`", "", False
             continue
-        # --- regex-литерал
         if c == "/":
             is_regex = prev_sig == "" or prev_sig in JS_REGEX_PREV or word in JS_REGEX_KW
             if is_regex and prev_sig not in ")]}" :
@@ -387,7 +348,6 @@ def minify_js(src):
                 i = j
                 prev_sig, word, at_line_start = ")", "", False
                 continue
-        # --- пробелы и переводы строк
         if c == "\n":
             while out and out[-1] in " \t":
                 out.pop()
@@ -401,7 +361,6 @@ def minify_js(src):
                 out.append(" ")
             i += 1
             continue
-        # --- обычный код
         out.append(c)
         at_line_start = False
         if c.isalnum() or c in "_$":
@@ -412,7 +371,6 @@ def minify_js(src):
         i += 1
     return "".join(out).strip() + "\n"
 
-
 def minify_css(s):
     s = re.sub(r"/\*.*?\*/", "", s, flags=re.S)
     s = re.sub(r"\s+", " ", s)
@@ -420,7 +378,6 @@ def minify_css(s):
     s = re.sub(r"\s*:\s*", ":", s)
     s = s.replace(";}", "}")
     return s.strip() + "\n"
-
 
 WEB_HEAD = (
     '<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>\n'
@@ -433,9 +390,7 @@ WEB_SCRIPT = (
     '<script type="module" src="src/main.js"></script>'
 )
 
-
-WEB_ICONS = """// Веб-версия: иконки Phosphor (MIT) загружаются с CDN один раз при запуске.
-export const ICON_PATHS = {};
+WEB_ICONS = """export const ICON_PATHS = {};
 const NAMES = __NAMES__;
 const BASE = 'https://cdn.jsdelivr.net/npm/@phosphor-icons/core@2.1.1/assets/regular/';
 export const loadIcons = () =>
@@ -452,10 +407,7 @@ export const loadIcons = () =>
 	);
 """
 
-
 def write_vercel_json():
-    """Заголовки безопасности для хостинга: политика содержимого (CSP), HTTPS, запрет встраивания и лишних возможностей браузера.
-    Хэш встроенного importmap считается здесь же, поэтому политика не расходится со страницей после пересборки."""
     import base64, hashlib, json
 
     m = re.search(r"<script type=\"importmap\">(.*?)</script>", WEB_SCRIPT, re.S)
@@ -495,7 +447,6 @@ def write_vercel_json():
         "outputDirectory": "web",
         "headers": [
             {"source": "/(.*)", "headers": [{"key": k, "value": v} for k, v in headers]},
-            # тяжёлые файлы распознавания рук кэшируются на месяц: повторные запуски камеры не качают их заново
             {"source": "/sw.js", "headers": [{"key": "Cache-Control", "value": "no-cache"}, {"key": "Service-Worker-Allowed", "value": "/"}]},
             {"source": "/manifest.webmanifest", "headers": [{"key": "Content-Type", "value": "application/manifest+json"}, {"key": "Cache-Control", "value": "no-cache"}]},
             {"source": "/vendor/mediapipe/(.*)", "headers": [{"key": "Cache-Control", "value": "public, max-age=2592000"}]},
@@ -505,9 +456,7 @@ def write_vercel_json():
         json.dump(cfg, fh, indent=2, ensure_ascii=False)
         fh.write("\n")
 
-
 def build_web():
-    """Лёгкая версия для публикации: свой код (минифицированный) + three.js с CDN. Папка web/."""
     import shutil
     icon_names = gen_icons()
     out = os.path.join(ROOT, "web")
@@ -525,7 +474,6 @@ def build_web():
             with open(path, encoding="utf-8") as fh:
                 code = fh.read()
             if path == ICONS_GENERATED:
-                # в веб-версии иконки Phosphor подгружаются с CDN при старте (меньше файлов и данных)
                 code = WEB_ICONS.replace("__NAMES__", repr(icon_names).replace("'", '"'))
             code = minify_js(code)
             dest = os.path.join(out, os.path.relpath(path, ROOT))
@@ -533,11 +481,9 @@ def build_web():
             with open(dest, "w", encoding="utf-8") as fh:
                 fh.write(code)
             total += len(code.encode("utf-8"))
-    # распознавание рук: модель и WASM лежат на самом сайте
     mp_src = os.path.join(ROOT, "vendor", "mediapipe")
     if os.path.isdir(mp_src):
         shutil.copytree(mp_src, os.path.join(out, "vendor", "mediapipe"))
-    # установка как приложения: манифест, иконки и сервис-воркер лежат в корне сайта
     for f in ("manifest.webmanifest", "sw.js", "plerdy.js"):
         shutil.copy(os.path.join(ROOT, f), os.path.join(out, f))
     shutil.copytree(os.path.join(ROOT, "assets", "pwa"), os.path.join(out, "assets", "pwa"))
@@ -554,7 +500,6 @@ def build_web():
     write_vercel_json()
     print("Веб-версия: web/ (JS %.0f КБ, CSS %.0f КБ, HTML %.0f КБ)" % (total / 1024, len(css) / 1024, len(html) / 1024))
 
-
 def newest_mtime():
     latest = 0
     for base, _, files in os.walk(os.path.join(ROOT, "src")):
@@ -562,7 +507,6 @@ def newest_mtime():
             if name.endswith(".js"):
                 latest = max(latest, os.path.getmtime(os.path.join(base, name)))
     return latest
-
 
 if __name__ == "__main__":
     if "--web" in sys.argv:

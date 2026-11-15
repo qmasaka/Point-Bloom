@@ -5,7 +5,6 @@ import { MotionCamTracker } from '../input/motion-cam-tracker.js';
 import { FX_ACTIONS } from '../state/layers.js';
 import { makeCamMovable } from '../ui/fx-cam-float.js';
 
-/** Камера движения и руки: запуск, кадры, жесты. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class TrackingPart {
 	async toggleMotionCam() {
 		if (this.camTracker && this.camTracker.running) {
@@ -27,7 +26,6 @@ export class TrackingPart {
 				this.app.toast('Камера включена: покажите ладонь', 'ok');
 			} catch (err) {
 				if (!err.handsLoadFailed) throw err;
-				// без сети распознать руки нельзя: переходим на упрощённый режим по движению
 				t.stop();
 				t = new MotionCamTracker((f) => this._onCamFrame(f));
 				this.camTracker = t;
@@ -70,7 +68,6 @@ export class TrackingPart {
 		if (this.camHint && txt) this.camHint.textContent = txt;
 	}
 
-	/** Окно с картинкой камеры: здесь видно себя и то, что распознал трекер */
 	_mountCam(tracker, status) {
 		this.camBox?.remove();
 		this.camHint = document.createElement('div');
@@ -85,12 +82,10 @@ export class TrackingPart {
 		makeCamMovable(this.camBox, document.getElementById('app'), document.getElementById('viewport'));
 	}
 
-	/** Точка на плоскости перед камерой в локальных координатах облака */
 	_ndcToLocal(x, y, out, depth = 0) {
 		const vp = this.app.viewport;
 		this._ray.setFromCamera(new THREE.Vector2(x, y), vp.camera);
 		const toCam = vp.camera.getWorldDirection(new THREE.Vector3()).negate();
-		// depth > 0: плоскость пальцев сдвинута к зрителю, к передней поверхности формы
 		this._plane.setFromNormalAndCoplanarPoint(toCam, toCam.clone().multiplyScalar(depth));
 		const hit = new THREE.Vector3();
 		if (!this._ray.ray.intersectPlane(this._plane, hit)) return null;
@@ -105,7 +100,6 @@ export class TrackingPart {
 		t.smooth = cfg.smooth;
 		if (this.camBox) this.camBox.hidden = cfg.preview !== 'on';
 		if (f.kind === 'hands') return this._onHands(f, cfg);
-		// запасной режим: центр движения в кадре
 		const txt = f.active ? 'Движение найдено' : 'Помашите рукой перед камерой';
 		if (this.camHint && this.camHint.textContent !== txt) this.camHint.textContent = txt;
 		this._camActive = f.active;
@@ -128,7 +122,6 @@ export class TrackingPart {
 	}
 
 	_onHands(f, cfg) {
-		// рабочая зона: центральная часть кадра (15-85%) растягивается на весь экран, чтобы не тянуться к краям камеры; скелет на сцене рисуется по тем же точкам, что и курсор
 		const bx = (v) => clamp((v - 0.15) / 0.7, 0, 1);
 		const mapP = (p) => [bx(p[0]), bx(p[1])];
 		const hands = f.hands.map((h) => ({ ...h, pts: h.pts.map(mapP), tips: h.tips.map(mapP), palm: mapP(h.palm) }));
@@ -150,7 +143,6 @@ export class TrackingPart {
 		const wantFx = new Set();
 		this.camTracker.setNumHands && this.camTracker.setNumHands(cfg.handsN === '1' ? 1 : 2);
 		for (const hd of hands) {
-			// щипок без задержки: он включается и выключается по самому сжатию пальцев, а остальные жесты проходят через голосование против дрожания
 			let g = hd.gesture;
 			if (hd.pinch) g = 'pinch';
 			else if (g === 'pinch') g = hd.rawGesture && hd.rawGesture !== 'pinch' ? hd.rawGesture : 'none';
@@ -218,7 +210,6 @@ export class TrackingPart {
 		this._handGrav = grav;
 		this._handSlice = sliceHand;
 		this._handDis = wantDis;
-		// знак руки включает эффект, пока его держат; отпустил, и слой возвращается как был
 		const hf = this._handFx || (this._handFx = new Map());
 		for (const id of wantFx) {
 			if (!hf.has(id) && this.state.layers[id]) {

@@ -5,15 +5,6 @@ import { pointsComputeHeroWGSL } from '../../shaders/wgsl/generated/points-compu
 import { pointsComputeShadowWGSL } from '../../shaders/wgsl/generated/points-compute-shadow.js';
 import { pointsRenderWGSL, shadowRenderWGSL } from '../../shaders/wgsl/generated/points-render.js';
 
-/**
- * Рендер облака точек на WebGPU. Шейдеры не написаны руками: их генерирует dev/gen-wgsl.mjs из боевого GLSL.
- * Кадр: проход расчёта (одна точка → положение на экране, размер, цвет; это весь вершинный шейдер GLSL) → рисование квадратов по этим данным.
- *
- * Облаков может быть два («слоя»): основное и «герой» раскадровки (видео поверх блока кадров, свой вариант шейдера).
- * «Тень на стене» это ещё один экземпляр основного облака со своим вариантом расчёта (SHADOW) и своим фрагментным шейдером.
- */
-
-// какие группы буферов зависят от каких атрибутов точек (имена как в GLSL)
 const ATTR_GROUPS = {
 	aOrigin: ['origin'],
 	aHide: ['origin'],
@@ -30,13 +21,8 @@ const ATTR_GROUPS = {
 	aPaint: ['paint'],
 };
 
-/**
- * Собирает одну группу из исходных массивов: по 4 числа на точку. out: рабочий массив (не меньше n * 4), его можно переиспользовать:
- * у видео и анимированного персонажа группы пересобираются каждый кадр, и новый массив на каждую (16 МБ на миллион точек) нагружал сборщик мусора
- */
 function packGroup(group, a, n, out = new Float32Array(n * 4)) {
 	out = out.length === n * 4 ? out : out.subarray(0, n * 4);
-	// недостающий атрибут читается как нули
 	out.fill(0);
 	const v3 = (src) => {
 		if (!src) return;
@@ -86,17 +72,13 @@ function packGroup(group, a, n, out = new Float32Array(n * 4)) {
 }
 
 const GROUPS = ['origin', 'target', 'colorA', 'colorB', 'normA', 'normB', 'sculpt', 'paint'];
-// группы лежат парами в одном буфере (первая половина и вторая, как inP0..inP3 в шейдере расчёта): так проходу хватает 8 буферов хранения,
-// а это минимум, который WebGPU гарантирует на любой видеокарте (раньше нужно было 11, и на многих видеокартах WebGPU не включался)
 const PAIR = { origin: [0, 0], target: [0, 1], colorA: [1, 0], colorB: [1, 1], normA: [2, 0], normB: [2, 1], sculpt: [3, 0], paint: [3, 1] };
 const IN_BUFS = ['in0', 'in1', 'in2', 'in3'];
 
-// как смешивание three.js: AdditiveBlending (SRC_ALPHA + ONE) и NormalBlending (SRC_ALPHA / ONE_MINUS_SRC_ALPHA, альфа ONE / ONE_MINUS_SRC_ALPHA)
 const BLEND_ADD = { color: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' }, alpha: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' } };
 const BLEND_NORMAL = { color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' } };
 
 export class WebGPUPoints {
-	/** @param {{device: GPUDevice, format: string}} gpu результат requestGpu() @param {HTMLCanvasElement} canvas */
 	constructor(gpu, canvas) {
 		this.device = gpu.device;
 		this.format = gpu.format;
@@ -104,25 +86,22 @@ export class WebGPUPoints {
 		this.ctx = canvas.getContext('webgpu');
 		this.ctx.configure({ device: this.device, format: this.format, alphaMode: 'premultiplied' });
 		this.pipelines = {};
-		this.layers = {}; // 'main' | 'hero' → { count, attrs, bufs }
+		this.layers = {};
 		this.frameData = new Float32Array(FRAME_BYTES / 4);
 		const D = this.device;
-		this.texVersion = 0; // растёт, когда служебные текстуры заменяются (привязки пересоздаются, в том числе у линий)
-		this.insts = []; // по набору значений на каждый рисуемый экземпляр (облако, призраки шлейфа, герой)
+		this.texVersion = 0;
+		this.insts = [];
 		this.sampler = D.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
-		// служебные текстуры: спектр звука (для эффекта «Спектр»), центры кусков (для «Разбора на части»), кадры раскадровки, кадр видео для «героя» и атлас символов (заглушки до первого использования)
 		this.specTex = D.createTexture({ size: [64, 1], format: 'r8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
 		this.pieceTex = D.createTexture({ size: [256, 1], format: 'rgba32float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
 		this.frTex = D.createTexture({ size: [1, 1, 1], format: 'rgba8unorm-srgb', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
 		this.heroTex = this._tex2d(1, 1, 'rgba8unorm-srgb', true);
 		this.atlasTex = this._tex2d(1, 1, 'rgba8unorm', true);
-		// «Экран» (кадр видео, карта глубины, память цвета), «Слит-скан» (кольцо прошлых кадров) и «Пиксельная сортировка» (смещения точек)
 		this.scrTex = this._tex2d(1, 1, 'rgba8unorm-srgb', true);
 		this.scrDep = this._tex2d(1, 1, 'r8unorm');
 		this.scrMTex = this._tex2d(1, 1, 'rgba8unorm');
 		this.slitTex = D.createTexture({ size: [1, 1, 1], format: 'rgba8unorm-srgb', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
 		this.sortTex = this._tex2d(1, 1, 'rg32float');
-		// пока «Экран» не выбрал видео, у шейдера чёрный кадр (как заглушка WebGL)
 		D.queue.writeTexture({ texture: this.scrTex }, new Uint8Array([0, 0, 0, 255]), { bytesPerRow: 4 }, [1, 1]);
 
 		const C = GPUShaderStage.COMPUTE;
@@ -147,9 +126,9 @@ export class WebGPUPoints {
 				{ binding: 5, visibility: F, sampler: { type: 'filtering' } },
 			],
 		});
-		this.dummyBuf = D.createBuffer({ size: 16, usage: GPUBufferUsage.STORAGE }); // заглушка для неиспользуемых привязок
+		this.dummyBuf = D.createBuffer({ size: 16, usage: GPUBufferUsage.STORAGE });
 		this.depth = null;
-		this.pick = null; // чтение положений точек для рамок слежения (см. pickRequest)
+		this.pick = null;
 	}
 
 	_tex2d(w, h, format, external = false) {
@@ -157,7 +136,6 @@ export class WebGPUPoints {
 		return this.device.createTexture({ size: [w, h], format, usage });
 	}
 
-	/** Привязки служебных текстур прохода расчёта (12..21, как TEX_DECL в dev/gen-wgsl.mjs): общие у точек, связей и осциллографа */
 	texLayout() {
 		const C = GPUShaderStage.COMPUTE;
 		const t = (binding, sampleType, viewDimension = '2d') => ({ binding, visibility: C, texture: { sampleType, viewDimension } });
@@ -190,7 +168,6 @@ export class WebGPUPoints {
 		];
 	}
 
-	/** Заменяет служебную текстуру, если у неё другой размер (привязки пересоздаются по texVersion) */
 	_resize(key, w, h, format, external) {
 		const cur = this[key];
 		if (cur.width === w && cur.height === h) return cur;
@@ -203,11 +180,6 @@ export class WebGPUPoints {
 		return this.layers.main ? this.layers.main.count : 0;
 	}
 
-	/**
-	 * Загружает облако. attrs: массивы как в GLSL-атрибутах (aOrigin, aTarget, aNormal, aNormalB, aColor, aColorB, aPaint, aHide, aDepth, aPath, aSculpt, aVis).
-	 * Недостающие атрибуты считаются нулями; aVis по умолчанию 1, aIdx по умолчанию i / n.
-	 * @param {string} [layer] 'main' (по умолчанию) или 'hero'
-	 */
 	setCloud(attrs, count, layer = 'main') {
 		const D = this.device;
 		const n = count ?? attrs.aOrigin.length / 3;
@@ -227,20 +199,17 @@ export class WebGPUPoints {
 		for (const g of GROUPS) this._writeGroup(L, g);
 		for (const k of ['outA', 'outB', 'outC']) {
 			L.bufs[k]?.destroy();
-			// outA (положение на экране) читается обратно для рамок слежения
 			L.bufs[k] = D.createBuffer({ size: n * 16, usage: GPUBufferUsage.STORAGE | (k === 'outA' ? GPUBufferUsage.COPY_SRC : 0) });
 		}
 	}
 
 	_writeGroup(L, g) {
 		const [b, half] = PAIR[g];
-		// writeBuffer копирует данные сразу, поэтому рабочий массив общий на все группы и слои
 		const need = L.count * 4;
 		if (!this._pack || this._pack.length < need) this._pack = new Float32Array(need);
 		this.device.queue.writeBuffer(L.bufs[IN_BUFS[b]], half * L.count * 16, packGroup(g, L.attrs, L.count, this._pack), 0, need);
 	}
 
-	/** Убирает облако слоя (например, «героя», когда видео закрыто) */
 	dropCloud(layer) {
 		const L = this.layers[layer];
 		if (!L) return;
@@ -248,14 +217,12 @@ export class WebGPUPoints {
 		delete this.layers[layer];
 	}
 
-	/** Буфер значений экземпляра i (создаётся при первом обращении) */
 	_inst(i) {
 		let it = this.insts[i];
 		if (!it) it = this.insts[i] = { buf: this.device.createBuffer({ size: FRAME_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }), groups: {} };
 		return it;
 	}
 
-	/** Привязки экземпляра для облака слоя: пересоздаются, если облако или служебные текстуры заменились */
 	_groupsFor(it, layer) {
 		const L = this.layers[layer];
 		const g = it.groups[layer];
@@ -284,7 +251,6 @@ export class WebGPUPoints {
 		return (it.groups[layer] = { computeGroup, renderGroup, ver: L.ver, tex: this.texVersion });
 	}
 
-	/** Перезаписывает данные точек, зависящие от изменившихся атрибутов (имена как в GLSL) */
 	updateAttributes(names, layer = 'main') {
 		const L = this.layers[layer];
 		const groups = new Set();
@@ -292,20 +258,14 @@ export class WebGPUPoints {
 		for (const g of groups) this._writeGroup(L, g);
 	}
 
-	/** Спектр звука: 64 байта (значения 0..255) */
 	setSpectrum(bytes) {
 		this.device.queue.writeTexture({ texture: this.specTex }, bytes, { bytesPerRow: 64 }, [64, 1]);
 	}
 
-	/** Центры кусков для эффекта «Разбор на части»: 256 векторов по 4 числа */
 	setPieces(floats) {
 		this.device.queue.writeTexture({ texture: this.pieceTex }, floats, { bytesPerRow: 256 * 16 }, [256, 1]);
 	}
 
-	/**
-	 * Кадры раскадровки: слои текстуры-массива (по одному кадру) в виде одного байтового массива RGBA, цвета в sRGB.
-	 * Пересоздаёт текстуру, если изменился размер или число кадров.
-	 */
 	setFrames(data, cols, rows, n) {
 		const cur = this.frTex;
 		if (cur.width !== cols || cur.height !== rows || cur.depthOrArrayLayers !== n) {
@@ -316,7 +276,6 @@ export class WebGPUPoints {
 		this.device.queue.writeTexture({ texture: this.frTex }, data, { bytesPerRow: cols * 4, rowsPerImage: rows }, [cols, rows, n]);
 	}
 
-	/** Атлас символов для точек-букв (холст с рядом символов; переворачивается по вертикали, как текстура WebGL) */
 	setAtlas(canvas) {
 		const w = canvas.width;
 		const h = canvas.height;
@@ -329,20 +288,14 @@ export class WebGPUPoints {
 		this.device.queue.copyExternalImageToTexture({ source: canvas, flipY: true }, { texture: this.atlasTex }, [w, h]);
 	}
 
-	/** Кадр видео для «героя» (HTMLVideoElement, ImageBitmap, холст); переворачивается по вертикали, как текстура WebGL */
 	setHeroSource(source, w, h) {
 		this._external('heroTex', source, w, h);
 	}
 
-	/** Кадр видео или картинка для «Экрана» (переворачивается по вертикали, как текстура WebGL) */
 	setScreenSource(source, w, h) {
 		this._external('scrTex', source, w, h);
 	}
 
-	/**
-	 * Копирует видео или картинку в текстуру. Кадр копируется, только когда он сменился: картинка один раз, видео по requestVideoFrameCallback
-	 * (видео 30 к/с на экране 60 Гц раньше копировалось дважды на каждый свой кадр, а на Windows копирование кадра в WebGPU заметно дороже, чем в WebGL)
-	 */
 	_external(key, source, w, h) {
 		if (!w || !h) return;
 		const tex = this._resize(key, w, h, 'rgba8unorm-srgb', true);
@@ -359,11 +312,9 @@ export class WebGPUPoints {
 			this.device.queue.copyExternalImageToTexture({ source, flipY: true }, { texture: tex, colorSpace: 'srgb' }, [w, h]);
 			sig[key] = { tex, source, t: isVideo ? source.currentTime : 0 };
 		} catch (e) {
-			/* кадр видео ещё не готов: остаётся прошлый */
 		}
 	}
 
-	/** Был ли у видео новый кадр с прошлой копии в текстуру key (true / false); undefined, если браузер не умеет requestVideoFrameCallback */
 	_videoFresh(video, key) {
 		if (typeof video.requestVideoFrameCallback !== 'function') return undefined;
 		const W = (this._vfc ||= new WeakMap());
@@ -377,23 +328,19 @@ export class WebGPUPoints {
 				video.requestVideoFrameCallback(on);
 			};
 			video.requestVideoFrameCallback(on);
-			// первый раз кадр копируется сразу: колбэк придёт только со следующим кадром
 			return true;
 		}
-		// видео играет, а колбэков давно нет (бывает у видео вне страницы): кадр копируется по старому правилу
 		if (!video.paused && performance.now() - st.at > 300) return undefined;
 		if (st.seen[key] === st.n) return false;
 		st.seen[key] = st.n;
 		return true;
 	}
 
-	/** Карта глубины «Экрана»: один байт на пиксель, строки уже перевёрнуты (как DataTexture в WebGL) */
 	setScreenDepth(data, w, h) {
 		const tex = this._resize('scrDep', w, h, 'r8unorm');
 		this.device.queue.writeTexture({ texture: tex }, data, { bytesPerRow: w }, [w, h]);
 	}
 
-	/** Память цвета «Экрана»: RGBA по номеру точки, строки по 2048 точек. rows: [первая, последняя + 1] изменившиеся строки (по умолчанию все) */
 	setScreenMemory(data, w, h, rows = null) {
 		const cur = this.scrMTex;
 		const tex = this._resize('scrMTex', w, h, 'rgba8unorm');
@@ -402,10 +349,6 @@ export class WebGPUPoints {
 		this.device.queue.writeTexture({ texture: tex, origin: [0, r0] }, data, { offset: r0 * w * 4, bytesPerRow: w * 4 }, [w, r1 - r0]);
 	}
 
-	/**
-	 * Кольцо прошлых кадров «Слит-скана»: M слоёв cols × rows, RGBA в sRGB. layers: какие слои записать (null: все).
-	 * В обычном кадре меняется один слой, поэтому и загружается только он (весь буфер бывает до 64 МБ).
-	 */
 	setSlit(data, cols, rows, M, layers = null) {
 		let tex = this.slitTex;
 		if (tex.width !== cols || tex.height !== rows || tex.depthOrArrayLayers !== M) {
@@ -420,17 +363,11 @@ export class WebGPUPoints {
 		else for (const l of layers) write(l, 1);
 	}
 
-	/** Смещения «Пиксельной сортировки»: по два числа на точку (x, y), строки по 2048 точек */
 	setSort(data, w, h) {
 		const tex = this._resize('sortTex', w, h, 'rg32float');
 		this.device.queue.writeTexture({ texture: tex }, data, { bytesPerRow: w * 8 }, [w, h]);
 	}
 
-	/**
-	 * Собирает конвейеры асинхронно: главный поток не ждёт видеодрайвер (в WebGL это самое дорогое место на Windows).
-	 * @param {{salt?: number, mapShader?: (code: string) => string}} opts salt: для проверки холодной сборки (меняет число в шейдере, чтобы кеш не помог); mapShader: подмена текста шейдера (для проверок)
-	 * @returns {Promise<{blockedMs: number, readyMs: number}>} сколько главный поток был занят и за сколько всё стало готово
-	 */
 	async prepare({ salt = 0, mapShader = null } = {}) {
 		const D = this.device;
 		const t0 = performance.now();
@@ -440,7 +377,6 @@ export class WebGPUPoints {
 		};
 		const jobs = [];
 		if (this._mapped !== mapShader) {
-			// другой вариант шейдера (только для проверок): пересобрать
 			delete this.pipelines.compute;
 			this._mapped = mapShader;
 		}
@@ -470,7 +406,6 @@ export class WebGPUPoints {
 						targets: [
 							{
 								format: rt ? RT_FORMAT : this.format,
-								// со свечением как AdditiveBlending у three.js; непрозрачный режим без смешивания
 								blend: add ? BLEND_ADD : undefined,
 							},
 						],
@@ -487,7 +422,6 @@ export class WebGPUPoints {
 		return { blockedMs, readyMs: performance.now() - t0 };
 	}
 
-	/** Вариант расчёта для «героя» раскадровки: собирается по первому требованию (это вторая большая программа) */
 	prepareHero() {
 		if (this.heroJob) return this.heroJob;
 		const D = this.device;
@@ -503,10 +437,6 @@ export class WebGPUPoints {
 		return this.heroJob;
 	}
 
-	/**
-	 * «Тень на стене»: свой вариант расчёта (SHADOW) и рисование мягкими точками (со свечением или обычным смешиванием, без записи глубины, как в WebGL).
-	 * Собирается по первому требованию: пока тень выключена, видеодрайвер эту программу не видит.
-	 */
 	prepareShadow() {
 		if (this.shadowJob) return this.shadowJob;
 		const D = this.device;
@@ -545,7 +475,6 @@ export class WebGPUPoints {
 		return !!(this.pipelines.computeShadow && this.pipelines['shadow-add' + (rt ? '-rt' : '')] && this.pipelines['shadow-normal' + (rt ? '-rt' : '')]);
 	}
 
-	/** Готов ли конвейер расчёта и рисования для указанного режима */
 	ready(add = true, rt = false) {
 		return !!(this.pipelines.compute && this.pipelines['points-' + (add ? 'add' : 'normal') + (rt ? '-rt' : '')]);
 	}
@@ -568,16 +497,6 @@ export class WebGPUPoints {
 		return this.depth;
 	}
 
-	/**
-	 * Один кадр.
-	 * @param {object} shared общие значения кадра (render/shared/frame-uniforms.js)
-	 * @param {object} extra значения рендера, общие для всех экземпляров: projectionMatrix (матрица three.js), uExposure
-	 * @param {object[]} [list] по записи на экземпляр (тень, облако, призраки шлейфа, герой): { modelMatrix, modelViewMatrix, normalMatrix, uTOff, uGhost, uHero, layer: 'main' | 'hero', shadow?: 'add' | 'normal' }; по умолчанию одно облако.
-	 *   Экземпляр с shadow рисуется вариантом «Тени на стене» (значения uShd* передаются в нём же); у основного облака main: true (по умолчанию первая запись), его значения берут связи и осциллограф
-	 * @param {{view?: GPUTextureView, size?: number[], rt?: boolean, noClear?: boolean, encoder?: GPUCommandEncoder}} [opts] куда рисовать: холст (по умолчанию) или текстура (rt: true, формат RT_FORMAT, без тон-маппинга);
-	 *   noClear: не очищать цель и глубину (до облака уже что-то нарисовано, например шлейф);
-	 *   с encoder кадр дописывается в чужой список команд (его отправит вызывающий)
-	 */
 	frame(shared, extra, list = [{}], opts = {}) {
 		const D = this.device;
 		const rt = !!opts.rt;
@@ -597,11 +516,9 @@ export class WebGPUPoints {
 			const computePipe = own.shadow ? this.pipelines.computeShadow : layer === 'hero' ? this.pipelines.computeHero : this.pipelines.compute;
 			const pipe = own.shadow ? this.pipelines['shadow-' + own.shadow + (rt ? '-rt' : '')] : pipeMain;
 			if (!L || !computePipe) return;
-			// буфер значений 0 у основного облака: его же читают связи и осциллограф (WebGPUMesh)
 			const main = own.main ?? (i === 0 && layer === 'main' && !own.shadow);
 			const it = this._inst(main ? 0 : slot++);
 			const g = this._groupsFor(it, layer);
-			// uRes остаётся общим значением кадра (CSS-пиксели, как у WebGL: по нему толщина линий), точки меряются настоящими пикселями цели (uPx)
 			packFrame(shared, { uPx: [w, h], uExposure: 1, uTOff: 0, uGhost: 1, ...extra, ...own }, this.frameData);
 			D.queue.writeBuffer(it.buf, 0, this.frameData);
 			const cp = enc.beginComputePass();
@@ -622,7 +539,6 @@ export class WebGPUPoints {
 			}
 			rp.end();
 		});
-		// если ничего не нарисовано, цель всё равно очищается
 		if (first) {
 			const rp = enc.beginRenderPass({
 				colorAttachments: [{ view, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }],
@@ -636,14 +552,11 @@ export class WebGPUPoints {
 		}
 	}
 
-	// ------------------------------------------------------------ рамки слежения: настоящие положения точек после всех эффектов
-	/** На ближайшем кадре положения этих точек (до 16 номеров) копируются из прохода расчёта и читаются без ожидания: результат в pickResult() */
 	pickRequest(idxs) {
 		const P = (this.pick ||= { buf: null, busy: null, want: null, res: null });
 		P.want = idxs.slice(0, 16);
 	}
 
-	/** Последние прочитанные положения: { idxs, clip (по 4 числа на точку: положение на экране до деления на w), mv, proj (матрицы того кадра) } или null */
 	pickResult() {
 		return this.pick ? this.pick.res : null;
 	}
@@ -658,7 +571,6 @@ export class WebGPUPoints {
 		P.busy = 'copied';
 	}
 
-	/** Вызывать после отправки кадра на видеокарту: буфер с копией можно читать только после неё */
 	pickMap() {
 		const P = this.pick;
 		if (!P || P.busy !== 'copied') return;
@@ -671,13 +583,11 @@ export class WebGPUPoints {
 				P.buf.unmap();
 			})
 			.catch(() => {
-				// чтение не удалось (например, потеряно устройство): рамки остаются на исходных положениях
 				P.failed = true;
 			})
 			.finally(() => (P.busy = null));
 	}
 
-	/** Ждёт, пока видеокарта закончит все отправленные кадры (нужно для замеров) */
 	idle() {
 		return this.device.queue.onSubmittedWorkDone();
 	}

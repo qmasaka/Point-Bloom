@@ -1,13 +1,7 @@
 import * as THREE from 'three';
 import { clamp } from '../../core/util.js';
 
-/**
- * Кольцевой буфер последних кадров видео на видеокарте (текстура-массив, слой на кадр) и «Слит-скан» на нём:
- * у каждой точки видео своя задержка во времени (по строкам, столбцам, кругам, глубине или пятнам). Шейдер в vert.js (блок VSCREEN; в WebGPU тот же шейдер, переведённый dev/gen-wgsl.mjs).
- * Методы подмешиваются в EffectsEngine.
- */
 export class SlitPart {
-	/** Каждый кадр: новый кадр видео ложится в буфер, значения для шейдера */
 	_slitTick(rgbNew, u) {
 		const S = this.state.layers.slitscan;
 		const pm = this.pm;
@@ -24,7 +18,6 @@ export class SlitPart {
 		u.uSlitG.value.set(H.cols, H.rows, H.cols * H.rows, H.M);
 	}
 
-	/** Буфер не меньше need кадров (и не больше ~64 МБ): новый кадр видео пишется в следующий слой */
 	_ringTick(rgbNew, need) {
 		const pm = this.pm;
 		const cols = pm.cols, rows = pm.rows;
@@ -57,7 +50,6 @@ export class SlitPart {
 				}
 			};
 			if (!H.filled) {
-				// в начале весь буфер заполнен первым кадром: прошлое набирается, пока видео играет
 				for (let l = 0; l < M; l++) write(l);
 				H.filled = true;
 				H.tex.clearLayerUpdates?.();

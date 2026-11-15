@@ -3,7 +3,7 @@ import { loadJSON, saveJSON, mergeDeep } from './util.js';
 const KEY = 'objglb.settings.v1';
 
 export const DEFAULTS = {
-	display: 'material', // material | solid | wire | points | normals | uv
+	display: 'material',
 	flat: false,
 	overlays: { grid: true, axes: true, wire: false, faces: false, bbox: true },
 	media: { pts: 80000, relief: 'bright', depth: 0.5, recFps: 15, recSec: 10, cutDark: 0, cutLight: 1, key: '#00ff00', keyTol: 0, edges: 0, contrast: 1, sat: 1, post: 0, invert: false },
@@ -32,7 +32,7 @@ export const DEFAULTS = {
 
 export function loadSettings() {
 	const s = mergeDeep(DEFAULTS, loadJSON(KEY, {}));
-	s.display = 'material'; // режим просмотра не запоминаем: новая сессия всегда начинается с материалов
+	s.display = 'material';
 	s.overlays.wire = false;
 	s.overlays.faces = false;
 	return s;

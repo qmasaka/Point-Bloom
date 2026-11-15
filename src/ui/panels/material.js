@@ -1,4 +1,3 @@
-// Вкладка «Материал»: слоты текстур, параметры PBR, UV-развёртка.
 import * as THREE from 'three';
 import { h, formatBytes } from '../../core/util.js';
 import { icon } from '../icons.js';
@@ -23,12 +22,10 @@ export function createMaterialPanel(app, root) {
 		app.bus.emit('geometry');
 	};
 
-	// ------------------------------------------------------ выбор материала
 	const matSelect = select({ options: [{ value: '', label: '' }], value: '', onChange: (v) => model.setActiveMaterial(model.materials()[parseInt(v, 10)]) });
 	const usage = h('div', { class: 'field-hint' });
 	const secPick = section('Материал', { key: 'mat-pick' }, matSelect.el, usage);
 
-	// --------------------------------------------------------------- слоты
 	const slotsBox = h('div', { class: 'sec-body', style: { padding: 0 } });
 	const slotRefs = new Map();
 
@@ -48,7 +45,6 @@ export function createMaterialPanel(app, root) {
 			e.stopPropagation();
 			pickFor(s.key);
 		} });
-		// имя по-русски, а техническое название (Normal, Roughness…) идёт второй строкой, пока файл не задан
 		const mainLabel = s.label.replace(/\s*\(.*\)$/, '');
 		const techLabel = (s.label.match(/\((.*)\)/) || [])[1] || '';
 		const nameEl = h('div', { class: 'slot-name' }, mainLabel);
@@ -109,7 +105,6 @@ export function createMaterialPanel(app, root) {
 	const slotsHint = h('div', { class: 'field-hint' }, 'Перетащите картинку на нужную карту. Файлы с именами вроде wood_normal.png и wood_roughness.png распознаются автоматически.');
 	const secSlots = section('Текстуры', { key: 'mat-slots' }, slotsBox, slotsHint);
 
-	// ------------------------------------------------- настройки выбранной текстуры
 	const repU = numberField({ value: 1, step: 0.1, axis: 'U', min: 0.0001, digits: 4, onChange: () => applyTexParams() });
 	const repV = numberField({ value: 1, step: 0.1, axis: 'V', min: 0.0001, digits: 4, onChange: () => applyTexParams() });
 	const offU = numberField({ value: 0, step: 0.01, axis: 'U', digits: 4, onChange: () => applyTexParams() });
@@ -142,7 +137,6 @@ export function createMaterialPanel(app, root) {
 		commit();
 	}
 
-	// ----------------------------------------------------------- параметры PBR
 	const color = colorField({ value: '#ffffff', onInput: (v) => { const m = mat(); if (m) { m.color.set(v); touch(); } }, onChange: commit });
 	const rough = slider({ value: 0.8, onInput: (v) => { const m = mat(); if (m) { m.roughness = v; touch(); } } });
 	const metal = slider({ value: 0, onInput: (v) => { const m = mat(); if (m) { m.metalness = v; touch(); } } });
@@ -170,12 +164,10 @@ export function createMaterialPanel(app, root) {
 	const rowMetal = field('Металличность', metal.el);
 	const secParams = section('Параметры', { key: 'mat-params' }, field('Базовый цвет', color.el), rowRough, rowMetal, field('Свечение', emissive.el), field('Сила свечения', emissiveI.el), field('Прозрачность', alphaMode.el), rowOpacity, rowCutoff, rowNormal, rowAO, doubleSide.el);
 
-	// ------------------------------------------------------------ UV-превью
 	const uvCanvas = h('canvas', { class: 'uv-canvas', width: 560, height: 560, 'aria-label': 'Развёртка UV' });
 	const secUV = section('Развёртка UV', { key: 'mat-uv', open: false }, h('div', { class: 'uv-box' }, uvCanvas, h('div', { class: 'field-hint' }, 'Оранжевые линии показывают, как грани меша лежат на текстуре. Если развёртка выходит за рамку, текстура будет повторяться.')));
 	let uvTimer = null;
 	let uvDirty = true;
-	/** UV-превью рисуем только когда раздел виден и открыт, и не чаще раза в 80 мс */
 	function scheduleUV() {
 		uvDirty = true;
 		if (root.hidden || secUV.el.classList.contains('is-closed')) return;
@@ -201,7 +193,6 @@ export function createMaterialPanel(app, root) {
 	root.append(noMat, wrap);
 
 	function refreshSoft() {
-		/* значения слайдеров уже актуальны */
 	}
 
 	function refresh() {

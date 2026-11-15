@@ -1,4 +1,3 @@
-// Экспорт «для сайта»: страница с <model-viewer>, постер, USDZ для iPhone и готовый код для вставки.
 import { exportModel, makeZip, defaultExportName } from './exporters.js';
 import { safeName } from '../core/util.js';
 
@@ -7,7 +6,6 @@ const BG = { dark: '#16181d', light: '#f1f2f4', transparent: 'transparent' };
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-/** Код элемента, который можно вставить в готовую страницу */
 export function embedSnippet({ glb = 'model.glb', usdz = null, poster = 'poster.jpg', title = '3D-модель', autoRotate = true, ar = true, height = '480px' }) {
 	const attrs = [
 		`src="${glb}"`,
@@ -60,10 +58,6 @@ function pageHtml({ title, bg, glb, usdz, poster, autoRotate, ar }) {
 
 const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.186.1';
 
-/**
- * Страница для облака точек: model-viewer рисует точки в 1 пиксель и размер из редактора теряется,
- * поэтому точки показывает three.js. Размер и форма берутся из extras узлов (pointSize в мировых единицах, pointShape).
- */
 function pointsPageHtml({ title, bg, glb }) {
 	return `<!doctype html>
 <html lang="en">
@@ -111,7 +105,7 @@ new GLTFLoader().load(${JSON.stringify(glb)}, (gltf) => {
 		if (!n.isPoints) return;
 		const size = (n.userData && n.userData.pointSize) || 0.01;
 		const tex = sprite((n.userData && n.userData.pointShape) || 'circle');
-		// у three.js размер точки с перспективой считается без учёта угла обзора, поэтому делится на tan(fov/2)
+
 		n.material = new THREE.PointsMaterial({ size: size * k, vertexColors: !!n.geometry.attributes.color, sizeAttenuation: true, map: tex, alphaTest: tex ? 0.5 : 0, transparent: false });
 	});
 	const box = new THREE.Box3().setFromObject(gltf.scene);
@@ -146,10 +140,6 @@ function blobToDataURL(blob) {
 	});
 }
 
-/**
- * Постер для страницы: чистый кадр (без сетки, осей и гизмо) в формате 4:3.
- * Камера на время съёмки сама кадрирует модель целиком, ракурс остаётся тем, что выбрал пользователь.
- */
 async function makePoster(app, bg) {
 	const vp = app.viewport;
 	const nav = app.nav;
@@ -177,7 +167,7 @@ async function makePoster(app, bg) {
 		const box = vp.getBounds(vp.root);
 		if (!box.isEmpty()) {
 			nav.frameBox(box, false);
-			nav.distance *= 0.82; // для постера модель может быть крупнее
+			nav.distance *= 0.82;
 			nav.applyCamera();
 		}
 		vp.render();
@@ -204,9 +194,6 @@ async function makePoster(app, bg) {
 	return { blob: await new Promise((res) => out.toBlob(res, 'image/jpeg', 0.85)), ext: 'jpg' };
 }
 
-/**
- * Готовит веб-пакет. Возвращает { blob, filename, info, extra: { snippet, files, warnings, single } }
- */
 export async function exportForWeb(app, o, progress) {
 	const t0 = performance.now();
 	const w = o.web;
@@ -239,7 +226,6 @@ export async function exportForWeb(app, o, progress) {
 	const common = { title, bg: w.bg, autoRotate: false, ar: false };
 	const info = { ...glb.info, format: 'web', glbBytes: glb.info.bytes, usdzBytes: usdz ? usdz.info.bytes : 0, ms: 0 };
 	let blob, filename, files;
-	// облако точек показывает своя страница на three.js: model-viewer не хранит размер точки
 	const hasPoints = glb.info.points > 0;
 	const makePage = (glbRef, posterRef) => (hasPoints ? pointsPageHtml({ title, bg: w.bg, glb: glbRef }) : pageHtml({ ...common, glb: glbRef, poster: posterRef, usdz: usdz ? 'model.usdz' : null }));
 	const snippet = hasPoints ? '<iframe src="index.html" style="width:100%;height:480px;border:0" title="3D"></iframe>' : embedSnippet({ ...common, glb: 'model.glb', poster: posterName, usdz: usdz ? 'model.usdz' : null });
@@ -253,7 +239,6 @@ export async function exportForWeb(app, o, progress) {
 		blob = new Blob([html], { type: 'text/html' });
 		filename = `${name}.html`;
 		files = [{ name: filename, size: blob.size }];
-		// в сниппете для встраивания один HTML не нужен: показываем вариант с файлами
 		warnings.push('Один HTML открывается с диска двойным кликом (нужен интернет для библиотеки просмотра). Для встраивания на сайт выберите ZIP.');
 	} else {
 		progress && progress('Упаковываю архив', 0.88);

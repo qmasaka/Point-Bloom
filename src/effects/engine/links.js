@@ -1,12 +1,9 @@
 import * as THREE from 'three';
 import { perf } from '../../core/perf.js';
 
-/** Эффект «Связи»: расчёт пар соседних точек и обновление линий. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class LinksPart {
-	/** Подбирает пары соседних узлов (по итоговой форме) и записывает атрибуты линий */
 	_computeLinks() {
 		if (!this.geometry || !this.linkObj) return;
-		// связи нужны только включённому эффекту: при входе в режим их подбор занимал десятки миллисекунд зря
 		if (!this.state.layers.links.on) {
 			this._linksStale = true;
 			return;
@@ -22,10 +19,8 @@ export class LinksPart {
 		const T = g.attributes.aTarget.array;
 		const ids = new Int32Array(S);
 		for (let i = 0; i < S; i++) ids[i] = Math.floor(i * step);
-		// радиус поиска соседей идёт за «Длиной связей» (шейдер рвёт нити длиннее 1.9 × длины), иначе длинные связи не находились совсем
 		const R = Math.min(0.75, Math.max(0.2, this.state.layers.links.range * 1.9));
 		const R2 = R * R;
-		// ячейка сетки по средней густоте узлов (а не по радиусу): соседи ищутся кольцами ячеек, и поиск кончается, как только три ближайших найдены
 		let x0 = Infinity, y0 = Infinity, z0 = Infinity, x1 = -Infinity, y1 = -Infinity, z1 = -Infinity;
 		for (let i = 0; i < S; i++) {
 			const p = ids[i] * 3;
@@ -56,7 +51,6 @@ export class LinksPart {
 			let b1_d = R2, b1_j = -1;
 			let b2_d = R2, b2_j = -1;
 			for (let r = 0; r <= rings; r++) {
-				// всё в кольце r не ближе (r-1) ячеек: если три соседа уже ближе, дальше искать незачем
 				if (r > 1 && b2_j >= 0 && b2_d < ((r - 1) * cell) ** 2) break;
 				for (let dx = -r; dx <= r; dx++) {
 					for (let dy = -r; dy <= r; dy++) {
@@ -197,7 +191,6 @@ export class LinksPart {
 		this._pairs = { ids, list: pairs, N, L };
 	}
 
-	/** Обновляет концы линий после смены формы: берём актуальные origin/target выбранных точек */
 	_syncLinks() {
 		if (!this._pairs || !this.linkObj) return;
 		const { ids, list, L } = this._pairs;

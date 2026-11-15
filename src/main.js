@@ -9,13 +9,10 @@ import { runBenchmark } from './core/capabilities.js';
 import { guardDevice } from './app/device-guard.js';
 import { initI18n } from './i18n/index.js';
 
-// перевод включается до сборки интерфейса: всё, что он создаст, переведётся сразу
 initI18n();
 
-/** Плавное открытие: пока всё строится, виден экран загрузки, потом он гаснет, а панели выезжают на места */
 function revealApp() {
 	let revealed = false;
-	// animate=false: интерфейс просто появляется. Выезд панелей нужен только при обычном открытии: если открытие затянулось (вкладка была в фоне, страница занята) или пользователь уже что-то делает, повторять его поверх модели нельзя, это и было миганием после добавления файла
 	const done = (animate = true) => {
 		if (revealed) return;
 		revealed = true;
@@ -33,7 +30,7 @@ function revealApp() {
 	window.addEventListener('pointerdown', early, { once: true, capture: true });
 	window.addEventListener('keydown', early, { once: true, capture: true });
 	window.addEventListener('drop', early, { once: true, capture: true });
-	setTimeout(() => done(false), 4000); // страховка: если вкладка скрыта и кадры не рисуются, интерфейс всё равно покажется
+	setTimeout(() => done(false), 4000);
 	const fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
 	Promise.all([fonts, new Promise((r) => setTimeout(r, 450))]).then(() => requestAnimationFrame(() => requestAnimationFrame(() => done(true))));
 }
@@ -57,7 +54,6 @@ function showFatal(e) {
 
 import { iconsReady } from './ui/icons.js';
 
-// установка как приложения: сервис-воркер нужен браузеру, чтобы предложить установку; кнопка в окне поддержки появляется, когда установка доступна
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
 	window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
@@ -82,11 +78,11 @@ document.addEventListener('click', (e) => {
 
 iconsReady
 	.then(() => {
-		guardDevice(); // на другом устройстве сайт начинает с исходных настроек
+		guardDevice();
 		const app = new App();
 		app.start();
-		window.__app = app; // удобно для отладки из консоли
+		window.__app = app;
 		revealApp();
-		window.__dev = { THREE, GLTFLoader, exportModel, verifyGLB, makeTextureSampler, makeDemoFiles, exportForWeb, runBenchmark }; // для отладки и автотестов
+		window.__dev = { THREE, GLTFLoader, exportModel, verifyGLB, makeTextureSampler, makeDemoFiles, exportForWeb, runBenchmark };
 	})
 	.catch(showFatal);

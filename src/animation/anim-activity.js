@@ -1,16 +1,13 @@
-// Активность костей по времени клипа: сколько кость движется в каждый момент. По ней рисуется полоса «Персонаж» на таймлайне.
 import * as THREE from 'three';
 
 const cache = new WeakMap();
 
-/** { n, total: Float32Array 0..1, bones: [{ name, vals: Float32Array 0..1, sum }] }, кости от самых подвижных к спокойным */
 export function clipActivity(clip, N = 160) {
 	if (cache.has(clip)) return cache.get(clip);
 	const dur = Math.max(clip.duration, 0.01);
 	const dt = dur / (N - 1);
 	const byBone = new Map();
 	for (const tr of clip.tracks) {
-		// имя дорожки «кость.свойство»; если разбор three не справился (двоеточия и точки в именах), делим по последней точке сами
 		let nodeName, propertyName;
 		try {
 			({ nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(tr.name));
@@ -39,7 +36,6 @@ export function clipActivity(clip, N = 160) {
 	const bones = [];
 	let gmax = 1e-6;
 	for (const [name, a] of byBone) {
-		// лёгкое сглаживание, чтобы полоса не рябила
 		const s = new Float32Array(N);
 		for (let i = 0; i < N; i++) s[i] = (a[Math.max(0, i - 1)] + a[i] * 2 + a[Math.min(N - 1, i + 1)]) / 4;
 		let sum = 0;

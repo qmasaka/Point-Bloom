@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const vert = /* glsl */ `
+const vert = `
 varying vec3 vWorld;
 void main() {
 	vec4 w = modelMatrix * vec4(position, 1.0);
@@ -8,7 +8,7 @@ void main() {
 	gl_Position = projectionMatrix * viewMatrix * w;
 }`;
 
-const frag = /* glsl */ `
+const frag = `
 varying vec3 vWorld;
 uniform float uSizeA, uSizeB, uMix, uRadius, uAxes, uOrtho;
 uniform vec3 uCenter, uCam, uBack, uColor, uAxisU, uAxisV, uNormal, uColU, uColV;
@@ -27,8 +27,8 @@ void main() {
 	float g = max(a * 0.5, b * 0.85);
 
 	vec2 fw = max(fwidth(p), vec2(1e-6));
-	float axU = (1.0 - smoothstep(0.0, 1.6, abs(p.y) / fw.y)) * uAxes;  // линия вдоль оси U (V = 0)
-	float axV = (1.0 - smoothstep(0.0, 1.6, abs(p.x) / fw.x)) * uAxes;  // линия вдоль оси V (U = 0)
+	float axU = (1.0 - smoothstep(0.0, 1.6, abs(p.y) / fw.y)) * uAxes;
+	float axV = (1.0 - smoothstep(0.0, 1.6, abs(p.x) / fw.x)) * uAxes;
 
 	float dist = length(p - pc);
 	float fade = 1.0 - smoothstep(uRadius * 0.3, uRadius, dist);
@@ -80,7 +80,6 @@ export class Grid extends THREE.Mesh {
 		this.floorY = 0;
 	}
 
-	/** Подстраивает масштаб сетки под расстояние до камеры */
 	update(nav, camera) {
 		const u = this.material.uniforms;
 		const d = Math.max(nav.distance, 1e-9);
@@ -93,10 +92,8 @@ export class Grid extends THREE.Mesh {
 		const radius = d * (nav.ortho ? 60 : 45);
 		u.uRadius.value = radius;
 		this.scale.set(radius, 1, radius);
-		// В ортогональных видах спереди/сбоку сетка лежит в плоскости, перпендикулярной взгляду (как в Blender)
 		const view = nav.ortho ? nav.axisView() : null;
 		this.rotation.set(0, 0, 0);
-		// цвета осей как в маркере и гизмо: ось three.js x подписана Y (зелёная), y подписана Z (синяя), z подписана X (красная)
 		const R = [0.9, 0.34, 0.37], G = [0.53, 0.78, 0.35], B = [0.31, 0.56, 0.94];
 		if (view === 'front' || view === 'back') {
 			u.uAxisU.value.set(1, 0, 0);

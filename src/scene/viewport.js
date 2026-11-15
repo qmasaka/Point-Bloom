@@ -5,10 +5,8 @@ import { Grid } from './grid.js';
 import { perf } from '../core/perf.js';
 import { screenRect } from '../core/util.js';
 
-/** Слои: чем рисуется. 0 — служебное (сетка, гизмо), остальное — содержимое сцены. */
 export const LAYER = { MESH: 1, POINTS: 2, WIRE: 3, FACES: 4 };
 
-// paint: тот же фон для холста (запись видео, GIF, скриншот), где CSS-градиент не нарисовать
 export const BACKGROUNDS = {
 	dark: { label: 'Тёмный градиент', css: 'radial-gradient(ellipse at 50% 25%, #3d4149 0%, #24272d 62%, #1b1d22 100%)', solid: '#2a2d33', light: false, paint: { type: 'radial', at: [0.5, 0.25], stops: [[0, '#3d4149'], [0.62, '#24272d'], [1, '#1b1d22']] } },
 	blender: { label: 'Серый (Blender)', css: 'linear-gradient(#4d4d4d, #323232)', solid: '#3d3d3d', light: false, paint: { type: 'linear', stops: [[0, '#4d4d4d'], [1, '#323232']] } },
@@ -24,10 +22,6 @@ export const BACKGROUNDS = {
 	},
 };
 
-/**
- * Рисует фон на 2D-холсте так же, как его рисует CSS под сценой. spec: { type: 'solid', c } | { type: 'linear', stops } (сверху вниз)
- * | { type: 'radial', at: [x, y] доли, stops } (эллипс до дальнего угла, как «radial-gradient(ellipse at …)»)
- */
 export function paintBackground(ctx, w, h, spec) {
 	ctx.save();
 	ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -44,7 +38,6 @@ export function paintBackground(ctx, w, h, spec) {
 		const cy = spec.at[1] * h;
 		const rx = Math.max(cx, w - cx) * Math.SQRT2;
 		const ry = Math.max(cy, h - cy) * Math.SQRT2;
-		// круговой градиент, сжатый по вертикали в эллипс
 		ctx.translate(cx, cy);
 		ctx.scale(1, ry / Math.max(rx, 1e-6));
 		const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
@@ -80,7 +73,6 @@ export class Viewport {
 		this.canvas = document.createElement('canvas');
 		this.canvas.className = 'gl';
 		stage.appendChild(this.canvas);
-		// если браузер не смог создать контекст с желаемыми параметрами (после сбоя видеодрайвера, на старых или перегруженных видеокартах), пробуем проще: без сглаживания и без выбора мощной видеокарты
 		const tries = [
 			{ antialias: perf.antialias, alpha: true, powerPreference: 'high-performance' },
 			{ antialias: false, alpha: true, powerPreference: 'default' },
@@ -93,7 +85,6 @@ export class Viewport {
 				break;
 			} catch (e) {
 				lastErr = e;
-				// у холста, на котором контекст не создался, можно запросить другой; на всякий случай берём чистый
 				this.canvas.remove();
 				this.canvas = document.createElement('canvas');
 				this.canvas.className = 'gl';
@@ -101,7 +92,6 @@ export class Viewport {
 			}
 		}
 		if (!this.renderer) throw lastErr;
-		// потеря контекста WebGL (переключение видеокарты, сон, блокировка экрана, перезапуск драйвера): без этой обработки сцена чернеет навсегда
 		this.contextLost = false;
 		this.canvas.addEventListener('webglcontextlost', (e) => {
 			e.preventDefault();
@@ -116,7 +106,7 @@ export class Viewport {
 			app.toast && app.toast('Графика восстановлена, сцена обновлена', 'ok', 2500);
 		});
 		this._basePR = Math.min(window.devicePixelRatio || 1, perf.maxPR);
-		this._qs = 1; // текущий масштаб разрешения (авто-качество)
+		this._qs = 1;
 		this.renderer.setPixelRatio(this._basePR);
 		this.renderer.setClearColor(0x000000, 0);
 		this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -129,7 +119,6 @@ export class Viewport {
 		this.camera = app.settings.nav.ortho ? this.orthoCam : this.perspCam;
 		this.scene.add(this.perspCam, this.orthoCam);
 
-		// Содержимое модели лежит здесь; всё, что вне root, — служебное
 		this.root = new THREE.Group();
 		this.root.name = 'Model';
 		this.scene.add(this.root);
@@ -137,7 +126,6 @@ export class Viewport {
 		this.grid = new Grid();
 		this.scene.add(this.grid);
 
-		// Освещение: окружение (студия) + «фонарь» от камеры
 		const pmrem = new THREE.PMREMGenerator(this.renderer);
 		this.envTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 		pmrem.dispose();
@@ -145,7 +133,6 @@ export class Viewport {
 		this.headlight = new THREE.DirectionalLight(0xffffff, 1.4);
 		this.scene.add(this.headlight, this.headlight.target);
 
-		// Рамка выделения
 		this.selBox = new THREE.Box3Helper(new THREE.Box3(), 0xf0a060);
 		this.selBox.material.toneMapped = false;
 		this.selBox.renderOrder = 20;
@@ -153,19 +140,16 @@ export class Viewport {
 		this.selBox.userData.helper = true;
 		this.scene.add(this.selBox);
 
-		// Гизмо перемещения/вращения/масштаба (создаём ДО навигации, чтобы он первым ловил события)
 		this.tc = new TransformControls(this.camera, this.canvas);
 		this.tc.size = 0.85;
-		// цвета осей как в маркерах X, Y, Z: ось three.js x показана как Y (зелёная), y как Z (синяя), z как X (красная)
 		this.tc.setColors('#86c85a', '#4f8ff0', '#e5565f', '#ffd24a');
 		this.scene.add(this.tc.getHelper());
-		// Shift при масштабировании: любая ручка тянет форму равномерно по всем осям, как в других 3D-редакторах
 		this.canvas.addEventListener(
 			'pointerdown',
 			(e) => {
 				if (e.shiftKey && this.tc.mode === 'scale' && this.tc.axis && this.tc.axis !== 'XYZ') {
 					this.tc.axis = 'XYZ';
-					this.tc.getHelper().updateMatrixWorld(true); // плоскость перетаскивания пересчитывается под новую ось
+					this.tc.getHelper().updateMatrixWorld(true);
 				}
 			},
 			true
@@ -178,7 +162,6 @@ export class Viewport {
 		this.applyRenderSettings();
 	}
 
-	// ----------------------------------------------------------- настройки
 	applyRenderSettings() {
 		const r = this.app.settings.render;
 		this.renderer.toneMapping = TONE[r.tone] ?? THREE.NeutralToneMapping;
@@ -199,9 +182,7 @@ export class Viewport {
 	}
 
 	resize() {
-		// идёт запись видео: холст держит размер кадра записи, окно его не трогает (см. engine/recording.js)
 		if (this.recLock) return;
-		// плотность пикселей: экран и авто-качество (см. _pr)
 		const pr = this._pr();
 		if (Math.abs(this.renderer.getPixelRatio() - pr) > 1e-6) this.renderer.setPixelRatio(pr);
 		const w = Math.max(1, this.stage.clientWidth);
@@ -216,11 +197,6 @@ export class Viewport {
 		this.dirty = true;
 	}
 
-	/**
-	 * Кадр сцены на телефоне: нижний лист выдвигается поверх сцены, а она не меняет ни размер, ни масштаб.
-	 * shift: на сколько пикселей поднять картинку (в видимую часть над листом); refH: высота, по которой считается масштаб
-	 * (постоянная, пока лист двигается; 0: по высоте всего окна). См. ui/mobile.js и nav.applyCamera
-	 */
 	setViewFrame(shift, refH = 0) {
 		shift = Math.max(0, Math.round(shift));
 		refH = Math.max(0, Math.round(refH));
@@ -230,13 +206,11 @@ export class Viewport {
 		this.app.nav?.applyCamera();
 	}
 
-	// ----------------------------------------------------------- измерения
 	getBounds(obj, target = new THREE.Box3()) {
 		target.makeEmpty();
 		obj.updateWorldMatrix(true, true);
 		obj.traverse((o) => {
 			if (o.userData.helper || !o.geometry || !(o.isMesh || o.isPoints || o.isLine)) return;
-			// у меша со скелетом габариты считаются по текущей позе костей, иначе рамка выделения остаётся на месте
 			if (o.isSkinnedMesh && o.skeleton) o.computeBoundingBox();
 			else if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
 			const b = o.isSkinnedMesh && o.boundingBox ? o.boundingBox : o.geometry.boundingBox;
@@ -267,7 +241,6 @@ export class Viewport {
 		this.invalidate();
 	}
 
-	// ------------------------------------------------------------ выбор
 	isVisibleInTree(o) {
 		for (let p = o; p; p = p.parent) if (!p.visible) return false;
 		return true;
@@ -282,7 +255,6 @@ export class Viewport {
 		const wpp = (2 * nav.distance * Math.tan(fov / 2)) / this.size.height;
 		this.raycaster.params.Points.threshold = wpp * (this.app.settings.point.size * 0.5 + 4);
 		this.raycaster.params.Line.threshold = wpp * 3;
-		// у меша со скелетом ограничивающая сфера считается один раз по позе привязки: без пересчёта клик по движущейся модели не попадал в неё
 		this.root.traverse((o) => {
 			if (o.isSkinnedMesh) o.boundingSphere = null;
 		});
@@ -295,12 +267,10 @@ export class Viewport {
 		return null;
 	}
 
-	// ----------------------------------------------------------- рендер
 	render() {
 		const app = this.app;
 		const nav = app.nav;
 		const o = app.settings.overlays;
-		// в режиме «Эффекты» сетка-плоскость включается отдельной кнопкой в меню фона
 		this.grid.floorY = this.fxHide ? (this.fxFloorY ?? 0) : 0;
 		const showGrid = this.fxHide ? !!this.fxGrid : o.grid;
 		this.grid.visible = showGrid;
@@ -325,10 +295,6 @@ export class Viewport {
 		app.bus.emit('rendered');
 	}
 
-	/**
-	 * Авто-качество: если кадров не хватает, разрешение отрисовки мягко снижается (до половины), а когда запас есть, возвращается.
-	 * Геометрия, эффекты и цвета не меняются: теряется только чёткость краёв, и только пока компьютер не справляется.
-	 */
 	_autoQuality(dt, now) {
 		const s = this.app.settings.render;
 		const fx = this.app.ui?.effectsEngine;
@@ -337,31 +303,26 @@ export class Viewport {
 			return;
 		}
 		if (fx?.recording || fx?.animBusy) return;
-		// в режиме «Эффекты» кадры идут непрерывно, поэтому подряд идущие долгие кадры это не пауза, а нехватка мощности (раньше такие кадры вообще не считались)
 		const sustained = !!fx?.active && dt > 150 && (this._prevDt || 0) > 150;
 		this._prevDt = dt;
-		if (dt > 150 && !sustained) return; // паузы между редкими кадрами не считаем
+		if (dt > 150 && !sustained) return;
 		if (sustained) dt = Math.min(dt, 600);
 		this._qEma = (this._qEma || 16.7) * 0.9 + dt * 0.1;
 		if (now - (this._qT || 0) < 1500) return;
 		this._qT = now;
 		const fps = 1000 / this._qEma;
-		// снижаем только если кадров мало несколько проверок подряд: одиночный провал (например, при загрузке) не повод менять разрешение
 		this._qLow = fps < 30 ? (this._qLow || 0) + 1 : 0;
 		if (this._qLow >= 3 && this._qs > 0.6) {
 			this._qLow = 0;
 			this._qDown = now;
 			this.setScale(Math.max(0.6, this._qs * 0.85));
-			// размытие под панелями тоже стоит кадров: при просадке интерфейс переходит на плоское стекло
 			document.documentElement.classList.add('perf-flat');
 		} else if (fps > 56 && this._qs < 1 && now - (this._qDown || 0) > 20000) {
 			this.setScale(Math.min(1, this._qs * 1.15));
-			// кадров снова хватает: матовое стекло панелей возвращается
 			if (this._qs >= 0.999) document.documentElement.classList.remove('perf-flat');
 		}
 	}
 
-	/** Плотность пикселей холста: экран и авто-качество. Масштаб интерфейса в неё не входит: лишние пиксели роняли частоту кадров, и панели теряли матовое стекло */
 	_pr() {
 		return this._basePR * this._qs;
 	}
@@ -380,7 +341,6 @@ export class Viewport {
 	}
 
 	frame(now) {
-		// анимация персонажа идёт своим временем: поза обновляется до отрисовки. При покадровой записи время идёт ровно на кадр за кадром
 		const off = this.app.ui?.effectsEngine?._recOff;
 		const dtA = off ? (off.busy ? 0 : 1 / off.fps) : Math.min(0.1, (now - (this._animT || now)) / 1000);
 		this._animT = now;
@@ -396,16 +356,13 @@ export class Viewport {
 		let lastF = 0;
 		const loop = (now) => {
 			requestAnimationFrame(loop);
-			// скрытая вкладка: ни рендера, ни лишней работы (браузер и так почти останавливает кадры, но здесь мы не тратим ничего)
 			if (this.contextLost || document.hidden) return;
-			// лимит кадров (например, 30 в секунду) экономит заряд и нагрев
 			const cap = this.app.settings.render.fpsCap || perf.maxFps;
 			if (cap && now - lastF < 1000 / cap - 3) return;
 			lastF = now;
 			this.frame(now);
 		};
 		requestAnimationFrame(loop);
-		// при возврате на вкладку сцена перерисовывается сразу, а счётчик кадров не делает скачка
 		document.addEventListener('visibilitychange', () => {
 			if (document.hidden) return;
 			lastF = 0;
@@ -414,15 +371,10 @@ export class Viewport {
 		});
 	}
 
-	/**
-	 * Холст, в котором лежит вся картинка (для записи видео и GIF). Обычно это основной холст;
-	 * когда облако рисует WebGPU на втором холсте, рендер-движок отдаёт составной холст из обоих (fxCompose).
-	 */
 	captureCanvas() {
 		return this.fxCompose ? this.fxCompose() : this.canvas;
 	}
 
-	/** Скриншот окна просмотра (PNG). transparent=true — без фона. */
 	async screenshot({ transparent = false } = {}) {
 		this.render();
 		const src = this.canvas;
@@ -432,10 +384,8 @@ export class Viewport {
 		const ctx = out.getContext('2d');
 		const fx = this.app.ui?.effectsEngine;
 		const bg = BACKGROUNDS[this.app.settings.render.bg] || BACKGROUNDS.dark;
-		// фон как на экране: в эффектах свой цвет и затемнение к краям, в редакторе градиент
 		if (!transparent) paintBackground(ctx, out.width, out.height, fx ? fx._recBgSpec() : bg.paint || { type: 'solid', c: bg.solid || '#2a2d33' });
 		ctx.drawImage(src, 0, 0);
-		// облако WebGPU лежит на втором холсте поверх основного (кадр ещё не ушёл на экран, поэтому читается сразу)
 		if (this.fxOverlay && this.fxOverlay.style.visibility !== 'hidden') ctx.drawImage(this.fxOverlay, 0, 0, out.width, out.height);
 		return new Promise((res) => out.toBlob(res, 'image/png'));
 	}

@@ -1,5 +1,3 @@
-// Инвентарь эффектов для переноса на WebGPU: какие значения кадра двигает каждый эффект и сколько строк шейдера ему принадлежит.
-// Запуск:  node dev/effects-inventory.mjs > docs/effects-inventory.md
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -7,7 +5,6 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const E = (p) => pathToFileURL(path.join(ROOT, 'src/effects', p)).href;
 
-// заглушки браузера: core/perf.js читает document и navigator при загрузке
 Object.defineProperty(globalThis, 'navigator', { value: { userAgent: 'node', platform: '' }, configurable: true });
 Object.defineProperty(globalThis, 'document', {
 	value: { createElement: () => { throw new Error('нет DOM'); }, documentElement: { classList: { add() {} } } },
@@ -28,7 +25,6 @@ const lines = (s) => s.split('\n').length;
 const loopSrc = fs.readFileSync(path.join(ROOT, 'src/effects/engine/loop.js'), 'utf8');
 const uniSrc = fs.readFileSync(path.join(ROOT, 'src/effects/render/shared/frame-uniforms.js'), 'utf8');
 
-// сколько строк шейдера уходит, если выключить ровно этот эффект (вырезается только его защищённый блок)
 const guardSize = (src, key) => {
 	const all = new Set(FX_GUARDS.keys());
 	const without = new Set(all);
@@ -38,8 +34,7 @@ const guardSize = (src, key) => {
 	return lines(full) - lines(cut);
 };
 
-// какие значения кадра пишет движок, когда речь об эффекте L.<id> (эвристика по тексту loop.js: строка со ссылкой на слой и на u.<имя>)
-const drives = new Map(); // layerId → Set(uniform)
+const drives = new Map();
 for (const line of loopSrc.split('\n')) {
 	const ids = [...line.matchAll(/\bL\.([a-zA-Z0-9_]+)/g)].map((m) => m[1]);
 	const us = [...line.matchAll(/\bu\.(u[A-Za-z0-9]+)\.value/g)].map((m) => m[1]);

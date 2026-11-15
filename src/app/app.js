@@ -1,4 +1,3 @@
-// Центральный объект приложения: связывает вьюпорт, модель, навигацию, историю и интерфейс.
 import { PointEditor } from '../points/point-edit.js';
 import { $, createEmitter } from '../core/util.js';
 import { loadSettings, saveSettings } from '../core/settings.js';
@@ -49,11 +48,9 @@ export class App {
 		this.nav.applyCamera();
 		this.model.applySnap();
 		this.viewport.start();
-		// Ссылка вида ?model=https://…/model.glb&texture=https://…/tex.png открывает модель сразу
 		const q = new URLSearchParams(location.search);
 		const model = q.get('model');
 		if (model) {
-			// чужая ссылка не должна молча подгружать файлы: только http(s) и только с подтверждением
 			const ok = /^https?:\/\//i.test(model) && q.getAll('texture').every((t) => /^https?:\/\//i.test(t));
 			if (ok) {
 				const host = (() => {
@@ -70,7 +67,6 @@ export class App {
 		}
 	}
 
-	// --- гизмо перемещения / вращения / масштаба
 	wireGizmo() {
 		const tc = this.viewport.tc;
 		let before = null;
@@ -97,7 +93,6 @@ export class App {
 				before = null;
 			}
 		});
-		// событие приходит на каждый pointermove: обновляем рамку и поля не чаще кадра, чтобы перетаскивание не тормозило
 		let pending = false;
 		tc.addEventListener('objectChange', () => {
 			if (pending) return;
@@ -105,7 +100,6 @@ export class App {
 			requestAnimationFrame(() => {
 				pending = false;
 				if (multi && this.model.pivot) {
-					// опора двигается, остальные объекты следуют за ней с сохранением взаимного положения
 					const pv = this.model.pivot;
 					pv.updateMatrixWorld(true);
 					const m4 = new THREE.Matrix4();
@@ -125,12 +119,10 @@ export class App {
 		});
 	}
 
-	// --- выбор кликом и фокус двойным кликом
 	wirePointer() {
 		this.bus.on('click', (e) => {
 			const hit = this.viewport.pick(e.clientX, e.clientY);
 			let obj = hit ? hit.object : null;
-			// как в 3D-редакторе: клик выбирает весь объект целиком, чтобы поля X, Y, Z и гизмо работали в мировых осях; Alt выбирает конкретную часть
 			if (obj && !e.altKey) while (obj.parent && obj.parent !== this.viewport.root) obj = obj.parent;
 			this.model.select(obj, { add: e.shiftKey });
 		});
@@ -157,7 +149,6 @@ export class App {
 		this.bus.emit('settings');
 	}
 
-	/** Настройки вида, точек и медиа отменяются Ctrl+Z, как и правки модели. Частые изменения подряд (тяга ползунка) склеиваются в одну отмену */
 	_settingsSnap() {
 		const { exportOpts, importOpts, ...rest } = this.settings;
 		return JSON.stringify(rest);
@@ -196,7 +187,6 @@ export class App {
 		});
 	}
 
-	/** Параметры материалов и назначенные текстуры тоже отменяются: снимок состояния до и после, частые изменения склеиваются */
 	_materialList() {
 		const out = new Set();
 		for (const m of this.model.meshes()) {
@@ -293,7 +283,6 @@ export class App {
 		this.viewport.invalidate();
 	}
 
-	/** После любых изменений материалов и текстур */
 	afterMaterialChange() {
 		const mode = this.settings.display;
 		if (mode !== 'material' && mode !== 'points') this.setDisplay('material');

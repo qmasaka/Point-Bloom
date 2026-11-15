@@ -1,4 +1,3 @@
-// Распознавание рук и пальцев по веб-камере (MediaPipe Hand Landmarker). Модель загружается из сети при первом включении.
 import { tr } from '../../i18n/index.js';
 const VISION = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21';
 const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
@@ -13,15 +12,13 @@ export const HAND_LINKS = [
 ];
 export const TIPS = [4, 8, 12, 16, 20];
 
-// Файлы распознавания лежат на самом сайте (vendor/mediapipe): один домен, без внешних запросов и зависимости от чужих серверов.
-// Если их нет (например, страница открыта как файл), берутся с CDN
 const LOCAL = new URL('vendor/mediapipe/', document.baseURI).href;
 const SOURCES = [
 	{ name: 'local', lib: LOCAL + 'vision_bundle.mjs', wasm: LOCAL + 'wasm', model: LOCAL + 'hand_landmarker.task' },
 	{ name: 'cdn', lib: VISION + '/vision_bundle.mjs', wasm: VISION + '/wasm', model: MODEL },
 ];
 const libs = {};
-const loadLib = (s) => (libs[s.name] ||= import(/* @vite-ignore */ s.lib));
+const loadLib = (s) => (libs[s.name] ||= import( s.lib));
 
 async function createLandmarker(conf, numHands = 2) {
 	let lastErr;
@@ -79,7 +76,6 @@ export class HandTracker {
 		this.numHands = 2;
 		this._lastTs = 0;
 		this._vfc = null;
-		// вкладка скрыта: камера и руки больше не валидны, всё сбрасывается, чтобы жест не «залип»
 		this._vis = () => {
 			if (!document.hidden) return;
 			this._tracks = [];
@@ -88,14 +84,12 @@ export class HandTracker {
 		};
 	}
 
-	/** Сколько рук искать: одна быстрее и точнее на слабом компьютере; меняется на ходу */
 	setNumHands(n) {
 		if (n === this.numHands) return;
 		this.numHands = n;
 		try {
 			this.landmarker?.setOptions({ numHands: n });
 		} catch (e) {
-			/* не критично */
 		}
 	}
 
@@ -127,12 +121,10 @@ export class HandTracker {
 		}
 	}
 
-	/** Следующий шаг привязан к новому кадру камеры (по одному распознаванию на кадр, без пропусков и повторов); без этой возможности работает таймер */
 	_schedule() {
 		if (!this.running) return;
 		const v = this.video;
 		if (v.requestVideoFrameCallback) this._vfc = v.requestVideoFrameCallback(() => this._tick());
-		// страховка: если колбэк кадра не придёт (скрытое видео), шаг всё равно будет
 		this._timer = setTimeout(() => this._tick(), v.requestVideoFrameCallback ? 80 : 16);
 	}
 
@@ -142,7 +134,6 @@ export class HandTracker {
 		try {
 			if (this._vfc != null && this.video.cancelVideoFrameCallback) this.video.cancelVideoFrameCallback(this._vfc);
 		} catch (e) {
-			/* не критично */
 		}
 		this._vfc = null;
 		const v = this.video;
@@ -154,12 +145,10 @@ export class HandTracker {
 				try {
 					this.landmarker.setOptions({ minHandDetectionConfidence: c, minHandPresenceConfidence: Math.max(0.3, c - 0.12), minTrackingConfidence: Math.max(0.3, c - 0.12) });
 				} catch (e) {
-					/* не критично */
 				}
 			}
 			let res = null;
 			try {
-				// MediaPipe требует строго возрастающие метки времени, даже если два кадра пришли в одну миллисекунду
 				const ts = Math.max(performance.now(), this._lastTs + 1);
 				this._lastTs = ts;
 				res = this.landmarker.detectForVideo(v, ts);
@@ -173,7 +162,6 @@ export class HandTracker {
 		this._schedule();
 	}
 
-	/** Руки сопоставляются с прошлым кадром по близости запястья (а не по порядку и подписи «левая/правая», которые у модели прыгают) */
 	_hands(res, aspect) {
 		const now = performance.now();
 		const dets = [];
@@ -205,7 +193,6 @@ export class HandTracker {
 			const dt = Math.min(0.2, Math.max(0.008, (now - (t.t || now - 33)) / 1000));
 			t.t = now;
 			const pts = d.raw.map((p, j) => [t.f[j * 2].filter(p[0], dt, minCut, 14), t.f[j * 2 + 1].filter(p[1], dt, minCut, 14)]);
-			// мировые координаты (в метрах, не зависят от разворота руки к камере) слегка сглаживаем только для распознавания
 			t.world = t.world ? d.world.map((p, j) => p.map((v, k) => t.world[j][k] + (v - t.world[j][k]) * 0.55)) : d.world;
 			t.wrist = pts[0];
 			t.lastSeen = now;
@@ -213,8 +200,6 @@ export class HandTracker {
 			hd.gesture = this._stable(t, hd.rawGesture, now);
 			t.hd = hd;
 		}
-		// потеряли руку на несколько кадров: держим её ещё чуть-чуть, чтобы жест не обрывался
-		// рука со щипком (рисование) держится после потери совсем недолго, чтобы не дорисовывать мазок вслепую; остальные жесты 0,38 с
 		this._tracks = this._tracks.filter((t) => matched.some(([m]) => m === t) || now - t.lastSeen < (t.hd && t.hd.pinch ? 150 : 380)).concat(matched.map(([t]) => t).filter((t) => !this._tracks.includes(t)));
 		return this._tracks.filter((t) => t.hd).map((t) => t.hd);
 	}
@@ -223,7 +208,6 @@ export class HandTracker {
 		return { id: 'H' + this._nextId++, f: Array.from({ length: 42 }, () => new OneEuro()), world: null, wrist: [0, 0], lastSeen: 0, t: 0, fing: [false, false, false, false], thumb: false, pinch: false, hist: [], cur: 'none', hd: null };
 	}
 
-	/** Жест меняется, только если за последние ~0,25 с он стал явным большинством и продержался дольше «задержки» */
 	_stable(t, raw, now) {
 		const win = Math.max(220, this.hold * 1000 * 2);
 		t.hist.push([now, raw]);
@@ -246,7 +230,6 @@ export class HandTracker {
 
 	_draw(hands) {
 		const c = this.pctx;
-		// пропорции превью как у кадра камеры: камера телефона снимает вертикально, и в окне 4:3 картинка растягивалась
 		const vw = this.video.videoWidth, vh = this.video.videoHeight;
 		if (vw && vh && Math.abs(this.preview.height - Math.round((this.preview.width * vh) / vw)) > 1) this.preview.height = Math.round((this.preview.width * vh) / vw);
 		const w = this.preview.width;
@@ -307,7 +290,6 @@ export class HandTracker {
 		try {
 			if (this._vfc != null && this.video.cancelVideoFrameCallback) this.video.cancelVideoFrameCallback(this._vfc);
 		} catch (e) {
-			/* не критично */
 		}
 		this._vfc = null;
 		if (this.stream) {
@@ -318,7 +300,6 @@ export class HandTracker {
 		try {
 			this.landmarker?.close();
 		} catch (e) {
-			/* уже закрыт */
 		}
 		this.landmarker = null;
 		this._tracks = [];
@@ -328,7 +309,6 @@ export class HandTracker {
 const dist = (a, b, aspect) => Math.hypot((a[0] - b[0]) * aspect, a[1] - b[1]);
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-/** Фильтр «One Euro»: когда рука почти стоит, сглаживает сильно (нет дрожи), когда движется быстро, почти не запаздывает */
 class OneEuro {
 	constructor() {
 		this.x = null;
@@ -351,7 +331,6 @@ class OneEuro {
 
 const sub3 = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const len3 = (a) => Math.hypot(a[0], a[1], a[2]);
-/** Угол в точке b между отрезками b-a и b-c, градусы (180 = палец прямой) */
 function angleAt(a, b, c) {
 	const u = sub3(a, b);
 	const v = sub3(c, b);
@@ -362,20 +341,11 @@ function angleAt(a, b, c) {
 
 const FINGERS = [[5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16], [17, 18, 19, 20]];
 
-/**
- * Жест определяется простыми правилами по геометрии пальцев (в метрических 3D-координатах, поэтому не зависит от поворота руки):
- *  1. Щипок: кончики большого и указательного пальцев рядом друг с другом. Это решает всё остальное: если они соединены, это щипок.
- *  2. Палец «разогнут», если он прямой в суставах и кончик далеко от запястья. «Согнут», если сложен и кончик прижат к ладони.
- *  3. Один указательный разогнут, остальные согнуты: «палец». Указательный и средний: «мир». Указательный и мизинец: «рога».
- *  4. Все четыре согнуты: «кулак» (большой палец вверх: «класс»). Три и больше разогнуты: «ладонь».
- * У каждого признака два порога (включение и выключение), поэтому жест не дрожит на границе.
- */
 function measure(t, pts, aspect) {
 	const W = t.world;
 	const size3 = Math.max(1e-5, len3(sub3(W[9], W[0])));
 	const palmC = [0, 5, 9, 13, 17].reduce((s, i) => [s[0] + W[i][0] / 5, s[1] + W[i][1] / 5, s[2] + W[i][2] / 5], [0, 0, 0]);
 	const wr = W[0];
-	// разгиб пальца: прямые суставы и кончик далеко от запястья (по сравнению с серединой пальца)
 	const curl = FINGERS.map(([m, p, d, tip], i) => {
 		const aP = angleAt(W[m], W[p], W[d]);
 		const aD = angleAt(W[p], W[d], W[tip]);
@@ -390,13 +360,10 @@ function measure(t, pts, aspect) {
 	});
 	const ex = t.fing.slice();
 	const count = ex.filter(Boolean).length;
-	// большой палец: прямой и отведён от основания указательного
 	const thOut = len3(sub3(W[4], W[5])) / size3;
 	t.thumb = angleAt(W[2], W[3], W[4]) > 140 && thOut > (t.thumb ? 0.45 : 0.6);
-	// щипок: расстояние между кончиками большого и указательного относительно размера кисти
 	const pd = len3(sub3(W[4], W[8])) / size3;
 	const idxPalm = len3(sub3(W[8], palmC)) / size3;
-	// указательный не должен быть сжат в кулак: в настоящем щипке он согнут не до конца и образует кольцо с большим
 	t.pinch = pd < (t.pinch ? 0.5 : 0.34) && idxPalm > 0.4 && curl[0] < (t.pinch ? 0.9 : 0.78);
 	let rawGesture = 'none';
 	if (t.pinch) rawGesture = 'pinch';

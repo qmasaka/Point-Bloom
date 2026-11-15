@@ -1,4 +1,3 @@
-// Текст в точки: любой шрифт, в том числе установленный на компьютере, превращается в облако точек в сцене.
 import { h, screenRect } from '../core/util.js';
 import { section, field, slider, segmented, switchRow, button, colorField } from '../ui/ui-kit.js';
 import { cloudToPoints } from './pointcloud.js';
@@ -20,7 +19,6 @@ function hsl(hh, s, l) {
 
 const BASE_FONTS = ['Geist', 'Arial', 'Helvetica', 'Georgia', 'Times New Roman', 'Courier New', 'Verdana', 'Trebuchet MS', 'Impact', 'system-ui', 'serif', 'sans-serif', 'monospace', 'cursive'];
 
-/** Облако точек из текста. opts: text, family, weight, italic, count, depth, fill ('fill'|'outline'), color ('#hex'|'rainbow'|'height') */
 export async function buildTextCloud(opts) {
 	const { text, family, weight = 700, italic = false, count = 40000, depth = 0.15, fill = 'fill', color = '#ffffff' } = opts;
 	const lines = (text || ' ').split('\n');
@@ -29,7 +27,6 @@ export async function buildTextCloud(opts) {
 	try {
 		await document.fonts.load(font, text);
 	} catch (e) {
-		/* шрифт может быть системным: тогда он и так доступен */
 	}
 	const meas = document.createElement('canvas').getContext('2d');
 	meas.font = font;
@@ -83,16 +80,14 @@ export async function buildTextCloud(opts) {
 	return { positions, normals, colors, count: n };
 }
 
-/** Раздел «Текст в точки» для вкладки «Точки» */
 export function createTextSection(app) {
 	const cfg = (app.settings.text ||= { text: 'Привет', family: 'Geist', weight: 700, italic: false, count: 40000, depth: 0.15, fill: 'fill', color: '#ffffff', colorMode: 'solid' });
 	const save = () => app.saveSettings();
-	let current = null; // текстовый объект в сцене, который редактируем
+	let current = null;
 	let timer = null;
 
 	const input = h('textarea', { class: 'text-in', rows: 2, spellcheck: 'false', placeholder: 'Введите текст', 'aria-label': 'Текст' });
 	input.value = cfg.text;
-	// выбор шрифта: поле с поиском и список шрифтов, каждый показан своим начертанием
 	let fontNames = [...BASE_FONTS];
 	let localTried = false;
 	const fontHint = h('div', { class: 'field-hint' });
@@ -225,7 +220,6 @@ export function createTextSection(app) {
 		pts.userData.text = true;
 		app.media?._muteFx?.();
 		if (current && current.parent && !asNew) {
-			// редактируем уже созданный текст: заменяем геометрию и сохраняем положение
 			const old = current.geometry;
 			current.geometry = pts.geometry;
 			old.dispose();
@@ -252,7 +246,6 @@ export function createTextSection(app) {
 		changed();
 	});
 	const add = button({ label: 'Создать текст из точек', icon: 'text-aa', variant: 'primary', cls: 'btn-block', onClick: () => generate(true) });
-	// выбор другого текстового объекта в сцене делает его текущим
 	app.bus.on('selection', () => {
 		const s = app.model.selected;
 		if (s && s.userData.text) current = s;

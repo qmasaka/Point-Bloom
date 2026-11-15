@@ -1,17 +1,7 @@
 import { lumaDepth } from '../input/depth-ai.js';
 import { SEG_CLASSES, SubjectSegmenter, dilateMask, dropSpecks, erodeMask } from '../input/segmenter.js';
 
-/**
- * «Шлейф движения» (только для видео): человек или другой движущийся объект выделяется, за ним тянется шлейф из прошлых кадров,
- * а видео плавно едет в сторону. Строится на кольце живых кадров раскадровки (frames.js): у шлейфа своя раскладка в шейдере
- * (раскладка 4 в frPlace, показ 6 в frShow), в альфа-канале каждого кадра вместе с глубиной лежит метка выделенного (128 и выше).
- * Методы подмешиваются в EffectsEngine (см. engine/index.js).
- */
 export class ChronoPart {
-	/**
-	 * Параметры кольца кадров: раскадровки или «Шлейфа движения». У шлейфа свои ручки, остальное как у живой ленты раскадровки.
-	 * Объект шлейфа собирается заново из его настроек: в сохранённые настройки раскадровки ничего не пишется
-	 */
 	_frP() {
 		const L = this.state.layers;
 		const C = L.chrono;
@@ -47,7 +37,6 @@ export class ChronoPart {
 		return F;
 	}
 
-	/** Раскадровка и шлейф делят одно кольцо кадров: включили одно, второе выключается */
 	_chronoExclusive() {
 		const L = this.state.layers;
 		const C = L.chrono;
@@ -58,7 +47,6 @@ export class ChronoPart {
 			else L.frames.on = false;
 			this.emit();
 		}
-		// шлейф только что включили: видео смотрит на зрителя, «Объём по глубине» включается вместе с ним
 		if (C.on && !p.c) {
 			this.state.look.autoRotate = false;
 			if (this.points) this.points.rotation.set(0, 0, 0);
@@ -80,19 +68,16 @@ export class ChronoPart {
 			this.segmenter = new SubjectSegmenter();
 			this.segmenter.onChange = () => this.emit();
 		}
-		// «Человека» выделяет модель позы, «Людей, животных, транспорт» DeepLab
 		this.segmenter.setMode(this.state.layers.chrono?.mask);
 		if (this.segmenter.phase === 'idle') this.segmenter.init().catch(() => {});
 	}
 
-	/** Сведения для панели: как сейчас выделяется объект */
 	chronoInfo() {
 		const C = this.state.layers.chrono;
 		const s = this.segmenter;
 		return { video: this.videoLoaded, mask: C?.mask, kind: s?.kind || (C?.mask === 'person' ? 'pose' : 'deeplab'), phase: s ? s.phase : 'idle', error: s?.error || '' };
 	}
 
-	/** Шлейф начинается заново: прошлые кадры забываются */
 	chronoReset() {
 		const fr = this._frames;
 		if (fr && fr.chrono) {
@@ -102,11 +87,6 @@ export class ChronoPart {
 		this._chronoX = 0;
 	}
 
-	/**
-	 * Метка выделенного для только что снятого кадра k (до записи глубины). Нейросеть: люди (или люди, животные, транспорт);
-	 * пока она загружается, и в режиме «Всё, что движется»: отличие кадра от медленно обновляемого фона. «Ближнее» считается
-	 * прямо по глубине (в _frDepthOne), здесь не нужно
-	 */
 	_chronoMask(fr, k) {
 		const C = this.state.layers.chrono;
 		const per = fr.cols * fr.rows;
@@ -116,19 +96,15 @@ export class ChronoPart {
 		let m = null;
 		if (C.mask === 'person') {
 			this._segInit();
-			// пока нейросеть грузится (или не загрузилась), шлейфа нет: подмена «всем, что движется» при едущей камере красила бы весь фон
 			m = this.segmenter.ready ? this.segmenter.mask(this.pm.el, fr.cols, fr.rows, SEG_CLASSES[C.mask]) : null;
 			if (!m) {
 				dst.fill(0);
 				return;
 			}
 		} else m = this._chronoMotion(fr, k, C);
-		// чистка: сужение и расширение на одну клетку (уходят одиночные ложные клетки, фигура остаётся своего размера, без ореола фона),
-		// потом отбрасываются мелкие обрывки: в шлейфе они висели бы отдельными лишними точками
 		dst.set(dropSpecks(dilateMask(erodeMask(m, fr.cols, fr.rows), fr.cols, fr.rows), fr.cols, fr.rows, Math.max(12, (fr.cols * fr.rows) / 1500)));
 	}
 
-	/** Движение: яркость кадра против медленно обновляемого фона (работает, когда камера в ролике стоит) */
 	_chronoMotion(fr, k, C) {
 		const per = fr.cols * fr.rows;
 		const f = fr.frames[k];
@@ -145,10 +121,8 @@ export class ChronoPart {
 			const d = Math.abs(l[i] - bg[i]);
 			out[i] = d > thr ? 1 : 0;
 			moved += out[i];
-			// фон подстраивается медленно, а там, где сейчас объект, почти стоит: иначе неподвижный человек растворялся бы в фоне
 			bg[i] += (l[i] - bg[i]) * (out[i] ? 0.01 : 0.08);
 		}
-		// «движется» больше трети кадра: это едет сама камера, а не объект. Фон берётся заново, кадр в шлейф не идёт
 		if (moved > per / 3) {
 			fr.bgL.set(l);
 			out.fill(0);
@@ -156,7 +130,6 @@ export class ChronoPart {
 		return out;
 	}
 
-	/** Альфа-канал кадра шлейфа: глубина в младших семи битах, 128 и выше это выделенное (d: глубина 0..1) */
 	_chronoAlpha(fr, k, d) {
 		const C = this.state.layers.chrono;
 		const per = fr.cols * fr.rows;
@@ -169,7 +142,6 @@ export class ChronoPart {
 		}
 	}
 
-	/** Каждый кадр: значения шлейфа для шейдера и сдвиг всего блока, если камера стоит */
 	_chronoUniforms(F, fr) {
 		const u = this.shared;
 		const C = this.state.layers.chrono;
@@ -184,7 +156,6 @@ export class ChronoPart {
 		u.uFr9.value.set(C.tint ?? 0.15, C.fade ?? 0.5, (C.depthZ ?? 0.03), Math.min(fr.n, fr.valid || 1));
 		u.uFr5.value.y = C.thin ?? 0.15;
 		u.uFr7.value.x = 1;
-		// камера стоит: видео уезжает по сцене (шлейф остаётся там, где кадры были сняты), дойдя до края, возвращается
 		const pts = this.points;
 		if (!pts) return;
 		if (C.follow === 'off') {

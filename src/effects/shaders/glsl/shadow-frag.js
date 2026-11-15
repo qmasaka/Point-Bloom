@@ -1,6 +1,4 @@
-// GLSL: фрагментный шейдер точек «Тени на стене» и поверхности, на которую она падает.
-
-export const shadowFrag = /* glsl */ `
+export const shadowFrag = `
 precision highp float;
 uniform vec4 uShd;
 varying vec3 vColor;
@@ -12,7 +10,7 @@ void main() {
 	vec2 c = gl_PointCoord - 0.5;
 	float r = length(c);
 	if (r > 0.5) discard;
-	// мягкая круглая точка; много точек друг на друге сгущаются в плотную тень
+
 	float a = (1.0 - smoothstep(mix(0.3, 0.0, uShd.y), 0.5, r)) * vD * (1.0 - vDk) * 0.4;
 	if (a < 0.002) discard;
 	gl_FragColor = vec4(vColor, a);
@@ -21,8 +19,7 @@ void main() {
 }
 `;
 
-/** Поверхность (пол или стена): мягкое пятно света, края уходят в фон */
-export const surfaceVert = /* glsl */ `
+export const surfaceVert = `
 varying vec2 vUv;
 void main() {
 	vUv = uv;
@@ -30,7 +27,7 @@ void main() {
 }
 `;
 
-export const surfaceFrag = /* glsl */ `
+export const surfaceFrag = `
 precision highp float;
 uniform vec3 uC;
 uniform float uA;

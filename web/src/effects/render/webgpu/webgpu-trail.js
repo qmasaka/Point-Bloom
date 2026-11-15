@@ -4,9 +4,9 @@ const WGSL = `
 struct U {
 	mv: mat4x4f,
 	proj: mat4x4f,
-	tintC: vec4f,   // rgb: цвет подмеса, w: доля подмеса
-	params: vec4f,  // x: размер точки в пикселях (до сжатия по расстоянию), y: прозрачность, zw: размер холста
-	out: vec4f,     // x: экспозиция, y: тональная компрессия (0 нет, 1 Neutral, 2 ACES, 3 AgX)
+	tintC: vec4f,
+	params: vec4f,
+	out: vec4f,
 }
 @group(0) @binding(0) var<uniform> u: U;
 

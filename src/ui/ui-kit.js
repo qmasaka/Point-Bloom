@@ -1,4 +1,3 @@
-// Набор компонентов интерфейса. Каждый возвращает { el, set(value) }, где set не вызывает onChange.
 import { h, clamp, fmt, screenRect } from '../core/util.js';
 import { icon } from './icons.js';
 
@@ -23,7 +22,6 @@ export function button({ label, icon: name, variant = 'secondary', onClick, titl
 	return b;
 }
 
-/** Сворачиваемая секция боковой панели */
 export function section(title, { actions = null, open = true, key } = {}, ...children) {
 	const body = h('div', { class: 'sec-body' }, ...children);
 	const head = h('button', { type: 'button', class: 'sec-head', 'aria-expanded': String(open) }, svg('caret-down', 14), h('span', { class: 'sec-title' }, title));
@@ -36,7 +34,6 @@ export function section(title, { actions = null, open = true, key } = {}, ...chi
 }
 
 export function field(label, control, { hint, wide = false } = {}) {
-	// ползунок-капсула: подпись ложится внутрь полосы, поле занимает одну строку (DESIGN.md, раздел 4)
 	if (control && control.__capLabel) {
 		control.__capLabel(label);
 		return h('div', { class: 'field field-cap' }, h('div', { class: 'field-control' }, control), hint ? h('div', { class: 'field-hint' }, hint) : null);
@@ -61,7 +58,6 @@ export function toggle({ value = false, onChange, label }) {
 	};
 }
 
-/** Строка «подпись слева, переключатель справа» */
 export function switchRow(label, opts, hint) {
 	const t = toggle({ ...opts, label });
 	const row = h('div', { class: 'switch-row' }, h('div', { class: 'switch-text' }, h('span', { class: 'switch-label' }, label), hint ? h('span', { class: 'field-hint' }, hint) : null), t.el);
@@ -102,7 +98,6 @@ export function select({ options = [], value, onChange, placeholder = 'Выбр�
 	let pop = null;
 	let focusedIndex = -1;
 
-	// Скрытый нативный select для обратной совместимости, автотестов и форм
 	const nativeSel = h('select', { class: 'custom-select-native', tabindex: '-1', 'aria-hidden': 'true' });
 
 	const parseOpt = (o) => {
@@ -153,7 +148,6 @@ export function select({ options = [], value, onChange, placeholder = 'Выбр�
 	const tr = (k) => (window.__i18n && window.__i18n.tr ? window.__i18n.tr(k) : k);
 
 	const curLabel = h('span', { class: 'custom-select-cur-text' });
-	// у пунктов может быть значок: тогда он стоит и в списке, и на самой кнопке
 	const curIcon = h('span', { class: 'custom-select-cur-ic', hidden: true });
 	const caret = svg('caret-down', 14);
 	caret.classList.add('custom-select-caret');
@@ -393,7 +387,6 @@ export function select({ options = [], value, onChange, placeholder = 'Выбр�
 	};
 }
 
-/** Число из текста: понимает пробелы-разделители, запятую, «2m», «500к», «1,5 млн» */
 export function parseHuman(s) {
 	const t = String(s).toLowerCase().replace(/\s/g, '').replace(',', '.');
 	const m = /^(-?[\d.]+)(млн|м|m|тыс\.?|к|k)?/.exec(t);
@@ -405,8 +398,6 @@ export function parseHuman(s) {
 export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, digits = 2, unit = '', format, parse, log = false, norm = false }) {
 	let lo = min;
 	let hi = max;
-	// log: бегунок работает по шкале 0..1000, значение растёт по степенному закону (для больших диапазонов)
-	// norm: бегунок идёт по шкале 0..1000, поэтому крайнее положение всегда ровно 1, даже если диапазон не делится на шаг
 	const scaled = log || norm;
 	const toPos = (v) => (log ? (Math.log(Math.max(v, lo) / lo) / Math.log(hi / lo)) * 1000 : norm ? clamp((v - lo) / (hi - lo), 0, 1) * 1000 : v);
 	const fromPos = (p) => {
@@ -419,15 +410,12 @@ export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onCh
 	const range = h('input', { type: 'range', class: 'range', min: scaled ? 0 : min, max: scaled ? 1000 : max, step: scaled ? 1 : step, value: toPos(value) });
 	const out = h('input', { type: 'text', class: 'num-out', inputmode: 'decimal', 'aria-label': 'Значение' });
 	const cur = () => fromPos(parseFloat(range.value));
-	// norm: движок получает реальное значение, а на экране шкала всегда от 0 до 1, чтобы числа читались одинаково во всех настройках
 	const frac = (v) => clamp(log ? Math.log(Math.max(v, lo) / lo) / Math.log(hi / lo) : (v - lo) / (hi - lo), 0, 1);
 	const unfrac = (f) => {
 		const v = log ? lo * Math.pow(hi / lo, f) : lo + f * (hi - lo);
 		return clamp(Math.round(v / step) * step, lo, hi);
 	};
 	const show = () => (out.value = norm ? fmt(Math.round(parseFloat(range.value) / 10) / 100, 2) : format ? format(cur()) : fmt(cur(), digits) + unit);
-	// капсула: подпись слева и число справа лежат внутри полосы, полоса заливается до значения; тянуть можно за любое место,
-	// двойной щелчок открывает число для ввода. Целые значения с небольшим числом вариантов (до 20) показываются ступенями
 	const lab = h('span', { class: 'field-label cap-label' });
 	const ticks = h('span', { class: 'cap-ticks', 'aria-hidden': 'true' });
 	const wrap = h('div', { class: 'slider cap' }, range, lab, out, ticks);
@@ -505,10 +493,6 @@ export function slider({ min = 0, max = 1, step = 0.01, value = 0, onInput, onCh
 		},
 	};
 }
-/**
- * Регулятор-крутилка для звуковых настроек: дуга 270°, число в центре, подпись снизу. Тянуть вверх-вниз (или вбок), Shift точнее,
- * стрелки с клавиатуры, двойной щелчок открывает число для ввода. Те же get/set, что у slider(), поэтому подставляется вместо него
- */
 export function knob({ label, min = 0, max = 1, step = 0.01, value = 0, onInput, onChange, digits = 2, unit = '', format, parse, log = false }) {
 	let v = clamp(value, min, max);
 	const frac = (x) => clamp(log ? Math.log(Math.max(x, min) / min) / Math.log(max / min) : (x - min) / (max - min), 0, 1);
@@ -535,7 +519,6 @@ export function knob({ label, min = 0, max = 1, step = 0.01, value = 0, onInput,
 	const out = h('input', { type: 'text', class: 'knob-val', inputmode: 'decimal', tabindex: '-1', 'aria-hidden': 'true' });
 	const face = h('div', { class: 'knob-face', role: 'slider', tabindex: '0', 'aria-label': label || 'Значение', 'aria-valuemin': String(min), 'aria-valuemax': String(max) }, svgEl, out);
 	const el = h('div', { class: 'knob' }, face, label ? h('span', { class: 'knob-label', title: label }, label) : null);
-	// полная дуга 270° из окружности 2π·17 ≈ 106.8
 	const paint = () => {
 		fill.setAttribute('stroke-dasharray', (80.1 * frac(v)).toFixed(2) + ' 106.8');
 		out.value = text(v);
@@ -585,7 +568,6 @@ export function knob({ label, min = 0, max = 1, step = 0.01, value = 0, onInput,
 		out.select();
 	});
 	const commit = () => {
-		// parse: своё чтение введённого текста (проценты, мс и с); иначе обычное число
 		const t = parse ? parse(out.value) : parseHuman(out.value);
 		el.classList.remove('is-edit');
 		out.tabIndex = -1;
@@ -615,25 +597,21 @@ export function knob({ label, min = 0, max = 1, step = 0.01, value = 0, onInput,
 	};
 }
 
-/** Чтение процентов: «60», «60%» и «0.6» дают 0.6 */
 export function parsePct(s) {
 	const t = parseFloat(String(s).replace(',', '.'));
 	return !isFinite(t) ? NaN : /%/.test(s) || t > 1 ? t / 100 : t;
 }
 
-/** Чтение времени в секундах: «120 мс», «0.5 с», «0.5» */
 export function parseSec(s) {
 	const str = String(s).replace(',', '.');
 	const t = parseFloat(str);
 	return !isFinite(t) ? NaN : /мс|ms/i.test(str) ? t / 1000 : t;
 }
 
-/** Ряд крутилок (до трёх в строку) */
 export function knobRow(...items) {
 	return h('div', { class: 'knob-row' }, ...items.map((k) => k.el || k));
 }
 
-/** Ползунок настроек эффектов: числа читаются одинаково, шкала до 1 (до 2, если так задумано). noNorm оставляет реальные величины: число точек, секунды, кадры */
 export function fxSlider(o) {
 	if (o.noNorm) return slider(o);
 	const lo = o.min ?? 0;
@@ -700,7 +678,6 @@ export function numberField({ value = 0, step = 0.1, onChange, axis, digits = 4,
 	};
 }
 
-// ---------------------------------------------------------------- свой выбор цвета (вместо системного окна)
 const hexToRgb = (hx) => {
 	const n = parseInt(hx.slice(1), 16);
 	return [(n >> 16) & 255, (n >> 8) & 255, n & 255];

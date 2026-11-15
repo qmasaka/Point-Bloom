@@ -1,14 +1,8 @@
 import * as THREE from 'three';
 import { clamp } from '../../core/util.js';
 
-const W = 2048; // ширина текстуры смещений: строки по 2048 точек
+const W = 2048;
 
-/**
- * Эффект «Пиксельная сортировка»: в каждой строке (или столбце) кадра точки внутри полос, где яркость проходит отбор, пересортировываются по яркости,
- * и каждая точка едет на своё новое место вместе со своим цветом. Куда ехать, считает процессор на каждый новый кадр (смещение на точку в текстуре),
- * а как далеко сейчас доехала, решает шейдер (блок VSCREEN в vert.js, в WebGL и WebGPU): держит, бежит волной, дышит или вспыхивает на ударе.
- * Методы подмешиваются в EffectsEngine.
- */
 export class PixelSortPart {
 	_sortTick(rgbNew, u) {
 		const P = this.state.layers.pixelsort;
@@ -29,7 +23,6 @@ export class PixelSortPart {
 			tex.generateMipmaps = false;
 			S = this._sort = { n, tex, rgb: null, sig: '', lum: new Float32Array(n), idx: new Int32Array(Math.max(cols, rows)) };
 		}
-		// у фото кадр один: храним его, чтобы пересортировать при смене настроек
 		if (rgbNew) S.rgb = rgbNew.slice ? rgbNew.slice() : rgbNew;
 		if (!S.rgb) S.rgb = pm.sample();
 		const sig = [P.dir, P.rule, P.cut, P.cut2, P.order, P.minLen].join('|');
@@ -42,7 +35,6 @@ export class PixelSortPart {
 		u.uSortP.value.set(n, cols, P.stretch ?? 1, P.glow ?? 0.3);
 	}
 
-	/** Сортировка полос: для каждой точки смещение (по x или y, в единицах сцены) до её места в отсортированной полосе */
 	_sortCompute(S, P, cols, rows) {
 		const { rgb, lum, idx } = S;
 		const n = cols * rows;
@@ -75,7 +67,6 @@ export class PixelSortPart {
 					for (let q = 0; q < m; q++) idx[q] = j + q;
 					const sub = idx.subarray(0, m);
 					sub.sort((x, y) => (desc ? lum[at(line, y)] - lum[at(line, x)] : lum[at(line, x)] - lum[at(line, y)]));
-					// точка, стоявшая на sub[q], едет на место j + q
 					for (let q = 0; q < m; q++) {
 						const from = sub[q];
 						const p = at(line, from);

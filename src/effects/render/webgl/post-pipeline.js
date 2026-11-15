@@ -1,4 +1,3 @@
-// Пост-обработка WebGL: обратная связь, свечение, хроматическая аберрация, датамош.
 import * as THREE from 'three';
 import { waitPrograms } from './programs.js';
 import { fbFrag, moshFrag, mvFrag, outFrag } from '../../shaders/glsl/post.js';
@@ -41,7 +40,7 @@ export class PostPipeline {
 				uTint: { value: new THREE.Color(1, 1, 1) },
 				uTintK: { value: 0.0 },
 			},
-			vertexShader: /* glsl */ `
+			vertexShader: `
 				varying vec2 vUv;
 				void main() {
 					vUv = uv;
@@ -61,7 +60,7 @@ export class PostPipeline {
 				uAberration: { value: 0.0 },
 				uRes: { value: new THREE.Vector2(1, 1) },
 			},
-			vertexShader: /* glsl */ `
+			vertexShader: `
 				varying vec2 vUv;
 				void main() {
 					vUv = uv;
@@ -79,7 +78,6 @@ export class PostPipeline {
 		this.hasHistory = false;
 	}
 
-	/** Собирает шейдеры вывода и обратной связи заранее: включение свечения или обратной связи не замирает на компиляции (у three.js разные программы для вывода в экран и в буфер) */
 	warm() {
 		const r = this.renderer;
 		const prev = r.getRenderTarget();
@@ -99,7 +97,6 @@ export class PostPipeline {
 		return waitPrograms(r, mats);
 	}
 
-	/** Цели рендера. Мипы подключаются динамически только когда датамош ищет движение блоков */
 	_buildTargets(type) {
 		for (const k of ['rtScene', 'rtSceneB', 'rtPing', 'rtPong', 'rtMoshA', 'rtMoshB', 'rtMvA', 'rtMvB']) {
 			if (this[k]) this[k].dispose();
@@ -116,16 +113,14 @@ export class PostPipeline {
 		this.hasHistory = false;
 	}
 
-	/** Датамош: поле движения по блокам, затем «декодирование без опорного кадра» (см. шейдеры ниже) */
 	_buildMosh() {
-		const vert = /* glsl */ `
+		const vert = `
 			varying vec2 vUv;
 			void main() {
 				vUv = uv;
 				gl_Position = vec4(position.xy, 0.0, 1.0);
 			}
 		`;
-		// 1) для каждого блока кадра ищем, куда он сместился относительно прошлого кадра (сравнение размытых копий кадров, поиск по сетке и уточнение)
 		this.mvMat = new THREE.ShaderMaterial({
 			uniforms: {
 				uCur: { value: null },
@@ -147,7 +142,6 @@ export class PostPipeline {
 			depthTest: false,
 			depthWrite: false,
 		});
-		// 2) «декодер»: прошлая картинка сдвигается по векторам, свежий кадр (остаток) добавляется лишь частично, блоки возвращаются к чистой картинке не одновременно
 		this.moshMat = new THREE.ShaderMaterial({
 			uniforms: {
 				uCur: { value: null },
@@ -184,7 +178,6 @@ export class PostPipeline {
 		this.moshHist = false;
 	}
 
-	/** Цели датамоша создаются при первом включении и подгоняются под размер блока */
 	_ensureMosh(block) {
 		const w = this.width;
 		const h = this.height;
@@ -212,7 +205,6 @@ export class PostPipeline {
 		return [mw, mh];
 	}
 
-	/** Один шаг датамоша: возвращает текстуру кадра после «сбоя» */
 	_moshStep(m) {
 		const r = this.renderer;
 		const block = m.block;
@@ -272,7 +264,6 @@ export class PostPipeline {
 		t = this.rtMoshA;
 		this.rtMoshA = this.rtMoshB;
 		this.rtMoshB = t;
-		// текущий кадр становится «прошлым» для следующего шага
 		t = this.rtScene;
 		this.rtScene = this.rtSceneB;
 		this.rtSceneB = t;

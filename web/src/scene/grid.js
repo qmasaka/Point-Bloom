@@ -25,8 +25,8 @@ void main() {
 	float g = max(a * 0.5, b * 0.85);
 
 	vec2 fw = max(fwidth(p), vec2(1e-6));
-	float axU = (1.0 - smoothstep(0.0, 1.6, abs(p.y) / fw.y)) * uAxes;  // линия вдоль оси U (V = 0)
-	float axV = (1.0 - smoothstep(0.0, 1.6, abs(p.x) / fw.x)) * uAxes;  // линия вдоль оси V (U = 0)
+	float axU = (1.0 - smoothstep(0.0, 1.6, abs(p.y) / fw.y)) * uAxes;
+	float axV = (1.0 - smoothstep(0.0, 1.6, abs(p.x) / fw.x)) * uAxes;
 
 	float dist = length(p - pc);
 	float fade = 1.0 - smoothstep(uRadius * 0.3, uRadius, dist);

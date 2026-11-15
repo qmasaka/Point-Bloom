@@ -1,4 +1,3 @@
-// Словарь интерфейса, немецкий: ключ это русский исходный текст, значение перевод. {} это подставляемое значение.
 export default {
 "%. Это один раз, потом модель берётся из кеша браузера. Пока видна быстрая карта по яркости.": "%. Das passiert einmal, danach wird das Modell aus dem Browser-Cache geladen. Bis dahin wird eine schnelle Helligkeitskarte angezeigt.",
 "(выключен)": "(aus)",

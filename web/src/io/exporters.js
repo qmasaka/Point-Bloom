@@ -537,7 +537,7 @@ const fv = (v) => {
 const a = v + vOff;
 if (uv && nr) return `${a}/${v + tOff}/${v + nOff}`;
 if (uv) return `${a}/${v + tOff}`;
-if (nr) return `${a}//${v + nOff}`;
+if (nr) return `${a}${v + nOff}`;
 return `${a}`;
 };
 for (const grp of groups) {

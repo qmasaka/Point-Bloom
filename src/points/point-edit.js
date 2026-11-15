@@ -1,4 +1,3 @@
-// Правка точек: выделение кистью или рамкой, удаление и перекраска выбранных точек у облака точек.
 import * as THREE from 'three';
 import { h, screenRect } from '../core/util.js';
 
@@ -6,10 +5,10 @@ export class PointEditor {
 	constructor(app) {
 		this.app = app;
 		this.active = false;
-		this.tool = 'brush'; // brush | rect
-		this.mode = 'add'; // add | sub
+		this.tool = 'brush';
+		this.mode = 'add';
 		this.radius = 36;
-		this.through = false; // выделять и точки за поверхностью
+		this.through = false;
 		this.obj = null;
 		this.sel = null;
 		this.count = 0;
@@ -26,14 +25,12 @@ export class PointEditor {
 		el.addEventListener('pointerup', (e) => this._up(e));
 		el.addEventListener('pointercancel', (e) => this._up(e));
 		el.addEventListener('pointerleave', () => (this._cursor.hidden = true));
-		// клавиши правки перехватываются раньше общих: Delete и X здесь удаляют точки, а не весь объект
 		window.addEventListener('keydown', (e) => this._key(e), true);
 		app.bus.on('tool', () => this._syncTool());
 		app.bus.on('selection', () => this.retarget());
 		app.bus.on('scene', () => this.retarget());
 	}
 
-	// ---------------------------------------------------------------- цель
 	target() {
 		const o = this.app.model.selected;
 		return o && o.isPoints && !o.userData.helper && o.geometry.attributes.position ? o : null;
@@ -55,21 +52,18 @@ export class PointEditor {
 		return this.app.model.tool === 'psel';
 	}
 
-	/** Включить или выключить правку: это инструмент в левой колонке, поэтому всё идёт через model.setTool */
 	setActive(on) {
 		const model = this.app.model;
 		if (on) model.setTool('psel');
 		else if (this.isPointTool) model.setTool(this._back || 'select');
 	}
 
-	/** Способ выделения: 'brush', 'rect' или 'lasso'. Если правка выключена, она включается */
 	setTool(t) {
 		this.tool = t;
 		if (!this.active) this.setActive(true);
 		else this._emit();
 	}
 
-	/** Вызывается при каждой смене инструмента слева */
 	_syncTool() {
 		const model = this.app.model;
 		const on = this.isPointTool;
@@ -79,7 +73,6 @@ export class PointEditor {
 			return;
 		}
 		if (on) {
-			// облако ещё не выбрано: берём единственное в сцене, иначе просим выбрать
 			if (!this.target()) {
 				const cand = this.app.viewport.root.children.filter((c) => c.isPoints && !c.userData.helper && c.visible && c.geometry.attributes.position);
 				if (cand.length === 1) model.select(cand[0]);
@@ -100,7 +93,6 @@ export class PointEditor {
 			this._lassoOff();
 			this._drag = null;
 		}
-		// пока включена правка, левая кнопка выделяет, а не вращает сцену (Alt вращает)
 		this.app.nav.paintLock = this.active;
 		this.app.viewport.container.classList.toggle('pe-active', this.active);
 		this._emit();
@@ -111,7 +103,6 @@ export class PointEditor {
 		this.app.viewport.invalidate();
 	}
 
-	// ---------------------------------------------------------------- проекция точек на экран
 	_project() {
 		const vp = this.app.viewport;
 		const o = this.obj;
@@ -126,7 +117,6 @@ export class PointEditor {
 		const pos = o.geometry.attributes.position;
 		const n = pos.count;
 		const a = pos.array;
-		// буферы переиспользуются между проекциями: на облаке в миллионы точек каждый клик иначе создавал бы десятки мегабайт мусора
 		const pool = this._projPool || (this._projPool = { cap: 0 });
 		if (pool.cap < n) {
 			pool.cap = n;
@@ -165,7 +155,6 @@ export class PointEditor {
 			const gi = Math.max(0, Math.min(gh - 1, (py / cell) | 0)) * gw + Math.max(0, Math.min(gw - 1, (px / cell) | 0));
 			if (d < grid[gi]) grid[gi] = d;
 		}
-		// видимые: те, что не глубже самой ближней точки в своей ячейке (с небольшим запасом)
 		const tol = (dmax - dmin) * 0.025 + 1e-6;
 		for (let i = 0; i < n; i++) {
 			if (!ok[i]) continue;
@@ -175,7 +164,6 @@ export class PointEditor {
 		this._proj = { sx, sy, ok, vis, left: r.left, top: r.top, n };
 	}
 
-	// ---------------------------------------------------------------- ввод
 	_down(e) {
 		if (!this.active || e.button !== 0 || e.altKey || !this.obj || this.app.ui.workspace !== 'edit') return;
 		e.preventDefault();
@@ -230,7 +218,6 @@ export class PointEditor {
 			this._lassoOff();
 			const path = d.path;
 			if (path.length >= 3) {
-				// многоугольник из линии: проверка «точка внутри» по лучу, сначала быстрый отсев по габаритам
 				let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
 				for (const [x, y] of path) {
 					if (x < x0) x0 = x;
@@ -294,7 +281,6 @@ export class PointEditor {
 		this._apply((x, y) => (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r2, remove);
 	}
 
-	/** Меняет выделение у всех точек, попавших в область (в координатах окна браузера) */
 	_apply(inside, remove) {
 		const P = this._proj;
 		if (!P || !this.sel) return;
@@ -326,7 +312,6 @@ export class PointEditor {
 			stop();
 			this.setActive(false);
 		} else if (e.code === 'Delete' || e.code === 'Backspace' || (e.code === 'KeyX' && !mod)) {
-			// пока правка включена, Delete и X работают только с точками: целый объект случайно не удалится
 			if (!this.obj) return;
 			stop();
 			if (this.count) this.deleteSelected();
@@ -344,7 +329,6 @@ export class PointEditor {
 		}
 	}
 
-	// ---------------------------------------------------------------- выделение
 	selectAll() {
 		if (!this.sel) return;
 		this.sel.fill(1);
@@ -373,7 +357,6 @@ export class PointEditor {
 		});
 	}
 
-	/** Выбранные точки подсвечиваются шейдером через атрибут aSel */
 	_writeOverlay() {
 		const o = this.obj;
 		if (!o || !this.sel) return;
@@ -398,7 +381,6 @@ export class PointEditor {
 		}
 	}
 
-	// ---------------------------------------------------------------- удаление и перекраска
 	deleteSelected() {
 		const o = this.obj;
 		if (!o || !this.count) return;
@@ -416,7 +398,6 @@ export class PointEditor {
 			for (let k = 0; k < keep.length; k++) for (let j = 0; j < sz; j++) out[k * sz + j] = a.array[keep[k] * sz + j];
 			newG.setAttribute(name, new THREE.BufferAttribute(out, sz, a.normalized));
 		}
-		// облако, посаженное на персонажа, хранит данные скиннинга по точкам: они сокращаются так же
 		let newAnim = oldAnim;
 		if (oldAnim) {
 			newAnim = { ...oldAnim };
@@ -489,10 +470,8 @@ export class PointEditor {
 			this._emit();
 		};
 		app.history.push({ label: 'Перекраска точек', redo: () => write(after), undo: () => write(before) }, true);
-		// выбранные точки светятся оранжевым и скрыли бы новый цвет, поэтому после перекраски выбор снимается
 		this.clear();
 		app.toast(`Закрашено точек: ${ids.length.toLocaleString('ru')}`, 'ok', 1800);
-		// перекраска видна только в режиме «Текстура»: в других цвет точек задаёт сам режим
 		const pt = app.settings.point;
 		if (pt.color !== 'texture') {
 			pt.color = 'texture';

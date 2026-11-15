@@ -1,5 +1,3 @@
-// Управление анимацией модели: полоса над сценой в редакторе и компактные настройки (клип, скорость, повтор, скелет) для таймлайна эффектов.
-// Анимацию сайт не создаёт: она приходит готовой вместе с моделью.
 import { h } from '../../core/util.js';
 import { icon } from '../icons.js';
 import { select, iconButton } from '../ui-kit.js';
@@ -10,12 +8,10 @@ const fmt = (t) => {
 	return `${m}:${(t - m * 60).toFixed(1).padStart(4, '0')}`;
 };
 
-/** Клип, скорость, повтор и показ скелета: общий набор настроек анимации */
 export function createAnimSettings(app) {
 	const A = app.anim;
 	const clipSel = select({ options: [{ value: '0', label: '-' }], value: '0', onChange: (v) => A.setClip(parseInt(v, 10)) });
 	const clipWrap = h('div', { class: 'as-clip' }, clipSel.el);
-	// скорость: один блок, каждый клик берёт следующее значение по кругу
 	const SPEEDS = [0.25, 0.5, 1, 1.5, 2, 3];
 	const speed = h('button', { type: 'button', class: 'as-speed', 'data-tip': 'Скорость анимации: нажмите, чтобы переключить' });
 	speed.addEventListener('click', () => {
@@ -42,7 +38,6 @@ export function createAnimSettings(app) {
 	return { el, sync };
 }
 
-/** Полоса над сценой: пуск и пауза, перемотка, время и настройки. Показывается, пока в сцене есть анимация и не открыт таймлайн эффектов */
 export function createAnimBar(app, host) {
 	const A = app.anim;
 	const play = iconButton({ icon: 'pause', title: 'Играть или пауза', onClick: () => A.toggle() });

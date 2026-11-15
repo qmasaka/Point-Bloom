@@ -3,12 +3,7 @@ import { clamp } from '../../core/util.js';
 import { buildFrameBlock, frameGrid, writeFrameColors } from '../frames/frame-block.js';
 import { adjustDepth, depthToGrid, grabFrame, lumaDepth, normalizeDepth } from '../input/depth-ai.js';
 
-/** Раскадровка: кадры видео как пластины в облаке точек. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class FramesPart {
-	// ------------------------------------------------------------ раскадровка видео
-	// Кадры лежат в одной текстуре на видеокарте (слой на кадр). Положения листов, показ, подсветка, шлейф и луч считаются
-	// в шейдере по одному числу «текущий кадр», поэтому на каждый кадр процессор почти ничего не делает.
-	/** Открыто видео (кадры можно брать, когда оно загружено) */
 	get videoLoaded() {
 		const pm = this.pm;
 		return !!(pm && pm.ready && pm.kind === 'video' && pm.el);
@@ -18,12 +13,10 @@ export class FramesPart {
 		return this.videoLoaded && this.pm.el.readyState >= 2;
 	}
 
-	/** Номера раскладок для шейдера */
 	_layoutId(name) {
 		return Math.max(0, ['stack', 'wall', 'film', 'tunnel', 'chrono', 'fan'].indexOf(name));
 	}
 
-	/** Снимок кадра видео в RGBA нужного размера: пишет прямо в out (кусок общего массива), лишних копий нет */
 	_frameTaker(cols, rows, el) {
 		const cv = document.createElement('canvas');
 		cv.width = cols;
@@ -36,7 +29,6 @@ export class FramesPart {
 		};
 	}
 
-	/** Второй, скрытый видеоэлемент с тем же файлом: кадры снимаются с него, а то, что вы смотрите и перематываете, не трогается */
 	async _capVideo() {
 		const src = this.pm.el.currentSrc || this.pm.el.src;
 		const v = document.createElement('video');
@@ -66,7 +58,6 @@ export class FramesPart {
 		});
 	}
 
-	/** Снимает n кадров видео в заданном разрешении со скрытой копии (для экспорта): возвращает массив RGBA */
 	async captureFramesForExport(n, cols, rows, onProgress) {
 		const cap = await this._capVideo();
 		try {
@@ -85,7 +76,6 @@ export class FramesPart {
 		}
 	}
 
-	/** Строка состояния съёмки в углу сцены (пока кадры доснимаются в фоне) */
 	_capStatus(text) {
 		if (!text) {
 			this._capEl?.remove();
@@ -100,7 +90,6 @@ export class FramesPart {
 		this._capEl.textContent = text;
 	}
 
-	/** Снимает указанные кадры со скрытого видео и сразу кладёт в слои общего массива */
 	async _captureList(fr, list, onEach) {
 		const take = (fr.take ||= this._frameTaker(fr.cols, fr.rows, fr.cap));
 		for (const k of list) {
@@ -117,7 +106,6 @@ export class FramesPart {
 		return true;
 	}
 
-	/** Незаснятые пока слои временно заполняются ближайшим снятым кадром: блок сразу целый, потом кадры уточняются */
 	_fillGaps(fr) {
 		const have = [];
 		for (let k = 0; k < fr.n; k++) if (fr.done[k]) have.push(k);
@@ -130,7 +118,6 @@ export class FramesPart {
 		}
 	}
 
-	/** Дальше кадры снимаются в фоне, от редких к частым; каждый сразу появляется в блоке */
 	async _refineFrames(fr, order) {
 		const tex = this._frameTex;
 		let count = fr.done.reduce((a, b) => a + b, 0);
@@ -149,7 +136,7 @@ export class FramesPart {
 		flush();
 		if (!fr.dead) this._capStatus('');
 		this._closeCap(fr);
-		
+
 	}
 
 	_closeCap(fr) {
@@ -160,7 +147,6 @@ export class FramesPart {
 		fr.take = null;
 	}
 
-	/** Общий массив кадров превращается в текстуру-массив: слой на кадр */
 	_makeFrameTexture(data, cols, rows, n) {
 		const tex = new THREE.DataArrayTexture(data, cols, rows, n);
 		tex.format = THREE.RGBAFormat;
@@ -173,27 +159,22 @@ export class FramesPart {
 		return tex;
 	}
 
-	/** Выставляет параметры блока в шейдер (размер, раскладка, глубина) */
 	_frameUniforms() {
 		const fr = this._frames;
 		const F = this._frP();
 		const u = this.shared;
 		if (!fr) return;
-		// материал точек пересоздаётся при смене источника и приносит заглушку вместо текстуры кадров: возвращаем настоящую
 		if (this._frameTex && u.uFrTex.value !== this._frameTex) u.uFrTex.value = this._frameTex;
 		const W = fr.aspect >= 1 ? 2.2 : 2.2 * fr.aspect;
 		u.uFr.value.set(1, fr.n, fr.cols * fr.rows, fr.cols * fr.rows * fr.n);
 		u.uFr2.value.set(fr.cols, fr.rows, W, W / fr.aspect);
 		u.uFr3.value.x = F.depth;
-		// после пересоздания материала раскладка в шейдере сбрасывается: возвращаем текущую
 		if (!this._layoutAnim) u.uFr3.value.set(F.depth, this._layoutCur ?? 0, this._layoutCur ?? 0, 0);
 	}
 
-	/** Блок кадров: снимаем кадры, кладём в текстуру и показываем (точки перетекают из текущей формы) */
 	async enableFrames() {
 		if (this._framesBusy || !this.videoReady || !this.active) return;
 		this._framesBusy = true;
-		// раскадровка или «Шлейф движения» (chrono.js): кольцо кадров одно, параметры у каждого свои
 		const F = this._frP();
 		try {
 			this.app.ui.busy('Раскладываю видео на кадры', 0.05);
@@ -207,17 +188,13 @@ export class FramesPart {
 				this._closeCap(this._frames);
 			}
 			const per = cols * rows * 4;
-			// все кадры лежат в одном массиве (он же уходит в текстуру), у каждого кадра только ссылка на свой кусок
 			const data = new Uint8Array(per * n);
 			const frames = Array.from({ length: n }, (_, k) => data.subarray(k * per, (k + 1) * per));
-			// dAi, dOk: глубина кадров от нейросети и отметки «посчитано» (по слою текстуры); dSig: с какими настройками записан альфа-канал
-			// chrono: кольцо работает на «Шлейф движения»; valid: сколько кадров шлейфа уже снято (остальные слои пустые и не показываются)
 			const fr = { frames, cols, rows, aspect, last: this._time, n, dur, head: 0, gain: 1, ts: null, done: new Uint8Array(n), times: null, cap: null, take: null, dead: false, dAi: null, dOk: new Uint8Array(n), dSig: this._frDepthSig(), dJob: false, chrono: !!F.chrono, valid: 1 };
 			let refine = null;
 			if (F.source === 'whole') {
 				fr.times = Array.from({ length: n }, (_, k) => Math.min(Math.max(0.05, dur - 0.04), (k / Math.max(1, n - 1)) * dur));
 				fr.cap = await this._capVideo();
-				// сначала редкие кадры (быстро, блок появляется сразу), остальное доснимается в фоне
 				let step = 1;
 				while (step * 2 <= Math.max(1, n / 12)) step *= 2;
 				const first = [];
@@ -242,7 +219,6 @@ export class FramesPart {
 				this._fillGaps(fr);
 				refine = rest;
 			} else {
-				// бегущая лента начинается пустой и заполняется по ходу видео
 				this._frameTaker(cols, rows)(frames[n - 1]);
 				if (fr.chrono) this._chronoMask(fr, n - 1);
 				this._frDepthOne(fr, n - 1);
@@ -259,19 +235,16 @@ export class FramesPart {
 			this.shared.uFrTex.value = this._frameTex;
 			this._frames = fr;
 			if (F.source === 'live') {
-				// время видео, с которого снят каждый слой ленты: по нему перемотка таймлайна двигает видео вдоль ленты
 				fr.ts = new Float32Array(n).fill(-1);
 				fr.ts[n - 1] = pm.el.currentTime || 0;
 				fr.tNew = pm.el.currentTime || 0;
 			}
-			// положения точек для переходов: считаем один раз, цвета не нужны (они в текстуре)
 			this._frameCloud = buildFrameBlock(frames.map(() => this._blankFrame(cols, rows)), cols, rows, aspect, F.layout, F.depth, true);
 			this._framesOn = true;
 			this._layoutCur = this._layoutId(F.layout);
 			this.shared.uFr3.value.set(F.depth, this._layoutCur, this._layoutCur, 0);
 			this.cache.clear();
 			this.state.look.colorBy = 'model';
-			// живая лента снимает кадры с того же видео: переход к блоку его не останавливает
 			this._keepVideo = F.source === 'live';
 			await this.setSource('frames');
 			this._frameUniforms();
@@ -303,7 +276,6 @@ export class FramesPart {
 			this._closeCap(fr);
 		}
 		this._capStatus('');
-		// перед уходом переносим видимые цвета в атрибуты точек: дальше переход идёт обычным путём
 		const g = this.geometry;
 		if (fr && g && g.attributes.aColor && g.attributes.aColor.count === fr.cols * fr.rows * fr.n) {
 			writeFrameColors(fr.frames, fr.cols, fr.rows, g.attributes.aColor.array, null, 4);
@@ -316,7 +288,6 @@ export class FramesPart {
 		this.shared.uFr8.value.x = 0;
 		this.shared.uHero.value.w = 0;
 		if (this.hero) this.hero.visible = false;
-		// шлейф со стоящей камерой мог увезти блок в сторону
 		if (this._chronoMoved && this.points) {
 			this.points.position.set(0, 0, 0);
 			this.points.updateMatrixWorld();
@@ -330,7 +301,6 @@ export class FramesPart {
 		this.emit();
 	}
 
-	/** Поменялось число кадров, точек или источник: кадры снимаем заново (с паузой, пока двигается ползунок) */
 	rebuildFramesSoon() {
 		clearTimeout(this._framesT);
 		this._framesT = setTimeout(async () => {
@@ -341,7 +311,6 @@ export class FramesPart {
 		}, 450);
 	}
 
-	/** Подъезжаем камерой так, чтобы весь блок помещался в кадр (для каждой раскладки свой размер) */
 	_framesFit() {
 		const F = this._frP();
 		const fr = this._frames;
@@ -350,23 +319,19 @@ export class FramesPart {
 		const W = fr.aspect >= 1 ? 2.2 : 2.2 * fr.aspect;
 		const H = W / fr.aspect;
 		if (F.chrono) {
-			// шлейф: в кадре текущее видео и начало шлейфа, центр чуть сдвинут в его сторону
 			const C = this.state.layers.chrono;
 			const len = Math.min(3, (C.drift || 0) * F.step * fr.n);
 			const sx = C.dir === 'right' ? -1 : C.dir === 'up' ? 0 : 1;
 			const sy = C.dir === 'up' ? -1 : 0;
-			// видео смотрит прямо на зрителя, лишь чуть сверху: так видны и шлейф, и объём
 			nav.animateTo({ yaw: 0, pitch: -0.06, distance: nav.fitDistance(Math.hypot(W / 2, H / 2) + len * 0.3), target: new THREE.Vector3(sx * len * 0.25, sy * len * 0.25, 0) }, 450);
 			return;
 		}
 		const R = { stack: Math.hypot(W / 2, H / 2, F.depth / 2), tunnel: Math.hypot(W / 2, H / 2, F.depth / 2), wall: 1.45, film: W * 1.35, fan: 2.7 }[F.layout] ?? 2;
-		// ракурс не трогаем (как было), только у веера камера чуть сверху, чтобы видна была дуга барабана
 		const view = F.layout === 'fan' ? { pitch: -0.22 } : {};
 		const target = F.layout === 'fan' ? new THREE.Vector3(0, 0, -0.7) : new THREE.Vector3(0, 0, 0);
 		nav.animateTo({ ...view, distance: nav.fitDistance(R * 0.85), target }, 450);
 	}
 
-	/** Поменялась раскладка или глубина: шейдер плавно перестраивает листы, а положения для переходов обновляются в фоне */
 	relayoutFrames() {
 		const F = this._frP();
 		const fr = this._frames;
@@ -393,17 +358,14 @@ export class FramesPart {
 		}, 350);
 	}
 
-	/** Каждый кадр: следим за видео, ведём показ, двигаем бегущую ленту. Данные точек не трогаем, только числа для шейдера */
 	_framesTick() {
 		this._chronoExclusive();
 		const F = this._frP();
-		// настройки из прошлых версий: исчезнувшие раскладки и режимы заменяем на ближайшие
 		if (!F.chrono) {
 			if (!['stack', 'wall', 'film', 'tunnel', 'fan'].includes(F.layout)) F.layout = 'stack';
 			if (!['off', 'peel', 'projector', 'trail'].includes(F.showMode)) F.showMode = 'off';
 			F.follow = 'off';
 		}
-		// раскадровку сменил шлейф (или наоборот): кольцо кадров собирается заново под новые параметры
 		if (this._framesOn && !this._framesBusy && this._frames && !!this._frames.chrono !== !!F.chrono && F.on) {
 			this.rebuildFramesSoon();
 			return;
@@ -413,7 +375,6 @@ export class FramesPart {
 			this.enableFrames();
 			return;
 		}
-		// выключаем только когда режим отключён или видео закрыли: во время перемотки видео ненадолго «не готово», и это не повод всё сбрасывать
 		if (this._framesOn && !this._framesBusy && (!F.on || !this.videoLoaded)) {
 			F.on = false;
 			this.disableFrames();
@@ -425,10 +386,8 @@ export class FramesPart {
 			u.uFr.value.x = 0;
 			return;
 		}
-		// шейдер берёт положения и цвета из блока, когда источник это блок (во время перехода туда он тоже включён: цвета уже из текстуры)
 		u.uFr.value.x = this.state.source === 'frames' ? 1 : 0;
 		this._frameUniforms();
-		// плавная смена раскладки
 		const an = this._layoutAnim;
 		if (an) {
 			const k = Math.min(1, (this._time - an.t0) / 0.7);
@@ -439,20 +398,16 @@ export class FramesPart {
 				this._layoutAnim = null;
 			}
 		}
-		// текущий кадр (дробный, поэтому показ идёт плавно, а не шагами). Его задаёт видео: крутите таймлайн, и блок следует за ним.
-		// У шлейфа «текущий» уходит от последнего снятого кадра по времени до следующего снимка: прошлые кадры съезжают плавно, без рывка на каждом снимке
 		const idx = F.chrono ? fr.n - 1 + Math.min(1, Math.max(0, (this._time - fr.last) / F.step)) : F.source === 'live' ? this._liveIdx(fr) : Math.max(0, Math.min(1, (this.pm.el.currentTime || 0) / Math.max(0.1, fr.dur))) * (fr.n - 1);
 		fr.cur = Math.min(fr.n - 1, Math.round(idx));
 		const modeId = { off: 0, peel: 1, projector: 4, trail: 5, chrono: 6 }[F.showMode] ?? 0;
 		u.uFr4.value.set(idx, modeId, F.showLen, F.thin ?? 0);
-		// листы рядом друг с другом не перекрываются, их разреживать незачем
 		u.uFr6.value.set(F.bsize ?? 1.5, F.track === 'full' && F.source === 'whole' ? 1 : 0, { all: 0, light: 1, dark: 2 }[F.tone] ?? 0, F.toneCut ?? 0.5);
 		u.uFr7.value.set(Math.max(0.05, (F.tail ?? 100) / 100), F.sat ?? 0, F.tailSoft ?? 0.6, 0);
 		u.uFr5.value.y = 0;
 		u.uFr5.value.z = { show: 0, dim: 1, hide: 2 }[F.future] ?? 1;
 		u.uFr5.value.w = (fr.gain || 1) * (F.gain ?? 1);
 		u.uFr7.value.w = F.dkeep ?? 0.5;
-		// рамки кадров: у остальных кадров и отдельно у текущего
 		u.uFrE.value.set(F.edge ?? 0, F.edgeW ?? 1.5, F.edgeCol === 'white' ? 1 : 0, F.curEdge ?? 0);
 		this._chronoUniforms(F, fr);
 		this._ensureHero(F, fr);
@@ -461,17 +416,11 @@ export class FramesPart {
 		this._framesDepthTick(fr);
 	}
 
-	// ------------------------------------------------------------ глубина кадров («Объём по глубине» поверх раскадровки)
-	// Карта глубины каждого кадра лежит в альфа-канале его слоя текстуры (0 далеко, 255 близко): шейдер берёт её вместе с цветом.
-	// По яркости она пишется сразу при съёмке кадра, нейросеть уточняет кадры в фоне, начиная с ближайших к текущему.
-
-	/** С какими настройками записан альфа-канал: при их смене кадры переписываются */
 	_frDepthSig() {
 		const Dp = this.state.layers.depth;
 		return Dp.src + '|' + Math.round(Dp.blur || 0) + '|' + (Dp.src === 'file' ? this._depthFile?.id || 0 : 0);
 	}
 
-	/** Записывает глубину одного кадра (слоя) в альфа-канал: от нейросети, если она уже посчитала этот кадр, иначе по яркости */
 	_frDepthOne(fr, k) {
 		const Dp = this.state.layers.depth;
 		const { cols, rows } = fr;
@@ -480,7 +429,6 @@ export class FramesPart {
 		let map;
 		const file = Dp.src === 'file' ? this._depthFile : null;
 		if (file) {
-			// своя карта одна на все кадры: переносим её на сетку кадра один раз
 			if (fr.dFileId !== file.id) {
 				fr.dFile = new Float32Array(per);
 				depthToGrid(file, cols, rows, fr.dFile);
@@ -489,23 +437,18 @@ export class FramesPart {
 			map = { w: cols, h: rows, data: fr.dFile };
 		} else {
 			let kd = Dp.src === 'ai' && fr.dAi ? (fr.dOk[k] ? k : -1) : -1;
-			// у шлейфа новый кадр снят, а нейросеть его ещё не посчитала: берём глубину ближайшего посчитанного кадра (он отстаёт на доли секунды),
-			// а не карту по яркости, иначе объём живого кадра прыгал бы между двумя разными картами
 			if (kd < 0 && fr.chrono && Dp.src === 'ai' && fr.dAi) {
 				for (let s = 1; s < fr.n && kd < 0; s++) if (fr.dOk[(k - s + fr.n) % fr.n]) kd = (k - s + fr.n) % fr.n;
 			}
 			map = kd >= 0 ? { w: cols, h: rows, data: fr.dAi.subarray(kd * per, (kd + 1) * per) } : lumaDepth(f, cols, rows, 4);
 		}
-		// размытие задано в пикселях большой карты, сетка кадра в несколько раз мельче
 		const r = Math.round((Dp.blur || 0) * 0.4);
 		if (r > 0) map = adjustDepth(map, { blur: r });
 		const d = map.data;
-		// у шлейфа движения в альфа-канале вместе с глубиной метка выделенного (chrono.js)
 		if (fr.chrono) this._chronoAlpha(fr, k, d);
 		else for (let i = 0; i < per; i++) f[i * 4 + 3] = (d[i] * 255 + 0.5) | 0;
 	}
 
-	/** Переписывает глубину всех кадров и отправляет текстуру целиком */
 	_frDepthAll(fr) {
 		const tex = this._frameTex;
 		for (let k = 0; k < fr.n; k++) {
@@ -515,7 +458,6 @@ export class FramesPart {
 		if (tex) tex.needsUpdate = true;
 	}
 
-	/** Каждый кадр: смена источника глубины или размытия переписывает кадры, нейросеть доснимает глубину в фоне */
 	_framesDepthTick(fr) {
 		const Dp = this.state.layers.depth;
 		if (!Dp.on) return;
@@ -525,21 +467,17 @@ export class FramesPart {
 			this._frDepthAll(fr);
 			this._depthEmit();
 		}
-		// превью карты в панели идёт за текущим кадром
 		if (fr.dShown !== fr.cur) {
 			fr.dShown = fr.cur;
 			this._depthEmit();
 		}
-		// dIdle: все кадры уже посчитаны (новые сбросят отметку), dRetry: после сбоя пауза, а не новая попытка на каждом кадре
 		if (Dp.src === 'ai' && !fr.dJob && !fr.dIdle && this.depthAI.phase !== 'error' && this._time > (fr.dRetry || 0)) this._frDepthAI(fr);
 	}
 
-	/** Время видео, с которого снят слой (у бегущей ленты слой может быть ещё пустым: тогда -1) */
 	_frLayerTime(fr, k) {
 		return fr.ts ? fr.ts[k] : fr.times ? fr.times[k] : -1;
 	}
 
-	/** Фоновый расчёт глубины кадров нейросетью: кадр снимается со скрытой копии видео в хорошем разрешении, ближайшие к текущему первыми */
 	async _frDepthAI(fr) {
 		fr.dJob = true;
 		const per = fr.cols * fr.rows;
@@ -564,7 +502,6 @@ export class FramesPart {
 					}
 				}
 				if (best < 0) {
-					// всё видео посчитано (пока кадры доснимаются, ждём их); бегущая лента ждёт новых кадров
 					if (!fr.ts && fr.done.every((x) => x)) {
 						fr.dIdle = true;
 						break;
@@ -579,7 +516,6 @@ export class FramesPart {
 				const img = grabFrame(cap, side);
 				if (!img) break;
 				const r = await this.depthAI.estimate(img);
-				// у бегущей ленты слой мог за это время перезаписаться новым кадром: тогда результат уже не про него
 				if (!alive() || this._frLayerTime(fr, best) !== t) continue;
 				const map = { w: r.w, h: r.h, data: normalizeDepth(r.data, st, st.init ? 0.35 : 0) };
 				depthToGrid(map, fr.cols, fr.rows, fr.dAi.subarray(best * per, (best + 1) * per));
@@ -605,7 +541,6 @@ export class FramesPart {
 		}
 	}
 
-	/** Сколько кадров раскадровки уже с глубиной от нейросети */
 	_frDepthCount() {
 		const fr = this._frames;
 		if (!fr) return [0, 0];
@@ -619,7 +554,6 @@ export class FramesPart {
 		return [ok, all];
 	}
 
-	/** Карта глубины текущего кадра раскадровки (для превью в панели) */
 	_frDepthMap() {
 		const fr = this._frames;
 		if (!fr || !this._framesOn) return null;
@@ -629,12 +563,10 @@ export class FramesPart {
 		const per = fr.cols * fr.rows;
 		const data = new Float32Array(per);
 		for (let i = 0; i < per; i++) data[i] = fr.chrono ? (f[i * 4 + 3] & 127) / 127 : f[i * 4 + 3] / 255;
-		// яркость, контраст и тени шейдер применяет сам: на превью то же, что на точках
 		const Dp = this.state.layers.depth;
 		return adjustDepth({ w: fr.cols, h: fr.rows, data }, { bright: Dp.bright, contrast: Dp.contrast, gamma: Dp.gamma });
 	}
 
-	/** Где на ленте текущее время видео: от начала ленты до её конца, дробное число между соседними кадрами */
 	_liveIdx(fr) {
 		const t = this.pm.el.currentTime || 0;
 		if (!fr.ts || t >= fr.tNew) return fr.n - 1;
@@ -656,7 +588,6 @@ export class FramesPart {
 		return fr.n - 1;
 	}
 
-	/** Густой текущий кадр: отдельный набор точек с тем же шейдером, цвет берётся прямо из видео */
 	_ensureHero(F, fr) {
 		const u = this.shared;
 		const want = this.state.source === 'frames' && F.hero >= 5000 && this.points && !this.morphing;
@@ -723,11 +654,9 @@ export class FramesPart {
 		u.uHeroTex.value = this._heroTex;
 		u.uHero.value.set(cols, rows, count, 1);
 		this.hero.visible = true;
-		// материал главного кадра следует за основным (режим смешивания, размер, плотность)
 		this.hero.material.blending = this.material.blending;
 	}
 
-	/** Следить за кадром: блок едет или поворачивается так, чтобы текущий кадр оказывался перед зрителем */
 	_framesFollow(F, fr) {
 		const pts = this.points;
 		if (!pts || this.morphing || this.state.source !== 'frames') return;
@@ -751,7 +680,6 @@ export class FramesPart {
 		}
 	}
 
-	/** Бегущая лента: новый кадр пишется в один слой текстуры, старые не трогаются; голова буфера сдвигается */
 	_framesLive(F, fr) {
 		const tv = this.pm.el.currentTime || 0;
 		const lastTv = this._liveTv ?? tv;
@@ -759,13 +687,11 @@ export class FramesPart {
 		if (fr.ts && this.pm.playing) {
 			let oldest = Infinity;
 			for (const t of fr.ts) if (t >= 0 && t < oldest) oldest = t;
-			// видео зациклилось или его перемотали за начало ленты: это новый проход, прежние кадры остаются как прошлое, но запись продолжается
 			if (tv < lastTv - 1 && tv < 1.5 || tv < oldest - 0.3) {
 				fr.ts.fill(-1);
 				fr.tNew = tv - 0.05;
 			}
 		}
-		// пока видео перемотано назад, в прошлые кадры ленты ничего не пишем: лента пополняется только когда видео идёт дальше её конца
 		if (this._time - fr.last < F.step || !this.pm.playing || this.morphing || tv <= fr.tNew + 0.02 || !fr.ts) return;
 		fr.last = this._time;
 		const take = (fr.take ||= this._frameTaker(fr.cols, fr.rows));
@@ -786,7 +712,6 @@ export class FramesPart {
 		this.shared.uFr5.value.x = fr.head % fr.n;
 	}
 
-	/** Случайное место на текущем кадре блока раскадровки (в координатах облака): для рамок трекинга. Повторяет расстановку кадров из шейдера */
 	_frameSample() {
 		const u = this.shared;
 		const n = u.uFr.value.y;

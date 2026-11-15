@@ -1,11 +1,8 @@
-// Панель «Медиа»: настройки точек для фото и видео, параметры записи, сохранение.
-// Воспроизведение, перемотка и запись живут на таймлайне во вьюпорте.
 import { h, formatInt } from '../../core/util.js';
 import { section, field, fxSlider as slider, segmented, switchRow, button, colorField, select } from '../ui-kit.js';
 
 export function createMediaPanel(app, root, { fx = false } = {}) {
 	const mc = app.media;
-	// постоянная ссылка на текущее фото или видео: их может быть несколько, и текущее меняется
 	const pm = mc.live;
 	const md = app.settings.media;
 	const save = () => app.saveSettings();
@@ -14,14 +11,12 @@ export function createMediaPanel(app, root, { fx = false } = {}) {
 	const info = h('div', { class: 'field-hint' });
 	const soundPm = () => mc.soundEntry?.()?.pm || pm;
 	const sound = switchRow('Звук видео', { value: !soundPm().muted, onChange: (v) => { soundPm().setMuted(!v); mc.emit(); } });
-	// несколько видео в эффектах: чей звук слышно (по умолчанию показанного; выбранное видео тогда играет и во время переходов)
 	let soundSrc = null;
 	const soundSrcRow = h('div', { class: 'field-wrap' });
 	const soundSig = { v: '' };
 	const pts = slider({ noNorm: true, log: true, min: 10000, max: 300000, step: 5000, value: md.pts, format: (v) => formatInt(v), onInput: (v) => { md.pts = v; }, onChange: async (v) => { if (fx) await eng().setMediaPts(v); else mc.setPts(v); } });
 	const relief = segmented({ cls: 'seg-tight', options: [{ value: 'none', label: 'Плоское', title: 'Без рельефа' }, { value: 'bright', label: 'Светлое', title: 'Светлое выше' }, { value: 'dark', label: 'Тёмное', title: 'Тёмное выше' }], value: md.relief, onChange: (v) => { md.relief = v; mc.styleChanged(); } });
 	const depth = slider({ min: 0, max: 1.5, step: 0.05, value: md.depth, digits: 2, onInput: (v) => { md.depth = v; mc.styleChanged(); }, onChange: save });
-	// фильтры: прячут точки по яркости, цвету или краям и правят цвет
 	const touchF = () => mc.styleChanged();
 	const pct = (v) => Math.round(v * 100) + '%';
 	const cutDark = slider({ min: 0, max: 0.95, step: 0.01, value: md.cutDark, format: pct, onInput: (v) => { md.cutDark = v; touchF(); }, onChange: save });
@@ -45,7 +40,6 @@ export function createMediaPanel(app, root, { fx = false } = {}) {
 	const closeBtn = button({ label: 'Убрать медиа', icon: 'x', variant: 'outline-danger', cls: 'btn-block', onClick: () => mc.close() });
 	const note = h('div', { class: 'field-hint' }, fx ? 'Видео продолжает играть и в эффектах: все эффекты применяются к его точкам.' : 'Облако точек лежит в сцене: его можно двигать, менять вид на вкладке «Точки» и скачивать кнопкой «Скачать» вверху.');
 	const ptsRow = field('Точек', pts.el);
-	// размер точек общий с вкладкой «Точки»: здесь он под рукой рядом с их количеством
 	const pset = app.settings.point;
 	const sizeSl = slider({ min: 1, max: 24, step: 0.5, value: pset.size, digits: 1, unit: ' px', onInput: (v) => { pset.size = v; if (app.settings.display !== 'points') app.setDisplay('points'); app.viewport.invalidate(); }, onChange: save });
 	const sizeRow = field('Размер точек', sizeSl.el);
@@ -57,7 +51,6 @@ export function createMediaPanel(app, root, { fx = false } = {}) {
 
 	function sync() {
 		const ready = pm.ready;
-		// без загруженного медиа секцию прячем классом: атрибут hidden занят переключением вкладок и сбрасывал бы скрытие
 		if (fx) sec.el.classList.toggle('is-empty', !ready);
 		const hasRec = !!pm.rec;
 		info.textContent = ready ? `${pm.name}: ${formatInt(pm.count)} точек${pm.kind === 'video' ? ', видео' : pm.kind === 'rec' ? ', точечный ролик' : ', фото'}` : '';
@@ -71,7 +64,6 @@ export function createMediaPanel(app, root, { fx = false } = {}) {
 				soundSrcRow.append(field('Звук из', soundSrc.el, { wide: true }));
 			}
 		}
-		// в эффектах звук видео всегда включён, переключатель не нужен
 		sound.el.hidden = fx || (!vids.length && pm.kind !== 'video');
 		sound.set(!soundPm().muted);
 		ptsRow.hidden = !ready || pm.isRec;

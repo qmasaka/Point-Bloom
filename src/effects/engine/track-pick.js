@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 
 const SLOTS = 16;
-// фрагментный шейдер прохода: пиксель хранит положение точки, a = 1 значит «точка нарисована»
-const pickFrag = /* glsl */ `
+const pickFrag = `
 precision highp float;
 varying vec3 vColor;
 void main() {
@@ -10,16 +9,8 @@ void main() {
 }
 `;
 
-/**
- * Где на самом деле точки рамок слежения. Эффекты (волны, глубина, вихри и другие) двигают точки на видеокарте, а рамки знают только исходные положения,
- * поэтому на видео и под эффектами рамка висела не там, где точка. Здесь до 16 закреплённых точек рисуются тем же шейдером в полоску 16×1 пикселей,
- * в каждом пикселе остаётся итоговое положение, и оно читается обратно без ожидания (результат приходит на следующем кадре).
- * Это путь WebGL; при WebGPU положения читаются из его прохода расчёта (WebGPUBackend.trackPick). Методы подмешиваются в EffectsEngine.
- */
 export class TrackPickPart {
-	/** Готовит проход и отдаёт последний результат: { idxs, data } или null */
 	_trackPick(idxs) {
-		// WebGPU рисует облако: положения читаются из его прохода расчёта, шейдер WebGL для этого не нужен
 		if (this.backend?.trackPick && !this.backend.useGl) return this.backend.trackPick(idxs);
 		const g = this.geometry;
 		const r = this.app.viewport.renderer;
@@ -39,14 +30,12 @@ export class TrackPickPart {
 			const rt = P?.rt || new THREE.WebGLRenderTarget(SLOTS, 1, { type: THREE.FloatType, format: THREE.RGBAFormat, depthBuffer: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
 			P = this._tp = { src: g, pts, scene, rt, buf: new Float32Array(SLOTS * 4), res: null, pending: false, sig: this._fxSig() };
 		}
-		// шейдер следует за набором включённых эффектов, как у самого облака
 		const sig = this._fxSig();
 		if (P.sig !== sig) {
 			P.sig = sig;
 			P.pts.material.vertexShader = this._fxSource('vert', this._fxCur);
 			P.pts.material.needsUpdate = true;
 		}
-		// пока программа собирается в фоне, рамки идут по исходным положениям
 		if (!this._gate('pick', true)) return P.res;
 		const pg = P.pts.geometry;
 		const used = idxs.slice(0, SLOTS);
@@ -85,7 +74,6 @@ export class TrackPickPart {
 					P.res = { idxs: snap, data: P.buf.slice() };
 				})
 				.catch(() => {
-					// чтение не поддерживается: рамки остаются на исходных положениях
 					this._tpFailed = true;
 				})
 				.finally(() => (P.pending = false));

@@ -1,6 +1,3 @@
-// Перевод интерфейса. Код сайта пишет русские тексты, а слой перевода на лету подменяет их по словарю.
-// Сайт всегда открывается на английском. Когда страницу переводят браузером на русский, украинский, испанский или немецкий,
-// подставляется наш готовый перевод вместо машинного; остальные языки переводит сам браузер.
 import EN from './en.js';
 import EXTRA from './extra.js';
 import UK from './uk.js';
@@ -17,18 +14,12 @@ const ATTRS = ['title', 'aria-label', 'placeholder', 'alt', 'data-tip'];
 const RU_TITLE = 'Point Bloom: студия 3D-облаков точек';
 const RU_DESC = 'Превращайте 3D-модели, фото, видео и текст в живые облака точек. Добавляйте эффекты, правьте точки и экспортируйте в GLB, PLY или веб-страницу прямо в браузере.';
 
-/**
- * Язык при открытии: страница, переведённая через Google Translate (адрес с _x_tr_tl), или язык браузера, если для него есть наш перевод; иначе английский.
- * Раньше сайт всегда открывался английским, и русскому или украинскому браузеру Chrome предлагал перевод. Его переводчик потом следил за каждым
- * изменением страницы (счётчики, панели, подсказки), а с украинским перезаписывал текст наперегонки с нашим словарём: интерфейс подтормаживал
- */
 const LANG_KEY = 'pointbloom.lang';
 function detect() {
 	try {
 		const tl = new URLSearchParams(location.search).get('_x_tr_tl');
 		if (tl && SUPPORTED.includes(tl.slice(0, 2).toLowerCase())) return tl.slice(0, 2).toLowerCase();
 	} catch (_) {}
-	// язык, на который страницу однажды перевели браузером: дальше сайт сразу открывается на нём, без переводчика Chrome
 	try {
 		const saved = localStorage.getItem(LANG_KEY);
 		if (saved === 'en' || SUPPORTED.includes(saved)) return saved;
@@ -59,19 +50,16 @@ function build(code) {
 		if (ru.includes('{}')) {
 			const parts = norm(ru).split('{}').map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 			tpl.push({ re: new RegExp('^' + parts.join('(.*?)') + '$', 's'), en: norm(tx), lit: norm(ru).replace(/\{\}/g, '').length });
-			// куски между подстановками тоже получают перевод: так они лежат в DOM отдельными узлами
 			const a = ru.split('{}');
 			const b = tx.split('{}');
 			if (a.length === b.length) a.forEach((x, i) => { const k = norm(x).replace(/ /g, ' ').trim(); if (k && CY.test(k) && !frag.has(k)) frag.set(k, norm(b[i]).replace(/ /g, ' ').trim()); });
 		}
-		// у строк с тегами и подстановками отдельные куски тоже получают перевод (так в DOM лежат их текстовые узлы)
 		if (/<|\{\}/.test(ru)) {
 			const a = ru.split(sp);
 			const b = tx.split(sp);
 			if (a.length === b.length) a.forEach((x, i) => x.trim() && CY.test(x) && !frag.has(x.trim()) && frag.set(x.trim(), b[i].trim()));
 		}
 	}
-	// сначала самые «длинные» шаблоны: общий вид «{}: {} точек{}» не должен перехватывать более точный
 	tpl.sort((x, y) => y.lit - x.lit);
 	const sub = Object.keys(D)
 		.filter((k) => !k.includes('{}') && !k.includes('<') && k.trim().length >= 2)
@@ -79,7 +67,6 @@ function build(code) {
 	return (built[code] = { D, tpl, frag, sub });
 }
 
-/** Переводит одну строку. Порядок: точное совпадение, шаблон с подстановками, замена известных кусков. */
 export function tr(s) {
 	if (lang === 'ru' || typeof s !== 'string' || !CY.test(s)) return s;
 	const cache = (caches[lang] ||= new Map());
@@ -122,7 +109,6 @@ export function tr(s) {
 		}
 	}
 	if (out === null) {
-		// склейки вроде «Добавлен блок: » + имя: заменяем известные куски, границы слов соблюдаются
 		let r = core;
 		for (const k of sub) {
 			if (!r.includes(k)) continue;
@@ -130,7 +116,6 @@ export function tr(s) {
 			while ((i = r.indexOf(k, i)) >= 0) {
 				const before = r[i - 1];
 				const after = r[i + k.length];
-				// слово не режем посередине: граница проверяется, только если сам ключ начинается или кончается буквой
 				if ((CY.test(k[0]) && CY.test(before || '')) || (CY.test(k[k.length - 1]) && CY.test(after || ''))) {
 					i += k.length;
 					continue;
@@ -145,12 +130,10 @@ export function tr(s) {
 	}
 	const res = lead + out + trail;
 	cache.set(s, res);
-	// «не переведено»: текст остался таким же или в нём остались русские слова, которых нет в словаре
 	if (res.trim() === core || (lang !== 'uk' && CY.test(res))) missing.add(lang + ':' + core);
 	return res;
 }
 
-// ---------------------------------------------------------------- DOM
 const ORIG = Symbol('ru');
 const ORIG_EN = Symbol('tr');
 let observer = null;
@@ -190,7 +173,6 @@ function walk(root) {
 		n = tw.nextNode();
 	}
 }
-/** Приводит весь текст страницы к текущему языку: у переведённых узлов хранится русский оригинал, с него и переводим заново */
 function applyAll() {
 	const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
 	let n = tw.currentNode;
@@ -256,10 +238,8 @@ export function setLang(next) {
 	window.dispatchEvent(new CustomEvent('langchange', { detail: next }));
 }
 
-// ---------------------------------------------------------------- перевод страницы браузером
 let forced = null;
 
-/** Chrome и Google Translate после перевода ставят на html класс translated-* и язык перевода. Для языков с нашим словарём возвращаем свой текст и просим переводчик больше не трогать страницу. */
 function forceLang(code) {
 	forced = code;
 	setLang(code);
@@ -272,7 +252,6 @@ function forceLang(code) {
 	}
 }
 
-/** Переводчик выключили («Показать оригинал» или язык без нашего словаря): возвращаем английский и снимаем запрет на повторный перевод. */
 function revertEn() {
 	if (!forced) return;
 	forced = null;
@@ -281,7 +260,6 @@ function revertEn() {
 	setLang('en');
 }
 
-/** В сцене ещё ничего не открыто: страницу можно перезагрузить, ничего не потеряв */
 function sceneEmpty() {
 	try {
 		const app = window.__app;
@@ -294,9 +272,6 @@ function sceneEmpty() {
 function watchTranslator() {
 	const check = () => {
 		const code = translatorOn() ? (document.documentElement.lang || '').slice(0, 2).toLowerCase() : '';
-		// переводчик Chrome остаётся в странице и обрабатывает каждое обновление интерфейса (поэтому переведённый сайт подтормаживал).
-		// Если для языка есть наш словарь, язык запоминается и страница открывается заново уже на нём, без переводчика.
-		// Перевод на английский возвращает английский. Пока в сцене что-то открыто, не перезагружаем, а просто подставляем свой перевод
 		if (code && (code === 'en' || SUPPORTED.includes(code)) && code !== lang) {
 			try {
 				localStorage.setItem(LANG_KEY, code);

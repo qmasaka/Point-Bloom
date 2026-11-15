@@ -1,7 +1,3 @@
-// Навигация по сцене в стиле Blender:
-//   СКМ — вращение, Shift+СКМ — сдвиг, Ctrl+СКМ — масштаб, колесо — зум (к курсору),
-//   Alt+ЛКМ — эмуляция СКМ (для трекпада), ПКМ-перетаскивание — сдвиг,
-//   ЛКМ-перетаскивание по пустому месту — вращение (можно отключить).
 import * as THREE from 'three';
 import { clamp, screenRect } from '../core/util.js';
 
@@ -36,7 +32,6 @@ export class Nav {
 		this.pitch = -0.45;
 		this.distance = 4;
 		this.refDistance = 4;
-		// наклон горизонта (радианы) и угол обзора (градусы, 0: из настроек): задают ключи камеры на таймлайне эффектов, в редакторе их нет
 		this.roll = 0;
 		this.fovOverride = 0;
 		this.ortho = !!app.settings.nav.ortho;
@@ -57,7 +52,6 @@ export class Nav {
 		return this.ortho ? this.vp.orthoCam : this.vp.perspCam;
 	}
 
-	// ---------------------------------------------------------------- камера
 	applyCamera() {
 		const cam = this.camera;
 		const { width, height } = this.vp.size;
@@ -70,7 +64,6 @@ export class Nav {
 		cam.position.set(0, 0, this.distance).applyQuaternion(this.q).add(this.target);
 		const R = this.vp.sceneRadius;
 		const d = this.distance;
-		// угол обзора может задавать ключ камеры на таймлайне эффектов (fovOverride), иначе он из настроек вида
 		const fovDeg = this.fovOverride || this.app.settings.render.fov;
 		const fov = THREE.MathUtils.degToRad(fovDeg);
 		if (this.ortho) {
@@ -88,7 +81,6 @@ export class Nav {
 			cam.near = Math.max(d * 0.01, 1e-6);
 			cam.far = Math.max(d * 100, (d + R) * 20);
 		}
-		// на телефоне под нижним листом: масштаб по постоянной опорной высоте, центр картинки поднят в видимую часть сцены (viewport.setViewFrame)
 		const shift = this.vp.viewShift || 0;
 		const ref = this.vp.viewRef || 0;
 		const k = ref > 0 && ref < height ? ref / height : 1;
@@ -119,14 +111,12 @@ export class Nav {
 		this.app.settings.nav.ortho = this.ortho;
 	}
 
-	// ------------------------------------------------------- виды и анимация
 	cancelTween() {
 		this.tween = null;
 	}
 
 	animateTo(to, ms = 320) {
 		const from = { target: this.target.clone(), yaw: this.yaw, pitch: this.pitch, distance: this.distance };
-		// если анимация уже идёт, недостающие параметры берём из её конечной точки (быстрые подряд команды не теряют кадрирование)
 		const base = this.tween ? this.tween.to : from;
 		const dest = {
 			target: to.target ? to.target.clone() : base.target.clone(),
@@ -149,7 +139,6 @@ export class Nav {
 		this.vp.invalidate();
 	}
 
-	/** Вызывается каждый кадр. Возвращает true, пока идёт анимация. */
 	tick(now) {
 		const tw = this.tween;
 		if (!tw) return false;
@@ -216,7 +205,6 @@ export class Nav {
 		this.animateTo({ target: point });
 	}
 
-	// ----------------------------------------------------------- манипуляции
 	get limits() {
 		const R = Math.max(this.vp.sceneRadius, 1e-3);
 		return { min: Math.max(R * 1e-4, 1e-7), max: Math.max(R * 400, 1) };
@@ -244,7 +232,6 @@ export class Nav {
 		this.applyCamera();
 	}
 
-	/** factor < 1 — приблизить, > 1 — отдалить. cx/cy — позиция курсора (zoom to cursor) */
 	zoom(factor, cx, cy) {
 		this.cancelTween();
 		const { min, max } = this.limits;
@@ -271,7 +258,6 @@ export class Nav {
 		if (this.ortho && this.autoOrtho && this.settings.autoPersp) this.setOrtho(false);
 	}
 
-	/** Имя оси-вида ('front', 'top'…), если камера смотрит строго вдоль оси, иначе null */
 	axisView() {
 		const TAU = Math.PI * 2;
 		const near = (a, b) => Math.abs((((a - b + Math.PI) % TAU) + TAU) % TAU - Math.PI) < 1e-3;
@@ -281,7 +267,6 @@ export class Nav {
 		return null;
 	}
 
-	/** Название текущего вида («Сверху», «Перспектива»…) */
 	viewLabel() {
 		const TAU = Math.PI * 2;
 		const near = (a, b) => Math.abs((((a - b + Math.PI) % TAU) + TAU) % TAU - Math.PI) < 1e-3;
@@ -293,7 +278,6 @@ export class Nav {
 		return this.ortho ? 'Ортогональная проекция' : 'Перспектива';
 	}
 
-	// ----------------------------------------------------------------- события
 	bind() {
 		const el = this.dom;
 		el.addEventListener('pointerdown', (e) => this.onDown(e));
@@ -303,7 +287,6 @@ export class Nav {
 		el.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
 		el.addEventListener('contextmenu', (e) => e.preventDefault());
 		el.addEventListener('dblclick', (e) => this.app.bus.emit('dblclick', e));
-		// Safari: жест щипка приходит как gesture*-события
 		el.addEventListener('gesturestart', (e) => {
 			e.preventDefault();
 			this._gestureScale = 1;
@@ -322,7 +305,6 @@ export class Nav {
 		const mod = shift ? 'pan' : ctrl ? 'zoom' : 'orbit';
 		if (e.button === 1 || (e.button === 0 && e.altKey)) return mod;
 		if (e.button === 2) return ctrl ? 'zoom' : shift ? 'orbit' : 'pan';
-		// режим рисования: левая кнопка не вращает сцену (рисует кисть), вращение по Alt; два пальца на тачскрине по-прежнему двигают вид
 		if (e.button === 0 && this.paintLock) return null;
 		if (e.button === 0) return this.settings.leftOrbit || e.pointerType === 'touch' ? 'pending' : 'click';
 		return null;
@@ -331,7 +313,7 @@ export class Nav {
 	onDown(e) {
 		if (!this.enabled) return;
 		const tc = this.vp.tc;
-		if (tc && (tc.dragging || tc.axis !== null)) return; // перехватил гизмо трансформации
+		if (tc && (tc.dragging || tc.axis !== null)) return;
 		if (e.button === 1) e.preventDefault();
 		this.dom.setPointerCapture(e.pointerId);
 		this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -386,7 +368,6 @@ export class Nav {
 		try {
 			this.dom.releasePointerCapture(e.pointerId);
 		} catch (err) {
-			/* уже отпущен */
 		}
 		if (!d) return;
 		if (this.pointers.size === 0) {
@@ -408,7 +389,6 @@ export class Nav {
 		const dy = e.deltaY * unit;
 		const inv = this.settings.invertZoom ? -1 : 1;
 		if (e.ctrlKey) {
-			// щипок на трекпаде (или Ctrl+колесо)
 			this.zoom(Math.exp(dy * 0.01 * inv), e.clientX, e.clientY);
 		} else if (this.settings.trackpad) {
 			if (e.shiftKey) this.pan(-dx, -dy);

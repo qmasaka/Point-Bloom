@@ -1,4 +1,3 @@
-// Вкладка «Точки»: создание облака точек, выбор количества и внешний вид точек.
 import { h, formatInt } from '../../core/util.js';
 import { section, field, fxSlider as slider, segmented, switchRow, colorField, button } from '../ui-kit.js';
 import * as THREE from 'three';
@@ -25,10 +24,9 @@ export function createPointsPanel(app, root) {
 	const dev = getDevice(app);
 	const cap = () => Math.max(100000, getDevice(app).limits.cap);
 	pt.surfaceCount = Math.min(pt.surfaceCount, cap());
-	let current = null; // { obj, meshes, kind } последнее созданное облако
+	let current = null;
 	let busy = false;
 
-	// ---------------------------------------------------------------- создание
 	const hint = h('div', { class: 'field-hint hint' });
 	const showHint = () => {
 		if (pt.source === 'vertices') {
@@ -66,7 +64,6 @@ export function createPointsPanel(app, root) {
 		},
 		onChange: () => {
 			save();
-			// ползунок сразу показывает результат: пересобираем облако (или создаём первое)
 			build({ auto: true });
 		},
 	});
@@ -103,10 +100,8 @@ export function createPointsPanel(app, root) {
 			const cloud = kind === 'vertices' ? verticesToCloud(entries, { anim: app.anim.has }) : await sampleSurface(entries, pt.surfaceCount, { anim: app.anim.has, onProgress: (p) => app.ui.busy('Строю облако точек', 0.1 + p * 0.85) });
 			if (!cloud.count) throw new Error('получилось 0 точек');
 			const pts = cloudToPoints(cloud, `Облако точек (${compact(cloud.count)})`);
-			// облако посажено на персонажа: оно двигается вместе со скелетом, пока играет анимация
 			if (cloud.anim) pts.userData.animPts = cloud.anim;
 			if (cur) {
-				// заменяем геометрию в уже созданном облаке, история не засоряется
 				const old = cur.obj.geometry;
 				cur.obj.geometry = pts.geometry;
 				cur.obj.userData.animPts = cloud.anim || null;
@@ -152,7 +147,6 @@ export function createPointsPanel(app, root) {
 
 	const secCreate = section('Облако точек', { key: 'p-create' }, source.el, rowCount, hint, hideSource.el, goBtn, status);
 
-	// ---------------------------------------------------------------- внешний вид
 	const showPoints = () => {
 		if (app.settings.display !== 'points') app.setDisplay('points');
 	};
@@ -197,7 +191,6 @@ export function createPointsPanel(app, root) {
 	colorRow.hidden = pt.color !== 'solid';
 	const secLook = section('Вид точек', { key: 'p-look' }, tiles, field('Размер', size.el), field('Цвет', colorMode.el, { wide: true }), colorRow, att.el);
 
-	// своя текстура для цвета точек (по UV модели); без неё берётся текстура самой модели
 	const texIn = h('input', { type: 'file', accept: 'image/*', hidden: true });
 	const texName = h('div', { class: 'field-hint' });
 	const showTex = () => {
@@ -232,7 +225,6 @@ export function createPointsPanel(app, root) {
 	showTex();
 	secLook.body ? secLook.body.append(texRow, texName) : secLook.el.append(texRow, texName);
 	const textSec = createTextSection(app);
-	// фото и видео в точках настраиваются на вкладке «Медиа»: создание облака и текст для них не нужны
 	const mediaNote = h('div', { class: 'fx-morph-note' }, h('b', {}, 'Фото или видео в точках'), h('span', {}, 'Количество точек, рельеф и запись настраиваются на вкладке «Медиа». Форма, размер и цвет точек общие и лежат ниже.'), button({ label: 'Открыть «Медиа»', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', onClick: () => app.ui.showTab('media') }));
 	mediaNote.hidden = true;
 	const secEdit = createPointEditSection(app);
@@ -250,7 +242,6 @@ export function createPointsPanel(app, root) {
 	app.bus.on('scene', syncMedia);
 	app.bus.on('media', syncMedia);
 
-	// ---------------------------------------------------------------- синхронизация
 	function sync() {
 		const vertices = pt.source === 'vertices';
 		source.set(pt.source);

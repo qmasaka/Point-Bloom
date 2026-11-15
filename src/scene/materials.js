@@ -1,4 +1,3 @@
-// Материалы и текстуры: приведение к PBR (glTF), загрузка файлов, слоты, определение типа по имени.
 import * as THREE from 'three';
 import { TGALoader } from 'three/addons/loaders/TGALoader.js';
 import { extOf, baseName, stripExt, clamp } from '../core/util.js';
@@ -12,7 +11,6 @@ export const SLOTS = [
 	{ key: 'emissiveMap', label: 'Свечение (Emissive)', short: 'Свечение', srgb: true, tokens: ['emissive', 'emission', 'emit', 'glow', 'e', 'ke'] },
 ];
 
-/** Типы карт, которые glTF не поддерживает в таком виде — не назначаем их молча как цвет */
 const UNSUPPORTED_TOKENS = ['height', 'bump', 'disp', 'displacement', 'spec', 'specular', 'gloss', 'glossiness', 'opacity', 'alpha', 'mask', 'trans', 'transparency'];
 
 export const slotByKey = (key) => SLOTS.find((s) => s.key === key);
@@ -24,7 +22,6 @@ export function setTextureLimits(aniso, maxSize) {
 	maxTexSize = maxSize;
 }
 
-/** По имени файла определяет, для какого слота текстура: 'map', 'normalMap', … или 'unsupported' */
 export function detectSlot(filename) {
 	const base = stripExt(baseName(filename)).toLowerCase();
 	const tokens = base.split(/[^a-z0-9]+/).filter(Boolean);
@@ -34,17 +31,15 @@ export function detectSlot(filename) {
 		if (okShort) for (const slot of SLOTS) if (slot.tokens.includes(t)) return slot.key;
 		if (UNSUPPORTED_TOKENS.includes(t)) return 'unsupported';
 	}
-	// слитные имена вроде «woodNormalGL»
 	const joined = tokens.join('');
 	for (const slot of SLOTS) for (const t of slot.tokens) if (t.length > 3 && joined.includes(t)) return slot.key;
 	for (const t of UNSUPPORTED_TOKENS) if (t.length > 3 && joined.includes(t)) return 'unsupported';
 	return 'map';
 }
 
-// ------------------------------------------------------------ загрузка файла
 function mimeOf(ext) {
 	if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
-	return 'image/png'; // png, webp, bmp, gif, tga … → экспортируем как PNG
+	return 'image/png';
 }
 
 function loadHTMLImage(url) {
@@ -69,7 +64,6 @@ function shrinkIfNeeded(img) {
 	return { image: c, w: c.width, h: c.height, scaled: true };
 }
 
-// Тяжёлые картинки (4K и 8K текстуры PBR) декодируются и уменьшаются в фоновом пуле потоков браузера, интерфейс при этом не замирает
 const BITMAP_MIN_BYTES = 1.5 * 1024 * 1024;
 
 async function decodeBigImage(file) {
@@ -87,7 +81,6 @@ async function decodeBigImage(file) {
 			bmp = await createImageBitmap(file, { resizeWidth: rw, resizeHeight: rh, resizeQuality: 'high' });
 			scaled = true;
 		}
-		// остальной код читает текстуру как обычное изображение (миниатюры, экспорт, UV), поэтому кладём результат на холст
 		const c = document.createElement('canvas');
 		c.width = bmp.width;
 		c.height = bmp.height;
@@ -100,7 +93,6 @@ async function decodeBigImage(file) {
 	}
 }
 
-/** Декодирует файл изображения → { image, width, height, mime } */
 export async function decodeImageFile(file) {
 	const ext = extOf(file.name);
 	let source;
@@ -120,7 +112,6 @@ export async function decodeImageFile(file) {
 			source = await loadHTMLImage(url);
 			if (source.decode) await Promise.race([source.decode().catch(() => {}), new Promise((r) => setTimeout(r, 400))]);
 		} finally {
-			// URL освобождаем после декодирования — картинка уже в памяти
 			setTimeout(() => URL.revokeObjectURL(url), 5000);
 		}
 	}
@@ -142,7 +133,6 @@ export async function loadTextureFile(file) {
 	return makeTexture(await decodeImageFile(file), file.name, file);
 }
 
-/** Заполняет уже созданную «пустую» текстуру (нужно MTLLoader, который ждёт синхронный результат) */
 export async function fillTextureFromFile(tex, file) {
 	const d = await decodeImageFile(file);
 	tex.image = d.image;
@@ -153,7 +143,6 @@ export async function fillTextureFromFile(tex, file) {
 	return tex;
 }
 
-// -------------------------------------------------------------- миниатюры
 export function thumbnail(tex, size = 72) {
 	if (!tex || !tex.image) return null;
 	const ud = tex.userData;
@@ -172,11 +161,9 @@ export function thumbnail(tex, size = 72) {
 	return ud.thumb;
 }
 
-// --------------------------------------------------- нормализация материалов
-/** Приводит любой материал к MeshStandardMaterial (то, что корректно экспортируется в glTF) */
 export function toStandard(src, report) {
 	if (!src) return new THREE.MeshStandardMaterial({ name: 'Material', color: 0xcccccc, roughness: 0.8, metalness: 0 });
-	if (src.isMeshStandardMaterial) return src; // включая Physical (glTF)
+	if (src.isMeshStandardMaterial) return src;
 	const m = new THREE.MeshStandardMaterial();
 	m.name = src.name || 'Material';
 	if (src.color) m.color.copy(src.color);
@@ -227,7 +214,6 @@ export function hasAlphaChannel(tex) {
 	return { any: clear > 0, hard: semi / n < 0.05, ratio: clear / n };
 }
 
-/** Применяет режим прозрачности: 'opaque' | 'mask' | 'blend' */
 export function setAlphaMode(material, mode, cutoff = 0.5) {
 	if (mode === 'mask') {
 		material.transparent = false;
@@ -251,7 +237,6 @@ export function getAlphaMode(material) {
 	return 'opaque';
 }
 
-/** Склеивает карту прозрачности (map_d) в альфа-канал базового цвета, чтобы glTF её понял */
 export function mergeAlphaIntoBaseColor(map, alphaMap) {
 	if (!map || !map.image || !alphaMap || !alphaMap.image) return null;
 	const w = map.image.width || map.image.naturalWidth;
@@ -270,7 +255,7 @@ export function mergeAlphaIntoBaseColor(map, alphaMap) {
 	const al = actx.getImageData(0, 0, w, h).data;
 	let semi = 0;
 	for (let i = 0; i < base.data.length; i += 4) {
-		const v = al[i]; // яркость (серая карта → R)
+		const v = al[i];
 		base.data[i + 3] = v;
 		if (v > 16 && v < 239) semi++;
 	}
@@ -287,7 +272,6 @@ export function mergeAlphaIntoBaseColor(map, alphaMap) {
 	return { texture: tex, hard: semi / (w * h) < 0.05 };
 }
 
-/** Карта высот (bump) → карта нормалей (оператор Собеля) */
 export function heightToNormalMap(height, strength = 2) {
 	const img = height.image;
 	const w = img.width || img.naturalWidth;
@@ -309,7 +293,6 @@ export function heightToNormalMap(height, strength = 2) {
 		for (let x = 0; x < w; x++) {
 			const dx = (L(x + 1, y - 1) + 2 * L(x + 1, y) + L(x + 1, y + 1)) - (L(x - 1, y - 1) + 2 * L(x - 1, y) + L(x - 1, y + 1));
 			const dy = (L(x - 1, y + 1) + 2 * L(x, y + 1) + L(x + 1, y + 1)) - (L(x - 1, y - 1) + 2 * L(x, y - 1) + L(x + 1, y - 1));
-			// +Y вверх (OpenGL): строки изображения идут сверху вниз, поэтому dy берём как есть
 			let nx = -dx * strength, ny = dy * strength, nz = 1;
 			const l = Math.hypot(nx, ny, nz);
 			nx /= l; ny /= l; nz /= l;
@@ -333,13 +316,11 @@ export function heightToNormalMap(height, strength = 2) {
 	return tex;
 }
 
-/** Постобработка материала после загрузки текстур: bump → normal, альфа-карта → альфа-канал */
 export function finalizeMaterial(m) {
 	const ud = m.userData;
 	if (ud.bumpMap && !m.normalMap && ud.bumpMap.image) {
 		const name = (ud.bumpMap.userData && ud.bumpMap.userData.fileName) || '';
 		if (detectSlot(name) === 'normalMap') {
-			// «bump» на самом деле карта нормалей
 			m.normalMap = ud.bumpMap;
 			m.normalMap.colorSpace = THREE.NoColorSpace;
 		} else {
@@ -371,14 +352,11 @@ export function fixColorSpaces(m) {
 	}
 }
 
-// ------------------------------------------------------------------ слоты
-/** Назначает текстуру в слот материала с корректной цветовой моделью и «разумными» множителями */
 export function assignTexture(material, slotKey, texture) {
 	const slot = slotByKey(slotKey);
 	if (!slot) return;
 	const cs = slot.srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
 	let tex = texture;
-	// одна текстура в слотах с разной цветовой моделью — клонируем (Source с картинкой общий)
 	if (tex.userData._slotCS && tex.userData._slotCS !== cs) {
 		tex = tex.clone();
 		tex.userData = { ...texture.userData, thumb: null };
@@ -422,7 +400,6 @@ export function materialTextures(material) {
 	return out;
 }
 
-/** Все материалы объекта (без дублей) */
 export function uniqueMaterials(list) {
 	const set = new Set();
 	for (const m of list) {
@@ -432,7 +409,6 @@ export function uniqueMaterials(list) {
 	return [...set];
 }
 
-/** Рисует UV-развёртку меша поверх базовой текстуры */
 export function drawUVLayout(canvas, geometry, material) {
 	const size = canvas.width;
 	const ctx = canvas.getContext('2d');
@@ -446,7 +422,6 @@ export function drawUVLayout(canvas, geometry, material) {
 		ctx.drawImage(tex.image, 0, 0, size, size);
 		ctx.restore();
 	}
-	// рамка 0..1
 	ctx.strokeStyle = 'rgba(255,255,255,.35)';
 	ctx.lineWidth = 1;
 	ctx.strokeRect(0.5, 0.5, size - 1, size - 1);
@@ -461,7 +436,7 @@ export function drawUVLayout(canvas, geometry, material) {
 	const idx = geometry.index;
 	const T = Math.floor((idx ? idx.count : uv.count) / 3);
 	const step = Math.max(1, Math.ceil(T / 40000));
-	const flip = !tex || tex.flipY !== false; // v вверх → рисуем с инверсией по y
+	const flip = !tex || tex.flipY !== false;
 	const X = (u) => u * size;
 	const Y = (v) => (flip ? 1 - v : v) * size;
 	ctx.beginPath();

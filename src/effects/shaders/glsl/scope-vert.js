@@ -1,7 +1,6 @@
-// GLSL: вершинный шейдер линии «Осциллограф».
 import { common } from './common.js';
 
-export const scopeVert = /* glsl */ `
+export const scopeVert = `
 attribute vec3 aOrigin;
 attribute vec3 aTarget;
 attribute float aIdx;

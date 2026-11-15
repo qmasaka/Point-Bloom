@@ -1,4 +1,3 @@
-// Вкладка «Сцена»: список объектов, трансформации, инструменты правки, облако точек.
 import * as THREE from 'three';
 import { h, fmt, formatInt, deg } from '../../core/util.js';
 import { icon } from '../icons.js';
@@ -13,7 +12,6 @@ export function createScenePanel(app, root) {
 	const ops = app.ops;
 	const expanded = new WeakMap();
 
-	// ------------------------------------------------------------- список объектов
 	const tree = h('div', { class: 'tree', role: 'tree', 'aria-label': 'Объекты сцены' });
 	const treeCount = h('div', { class: 'field-hint' });
 	const addBtn = iconButton({ icon: 'plus', title: 'Добавить модель в сцену', onClick: () => app.ui.openFiles('add') });
@@ -137,7 +135,6 @@ row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 		if (sel) sel.scrollIntoView({ block: 'nearest' });
 	}
 
-	// ----------------------------------------------------- свойства объекта
 	const nameInput = h('input', { type: 'text', class: 'num-in', style: { textAlign: 'left', fontFamily: 'var(--font)', fontSize: '13px', height: '32px' }, 'aria-label': 'Имя объекта', spellcheck: 'false' });
 	nameInput.addEventListener('change', () => {
 		const o = model.selected;
@@ -148,7 +145,6 @@ row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 		if (e.key === 'Enter') nameInput.blur();
 	});
 
-	// поля X, Y, Z совпадают с осями гизмо (Z вверх): X = внутренняя ось z, Y = x, Z = y
 	const PERM = [2, 0, 1];
 	const tf = { p: [], r: [], s: [] };
 	const fromFields = (arr) => {
@@ -198,7 +194,6 @@ row.addEventListener('click', (e) => model.select(obj, { add: e.shiftKey }));
 		root.querySelector('#dimsVal').textContent = b.isEmpty() ? 'нет геометрии' : `${fmt(s.z, 3)} × ${fmt(s.x, 3)} × ${fmt(s.y, 3)}`;
 	}
 
-	// --------------------------------------------------------- инструменты
 	const need = [];
 	const tbtn = (label, iconName, fn, title, variant = 'secondary') => {
 		const b = button({ label, icon: iconName, variant, onClick: fn, title, size: 16 });
@@ -248,7 +243,6 @@ field('Сглаживание', angleSlider.el, {}),
 		field('Отразить', mirrorRow)
 );
 for (const b of need.slice(-3)) b.classList.add('btn-block');
-// --------------------------------------------------------- настройки сплатов (фото в сплаты, PLY со сплатами)
 	const splatInfo = h('div', { class: 'field-hint' });
 	const splatCount = slider({ noNorm: true, log: true, min: 2000, max: 1500000, step: 1000, value: 200000, format: (v) => formatInt(v), onInput: (v) => splatApply({ count: v }), onChange: () => {} });
 	const splatOp = slider({ min: 0, max: 0.9, step: 0.01, value: 0.05, onInput: (v) => splatApply({ minOp: v }) });
@@ -289,7 +283,6 @@ for (const b of need.slice(-3)) b.classList.add('btn-block');
 const secTools = section('Правка', { key: 'tools' }, toolsBody);
 const secMesh = section('Сетка и нормали', { key: 'mesh', open: false }, meshBody);
 
-	// --------------------------------------------------------- облако точек
 	root.append(secObjects.el, secObject.el, secSplat.el, secTools.el, secMesh.el);
 
 	const MESH_ONLY = ['Склеить вершины', 'Вывернуть нормали', 'Плоское затенение', 'Перевернуть UV'];
@@ -297,7 +290,6 @@ const secMesh = section('Сетка и нормали', { key: 'mesh', open: fal
 		const sel = model.selected;
 		const has = !!sel;
 		for (const b of need) b.disabled = !has;
-		// у облака точек, фото и видео нет граней: операции с сеткой и нормалями им не нужны, поэтому не показываем
 		const hasMesh = !!sel && (sel.isMesh || model.meshesOf(sel).length > 0);
 		for (const b of need) {
 			const label = b.querySelector('.btn-label')?.textContent;

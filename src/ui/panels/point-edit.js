@@ -1,5 +1,3 @@
-// Правка точек: панель появляется справа от кнопки инструмента в левой колонке (выбор способа, режим, действия),
-// а во вкладке «Точки» остаётся короткий раздел-подсказка.
 import { h, formatInt, screenRect } from '../../core/util.js';
 import { icon } from '../icons.js';
 import { section, field, fxSlider as slider, segmented, switchRow, colorField, button, iconButton } from '../ui-kit.js';
@@ -9,7 +7,6 @@ export function createPointEditSection(app) {
 	let paintHex = '#3fc8e4';
 	let strength = 1;
 
-	// ---------------------------------------------------------------- плавающая панель
 	const METHODS = [
 		['brush', 'Кисть', 'paint-brush', 'Закрашивайте точки кистью: всё под кругом выбирается (B)'],
 		['rect', 'Прямоугольник', 'selection', 'Протяните рамку: выберутся все точки внутри (M)'],
@@ -38,7 +35,6 @@ export function createPointEditSection(app) {
 	const bInv = button({ label: 'Наоборот', variant: 'secondary', cls: 'btn-sm', title: 'Инвертировать выбор (Ctrl+I)', onClick: () => pe.invert() });
 	const count = h('div', { class: 'pe-count' });
 	const bDel = button({ label: 'Удалить выбранные', icon: 'trash', variant: 'secondary', cls: 'btn-block pe-del', title: 'Удалить выбранные точки (Delete или X)', onClick: () => pe.deleteSelected() });
-	// у цвета одно поле: общий цвет для панели и кнопки, никакой синхронизации между копиями
 	const color = colorField({ value: paintHex, onInput: (v) => (paintHex = v), onChange: (v) => (paintHex = v) });
 	const str = slider({ noNorm: true, min: 5, max: 100, step: 5, value: 100, format: (v) => v + '%', onInput: (v) => (strength = v / 100) });
 	const bPaint = button({ label: 'Закрасить выбранные', icon: 'paint-bucket', variant: 'primary', cls: 'btn-block', title: 'Перекрасить выбранные точки в этот цвет', onClick: () => pe.paintSelected(paintHex, strength) });
@@ -67,7 +63,6 @@ export function createPointEditSection(app) {
 	);
 	(document.querySelector('.workspace') || document.body).append(panel);
 
-	/** Панель стоит справа от кнопки инструмента и по ширине равна панели настроек */
 	function place() {
 		if (panel.hidden) return;
 		const scale = panel.currentCSSZoom || parseFloat(document.documentElement.style.zoom) || parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-scale')) || 1;
@@ -86,7 +81,6 @@ export function createPointEditSection(app) {
 			const sheetH = parseFloat(getComputedStyle(document.getElementById('app')).getPropertyValue('--sheet-h')) || 84;
 			panel.style.maxHeight = Math.max(160, (ws.height - (rr.top - ws.top) - sheetH - 24 * scale) / scale) + 'px';
 		} else {
-			// колонка кнопок и панель вместе по ширине равны блоку настроек, по высоте панель стоит между теми же верхним и нижним краями
 			const sideW = sr && sr.width ? sr.width : 300 * scale;
 			panel.style.width = Math.max(220, (sideW - rr.width - gap) / scale) + 'px';
 			panel.style.left = (rr.right - ws.left + gap) / scale + 'px';
@@ -105,7 +99,6 @@ export function createPointEditSection(app) {
 		ro.observe(document.querySelector('.toolrail'));
 	}
 
-	// ---------------------------------------------------------------- раздел во вкладке «Точки»
 	const toggle = button({ label: 'Выделять точки', icon: 'selection', variant: 'primary', cls: 'btn-block pe-toggle', onClick: () => pe.setActive(!pe.active) });
 	const sideNote = h('div', { class: 'field-hint hint' });
 	const sec = section('Правка точек', { key: 'p-edit' }, sideNote, toggle);

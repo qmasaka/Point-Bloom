@@ -1,4 +1,3 @@
-// Содержимое сцены: объекты, выделение, активный материал, статистика.
 import * as THREE from 'three';
 import { triangleCount } from '../core/geom.js';
 import { uniqueMaterials, materialTextures } from './materials.js';
@@ -7,17 +6,16 @@ export class Model {
 	constructor(app) {
 		this.app = app;
 		this.selected = null;
-		this.selection = []; // все выделенные объекты; selected: последний из них
+		this.selection = [];
 		this.pivot = null;
 		this.activeMaterial = null;
-		this.tool = 'select'; // select | translate | rotate | scale
+		this.tool = 'select';
 	}
 
 	get root() {
 		return this.app.viewport.root;
 	}
 
-	/** Все меши / облака точек (без служебных) */
 	renderables() {
 		const out = [];
 		this.root.traverse((o) => {
@@ -37,7 +35,6 @@ export class Model {
 		return out;
 	}
 
-	/** Уникальные исходные материалы сцены */
 	materials() {
 		const d = this.app.display;
 		return uniqueMaterials(this.meshes().map((m) => d.getOriginal(m)));
@@ -50,7 +47,6 @@ export class Model {
 		});
 	}
 
-	// ----------------------------------------------------------- изменения
 	changed({ display = true } = {}) {
 		this.app.viewport.updateSceneBounds();
 		if (display) this.app.display.apply();
@@ -106,9 +102,6 @@ export class Model {
 		this.app.bus.emit('newdoc');
 	}
 
-	// ------------------------------------------------------------ выделение
-	/** Выделение; add: Shift-клик добавляет объект к выделению или снимает его */
-	/** Меш со скелетом сам по себе не двигается: скелет гасит его трансформацию. Поэтому клик по такому мешу или кости выбирает всю модель */
 	rigTarget(obj) {
 		if (!obj || !(obj.isSkinnedMesh || obj.isBone)) return obj;
 		let top = obj;
@@ -160,7 +153,6 @@ export class Model {
 		if (sel && (this.tool === 'translate' || this.tool === 'rotate' || this.tool === 'scale')) {
 			tc.setMode(this.tool);
 			if (this.selection.length > 1) {
-				// несколько объектов двигаются вместе через общую опору в центре выделения
 				const vp = this.app.viewport;
 				const box = new THREE.Box3();
 				const tmp = new THREE.Box3();
@@ -188,7 +180,6 @@ export class Model {
 		tc.setScaleSnap(s.on ? s.scale : null);
 	}
 
-	// ------------------------------------------------------------ статистика
 	stats(onlyVisible = true) {
 		let verts = 0, tris = 0, points = 0, objects = 0;
 		for (const o of this.renderables()) {

@@ -1,9 +1,7 @@
 import * as THREE from 'three';
 import { FX_PALETTES } from '../state/options.js';
 
-/** Инструменты: лепка, кисть, закрашивание. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class ToolsPart {
-	// ------------------------------------------------------------ лепка пальцами
 	_startGrab(loc, R) {
 		const T = this.geometry.attributes.aTarget.array;
 		const n = T.length / 3;
@@ -46,7 +44,6 @@ export class ToolsPart {
 		this._sculptLive = false;
 	}
 
-	/** Смыть всю краску */
 	clearBrush() {
 		this.brushHits = [];
 		this._dabs = [];
@@ -59,7 +56,6 @@ export class ToolsPart {
 		this.emit();
 	}
 
-	/** Мазок кистью в точке pos (на плоскости перед формой). Из точки идёт луч от камеры, краска ложится на ближнюю к камере поверхность в радиусе кисти */
 	addBrushHit(pos) {
 		if (!pos || !this.geometry || !this.geometry.attributes.aPaint) return;
 		const B = this.state.layers.brush;
@@ -127,7 +123,6 @@ export class ToolsPart {
 			}
 		}
 		if (!m) return;
-		// краска ложится только на ближнюю к камере поверхность, а не пробивает форму насквозь
 		const tlim = tmin + rMax * 0.9;
 		const NB = 64;
 		const cnt = new Int32Array(NB + 1);
@@ -154,7 +149,6 @@ export class ToolsPart {
 		if (this._dabs.length > 40) this._dabs.shift();
 	}
 
-	/** Каждый кадр: мазки растекаются от места нанесения, краска смешивается с уже лежащей и подсыхает тёмной кромкой */
 	_paintTick() {
 		const ds = this._dabs;
 		const attr = this.geometry?.attributes.aPaint;
@@ -183,7 +177,6 @@ export class ToolsPart {
 						arr[o + 1] = Math.exp(dab.lg);
 						arr[o + 2] = Math.exp(dab.lb);
 					} else {
-						// вычитающее смешение: среднее по логарифму цвета, как у настоящей краски (синий и жёлтый дают зелёный)
 						const wt = da / (a0 + da);
 						arr[o] = Math.exp((1 - wt) * Math.log(Math.max(arr[o], 1e-3)) + wt * dab.lr);
 						arr[o + 1] = Math.exp((1 - wt) * Math.log(Math.max(arr[o + 1], 1e-3)) + wt * dab.lg);

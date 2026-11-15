@@ -1,11 +1,3 @@
-// Дымовой тест режима «Эффекты»: загружает демо-модель, входит в режим, по очереди включает и выключает каждый эффект,
-// заходит в редактор и обратно. Для каждого шага собирает: ошибки в консоли, долгие задачи главного потока, паузы в WebGL-вызовах
-// и самые долгие кадры. Нужен, чтобы после каждого шага переноса кода убедиться, что ничего не сломалось и не стало медленнее.
-//
-// Как запускать: открыть приложение в Chrome (python -m http.server 8765, затем http://localhost:8765/index.html),
-// вставить файл целиком в консоль браузера (или выполнить через DevTools MCP). Тест идёт в фоне; готовность и результат:
-//     window.__smoke.done   → true, когда закончил
-//     window.__smoke.report → итог (JSON), там же report.problems: пустой список = всё хорошо
 (() => {
 	const S = (window.__smoke = { done: false, steps: [], errors: [], report: null });
 	const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -16,7 +8,6 @@
 		el.click();
 	};
 
-	// ошибки приложения
 	window.addEventListener('error', (e) => S.errors.push('error: ' + e.message));
 	window.addEventListener('unhandledrejection', (e) => S.errors.push('rejection: ' + (e.reason && (e.reason.message || e.reason))));
 	const oErr = console.error;
@@ -25,7 +16,6 @@
 		oErr.apply(console, a);
 	};
 
-	// потеря контекста WebGL (сброс видеопроцесса): записывается с названием шага, на котором случилась
 	let currentStep = 'до начала';
 	const hookCanvas = () => {
 		const cv = document.querySelector('canvas.gl');
@@ -36,7 +26,6 @@
 	};
 	hookCanvas();
 
-	// долгие задачи, кадры, паузы WebGL
 	const lt = [];
 	try {
 		new PerformanceObserver((l) => l.getEntries().forEach((e) => lt.push(Math.round(e.duration)))).observe({ entryTypes: ['longtask'] });
@@ -142,7 +131,6 @@
 				const st = S.steps[S.steps.length - 2];
 				st.note = 'эффектов включено: ' + before + ' → ' + mid;
 			}
-			// вывод через пост-обработку (буфер) и обратно на экран
 			await step('свечение: включить', () => {
 				fx.state.look.bloom = 0.8;
 			}, 2500);

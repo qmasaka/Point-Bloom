@@ -1,20 +1,9 @@
-// Транспайлер GLSL → WGSL для подмножества GLSL, которое используют шейдеры эффектов (shaders/glsl/*.js).
-// Зачем: WGSL получается из того же исходника, что и боевой GLSL, поэтому формулы совпадают по построению и не живут в двух копиях.
-// Это не общий компилятор: незнакомая конструкция даёт понятную ошибку, а не молча неверный код.
-//
-// Использование из другого скрипта:
-//   import { parseGLSL, emitWGSL } from './glsl2wgsl.mjs';
-//   const prog = parseGLSL(glslText, { defines: { HERO: 1 } });
-//   const out = emitWGSL(prog, { ... });
-
-// ---------------------------------------------------------------- препроцессор и лексер
 const KEYWORD_TYPES = new Set(['float', 'int', 'bool', 'void', 'vec2', 'vec3', 'vec4', 'ivec2', 'ivec3', 'ivec4', 'bvec2', 'bvec3', 'bvec4', 'mat2', 'mat3', 'mat4', 'sampler2D', 'sampler2DArray']);
 
-/** Условная компиляция и #define без аргументов. Возвращает текст без директив и таблицу макросов */
 function preprocess(src, defines) {
 	const macros = new Map(Object.entries(defines || {}).map(([k, v]) => [k, String(v)]));
 	const out = [];
-	const stack = []; // { active, taken, parentActive }
+	const stack = [];
 	const active = () => stack.every((s) => s.active);
 	for (const line of src.split('\n')) {
 		const m = /^\s*#\s*(\w+)\s*(.*)$/.exec(line);
@@ -40,7 +29,6 @@ function preprocess(src, defines) {
 				macros.set(mm[1], mm[3].replace(/\/\/.*$/, '').trim());
 			}
 		} else if (dir === 'include' || dir === 'version' || dir === 'extension') {
-			// директивы three.js (tonemapping_fragment и т. п.) обрабатываются отдельно
 		} else throw new Error('неизвестная директива #' + dir);
 		out.push('');
 	}
@@ -77,7 +65,6 @@ function lex(text, macros) {
 		if (id) {
 			const name = id[0];
 			if (macros.has(name) && macros.get(name) !== undefined) {
-				// простая подстановка макроса: лексим тело
 				const body = macros.get(name);
 				toks.push(...lex(body, new Map([...macros].filter(([k]) => k !== name))).slice(0, -1));
 			} else toks.push({ t: 'id', v: name });
@@ -97,7 +84,6 @@ function lex(text, macros) {
 	return toks;
 }
 
-// ---------------------------------------------------------------- парсер
 const PREC = { '||': 1, '^^': 1, '&&': 2, '==': 4, '!=': 4, '<': 5, '>': 5, '<=': 5, '>=': 5, '+': 7, '-': 7, '*': 8, '/': 8, '%': 8 };
 
 export function parseGLSL(src, { defines = {} } = {}) {
@@ -125,7 +111,6 @@ export function parseGLSL(src, { defines = {} } = {}) {
 		return next().v;
 	}
 
-	// ---- выражения
 	function parsePrimary() {
 		const t = peek();
 		if (t.t === 'num') {
@@ -213,7 +198,6 @@ export function parseGLSL(src, { defines = {} } = {}) {
 		return parseAssign();
 	}
 
-	// ---- операторы
 	function parseDeclRest(type) {
 		const decls = [];
 		do {
@@ -313,7 +297,6 @@ export function parseGLSL(src, { defines = {} } = {}) {
 		return { k: 'decl', type, decls, isConst };
 	}
 
-	// ---- верхний уровень
 	const prog = { uniforms: [], attributes: [], varyings: [], globals: [], funcs: [] };
 	while (peek().t !== 'eof') {
 		if (isId('precision')) {
@@ -355,7 +338,7 @@ export function parseGLSL(src, { defines = {} } = {}) {
 			expect(')');
 			prog.funcs.push({ ret: type, name, params, body: parseBlock() });
 		} else {
-			p--; // вернуть имя: это глобальная переменная
+			p--;
 			const decls = parseDeclRest(type);
 			expect(';');
 			for (const d of decls) prog.globals.push({ type, name: d.name, init: d.init, isConst, len: d.arr ? Number(d.arr.v) : 0 });
@@ -364,7 +347,6 @@ export function parseGLSL(src, { defines = {} } = {}) {
 	return prog;
 }
 
-// ---------------------------------------------------------------- типы
 const TYPE_WGSL = { float: 'f32', int: 'i32', bool: 'bool', vec2: 'vec2f', vec3: 'vec3f', vec4: 'vec4f', ivec2: 'vec2i', ivec3: 'vec3i', ivec4: 'vec4i', bvec2: 'vec2<bool>', bvec3: 'vec3<bool>', bvec4: 'vec4<bool>', mat2: 'mat2x2f', mat3: 'mat3x3f', mat4: 'mat4x4f' };
 const VEC_OF = { float: ['float', 1], vec2: ['float', 2], vec3: ['float', 3], vec4: ['float', 4], ivec2: ['int', 2], ivec3: ['int', 3], ivec4: ['int', 4], bvec2: ['bool', 2], bvec3: ['bool', 3], bvec4: ['bool', 4] };
 const dimOf = (t) => (VEC_OF[t] ? VEC_OF[t][1] : 0);
@@ -374,16 +356,15 @@ const safe = (n) => (RESERVED.has(n) || n.startsWith('__') ? n + '_' : n);
 
 const SAME_AS_FIRST = new Set(['abs', 'sign', 'floor', 'ceil', 'fract', 'sqrt', 'inversesqrt', 'exp', 'exp2', 'log', 'log2', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'normalize', 'radians', 'degrees', 'round', 'trunc']);
 
-// ---------------------------------------------------------------- генерация WGSL
 export function emitWGSL(prog, opts = {}) {
 	const {
-		uniformPrefix = 'fr.', // как обращаться к значению кадра
-		textures = {}, // имя sampler → { name: имя текстуры в WGSL, mode: 'sample'|'load', sampler?: имя сэмплера }
-		privateNames = new Set(), // глобальные «входы/выходы» (атрибуты, varying, gl_*): объявляются как var<private>
-		builtinTypes = {}, // имя → тип GLSL для встроенных имён вроде gl_Position
-		skipFuncs = new Set(), // функции, которые не нужно выводить
-		renameFuncs = {}, // переименование функций (например main → main_)
-		flipY = false, // у GLSL текстурные координаты идут снизу вверх, у WebGPU сверху вниз: при true координаты и gl_FragCoord отражаются, чтобы результат совпал с WebGL
+		uniformPrefix = 'fr.',
+		textures = {},
+		privateNames = new Set(),
+		builtinTypes = {},
+		skipFuncs = new Set(),
+		renameFuncs = {},
+		flipY = false,
 	} = opts;
 
 	const uniforms = new Map(prog.uniforms.map((u) => [u.name, u]));
@@ -393,7 +374,6 @@ export function emitWGSL(prog, opts = {}) {
 	for (const v of prog.varyings) globalsInfo.set(v.name, { type: v.type, kind: 'private' });
 	for (const [n, t] of Object.entries(builtinTypes)) globalsInfo.set(n, { type: t, kind: 'private' });
 
-	// перегруженные пользовательские функции
 	const byName = new Map();
 	for (const f of prog.funcs) (byName.get(f.name) || byName.set(f.name, []).get(f.name)).push(f);
 	const funcName = (f) => {
@@ -433,7 +413,6 @@ export function emitWGSL(prog, opts = {}) {
 		return s;
 	};
 
-	// ---- выражения: возвращают { s, t }
 	function typeFromMember(bt, m) {
 		const info = VEC_OF[bt];
 		if (!info) throw new Error('доступ к полю у типа ' + bt);
@@ -451,12 +430,10 @@ export function emitWGSL(prog, opts = {}) {
 		const args = e.args.map((a) => emitExpr(a, env));
 		const argT = args.map((a) => a.t);
 		const A = (i) => args[i].s;
-		// конструкторы
 		if (TYPE_WGSL[name] && name !== 'bool' && !['float', 'int'].includes(name)) {
 			const w = TYPE_WGSL[name];
 			if (/^mat/.test(name)) {
 				if (args.length === 1 && /^mat/.test(argT[0]) && argT[0] !== name) {
-					// mat3(mat4) и подобное: берём левый верхний угол
 					const k = Number(name[3]);
 					const cols = [];
 					for (let c = 0; c < k; c++) cols.push(`${TYPE_WGSL['vec' + k]}(${A(0)}[${c}].${'xyzw'.slice(0, k)})`);
@@ -471,7 +448,6 @@ export function emitWGSL(prog, opts = {}) {
 		if (name === 'float') return { s: `f32(${A(0)})`, t: 'float' };
 		if (name === 'int') return { s: `i32(${A(0)})`, t: 'int' };
 		if (name === 'bool') return { s: `bool(${A(0)})`, t: 'bool' };
-		// встроенные функции
 		switch (name) {
 			case 'mod': {
 				const t = widest(...argT);
@@ -522,7 +498,6 @@ export function emitWGSL(prog, opts = {}) {
 				const tx = textures[e.args[0].n];
 				if (!tx) throw new Error('неизвестная текстура ' + e.args[0].n);
 				if (tx.mode === 'sample') return { s: `textureSampleLevel(${tx.name}, ${tx.sampler}, ${uvText(A(1))}, 0.0)`, t: 'vec4' };
-				// загрузка по нормализованным координатам (ближайшая точка)
 				return { s: `textureLoad(${tx.name}, vec2i(${A(1)} * vec2f(textureDimensions(${tx.name}))), 0)`, t: 'vec4' };
 			}
 			case 'textureLod': {
@@ -541,24 +516,21 @@ export function emitWGSL(prog, opts = {}) {
 		if (SAME_AS_FIRST.has(name) || ['abs', 'sign', 'floor', 'ceil', 'fract', 'sqrt', 'exp', 'exp2', 'log', 'log2', 'sin', 'cos', 'tan', 'normalize'].includes(name)) {
 			return { s: `${name}(${A(0)})`, t: argT[0] };
 		}
-		// пользовательская функция
 		const f = pickFunc(name, argT);
 		if (!f) throw new Error('неизвестная функция ' + name);
 		const parts = f.params.map((pm, i) => {
 			if (pm.qual === 'in') return args[i].s;
 			const a = e.args[i];
 			const v = a.k === 'id' ? env.get(a.n) : null;
-			// параметр-указатель передаётся дальше как есть, обычная переменная берётся по адресу
 			return v && v.ptr ? lvalueText(a, env) : `&${lvalueText(a, env)}`;
 		});
 		return { s: `${funcName(f)}(${parts.join(', ')})`, t: f.ret };
 	}
 
-	/** Текст lvalue для передачи указателем (out/inout): простая переменная */
 	function lvalueText(e, env) {
 		if (e.k === 'id') {
 			const v = env.get(e.n) || globalsInfo.get(e.n);
-			if (v && v.ptr) return safe(e.n); // уже указатель
+			if (v && v.ptr) return safe(e.n);
 			return safe(e.n);
 		}
 		throw new Error('в out-параметр передаётся не переменная');
@@ -610,7 +582,6 @@ export function emitWGSL(prog, opts = {}) {
 				else if (/^mat/.test(l.t)) t = l.t;
 				else if (/^mat/.test(r.t)) t = r.t;
 				else t = widest(l.t, r.t);
-				// WGSL: сравнение вектора со скаляром невозможно, у GLSL тоже; арифметика вектор-скаляр разрешена
 				let op = e.op;
 				if (op === '^^') op = '!=';
 				return { s: `(${l.s} ${op} ${r.s})`, t };
@@ -619,7 +590,6 @@ export function emitWGSL(prog, opts = {}) {
 				const c = emitExpr(e.c, env);
 				const a = emitExpr(e.a, env);
 				const b = emitExpr(e.b, env);
-				// у select обе ветви одного типа; числовые литералы приводятся к типу другой ветви
 				return { s: `select(${b.s}, ${a.s}, ${c.s})`, t: a.t };
 			}
 			case 'call':
@@ -630,12 +600,10 @@ export function emitWGSL(prog, opts = {}) {
 		throw new Error('неизвестный узел ' + e.k);
 	}
 
-	// ---- операторы
 	const COMP = 'xyzw';
 	function emitAssignStmt(e, env, ind) {
 		const lhs = e.l;
 		const op = e.op;
-		// запись в несколько компонентов: pos.xz = ...
 		if (lhs.k === 'mem' && lhs.m.length > 1) {
 			const base = emitExpr(lhs.e, env);
 			const n = dimOf(base.t);
@@ -646,7 +614,6 @@ export function emitWGSL(prog, opts = {}) {
 			else val = splat(rhs, sub.t);
 			const tmp = `_sw${tmpCounter++}`;
 			const comps = [];
-			// буквы цвета (rgba) и текстурные (stpq) означают те же компоненты, что и xyzw
 			const norm = [...lhs.m].map((ch) => 'xyzw'['rgba'.indexOf(ch) >= 0 ? 'rgba'.indexOf(ch) : 'stpq'.indexOf(ch) >= 0 ? 'stpq'.indexOf(ch) : 'xyzw'.indexOf(ch)]).join('');
 			for (let i = 0; i < n; i++) {
 				const j = norm.indexOf(COMP[i]);
@@ -660,7 +627,6 @@ export function emitWGSL(prog, opts = {}) {
 		return `${ind}${l.s} ${op} ${rv};\n`;
 	}
 
-	/** Тело блока: одна общая область видимости на все операторы */
 	function emitBody(stmts, env, ind) {
 		const inner = new Env(env);
 		return stmts.map((x) => emitStmt(x, inner, ind)).join('');
@@ -749,7 +715,6 @@ export function emitWGSL(prog, opts = {}) {
 	const usedHelpers = new Set();
 	const out = [];
 
-	// глобальные переменные и константы
 	for (const g of prog.globals) {
 		const env = new Env();
 		const w = g.len ? `array<${TYPE_WGSL[g.type]}, ${g.len}>` : TYPE_WGSL[g.type];
@@ -758,7 +723,6 @@ export function emitWGSL(prog, opts = {}) {
 			out.push(`const ${safe(g.name)}: ${w} = ${splat(r, g.type)};`);
 		} else out.push(`var<private> ${safe(g.name)}: ${w}${g.init ? ' = ' + splat(emitExpr(g.init, env), g.type) : ''};`);
 	}
-	// функции
 	const fnTexts = [];
 	for (const f of prog.funcs) {
 		if (skipFuncs.has(f.name)) continue;
@@ -789,7 +753,6 @@ export function emitWGSL(prog, opts = {}) {
 	};
 	const helperText = [...usedHelpers].map((h) => helpers[h]).join('\n');
 
-	// структура значений кадра
 	const fields = prog.uniforms.filter((u) => !/^sampler/.test(u.type));
 	return {
 		wgsl: [helperText, out.join('\n'), fnTexts.join('\n')].filter(Boolean).join('\n\n'),

@@ -1,36 +1,24 @@
 import { clamp } from '../../core/util.js';
 
-/** Номера видов в шейдере: 0 шипы, 1 бугры, 3 щупальца растут из очагов; остальные это виды отрыва участков */
 const MODE = { spikes: 0, bulge: 1, tendril: 3, slab: 2, pillar: 4, terrace: 5, shards: 6, peel: 7, screw: 8, dust: 9 };
 const DETACH = new Set(['slab', 'pillar', 'terrace', 'shards', 'peel', 'screw', 'dust']);
 
-/**
- * Эффект «Рост на ритме». На форме расставлены очаги (до 24).
- * Виды отрыва: каждый удар сдвигает растущие участки ещё на шаг наружу. Участок отходит рывком и стоит до следующего удара,
- * а на пределе держится, по ударам возвращается, отламывается и улетает или садится на место, и тогда растёт новый.
- * Шипы, бугры и щупальца: удары и бас выращивают очаги, в тишине они опадают.
- * Шейдерная часть: shaders/glsl/vert.js (блок VSHOOT, в WebGL и WebGPU). Методы подмешиваются в EffectsEngine.
- */
 export class ShootsPart {
 	_shootTick(dt, L, u) {
-		// сила не качается от громкости (диапазон и реакция тут не нужны): рост ведут только удары и бас по своим правилам
 		const eff = L.on ? L.amount * (this._fxGate ?? 1) : 0;
 		if (eff <= 0.001 || !this.geometry) {
 			u.uShoot.value.x = 0;
 			return;
 		}
-		// прежний вид «Отрыв» стал видом «Плита»
 		if (L.mode === 'detach') L.mode = 'slab';
 		const S = (this._shS ||= { geo: null, n: 0, pos: null, nrm: null, g: null, th: null, beat: 0, bassUp: false, autoT: 0, lastBeat: -9, R: null, active: [] });
 		const N = clamp(Math.round(L.seeds || 14), 4, 24);
 		if (S.geo !== this.geometry || S.n !== N) this._shootSeeds(S, N);
-		// удар: по музыке (удар или всплеск баса), а без звука сам по таймеру
 		let beat = false;
 		let bass = 0;
 		const trig = L.trigger || 'beat';
 		if (this.soundActive) {
 			bass = this.levels.bass;
-			// удар анализатора: метка времени надёжнее порога на коротком всплеске (на 60 к/с он не всегда доходит до 0.9)
 			const tb = this._tb;
 			const bNew = tb !== undefined && tb !== S.tb;
 			S.tb = tb;
@@ -44,7 +32,6 @@ export class ShootsPart {
 			}
 			bass = 0.36 + 0.34 * Math.sin(this._time * 1.6);
 		}
-		// «Удар» двигает ступенями, «Бас» растит плавно по громкости баса, «Оба» вместе
 		if (trig === 'bass') beat = false;
 		const bassOn = trig !== 'beat';
 		S.bassOver = bassOn ? clamp((bass - 0.2) / 0.8, 0, 1) : 0;
@@ -56,13 +43,11 @@ export class ShootsPart {
 		else this._shootGrow(S, L, dt, beat, bass, N, V, W);
 		u.uShoot.value.set(Math.min(eff, 1.5), MODE[L.mode] ?? 2, Math.max(0.05, (L.size ?? 0.3) * 0.9), Math.max(0.1, (L.maxLen ?? 1) * 0.7));
 		u.uShootP.value.set(L.glow ?? 0.3, L.wobble ?? 0.3, this._time, L.sizeUp ?? 0.15);
-		// особая настройка вида: ступеней у «Ступеней», размер осколков, слоёв, закрутка винта, разлёт пыли
 		const xtra = { terrace: L.tiers ?? 4, shards: L.shardSize ?? 0.5, peel: L.layers ?? 6, screw: L.twist ?? 1, dust: L.scatter ?? 1.3 }[L.mode] ?? 0;
 		u.uShootD.value.set({ normal: 0, radial: 1, up: 2, view: 3 }[L.dir] ?? 0, Math.max(0.005, L.step ?? 0.12), xtra, 0);
 		u.uShootE.value.set(L.edge ?? 0.35, L.spread ?? 0, L.taper ?? 0, 0);
 	}
 
-	/** Отрыв участков: шаг за удар, упругий рывок, поведение на пределе */
 	_shootDetach(S, L, dt, beat, N, V, W) {
 		if (!S.R || S.R.length !== N) S.R = Array.from({ length: N }, () => ({ steps: 0, d: 0, v: 0, fade: 1, phase: 'idle' }));
 		const R = S.R;
@@ -70,7 +55,6 @@ export class ShootsPart {
 		const step = Math.max(0.005, L.step ?? 0.12);
 		const maxSteps = clamp(Math.round(L.maxSteps ?? 6), 1, 24);
 		const peak = L.peak || 'hold';
-		// участок на пределе (фаза top) живёт по тем настройкам, что выбраны сейчас: смена «Дойдя до предела» или «Ударов до предела» действует и на уже выросшие
 		for (const r of R) {
 			if (r.phase === 'grow' || r.phase === 'back' || r.phase === 'top') {
 				if (r.steps > maxSteps) r.steps = maxSteps;
@@ -83,7 +67,6 @@ export class ShootsPart {
 				} else if (r.phase === 'top' || (r.phase === 'back' && peak !== 'back')) r.phase = 'grow';
 			}
 		}
-		// сколько участков растёт: недостающие начинают расти на свободных местах. При «Остаётся» участки на пределе занимают место, при «Остаётся, растёт другой» нет
 		S.active = S.active.filter((i) => R[i].phase === 'grow' || R[i].phase === 'back');
 		const holding = peak === 'hold' ? R.filter((r) => r.phase === 'top').length : 0;
 		while (S.active.length + holding < want) {
@@ -98,7 +81,6 @@ export class ShootsPart {
 			const i = S.active.pop();
 			R[i].phase = 'settle';
 		}
-		// только если выбрано «Возвращается»: когда удары пропали, участки сами идут обратно по шагу раз в полсекунды
 		if (L.quiet === 'back' && S.quiet && !beat) {
 			S.qT = (S.qT || 0) + dt;
 			if (S.qT > 0.5) {
@@ -122,10 +104,8 @@ export class ShootsPart {
 					r.phase = 'settle';
 				}
 			}
-			// дошёл до предела: фаза определится в начале следующего кадра по выбранному «Дойдя до предела»
 		};
 		if (beat) for (const i of S.active) advance(R[i]);
-		// бас растит плавно: доля шага копится по громкости баса, целый шаг засчитывается как удар
 		if (S.bassOver > 0) {
 			const rate = S.bassOver * (L.bassSpeed ?? 2) * dt;
 			for (const i of S.active) {
@@ -138,7 +118,6 @@ export class ShootsPart {
 				}
 			}
 		}
-		// участок едет к своей ступени на пружине: «Длительность рывка» это время шага, перелёт за ступень небольшой и всегда один
 		const T = Math.max(0.03, L.stepTime ?? 0.25);
 		const w = 4.6 / T;
 		const z = 0.8;
@@ -146,7 +125,6 @@ export class ShootsPart {
 			const r = R[i];
 			let target = (r.steps + (r.phase === 'grow' ? r.acc || 0 : r.phase === 'back' ? -(r.acc || 0) : 0)) * step;
 			if (r.phase === 'drop') {
-				// отломился: летит дальше и гаснет, потом место свободно для нового участка
 				r.dropV = (r.dropV || step * 3) + dt * step * 10;
 				r.d += r.dropV * dt;
 				r.fade -= dt * 1.1;
@@ -164,10 +142,6 @@ export class ShootsPart {
 		for (let i = N; i < 24; i++) V[i].w = 0;
 	}
 
-	/**
-	 * Шипы, бугры, щупальца: те же правила, что у отрыва. Каждый удар прибавляет очагам шаг (1 / «ударов до предела»), рост сам не откатывается.
-	 * На пределе очаг остаётся, идёт обратно по ударам, отламывается (быстро опадает) или оседает (медленно). Назад идут только если так выбрано.
-	 */
 	_shootGrow(S, L, dt, beat, bass, N, V, W) {
 		if (!S.gs || S.gs.length !== 24) {
 			S.gs = new Float32Array(24);
@@ -185,7 +159,6 @@ export class ShootsPart {
 			else if (peak === 'reset') S.gx[i] = 1;
 		};
 		if (beat && trig !== 'bass') {
-			// растут очаги, которые ещё не дошли до предела, а идущие назад сдвигаются на шаг назад
 			const free = [];
 			for (let i = 0; i < N; i++) {
 				if (S.gx[i]) continue;
@@ -204,7 +177,6 @@ export class ShootsPart {
 				if (S.g[i] >= 0.999) reach(i);
 			}
 		}
-		// без ударов по выбору очаги сами идут назад: шаг раз в полсекунды
 		if (L.quiet === 'back' && S.quiet && !beat) {
 			S.qT = (S.qT || 0) + dt;
 			if (S.qT > 0.5) {
@@ -220,27 +192,23 @@ export class ShootsPart {
 				S.gs[i] = 0;
 				continue;
 			}
-			// очаг на пределе живёт по выбранному сейчас «Дойдя до предела»: смена настройки действует и на уже выросшие
 			if (!S.gx[i]) {
 				if (S.g[i] >= 0.999) reach(i);
 				else if (S.gd[i] < 0 && peak !== 'back') S.gd[i] = 1;
 			}
 			if (S.gx[i]) {
-				// отломился или оседает: падает к нулю и снова может расти
 				S.g[i] = Math.max(0, S.g[i] - dt * (S.gx[i] === 2 ? 2.5 : 0.6));
 				if (S.g[i] <= 0) {
 					S.gx[i] = 0;
 					S.gd[i] = 1;
 				}
 			} else if (trig !== 'beat' && S.gd[i] > 0) {
-				// бас растит плавно: у каждого очага свой порог, чем громче бас, тем быстрее он растёт
 				const over = clamp((bass - S.th[i]) / (1 - S.th[i]), 0, 1);
 				if (over > 0) {
 					S.g[i] = Math.min(1, S.g[i] + inc * over * (L.bassSpeed ?? 2) * dt);
 					if (S.g[i] >= 0.999) reach(i);
 				}
 			}
-			// на экране очаг догоняет цель пружиной: рывок на каждом ударе
 			const dtc = Math.min(dt, 0.05);
 			S.gv[i] += (w * w * (S.g[i] - S.gs[i]) - 2 * 0.8 * w * S.gv[i]) * dtc;
 			S.gs[i] = Math.max(0, S.gs[i] + S.gv[i] * dtc);
@@ -249,7 +217,6 @@ export class ShootsPart {
 		}
 	}
 
-	/** Очаги расставляются по форме врассыпную: из случайных точек берутся самые далёкие друг от друга */
 	_shootSeeds(S, N) {
 		const T = this.geometry.attributes.aTarget.array;
 		const Nr = this.geometry.attributes.aNormal?.array;

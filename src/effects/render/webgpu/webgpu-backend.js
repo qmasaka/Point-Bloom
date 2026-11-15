@@ -8,14 +8,12 @@ import { WebGPUTrail } from './webgpu-trail.js';
 import { WebGPUSurface } from './webgpu-surface.js';
 import { markGpuBad, markGpuGood } from './device.js';
 
-// атрибуты облака (имена как в GLSL), которые движок эффектов хранит в геометрии three.js
 const ATTRS = ['aOrigin', 'aTarget', 'aNormal', 'aNormalB', 'aPaint', 'aColor', 'aColorB', 'aHide', 'aDepth', 'aPath', 'aSculpt', 'aVis', 'aIdx'];
 
 const _mv = new THREE.Matrix4();
 const _pm = new THREE.Matrix4();
 const _v4 = new THREE.Vector4();
 
-// тональная компрессия renderer.toneMapping → значение uTone в шейдерах WebGPU (остальные виды рисует WebGL)
 const TONE = new Map([
 	[THREE.NoToneMapping, 0],
 	[THREE.NeutralToneMapping, 1],
@@ -23,27 +21,17 @@ const TONE = new Map([
 	[THREE.AgXToneMapping, 3],
 ]);
 
-/**
- * Рендер-движок эффектов на WebGPU. Сцена редактора (сетка, фон) по-прежнему рисуется WebGL на основном холсте, а облако точек
- * и пост-обработка (обратная связь, свечение, аберрация) рисуются WebGPU на втором холсте поверх него.
- *
- * На WebGPU перенесено всё: облако со всеми эффектами (и «Экран», «Слит-скан», «Пиксельная сортировка»), «Тень на стене», шлейф, связи, осциллограф,
- * раскадровка и «герой», пост-обработка, все тональные компрессии из настроек, рамки слежения. Прежний WebGL берёт кадр, только если WebGPU не справился
- * (не собрался шейдер, потеряно устройство). Шейдеры WebGL при этом собираются лениво (см. wakeGl), поэтому у тех, кому они не нужны,
- * видеодрайвер не получает ни одной большой программы.
- */
 export class WebGPUBackend extends RenderBackend {
-	/** @param {object} engine @param {{device: GPUDevice, format: string}} gpu результат requestGpu() */
 	constructor(engine, gpu) {
 		super(engine);
 		this.gpu = gpu;
 		this.gl = new WebGLBackend(engine);
-		this.sync = {}; // что уже загружено в WebGPU: слои облака (геометрия и версии атрибутов), служебные текстуры
+		this.sync = {};
 		this.glWarm = false;
 		this.glWaking = false;
 		this.useGl = false;
 		this.tint = null;
-		this.stats = { gpu: 0, gl: 0 }; // сколько кадров нарисовано каждым путём (для проверок)
+		this.stats = { gpu: 0, gl: 0 };
 	}
 
 	get kind() {
@@ -54,7 +42,6 @@ export class WebGPUBackend extends RenderBackend {
 		const e = this.engine;
 		const vp = e.app.viewport;
 		this.gl.create();
-		// холст и конвейеры могли быть прогреты заранее (select.js, prewarmEffects): тогда первый вход не ждёт сборки шейдеров
 		const w = this.warm;
 		this.warm = null;
 		const cv = w ? w.cv : document.createElement('canvas');
@@ -74,7 +61,6 @@ export class WebGPUBackend extends RenderBackend {
 			this.lost = true;
 			if (info && info.reason !== 'destroyed') markGpuBad('устройство потеряно: ' + (info.message || info.reason));
 		});
-		// WebGL-шейдеры эффектов не собираются, пока облако рисует WebGPU
 		e._glDormant = true;
 	}
 
@@ -82,12 +68,10 @@ export class WebGPUBackend extends RenderBackend {
 		try {
 			await Promise.all([this.pts.prepare(), this.post.prepare()]);
 		} catch (e) {
-			// шейдер не собрался: кадры пойдут через WebGL (gpuReady ниже), а режим «Авто» больше не будет пробовать WebGPU
 			this.lost = true;
 			markGpuBad('не собрались шейдеры: ' + (e && e.message ? e.message : e), true);
 			return;
 		}
-		// минута без сбоев: прежние сбои (сон компьютера, сброс драйвера) забываются
 		setTimeout(() => {
 			if (!this.lost) markGpuGood();
 		}, 60000);
@@ -104,7 +88,6 @@ export class WebGPUBackend extends RenderBackend {
 		this.gl.setTint(color);
 	}
 
-	/** Включает прежний WebGL-путь: собирает его шейдеры в фоне (кадры пока идут через WebGPU) */
 	wakeGl() {
 		if (this.glWaking || this.glWarm) return;
 		const e = this.engine;
@@ -119,10 +102,6 @@ export class WebGPUBackend extends RenderBackend {
 			});
 	}
 
-	/**
-	 * Движок спрашивает, умеет ли WebGPU показать объект со своим шейдером (kind как в _gate: 'line', 'scope').
-	 * true: можно показывать; false: ещё собирается; undefined: WebGPU такое не рисует.
-	 */
 	gpuMesh(kind) {
 		if (kind === 'shadow') {
 			if (this.lost || this.pts.shadowFailed || this.surface.failed) return undefined;
@@ -136,7 +115,6 @@ export class WebGPUBackend extends RenderBackend {
 		return m.ready(false) && m.ready(true);
 	}
 
-	/** Умеет ли WebGPU рисовать этот объект сцены (пока его конвейер собирается, объект просто не виден: будить WebGL ради него не нужно) */
 	_gpuDraws(obj) {
 		const e = this.engine;
 		if (this.lost) return false;
@@ -148,12 +126,10 @@ export class WebGPUBackend extends RenderBackend {
 		return !!e._trail && obj === e._trail.group && !this.trail.failed;
 	}
 
-	/** Тональная компрессия из настроек: номер для шейдеров WebGPU или undefined, если такой там нет */
 	_tone() {
 		return TONE.get(this.engine.app.viewport.renderer.toneMapping);
 	}
 
-	/** Есть ли в сцене то, что умеет рисовать только WebGL */
 	_glOnly() {
 		const e = this.engine;
 		const pts = e.points;
@@ -162,7 +138,6 @@ export class WebGPUBackend extends RenderBackend {
 		return this._tone() === undefined;
 	}
 
-	/** Облако слоя в WebGPU совпадает с геометрией движка: при смене облака загружается заново, при правке атрибутов обновляются нужные буферы */
 	_syncCloud(g = this.engine.geometry, layer = 'main') {
 		if (!g) return false;
 		const S = this.sync[layer] || (this.sync[layer] = { geo: null, versions: {} });
@@ -187,7 +162,6 @@ export class WebGPUBackend extends RenderBackend {
 		return true;
 	}
 
-	/** Служебные текстуры: спектр звука, центры кусков, атлас символов, кадры раскадровки, кадр видео «героя», «Экран», «Слит-скан», «Пиксельная сортировка» */
 	_syncTextures() {
 		const e = this.engine;
 		const pts = this.pts;
@@ -224,14 +198,12 @@ export class WebGPUBackend extends RenderBackend {
 		this._syncScreen();
 	}
 
-	/** Текстуры «Экрана», «Слит-скана» и «Пиксельной сортировки»: загружаются, только пока эффект включён, и только то, что изменилось */
 	_syncScreen() {
 		const sh = this.engine.shared;
 		const pts = this.pts;
 		const S = this.sync;
 		if (sh.uScr.value.x > 0.001) {
 			const img = sh.uScrTex.value?.image;
-			// видео или картинка; заглушка (DataTexture) остаётся чёрным кадром
 			if (img && img.videoWidth && img.readyState >= 2) pts.setScreenSource(img, img.videoWidth, img.videoHeight);
 			else if (img && img.complete && img.naturalWidth) pts.setScreenSource(img, img.naturalWidth, img.naturalHeight);
 			const dep = sh.uScrDep.value;
@@ -242,7 +214,6 @@ export class WebGPUBackend extends RenderBackend {
 			}
 			const mem = sh.uScrMTex.value;
 			if (sh.uScrQ.value.y > 0.5 && mem?.image?.data && (S.scrMem !== mem || S.scrMemVer !== mem.version)) {
-				// память пересчитывается кусками по 200 тысяч точек: загружаются только строки, которые изменились (engine/screen.js, userData.dirty)
 				const d = S.scrMem === mem ? mem.userData.dirty : null;
 				const W = mem.image.width;
 				S.scrMem = mem;
@@ -254,7 +225,6 @@ export class WebGPUBackend extends RenderBackend {
 		const slit = sh.uSlitTex.value;
 		if (sh.uSlit.value.x > 0.001 && slit?.isDataArrayTexture && slit.image.data && (S.slit !== slit || S.slitVer !== slit.version)) {
 			const im = slit.image;
-			// в обычном кадре в кольцо дописан один кадр: загружается только его слой
 			const layers = S.slit === slit && slit.layerUpdates?.size ? [...slit.layerUpdates] : null;
 			S.slit = slit;
 			S.slitVer = slit.version;
@@ -269,10 +239,6 @@ export class WebGPUBackend extends RenderBackend {
 		}
 	}
 
-	/**
-	 * Рамки слежения: настоящие положения точек после всех эффектов (с прошлых кадров), как engine/track-pick.js делает в WebGL.
-	 * Положение на экране из прохода расчёта переводится обратно в координаты облака. Возвращает { idxs, data } (по 4 числа на точку, w = 1: точка найдена) или null.
-	 */
 	trackPick(idxs) {
 		if (this.lost || !this.pts) return null;
 		this.pts.pickRequest(idxs);
@@ -285,7 +251,6 @@ export class WebGPUBackend extends RenderBackend {
 			r.idxs.forEach((id, k) => {
 				const c = r.clip;
 				const x = c[k * 4], y = c[k * 4 + 1], z = c[k * 4 + 2], w = c[k * 4 + 3];
-				// скрытая точка (эффект убрал её с экрана): положения нет
 				if (x === 2 && y === 2 && z === 2 && w === 1) return;
 				_v4.set(x, y, z, w).applyMatrix4(_pm);
 				if (Math.abs(_v4.w) < 1e-8) return;
@@ -299,7 +264,6 @@ export class WebGPUBackend extends RenderBackend {
 		return this._pickRes;
 	}
 
-	/** Значения экземпляра (матрицы объекта и его собственные значения). Матрицы у каждого объекта свои и переиспользуются из кадра в кадр */
 	_inst(obj, camera, extra) {
 		const m = (this._mats ||= new WeakMap());
 		let r = m.get(obj);
@@ -310,16 +274,11 @@ export class WebGPUBackend extends RenderBackend {
 		return { modelMatrix: r.modelMatrix, modelViewMatrix: r.modelViewMatrix, normalMatrix: r.normalMatrix, ...extra };
 	}
 
-	/**
-	 * Составной холст из обоих слоёв (основной WebGL и облако WebGPU): с него идёт запись видео и GIF.
-	 * Создаётся при первом обращении и обновляется каждый кадр, пока идёт запись (раньше склейка двух полноэкранных холстов шла каждый кадр до конца сеанса)
-	 */
 	captureCanvas() {
 		if (!this.cap) {
 			this.cap = document.createElement('canvas');
 			this.capCtx = this.cap.getContext('2d');
 		}
-		// запись ещё не отметилась в движке (recording, animBusy): пару секунд холст обновляется в любом случае
 		this.capHold = performance.now() + 2000;
 		this._compose();
 		return this.cap;
@@ -350,11 +309,9 @@ export class WebGPUBackend extends RenderBackend {
 		const gpuReady = !this.lost && this.pts.ready(true) && this.post.ready('out');
 		const wantGl = !gpuReady || this._glOnly();
 		if (wantGl) this.wakeGl();
-		// старый путь берёт кадр, когда его шейдеры собраны и покрывают все включённые эффекты; пока он собирается, кадры идут через WebGPU (без недостающего)
 		this.useGl = wantGl && this.glWarm && e._fxCovered();
 		if (this.useGl) {
 			this.stats.gl++;
-			// кадры «Слит-скана» в этот раз загрузит WebGL: при возврате кольцо загружается целиком
 			this.sync.slit = null;
 			this.canvas.style.visibility = 'hidden';
 			e.points.visible = true;
@@ -367,7 +324,6 @@ export class WebGPUBackend extends RenderBackend {
 			renderer.render(scene, camera);
 			return;
 		}
-		// WebGPU: основная сцена без облака рисуется WebGL (сетка, фон), облако поверх неё
 		e.points.visible = false;
 		renderer.setRenderTarget(null);
 		renderer.render(scene, camera);
@@ -387,9 +343,7 @@ export class WebGPUBackend extends RenderBackend {
 		const shared = e.shared;
 		const add = shared.uAdd.value > 0.5;
 		const list = [];
-		// «Тень на стене»: копия облака по лучу света, рисуется до облака (renderOrder -1 в WebGL)
 		const sh = e._shadow;
-		// программы готовятся, как только объект виден: движок спрашивает о них (gpuMesh) только пока WebGL спит, а он мог уже проснуться
 		if (sh && (sh.pts.visible || sh.plane.visible) && sh.pts.parent === e.points) {
 			pts.prepareShadow();
 			this.surface.prepare();
@@ -404,7 +358,6 @@ export class WebGPUBackend extends RenderBackend {
 			if (!g.visible) continue;
 			list.push(this._inst(g, camera, { uTOff: g.material.uniforms.uTOff.value, uGhost: g.material.uniforms.uGhost.value, uHero: g.material.uniforms.uHero.value }));
 		}
-		// «герой» раскадровки (видео поверх блока кадров): второе облако со своим шейдером, собирается по первому требованию
 		const hero = e.hero;
 		if (hero && hero.visible) {
 			pts.prepareHero();
@@ -476,17 +429,14 @@ export class WebGPUBackend extends RenderBackend {
 		} else {
 			this.hasHistory = false;
 		}
-		// экспозиция и тональная компрессия на выходе, как #include <tonemapping_fragment> в выходном проходе WebGL
 		post.run(enc, 'out', pts.ctx.getCurrentTexture().createView(), size, { uBloom: bloom, uAberration: ab, uRes: size, uExposure: common.uExposure, uTone: common.uTone }, { uTex: src });
 		D.queue.submit([enc.finish()]);
 		pts.pickMap();
 	}
 
-	/** Поверхность под тенью, шлейф, облако (с тенью и призраками), затем линии (связи, осциллограф) в одну и ту же цель */
 	_scene(enc, view, size, rt, list, common, camera) {
 		const e = this.engine;
 		let noClear = false;
-		// поверхность под «Тенью на стене» самая дальняя (renderOrder -2 в WebGL) и очищает цель
 		const plane = e._shadow?.plane;
 		if (plane && plane.visible && plane.parent === e.points && this.surface.ready(rt)) {
 			this._mvp ||= new THREE.Matrix4();
@@ -494,7 +444,6 @@ export class WebGPUBackend extends RenderBackend {
 			this.surface.draw(enc, view, this.pts._depthFor(size[0], size[1]).createView(), rt, plane, { mvp: this._mvp, exposure: common.uExposure, tone: common.uTone });
 			noClear = true;
 		}
-		// шлейф персонажа рисуется до облака (renderOrder -1 в WebGL)
 		const tr = e._trail;
 		if (tr && tr.group.visible && tr.group.parent === e.points) {
 			this.trail.prepare();

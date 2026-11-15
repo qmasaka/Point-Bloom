@@ -1,10 +1,3 @@
-// Проверка модулей src/: ловит то, что при переносе кода по файлам ломается молча и всплывает только в рантайме.
-//   1) имя используется, но нигде не объявлено и не импортировано (забытый import);
-//   2) импорт указывает на файл, которого нет, или на имя, которое файл не экспортирует;
-//   3) циклические зависимости между модулями (порядок сборки build.py на них не рассчитан).
-//
-// Запуск:   node dev/check-modules.mjs
-// Нужен пакет acorn (парсер JS): `npm i --no-save acorn`, либо путь к нему в переменной ACORN=/путь/к/acorn.
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -23,7 +16,6 @@ async function loadAcorn() {
 }
 const acorn = await loadAcorn();
 
-// Глобальные имена браузера и языка, которые можно использовать без объявления
 const GLOBALS = new Set(
 	(
 		'undefined NaN Infinity globalThis window document navigator location history screen performance console localStorage sessionStorage indexedDB ' +
@@ -42,7 +34,6 @@ const GLOBALS = new Set(
 	).split(/\s+/)
 );
 
-// ---------------------------------------------------------------- файлы
 function listFiles(dir) {
 	const out = [];
 	for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -55,15 +46,14 @@ function listFiles(dir) {
 
 const rel = (p) => path.relative(ROOT, p).replace(/\\/g, '/');
 const files = listFiles(SRC);
-const info = new Map(); // путь → { ast, imports, exports, reexports, free }
+const info = new Map();
 
 function resolveSpec(spec, from) {
-	if (spec === 'three' || spec.startsWith('three/')) return null; // внешняя библиотека
+	if (spec === 'three' || spec.startsWith('three/')) return null;
 	if (!spec.startsWith('.')) return null;
 	return path.normalize(path.join(path.dirname(from), spec));
 }
 
-// ---------------------------------------------------------------- разбор области видимости
 function patternNames(p, out) {
 	if (!p) return;
 	switch (p.type) {
@@ -87,7 +77,6 @@ function patternNames(p, out) {
 
 const FUNC = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression']);
 
-// Все объявления внутри функции (не заходя во вложенные функции); для простоты блоки не различаются
 function hoist(node, out) {
 	if (!node || typeof node.type !== 'string') return;
 	switch (node.type) {
@@ -115,7 +104,7 @@ function hoist(node, out) {
 }
 
 function freeNames(ast) {
-	const free = new Map(); // имя → первая строка
+	const free = new Map();
 	const programScope = new Set();
 	for (const n of ast.body) {
 		if (n.type === 'ImportDeclaration') n.specifiers.forEach((s) => programScope.add(s.local.name));
@@ -131,7 +120,6 @@ function freeNames(ast) {
 		if (!node || typeof node.type !== 'string') return;
 		switch (node.type) {
 			case 'Identifier': {
-				// не ссылки: свойства, ключи, метки, спецификаторы
 				if (parent) {
 					if (parent.type === 'MemberExpression' && key === 'property' && !parent.computed) return;
 					if ((parent.type === 'Property' || parent.type === 'MethodDefinition' || parent.type === 'PropertyDefinition') && key === 'key' && !parent.computed) return;
@@ -149,7 +137,6 @@ function freeNames(ast) {
 				node.params.forEach((p) => patternNames(p, s));
 				hoist(node.body, s);
 				const inner = [...scopes, s];
-				// значения по умолчанию в параметрах и деструктуризации тоже содержат ссылки
 				node.params.forEach((p) => visitPatternExprs(p, inner));
 				visit(node.body, node, 'body', inner);
 				return;
@@ -185,7 +172,6 @@ function freeNames(ast) {
 		}
 	}
 
-	// в шаблоне деструктуризации ссылками являются только значения по умолчанию и вычисляемые ключи
 	function visitPatternExprs(p, scopes) {
 		if (!p) return;
 		if (p.type === 'AssignmentPattern') {
@@ -208,7 +194,6 @@ function freeNames(ast) {
 	return free;
 }
 
-// ---------------------------------------------------------------- сбор данных
 let problems = 0;
 const err = (msg) => {
 	problems++;
@@ -247,7 +232,6 @@ for (const f of files) {
 	info.set(f, { ast, imports, exports, reexportAll, free: freeNames(ast) });
 }
 
-// ---------------------------------------------------------------- проверки
 const exportsOf = (f, seen = new Set()) => {
 	const d = info.get(f);
 	if (!d || seen.has(f)) return new Set();
@@ -281,7 +265,6 @@ for (const [f, d] of info) {
 	for (const [name, line] of d.free) err(`${rel(f)}:${line}: имя '${name}' нигде не объявлено и не импортировано`);
 }
 
-// циклы
 const state = new Map();
 const stack = [];
 const cycles = [];

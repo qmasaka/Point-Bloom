@@ -1,4 +1,3 @@
-// Начальное состояние режима «Эффекты» и ключ сохранения.
 import { FX_LAYERS } from './layers.js';
 import { AUDIO_DEF } from './options.js';
 

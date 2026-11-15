@@ -1,5 +1,3 @@
-// Оболочка интерфейса: шапка, панель инструментов, оверлеи вьюпорта, вкладки, подсказки, тосты,
-// перетаскивание файлов, горячие клавиши, справка.
 import * as THREE from 'three';
 import { h, $, $$, extOf, formatInt, downloadBlob, placeAbove, screenRect } from '../core/util.js';
 import { icon, hydrateIcons, iconsReady } from './icons.js';
@@ -23,7 +21,6 @@ import { pickBackendKind, prewarmEffects } from '../effects/render/select.js';
 
 const TOAST_ICON = { ok: 'check-circle', warn: 'warning', error: 'warning-circle', info: 'info' };
 
-/** Масштаб интерфейса (CSS zoom на html): экранные пиксели делим на него, чтобы получить CSS-пиксели */
 const uiZoom = () => parseFloat(document.documentElement.style.zoom) || 1;
 
 export class UI {
@@ -75,7 +72,6 @@ export class UI {
 		this.refreshViewLabel();
 	}
 
-	// ---------------------------------------------------------------- шапка
 	buildChips() {
 		const box = $('#formatChips');
 		for (const ext of [...Object.keys(MODEL_FORMATS), 'zip']) box.append(h('span', { class: 'chip' }, ext));
@@ -86,7 +82,6 @@ export class UI {
 		$('#btnOpen').dataset.tip = 'Открыть модель, текстуры, фото или видео (O)';
 		$('#btnOpen').addEventListener('click', () => this.openFiles('auto'));
 		$$('#modeSwitch [data-ws]').forEach((b) => b.addEventListener('click', () => this.setWorkspace(b.dataset.ws)));
-		// подсветка выбранного режима переезжает от одной кнопки к другой, а не включается на месте
 		this.moveModeIndicator = () => {
 			const sw = $('#modeSwitch');
 			const sel = sw.querySelector('[aria-selected="true"]');
@@ -97,7 +92,6 @@ export class UI {
 		this.moveModeIndicator();
 		window.addEventListener('resize', () => this.moveModeIndicator());
 		document.fonts && document.fonts.ready.then(() => this.moveModeIndicator());
-		// подпись кнопки меняет ширину при переводе страницы: подсветка режима пересчитывается по размеру самих кнопок
 		if (window.ResizeObserver) {
 			const ro = new ResizeObserver(() => this.moveModeIndicator());
 			ro.observe($('#modeSwitch'));
@@ -110,7 +104,6 @@ export class UI {
 		$('#btnUndo').addEventListener('click', () => this.undo());
 		$('#btnRedo').addEventListener('click', () => this.redo());
 		$('#btnHelp').addEventListener('click', () => this.showHelp());
-		// «Поддержать автора»: плашка под кнопкой в шапке, закрывается кликом снаружи и Esc
 		{
 			const btn = $('#btnSupport');
 			const pop = $('#supportPop');
@@ -123,7 +116,6 @@ export class UI {
 				pop.hidden = !pop.hidden;
 				btn.setAttribute('aria-expanded', String(!pop.hidden));
 				if (!pop.hidden) {
-					// отступ от шапки такой же, как у боковых панелей, и тот же правый край
 					const hb = document.querySelector('header.topbar, .topbar');
 					const bottom = hb ? screenRect(hb).bottom : screenRect(btn).bottom;
 					pop.style.top = Math.round(bottom / uiZoom() + 12) + 'px';
@@ -156,8 +148,6 @@ export class UI {
 		});
 	}
 
-	// ------------------------------------------------- загрузка по ссылке и из буфера
-	/** Скачивает файл по ссылке и отдаёт его обычному импорту */
 	async loadFromUrl(url, { textures = [] } = {}) {
 		const fetchFile = async (u) => {
 			const res = await fetch(u, { mode: 'cors' });
@@ -207,7 +197,6 @@ export class UI {
 		});
 	}
 
-	// ---------------------------------------------------------------- FPS
 	refreshFps() {
 		const el = $('#statusFps');
 		const on = this.app.settings.render.fps;
@@ -224,13 +213,9 @@ export class UI {
 		}
 	}
 
-	/** Подпись кнопки в шапке теперь всегда «Экспорт»: что именно скачивать, выбирается в окне настроек */
 	setExportLabel() {}
 
 	async openFiles(mode = 'auto') {
-		// в режиме эффектов «Открыть» сразу спрашивает, что делать с файлом: дополнить сцену (ещё модель, видео, фото) или начать с чистого листа
-		// «Добавить…» в эффектах: тот же выбор, но без «Начать заново»
-		// «Добавить…» в эффектах сразу открывает выбор файла: модель дополняет сцену, видео или фото становится точками (без лишнего окна с вопросом)
 		if (mode === 'fxadd') {
 			this.openMode = 'add';
 			this.fileInput.accept = ACCEPT_ALL;
@@ -264,7 +249,6 @@ export class UI {
 	}
 
 	undo() {
-		// в режиме эффектов отменяются именно правки эффектов
 		if (this.workspace === 'fx') {
 			this.effectsEngine.undo().then((l) => l && this.toast('Отменено: ' + l, 'info', 1800));
 			return;
@@ -295,13 +279,11 @@ export class UI {
 		const open = force !== undefined ? force : pop.hidden;
 		const wasOpen = !pop.hidden;
 		pop.hidden = !open;
-		// пока открыт экспорт, всё, что играло на фоне (анимация модели, таймлайн эффектов, видео), стоит на паузе; при выходе продолжает с того же места
 		if (open && !wasOpen) this.holdPlayback('export');
 		else if (!open && wasOpen) this.releasePlayback('export');
 		$('#btnExport').setAttribute('aria-expanded', String(open));
 	}
 
-	/** Пауза фона: анимация модели, таймлайн и видео стоят, эффекты и звук заморожены, пока есть хоть одна причина (экспорт, справка) */
 	holdPlayback(reason) {
 		const holds = this._holds || (this._holds = new Set());
 		if (holds.has(reason)) return;
@@ -347,7 +329,6 @@ export class UI {
 		r.dataset.tip = hst.canRedo ? `Повторить: ${hst.redoLabel} (Ctrl+Shift+Z)` : 'Повторить (Ctrl+Shift+Z)';
 	}
 
-	// ------------------------------------------------------- панель инструментов
 	buildToolrail() {
 		const app = this.app;
 		const model = app.model;
@@ -384,17 +365,13 @@ export class UI {
 		this.updateHint();
 	}
 
-	// ---------------------------------------------------- оверлеи вьюпорта
 	buildViewportOverlays() {
 		const app = this.app;
 		const s = app.settings;
-		// режимы отображения
-		// режим «Облако точек из вершин» из панели убран: для точек есть вкладка «Точки» и режим «Эффекты»
 		this.modeBar = segmented({ options: DISPLAY_MODES.filter((m) => m.value !== 'points'), value: s.display, label: 'Режим отображения', onChange: (v) => app.setDisplay(v) });
 		$('#modeBar').append(this.modeBar.el);
 		this.modeBar.el.style.cssText = 'background:transparent;border:0;padding:0';
 
-		// выпадающее меню оверлеев
 		const btn = $('#btnOverlays');
 		const pop = $('#overlayPop');
 		const rows = [
@@ -422,7 +399,6 @@ export class UI {
 			pop.hidden = true;
 			btn.setAttribute('aria-expanded', 'false');
 		};
-		// меню живёт в самой сцене, а не в нижней панели: у панели своё размытие, и вложенное не видит сцену
 		$('#viewport').append(pop);
 		btn.addEventListener('click', (e) => {
 			e.stopPropagation();
@@ -435,7 +411,6 @@ export class UI {
 		});
 		this.closeOverlayPop = close;
 
-		// гизмо осей и кнопки справа
 		this.gizmo = new AxisGizmo(app, $('#axisCanvas'));
 		$('#btnOrtho').addEventListener('click', () => {
 			app.nav.toggleOrtho();
@@ -460,8 +435,6 @@ export class UI {
 		$('#btnOrtho').dataset.tip = app.nav.ortho ? 'Сейчас: ортогональная. Включить перспективу (5)' : 'Сейчас: перспектива. Включить ортогональную (5)';
 	}
 
-	// --------------------------------------------------------- боковая панель
-	/** После отмены настроек панели собираются заново и показывают восстановленные значения */
 	rebuildSettingsPanels() {
 		const app = this.app;
 		for (const [name, make, prop] of [['view', createViewPanel, 'viewPanel'], ['points', createPointsPanel, 'pointsPanel'], ['media', createMediaPanel, 'mediaPanel']]) {
@@ -475,14 +448,12 @@ export class UI {
 		for (const name of ['scene', 'material', 'points', 'media', 'view']) this.tabs[name] = $(`#panel-${name}`);
 		$$('.tab').forEach((t) => t.addEventListener('click', () => this.showTab(t.dataset.tab)));
 		this.scenePanel = createScenePanel(app, this.tabs.scene);
-		// полоса анимации над сценой: видна, только если в файле есть клипы
 		this.animBar = createAnimBar(app, $('#viewport'));
 		this.materialPanel = createMaterialPanel(app, this.tabs.material);
 		this.viewPanel = createViewPanel(app, this.tabs.view);
 		this.pointsPanel = createPointsPanel(app, this.tabs.points);
 		this.mediaPanel = createMediaPanel(app, this.tabs.media);
 		this.mediaBar = createMediaBar(app, $('#viewport'));
-		// вкладка «Медиа» появляется только когда открыто фото или видео
 		const mediaTab = $('.tab[data-tab="media"]');
 		app.bus.on('media', () => {
 			const has = app.media.present;
@@ -496,7 +467,6 @@ export class UI {
 		this.buildExportPop();
 		this.makeSidebarResizable();
 		initMobile(app);
-		// пока человек в редакторе, видеокарта в фоне готовит шейдеры «Эффектов»: первый вход туда без долгой паузы
 		const warmFx = () => prewarmEffects(pickBackendKind(app.settings.render.backend));
 		setTimeout(() => (window.requestIdleCallback ? requestIdleCallback(warmFx, { timeout: 4000 }) : warmFx()), 2500);
 	}
@@ -505,7 +475,6 @@ export class UI {
 		const SCALES = [0.75, 0.85, 0.92, 1.0, 1.1, 1.2, 1.35];
 		let currentScale = 1.0;
 
-		// без сохранённого выбора: на обычных экранах 100%, на больших интерфейс сам увеличивается
 		const autoScale = () => Math.round(Math.min(1.5, Math.max(1, window.innerWidth / 1600)) * 20) / 20;
 		currentScale = autoScale();
 		try {
@@ -518,8 +487,6 @@ export class UI {
 			}
 		} catch (_) {}
 
-		// Масштаб не даёт вёрстке стать уже 960 и ниже 600 px: иначе на ноутбуке при 135% панели не помещались и налезали друг на друга
-		// (раскладка для телефона включается по ширине окна, а не по ширине вёрстки). На телефоне масштаба нет вовсе
 		let shownScale = 1;
 		const fitScale = (s) => {
 			const w = window.innerWidth;
@@ -555,7 +522,6 @@ export class UI {
 		};
 
 		applyScale(currentScale, false);
-		// окно поменяло размер: масштаб пересчитывается под него (выбранное значение помнится)
 		let fitT = 0;
 		window.addEventListener('resize', () => {
 			clearTimeout(fitT);
@@ -565,7 +531,6 @@ export class UI {
 		});
 
 		this.changeUiScale = (dir) => {
-			// шаг идёт от того, что сейчас на экране (выбранное могло быть урезано размером окна)
 			const cur = shownScale;
 			let idx = SCALES.findIndex((v) => Math.abs(v - cur) < 0.04);
 			if (idx === -1) {
@@ -593,15 +558,13 @@ export class UI {
 		if (ws.classList.contains('sidebar-hidden')) this.toggleSidebar(false);
 	}
 
-	/** Рабочее пространство: «edit» (редактор) или «fx» (эффекты для облака точек) */
 	async setWorkspace(ws) {
 		if (this._locked && ws !== 'edit') return;
 		if (ws === this.workspace) return;
 		if (ws !== 'edit') this.app.pointEdit && this.app.pointEdit.setActive(false);
 		const fxPanel = $('#panel-effects');
 		const vpEl = $('#viewport');
-		vpEl.classList.add('ws-out'); // сцена плавно гаснет на время переключения
-		// даём гашению начаться: тяжёлая работа ниже блокирует страницу, а затухание идёт на видеокарте и дойдёт до конца, не выглядя подвисанием
+		vpEl.classList.add('ws-out');
 		await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 130)));
 		if (ws === 'fx') {
 			this.prevTab = $$('.tab').find((t) => t.getAttribute('aria-selected') === 'true')?.dataset.tab || 'scene';
@@ -637,7 +600,6 @@ export class UI {
 	}
 
 	makeSidebarResizable() {
-		// настройки не уже 280 px: это шире левой панели эффектов (252 px), чтобы поля и подписи не сжимались
 		const SIDEBAR_MIN = 280;
 		const resizer = $('#sidebarResizer');
 		const sidebar = $('#sidebar');
@@ -677,7 +639,6 @@ export class UI {
 			const delta = (startX - e.clientX) / z;
 			let newW = Math.round(startW / z + delta);
 			const minW = SIDEBAR_MIN;
-			// не шире 420 px и не больше 38% окна: панель не должна занимать пол-экрана
 			const maxW = Math.max(minW, Math.min(420, Math.floor((window.innerWidth / z) * 0.38)));
 			newW = Math.max(minW, Math.min(maxW, newW));
 			document.documentElement.style.setProperty('--sidebar-w', `${newW}px`);
@@ -713,7 +674,6 @@ export class UI {
 		});
 	}
 
-	// --------------------------------------------------------------- статус
 	buildStatus() {
 		this.updateHint();
 		this.updateStatus();
@@ -741,7 +701,6 @@ export class UI {
 		const el = $('#statusStats');
 		const parts = [];
 		if (this.workspace === 'fx') {
-			// в эффектах важно другое: сколько точек рисуется и сколько эффектов включено (список слева это уже не повторяет)
 			const eng = this.effectsEngine;
 			const pts = eng.geometry?.attributes?.aIdx?.count || 0;
 			const on = Object.values(eng.state.layers).filter((l) => l && l.on).length;
@@ -756,7 +715,6 @@ export class UI {
 		el.innerHTML = parts.map((p) => `<span>${p}</span>`).join('');
 	}
 
-	/** Блокирует всё, кроме стартовой карточки, верхних кнопок и справки, пока в сцене нет ничего */
 	_setLocked(locked) {
 		if (this._locked === locked) return;
 		this._locked = locked;
@@ -768,9 +726,7 @@ export class UI {
 		const app = this.app;
 		const top = app.viewport.root.children.filter((c) => !c.userData.helper);
 		const es = $('#emptyState');
-		// стартовая карточка уходит плавно и только когда модель начала проявляться: раньше она пропадала сразу, а модель ещё готовилась, и экран на миг оставался пустым
 		const gone = top.length > 0 && !this._importing;
-		// пока ничего не загружено, интерфейс заблокирован: сначала нужна модель, фото или видео (демо-модель, файл или перетаскивание)
 		this._setLocked(!gone);
 		if (!gone) {
 			clearTimeout(this._esT);
@@ -790,7 +746,6 @@ export class UI {
 		this.updateStatus();
 	}
 
-	// ---------------------------------------------------------- подсказки
 	buildTooltips() {
 		const tip = $('#tooltip');
 		let timer = null;
@@ -805,7 +760,6 @@ export class UI {
 		const show = (el) => {
 			const text = el.dataset.tip;
 			if (!text) return;
-			// горячая клавиша в скобках в конце подсказки показывается отдельной плашкой
 			tip.textContent = '';
 			const m = text.match(/^(.*?)\s*\(([^()]{1,18})\)\s*$/);
 			const looksKey = m && /^(Ctrl|Cmd|Shift|Alt|Esc|Home|Пробел|Space|Enter|Tab|[A-Za-zА-Яа-я0-9?]\b)/.test(m[2]);
@@ -819,10 +773,8 @@ export class UI {
 			const pos = el.dataset.tipPos || 'bottom';
 			const tw = tip.offsetWidth;
 			const th = tip.offsetHeight;
-			// везде один и тот же зазор от элемента до подсказки, положение по целым пикселям
 			const GAP = 10;
 			const EDGE = 12;
-			// отступ считается от края панели, в которой лежит элемент (а не от самого элемента), поэтому подсказка никогда не налезает на рамку панели и зазор везде один
 			const sr = (sel) => {
 				const sf = el.closest(sel);
 				if (!sf) return r;
@@ -851,7 +803,6 @@ export class UI {
 		document.addEventListener('pointerover', (e) => {
 			const el = e.target.closest && e.target.closest('[data-tip]');
 			if (!el || el === current) return;
-			// в редакторе подсказки только у кнопок без текста: там, где подпись видна, подсказка лишняя
 			const iconOnly = el.matches('.btn-tool, .dock-btn, .btn-icon, .sw, .shape-tile');
 			if (this.workspace !== 'fx' && !iconOnly && (el.textContent || '').trim().length > 0) return;
 			hide();
@@ -865,7 +816,6 @@ export class UI {
 		document.addEventListener('scroll', hide, true);
 	}
 
-	// --------------------------------------------------- тосты и «занято»
 	toast(msg, type = 'info', ms) {
 		const box = $('#toasts');
 		const life = ms || (type === 'error' ? 8000 : type === 'warn' ? 6500 : 4200);
@@ -900,7 +850,6 @@ export class UI {
 			return;
 		}
 		if (this.busyTimer) return;
-		// окно загрузки показывается, только если работа идёт заметно долго, и появляется плавно: короткая загрузка не мигает экраном
 		this.busyTimer = setTimeout(() => {
 			this.busyTimer = null;
 			box.hidden = false;
@@ -919,7 +868,6 @@ export class UI {
 		}, 260);
 	}
 
-	// ------------------------------------------------------------- диалоги
 	choose({ title, text, buttons }) {
 		return new Promise((resolve) => {
 			const dlg = this.dialog;
@@ -937,7 +885,6 @@ export class UI {
 	}
 
 	showHelp() {
-		// клавиши рисуются отдельными «кнопками»: «Ctrl+Shift+Z» это три клавиши; несколько вариантов через «/»
 		const combo = (s) => h('span', { class: 'kd-combo' }, ...s.split(/\+(?=.)/).flatMap((k, i) => (i ? [h('i', {}, '+'), h('kbd', {}, k)] : [h('kbd', {}, k)])));
 		const row = (label, ...variants) => h('div', { class: 'kd-row' }, h('span', { class: 'kd-label' }, label), h('span', { class: 'kd-keys' }, ...variants.flatMap((v, i) => (i ? [h('em', {}, 'или'), combo(v)] : [combo(v)]))));
 		const group = (title, icn, ...rows) => h('section', { class: 'kd-group' + (title === 'Таймлайн анимации' ? ' kd-wide' : '') }, h('h3', {}, h('span', { class: 'kd-ic', html: icon(icn, 15) }), title), ...rows);
@@ -1020,7 +967,6 @@ export class UI {
 		dlg.showModal();
 	}
 
-	// ------------------------------------------------------- файлы: drag & drop
 	buildDragDrop() {
 		const overlay = $('#dropOverlay');
 		const hasFiles = (e) => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
@@ -1053,15 +999,11 @@ export class UI {
 		$('#dropOverlay').hidden = true;
 	}
 
-	/** Единая точка входа для файлов: модели, текстуры, архивы */
-	/** Фото, видео или точечный ролик: открываем во вкладке «Медиа» и превращаем в облако точек */
 	async openMedia(file, { add = false } = {}) {
 		this.busy('Читаю файл', 0.3);
 		try {
 			const mc = this.app.media;
 			if (this.workspace === 'fx' && mc.pm.ready) {
-				// в эффектах второе, третье и дальше фото или видео добавляются рядом: между ними можно делать морфинг.
-				// «Добавить» только ставит файл в список форм, «Открыть» сразу показывает его
 				if (mc.count() >= 6) {
 					this.toast('Можно открыть до шести фото и видео сразу. Уберите ненужное кнопкой «Убрать медиа»', 'warn');
 					return;
@@ -1083,7 +1025,6 @@ export class UI {
 	async handleFiles(files, { mode = 'auto', point = null } = {}) {
 		const app = this.app;
 		const isMedia = (f) => (f.type || '').startsWith('video') || ['mp4', 'webm', 'mov', 'm4v', 'ogv', 'pcv'].includes(extOf(f.name));
-		// выбрано «Видео или фото»: берём первый подходящий файл как источник точек, не трогая модели сцены
 		if (mode === 'media') {
 			const f = files.find(isMedia) || files.find((x) => IMAGE_EXT.includes(extOf(x.name)));
 			if (!f) {
@@ -1094,12 +1035,10 @@ export class UI {
 		}
 		const vid = files.find(isMedia);
 		if (vid && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) return this.openMedia(vid, { add: mode === 'add' });
-		// «Добавить…» в эффектах: фото без модели в выборе тоже становится точками, а не текстурой
 		if (mode === 'add' && this.workspace === 'fx' && !files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip')) {
 			const img = files.find((x) => IMAGE_EXT.includes(extOf(x.name)));
 			if (img) return this.openMedia(img, { add: true });
 		}
-		// одиночная картинка без модели в сцене: текстуре некуда ложиться, поэтому делаем из неё точки
 		if (files.length === 1 && IMAGE_EXT.includes(extOf(files[0].name)) && !app.model.meshes().length) return this.openMedia(files[0]);
 		const hasModel = files.some((f) => extOf(f.name) in MODEL_FORMATS || extOf(f.name) === 'zip');
 		try {
@@ -1141,7 +1080,6 @@ export class UI {
 			this.busy('Читаю файлы', 0.02);
 			this._importing = true;
 			const before = new Set(app.viewport.root.children);
-			// новые объекты сразу прячем: иначе модель мелькает целиком, исчезает и только потом плавно появляется (выглядит как двойной запуск)
 			app.model.holdNew = [];
 			let r;
 			try {
@@ -1151,11 +1089,9 @@ export class UI {
 				app.model.holdNew = null;
 				throw e;
 			}
-			// шейдеры и текстуры готовим заранее, пока окно загрузки ещё закрывает сцену: иначе первый кадр с моделью подвисает
 			const held = app.model.holdNew || [];
 			app.model.holdNew = null;
 			const fresh = app.viewport.root.children.filter((c) => !before.has(c) && !c.userData.helper);
-			// объекты возвращаются в сцену полностью прозрачными, прогреваются шейдеры, и только потом идёт проявление
 			this.fadePrepare(fresh);
 			for (const o of held) o.visible = true;
 			await this.warmUp();
@@ -1173,18 +1109,15 @@ export class UI {
 		}
 	}
 
-	/** Заранее компилирует шейдеры и загружает текстуры на видеокарту */
 	async warmUp() {
 		const vp = this.app.viewport;
 		try {
 			if (vp.renderer.compileAsync) await vp.renderer.compileAsync(vp.scene, vp.camera);
 			else vp.renderer.compile(vp.scene, vp.camera);
 		} catch (e) {
-			/* предварительная подготовка не обязательна */
 		}
 	}
 
-	/** Новые объекты плавно проявляются: прозрачность от нуля и лёгкий рост, вместо резкого появления */
 	fadePrepare(objs) {
 		if (!objs.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 		for (const o of objs) {
@@ -1250,10 +1183,8 @@ export class UI {
 	reportImport(r) {
 		const app = this.app;
 		if (r.models.length) {
-			// первая модель в пустой сцене сразу стоит в кадре: раньше она появлялась вплотную, и камера отъезжала, пока модель проявлялась
 			const first = !$('#emptyState').hidden;
 			app.nav.frameAll(!first);
-			// персонаж с анимацией: камера охватывает всё его движение, а не позу привязки
 			if (app.anim.has) {
 				const ab = app.anim.animatedBounds();
 				if (!ab.isEmpty()) app.nav.frameBox(ab, true, true);
@@ -1265,7 +1196,6 @@ export class UI {
 				setTimeout(() => this.toast('Текстур нет. Перетащите картинку на модель или нажмите «Текстура» вверху', 'info', 6500), 1200);
 			}
 			if (r.assigned && r.assigned.length) this.toast(`Текстуры назначены: ${r.assigned.length}`, 'ok');
-			// Подсказка про единицы измерения: CAD и FBX часто в мм и см, а glTF ожидает метры
 			const sz = app.viewport.getBounds(app.viewport.root).getSize(new THREE.Vector3());
 			const big = Math.max(sz.x, sz.y, sz.z);
 			if (big > 400 || (big > 0 && big < 0.02)) {
@@ -1278,12 +1208,10 @@ export class UI {
 		uniq.slice(0, 3).forEach((w, i) => setTimeout(() => this.toast(w, 'warn'), 400 + i * 250));
 	}
 
-	// ------------------------------------------------------- горячие клавиши
 	buildShortcuts() {
 		const app = this.app;
 		const isTyping = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable || !!t.closest?.('.custom-select-wrap, .custom-select-pop, .select'));
 		const modeKeys = DISPLAY_MODES.map((m) => m.value);
-		// Пробел всегда запускает и останавливает воспроизведение: кнопка или ползунок, на которых остался фокус, его не перехватывают
 		window.addEventListener(
 			'keydown',
 			(e) => {
@@ -1320,7 +1248,6 @@ export class UI {
 				if (e.key === 'Escape') e.target.blur();
 				return;
 			}
-			// отмена / повтор / экспорт
 			if (mod && code === 'KeyZ') {
 				e.preventDefault();
 				e.shiftKey ? this.redo() : this.undo();
@@ -1331,7 +1258,6 @@ export class UI {
 				this.redo();
 				return;
 			}
-			// Ctrl+S: вместо «Сохранить страницу» браузера открывается экспорт
 			if (mod && (code === 'KeyE' || code === 'KeyS')) {
 				e.preventDefault();
 				this.toggleExportPop();
@@ -1359,7 +1285,6 @@ export class UI {
 			}
 			if (mod) return;
 
-			// виды (Numpad и Alt+цифры для клавиатур без Numpad)
 			const numView = { Numpad1: 'front', Numpad3: 'right', Numpad7: 'top' };
 			const altView = { Digit1: 'front', Digit3: 'right', Digit7: 'top' };
 			const view = numView[code] || (e.altKey && altView[code]);
@@ -1424,7 +1349,6 @@ export class UI {
 					}
 					break;
 				case 'Space':
-					// при открытом секвенсоре пробел запускает таймлайн, звук отдельно не переключаем
 					if (this.workspace === 'fx' && !$('#app').classList.contains('fx-anim-active')) {
 						e.preventDefault();
 						this.effectsEngine.toggle().catch(() => {});
@@ -1458,7 +1382,6 @@ export class UI {
 				}
 				case 'Escape':
 					if (this.workspace === 'fx' && this.exitFxFocus && document.getElementById('app').classList.contains('fx-focus')) {
-						// режим «только сцена»: Esc возвращает интерфейс, а не выходит из эффектов
 						this.exitFxFocus();
 						return;
 					}
@@ -1492,7 +1415,6 @@ function escapeHtml(s) {
 	return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
 
-/** Собирает файлы из drop, включая содержимое папок */
 async function collectDropped(dt) {
 	const out = [];
 	const items = dt.items ? [...dt.items] : [];

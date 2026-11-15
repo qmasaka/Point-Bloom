@@ -6,10 +6,7 @@ import { HandTracker } from '../input/hand-tracker.js';
 import { GLYPH_SETS, glyphAtlas } from '../render/webgl/textures.js';
 import { COLOR_BY, FX_PALETTES, MASK_MODES, MORPH_EASES, MORPH_SORTS, MORPH_STYLES } from '../state/options.js';
 
-/** Главный цикл кадра: расчёт значений эффектов и передача их в сцену. Методы подмешиваются в EffectsEngine (см. engine/index.js). */
 export class LoopPart {
-	/** Отметка удара: от неё считают время пульс, взрыв и капли-волны */
-	/** Центры кусков для «Разбора»: куски это подряд идущие точки облака (оно упорядочено по пространству), центр каждого пишется в текстуру */
 	_pieceUpdate(P) {
 		const g = this.geometry;
 		if (!g || !this.pieceTex) return;
@@ -41,21 +38,17 @@ export class LoopPart {
 		const tick = (now) => {
 			if (!this.active) return;
 			this._raf = requestAnimationFrame(tick);
-			// скрытая вкладка: сцену и анализ звука не считаем, время эффектов не копится (музыка при этом продолжает играть)
 			if (document.hidden) {
 				this._lastT = now;
 				return;
 			}
-			// покадровая запись: пока прошлый кадр кодируется (и видео перематывается на следующий), время сцены стоит
 			const off = this._recOff;
 			if (off && off.busy) {
 				this._lastT = now;
 				return;
 			}
-			// в режиме эффектов на Windows (где дисплеи 120-165+ Гц) ограничиваем 60 к/с, чтобы видеокарта не раскалялась и вентиляторы не шумели
 			const capFps = this.app.settings.render.fpsCap || (perf.windows ? 60 : 0);
 			if (!off && capFps && now - this._lastT < 1000 / capFps - 2) return;
-			// пока открыто окно экспорта, время эффектов стоит на месте; при покадровой записи шаг ровно в один кадр видео
 			const dt = this.frozen ? 0 : off ? 1 / off.fps : Math.min(0.1, (now - this._lastT) / 1000);
 			this._lastT = now;
 			this._lastDt = dt;
@@ -67,7 +60,6 @@ export class LoopPart {
 				try {
 					this._animStep(dt);
 				} catch (e) {
-					// ошибка в анимации не должна останавливать отрисовку сцены
 					this.animPlaying = false;
 					this.animRec = false;
 					this.app.toast('Анимация остановлена: ' + (e.message || e), 'error');
@@ -79,11 +71,9 @@ export class LoopPart {
 				this.morph = Math.min(1, this.morph + dt / Math.max(0.3, st0.morphCfg.time));
 				if (this.morph >= 1) {
 					this.morphing = false;
-					// переход закончился: дальше живёт поза приходящей формы (если она анимирована)
 					this._animCloud = this._animIn || null;
 					this._animIn = this._animOut = null;
 					this._animVer = -1;
-					// после сборки по форме больше не бежит полоса света
 					this._settleOn = false;
 					this._settleT = this._time;
 				}
@@ -99,7 +89,6 @@ export class LoopPart {
 			const pal = FX_PALETTES.find((p) => p.id === look.palette) || FX_PALETTES[0];
 			if (this.backend) this.backend.setTint(new THREE.Color(pal.c[0]));
 			u.uTime.value = this._time;
-			// во время перехода эффекты плавно гаснут и после сборки так же плавно возвращаются: форма собирается чисто, но эффекты остаются на обеих моделях
 			{
 				const m = this.morphing ? this.morph : 1;
 				const sm = (a, b, x) => {
@@ -115,16 +104,12 @@ export class LoopPart {
 			}
 			u.uMorph.value = this.morph;
 			{
-				// блок морфинга на таймлайне может задать свой вид перехода (keyframes.js, _morphTrackApply)
 				const ms = this._mtStyle;
 				const mcf = ms ? { ...st.morphCfg, style: MORPH_STYLES[ms.idx].id, scatter: ms.scatter, stagger: ms.stagger, turns: ms.turns, sort: ms.sort, ease: ms.ease, glow: ms.glow } : st.morphCfg;
 				u.uMorphS.value.set(Math.max(0, MORPH_STYLES.findIndex((x) => x.id === mcf.style)), mcf.scatter, mcf.stagger, mcf.turns);
-				// w: морфинг возможен (больше одной формы или переход уже идёт). Пока нет, WebGL держит шейдер без кода морфинга: он собирается в разы быстрее,
-				// а вариант с морфингом собирается в фоне, как только появилась вторая форма
 				u.uMorphO.value.set(Math.max(0, MORPH_SORTS.findIndex((x) => x[0] === mcf.sort)), Math.max(0, MORPH_EASES.findIndex((x) => x[0] === mcf.ease)), mcf.glow, (this.playlist?.length || 0) > 1 || this.morphing ? 1 : 0);
 				u.uMorphD.value.set(this._mm?.out ? 1 : 0, this._mm?.in ? 1 : 0, Math.round(mcf.spin || 0), mcf.fsize ?? 1);
 			}
-			// вид точек общий с вкладкой «Точки» редактора: форма, размер, цвет, затухание вдали
 			const pset = this.app.settings.point;
 			u.uSize.value = pset.size;
 			u.uShape.value = this._eff(L.voxel) > 0.25 ? 0 : Math.max(0, ['square', 'circle', 'sphere', 'ring', 'diamond', 'plus'].indexOf(pset.shape));
@@ -132,7 +117,6 @@ export class LoopPart {
 			u.uAtt.value = pset.attenuate ? Math.max(0.05, this.app.nav.distance || 5) : 0;
 			u.uPR.value = this.app.viewport.renderer.getPixelRatio();
 			u.uBeat.value = this.levels.beat;
-			// чем плотнее точки ложатся на пиксели (мелкий экран, близкая камера), тем больше они выгорают: приглушаем
 			{
 				const cam = this.app.viewport.camera;
 				const n = this.geometry.attributes.position.count;
@@ -147,11 +131,8 @@ export class LoopPart {
 				}
 				u.uDens.value = Math.min(1.6, Math.sqrt(150000 / Math.max(1, n))) * fit;
 			}
-			// яркость всей сцены может пульсировать в такт выбранным частотам
-			// один и тот же объект полосы: у _bandLevel по нему хранится огибающая (новый объект на каждом кадре терял её)
 			const sb = (this._sceneBand ||= { band: 'bass' });
 			sb.band = look.audioBand || 'bass';
-			// дорожка «Блум» на таймлайне добавляет свечение и яркость поверх настроек вида
 			const bloomK = this._animBloom || 0;
 			u.uBright.value = look.bright * (1 + (look.brightAudio || 0) * this._bandLevel(sb) * 1.8) * (1 + bloomK * 0.8);
 			u.uGlow.value = look.glow + bloomK * 1.5;
@@ -162,7 +143,6 @@ export class LoopPart {
 			const add = look.blend === 'add';
 			u.uAdd.value = add ? 1 : 0;
 			const bl = add ? THREE.AdditiveBlending : THREE.NormalBlending;
-			// смена режима смешивания даёт другую программу шейдера: переключаемся, когда она собрана в фоне (иначе кадр ждёт драйвер секундами)
 			if (this.material.blending !== bl && this._gate(add ? 'vert|add' : 'vert|norm', true)) {
 				for (const m of [this.material, ...this.ghosts.map((g) => g.material), ...(this.hero ? [this.hero.material] : [])]) {
 					m.blending = bl;
@@ -171,7 +151,6 @@ export class LoopPart {
 					m.needsUpdate = true;
 				}
 			}
-			// ритм: отметка последнего удара. Без музыки эффекты бьют сами с заданным периодом
 			if (this._tb === undefined) this._tb = -9;
 			if (!this.playing && this._time - this._tb > (L.blast.period || 1.6)) this._markBeat();
 			const curlSurf = L.curl.mode === 'surface';
@@ -183,7 +162,6 @@ export class LoopPart {
 			{
 				const W = L.wave;
 				const wm = { rings: 0, drops: 1, plane: 2, spiral: 3, rise: 4 }[W.mode] ?? 0;
-				// капли идут по своему таймеру, не зависят от «Взрыва» и от музыки; под музыку (если выбран диапазон и звук играет) капают на удар
 				const useBeat = W.band !== 'none' && this.playing;
 				if (this._wdT === undefined) this._wdT = -9;
 				if (!this._wdSrc) this._wdSrc = new THREE.Vector3();
@@ -203,7 +181,6 @@ export class LoopPart {
 			}
 			u.uTwist.value.set(L.twist.mode === 'jelly' ? 0 : this._eff(L.twist), { twist: 0, bend: 1, taper: 2, snake: 3, breathe: 4 }[L.twist.mode] ?? 0, L.twist.speed, 0);
 			{
-				// «Пульс» стал видом эффекта «Взрыв»: тот же ритм и те же блоки таймлайна. Старый слой пульса работает как раньше, только у пресетов
 				const B = L.blast;
 				const bs = B.style || 'burst';
 				const P = bs === 'burst' ? { on: false, amount: 0, mode: 'shell', delay: 0.35, speed: 1 } : { on: B.on, amount: B.amount, band: B.band, react: B.react, amode: B.amode, mode: bs, delay: B.delay ?? 0.35, speed: B.pspeed ?? 1 };
@@ -212,13 +189,11 @@ export class LoopPart {
 				u.uPulseP.value.set(pm, P.delay, this._tb, P.speed);
 			}
 			u.uBlast.value.set(L.blast.on && (L.blast.style || 'burst') === 'burst' ? this._eff(L.blast) : 0, L.blast.decay, L.blast.random, this._tb);
-			// «Течение» теперь вид эффекта «Вихри и течение»; отдельный слой остаётся для старых проектов и клипов
 			if (curlSurf) u.uFlow.value.set(this._eff(L.curl), L.curl.fscale, L.curl.speed, L.curl.fdir);
 			else u.uFlow.value.set(this._eff(L.flow), L.flow.scale, L.flow.speed, L.flow.dir);
 			u.uVoxel.value.set(clamp(this._eff(L.voxel), 0, 1), 0, 0, 0);
 			u.uVoxelP.value.set({ grid: 0, lego: 1, breathe: 2, wave: 3, stairs: 4, scatter: 5 }[L.voxel.mode] ?? 0, L.voxel.speed, L.voxel.size ?? 1, L.voxel.height ?? 1);
 			u.uJitter.value.set(this._eff(L.jitter), 0, 0, 0);
-			// разбор на части
 			{
 				const X = L.explode;
 				const xe = this._eff(X);
@@ -235,7 +210,6 @@ export class LoopPart {
 				u.uExp.value.set(p, Math.max(2, Math.min(256, X.pieces)), X.stagger, X.spin);
 				u.uExpP.value.set(xe * X.dist * 0.9, 0, 0, 0);
 			}
-			// желе (вид деформации): упругая дрожь расходится от толчков
 			{
 				const J = L.twist;
 				const jOn = J.on && J.mode === 'jelly';
@@ -256,7 +230,6 @@ export class LoopPart {
 							addKick(o, d);
 						}
 					} else if (this._animCloud) {
-						// движение модели: толчок рождается от резкого изменения скорости центра (прыжок, остановка, приземление)
 						const cn = u.uCen.value;
 						if (!this._jc) {
 							this._jc = cn.clone();
@@ -285,7 +258,6 @@ export class LoopPart {
 			{
 				this._scopeTick(dt, L.scope, u);
 			}
-			// у фото, видео и блока кадров своя геометрия: направление наружу идёт по взгляду, а вертикальный размах берётся с кадра, а не с исходного облака
 			u.uFlat.value = st.source === 'media' || u.uFr.value.x > 0.5 ? 1 : 0;
 			if (this._yrBase) {
 				if (u.uFr.value.x > 0.5) {
@@ -295,11 +267,9 @@ export class LoopPart {
 			}
 			{
 				const Dp = L.depth;
-				// объём по глубине работает на фото и видео, а также на блоке раскадровки (у каждого кадра своя карта)
 				const onFr = st.source === 'frames' && this._framesOn && u.uFr.value.x > 0.5;
 				const on = Dp.on && ((st.source === 'media' && this.pm.ready) || onFr);
 				u.uDepth.value.set(on ? clamp(this._eff(Dp), 0, 1.5) : 0, { relief: 0, layers: 1, breath: 2 }[Dp.mode] ?? 0, Dp.speed, Dp.focus);
-				// у фото и видео карта правится заранее (яркость, контраст, тени), у кадров раскадровки в шейдере
 				if (onFr) u.uDepthQ.value.set(Dp.zone ?? 0.12, Dp.bright ?? 0, Dp.contrast ?? 1, Dp.gamma ?? 1);
 				else u.uDepthQ.value.set(Dp.zone ?? 0.12, 0, 1, 1);
 				u.uDepthP.value.set(Dp.layers, Dp.dir === 'far' ? -1 : 1, Dp.sway, { photo: 0, map: 1, heat: 2 }[Dp.view] ?? 0);
@@ -308,10 +278,8 @@ export class LoopPart {
 			this._chladniTick(dt, L.chladni, u);
 			this._shootTick(dt, L.shoots, u);
 			this._shadowTick(dt, L.shadow, u);
-			// гиперпространство: угол поворота в 4D копится (смена скорости не дёргает форму), удар звука даёт рывок
 			{
 				const H = L.hyper;
-				// сила нарастает и спадает плавно; выключенный эффект при следующем включении начинает с исходной формы (угол ноль), а не с прыжка
 				const he0 = this._eff(H);
 				this._hypK = (this._hypK || 0) + (he0 - (this._hypK || 0)) * (1 - Math.exp(-dt * 4));
 				const he = this._hypK > 0.002 || he0 > 0 ? this._hypK : 0;
@@ -326,7 +294,6 @@ export class LoopPart {
 			u.uDisP.value.set({ wind: 0, burn: 1, laser: 2, layers: 3, chunks: 4, sand: 5, vortex: 6, shock: 7 }[L.dissolve.style] ?? 0, 0, 0, 0);
 			u.uCursor.value.set(this._eff(L.cursor), L.cursor.radius, { attract: -1, swirl: 2 }[L.cursor.mode] ?? 1, 0);
 
-			// Распад: взрыв, пока форма разрушена, и сборка дугами после
 			{
 				const P = L.physics;
 				if (this.isCollapsed && P.on) {
@@ -339,14 +306,12 @@ export class LoopPart {
 						this.collapseTime = 0;
 					}
 				}
-				// сила постоянная, без реакции на бит: осколки спокойно лежат на полу, пока форму не соберут обратно
 				u.uPhysics.value.set(this.collapseTime > 0 ? Math.max(0.01, P.amount) : 0, P.gravity, P.bounce, P.wind);
 				u.uPhysP.value.set(P.burst, P.peel, P.swirl, 0);
 				u.uAsm.value = this.asm;
 				u.uCollapseTime.value = this.collapseTime;
 			}
 
-			// Кисть
 			const brE = Math.max(L.brush ? this._eff(L.brush) : 0, this.camTracker?.running && this._time - (this._brushHand ?? -9) < 0.4 ? 1 : 0);
 			const brArr = u.uBrushHits.value;
 			for (let i = 0; i < 20; i++) {
@@ -359,11 +324,9 @@ export class LoopPart {
 				}
 			}
 			u.uBrushParam.value.set(0, 0.4, 3.5, 1);
-			// акварель: растекание мазков и вывод краски на форму (краска остаётся, даже если кисть выключили)
 			this._paintTick();
 			u.uPaintP.value.set(this._painted ? 1 : 0, L.brush.grain, L.brush.mode === 'glaze' ? 1 : 0, 0);
 
-			// Срез / Изолинии
 			const sl = L.slice;
 			const nLines = Math.max(1, Math.round(sl.count || 1));
 			const axVal = { y: 0, x: 1, z: 2, diag: 3 }[sl.axis] ?? 0;
@@ -376,7 +339,6 @@ export class LoopPart {
 			if (smode === 2) sph = sph * 1.1 - 0.05;
 			u.uSlice.value.set(this._eff(sl), sph, sl.width, axVal + nLines * 10);
 			u.uSliceM.value.set(smode, sl.lift, sl.color === 'model' ? 1 : 0, 0);
-			// срез рукой: плоскость среза следует за ладонью, форма проявляется по ту сторону
 			const hs = this._handSlice;
 			if (hs && this.camTracker?.running && this._time - (this._handsT ?? -9) < 0.4) {
 				const c = { y: hs.y, x: hs.x, z: hs.z, diag: (hs.x + hs.y) * 0.707 }[sl.axis] ?? hs.y;
@@ -385,8 +347,7 @@ export class LoopPart {
 			}
 			u.uSliceC.value.set(sl.color && sl.color !== 'auto' && sl.color !== 'model' ? sl.color : pal.c[2]);
 
-			// Look P2 & DoF
-			u.uLookP2.value.set(0, 0, 0, 0); // размер по шуму и по звуку убраны из настроек: старые сохранённые значения не действуют
+			u.uLookP2.value.set(0, 0, 0, 0);
 			u.uShade.value = look.shade || 0;
 			const gm = GLYPH_SETS[look.glyph] ? look.glyph : 'off';
 			if (gm !== this._glyphMode) {
@@ -399,13 +360,9 @@ export class LoopPart {
 			u.uGlyph.value.set(gm === 'off' ? 0 : 1, gm === 'off' ? 1 : 2.3, u.uAtlas.value.userData?.n || 8);
 			u.uDof.value.set(look.dofOn ? 1 : 0, look.dofDist || 5.2, look.dofRange || 1.4, 0);
 
-			// блоков морфинга на таймлайне больше нет или таймлайн закрыт: прежняя форма возвращается
 			if (this._mtActive && !(this.timelineOpen && this._morphChain(this.state.anim.clips || []).length)) this._releaseMorphTrack();
-			// пока курсор таймлайна стоит, дорожка морфинга всё равно держит свою форму (её могли только что дорисовать в фоне)
 			else if (this.timelineOpen && !this.animPlaying && !this.morphing && this._morphChain(this.state.anim.clips || []).length) this._morphTrackApply(this.state.anim.clips, this.animT);
-			// курсор стоит на таймлайне: эффекты с блоками включены только там, где под курсором есть их блок
 			if (!this.animPlaying && !this.animRec && (this.state.anim.clips?.length || (this.state.anim.saved && Object.keys(this.state.anim.saved).length))) this._animGate(this.animT);
-			// персонаж идёт по времени таймлайна, пока таймлайн играет: дорожка «Персонаж» совпадает с тем, что видно в сцене
 			{
 				const A = this.app.anim;
 				if (this.animPlaying && A.has) {
@@ -420,8 +377,6 @@ export class LoopPart {
 					A.playing = this._charWas;
 				}
 			}
-			// персонаж с анимацией: точки идут за позой скелета
-			// во время перехода анимированные формы продолжают двигаться: уходящая в начале пути, приходящая в конце
 			if (this.morphing && this.geometry && this.app.anim.has && (this._animIn || this._animOut) && this._animVerM !== this.app.anim.version) {
 				this._animVerM = this.app.anim.version;
 				const g = this.geometry;
@@ -446,9 +401,7 @@ export class LoopPart {
 						this._animBuf = new Float32Array(ac.count * 3);
 						this._animBufN = new Float32Array(ac.count * 3);
 					}
-					// нормали идут за позой вместе с точками: эффекты с направлением (толчок вдоль нормали, ветер, выдавливание) не «штырит» при повороте модели
 					evalAnimPoints(ac.anim, ac.norm, this._animBuf, ac.anim.bn ? this._animBufN : null);
-					// вертикальный размах формы следует за позой: эффекты по высоте (полосы, срезы, наклон) считаются от текущего роста персонажа
 					{
 						const b = this._animBuf;
 						let mn = Infinity, mx = -Infinity, x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
@@ -479,9 +432,7 @@ export class LoopPart {
 			}
 			if (this._linksStale && L.links.on) this._computeLinks();
 		this._trailTick(L.trail);
-			// переход между видео и другими формами: видео играет, пока точки разлетаются, и запускается, когда они собираются
 			if (this._mm) this._mediaMorphTick(dt);
-			// фото и видео: обновляем цвета и высоту точек по текущему кадру
 			let rgbNew = null;
 			if (st.source === 'media' && this.pm.ready && this.geometry && !this.morphing && this.geometry.attributes.position.count === this.pm.count) {
 				const rgb = this.pm.advance(dt);
@@ -498,27 +449,23 @@ export class LoopPart {
 					g.attributes.aColorB.array.set(g.attributes.aColor.array);
 					g.attributes.aColor.needsUpdate = g.attributes.aColorB.needsUpdate = true;
 					g.attributes.position.needsUpdate = g.attributes.aOrigin.needsUpdate = g.attributes.aTarget.needsUpdate = true;
-					// нити связей держатся за точки, поэтому на каждом новом кадре видео переносим их концы
 					if (L.links.on) this._syncLinks();
 				}
 			}
 			if (st.source === 'media' && this.pm.ready && this.geometry && this.geometry.attributes.position.count === this.pm.count) this._depthTick(dt, rgbNew);
 			this._slitTick(rgbNew, u);
 			this._sortTick(rgbNew, u);
-			// морфинг по списку форм: по таймеру или под музыку
 			{
 				const mc = st.morphCfg;
 				if (mc.mode === 'timer' && (this.playlist?.length || 0) > 1 && !this.morphing && this._time - (this._lastMorph || 0) > mc.interval) this.morphNext();
 				this._morphMusicTick(dt);
 			}
-			// растворение
 			{
 				const D = L.dissolve;
 				let p = 0;
 				if (D.on) {
 					if (D.mode === 'loop') {
 						this._disT = (this._disT || 0) + dt * D.speed * 0.25;
-						// доля цикла, на которую приходится распад: поровну, дольше распад или дольше сборка
 						const split = D.dir === 'out' ? 0.7 : D.dir === 'in' ? 0.3 : 0.5;
 						const c = (this._disT % 2) / 2;
 						const x = c < split ? c / split : 1 - (c - split) / (1 - split);
@@ -534,7 +481,6 @@ export class LoopPart {
 				const hand = this.camTracker?.running && this._handDis && this._time - (this._handsT ?? -9) < 0.4;
 				this._disH = (this._disH || 0) + ((hand ? 1 : 0) - (this._disH || 0)) * (1 - Math.exp(-dt * Math.max(0.5, D.speed) * 1.2));
 				if (this._disH > 0.002) p = Math.max(p, this._disH * this._disH * (3 - 2 * this._disH));
-				// «Росток»: растворение наоборот. Ход растворения гонит фронт роста назад, поэтому форма прорастает снизу и увядает с верхушки
 				const sprout = D.on && D.style === 'sprout';
 				if (sprout) {
 					const cyc = Math.floor((this._disT || 0) / 2);
@@ -551,10 +497,8 @@ export class LoopPart {
 				u.uDisQ.value.set(D.edge ?? 0.32, D.scatter ?? 1, D.glow ?? 0.35, D.shrink ?? 0.85);
 				u.uDisT.value = D.turb;
 			}
-			// лепка: глина медленно возвращает форму
 			if (this._sculptLive && this.geometry && !(this._grabs && this._grabs.size)) {
 				const el = L.camTrack.elastic;
-				// возврат глины проходит по всему массиву: делаем это раз в три кадра с поправкой на время, а не каждый кадр
 				this._sculptAcc = (this._sculptAcc || 0) + dt;
 				if (el > 0 && this._sculptAcc >= 0.05) {
 					const arr = this.geometry.attributes.aSculpt.array;
@@ -570,7 +514,6 @@ export class LoopPart {
 					if (mx < 5e-4) this.clearSculpt();
 				}
 			}
-			// гравитация: центр поля (курсор, рука или центр формы)
 			{
 				const g = L.gravity;
 				const handG = this.camTracker?.running && this._handGrav && this._time - (this._handsT ?? -9) < 0.4;
@@ -581,17 +524,14 @@ export class LoopPart {
 				this._gc.lerp(tgt, 1 - Math.exp(-dt * 8));
 				this._gPrec = (this._gPrec || 0) + dt * g.precess * 1.2;
 				const mode = { orbit: 0, hole: 1, float: 2, swarm: 3, rings: 4 }[g.mode] ?? 0;
-				// диск и воронка сжимают точки в тесную область: приглушаем, чтобы не выгорало
 				u.uDens.value /= 1 + Math.min(1, ge) * (mode === 0 || mode === 4 ? g.flatten * 5 : mode === 1 ? 2 : mode === 3 ? 0.8 : 0);
 				u.uGrav.value.set(ge, mode, g.speed, g.flatten);
 				u.uGravT.value.set(g.tilt + Math.sin(this._gPrec) * 0.18 * g.precess, this._gPrec * 0.6, g.spread, g.jet);
 				u.uGravP.value.set(this._gc.x, this._gc.y, this._gc.z, g.target === 'center' && !handG ? 4 : g.radius);
 			}
-			// размер берём из кэша области просмотра: чтение clientHeight каждый кадр вызывало бы принудительный пересчёт вёрстки
 			const vsz = this.app.viewport.size;
 			u.uRes.value.set(Math.max(1, vsz.width), Math.max(1, vsz.height));
 			u.uLinkW.value = L.links.width;
-			// связи
 			const lk = this._eff(L.links);
 			if (this.linkObj) {
 				this.linkObj.visible = this._gate('line', lk > 0.01);
@@ -603,7 +543,6 @@ export class LoopPart {
 				const beaconsOn = L.links.beacons === 'off' ? 0 : 1;
 				if (u.uLinkP) u.uLinkP.value.set(mMode, cMode, beaconsOn, this.levels.beat);
 			}
-			// шлейф
 			const ec = this._eff(L.echo);
 			const eo = L.echo;
 			const nG = Math.round(eo.copies);
@@ -623,13 +562,11 @@ export class LoopPart {
 					g.scale.setScalar(1 - 0.05 * k);
 					g.position.set(0, k * 0.04 * Math.sin(this._time * 0.8), 0);
 				} else {
-					// ореол: копии чуть крупнее формы и дышат, поэтому видны, даже когда форма стоит на месте
 					g.rotation.set(0, 0, 0);
 					g.scale.setScalar(1 + 0.05 * k * (0.65 + 0.35 * Math.sin(this._time * 1.6 - k * 0.6)));
 					g.position.set(0, 0, 0);
 				}
 			});
-			// зона действия
 			const mk = st.mask;
 			const mi = Math.max(0, MASK_MODES.findIndex((m) => m.id === mk.mode));
 			const T = this._time * mk.speed;
@@ -652,7 +589,6 @@ export class LoopPart {
 			u.uMaskShow.value = mk.show ? 1 : 0;
 			u.uMouse.value.copy(this.mouse);
 			u.uMouseOn.value = this.mouseOn ? 1 : 0;
-			// руки: кончики пальцев как точки воздействия на форму
 			{
 				const cfg = L.camTrack;
 				const running = !!this.camTracker?.running;
@@ -666,7 +602,6 @@ export class LoopPart {
 				}
 				const he = running && cfg.on ? cfg.amount * cfg.power : 0;
 				u.uHandP.value.set(fade > 0 ? he : 0, cfg.radius, 0, n);
-				// вращение руками: скорость затухает с инерцией, когда щипок отпущен
 				const sp = this._spin;
 				if (sp && running) {
 					if (this._time - (this._grabbing ?? -9) > 0.15) {
@@ -681,9 +616,7 @@ export class LoopPart {
 				const sc = this.points.scale.x;
 				if (Math.abs(sc - target) > 0.002) this.points.scale.setScalar(sc + (target - sc) * (1 - Math.exp(-dt * 6)));
 			}
-			// камера: если рука пропала, курсор отпускает форму
 			if (this.camTracker?.running && this.mouseOn && this._time - (this._moveT ?? -9) > 1 && this._time - (this._camT ?? -9) > 0.7) this.mouseOn = false;
-			// трекер-точки: рамки и касание формы работают от одних и тех же узлов
 			if (this.hud) {
 				this.hud.clear();
 				const T = L.tracking;
@@ -698,13 +631,11 @@ export class LoopPart {
 				}
 				this.hud.pickOverride = this.shared.uFr.value.x > 0.5 ? () => this._frameSample() : null;
 				this.hud.follow = !!(this._animCloud && this.app.anim.has);
-				// настоящие положения закреплённых точек после всех эффектов (с прошлого кадра): рамка висит на точке, а не на её исходном месте
 				this.hud.gpu = n > 0 && !this.hud.pickOverride ? this._trackPick(this.hud.items.map((it) => it.idx)) : null;
 				this.hud.speed = T.speed ?? 1;
 				this.hud.update(n, this.geometry, this.morph, this.levels, dt, tgs);
 				const hex = (c) => '#' + new THREE.Color(c).getHexString(THREE.SRGBColorSpace);
 				const cols = [hex(pal.c[0]), hex(pal.c[2])];
-				// прозрачность рамок свой ползунок; сила на неё не влияет, кроме плавного появления и исчезновения у самого нуля (блоки таймлайна)
 				if (T.on) this.hud.drawTracking(T, (T.opacity ?? 1) * Math.min(1, tr * 10), { points: this.points, camera: this.app.viewport.camera, levels: this.levels, colors: T.color && T.color !== 'auto' ? [T.color, T.color] : cols });
 				if (look.hud) this.hud.drawTelemetry({ audioWave: look.hudSpectrum ? 'on' : 'off' }, 1, { levels: this.levels, spec: this.spec, colors: cols });
 				if (this.camTracker?.running) {
@@ -740,8 +671,6 @@ export class LoopPart {
 				u.uMarkC.value.set(T.color && T.color !== 'auto' ? T.color : pal.c[2]);
 				u.uShockP.value.z = ni;
 			}
-			// ударные волны
-			// волна нужна только жесту ладони «волна» (камера): отдельного эффекта «Ударная волна» больше нет
 			const shE = this._time - (this._waveT ?? -9) < 5 ? 0.9 : 0;
 			const sh = u.uShock.value;
 			for (let i = 0; i < 4; i++) {
@@ -753,7 +682,6 @@ export class LoopPart {
 			u.uShockP.value.set(shE, 1.2, u.uShockP.value.z, 0);
 			this.onFrame && this.onFrame(this.levels);
 			this._fxCheck();
-			// кадр с новым временем готов к отрисовке: запись возьмёт именно его (recording.js, _recFrame)
 			if (off) off.fresh = true;
 			this.app.viewport.invalidate();
 		};

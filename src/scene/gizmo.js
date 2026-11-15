@@ -1,4 +1,3 @@
-// Гизмо осей (как в Blender): клик по оси ставит вид, перетаскивание вращает сцену.
 import { screenRect } from '../core/util.js';
 import * as THREE from 'three';
 
@@ -69,7 +68,6 @@ export class AxisGizmo {
 			ctx.fillStyle = 'rgba(255,255,255,0.07)';
 			ctx.fill();
 		}
-		// линии осей
 		for (const it of this.items) {
 			if (!it.positive) continue;
 			ctx.beginPath();
@@ -162,7 +160,6 @@ export class AxisGizmo {
 		try {
 			this.canvas.releasePointerCapture(e.pointerId);
 		} catch (err) {
-			/* уже отпущен */
 		}
 		if (!d.moved && d.target && d.target !== 'bg') {
 			const nav = this.app.nav;

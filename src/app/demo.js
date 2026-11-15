@@ -1,4 +1,3 @@
-// Демо-модель: настоящие файлы .obj + .mtl + .png, которые идут тем же путём, что и ваши.
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
@@ -74,7 +73,6 @@ function texturePNG() {
 
 export async function makeDemoFiles() {
 	const knot = new THREE.TorusKnotGeometry(0.9, 0.3, 260, 40, 2, 3);
-	// развёртка по умолчанию растянута вдоль узла: u идёт по всей длине кривой, v вокруг трубки. Растягиваем u в число раз, равное отношению длины узла к длине окружности трубки, и клетки становятся квадратными
 	{
 		const pos = knot.attributes.position, uv = knot.attributes.uv;
 		const rs = 40 + 1;
@@ -92,8 +90,6 @@ export async function makeDemoFiles() {
 	return [new File([obj], 'demo.obj', { type: 'text/plain' }), new File([mtl], 'demo.mtl', { type: 'text/plain' }), new File([png], 'demo_texture.png', { type: 'image/png' })];
 }
 
-// ---------------------------------------------------------------- демо-анимация: прыгающий шарик
-/** Шарик со скелетом из одной кости, текстурой и клипом: прыжки вдоль горизонтали с затуханием, сплющивание при ударе и качение. Настоящий GLB, идёт тем же путём, что ваши файлы */
 export async function makeDemoCharacterFile() {
 	const R = 0.35;
 	const bone = new THREE.Bone();
@@ -106,7 +102,6 @@ export async function makeDemoCharacterFile() {
 	const sw = new Float32Array(n * 4);
 	for (let i = 0; i < n; i++) sw[i * 4] = 1;
 	geo.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
-	// текстура: цветные полосы с клетками, по ним видно и развёртку, и вращение при качении
 	const cv = document.createElement('canvas');
 	cv.width = 1024;
 	cv.height = 512;
@@ -137,7 +132,6 @@ export async function makeDemoCharacterFile() {
 	root.updateMatrixWorld(true);
 	mesh.bind(new THREE.Skeleton([bone]), mesh.matrixWorld);
 
-	// прыжки по горизонтали: каждый короче и ниже предыдущего (высота растёт как квадрат времени полёта), в точке удара шарик сплющивается
 	const fps = 30;
 	const ts = [], pos = [], rot = [], scl = [];
 	const T0 = 0.9, decay = 0.72, H0 = 0.95, bounces = 7, span = 3.2;
