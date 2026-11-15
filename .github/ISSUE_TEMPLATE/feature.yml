@@ -1,0 +1,16 @@
+name: Идея
+description: Предложить новую возможность или улучшение
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Что хочется
+      description: Опишите идею и зачем она нужна. Примеры и ссылки на похожее приветствуются.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Где
+      options: [Редактор, Эффекты, Морфинг, Звук, Таймлайн и запись, Экспорт, Интерфейс, Другое]

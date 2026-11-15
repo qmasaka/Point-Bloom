@@ -1,0 +1,30 @@
+name: Ошибка
+description: Что-то работает не так
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Что случилось
+      description: Что вы делали и что пошло не так. Если можно, приложите скриншот или запись экрана.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Как должно быть
+  - type: input
+    id: env
+    attributes:
+      label: Браузер и система
+      placeholder: Chrome 140, macOS 15
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Режим отрисовки
+      options: [Не знаю, WebGPU, WebGL]
+  - type: textarea
+    id: file
+    attributes:
+      label: Файл или сцена
+      description: Какая модель, фото или видео, сколько частиц. Консоль браузера (F12), если там есть ошибки.
