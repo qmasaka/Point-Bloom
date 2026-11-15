@@ -4,163 +4,163 @@
 
 # Point Bloom
 
-**Студия облаков точек в браузере.** Превращайте 3D-модели, фото и видео в живые облака точек, добавляйте эффекты под музыку, делайте морфинг между формами и записывайте всё в видео.
+**A point cloud studio in your browser.** Turn 3D models, photos and video into living point clouds, add music-driven effects, morph between shapes and record it all to video.
 
-[![Открыть](https://img.shields.io/badge/%D0%BE%D1%82%D0%BA%D1%80%D1%8B%D1%82%D1%8C-pointbloom.vercel.app-e58a45?style=for-the-badge&logo=vercel&logoColor=white)](https://pointbloom.vercel.app)
+[![Open](https://img.shields.io/badge/open-pointbloom.vercel.app-e58a45?style=for-the-badge&logo=vercel&logoColor=white)](https://pointbloom.vercel.app)
 
-![Без установки](https://img.shields.io/badge/%D0%B1%D0%B5%D0%B7-%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BA%D0%B8-2f343c?style=flat-square)
-![Файлы остаются у вас](https://img.shields.io/badge/%D1%84%D0%B0%D0%B9%D0%BB%D1%8B-%D0%BE%D1%81%D1%82%D0%B0%D1%8E%D1%82%D1%81%D1%8F_%D1%83_%D0%B2%D0%B0%D1%81-62bb8c?style=flat-square)
-![WebGPU и WebGL](https://img.shields.io/badge/WebGPU_%C2%B7_WebGL-three.js-4f8ff0?style=flat-square)
-![Языки](https://img.shields.io/badge/%D1%8F%D0%B7%D1%8B%D0%BA%D0%B8-RU_%C2%B7_UK_%C2%B7_EN_%C2%B7_ES_%C2%B7_DE-a6aeba?style=flat-square)
-![Лицензия](https://img.shields.io/badge/%D0%BB%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F-%D0%B2%D1%81%D0%B5_%D0%BF%D1%80%D0%B0%D0%B2%D0%B0_%D0%B7%D0%B0%D1%89%D0%B8%D1%89%D0%B5%D0%BD%D1%8B-ec7062?style=flat-square)
+![No install](https://img.shields.io/badge/no-install-2f343c?style=flat-square)
+![Your files stay with you](https://img.shields.io/badge/your_files-stay_with_you-62bb8c?style=flat-square)
+![WebGPU and WebGL](https://img.shields.io/badge/WebGPU_%C2%B7_WebGL-three.js-4f8ff0?style=flat-square)
+![Languages](https://img.shields.io/badge/languages-RU_%C2%B7_UK_%C2%B7_EN_%C2%B7_ES_%C2%B7_DE-a6aeba?style=flat-square)
+![License](https://img.shields.io/badge/license-all_rights_reserved-ec7062?style=flat-square)
 
-[English version](README.en.md)
+[Русская версия](README.ru.md)
 
 </div>
 
 ---
 
-## Что это
+## What it is
 
-Point Bloom работает целиком в браузере: ни сервера, ни регистрации, ни установки. Файлы обрабатываются на вашем компьютере и никуда не отправляются.
+Point Bloom runs entirely in the browser: no server, no sign-up, no install. Files are processed on your computer and never uploaded.
 
-Это два инструмента в одном окне:
+Two tools in one window:
 
-- **Редактор.** Открывает модели (OBJ, GLB, FBX, STL, PLY и ещё десяток форматов), правит материалы, текстуры и сетку, собирает облако точек и экспортирует в GLB, glTF, USDZ, PLY, STL или готовую страницу для сайта.
-- **Режим «Эффекты».** Всё считается на видеокарте. Из модели, фото или видео получается облако точек, и над ним работает цепочка независимых эффектов, которые реагируют на музыку, мышь и руки перед камерой. Результат записывается в MP4.
+- **Editor.** Opens models (OBJ, GLB, FBX, STL, PLY and more), edits materials, textures and meshes, builds point clouds and exports to GLB, glTF, USDZ, PLY, STL or a ready-made web page.
+- **Effects mode.** Everything runs on the GPU. A model, photo or video becomes a point cloud, and a chain of independent effects reacts to music, the mouse and your hands in front of the camera. The result is recorded to MP4.
 
 <div align="center">
-<img src="docs/img/ui-effects.jpg" alt="Режим «Эффекты»" width="100%">
+<img src="docs/img/ui-effects.jpg" alt="Effects mode" width="100%">
 </div>
 
-## Галерея
+## Gallery
 
-Все кадры ниже сделаны в самом приложении на демо-модели, которая лежит в `samples/`.
+All frames were made in the app itself on the demo model from `samples/`.
 
 <table>
 <tr>
-<td width="33%"><img src="docs/img/twist.jpg" alt="Деформация"><br><sub><b>Деформация</b>: скрутка, изгиб, змейка, дыхание</sub></td>
-<td width="33%"><img src="docs/img/spectrum.jpg" alt="Спектр"><br><sub><b>Спектр</b>: форма отзывается на звук</sub></td>
-<td width="33%"><img src="docs/img/wave.jpg" alt="Волны"><br><sub><b>Волны</b>: капли, кольца, спираль</sub></td>
+<td width="33%"><img src="docs/img/twist.jpg" alt="Deform"><br><sub><b>Deform</b>: twist, bend, snake, breathe</sub></td>
+<td width="33%"><img src="docs/img/spectrum.jpg" alt="Spectrum"><br><sub><b>Spectrum</b>: the shape answers the sound</sub></td>
+<td width="33%"><img src="docs/img/wave.jpg" alt="Waves"><br><sub><b>Waves</b>: drops, rings, spiral</sub></td>
 </tr>
 <tr>
-<td width="33%"><img src="docs/img/links.jpg" alt="Связи"><br><sub><b>Связи</b>: светящиеся нити между точками</sub></td>
-<td width="33%"><img src="docs/img/morph-flow.jpg" alt="Морфинг: течение"><br><sub><b>Морфинг</b>: переход «Течение» посередине пути</sub></td>
-<td width="33%"><img src="docs/img/morph-portal.jpg" alt="Морфинг: портал"><br><sub><b>Морфинг</b>: переход «Портал»</sub></td>
+<td width="33%"><img src="docs/img/links.jpg" alt="Links"><br><sub><b>Links</b>: glowing threads between points</sub></td>
+<td width="33%"><img src="docs/img/morph-flow.jpg" alt="Morph: flow"><br><sub><b>Morphing</b>: the Flow transition mid-way</sub></td>
+<td width="33%"><img src="docs/img/morph-portal.jpg" alt="Morph: portal"><br><sub><b>Morphing</b>: the Portal transition</sub></td>
 </tr>
 </table>
 
-## Быстрый старт
+## Quick start
 
-1. Откройте **[pointbloom.vercel.app](https://pointbloom.vercel.app)** (или `index.html` из этой папки: сборка работает и без сервера).
-2. Перетащите в окно файл модели. Для `.obj` бросайте сразу вместе с `.mtl` и текстурами, либо целую папку или `.zip`. Для пробы нажмите **«Демо-модель»**.
-3. Хотите эффекты: переключите **«Редактор / Эффекты»** в шапке (клавиша `E`), слева включите нужный эффект.
-4. Хотите файл: **«Экспорт»** (или `Ctrl+E`), выберите формат.
+1. Open **[pointbloom.vercel.app](https://pointbloom.vercel.app)** (or `index.html` from this folder: the build works without a server).
+2. Drop a model file into the window. For `.obj`, drop it together with the `.mtl` and textures, or a whole folder or `.zip`. To try it, press **Demo model**.
+3. For effects, switch **Editor / Effects** in the header (key `E`) and turn effects on in the left panel.
+4. For a file, press **Export** (or `Ctrl+E`) and pick a format.
 
 <div align="center">
-<img src="docs/img/ui-editor.jpg" alt="Редактор" width="100%">
+<img src="docs/img/ui-editor.jpg" alt="Editor" width="100%">
 </div>
 
-## Возможности
+## Features
 
-### Редактор
+### Editor
 
 | | |
 |---|---|
-| **Форматы на входе** | OBJ (+MTL), GLB, glTF, FBX, DAE, STL, PLY, 3DS, 3MF, AMF, USDZ, PCD, XYZ, OFF, архивы ZIP. Текстуры: PNG, JPG, WebP, BMP, GIF, TGA |
-| **Форматы на выходе** | GLB, glTF, USDZ (AR на iPhone), готовая страница для сайта, OBJ+MTL+текстуры (ZIP), PLY (сетка или облако точек), STL. Быстрые сценарии: «Для сайта», «AR на iPhone», «Для игры», «Для печати» |
-| **Материалы** | PBR-слоты (цвет, нормали, шероховатость, металличность, AO, свечение), тип карты определяется по имени файла, повтор и смещение, прозрачность, предпросмотр UV |
-| **Правка** | упрощение сетки с сохранением UV, перемещение, вращение, масштаб, склейка вершин, выворот нормалей, отражение, дублирование, отмена и повтор |
-| **Облака точек** | вершины или равномерная выборка с цветом из текстуры; круг, квадрат, шар, кольцо, ромб, плюс; карточка «Ваш компьютер» подсказывает, сколько точек комфортно |
-| **Фото и видео в точки** | цвет точки из пикселя, высота по яркости; видео можно записать в точечный ролик (`.pcv`), в PLY-кадры или поставить кадр в сцену |
-| **Анимация** | скелетная анимация персонажей (демо-анимация внутри), камера охватывает всё движение |
+| **Input formats** | OBJ (+MTL), GLB, glTF, FBX, DAE, STL, PLY, 3DS, 3MF, AMF, USDZ, PCD, XYZ, OFF, ZIP archives. Textures: PNG, JPG, WebP, BMP, GIF, TGA |
+| **Output formats** | GLB, glTF, USDZ (AR on iPhone), a ready web page, OBJ+MTL+textures (ZIP), PLY (mesh or point cloud), STL. Quick presets: web, AR on iPhone, game, print |
+| **Materials** | PBR slots (color, normal, roughness, metalness, AO, emissive), map type detected from the file name, repeat and offset, transparency, UV preview |
+| **Editing** | mesh simplification that keeps UVs, move, rotate, scale, weld vertices, flip normals, mirror, duplicate, undo and redo |
+| **Point clouds** | vertices or even surface sampling with texture color; circle, square, sphere, ring, diamond, plus; the "Your computer" card suggests a comfortable point count |
+| **Photo and video to points** | point color from the pixel, height from brightness; video can be recorded into a point clip (`.pcv`), PLY frames, or a frame placed into the scene |
+| **Animation** | skeletal character animation (a demo animation is built in); the camera frames the whole motion |
 
-### Режим «Эффекты»
+### Effects mode
 
-Идея из TouchDesigner POP: цепочка независимых «операторов» над облаком точек. У каждого эффекта свои настройки и своя реакция на звук (бас, середина, верх, удар; плавно или по порогу).
+The idea comes from TouchDesigner POPs: a chain of independent operators over a point cloud. Every effect has its own settings and its own sound reaction (bass, mid, high, beat; smooth or threshold).
 
-| Группа | Эффекты |
+| Group | Effects |
 |---|---|
-| **Видео** | Объём по глубине, Пиксельная сортировка, Раскадровка, Шлейф движения, Слит-скан |
-| **Движение** | Вихри и течение, Гравитация, Деформация |
-| **Звук и ритм** | Спектр, Волны, Взрыв, Рост на ритме, Звуковой песок (фигуры Хладни), Осциллограф |
-| **Разрушение** | Распад, Разбор на части, Растворение |
-| **Цифровые** | Воксели, Глитч, Датамош |
-| **Графика** | Тень на стене, Связи, Срез, Следы времени, Эхо, Рамки слежения |
-| **Управление** | Курсор, Кисть (акварель по форме), Руки (камера) |
-| **Эксперименты** | Гиперпространство (четвёртое измерение), Экран (видео играет на форме) |
+| **Video** | Depth volume, Pixel sort, Storyboard, Motion trail, Slit-scan |
+| **Motion** | Swirls and flow, Gravity, Deform |
+| **Sound and rhythm** | Spectrum, Waves, Blast, Beat growth, Sound sand (Chladni figures), Oscilloscope |
+| **Destruction** | Decay, Take apart, Dissolve |
+| **Digital** | Voxels, Glitch, Datamosh |
+| **Graphics** | Shadow on the wall, Links, Slice, Time trails, Echo, Tracking frames |
+| **Control** | Cursor, Brush (watercolor on the shape), Hands (camera) |
+| **Experiments** | Hyperspace (the fourth dimension), Screen (video plays on the shape) |
 
-#### Морфинг
+#### Morphing
 
-Плавные переходы между моделями, фото и видео в любых сочетаниях.
+Smooth transitions between models, photos and videos in any combination.
 
-- **Формы:** любые объекты сцены, видео и фото (до шести сразу). У всех форм одинаковое число точек, поэтому переход идёт без швов.
-- **Виды перехода:** Течение, Вихрь, Взрыв, Сканер, Пыль, Осыпание, Через 4D, Через сферу, Кубики, Сплющивание, Рельеф (по карте глубины от нейросети), Портал, Магнит.
-- **Запуск:** кнопкой, по таймеру или **под музыку**: скачком на всплеск выбранных частот или плавно, форма идёт за громкостью.
-- **Ручной ползунок** перехода, порядок «по кругу», «туда и обратно» или случайный, длительность, разлёт, закрутка, размер точек в пути.
-- Видео играет, пока точки разлетаются, и запускается снова, когда они собираются. Звук можно закрепить за любым видео.
-- Анимированные модели продолжают двигаться во время перехода.
+- **Shapes:** any scene objects, videos and photos (up to six at once). All shapes share one point count, so transitions have no seams.
+- **Transition styles:** Flow, Swirl, Burst, Scanner, Dust, Sand, Through 4D, Through a sphere, Blocks, Flattening, Relief (from a neural depth map), Portal, Magnet.
+- **Triggering:** by button, by timer or **to music**: a jump on a burst in the chosen frequencies, or smooth, with the shape following the loudness.
+- A manual progress slider, order (loop, back and forth, random), duration, scatter, twist, point size in flight.
+- Video keeps playing while points scatter and restarts as they gather. Sound can be pinned to any video.
+- Animated models keep moving during the transition.
 
-#### Звук
+#### Sound
 
-Встроенный синтезатор (три стиля), свой аудиофайл, микрофон или звук открытого видео. Без звука сцена остаётся живой.
+A built-in synthesizer (three styles), your own audio file, the microphone or the sound of an open video. Without sound the scene stays alive.
 
-#### Руки и камера
+#### Hands and camera
 
-Распознавание рук через MediaPipe. Каждому жесту (ладонь, кулак, щипок, указательный палец) назначается действие: оттолкнуть, притянуть, вихрь, лепить глину, гравитация, ударная волна, распад, светящийся след. Есть готовые схемы: «Игра», «Скульптор», «Космос», «Магия». Видео с камеры не покидает браузер.
+Hand tracking through MediaPipe. Each gesture (palm, fist, pinch, index finger) gets an action: push, pull, swirl, sculpt clay, gravity, shockwave, decay, glowing trail. Ready schemes: Game, Sculptor, Space, Magic. Camera video never leaves the browser.
 
-#### Таймлайн и запись
+#### Timeline and recording
 
-- **Анимация по ключам:** камера, размер, яркость и сила эффектов плавно меняются на дорожке времени; блоки эффектов можно перетаскивать, резать, повторять, а блоки морфинга идти цепочкой.
-- **Запись видео** со звуком: MP4 (H.264/AAC через WebCodecs), качество на выбор, кадр точного размера с фоном сцены. Таймлайн записывается покадрово, без пропусков.
+- **Keyframe animation:** camera, size, brightness and effect strength change smoothly along a time track; effect blocks can be dragged, cut and repeated, and morph blocks run in a chain.
+- **Video recording** with sound: MP4 (H.264/AAC via WebCodecs), selectable quality, exact frame size with the scene background. The timeline is recorded frame by frame with no dropped frames.
 
-## Как это работает
+## How it works
 
-- **Рендер:** three.js. На Windows и Linux по умолчанию WebGPU, на Mac WebGL; если WebGPU не заработал, приложение само переключается. Шейдеры эффектов пишутся один раз на GLSL, а WGSL для WebGPU генерируется из них скриптом `dev/gen-wgsl.mjs`.
-- **Приватность:** файлы, камера и микрофон обрабатываются локально. Из сети загружаются только библиотеки с CDN и модели нейросетей (распознавание рук и глубина), и только когда вы включаете эти функции.
-- **Установка как приложения:** сайт можно поставить на рабочий стол или экран телефона (PWA).
-- **Языки интерфейса:** русский, украинский, английский, испанский, немецкий. Язык выбирается по настройкам браузера.
+- **Rendering:** three.js. WebGPU is the default on Windows and Linux, WebGL on Mac; if WebGPU fails the app switches by itself. Effect shaders are written once in GLSL and the WGSL for WebGPU is generated from them by `dev/gen-wgsl.mjs`.
+- **Privacy:** files, camera and microphone are processed locally. Only libraries from the CDN and neural network models (hand tracking and depth) are downloaded, and only when you turn those features on.
+- **Install as an app:** the site can be added to the desktop or phone home screen (PWA).
+- **Interface languages:** Russian, Ukrainian, English, Spanish, German, picked from the browser settings.
 
-## Требования
+## Requirements
 
-Современный браузер с WebGL 2; лучше всего работает в Chrome и Edge. WebGPU необязателен. Для эффектов желательна дискретная или современная встроенная видеокарта: карточка «Ваш компьютер» измеряет скорость и подсказывает, сколько точек комфортно.
+A modern browser with WebGL 2; works best in Chrome and Edge. WebGPU is optional. A discrete or modern integrated GPU is recommended for effects: the "Your computer" card measures speed and suggests a comfortable point count.
 
-Горячие клавиши и управление мышью: **[docs/CONTROLS.md](docs/CONTROLS.md)**.
+Mouse and keyboard controls: **[docs/CONTROLS.md](docs/CONTROLS.md)** (in Russian).
 
-## Сборка
+## Build
 
-Нужен только Python 3, Node.js не требуется.
+Only Python 3 is needed, no Node.js.
 
 ```bash
-python3 build.py            # собрать assets/app.js (index.html открывается двойным кликом)
-python3 build.py --watch    # пересобирать при каждом сохранении
-python3 build.py --web      # собрать лёгкую версию для публикации в web/
+python3 build.py            # build assets/app.js (index.html opens by double click)
+python3 build.py --watch    # rebuild on every save
+python3 build.py --web      # build the light version for publishing into web/
 ```
 
-Публикация: папка `web/` готова к загрузке на любой статический хостинг (около 300 КБ, three.js и иконки с CDN). Заголовки безопасности для Vercel (`vercel.json`) генерируются тем же `build.py`.
+Publishing: the `web/` folder is ready for any static host (about 300 KB, three.js and icons from a CDN). The Vercel security headers (`vercel.json`) are generated by the same `build.py`.
 
-## Структура проекта
+## Project layout
 
 ```
-index.html        страница приложения
-assets/           app.js (готовая сборка), стили, шрифты Geist, иконки приложения
-src/              исходный код на ES-модулях (подробно: src/README.md)
-dev/              инструменты разработчика: проверка модулей, генерация WGSL, дымовой тест эффектов
-docs/             документация: управление, дизайн-бриф, инвентарь эффектов, отчёт по WebGPU
-samples/          демо-модель: demo.obj + demo.mtl + demo_texture.png
-vendor/           three.js (MIT), иконки Phosphor (MIT)
-web/              лёгкая версия для публикации (создаётся build.py --web)
-build.py          сборщик
+index.html        the app page
+assets/           app.js (built), styles, Geist fonts, app icons
+src/              source as ES modules (details: src/README.md)
+dev/              developer tools: module check, WGSL generation, effects smoke test
+docs/             documentation: controls, design brief, effects inventory, WebGPU report
+samples/          demo model: demo.obj + demo.mtl + demo_texture.png
+vendor/           three.js (MIT), Phosphor icons (MIT)
+web/              light version for publishing (made by build.py --web)
+build.py          the builder
 ```
 
-Перед изменениями интерфейса прочитайте **[docs/DESIGN.md](docs/DESIGN.md)**: там цвета, размеры, значки и правила оформления.
+Before changing the interface read **[docs/DESIGN.md](docs/DESIGN.md)** (in Russian): colors, sizes, icons and layout rules.
 
-## Известные ограничения
+## Known limitations
 
-- Модели со сжатием Draco пока не поддерживаются.
-- Анимации и скелеты при экспорте в GLB не сохраняются.
-- Единицы: glTF использует метры. Для моделей из CAD или FBX (миллиметры, сантиметры) выберите масштаб на вкладке «Экспорт».
+- Draco-compressed models are not supported yet.
+- Animations and skeletons are not saved on GLB export.
+- Units: glTF uses meters. For models from CAD or FBX (millimeters, centimeters) pick a scale on the Export tab.
 
-## Лицензии
+## Licenses
 
-Исходный код проекта: все права защищены, подробнее в [LICENSE](LICENSE). Сторонние компоненты: three.js (MIT), иконки Phosphor (MIT), шрифт Geist (SIL OFL), проверка GLB при разработке: Khronos glTF Validator.
+Project source code: all rights reserved, see [LICENSE](LICENSE). Third-party: three.js (MIT), Phosphor icons (MIT), Geist font (SIL OFL), GLB validation during development: Khronos glTF Validator.
