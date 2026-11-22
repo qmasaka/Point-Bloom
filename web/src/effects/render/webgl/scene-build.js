@@ -36,7 +36,7 @@ g.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(count).fill(
 g.setAttribute('aPath', new THREE.BufferAttribute(new Float32Array(count), 1));
 g.setAttribute('aIdx', new THREE.BufferAttribute(idx, 1));
 g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
-g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 2).fill(1), 2));
+g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 3).fill(1), 3));
 this._grabs = new Map();
 this._animCloud = st.source === 'model' && c.anim && c.norm ? c : null;
 this._animVer = -1;
@@ -111,6 +111,7 @@ this._computeLinks();
 }
 _disposePoints() {
 if (!this.points) return;
+this._disposeExperiments();
 this.app.viewport.scene.remove(this.points);
 this.points.traverse((o) => {
 if (o.geometry && o !== this.points) o.geometry.dispose();

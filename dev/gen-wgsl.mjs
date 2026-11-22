@@ -37,6 +37,8 @@ const TEXTURES_VERT = {
 	uScrMTex: { name: 'scrMTex', mode: 'load' },
 	uSlitTex: { name: 'slitTex', mode: 'load', array: true },
 	uSortTex: { name: 'sortTex', mode: 'load' },
+	uExperimentField: { name: 'experimentField', mode: 'load' },
+	uExperimentShapes: { name: 'experimentShapes', mode: 'load' },
 };
 const TEXTURES_FRAG = { uAtlas: { name: 'atlasTex', mode: 'sample', sampler: 'linSamp' } };
 
@@ -168,7 +170,9 @@ const TEX_DECL = `@group(0) @binding(12) var specTex: texture_2d<f32>;
 @group(0) @binding(18) var scrDep: texture_2d<f32>;
 @group(0) @binding(19) var scrMTex: texture_2d<f32>;
 @group(0) @binding(20) var slitTex: texture_2d_array<f32>;
-@group(0) @binding(21) var sortTex: texture_2d<f32>;`;
+@group(0) @binding(21) var sortTex: texture_2d<f32>;
+@group(0) @binding(22) var experimentField: texture_2d<f32>;
+@group(0) @binding(23) var experimentShapes: texture_2d<f32>;`;
 const makeCompute = (progV, resV) => `${frameStruct}
 @group(0) @binding(0) var<uniform> fr: Frame;
 
@@ -206,7 +210,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 	aColor = ca.rgb;
 	aPath = ca.w;
 	aColorB = cb.rgb;
-	aVis = vec2f(cb.w, na.w);
+	aVis = vec3f(cb.w, na.w, inP2[count + i].w);
 	aNormal = na.xyz;
 	aNormalB = inP2[count + i].xyz;
 	aSculpt = sc.xyz;

@@ -5275,6 +5275,14 @@ body.is-resizing-h * {
 	border-color: var(--accent-line);
 	background: rgba(229, 138, 69, 0.07);
 }
+.fx-layer-head .fx-prev-icon {
+	display: grid;
+	place-items: center;
+	color: var(--text-faint);
+}
+.fx-layer.is-on .fx-prev-icon {
+	color: var(--accent-text);
+}
 .fx-layer-head .switch {
 	justify-self: end;
 }

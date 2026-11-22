@@ -1,6 +1,12 @@
 export const pointsComputeHeroWGSL = `
 struct Frame {
 	@size(16) uAdd: f32,
+	uExperimentShapeInfo: vec4f,
+	uExperimentSim: vec4f,
+	uExperimentView: vec4f,
+	uImpossible: vec4f,
+	uInterference: vec4f,
+	uRecursion: vec4f,
 	@size(16) uSolid: vec3f,
 	@size(16) uAtt: f32,
 	@size(16) uSize: f32,
@@ -165,6 +171,8 @@ struct Frame {
 @group(0) @binding(19) var scrMTex: texture_2d<f32>;
 @group(0) @binding(20) var slitTex: texture_2d_array<f32>;
 @group(0) @binding(21) var sortTex: texture_2d<f32>;
+@group(0) @binding(22) var experimentField: texture_2d<f32>;
+@group(0) @binding(23) var experimentShapes: texture_2d<f32>;
 
 var<private> aOrigin: vec3f;
 var<private> aTarget: vec3f;
@@ -178,7 +186,7 @@ var<private> aColorB: vec3f;
 var<private> aHide: f32;
 var<private> aDepth: f32;
 var<private> aPath: f32;
-var<private> aVis: vec2f;
+var<private> aVis: vec3f;
 var<private> vColor: vec3f;
 var<private> vD: f32;
 var<private> vDk: f32;
@@ -1593,6 +1601,13 @@ fn frLayerSubj(k_in: f32, g_in: vec2f) -> f32 {
 	return select(0.0, 1.0, (textureLoad(frTex, vec3i(i32(p.x), i32(p.y), layer).xy, vec3i(i32(p.x), i32(p.y), layer).z, 0).a > 0.5));
 }
 
+fn experimentHash(seed_in: i32) -> f32 {
+	var seed: i32 = seed_in;
+	var v: i32 = ((((((seed % 65521)) * 25173) + 13849)) % 65521);
+	var m: i32 = (v % 32749);
+	return (f32(((((m * m) + (v * 31))) % 65521)) / 65521.0);
+}
+
 fn main_() {
 	if ((aHide > 0.5)) {
 		gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);
@@ -1696,6 +1711,10 @@ fn main_() {
 	}
 	var pos: vec3f = fxDisplace(aOrigin, aTarget, aIdx, &base, &maskV);
 	pos += aSculpt;
+	var experimentTint: f32 = 0.0;
+	var experimentScale: f32 = 1.0;
+	var phaseMix: f32 = 0.0;
+	var phaseColor: vec3f = vec3f(0.0);
 	if ((gScopeG > 0.01)) {
 		pos += (((((vec3f(hash11((aIdx * 13.1)), hash11((aIdx * 7.7)), hash11((aIdx * 3.3))) - 0.5)) * gScopeG) * fr.uScopeQ.w) * 0.4);
 	}
@@ -1721,6 +1740,7 @@ fn main_() {
 	if ((fr.uFr.x > 0.5)) {
 		colM = frCol;
 	}
+	colM = mix(colM, phaseColor, phaseMix);
 	var nrmM: vec3f = mix(aNormal, aNormalB, eC);
 	if (((fr.uColorBy > 2.5) && (fr.uColorBy < 3.5))) {
 		col = colM;
@@ -1733,7 +1753,8 @@ fn main_() {
 	}
 	var vm: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));
 	var vis: f32 = mix(aVis.x, aVis.y, vm);
-	vColor = (((col * fr.uBright) * ((1.0 + (fr.uBeat * 0.3)))) * vis);
+	vColor = (((mix(col, phaseColor, (phaseMix * 0.78)) * fr.uBright) * ((1.0 + (fr.uBeat * 0.3)))) * vis);
+	vColor = mix(vColor, (((mix(fr.uP1, fr.uP2, experimentTint) * fr.uBright) * ((0.6 + experimentTint))) * vis), (experimentTint * 0.72));
 	if (((fr.uPaintP.x > 0.5) && (aPaint.w > 0.002))) {
 		var pa: f32 = aPaint.w;
 		var cov: f32 = (1.0 - exp((-pa * 3.4)));
@@ -2051,7 +2072,7 @@ fn main_() {
 	s *= (1.0 - (0.85 * gHypF));
 	s *= (((((1.0 + (gScopeT * fr.uScopeQ.y)) + ((gScopeG * fr.uScopeQ.z) * 2.5)) + (gDepthG * 0.8))) * ((1.0 - gScopeD)));
 	s *= select(0.73, ((0.73 * fr.uAtt) / max(-mv.z, (fr.uAtt * 0.1))), (fr.uAtt > 0.001));
-	gl_PointSize = clamp(s, 1.0, 95.0);
+	gl_PointSize = clamp((s * experimentScale), 1.0, 95.0);
 	if ((((((gScopeD > 0.97) || (dkv > 0.97)) || (gDrop > 0.5)) || (gGrow < 0.03)) || (gHypF > 0.97))) {
 		gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;
@@ -2077,7 +2098,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 	aColor = ca.rgb;
 	aPath = ca.w;
 	aColorB = cb.rgb;
-	aVis = vec2f(cb.w, na.w);
+	aVis = vec3f(cb.w, na.w, inP2[count + i].w);
 	aNormal = na.xyz;
 	aNormalB = inP2[count + i].xyz;
 	aSculpt = sc.xyz;

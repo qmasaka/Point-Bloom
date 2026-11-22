@@ -1,6 +1,12 @@
 export const pointsRenderWGSL =  `
 struct Frame {
 	@size(16) uAdd: f32,
+	uExperimentShapeInfo: vec4f,
+	uExperimentSim: vec4f,
+	uExperimentView: vec4f,
+	uImpossible: vec4f,
+	uInterference: vec4f,
+	uRecursion: vec4f,
 	@size(16) uSolid: vec3f,
 	@size(16) uAtt: f32,
 	@size(16) uSize: f32,
@@ -336,6 +342,12 @@ fn fs_raw(in: VOut) -> @location(0) vec4f {
 export const shadowRenderWGSL =  `
 struct Frame {
 	@size(16) uAdd: f32,
+	uExperimentShapeInfo: vec4f,
+	uExperimentSim: vec4f,
+	uExperimentView: vec4f,
+	uImpossible: vec4f,
+	uInterference: vec4f,
+	uRecursion: vec4f,
 	@size(16) uSolid: vec3f,
 	@size(16) uAtt: f32,
 	@size(16) uSize: f32,

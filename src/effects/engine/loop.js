@@ -681,6 +681,7 @@ export class LoopPart {
 			}
 			u.uShockP.value.set(shE, 1.2, u.uShockP.value.z, 0);
 			this.onFrame && this.onFrame(this.levels);
+			this._experimentTick(dt, L);
 			this._fxCheck();
 			if (off) off.fresh = true;
 			this.app.viewport.invalidate();

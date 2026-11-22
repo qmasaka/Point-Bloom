@@ -88,7 +88,9 @@ The idea comes from TouchDesigner POPs: a chain of independent operators over a 
 | **Digital** | Voxels, Glitch, Datamosh |
 | **Graphics** | Shadow on the wall, Links, Slice, Time trails, Echo, Tracking frames |
 | **Control** | Cursor, Brush (watercolor on the shape), Hands (camera) |
-| **Experiments** | Hyperspace (the fourth dimension), Screen (video plays on the shape) |
+| **Experiments** | Hyperspace, Screen, Autophagy, Reaction Skin, Impossible Sculpture, Causal Wounds, Phase Interference, Recursive Anatomy |
+
+See the [experiments guide](docs/EXPERIMENTS.md) for controls and implementation details (in Russian).
 
 #### Morphing
 

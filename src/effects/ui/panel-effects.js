@@ -764,7 +764,7 @@ export function createEffectsPanel(app, root, engine) {
 					extraCtl[ex.key] = sg;
 					put(field(ex.label, sg.el, { wide: true }), ex);
 				} else {
-					const sl = slider({ noNorm: !!ex.noNorm || !!(ex.int && /сколько|число|копий|кадров|точек|узлов|слоёв|перьев|колонок|линий|рамок/i.test(ex.label)), min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.int ? 0 : ex.noNorm ? 1 : 2, unit: ex.unit, log: ex.log, format: ex.log ? (v) => formatInt(v) : undefined, onInput: (v) => { L[ex.key] = v; if (ex.relayout) engine.relayoutFrames(); }, onChange: after });
+					const sl = slider({ noNorm: !!ex.noNorm || !!(ex.int && /сколько|число|копий|кадров|точек|узлов|слоёв|перьев|колонок|линий|рамок/i.test(ex.label)), min: ex.min, max: ex.max, step: ex.step, value: L[ex.key], digits: ex.digits ?? (ex.int ? 0 : ex.noNorm ? 1 : 2), unit: ex.unit, log: ex.log, format: ex.log ? (v) => formatInt(v) : undefined, onInput: (v) => { L[ex.key] = v; if (ex.relayout) engine.relayoutFrames(); }, onChange: after });
 					extraCtl[ex.key] = sl;
 					put(field(ex.label, sl.el), ex);
 				}
@@ -846,7 +846,7 @@ export function createEffectsPanel(app, root, engine) {
 			if (def.sound !== false) body.append(audioHead, audioWrap);
 			syncAudioHead();
 			audioUiFull();
-			const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
+			const prevCanvas = def.staticIcon ? h('span', { class: 'fx-prev fx-prev-icon', 'aria-hidden': 'true', html: icon(def.icon, 16) }) : h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
 			const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
 			const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right', 'data-tip-delay': '1300' }, row);
 			const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, body);
@@ -864,7 +864,7 @@ export function createEffectsPanel(app, root, engine) {
 				}
 			});
 			fbody.append(card);
-			attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
+			if (!def.staticIcon) attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
 			inspBox.append(insp);
 			cards.push({ folder, def, L, sw, amount, react, band, reactRow, modeSeg, thr, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
 		}

@@ -167,6 +167,12 @@ export class WebGPUBackend extends RenderBackend {
 		const pts = this.pts;
 		const sh = e.shared;
 		const S = this.sync;
+		for (const [key, tex] of [['experimentField', sh.uExperimentField.value], ['experimentShapes', sh.uExperimentShapes.value]]) {
+			if (!tex || (S[key]?.tex === tex && S[key].version === tex.version)) continue;
+			const row = key === 'experimentShapes' && S[key]?.tex === tex ? e._experimentShapes?.dirtyRow ?? null : null;
+			pts.setExperimentTexture(key, tex.image, row);
+			S[key] = { tex, version: tex.version };
+		}
 		const spec = e.specTex;
 		if (spec && S.spec !== spec.version) {
 			S.spec = spec.version;

@@ -13,7 +13,7 @@ const ATTR_GROUPS = {
 	aColor: ['colorA'],
 	aPath: ['colorA'],
 	aColorB: ['colorB'],
-	aVis: ['colorB', 'normA'],
+	aVis: ['colorB', 'normA', 'normB'],
 	aNormal: ['normA'],
 	aNormalB: ['normB'],
 	aSculpt: ['sculpt'],
@@ -36,6 +36,7 @@ function packGroup(group, a, n, out = new Float32Array(n * 4)) {
 		if (!src) return;
 		for (let i = 0; i < n; i++) out[i * 4 + 3] = src[i * k + off];
 	};
+	const visSize = a.aVis?.length / n;
 	switch (group) {
 		case 'origin':
 			v3(a.aOrigin);
@@ -51,14 +52,15 @@ function packGroup(group, a, n, out = new Float32Array(n * 4)) {
 			break;
 		case 'colorB':
 			v3(a.aColorB);
-			w1(a.aVis, 2, 0);
+			w1(a.aVis, visSize, 0);
 			break;
 		case 'normA':
 			v3(a.aNormal);
-			w1(a.aVis, 2, 1);
+			w1(a.aVis, visSize, 1);
 			break;
 		case 'normB':
 			v3(a.aNormalB);
+			if (visSize === 3) w1(a.aVis, 3, 2);
 			break;
 		case 'sculpt':
 			v3(a.aSculpt);
@@ -102,6 +104,8 @@ export class WebGPUPoints {
 		this.scrMTex = this._tex2d(1, 1, 'rgba8unorm');
 		this.slitTex = D.createTexture({ size: [1, 1, 1], format: 'rgba8unorm-srgb', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
 		this.sortTex = this._tex2d(1, 1, 'rg32float');
+		this.experimentField = this._tex2d(1, 1, 'rgba32float');
+		this.experimentShapes = this._tex2d(1, 1, 'rgba32float');
 		D.queue.writeTexture({ texture: this.scrTex }, new Uint8Array([0, 0, 0, 255]), { bytesPerRow: 4 }, [1, 1]);
 
 		const C = GPUShaderStage.COMPUTE;
@@ -150,6 +154,8 @@ export class WebGPUPoints {
 			t(19, 'unfilterable-float'),
 			t(20, 'unfilterable-float', '2d-array'),
 			t(21, 'unfilterable-float'),
+			t(22, 'unfilterable-float'),
+			t(23, 'unfilterable-float'),
 		];
 	}
 
@@ -165,6 +171,8 @@ export class WebGPUPoints {
 			{ binding: 19, resource: this.scrMTex.createView() },
 			{ binding: 20, resource: this.slitTex.createView({ dimension: '2d-array' }) },
 			{ binding: 21, resource: this.sortTex.createView() },
+			{ binding: 22, resource: this.experimentField.createView() },
+			{ binding: 23, resource: this.experimentShapes.createView() },
 		];
 	}
 
@@ -366,6 +374,13 @@ export class WebGPUPoints {
 	setSort(data, w, h) {
 		const tex = this._resize('sortTex', w, h, 'rg32float');
 		this.device.queue.writeTexture({ texture: tex }, data, { bytesPerRow: w * 8 }, [w, h]);
+	}
+
+	setExperimentTexture(key, image, row = null) {
+		const { data, width, height } = image;
+		const tex = this._resize(key, width, height, 'rgba32float');
+		const start = row ?? 0;
+		this.device.queue.writeTexture({ texture: tex, origin: [0, start] }, data, { offset: start * width * 16, bytesPerRow: width * 16 }, [width, row === null ? height : 1]);
 	}
 
 	async prepare({ salt = 0, mapShader = null } = {}) {
@@ -596,7 +611,7 @@ export class WebGPUPoints {
 		for (const L of Object.values(this.layers)) for (const b of Object.values(L.bufs)) b.destroy();
 		this.layers = {};
 		for (const it of this.insts) it.buf.destroy();
-		for (const t of [this.specTex, this.pieceTex, this.frTex, this.heroTex, this.atlasTex, this.scrTex, this.scrDep, this.scrMTex, this.slitTex, this.sortTex]) t.destroy();
+		for (const t of [this.specTex, this.pieceTex, this.frTex, this.heroTex, this.atlasTex, this.scrTex, this.scrDep, this.scrMTex, this.slitTex, this.sortTex, this.experimentField, this.experimentShapes]) t.destroy();
 		this.dummyBuf.destroy();
 		this.pick?.buf?.destroy();
 		this.depth?.destroy();

@@ -30,6 +30,7 @@ import { ShadowPart } from './shadow.js';
 import { ChronoPart } from './chrono.js';
 import { PixelSortPart } from './pixelsort.js';
 import { TrackPickPart } from './track-pick.js';
+import { ExperimentsPart } from './experiments.js';
 import { mixin } from './mixin.js';
 export class EffectsEngine {
 constructor(app) {
@@ -261,6 +262,7 @@ this.hud = new TrackerHud(document.getElementById('viewport'));
 this.app.viewport.fxGrid = !!this.state.look.grid;
 this.applyBg();
 this.backend.install();
+this._offExperimentFrame = app.bus.on('rendered', () => this._experimentRendered());
 app.nav.animateTo({ target: new THREE.Vector3(0, 0, 0), distance: 5.2 }, 0);
 this.syncLookFromPoints();
 if (this.pm.ready) {
@@ -287,6 +289,8 @@ cancelAnimationFrame(this._raf);
 this._syncPaintLock(true);
 clearTimeout(this._sceneT);
 this._offScene && this._offScene();
+this._offExperimentFrame?.();
+this._offExperimentFrame = null;
 this.hud?.dispose();
 this.hud = null;
 this.backend?.dispose();
@@ -352,11 +356,11 @@ this.app.viewport.invalidate();
 }
 _syncPaintLock(off) {
 const B = this.state.layers.brush;
-const want = !off && this.active && !!B && B.on && B.lock !== 'off';
+const want = !off && this.active && ((B?.on && B.lock !== 'off') || this.state.layers.causalWounds.on);
 const nav = this.app.nav;
 if (nav.paintLock === want) return;
 nav.paintLock = want;
 this.app.viewport.container.classList.toggle('paint-lock', want);
 }
 }
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, ChronoPart, PixelSortPart, TrackPickPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, ChronoPart, PixelSortPart, TrackPickPart, ExperimentsPart);

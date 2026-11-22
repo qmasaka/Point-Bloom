@@ -8,6 +8,7 @@ this.shocks.length = Math.min(this.shocks.length, 4);
 }
 _onDown(e) {
 this._pointerDown = true;
+if (e.button === 0 && !e.altKey && this.state.layers.causalWounds.on) this._experimentPointer(e, 'wound');
 this._down = { x: e.clientX, y: e.clientY, t: performance.now(), b: e.button };
 if (this.mouseOn && this.state.layers.brush.on) {
 this.addBrushHit(this.mouse);
@@ -17,6 +18,7 @@ _onUp(e) {
 this._pointerDown = false;
 const d = this._down;
 this._down = null;
+if (d?.b === 0 && !e.altKey && this.state.layers.reactionSkin.on && Math.hypot(e.clientX - d.x, e.clientY - d.y) <= 6) this._experimentPointer(e, 'seed');
 if (!d || d.b !== 0) return;
 return;
 if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 5 || performance.now() - d.t > 450) return;
@@ -25,6 +27,7 @@ if (this.mouseOn) this.addShock(this.mouse);
 }
 _onMove(e) {
 if (!this.points) return;
+if (e.buttons === 1 && !e.altKey && this.state.layers.causalWounds.on) this._experimentPointer(e, 'wound');
 const mp = this._mScr;
 if (mp) {
 const v = (this._mVel ||= { x: 0, y: 0 });

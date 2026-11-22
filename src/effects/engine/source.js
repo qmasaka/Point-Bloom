@@ -462,10 +462,11 @@ export class SourcePart {
 			const frac = this._fracFor(key);
 			const n = vis.count;
 			for (let i = 0; i < n; i++) {
-				const cur = vis.array[i * 2] * (1 - k) + vis.array[i * 2 + 1] * k;
+				const offset = i * vis.itemSize;
+				const cur = vis.array[offset] * (1 - k) + vis.array[offset + 1] * k;
 				const rnd = (Math.imul(i + 1, 2654435761) >>> 0) / 4294967296;
-				vis.array[i * 2] = cur;
-				vis.array[i * 2 + 1] = rnd < frac ? 1 : 0;
+				vis.array[offset] = cur;
+				vis.array[offset + 1] = rnd < frac ? 1 : 0;
 			}
 			vis.needsUpdate = true;
 		}
