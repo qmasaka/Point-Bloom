@@ -4,12 +4,39 @@ import { ExperimentField } from './experiment-field.js';
 const FIELD_STEP = 1 / 24;
 const SHAPE_WIDTH = 256;
 const SHAPE_LIMIT = 65536;
-const ANCHORS = 16;
+const ANCHORS = 12;
 function visibleIndices(cloud) {
 if (!cloud?.hide) return null;
 const indices = [];
 for (let i = 0; i < cloud.count; i++) if (cloud.hide[i] < 0.5) indices.push(i);
 return indices;
+}
+function copyAnchors({ aTarget, aVis, aHide }) {
+const candidates = [];
+const count = Math.min(192, aTarget.count);
+const stride = aTarget.count / Math.max(1, count);
+for (let i = 0; i < count; i++) {
+const start = Math.floor((i + 0.5) * stride);
+let point = start;
+for (let j = 0; j < 48 && (aVis.getY(point) < 0.01 || aHide.getX(point) > 0.5); j++) point = (point + 1) % aTarget.count;
+if (aVis.getY(point) >= 0.01 && aHide.getX(point) <= 0.5) candidates.push({ point, distance: Infinity });
+}
+const pos = aTarget.array;
+const result = [];
+let next = candidates[0];
+for (let i = 0; i < ANCHORS; i++) {
+const point = next?.point ?? result[0] ?? 0;
+result.push(point);
+const p = point * 3;
+next = null;
+for (const candidate of candidates) {
+const q = candidate.point * 3;
+const dx = pos[p] - pos[q], dy = pos[p + 1] - pos[q + 1], dz = pos[p + 2] - pos[q + 2];
+candidate.distance = Math.min(candidate.distance, dx * dx + dy * dy + dz * dz);
+if (!next || candidate.distance > next.distance) next = candidate;
+}
+}
+return result;
 }
 function shapeTexture(clouds, attributes, count) {
 const rows = Math.ceil(count / SHAPE_WIDTH);
@@ -30,14 +57,12 @@ const c = (k) => Math.round(Math.max(0, Math.min(1, rgb?.[from + k] ?? 0.6)) * 2
 data[to + 3] = c(0) + 256 * c(1) + 65536 * c(2);
 }
 }
-const pos = attributes.aTarget.array, vis = attributes.aVis;
-for (let i = 0; i < ANCHORS; i++) {
-let j = Math.floor((0.37 + i * 0.61803399) % 1 * attributes.aTarget.count);
-for (let k = 0; k < 64 && (vis.getY(j) < 0.01 || attributes.aHide.getX(j) > 0.5); k++) j = (j + 1) % attributes.aTarget.count;
+const pos = attributes.aTarget.array;
+copyAnchors(attributes).forEach((j, i) => {
 const to = (rows * 2 * SHAPE_WIDTH + i) * 4;
 data.set(pos.subarray(j * 3, j * 3 + 3), to);
 data[to + 3] = j;
-}
+});
 const tex = new THREE.DataTexture(data, SHAPE_WIDTH, rows * 2 + 1, THREE.RGBAFormat, THREE.FloatType);
 tex.needsUpdate = true;
 return tex;

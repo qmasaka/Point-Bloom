@@ -12,6 +12,15 @@ function cellOf(x, y, z) {
 	return axis(x) + SIDE * (axis(y) + SIDE * axis(z));
 }
 
+function packedFieldCoordinate(x, y, z) {
+	const axis = (v) => clamp(v * 8 + 15.5, 0, SIDE - 1);
+	const gx = axis(x), gy = axis(y), gz = axis(z);
+	const ix = Math.min(SIDE - 2, Math.floor(gx)), iy = Math.min(SIDE - 2, Math.floor(gy)), iz = Math.min(SIDE - 2, Math.floor(gz));
+	const cell = ix + SIDE * (iy + SIDE * iz);
+	const fraction = Math.round((gx - ix) * 7) + 8 * (Math.round((gy - iy) * 7) + 8 * Math.round((gz - iz) * 7));
+	return cell * 512 + fraction;
+}
+
 function graphOf(cells, occupied) {
 	return cells.map((id) => {
 		const x = id % SIDE, y = Math.floor(id / SIDE) % SIDE, z = Math.floor(id / (SIDE * SIDE));
@@ -58,7 +67,7 @@ export class ExperimentField {
 			const index = i / 3;
 			const x = pos[i], y = pos[i + 1], z = pos[i + 2];
 			const cell = cellOf(x, y, z);
-			vis.array[i + 2] = cell;
+			vis.array[i + 2] = packedFieldCoordinate(x, y, z);
 			if (vis.array[i + 1] <= 0.01 || (faces && geometry.attributes.aHide.array[index] > 0.5)) continue;
 			if (!counts[cell]++) {
 				this.cells.push(cell);
@@ -142,14 +151,17 @@ export class ExperimentField {
 			p.fromArray(this.current, j).add(this._offset.fromArray(d, j)).applyMatrix4(this.projection);
 			const x = Math.floor((p.x * 0.5 + 0.5) * width), y = Math.floor((0.5 - p.y * 0.5) * height);
 			let sx = 0, sy = 0, sz = 0;
-			if (p.z >= -1 && p.z <= 1 && x >= 2 && y >= 2 && x < width - 2 && y < height - 2) {
+			if (p.z >= -1 && p.z <= 1 && x >= 4 && y >= 4 && x < width - 4 && y < height - 4) {
 				const i = x + y * width;
-				const gx = img[i + 2] - img[i - 2], gy = img[i - 2 * width] - img[i + 2 * width];
-				const edge = Math.min(1, Math.hypot(gx, gy) * 3);
-				const eddy = settings.chaos * (0.3 + edge) * Math.sin(this.current[j] * 18 + this.current[j + 1] * 24 + this.time * 1.6);
+				const gx = (img[i + 2] - img[i - 2]) * 0.65 + (img[i + 4] - img[i - 4]) * 0.35;
+				const gy = (img[i - 2 * width] - img[i + 2 * width]) * 0.65 + (img[i - 4 * width] - img[i + 4 * width]) * 0.35;
+				const edge = Math.min(1, Math.hypot(gx, gy) * 3.4);
+				const eddy = settings.chaos * (0.35 + edge) * Math.sin(this.current[j] * 9 + this.current[j + 1] * 13 + this.time * 1.25);
 				sx = settings.pull * gx - gy * eddy;
 				sy = settings.pull * gy + gx * eddy;
-				sz = settings.edge * (edge * 0.7 - img[i] * 0.3) + eddy * img[i] * 0.3;
+				const surround = (img[i + 4] + img[i - 4] + img[i + 4 * width] + img[i - 4 * width]) * 0.25;
+				const fold = clamp((img[i] - surround) * 1.8, -0.38, 0.5);
+				sz = settings.edge * (edge * 0.52 - fold) + eddy * edge * 0.28;
 			}
 			const gain = STEP * settings.feedback * 2.8;
 			d[j] = clamp(d[j] * retain + gain * (sx * this.right.x + sy * this.up.x + sz * this.forward.x), -0.8, 0.8);
@@ -264,9 +276,10 @@ export class ExperimentField {
 		}
 		for (let index = 0; index < this.cells.length; index++) {
 			const id = this.cells[index], j = id * 3, p = id * 4, i = this.indices[id];
-			const chem = reaction.on && b ? clamp((b[id] - 0.08) * 3.4, 0, 1) * reaction.amount : 0;
+			const concentration = reaction.on && b ? clamp((b[id] - 0.06) * 3.8, 0, 1) : 0;
+			const chem = concentration * concentration * (3 - 2 * concentration) * reaction.amount;
 			const mutation = chem * chem * reaction.mutation;
-			const ridge = chem * reaction.growth * (0.16 + mutation * 0.6);
+			const ridge = chem * reaction.growth * (0.12 + mutation * 0.55);
 			let w = this.wounds[id];
 			if (wounds.on) {
 				let nearby = 0;
@@ -275,7 +288,8 @@ export class ExperimentField {
 				this.cracks[id] = Math.max(w * decay, 0) + nearby * grain * wounds.spread * 0.17;
 			}
 			w = wounds.on ? w * wounds.amount : 0;
-			const layer = id % 4;
+			const ribbon = Math.sin(this.centers[j] * 4.8 + this.centers[j + 1] * 8 - this.centers[j + 2] * 5.5);
+			const layer = Math.floor((ribbon * 0.5 + 0.5) * 3.99);
 			const back = Math.min(this.history.length - 1, 2 + layer * 4);
 			const past = back >= 0 ? this.history[(this.historyHead - back + HISTORY) % HISTORY] : null;
 			for (let k = 0; k < 3; k++) {
@@ -283,11 +297,11 @@ export class ExperimentField {
 				const local = this.autoOn ? this.feedback[j + k] * auto.amount : 0;
 				const offset = local + ridge * normals[i + k] + noise * mutation * 0.14;
 				const live = this.current[j + k] + offset;
-				const cut = (layer + 1) * 0.12 * normals[i + k] + noise * 0.12;
+				const cut = (0.19 + layer * 0.15) * normals[i + k] + noise * 0.09;
 				this.output[p + k] = offset + w * wounds.depth * ((past ? past[j + k] - live : 0) + cut);
 				if (snapshot) snapshot[j + k] = live;
 			}
-			this.output[p + 3] = Math.min(1, chem * 0.9 + w * 0.75);
+			this.output[p + 3] = 2 + chem - Math.min(1, w * (0.82 + layer * 0.12));
 		}
 		if (wounds.on) [this.wounds, this.cracks] = [this.cracks, this.wounds];
 		this.texture.needsUpdate = true;

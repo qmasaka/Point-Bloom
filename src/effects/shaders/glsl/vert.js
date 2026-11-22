@@ -115,6 +115,45 @@ float experimentHash(int seed) {
 	return float((m * m + v * 31) % 65521) / 65521.0;
 }
 
+vec4 experimentCell(int id) {
+	return texelFetch(uExperimentField, ivec2(id % 256, id / 256), 0);
+}
+
+vec4 sampleExperimentField(int packed) {
+	int id = packed / 512;
+	int fraction = packed % 512;
+	float a = float(fraction % 8) / 7.0;
+	float b = float((fraction / 8) % 8) / 7.0;
+	float c = float(fraction / 64) / 7.0;
+	int x = 1;
+	int y = 32;
+	int z = 1024;
+	if (a < b) {
+		float t = a; a = b; b = t;
+		int s = x; x = y; y = s;
+	}
+	if (b < c) {
+		float t = b; b = c; c = t;
+		int s = y; y = z; z = s;
+	}
+	if (a < b) {
+		float t = a; a = b; b = t;
+		int s = x; x = y; y = s;
+	}
+	vec4 p0 = experimentCell(id);
+	vec4 p1 = experimentCell(id + x);
+	vec4 p2 = experimentCell(id + x + y);
+	vec4 p3 = experimentCell(id + x + y + z);
+	vec4 w = vec4(1.0 - a, a - b, b - c, c) * step(vec4(0.5), vec4(p0.w, p1.w, p2.w, p3.w));
+	float total = dot(w, vec4(1.0));
+	vec4 value = (p0 * w.x + p1 * w.y + p2 * w.z + p3 * w.w) / max(total, 0.001);
+	return vec4(value.xyz, (value.w - 2.0) * step(0.001, total));
+}
+
+vec3 experimentColor(float value) {
+	return vec3(mod(value, 256.0), mod(floor(value / 256.0), 256.0), floor(value / 65536.0)) / 255.0;
+}
+
 void main() {
 	if (aHide > 0.5) {
 
@@ -285,10 +324,13 @@ void main() {
 	float experimentScale = 1.0;
 	float phaseMix = 0.0;
 	vec3 phaseColor = vec3(0.0);
+	float phaseRim = 0.0;
+	float sculptMix = 0.0;
+	vec3 sculptColor = vec3(0.0);
+	float copyShade = 0.0;
 #ifndef HERO
 	if (uExperimentSim.x > 0.5) {
-		int cell = int(aVis.z + 0.5);
-		vec4 field = texelFetch(uExperimentField, ivec2(cell % 256, cell / 256), 0);
+		vec4 field = sampleExperimentField(int(aVis.z));
 		pos += field.xyz * maskV;
 		experimentTint = field.w * maskV;
 	}
@@ -305,9 +347,24 @@ void main() {
 		float sid = floor(aIdx * uExperimentView.w + 0.5);
 		if (uExperimentView.w > uExperimentShapeInfo.x) sid = floor(experimentHash(int(sid) + 373) * uExperimentShapeInfo.x);
 		int q = int(clamp(sid, 0.0, uExperimentShapeInfo.x - 1.0));
-		if (mod(uExperimentShapeInfo.z, 2.0) > 0.5) shapeA = texelFetch(uExperimentShapes, ivec2(q % 256, q / 256), 0).xyz;
-		if (uExperimentShapeInfo.z >= 2.0) shapeB = texelFetch(uExperimentShapes, ivec2(q % 256, q / 256 + int(uExperimentShapeInfo.y)), 0).xyz;
-		pos += ((shapeA - base) * weightA + (shapeB - base) * weightB) * uImpossible.x * maskV;
+		if (weightA > 0.001 && mod(uExperimentShapeInfo.z, 2.0) > 0.5) {
+			vec4 p = texelFetch(uExperimentShapes, ivec2(q % 256, q / 256), 0);
+			shapeA = p.xyz;
+			sculptColor += experimentColor(p.w) * weightA;
+			sculptMix += weightA;
+		}
+		if (weightB > 0.001 && uExperimentShapeInfo.z >= 2.0) {
+			vec4 p = texelFetch(uExperimentShapes, ivec2(q % 256, q / 256 + int(uExperimentShapeInfo.y)), 0);
+			shapeB = p.xyz;
+			sculptColor += experimentColor(p.w) * weightB;
+			sculptMix += weightB;
+		}
+		sculptColor /= max(sculptMix, 0.001);
+		sculptMix *= uImpossible.x * maskV;
+		vec3 toA = shapeA - base, toB = shapeB - base;
+		vec3 axis = vec3(0.28, 0.88, 0.36);
+		vec3 arc = cross(axis, toA * weightA * (1.0 - weightA) - toB * weightB * (1.0 - weightB));
+		pos += (toA * weightA + toB * weightB + arc * 0.72) * uImpossible.x * maskV;
 	}
 	if (uInterference.x > 0.001) {
 		float phase = (uTime - uTOff) * uInterference.z + uExperimentView.y * uExperimentView.z * 5.0;
@@ -316,7 +373,10 @@ void main() {
 		crossWave += sin((base.y * 1.3 - base.z * 0.61) * uInterference.y * 1.73 - phase * 0.73 + angle * 2.0) * 0.33;
 		crossWave += sin(length(base.xz) * uInterference.y * 3.1 - phase * 1.4) * 0.11;
 		int pointId = int(floor(aIdx * uExperimentView.w + 0.5));
-		float chosen = step(crossWave, uInterference.w * 2.02 - 1.01) * step(experimentHash(pointId + 479), uInterference.x * maskV);
+		float threshold = uInterference.w * 2.02 - 1.01;
+		float enabled = step(experimentHash(pointId + 479), uInterference.x * maskV);
+		float chosen = step(crossWave, threshold) * enabled;
+		phaseRim = (1.0 - smoothstep(0.015, 0.16, abs(crossWave - threshold))) * enabled * smoothstep(0.0, 0.1, uInterference.w) * (1.0 - smoothstep(0.9, 1.0, uInterference.w));
 		if (chosen > 0.5) {
 			vec3 alt = vec3(-base.x * 0.71 + 0.56, base.y * 0.88, -base.z + 0.42 * sin(base.y * 3.5));
 			phaseColor = uP2;
@@ -327,8 +387,7 @@ void main() {
 				int row = q / 256 + (uExperimentShapeInfo.z == 2.0 ? int(uExperimentShapeInfo.y) : 0);
 				vec4 samplePoint = texelFetch(uExperimentShapes, ivec2(q % 256, row), 0);
 				alt = samplePoint.xyz;
-				float packed = samplePoint.w;
-				phaseColor = vec3(mod(packed, 256.0), mod(floor(packed / 256.0), 256.0), floor(packed / 65536.0)) / 255.0;
+				phaseColor = experimentColor(samplePoint.w);
 			}
 			pos += alt - base;
 			phaseMix = 1.0;
@@ -347,15 +406,21 @@ void main() {
 			float second = 1.0 - smoothstep(secondGate - 0.06, secondGate, levelDraw);
 			float third = 1.0 - smoothstep(thirdGate - 0.035, thirdGate, levelDraw);
 			int row = int(uExperimentShapeInfo.y) * 2;
+			vec3 copyCenter = uCen;
+			float copyScale = 1.0;
 			for (int i = 0; i < 3; i++) {
 				if (float(i) >= uRecursion.y) break;
 				float weight = first * (i == 0 ? 1.0 : i == 1 ? second : third);
 				if (weight <= 0.001) break;
-				float groupId = floor(experimentHash(pointId * (41 + i * 12) + 1279 + i * 193) * 16.0);
+				float copies = i == 0 ? 12.0 : i == 1 ? 6.0 : 4.0;
+				float groupId = floor(experimentHash(pointId * (41 + i * 12) + 1279 + i * 193) * copies);
 				vec3 anchor = texelFetch(uExperimentShapes, ivec2(int(groupId), row), 0).xyz;
-				pos = mix(pos, anchor + (pos - uCen) * uRecursion.z, weight);
-				experimentScale *= mix(1.0, mix(0.62, 0.85, nearLod), weight);
+				copyCenter += (anchor - uCen) * copyScale * weight;
+				copyScale *= mix(1.0, uRecursion.z, weight);
+				experimentScale *= mix(1.0, mix(0.56, 0.82, nearLod), weight);
+				copyShade += weight * 0.26;
 			}
+			pos = copyCenter + (pos - uCen) * copyScale;
 		}
 	}
 #endif
@@ -375,7 +440,7 @@ void main() {
 	float eC = uMorph < 0.9999 ? (int(uMorphS.x + 0.5) == 2 ? smoothstep(0.5, 0.9, ltC) : morphEase(ltC)) : 1.0;
 	vec3 colM = mix(aColor, aColorB, eC);
 	if (uFr.x > 0.5) colM = frCol;
-	colM = mix(colM, phaseColor, phaseMix);
+	colM = mix(mix(colM, sculptColor, sculptMix), phaseColor, phaseMix);
 #ifdef VSCREEN
 #ifndef HERO
 
@@ -433,8 +498,15 @@ void main() {
 
 	float vm = uMorph * uMorph * (3.0 - 2.0 * uMorph);
 	float vis = mix(aVis.x, aVis.y, vm);
-	vColor = mix(col, phaseColor, phaseMix * 0.78) * uBright * (1.0 + uBeat * 0.3) * vis;
-	vColor = mix(vColor, mix(uP1, uP2, experimentTint) * uBright * (0.6 + experimentTint) * vis, experimentTint * 0.72);
+	float skin = max(0.0, experimentTint);
+	float wound = max(0.0, -experimentTint);
+	float rim = smoothstep(0.05, 0.21, wound) * (1.0 - smoothstep(0.24, 0.65, wound));
+	float vein = smoothstep(0.08, 0.25, skin) * (1.0 - smoothstep(0.33, 0.68, skin));
+	vec3 phaseInk = mix(phaseColor, uP2, 0.27);
+	vColor = mix(col, phaseInk, phaseMix * 0.76) * uBright * (1.0 + uBeat * 0.3) * vis;
+	vColor *= 1.0 - 0.32 * wound - 0.2 * copyShade;
+	vColor += (mix(uP0, uP2, skin) * skin * 0.27 + uP2 * vein * 0.42 + mix(uP1, uP2, 0.65) * rim * 0.55 + mix(uP1, uP2, phaseMix) * phaseRim * 0.28) * uBright * vis;
+	experimentScale *= 1.0 + rim * 0.23 + vein * 0.16 + phaseRim * 0.14;
 
 	if (uPaintP.x > 0.5 && aPaint.w > 0.002) {
 		float pa = aPaint.w;

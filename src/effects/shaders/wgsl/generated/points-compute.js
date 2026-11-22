@@ -1585,6 +1585,60 @@ fn experimentHash(seed_in: i32) -> f32 {
 	return (f32(((((m * m) + (v * 31))) % 65521)) / 65521.0);
 }
 
+fn experimentCell(id__in: i32) -> vec4f {
+	var id_: i32 = id__in;
+	return textureLoad(experimentField, vec2i((id_ % 256), (id_ / 256)), 0);
+}
+
+fn sampleExperimentField(packed__in: i32) -> vec4f {
+	var packed_: i32 = packed__in;
+	var id_: i32 = (packed_ / 512);
+	var fraction: i32 = (packed_ % 512);
+	var a: f32 = (f32((fraction % 8)) / 7.0);
+	var b: f32 = (f32((((fraction / 8)) % 8)) / 7.0);
+	var c: f32 = (f32((fraction / 64)) / 7.0);
+	var x: i32 = 1;
+	var y: i32 = 32;
+	var z: i32 = 1024;
+	if ((a < b)) {
+		var t: f32 = a;
+		a = b;
+		b = t;
+		var s: i32 = x;
+		x = y;
+		y = s;
+	}
+	if ((b < c)) {
+		var t: f32 = b;
+		b = c;
+		c = t;
+		var s: i32 = y;
+		y = z;
+		z = s;
+	}
+	if ((a < b)) {
+		var t: f32 = a;
+		a = b;
+		b = t;
+		var s: i32 = x;
+		x = y;
+		y = s;
+	}
+	var p0: vec4f = experimentCell(id_);
+	var p1: vec4f = experimentCell((id_ + x));
+	var p2: vec4f = experimentCell(((id_ + x) + y));
+	var p3: vec4f = experimentCell((((id_ + x) + y) + z));
+	var w: vec4f = (vec4f((1.0 - a), (a - b), (b - c), c) * step(vec4f(0.5), vec4f(p0.w, p1.w, p2.w, p3.w)));
+	var total: f32 = dot(w, vec4f(1.0));
+	var value: vec4f = ((((((p0 * w.x) + (p1 * w.y)) + (p2 * w.z)) + (p3 * w.w))) / max(total, 0.001));
+	return vec4f(value.xyz, (((value.w - 2.0)) * step(0.001, total)));
+}
+
+fn experimentColor(value_in: f32) -> vec3f {
+	var value: f32 = value_in;
+	return (vec3f(glsl_mod_f(value, 256.0), glsl_mod_f(floor((value / 256.0)), 256.0), floor((value / 65536.0))) / 255.0);
+}
+
 fn main_() {
 	if ((aHide > 0.5)) {
 		gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);
@@ -1722,9 +1776,12 @@ fn main_() {
 	var experimentScale: f32 = 1.0;
 	var phaseMix: f32 = 0.0;
 	var phaseColor: vec3f = vec3f(0.0);
+	var phaseRim: f32 = 0.0;
+	var sculptMix: f32 = 0.0;
+	var sculptColor: vec3f = vec3f(0.0);
+	var copyShade: f32 = 0.0;
 	if ((fr.uExperimentSim.x > 0.5)) {
-		var cell: i32 = i32((aVis.z + 0.5));
-		var field: vec4f = textureLoad(experimentField, vec2i((cell % 256), (cell / 256)), 0);
+		var field: vec4f = sampleExperimentField(i32(aVis.z));
 		pos += (field.xyz * maskV);
 		experimentTint = (field.w * maskV);
 	}
@@ -1743,13 +1800,25 @@ fn main_() {
 			sid = floor((experimentHash((i32(sid) + 373)) * fr.uExperimentShapeInfo.x));
 		}
 		var q: i32 = i32(clamp(sid, 0.0, (fr.uExperimentShapeInfo.x - 1.0)));
-		if ((glsl_mod_f(fr.uExperimentShapeInfo.z, 2.0) > 0.5)) {
-			shapeA = textureLoad(experimentShapes, vec2i((q % 256), (q / 256)), 0).xyz;
+		if (((weightA > 0.001) && (glsl_mod_f(fr.uExperimentShapeInfo.z, 2.0) > 0.5))) {
+			var p: vec4f = textureLoad(experimentShapes, vec2i((q % 256), (q / 256)), 0);
+			shapeA = p.xyz;
+			sculptColor += (experimentColor(p.w) * weightA);
+			sculptMix += weightA;
 		}
-		if ((fr.uExperimentShapeInfo.z >= 2.0)) {
-			shapeB = textureLoad(experimentShapes, vec2i((q % 256), ((q / 256) + i32(fr.uExperimentShapeInfo.y))), 0).xyz;
+		if (((weightB > 0.001) && (fr.uExperimentShapeInfo.z >= 2.0))) {
+			var p: vec4f = textureLoad(experimentShapes, vec2i((q % 256), ((q / 256) + i32(fr.uExperimentShapeInfo.y))), 0);
+			shapeB = p.xyz;
+			sculptColor += (experimentColor(p.w) * weightB);
+			sculptMix += weightB;
 		}
-		pos += (((((((shapeA - base)) * weightA) + (((shapeB - base)) * weightB))) * fr.uImpossible.x) * maskV);
+		sculptColor /= vec3f(max(sculptMix, 0.001));
+		sculptMix *= (fr.uImpossible.x * maskV);
+		var toA: vec3f = (shapeA - base);
+		var toB: vec3f = (shapeB - base);
+		var axis: vec3f = vec3f(0.28, 0.88, 0.36);
+		var arc: vec3f = cross(axis, (((toA * weightA) * ((1.0 - weightA))) - ((toB * weightB) * ((1.0 - weightB)))));
+		pos += ((((((toA * weightA) + (toB * weightB)) + (arc * 0.72))) * fr.uImpossible.x) * maskV);
 	}
 	if ((fr.uInterference.x > 0.001)) {
 		var phase: f32 = ((((fr.uTime - fr.uTOff)) * fr.uInterference.z) + ((fr.uExperimentView.y * fr.uExperimentView.z) * 5.0));
@@ -1758,7 +1827,10 @@ fn main_() {
 		crossWave += (sin((((((((base.y * 1.3) - (base.z * 0.61))) * fr.uInterference.y) * 1.73) - (phase * 0.73)) + (angle * 2.0))) * 0.33);
 		crossWave += (sin((((length(base.xz) * fr.uInterference.y) * 3.1) - (phase * 1.4))) * 0.11);
 		var pointId: i32 = i32(floor(((aIdx * fr.uExperimentView.w) + 0.5)));
-		var chosen: f32 = (step(crossWave, ((fr.uInterference.w * 2.02) - 1.01)) * step(experimentHash((pointId + 479)), (fr.uInterference.x * maskV)));
+		var threshold: f32 = ((fr.uInterference.w * 2.02) - 1.01);
+		var enabled: f32 = step(experimentHash((pointId + 479)), (fr.uInterference.x * maskV));
+		var chosen: f32 = (step(crossWave, threshold) * enabled);
+		phaseRim = (((((1.0 - smoothstep(0.015, 0.16, abs((crossWave - threshold))))) * enabled) * smoothstep(0.0, 0.1, fr.uInterference.w)) * ((1.0 - smoothstep(0.9, 1.0, fr.uInterference.w))));
 		if ((chosen > 0.5)) {
 			var alt: vec3f = vec3f(((-base.x * 0.71) + 0.56), (base.y * 0.88), (-base.z + (0.42 * sin((base.y * 3.5)))));
 			phaseColor = fr.uP2;
@@ -1771,8 +1843,7 @@ fn main_() {
 				var row: i32 = ((q / 256) + (select(0, i32(fr.uExperimentShapeInfo.y), (fr.uExperimentShapeInfo.z == 2.0))));
 				var samplePoint: vec4f = textureLoad(experimentShapes, vec2i((q % 256), row), 0);
 				alt = samplePoint.xyz;
-				var packed_: f32 = samplePoint.w;
-				phaseColor = (vec3f(glsl_mod_f(packed_, 256.0), glsl_mod_f(floor((packed_ / 256.0)), 256.0), floor((packed_ / 65536.0))) / 255.0);
+				phaseColor = experimentColor(samplePoint.w);
 			}
 			pos += (alt - base);
 			phaseMix = 1.0;
@@ -1791,6 +1862,8 @@ fn main_() {
 			var second: f32 = (1.0 - smoothstep((secondGate - 0.06), secondGate, levelDraw));
 			var third: f32 = (1.0 - smoothstep((thirdGate - 0.035), thirdGate, levelDraw));
 			var row: i32 = (i32(fr.uExperimentShapeInfo.y) * 2);
+			var copyCenter: vec3f = fr.uCen;
+			var copyScale: f32 = 1.0;
 			for (var i: i32 = 0; (i < 3); i++) {
 				if ((f32(i) >= fr.uRecursion.y)) {
 					break;
@@ -1799,11 +1872,15 @@ fn main_() {
 				if ((weight <= 0.001)) {
 					break;
 				}
-				var groupId: f32 = floor((experimentHash((((pointId * ((41 + (i * 12)))) + 1279) + (i * 193))) * 16.0));
+				var copies: f32 = select(select(4.0, 6.0, (i == 1)), 12.0, (i == 0));
+				var groupId: f32 = floor((experimentHash((((pointId * ((41 + (i * 12)))) + 1279) + (i * 193))) * copies));
 				var anchor: vec3f = textureLoad(experimentShapes, vec2i(i32(groupId), row), 0).xyz;
-				pos = mix(pos, (anchor + (((pos - fr.uCen)) * fr.uRecursion.z)), weight);
-				experimentScale *= mix(1.0, mix(0.62, 0.85, nearLod), weight);
+				copyCenter += ((((anchor - fr.uCen)) * copyScale) * weight);
+				copyScale *= mix(1.0, fr.uRecursion.z, weight);
+				experimentScale *= mix(1.0, mix(0.56, 0.82, nearLod), weight);
+				copyShade += (weight * 0.26);
 			}
+			pos = (copyCenter + (((pos - fr.uCen)) * copyScale));
 		}
 	}
 	if ((gScopeG > 0.01)) {
@@ -1831,7 +1908,7 @@ fn main_() {
 	if ((fr.uFr.x > 0.5)) {
 		colM = frCol;
 	}
-	colM = mix(colM, phaseColor, phaseMix);
+	colM = mix(mix(colM, sculptColor, sculptMix), phaseColor, phaseMix);
 	if ((fr.uSlit.x > 0.001)) {
 		var sip: f32 = floor(((aIdx * fr.uSlitG.z) + 0.5));
 		var sci: f32 = glsl_mod_f(sip, fr.uSlitG.x);
@@ -1898,8 +1975,15 @@ fn main_() {
 	}
 	var vm: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));
 	var vis: f32 = mix(aVis.x, aVis.y, vm);
-	vColor = (((mix(col, phaseColor, (phaseMix * 0.78)) * fr.uBright) * ((1.0 + (fr.uBeat * 0.3)))) * vis);
-	vColor = mix(vColor, (((mix(fr.uP1, fr.uP2, experimentTint) * fr.uBright) * ((0.6 + experimentTint))) * vis), (experimentTint * 0.72));
+	var skin: f32 = max(0.0, experimentTint);
+	var wound: f32 = max(0.0, -experimentTint);
+	var rim: f32 = (smoothstep(0.05, 0.21, wound) * ((1.0 - smoothstep(0.24, 0.65, wound))));
+	var vein: f32 = (smoothstep(0.08, 0.25, skin) * ((1.0 - smoothstep(0.33, 0.68, skin))));
+	var phaseInk: vec3f = mix(phaseColor, fr.uP2, 0.27);
+	vColor = (((mix(col, phaseInk, (phaseMix * 0.76)) * fr.uBright) * ((1.0 + (fr.uBeat * 0.3)))) * vis);
+	vColor *= vec3f(((1.0 - (0.32 * wound)) - (0.2 * copyShade)));
+	vColor += ((((((((mix(fr.uP0, fr.uP2, skin) * skin) * 0.27) + ((fr.uP2 * vein) * 0.42)) + ((mix(fr.uP1, fr.uP2, 0.65) * rim) * 0.55)) + ((mix(fr.uP1, fr.uP2, phaseMix) * phaseRim) * 0.28))) * fr.uBright) * vis);
+	experimentScale *= (((1.0 + (rim * 0.23)) + (vein * 0.16)) + (phaseRim * 0.14));
 	if (((fr.uPaintP.x > 0.5) && (aPaint.w > 0.002))) {
 		var pa: f32 = aPaint.w;
 		var cov: f32 = (1.0 - exp((-pa * 3.4)));
