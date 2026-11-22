@@ -69,6 +69,7 @@ export const MORPH_STYLES = [
 	{ id: 'portal', name: 'Портал', icon: 'circle', hint: 'Точки по спирали затягивает в светящееся кольцо, и из него же выходит новая форма', v: { scatter: 0.8, stagger: 0.5, turns: 1, sort: 'out', ease: 'soft', glow: 1.0 } },
 	{ id: 'shatter', hidden: true, name: 'Стекло', icon: 'polygon', hint: 'Форма трескается на осколки, они кувыркаются и падают, потом осколки новой формы складываются в неё', v: { scatter: 0.8, stagger: 0.6, turns: 1, sort: 'random', ease: 'smooth', glow: 0.4 } },
 	{ id: 'magnet', name: 'Магнит', icon: 'magnet', hint: 'Точки идут пучками по дугам силовых линий, как железные опилки', v: { scatter: 0.9, stagger: 0.4, turns: 1, sort: 'random', ease: 'soft', glow: 0.5 } },
+	{ id: 'phase', name: 'Фаза', icon: 'waves', hint: 'Узор пересекает облако. По обе стороны границы видны исходная и новая формы.', v: { scatter: 0.25, stagger: 1.2, turns: 1, sort: 'random', ease: 'smooth', glow: 0.55 } },
 ];
 
 export const MORPH_SORTS = [

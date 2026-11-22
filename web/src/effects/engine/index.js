@@ -40,6 +40,13 @@ this.state = mergeDeep(defaultState(), loadJSON(KEY, {}));
 if (!this.state.audio.idleSet) this.state.audio.idle = false;
 this.state.mask = { ...defaultState().mask };
 for (const l of FX_LAYERS) this.state.layers[l.id] = { ...AUDIO_DEF, ...l.def, ...this.state.layers[l.id] };
+const { brush, causalWounds, phaseInterference, reactionSkin } = this.state.layers;
+if (causalWounds.on && !brush.on) {
+Object.assign(brush, { on: true, tool: 'scars', radius: causalWounds.radius, scarDepth: causalWounds.depth, scarMemory: causalWounds.memory });
+}
+causalWounds.on = false;
+phaseInterference.on = false;
+if (reactionSkin.trigger !== 'beat') reactionSkin.trigger = 'manual';
 {
 const fl = this.state.layers.flow;
 const cl = this.state.layers.curl;
@@ -358,7 +365,7 @@ this.app.viewport.invalidate();
 }
 _syncPaintLock(off) {
 const B = this.state.layers.brush;
-const want = !off && this.active && ((B?.on && B.lock !== 'off') || this.state.layers.causalWounds.on);
+const want = !off && this.active && B?.on && B.lock !== 'off';
 const nav = this.app.nav;
 if (nav.paintLock === want) return;
 nav.paintLock = want;

@@ -10,7 +10,8 @@ export class InteractionPart {
 
 	_onDown(e) {
 		this._pointerDown = true;
-		if (e.button === 0 && !e.altKey && this.state.layers.causalWounds.on) this._experimentPointer(e, 'wound');
+		const brush = this.state.layers.brush;
+		if (e.button === 0 && !e.altKey && brush.on && brush.tool === 'scars') this._experimentPointer(e, 'wound');
 		this._down = { x: e.clientX, y: e.clientY, t: performance.now(), b: e.button };
 		if (this.mouseOn && this.state.layers.brush.on) {
 			this.addBrushHit(this.mouse);
@@ -31,7 +32,8 @@ export class InteractionPart {
 
 	_onMove(e) {
 		if (!this.points) return;
-		if (e.buttons === 1 && !e.altKey && this.state.layers.causalWounds.on) this._experimentPointer(e, 'wound');
+		const brush = this.state.layers.brush;
+		if (e.buttons === 1 && !e.altKey && brush.on && brush.tool === 'scars') this._experimentPointer(e, 'wound');
 		const mp = this._mScr;
 		if (mp) {
 			const v = (this._mVel ||= { x: 0, y: 0 });

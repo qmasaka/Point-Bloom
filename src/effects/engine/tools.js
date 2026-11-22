@@ -59,6 +59,7 @@ export class ToolsPart {
 	addBrushHit(pos) {
 		if (!pos || !this.geometry || !this.geometry.attributes.aPaint) return;
 		const B = this.state.layers.brush;
+		if (B.tool === 'scars') return;
 		const sp = Math.max(0.015, B.radius * 0.28);
 		const T0 = this._lastDabT ?? -9;
 		if (this._lastDab && this._lastDab.distanceTo(pos) < sp && this._time - T0 < 0.4) return;

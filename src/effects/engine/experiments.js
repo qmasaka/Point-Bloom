@@ -1,19 +1,13 @@
 import * as THREE from 'three';
 import { clamp, screenRect } from '../../core/util.js';
 import { ExperimentField } from './experiment-field.js';
+import { packParallaxSlot, readParallaxPhoto } from './parallax-photos.js';
 
 const FIELD_STEP = 1 / 24;
 const SHAPE_WIDTH = 256;
 const SHAPE_LIMIT = 65536;
 const ANCHORS = 12;
 const TAU = Math.PI * 2;
-
-function visibleIndices(cloud) {
-	if (!cloud?.hide) return null;
-	const indices = [];
-	for (let i = 0; i < cloud.count; i++) if (cloud.hide[i] < 0.5) indices.push(i);
-	return indices;
-}
 
 function copyAnchors({ aTarget, aVis, aHide }) {
 	const candidates = [];
@@ -43,34 +37,25 @@ function copyAnchors({ aTarget, aVis, aHide }) {
 	return result;
 }
 
-function shapeTexture(clouds, attributes, count) {
+function shapeTexture(photos, attributes, count) {
 	const rows = Math.ceil(count / SHAPE_WIDTH);
-	const data = new Float32Array(SHAPE_WIDTH * (rows * 2 + 1) * 4);
-	for (let slot = 0; slot < 2; slot++) {
-		const cloud = clouds[slot];
-		if (!cloud?.count) continue;
-		const visible = visibleIndices(cloud);
-		const available = visible?.length ?? cloud.count;
-		if (!available) continue;
-		for (let i = 0; i < count; i++) {
-			const index = Math.floor(i * available / count);
-			const from = (visible ? visible[index] : index) * 3;
-			const to = (slot * rows * SHAPE_WIDTH + i) * 4;
-			data.set(cloud.positions.subarray(from, from + 3), to);
-			const rgb = cloud.colors;
-			const c = (k) => Math.round(Math.max(0, Math.min(1, rgb?.[from + k] ?? 0.6)) * 255);
-			data[to + 3] = c(0) + 256 * c(1) + 65536 * c(2);
-		}
+	const stride = rows * SHAPE_WIDTH * 4;
+	const data = new Float32Array(stride * 3 + SHAPE_WIDTH * 4);
+	let flags = 0;
+	for (let slot = 0; slot < 3; slot++) {
+		if (!photos[slot]) continue;
+		packParallaxSlot(photos[slot], attributes.aTarget, count, slot, data, slot * stride);
+		flags += 2 ** slot;
 	}
 	const pos = attributes.aTarget.array;
 	copyAnchors(attributes).forEach((j, i) => {
-		const to = (rows * 2 * SHAPE_WIDTH + i) * 4;
-		data.set(pos.subarray(j * 3, j * 3 + 3), to);
-		data[to + 3] = j;
+		const at = stride * 3 + i * 4;
+		data.set(pos.subarray(j * 3, j * 3 + 3), at);
+		data[at + 3] = j;
 	});
-	const tex = new THREE.DataTexture(data, SHAPE_WIDTH, rows * 2 + 1, THREE.RGBAFormat, THREE.FloatType);
+	const tex = new THREE.DataTexture(data, SHAPE_WIDTH, rows * 3 + 1, THREE.RGBAFormat, THREE.FloatType);
 	tex.needsUpdate = true;
-	return tex;
+	return { tex, flags };
 }
 
 export class ExperimentsPart {
@@ -92,38 +77,51 @@ export class ExperimentsPart {
 		this._experimentField.capture(this.app.viewport, this.points, this.backend?.kind === 'webgpu' ? this.backend.canvas : null);
 	}
 
+	async setParallaxPhoto(slot, file) {
+		if (!Number.isInteger(slot) || slot < 0 || slot > 2) return;
+		const requests = this._parallaxRequests ||= [];
+		const request = {};
+		requests[slot] = request;
+		try {
+			const photo = await readParallaxPhoto(file);
+			if (requests[slot] !== request) return;
+			(this._parallaxPhotos ||= [null, null, null])[slot] = photo;
+			this._parallaxRevision = (this._parallaxRevision || 0) + 1;
+			this.emit();
+		} catch {
+			if (requests[slot] === request) this.app.toast('Не удалось открыть фото для ракурса', 'error');
+		}
+	}
+
+	clearParallaxPhotos() {
+		if (this._parallaxRequests) this._parallaxRequests.length = 0;
+		this._parallaxPhotos = null;
+		this._parallaxRevision = (this._parallaxRevision || 0) + 1;
+		this.emit();
+	}
+
+	parallaxPhotoNames() {
+		return this._parallaxPhotos?.map((photo) => photo?.name || '') || ['', '', ''];
+	}
+
 	_experimentShapesTick(layers, geometry, key) {
 		const u = this.shared;
-		const alternate = (layers.impossible.on && layers.impossible.source === 'playlist') || (layers.phaseInterference.on && layers.phaseInterference.source === 'playlist');
+		const photos = layers.impossible.on ? this._parallaxPhotos || [] : [];
+		const alternate = photos.some(Boolean);
 		const recursive = layers.recursiveAnatomy.on;
 		if (!alternate && !recursive) {
 			this._clearExperimentShapes();
 			u.uExperimentShapeInfo.value.set(1, 1, 0, this.app.nav.distance);
 			return;
 		}
-		const activeKey = this.curKey || this.state.source;
-		const ignored = new Set([activeKey, key, this.state.source, 'frames']);
-		const keys = alternate ? [...new Set(this.playlist || [])].filter((id) => !ignored.has(id)).slice(0, 2) : [];
-		const signature = JSON.stringify([key, activeKey, keys]);
+		const signature = JSON.stringify([key, alternate ? this._parallaxRevision : 0]);
 		let shapes = this._experimentShapes;
 		if (shapes?.geo !== geometry || shapes.signature !== signature) {
 			this._clearExperimentShapes();
-			shapes = this._experimentShapes = { geo: geometry, signature, flags: 0, count: 1, tex: shapeTexture([], geometry.attributes, 1), anchorVersion: -1 };
-			if (keys.length) {
-				Promise.all(keys.map((k) => this._cloudFor(k).catch(() => null))).then((clouds) => {
-					if (this._experimentShapes !== shapes) return;
-					clouds = clouds.map((c) => c?.hide?.every((v) => v > 0.5) ? null : c);
-					const count = Math.min(SHAPE_LIMIT, geometry.attributes.aTarget.count, ...clouds.filter((c) => c?.count).map((c) => c.count));
-					const tex = shapeTexture(clouds, geometry.attributes, count);
-					shapes.tex.dispose();
-					shapes.tex = tex;
-					shapes.count = count;
-					shapes.flags = (clouds[0]?.count ? 1 : 0) + (clouds[1]?.count ? 2 : 0);
-					shapes.anchorVersion = -1;
-					this.app.viewport.invalidate();
-				});
-			}
+			const count = alternate ? Math.min(SHAPE_LIMIT, geometry.attributes.aTarget.count) : 1;
+			shapes = this._experimentShapes = { geo: geometry, signature, count, ...shapeTexture(photos, geometry.attributes, count), anchorVersion: -1 };
 		}
+
 		const attr = geometry.attributes.aTarget;
 		if (recursive && shapes.anchorVersion !== attr.version) {
 			shapes.anchorVersion = attr.version;
@@ -157,53 +155,34 @@ export class ExperimentsPart {
 
 	_experimentTick(dt, layers) {
 		const g = this.geometry, u = this.shared;
-		const { autophagy: auto, reactionSkin: skin, causalWounds: scar, phaseInterference: phase, impossible: sculpt, recursiveAnatomy: recursive } = layers;
+		const { autophagy: auto, reactionSkin: skin, causalWounds: scar, impossible: sculpt, recursiveAnatomy: recursive, brush } = layers;
 		const cam = this.app.viewport.camera;
-		const motion = this._experimentMotion ||= { sculpt: 0, phase: 0, copies: 0, beat: this._tb };
+		const motion = this._experimentMotion ||= { beat: this._tb };
 		const beat = !!(this.soundActive && this._tb !== motion.beat);
 		motion.beat = this._tb;
 		const gain = (layer) => clamp(this._eff(layer), 0, 2);
 		const gains = this._experimentGains ||= {};
+		const scars = brush.on && brush.tool === 'scars';
 		gains.autophagy = gain(auto);
 		gains.reactionSkin = gain(skin);
-		gains.causalWounds = gain(scar);
-		if (sculpt.on || phase.on || recursive.on || auto.on || scar.on || skin.on) this.points.updateMatrixWorld(true);
-		let yaw = 0, pitch = 0;
-		if (sculpt.on || phase.on) {
+		gains.causalWounds = scars ? gain(brush) : 0;
+		if (sculpt.on || recursive.on || auto.on || scars || skin.on) this.points.updateMatrixWorld(true);
+		let yaw = 0;
+		if (sculpt.on) {
 			const view = this.points.worldToLocal((this._experimentView ||= new THREE.Vector3()).copy(cam.position));
 			yaw = Math.atan2(view.x, view.z);
-			pitch = Math.atan2(view.y, view.z);
 		}
-		let sculptAngle = sculpt.axis === 'pitch' ? pitch : yaw;
-		if (!sculpt.on || sculpt.motion === 'camera') motion.sculpt = 0;
-		else {
-			motion.sculpt = (motion.sculpt + dt * sculpt.speed * TAU) % TAU;
-			sculptAngle = sculpt.angle * TAU / 360 + (sculpt.motion === 'swing' ? Math.sin(motion.sculpt) * TAU / 3 : motion.sculpt);
-		}
-		if (!phase.on) motion.phase = 0;
-		else {
-			const move = phase.motion === 'beat' ? (beat ? phase.jump * TAU / 360 : 0) : dt * phase.speed;
-			motion.phase = (motion.phase + move) % (TAU * 100);
-		}
-		const phaseAngle = phase.angle * TAU / 360 + yaw * phase.camera;
-		const phaseTime = phase.motion === 'swing' ? Math.sin(motion.phase) * Math.PI : motion.phase;
-		if (!recursive.on || recursive.motion !== 'breathe') motion.copies = 0;
-		else motion.copies = (motion.copies + dt * recursive.speed * TAU) % TAU;
 		const zoom = clamp((recursive.revealAt + 2.5 - this.app.nav.distance) / 5, 0, 1);
-		const reveal = recursive.motion === 'breathe' ? 0.5 - Math.cos(motion.copies) * 0.5 : recursive.motion === 'fixed' ? 1 : zoom * zoom * (3 - 2 * zoom);
-		u.uExperimentView.value.set(sculptAngle, phaseTime, reveal, g.attributes.position.count);
-		u.uImpossible.value.set(Math.min(1, gain(sculpt)), sculpt.angle * TAU / 360, sculpt.blend, sculpt.source === 'playlist' ? sculpt.tint : -1);
-		u.uImpossibleStyle.value.set(sculpt.views, { twist: 0, pleats: 1, prism: 2 }[sculpt.style] ?? 0, sculpt.arc, sculpt.separation);
-		u.uInterference.value.set(gain(phase), phase.freq, phaseAngle, phase.bias);
-		u.uPhaseStyle.value.set({ bands: 0, rings: 1, spots: 2 }[phase.style] ?? 0, phase.spacing, phase.rim, phase.width);
-		u.uPhaseLook.value.set(phase.tint, phase.source === 'playlist' ? 1 : 0, 0, 0);
+		const reveal = zoom * zoom * (3 - 2 * zoom);
+		u.uExperimentView.value.set(yaw, 0, reveal, g.attributes.position.count);
+		u.uImpossible.value.set(Math.min(1, gain(sculpt)), 0, sculpt.blend, sculpt.arc);
 		u.uRecursion.value.set(gain(recursive), recursive.levels, recursive.scale, recursive.density);
 		u.uRecursionStyle.value.set(recursive.copies, recursive.spread, recursive.rotation * TAU / 360, { surface: 0, ring: 1, spiral: 2 }[recursive.layout] ?? 0);
 		u.uRecursionLook.value.set(recursive.detail, recursive.ink, 0, 0);
 		const key = this.cloudKey;
 		this._experimentShapesTick(layers, g, key);
-		const enabled = [auto, skin, scar].some((l) => l.on && l.amount > 0);
-		u.uExperimentSim.value.set(enabled ? 1 : 0, skin.ink, scar.ink, auto.ink * Math.min(1, gains.autophagy));
+		const enabled = scars || [auto, skin].some((l) => l.on && l.amount > 0);
+		u.uExperimentSim.value.set(enabled ? 1 : 0, skin.ink, scar.ink, 0.30 * Math.min(1, gains.autophagy));
 		if (!enabled) {
 			if (this._experimentField) {
 				this._experimentField.dispose();
@@ -224,7 +203,8 @@ export class ExperimentsPart {
 		if (field.next < FIELD_STEP) return;
 		field.next %= FIELD_STEP;
 		field.time += FIELD_STEP;
-		field.step(layers, this.morph, this.app.viewport, this.points, this._experimentPicks || {}, gains, field.beat);
+		const wounds = Object.assign(this._scarSettings ||= {}, scar, { on: scars, radius: brush.radius, depth: brush.scarDepth, memory: brush.scarMemory });
+		field.step(auto, skin, wounds, this.morph, this.app.viewport, this.points, this._experimentPicks || {}, gains, field.beat);
 		field.beat = false;
 		this._experimentPicks = {};
 	}

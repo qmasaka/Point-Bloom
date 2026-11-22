@@ -326,6 +326,9 @@ export function createEffectsPanel(app, root, engine) {
 	const intRow = field('Секунд на форму', morphInt.el);
 	const liftRow = field('Объём по глубине в пути', morphLift.el);
 	const scrubRow = field('Вручную', morphScrub.el);
+	const morphSortRow = field('Какие точки первыми', morphSort.el, { wide: true });
+	const staggerRow = field('Разнобой по времени', morphStagger.el);
+	const scatterRow = field('Разлёт', morphScatter.el);
 	const morphSettings = h('div', { class: 'sec-body', style: { padding: 0 } },
 		h('div', { class: 'fx-sub' }, 'Запуск'),
 		field('Переход', morphMode.el, { wide: true }),
@@ -341,9 +344,9 @@ export function createEffectsPanel(app, root, engine) {
 		timeRow,
 		field('Характер движения', morphEase.el, { wide: true }),
 		h('div', { class: 'fx-sub' }, 'Движение точек'),
-		field('Какие точки первыми', morphSort.el, { wide: true }),
-		field('Разнобой по времени', morphStagger.el),
-		field('Разлёт', morphScatter.el),
+		morphSortRow,
+		staggerRow,
+		scatterRow,
 		turnsRow,
 		h('div', { class: 'fx-sub' }, 'Вид в пути'),
 		field('Вспышка в пути', morphGlow.el),
@@ -357,6 +360,9 @@ export function createEffectsPanel(app, root, engine) {
 		const cur = MORPH_STYLES.find((x) => x.id === mc.style) || MORPH_STYLES[0];
 		styleSel.set(cur.id);
 		styleHint.textContent = cur.hint;
+		morphSortRow.hidden = cur.id === 'phase';
+		staggerRow.querySelector('.field-label').textContent = cur.id === 'phase' ? 'Частота узора' : 'Разнобой по времени';
+		scatterRow.querySelector('.field-label').textContent = cur.id === 'phase' ? 'Глубина границы' : 'Разлёт';
 		turnsRow.hidden = cur.id !== 'swirl' && cur.id !== 'hyper';
 		if (mc.mode === 'beat') Object.assign(mc, { mode: 'music', band: 'beat', amode: 'gate' });
 		intRow.hidden = mc.mode === 'music';
@@ -603,15 +609,6 @@ export function createEffectsPanel(app, root, engine) {
 			} else if (def.id === 'chrono') {
 				chronoStat = h('div', { class: 'field-hint fx-chrono-stat' });
 				body.append(chronoStat);
-			} else if (def.id === 'brush') {
-				const clearBtn = button({
-					label: 'Смыть всю краску',
-					icon: 'broom',
-					variant: 'secondary',
-					cls: 'btn-block',
-					onClick: () => engine.clearBrush(),
-				});
-				body.append(clearBtn);
 			} else if (def.id === 'dissolve') {
 				const disBtn = button({ label: 'Растворить / собрать', icon: 'snowflake', variant: 'primary', cls: 'btn-block', onClick: () => engine.toggleDissolve() });
 				body.append(disBtn);
@@ -707,7 +704,35 @@ export function createEffectsPanel(app, root, engine) {
 					if (ex.reframe) engine.rebuildFramesSoon();
 					if (ex.relayout) engine.relayoutFrames();
 				};
-				if (ex.type === 'select') {
+				if (ex.type === 'photos') {
+					const labels = ['Фото для 0°', 'Фото для 120°', 'Фото для 240°'];
+					const names = [];
+					for (let i = 0; i < labels.length; i++) {
+						const input = h('input', { type: 'file', accept: 'image/*', hidden: true, 'aria-label': labels[i] });
+						const current = h('div', { class: 'field-hint', style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } });
+						const pick = button({ label: labels[i], icon: 'image', variant: 'secondary', cls: 'btn-block', onClick: () => input.click() });
+						input.addEventListener('change', () => {
+							const file = input.files?.[0];
+							input.value = '';
+							if (file) engine.setParallaxPhoto(i, file);
+						});
+						names.push(current);
+						put(h('div', {}, pick, input, current), ex);
+					}
+					const clear = button({ label: 'Убрать фото ракурсов', icon: 'broom', variant: 'secondary', cls: 'btn-block', onClick: () => engine.clearParallaxPhotos() });
+					put(clear, ex);
+					const refresh = () => {
+						const files = engine.parallaxPhotoNames();
+						clear.hidden = !files.some(Boolean);
+						names.forEach((el, i) => {
+							el.hidden = !files[i];
+							if (el.textContent !== files[i]) el.textContent = files[i];
+							el.title = files[i];
+						});
+					};
+					app.bus.on('fx', refresh);
+					refresh();
+				} else if (ex.type === 'select') {
 					const sl = select({ options: ex.options.map(([value, label, sub]) => ({ value, label, sub })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
 					extraCtl[ex.key] = sl;
 					put(field(ex.label, sl.el, { wide: true }), ex);
@@ -1096,9 +1121,25 @@ export function createEffectsPanel(app, root, engine) {
 	const secLookShow = section('Отображение', { key: 'fx-look-show' }, hudSw.el, hudSpec.el);
 	const secLookPerf = section('Производительность', { key: 'fx-look-perf', open: false }, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), field('Движок отрисовки', backendSeg.el, { wide: true }), backendHint, fpsFx.el, perfHint);
 	const secLookRec = section('Запись анимации', { key: 'fx-look-rec', open: false }, animTimelineOpenBtn, field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
+	const fractal = st.layers.recursiveAnatomy;
+	const labSwitch = switchRow('Фрактал', { value: fractal.on, onChange: (v) => { fractal.on = v; syncLab(); save(); } });
+	const labLevel = slider({ min: 1, max: 3, step: 1, digits: 0, value: fractal.levels, onInput: (v) => { fractal.levels = v; }, onChange: save });
+	const labCopies = slider({ min: 3, max: 12, step: 1, digits: 0, value: fractal.copies, onInput: (v) => { fractal.copies = v; }, onChange: save });
+	const labScale = slider({ min: 0.16, max: 0.46, step: 0.01, digits: 2, unit: ' ×', value: fractal.scale, onInput: (v) => { fractal.scale = v; }, onChange: save });
+	const labBody = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Уровни вложенности', labLevel.el), field('Число копий', labCopies.el), field('Масштаб копии', labScale.el));
+	const syncLab = () => {
+		labSwitch.set(fractal.on);
+		labLevel.set(fractal.levels);
+		labCopies.set(fractal.copies);
+		labScale.set(fractal.scale);
+		labBody.hidden = !fractal.on;
+	};
+	app.bus.on('fx', syncLab);
+	syncLab();
+	const secLab = section('Лаборатория', { key: 'fx-look-lab', open: false }, labSwitch.el, labBody);
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
-	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookPts, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec]]];
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookPts, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec, secLab]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
 	try {

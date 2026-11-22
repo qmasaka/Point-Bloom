@@ -5,11 +5,7 @@ struct Frame {
 	uExperimentSim: vec4f,
 	uExperimentView: vec4f,
 	uImpossible: vec4f,
-	uInterference: vec4f,
 	uRecursion: vec4f,
-	uImpossibleStyle: vec4f,
-	uPhaseStyle: vec4f,
-	uPhaseLook: vec4f,
 	uRecursionStyle: vec4f,
 	uRecursionLook: vec4f,
 	@size(16) uSolid: vec3f,
@@ -467,6 +463,13 @@ fn morphLocal(A_in: vec3f, B_in: vec3f, idx_in: f32) -> f32 {
 	var idx: f32 = idx_in;
 	var h: f32 = hash11((idx * 3.17));
 	var msty: i32 = i32((fr.uMorphS.x + 0.5));
+	if ((msty == 15)) {
+		var p: vec3f = ((((A + B)) * 0.5) - fr.uCen);
+		var freq: f32 = (4.0 + (fr.uMorphS.z * 4.0));
+		var band: f32 = ((sin(((((p.x + (p.z * 0.47))) * freq) + sin((p.y * 4.0)))) * 0.56) + (sin((((p.y - (p.z * 0.38))) * ((freq * 0.78)))) * 0.44));
+		var edge: f32 = (0.5 + (band * 0.40));
+		return smoothstep((edge - 0.034), (edge + 0.034), fr.uMorph);
+	}
 	if ((msty == 8)) {
 		h = hash11(dot(floor((((A - fr.uCen)) * 5.0)), vec3f(17.13, 31.71, 57.29)));
 	}
@@ -999,6 +1002,10 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var bund: f32 = ((floor((hA * 10.0)) / 10.0) * 6.2831853);
 			var nb: vec3f = ((n1 * cos(bund)) + (n2 * sin(bund)));
 			(*base) = (mix(aOrigin, aTarget, e) + ((((nb * sin((e * 3.1415926535))) * ((0.25 + (0.55 * L14)))) * sc) * ((0.85 + (0.3 * hB)))));
+		}
+		if ((sty == 15)) {
+			(*base) = mix(aOrigin, aTarget, e);
+			(*base) += ((vec3f(0.13, 0.16, 0.7) * sin((lt * 3.1415926535))) * sc);
 		}
 		if ((abs(fr.uMorphD.z) > 0.001)) {
 			var sm: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));
@@ -1613,13 +1620,15 @@ fn experimentHash(seed_in: i32) -> f32 {
 	return (f32(((((m * m) + (v * 31))) % 65521)) / 65521.0);
 }
 
-fn experimentCell(id__in: i32) -> vec4f {
+fn experimentCell(id__in: i32, page_in: i32) -> vec4f {
 	var id_: i32 = id__in;
-	return textureLoad(experimentField, vec2i((id_ % 256), (id_ / 256)), 0);
+	var page: i32 = page_in;
+	return textureLoad(experimentField, vec2i((id_ % 256), ((id_ / 256) + (page * 128))), 0);
 }
 
-fn sampleExperimentField(packed__in: i32) -> vec4f {
+fn sampleExperimentField(packed__in: i32, page_in: i32) -> vec4f {
 	var packed_: i32 = packed__in;
+	var page: i32 = page_in;
 	var id_: i32 = (packed_ / 512);
 	var fraction: i32 = (packed_ % 512);
 	var a: f32 = (f32((fraction % 8)) / 7.0);
@@ -1652,10 +1661,10 @@ fn sampleExperimentField(packed__in: i32) -> vec4f {
 		x = y;
 		y = s;
 	}
-	var p0: vec4f = experimentCell(id_);
-	var p1: vec4f = experimentCell((id_ + x));
-	var p2: vec4f = experimentCell(((id_ + x) + y));
-	var p3: vec4f = experimentCell((((id_ + x) + y) + z));
+	var p0: vec4f = experimentCell(id_, page);
+	var p1: vec4f = experimentCell((id_ + x), page);
+	var p2: vec4f = experimentCell(((id_ + x) + y), page);
+	var p3: vec4f = experimentCell((((id_ + x) + y) + z), page);
 	var w: vec4f = (vec4f((1.0 - a), (a - b), (b - c), c) * step(vec4f(0.5), vec4f(p0.w, p1.w, p2.w, p3.w)));
 	var total: f32 = dot(w, vec4f(1.0));
 	var value: vec4f = ((((((p0 * w.x) + (p1 * w.y)) + (p2 * w.z)) + (p3 * w.w))) / max(total, 0.001));
@@ -1780,13 +1789,11 @@ fn main_() {
 	pos += aSculpt;
 	var experimentTint: f32 = 0.0;
 	var experimentScale: f32 = 1.0;
-	var phaseMix: f32 = 0.0;
-	var phaseColor: vec3f = vec3f(0.0);
-	var phaseRim: f32 = 0.0;
 	var sculptMix: f32 = 0.0;
 	var sculptColor: vec3f = vec3f(0.0);
 	var copyShade: f32 = 0.0;
 	var autoLight: f32 = 0.0;
+	var bite: f32 = 0.0;
 	if ((gScopeG > 0.01)) {
 		pos += (((((vec3f(hash11((aIdx * 13.1)), hash11((aIdx * 7.7)), hash11((aIdx * 3.3))) - 0.5)) * gScopeG) * fr.uScopeQ.w) * 0.4);
 	}
@@ -1794,7 +1801,7 @@ fn main_() {
 		pos += ((frNrm * frLift) * 0.7);
 	}
 	var dkv: f32 = gDisK;
-	vDk = max(max(dkv, gDrop), (1.0 - gGrow));
+	vDk = max(max(max(dkv, gDrop), (1.0 - gGrow)), bite);
 	var t: f32 = (fr.uTime - fr.uTOff);
 	var disp: f32 = clamp((length((pos - base)) * 1.5), 0.0, 1.0);
 	var k: f32;
@@ -1812,7 +1819,7 @@ fn main_() {
 	if ((fr.uFr.x > 0.5)) {
 		colM = frCol;
 	}
-	colM = mix(mix(colM, sculptColor, sculptMix), phaseColor, (phaseMix * fr.uPhaseLook.x));
+	colM = mix(colM, sculptColor, sculptMix);
 	var nrmM: vec3f = mix(aNormal, aNormalB, eC);
 	if (((fr.uColorBy > 2.5) && (fr.uColorBy < 3.5))) {
 		col = colM;
@@ -1829,11 +1836,10 @@ fn main_() {
 	var wound: f32 = max(0.0, -experimentTint);
 	var rim: f32 = (smoothstep(0.05, 0.21, wound) * ((1.0 - smoothstep(0.24, 0.65, wound))));
 	var vein: f32 = (smoothstep(0.08, 0.25, skin) * ((1.0 - smoothstep(0.33, 0.68, skin))));
-	var phaseInk: vec3f = mix(phaseColor, fr.uP2, 0.27);
-	vColor = (((mix(col, phaseInk, (phaseMix * fr.uPhaseLook.x)) * fr.uBright) * ((1.0 + (fr.uBeat * 0.3)))) * vis);
-	vColor *= vec3f(((1.0 - (0.32 * wound)) - (0.2 * copyShade)));
-	vColor += (((((((((mix(fr.uP0, fr.uP2, skin) * skin) * 0.27) + (((fr.uP2 * vein) * fr.uExperimentSim.y) * 0.56)) + (((mix(fr.uP1, fr.uP2, 0.65) * rim) * fr.uExperimentSim.z) * 0.65)) + ((mix(fr.uP1, fr.uP2, phaseMix) * phaseRim) * 0.4)) + ((fr.uP2 * autoLight) * 0.38))) * fr.uBright) * vis);
-	experimentScale *= (((1.0 + (rim * 0.23)) + (vein * 0.16)) + (phaseRim * 0.14));
+	vColor = (((mix(col, sculptColor, sculptMix) * fr.uBright) * ((1.0 + (fr.uBeat * 0.3)))) * vis);
+	vColor *= vec3f(((((1.0 - (0.32 * wound)) - (0.2 * copyShade))) * ((1.0 - bite))));
+	vColor += ((((((((mix(fr.uP0, fr.uP2, skin) * skin) * 0.27) + (((fr.uP2 * vein) * fr.uExperimentSim.y) * 0.56)) + (((mix(fr.uP1, fr.uP2, 0.65) * rim) * fr.uExperimentSim.z) * 0.65)) + ((fr.uP2 * autoLight) * 0.38))) * fr.uBright) * vis);
+	experimentScale *= ((((1.0 + (rim * 0.23)) + (vein * 0.16))) * ((1.0 - (bite * 0.78))));
 	if (((fr.uPaintP.x > 0.5) && (aPaint.w > 0.002))) {
 		var pa: f32 = aPaint.w;
 		var cov: f32 = (1.0 - exp((-pa * 3.4)));
@@ -2152,7 +2158,7 @@ fn main_() {
 	s *= (((((1.0 + (gScopeT * fr.uScopeQ.y)) + ((gScopeG * fr.uScopeQ.z) * 2.5)) + (gDepthG * 0.8))) * ((1.0 - gScopeD)));
 	s *= select(0.73, ((0.73 * fr.uAtt) / max(-mv.z, (fr.uAtt * 0.1))), (fr.uAtt > 0.001));
 	gl_PointSize = clamp((s * experimentScale), 1.0, 95.0);
-	if ((((((gScopeD > 0.97) || (dkv > 0.97)) || (gDrop > 0.5)) || (gGrow < 0.03)) || (gHypF > 0.97))) {
+	if (((((((gScopeD > 0.97) || (dkv > 0.97)) || (gDrop > 0.5)) || (gGrow < 0.03)) || (gHypF > 0.97)) || (bite > 0.97))) {
 		gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;
 	}

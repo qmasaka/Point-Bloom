@@ -251,6 +251,13 @@ float morphLocal(vec3 A, vec3 B, float idx) {
 	float h = hash11(idx * 3.17);
 
 	int msty = int(uMorphS.x + 0.5);
+	if (msty == 15) {
+		vec3 p = (A + B) * 0.5 - uCen;
+		float freq = 4.0 + uMorphS.z * 4.0;
+		float band = sin((p.x + p.z * 0.47) * freq + sin(p.y * 4.0)) * 0.56 + sin((p.y - p.z * 0.38) * (freq * 0.78)) * 0.44;
+		float edge = 0.5 + band * 0.40;
+		return smoothstep(edge - 0.034, edge + 0.034, uMorph);
+	}
 	if (msty == 8) h = hash11(dot(floor((A - uCen) * 5.0), vec3(17.13, 31.71, 57.29)));
 
 	if (msty == 13) h = hash11(dot(floor((A - uCen) * 3.0), vec3(12.9, 78.2, 37.7)));
@@ -774,6 +781,10 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			float bund = floor(hA * 10.0) / 10.0 * 6.2831853;
 			vec3 nb = n1 * cos(bund) + n2 * sin(bund);
 			base = mix(aOrigin, aTarget, e) + nb * sin(e * PI) * (0.25 + 0.55 * L14) * sc * (0.85 + 0.3 * hB);
+		}
+		if (sty == 15) {
+			base = mix(aOrigin, aTarget, e);
+			base += vec3(0.13, 0.16, 0.7) * sin(lt * PI) * sc;
 		}
 
 		if (abs(uMorphD.z) > 0.001) {
