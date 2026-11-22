@@ -15,6 +15,84 @@ const grid = (cols, rows, sx, sy) => {
 };
 
 const DRAW = {
+	autophagy: (c, t) => {
+		const p = t * TAU / 3;
+		for (let j = 0; j < 4; j++) for (let i = 0; i < 23; i++) {
+			const a = i / 23 * TAU + j * 0.5;
+			const fold = Math.sin(a * 3 + p + j * 0.8);
+			const r = (10 - j * 2.05) * (1 + fold * 0.18);
+			const twist = a + j * 0.24 * Math.sin(p - a);
+			const hole = Math.max(0, Math.cos(a - p)) ** 4;
+			dot(c, Math.cos(twist) * r * 1.15 + j * hole, Math.sin(twist) * r * 0.84, 1.15 + hole * 0.75, 0.27 + 0.68 * (1 - hole * j * 0.22));
+		}
+	},
+	reactionSkin: (c, t) => {
+		const p = t * TAU / 4;
+		for (const [x, y] of grid(13, 11, 2, 1.85)) {
+			if ((x / 12) ** 2 + (y / 9.5) ** 2 > 1) continue;
+			const u = 0.55 * Math.sin(x * 0.62 + Math.sin(y * 0.54 + p) * 1.6);
+			const v = 0.45 * Math.cos(y * 0.7 + Math.cos(x * 0.42 - p) * 2);
+			const rim = Math.max(0, 1 - Math.abs(u + v - 0.18) * 2.6);
+			dot(c, x, y - rim * 0.8, 0.85 + rim * 1.1, 0.22 + rim * 0.75);
+		}
+	},
+	impossible: (c, t) => {
+		const p = t * TAU / 4;
+		for (let j = 0; j < 3; j++) for (let i = 0; i < 24; i++) {
+			const a = i / 24 * TAU;
+			const warp = 1 + 0.24 * Math.cos(a * 3 + p) + 0.17 * Math.cos(a * 4 - p);
+			const x = Math.cos(a) * (8 + j * 1.4) * warp;
+			const z = Math.sin(a) * (7 + j) * warp;
+			const y = (j - 1) * 4.4;
+			dot(c, x * Math.cos(p) + z * Math.sin(p), y + (z * Math.cos(p) - x * Math.sin(p)) * 0.38, j === 1 ? 1.6 : 1.1, 0.58 + 0.35 * Math.sin(a - p));
+		}
+	},
+	causalWounds: (c, t) => {
+		const p = t * TAU / 3;
+		const open = (1 - Math.cos(p)) * 0.5;
+		for (const [x, y] of grid(11, 9, 2.25, 2.2)) {
+			if ((x / 12.5) ** 2 + (y / 9.5) ** 2 > 1) continue;
+			const gap = x - Math.sin(y * 0.67) * 2.4 - y * 0.26;
+			const pull = Math.max(0, 1 - Math.abs(gap) / 8);
+			dot(c, x + Math.sign(gap) * open * pull * 3.9, y, 1.2, 0.35 + pull * 0.45);
+		}
+		for (let k = 0; k < 3; k++) for (let j = 0; j < 9; j++) {
+			const y = (j - 4) * 1.6;
+			const x = Math.sin(y * 0.67) * 2.4 + y * 0.26 + (k - 1) * open * 2.5;
+			dot(c, x, y - (k - 1) * 0.9 * open, 1 + k * 0.18, open * (0.4 + 0.25 * k));
+		}
+	},
+	phaseInterference: (c, t) => {
+		const p = t * TAU / 3.5;
+		for (const [x, y] of grid(12, 10, 1.9, 1.85)) {
+			if ((x / 10.6) ** 2 + (y / 9) ** 2 > 1) continue;
+			const band = Math.sin(x * 0.72 + p) * 0.68 + Math.cos(y * 0.84 - p) * 0.32;
+			const b = band < 0 ? 1 : 0;
+			const rim = Math.max(0, 1 - Math.abs(band) * 4);
+			dot(c, x * (b ? 0.92 : 1) + (b ? 4 : -3), y + (b ? x * 0.22 : 0) + (b ? 0.9 : -0.5), 1.05 + rim * 0.8, 0.48 + rim * 0.45);
+		}
+	},
+	recursiveAnatomy: (c, t) => {
+		const p = t * TAU / 4;
+		const cloud = (x, y, r, k, alpha) => {
+			for (let j = 0; j < k; j++) {
+				const a = j / k * TAU;
+				const s = r * (0.84 + 0.16 * Math.cos(a * 3));
+				dot(c, x + Math.cos(a) * s, y + Math.sin(a) * s, 1.2, alpha);
+			}
+		};
+		const breath = 0.5 + 0.5 * Math.sin(p);
+		cloud(0, 0, 10.5, 25, 0.25);
+		for (let i = 0; i < 3; i++) {
+			const a = i * TAU / 3 + p;
+			const x = Math.cos(a) * 8.4, y = Math.sin(a) * 6.5;
+			cloud(x, y, 4.2 + 0.8 * breath, 12, 0.84);
+			for (let j = 0; j < 3; j++) {
+				const b = j * TAU / 3 - p;
+				cloud(x + Math.cos(b) * 2.3, y + Math.sin(b) * 1.8, 1.3, 4, 0.1 + breath * 0.75);
+			}
+		}
+	},
 	curl: (c, t) => {
 		for (let k = 0; k < 3; k++) for (let i = 0; i < 9; i++) {
 			const a = k * 2.09 + i * 0.5 - t * 1.4;
@@ -474,7 +552,7 @@ export function attachPreview(canvas, id, card, getColor) {
 		raf = requestAnimationFrame(frame);
 	};
 	const start = () => {
-		if (raf) return;
+		if (raf || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 		t0 = performance.now();
 		raf = requestAnimationFrame(frame);
 	};

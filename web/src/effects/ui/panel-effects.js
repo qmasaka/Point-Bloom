@@ -11,6 +11,7 @@ import { clipActivity } from '../../animation/anim-activity.js';
 import { attachPreview } from './fx-previews.js';
 import { SHAPES as POINT_SHAPE_LIST } from '../../ui/panels/points.js';
 import { FX_GROUP_NAMES, FX_ACTIONS, FX_LAYERS } from '../state/layers.js';
+import { EXPERIMENT_IDS } from '../state/experiments.js';
 import { FX_PALETTES, BANDS, COLOR_BY_UI, SYNTH_STYLES, MORPH_STYLES, MORPH_SORTS, MORPH_EASES } from '../state/options.js';
 import { recDefaults, saveRecDefaults } from '../engine/recording.js';
 export function makeModelProvider(app) {
@@ -531,7 +532,7 @@ rotate: { id: 'rotate', name: 'Вращение', icon: 'arrows-clockwise', hint
 bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 };
 const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
+const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort', ...EXPERIMENT_IDS];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
 let chronoStat = null;
@@ -838,7 +839,7 @@ band.el.addEventListener('click', () => requestAnimationFrame(syncAudioHead));
 if (def.sound !== false) body.append(audioHead, audioWrap);
 syncAudioHead();
 audioUiFull();
-const prevCanvas = def.staticIcon ? h('span', { class: 'fx-prev fx-prev-icon', 'aria-hidden': 'true', html: icon(def.icon, 16) }) : h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
+const prevCanvas = h('canvas', { class: 'fx-prev', 'aria-hidden': 'true' });
 const row = h('div', { class: 'fx-layer-head', role: 'button', tabindex: '0' }, prevCanvas, h('span', { class: 'fx-layer-title' }, def.name), sw.el);
 const card = h('div', { class: 'fx-layer' + (L.on ? ' is-on' : ''), 'data-layer': def.id, 'data-tip': def.hint, 'data-tip-pos': 'right', 'data-tip-delay': '1300' }, row);
 const insp = h('div', { class: 'fx-insp', 'data-layer': def.id }, body);
@@ -856,7 +857,7 @@ fxTabHook();
 }
 });
 fbody.append(card);
-if (!def.staticIcon) attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e58a45');
+attachPreview(prevCanvas, def.id, card, () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
 inspBox.append(insp);
 cards.push({ folder, def, L, sw, amount, react, band, reactRow, modeSeg, thr, rel, audioUi: audioUiFull, syncHead: syncAudioHead, picker, extraCtl, applyWhen, card, insp, fhead });
 }

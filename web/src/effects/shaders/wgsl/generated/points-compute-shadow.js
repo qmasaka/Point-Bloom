@@ -7,6 +7,11 @@ struct Frame {
 	uImpossible: vec4f,
 	uInterference: vec4f,
 	uRecursion: vec4f,
+	uImpossibleStyle: vec4f,
+	uPhaseStyle: vec4f,
+	uPhaseLook: vec4f,
+	uRecursionStyle: vec4f,
+	uRecursionLook: vec4f,
 	@size(16) uSolid: vec3f,
 	@size(16) uAtt: f32,
 	@size(16) uSize: f32,
@@ -1639,6 +1644,14 @@ fn experimentColor(value_in: f32) -> vec3f {
 	return (vec3f(glsl_mod_f(value, 256.0), glsl_mod_f(floor((value / 256.0)), 256.0), floor((value / 65536.0))) / 255.0);
 }
 
+fn experimentYaw(p_in: vec3f, angle_in: f32) -> vec3f {
+	var p: vec3f = p_in;
+	var angle: f32 = angle_in;
+	var c: f32 = cos(angle);
+	var s: f32 = sin(angle);
+	return vec3f(((p.x * c) - (p.z * s)), p.y, ((p.x * s) + (p.z * c)));
+}
+
 fn main_() {
 	if ((aHide > 0.5)) {
 		gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);
@@ -1780,61 +1793,83 @@ fn main_() {
 	var sculptMix: f32 = 0.0;
 	var sculptColor: vec3f = vec3f(0.0);
 	var copyShade: f32 = 0.0;
+	var autoLight: f32 = 0.0;
 	if ((fr.uExperimentSim.x > 0.5)) {
 		var field: vec4f = sampleExperimentField(i32(aVis.z));
 		pos += (field.xyz * maskV);
 		experimentTint = (field.w * maskV);
+		autoLight = ((smoothstep(0.07, 0.65, length(field.xyz)) * maskV) * fr.uExperimentSim.w);
 	}
 	if ((fr.uImpossible.x > 0.001)) {
-		var turn: f32 = (fract(((((fr.uExperimentView.x - fr.uImpossible.y)) / 6.2831853) + 1.0)) * 3.0);
+		var turn: f32 = (fract((((fr.uExperimentView.x - fr.uImpossible.y)) / 6.2831853)) * fr.uImpossibleStyle.x);
 		var nearA: f32 = abs((turn - 1.0));
 		var nearB: f32 = abs((turn - 2.0));
 		var width: f32 = mix(0.57, 1.0, fr.uImpossible.z);
 		var weightA: f32 = (1.0 - smoothstep(0.02, width, nearA));
-		var weightB: f32 = (1.0 - smoothstep(0.02, width, nearB));
+		var weightB: f32 = (((1.0 - smoothstep(0.02, width, nearB))) * step(2.5, fr.uImpossibleStyle.x));
 		var yaw: f32 = ((base.y * 2.4) + (base.x * 0.8));
 		var shapeA: vec3f = vec3f(((base.x * cos(yaw)) - (base.z * sin(yaw))), base.y, ((base.x * sin(yaw)) + (base.z * cos(yaw))));
 		var shapeB: vec3f = vec3f((base.x + (0.3 * sin((base.y * 7.0)))), ((base.y * 0.85) + (base.z * 0.35)), ((-base.z * 0.35) + (0.47 * sin(((base.x * 6.7) + (base.y * 3.2))))));
+		var directionStyle: f32 = fr.uImpossibleStyle.y;
+		if ((directionStyle > 1.5)) {
+			var facet: f32 = (floor((((base.y + 1.3)) * 4.0)) * 0.37);
+			shapeA = (experimentYaw(base, facet) * vec3f(1.1, 0.87, 1.08));
+			shapeB = vec3f((base.x * ((0.62 + (facet * 0.26)))), base.y, ((base.z * 0.75) + (0.27 * sign(base.x))));
+		} else if ((directionStyle > 0.5)) {
+			shapeA = vec3f(((base.x * 0.85) + (0.35 * sin((base.y * 8.0)))), base.y, ((base.z * 0.4) + (0.32 * cos((base.y * 8.0)))));
+			shapeB = vec3f(base.x, ((base.y * 0.78) + (0.22 * cos((base.x * 9.0)))), ((base.z * 0.65) + (0.22 * sin((base.x * 9.0)))));
+		}
 		var sid: f32 = floor(((aIdx * fr.uExperimentView.w) + 0.5));
 		if ((fr.uExperimentView.w > fr.uExperimentShapeInfo.x)) {
 			sid = floor((experimentHash((i32(sid) + 373)) * fr.uExperimentShapeInfo.x));
 		}
 		var q: i32 = i32(clamp(sid, 0.0, (fr.uExperimentShapeInfo.x - 1.0)));
-		if (((weightA > 0.001) && (glsl_mod_f(fr.uExperimentShapeInfo.z, 2.0) > 0.5))) {
+		if ((((fr.uImpossible.w >= 0.0) && (weightA > 0.001)) && (glsl_mod_f(fr.uExperimentShapeInfo.z, 2.0) > 0.5))) {
 			var p: vec4f = textureLoad(experimentShapes, vec2i((q % 256), (q / 256)), 0);
 			shapeA = p.xyz;
 			sculptColor += (experimentColor(p.w) * weightA);
 			sculptMix += weightA;
 		}
-		if (((weightB > 0.001) && (fr.uExperimentShapeInfo.z >= 2.0))) {
+		if ((((fr.uImpossible.w >= 0.0) && (weightB > 0.001)) && (fr.uExperimentShapeInfo.z >= 2.0))) {
 			var p: vec4f = textureLoad(experimentShapes, vec2i((q % 256), ((q / 256) + i32(fr.uExperimentShapeInfo.y))), 0);
 			shapeB = p.xyz;
 			sculptColor += (experimentColor(p.w) * weightB);
 			sculptMix += weightB;
 		}
 		sculptColor /= vec3f(max(sculptMix, 0.001));
-		sculptMix *= (fr.uImpossible.x * maskV);
+		sculptMix = (((min(1.0, sculptMix) * max(0.0, fr.uImpossible.w)) * fr.uImpossible.x) * maskV);
+		shapeA.x += fr.uImpossibleStyle.w;
+		shapeB.x -= fr.uImpossibleStyle.w;
 		var toA: vec3f = (shapeA - base);
 		var toB: vec3f = (shapeB - base);
 		var axis: vec3f = vec3f(0.28, 0.88, 0.36);
 		var arc: vec3f = cross(axis, (((toA * weightA) * ((1.0 - weightA))) - ((toB * weightB) * ((1.0 - weightB)))));
-		pos += ((((((toA * weightA) + (toB * weightB)) + (arc * 0.72))) * fr.uImpossible.x) * maskV);
+		pos += ((((((toA * weightA) + (toB * weightB)) + (arc * fr.uImpossibleStyle.z))) * fr.uImpossible.x) * maskV);
 	}
 	if ((fr.uInterference.x > 0.001)) {
-		var phase: f32 = ((((fr.uTime - fr.uTOff)) * fr.uInterference.z) + ((fr.uExperimentView.y * fr.uExperimentView.z) * 5.0));
-		var angle: f32 = fr.uExperimentView.x;
-		var crossWave: f32 = (sin(((((((base.x * cos(angle)) + (base.z * sin(angle)))) * fr.uInterference.y) * 2.3) + phase)) * 0.56);
-		crossWave += (sin((((((((base.y * 1.3) - (base.z * 0.61))) * fr.uInterference.y) * 1.73) - (phase * 0.73)) + (angle * 2.0))) * 0.33);
-		crossWave += (sin((((length(base.xz) * fr.uInterference.y) * 3.1) - (phase * 1.4))) * 0.11);
+		var phase: f32 = fr.uExperimentView.y;
+		var angle: f32 = fr.uInterference.z;
+		var x: f32 = ((base.x * cos(angle)) + (base.z * sin(angle)));
+		var y: f32 = ((base.y * 1.3) - (base.z * 0.61));
+		var f: f32 = fr.uInterference.y;
+		var crossWave: f32 = (((sin((((x * f) * 2.3) + phase)) * 0.56) + (sin(((((y * f) * 1.73) - (phase * 0.73)) + (angle * 2.0))) * 0.33)) + (sin((((length(base.xz) * f) * 3.1) - (phase * 1.4))) * 0.11));
+		var pattern: f32 = fr.uPhaseStyle.x;
+		if ((pattern > 1.5)) {
+			crossWave = (((sin((((x * f) * 2.0) + phase)) * sin((((y * f) * 1.9) - (phase * 0.8)))) * 0.85) + (sin((((base.z * f) * 1.3) + angle)) * 0.15));
+		} else if ((pattern > 0.5)) {
+			var center: vec2f = vec2f((0.31 * cos(angle)), (0.25 * sin(angle)));
+			crossWave = ((sin((((length((vec2f(x, y) - center)) * f) * 3.3) - phase)) * 0.82) + (sin(((base.z * f) + (phase * 0.5))) * 0.18));
+		}
 		var pointId: i32 = i32(floor(((aIdx * fr.uExperimentView.w) + 0.5)));
 		var threshold: f32 = ((fr.uInterference.w * 2.02) - 1.01);
 		var enabled: f32 = step(experimentHash((pointId + 479)), (fr.uInterference.x * maskV));
 		var chosen: f32 = (step(crossWave, threshold) * enabled);
-		phaseRim = (((((1.0 - smoothstep(0.015, 0.16, abs((crossWave - threshold))))) * enabled) * smoothstep(0.0, 0.1, fr.uInterference.w)) * ((1.0 - smoothstep(0.9, 1.0, fr.uInterference.w))));
+		phaseRim = (((((((1.0 - smoothstep((fr.uPhaseStyle.w * 0.12), fr.uPhaseStyle.w, abs((crossWave - threshold))))) * enabled) * smoothstep(0.0, 0.1, fr.uInterference.w)) * ((1.0 - smoothstep(0.9, 1.0, fr.uInterference.w)))) * fr.uPhaseStyle.z) * min(1.4, fr.uInterference.x));
+		pos.x += ((((chosen - 0.5)) * fr.uPhaseStyle.y) * enabled);
 		if ((chosen > 0.5)) {
 			var alt: vec3f = vec3f(((-base.x * 0.71) + 0.56), (base.y * 0.88), (-base.z + (0.42 * sin((base.y * 3.5)))));
 			phaseColor = fr.uP2;
-			if ((fr.uExperimentShapeInfo.z >= 1.0)) {
+			if (((fr.uPhaseLook.y * fr.uExperimentShapeInfo.z) >= 1.0)) {
 				var sid: f32 = f32(pointId);
 				if ((fr.uExperimentView.w > fr.uExperimentShapeInfo.x)) {
 					sid = floor((experimentHash((pointId + 373)) * fr.uExperimentShapeInfo.x));
@@ -1850,10 +1885,10 @@ fn main_() {
 		}
 	}
 	if ((fr.uRecursion.x > 0.001)) {
-		var nearLod: f32 = (1.0 - smoothstep(2.0, 7.0, fr.uExperimentShapeInfo.w));
+		var nearLod: f32 = fr.uExperimentView.z;
 		var pointId: i32 = i32(floor(((aIdx * fr.uExperimentView.w) + 0.5)));
 		var draw: f32 = experimentHash(((pointId * 17) + 139));
-		var levelGate: f32 = (((fr.uRecursion.w * fr.uRecursion.x) * maskV) * mix(0.52, 1.0, nearLod));
+		var levelGate: f32 = min(0.97, (((fr.uRecursion.w * fr.uRecursion.x) * maskV) * mix(0.45, 1.0, nearLod)));
 		if ((draw < levelGate)) {
 			var levelDraw: f32 = experimentHash(((pointId * 29) + 719));
 			var first: f32 = (1.0 - smoothstep((levelGate - 0.06), levelGate, draw));
@@ -1864,6 +1899,8 @@ fn main_() {
 			var row: i32 = (i32(fr.uExperimentShapeInfo.y) * 2);
 			var copyCenter: vec3f = fr.uCen;
 			var copyScale: f32 = 1.0;
+			var copyYaw: f32 = 0.0;
+			var copyLayout: f32 = fr.uRecursionStyle.w;
 			for (var i: i32 = 0; (i < 3); i++) {
 				if ((f32(i) >= fr.uRecursion.y)) {
 					break;
@@ -1872,15 +1909,23 @@ fn main_() {
 				if ((weight <= 0.001)) {
 					break;
 				}
-				var copies: f32 = select(select(4.0, 6.0, (i == 1)), 12.0, (i == 0));
+				var copies: f32 = max(2.0, floor((fr.uRecursionStyle.x / f32((i + 1)))));
 				var groupId: f32 = floor((experimentHash((((pointId * ((41 + (i * 12)))) + 1279) + (i * 193))) * copies));
-				var anchor: vec3f = textureLoad(experimentShapes, vec2i(i32(groupId), row), 0).xyz;
-				copyCenter += ((((anchor - fr.uCen)) * copyScale) * weight);
+				var anchor: vec3f = (textureLoad(experimentShapes, vec2i(i32(groupId), row), 0).xyz - fr.uCen);
+				var turn: f32 = ((((groupId / copies)) * 6.2831853) + (f32(i) * 0.62));
+				if ((copyLayout > 1.5)) {
+					var height: f32 = ((groupId / max(1.0, (copies - 1.0))) - 0.5);
+					anchor = vec3f((cos((turn * 1.7)) * 0.88), (height * 1.72), (sin((turn * 1.7)) * 0.88));
+				} else if ((copyLayout > 0.5)) {
+					anchor = vec3f(cos(turn), (sin((turn * 2.0)) * 0.23), sin(turn));
+				}
+				copyCenter += (((experimentYaw(anchor, copyYaw) * fr.uRecursionStyle.y) * copyScale) * weight);
+				copyYaw += ((sin((turn + 0.74)) * fr.uRecursionStyle.z) * weight);
 				copyScale *= mix(1.0, fr.uRecursion.z, weight);
-				experimentScale *= mix(1.0, mix(0.56, 0.82, nearLod), weight);
-				copyShade += (weight * 0.26);
+				experimentScale *= mix(1.0, (mix(0.42, 0.96, fr.uRecursionLook.x) + (nearLod * 0.06)), weight);
+				copyShade += ((weight * fr.uRecursionLook.y) * 0.36);
 			}
-			pos = (copyCenter + (((pos - fr.uCen)) * copyScale));
+			pos = (copyCenter + (experimentYaw((pos - fr.uCen), copyYaw) * copyScale));
 		}
 	}
 	if ((gScopeG > 0.01)) {
@@ -1908,7 +1953,7 @@ fn main_() {
 	if ((fr.uFr.x > 0.5)) {
 		colM = frCol;
 	}
-	colM = mix(mix(colM, sculptColor, sculptMix), phaseColor, phaseMix);
+	colM = mix(mix(colM, sculptColor, sculptMix), phaseColor, (phaseMix * fr.uPhaseLook.x));
 	if ((fr.uSlit.x > 0.001)) {
 		var sip: f32 = floor(((aIdx * fr.uSlitG.z) + 0.5));
 		var sci: f32 = glsl_mod_f(sip, fr.uSlitG.x);
@@ -1980,9 +2025,9 @@ fn main_() {
 	var rim: f32 = (smoothstep(0.05, 0.21, wound) * ((1.0 - smoothstep(0.24, 0.65, wound))));
 	var vein: f32 = (smoothstep(0.08, 0.25, skin) * ((1.0 - smoothstep(0.33, 0.68, skin))));
 	var phaseInk: vec3f = mix(phaseColor, fr.uP2, 0.27);
-	vColor = (((mix(col, phaseInk, (phaseMix * 0.76)) * fr.uBright) * ((1.0 + (fr.uBeat * 0.3)))) * vis);
+	vColor = (((mix(col, phaseInk, (phaseMix * fr.uPhaseLook.x)) * fr.uBright) * ((1.0 + (fr.uBeat * 0.3)))) * vis);
 	vColor *= vec3f(((1.0 - (0.32 * wound)) - (0.2 * copyShade)));
-	vColor += ((((((((mix(fr.uP0, fr.uP2, skin) * skin) * 0.27) + ((fr.uP2 * vein) * 0.42)) + ((mix(fr.uP1, fr.uP2, 0.65) * rim) * 0.55)) + ((mix(fr.uP1, fr.uP2, phaseMix) * phaseRim) * 0.28))) * fr.uBright) * vis);
+	vColor += (((((((((mix(fr.uP0, fr.uP2, skin) * skin) * 0.27) + (((fr.uP2 * vein) * fr.uExperimentSim.y) * 0.56)) + (((mix(fr.uP1, fr.uP2, 0.65) * rim) * fr.uExperimentSim.z) * 0.65)) + ((mix(fr.uP1, fr.uP2, phaseMix) * phaseRim) * 0.4)) + ((fr.uP2 * autoLight) * 0.38))) * fr.uBright) * vis);
 	experimentScale *= (((1.0 + (rim * 0.23)) + (vein * 0.16)) + (phaseRim * 0.14));
 	if (((fr.uPaintP.x > 0.5) && (aPaint.w > 0.002))) {
 		var pa: f32 = aPaint.w;

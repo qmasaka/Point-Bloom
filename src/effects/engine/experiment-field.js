@@ -92,6 +92,7 @@ export class ExperimentField {
 
 	resetReaction() {
 		this.chem = null;
+		delete this.triggers?.seed;
 	}
 
 	resetWounds() {
@@ -100,6 +101,7 @@ export class ExperimentField {
 		this.history.length = 0;
 		this.historyHead = -1;
 		this.historyTime = -Infinity;
+		delete this.triggers?.wound;
 	}
 
 	capture(viewport, object, overlay) {
@@ -139,11 +141,15 @@ export class ExperimentField {
 		this.forward.setFromMatrixColumn(camera.matrixWorld, 2).transformDirection(this.inverse);
 	}
 
-	_updateFeedback(settings) {
+	_updateFeedback(settings, amount) {
 		const img = this.luma;
 		if (!img) return;
 		const { width, height } = this.surface;
-		const retain = Math.exp(-STEP / settings.memory);
+		const area = Math.round(settings.sample);
+		const inner = Math.max(1, Math.round(area * 0.5));
+		const retain = Math.exp(-STEP * settings.speed / settings.memory);
+		const gain = STEP * settings.feedback * settings.speed * 2.8 * (0.4 + 0.6 * Math.min(1, amount));
+		const limit = settings.limit;
 		const p = this.point;
 		for (const id of this.cells) {
 			const j = id * 3;
@@ -151,26 +157,35 @@ export class ExperimentField {
 			p.fromArray(this.current, j).add(this._offset.fromArray(d, j)).applyMatrix4(this.projection);
 			const x = Math.floor((p.x * 0.5 + 0.5) * width), y = Math.floor((0.5 - p.y * 0.5) * height);
 			let sx = 0, sy = 0, sz = 0;
-			if (p.z >= -1 && p.z <= 1 && x >= 4 && y >= 4 && x < width - 4 && y < height - 4) {
+			if (p.z >= -1 && p.z <= 1 && x >= area && y >= area && x < width - area && y < height - area) {
 				const i = x + y * width;
-				const gx = (img[i + 2] - img[i - 2]) * 0.65 + (img[i + 4] - img[i - 4]) * 0.35;
-				const gy = (img[i - 2 * width] - img[i + 2 * width]) * 0.65 + (img[i - 4 * width] - img[i + 4 * width]) * 0.35;
+				const gx = (img[i + inner] - img[i - inner]) * 0.65 + (img[i + area] - img[i - area]) * 0.35;
+				const gy = (img[i - inner * width] - img[i + inner * width]) * 0.65 + (img[i - area * width] - img[i + area * width]) * 0.35;
 				const edge = Math.min(1, Math.hypot(gx, gy) * 3.4);
-				const eddy = settings.chaos * (0.35 + edge) * Math.sin(this.current[j] * 9 + this.current[j + 1] * 13 + this.time * 1.25);
+				const eddy = settings.chaos * (0.35 + edge) * Math.sin(this.current[j] * 9 + this.current[j + 1] * 13 + this.time * settings.speed * 1.25);
 				sx = settings.pull * gx - gy * eddy;
 				sy = settings.pull * gy + gx * eddy;
-				const surround = (img[i + 4] + img[i - 4] + img[i + 4 * width] + img[i - 4 * width]) * 0.25;
+				const surround = (img[i + area] + img[i - area] + img[i + area * width] + img[i - area * width]) * 0.25;
 				const fold = clamp((img[i] - surround) * 1.8, -0.38, 0.5);
 				sz = settings.edge * (edge * 0.52 - fold) + eddy * edge * 0.28;
+				if (settings.style === 'vortex') {
+					const spin = settings.edge * 0.68 + eddy * 0.45;
+					sx = sx * 0.55 - gy * spin;
+					sy = sy * 0.55 + gx * spin;
+					sz *= 0.4;
+				} else if (settings.style === 'erode') {
+					sx -= gx * settings.edge * 1.15;
+					sy -= gy * settings.edge * 1.15;
+					sz = -settings.edge * (edge * 0.48 + Math.max(0, fold));
+				}
 			}
-			const gain = STEP * settings.feedback * 2.8;
-			d[j] = clamp(d[j] * retain + gain * (sx * this.right.x + sy * this.up.x + sz * this.forward.x), -0.8, 0.8);
-			d[j + 1] = clamp(d[j + 1] * retain + gain * (sx * this.right.y + sy * this.up.y + sz * this.forward.y), -0.8, 0.8);
-			d[j + 2] = clamp(d[j + 2] * retain + gain * (sx * this.right.z + sy * this.up.z + sz * this.forward.z), -0.8, 0.8);
+			d[j] = clamp(d[j] * retain + gain * (sx * this.right.x + sy * this.up.x + sz * this.forward.x), -limit, limit);
+			d[j + 1] = clamp(d[j + 1] * retain + gain * (sx * this.right.y + sy * this.up.y + sz * this.forward.y), -limit, limit);
+			d[j + 2] = clamp(d[j + 2] * retain + gain * (sx * this.right.z + sy * this.up.z + sz * this.forward.z), -limit, limit);
 		}
 	}
 
-	_seed(center, radius) {
+	_seed(center, radius, strength) {
 		const cs = this.centers;
 		const { a, b } = this.chem;
 		for (const id of this.cells) {
@@ -178,24 +193,28 @@ export class ExperimentField {
 			const d = Math.hypot(cs[j] - center[0], cs[j + 1] - center[1], cs[j + 2] - center[2]);
 			if (d >= radius) continue;
 			const weight = 1 - d / radius;
-			a[id] = Math.min(a[id], 0.28 + 0.35 * (1 - weight));
-			b[id] = Math.max(b[id], 0.34 + 0.3 * weight);
+			a[id] = Math.min(a[id], 1 - strength * (0.54 + 0.40 * weight));
+			b[id] = Math.max(b[id], strength * (0.5 + 0.44 * weight));
 		}
 	}
 
 	_react(settings, hit) {
 		if (!this.chem) {
-			this.chem = { a: new Float32Array(CELLS).fill(1), b: new Float32Array(CELLS), nextA: new Float32Array(CELLS), nextB: new Float32Array(CELLS), warm: 20 };
+			this.chem = { a: new Float32Array(CELLS).fill(1), b: new Float32Array(CELLS), nextA: new Float32Array(CELLS), nextB: new Float32Array(CELLS), warm: 20, substeps: 0 };
 			for (let i = 0; i < Math.min(12, this.cells.length); i++) {
 				const index = Math.floor((0.23 + i * 0.61803399) % 1 * this.cells.length);
 				const j = this.cells[index] * 3;
-				this._seed(this.centers.subarray(j, j + 3), 0.23);
+				this._seed(this.centers.subarray(j, j + 3), 0.23, Math.max(0.55, settings.seed));
 			}
 		}
-		if (hit >= 0) this._seed(this.centers.subarray(hit * 3, hit * 3 + 3), settings.radius);
+		if (hit >= 0) this._seed(this.centers.subarray(hit * 3, hit * 3 + 3), settings.radius, settings.seed);
 		const c = this.chem;
-		const feed = settings.feed / 1000, kill = settings.kill / 1000;
-		const steps = c.warm-- > 0 ? 12 : 5;
+		const feed = Math.max(0.008, settings.feed / 1000 - (settings.style === 'maze' ? 0.022 : settings.style === 'branches' ? 0.035 : 0));
+		const kill = Math.max(0.03, settings.kill / 1000 - (settings.style === 'maze' ? 0.004 : settings.style === 'branches' ? 0.01 : 0));
+		c.substeps += Math.min(18, (c.warm > 0 ? 12 : 5) * settings.speed);
+		if (c.warm > 0) c.warm--;
+		const steps = Math.floor(c.substeps);
+		c.substeps -= steps;
 		for (let step = 0; step < steps; step++) {
 			const { a, b, nextA, nextB } = c;
 			for (let i = 0; i < this.cells.length; i++) {
@@ -209,7 +228,7 @@ export class ExperimentField {
 				const diffusion = settings.diffusion / Math.max(1, neighbours.length);
 				const reaction = av * bv * bv;
 				nextA[id] = clamp(av + 0.8 * (diffusion * 0.95 * sumA - reaction + feed * (1 - av)), 0, 1);
-				nextB[id] = clamp(bv + 0.8 * (diffusion * 0.46 * sumB + reaction - (kill + feed) * bv), 0, 1);
+				nextB[id] = clamp(bv + 0.8 * (diffusion * settings.balance * sumB + reaction - (kill + feed) * bv), 0, 1);
 			}
 			[c.a, c.nextA] = [nextA, a];
 			[c.b, c.nextB] = [nextB, b];
@@ -242,13 +261,31 @@ export class ExperimentField {
 		for (const id of this.cells) {
 			const j = id * 3;
 			const dx = c[j] - c[hj], dy = c[j + 1] - c[hj + 1], dz = c[j + 2] - c[hj + 2];
-			const jagged = 0.7 + 0.3 * Math.sin(id * 0.017 + c[j + 1] * 37);
+			const jagged = 1 - settings.roughness * (0.22 + 0.38 * Math.sin(id * 0.017 + c[j + 1] * 37));
 			const d = Math.hypot(dx * 0.75, dy, dz * 1.15) / (settings.radius * jagged);
 			this.wounds[id] = Math.max(this.wounds[id], clamp(1 - d, 0, 1) ** 0.45);
 		}
 	}
 
-	step(layers, mix, viewport, object, picks) {
+	_repeatCell(key, settings, beat, amount) {
+		const timers = this.triggers ||= {};
+		if (!settings.on || settings.trigger === 'manual') {
+			delete timers[key];
+			return -1;
+		}
+		let timer = timers[key];
+		if (timer?.type !== settings.trigger || timer.period !== settings.period) {
+			timer = timers[key] = { type: settings.trigger, period: settings.period, next: this.time + settings.period * 0.5, count: 0 };
+		}
+		if (amount <= 0.001 || !this.cells.length) return -1;
+		const due = settings.trigger === 'beat' ? beat : this.time >= timer.next;
+		if (!due) return -1;
+		timer.next = this.time + settings.period;
+		const index = Math.floor(((key === 'seed' ? 0.27 : 0.62) + timer.count++ * 0.61803398875) % 1 * this.cells.length);
+		return this.cells[index];
+	}
+
+	step(layers, mix, viewport, object, picks, gains, beat) {
 		const a = this.geometry.attributes;
 		const origin = a.aOrigin.array, target = a.aTarget.array, sculpt = a.aSculpt.array, normals = a.aNormalB.array;
 		for (const id of this.cells) {
@@ -256,18 +293,23 @@ export class ExperimentField {
 			for (let k = 0; k < 3; k++) this.current[j + k] = origin[i + k] + (target[i + k] - origin[i + k]) * mix + sculpt[i + k];
 		}
 		const auto = layers.autophagy, reaction = layers.reactionSkin, wounds = layers.causalWounds;
+		const pulse = auto.repeat === 'pulse' ? 0.5 - 0.5 * Math.cos(2 * Math.PI * this.time / auto.period) : 1;
+		const autoGain = (gains.autophagy || 0) * pulse;
+		const chemGain = gains.reactionSkin || 0, woundGain = gains.causalWounds || 0;
 		this._offset ||= new THREE.Vector3();
-		if (auto.on && auto.amount > 0) this._updateFeedback(auto);
+		if (auto.on && auto.amount > 0) this._updateFeedback(auto, autoGain);
 		else if (this.autoOn) this.resetFeedback();
 		this.autoOn = auto.on && auto.amount > 0;
-		if (reaction.on) this._react(reaction, picks.seed ? this.pick(picks.seed, viewport, object) : -1);
+		const seedCell = this._repeatCell('seed', reaction, beat, chemGain);
+		const woundCell = this._repeatCell('wound', wounds, beat, woundGain);
+		if (reaction.on) this._react(reaction, picks.seed ? this.pick(picks.seed, viewport, object) : seedCell);
 		else if (this.chem) this.resetReaction();
-		if (wounds.on && picks.wound) this._wound(wounds, this.pick(picks.wound, viewport, object));
+		if (wounds.on && (picks.wound || woundCell >= 0)) this._wound(wounds, picks.wound ? this.pick(picks.wound, viewport, object) : woundCell);
 		if (!wounds.on && this.woundOn) this.resetWounds();
 		this.woundOn = wounds.on;
 		const decay = Math.exp(-3 * STEP / wounds.healing);
 		const b = this.chem?.b;
-		const captureHistory = wounds.on && this.time - (this.historyTime ?? -Infinity) >= 0.10;
+		const captureHistory = wounds.on && this.time - (this.historyTime ?? -Infinity) + 0.0001 >= Math.max(STEP, wounds.memory / HISTORY);
 		let snapshot;
 		if (captureHistory) {
 			this.historyTime = this.time;
@@ -277,9 +319,10 @@ export class ExperimentField {
 		for (let index = 0; index < this.cells.length; index++) {
 			const id = this.cells[index], j = id * 3, p = id * 4, i = this.indices[id];
 			const concentration = reaction.on && b ? clamp((b[id] - 0.06) * 3.8, 0, 1) : 0;
-			const chem = concentration * concentration * (3 - 2 * concentration) * reaction.amount;
+			const chem = concentration * concentration * (3 - 2 * concentration) * chemGain;
 			const mutation = chem * chem * reaction.mutation;
-			const ridge = chem * reaction.growth * (0.12 + mutation * 0.55);
+			const growthDirection = reaction.relief === 'in' ? -1 : reaction.relief === 'both' ? concentration * 2 - 0.8 : 1;
+			const ridge = chem * reaction.growth * (0.12 + mutation * 0.55) * growthDirection;
 			let w = this.wounds[id];
 			if (wounds.on) {
 				let nearby = 0;
@@ -287,21 +330,23 @@ export class ExperimentField {
 				const grain = (Math.sin(id * 1.618) * 0.5 + 0.5) ** 3;
 				this.cracks[id] = Math.max(w * decay, 0) + nearby * grain * wounds.spread * 0.17;
 			}
-			w = wounds.on ? w * wounds.amount : 0;
+			w = wounds.on ? Math.min(1.2, w * woundGain) : 0;
 			const ribbon = Math.sin(this.centers[j] * 4.8 + this.centers[j + 1] * 8 - this.centers[j + 2] * 5.5);
-			const layer = Math.floor((ribbon * 0.5 + 0.5) * 3.99);
-			const back = Math.min(this.history.length - 1, 2 + layer * 4);
+			const strand = wounds.style === 'crack' ? Math.abs(ribbon) * 0.8 + 0.2 : wounds.style === 'peel' ? w : ribbon * 0.5 + 0.5;
+			const layer = Math.floor(clamp(strand, 0, 0.999) * wounds.layers);
+			const back = Math.min(this.history.length - 1, 2 + Math.round(layer * (HISTORY - 3) / Math.max(1, wounds.layers - 1)));
 			const past = back >= 0 ? this.history[(this.historyHead - back + HISTORY) % HISTORY] : null;
 			for (let k = 0; k < 3; k++) {
 				const noise = Math.sin(this.centers[j + (k + 1) % 3] * 19 + k * 2 + this.time * 0.7);
-				const local = this.autoOn ? this.feedback[j + k] * auto.amount : 0;
+				const local = this.autoOn ? this.feedback[j + k] * autoGain : 0;
 				const offset = local + ridge * normals[i + k] + noise * mutation * 0.14;
 				const live = this.current[j + k] + offset;
-				const cut = (0.19 + layer * 0.15) * normals[i + k] + noise * 0.09;
+				const lift = wounds.style === 'crack' ? 0.12 - layer * wounds.spacing : 0.19 + layer * wounds.spacing;
+				const cut = lift * normals[i + k] + noise * (0.04 + wounds.roughness * 0.12);
 				this.output[p + k] = offset + w * wounds.depth * ((past ? past[j + k] - live : 0) + cut);
 				if (snapshot) snapshot[j + k] = live;
 			}
-			this.output[p + 3] = 2 + chem - Math.min(1, w * (0.82 + layer * 0.12));
+			this.output[p + 3] = 2 + Math.min(1, chem) - Math.min(1, w * (0.82 + layer * 0.08));
 		}
 		if (wounds.on) [this.wounds, this.cracks] = [this.cracks, this.wounds];
 		this.texture.needsUpdate = true;

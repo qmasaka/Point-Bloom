@@ -315,6 +315,8 @@ export class EffectsEngine {
 		this.app.viewport.applyRenderSettings();
 		const vp = this.app.viewport;
 		this._disposePoints();
+		this._experimentMotion = null;
+		this._experimentGains = null;
 		vp.root.visible = this._saved?.rootVisible !== false;
 		vp.fxHide = false;
 		const stage = document.querySelector('.stage');

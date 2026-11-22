@@ -25,6 +25,11 @@ uniform vec4 uExperimentView;
 uniform vec4 uImpossible;
 uniform vec4 uInterference;
 uniform vec4 uRecursion;
+uniform vec4 uImpossibleStyle;
+uniform vec4 uPhaseStyle;
+uniform vec4 uPhaseLook;
+uniform vec4 uRecursionStyle;
+uniform vec4 uRecursionLook;
 uniform vec3 uSolid;
 uniform float uAtt;
 uniform float uSize;
@@ -152,6 +157,12 @@ vec4 sampleExperimentField(int packed) {
 
 vec3 experimentColor(float value) {
 	return vec3(mod(value, 256.0), mod(floor(value / 256.0), 256.0), floor(value / 65536.0)) / 255.0;
+}
+
+vec3 experimentYaw(vec3 p, float angle) {
+	float c = cos(angle);
+	float s = sin(angle);
+	return vec3(p.x * c - p.z * s, p.y, p.x * s + p.z * c);
 }
 
 void main() {
@@ -328,59 +339,81 @@ void main() {
 	float sculptMix = 0.0;
 	vec3 sculptColor = vec3(0.0);
 	float copyShade = 0.0;
+	float autoLight = 0.0;
 #ifndef HERO
 	if (uExperimentSim.x > 0.5) {
 		vec4 field = sampleExperimentField(int(aVis.z));
 		pos += field.xyz * maskV;
 		experimentTint = field.w * maskV;
+		autoLight = smoothstep(0.07, 0.65, length(field.xyz)) * maskV * uExperimentSim.w;
 	}
 	if (uImpossible.x > 0.001) {
-		float turn = fract((uExperimentView.x - uImpossible.y) / 6.2831853 + 1.0) * 3.0;
+		float turn = fract((uExperimentView.x - uImpossible.y) / 6.2831853) * uImpossibleStyle.x;
 		float nearA = abs(turn - 1.0);
 		float nearB = abs(turn - 2.0);
 		float width = mix(0.57, 1.0, uImpossible.z);
 		float weightA = 1.0 - smoothstep(0.02, width, nearA);
-		float weightB = 1.0 - smoothstep(0.02, width, nearB);
+		float weightB = (1.0 - smoothstep(0.02, width, nearB)) * step(2.5, uImpossibleStyle.x);
 		float yaw = base.y * 2.4 + base.x * 0.8;
 		vec3 shapeA = vec3(base.x * cos(yaw) - base.z * sin(yaw), base.y, base.x * sin(yaw) + base.z * cos(yaw));
 		vec3 shapeB = vec3(base.x + 0.3 * sin(base.y * 7.0), base.y * 0.85 + base.z * 0.35, -base.z * 0.35 + 0.47 * sin(base.x * 6.7 + base.y * 3.2));
+		float directionStyle = uImpossibleStyle.y;
+		if (directionStyle > 1.5) {
+			float facet = floor((base.y + 1.3) * 4.0) * 0.37;
+			shapeA = experimentYaw(base, facet) * vec3(1.1, 0.87, 1.08);
+			shapeB = vec3(base.x * (0.62 + facet * 0.26), base.y, base.z * 0.75 + 0.27 * sign(base.x));
+		} else if (directionStyle > 0.5) {
+			shapeA = vec3(base.x * 0.85 + 0.35 * sin(base.y * 8.0), base.y, base.z * 0.4 + 0.32 * cos(base.y * 8.0));
+			shapeB = vec3(base.x, base.y * 0.78 + 0.22 * cos(base.x * 9.0), base.z * 0.65 + 0.22 * sin(base.x * 9.0));
+		}
 		float sid = floor(aIdx * uExperimentView.w + 0.5);
 		if (uExperimentView.w > uExperimentShapeInfo.x) sid = floor(experimentHash(int(sid) + 373) * uExperimentShapeInfo.x);
 		int q = int(clamp(sid, 0.0, uExperimentShapeInfo.x - 1.0));
-		if (weightA > 0.001 && mod(uExperimentShapeInfo.z, 2.0) > 0.5) {
+		if (uImpossible.w >= 0.0 && weightA > 0.001 && mod(uExperimentShapeInfo.z, 2.0) > 0.5) {
 			vec4 p = texelFetch(uExperimentShapes, ivec2(q % 256, q / 256), 0);
 			shapeA = p.xyz;
 			sculptColor += experimentColor(p.w) * weightA;
 			sculptMix += weightA;
 		}
-		if (weightB > 0.001 && uExperimentShapeInfo.z >= 2.0) {
+		if (uImpossible.w >= 0.0 && weightB > 0.001 && uExperimentShapeInfo.z >= 2.0) {
 			vec4 p = texelFetch(uExperimentShapes, ivec2(q % 256, q / 256 + int(uExperimentShapeInfo.y)), 0);
 			shapeB = p.xyz;
 			sculptColor += experimentColor(p.w) * weightB;
 			sculptMix += weightB;
 		}
 		sculptColor /= max(sculptMix, 0.001);
-		sculptMix *= uImpossible.x * maskV;
+		sculptMix = min(1.0, sculptMix) * max(0.0, uImpossible.w) * uImpossible.x * maskV;
+		shapeA.x += uImpossibleStyle.w;
+		shapeB.x -= uImpossibleStyle.w;
 		vec3 toA = shapeA - base, toB = shapeB - base;
 		vec3 axis = vec3(0.28, 0.88, 0.36);
 		vec3 arc = cross(axis, toA * weightA * (1.0 - weightA) - toB * weightB * (1.0 - weightB));
-		pos += (toA * weightA + toB * weightB + arc * 0.72) * uImpossible.x * maskV;
+		pos += (toA * weightA + toB * weightB + arc * uImpossibleStyle.z) * uImpossible.x * maskV;
 	}
 	if (uInterference.x > 0.001) {
-		float phase = (uTime - uTOff) * uInterference.z + uExperimentView.y * uExperimentView.z * 5.0;
-		float angle = uExperimentView.x;
-		float crossWave = sin((base.x * cos(angle) + base.z * sin(angle)) * uInterference.y * 2.3 + phase) * 0.56;
-		crossWave += sin((base.y * 1.3 - base.z * 0.61) * uInterference.y * 1.73 - phase * 0.73 + angle * 2.0) * 0.33;
-		crossWave += sin(length(base.xz) * uInterference.y * 3.1 - phase * 1.4) * 0.11;
+		float phase = uExperimentView.y;
+		float angle = uInterference.z;
+		float x = base.x * cos(angle) + base.z * sin(angle);
+		float y = base.y * 1.3 - base.z * 0.61;
+		float f = uInterference.y;
+		float crossWave = sin(x * f * 2.3 + phase) * 0.56 + sin(y * f * 1.73 - phase * 0.73 + angle * 2.0) * 0.33 + sin(length(base.xz) * f * 3.1 - phase * 1.4) * 0.11;
+		float pattern = uPhaseStyle.x;
+		if (pattern > 1.5) {
+			crossWave = sin(x * f * 2.0 + phase) * sin(y * f * 1.9 - phase * 0.8) * 0.85 + sin(base.z * f * 1.3 + angle) * 0.15;
+		} else if (pattern > 0.5) {
+			vec2 center = vec2(0.31 * cos(angle), 0.25 * sin(angle));
+			crossWave = sin(length(vec2(x, y) - center) * f * 3.3 - phase) * 0.82 + sin(base.z * f + phase * 0.5) * 0.18;
+		}
 		int pointId = int(floor(aIdx * uExperimentView.w + 0.5));
 		float threshold = uInterference.w * 2.02 - 1.01;
 		float enabled = step(experimentHash(pointId + 479), uInterference.x * maskV);
 		float chosen = step(crossWave, threshold) * enabled;
-		phaseRim = (1.0 - smoothstep(0.015, 0.16, abs(crossWave - threshold))) * enabled * smoothstep(0.0, 0.1, uInterference.w) * (1.0 - smoothstep(0.9, 1.0, uInterference.w));
+		phaseRim = (1.0 - smoothstep(uPhaseStyle.w * 0.12, uPhaseStyle.w, abs(crossWave - threshold))) * enabled * smoothstep(0.0, 0.1, uInterference.w) * (1.0 - smoothstep(0.9, 1.0, uInterference.w)) * uPhaseStyle.z * min(1.4, uInterference.x);
+		pos.x += (chosen - 0.5) * uPhaseStyle.y * enabled;
 		if (chosen > 0.5) {
 			vec3 alt = vec3(-base.x * 0.71 + 0.56, base.y * 0.88, -base.z + 0.42 * sin(base.y * 3.5));
 			phaseColor = uP2;
-			if (uExperimentShapeInfo.z >= 1.0) {
+			if (uPhaseLook.y * uExperimentShapeInfo.z >= 1.0) {
 				float sid = float(pointId);
 				if (uExperimentView.w > uExperimentShapeInfo.x) sid = floor(experimentHash(pointId + 373) * uExperimentShapeInfo.x);
 				int q = int(clamp(sid, 0.0, uExperimentShapeInfo.x - 1.0));
@@ -394,10 +427,10 @@ void main() {
 		}
 	}
 	if (uRecursion.x > 0.001) {
-		float nearLod = 1.0 - smoothstep(2.0, 7.0, uExperimentShapeInfo.w);
+		float nearLod = uExperimentView.z;
 		int pointId = int(floor(aIdx * uExperimentView.w + 0.5));
 		float draw = experimentHash(pointId * 17 + 139);
-		float levelGate = uRecursion.w * uRecursion.x * maskV * mix(0.52, 1.0, nearLod);
+		float levelGate = min(0.97, uRecursion.w * uRecursion.x * maskV * mix(0.45, 1.0, nearLod));
 		if (draw < levelGate) {
 			float levelDraw = experimentHash(pointId * 29 + 719);
 			float first = 1.0 - smoothstep(levelGate - 0.06, levelGate, draw);
@@ -408,19 +441,29 @@ void main() {
 			int row = int(uExperimentShapeInfo.y) * 2;
 			vec3 copyCenter = uCen;
 			float copyScale = 1.0;
+			float copyYaw = 0.0;
+			float copyLayout = uRecursionStyle.w;
 			for (int i = 0; i < 3; i++) {
 				if (float(i) >= uRecursion.y) break;
 				float weight = first * (i == 0 ? 1.0 : i == 1 ? second : third);
 				if (weight <= 0.001) break;
-				float copies = i == 0 ? 12.0 : i == 1 ? 6.0 : 4.0;
+				float copies = max(2.0, floor(uRecursionStyle.x / float(i + 1)));
 				float groupId = floor(experimentHash(pointId * (41 + i * 12) + 1279 + i * 193) * copies);
-				vec3 anchor = texelFetch(uExperimentShapes, ivec2(int(groupId), row), 0).xyz;
-				copyCenter += (anchor - uCen) * copyScale * weight;
+				vec3 anchor = texelFetch(uExperimentShapes, ivec2(int(groupId), row), 0).xyz - uCen;
+				float turn = (groupId / copies) * 6.2831853 + float(i) * 0.62;
+				if (copyLayout > 1.5) {
+					float height = groupId / max(1.0, copies - 1.0) - 0.5;
+					anchor = vec3(cos(turn * 1.7) * 0.88, height * 1.72, sin(turn * 1.7) * 0.88);
+				} else if (copyLayout > 0.5) {
+					anchor = vec3(cos(turn), sin(turn * 2.0) * 0.23, sin(turn));
+				}
+				copyCenter += experimentYaw(anchor, copyYaw) * uRecursionStyle.y * copyScale * weight;
+				copyYaw += sin(turn + 0.74) * uRecursionStyle.z * weight;
 				copyScale *= mix(1.0, uRecursion.z, weight);
-				experimentScale *= mix(1.0, mix(0.56, 0.82, nearLod), weight);
-				copyShade += weight * 0.26;
+				experimentScale *= mix(1.0, mix(0.42, 0.96, uRecursionLook.x) + nearLod * 0.06, weight);
+				copyShade += weight * uRecursionLook.y * 0.36;
 			}
-			pos = copyCenter + (pos - uCen) * copyScale;
+			pos = copyCenter + experimentYaw(pos - uCen, copyYaw) * copyScale;
 		}
 	}
 #endif
@@ -440,7 +483,7 @@ void main() {
 	float eC = uMorph < 0.9999 ? (int(uMorphS.x + 0.5) == 2 ? smoothstep(0.5, 0.9, ltC) : morphEase(ltC)) : 1.0;
 	vec3 colM = mix(aColor, aColorB, eC);
 	if (uFr.x > 0.5) colM = frCol;
-	colM = mix(mix(colM, sculptColor, sculptMix), phaseColor, phaseMix);
+	colM = mix(mix(colM, sculptColor, sculptMix), phaseColor, phaseMix * uPhaseLook.x);
 #ifdef VSCREEN
 #ifndef HERO
 
@@ -503,9 +546,9 @@ void main() {
 	float rim = smoothstep(0.05, 0.21, wound) * (1.0 - smoothstep(0.24, 0.65, wound));
 	float vein = smoothstep(0.08, 0.25, skin) * (1.0 - smoothstep(0.33, 0.68, skin));
 	vec3 phaseInk = mix(phaseColor, uP2, 0.27);
-	vColor = mix(col, phaseInk, phaseMix * 0.76) * uBright * (1.0 + uBeat * 0.3) * vis;
+	vColor = mix(col, phaseInk, phaseMix * uPhaseLook.x) * uBright * (1.0 + uBeat * 0.3) * vis;
 	vColor *= 1.0 - 0.32 * wound - 0.2 * copyShade;
-	vColor += (mix(uP0, uP2, skin) * skin * 0.27 + uP2 * vein * 0.42 + mix(uP1, uP2, 0.65) * rim * 0.55 + mix(uP1, uP2, phaseMix) * phaseRim * 0.28) * uBright * vis;
+	vColor += (mix(uP0, uP2, skin) * skin * 0.27 + uP2 * vein * uExperimentSim.y * 0.56 + mix(uP1, uP2, 0.65) * rim * uExperimentSim.z * 0.65 + mix(uP1, uP2, phaseMix) * phaseRim * 0.4 + uP2 * autoLight * 0.38) * uBright * vis;
 	experimentScale *= 1.0 + rim * 0.23 + vein * 0.16 + phaseRim * 0.14;
 
 	if (uPaintP.x > 0.5 && aPaint.w > 0.002) {

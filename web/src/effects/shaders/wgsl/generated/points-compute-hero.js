@@ -7,6 +7,11 @@ struct Frame {
 	uImpossible: vec4f,
 	uInterference: vec4f,
 	uRecursion: vec4f,
+	uImpossibleStyle: vec4f,
+	uPhaseStyle: vec4f,
+	uPhaseLook: vec4f,
+	uRecursionStyle: vec4f,
+	uRecursionLook: vec4f,
 	@size(16) uSolid: vec3f,
 	@size(16) uAtt: f32,
 	@size(16) uSize: f32,
@@ -1662,6 +1667,14 @@ fn experimentColor(value_in: f32) -> vec3f {
 	return (vec3f(glsl_mod_f(value, 256.0), glsl_mod_f(floor((value / 256.0)), 256.0), floor((value / 65536.0))) / 255.0);
 }
 
+fn experimentYaw(p_in: vec3f, angle_in: f32) -> vec3f {
+	var p: vec3f = p_in;
+	var angle: f32 = angle_in;
+	var c: f32 = cos(angle);
+	var s: f32 = sin(angle);
+	return vec3f(((p.x * c) - (p.z * s)), p.y, ((p.x * s) + (p.z * c)));
+}
+
 fn main_() {
 	if ((aHide > 0.5)) {
 		gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);
@@ -1773,6 +1786,7 @@ fn main_() {
 	var sculptMix: f32 = 0.0;
 	var sculptColor: vec3f = vec3f(0.0);
 	var copyShade: f32 = 0.0;
+	var autoLight: f32 = 0.0;
 	if ((gScopeG > 0.01)) {
 		pos += (((((vec3f(hash11((aIdx * 13.1)), hash11((aIdx * 7.7)), hash11((aIdx * 3.3))) - 0.5)) * gScopeG) * fr.uScopeQ.w) * 0.4);
 	}
@@ -1798,7 +1812,7 @@ fn main_() {
 	if ((fr.uFr.x > 0.5)) {
 		colM = frCol;
 	}
-	colM = mix(mix(colM, sculptColor, sculptMix), phaseColor, phaseMix);
+	colM = mix(mix(colM, sculptColor, sculptMix), phaseColor, (phaseMix * fr.uPhaseLook.x));
 	var nrmM: vec3f = mix(aNormal, aNormalB, eC);
 	if (((fr.uColorBy > 2.5) && (fr.uColorBy < 3.5))) {
 		col = colM;
@@ -1816,9 +1830,9 @@ fn main_() {
 	var rim: f32 = (smoothstep(0.05, 0.21, wound) * ((1.0 - smoothstep(0.24, 0.65, wound))));
 	var vein: f32 = (smoothstep(0.08, 0.25, skin) * ((1.0 - smoothstep(0.33, 0.68, skin))));
 	var phaseInk: vec3f = mix(phaseColor, fr.uP2, 0.27);
-	vColor = (((mix(col, phaseInk, (phaseMix * 0.76)) * fr.uBright) * ((1.0 + (fr.uBeat * 0.3)))) * vis);
+	vColor = (((mix(col, phaseInk, (phaseMix * fr.uPhaseLook.x)) * fr.uBright) * ((1.0 + (fr.uBeat * 0.3)))) * vis);
 	vColor *= vec3f(((1.0 - (0.32 * wound)) - (0.2 * copyShade)));
-	vColor += ((((((((mix(fr.uP0, fr.uP2, skin) * skin) * 0.27) + ((fr.uP2 * vein) * 0.42)) + ((mix(fr.uP1, fr.uP2, 0.65) * rim) * 0.55)) + ((mix(fr.uP1, fr.uP2, phaseMix) * phaseRim) * 0.28))) * fr.uBright) * vis);
+	vColor += (((((((((mix(fr.uP0, fr.uP2, skin) * skin) * 0.27) + (((fr.uP2 * vein) * fr.uExperimentSim.y) * 0.56)) + (((mix(fr.uP1, fr.uP2, 0.65) * rim) * fr.uExperimentSim.z) * 0.65)) + ((mix(fr.uP1, fr.uP2, phaseMix) * phaseRim) * 0.4)) + ((fr.uP2 * autoLight) * 0.38))) * fr.uBright) * vis);
 	experimentScale *= (((1.0 + (rim * 0.23)) + (vein * 0.16)) + (phaseRim * 0.14));
 	if (((fr.uPaintP.x > 0.5) && (aPaint.w > 0.002))) {
 		var pa: f32 = aPaint.w;

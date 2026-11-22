@@ -1,11 +1,12 @@
 import { saveJSON } from '../../core/util.js';
 import { KEY } from '../state/defaults.js';
+import { EXPERIMENT_IDS } from '../state/experiments.js';
 import { FX_SHAPES, MORPH_STYLES } from '../state/options.js';
 import { fitCount } from '../shapes/cloud-utils.js';
 import { recDefaults } from './recording.js';
 export class KeyframesPart {
 _animLayers() {
-return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort'];
+return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort', ...EXPERIMENT_IDS];
 }
 animCapture() {
 const nav = this.app.nav;
@@ -682,6 +683,7 @@ if (clips.length === 0 && a.layers && b.layers) {
 const L = this.state.layers;
 for (const id of this._animLayers()) {
 if (!L[id]) continue;
+if (EXPERIMENT_IDS.includes(id) && !(id in a.layers) && !(id in b.layers)) continue;
 const v = mix(a.layers[id] ?? 0, b.layers[id] ?? 0);
 if (v > 0.003) {
 L[id].on = true;
