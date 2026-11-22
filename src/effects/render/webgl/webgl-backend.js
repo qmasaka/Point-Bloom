@@ -32,13 +32,20 @@ export class WebGLBackend extends RenderBackend {
 		const ab = e.state.look.aberration || 0;
 		const dm = e.state.layers.datamosh;
 		e._tgtSync();
-		if (!e._tgtRT) {
-			renderer.setRenderTarget(null);
-			renderer.render(scene, camera);
-			this.post.hasHistory = false;
-			return;
+		const points = e.points;
+		const visible = points?.visible;
+		if (points && e._materialHideSource) points.visible = false;
+		try {
+			if (!e._tgtRT) {
+				renderer.setRenderTarget(null);
+				renderer.render(scene, camera);
+				this.post.hasHistory = false;
+				return;
+			}
+			this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true);
+		} finally {
+			if (points) points.visible = visible;
 		}
-		this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true);
 	}
 
 	setTint(color) {

@@ -89,6 +89,11 @@ export function makeModelProvider(app) {
 	};
 	const topObjects = () => root.children.filter((o) => !o.userData.helper && !o.userData.media && o.name !== '__fx' && (() => { let ok = false; o.traverse((c) => { if (!c.userData.helper && (c.isMesh || c.isPoints)) ok = true; }); return ok; })());
 	return {
+		volumeMeshes(key) {
+			if (key === 'model') return meshes();
+			const obj = key.startsWith('obj:') && topObjects().find((o) => o.uuid === key.slice(4));
+			return obj ? app.model.meshesOf(obj).filter(shown) : [];
+		},
 		sizeOf: (obj) => {
 			let n = 0;
 			obj.traverse((c) => {
@@ -109,7 +114,7 @@ export function makeModelProvider(app) {
 			const list = app.model.meshesOf(obj);
 			if (!list.length) return null;
 			const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
-			const sc = await sampleSurface(entries, count, { anim: app.anim.has });
+			const sc = await sampleSurface(entries, count, { anim: app.anim.has, rigid: true });
 			if (sc && sc.anim && app.anim.has) sc.animBox = app.anim.animatedBounds();
 			return sc;
 		},
@@ -122,7 +127,7 @@ export function makeModelProvider(app) {
 			const list = meshes();
 			if (!list.length) return null;
 			const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
-			const cl = await sampleSurface(entries, count, { anim: app.anim.has, onProgress: (p) => {
+			const cl = await sampleSurface(entries, count, { anim: app.anim.has, rigid: true, onProgress: (p) => {
 				if (!app.ui.effectsEngine?._quiet) app.ui.busy('Беру точки с модели', 0.2 + p * 0.7);
 			} });
 			if (cl.anim && app.anim.has) cl.animBox = app.anim.animatedBounds();
@@ -663,7 +668,7 @@ export function createEffectsPanel(app, root, engine) {
 				body.append(button({ label: 'Вернуть форму после лепки', icon: 'broom', variant: 'secondary', cls: 'btn-block', onClick: () => engine.clearSculpt() }));
 				body.append(h('div', { class: 'field-hint' }, 'При первом включении загружается модель распознавания рук (около 10 МБ), нужен интернет. Видео с камеры никуда не отправляется.'));
 			}
-			if (def.id !== 'frames' && def.id !== 'chrono') body.append(field('Сила', amount.el));
+			if (!def.noAmount && def.id !== 'frames' && def.id !== 'chrono') body.append(field('Сила', amount.el));
 			const extraCtl = {};
 			const whenList = [];
 			let cur = body;
@@ -3208,13 +3213,15 @@ export function createEffectsPanel(app, root, engine) {
 		countActive();
 		for (const c of cards) {
 			if (c.def.group !== 'Видео') continue;
-			c.folder.hidden = !engine.pm.ready;
-			if (c.def.id === 'frames' || c.def.id === 'slitscan' || c.def.id === 'chrono') c.card.hidden = !engine.videoLoaded;
+			c.folder.hidden = !engine.pm.ready && !engine.hasVoidPrint;
+			if (c.def.id === 'voidPrint') c.card.hidden = !engine.videoLoaded && !engine.hasVoidPrint;
+			else if (['frames', 'slitscan', 'chrono', 'affinity'].includes(c.def.id)) c.card.hidden = !engine.videoLoaded;
+			else c.card.hidden = !engine.pm.ready;
 		}
 		{
 			const vc = cards.find((c) => c.def.group === 'Видео');
 			const nm = vc?.fhead.querySelector('.fx-folder-name');
-			if (nm) nm.textContent = engine.pm.ready && !engine.videoLoaded ? 'Фото' : 'Видео';
+			if (nm) nm.textContent = engine.pm.ready && !engine.videoLoaded && !engine.hasVoidPrint ? 'Фото' : 'Видео';
 		}
 		for (const c of cards) if (c.def.group === 'Анимация') c.folder.hidden = !engine.animReady;
 		special.hidden = !cards.some((c) => SPECIAL[c.def.group] && !c.folder.hidden);

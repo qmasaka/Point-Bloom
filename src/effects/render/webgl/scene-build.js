@@ -4,24 +4,28 @@ import { frag } from '../../shaders/glsl/frag.js';
 import { lineFrag } from '../../shaders/glsl/line-frag.js';
 
 export class BuildPart {
-	async _build() {
+	async _build(requestedKey) {
+		const version = this._buildVersion = (this._buildVersion || 0) + 1;
 		const st = this.state;
 		if (st.source === 'model' && !this.hasModel) st.source = 'sphere';
-		let bKey = st.source === 'media' && this.curKey && this.curKey.startsWith('media') ? this.curKey : st.source;
-		if (st.source === 'media' && !this.app.media.entry(bKey)?.pm.ready) {
+		let bKey = requestedKey || (st.source === 'media' && this.curKey?.startsWith('media') ? this.curKey : st.source);
+		if (bKey.startsWith('media') && !this.app.media.entry(bKey)?.pm.ready) {
 			bKey = this.app.media.lib.find((e) => e.pm.ready)?.id || bKey;
 			this.curKey = bKey;
 		}
 		let c = await this._cloudFor(bKey);
+		if (!this.active || version !== this._buildVersion) return;
 		if (!c) {
-			st.source = 'sphere';
-			c = await this._cloudFor('sphere');
+			bKey = st.source = 'sphere';
+			c = await this._cloudFor(bKey);
 		}
+		const isModel = bKey === 'model' || bKey.startsWith('obj:');
+		const model = isModel || bKey.startsWith('media') || bKey === 'frames' ? c : this.hasModel ? (await this._cloudFor('model').catch(() => null)) || c : c;
+		if (!this.active || version !== this._buildVersion) return;
 		const count = c.count;
 		const g = new THREE.BufferGeometry();
 		const idx = new Float32Array(count);
 		for (let i = 0; i < count; i++) idx[i] = i / count;
-		const model = st.source === 'model' || st.source === 'media' || st.source === 'frames' ? c : this.hasModel ? (await this._cloudFor('model').catch(() => null)) || c : c;
 		g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
 		g.setAttribute('aOrigin', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
 		g.setAttribute('aTarget', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
@@ -39,7 +43,7 @@ export class BuildPart {
 		g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
 		g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 3).fill(1), 3));
 		this._grabs = new Map();
-		this._animCloud = st.source === 'model' && c.anim && c.norm ? c : null;
+		this._animCloud = isModel && c.anim && c.norm ? c : null;
 		this._animVer = -1;
 		this._animIn = this._animOut = null;
 		if (!this.specTex) {
@@ -104,7 +108,8 @@ export class BuildPart {
 		this.shared = shared;
 		this.points = pts;
 		if (rot) pts.rotation.copy(rot);
-		this.cloudKey = st.source === 'media' ? bKey : st.source;
+		this.cloudKey = bKey;
+		this._materialNorm = c.norm;
 		this.morph = 1;
 		this.morphing = false;
 		this.app.viewport.scene.add(pts);
@@ -114,6 +119,7 @@ export class BuildPart {
 	_disposePoints() {
 		if (!this.points) return;
 		this._disposeExperiments();
+		this._disposeMaterialGeometry();
 		this.app.viewport.scene.remove(this.points);
 		this.points.traverse((o) => {
 			if (o.geometry && o !== this.points) o.geometry.dispose();

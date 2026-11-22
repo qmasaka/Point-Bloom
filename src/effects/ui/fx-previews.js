@@ -15,6 +15,42 @@ const grid = (cols, rows, sx, sy) => {
 };
 
 const DRAW = {
+	inners: (c, t) => {
+		const p = t * TAU / 4;
+		for (let j = 0; j < 8; j++) for (let i = 0; i < 24; i++) {
+			const a = (i / 24) * TAU;
+			const wave = Math.sin(a * 2 - p + j * 0.55);
+			const x = Math.cos(a) * (4.3 + j * 0.84);
+			const y = Math.sin(a) * (2.8 + j * 0.45) + wave * 2.4;
+			dot(c, x, y, 1.05 + Math.max(0, wave) * 0.5, 0.32 + 0.64 * (i % 6) / 5);
+		}
+	},
+	affinity: (c, t) => {
+		const wave = Math.sin(t * TAU / 3);
+		for (let i = 0; i < 18; i++) {
+			const f = i / 17;
+			dot(c, -10 + f * 20, -3 + Math.sin(f * Math.PI) * (-3 + wave * 2), 1.05, 0.36 + 0.5 * f);
+			dot(c, -10 + f * 20, 4 - Math.sin(f * Math.PI) * (-1 + wave * 1.5), 1.05, 0.24 + 0.5 * (1 - f));
+		}
+		for (let i = 0; i < 10; i++) for (const k of [-1, 1]) {
+			dot(c, k * (10 + Math.cos(i * 2.4) * 2.8), k * 3 + Math.sin(i * 2.4) * (3.9 + wave), 1.5, 0.65);
+		}
+	},
+	temporalFabric: (c, t) => {
+		for (let j = 0; j < 6; j++) for (let i = 0; i < 17; i++) {
+			const u = i / 16;
+			const wave = Math.sin(u * 5 - t * 2 + j * 0.25);
+			dot(c, (u - 0.5) * 24, (j - 2.5) * (1.6 + wave * 0.62) + wave * 4, 1.2, 0.22 + u * 0.74);
+		}
+	},
+	voidPrint: (c, t) => {
+		for (let j = 2; j >= 0; j--) for (const [x, y] of grid(10, 8, 2.02, 2.03)) {
+			const dx = x - Math.sin(t * 1.9 - j * 0.76) * 4.3;
+			const radius = Math.hypot(dx, y * 0.95);
+			if (radius < 4.3) continue;
+			dot(c, x + (j - 1) * 2.1, y - (j - 1) * 1.3, radius < 5.7 ? 1.55 : 1, (radius < 5.7 ? 0.94 : 0.45) - j * 0.12);
+		}
+	},
 	autophagy: (c, t) => {
 		const p = t * TAU / 3;
 		for (let j = 0; j < 4; j++) for (let i = 0; i < 23; i++) {

@@ -31,6 +31,7 @@ import { ChronoPart } from './chrono.js';
 import { PixelSortPart } from './pixelsort.js';
 import { TrackPickPart } from './track-pick.js';
 import { ExperimentsPart } from './experiments.js';
+import { MaterialPart } from './material-effects.js';
 import { mixin } from './mixin.js';
 
 export class EffectsEngine {
@@ -324,6 +325,7 @@ export class EffectsEngine {
 		this._disposePoints();
 		this._experimentMotion = null;
 		this._experimentGains = null;
+		this._materialVideo = this._materialScreen = null;
 		vp.root.visible = this._saved?.rootVisible !== false;
 		vp.fxHide = false;
 		const stage = document.querySelector('.stage');
@@ -389,4 +391,4 @@ export class EffectsEngine {
 	}
 }
 
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, ChronoPart, PixelSortPart, TrackPickPart, ExperimentsPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, ChronoPart, PixelSortPart, TrackPickPart, ExperimentsPart, MaterialPart);

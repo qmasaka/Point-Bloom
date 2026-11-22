@@ -139,7 +139,7 @@ function mulberry32(a) {
 	};
 }
 
-export async function sampleSurface(entries, count, { seed = 1337, onProgress, anim = false } = {}) {
+export async function sampleSurface(entries, count, { seed = 1337, onProgress, anim = false, rigid = false } = {}) {
 	const rng = mulberry32(seed);
 	const parts = [];
 	let totalArea = 0;
@@ -283,7 +283,7 @@ export async function sampleSurface(entries, count, { seed = 1337, onProgress, a
 			}
 		}
 	}
-	return { positions, colors, normals, count: w, anim: A_ && A_.parts.some((q) => q.skinned) ? A_ : null };
+	return { positions, colors, normals, count: w, anim: A_ && (rigid || A_.parts.some((q) => q.skinned)) ? A_ : null };
 }
 
 export function verticesToCloud(entries, { anim = false } = {}) {

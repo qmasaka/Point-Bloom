@@ -130,7 +130,7 @@ t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
 return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 };
 }
-export async function sampleSurface(entries, count, { seed = 1337, onProgress, anim = false } = {}) {
+export async function sampleSurface(entries, count, { seed = 1337, onProgress, anim = false, rigid = false } = {}) {
 const rng = mulberry32(seed);
 const parts = [];
 let totalArea = 0;
@@ -271,7 +271,7 @@ await yieldUI();
 }
 }
 }
-return { positions, colors, normals, count: w, anim: A_ && A_.parts.some((q) => q.skinned) ? A_ : null };
+return { positions, colors, normals, count: w, anim: A_ && (rigid || A_.parts.some((q) => q.skinned)) ? A_ : null };
 }
 export function verticesToCloud(entries, { anim = false } = {}) {
 const P = [], C = [], N = [];

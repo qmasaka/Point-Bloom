@@ -27,6 +27,10 @@ const bloom = e.state.look.bloom || 0;
 const ab = e.state.look.aberration || 0;
 const dm = e.state.layers.datamosh;
 e._tgtSync();
+const points = e.points;
+const visible = points?.visible;
+if (points && e._materialHideSource) points.visible = false;
+try {
 if (!e._tgtRT) {
 renderer.setRenderTarget(null);
 renderer.render(scene, camera);
@@ -34,6 +38,9 @@ this.post.hasHistory = false;
 return;
 }
 this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true);
+} finally {
+if (points) points.visible = visible;
+}
 }
 setTint(color) {
 this.post.tint = color;

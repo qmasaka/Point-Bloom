@@ -384,12 +384,14 @@ const prevKey = this.cloudKey;
 st.source = key.startsWith('obj:') ? 'model' : isMedia ? 'media' : key;
 this.touch();
 if (!this.active || !this.geometry) return this.emit();
+const version = this._buildVersion = (this._buildVersion || 0) + 1;
 let target;
 try {
 target = await this._cloudFor(key);
 } finally {
 this.app.ui.idle();
 }
+if (!this.active || version !== this._buildVersion) return;
 if (!target) return this.emit();
 this.curKey = key;
 if (isMedia && this.app.media.pm !== mEntry.pm) {
@@ -403,8 +405,8 @@ this._endMediaMorph();
 if (!target || target.count !== this.geometry.attributes.position.count) {
 const was = prevKey && prevKey !== key && prevKey.startsWith('media') ? this.app.media.entry(prevKey) : null;
 if (was && was.pm.playing && !this.app.media.keepsSound(was) && !this._keepVideo) was.pm.pause();
-await this._build();
-if (mEntry && mEntry.want !== false && !mEntry.pm.playing) mEntry.pm.play();
+await this._build(key);
+if (this.cloudKey === key && mEntry && mEntry.want !== false && !mEntry.pm.playing) mEntry.pm.play();
 return this.emit();
 }
 const g = this.geometry;
@@ -448,6 +450,7 @@ vis.needsUpdate = true;
 }
 o.needsUpdate = t.needsUpdate = true;
 this.cloudKey = key;
+this._materialNorm = target.norm;
 this._animOut = this._animIn || this._animCloud || null;
 this._animIn = (key === 'model' || key.startsWith('obj:')) && target.anim && target.norm ? target : null;
 this._animCloud = null;

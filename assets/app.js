@@ -36917,7 +36917,7 @@ t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
 return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 };
 }
-async function sampleSurface(entries, count, { seed = 1337, onProgress, anim = false } = {}) {
+async function sampleSurface(entries, count, { seed = 1337, onProgress, anim = false, rigid = false } = {}) {
 const rng = mulberry32(seed);
 const parts = [];
 let totalArea = 0;
@@ -37058,7 +37058,7 @@ await yieldUI();
 }
 }
 }
-return { positions, colors, normals, count: w, anim: A_ && A_.parts.some((q) => q.skinned) ? A_ : null };
+return { positions, colors, normals, count: w, anim: A_ && (rigid || A_.parts.some((q) => q.skinned)) ? A_ : null };
 }
 function verticesToCloud(entries, { anim = false } = {}) {
 const P = [], C = [], N = [];
@@ -70547,6 +70547,10 @@ const bloom = e.state.look.bloom || 0;
 const ab = e.state.look.aberration || 0;
 const dm = e.state.layers.datamosh;
 e._tgtSync();
+const points = e.points;
+const visible = points?.visible;
+if (points && e._materialHideSource) points.visible = false;
+try {
 if (!e._tgtRT) {
 renderer.setRenderTarget(null);
 renderer.render(scene, camera);
@@ -70554,6 +70558,9 @@ this.post.hasHistory = false;
 return;
 }
 this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true);
+} finally {
+if (points) points.visible = visible;
+}
 }
 setTint(color) {
 this.post.tint = color;
@@ -80409,6 +80416,11 @@ return;
 e.points.visible = false;
 renderer.setRenderTarget(null);
 renderer.render(scene, camera);
+if (e._materialHideSource) {
+this.canvas.style.visibility = 'hidden';
+this.hasHistory = false;
+return;
+}
 this.canvas.style.visibility = '';
 this.stats.gpu++;
 if (!this._syncCloud()) return;
@@ -80676,6 +80688,55 @@ range('blend', 'Плавность ракурсов'), range('arc', 'Дуга п
 ];
 const EXPERIMENT_IDS = EXPERIMENT_LAYERS.filter((layer) => !layer.hidden).map((layer) => layer.id);
 };
+__defs['src/effects/state/material-layers.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'MATERIAL_LAYERS', () => MATERIAL_LAYERS);
+const MATERIAL_LAYERS = [
+{
+id: 'inners', group: 'Эксперименты', name: 'Внутренности', icon: 'cube-transparent',
+hint: 'Линии заполняют объём формы. «Экран» окрашивает их кадром.',
+sound: false, noAmount: true, max: 1, def: { on: false, amount: 1, mode: 'flow', density: 0.53, complexity: 0.55, shell: 'hide' },
+extras: [
+{ key: 'mode', label: 'Рисунок', type: 'select', options: [['flow', 'Течение'], ['orbit', 'Орбиты'], ['growth', 'Ветвление'], ['weave', 'Переплетение']] },
+{ key: 'density', label: 'Плотность', min: 0, max: 1, step: 0.01 },
+{ key: 'complexity', label: 'Сложность', min: 0, max: 1, step: 0.01 },
+{ key: 'shell', label: 'Оболочка', type: 'seg', options: [['show', 'Видна'], ['hide', 'Скрыта']] },
+],
+},
+{
+id: 'affinity', group: 'Видео', name: 'Родство', icon: 'share-network',
+hint: 'Объединяет участки видео, которые движутся одинаково. Нужен движущийся кадр.',
+sound: false, noAmount: true, max: 1, def: { on: false, amount: 1, mode: 'clusters', similarity: 0.56, strength: 0.65, source: 'hide' },
+extras: [
+{ key: 'mode', label: 'Рисунок', type: 'seg', options: [['clusters', 'Скопления'], ['filaments', 'Нити']] },
+{ key: 'similarity', label: 'Сходство', min: 0, max: 1, step: 0.01 },
+{ key: 'strength', label: 'Сила', min: 0, max: 1, step: 0.01 },
+{ key: 'source', label: 'Исходник', type: 'seg', options: [['show', 'Виден'], ['hide', 'Скрыт']] },
+],
+},
+{
+id: 'temporalFabric', group: 'Анимация', name: 'Ткань движения', icon: 'waves',
+hint: 'Нити и полотна соединяют позы анимированной модели. След можно рассмотреть на паузе.',
+sound: false, noAmount: true, max: 1, def: { on: false, amount: 1, mode: 'ribbons', history: 1.8, density: 0.52 },
+extras: [
+{ key: 'mode', label: 'Рисунок', type: 'seg', options: [['threads', 'Нити'], ['ribbons', 'Ленты'], ['membrane', 'Полотно']] },
+{ key: 'history', label: 'История', min: 0.25, max: 4, step: 0.05, noNorm: true, unit: 'с' },
+{ key: 'density', label: 'Плотность', min: 0, max: 1, step: 0.01 },
+],
+},
+{
+id: 'voidPrint', group: 'Видео', name: 'Отпечаток пустоты', icon: 'intersect',
+hint: 'Движущийся силуэт прорезает объём. Отпечаток остаётся после паузы и удаления видео.',
+sound: false, noAmount: true, max: 1, def: { on: false, amount: 1, mode: 'print', depth: 0.72, history: 2.4 },
+extras: [
+{ key: 'mode', label: 'Режим', type: 'seg', options: [['cut', 'Вырез'], ['print', 'Отпечаток'], ['negative', 'Негатив']] },
+{ key: 'depth', label: 'Глубина', min: 0.08, max: 1, step: 0.01 },
+{ key: 'history', label: 'История', min: 0.4, max: 4, step: 0.05, noNorm: true, unit: 'с', when: ['mode', ['print', 'negative']] },
+{ type: 'button', label: 'Очистить отпечаток', icon: 'broom', act: 'clearVoidPrint' },
+],
+},
+];
+};
 __defs['src/effects/state/layers.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'FX_ACTIONS', () => FX_ACTIONS);
@@ -80683,10 +80744,12 @@ __def(__exports, 'FX_LAYERS', () => FX_LAYERS);
 __def(__exports, 'FX_GROUPS', () => FX_GROUPS);
 __def(__exports, 'FX_GROUP_NAMES', () => FX_GROUP_NAMES);
 const { EXPERIMENT_LAYERS } = __req('src/effects/state/experiments.js');
+const { MATERIAL_LAYERS } = __req('src/effects/state/material-layers.js');
 const { perf } = __req('src/core/perf.js');
 const FX_ACTIONS = [['none', 'Без действия'], ['push', 'Отталкивание: от ладони'], ['pull', 'Притягивание: к ладони'], ['swirl', 'Вихрь: вращение пальцами'], ['rotate', 'Вращение: поворот модели'], ['sculpt', 'Лепка: изменение формы'], ['gravity', 'Гравитация: притяжение к руке'], ['wave', 'Ударная волна: фронт от руки'], ['break', 'Распад: пока держишь жест'], ['dissolve', 'Растворение: пока держишь жест'], ['brush', 'Световой штрих: след в воздухе'], ['slicecut', 'Срез рукой: секущая плоскость'], ['fx:curl', 'Эффект: Вихри'], ['fx:wave', 'Эффект: Волны'], ['fx:pulse', 'Эффект: Пульс'], ['fx:twist', 'Эффект: Деформация'], ['fx:blast', 'Эффект: Взрыв по биту'], ['fx:flow', 'Эффект: Течение'], ['fx:voxel', 'Эффект: Воксели'], ['fx:glitch', 'Эффект: Глитч'], ['fx:links', 'Эффект: Связи'], ['fx:slice', 'Эффект: Срез'], ['fx:echo', 'Эффект: Шлейф'], ['fx:hyper', 'Эффект: Гиперпространство']];
 const FX_LAYERS = [
 ...EXPERIMENT_LAYERS,
+...MATERIAL_LAYERS,
 { id: 'frames', sound: false, group: 'Видео', name: 'Раскадровка', icon: 'film-strip', hint: 'Видео раскладывается на кадры из точек, кадры собираются в блок. Показ идёт за таймлайном', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, layout: 'stack', all: 'off', frames: 24, budget: 300000, depth: 1.6, source: 'whole', step: 0.3, thin: 0, edge: 0, edgeW: 1.5, edgeCol: 'pal', curEdge: 0, showMode: 'off', showLen: 0.12, hero: 150000, future: 'hide', gain: 1, sat: 0, bsize: 1.5, track: 'grow', tone: 'all', toneCut: 0.5, tail: 100, tailSoft: 0.6, dkeep: 0.5 }, extras: [{ type: 'title', label: 'Раскладка' }, { key: 'layout', label: 'Как расставить кадры', type: 'select', options: [['stack', 'Стопка: слои вглубь'], ['wall', 'Стена: плоская сетка'], ['film', 'Киноплёнка: кадры в ряд'], ['tunnel', 'Туннель: перспектива вглубь'], ['fan', 'Веер: кадры на дуге барабана']], relayout: true }, { key: 'track', label: 'Что в стопке', type: 'seg', options: [['grow', 'Пройденное'], ['full', 'Весь ряд']], when: ['layout', ['stack', 'tunnel']] }, { key: 'depth', label: 'Глубина', min: 0.2, max: 4, step: 0.1, relayout: true, when: ['layout', ['stack', 'tunnel']] }, { type: 'title', label: 'Показ' }, { key: 'showMode', label: 'Как показывать', type: 'select', options: [['off', 'Статично: все кадры как есть'], ['peel', 'Листание: слёт пройденных'], ['projector', 'Проектор: бегущий луч'], ['trail', 'Шлейф: затухающий след']] }, { key: 'showLen', label: 'Ширина луча и длина шлейфа', min: 0.02, max: 0.5, step: 0.01, when: ['showMode', ['projector', 'trail']] }, { key: 'future', label: 'Кадры впереди текущего', type: 'seg', options: [['show', 'Видны'], ['dim', 'Редкие'], ['hide', 'Скрыты']], when: ['showMode', ['off']] }, { key: 'thin', label: 'Прореживать остальные кадры', min: 0, max: 1, step: 0.05, when: ['showMode', ['off']] }, { key: 'edge', label: 'Рамки кадров', min: 0, max: 1, step: 0.05 }, { key: 'curEdge', label: 'Рамка текущего кадра', min: 0, max: 1, step: 0.05 }, { key: 'edgeW', label: 'Толщина рамок', min: 0.5, max: 4, step: 0.5, noNorm: true }, { key: 'edgeCol', label: 'Цвет рамок', type: 'seg', options: [['pal', 'Палитра'], ['white', 'Белый']] }, { type: 'title', label: 'Объём' }, { type: 'note', text: 'Включите «Объём по глубине» в разделе «Фото и видео»: каждый кадр выдавится по своей карте глубины.' }, { key: 'dkeep', label: 'Объём остальных кадров', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Хвост' }, { key: 'tail', label: 'Длина хвоста, доля видео', min: 5, max: 100, step: 1, int: true, unit: '%' }, { key: 'tailSoft', label: 'Как гаснет хвост: резко ... плавно', min: 0, max: 1, step: 0.05 }, { type: 'title', label: 'Цвет остальных кадров' }, { key: 'sat', label: 'Насыщенность (0 это цвета видео)', min: -1, max: 1, step: 0.05 }, { key: 'gain', label: 'Яркость', min: 0.4, max: 3, step: 0.05 }, { key: 'tone', label: 'Какие тона оставить', type: 'seg', options: [['all', 'Все'], ['light', 'Светлые'], ['dark', 'Тёмные']] }, { key: 'toneCut', label: 'Граница светлого и тёмного', min: 0.05, max: 0.95, step: 0.01, when: ['tone', ['light', 'dark']] }, { key: 'bsize', label: 'Размер точек', min: 0.5, max: 4, step: 0.1 }, { type: 'title', label: 'Детализация' }, { key: 'hero', label: 'Точек в текущем кадре', min: 0, max: 300000, step: 10000, int: true, log: false, hero: true }, { key: 'budget', label: 'Точек в остальных кадрах', min: 60000, max: 1500000, step: 10000, int: true, log: true, reframe: true }, { type: 'title', label: 'Кадры' }, { key: 'source', label: 'Откуда кадры', type: 'seg', options: [['whole', 'Всё видео'], ['live', 'Бегущая лента']], reframe: true }, { key: 'all', label: 'Сколько кадров', type: 'seg', options: [['off', 'Выбрать'], ['on', 'Все кадры']], reframe: true, when: ['source', ['whole']] }, { key: 'frames', label: 'Кадров в блоке', min: 4, max: 120, step: 1, int: true, reframe: true, when: ['all', ['off']] }, { key: 'step', label: 'Скорость ленты, с на кадр', min: 0.1, max: 2, step: 0.05, when: ['source', ['live']] }] },
 { id: 'chrono', sound: false, group: 'Видео', name: 'Шлейф движения', icon: 'wind', hint: 'Только для видео: человек или другой движущийся объект выделяется, за ним тянется шлейф из прошлых кадров, а видео плавно едет в сторону. Работает вместе с «Объёмом по глубине»', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mask: 'person', sens: 0.5, live: 'full', count: 14, every: 0.12, fade: 0.4, bgKeep: 0, thin: 0.15, tint: 0.15, dir: 'left', drift: 1.1, follow: 'on', depthZ: 0.04, dkeep: 0.5, size: 1.4, hero: 220000, budget: 900000 }, extras: [
 { type: 'row', items: [{ label: 'Начать шлейф заново', icon: 'arrow-counter-clockwise', act: 'chronoReset' }] },
@@ -80892,15 +80955,15 @@ const FX_LAYERS = [
 ] },
 ];
 const FX_GROUPS = {
-'Видео': ['depth', 'pixelsort', 'frames', 'chrono', 'slitscan'],
-'Анимация': ['trail'],
+'Видео': ['depth', 'pixelsort', 'frames', 'chrono', 'slitscan', 'affinity', 'voidPrint'],
+'Анимация': ['trail', 'temporalFabric'],
 'Движение': ['curl', 'gravity', 'twist'],
 'Звук и ритм': ['spectrum', 'wave', 'blast', 'shoots', 'chladni', 'scope'],
 'Разрушение': ['physics', 'explode', 'dissolve'],
 'Цифровые': ['voxel', 'glitch', 'datamosh'],
 'Графика': ['shadow', 'links', 'slice', 'feedback', 'echo', 'tracking'],
 'Управление': ['cursor', 'brush', 'camTrack'],
-'Эксперименты': ['hyper', 'vscreen', ...EXPERIMENT_LAYERS.filter((layer) => !layer.hidden).map((layer) => layer.id)],
+'Эксперименты': ['hyper', 'vscreen', 'inners', ...EXPERIMENT_LAYERS.filter((layer) => !layer.hidden).map((layer) => layer.id)],
 };
 const FX_GROUP_NAMES = Object.keys(FX_GROUPS);
 {
@@ -87747,6 +87810,36 @@ __defs['src/i18n/more.js'] = function (__exports, __req) {
 __def(__exports, 'default', () => __default);
 const __default = {
 en: {
+'Внутренности': 'Inners',
+'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Lines fill the volume. Screen colors them with the current frame.',
+'Рисунок': 'Pattern',
+'Течение': 'Flow',
+'Орбиты': 'Orbits',
+'Ветвление': 'Branching',
+'Переплетение': 'Weave',
+'Плотность': 'Density',
+'Сложность': 'Complexity',
+'Оболочка': 'Shell',
+'Видна': 'Visible',
+'Скрыта': 'Hidden',
+'Родство': 'Affinity',
+'Объединяет участки видео, которые движутся одинаково. Нужен движущийся кадр.': 'Groups parts of the video that move alike. Use footage with motion.',
+'Скопления': 'Clusters',
+'Нити': 'Threads',
+'Сходство': 'Similarity',
+'Сила': 'Strength',
+'Исходник': 'Source',
+'Ткань движения': 'Motion Fabric',
+'Нити и полотна соединяют позы анимированной модели. След можно рассмотреть на паузе.': 'Threads and fabric connect animated poses. Pause to inspect the trail.',
+'Полотно': 'Membrane',
+'История': 'History',
+'Отпечаток пустоты': 'Void Print',
+'Движущийся силуэт прорезает объём. Отпечаток остаётся после паузы и удаления видео.': 'A moving silhouette carves the volume. The print remains when the video is paused or removed.',
+'Вырез': 'Cut',
+'Отпечаток': 'Print',
+'Негатив': 'Negative',
+'Глубина': 'Depth',
+'Очистить отпечаток': 'Clear print',
 'Складки сцепляются и разъедают соседние участки. Поворот камеры меняет ход роста.': 'Folds cling together and eat into nearby areas. Orbit the camera to change how they grow.',
 'Сцепление': 'Adhesion',
 'Разъедание': 'Erosion strength',
@@ -89016,6 +89109,36 @@ en: {
 'Спад': 'Decay',
 },
 uk: {
+'Внутренности': 'Нутрощі',
+'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Лінії заповнюють об’єм форми. «Екран» забарвлює їх поточним кадром.',
+'Рисунок': 'Візерунок',
+'Течение': 'Течія',
+'Орбиты': 'Орбіти',
+'Ветвление': 'Розгалуження',
+'Переплетение': 'Переплетення',
+'Плотность': 'Щільність',
+'Сложность': 'Складність',
+'Оболочка': 'Оболонка',
+'Видна': 'Видно',
+'Скрыта': 'Приховано',
+'Родство': 'Спорідненість',
+'Объединяет участки видео, которые движутся одинаково. Нужен движущийся кадр.': 'Об’єднує ділянки відео, які рухаються подібно. Потрібне відео з рухом.',
+'Скопления': 'Скупчення',
+'Нити': 'Нитки',
+'Сходство': 'Схожість',
+'Сила': 'Сила',
+'Исходник': 'Джерело',
+'Ткань движения': 'Тканина руху',
+'Нити и полотна соединяют позы анимированной модели. След можно рассмотреть на паузе.': 'Нитки й полотна з’єднують пози анімованої моделі. Слід можна роздивитися на паузі.',
+'Полотно': 'Полотно',
+'История': 'Історія',
+'Отпечаток пустоты': 'Відбиток порожнечі',
+'Движущийся силуэт прорезает объём. Отпечаток остаётся после паузы и удаления видео.': 'Рухомий силует прорізає об’єм. Відбиток залишається після паузи й видалення відео.',
+'Вырез': 'Виріз',
+'Отпечаток': 'Відбиток',
+'Негатив': 'Негатив',
+'Глубина': 'Глибина',
+'Очистить отпечаток': 'Очистити відбиток',
 'Складки сцепляются и разъедают соседние участки. Поворот камеры меняет ход роста.': 'Складки зчіплюються й роз’їдають сусідні ділянки. Поворот камери змінює ріст.',
 'Сцепление': 'Зчеплення',
 'Разъедание': 'Роз’їдання',
@@ -90285,6 +90408,36 @@ uk: {
 'Спад': 'Спад',
 },
 es: {
+'Внутренности': 'Interior',
+'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Las líneas ocupan el volumen. Pantalla las colorea con el fotograma.',
+'Рисунок': 'Patrón',
+'Течение': 'Flujo',
+'Орбиты': 'Órbitas',
+'Ветвление': 'Ramificación',
+'Переплетение': 'Entrelazado',
+'Плотность': 'Densidad',
+'Сложность': 'Complejidad',
+'Оболочка': 'Envolvente',
+'Видна': 'Visible',
+'Скрыта': 'Oculta',
+'Родство': 'Afinidad',
+'Объединяет участки видео, которые движутся одинаково. Нужен движущийся кадр.': 'Agrupa partes del vídeo que se mueven de forma similar. Usa un vídeo con movimiento.',
+'Скопления': 'Grupos',
+'Нити': 'Hilos',
+'Сходство': 'Similitud',
+'Сила': 'Intensidad',
+'Исходник': 'Fuente',
+'Ткань движения': 'Tejido en movimiento',
+'Нити и полотна соединяют позы анимированной модели. След можно рассмотреть на паузе.': 'Los hilos y las telas conectan poses animadas. Pausa para examinar la estela.',
+'Полотно': 'Membrana',
+'История': 'Historial',
+'Отпечаток пустоты': 'Huella del vacío',
+'Движущийся силуэт прорезает объём. Отпечаток остаётся после паузы и удаления видео.': 'Una silueta en movimiento talla el volumen. La huella permanece si se pausa o se elimina el vídeo.',
+'Вырез': 'Corte',
+'Отпечаток': 'Huella',
+'Негатив': 'Negativo',
+'Глубина': 'Profundidad',
+'Очистить отпечаток': 'Borrar huella',
 'Складки сцепляются и разъедают соседние участки. Поворот камеры меняет ход роста.': 'Los pliegues se adhieren y erosionan las zonas vecinas. Gira la cámara para cambiar su crecimiento.',
 'Сцепление': 'Adhesión',
 'Разъедание': 'Fuerza de erosión',
@@ -91554,6 +91707,36 @@ es: {
 'Спад': 'Caída',
 },
 de: {
+'Внутренности': 'Innenleben',
+'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Linien füllen das Volumen. Bildschirm färbt sie mit dem aktuellen Bild.',
+'Рисунок': 'Muster',
+'Течение': 'Strömung',
+'Орбиты': 'Umlaufbahnen',
+'Ветвление': 'Verzweigung',
+'Переплетение': 'Geflecht',
+'Плотность': 'Dichte',
+'Сложность': 'Komplexität',
+'Оболочка': 'Hülle',
+'Видна': 'Sichtbar',
+'Скрыта': 'Verborgen',
+'Родство': 'Affinität',
+'Объединяет участки видео, которые движутся одинаково. Нужен движущийся кадр.': 'Gruppiert Videobereiche mit ähnlicher Bewegung. Verwende eine Aufnahme mit Bewegung.',
+'Скопления': 'Gruppen',
+'Нити': 'Fäden',
+'Сходство': 'Ähnlichkeit',
+'Сила': 'Stärke',
+'Исходник': 'Quelle',
+'Ткань движения': 'Bewegungsgewebe',
+'Нити и полотна соединяют позы анимированной модели. След можно рассмотреть на паузе.': 'Fäden und Gewebe verbinden animierte Posen. Pausiere, um die Spur zu betrachten.',
+'Полотно': 'Membran',
+'История': 'Verlauf',
+'Отпечаток пустоты': 'Hohlraumabdruck',
+'Движущийся силуэт прорезает объём. Отпечаток остаётся после паузы и удаления видео.': 'Eine bewegte Silhouette schneidet in das Volumen. Der Abdruck bleibt beim Pausieren oder Entfernen des Videos erhalten.',
+'Вырез': 'Ausschnitt',
+'Отпечаток': 'Abdruck',
+'Негатив': 'Negativ',
+'Глубина': 'Tiefe',
+'Очистить отпечаток': 'Abdruck löschen',
 'Складки сцепляются и разъедают соседние участки. Поворот камеры меняет ход роста.': 'Falten haften zusammen und lösen benachbarte Bereiche auf. Drehe die Kamera, um das Wachstum zu ändern.',
 'Сцепление': 'Haftung',
 'Разъедание': 'Erosionsstärke',
@@ -97053,12 +97236,14 @@ const prevKey = this.cloudKey;
 st.source = key.startsWith('obj:') ? 'model' : isMedia ? 'media' : key;
 this.touch();
 if (!this.active || !this.geometry) return this.emit();
+const version = this._buildVersion = (this._buildVersion || 0) + 1;
 let target;
 try {
 target = await this._cloudFor(key);
 } finally {
 this.app.ui.idle();
 }
+if (!this.active || version !== this._buildVersion) return;
 if (!target) return this.emit();
 this.curKey = key;
 if (isMedia && this.app.media.pm !== mEntry.pm) {
@@ -97072,8 +97257,8 @@ this._endMediaMorph();
 if (!target || target.count !== this.geometry.attributes.position.count) {
 const was = prevKey && prevKey !== key && prevKey.startsWith('media') ? this.app.media.entry(prevKey) : null;
 if (was && was.pm.playing && !this.app.media.keepsSound(was) && !this._keepVideo) was.pm.pause();
-await this._build();
-if (mEntry && mEntry.want !== false && !mEntry.pm.playing) mEntry.pm.play();
+await this._build(key);
+if (this.cloudKey === key && mEntry && mEntry.want !== false && !mEntry.pm.playing) mEntry.pm.play();
 return this.emit();
 }
 const g = this.geometry;
@@ -97117,6 +97302,7 @@ vis.needsUpdate = true;
 }
 o.needsUpdate = t.needsUpdate = true;
 this.cloudKey = key;
+this._materialNorm = target.norm;
 this._animOut = this._animIn || this._animCloud || null;
 this._animIn = (key === 'model' || key.startsWith('obj:')) && target.anim && target.norm ? target : null;
 this._animCloud = null;
@@ -97394,24 +97580,28 @@ const { createFrameUniforms } = __req('src/effects/render/shared/frame-uniforms.
 const { frag } = __req('src/effects/shaders/glsl/frag.js');
 const { lineFrag } = __req('src/effects/shaders/glsl/line-frag.js');
 class BuildPart {
-async _build() {
+async _build(requestedKey) {
+const version = this._buildVersion = (this._buildVersion || 0) + 1;
 const st = this.state;
 if (st.source === 'model' && !this.hasModel) st.source = 'sphere';
-let bKey = st.source === 'media' && this.curKey && this.curKey.startsWith('media') ? this.curKey : st.source;
-if (st.source === 'media' && !this.app.media.entry(bKey)?.pm.ready) {
+let bKey = requestedKey || (st.source === 'media' && this.curKey?.startsWith('media') ? this.curKey : st.source);
+if (bKey.startsWith('media') && !this.app.media.entry(bKey)?.pm.ready) {
 bKey = this.app.media.lib.find((e) => e.pm.ready)?.id || bKey;
 this.curKey = bKey;
 }
 let c = await this._cloudFor(bKey);
+if (!this.active || version !== this._buildVersion) return;
 if (!c) {
-st.source = 'sphere';
-c = await this._cloudFor('sphere');
+bKey = st.source = 'sphere';
+c = await this._cloudFor(bKey);
 }
+const isModel = bKey === 'model' || bKey.startsWith('obj:');
+const model = isModel || bKey.startsWith('media') || bKey === 'frames' ? c : this.hasModel ? (await this._cloudFor('model').catch(() => null)) || c : c;
+if (!this.active || version !== this._buildVersion) return;
 const count = c.count;
 const g = new THREE.BufferGeometry();
 const idx = new Float32Array(count);
 for (let i = 0; i < count; i++) idx[i] = i / count;
-const model = st.source === 'model' || st.source === 'media' || st.source === 'frames' ? c : this.hasModel ? (await this._cloudFor('model').catch(() => null)) || c : c;
 g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
 g.setAttribute('aOrigin', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
 g.setAttribute('aTarget', new THREE.BufferAttribute(new Float32Array(c.positions), 3));
@@ -97429,7 +97619,7 @@ g.setAttribute('aIdx', new THREE.BufferAttribute(idx, 1));
 g.setAttribute('aSculpt', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
 g.setAttribute('aVis', new THREE.BufferAttribute(new Float32Array(count * 3).fill(1), 3));
 this._grabs = new Map();
-this._animCloud = st.source === 'model' && c.anim && c.norm ? c : null;
+this._animCloud = isModel && c.anim && c.norm ? c : null;
 this._animVer = -1;
 this._animIn = this._animOut = null;
 if (!this.specTex) {
@@ -97494,7 +97684,8 @@ this.material = mat;
 this.shared = shared;
 this.points = pts;
 if (rot) pts.rotation.copy(rot);
-this.cloudKey = st.source === 'media' ? bKey : st.source;
+this.cloudKey = bKey;
+this._materialNorm = c.norm;
 this.morph = 1;
 this.morphing = false;
 this.app.viewport.scene.add(pts);
@@ -97503,6 +97694,7 @@ this._computeLinks();
 _disposePoints() {
 if (!this.points) return;
 this._disposeExperiments();
+this._disposeMaterialGeometry();
 this.app.viewport.scene.remove(this.points);
 this.points.traverse((o) => {
 if (o.geometry && o !== this.points) o.geometry.dispose();
@@ -103837,6 +104029,7 @@ else sh[i].set(0, 0, 0, -1);
 u.uShockP.value.set(shE, 1.2, u.uShockP.value.z, 0);
 this.onFrame && this.onFrame(this.levels);
 this._experimentTick(dt, L);
+this._materialTick(L, now / 1000);
 this._fxCheck();
 if (off) off.fresh = true;
 this.app.viewport.invalidate();
@@ -105900,6 +106093,823 @@ this._experimentPicks = {};
 }
 }
 };
+__defs['src/effects/engine/material-volume.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'mediaBounds', () => mediaBounds);
+__def(__exports, 'makeVolume', () => makeVolume);
+__def(__exports, 'insideSegment', () => insideSegment);
+__def(__exports, 'seededRandom', () => seededRandom);
+const THREE = __req('vendor/three/build/three.module.js');
+const N = 34;
+function mediaBounds(aspect) {
+const x = 1.1 * Math.min(1, aspect);
+return { x, y: x / aspect };
+}
+function makeVolume(key, cloud, meshes, media) {
+if (media) {
+const { x, y } = mediaBounds(media.aspect);
+const { cols, rows } = media;
+const p = cloud.positions;
+const hide = cloud.hide;
+return {
+min: [-x, -y, -1.6], max: [x, y, 1.6],
+inside(px, py, pz) {
+const i = Math.floor((px / x * 0.5 + 0.5) * cols);
+const j = Math.floor((0.5 - py / y * 0.5) * rows);
+if (i < 0 || i >= cols || j < 0 || j >= rows) return false;
+const k = j * cols + i;
+return (!hide || hide[k] < 0.5) && Math.abs(pz - p[k * 3 + 2] - (cloud.depth?.(k) || 0)) < 0.25;
+},
+};
+}
+if (key === 'sphere' || key === 'torus' || key === 'cube') {
+const limits = key === 'torus' ? [1.36, 0.36, 1.36] : Array(3).fill(key === 'sphere' ? 1 : 0.65);
+return {
+min: limits.map((v) => -v), max: limits,
+inside(x, y, z) {
+if (key === 'sphere') return x * x + y * y + z * z < 1;
+if (key === 'torus') return (Math.hypot(x, z) - 1) ** 2 + y * y < 0.36 ** 2;
+return Math.max(Math.abs(x), Math.abs(y), Math.abs(z)) < 0.65;
+},
+};
+}
+const min = [Infinity, Infinity, Infinity];
+const max = [-Infinity, -Infinity, -Infinity];
+const p = cloud.positions;
+for (let i = 0; i < p.length; i++) {
+const c = i % 3;
+min[c] = Math.min(min[c], p[i]);
+max[c] = Math.max(max[c], p[i]);
+}
+for (let c = 0; c < 3; c++) {
+const pad = Math.max(0.01, (0.12 - (max[c] - min[c])) / 2);
+min[c] -= pad;
+max[c] += pad;
+}
+const d = max.map((v, i) => (v - min[i]) / N);
+const cells = new Uint8Array(N ** 3);
+if (cloud.norm) for (const mesh of meshes) rasterMesh(mesh, cloud.norm, min, d, cells);
+if (!cells.some(Boolean)) {
+const front = new Float32Array(N * N).fill(-Infinity);
+const back = new Float32Array(N * N).fill(Infinity);
+for (let i = 0; i < p.length; i += 3) {
+const x = Math.floor((p[i] - min[0]) / d[0]);
+const y = Math.floor((p[i + 1] - min[1]) / d[1]);
+const j = y * N + x;
+back[j] = Math.min(back[j], p[i + 2] - 0.055);
+front[j] = Math.max(front[j], p[i + 2] + 0.055);
+}
+for (let x = 0; x < N * N; x++) fillColumn(cells, x, back[x], front[x], min[2], d[2]);
+}
+const occupied = [];
+for (let i = 0; i < cells.length; i++) if (cells[i]) occupied.push(i);
+return {
+min, max,
+seed(random) {
+const i = occupied[Math.floor(random() * occupied.length)];
+return [i % N, Math.floor(i / N) % N, Math.floor(i / (N * N))].map((v, k) => min[k] + (v + random()) * d[k]);
+},
+inside(px, py, pz) {
+const x = Math.floor((px - min[0]) / d[0]);
+const y = Math.floor((py - min[1]) / d[1]);
+const z = Math.floor((pz - min[2]) / d[2]);
+return x >= 0 && x < N && y >= 0 && y < N && z >= 0 && z < N && cells[(z * N + y) * N + x] === 1;
+},
+};
+}
+function fillColumn(cells, column, low, high, min, step) {
+const from = Math.max(0, Math.ceil((low - min) / step - 0.5));
+const to = Math.min(N - 1, Math.floor((high - min) / step - 0.5));
+for (let z = from; z <= to; z++) cells[z * N * N + column] = 1;
+}
+function rasterMesh(mesh, norm, min, d, cells) {
+mesh.updateWorldMatrix(true, false);
+const { position } = mesh.geometry.attributes;
+const index = mesh.geometry.index;
+const p = new Float32Array(position.count * 3);
+const v = new THREE.Vector3();
+for (let i = 0; i < position.count; i++) {
+mesh.getVertexPosition(i, v).applyMatrix4(mesh.matrixWorld);
+p.set([(v.x - norm.cx) * norm.k, (v.y - norm.cy) * norm.k, (v.z - norm.cz) * norm.k], i * 3);
+}
+const hits = Array.from({ length: N * N }, () => []);
+const count = index?.count ?? position.count;
+for (let i = 0; i + 2 < count; i += 3) {
+const a = (index ? index.getX(i) : i) * 3;
+const b = (index ? index.getX(i + 1) : i + 1) * 3;
+const c = (index ? index.getX(i + 2) : i + 2) * 3;
+const ax = p[a], ay = p[a + 1], az = p[a + 2];
+const bx = p[b] - ax, by = p[b + 1] - ay;
+const cx = p[c] - ax, cy = p[c + 1] - ay;
+const det = bx * cy - by * cx;
+if (Math.abs(det) < 1e-10) continue;
+const x0 = Math.max(0, Math.ceil((ax + Math.min(0, bx, cx) - min[0]) / d[0] - 0.501));
+const x1 = Math.min(N - 1, Math.floor((ax + Math.max(0, bx, cx) - min[0]) / d[0] - 0.501));
+const y0 = Math.max(0, Math.ceil((ay + Math.min(0, by, cy) - min[1]) / d[1] - 0.503));
+const y1 = Math.min(N - 1, Math.floor((ay + Math.max(0, by, cy) - min[1]) / d[1] - 0.503));
+for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+const px = min[0] + (x + 0.501) * d[0] - ax;
+const py = min[1] + (y + 0.503) * d[1] - ay;
+const s = (px * cy - py * cx) / det;
+const t = (bx * py - by * px) / det;
+if (s >= 0 && t >= 0 && s + t <= 1) hits[y * N + x].push(az + (p[b + 2] - az) * s + (p[c + 2] - az) * t);
+}
+}
+for (let i = 0; i < hits.length; i++) {
+const list = hits[i].sort((a, b) => a - b).filter((z, k, arr) => !k || z - arr[k - 1] > 1e-5);
+if (list.length % 2) continue;
+for (let j = 0; j < list.length; j += 2) fillColumn(cells, i, list[j], list[j + 1], min[2], d[2]);
+}
+}
+function insideSegment(inside, a, b) {
+return inside(...b) && inside((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
+}
+function seededRandom(seed) {
+return () => {
+seed ^= seed << 13;
+seed ^= seed >>> 17;
+seed ^= seed << 5;
+return (seed >>> 0) / 4294967296;
+};
+}
+};
+__defs['src/effects/engine/material-drawing.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'MaterialDrawing', () => MaterialDrawing);
+__def(__exports, 'makeScreenColor', () => makeScreenColor);
+__def(__exports, 'drawInners', () => drawInners);
+__def(__exports, 'drawAffinity', () => drawAffinity);
+__def(__exports, 'FabricHistory', () => FabricHistory);
+__def(__exports, 'drawFabric', () => drawFabric);
+__def(__exports, 'voidField', () => voidField);
+__def(__exports, 'drawVoid', () => drawVoid);
+const THREE = __req('vendor/three/build/three.module.js');
+const { clamp } = __req('src/core/util.js');
+const { insideSegment, mediaBounds, seededRandom } = __req('src/effects/engine/material-volume.js');
+const TAU = Math.PI * 2;
+const MIX = new THREE.Color();
+const PIXEL = new THREE.Color();
+const PROJECTED = new THREE.Vector3();
+const vertex = (x, y, z) => [Math.fround(x), Math.fround(y), Math.fround(z)];
+class MaterialDrawing {
+constructor() {
+this.lines = [[], []];
+this.faces = [[], []];
+this.points = [[], []];
+}
+vertex(kind, p, color, light = 1) {
+kind[0].push(...p);
+kind[1].push(color.r * light, color.g * light, color.b * light);
+}
+segment(a, b, color, light = 1) {
+this.vertex(this.lines, a, color, light);
+this.vertex(this.lines, b, color, light);
+}
+quad(a, b, c, d, color, light) {
+for (const p of [a, b, c, b, d, c]) this.vertex(this.faces, p, color, light);
+}
+}
+function tint(palette, v) {
+v = clamp(v, 0, 1) * 2;
+return MIX.copy(palette[Math.min(1, Math.floor(v))]).lerp(palette[v < 1 ? 1 : 2], v < 1 ? v : v - 1);
+}
+function makeScreenColor(feed, layer, points, viewport, shared) {
+if (!feed?.rgba) return null;
+const { x: cx, z: cz } = shared.uCen.value;
+const { x: low, y: high } = shared.uYR.value;
+const height = Math.max(0.01, high - low);
+const angle = layer.rotate * Math.PI / 180;
+const cr = Math.cos(angle), sr = Math.sin(angle);
+const scale = Math.max(0.1, layer.scale);
+const camera = viewport.camera;
+const cameraAspect = camera.aspect || 1;
+return (point, color) => {
+let u, v;
+if (layer.mode === 'wrap') {
+u = (Math.atan2(point[2] - cz, point[0] - cx) / TAU) / scale + 0.5;
+u -= Math.floor(u);
+v = clamp((point[1] - low) / height, 0, 1);
+} else {
+let x = (point[0] - cx) / (height * feed.aspect), y = (point[1] - (low + high) / 2) / height;
+if (layer.mode === 'project') {
+PROJECTED.fromArray(point).applyMatrix4(points.matrixWorld).project(camera);
+x = PROJECTED.x * 0.5 * cameraAspect / feed.aspect;
+y = PROJECTED.y * 0.5;
+}
+u = 0.5 + (x * cr - y * sr) / scale;
+v = 0.5 + (x * sr + y * cr) / scale;
+if (u < 0 || u > 1 || v < 0 || v > 1) return color;
+}
+const k = feed.pixel(u, 1 - v) * 4;
+PIXEL.setRGB(feed.rgba[k] / 255, feed.rgba[k + 1] / 255, feed.rgba[k + 2] / 255, THREE.SRGBColorSpace);
+return color.lerp(PIXEL.multiplyScalar(layer.bright).addScalar(0.012), layer.mix * 0.91);
+};
+}
+function drawInners(draw, volume, layer, palette, removed, screen) {
+const random = seededRandom(0x517e51);
+const { min, max, inside } = volume;
+const span = max.map((v, i) => v - min[i]);
+const complexity = layer.complexity;
+const count = Math.round(55 + layer.density ** 1.2 * 860);
+const steps = Math.round(15 + complexity * 28);
+const mode = layer.mode;
+const space = Math.max(...span);
+const step = space * 0.017;
+const open = removed ? (x, y, z) => inside(x, y, z) && !removed(x, y, z) : inside;
+const beam = (a, b, tone, light) => {
+if (removed && (removed(...a) || !insideSegment(open, a, b))) return;
+const color = tint(palette, tone);
+draw.segment(a, b, screen ? screen(b, color) : color, light);
+};
+for (let i = 0; i < count; i++) {
+let start;
+for (let j = 0; j < 12; j++) {
+start = volume.seed ? volume.seed(random) : min.map((v, k) => v + random() * span[k]);
+start = vertex(...start);
+if (inside(...start)) break;
+start = null;
+}
+if (!start) continue;
+const phase = random() * TAU;
+const tone = random();
+const length = Math.round(steps * (0.55 + 0.6 * random()));
+const light = 0.42 + random() ** 1.4 * 0.87;
+if (mode === 'orbit' || mode === 'weave') {
+const radius = (0.07 + random() ** 1.6 * 0.46) * space;
+const band = (i % 13) / 12;
+const warp = i % 2 === 0;
+const point = (s, offset = 0) => {
+if (mode === 'orbit') {
+const a = phase + s * TAU * (0.8 + complexity * 1.1);
+const r = radius * (0.18 + s * 0.82);
+return vertex(
+start[0] + Math.cos(a) * r,
+start[1] + Math.sin(a) * r * 0.68 * Math.sin(phase) + Math.sin(a * 2) * r * 0.23,
+start[2] + Math.sin(a) * r * Math.cos(phase),
+);
+}
+const axis = (i % 44 + 0.5) / 44 + offset;
+const u = warp ? s : axis;
+const v = warp ? axis : s;
+return vertex(
+min[0] + u * span[0],
+min[1] + v * span[1],
+min[2] + span[2] * (0.16 + band * 0.68 + Math.sin((u * 1.2 + v) * TAU * (1 + complexity) + band * 4) * 0.14),
+);
+};
+const ribbonWidth = 0.004 + complexity * 0.013;
+const membrane = mode === 'weave' && i % 6 === 0;
+let a = point(0);
+for (let j = 1; j <= length; j++) {
+const b = point(j / length);
+if (open(...a) && insideSegment(open, a, b)) {
+beam(a, b, mode === 'orbit' ? tone * 0.75 + j / length * 0.25 : band, light);
+if (membrane) {
+const c = point((j - 1) / length, ribbonWidth);
+const d = point(j / length, ribbonWidth);
+if (open(...c) && insideSegment(open, c, d) && insideSegment(open, a, c) && insideSegment(open, b, d) && insideSegment(open, b, c)) {
+const color = tint(palette, band * 0.85 + 0.15);
+draw.quad(a, c, b, d, screen ? screen(b, color) : color, light * 0.63);
+}
+}
+}
+a = b;
+}
+continue;
+}
+const grow = mode === 'growth';
+const frequency = (2.5 + complexity * 4.3) / space;
+const paths = [{ p: start, phase, length, branch: 0 }];
+for (const path of paths) {
+let a = path.p;
+for (let k = 0; k < path.length; k++) {
+const [x, y, z] = a;
+const f = path.phase;
+const dx = Math.sin(y * frequency + 0.7) - Math.cos(z * frequency + f * 0.33);
+const dy = Math.sin(z * frequency - 0.4) - Math.cos(x * frequency + f * 0.22) + (grow ? 0.8 : 0);
+const dz = Math.sin(x * frequency + f * 0.22) - Math.cos(y * frequency - 0.7);
+const speed = step / Math.max(0.25, Math.hypot(dx, dy, dz));
+const b = vertex(x + dx * speed, y + dy * speed, z + dz * speed);
+if (!insideSegment(inside, a, b)) break;
+beam(a, b, tone * 0.75 + k / path.length * 0.25, light * (path.branch ? 0.62 : 1));
+if (grow && path.branch === 0 && k > 2 && k % 7 === 0 && random() < 0.35 + complexity * 0.56) {
+paths.push({ p: b, phase: f + (random() - 0.5) * 16, length: Math.round(5 + complexity * 11), branch: 1 });
+}
+a = b;
+}
+}
+}
+}
+function distance(a, b) {
+return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+function drawAffinity(draw, feed, layer, palette) {
+if (!feed.patches?.length) return;
+const { w, h } = feed;
+const { x, y } = mediaBounds(feed.aspect);
+const threshold = 3.15 - 2.75 * layer.similarity;
+const strength = layer.strength;
+const patches = feed.patches.filter((p) => p.life >= 2 && p.energy > 0.42);
+const groups = [];
+const point = (p, z = 0) => [(p.x / w * 2 - 1) * x, (1 - p.y / h * 2) * y, z];
+for (const p of patches) {
+let chosen = null, best = threshold;
+for (const g of groups) {
+const d = Math.hypot(p.vx - g.vx, p.vy - g.vy, (p.ax - g.ax) * 0.45, (p.ay - g.ay) * 0.45, (p.energy - g.energy) * 0.28);
+if (d < best) {
+best = d;
+chosen = g;
+}
+}
+if (!chosen) {
+chosen = { vx: p.vx, vy: p.vy, ax: p.ax, ay: p.ay, energy: p.energy, points: [] };
+groups.push(chosen);
+}
+chosen.points.push(p);
+}
+for (const g of groups) {
+if (g.points.length < 2) continue;
+const direction = Math.atan2(-g.vy, g.vx) / TAU + 0.5;
+const level = strength * Math.min(1, 0.3 + g.energy * 0.23);
+const color = tint(palette, direction);
+if (layer.mode === 'clusters') {
+const center = g.points.reduce(([x, y], p) => [x + p.x / g.points.length, y + p.y / g.points.length], [0, 0]);
+for (const p of g.points) {
+const base = point(p);
+const gather = level * 0.45;
+base[0] += ((center[0] - p.x) / w * 2 * x) * gather + (g.vx * 0.08 + p.ax * 0.04) * level;
+base[1] -= ((center[1] - p.y) / h * 2 * y) * gather + (g.vy * 0.08 + p.ay * 0.04) * level;
+base[2] = level * (0.22 + g.energy * 0.09);
+for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
+const idx = (p.y + j) * w + p.x + i;
+const k = idx * 4;
+const lum = feed.gray[idx];
+PIXEL.setRGB(feed.rgba[k] / 255, feed.rgba[k + 1] / 255, feed.rgba[k + 2] / 255, THREE.SRGBColorSpace);
+PIXEL.lerp(color, 0.48);
+draw.vertex(draw.points, [base[0] + i * x * 2 / w, base[1] - j * y * 2 / h, base[2] + (lum - 0.45) * level * 0.22], PIXEL, 0.55 + level);
+}
+}
+continue;
+}
+for (const p of g.points) {
+const a = point(p);
+const link = g.points.find((q) => q.y * w + q.x > p.y * w + p.x && Math.hypot(q.x - p.x, q.y - p.y) > 13);
+draw.vertex(draw.points, a, color, 1.05);
+if (!link) continue;
+const b = point(link);
+const reach = distance(a, b);
+let last = a;
+for (let i = 1; i <= 16; i++) {
+const s = i / 16;
+const bow = Math.sin(Math.PI * s) * reach * level;
+const next = [a[0] + (b[0] - a[0]) * s + bow * g.vx * 0.05, a[1] + (b[1] - a[1]) * s - bow * g.vy * 0.05, bow * 0.67];
+draw.segment(last, next, color, 0.5 + s * 0.55);
+last = next;
+}
+}
+}
+}
+class FabricHistory {
+constructor(cloud) {
+const random = seededRandom(0x37af130);
+const count = Math.min(220, cloud.count);
+this.ids = Array.from({ length: count }, (_, i) => Math.floor((i + random()) * cloud.count / count));
+this.frames = [];
+this.clock = 0;
+this.version = 0;
+}
+sample(positions, anim) {
+const step = 1 / 19;
+const gap = Math.abs(anim.time - this.time);
+if (this.clip !== anim.clipIndex || (gap > 0.35 && (!anim.playing || gap < anim.duration - 0.22))) {
+this.frames.length = 0;
+this.time = undefined;
+}
+if (this.time !== undefined && gap < step) return;
+this.clock += Number.isFinite(gap) && gap < 0.35 ? gap : step;
+this.clip = anim.clipIndex;
+this.time = anim.time;
+const points = this.ids.map((i) => [positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]]);
+if (!this.frames.length) this.pairs = points.map((p, i) => {
+let next = -1, other = -1, d = 0.24, d2 = 0.28;
+for (let j = 0; j < points.length; j++) {
+if (i === j) continue;
+const delta = distance(p, points[j]);
+if (delta > 0.015 && delta < d) {
+other = next;
+d2 = d;
+next = j;
+d = delta;
+} else if (delta > 0.04 && delta < d2) {
+other = j;
+d2 = delta;
+}
+}
+return [next, other];
+});
+this.frames.push({ time: this.clock, points });
+while (this.frames.length > 84 || this.frames[0].time < this.clock - 4.1) this.frames.shift();
+this.version++;
+}
+}
+function drawFabric(draw, fabric, layer, palette) {
+const frames = fabric.frames.filter((f) => f.time >= fabric.clock - layer.history);
+const count = Math.round(fabric.ids.length * (0.08 + layer.density * 0.92));
+for (let t = 1; t < frames.length; t++) {
+const prev = frames[t - 1].points, cur = frames[t].points;
+const age = t / (frames.length - 1);
+for (let i = 0; i < count; i++) {
+const a = prev[i], c = cur[i];
+if (distance(a, c) < 0.0015 || distance(a, c) > 0.42) continue;
+const color = tint(palette, (i % 23) / 22 * 0.59 + age * 0.41);
+draw.segment(a, c, color, 0.34 + age * 0.65);
+if (layer.mode === 'threads') continue;
+const [j, k] = fabric.pairs[i];
+if (j < 0 || distance(prev[j], cur[j]) > 0.42) continue;
+draw.quad(a, prev[j], c, cur[j], color, (layer.mode === 'ribbons' ? 0.55 : 0.9) * age);
+if (layer.mode === 'ribbons') {
+draw.segment(prev[j], cur[j], color, 0.6);
+} else if (k >= 0 && distance(prev[k], cur[k]) < 0.42) {
+draw.quad(a, prev[k], c, cur[k], color, 0.44 + age * 0.36);
+if (t % 3 === 0) draw.segment(c, cur[j], color, 0.39 + age * 0.46);
+}
+}
+}
+}
+function voidField(slices, volume, layer) {
+const last = slices.at(-1);
+if (!last) return null;
+const recent = slices.filter((s) => s.time >= last.time - layer.history);
+const [mx, my, mz] = volume.min;
+const [rx, ry, rz] = volume.max;
+const spanX = rx - mx, spanY = ry - my, spanZ = rz - mz;
+const thickness = spanZ * layer.depth;
+const center = (mz + rz) * 0.5;
+const activeMin = layer.mode === 'cut' ? rz - thickness : center - thickness * 0.5;
+const maskAt = (s, u, v) => s.mask && s.mask[Math.floor(v * s.h) * s.w + Math.floor(u * s.w)] > 0;
+return (x, y, z) => {
+const u = (x - mx) / spanX, v = 1 - (y - my) / spanY, t = (z - activeMin) / thickness;
+if (u < 0 || u >= 1 || v < 0 || v >= 1 || t < 0 || t > 1) return false;
+if (layer.mode === 'cut') return maskAt(last, u, v);
+const idx = Math.min(recent.length - 1, Math.floor(t * recent.length));
+return maskAt(recent[idx], u, v);
+};
+}
+function drawVoid(draw, volume, field, layer, palette, inner) {
+const { min, max, inside } = volume;
+const n = 38;
+const d = max.map((v, i) => (v - min[i]) / n);
+const random = seededRandom(0x34e34e);
+const negative = layer.mode === 'negative';
+for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) for (let k = 0; k < n; k++) {
+const x = min[0] + (i + 0.29 + random() * 0.42) * d[0];
+const y = min[1] + (j + 0.29 + random() * 0.42) * d[1];
+const z = min[2] + (k + 0.29 + random() * 0.42) * d[2];
+if (!inside(x, y, z)) continue;
+const cut = !!field(x, y, z);
+if (cut !== negative) continue;
+const edge = !!field(x + d[0], y, z) !== cut || !!field(x - d[0], y, z) !== cut
+|| !!field(x, y + d[1], z) !== cut || !!field(x, y - d[1], z) !== cut
+|| !!field(x, y, z + d[2]) !== cut || !!field(x, y, z - d[2]) !== cut;
+if (inner && !negative && !edge) continue;
+const rim = !inside(x, y, z + d[2]) || !inside(x, y, z - d[2]);
+if (!edge && !rim && random() > (negative ? 0.46 : 0.18)) continue;
+const color = tint(palette, edge || negative ? 0.58 + k / n * 0.41 : k / n * 0.5);
+draw.vertex(draw.points, [x, y, z], color, edge ? 1.08 : rim ? 0.54 : 0.3);
+}
+}
+};
+__defs['src/effects/engine/material-video.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'MaterialVideo', () => MaterialVideo);
+const { dilateMask, dropSpecks } = __req('src/effects/input/segmenter.js');
+const STEP = 4;
+const PERIOD = 0.09;
+class MaterialVideo {
+constructor() {
+this.canvas = document.createElement('canvas');
+this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+this.version = 0;
+}
+read(el, now, motion = true) {
+if (!el || !this.ctx) return null;
+const sw = el.videoWidth || el.naturalWidth || el.width;
+const sh = el.videoHeight || el.naturalHeight || el.height;
+if (!sw || !sh || (el.tagName === 'VIDEO' && el.readyState < 2)) return null;
+const time = el.currentTime || 0;
+if (this.el === el && (Math.abs(time - this.time) < 1e-4 || now - this.now < PERIOD)) return null;
+const reset = this.el !== el || Math.abs(time - this.time) > 0.45 || time < this.time;
+if (this.el !== el) {
+this.feedId = Symbol();
+const scale = 96 / Math.max(sw, sh);
+this.w = this.canvas.width = Math.max(8, Math.round(sw * scale));
+this.h = this.canvas.height = Math.max(8, Math.round(sh * scale));
+this.aspect = sw / sh;
+}
+const { w, h } = this;
+let rgba;
+try {
+this.ctx.drawImage(el, 0, 0, w, h);
+rgba = this.ctx.getImageData(0, 0, w, h).data;
+} catch {
+return null;
+}
+const gray = new Float32Array(w * h);
+for (let i = 0; i < gray.length; i++) {
+const j = i * 4;
+gray[i] = (0.2126 * rgba[j] + 0.7152 * rgba[j + 1] + 0.0722 * rgba[j + 2]) / 255;
+}
+this.delta = reset ? PERIOD : Math.max(1 / 120, time - this.time);
+this.el = el;
+this.time = time;
+this.now = now;
+this.rgba = rgba;
+this.version++;
+if (motion) {
+if (reset || !this.gray) {
+this.background = gray.slice();
+this.patches = [];
+this.mask = null;
+} else {
+this.patches = patchMotion(gray, this.gray, w, h, this.patches, PERIOD / this.delta);
+this.mask = motionMask(gray, this.gray, this.background, w, h);
+}
+}
+this.gray = gray;
+return this;
+}
+pixel(u, v) {
+return Math.min(this.h - 1, Math.max(0, Math.floor(v * this.h))) * this.w
++ Math.min(this.w - 1, Math.max(0, Math.floor(u * this.w)));
+}
+}
+function patchMotion(cur, prev, w, h, old, rate) {
+const edge = 8;
+const cols = Math.max(0, Math.ceil((w - 2 * edge) / STEP));
+const rows = Math.max(0, Math.ceil((h - 2 * edge) / STEP));
+const patches = [];
+for (let iy = 0; iy < rows; iy++) for (let ix = 0; ix < cols; ix++) {
+const x = edge + ix * STEP, y = edge + iy * STEP;
+const i = y * w + x;
+const patch = { x, y, dx: 0, dy: 0, vx: 0, vy: 0, ax: 0, ay: 0, energy: 0, life: 0 };
+patches.push(patch);
+let mn = 1, mx = 0, stationary = 0;
+for (let oy = -2; oy <= 2; oy++) for (let ox = -2; ox <= 2; ox++) {
+const j = i + oy * w + ox;
+mn = Math.min(mn, cur[j]);
+mx = Math.max(mx, cur[j]);
+stationary += Math.abs(cur[j] - prev[j]);
+}
+if (mx - mn < 0.05 || stationary < 0.095) continue;
+let best = stationary, bx = 0, by = 0;
+for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) {
+const shift = dy * w + dx;
+let err = 0.012 * Math.hypot(dx, dy);
+for (let oy = -2; oy <= 2; oy++) for (let ox = -2; ox <= 2; ox++) {
+const j = i + oy * w + ox;
+err += Math.abs(cur[j] - prev[j + shift]);
+}
+if (err < best - 0.0001) {
+best = err;
+bx = dx;
+by = dy;
+}
+}
+if ((!bx && !by) || best > 1.8 || (stationary - best) / stationary < 0.18) continue;
+const oldX = Math.round(ix + bx / STEP), oldY = Math.round(iy + by / STEP);
+const q = oldX >= 0 && oldX < cols && oldY >= 0 && oldY < rows ? old[oldY * cols + oldX] : null;
+const dx = -bx * rate, dy = -by * rate;
+patch.dx = dx;
+patch.dy = dy;
+patch.vx = q?.life ? q.vx * 0.58 + dx * 0.42 : dx;
+patch.vy = q?.life ? q.vy * 0.58 + dy * 0.42 : dy;
+patch.ax = q?.life ? q.ax * 0.55 + (dx - q.vx) * 0.45 : 0;
+patch.ay = q?.life ? q.ay * 0.55 + (dy - q.vy) * 0.45 : 0;
+patch.energy = q?.life ? q.energy * 0.64 + Math.hypot(dx, dy) * 0.36 : Math.hypot(dx, dy);
+patch.life = Math.min(12, (q?.life || 0) + 1);
+}
+return patches;
+}
+function motionMask(gray, prev, background, w, h) {
+const mask = new Uint8Array(gray.length);
+let exposureShift = 0, active = 0, foreground = 0;
+for (let i = 0; i < gray.length; i++) exposureShift += gray[i] - prev[i];
+exposureShift /= gray.length;
+for (let i = 0; i < gray.length; i++) {
+const change = gray[i] - background[i];
+active += Math.abs(gray[i] - prev[i] - exposureShift) > 0.052 ? 1 : 0;
+mask[i] = Math.abs(change) > 0.105 ? 1 : 0;
+foreground += mask[i];
+background[i] += change * (mask[i] ? 0.045 : 0.24);
+}
+if (foreground > gray.length * 0.52 || Math.abs(exposureShift) > 0.13) {
+background.set(gray);
+return null;
+}
+if (active < 4 || foreground < 9) return null;
+return dilateMask(dropSpecks(mask, w, h, Math.max(6, Math.round(gray.length * 0.0016))), w, h);
+}
+};
+__defs['src/effects/engine/material-effects.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'MaterialPart', () => MaterialPart);
+const THREE = __req('vendor/three/build/three.module.js');
+const { clamp } = __req('src/core/util.js');
+const { FabricHistory, MaterialDrawing, drawAffinity, drawFabric, drawInners, drawVoid, makeScreenColor, voidField } = __req('src/effects/engine/material-drawing.js');
+const { MaterialVideo } = __req('src/effects/engine/material-video.js');
+const { makeVolume, mediaBounds } = __req('src/effects/engine/material-volume.js');
+function makePart(group, id) {
+const common = { vertexColors: true, transparent: true, depthWrite: false };
+const parts = {
+lines: new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ ...common, opacity: 0.84 })),
+faces: new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ ...common, opacity: 0.28, side: THREE.DoubleSide, forceSinglePass: true })),
+points: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, size: id === 'affinity' ? 0.016 : 0.013, opacity: 0.9 })),
+};
+for (const o of Object.values(parts)) {
+o.frustumCulled = false;
+o.userData.helper = true;
+group.add(o);
+}
+return { parts, key: '' };
+}
+function present(root, id, key, build) {
+const part = root.userData[id] ||= makePart(root, id);
+if (!build || part.key !== key) {
+const draw = build && new MaterialDrawing();
+if (draw) build(draw);
+for (const [kind, object] of Object.entries(part.parts)) {
+const g = object.geometry;
+const data = draw?.[kind];
+const n = data ? data[0].length : 0;
+if (n) {
+if (!g.attributes.position || g.attributes.position.array.length < n) {
+const capacity = 3 * 2 ** Math.ceil(Math.log2(n / 3));
+g.dispose();
+for (const name of ['position', 'color']) g.setAttribute(name, new THREE.BufferAttribute(new Float32Array(capacity), 3).setUsage(THREE.DynamicDrawUsage));
+}
+for (const [i, name] of ['position', 'color'].entries()) {
+const a = g.attributes[name];
+a.array.set(data[i]);
+a.clearUpdateRanges();
+a.addUpdateRange(0, n);
+a.needsUpdate = true;
+}
+}
+g.setDrawRange(0, n / 3);
+object.visible = n > 0;
+}
+part.key = build ? key : '';
+}
+return Object.values(part.parts).some((x) => x.visible);
+}
+class MaterialPart {
+get hasVoidPrint() {
+return !!this._voidHistory?.slices.length;
+}
+clearVoidPrint() {
+this._voidHistory = null;
+this.app.viewport.invalidate();
+this.emit();
+}
+_disposeMaterialGeometry() {
+const root = this._materialRoot;
+if (root) {
+root.removeFromParent();
+root.traverse((o) => {
+o.geometry?.dispose();
+o.material?.dispose();
+});
+}
+this._materialRoot = null;
+this._materialVolumes = null;
+this._materialFabric = null;
+this._materialHideSource = false;
+}
+_materialVolume(media) {
+const key = this.cloudKey || 'sphere';
+const attrs = this.geometry.attributes;
+const D = this.shared.uDepth.value;
+const DP = this.shared.uDepthP.value;
+const zone = this.shared.uDepthQ.value.x;
+const tag = media ? [key, media.cols, media.rows, media.aspect, D.x, D.y, D.w, DP.x, DP.y, zone].join(':') : key;
+const cached = this._materialVolumes;
+if (cached?.tag === tag && cached.geo === this.geometry) return cached.volume;
+const norm = this._materialNorm;
+const meshes = norm ? this.modelProvider?.volumeMeshes(key) || [] : [];
+const cloud = { positions: attrs.aTarget.array, hide: attrs.aHide.array, norm };
+if (media && D.x > 0.001) {
+cloud.depth = (i) => {
+const dir = Math.sign(DP.y) || 1;
+const v = attrs.aDepth.array[i];
+const n = dir > 0 ? v : 1 - v;
+const f = dir > 0 ? D.w : 1 - D.w;
+const levels = Math.max(2, DP.x);
+const dn = D.y === 1 ? Math.round(n * levels) / levels : n;
+const diff = dn - f;
+const spread = clamp((Math.abs(diff) - zone) / Math.max(0.001, 1 - zone), 0, 1);
+return Math.sign(diff) * spread * D.x * (D.y === 1 ? 1.5 : 1.2);
+};
+}
+const volume = makeVolume(key, cloud, meshes, media);
+volume.version = (this._materialVolumeVer = (this._materialVolumeVer || 0) + 1);
+this._materialVolumes = { tag, volume, geo: this.geometry };
+return volume;
+}
+_materialRecordVoid(feed, media) {
+const h = this._voidHistory ||= { slices: [], clock: 0, version: 0 };
+const first = h.slices.length === 0;
+if (h.feed === feed.feedId && feed.version === h.lastVersion) return;
+let mask = feed.mask;
+const C = this.state.layers.chrono;
+if (C.on && C.mask === 'person' && this.segmenter?.ready) {
+mask = this.segmenter.mask(feed.el, feed.w, feed.h) || mask;
+}
+const valid = mask?.some(Boolean);
+if (h.feed !== feed.feedId && !valid) return;
+if (h.feed !== feed.feedId) {
+h.slices.length = 0;
+h.mediaVolume = null;
+h.feed = feed.feedId;
+}
+h.lastVersion = feed.version;
+h.clock += feed.delta;
+if (media) {
+const { x, y } = mediaBounds(feed.aspect);
+h.mediaVolume ||= {
+min: [-x, -y, -0.64], max: [x, y, 0.64],
+inside: (px, py, pz) => Math.abs(px) < x && Math.abs(py) < y && Math.abs(pz) < 0.64,
+};
+}
+h.slices.push({ time: h.clock, mask: valid ? mask.slice() : null, w: feed.w, h: feed.h });
+while (h.slices.length > 85 || h.slices[0].time < h.clock - 4.2) h.slices.shift();
+h.version++;
+if (first) this.emit();
+}
+_materialTick(layers, now) {
+const { inners, affinity, temporalFabric, voidPrint, vscreen } = layers;
+const points = this.points;
+this._materialHideSource = false;
+if (!points || !(inners.on || affinity.on || temporalFabric.on || voidPrint.on)) {
+if (this._materialRoot) this._disposeMaterialGeometry();
+this._materialVideo = this._materialScreen = null;
+return;
+}
+const viewport = this.app.viewport;
+const root = this._materialRoot ||= new THREE.Group();
+if (!root.parent) {
+root.name = '__material-effects';
+root.matrixAutoUpdate = false;
+root.userData.helper = true;
+viewport.scene.add(root);
+}
+points.updateMatrixWorld(true);
+root.matrix.copy(points.matrixWorld);
+root.matrixWorldNeedsUpdate = true;
+const palette = [this.shared.uP0.value, this.shared.uP1.value, this.shared.uP2.value];
+const pal = this.state.look.palette;
+const media = this.cloudKey?.startsWith('media') && this.pm?.ready && this.pm.count === this.geometry.attributes.aTarget.count ? this.pm : null;
+const video = this.videoReady ? this.pm.el : null;
+const motion = video && (affinity.on || voidPrint.on) ? (this._materialVideo ||= new MaterialVideo()) : null;
+const fresh = motion?.read(video, now);
+if (!motion) this._materialVideo = null;
+if (voidPrint.on && fresh) this._materialRecordVoid(fresh, media);
+const imprint = voidPrint.on && this._voidHistory?.slices.length ? this._voidHistory : null;
+const volume = inners.on || imprint ? this._materialVolume(media) : null;
+const medium = imprint && (media || !this.videoLoaded) ? imprint.mediaVolume || volume : volume;
+const cut = imprint ? voidField(imprint.slices, medium, voidPrint) : null;
+const activeScreen = inners.on && this.shared.uScr.value.x > 0.001 ? this._screenSource()?.media : null;
+const screen = activeScreen ? (this._materialScreen ||= new MaterialVideo()) : null;
+if (!screen) this._materialScreen = null;
+screen?.read(activeScreen, now, false);
+const projection = screen && vscreen.mode === 'project' ? Math.floor(now * 12) : 0;
+const maskVer = cut ? [imprint.version, voidPrint.mode, voidPrint.depth, voidPrint.history].join(':') : '';
+const removed = cut && (voidPrint.mode === 'negative' ? (x, y, z) => !cut(x, y, z) : cut);
+const innerKey = [volume?.version, pal, inners.mode, inners.density, inners.complexity, maskVer, media && Math.floor(now * 8),
+screen?.version, screen && vscreen.mode, screen && vscreen.scale, screen && vscreen.rotate, screen && vscreen.bright, screen && vscreen.mix, projection].join(':');
+const hasInner = present(root, 'inners', innerKey, inners.on
+? (draw) => drawInners(draw, volume, inners, palette, removed, screen && makeScreenColor(screen, vscreen, points, viewport, this.shared))
+: null);
+const hasAffinity = present(root, 'affinity', [motion?.version, pal, affinity.mode, affinity.strength, affinity.similarity].join(':'), affinity.on && motion
+? (draw) => drawAffinity(draw, motion, affinity, palette)
+: null);
+const cloud = this._animCloud;
+const anim = this.app.anim;
+let fabric = null;
+if (temporalFabric.on && cloud && this._animBuf && anim.has) {
+if (this._materialFabric?.cloud !== cloud) this._materialFabric = { cloud, history: new FabricHistory(cloud) };
+fabric = this._materialFabric.history;
+fabric.sample(this._animBuf, anim);
+} else this._materialFabric = null;
+present(root, 'temporalFabric', [fabric?.version, pal, temporalFabric.mode, temporalFabric.history, temporalFabric.density].join(':'), fabric
+? (draw) => drawFabric(draw, fabric, temporalFabric, palette)
+: null);
+const hasPrint = present(root, 'voidPrint', [maskVer, volume?.version, pal, inners.on].join(':'), cut
+? (draw) => drawVoid(draw, medium, cut, voidPrint, palette, inners.on)
+: null);
+this._materialHideSource = !!(hasPrint || (hasInner && inners.shell === 'hide') || (hasAffinity && media && affinity.source === 'hide'));
+}
+}
+};
 __defs['src/effects/engine/mixin.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'mixin', () => mixin);
@@ -105949,6 +106959,7 @@ const { ChronoPart } = __req('src/effects/engine/chrono.js');
 const { PixelSortPart } = __req('src/effects/engine/pixelsort.js');
 const { TrackPickPart } = __req('src/effects/engine/track-pick.js');
 const { ExperimentsPart } = __req('src/effects/engine/experiments.js');
+const { MaterialPart } = __req('src/effects/engine/material-effects.js');
 const { mixin } = __req('src/effects/engine/mixin.js');
 class EffectsEngine {
 constructor(app) {
@@ -106229,6 +107240,7 @@ const vp = this.app.viewport;
 this._disposePoints();
 this._experimentMotion = null;
 this._experimentGains = null;
+this._materialVideo = this._materialScreen = null;
 vp.root.visible = this._saved?.rootVisible !== false;
 vp.fxHide = false;
 const stage = document.querySelector('.stage');
@@ -106290,7 +107302,7 @@ nav.paintLock = want;
 this.app.viewport.container.classList.toggle('paint-lock', want);
 }
 }
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, ChronoPart, PixelSortPart, TrackPickPart, ExperimentsPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, ChronoPart, PixelSortPart, TrackPickPart, ExperimentsPart, MaterialPart);
 };
 __defs['src/animation/anim-activity.js'] = function (__exports, __req) {
 'use strict';
@@ -106375,6 +107387,42 @@ for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) out.push([(i - (co
 return out;
 };
 const DRAW = {
+inners: (c, t) => {
+const p = t * TAU / 4;
+for (let j = 0; j < 8; j++) for (let i = 0; i < 24; i++) {
+const a = (i / 24) * TAU;
+const wave = Math.sin(a * 2 - p + j * 0.55);
+const x = Math.cos(a) * (4.3 + j * 0.84);
+const y = Math.sin(a) * (2.8 + j * 0.45) + wave * 2.4;
+dot(c, x, y, 1.05 + Math.max(0, wave) * 0.5, 0.32 + 0.64 * (i % 6) / 5);
+}
+},
+affinity: (c, t) => {
+const wave = Math.sin(t * TAU / 3);
+for (let i = 0; i < 18; i++) {
+const f = i / 17;
+dot(c, -10 + f * 20, -3 + Math.sin(f * Math.PI) * (-3 + wave * 2), 1.05, 0.36 + 0.5 * f);
+dot(c, -10 + f * 20, 4 - Math.sin(f * Math.PI) * (-1 + wave * 1.5), 1.05, 0.24 + 0.5 * (1 - f));
+}
+for (let i = 0; i < 10; i++) for (const k of [-1, 1]) {
+dot(c, k * (10 + Math.cos(i * 2.4) * 2.8), k * 3 + Math.sin(i * 2.4) * (3.9 + wave), 1.5, 0.65);
+}
+},
+temporalFabric: (c, t) => {
+for (let j = 0; j < 6; j++) for (let i = 0; i < 17; i++) {
+const u = i / 16;
+const wave = Math.sin(u * 5 - t * 2 + j * 0.25);
+dot(c, (u - 0.5) * 24, (j - 2.5) * (1.6 + wave * 0.62) + wave * 4, 1.2, 0.22 + u * 0.74);
+}
+},
+voidPrint: (c, t) => {
+for (let j = 2; j >= 0; j--) for (const [x, y] of grid(10, 8, 2.02, 2.03)) {
+const dx = x - Math.sin(t * 1.9 - j * 0.76) * 4.3;
+const radius = Math.hypot(dx, y * 0.95);
+if (radius < 4.3) continue;
+dot(c, x + (j - 1) * 2.1, y - (j - 1) * 1.3, radius < 5.7 ? 1.55 : 1, (radius < 5.7 ? 0.94 : 0.45) - j * 0.12);
+}
+},
 autophagy: (c, t) => {
 const p = t * TAU / 3;
 for (let j = 0; j < 4; j++) for (let i = 0; i < 23; i++) {
@@ -107019,6 +108067,11 @@ return out;
 };
 const topObjects = () => root.children.filter((o) => !o.userData.helper && !o.userData.media && o.name !== '__fx' && (() => { let ok = false; o.traverse((c) => { if (!c.userData.helper && (c.isMesh || c.isPoints)) ok = true; }); return ok; })());
 return {
+volumeMeshes(key) {
+if (key === 'model') return meshes();
+const obj = key.startsWith('obj:') && topObjects().find((o) => o.uuid === key.slice(4));
+return obj ? app.model.meshesOf(obj).filter(shown) : [];
+},
 sizeOf: (obj) => {
 let n = 0;
 obj.traverse((c) => {
@@ -107039,7 +108092,7 @@ if (cl.length) return fromClouds(cl, count);
 const list = app.model.meshesOf(obj);
 if (!list.length) return null;
 const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
-const sc = await sampleSurface(entries, count, { anim: app.anim.has });
+const sc = await sampleSurface(entries, count, { anim: app.anim.has, rigid: true });
 if (sc && sc.anim && app.anim.has) sc.animBox = app.anim.animatedBounds();
 return sc;
 },
@@ -107052,7 +108105,7 @@ if (c.length) return fromClouds(c, count);
 const list = meshes();
 if (!list.length) return null;
 const entries = list.map((m) => ({ mesh: m, mats: overrideMats(app.pointTexture, app.display.getOriginal(m)) }));
-const cl = await sampleSurface(entries, count, { anim: app.anim.has, onProgress: (p) => {
+const cl = await sampleSurface(entries, count, { anim: app.anim.has, rigid: true, onProgress: (p) => {
 if (!app.ui.effectsEngine?._quiet) app.ui.busy('Беру точки с модели', 0.2 + p * 0.7);
 } });
 if (cl.anim && app.anim.has) cl.animBox = app.anim.animatedBounds();
@@ -107586,7 +108639,7 @@ body.append(camBtn);
 body.append(button({ label: 'Вернуть форму после лепки', icon: 'broom', variant: 'secondary', cls: 'btn-block', onClick: () => engine.clearSculpt() }));
 body.append(h('div', { class: 'field-hint' }, 'При первом включении загружается модель распознавания рук (около 10 МБ), нужен интернет. Видео с камеры никуда не отправляется.'));
 }
-if (def.id !== 'frames' && def.id !== 'chrono') body.append(field('Сила', amount.el));
+if (!def.noAmount && def.id !== 'frames' && def.id !== 'chrono') body.append(field('Сила', amount.el));
 const extraCtl = {};
 const whenList = [];
 let cur = body;
@@ -110021,13 +111074,15 @@ modelNote.textContent = kind === 'cloud' ? `Берётся облако точе
 countActive();
 for (const c of cards) {
 if (c.def.group !== 'Видео') continue;
-c.folder.hidden = !engine.pm.ready;
-if (c.def.id === 'frames' || c.def.id === 'slitscan' || c.def.id === 'chrono') c.card.hidden = !engine.videoLoaded;
+c.folder.hidden = !engine.pm.ready && !engine.hasVoidPrint;
+if (c.def.id === 'voidPrint') c.card.hidden = !engine.videoLoaded && !engine.hasVoidPrint;
+else if (['frames', 'slitscan', 'chrono', 'affinity'].includes(c.def.id)) c.card.hidden = !engine.videoLoaded;
+else c.card.hidden = !engine.pm.ready;
 }
 {
 const vc = cards.find((c) => c.def.group === 'Видео');
 const nm = vc?.fhead.querySelector('.fx-folder-name');
-if (nm) nm.textContent = engine.pm.ready && !engine.videoLoaded ? 'Фото' : 'Видео';
+if (nm) nm.textContent = engine.pm.ready && !engine.videoLoaded && !engine.hasVoidPrint ? 'Фото' : 'Видео';
 }
 for (const c of cards) if (c.def.group === 'Анимация') c.folder.hidden = !engine.animReady;
 special.hidden = !cards.some((c) => SPECIAL[c.def.group] && !c.folder.hidden);

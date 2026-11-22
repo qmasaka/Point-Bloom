@@ -333,6 +333,11 @@ export class WebGPUBackend extends RenderBackend {
 		e.points.visible = false;
 		renderer.setRenderTarget(null);
 		renderer.render(scene, camera);
+		if (e._materialHideSource) {
+			this.canvas.style.visibility = 'hidden';
+			this.hasHistory = false;
+			return;
+		}
 		this.canvas.style.visibility = '';
 		this.stats.gpu++;
 		if (!this._syncCloud()) return;
