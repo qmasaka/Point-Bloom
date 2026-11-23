@@ -110,10 +110,29 @@ const complexity = layer.complexity;
 const mode = layer.mode;
 const space = Math.max(...span);
 const open = removed ? (x, y, z) => inside(x, y, z) && !removed(x, y, z) : inside;
-const bundles = Math.round(30 + layer.density ** 1.1 * 190);
-const steps = Math.round(26 + complexity * 56);
-const step = space * 0.0125;
-const wave = (1.3 + complexity * 3.1) * 2 / space;
+const o = {
+roots: Math.round(layer.roots ?? 3),
+reach: layer.reach ?? 0.5,
+trunk: layer.trunk ?? 0.55,
+tips: layer.tips ?? 0.8,
+links: Math.round(layer.links ?? 3),
+bow: layer.bow ?? 0.4,
+ribs: layer.ribs ?? 0.5,
+strands: Math.round(layer.strands ?? 3),
+twist: layer.twist ?? 2,
+spread: layer.spread ?? 0.85,
+prune: layer.prune ?? 0.5,
+glow: layer.glow ?? 1,
+hue: layer.hue ?? 0,
+tone: layer.tone ?? 'grow',
+};
+const toneOf = (birth, p) => {
+let t = birth;
+if (o.tone === 'height') t = clamp((p[1] - min[1]) / Math.max(1e-6, span[1]), 0, 1);
+else if (o.tone === 'solid') t = 0.5;
+const w = (t + o.hue) % 2;
+return w > 1 ? 2 - w : w;
+};
 const place = () => {
 for (let j = 0; j < 14; j++) {
 const p = vertex(...(volume.seed ? volume.seed(random) : min.map((v, k) => v + random() * span[k])));
@@ -125,58 +144,17 @@ const link = (a, b, tone, light, t, tEnd, phase, birth = 0, birthEnd = birth) =>
 if (!insideSegment(open, a, b) || (removed && removed(...a))) return false;
 const color = tint(palette, tone);
 const shade = screen ? screen(b, color) : color;
-draw.segment(a, b, shade, light, t, tEnd, phase, birth, birthEnd);
+const gain = light * o.glow;
+draw.segment(a, b, shade, gain, t, tEnd, phase, birth, birthEnd);
 for (let k = 1; k <= 2; k++) {
 const f = k / 3;
-draw.vertex(draw.points, [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f], shade, light * 1.15, t + (tEnd - t) * f, phase, birth + (birthEnd - birth) * f);
+draw.vertex(draw.points, [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f], shade, gain * 1.15, t + (tEnd - t) * f, phase, birth + (birthEnd - birth) * f);
 }
 return true;
 };
 const glow = (p, tone, light, phase, birth = 0) => {
 const color = tint(palette, Math.min(1, tone + 0.25));
-draw.vertex(draw.nodes, p, screen ? screen(p, color) : color, light * 1.2, 0, phase, birth);
-};
-const field = (p, shift, lift) => {
-const [x, y, z] = p;
-const dx = Math.sin(y * wave + 0.7 + shift) - Math.cos(z * wave + 0.9);
-const dy = Math.sin(z * wave - 0.4) - Math.cos(x * wave + 0.5 + shift) + lift;
-const dz = Math.sin(x * wave + 0.6) - Math.cos(y * wave - 0.7 - shift);
-const m = Math.max(0.25, Math.hypot(dx, dy, dz));
-return [dx / m, dy / m, dz / m];
-};
-const steer = (a, dir) => {
-const reach = (d) => {
-const b = vertex(a[0] + d[0] * step, a[1] + d[1] * step, a[2] + d[2] * step);
-return insideSegment(open, a, b) ? b : null;
-};
-const straight = reach(dir);
-if (straight) return straight;
-let ux = dir[1] * 0.46 - dir[2] * 0.83, uy = dir[2] * 0.31 - dir[0] * 0.46, uz = dir[0] * 0.83 - dir[1] * 0.31;
-const un = Math.hypot(ux, uy, uz) || 1;
-ux /= un; uy /= un; uz /= un;
-const wx = dir[1] * uz - dir[2] * uy, wy = dir[2] * ux - dir[0] * uz, wz = dir[0] * uy - dir[1] * ux;
-for (const bend of [0.5, 1, 1.7, 3]) {
-for (const [cu, cw] of [[1, 0], [-1, 0], [0, 1], [0, -1], [0.7, 0.7], [-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7]]) {
-const d = [dir[0] + (ux * cu + wx * cw) * bend, dir[1] + (uy * cu + wy * cw) * bend, dir[2] + (uz * cu + wz * cw) * bend];
-const m = Math.hypot(...d) || 1;
-const b = reach([d[0] / m, d[1] / m, d[2] / m]);
-if (b) return b;
-}
-}
-return null;
-};
-const follow = (from, length, shift, lift, tone, light, phase, spread) => {
-let a = from;
-let last = null;
-for (let k = 0; k < length; k++) {
-const dir = field(a, shift, lift);
-const b = steer(a, dir);
-if (!b) break;
-if (!link(a, b, tone + k / length * spread, light * (0.55 + 0.45 * Math.sin(Math.PI * Math.min(1, (k + 1) / length * 1.15))), k / length, (k + 1) / length, phase)) break;
-last = b;
-a = b;
-}
-return last;
+draw.vertex(draw.nodes, p, screen ? screen(p, color) : color, light * 1.2 * o.glow, 0, phase, birth);
 };
 const growTree = () => {
 const count = Math.round(500 + layer.density * 2800);
@@ -186,7 +164,7 @@ const p = place();
 if (p) attractors.push({ p, alive: true });
 }
 if (!attractors.length) return;
-const reach = space * (0.16 + (1 - complexity) * 0.08);
+const reach = space * (0.09 + o.reach * 0.2 + (1 - complexity) * 0.04);
 const kill = space * 0.03;
 const bite = space * 0.017;
 const cell = reach;
@@ -202,7 +180,7 @@ if (!grid.has(k)) grid.set(k, []);
 grid.get(k).push(index);
 return index;
 };
-const roots = 2 + Math.round(complexity * 3);
+const roots = o.roots;
 for (let r = 0; r < roots; r++) {
 let best = null;
 for (let j = 0; j < 12; j++) {
@@ -284,14 +262,14 @@ const parent = nodes[node.parent];
 const birth = node.iteration / total * 0.92;
 const birthStart = parent.iteration / total * 0.92;
 const thick = (node.weight / heaviest) ** 0.45;
-const light = 0.45 + thick * 0.55;
-const tone = 0.1 + 0.9 * birth;
+const light = 0.35 + thick * (0.25 + o.trunk * 0.9);
+const tone = toneOf(birth, node.p);
 link(parent.p, node.p, tone, light, birthStart * 2.4, birth * 2.4, 0, birthStart, birth);
 if (thick > 0.5 && random() < 0.35) {
 const wobble = space * 0.004;
 draw.vertex(draw.points, [node.p[0] + (random() - 0.5) * wobble, node.p[1] + (random() - 0.5) * wobble, node.p[2] + (random() - 0.5) * wobble], tint(palette, tone), light * 0.9, birth * 2.4, 0, birth);
 }
-if (node.leaf && tips < 700 && random() < 0.8) {
+if (node.leaf && tips < 900 && random() < o.tips) {
 tips++;
 glow(node.p, tone, 0.8 + random() * 0.6, 0, birth);
 }
@@ -307,7 +285,7 @@ if (!p) continue;
 if (points.every((q) => Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]) > separation)) points.push(p);
 }
 if (points.length < 2) return;
-const neighbours = 2 + Math.round(complexity * 2.4);
+const neighbours = o.links;
 const reachMax = separation * 3.6;
 const edges = new Map();
 const adjacent = points.map(() => []);
@@ -348,7 +326,8 @@ visit(Math.floor(random() * points.length), 0);
 for (let i = 0; i < points.length; i++) if (depth[i] < 0) visit(i, Math.floor(random() * farthest * 0.7));
 const birthOf = (i) => Math.min(0.9, depth[i] / (farthest + 1) * 0.9);
 const tones = points.map(() => random());
-const bow = 0.12 + complexity * 0.22;
+const nodeLight = 0.35 + o.tips * 1.1;
+const bow = 0.04 + o.bow * 0.5;
 for (const [a, b] of edges.values()) {
 const p = points[a], q = points[b];
 const [first, second] = depth[a] <= depth[b] ? [a, b] : [b, a];
@@ -367,7 +346,7 @@ let last = from;
 for (let k = 1; k <= pieces; k++) {
 const s = k / pieces;
 const next = curve(s);
-const tone = tones[first] + (tones[second] - tones[first]) * s;
+const tone = toneOf(b0 + (b1 - b0) * s, [from[0] + (to[0] - from[0]) * s, from[1] + (to[1] - from[1]) * s, 0]) * 0.55 + (tones[first] + (tones[second] - tones[first]) * s) * 0.45;
 link(last, next, tone, 0.75, (b0 + (b1 - b0) * (s - 1 / pieces)) * 2.4, (b0 + (b1 - b0) * s) * 2.4, 0, b0 + (b1 - b0) * (s - 1 / pieces), b0 + (b1 - b0) * s);
 last = next;
 }
@@ -375,79 +354,216 @@ last = next;
 points.forEach((p, i) => {
 const hub = Math.min(1, adjacent[i].length / 5);
 const birth = birthOf(i);
-glow(p, tones[i], 0.7 + hub * 1.1, 0, birth);
+glow(p, toneOf(birth, p), (0.5 + hub * 0.9) * nodeLight, 0, birth);
 if (hub > 0.5) glow([p[0] + (random() - 0.5) * space * 0.006, p[1] + (random() - 0.5) * space * 0.006, p[2]], tones[i], 0.9, 0, birth);
 });
 };
-if (mode === 'growth') return growTree();
+const growSkeleton = () => {
+const resolution = 34 + Math.round(layer.density * 22);
+const cell = space / resolution;
+const nx = Math.ceil(span[0] / cell) + 2, ny = Math.ceil(span[1] / cell) + 2, nz = Math.ceil(span[2] / cell) + 2;
+const total = nx * ny * nz;
+const at = (x, y, z) => x + nx * (y + ny * z);
+const solid = new Uint8Array(total);
+const dist = new Float32Array(total);
+for (let z = 0; z < nz; z++) for (let y = 0; y < ny; y++) for (let x = 0; x < nx; x++) {
+const on = open(min[0] + (x - 0.5) * cell, min[1] + (y - 0.5) * cell, min[2] + (z - 0.5) * cell);
+solid[at(x, y, z)] = on ? 1 : 0;
+dist[at(x, y, z)] = on ? 1e9 : 0;
+}
+const offsets = [];
+for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+if (dx || dy || dz) offsets.push([dx, dy, dz, Math.hypot(dx, dy, dz), dz < 0 || (dz === 0 && (dy < 0 || (dy === 0 && dx < 0)))]);
+}
+for (const forward of [true, false]) {
+for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+const x = forward ? i : nx - 1 - i, y = forward ? j : ny - 1 - j, z = forward ? k : nz - 1 - k;
+const here = at(x, y, z);
+if (!solid[here]) continue;
+let best = dist[here];
+for (const [dx, dy, dz, w, back] of offsets) {
+if (back !== forward) continue;
+const X = x + dx, Y = y + dy, Z = z + dz;
+if (X < 0 || Y < 0 || Z < 0 || X >= nx || Y >= ny || Z >= nz) continue;
+best = Math.min(best, dist[at(X, Y, Z)] + w);
+}
+dist[here] = best;
+}
+}
+let thickest = 0;
+for (let i = 0; i < total; i++) if (solid[i]) thickest = Math.max(thickest, dist[i]);
+if (thickest < 2) return false;
+const cost = new Float32Array(total).fill(Infinity);
+const along = new Float32Array(total);
+const from = new Int32Array(total).fill(-1);
+const covered = new Uint8Array(total);
+const onSkeleton = new Uint8Array(total);
+const keys = [], nodesQueue = [];
+const push = (key, node) => {
+let i = keys.length;
+keys.push(key);
+nodesQueue.push(node);
+while (i > 0) {
+const up = (i - 1) >> 1;
+if (keys[up] <= key) break;
+keys[i] = keys[up];
+nodesQueue[i] = nodesQueue[up];
+i = up;
+}
+keys[i] = key;
+nodesQueue[i] = node;
+};
+const pop = () => {
+const node = nodesQueue[0];
+const key = keys.pop();
+const last = nodesQueue.pop();
+const size = keys.length;
+if (size) {
+let i = 0;
+for (;;) {
+let child = i * 2 + 1;
+if (child >= size) break;
+if (child + 1 < size && keys[child + 1] < keys[child]) child++;
+if (keys[child] >= key) break;
+keys[i] = keys[child];
+nodesQueue[i] = nodesQueue[child];
+i = child;
+}
+keys[i] = key;
+nodesQueue[i] = last;
+}
+return node;
+};
+const chains = [];
+const minVoxels = (space * (0.012 + (1 - o.prune) * 0.2)) / cell;
+let longest = 1e-6;
+for (let component = 0; component < 4 && chains.length < 140; component++) {
+let root = -1;
+for (let i = 0; i < total; i++) if (solid[i] && cost[i] === Infinity && (root < 0 || dist[i] > dist[root])) root = i;
+if (root < 0 || dist[root] < 2) break;
+const members = [root];
+cost[root] = 0;
+along[root] = 0;
+push(0, root);
+while (keys.length) {
+const key = keys[0];
+const v = pop();
+if (key > cost[v]) continue;
+const x = v % nx, y = Math.floor(v / nx) % ny, z = Math.floor(v / (nx * ny));
+for (const [dx, dy, dz, w] of offsets) {
+const X = x + dx, Y = y + dy, Z = z + dz;
+if (X < 0 || Y < 0 || Z < 0 || X >= nx || Y >= ny || Z >= nz) continue;
+const n = at(X, Y, Z);
+if (!solid[n]) continue;
+const middle = (dist[v] + dist[n]) * 0.5;
+const next = key + w * (1 + 30 * Math.max(0, 1 - middle / thickest) ** 6);
+if (next < cost[n]) {
+if (cost[n] === Infinity) members.push(n);
+cost[n] = next;
+from[n] = v;
+along[n] = along[v] + w;
+push(next, n);
+}
+}
+}
+members.sort((a, b) => along[b] - along[a]);
+longest = Math.max(longest, along[members[0]]);
+onSkeleton[root] = 1;
+for (const tip of members) {
+if (covered[tip] || chains.length >= 140) continue;
+const path = [];
+let u = tip;
+while (u >= 0 && !onSkeleton[u]) {
+path.push(u);
+u = from[u];
+}
+if (u < 0) continue;
+if (along[tip] - along[u] < minVoxels) {
+covered[tip] = 1;
+continue;
+}
+path.push(u);
+path.reverse();
+for (const v of path) onSkeleton[v] = 1;
+chains.push(path);
+for (let i = 0; i < path.length; i += 2) {
+const v = path[i];
+const x = v % nx, y = Math.floor(v / nx) % ny, z = Math.floor(v / (nx * ny));
+const radius = Math.ceil(dist[v] * 1.05 + 2);
+for (let dz = -radius; dz <= radius; dz++) for (let dy = -radius; dy <= radius; dy++) for (let dx = -radius; dx <= radius; dx++) {
+if (dx * dx + dy * dy + dz * dz > radius * radius) continue;
+const X = x + dx, Y = y + dy, Z = z + dz;
+if (X >= 0 && Y >= 0 && Z >= 0 && X < nx && Y < ny && Z < nz) covered[at(X, Y, Z)] = 1;
+}
+}
+}
+}
+if (!chains.length) return false;
+const ribGap = space * (0.11 - 0.095 * o.ribs);
+const turns = o.twist * Math.PI * 2.2 / space;
+const roundSteps = 18;
+const centre = (v) => [min[0] + ((v % nx) - 0.5) * cell, min[1] + ((Math.floor(v / nx) % ny) - 0.5) * cell, min[2] + (Math.floor(v / (nx * ny)) - 0.5) * cell];
+let drawn = 0;
+for (const path of chains) {
+let pts = path.map(centre);
+const radii = path.map((v) => dist[v] * cell);
+const births = path.map((v) => Math.min(0.9, along[v] / longest * 0.9));
+for (let pass = 0; pass < 4; pass++) {
+pts = pts.map((p, i) => (i === 0 || i === pts.length - 1 ? p : [0, 1, 2].map((k) => p[k] * 0.5 + (pts[i - 1][k] + pts[i + 1][k]) * 0.25)));
+}
+const keep = pts.map((p, i) => i).filter((i) => i % 2 === 0 || i === pts.length - 1);
+pts = keep.map((i) => pts[i]);
+const rad = keep.map((i) => radii[i]);
+const birth = keep.map((i) => births[i]);
+let u = null, arc = 0, nextRib = ribGap * random();
+const previous = [];
+for (let i = 0; i < pts.length; i++) {
+const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+let tx = b[0] - a[0], ty = b[1] - a[1], tz = b[2] - a[2];
+const tl = Math.hypot(tx, ty, tz) || 1;
+tx /= tl; ty /= tl; tz /= tl;
+if (!u) {
+const ref = Math.abs(ty) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+u = [ty * ref[2] - tz * ref[1], tz * ref[0] - tx * ref[2], tx * ref[1] - ty * ref[0]];
+}
+const dot = u[0] * tx + u[1] * ty + u[2] * tz;
+u = [u[0] - tx * dot, u[1] - ty * dot, u[2] - tz * dot];
+const ul = Math.hypot(...u) || 1;
+u = [u[0] / ul, u[1] / ul, u[2] / ul];
+const v = [ty * u[2] - tz * u[1], tz * u[0] - tx * u[2], tx * u[1] - ty * u[0]];
+const now = birth[i], before = birth[Math.max(0, i - 1)];
+const tone = toneOf(now, pts[i]);
+if (i > 0) {
+arc += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1], pts[i][2] - pts[i - 1][2]);
+if (link(pts[i - 1], pts[i], tone, 1.35, before * 2.4, now * 2.4, 0, before, now)) drawn++;
+}
+const radius = Math.max(cell, rad[i] * o.spread);
+for (let k = 0; k < o.strands; k++) {
+const angle = k / o.strands * 2 * Math.PI + arc * turns;
+const c = Math.cos(angle) * radius * 0.7, s2 = Math.sin(angle) * radius * 0.7;
+const q = [pts[i][0] + u[0] * c + v[0] * s2, pts[i][1] + u[1] * c + v[1] * s2, pts[i][2] + u[2] * c + v[2] * s2];
+if (previous[k]) link(previous[k], q, tone, 0.5, before * 2.4, now * 2.4, 0.07 * k, before, now);
+previous[k] = q;
+}
+if (o.ribs > 0.02 && arc >= nextRib) {
+nextRib = arc + ribGap;
+let last = null;
+for (let k = 0; k <= roundSteps; k++) {
+const angle = k / roundSteps * 2 * Math.PI;
+const q = [pts[i][0] + (u[0] * Math.cos(angle) + v[0] * Math.sin(angle)) * radius, pts[i][1] + (u[1] * Math.cos(angle) + v[1] * Math.sin(angle)) * radius, pts[i][2] + (u[2] * Math.cos(angle) + v[2] * Math.sin(angle)) * radius];
+if (last) link(last, q, tone, 0.5, now * 2.4, now * 2.4, 0.5, now, Math.min(1, now + 0.012));
+last = q;
+}
+}
+}
+glow(pts[pts.length - 1], toneOf(birth[birth.length - 1], pts[pts.length - 1]), 0.3 + o.tips, 0, birth[birth.length - 1]);
+glow(pts[0], toneOf(birth[0], pts[0]), 0.2 + o.tips * 0.8, 0, birth[0]);
+}
+return drawn > 0;
+};
 if (mode === 'network') return growNetwork();
-for (let i = 0; i < bundles; i++) {
-const start = place();
-if (!start) continue;
-const phase = random();
-const tone = random();
-const light = 0.5 + random() ** 1.3 * 0.8;
-const length = Math.round(steps * (0.6 + 0.55 * random()));
-if (mode === 'orbit') {
-const radius = (0.08 + random() ** 1.3 * 0.42) * space;
-const tilt = random() * TAU;
-const spin = (0.45 + complexity * 0.85) * (random() < 0.5 ? -1 : 1);
-const rings = 1 + Math.floor(random() * 2);
-for (let ring = 0; ring < rings; ring++) {
-const r0 = radius * (0.55 + ring * 0.38);
-const lean = tilt + ring * 0.7;
-const point = (s) => {
-const angle = phase * TAU + s * TAU * spin;
-const r = r0 * (0.5 + s * 0.5);
-return vertex(
-start[0] + Math.cos(angle) * r,
-start[1] + Math.sin(angle) * r * Math.sin(lean) + Math.sin(angle * 2) * r * 0.16,
-start[2] + Math.sin(angle) * r * Math.cos(lean),
-);
-};
-const turns = Math.round(length * 1.3);
-let a = point(0);
-for (let j = 1; j <= turns; j++) {
-const b = point(j / turns);
-if (open(...a)) link(a, b, tone * 0.7 + j / turns * 0.3, light, (j - 1) / turns, j / turns, phase + ring * 0.21);
-a = b;
-}
-if (open(...a)) glow(a, tone, light, phase);
-}
-continue;
-}
-if (mode === 'weave') {
-const axisCount = 46;
-const band = (i % 13) / 12;
-const warp = i % 2 === 0;
-const lane = (i % axisCount + 0.5) / axisCount;
-const point = (s) => {
-const u = warp ? s : lane;
-const v = warp ? lane : s;
-return vertex(
-min[0] + u * span[0],
-min[1] + v * span[1],
-min[2] + span[2] * (0.16 + band * 0.68 + Math.sin((u * 1.2 + v) * TAU * (1 + complexity) + band * 4) * 0.14),
-);
-};
-const cuts = Math.round(steps * 1.4);
-let a = point(0);
-for (let j = 1; j <= cuts; j++) {
-const b = point(j / cuts);
-if (open(...a)) link(a, b, band, light, (j - 1) / cuts, j / cuts, phase);
-if (open(...a) && i % 6 === 0 && j % 5 === 0) glow(a, band, light * 0.8, phase);
-a = b;
-}
-continue;
-}
-const fibres = 4 + Math.floor(random() * 5);
-for (let f = 0; f < fibres; f++) {
-const from = f === 0 ? start : vertex(start[0] + (random() - 0.5) * space * 0.03, start[1] + (random() - 0.5) * space * 0.03, start[2] + (random() - 0.5) * space * 0.03);
-if (!inside(...from)) continue;
-const end = follow(from, length, (i % 7) * 0.05, 0, tone, light * (0.75 + 0.25 * random()), phase + f * 0.03, 0.25);
-if (end && f === 0) glow(end, tone, light, phase);
-}
-}
+if (mode === 'skeleton' && growSkeleton()) return;
+growTree();
 }
 export function drawShell(draw, positions, colors, hide, palette, limit) {
 const count = positions.length / 3;

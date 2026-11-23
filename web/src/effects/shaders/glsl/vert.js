@@ -21,6 +21,10 @@ uniform sampler2D uExperimentShapes;
 uniform vec4 uExperimentShapeInfo;
 uniform vec4 uExperimentSim;
 uniform vec4 uChemistry;
+uniform vec4 uChemistryB;
+uniform vec4 uExperimentTint;
+uniform vec4 uImpossibleStyle;
+uniform vec4 uImpossibleMix;
 uniform vec4 uExperimentView;
 uniform vec4 uImpossible;
 uniform vec4 uRecursion;
@@ -110,9 +114,9 @@ float frLayerSubj(float k, vec2 g) {
 #define HEROSIZE uFr6.x
 #endif
 
-float chemistryWave(vec3 p, float frequency, float t) {
+float chemistryWave(vec3 p, float frequency, float t, float warp) {
 	vec3 flow = vec3(snoise(p * 1.1 + t * 0.03), snoise(p * 1.1 + 7.3 - t * 0.025), snoise(p * 1.1 + 13.1));
-	vec3 w = p * frequency + flow * 1.7;
+	vec3 w = p * frequency + flow * 1.7 * warp;
 	float s = cos(dot(w, vec3(0.93, 0.21, -0.3)) + t * 0.22)
 		+ cos(dot(w, vec3(-0.35, 0.88, 0.32)) - t * 0.18 + 1.7)
 		+ cos(dot(w, vec3(0.28, -0.41, 0.87)) + t * 0.14 + 3.1)
@@ -171,6 +175,34 @@ vec3 experimentYaw(vec3 p, float angle) {
 	float c = cos(angle);
 	float s = sin(angle);
 	return vec3(p.x * c - p.z * s, p.y, p.x * s + p.z * c);
+}
+
+vec3 experimentPalette(float t) {
+	t = clamp(t, 0.0, 1.0);
+	return t < 0.5 ? mix(uP0, uP1, t * 2.0) : mix(uP1, uP2, (t - 0.5) * 2.0);
+}
+
+vec3 viewForm(int id, vec3 p, vec3 n, int pointId, float yaw) {
+	vec3 c = uCen;
+	vec3 d = p - c;
+	if (id == 1) return experimentYaw(p, p.y * 2.4 + p.x * 0.8);
+	if (id == 2) return vec3(p.x + 0.3 * sin(p.y * 7.0), p.y * 0.85 + p.z * 0.35, -p.z * 0.35 + 0.47 * sin(p.x * 6.7 + p.y * 3.2));
+	if (id == 3) return c + d / max(length(d), 0.001) * 0.95;
+	if (id == 4) {
+		vec3 view = vec3(sin(yaw), 0.0, cos(yaw));
+		return p - view * dot(d, view) * 0.96;
+	}
+	if (id == 5) {
+		float h = experimentHash(pointId * 7 + 3);
+		vec3 dir = vec3(experimentHash(pointId * 11 + 5), experimentHash(pointId * 13 + 1), experimentHash(pointId * 17 + 9)) - 0.5;
+		return p + n * 0.2 + dir * 0.4 * (0.75 + 0.25 * sin(uTime * 1.3 + h * 6.28));
+	}
+	if (id == 6) return floor(p / 0.14 + 0.5) * 0.14;
+	if (id == 7) {
+		float k = 0.38 + 0.62 * abs(sin(p.y * 3.2));
+		return vec3(c.x + d.x * k, p.y, c.z + d.z * k);
+	}
+	return p;
 }
 
 void main() {
@@ -360,16 +392,18 @@ void main() {
 			float growth = clamp(colony, 0.0, 1.0);
 			vec4 spread = sampleExperimentField(int(aVis.z), 1);
 			float pulse = clamp(spread.z * maskV, 0.0, 1.0);
-			float wave = chemistryWave(base, uChemistry.z, uTime);
-			float reach = mix(1.9, 0.6, growth);
+			float wave = chemistryWave(base, uChemistry.z, uTime, uChemistryB.y);
+			float cover = uChemistryB.z;
+			float softness = mix(0.3, 2.2, uChemistryB.x);
+			float reach = mix(1.9, mix(0.95, 0.2, cover), growth);
 			float dome;
 			if (uChemistry.y < 0.5) {
-				chemBody = smoothstep(reach, reach + 0.14, wave);
-				dome = smoothstep(reach - 0.1, reach + 0.9, wave);
+				chemBody = smoothstep(reach, reach + 0.14 * softness, wave);
+				dome = smoothstep(reach - 0.1 * softness, reach + 0.9, wave);
 				chemCore = smoothstep(reach + 0.3, reach + 0.85, wave);
 			} else {
-				float width = (uChemistry.y < 1.5 ? 0.2 : 0.05) * growth;
-				chemBody = 1.0 - smoothstep(width, width + (uChemistry.y < 1.5 ? 0.16 : 0.1), abs(wave));
+				float width = (uChemistry.y < 1.5 ? 0.2 : 0.05) * mix(0.5, 1.7, cover) * growth;
+				chemBody = 1.0 - smoothstep(width, width + (uChemistry.y < 1.5 ? 0.16 : 0.1) * softness, abs(wave));
 				dome = chemBody;
 				chemCore = smoothstep(0.55, 1.0, chemBody);
 			}
@@ -394,31 +428,33 @@ void main() {
 		float turn = fract(uExperimentView.x / 6.2831853) * 3.0;
 		float width = mix(0.4, 0.9, uImpossible.z);
 		int pointId = int(floor(aIdx * uExperimentView.w + 0.5));
-		float lag = 0.5 + experimentHash(pointId * 29 + 7);
+		float lag = 1.0 - uImpossible.y * 0.5 + experimentHash(pointId * 29 + 7) * uImpossible.y;
 		float first = 1.0 - smoothstep(0.06, width, min(turn, 3.0 - turn) * lag);
 		float second = 1.0 - smoothstep(0.06, width, abs(turn - 1.0) * lag);
 		float third = 1.0 - smoothstep(0.06, width, abs(turn - 2.0) * lag);
-		shiftGlow = min(1.0, 4.0 * (first * (1.0 - first) + second * (1.0 - second) + third * (1.0 - third))) * uImpossible.x * maskV;
-		float yaw = base.y * 2.4 + base.x * 0.8;
-		vec3 targetA = base;
-		vec3 targetB = experimentYaw(base, yaw);
-		vec3 targetC = vec3(base.x + 0.3 * sin(base.y * 7.0), base.y * 0.85 + base.z * 0.35, -base.z * 0.35 + 0.47 * sin(base.x * 6.7 + base.y * 3.2));
+		shiftGlow = min(1.0, 4.0 * (first * (1.0 - first) + second * (1.0 - second) + third * (1.0 - third))) * uImpossibleMix.w * uImpossible.x * maskV;
+		vec3 formNormal = uMorph < 0.9999 ? mix(aNormal, aNormalB, uMorph) : aNormalB;
+		formNormal = length(formNormal) > 0.0 ? normalize(formNormal) : vec3(0.0, 1.0, 0.0);
+		int idA = int(uImpossibleStyle.x + 0.5), idB = int(uImpossibleStyle.y + 0.5), idC = int(uImpossibleStyle.z + 0.5);
+		vec3 targetA = base + (viewForm(idA, base, formNormal, pointId, uExperimentView.x) - base) * uImpossibleMix.x;
+		vec3 targetB = base + (viewForm(idB, base, formNormal, pointId, uExperimentView.x) - base) * uImpossibleMix.y;
+		vec3 targetC = base + (viewForm(idC, base, formNormal, pointId, uExperimentView.x) - base) * uImpossibleMix.z;
 		int q = int(min(floor((float(pointId) + 0.5) * uExperimentShapeInfo.x / max(1.0, uExperimentView.w)), uExperimentShapeInfo.x - 1.0));
 		int flags = int(uExperimentShapeInfo.z);
 		int rows = int(uExperimentShapeInfo.y);
-		if (first > 0.0001 && (flags % 2) == 1) {
+		if (idA == 8 && first > 0.0001 && (flags % 2) == 1) {
 			vec4 sampleA = texelFetch(uExperimentShapes, ivec2(q % 256, q / 256), 0);
 			targetA = sampleA.xyz + uCen;
 			sculptColor += experimentColor(sampleA.w) * first;
 			sculptMix += first;
 		}
-		if (second > 0.0001 && ((flags / 2) % 2) == 1) {
+		if (idB == 8 && second > 0.0001 && ((flags / 2) % 2) == 1) {
 			vec4 sampleB = texelFetch(uExperimentShapes, ivec2(q % 256, q / 256 + rows), 0);
 			targetB = sampleB.xyz + uCen;
 			sculptColor += experimentColor(sampleB.w) * second;
 			sculptMix += second;
 		}
-		if (third > 0.0001 && flags >= 4) {
+		if (idC == 8 && third > 0.0001 && flags >= 4) {
 			vec4 sampleC = texelFetch(uExperimentShapes, ivec2(q % 256, q / 256 + 2 * rows), 0);
 			targetC = sampleC.xyz + uCen;
 			sculptColor += experimentColor(sampleC.w) * third;
@@ -551,13 +587,14 @@ void main() {
 	float rim = smoothstep(0.05, 0.21, wound) * (1.0 - smoothstep(0.24, 0.65, wound));
 	vColor = mix(col, sculptColor, sculptMix) * uBright * (1.0 + uBeat * 0.3) * vis;
 	vColor *= (1.0 - 0.32 * wound - 0.2 * copyShade) * (1.0 - bite);
-	vColor += (mix(uP1, uP2, 0.65) * rim * uExperimentSim.z * 0.65 + uP2 * autoLight * 0.38) * uBright * vis;
+	vColor += (mix(uP1, uP2, 0.65) * rim * uExperimentSim.z * 0.65 + experimentPalette(uExperimentTint.x) * autoLight * 0.38) * uBright * vis;
 	if (uChemistry.x > 0.001) {
 		float pigment = chemBody * uExperimentSim.y;
-		vec3 dye = mix(uP1, uP2, chemCore) * uBright * vis;
+		float hue = uExperimentTint.z;
+		vec3 dye = mix(experimentPalette(hue + chemCore * 0.4), col * 1.6, uExperimentTint.w) * uBright * vis;
 		vColor = mix(vColor * (1.0 - 0.38 * uExperimentSim.y), vColor * 0.4 + dye * 1.15, pigment);
-		vColor += uP2 * chemRim * uExperimentSim.y * (0.4 + 0.9 * uChemistry.w + uBeat * 0.4) * uBright * vis;
-		experimentScale *= 1.0 + chemBody * 0.22 + chemRim * 0.38;
+		vColor += experimentPalette(hue + 0.45) * chemRim * uExperimentSim.y * (0.4 + 0.9 * uChemistry.w + uBeat * 0.4) * uBright * vis;
+		experimentScale *= 1.0 + chemBody * 0.44 * uChemistryB.w + chemRim * 0.76 * uChemistryB.w;
 	}
 	vColor += uP2 * shiftGlow * 0.1 * uBright * vis;
 	experimentScale *= (1.0 + rim * 0.23 + shiftGlow * 0.14) * (1.0 - bite * 0.78);

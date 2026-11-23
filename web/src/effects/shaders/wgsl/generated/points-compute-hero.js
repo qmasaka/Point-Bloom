@@ -4,6 +4,10 @@ struct Frame {
 	uExperimentShapeInfo: vec4f,
 	uExperimentSim: vec4f,
 	uChemistry: vec4f,
+	uChemistryB: vec4f,
+	uExperimentTint: vec4f,
+	uImpossibleStyle: vec4f,
+	uImpossibleMix: vec4f,
 	uExperimentView: vec4f,
 	uImpossible: vec4f,
 	uRecursion: vec4f,
@@ -1614,12 +1618,13 @@ fn frLayerSubj(k_in: f32, g_in: vec2f) -> f32 {
 	return select(0.0, 1.0, (textureLoad(frTex, vec3i(i32(p.x), i32(p.y), layer).xy, vec3i(i32(p.x), i32(p.y), layer).z, 0).a > 0.5));
 }
 
-fn chemistryWave(p_in: vec3f, frequency_in: f32, t_in: f32) -> f32 {
+fn chemistryWave(p_in: vec3f, frequency_in: f32, t_in: f32, warp_in: f32) -> f32 {
 	var p: vec3f = p_in;
 	var frequency: f32 = frequency_in;
 	var t: f32 = t_in;
+	var warp: f32 = warp_in;
 	var flow: vec3f = vec3f(snoise(((p * 1.1) + (t * 0.03))), snoise((((p * 1.1) + 7.3) - (t * 0.025))), snoise(((p * 1.1) + 13.1)));
-	var w: vec3f = ((p * frequency) + (flow * 1.7));
+	var w: vec3f = ((p * frequency) + ((flow * 1.7) * warp));
 	var s: f32 = (((((cos((dot(w, vec3f(0.93, 0.21, -0.3)) + (t * 0.22))) + cos(((dot(w, vec3f(-0.35, 0.88, 0.32)) - (t * 0.18)) + 1.7))) + cos(((dot(w, vec3f(0.28, -0.41, 0.87)) + (t * 0.14)) + 3.1))) + cos(((dot(w, vec3f(-0.71, -0.52, -0.47)) - (t * 0.16)) + 4.6))) + cos(((dot(w, vec3f(0.52, 0.61, -0.6)) + (t * 0.2)) + 2.3))) + cos(((dot(w, vec3f(0.12, -0.83, -0.54)) - (t * 0.12)) + 5.4)));
 	return (s * 0.4082);
 }
@@ -1693,6 +1698,48 @@ fn experimentYaw(p_in: vec3f, angle_in: f32) -> vec3f {
 	var c: f32 = cos(angle);
 	var s: f32 = sin(angle);
 	return vec3f(((p.x * c) - (p.z * s)), p.y, ((p.x * s) + (p.z * c)));
+}
+
+fn experimentPalette(t_in: f32) -> vec3f {
+	var t: f32 = t_in;
+	t = clamp(t, 0.0, 1.0);
+	return select(mix(fr.uP1, fr.uP2, (((t - 0.5)) * 2.0)), mix(fr.uP0, fr.uP1, (t * 2.0)), (t < 0.5));
+}
+
+fn viewForm(id__in: i32, p_in: vec3f, n_in: vec3f, pointId_in: i32, yaw_in: f32) -> vec3f {
+	var id_: i32 = id__in;
+	var p: vec3f = p_in;
+	var n: vec3f = n_in;
+	var pointId: i32 = pointId_in;
+	var yaw: f32 = yaw_in;
+	var c: vec3f = fr.uCen;
+	var d: vec3f = (p - c);
+	if ((id_ == 1)) {
+		return experimentYaw(p, ((p.y * 2.4) + (p.x * 0.8)));
+	}
+	if ((id_ == 2)) {
+		return vec3f((p.x + (0.3 * sin((p.y * 7.0)))), ((p.y * 0.85) + (p.z * 0.35)), ((-p.z * 0.35) + (0.47 * sin(((p.x * 6.7) + (p.y * 3.2))))));
+	}
+	if ((id_ == 3)) {
+		return (c + ((d / max(length(d), 0.001)) * 0.95));
+	}
+	if ((id_ == 4)) {
+		var view: vec3f = vec3f(sin(yaw), 0.0, cos(yaw));
+		return (p - ((view * dot(d, view)) * 0.96));
+	}
+	if ((id_ == 5)) {
+		var h: f32 = experimentHash(((pointId * 7) + 3));
+		var dir: vec3f = (vec3f(experimentHash(((pointId * 11) + 5)), experimentHash(((pointId * 13) + 1)), experimentHash(((pointId * 17) + 9))) - 0.5);
+		return ((p + (n * 0.2)) + ((dir * 0.4) * ((0.75 + (0.25 * sin(((fr.uTime * 1.3) + (h * 6.28))))))));
+	}
+	if ((id_ == 6)) {
+		return (floor(((p / 0.14) + 0.5)) * 0.14);
+	}
+	if ((id_ == 7)) {
+		var k: f32 = (0.38 + (0.62 * abs(sin((p.y * 3.2)))));
+		return vec3f((c.x + (d.x * k)), p.y, (c.z + (d.z * k)));
+	}
+	return p;
 }
 
 fn main_() {
@@ -1851,13 +1898,14 @@ fn main_() {
 	var rim: f32 = (smoothstep(0.05, 0.21, wound) * ((1.0 - smoothstep(0.24, 0.65, wound))));
 	vColor = (((mix(col, sculptColor, sculptMix) * fr.uBright) * ((1.0 + (fr.uBeat * 0.3)))) * vis);
 	vColor *= vec3f(((((1.0 - (0.32 * wound)) - (0.2 * copyShade))) * ((1.0 - bite))));
-	vColor += (((((((mix(fr.uP1, fr.uP2, 0.65) * rim) * fr.uExperimentSim.z) * 0.65) + ((fr.uP2 * autoLight) * 0.38))) * fr.uBright) * vis);
+	vColor += (((((((mix(fr.uP1, fr.uP2, 0.65) * rim) * fr.uExperimentSim.z) * 0.65) + ((experimentPalette(fr.uExperimentTint.x) * autoLight) * 0.38))) * fr.uBright) * vis);
 	if ((fr.uChemistry.x > 0.001)) {
 		var pigment: f32 = (chemBody * fr.uExperimentSim.y);
-		var dye: vec3f = ((mix(fr.uP1, fr.uP2, chemCore) * fr.uBright) * vis);
+		var hue: f32 = fr.uExperimentTint.z;
+		var dye: vec3f = ((mix(experimentPalette((hue + (chemCore * 0.4))), (col * 1.6), fr.uExperimentTint.w) * fr.uBright) * vis);
 		vColor = mix((vColor * ((1.0 - (0.38 * fr.uExperimentSim.y)))), ((vColor * 0.4) + (dye * 1.15)), pigment);
-		vColor += (((((fr.uP2 * chemRim) * fr.uExperimentSim.y) * (((0.4 + (0.9 * fr.uChemistry.w)) + (fr.uBeat * 0.4)))) * fr.uBright) * vis);
-		experimentScale *= ((1.0 + (chemBody * 0.22)) + (chemRim * 0.38));
+		vColor += (((((experimentPalette((hue + 0.45)) * chemRim) * fr.uExperimentSim.y) * (((0.4 + (0.9 * fr.uChemistry.w)) + (fr.uBeat * 0.4)))) * fr.uBright) * vis);
+		experimentScale *= ((1.0 + ((chemBody * 0.44) * fr.uChemistryB.w)) + ((chemRim * 0.76) * fr.uChemistryB.w));
 	}
 	vColor += ((((fr.uP2 * shiftGlow) * 0.1) * fr.uBright) * vis);
 	experimentScale *= ((((1.0 + (rim * 0.23)) + (shiftGlow * 0.14))) * ((1.0 - (bite * 0.78))));

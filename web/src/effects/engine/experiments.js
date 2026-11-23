@@ -8,6 +8,7 @@ const SHAPE_WIDTH = 256;
 const SHAPE_LIMIT = 65536;
 const ANCHORS = 12;
 const TAU = Math.PI * 2;
+const VIEW_FORMS = { none: 0, twist: 1, wave: 2, sphere: 3, flat: 4, dust: 5, cubes: 6, vase: 7, photo: 8 };
 function copyAnchors({ aTarget, aVis, aHide }) {
 const candidates = [];
 const count = Math.min(192, aTarget.count);
@@ -108,7 +109,7 @@ this.emit();
 _experimentShapesTick(layers, geometry, key) {
 const u = this.shared;
 const photos = layers.impossible.on ? this._parallaxPhotos || [] : [];
-const alternate = photos.some(Boolean);
+const alternate = layers.impossible.on && ['a', 'b', 'c'].some((key, i) => layers.impossible[key] === 'photo' && photos[i]);
 const recursive = layers.recursiveAnatomy.on;
 if (!alternate && !recursive) {
 this._clearExperimentShapes();
@@ -167,22 +168,27 @@ if (sculpt.on || recursive.on || auto.on || scars || skin.on) this.points.update
 let yaw = 0;
 if (sculpt.on) {
 const view = this.points.worldToLocal((this._experimentView ||= new THREE.Vector3()).copy(cam.position));
-yaw = Math.atan2(view.x, view.z);
+yaw = Math.atan2(view.x, view.z) - sculpt.offset * TAU / 360;
 this._parallaxYaw = yaw;
 }
 const zoom = clamp((recursive.revealAt + 2.5 - this.app.nav.distance) / 5, 0, 1);
 const reveal = zoom * zoom * (3 - 2 * zoom);
 u.uExperimentView.value.set(yaw, 0, reveal, g.attributes.position.count);
-u.uImpossible.value.set(Math.min(1, gain(sculpt)), 0, sculpt.blend, sculpt.arc);
+u.uImpossible.value.set(Math.min(1, gain(sculpt)), sculpt.spread, sculpt.blend, sculpt.arc);
+const form = (id) => VIEW_FORMS[id] ?? 0;
+u.uImpossibleStyle.value.set(form(sculpt.a), form(sculpt.b), form(sculpt.c), 0);
+u.uImpossibleMix.value.set(sculpt.powerA, sculpt.powerB, sculpt.powerC, sculpt.shine);
 u.uRecursion.value.set(gain(recursive), recursive.levels, recursive.scale, recursive.density);
 u.uRecursionStyle.value.set(recursive.copies, recursive.spread, recursive.rotation * TAU / 360, { surface: 0, ring: 1, spiral: 2 }[recursive.layout] ?? 0);
 u.uRecursionLook.value.set(recursive.detail, recursive.ink, 0, 0);
 const key = this.cloudKey;
 this._experimentShapesTick(layers, g, key);
 const enabled = scars || [auto, skin].some((l) => l.on && l.amount > 0);
-u.uExperimentSim.value.set(enabled ? 1 : 0, skin.ink, scar.ink, 0.30 * Math.min(1, gains.autophagy));
+u.uExperimentSim.value.set(enabled ? 1 : 0, skin.ink, scar.ink, auto.ink * Math.min(1, gains.autophagy));
+u.uExperimentTint.value.set(auto.hue, 0, skin.hue, skin.dye === 'model' ? 1 : 0);
 const look = CHEMISTRY[skin.style] || CHEMISTRY.spots;
-u.uChemistry.value.set(skin.on && skin.amount > 0 ? look.lift * skin.growth * 0.1 : 0, look.shape, look.freq / skin.scale, look.glow);
+u.uChemistry.value.set(skin.on && skin.amount > 0 ? look.lift * skin.growth * 0.1 : 0, look.shape, look.freq / skin.scale, look.glow * skin.rim);
+u.uChemistryB.value.set(skin.soft, skin.warp, skin.cover, skin.dots);
 if (!enabled) {
 if (this._experimentField) {
 this._experimentField.dispose();

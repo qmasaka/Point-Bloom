@@ -736,12 +736,18 @@ s.pick.firstElementChild && (s.pick.firstElementChild.style.display = thumbs[i] 
 }
 });
 };
+const keys = ['a', 'b', 'c'];
 const live = () => {
 if (!row.isConnected) return clearInterval(timer);
 const active = engine.parallaxActiveSlot();
-slots.forEach((s, i) => s.slot.classList.toggle('is-live', i === active));
+slots.forEach((s, i) => {
+s.slot.hidden = L[keys[i]] !== 'photo';
+s.slot.classList.toggle('is-live', i === active);
+});
+row.hidden = slots.every((s) => s.slot.hidden);
 };
 const timer = setInterval(live, 140);
+live();
 app.bus.on('fx', refresh);
 refresh();
 } else if (ex.type === 'select') {

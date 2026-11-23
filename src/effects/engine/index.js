@@ -48,6 +48,7 @@ export class EffectsEngine {
 		}
 		causalWounds.on = false;
 		this.state.layers.links.on = false;
+		if (!['growth', 'network', 'skeleton'].includes(this.state.layers.inners.mode)) this.state.layers.inners.mode = 'growth';
 		phaseInterference.on = false;
 		if (reactionSkin.trigger !== 'beat') reactionSkin.trigger = 'manual';
 		{

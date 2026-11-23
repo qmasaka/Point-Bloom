@@ -88,7 +88,7 @@ The idea comes from TouchDesigner POPs: a chain of independent operators over a 
 | **Digital** | Voxels, Glitch, Datamosh |
 | **Graphics** | Shadow on the wall, Slice, Time trails, Echo, Tracking frames |
 | **Control** | Cursor, Brush (watercolor on the shape), Hands (camera) |
-| **Experiments** | Hyperspace, Screen, Inners (growing branches, a neural network, glowing threads), Hunger, Chemistry (pattern colonies growing over the surface), Parallax (a different photo for each camera angle). Scars is a brush, Phase is a morph transition, and Fractal is in the Lab. |
+| **Experiments** | Hyperspace, Screen, Inners (growing branches, a neural network, a skeleton), Absorption, Pattern (colonies growing over the surface), Parallax (a different look of the shape from each side). Scars is a brush, Phase is a morph transition, and Fractal is in the Lab. |
 
 See the [experiments guide](docs/EXPERIMENTS.md) for controls and implementation details (in Russian).
 

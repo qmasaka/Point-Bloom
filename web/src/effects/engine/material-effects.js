@@ -200,16 +200,20 @@ const projection = screen && vscreen.mode === 'project' ? Math.floor(now * 12) :
 const maskVer = cut ? [imprint.version, voidPrint.mode, voidPrint.depth, voidPrint.history].join(':') : '';
 const removed = cut && (voidPrint.mode === 'negative' ? (x, y, z) => !cut(x, y, z) : cut);
 const ghost = inners.on && inners.shell === 'ghost';
-const innerShape = [volume?.version, pal, inners.mode, inners.density, inners.complexity, maskVer,
+const innerShape = [volume?.version, pal, inners.mode, inners.density, inners.complexity, inners.roots, inners.reach, inners.trunk, inners.tips, inners.links, inners.bow, inners.ribs, inners.strands, inners.twist, inners.spread, inners.prune, inners.glow, inners.hue, inners.tone, maskVer,
 screen?.version, screen && vscreen.mode, screen && vscreen.scale, screen && vscreen.rotate, screen && vscreen.bright, screen && vscreen.mix, projection].join(':');
 const innerKey = innerShape + ':' + (media ? Math.floor(now * 8) : '');
 const hasInner = present(root, 'inners', innerKey, inners.on
 ? (draw) => drawInners(draw, volume, inners, palette, removed, screen && makeScreenColor(screen, vscreen, points, viewport, this.shared))
 : null, now, innerShape);
 const anim = this.app.anim;
-const growing = inners.mode === 'growth' || inners.mode === 'network';
-const cycle = growing ? growthCycle(now, root.userData.inners.started, inners.flow ?? 1, inners.repeat ?? 'loop') : null;
-if (hasInner) pulseMaterial(root.userData.inners, now, inners.pulse ?? 0.7, inners.flow ?? 1, cycle);
+const cycle = growthCycle(now, root.userData.inners.started, inners.flow ?? 1, inners.repeat ?? 'loop');
+if (hasInner) {
+const inner = root.userData.inners;
+inner.parts.points.material.size = 0.03 * (inners.bead ?? 1);
+inner.parts.nodes.material.size = 0.075 * (inners.bead ?? 1);
+pulseMaterial(inner, now, inners.pulse ?? 0.7, inners.flow ?? 1, cycle);
+}
 const attrs = this.geometry.attributes;
 present(root, 'shell', [ghost, pal, volume?.version, this.cloudKey, attrs.aTarget.count, Math.round(this.morph * 50), anim.has ? Math.floor(anim.time * 12) : 0].join(':'), ghost
 ? (draw) => drawShell(draw, attrs.aTarget.array, attrs.aColor.array, attrs.aHide.array, palette, 16000)
