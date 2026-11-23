@@ -1416,6 +1416,7 @@ export default {
 		'Лежит перед сборкой, с': 'Stays down before reassembly, s',
 		'Снос': 'Drift',
 		'Грубые цвета': 'Coarse colors',
+		'Затухание упавших': 'Fade of fallen pieces',
 	},
 	uk: {
 		'Внутренности': 'Нутрощі',
@@ -2834,6 +2835,7 @@ export default {
 		'Лежит перед сборкой, с': 'Лежить перед збиранням, с',
 		'Снос': 'Знос',
 		'Грубые цвета': 'Грубі кольори',
+		'Затухание упавших': 'Згасання впалих',
 	},
 	es: {
 		'Внутренности': 'Interior',
@@ -4252,6 +4254,7 @@ export default {
 		'Лежит перед сборкой, с': 'Se queda antes de reunirse, s',
 		'Снос': 'Deriva',
 		'Грубые цвета': 'Colores bastos',
+		'Затухание упавших': 'Atenuación de los caídos',
 	},
 	de: {
 		'Внутренности': 'Innenleben',
@@ -5670,5 +5673,6 @@ export default {
 		'Лежит перед сборкой, с': 'Bleibt vor dem Zusammensetzen liegen, s',
 		'Снос': 'Drift',
 		'Грубые цвета': 'Grobe Farben',
+		'Затухание упавших': 'Verblassen der Gefallenen',
 	},
 };

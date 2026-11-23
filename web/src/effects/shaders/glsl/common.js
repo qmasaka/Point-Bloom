@@ -29,6 +29,9 @@ uniform vec3 uScopeC;
 float gDepth = 0.5;
 
 float gMorphLT = 1.0;
+float gCrumbleLive = 0.0;
+float gCrumbleFade = 0.0;
+vec3 gCrumblePos = vec3(0.0);
 float gDisK = 0.0;
 float gDepthG = 0.0;
 vec3 gNormal = vec3(0.0);
@@ -1292,9 +1295,11 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		float seed = hash11(aIdx * 1234.56 + 17.1);
 		float seed2 = hash11(aIdx * 2345.67 + 39.3);
 		float seed3 = hash11(aIdx * 3456.78 + 81.7);
+		bool flatSource = uCrumble.x > 1.5;
+		if (crumble && flatSource) cb = vec3(base.xy, 0.0);
 		if (crumble && chunkSize > 0.004) {
-			vec3 cell = floor(base / chunkSize);
-			cb = (cell + 0.5) * chunkSize;
+			vec3 cell = flatSource ? vec3(floor(base.xy / chunkSize), 0.0) : floor(base / chunkSize);
+			cb = flatSource ? vec3((cell.xy + 0.5) * chunkSize, 0.0) : (cell + 0.5) * chunkSize;
 			float cid = dot(cell, vec3(1.0, 57.0, 113.0));
 			seed = hash11(cid * 1.37 + 17.1);
 			seed2 = hash11(cid * 2.11 + 39.3);
@@ -1317,8 +1322,11 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		}
 		vec3 radd = normalize(cb + vec3(1e-3));
 		vec3 tang = normalize(vec3(-cb.z, 0.0, cb.x) + vec3(1e-3, 0.0, 0.0));
-		float speedScale = crumble ? 0.45 : 1.0;
-		vec3 v0 = (radd * (0.5 + seed * 1.1) + tang * uPhysP.z * (0.3 + seed3 * 0.9)) * uPhysP.x * speedScale;
+		float speedScale = crumble ? 0.7 : 1.0;
+		float scatterAngle = seed3 * 6.2831853;
+		vec3 scatterDir = vec3(cos(scatterAngle), 0.0, sin(scatterAngle));
+		vec3 throwDir = crumble ? scatterDir * (0.4 + 1.5 * seed) + radd * 0.2 : radd * (0.5 + seed * 1.1);
+		vec3 v0 = (throwDir + tang * uPhysP.z * (0.3 + seed3 * 0.9)) * uPhysP.x * speedScale;
 		float vy0 = (0.5 + seed2 * 1.0) * uPhysP.x * speedScale;
 		float g = uPhysics.y * 3.8;
 		float floorY = uYR.x - 0.04;
@@ -1354,6 +1362,7 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			float ct = cos(tumble);
 			float st = sin(tumble);
 			vec3 offset = base - cb;
+			if (flatSource) offset.z = mix(base.z, 0.0, smoothstep(0.0, 0.4, pt));
 			offset.xz = vec2(offset.x * ct - offset.z * st, offset.x * st + offset.z * ct);
 			offset.xy = vec2(offset.x * ct - offset.y * st, offset.x * st + offset.y * ct);
 			pPhys += offset;
@@ -1375,6 +1384,11 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 			target = mix(target, pos, eA);
 			target += side * sin(eA * 3.14159) * 0.45 * (seed3 - 0.3);
 			target.y += sin(eA * 3.14159) * 0.5 * (0.4 + seed);
+		}
+		if (crumble) {
+			gCrumbleLive = live;
+			gCrumblePos = target;
+			gCrumbleFade = live * smoothstep(1.6, 5.5, pt) * uCrumble.w * (1.0 - clamp(uAsm * 1.6, 0.0, 1.0));
 		}
 		pos = target;
 	}

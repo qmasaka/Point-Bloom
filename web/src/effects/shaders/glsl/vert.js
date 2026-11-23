@@ -986,6 +986,10 @@ void main() {
 		}
 	}
 #endif
+	if (gCrumbleLive > 0.5) {
+		pos = gCrumblePos;
+		vColor *= 1.0 - gCrumbleFade * 0.85;
+	}
 #ifdef SHADOW
 
 	float shA = 0.0;
@@ -1044,7 +1048,7 @@ void main() {
 #ifdef SHADOW
 	s *= mix(1.0, 2.8, uShd.y);
 #endif
-	gl_PointSize = clamp(s * experimentScale, 1.0, 95.0);
+	gl_PointSize = clamp(s * experimentScale * (1.0 - 0.45 * gCrumbleFade), 1.0, 95.0);
 	if (gScopeD > 0.97 || dkv > 0.97 || gDrop > 0.5 || gGrow < 0.03 || gHypF > 0.97 || bite > 0.97) {
 		gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;

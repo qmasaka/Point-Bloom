@@ -140,12 +140,12 @@ export class InteractionPart {
 
 	moshStyle(L, style) {
 		const P = {
-			bleed: { trigger: 'timer', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, coh: 0.6, void: 1 },
+			bleed: { trigger: 'always', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, coh: 0.6, void: 1 },
 			melt: { trigger: 'always', block: '16', detail: 0.05, inertia: 0.8, leak: 0.12, smooth: 1, drift: 0.3, angle: 270, flow: 0.7, chroma: 0.35, quant: 0, coh: 0.6, void: 1 },
-			blocks: { trigger: 'timer', period: 2.5, recover: 1.5, block: '32', detail: 0.35, inertia: 0.3, leak: 0.4, smooth: 0, drift: 0.2, angle: 0, flow: 0, chroma: 0.15, quant: 0.6, stale: 0.25, jit: 0.5, coh: 0.6, void: 1 },
+			blocks: { trigger: 'always', period: 2.5, recover: 1.5, block: '32', detail: 0.35, inertia: 0.3, leak: 0.4, smooth: 0, drift: 0.2, angle: 0, flow: 0, chroma: 0.15, quant: 0.6, stale: 0.25, jit: 0.5, coh: 0.6, void: 1 },
 			trails: { trigger: 'always', block: '16', inertia: 0.7, smooth: 1, drift: 0.2, angle: 90, flow: 0.6, chroma: 0.25, quant: 0, coh: 0.8, void: 1, trail: 0.7 },
-			broken: { trigger: 'timer', period: 2.5, recover: 1.8, block: '32', detail: 0.3, inertia: 0.4, leak: 0.3, smooth: 0, drift: 0.2, angle: 0, flow: 0, chroma: 0.4, quant: 0.5, stale: 0.35, coh: 0.3, void: 1 },
-			scatter: { trigger: 'timer', period: 3, recover: 2.5, block: '16', detail: 0.1, inertia: 0.5, leak: 0.2, smooth: 0, drift: 0.1, angle: 270, flow: 0.1, chroma: 0.2, quant: 0.2, coh: 0.4, void: 1 },
+			broken: { trigger: 'always', period: 2.5, recover: 1.8, block: '32', detail: 0.3, inertia: 0.4, leak: 0.3, smooth: 0, drift: 0.2, angle: 0, flow: 0, chroma: 0.4, quant: 0.5, stale: 0.35, coh: 0.3, void: 1 },
+			scatter: { trigger: 'always', period: 3, recover: 2.5, block: '16', detail: 0.1, inertia: 0.5, leak: 0.2, smooth: 0, drift: 0.1, angle: 270, flow: 0.1, chroma: 0.2, quant: 0.2, coh: 0.4, void: 1 },
 		}[style];
 		if (!P) return;
 		Object.assign(L, P, { style });

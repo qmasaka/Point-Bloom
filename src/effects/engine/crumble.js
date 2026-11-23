@@ -48,7 +48,7 @@ export class CrumblePart {
 		C.beat = level.beat;
 		const packed = u.uCrumbleT.value;
 		for (let i = 0; i < BINS / 4; i++) packed[i].set(C.times[i * 4], C.times[i * 4 + 1], C.times[i * 4 + 2], C.times[i * 4 + 3]);
-		u.uCrumble.value.set(1, this._time, P.chunk, 0);
+		u.uCrumble.value.set(this.state.source === 'media' && this.pm?.ready ? 2 : 1, this._time, P.chunk, P.fade ?? 0.6);
 		u.uPhysics.value.set(Math.max(0.01, P.amount), P.gravity, P.bounce, P.wind);
 		u.uPhysP.value.set(P.burst, P.peel, P.swirl, 0);
 		u.uAsm.value = C.phase === 'asm' ? C.asm : 0;

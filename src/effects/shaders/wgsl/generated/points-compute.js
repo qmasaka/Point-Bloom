@@ -223,6 +223,9 @@ var<private> gScopeT: f32 = 0.0;
 var<private> gScopeD: f32 = 0.0;
 var<private> gDepth: f32 = 0.5;
 var<private> gMorphLT: f32 = 1.0;
+var<private> gCrumbleLive: f32 = 0.0;
+var<private> gCrumbleFade: f32 = 0.0;
+var<private> gCrumblePos: vec3f = vec3f(0.0);
 var<private> gDisK: f32 = 0.0;
 var<private> gDepthG: f32 = 0.0;
 var<private> gNormal: vec3f = vec3f(0.0);
@@ -1508,9 +1511,13 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		var seed: f32 = hash11(((aIdx * 1234.56) + 17.1));
 		var seed2: f32 = hash11(((aIdx * 2345.67) + 39.3));
 		var seed3: f32 = hash11(((aIdx * 3456.78) + 81.7));
+		var flatSource: bool = (fr.uCrumble.x > 1.5);
+		if ((crumble && flatSource)) {
+			cb = vec3f((*base).xy, 0.0);
+		}
 		if ((crumble && (chunkSize > 0.004))) {
-			var cell: vec3f = floor(((*base) / chunkSize));
-			cb = (((cell + 0.5)) * chunkSize);
+			var cell: vec3f = select(floor(((*base) / chunkSize)), vec3f(floor(((*base).xy / chunkSize)), 0.0), flatSource);
+			cb = select((((cell + 0.5)) * chunkSize), vec3f((((cell.xy + 0.5)) * chunkSize), 0.0), flatSource);
 			var cid: f32 = dot(cell, vec3f(1.0, 57.0, 113.0));
 			seed = hash11(((cid * 1.37) + 17.1));
 			seed2 = hash11(((cid * 2.11) + 39.3));
@@ -1533,8 +1540,11 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		}
 		var radd: vec3f = normalize((cb + vec3f(1e-3)));
 		var tang: vec3f = normalize((vec3f(-cb.z, 0.0, cb.x) + vec3f(1e-3, 0.0, 0.0)));
-		var speedScale: f32 = select(1.0, 0.45, crumble);
-		var v0: vec3f = (((((radd * ((0.5 + (seed * 1.1)))) + ((tang * fr.uPhysP.z) * ((0.3 + (seed3 * 0.9)))))) * fr.uPhysP.x) * speedScale);
+		var speedScale: f32 = select(1.0, 0.7, crumble);
+		var scatterAngle: f32 = (seed3 * 6.2831853);
+		var scatterDir: vec3f = vec3f(cos(scatterAngle), 0.0, sin(scatterAngle));
+		var throwDir: vec3f = select((radd * ((0.5 + (seed * 1.1)))), ((scatterDir * ((0.4 + (1.5 * seed)))) + (radd * 0.2)), crumble);
+		var v0: vec3f = ((((throwDir + ((tang * fr.uPhysP.z) * ((0.3 + (seed3 * 0.9)))))) * fr.uPhysP.x) * speedScale);
 		var vy0: f32 = ((((0.5 + (seed2 * 1.0))) * fr.uPhysP.x) * speedScale);
 		var g: f32 = (fr.uPhysics.y * 3.8);
 		var floorY: f32 = (fr.uYR.x - 0.04);
@@ -1569,6 +1579,9 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			var ct: f32 = cos(tumble);
 			var st: f32 = sin(tumble);
 			var offset: vec3f = ((*base) - cb);
+			if (flatSource) {
+				offset.z = mix((*base).z, 0.0, smoothstep(0.0, 0.4, pt));
+			}
 			{ let _sw20 = vec2f(((offset.x * ct) - (offset.z * st)), ((offset.x * st) + (offset.z * ct))); offset = vec3f(_sw20.x, offset.y, _sw20.y); }
 			{ let _sw21 = vec2f(((offset.x * ct) - (offset.y * st)), ((offset.x * st) + (offset.y * ct))); offset = vec3f(_sw21.x, _sw21.y, offset.z); }
 			pPhys += offset;
@@ -1590,6 +1603,11 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			target_ = mix(target_, pos, eA);
 			target_ += (((side * sin((eA * 3.14159))) * 0.45) * ((seed3 - 0.3)));
 			target_.y += ((sin((eA * 3.14159)) * 0.5) * ((0.4 + seed)));
+		}
+		if (crumble) {
+			gCrumbleLive = live;
+			gCrumblePos = target_;
+			gCrumbleFade = (((live * smoothstep(1.6, 5.5, pt)) * fr.uCrumble.w) * ((1.0 - clamp((fr.uAsm * 1.6), 0.0, 1.0))));
 		}
 		pos = target_;
 	}
@@ -2529,6 +2547,10 @@ fn main_() {
 			pos += (((((dirn * sdv) * fr.uScrD.y) * 0.45) * smask) * fr.uScr.x);
 		}
 	}
+	if ((gCrumbleLive > 0.5)) {
+		pos = gCrumblePos;
+		vColor *= vec3f((1.0 - (gCrumbleFade * 0.85)));
+	}
 	vD = disp;
 	var mv: vec4f = (fr.modelViewMatrix * vec4f(pos, 1.0));
 	gl_Position = (fr.projectionMatrix * mv);
@@ -2554,7 +2576,7 @@ fn main_() {
 	s *= (1.0 - (0.85 * gHypF));
 	s *= (((((1.0 + (gScopeT * fr.uScopeQ.y)) + ((gScopeG * fr.uScopeQ.z) * 2.5)) + (gDepthG * 0.8))) * ((1.0 - gScopeD)));
 	s *= select(0.73, ((0.73 * fr.uAtt) / max(-mv.z, (fr.uAtt * 0.1))), (fr.uAtt > 0.001));
-	gl_PointSize = clamp((s * experimentScale), 1.0, 95.0);
+	gl_PointSize = clamp(((s * experimentScale) * ((1.0 - (0.45 * gCrumbleFade)))), 1.0, 95.0);
 	if (((((((gScopeD > 0.97) || (dkv > 0.97)) || (gDrop > 0.5)) || (gGrow < 0.03)) || (gHypF > 0.97)) || (bite > 0.97))) {
 		gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);
 		gl_PointSize = 0.0;
