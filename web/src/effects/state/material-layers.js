@@ -2,13 +2,14 @@ export const MATERIAL_LAYERS = [
 {
 id: 'inners', group: 'Эксперименты', name: 'Внутренности', icon: 'cube-transparent',
 hint: 'Внутри формы растут светящиеся нити, по ним бегут импульсы. «Экран» окрашивает их кадром.',
-sound: false, noAmount: true, max: 1, def: { on: false, amount: 1, mode: 'flow', density: 0.7, complexity: 0.55, pulse: 0.7, flow: 1, shell: 'ghost' },
+sound: false, noAmount: true, max: 1, def: { on: false, amount: 1, mode: 'growth', density: 0.7, complexity: 0.55, pulse: 0.7, flow: 1, repeat: 'loop', shell: 'ghost' },
 extras: [
-{ key: 'mode', label: 'Рисунок', type: 'select', options: [['flow', 'Течение'], ['orbit', 'Орбиты'], ['growth', 'Ветвление'], ['weave', 'Переплетение']] },
+{ key: 'mode', label: 'Рисунок', type: 'select', options: [['growth', 'Рост', 'Ветви прорастают из корней и заполняют объём'], ['network', 'Нейросеть', 'Узлы и связи, сигнал расходится по сети'], ['flow', 'Течение', 'Пучки нитей по общему потоку'], ['orbit', 'Орбиты', 'Кольца и спирали'], ['weave', 'Переплетение', 'Ткань из нитей']] },
 { key: 'density', label: 'Плотность', min: 0, max: 1, step: 0.01 },
 { key: 'complexity', label: 'Сложность', min: 0, max: 1, step: 0.01 },
 { key: 'pulse', label: 'Импульсы', min: 0, max: 1, step: 0.01 },
 { key: 'flow', label: 'Скорость потока', min: 0.2, max: 3, step: 0.05, noNorm: true, unit: ' ×' },
+{ key: 'repeat', label: 'Рост', type: 'seg', options: [['loop', 'Заново'], ['hold', 'Остаётся']], when: ['mode', ['growth', 'network']] },
 { key: 'shell', label: 'Оболочка', type: 'seg', options: [['show', 'Видна'], ['ghost', 'Призрак'], ['hide', 'Скрыта']] },
 ],
 },

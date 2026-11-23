@@ -153,7 +153,7 @@ export const FX_LAYERS = [
 { key: 'wallBright', label: 'Яркость поверхности', min: 0, max: 1.5, step: 0.05, when: ['surface', ['on']] },
 { type: 'note', text: 'Отставание действует на эффекты, которые идут во времени (волны, вихри, глитч и другие): тень повторяет их с задержкой.' },
 ] },
-{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются стиль, цвет, маяки, число узлов и дальность связи', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: perf.isApple || perf.tier === 'high' ? 3500 : 2000, pulses: 'on', pulseSpeed: 1.6, mode: 'classic', colorMode: 'palette', beacons: 'on' }, extras: [
+{ id: 'links', hidden: true, group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются стиль, цвет, маяки, число узлов и дальность связи', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: perf.isApple || perf.tier === 'high' ? 3500 : 2000, pulses: 'on', pulseSpeed: 1.6, mode: 'classic', colorMode: 'palette', beacons: 'on' }, extras: [
 { key: 'mode', label: 'Стиль связей', type: 'select', options: [['classic', 'Классика: равномерная паутина'], ['neural', 'Нейросеть: синапсы с импульсами'], ['constellation', 'Созвездия: тонкие нити звёзд'], ['cyber', 'Киберпанк: лазерный стробоскоп'], ['elastic', 'Натяжение: свечение от длины']] },
 { key: 'colorMode', label: 'Цвет нитей', type: 'seg', options: [['palette', 'Палитра'], ['tension', 'Натяг'], ['neon', 'Неон'], ['rainbow', 'Радуга']] },
 { key: 'beacons', label: 'Огоньки на узлах', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] },

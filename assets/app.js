@@ -78080,13 +78080,14 @@ const MATERIAL_LAYERS = [
 {
 id: 'inners', group: 'Эксперименты', name: 'Внутренности', icon: 'cube-transparent',
 hint: 'Внутри формы растут светящиеся нити, по ним бегут импульсы. «Экран» окрашивает их кадром.',
-sound: false, noAmount: true, max: 1, def: { on: false, amount: 1, mode: 'flow', density: 0.7, complexity: 0.55, pulse: 0.7, flow: 1, shell: 'ghost' },
+sound: false, noAmount: true, max: 1, def: { on: false, amount: 1, mode: 'growth', density: 0.7, complexity: 0.55, pulse: 0.7, flow: 1, repeat: 'loop', shell: 'ghost' },
 extras: [
-{ key: 'mode', label: 'Рисунок', type: 'select', options: [['flow', 'Течение'], ['orbit', 'Орбиты'], ['growth', 'Ветвление'], ['weave', 'Переплетение']] },
+{ key: 'mode', label: 'Рисунок', type: 'select', options: [['growth', 'Рост', 'Ветви прорастают из корней и заполняют объём'], ['network', 'Нейросеть', 'Узлы и связи, сигнал расходится по сети'], ['flow', 'Течение', 'Пучки нитей по общему потоку'], ['orbit', 'Орбиты', 'Кольца и спирали'], ['weave', 'Переплетение', 'Ткань из нитей']] },
 { key: 'density', label: 'Плотность', min: 0, max: 1, step: 0.01 },
 { key: 'complexity', label: 'Сложность', min: 0, max: 1, step: 0.01 },
 { key: 'pulse', label: 'Импульсы', min: 0, max: 1, step: 0.01 },
 { key: 'flow', label: 'Скорость потока', min: 0.2, max: 3, step: 0.05, noNorm: true, unit: ' ×' },
+{ key: 'repeat', label: 'Рост', type: 'seg', options: [['loop', 'Заново'], ['hold', 'Остаётся']], when: ['mode', ['growth', 'network']] },
 { key: 'shell', label: 'Оболочка', type: 'seg', options: [['show', 'Видна'], ['ghost', 'Призрак'], ['hide', 'Скрыта']] },
 ],
 },
@@ -78285,7 +78286,7 @@ const FX_LAYERS = [
 { key: 'wallBright', label: 'Яркость поверхности', min: 0, max: 1.5, step: 0.05, when: ['surface', ['on']] },
 { type: 'note', text: 'Отставание действует на эффекты, которые идут во времени (волны, вихри, глитч и другие): тень повторяет их с задержкой.' },
 ] },
-{ id: 'links', group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются стиль, цвет, маяки, число узлов и дальность связи', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: perf.isApple || perf.tier === 'high' ? 3500 : 2000, pulses: 'on', pulseSpeed: 1.6, mode: 'classic', colorMode: 'palette', beacons: 'on' }, extras: [
+{ id: 'links', hidden: true, group: 'Графика', name: 'Связи', icon: 'share-network', hint: 'Светящиеся нити между соседними точками с бегущими огоньками. Настраиваются стиль, цвет, маяки, число узлов и дальность связи', max: 2, def: { on: false, amount: 1, band: 'beat', react: 0.5, range: 0.2, width: 1.8, count: perf.isApple || perf.tier === 'high' ? 3500 : 2000, pulses: 'on', pulseSpeed: 1.6, mode: 'classic', colorMode: 'palette', beacons: 'on' }, extras: [
 { key: 'mode', label: 'Стиль связей', type: 'select', options: [['classic', 'Классика: равномерная паутина'], ['neural', 'Нейросеть: синапсы с импульсами'], ['constellation', 'Созвездия: тонкие нити звёзд'], ['cyber', 'Киберпанк: лазерный стробоскоп'], ['elastic', 'Натяжение: свечение от длины']] },
 { key: 'colorMode', label: 'Цвет нитей', type: 'seg', options: [['palette', 'Палитра'], ['tension', 'Натяг'], ['neon', 'Неон'], ['rainbow', 'Радуга']] },
 { key: 'beacons', label: 'Огоньки на узлах', type: 'seg', options: [['on', 'Есть'], ['off', 'Нет']] },
@@ -86505,6 +86506,12 @@ en: {
 'Колонии узора растут по поверхности. Щёлкните по модели, чтобы посеять новую.': 'Pattern colonies grow across the surface. Click the model to plant a new one.',
 'Внутри формы растут светящиеся нити, по ним бегут импульсы. «Экран» окрашивает их кадром.': 'Glowing threads grow inside the shape and pulses run along them. Screen colors them with the frame.',
 'Назначьте фото углам камеры. Крутите сцену или включите вращение формы: виды сменяют друг друга по кругу.': 'Assign photos to camera angles. Orbit the scene or turn on shape rotation: the views follow one another in a loop.',
+'Заново': 'Repeat',
+'Ветви прорастают из корней и заполняют объём': 'Branches grow from roots and fill the volume',
+'Узлы и связи, сигнал расходится по сети': 'Nodes and links, the signal spreads across the network',
+'Пучки нитей по общему потоку': 'Bundles of threads in one flow',
+'Кольца и спирали': 'Rings and spirals',
+'Ткань из нитей': 'Woven threads',
 },
 uk: {
 'Внутренности': 'Нутрощі',
@@ -87815,6 +87822,12 @@ uk: {
 'Колонии узора растут по поверхности. Щёлкните по модели, чтобы посеять новую.': 'Колонії візерунка ростуть поверхнею. Клацніть модель, щоб посіяти нову.',
 'Внутри формы растут светящиеся нити, по ним бегут импульсы. «Экран» окрашивает их кадром.': 'Усередині форми ростуть світні нитки, по них біжать імпульси. «Екран» забарвлює їх кадром.',
 'Назначьте фото углам камеры. Крутите сцену или включите вращение формы: виды сменяют друг друга по кругу.': 'Призначте фото кутам камери. Крутіть сцену або ввімкніть обертання форми: види змінюють один одного по колу.',
+'Заново': 'Знову',
+'Ветви прорастают из корней и заполняют объём': 'Гілки проростають із коренів і заповнюють об’єм',
+'Узлы и связи, сигнал расходится по сети': 'Вузли й зв’язки, сигнал розходиться мережею',
+'Пучки нитей по общему потоку': 'Пучки ниток в одному потоці',
+'Кольца и спирали': 'Кільця й спіралі',
+'Ткань из нитей': 'Тканина з ниток',
 },
 es: {
 'Внутренности': 'Interior',
@@ -89125,6 +89138,12 @@ es: {
 'Колонии узора растут по поверхности. Щёлкните по модели, чтобы посеять новую.': 'Las colonias del patrón crecen por la superficie. Haz clic en el modelo para sembrar otra.',
 'Внутри формы растут светящиеся нити, по ним бегут импульсы. «Экран» окрашивает их кадром.': 'Dentro de la forma crecen hilos luminosos y por ellos corren pulsos. Pantalla los colorea con el fotograma.',
 'Назначьте фото углам камеры. Крутите сцену или включите вращение формы: виды сменяют друг друга по кругу.': 'Asigna fotos a los ángulos de la cámara. Gira la escena o activa la rotación de la forma: las vistas se suceden en círculo.',
+'Заново': 'Repetir',
+'Ветви прорастают из корней и заполняют объём': 'Las ramas brotan de las raíces y llenan el volumen',
+'Узлы и связи, сигнал расходится по сети': 'Nodos y enlaces, la señal se propaga por la red',
+'Пучки нитей по общему потоку': 'Haces de hilos en un mismo flujo',
+'Кольца и спирали': 'Anillos y espirales',
+'Ткань из нитей': 'Tejido de hilos',
 },
 de: {
 'Внутренности': 'Innenleben',
@@ -90435,6 +90454,12 @@ de: {
 'Колонии узора растут по поверхности. Щёлкните по модели, чтобы посеять новую.': 'Mustkolonien wachsen über die Oberfläche. Klicke auf das Modell, um eine neue zu setzen.',
 'Внутри формы растут светящиеся нити, по ним бегут импульсы. «Экран» окрашивает их кадром.': 'Im Inneren wachsen leuchtende Fäden, über die Impulse laufen. Bildschirm färbt sie mit dem Bild.',
 'Назначьте фото углам камеры. Крутите сцену или включите вращение формы: виды сменяют друг друга по кругу.': 'Weise den Kamerawinkeln Fotos zu. Drehe die Szene oder aktiviere die Formrotation: die Ansichten wechseln im Kreis.',
+'Заново': 'Wiederholen',
+'Ветви прорастают из корней и заполняют объём': 'Äste wachsen aus Wurzeln und füllen das Volumen',
+'Узлы и связи, сигнал расходится по сети': 'Knoten und Verbindungen, das Signal breitet sich im Netz aus',
+'Пучки нитей по общему потоку': 'Fadenbündel in einem gemeinsamen Fluss',
+'Кольца и спирали': 'Ringe und Spiralen',
+'Ткань из нитей': 'Gewebe aus Fäden',
 },
 };
 };
@@ -93377,7 +93402,7 @@ const { fitCount } = __req('src/effects/shapes/cloud-utils.js');
 const { recDefaults } = __req('src/effects/engine/recording.js');
 class KeyframesPart {
 _animLayers() {
-return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'links', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort', ...EXPERIMENT_IDS];
+return ['curl', 'spectrum', 'wave', 'twist', 'blast', 'flow', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'dissolve', 'gravity', 'scope', 'depth', 'explode', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort', ...EXPERIMENT_IDS];
 }
 animCapture() {
 const nav = this.app.nav;
@@ -93905,7 +93930,7 @@ A.keys = [
 ];
 A.clips = [
 { id: 'c_pr_5', layerId: 'slice', start: 0.0, dur: 4.0, fadeIn: 0.2, fadeOut: 0.8, amount: 1.0 },
-{ id: 'c_pr_6', layerId: 'links', start: 3.0, dur: 4.5, fadeIn: 0.8, fadeOut: 1.0, amount: 0.95 },
+{ id: 'c_pr_6', layerId: 'wave', start: 3.0, dur: 4.5, fadeIn: 0.8, fadeOut: 1.0, amount: 0.95 },
 { id: 'c_pr_7', layerId: 'glitch', start: 5.5, dur: 3.5, fadeIn: 0.4, fadeOut: 0.8, amount: 0.85 },
 { id: 'c_pr_8', layerId: 'bloom', start: 6.5, dur: 3.0, fadeIn: 0.5, fadeOut: 0.8, amount: 0.9 },
 ];
@@ -103817,6 +103842,8 @@ return (seed >>> 0) / 4294967296;
 __defs['src/effects/engine/material-drawing.js'] = function (__exports, __req) {
 'use strict';
 __def(__exports, 'MaterialDrawing', () => MaterialDrawing);
+__def(__exports, 'GROW_TIME', () => GROW_TIME);
+__def(__exports, 'growthCycle', () => growthCycle);
 __def(__exports, 'pulseMaterial', () => pulseMaterial);
 __def(__exports, 'makeScreenColor', () => makeScreenColor);
 __def(__exports, 'drawInners', () => drawInners);
@@ -103841,21 +103868,32 @@ this.faces = [[], []];
 this.points = [[], [], []];
 this.nodes = [[], [], []];
 }
-vertex(kind, p, color, light = 1, t = 0, phase = 0) {
+vertex(kind, p, color, light = 1, t = 0, phase = 0, birth = 0) {
 kind[0].push(...p);
 kind[1].push(color.r * light, color.g * light, color.b * light);
-if (kind[2]) kind[2].push(t, phase);
+if (kind[2]) kind[2].push(t, phase, birth);
 }
-segment(a, b, color, light = 1, t = 0, tEnd = t, phase = 0) {
-this.vertex(this.lines, a, color, light, t, phase);
-this.vertex(this.lines, b, color, light, tEnd, phase);
+segment(a, b, color, light = 1, t = 0, tEnd = t, phase = 0, birth = 0, birthEnd = birth) {
+this.vertex(this.lines, a, color, light, t, phase, birth);
+this.vertex(this.lines, b, color, light, tEnd, phase, birthEnd);
 }
 quad(a, b, c, d, color, light) {
 for (const p of [a, b, c, b, d, c]) this.vertex(this.faces, p, color, light);
 }
 }
 const FLOW_SPEED = 0.17;
-function pulseMaterial(part, now, strength, speed) {
+const GROW_TIME = 9;
+const HOLD_TIME = 4;
+const FADE_TIME = 2.5;
+function growthCycle(now, started, speed, repeat) {
+const elapsed = Math.max(0, now - started) * speed;
+const grow = GROW_TIME;
+if (repeat !== 'loop') return { reveal: Math.min(1.2, elapsed / grow), fade: 1 };
+const u = elapsed % (grow + HOLD_TIME + FADE_TIME);
+const out = (u - grow - HOLD_TIME) / FADE_TIME;
+return { reveal: Math.min(1.2, u / grow), fade: 1 - Math.min(1, Math.max(0, out)) ** 2 };
+}
+function pulseMaterial(part, now, strength, speed, cycle) {
 if (!part?.flow) return;
 const reach = 1.6 * strength;
 const floor = 1 - strength * 0.55;
@@ -103864,12 +103902,16 @@ const base = part.base[kind];
 const attribute = part.parts[kind].geometry.attributes.color;
 if (!attribute || !flow.length) continue;
 const out = attribute.array;
-const count = flow.length / 2;
+const count = flow.length / 3;
 const travel = now * speed * FLOW_SPEED;
 for (let i = 0; i < count; i++) {
-let d = flow[i * 2 + 1] + travel - flow[i * 2];
+let d = flow[i * 3 + 1] + travel - flow[i * 3];
 d -= Math.floor(d);
-const k = floor + reach * Math.exp(-d * 7);
+let k = floor + reach * Math.exp(-d * 7);
+if (cycle) {
+const age = cycle.reveal - flow[i * 3 + 2];
+k = age <= 0 ? 0 : (k + 2.2 * Math.exp(-age * 26)) * Math.min(1, age * 14) * cycle.fade;
+}
 out[i * 3] = base[i * 3] * k;
 out[i * 3 + 1] = base[i * 3 + 1] * k;
 out[i * 3 + 2] = base[i * 3 + 2] * k;
@@ -103934,20 +103976,20 @@ if (inside(...p)) return p;
 }
 return null;
 };
-const link = (a, b, tone, light, t, tEnd, phase) => {
+const link = (a, b, tone, light, t, tEnd, phase, birth = 0, birthEnd = birth) => {
 if (!insideSegment(open, a, b) || (removed && removed(...a))) return false;
 const color = tint(palette, tone);
 const shade = screen ? screen(b, color) : color;
-draw.segment(a, b, shade, light, t, tEnd, phase);
+draw.segment(a, b, shade, light, t, tEnd, phase, birth, birthEnd);
 for (let k = 1; k <= 2; k++) {
 const f = k / 3;
-draw.vertex(draw.points, [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f], shade, light * 1.15, t + (tEnd - t) * f, phase);
+draw.vertex(draw.points, [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f], shade, light * 1.15, t + (tEnd - t) * f, phase, birth + (birthEnd - birth) * f);
 }
 return true;
 };
-const glow = (p, tone, light, phase) => {
+const glow = (p, tone, light, phase, birth = 0) => {
 const color = tint(palette, Math.min(1, tone + 0.25));
-draw.vertex(draw.nodes, p, screen ? screen(p, color) : color, light * 1.2, 0, phase);
+draw.vertex(draw.nodes, p, screen ? screen(p, color) : color, light * 1.2, 0, phase, birth);
 };
 const field = (p, shift, lift) => {
 const [x, y, z] = p;
@@ -103991,6 +104033,209 @@ a = b;
 }
 return last;
 };
+const growTree = () => {
+const count = Math.round(500 + layer.density * 2800);
+const attractors = [];
+for (let i = 0; i < count; i++) {
+const p = place();
+if (p) attractors.push({ p, alive: true });
+}
+if (!attractors.length) return;
+const reach = space * (0.16 + (1 - complexity) * 0.08);
+const kill = space * 0.03;
+const bite = space * 0.017;
+const cell = reach;
+const key = (x, y, z) => x + ',' + y + ',' + z;
+const grid = new Map();
+const nodes = [];
+const addNode = (p, parent, iteration) => {
+const index = nodes.length;
+nodes.push({ p, parent, iteration, weight: 1, leaf: true });
+if (parent >= 0) nodes[parent].leaf = false;
+const k = key(Math.floor(p[0] / cell), Math.floor(p[1] / cell), Math.floor(p[2] / cell));
+if (!grid.has(k)) grid.set(k, []);
+grid.get(k).push(index);
+return index;
+};
+const roots = 2 + Math.round(complexity * 3);
+for (let r = 0; r < roots; r++) {
+let best = null;
+for (let j = 0; j < 12; j++) {
+const p = place();
+if (p && (!best || p[1] < best[1])) best = p;
+}
+if (best) addNode(best, -1, 0);
+}
+const limit = 14000;
+const rounds = 260;
+let used = 0;
+for (let round = 1; round <= rounds && nodes.length < limit; round++) {
+const pulls = new Map();
+let any = false;
+for (const attractor of attractors) {
+if (!attractor.alive) continue;
+const [x, y, z] = attractor.p;
+const cx = Math.floor(x / cell), cy = Math.floor(y / cell), cz = Math.floor(z / cell);
+let nearest = -1, best = reach;
+for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+const list = grid.get(key(cx + dx, cy + dy, cz + dz));
+if (!list) continue;
+for (const n of list) {
+const q = nodes[n].p;
+const d = Math.hypot(q[0] - x, q[1] - y, q[2] - z);
+if (d < best) {
+best = d;
+nearest = n;
+}
+}
+}
+if (nearest < 0) continue;
+if (best < kill) {
+attractor.alive = false;
+continue;
+}
+any = true;
+const q = nodes[nearest].p;
+const pull = pulls.get(nearest) || [0, 0, 0];
+pull[0] += (x - q[0]) / best;
+pull[1] += (y - q[1]) / best;
+pull[2] += (z - q[2]) / best;
+pulls.set(nearest, pull);
+}
+if (!any) break;
+used = round;
+for (const [n, pull] of pulls) {
+const m = Math.hypot(...pull);
+if (m < 1e-6) continue;
+const q = nodes[n].p;
+const jitter = (random() - 0.5) * 0.35;
+const b = vertex(q[0] + (pull[0] / m + jitter) * bite, q[1] + (pull[1] / m + jitter) * bite, q[2] + (pull[2] / m - jitter) * bite);
+if (!insideSegment(open, q, b)) continue;
+const bx = Math.floor(b[0] / cell), by = Math.floor(b[1] / cell), bz = Math.floor(b[2] / cell);
+let crowded = false;
+for (let dx = -1; dx <= 1 && !crowded; dx++) for (let dy = -1; dy <= 1 && !crowded; dy++) for (let dz = -1; dz <= 1 && !crowded; dz++) {
+const list = grid.get(key(bx + dx, by + dy, bz + dz));
+if (!list) continue;
+for (const o of list) {
+if (o === n) continue;
+const w = nodes[o].p;
+if (Math.hypot(w[0] - b[0], w[1] - b[1], w[2] - b[2]) < bite * 0.6) {
+crowded = true;
+break;
+}
+}
+}
+if (crowded) continue;
+addNode(b, n, round);
+}
+}
+for (let i = nodes.length - 1; i >= 0; i--) if (nodes[i].parent >= 0) nodes[nodes[i].parent].weight += nodes[i].weight;
+const heaviest = Math.max(...nodes.map((n) => n.weight));
+const total = Math.max(1, used);
+let tips = 0;
+for (const node of nodes) {
+if (node.parent < 0) continue;
+const parent = nodes[node.parent];
+const birth = node.iteration / total * 0.92;
+const birthStart = parent.iteration / total * 0.92;
+const thick = (node.weight / heaviest) ** 0.45;
+const light = 0.45 + thick * 0.55;
+const tone = 0.1 + 0.9 * birth;
+link(parent.p, node.p, tone, light, birthStart * 2.4, birth * 2.4, 0, birthStart, birth);
+if (thick > 0.5 && random() < 0.35) {
+const wobble = space * 0.004;
+draw.vertex(draw.points, [node.p[0] + (random() - 0.5) * wobble, node.p[1] + (random() - 0.5) * wobble, node.p[2] + (random() - 0.5) * wobble], tint(palette, tone), light * 0.9, birth * 2.4, 0, birth);
+}
+if (node.leaf && tips < 700 && random() < 0.8) {
+tips++;
+glow(node.p, tone, 0.8 + random() * 0.6, 0, birth);
+}
+}
+};
+const growNetwork = () => {
+const count = Math.round(90 + layer.density * 520);
+const separation = space * 0.62 / Math.cbrt(count);
+const points = [];
+for (let attempt = 0; attempt < count * 14 && points.length < count; attempt++) {
+const p = place();
+if (!p) continue;
+if (points.every((q) => Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]) > separation)) points.push(p);
+}
+if (points.length < 2) return;
+const neighbours = 2 + Math.round(complexity * 2.4);
+const reachMax = separation * 3.6;
+const edges = new Map();
+const adjacent = points.map(() => []);
+points.forEach((p, i) => {
+const order = points.map((q, j) => [Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]), j]).filter(([d, j]) => j !== i && d < reachMax).sort((a, b) => a[0] - b[0]).slice(0, neighbours);
+for (const [, j] of order) {
+const a = Math.min(i, j), b = Math.max(i, j);
+const id = a * 100000 + b;
+if (edges.has(id)) continue;
+let clear = true;
+for (let k = 1; k < 6 && clear; k++) {
+const f = k / 6;
+clear = open(points[a][0] + (points[b][0] - points[a][0]) * f, points[a][1] + (points[b][1] - points[a][1]) * f, points[a][2] + (points[b][2] - points[a][2]) * f);
+}
+if (!clear) continue;
+edges.set(id, [a, b]);
+adjacent[a].push(b);
+adjacent[b].push(a);
+}
+});
+const depth = new Array(points.length).fill(-1);
+let farthest = 1;
+const queue = [];
+const visit = (start, offset) => {
+depth[start] = offset;
+queue.push(start);
+while (queue.length) {
+const n = queue.shift();
+for (const m of adjacent[n]) {
+if (depth[m] >= 0) continue;
+depth[m] = depth[n] + 1;
+farthest = Math.max(farthest, depth[m]);
+queue.push(m);
+}
+}
+};
+visit(Math.floor(random() * points.length), 0);
+for (let i = 0; i < points.length; i++) if (depth[i] < 0) visit(i, Math.floor(random() * farthest * 0.7));
+const birthOf = (i) => Math.min(0.9, depth[i] / (farthest + 1) * 0.9);
+const tones = points.map(() => random());
+const bow = 0.12 + complexity * 0.22;
+for (const [a, b] of edges.values()) {
+const p = points[a], q = points[b];
+const [first, second] = depth[a] <= depth[b] ? [a, b] : [b, a];
+const from = points[first], to = points[second];
+const length = Math.hypot(to[0] - from[0], to[1] - from[1], to[2] - from[2]);
+const nx = random() - 0.5, ny = random() - 0.5, nz = random() - 0.5;
+const norm = Math.hypot(nx, ny, nz) || 1;
+const side = [nx / norm * length * bow, ny / norm * length * bow, nz / norm * length * bow];
+const curve = (s) => {
+const lift = Math.sin(Math.PI * s);
+return vertex(from[0] + (to[0] - from[0]) * s + side[0] * lift, from[1] + (to[1] - from[1]) * s + side[1] * lift, from[2] + (to[2] - from[2]) * s + side[2] * lift);
+};
+const pieces = 9;
+const b0 = birthOf(first), b1 = Math.max(b0 + 0.02, birthOf(second));
+let last = from;
+for (let k = 1; k <= pieces; k++) {
+const s = k / pieces;
+const next = curve(s);
+const tone = tones[first] + (tones[second] - tones[first]) * s;
+link(last, next, tone, 0.75, (b0 + (b1 - b0) * (s - 1 / pieces)) * 2.4, (b0 + (b1 - b0) * s) * 2.4, 0, b0 + (b1 - b0) * (s - 1 / pieces), b0 + (b1 - b0) * s);
+last = next;
+}
+}
+points.forEach((p, i) => {
+const hub = Math.min(1, adjacent[i].length / 5);
+const birth = birthOf(i);
+glow(p, tones[i], 0.7 + hub * 1.1, 0, birth);
+if (hub > 0.5) glow([p[0] + (random() - 0.5) * space * 0.006, p[1] + (random() - 0.5) * space * 0.006, p[2]], tones[i], 0.9, 0, birth);
+});
+};
+if (mode === 'growth') return growTree();
+if (mode === 'network') return growNetwork();
 for (let i = 0; i < bundles; i++) {
 const start = place();
 if (!start) continue;
@@ -104050,35 +104295,12 @@ a = b;
 }
 continue;
 }
-const grow = mode === 'growth';
-const fibres = grow ? 1 : 4 + Math.floor(random() * 5);
+const fibres = 4 + Math.floor(random() * 5);
 for (let f = 0; f < fibres; f++) {
 const from = f === 0 ? start : vertex(start[0] + (random() - 0.5) * space * 0.03, start[1] + (random() - 0.5) * space * 0.03, start[2] + (random() - 0.5) * space * 0.03);
 if (!inside(...from)) continue;
-const shift = (i % 7) * 0.05;
-if (!grow) {
-const end = follow(from, length, shift, 0, tone, light * (0.75 + 0.25 * random()), phase + f * 0.03, 0.25);
+const end = follow(from, length, (i % 7) * 0.05, 0, tone, light * (0.75 + 0.25 * random()), phase + f * 0.03, 0.25);
 if (end && f === 0) glow(end, tone, light, phase);
-continue;
-}
-const branches = [{ p: from, length, shift, depth: 0, phase }];
-for (let n = 0; n < branches.length && n < 60; n++) {
-const branch = branches[n];
-let a = branch.p;
-for (let k = 0; k < branch.length; k++) {
-const dir = field(a, branch.shift, 0.9);
-const b = steer(a, dir);
-if (!b) break;
-const taper = 1 - branch.depth * 0.22;
-if (!link(a, b, tone * 0.6 + k / branch.length * 0.4, light * taper, k / branch.length, (k + 1) / branch.length, branch.phase)) break;
-if (k > 3 && k % 6 === 0 && branch.depth < 3 && random() < 0.3 + complexity * 0.5) {
-glow(b, tone, light * 0.9, branch.phase);
-branches.push({ p: b, length: Math.round(branch.length * (0.55 + random() * 0.3)), shift: branch.shift + (random() - 0.5) * 1.8, depth: branch.depth + 1, phase: random() });
-}
-a = b;
-if (k === branch.length - 1) glow(a, tone, light, branch.phase);
-}
-}
 }
 }
 }
@@ -104407,17 +104629,35 @@ __defs['src/effects/engine/material-effects.js'] = function (__exports, __req) {
 __def(__exports, 'MaterialPart', () => MaterialPart);
 const THREE = __req('vendor/three/build/three.module.js');
 const { clamp } = __req('src/core/util.js');
-const { FabricHistory, MaterialDrawing, drawAffinity, drawFabric, drawInners, drawShell, drawVoid, makeScreenColor, pulseMaterial, voidField } = __req('src/effects/engine/material-drawing.js');
+const { FabricHistory, MaterialDrawing, drawAffinity, drawFabric, drawInners, drawShell, drawVoid, growthCycle, makeScreenColor, pulseMaterial, voidField } = __req('src/effects/engine/material-drawing.js');
 const { MaterialVideo } = __req('src/effects/engine/material-video.js');
 const { makeVolume, mediaBounds } = __req('src/effects/engine/material-volume.js');
+let glowSprite = null;
+function glowTexture() {
+if (glowSprite) return glowSprite;
+const canvas = document.createElement('canvas');
+canvas.width = canvas.height = 64;
+const ctx = canvas.getContext('2d');
+const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+gradient.addColorStop(0, 'rgba(255,255,255,1)');
+gradient.addColorStop(0.28, 'rgba(255,255,255,0.8)');
+gradient.addColorStop(0.62, 'rgba(255,255,255,0.18)');
+gradient.addColorStop(1, 'rgba(255,255,255,0)');
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, 64, 64);
+glowSprite = new THREE.CanvasTexture(canvas);
+return glowSprite;
+}
 function makePart(group, id) {
 const common = { vertexColors: true, transparent: true, depthWrite: false };
-const bead = id === 'inners' ? 0.024 : id === 'affinity' ? 0.016 : 0.013;
+const bead = id === 'inners' ? 0.03 : id === 'affinity' ? 0.016 : 0.013;
+const additive = id === 'inners' ? { blending: THREE.AdditiveBlending } : {};
+const sprite = id === 'inners' ? { map: glowTexture(), alphaTest: 0.01 } : {};
 const parts = {
-lines: new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ ...common, opacity: 0.84 })),
+lines: new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ ...common, ...additive, opacity: 0.84 })),
 faces: new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ ...common, opacity: 0.28, side: THREE.DoubleSide, forceSinglePass: true })),
-points: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, size: bead, opacity: 0.9 })),
-nodes: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, size: 0.052, opacity: 0.8, blending: THREE.AdditiveBlending })),
+points: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, ...additive, ...sprite, size: bead, opacity: 0.9 })),
+nodes: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, ...sprite, size: id === 'inners' ? 0.075 : 0.052, opacity: 0.8, blending: THREE.AdditiveBlending })),
 };
 for (const o of Object.values(parts)) {
 o.frustumCulled = false;
@@ -104426,9 +104666,13 @@ group.add(o);
 }
 return { parts, key: '', flow: null, base: null };
 }
-function present(root, id, key, build) {
+function present(root, id, key, build, now = 0, stamp = '') {
 const part = root.userData[id] ||= makePart(root, id);
 if (!build || part.key !== key) {
+if (build && (part.stamp !== stamp || !part.key)) {
+part.stamp = stamp;
+part.started = now;
+}
 const draw = build && new MaterialDrawing();
 if (draw) build(draw);
 part.flow = {};
@@ -104585,13 +104829,16 @@ const projection = screen && vscreen.mode === 'project' ? Math.floor(now * 12) :
 const maskVer = cut ? [imprint.version, voidPrint.mode, voidPrint.depth, voidPrint.history].join(':') : '';
 const removed = cut && (voidPrint.mode === 'negative' ? (x, y, z) => !cut(x, y, z) : cut);
 const ghost = inners.on && inners.shell === 'ghost';
-const innerKey = [volume?.version, pal, inners.mode, inners.density, inners.complexity, maskVer, media && Math.floor(now * 8),
+const innerShape = [volume?.version, pal, inners.mode, inners.density, inners.complexity, maskVer,
 screen?.version, screen && vscreen.mode, screen && vscreen.scale, screen && vscreen.rotate, screen && vscreen.bright, screen && vscreen.mix, projection].join(':');
+const innerKey = innerShape + ':' + (media ? Math.floor(now * 8) : '');
 const hasInner = present(root, 'inners', innerKey, inners.on
 ? (draw) => drawInners(draw, volume, inners, palette, removed, screen && makeScreenColor(screen, vscreen, points, viewport, this.shared))
-: null);
+: null, now, innerShape);
 const anim = this.app.anim;
-if (hasInner) pulseMaterial(root.userData.inners, now, inners.pulse ?? 0.7, inners.flow ?? 1);
+const growing = inners.mode === 'growth' || inners.mode === 'network';
+const cycle = growing ? growthCycle(now, root.userData.inners.started, inners.flow ?? 1, inners.repeat ?? 'loop') : null;
+if (hasInner) pulseMaterial(root.userData.inners, now, inners.pulse ?? 0.7, inners.flow ?? 1, cycle);
 const attrs = this.geometry.attributes;
 present(root, 'shell', [ghost, pal, volume?.version, this.cloudKey, attrs.aTarget.count, Math.round(this.morph * 50), anim.has ? Math.floor(anim.time * 12) : 0].join(':'), ghost
 ? (draw) => drawShell(draw, attrs.aTarget.array, attrs.aColor.array, attrs.aHide.array, palette, 16000)
@@ -104680,6 +104927,7 @@ if (causalWounds.on && !brush.on) {
 Object.assign(brush, { on: true, tool: 'scars', radius: causalWounds.radius, scarDepth: causalWounds.depth, scarMemory: causalWounds.memory });
 }
 causalWounds.on = false;
+this.state.layers.links.on = false;
 phaseInterference.on = false;
 if (reactionSkin.trigger !== 'beat') reactionSkin.trigger = 'manual';
 {
@@ -106228,7 +106476,7 @@ rotate: { id: 'rotate', name: 'Вращение', icon: 'arrows-clockwise', hint
 bloom: { id: 'bloom', name: 'Блум', icon: 'sparkle', hint: 'Вспышка и усиление свечения точек' },
 };
 const getLayerDef = (id) => EXTRA_ANIM_LAYERS[id] || FX_LAYERS.find((x) => x.id === id) || { id, name: id, icon: 'sparkle', hint: '' };
-const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'links', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort', ...EXPERIMENT_IDS];
+const ANIM_LAYERS = ['morph', 'curl', 'wave', 'twist', 'pulse', 'blast', 'voxel', 'glitch', 'slice', 'feedback', 'datamosh', 'echo', 'dissolve', 'spectrum', 'physics', 'rotate', 'bloom', 'gravity', 'scope', 'depth', 'trail', 'vscreen', 'shoots', 'hyper', 'slitscan', 'chladni', 'shadow', 'pixelsort', ...EXPERIMENT_IDS];
 let toggleAnim = () => {};
 let animAddFromInspector = () => {};
 let chronoStat = null;

@@ -1,16 +1,34 @@
 import * as THREE from 'three';
 import { clamp } from '../../core/util.js';
-import { FabricHistory, MaterialDrawing, drawAffinity, drawFabric, drawInners, drawShell, drawVoid, makeScreenColor, pulseMaterial, voidField } from './material-drawing.js';
+import { FabricHistory, MaterialDrawing, drawAffinity, drawFabric, drawInners, drawShell, drawVoid, growthCycle, makeScreenColor, pulseMaterial, voidField } from './material-drawing.js';
 import { MaterialVideo } from './material-video.js';
 import { makeVolume, mediaBounds } from './material-volume.js';
+let glowSprite = null;
+function glowTexture() {
+if (glowSprite) return glowSprite;
+const canvas = document.createElement('canvas');
+canvas.width = canvas.height = 64;
+const ctx = canvas.getContext('2d');
+const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+gradient.addColorStop(0, 'rgba(255,255,255,1)');
+gradient.addColorStop(0.28, 'rgba(255,255,255,0.8)');
+gradient.addColorStop(0.62, 'rgba(255,255,255,0.18)');
+gradient.addColorStop(1, 'rgba(255,255,255,0)');
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, 64, 64);
+glowSprite = new THREE.CanvasTexture(canvas);
+return glowSprite;
+}
 function makePart(group, id) {
 const common = { vertexColors: true, transparent: true, depthWrite: false };
-const bead = id === 'inners' ? 0.024 : id === 'affinity' ? 0.016 : 0.013;
+const bead = id === 'inners' ? 0.03 : id === 'affinity' ? 0.016 : 0.013;
+const additive = id === 'inners' ? { blending: THREE.AdditiveBlending } : {};
+const sprite = id === 'inners' ? { map: glowTexture(), alphaTest: 0.01 } : {};
 const parts = {
-lines: new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ ...common, opacity: 0.84 })),
+lines: new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ ...common, ...additive, opacity: 0.84 })),
 faces: new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ ...common, opacity: 0.28, side: THREE.DoubleSide, forceSinglePass: true })),
-points: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, size: bead, opacity: 0.9 })),
-nodes: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, size: 0.052, opacity: 0.8, blending: THREE.AdditiveBlending })),
+points: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, ...additive, ...sprite, size: bead, opacity: 0.9 })),
+nodes: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, ...sprite, size: id === 'inners' ? 0.075 : 0.052, opacity: 0.8, blending: THREE.AdditiveBlending })),
 };
 for (const o of Object.values(parts)) {
 o.frustumCulled = false;
@@ -19,9 +37,13 @@ group.add(o);
 }
 return { parts, key: '', flow: null, base: null };
 }
-function present(root, id, key, build) {
+function present(root, id, key, build, now = 0, stamp = '') {
 const part = root.userData[id] ||= makePart(root, id);
 if (!build || part.key !== key) {
+if (build && (part.stamp !== stamp || !part.key)) {
+part.stamp = stamp;
+part.started = now;
+}
 const draw = build && new MaterialDrawing();
 if (draw) build(draw);
 part.flow = {};
@@ -178,13 +200,16 @@ const projection = screen && vscreen.mode === 'project' ? Math.floor(now * 12) :
 const maskVer = cut ? [imprint.version, voidPrint.mode, voidPrint.depth, voidPrint.history].join(':') : '';
 const removed = cut && (voidPrint.mode === 'negative' ? (x, y, z) => !cut(x, y, z) : cut);
 const ghost = inners.on && inners.shell === 'ghost';
-const innerKey = [volume?.version, pal, inners.mode, inners.density, inners.complexity, maskVer, media && Math.floor(now * 8),
+const innerShape = [volume?.version, pal, inners.mode, inners.density, inners.complexity, maskVer,
 screen?.version, screen && vscreen.mode, screen && vscreen.scale, screen && vscreen.rotate, screen && vscreen.bright, screen && vscreen.mix, projection].join(':');
+const innerKey = innerShape + ':' + (media ? Math.floor(now * 8) : '');
 const hasInner = present(root, 'inners', innerKey, inners.on
 ? (draw) => drawInners(draw, volume, inners, palette, removed, screen && makeScreenColor(screen, vscreen, points, viewport, this.shared))
-: null);
+: null, now, innerShape);
 const anim = this.app.anim;
-if (hasInner) pulseMaterial(root.userData.inners, now, inners.pulse ?? 0.7, inners.flow ?? 1);
+const growing = inners.mode === 'growth' || inners.mode === 'network';
+const cycle = growing ? growthCycle(now, root.userData.inners.started, inners.flow ?? 1, inners.repeat ?? 'loop') : null;
+if (hasInner) pulseMaterial(root.userData.inners, now, inners.pulse ?? 0.7, inners.flow ?? 1, cycle);
 const attrs = this.geometry.attributes;
 present(root, 'shell', [ghost, pal, volume?.version, this.cloudKey, attrs.aTarget.count, Math.round(this.morph * 50), anim.has ? Math.floor(anim.time * 12) : 0].join(':'), ghost
 ? (draw) => drawShell(draw, attrs.aTarget.array, attrs.aColor.array, attrs.aHide.array, palette, 16000)

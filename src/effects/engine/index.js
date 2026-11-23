@@ -47,6 +47,7 @@ export class EffectsEngine {
 			Object.assign(brush, { on: true, tool: 'scars', radius: causalWounds.radius, scarDepth: causalWounds.depth, scarMemory: causalWounds.memory });
 		}
 		causalWounds.on = false;
+		this.state.layers.links.on = false;
 		phaseInterference.on = false;
 		if (reactionSkin.trigger !== 'beat') reactionSkin.trigger = 'manual';
 		{

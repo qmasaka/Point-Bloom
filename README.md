@@ -44,7 +44,7 @@ All frames were made in the app itself on the demo model from `samples/`.
 <td width="33%"><img src="docs/img/wave.jpg" alt="Waves"><br><sub><b>Waves</b>: drops, rings, spiral</sub></td>
 </tr>
 <tr>
-<td width="33%"><img src="docs/img/links.jpg" alt="Links"><br><sub><b>Links</b>: glowing threads between points</sub></td>
+<td width="33%"><img src="docs/img/inners.jpg" alt="Inners"><br><sub><b>Inners</b>: branches grow from roots and fill the volume</sub></td>
 <td width="33%"><img src="docs/img/morph-flow.jpg" alt="Morph: flow"><br><sub><b>Morphing</b>: the Flow transition mid-way</sub></td>
 <td width="33%"><img src="docs/img/morph-portal.jpg" alt="Morph: portal"><br><sub><b>Morphing</b>: the Portal transition</sub></td>
 </tr>
@@ -86,9 +86,9 @@ The idea comes from TouchDesigner POPs: a chain of independent operators over a 
 | **Sound and rhythm** | Spectrum, Waves, Blast, Beat growth, Sound sand (Chladni figures), Oscilloscope |
 | **Destruction** | Decay, Take apart, Dissolve |
 | **Digital** | Voxels, Glitch, Datamosh |
-| **Graphics** | Shadow on the wall, Links, Slice, Time trails, Echo, Tracking frames |
+| **Graphics** | Shadow on the wall, Slice, Time trails, Echo, Tracking frames |
 | **Control** | Cursor, Brush (watercolor on the shape), Hands (camera) |
-| **Experiments** | Hyperspace, Screen, Inners (glowing threads with running pulses), Hunger, Chemistry (pattern colonies growing over the surface), Parallax (a different photo for each camera angle). Scars is a brush, Phase is a morph transition, and Fractal is in the Lab. |
+| **Experiments** | Hyperspace, Screen, Inners (growing branches, a neural network, glowing threads), Hunger, Chemistry (pattern colonies growing over the surface), Parallax (a different photo for each camera angle). Scars is a brush, Phase is a morph transition, and Fractal is in the Lab. |
 
 See the [experiments guide](docs/EXPERIMENTS.md) for controls and implementation details (in Russian).
 
