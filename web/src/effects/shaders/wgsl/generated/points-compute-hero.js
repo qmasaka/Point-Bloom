@@ -4,6 +4,13 @@ struct Frame {
 	uExperimentShapeInfo: vec4f,
 	uExperimentSim: vec4f,
 	uChemistry: vec4f,
+	uHist: vec4f,
+	uTsplit: vec4f,
+	uTsplit2: vec4f,
+	uMrel: vec4f,
+	uMrel2: vec4f,
+	uMrel3: vec4f,
+	uLive: vec4f,
 	uChemistryB: vec4f,
 	uExperimentTint: vec4f,
 	uImpossibleStyle: vec4f,
@@ -1700,6 +1707,14 @@ fn experimentYaw(p_in: vec3f, angle_in: f32) -> vec3f {
 	return vec3f(((p.x * c) - (p.z * s)), p.y, ((p.x * s) + (p.z * c)));
 }
 
+fn histColor(cx_in: i32, cy_in: i32, age_in: f32) -> vec3f {
+	var cx: i32 = cx_in;
+	var cy: i32 = cy_in;
+	var age: f32 = age_in;
+	var slot: i32 = i32(glsl_mod_f(((fr.uHist.z - floor(age)) + (fr.uHist.w * 8.0)), fr.uHist.w));
+	return textureLoad(slitTex, vec3i(cx, cy, slot).xy, vec3i(cx, cy, slot).z, 0).rgb;
+}
+
 fn experimentPalette(t_in: f32) -> vec3f {
 	var t: f32 = t_in;
 	t = clamp(t, 0.0, 1.0);
@@ -1771,7 +1786,7 @@ fn main_() {
 		var frBg: f32 = 0.0;
 		if (((fr.uFr8.x > 0.5) && !cull)) {
 			frBg = (1.0 - frLayerSubj((fr.uFr.y - 1.0), (((((fcell + 0.5)) / fr.uHero.xy) * fr.uFr2.xy) - 0.5)));
-			if (((frBg > 0.5) && (fr.uFr8.x > 2.5))) {
+			if (((frBg > 0.5) && (fr.uLive.x < 0.02))) {
 				cull = true;
 			}
 		}
@@ -1796,8 +1811,8 @@ fn main_() {
 		var fc: vec3f = textureSampleLevel(heroTex, linSamp, vec2f((((fcell.x + 0.5)) / fr.uHero.x), (1.0 - (((fcell.y + 0.5)) / fr.uHero.y))), 0.0).rgb;
 		var l: f32 = dot(fc, vec3f(0.3, 0.59, 0.11));
 		frCol = ((((fc * ((1.0 - sh.z))) + ((tcol * ((0.35 + (l * 1.6)))) * sh.z))) * sh.x);
-		if (((frBg > 0.5) && (fr.uFr8.x > 1.5))) {
-			frCol *= vec3f(0.3);
+		if ((frBg > 0.5)) {
+			frCol *= vec3f(fr.uLive.x);
 		}
 		var frGs: vec2f = fr.uHero.xy;
 		var frEw: f32 = ((fr.uFrE.y * fr.uHero.x) / max(fr.uFr2.x, 1.0));

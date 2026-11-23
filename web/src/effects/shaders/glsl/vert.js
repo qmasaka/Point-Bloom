@@ -21,6 +21,13 @@ uniform sampler2D uExperimentShapes;
 uniform vec4 uExperimentShapeInfo;
 uniform vec4 uExperimentSim;
 uniform vec4 uChemistry;
+uniform vec4 uHist;
+uniform vec4 uTsplit;
+uniform vec4 uTsplit2;
+uniform vec4 uMrel;
+uniform vec4 uMrel2;
+uniform vec4 uMrel3;
+uniform vec4 uLive;
 uniform vec4 uChemistryB;
 uniform vec4 uExperimentTint;
 uniform vec4 uImpossibleStyle;
@@ -177,6 +184,11 @@ vec3 experimentYaw(vec3 p, float angle) {
 	return vec3(p.x * c - p.z * s, p.y, p.x * s + p.z * c);
 }
 
+vec3 histColor(int cx, int cy, float age) {
+	int slot = int(mod(uHist.z - floor(age) + uHist.w * 8.0, uHist.w));
+	return texelFetch(uSlitTex, ivec3(cx, cy, slot), 0).rgb;
+}
+
 vec3 experimentPalette(float t) {
 	t = clamp(t, 0.0, 1.0);
 	return t < 0.5 ? mix(uP0, uP1, t * 2.0) : mix(uP1, uP2, (t - 0.5) * 2.0);
@@ -243,7 +255,7 @@ void main() {
 		if (uFr8.x > 0.5 && !cull) {
 #ifdef HERO
 			frBg = 1.0 - frLayerSubj(uFr.y - 1.0, (fcell + 0.5) / uHero.xy * uFr2.xy - 0.5);
-			if (frBg > 0.5 && uFr8.x > 2.5) cull = true;
+			if (frBg > 0.5 && uLive.x < 0.02) cull = true;
 #else
 
 			if (fk < uFr.y - uFr9.w - 0.5) cull = true;
@@ -259,7 +271,7 @@ void main() {
 		if (uAdd < 0.5) sh.x = 1.0;
 #ifndef HERO
 
-		if (uHero.w > 0.5 && uFr8.x < 0.5 && abs(fk - floor(uFr4.x + 0.5)) < 0.1) cull = true;
+		if (uHero.w > 0.5 && abs(fk - floor(uFr4.x + 0.5)) < 0.1) cull = true;
 
 		float dl = abs(fk - uFr4.x);
 		float keep = mix(1.0, clamp(1.0 / (1.0 + dl * 0.45), 0.08, 1.0), uFr5.y);
@@ -308,7 +320,7 @@ void main() {
 		frCol = (fc * (1.0 - sh.z) + tcol * (0.35 + l * 1.6) * sh.z) * sh.x;
 
 #ifdef HERO
-		if (frBg > 0.5 && uFr8.x > 1.5) frCol *= 0.3;
+		if (frBg > 0.5) frCol *= uLive.x;
 		vec2 frGs = uHero.xy;
 		float frEw = uFrE.y * uHero.x / max(uFr2.x, 1.0);
 		float frEk = uFrE.w;
@@ -569,6 +581,65 @@ void main() {
 		pos.xy += qd * qk * uSortP.z;
 
 		colM *= 1.0 + min(length(qd) * 6.0, 1.0) * qk * uSortP.w;
+	}
+
+	if (uTsplit.x > 0.001 || uMrel.x > 0.001) {
+		float histTotal = uHist.x * uHist.y;
+		float histIndex = floor(aIdx * histTotal + 0.5);
+		int hx = int(mod(histIndex, uHist.x));
+		int hy = int(floor(histIndex / uHist.x));
+		ivec2 hmax = ivec2(int(uHist.x) - 1, int(uHist.y) - 1);
+		if (uTsplit.x > 0.001) {
+			int splitMode = int(uTsplit.y + 0.5);
+			float spreadAge = uTsplit.z;
+			vec2 offset = vec2(cos(uTsplit2.y), sin(uTsplit2.y)) * uTsplit2.x;
+			ivec2 here = ivec2(hx, hy);
+			ivec2 redAt = here;
+			ivec2 blueAt = here;
+			float greenAge = 0.0;
+			float blueAge = 0.0;
+			if (splitMode != 1) {
+				greenAge = spreadAge;
+				blueAge = spreadAge * 2.0;
+			}
+			if (splitMode != 0) {
+				redAt = clamp(here + ivec2(int(floor(offset.x + 0.5)), int(floor(offset.y + 0.5))), ivec2(0), hmax);
+				blueAt = clamp(here - ivec2(int(floor(offset.x + 0.5)), int(floor(offset.y + 0.5))), ivec2(0), hmax);
+			}
+			vec3 sr = histColor(redAt.x, redAt.y, 0.0);
+			vec3 sg = histColor(hx, hy, greenAge);
+			vec3 sb = histColor(blueAt.x, blueAt.y, blueAge);
+			vec3 split = vec3(sr.r, sg.g, sb.b);
+			float splitLum = dot(split, vec3(0.3, 0.59, 0.11));
+			split = mix(vec3(splitLum), split, uTsplit2.z) * uTsplit2.w;
+			colM = mix(colM, split, min(uTsplit.x, 1.0));
+		}
+		if (uMrel.x > 0.001) {
+			vec3 present = histColor(hx, hy, 0.0);
+			float energy = 0.0;
+			for (int i = 1; i <= 4; i++) {
+				vec3 past = histColor(hx, hy, float(i) * uMrel.w * 0.25);
+				energy = max(energy, length(present - past));
+			}
+			energy = clamp((energy - uMrel2.x) * uMrel.z, 0.0, 1.0);
+			energy = energy * energy * (3.0 - 2.0 * energy) * min(uMrel.x, 1.0);
+			vec3 liftNormal = uMorph < 0.9999 ? mix(aNormal, aNormalB, uMorph) : aNormalB;
+			liftNormal = length(liftNormal) > 0.0 ? normalize(liftNormal) : vec3(0.0, 0.0, 1.0);
+			int liftMode = int(uMrel.y + 0.5);
+			if (liftMode == 1) {
+				float lh = experimentHash(int(floor(aIdx * uExperimentView.w + 0.5)) * 5 + 11);
+				vec3 scatter = vec3(experimentHash(int(histIndex) * 3 + 1), experimentHash(int(histIndex) * 7 + 2), experimentHash(int(histIndex) * 13 + 3)) - 0.5;
+				pos += (liftNormal * 0.7 + scatter * 1.2) * energy * uMrel3.x * (0.5 + lh * 0.5);
+			} else if (liftMode == 2) {
+				pos += vec3(0.0, 1.0, 0.0) * energy * uMrel3.x * 0.5;
+			} else {
+				pos += liftNormal * energy * uMrel3.x * 0.5;
+			}
+			vec3 hot = experimentPalette(0.55 + 0.45 * energy);
+			colM = mix(colM, hot * (0.7 + 0.8 * energy), uMrel2.w * energy);
+			colM *= 1.0 - uMrel2.y * (1.0 - energy) * min(uMrel.x, 1.0);
+			experimentScale *= 1.0 + energy * uMrel2.z;
+		}
 	}
 #endif
 #endif

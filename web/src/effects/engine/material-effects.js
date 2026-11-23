@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { clamp } from '../../core/util.js';
 import { FabricHistory, MaterialDrawing, drawFabric, drawInners, drawShell, growthCycle, makeScreenColor, pulseMaterial } from './material-drawing.js';
-import { drawAffinity, drawContours } from './material-video-draw.js';
 import { MaterialVideo } from './material-video.js';
 import { makeVolume, mediaBounds } from './material-volume.js';
 let glowSprite = null;
@@ -22,8 +21,8 @@ return glowSprite;
 }
 function makePart(group, id) {
 const common = { vertexColors: true, transparent: true, depthWrite: false };
-const bead = id === 'inners' ? 0.03 : id === 'affinity' ? 0.02 : id === 'contours' ? 0.018 : 0.013;
-const glowing = id === 'inners' || id === 'affinity' || id === 'contours';
+const bead = id === 'inners' ? 0.03 : 0.013;
+const glowing = id === 'inners';
 const additive = glowing ? { blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor } : {};
 const sprite = glowing ? { map: glowTexture(), alphaTest: 0.01 } : {};
 const parts = {
@@ -125,12 +124,12 @@ this._materialVolumes = { tag, volume, geo: this.geometry };
 return volume;
 }
 _materialTick(layers, now) {
-const { inners, affinity, temporalFabric, contours, vscreen } = layers;
+const { inners, temporalFabric, vscreen } = layers;
 const points = this.points;
 this._materialHideSource = false;
-if (!points || !(inners.on || affinity.on || temporalFabric.on || contours.on)) {
+if (!points || !(inners.on || temporalFabric.on)) {
 if (this._materialRoot) this._disposeMaterialGeometry();
-this._materialVideo = this._materialScreen = this._materialContours = null;
+this._materialScreen = null;
 return;
 }
 const viewport = this.app.viewport;
@@ -147,20 +146,12 @@ root.matrixWorldNeedsUpdate = true;
 const palette = [this.shared.uP0.value, this.shared.uP1.value, this.shared.uP2.value];
 const pal = this.state.look.palette;
 const media = this.cloudKey?.startsWith('media') && this.pm?.ready && this.pm.count === this.geometry.attributes.aTarget.count ? this.pm : null;
-const video = this.videoReady ? this.pm.el : null;
-const motion = video && affinity.on ? (this._materialVideo ||= new MaterialVideo()) : null;
-motion?.read(video, now);
-if (!motion) this._materialVideo = null;
-const still = contours.on && media && this.pm.el ? this.pm.el : null;
-const relief = still ? (this._materialContours ||= new MaterialVideo()) : null;
-relief?.read(still, now, false);
-if (!relief) this._materialContours = null;
 const volume = inners.on ? this._materialVolume(media) : null;
 const removed = null;
 const activeScreen = inners.on && this.shared.uScr.value.x > 0.001 ? this._screenSource()?.media : null;
 const screen = activeScreen ? (this._materialScreen ||= new MaterialVideo()) : null;
 if (!screen) this._materialScreen = null;
-screen?.read(activeScreen, now, false);
+screen?.read(activeScreen, now);
 const projection = screen && vscreen.mode === 'project' ? Math.floor(now * 12) : 0;
 const ghost = inners.on && inners.shell === 'ghost';
 const innerShape = [volume?.version, pal, inners.mode, inners.density, inners.complexity, inners.roots, inners.reach, inners.trunk, inners.tips, inners.links, inners.bow, inners.ribs, inners.strands, inners.twist, inners.spread, inners.prune, inners.glow, inners.hue, inners.tone,
@@ -181,22 +172,6 @@ const attrs = this.geometry.attributes;
 present(root, 'shell', [ghost, pal, volume?.version, this.cloudKey, attrs.aTarget.count, Math.round(this.morph * 50), anim.has ? Math.floor(anim.time * 12) : 0].join(':'), ghost
 ? (draw) => drawShell(draw, attrs.aTarget.array, attrs.aColor.array, attrs.aHide.array, palette, 16000)
 : null);
-const hasAffinity = present(root, 'affinity', motion?.version + ':' + pal + ':' + JSON.stringify(affinity), affinity.on && motion
-? (draw) => drawAffinity(draw, motion, affinity, palette)
-: null);
-if (hasAffinity) {
-const part = root.userData.affinity;
-part.parts.points.material.size = (affinity.mode === 'dust' ? 0.032 : 0.02) * (affinity.bead ?? 1);
-part.parts.nodes.material.size = 0.06 * (affinity.bead ?? 1);
-}
-const sweepTick = contours.sweep > 0 ? Math.floor(now * 10) : 0;
-const hasContours = present(root, 'contours', relief?.version + ':' + pal + ':' + JSON.stringify(contours) + ':' + sweepTick, contours.on && relief?.gray
-? (draw) => drawContours(draw, relief, contours, palette, now)
-: null);
-if (hasContours) {
-const part = root.userData.contours;
-part.parts.points.material.size = 0.018 * (contours.bead ?? 1);
-}
 const cloud = this._animCloud;
 let fabric = null;
 if (temporalFabric.on && cloud && this._animBuf && anim.has) {
@@ -207,6 +182,6 @@ fabric.sample(this._animBuf, anim);
 present(root, 'temporalFabric', [fabric?.version, pal, temporalFabric.mode, temporalFabric.history, temporalFabric.density].join(':'), fabric
 ? (draw) => drawFabric(draw, fabric, temporalFabric, palette)
 : null);
-this._materialHideSource = !!((hasInner && inners.shell !== 'show') || (hasAffinity && media && affinity.source === 'hide') || (hasContours && media && contours.source === 'hide'));
+this._materialHideSource = !!(hasInner && inners.shell !== 'show');
 }
 }

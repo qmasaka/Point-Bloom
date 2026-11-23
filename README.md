@@ -81,7 +81,7 @@ The idea comes from TouchDesigner POPs: a chain of independent operators over a 
 
 | Group | Effects |
 |---|---|
-| **Video** | Depth volume, Pixel sort, Storyboard, Motion trail, Slit-scan, Affinity (motion streams, links, dust), Contour lines (a topographic map of the frame) |
+| **Video** | Depth volume, Pixel sort, Storyboard, Motion trail, Slit-scan, Color split, Motion relief |
 | **Motion** | Swirls and flow, Gravity, Deform |
 | **Sound and rhythm** | Spectrum, Waves, Blast, Beat growth, Sound sand (Chladni figures), Oscilloscope |
 | **Destruction** | Decay, Take apart, Dissolve |

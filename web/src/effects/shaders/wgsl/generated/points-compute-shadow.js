@@ -4,6 +4,13 @@ struct Frame {
 	uExperimentShapeInfo: vec4f,
 	uExperimentSim: vec4f,
 	uChemistry: vec4f,
+	uHist: vec4f,
+	uTsplit: vec4f,
+	uTsplit2: vec4f,
+	uMrel: vec4f,
+	uMrel2: vec4f,
+	uMrel3: vec4f,
+	uLive: vec4f,
 	uChemistryB: vec4f,
 	uExperimentTint: vec4f,
 	uImpossibleStyle: vec4f,
@@ -1677,6 +1684,14 @@ fn experimentYaw(p_in: vec3f, angle_in: f32) -> vec3f {
 	return vec3f(((p.x * c) - (p.z * s)), p.y, ((p.x * s) + (p.z * c)));
 }
 
+fn histColor(cx_in: i32, cy_in: i32, age_in: f32) -> vec3f {
+	var cx: i32 = cx_in;
+	var cy: i32 = cy_in;
+	var age: f32 = age_in;
+	var slot: i32 = i32(glsl_mod_f(((fr.uHist.z - floor(age)) + (fr.uHist.w * 8.0)), fr.uHist.w));
+	return textureLoad(slitTex, vec3i(cx, cy, slot).xy, vec3i(cx, cy, slot).z, 0).rgb;
+}
+
 fn experimentPalette(t_in: f32) -> vec3f {
 	var t: f32 = t_in;
 	t = clamp(t, 0.0, 1.0);
@@ -1760,7 +1775,7 @@ fn main_() {
 		if ((fr.uAdd < 0.5)) {
 			sh.x = 1.0;
 		}
-		if ((((fr.uHero.w > 0.5) && (fr.uFr8.x < 0.5)) && (abs((fk - floor((fr.uFr4.x + 0.5)))) < 0.1))) {
+		if (((fr.uHero.w > 0.5) && (abs((fk - floor((fr.uFr4.x + 0.5)))) < 0.1))) {
 			cull = true;
 		}
 		var dl: f32 = abs((fk - fr.uFr4.x));
@@ -2075,6 +2090,64 @@ fn main_() {
 		qk = (((qk * qk) * ((3.0 - (2.0 * qk)))) * min(fr.uSort.x, 1.0));
 		{ let _sw22 = (pos.xy + ((qd * qk) * fr.uSortP.z)); pos = vec3f(_sw22.x, _sw22.y, pos.z); }
 		colM *= vec3f((1.0 + ((min((length(qd) * 6.0), 1.0) * qk) * fr.uSortP.w)));
+	}
+	if (((fr.uTsplit.x > 0.001) || (fr.uMrel.x > 0.001))) {
+		var histTotal: f32 = (fr.uHist.x * fr.uHist.y);
+		var histIndex: f32 = floor(((aIdx * histTotal) + 0.5));
+		var hx: i32 = i32(glsl_mod_f(histIndex, fr.uHist.x));
+		var hy: i32 = i32(floor((histIndex / fr.uHist.x)));
+		var hmax: vec2i = vec2i((i32(fr.uHist.x) - 1), (i32(fr.uHist.y) - 1));
+		if ((fr.uTsplit.x > 0.001)) {
+			var splitMode: i32 = i32((fr.uTsplit.y + 0.5));
+			var spreadAge: f32 = fr.uTsplit.z;
+			var offset: vec2f = (vec2f(cos(fr.uTsplit2.y), sin(fr.uTsplit2.y)) * fr.uTsplit2.x);
+			var here: vec2i = vec2i(hx, hy);
+			var redAt: vec2i = here;
+			var blueAt: vec2i = here;
+			var greenAge: f32 = 0.0;
+			var blueAge: f32 = 0.0;
+			if ((splitMode != 1)) {
+				greenAge = spreadAge;
+				blueAge = (spreadAge * 2.0);
+			}
+			if ((splitMode != 0)) {
+				redAt = clamp((here + vec2i(i32(floor((offset.x + 0.5))), i32(floor((offset.y + 0.5))))), vec2i(0), hmax);
+				blueAt = clamp((here - vec2i(i32(floor((offset.x + 0.5))), i32(floor((offset.y + 0.5))))), vec2i(0), hmax);
+			}
+			var sr: vec3f = histColor(redAt.x, redAt.y, 0.0);
+			var sg: vec3f = histColor(hx, hy, greenAge);
+			var sb: vec3f = histColor(blueAt.x, blueAt.y, blueAge);
+			var split: vec3f = vec3f(sr.r, sg.g, sb.b);
+			var splitLum: f32 = dot(split, vec3f(0.3, 0.59, 0.11));
+			split = (mix(vec3f(splitLum), split, fr.uTsplit2.z) * fr.uTsplit2.w);
+			colM = mix(colM, split, min(fr.uTsplit.x, 1.0));
+		}
+		if ((fr.uMrel.x > 0.001)) {
+			var present: vec3f = histColor(hx, hy, 0.0);
+			var energy: f32 = 0.0;
+			for (var i: i32 = 1; (i <= 4); i++) {
+				var past: vec3f = histColor(hx, hy, ((f32(i) * fr.uMrel.w) * 0.25));
+				energy = max(energy, length((present - past)));
+			}
+			energy = clamp((((energy - fr.uMrel2.x)) * fr.uMrel.z), 0.0, 1.0);
+			energy = (((energy * energy) * ((3.0 - (2.0 * energy)))) * min(fr.uMrel.x, 1.0));
+			var liftNormal: vec3f = select(aNormalB, mix(aNormal, aNormalB, fr.uMorph), (fr.uMorph < 0.9999));
+			liftNormal = select(vec3f(0.0, 0.0, 1.0), normalize(liftNormal), (length(liftNormal) > 0.0));
+			var liftMode: i32 = i32((fr.uMrel.y + 0.5));
+			if ((liftMode == 1)) {
+				var lh: f32 = experimentHash(((i32(floor(((aIdx * fr.uExperimentView.w) + 0.5))) * 5) + 11));
+				var scatter: vec3f = (vec3f(experimentHash(((i32(histIndex) * 3) + 1)), experimentHash(((i32(histIndex) * 7) + 2)), experimentHash(((i32(histIndex) * 13) + 3))) - 0.5);
+				pos += ((((((liftNormal * 0.7) + (scatter * 1.2))) * energy) * fr.uMrel3.x) * ((0.5 + (lh * 0.5))));
+			} else if ((liftMode == 2)) {
+				pos += (((vec3f(0.0, 1.0, 0.0) * energy) * fr.uMrel3.x) * 0.5);
+			} else {
+				pos += (((liftNormal * energy) * fr.uMrel3.x) * 0.5);
+			}
+			var hot: vec3f = experimentPalette((0.55 + (0.45 * energy)));
+			colM = mix(colM, (hot * ((0.7 + (0.8 * energy)))), (fr.uMrel2.w * energy));
+			colM *= vec3f((1.0 - ((fr.uMrel2.y * ((1.0 - energy))) * min(fr.uMrel.x, 1.0))));
+			experimentScale *= (1.0 + (energy * fr.uMrel2.z));
+		}
 	}
 	var nrmM: vec3f = mix(aNormal, aNormalB, eC);
 	if (((fr.uColorBy > 2.5) && (fr.uColorBy < 3.5))) {

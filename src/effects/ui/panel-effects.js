@@ -3235,7 +3235,7 @@ export function createEffectsPanel(app, root, engine) {
 		for (const c of cards) {
 			if (c.def.group !== 'Видео') continue;
 			c.folder.hidden = !engine.pm.ready;
-			if (['frames', 'slitscan', 'chrono', 'affinity'].includes(c.def.id)) c.card.hidden = !engine.videoLoaded;
+			if (['frames', 'slitscan', 'chrono', 'tsplit', 'mrelief'].includes(c.def.id)) c.card.hidden = !engine.videoLoaded;
 			else c.card.hidden = !engine.pm.ready;
 		}
 		{

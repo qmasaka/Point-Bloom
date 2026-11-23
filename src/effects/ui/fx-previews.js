@@ -25,11 +25,23 @@ const DRAW = {
 			dot(c, x, y, 1.05 + Math.max(0, wave) * 0.5, 0.32 + 0.64 * (i % 6) / 5);
 		}
 	},
-	affinity: (c, t) => {
+	tsplit: (c, t) => {
 		const p = t * TAU / 3;
-		for (let k = 0; k < 4; k++) for (let i = 0; i < 9; i++) {
-			const f = i / 8;
-			dot(c, -10 + f * 18 + Math.sin(p + k) * 1.6, -7.5 + k * 5 + Math.sin(f * 3 + p + k) * 1.6, 0.7 + f * 0.9, 0.14 + 0.82 * f);
+		for (let i = 0; i < 20; i++) {
+			const u = i / 19;
+			const x = (u - 0.5) * 18;
+			const y = Math.sin(u * 5 + p) * 4;
+			dot(c, x - 1.6, y, 1.2, 0.3 + 0.45 * u);
+			dot(c, x, y, 1.2, 0.55);
+			dot(c, x + 1.6, y, 1.2, 0.85 - 0.45 * u);
+		}
+	},
+	mrelief: (c, t) => {
+		const p = t * TAU / 3;
+		for (const [x, y] of grid(13, 9, 1.9, 1.9)) {
+			const d = Math.hypot(x - Math.sin(p) * 6, y);
+			const lift = Math.max(0, 1 - d / 5.5);
+			dot(c, x, y - lift * 3.2, 0.8 + lift * 1.2, 0.2 + lift * 0.75);
 		}
 	},
 	temporalFabric: (c, t) => {
@@ -37,15 +49,6 @@ const DRAW = {
 			const u = i / 16;
 			const wave = Math.sin(u * 5 - t * 2 + j * 0.25);
 			dot(c, (u - 0.5) * 24, (j - 2.5) * (1.6 + wave * 0.62) + wave * 4, 1.2, 0.22 + u * 0.74);
-		}
-	},
-	contours: (c, t) => {
-		const p = t * TAU / 3;
-		for (let j = 0; j < 5; j++) for (let i = 0; i < 26; i++) {
-			const a = i / 26 * TAU;
-			const wobble = 1 + 0.14 * Math.sin(a * 3 + p + j * 0.7) + 0.08 * Math.cos(a * 2 - p);
-			const r = 2.2 + j * 1.9;
-			dot(c, Math.cos(a) * r * wobble * 1.25, Math.sin(a) * r * wobble * 0.9, j === 2 ? 1.25 : 1, 0.3 + j * 0.14);
 		}
 	},
 	autophagy: (c, t) => {
