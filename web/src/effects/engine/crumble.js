@@ -18,7 +18,7 @@ const level = this.levels || { bass: 0, mid: 0, high: 0, beat: 0 };
 const gate = P.amode === 'gate';
 const heard = P.band === 'none' ? 0 : gate ? this._eff(P) / Math.max(0.01, P.amount) : this._bandLevel(P) * Math.min(2, (P.react || 0) * 2);
 if (C.phase === 'break') {
-const rise = dt * (P.idle * 0.08 + heard * 0.35);
+const rise = dt * (P.idle * 0.08 + heard * 0.35) * (P.pace ?? 1);
 C.damage = Math.min(1, C.damage + rise);
 const top = Math.min(BINS - 1, Math.floor(C.damage * (BINS - 1)));
 for (let i = C.last; i <= top; i++) C.times[i] = this._time;
@@ -46,7 +46,7 @@ C.asm = 0;
 const packed = u.uCrumbleT.value;
 for (let i = 0; i < BINS / 4; i++) packed[i].set(C.times[i * 4], C.times[i * 4 + 1], C.times[i * 4 + 2], C.times[i * 4 + 3]);
 u.uCrumble.value.set(this.state.source === 'media' && this.pm?.ready ? 2 : 1, this._time, P.chunk, P.fade ?? 0.6);
-u.uPhysics.value.set(Math.max(0.01, P.amount), P.gravity, P.bounce, P.wind);
+u.uPhysics.value.set(Math.max(0.01, P.amount), P.gravity, P.bounce, 0);
 u.uPhysP.value.set(P.burst, P.peel, P.swirl, 0);
 u.uAsm.value = C.phase === 'asm' ? C.asm : 0;
 u.uCollapseTime.value = 0;

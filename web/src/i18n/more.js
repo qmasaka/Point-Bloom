@@ -1,5 +1,6 @@
 export default {
 en: {
+'Сколько отлетает за раз': 'How many fly off at once',
 'Внутренности': 'Inners',
 'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Lines fill the volume. Screen colors them with the current frame.',
 'Рисунок': 'Pattern',
@@ -1414,6 +1415,7 @@ en: {
 'Затухание упавших': 'Fade of fallen pieces',
 },
 uk: {
+'Сколько отлетает за раз': 'Скільки відлітає за раз',
 'Внутренности': 'Нутрощі',
 'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Лінії заповнюють об’єм форми. «Екран» забарвлює їх поточним кадром.',
 'Рисунок': 'Візерунок',
@@ -2828,6 +2830,7 @@ uk: {
 'Затухание упавших': 'Згасання впалих',
 },
 es: {
+'Сколько отлетает за раз': 'Cuántos salen a la vez',
 'Внутренности': 'Interior',
 'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Las líneas ocupan el volumen. Pantalla las colorea con el fotograma.',
 'Рисунок': 'Patrón',
@@ -4242,6 +4245,7 @@ es: {
 'Затухание упавших': 'Atenuación de los caídos',
 },
 de: {
+'Сколько отлетает за раз': 'Wie viele auf einmal abfliegen',
 'Внутренности': 'Innenleben',
 'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Linien füllen das Volumen. Bildschirm färbt sie mit dem aktuellen Bild.',
 'Рисунок': 'Muster',

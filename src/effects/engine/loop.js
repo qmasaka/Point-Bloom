@@ -310,7 +310,7 @@ export class LoopPart {
 						this.collapseTime = 0;
 					}
 				}
-				u.uPhysics.value.set(this.collapseTime > 0 ? Math.max(0.01, P.amount) : 0, P.gravity, P.bounce, P.wind);
+				u.uPhysics.value.set(this.collapseTime > 0 ? Math.max(0.01, P.amount) : 0, P.gravity, P.bounce, 0);
 				u.uPhysP.value.set(P.burst, P.peel, P.swirl, 0);
 				u.uAsm.value = this.asm;
 				u.uCollapseTime.value = this.collapseTime;

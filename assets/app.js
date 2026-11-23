@@ -78805,8 +78805,9 @@ const FX_LAYERS = [
 { key: 'dshow', label: 'Что видно на форме', type: 'seg', options: [['video', 'Видео'], ['map', 'Карта глубины']], when: ['dsrc', ['bright', 'ai', 'file']] },
 ] },
 { id: 'curl', group: 'Движение', name: 'Вихри и течение', icon: 'tornado', hint: 'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)', max: 2, def: { on: false, amount: 1, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8, fscale: 1.6, fdir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['noise', 'Вихри: хаотичное движение'], ['stream', 'Поток: движение с возвратом'], ['orbit', 'Кольца: вращение слоёв'], ['surface', 'Течение: скольжение по форме']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1, when: ['mode', ['noise', 'stream', 'orbit']] }, { key: 'fscale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1, when: ['mode', ['surface']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }, { key: 'fdir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['surface']] }] },
-{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается, осколки падают на пол с отскоками и собираются обратно. Режим «Крошится» разрушает форму или видео под музыку', max: 2, def: { on: false, amount: 1.0, band: 'bass', react: 0.5, mode: 'drop', gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2, idle: 0.4, chunk: 0.08, fade: 0.6, repeat: 'loop', hold: 3 }, extras: [
+{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается, осколки падают на пол с отскоками и собираются обратно. Режим «Крошится» разрушает форму или видео под музыку', max: 2, def: { on: false, amount: 1.0, band: 'bass', react: 0.5, mode: 'drop', gravity: 1.2, bounce: 0.3, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2, idle: 0.4, pace: 1, chunk: 0.08, fade: 0.6, repeat: 'loop', hold: 3 }, extras: [
 { key: 'mode', label: 'Как разрушается', type: 'seg', options: [['drop', 'Целиком'], ['crumble', 'Крошится']] },
+{ key: 'pace', label: 'Сколько отлетает за раз', min: 0.2, max: 4, step: 0.05, noNorm: true, unit: ' ×', when: ['mode', ['crumble']] },
 { key: 'idle', label: 'Крошится само', min: 0, max: 1, step: 0.01, when: ['mode', ['crumble']] },
 { type: 'title', label: 'Осколки', open: true },
 { key: 'chunk', label: 'Размер кусочков', min: 0, max: 0.4, step: 0.01, noNorm: true, unit: ' м', digits: 2, when: ['mode', ['crumble']] },
@@ -78817,7 +78818,6 @@ const FX_LAYERS = [
 { type: 'title', label: 'Физика', open: true },
 { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 },
 { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 },
-{ key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 },
 { type: 'title', label: 'Сборка', open: true },
 { key: 'repeat', label: 'Потом', type: 'seg', options: [['loop', 'Собирается'], ['hold', 'Лежит']], when: ['mode', ['crumble']] },
 { key: 'hold', label: 'Лежит перед сборкой, с', min: 0, max: 15, step: 0.5, noNorm: true, when: ['mode', ['crumble']] },
@@ -85802,6 +85802,7 @@ __defs['src/i18n/more.js'] = function (__exports, __req) {
 __def(__exports, 'default', () => __default);
 const __default = {
 en: {
+'Сколько отлетает за раз': 'How many fly off at once',
 'Внутренности': 'Inners',
 'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Lines fill the volume. Screen colors them with the current frame.',
 'Рисунок': 'Pattern',
@@ -87216,6 +87217,7 @@ en: {
 'Затухание упавших': 'Fade of fallen pieces',
 },
 uk: {
+'Сколько отлетает за раз': 'Скільки відлітає за раз',
 'Внутренности': 'Нутрощі',
 'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Лінії заповнюють об’єм форми. «Екран» забарвлює їх поточним кадром.',
 'Рисунок': 'Візерунок',
@@ -88630,6 +88632,7 @@ uk: {
 'Затухание упавших': 'Згасання впалих',
 },
 es: {
+'Сколько отлетает за раз': 'Cuántos salen a la vez',
 'Внутренности': 'Interior',
 'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Las líneas ocupan el volumen. Pantalla las colorea con el fotograma.',
 'Рисунок': 'Patrón',
@@ -90044,6 +90047,7 @@ es: {
 'Затухание упавших': 'Atenuación de los caídos',
 },
 de: {
+'Сколько отлетает за раз': 'Wie viele auf einmal abfliegen',
 'Внутренности': 'Innenleben',
 'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Linien füllen das Volumen. Bildschirm färbt sie mit dem aktuellen Bild.',
 'Рисунок': 'Muster',
@@ -102333,7 +102337,7 @@ this.asm = 0;
 this.collapseTime = 0;
 }
 }
-u.uPhysics.value.set(this.collapseTime > 0 ? Math.max(0.01, P.amount) : 0, P.gravity, P.bounce, P.wind);
+u.uPhysics.value.set(this.collapseTime > 0 ? Math.max(0.01, P.amount) : 0, P.gravity, P.bounce, 0);
 u.uPhysP.value.set(P.burst, P.peel, P.swirl, 0);
 u.uAsm.value = this.asm;
 u.uCollapseTime.value = this.collapseTime;
@@ -103135,7 +103139,7 @@ const level = this.levels || { bass: 0, mid: 0, high: 0, beat: 0 };
 const gate = P.amode === 'gate';
 const heard = P.band === 'none' ? 0 : gate ? this._eff(P) / Math.max(0.01, P.amount) : this._bandLevel(P) * Math.min(2, (P.react || 0) * 2);
 if (C.phase === 'break') {
-const rise = dt * (P.idle * 0.08 + heard * 0.35);
+const rise = dt * (P.idle * 0.08 + heard * 0.35) * (P.pace ?? 1);
 C.damage = Math.min(1, C.damage + rise);
 const top = Math.min(BINS - 1, Math.floor(C.damage * (BINS - 1)));
 for (let i = C.last; i <= top; i++) C.times[i] = this._time;
@@ -103163,7 +103167,7 @@ C.asm = 0;
 const packed = u.uCrumbleT.value;
 for (let i = 0; i < BINS / 4; i++) packed[i].set(C.times[i * 4], C.times[i * 4 + 1], C.times[i * 4 + 2], C.times[i * 4 + 3]);
 u.uCrumble.value.set(this.state.source === 'media' && this.pm?.ready ? 2 : 1, this._time, P.chunk, P.fade ?? 0.6);
-u.uPhysics.value.set(Math.max(0.01, P.amount), P.gravity, P.bounce, P.wind);
+u.uPhysics.value.set(Math.max(0.01, P.amount), P.gravity, P.bounce, 0);
 u.uPhysP.value.set(P.burst, P.peel, P.swirl, 0);
 u.uAsm.value = C.phase === 'asm' ? C.asm : 0;
 u.uCollapseTime.value = 0;

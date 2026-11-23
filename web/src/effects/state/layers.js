@@ -101,8 +101,9 @@ export const FX_LAYERS = [
 { key: 'dshow', label: 'Что видно на форме', type: 'seg', options: [['video', 'Видео'], ['map', 'Карта глубины']], when: ['dsrc', ['bright', 'ai', 'file']] },
 ] },
 { id: 'curl', group: 'Движение', name: 'Вихри и течение', icon: 'tornado', hint: 'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)', max: 2, def: { on: false, amount: 1, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8, fscale: 1.6, fdir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['noise', 'Вихри: хаотичное движение'], ['stream', 'Поток: движение с возвратом'], ['orbit', 'Кольца: вращение слоёв'], ['surface', 'Течение: скольжение по форме']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1, when: ['mode', ['noise', 'stream', 'orbit']] }, { key: 'fscale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1, when: ['mode', ['surface']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }, { key: 'fdir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['surface']] }] },
-{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается, осколки падают на пол с отскоками и собираются обратно. Режим «Крошится» разрушает форму или видео под музыку', max: 2, def: { on: false, amount: 1.0, band: 'bass', react: 0.5, mode: 'drop', gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2, idle: 0.4, chunk: 0.08, fade: 0.6, repeat: 'loop', hold: 3 }, extras: [
+{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается, осколки падают на пол с отскоками и собираются обратно. Режим «Крошится» разрушает форму или видео под музыку', max: 2, def: { on: false, amount: 1.0, band: 'bass', react: 0.5, mode: 'drop', gravity: 1.2, bounce: 0.3, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2, idle: 0.4, pace: 1, chunk: 0.08, fade: 0.6, repeat: 'loop', hold: 3 }, extras: [
 { key: 'mode', label: 'Как разрушается', type: 'seg', options: [['drop', 'Целиком'], ['crumble', 'Крошится']] },
+{ key: 'pace', label: 'Сколько отлетает за раз', min: 0.2, max: 4, step: 0.05, noNorm: true, unit: ' ×', when: ['mode', ['crumble']] },
 { key: 'idle', label: 'Крошится само', min: 0, max: 1, step: 0.01, when: ['mode', ['crumble']] },
 { type: 'title', label: 'Осколки', open: true },
 { key: 'chunk', label: 'Размер кусочков', min: 0, max: 0.4, step: 0.01, noNorm: true, unit: ' м', digits: 2, when: ['mode', ['crumble']] },
@@ -113,7 +114,6 @@ export const FX_LAYERS = [
 { type: 'title', label: 'Физика', open: true },
 { key: 'gravity', label: 'Гравитация', min: 0.2, max: 3.0, step: 0.1 },
 { key: 'bounce', label: 'Упругость пола', min: 0.1, max: 0.9, step: 0.05 },
-{ key: 'wind', label: 'Ветер', min: -1.5, max: 1.5, step: 0.1 },
 { type: 'title', label: 'Сборка', open: true },
 { key: 'repeat', label: 'Потом', type: 'seg', options: [['loop', 'Собирается'], ['hold', 'Лежит']], when: ['mode', ['crumble']] },
 { key: 'hold', label: 'Лежит перед сборкой, с', min: 0, max: 15, step: 0.5, noNorm: true, when: ['mode', ['crumble']] },
