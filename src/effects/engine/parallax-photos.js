@@ -31,6 +31,7 @@ export async function readParallaxPhoto(file) {
 		bitmap.close();
 	}
 	const rgba = ctx.getImageData(0, 0, w, h).data;
+	const thumb = canvas.toDataURL('image/jpeg', 0.72);
 	const pixels = [];
 	const ratio = 2.22 / Math.max(w, h);
 	for (let y = 0; y < h; y++) {
@@ -43,7 +44,7 @@ export async function readParallaxPhoto(file) {
 	}
 	if (!pixels.length) throw new Error('empty photo');
 	pixels.sort((a, b) => a.key - b.key);
-	return { name: file.name, pixels, pitch: ratio };
+	return { name: file.name, pixels, pitch: ratio, thumb };
 }
 
 export function packParallaxSlot(photo, attribute, count, slot, out, start) {

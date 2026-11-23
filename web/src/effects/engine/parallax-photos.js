@@ -27,6 +27,7 @@ ctx.drawImage(bitmap, 0, 0, w, h);
 bitmap.close();
 }
 const rgba = ctx.getImageData(0, 0, w, h).data;
+const thumb = canvas.toDataURL('image/jpeg', 0.72);
 const pixels = [];
 const ratio = 2.22 / Math.max(w, h);
 for (let y = 0; y < h; y++) {
@@ -39,7 +40,7 @@ pixels.push({ x: (x + 0.5 - w / 2) * ratio, y: (h / 2 - y - 0.5) * ratio, rgb, k
 }
 if (!pixels.length) throw new Error('empty photo');
 pixels.sort((a, b) => a.key - b.key);
-return { name: file.name, pixels, pitch: ratio };
+return { name: file.name, pixels, pitch: ratio, thumb };
 }
 export function packParallaxSlot(photo, attribute, count, slot, out, start) {
 const angle = slot * TAU / 3;

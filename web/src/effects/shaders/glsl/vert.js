@@ -20,6 +20,7 @@ uniform sampler2D uExperimentField;
 uniform sampler2D uExperimentShapes;
 uniform vec4 uExperimentShapeInfo;
 uniform vec4 uExperimentSim;
+uniform vec4 uChemistry;
 uniform vec4 uExperimentView;
 uniform vec4 uImpossible;
 uniform vec4 uRecursion;
@@ -108,6 +109,18 @@ float frLayerSubj(float k, vec2 g) {
 #else
 #define HEROSIZE uFr6.x
 #endif
+
+float chemistryWave(vec3 p, float frequency, float t) {
+	vec3 flow = vec3(snoise(p * 1.1 + t * 0.03), snoise(p * 1.1 + 7.3 - t * 0.025), snoise(p * 1.1 + 13.1));
+	vec3 w = p * frequency + flow * 1.7;
+	float s = cos(dot(w, vec3(0.93, 0.21, -0.3)) + t * 0.22)
+		+ cos(dot(w, vec3(-0.35, 0.88, 0.32)) - t * 0.18 + 1.7)
+		+ cos(dot(w, vec3(0.28, -0.41, 0.87)) + t * 0.14 + 3.1)
+		+ cos(dot(w, vec3(-0.71, -0.52, -0.47)) - t * 0.16 + 4.6)
+		+ cos(dot(w, vec3(0.52, 0.61, -0.6)) + t * 0.2 + 2.3)
+		+ cos(dot(w, vec3(0.12, -0.83, -0.54)) - t * 0.12 + 5.4);
+	return s * 0.4082;
+}
 
 float experimentHash(int seed) {
 	int v = ((seed % 65521) * 25173 + 13849) % 65521;
@@ -333,11 +346,42 @@ void main() {
 	float copyShade = 0.0;
 	float autoLight = 0.0;
 	float bite = 0.0;
+	float chemBody = 0.0;
+	float chemCore = 0.0;
+	float chemRim = 0.0;
+	float shiftGlow = 0.0;
 #ifndef HERO
 	if (uExperimentSim.x > 0.5) {
 		vec4 field = sampleExperimentField(int(aVis.z), 0);
 		pos += field.xyz * maskV;
 		experimentTint = field.w * maskV;
+		if (uChemistry.x > 0.001) {
+			float colony = clamp(max(0.0, field.w) * maskV, 0.0, 1.3);
+			float growth = clamp(colony, 0.0, 1.0);
+			vec4 spread = sampleExperimentField(int(aVis.z), 1);
+			float pulse = clamp(spread.z * maskV, 0.0, 1.0);
+			float wave = chemistryWave(base, uChemistry.z, uTime);
+			float reach = mix(1.9, 0.6, growth);
+			float dome;
+			if (uChemistry.y < 0.5) {
+				chemBody = smoothstep(reach, reach + 0.14, wave);
+				dome = smoothstep(reach - 0.1, reach + 0.9, wave);
+				chemCore = smoothstep(reach + 0.3, reach + 0.85, wave);
+			} else {
+				float width = (uChemistry.y < 1.5 ? 0.2 : 0.05) * growth;
+				chemBody = 1.0 - smoothstep(width, width + (uChemistry.y < 1.5 ? 0.16 : 0.1), abs(wave));
+				dome = chemBody;
+				chemCore = smoothstep(0.55, 1.0, chemBody);
+			}
+			float arrival = smoothstep(0.02, 0.2, growth);
+			chemBody = max(chemBody * arrival, pulse * 0.6);
+			dome = max(dome * arrival, pulse * 0.5);
+			chemRim = chemBody * (1.0 - chemCore) + pulse * 0.8;
+			vec3 chemNormal = uMorph < 0.9999 ? mix(aNormal, aNormalB, uMorph) : aNormalB;
+			chemNormal = length(chemNormal) > 0.0 ? normalize(chemNormal) : vec3(0.0, 1.0, 0.0);
+			float lift = (dome * 0.7 + chemCore * 0.3) * (0.85 + 0.25 * wave) * (1.0 + uBeat * 0.3);
+			pos += chemNormal * lift * uChemistry.x;
+		}
 		float hungerInk = uExperimentSim.w;
 		if (hungerInk > 0.001) {
 			vec4 contact = sampleExperimentField(int(aVis.z), 1);
@@ -348,15 +392,17 @@ void main() {
 	}
 	if (uImpossible.x > 0.001) {
 		float turn = fract(uExperimentView.x / 6.2831853) * 3.0;
-		float width = mix(0.56, 1.0, uImpossible.z);
-		float first = 1.0 - smoothstep(0.06, width, min(turn, 3.0 - turn));
-		float second = 1.0 - smoothstep(0.06, width, abs(turn - 1.0));
-		float third = 1.0 - smoothstep(0.06, width, abs(turn - 2.0));
+		float width = mix(0.4, 0.9, uImpossible.z);
+		int pointId = int(floor(aIdx * uExperimentView.w + 0.5));
+		float lag = 0.5 + experimentHash(pointId * 29 + 7);
+		float first = 1.0 - smoothstep(0.06, width, min(turn, 3.0 - turn) * lag);
+		float second = 1.0 - smoothstep(0.06, width, abs(turn - 1.0) * lag);
+		float third = 1.0 - smoothstep(0.06, width, abs(turn - 2.0) * lag);
+		shiftGlow = min(1.0, 4.0 * (first * (1.0 - first) + second * (1.0 - second) + third * (1.0 - third))) * uImpossible.x * maskV;
 		float yaw = base.y * 2.4 + base.x * 0.8;
 		vec3 targetA = base;
 		vec3 targetB = experimentYaw(base, yaw);
 		vec3 targetC = vec3(base.x + 0.3 * sin(base.y * 7.0), base.y * 0.85 + base.z * 0.35, -base.z * 0.35 + 0.47 * sin(base.x * 6.7 + base.y * 3.2));
-		int pointId = int(floor(aIdx * uExperimentView.w + 0.5));
 		int q = int(min(floor((float(pointId) + 0.5) * uExperimentShapeInfo.x / max(1.0, uExperimentView.w)), uExperimentShapeInfo.x - 1.0));
 		int flags = int(uExperimentShapeInfo.z);
 		int rows = int(uExperimentShapeInfo.y);
@@ -501,14 +547,20 @@ void main() {
 
 	float vm = uMorph * uMorph * (3.0 - 2.0 * uMorph);
 	float vis = mix(aVis.x, aVis.y, vm);
-	float skin = max(0.0, experimentTint);
 	float wound = max(0.0, -experimentTint);
 	float rim = smoothstep(0.05, 0.21, wound) * (1.0 - smoothstep(0.24, 0.65, wound));
-	float vein = smoothstep(0.08, 0.25, skin) * (1.0 - smoothstep(0.33, 0.68, skin));
 	vColor = mix(col, sculptColor, sculptMix) * uBright * (1.0 + uBeat * 0.3) * vis;
 	vColor *= (1.0 - 0.32 * wound - 0.2 * copyShade) * (1.0 - bite);
-	vColor += (mix(uP0, uP2, skin) * skin * 0.27 + uP2 * vein * uExperimentSim.y * 0.56 + mix(uP1, uP2, 0.65) * rim * uExperimentSim.z * 0.65 + uP2 * autoLight * 0.38) * uBright * vis;
-	experimentScale *= (1.0 + rim * 0.23 + vein * 0.16) * (1.0 - bite * 0.78);
+	vColor += (mix(uP1, uP2, 0.65) * rim * uExperimentSim.z * 0.65 + uP2 * autoLight * 0.38) * uBright * vis;
+	if (uChemistry.x > 0.001) {
+		float pigment = chemBody * uExperimentSim.y;
+		vec3 dye = mix(uP1, uP2, chemCore) * uBright * vis;
+		vColor = mix(vColor * (1.0 - 0.38 * uExperimentSim.y), vColor * 0.4 + dye * 1.15, pigment);
+		vColor += uP2 * chemRim * uExperimentSim.y * (0.4 + 0.9 * uChemistry.w + uBeat * 0.4) * uBright * vis;
+		experimentScale *= 1.0 + chemBody * 0.22 + chemRim * 0.38;
+	}
+	vColor += uP2 * shiftGlow * 0.1 * uBright * vis;
+	experimentScale *= (1.0 + rim * 0.23 + shiftGlow * 0.14) * (1.0 - bite * 0.78);
 
 	if (uPaintP.x > 0.5 && aPaint.w > 0.002) {
 		float pa = aPaint.w;

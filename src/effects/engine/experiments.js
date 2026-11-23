@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { clamp, screenRect } from '../../core/util.js';
 import { ExperimentField } from './experiment-field.js';
+import { CHEMISTRY } from './chemistry-field.js';
 import { packParallaxSlot, readParallaxPhoto } from './parallax-photos.js';
 
 const FIELD_STEP = 1 / 24;
@@ -93,15 +94,27 @@ export class ExperimentsPart {
 		}
 	}
 
-	clearParallaxPhotos() {
-		if (this._parallaxRequests) this._parallaxRequests.length = 0;
-		this._parallaxPhotos = null;
-		this._parallaxRevision = (this._parallaxRevision || 0) + 1;
-		this.emit();
-	}
-
 	parallaxPhotoNames() {
 		return this._parallaxPhotos?.map((photo) => photo?.name || '') || ['', '', ''];
+	}
+
+	parallaxPhotoThumbs() {
+		return this._parallaxPhotos?.map((photo) => photo?.thumb || '') || ['', '', ''];
+	}
+
+	parallaxActiveSlot() {
+		const layer = this.state.layers.impossible;
+		if (!layer.on || this._parallaxYaw === undefined) return -1;
+		return Math.round(((this._parallaxYaw / TAU) % 1 + 1) % 1 * 3) % 3;
+	}
+
+	clearParallaxPhoto(slot) {
+		if (this._parallaxRequests) this._parallaxRequests[slot] = null;
+		if (!this._parallaxPhotos?.[slot]) return;
+		this._parallaxPhotos[slot] = null;
+		if (!this._parallaxPhotos.some(Boolean)) this._parallaxPhotos = null;
+		this._parallaxRevision = (this._parallaxRevision || 0) + 1;
+		this.emit();
 	}
 
 	_experimentShapesTick(layers, geometry, key) {
@@ -171,6 +184,7 @@ export class ExperimentsPart {
 		if (sculpt.on) {
 			const view = this.points.worldToLocal((this._experimentView ||= new THREE.Vector3()).copy(cam.position));
 			yaw = Math.atan2(view.x, view.z);
+			this._parallaxYaw = yaw;
 		}
 		const zoom = clamp((recursive.revealAt + 2.5 - this.app.nav.distance) / 5, 0, 1);
 		const reveal = zoom * zoom * (3 - 2 * zoom);
@@ -183,6 +197,8 @@ export class ExperimentsPart {
 		this._experimentShapesTick(layers, g, key);
 		const enabled = scars || [auto, skin].some((l) => l.on && l.amount > 0);
 		u.uExperimentSim.value.set(enabled ? 1 : 0, skin.ink, scar.ink, 0.30 * Math.min(1, gains.autophagy));
+		const look = CHEMISTRY[skin.style] || CHEMISTRY.spots;
+		u.uChemistry.value.set(skin.on && skin.amount > 0 ? look.lift * skin.growth * 0.1 : 0, look.shape, look.freq / skin.scale, look.glow);
 		if (!enabled) {
 			if (this._experimentField) {
 				this._experimentField.dispose();

@@ -703,30 +703,45 @@ if (ex.relayout) engine.relayoutFrames();
 };
 if (ex.type === 'photos') {
 const labels = ['Фото для 0°', 'Фото для 120°', 'Фото для 240°'];
-const names = [];
-for (let i = 0; i < labels.length; i++) {
+const angles = ['0°', '120°', '240°'];
+const row = h('div', { class: 'px-slots' });
+const slots = angles.map((angle, i) => {
 const input = h('input', { type: 'file', accept: 'image/*', hidden: true, 'aria-label': labels[i] });
-const current = h('div', { class: 'field-hint', style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } });
-const pick = button({ label: labels[i], icon: 'image', variant: 'secondary', cls: 'btn-block', onClick: () => input.click() });
+const pick = h('button', { type: 'button', class: 'px-pick', title: labels[i], 'aria-label': labels[i], html: icon('image', 18) });
+const clear = h('button', { type: 'button', class: 'px-clear', title: 'Убрать фото', 'aria-label': 'Убрать фото', html: icon('x', 12) });
+const badge = h('span', { class: 'px-angle' }, angle);
+pick.addEventListener('click', () => input.click());
+clear.addEventListener('click', () => engine.clearParallaxPhoto(i));
 input.addEventListener('change', () => {
 const file = input.files?.[0];
 input.value = '';
 if (file) engine.setParallaxPhoto(i, file);
 });
-names.push(current);
-put(h('div', {}, pick, input, current), ex);
-}
-const clear = button({ label: 'Убрать фото ракурсов', icon: 'broom', variant: 'secondary', cls: 'btn-block', onClick: () => engine.clearParallaxPhotos() });
-put(clear, ex);
+const slot = h('div', { class: 'px-slot' }, pick, badge, clear, input);
+row.append(slot);
+return { slot, pick, clear, thumb: '' };
+});
+put(row, ex);
 const refresh = () => {
-const files = engine.parallaxPhotoNames();
-clear.hidden = !files.some(Boolean);
-names.forEach((el, i) => {
-el.hidden = !files[i];
-if (el.textContent !== files[i]) el.textContent = files[i];
-el.title = files[i];
+const names = engine.parallaxPhotoNames();
+const thumbs = engine.parallaxPhotoThumbs();
+slots.forEach((s, i) => {
+s.slot.classList.toggle('has-photo', !!names[i]);
+s.clear.hidden = !names[i];
+s.pick.title = names[i] || labels[i];
+if (s.thumb !== thumbs[i]) {
+s.thumb = thumbs[i];
+s.pick.style.backgroundImage = thumbs[i] ? `url("${thumbs[i]}")` : '';
+s.pick.firstElementChild && (s.pick.firstElementChild.style.display = thumbs[i] ? 'none' : '');
+}
 });
 };
+const live = () => {
+if (!row.isConnected) return clearInterval(timer);
+const active = engine.parallaxActiveSlot();
+slots.forEach((s, i) => s.slot.classList.toggle('is-live', i === active));
+};
+const timer = setInterval(live, 140);
 app.bus.on('fx', refresh);
 refresh();
 } else if (ex.type === 'select') {

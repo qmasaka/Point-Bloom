@@ -1,22 +1,24 @@
 import * as THREE from 'three';
 import { clamp } from '../../core/util.js';
-import { FabricHistory, MaterialDrawing, drawAffinity, drawFabric, drawInners, drawVoid, makeScreenColor, voidField } from './material-drawing.js';
+import { FabricHistory, MaterialDrawing, drawAffinity, drawFabric, drawInners, drawShell, drawVoid, makeScreenColor, pulseMaterial, voidField } from './material-drawing.js';
 import { MaterialVideo } from './material-video.js';
 import { makeVolume, mediaBounds } from './material-volume.js';
 
 function makePart(group, id) {
 	const common = { vertexColors: true, transparent: true, depthWrite: false };
+	const bead = id === 'inners' ? 0.024 : id === 'affinity' ? 0.016 : 0.013;
 	const parts = {
 		lines: new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ ...common, opacity: 0.84 })),
 		faces: new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ ...common, opacity: 0.28, side: THREE.DoubleSide, forceSinglePass: true })),
-		points: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, size: id === 'affinity' ? 0.016 : 0.013, opacity: 0.9 })),
+		points: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, size: bead, opacity: 0.9 })),
+		nodes: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, size: 0.052, opacity: 0.8, blending: THREE.AdditiveBlending })),
 	};
 	for (const o of Object.values(parts)) {
 		o.frustumCulled = false;
 		o.userData.helper = true;
 		group.add(o);
 	}
-	return { parts, key: '' };
+	return { parts, key: '', flow: null, base: null };
 }
 
 function present(root, id, key, build) {
@@ -24,6 +26,8 @@ function present(root, id, key, build) {
 	if (!build || part.key !== key) {
 		const draw = build && new MaterialDrawing();
 		if (draw) build(draw);
+		part.flow = {};
+		part.base = {};
 		for (const [kind, object] of Object.entries(part.parts)) {
 			const g = object.geometry;
 			const data = draw?.[kind];
@@ -40,6 +44,10 @@ function present(root, id, key, build) {
 					a.clearUpdateRanges();
 					a.addUpdateRange(0, n);
 					a.needsUpdate = true;
+				}
+				if (data[2]) {
+					part.flow[kind] = Float32Array.from(data[2]);
+					part.base[kind] = Float32Array.from(data[1]);
 				}
 			}
 			g.setDrawRange(0, n / 3);
@@ -178,17 +186,23 @@ export class MaterialPart {
 		const projection = screen && vscreen.mode === 'project' ? Math.floor(now * 12) : 0;
 		const maskVer = cut ? [imprint.version, voidPrint.mode, voidPrint.depth, voidPrint.history].join(':') : '';
 		const removed = cut && (voidPrint.mode === 'negative' ? (x, y, z) => !cut(x, y, z) : cut);
+		const ghost = inners.on && inners.shell === 'ghost';
 		const innerKey = [volume?.version, pal, inners.mode, inners.density, inners.complexity, maskVer, media && Math.floor(now * 8),
 			screen?.version, screen && vscreen.mode, screen && vscreen.scale, screen && vscreen.rotate, screen && vscreen.bright, screen && vscreen.mix, projection].join(':');
 		const hasInner = present(root, 'inners', innerKey, inners.on
 			? (draw) => drawInners(draw, volume, inners, palette, removed, screen && makeScreenColor(screen, vscreen, points, viewport, this.shared))
+			: null);
+		const anim = this.app.anim;
+		if (hasInner) pulseMaterial(root.userData.inners, now, inners.pulse ?? 0.7, inners.flow ?? 1);
+		const attrs = this.geometry.attributes;
+		present(root, 'shell', [ghost, pal, volume?.version, this.cloudKey, attrs.aTarget.count, Math.round(this.morph * 50), anim.has ? Math.floor(anim.time * 12) : 0].join(':'), ghost
+			? (draw) => drawShell(draw, attrs.aTarget.array, attrs.aColor.array, attrs.aHide.array, palette, 16000)
 			: null);
 		const hasAffinity = present(root, 'affinity', [motion?.version, pal, affinity.mode, affinity.strength, affinity.similarity].join(':'), affinity.on && motion
 			? (draw) => drawAffinity(draw, motion, affinity, palette)
 			: null);
 
 		const cloud = this._animCloud;
-		const anim = this.app.anim;
 		let fabric = null;
 		if (temporalFabric.on && cloud && this._animBuf && anim.has) {
 			if (this._materialFabric?.cloud !== cloud) this._materialFabric = { cloud, history: new FabricHistory(cloud) };
@@ -202,6 +216,6 @@ export class MaterialPart {
 		const hasPrint = present(root, 'voidPrint', [maskVer, volume?.version, pal, inners.on].join(':'), cut
 			? (draw) => drawVoid(draw, medium, cut, voidPrint, palette, inners.on)
 			: null);
-		this._materialHideSource = !!(hasPrint || (hasInner && inners.shell === 'hide') || (hasAffinity && media && affinity.source === 'hide'));
+		this._materialHideSource = !!(hasPrint || (hasInner && inners.shell !== 'show') || (hasAffinity && media && affinity.source === 'hide'));
 	}
 }

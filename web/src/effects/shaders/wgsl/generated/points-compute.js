@@ -3,6 +3,7 @@ struct Frame {
 	@size(16) uAdd: f32,
 	uExperimentShapeInfo: vec4f,
 	uExperimentSim: vec4f,
+	uChemistry: vec4f,
 	uExperimentView: vec4f,
 	uImpossible: vec4f,
 	uRecursion: vec4f,
@@ -1590,6 +1591,16 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 	return pos;
 }
 
+fn chemistryWave(p_in: vec3f, frequency_in: f32, t_in: f32) -> f32 {
+	var p: vec3f = p_in;
+	var frequency: f32 = frequency_in;
+	var t: f32 = t_in;
+	var flow: vec3f = vec3f(snoise(((p * 1.1) + (t * 0.03))), snoise((((p * 1.1) + 7.3) - (t * 0.025))), snoise(((p * 1.1) + 13.1)));
+	var w: vec3f = ((p * frequency) + (flow * 1.7));
+	var s: f32 = (((((cos((dot(w, vec3f(0.93, 0.21, -0.3)) + (t * 0.22))) + cos(((dot(w, vec3f(-0.35, 0.88, 0.32)) - (t * 0.18)) + 1.7))) + cos(((dot(w, vec3f(0.28, -0.41, 0.87)) + (t * 0.14)) + 3.1))) + cos(((dot(w, vec3f(-0.71, -0.52, -0.47)) - (t * 0.16)) + 4.6))) + cos(((dot(w, vec3f(0.52, 0.61, -0.6)) + (t * 0.2)) + 2.3))) + cos(((dot(w, vec3f(0.12, -0.83, -0.54)) - (t * 0.12)) + 5.4)));
+	return (s * 0.4082);
+}
+
 fn experimentHash(seed_in: i32) -> f32 {
 	var seed: i32 = seed_in;
 	var v: i32 = ((((((seed % 65521)) * 25173) + 13849)) % 65521);
@@ -1801,10 +1812,41 @@ fn main_() {
 	var copyShade: f32 = 0.0;
 	var autoLight: f32 = 0.0;
 	var bite: f32 = 0.0;
+	var chemBody: f32 = 0.0;
+	var chemCore: f32 = 0.0;
+	var chemRim: f32 = 0.0;
+	var shiftGlow: f32 = 0.0;
 	if ((fr.uExperimentSim.x > 0.5)) {
 		var field: vec4f = sampleExperimentField(i32(aVis.z), 0);
 		pos += (field.xyz * maskV);
 		experimentTint = (field.w * maskV);
+		if ((fr.uChemistry.x > 0.001)) {
+			var colony: f32 = clamp((max(0.0, field.w) * maskV), 0.0, 1.3);
+			var growth: f32 = clamp(colony, 0.0, 1.0);
+			var spread: vec4f = sampleExperimentField(i32(aVis.z), 1);
+			var pulse: f32 = clamp((spread.z * maskV), 0.0, 1.0);
+			var wave: f32 = chemistryWave(base, fr.uChemistry.z, fr.uTime);
+			var reach: f32 = mix(1.9, 0.6, growth);
+			var dome: f32;
+			if ((fr.uChemistry.y < 0.5)) {
+				chemBody = smoothstep(reach, (reach + 0.14), wave);
+				dome = smoothstep((reach - 0.1), (reach + 0.9), wave);
+				chemCore = smoothstep((reach + 0.3), (reach + 0.85), wave);
+			} else {
+				var width: f32 = ((select(0.05, 0.2, (fr.uChemistry.y < 1.5))) * growth);
+				chemBody = (1.0 - smoothstep(width, (width + (select(0.1, 0.16, (fr.uChemistry.y < 1.5)))), abs(wave)));
+				dome = chemBody;
+				chemCore = smoothstep(0.55, 1.0, chemBody);
+			}
+			var arrival: f32 = smoothstep(0.02, 0.2, growth);
+			chemBody = max((chemBody * arrival), (pulse * 0.6));
+			dome = max((dome * arrival), (pulse * 0.5));
+			chemRim = ((chemBody * ((1.0 - chemCore))) + (pulse * 0.8));
+			var chemNormal: vec3f = select(aNormalB, mix(aNormal, aNormalB, fr.uMorph), (fr.uMorph < 0.9999));
+			chemNormal = select(vec3f(0.0, 1.0, 0.0), normalize(chemNormal), (length(chemNormal) > 0.0));
+			var lift: f32 = (((((dome * 0.7) + (chemCore * 0.3))) * ((0.85 + (0.25 * wave)))) * ((1.0 + (fr.uBeat * 0.3))));
+			pos += ((chemNormal * lift) * fr.uChemistry.x);
+		}
 		var hungerInk: f32 = fr.uExperimentSim.w;
 		if ((hungerInk > 0.001)) {
 			var contact: vec4f = sampleExperimentField(i32(aVis.z), 1);
@@ -1815,15 +1857,17 @@ fn main_() {
 	}
 	if ((fr.uImpossible.x > 0.001)) {
 		var turn: f32 = (fract((fr.uExperimentView.x / 6.2831853)) * 3.0);
-		var width: f32 = mix(0.56, 1.0, fr.uImpossible.z);
-		var first: f32 = (1.0 - smoothstep(0.06, width, min(turn, (3.0 - turn))));
-		var second: f32 = (1.0 - smoothstep(0.06, width, abs((turn - 1.0))));
-		var third: f32 = (1.0 - smoothstep(0.06, width, abs((turn - 2.0))));
+		var width: f32 = mix(0.4, 0.9, fr.uImpossible.z);
+		var pointId: i32 = i32(floor(((aIdx * fr.uExperimentView.w) + 0.5)));
+		var lag: f32 = (0.5 + experimentHash(((pointId * 29) + 7)));
+		var first: f32 = (1.0 - smoothstep(0.06, width, (min(turn, (3.0 - turn)) * lag)));
+		var second: f32 = (1.0 - smoothstep(0.06, width, (abs((turn - 1.0)) * lag)));
+		var third: f32 = (1.0 - smoothstep(0.06, width, (abs((turn - 2.0)) * lag)));
+		shiftGlow = ((min(1.0, (4.0 * ((((first * ((1.0 - first))) + (second * ((1.0 - second)))) + (third * ((1.0 - third))))))) * fr.uImpossible.x) * maskV);
 		var yaw: f32 = ((base.y * 2.4) + (base.x * 0.8));
 		var targetA: vec3f = base;
 		var targetB: vec3f = experimentYaw(base, yaw);
 		var targetC: vec3f = vec3f((base.x + (0.3 * sin((base.y * 7.0)))), ((base.y * 0.85) + (base.z * 0.35)), ((-base.z * 0.35) + (0.47 * sin(((base.x * 6.7) + (base.y * 3.2))))));
-		var pointId: i32 = i32(floor(((aIdx * fr.uExperimentView.w) + 0.5)));
 		var q: i32 = i32(min(floor(((((f32(pointId) + 0.5)) * fr.uExperimentShapeInfo.x) / max(1.0, fr.uExperimentView.w))), (fr.uExperimentShapeInfo.x - 1.0)));
 		var flags: i32 = i32(fr.uExperimentShapeInfo.z);
 		var rows: i32 = i32(fr.uExperimentShapeInfo.y);
@@ -1991,14 +2035,20 @@ fn main_() {
 	}
 	var vm: f32 = ((fr.uMorph * fr.uMorph) * ((3.0 - (2.0 * fr.uMorph))));
 	var vis: f32 = mix(aVis.x, aVis.y, vm);
-	var skin: f32 = max(0.0, experimentTint);
 	var wound: f32 = max(0.0, -experimentTint);
 	var rim: f32 = (smoothstep(0.05, 0.21, wound) * ((1.0 - smoothstep(0.24, 0.65, wound))));
-	var vein: f32 = (smoothstep(0.08, 0.25, skin) * ((1.0 - smoothstep(0.33, 0.68, skin))));
 	vColor = (((mix(col, sculptColor, sculptMix) * fr.uBright) * ((1.0 + (fr.uBeat * 0.3)))) * vis);
 	vColor *= vec3f(((((1.0 - (0.32 * wound)) - (0.2 * copyShade))) * ((1.0 - bite))));
-	vColor += ((((((((mix(fr.uP0, fr.uP2, skin) * skin) * 0.27) + (((fr.uP2 * vein) * fr.uExperimentSim.y) * 0.56)) + (((mix(fr.uP1, fr.uP2, 0.65) * rim) * fr.uExperimentSim.z) * 0.65)) + ((fr.uP2 * autoLight) * 0.38))) * fr.uBright) * vis);
-	experimentScale *= ((((1.0 + (rim * 0.23)) + (vein * 0.16))) * ((1.0 - (bite * 0.78))));
+	vColor += (((((((mix(fr.uP1, fr.uP2, 0.65) * rim) * fr.uExperimentSim.z) * 0.65) + ((fr.uP2 * autoLight) * 0.38))) * fr.uBright) * vis);
+	if ((fr.uChemistry.x > 0.001)) {
+		var pigment: f32 = (chemBody * fr.uExperimentSim.y);
+		var dye: vec3f = ((mix(fr.uP1, fr.uP2, chemCore) * fr.uBright) * vis);
+		vColor = mix((vColor * ((1.0 - (0.38 * fr.uExperimentSim.y)))), ((vColor * 0.4) + (dye * 1.15)), pigment);
+		vColor += (((((fr.uP2 * chemRim) * fr.uExperimentSim.y) * (((0.4 + (0.9 * fr.uChemistry.w)) + (fr.uBeat * 0.4)))) * fr.uBright) * vis);
+		experimentScale *= ((1.0 + (chemBody * 0.22)) + (chemRim * 0.38));
+	}
+	vColor += ((((fr.uP2 * shiftGlow) * 0.1) * fr.uBright) * vis);
+	experimentScale *= ((((1.0 + (rim * 0.23)) + (shiftGlow * 0.14))) * ((1.0 - (bite * 0.78))));
 	if (((fr.uPaintP.x > 0.5) && (aPaint.w > 0.002))) {
 		var pa: f32 = aPaint.w;
 		var cov: f32 = (1.0 - exp((-pa * 3.4)));

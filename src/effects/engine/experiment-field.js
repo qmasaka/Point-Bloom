@@ -1,17 +1,12 @@
 import * as THREE from 'three';
 import { clamp } from '../../core/util.js';
+import { ChemistryColonies } from './chemistry-field.js';
 
 const SIDE = 32;
 const WIDTH = 256;
 const CELLS = SIDE ** 3;
 const STEP = 1 / 24;
 const HISTORY = 18;
-const CHEMISTRY = {
-	spots: { feed: 0.038, kill: 0.062, diffusion: 0.95, balance: 0.39, seeding: 8, radius: 0.22, seed: 0.78, relief: 0.68 },
-	maze: { feed: 0.035, kill: 0.056, diffusion: 1.05, balance: 0.51, seeding: 16, radius: 0.16, seed: 0.67, relief: 0.25 },
-	branches: { feed: 0.025, kill: 0.053, diffusion: 1.07, balance: 0.53, seeding: 2, radius: 0.27, seed: 0.83, relief: 0.92 },
-};
-
 function cellOf(x, y, z) {
 	const axis = (v) => clamp(Math.floor(v * 8 + 16), 0, 31);
 	return axis(x) + SIDE * (axis(y) + SIDE * axis(z));
@@ -51,6 +46,7 @@ export class ExperimentField {
 		this.texture.needsUpdate = true;
 		this.centers = new Float32Array(CELLS * 3);
 		this.indices = new Int32Array(CELLS).fill(-1);
+		this.slot = new Int32Array(CELLS).fill(-1);
 		this.cells = [];
 		this.feedback = new Float32Array(CELLS * 3);
 		this.current = new Float32Array(CELLS * 3);
@@ -86,6 +82,7 @@ export class ExperimentField {
 			for (let k = 0; k < 3; k++) this.centers[id * 3 + k] /= counts[id];
 		}
 		this.neighbours = graphOf(this.cells, counts);
+		this.cells.forEach((id, i) => (this.slot[id] = i));
 		vis.needsUpdate = true;
 	}
 
@@ -229,85 +226,9 @@ export class ExperimentField {
 		[h.bite, h.nextBite] = [h.nextBite, h.bite];
 	}
 
-	_seed(center, radius, strength) {
-		const cs = this.centers;
-		const { a, b, age } = this.chem;
-		for (const id of this.cells) {
-			const j = id * 3;
-			const d = Math.hypot(cs[j] - center[0], cs[j + 1] - center[1], cs[j + 2] - center[2]);
-			if (d >= radius) continue;
-			const weight = 1 - d / radius;
-			a[id] = Math.min(a[id], 1 - strength * (0.54 + 0.40 * weight));
-			b[id] = Math.max(b[id], strength * (0.5 + 0.44 * weight));
-			if (age) age[id] = 0.02 + (1 - weight) * 0.12;
-		}
-	}
-
 	_react(settings, hit) {
-		const recipe = CHEMISTRY[settings.style] || CHEMISTRY.spots;
-		if (!this.chem || this.chem.recipe !== recipe) {
-			this.chem = { recipe, a: new Float32Array(CELLS).fill(1), b: new Float32Array(CELLS), nextA: new Float32Array(CELLS), nextB: new Float32Array(CELLS), warm: 20, substeps: 0 };
-			if (recipe === CHEMISTRY.branches) Object.assign(this.chem, { age: new Float32Array(CELLS).fill(-1), nextAge: new Float32Array(CELLS).fill(-1), front: new Float32Array(CELLS), wave: 0 });
-			for (let i = 0; i < Math.min(recipe.seeding, this.cells.length); i++) {
-				const index = Math.floor((0.23 + i * 0.61803399) % 1 * this.cells.length);
-				const j = this.cells[index] * 3;
-				this._seed(this.centers.subarray(j, j + 3), recipe.radius, recipe.seed);
-			}
-		}
-		if (hit >= 0) this._seed(this.centers.subarray(hit * 3, hit * 3 + 3), settings.radius, recipe.seed);
-		const c = this.chem;
-		const { feed, kill } = recipe;
-		c.substeps += Math.min(18, (c.warm > 0 ? 12 : 5) * settings.speed);
-		if (c.warm > 0) c.warm--;
-		const steps = Math.floor(c.substeps);
-		c.substeps -= steps;
-		for (let step = 0; step < steps; step++) {
-			const { a, b, nextA, nextB } = c;
-			for (let i = 0; i < this.cells.length; i++) {
-				const id = this.cells[i], neighbours = this.neighbours[i];
-				const av = a[id], bv = b[id];
-				let sumA = 0, sumB = 0, near = 0;
-				for (const n of neighbours) {
-					sumA += a[n] - av;
-					sumB += b[n] - bv;
-					if (recipe === CHEMISTRY.branches) near = Math.max(near, b[n] - bv);
-				}
-				const diffusion = recipe.diffusion / Math.max(1, neighbours.length);
-				const reaction = av * bv * bv;
-				nextA[id] = clamp(av + 0.8 * (diffusion * 0.95 * sumA - reaction + feed * (1 - av)), 0, 1);
-				nextB[id] = clamp(bv + 0.8 * (diffusion * recipe.balance * sumB + reaction - (kill + feed) * bv + near * 0.09 * av), 0, 1);
-			}
-			[c.a, c.nextA] = [nextA, a];
-			[c.b, c.nextB] = [nextB, b];
-		}
-		if (c.age) this._infectionFront(c, settings.speed);
-	}
-
-	_infectionFront(chem, speed) {
-		let active = false;
-		for (let i = 0; i < this.cells.length; i++) {
-			const id = this.cells[i];
-			let age = chem.age[id];
-			if (age < 0) {
-				const delay = 0.12 + (id % 11) * 0.012;
-				for (const n of this.neighbours[i]) {
-					if (chem.age[n] < delay || chem.age[n] > 0.48) continue;
-					age = 0;
-					break;
-				}
-			} else {
-				age += STEP * speed;
-				if (age >= 2.8) age = -1;
-			}
-			active ||= age >= 0;
-			chem.nextAge[id] = age;
-			chem.front[id] = age < 0 ? 0 : Math.min(1, age * 8) * Math.exp(-age * 2.7);
-		}
-		[chem.age, chem.nextAge] = [chem.nextAge, chem.age];
-		if (!active && this.cells.length) {
-			const id = this.cells[Math.floor((++chem.wave * 0.61803398875 % 1) * this.cells.length)];
-			chem.age[id] = 0;
-		}
+		if (!this.chem || this.chem.style !== settings.style) this.chem = new ChemistryColonies(this, settings.style);
+		this.chem.step(settings, hit >= 0 ? this.slot[hit] : -1, STEP);
 	}
 
 	pick(ndc, viewport, object) {
@@ -365,7 +286,7 @@ export class ExperimentField {
 		if (!wounds.on && this.woundOn) this.resetWounds();
 		this.woundOn = wounds.on;
 		const decay = Math.exp(-3 * STEP / wounds.healing);
-		const b = this.chem?.b;
+		const colonies = reaction.on ? this.chem : null;
 		const captureHistory = wounds.on && this.time - (this.historyTime ?? -Infinity) + 0.0001 >= Math.max(STEP, wounds.memory / HISTORY);
 		let snapshot;
 		if (captureHistory) {
@@ -375,11 +296,8 @@ export class ExperimentField {
 		}
 		for (let index = 0; index < this.cells.length; index++) {
 			const id = this.cells[index], j = id * 3, p = id * 4, i = this.indices[id];
-			const infection = this.chem?.front?.[id] ?? 0;
-			const concentration = reaction.on && b ? clamp(Math.max((b[id] - 0.06) * 3.8, infection * 1.4), 0, 1) : 0;
-			const chem = concentration * concentration * (3 - 2 * concentration) * chemGain;
-			const mutation = chem * chem * (this.chem?.recipe.relief ?? 0);
-			const ridge = chem * reaction.growth * (0.12 + mutation * 0.55);
+			const chem = colonies ? colonies.value[index] * chemGain : 0;
+			const front = colonies ? colonies.front[index] * chemGain : 0;
 			let w = this.wounds[id];
 			if (wounds.on) {
 				let nearby = 0;
@@ -396,17 +314,18 @@ export class ExperimentField {
 			for (let k = 0; k < 3; k++) {
 				const noise = Math.sin(this.centers[j + (k + 1) % 3] * 19 + k * 2 + this.time * 0.7);
 				const local = this.autoOn ? this.feedback[j + k] * autoGain : 0;
-				const offset = local + ridge * normals[i + k] + noise * mutation * 0.14;
+				const offset = local;
 				const live = this.current[j + k] + offset;
 				const lift = wounds.style === 'crack' ? 0.12 - layer * wounds.spacing : 0.19 + layer * wounds.spacing;
 				const cut = lift * normals[i + k] + noise * (0.04 + wounds.roughness * 0.12);
 				this.output[p + k] = offset + w * wounds.depth * ((past ? past[j + k] - live : 0) + cut);
 				if (snapshot) snapshot[j + k] = live;
 			}
-			this.output[p + 3] = 2 + Math.min(1, chem) - Math.min(1, w * (0.82 + layer * 0.08));
+			this.output[p + 3] = 2 + Math.min(1.3, chem) - Math.min(1, w * (0.82 + layer * 0.08));
 			const detail = CELLS * 4 + p;
 			this.output[detail] = Math.min(1, (this.hunger?.bite[id] ?? 0) * autoGain);
 			this.output[detail + 1] = (this.hunger?.pressure[id] ?? 0) * autoGain;
+			this.output[detail + 2] = Math.min(1.3, front);
 			this.output[detail + 3] = 2;
 		}
 		if (wounds.on) [this.wounds, this.cracks] = [this.cracks, this.wounds];

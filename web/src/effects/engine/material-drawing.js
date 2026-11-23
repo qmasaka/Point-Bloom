@@ -8,20 +8,47 @@ const PROJECTED = new THREE.Vector3();
 const vertex = (x, y, z) => [Math.fround(x), Math.fround(y), Math.fround(z)];
 export class MaterialDrawing {
 constructor() {
-this.lines = [[], []];
+this.lines = [[], [], []];
 this.faces = [[], []];
-this.points = [[], []];
+this.points = [[], [], []];
+this.nodes = [[], [], []];
 }
-vertex(kind, p, color, light = 1) {
+vertex(kind, p, color, light = 1, t = 0, phase = 0) {
 kind[0].push(...p);
 kind[1].push(color.r * light, color.g * light, color.b * light);
+if (kind[2]) kind[2].push(t, phase);
 }
-segment(a, b, color, light = 1) {
-this.vertex(this.lines, a, color, light);
-this.vertex(this.lines, b, color, light);
+segment(a, b, color, light = 1, t = 0, tEnd = t, phase = 0) {
+this.vertex(this.lines, a, color, light, t, phase);
+this.vertex(this.lines, b, color, light, tEnd, phase);
 }
 quad(a, b, c, d, color, light) {
 for (const p of [a, b, c, b, d, c]) this.vertex(this.faces, p, color, light);
+}
+}
+const FLOW_SPEED = 0.17;
+export function pulseMaterial(part, now, strength, speed) {
+if (!part?.flow) return;
+const reach = 1.6 * strength;
+const floor = 1 - strength * 0.55;
+for (const [kind, flow] of Object.entries(part.flow)) {
+const base = part.base[kind];
+const attribute = part.parts[kind].geometry.attributes.color;
+if (!attribute || !flow.length) continue;
+const out = attribute.array;
+const count = flow.length / 2;
+const travel = now * speed * FLOW_SPEED;
+for (let i = 0; i < count; i++) {
+let d = flow[i * 2 + 1] + travel - flow[i * 2];
+d -= Math.floor(d);
+const k = floor + reach * Math.exp(-d * 7);
+out[i * 3] = base[i * 3] * k;
+out[i * 3 + 1] = base[i * 3 + 1] * k;
+out[i * 3 + 2] = base[i * 3 + 2] * k;
+}
+attribute.clearUpdateRanges();
+attribute.addUpdateRange(0, count * 3);
+attribute.needsUpdate = true;
 }
 }
 function tint(palette, v) {
@@ -65,94 +92,176 @@ const random = seededRandom(0x517e51);
 const { min, max, inside } = volume;
 const span = max.map((v, i) => v - min[i]);
 const complexity = layer.complexity;
-const count = Math.round(55 + layer.density ** 1.2 * 860);
-const steps = Math.round(15 + complexity * 28);
 const mode = layer.mode;
 const space = Math.max(...span);
-const step = space * 0.017;
 const open = removed ? (x, y, z) => inside(x, y, z) && !removed(x, y, z) : inside;
-const beam = (a, b, tone, light) => {
-if (removed && (removed(...a) || !insideSegment(open, a, b))) return;
-const color = tint(palette, tone);
-draw.segment(a, b, screen ? screen(b, color) : color, light);
-};
-for (let i = 0; i < count; i++) {
-let start;
-for (let j = 0; j < 12; j++) {
-start = volume.seed ? volume.seed(random) : min.map((v, k) => v + random() * span[k]);
-start = vertex(...start);
-if (inside(...start)) break;
-start = null;
+const bundles = Math.round(30 + layer.density ** 1.1 * 190);
+const steps = Math.round(26 + complexity * 56);
+const step = space * 0.0125;
+const wave = (1.3 + complexity * 3.1) * 2 / space;
+const place = () => {
+for (let j = 0; j < 14; j++) {
+const p = vertex(...(volume.seed ? volume.seed(random) : min.map((v, k) => v + random() * span[k])));
+if (inside(...p)) return p;
 }
+return null;
+};
+const link = (a, b, tone, light, t, tEnd, phase) => {
+if (!insideSegment(open, a, b) || (removed && removed(...a))) return false;
+const color = tint(palette, tone);
+const shade = screen ? screen(b, color) : color;
+draw.segment(a, b, shade, light, t, tEnd, phase);
+for (let k = 1; k <= 2; k++) {
+const f = k / 3;
+draw.vertex(draw.points, [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f], shade, light * 1.15, t + (tEnd - t) * f, phase);
+}
+return true;
+};
+const glow = (p, tone, light, phase) => {
+const color = tint(palette, Math.min(1, tone + 0.25));
+draw.vertex(draw.nodes, p, screen ? screen(p, color) : color, light * 1.2, 0, phase);
+};
+const field = (p, shift, lift) => {
+const [x, y, z] = p;
+const dx = Math.sin(y * wave + 0.7 + shift) - Math.cos(z * wave + 0.9);
+const dy = Math.sin(z * wave - 0.4) - Math.cos(x * wave + 0.5 + shift) + lift;
+const dz = Math.sin(x * wave + 0.6) - Math.cos(y * wave - 0.7 - shift);
+const m = Math.max(0.25, Math.hypot(dx, dy, dz));
+return [dx / m, dy / m, dz / m];
+};
+const steer = (a, dir) => {
+const reach = (d) => {
+const b = vertex(a[0] + d[0] * step, a[1] + d[1] * step, a[2] + d[2] * step);
+return insideSegment(open, a, b) ? b : null;
+};
+const straight = reach(dir);
+if (straight) return straight;
+let ux = dir[1] * 0.46 - dir[2] * 0.83, uy = dir[2] * 0.31 - dir[0] * 0.46, uz = dir[0] * 0.83 - dir[1] * 0.31;
+const un = Math.hypot(ux, uy, uz) || 1;
+ux /= un; uy /= un; uz /= un;
+const wx = dir[1] * uz - dir[2] * uy, wy = dir[2] * ux - dir[0] * uz, wz = dir[0] * uy - dir[1] * ux;
+for (const bend of [0.5, 1, 1.7, 3]) {
+for (const [cu, cw] of [[1, 0], [-1, 0], [0, 1], [0, -1], [0.7, 0.7], [-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7]]) {
+const d = [dir[0] + (ux * cu + wx * cw) * bend, dir[1] + (uy * cu + wy * cw) * bend, dir[2] + (uz * cu + wz * cw) * bend];
+const m = Math.hypot(...d) || 1;
+const b = reach([d[0] / m, d[1] / m, d[2] / m]);
+if (b) return b;
+}
+}
+return null;
+};
+const follow = (from, length, shift, lift, tone, light, phase, spread) => {
+let a = from;
+let last = null;
+for (let k = 0; k < length; k++) {
+const dir = field(a, shift, lift);
+const b = steer(a, dir);
+if (!b) break;
+if (!link(a, b, tone + k / length * spread, light * (0.55 + 0.45 * Math.sin(Math.PI * Math.min(1, (k + 1) / length * 1.15))), k / length, (k + 1) / length, phase)) break;
+last = b;
+a = b;
+}
+return last;
+};
+for (let i = 0; i < bundles; i++) {
+const start = place();
 if (!start) continue;
-const phase = random() * TAU;
+const phase = random();
 const tone = random();
-const length = Math.round(steps * (0.55 + 0.6 * random()));
-const light = 0.42 + random() ** 1.4 * 0.87;
-if (mode === 'orbit' || mode === 'weave') {
-const radius = (0.07 + random() ** 1.6 * 0.46) * space;
+const light = 0.5 + random() ** 1.3 * 0.8;
+const length = Math.round(steps * (0.6 + 0.55 * random()));
+if (mode === 'orbit') {
+const radius = (0.08 + random() ** 1.3 * 0.42) * space;
+const tilt = random() * TAU;
+const spin = (0.45 + complexity * 0.85) * (random() < 0.5 ? -1 : 1);
+const rings = 1 + Math.floor(random() * 2);
+for (let ring = 0; ring < rings; ring++) {
+const r0 = radius * (0.55 + ring * 0.38);
+const lean = tilt + ring * 0.7;
+const point = (s) => {
+const angle = phase * TAU + s * TAU * spin;
+const r = r0 * (0.5 + s * 0.5);
+return vertex(
+start[0] + Math.cos(angle) * r,
+start[1] + Math.sin(angle) * r * Math.sin(lean) + Math.sin(angle * 2) * r * 0.16,
+start[2] + Math.sin(angle) * r * Math.cos(lean),
+);
+};
+const turns = Math.round(length * 1.3);
+let a = point(0);
+for (let j = 1; j <= turns; j++) {
+const b = point(j / turns);
+if (open(...a)) link(a, b, tone * 0.7 + j / turns * 0.3, light, (j - 1) / turns, j / turns, phase + ring * 0.21);
+a = b;
+}
+if (open(...a)) glow(a, tone, light, phase);
+}
+continue;
+}
+if (mode === 'weave') {
+const axisCount = 46;
 const band = (i % 13) / 12;
 const warp = i % 2 === 0;
-const point = (s, offset = 0) => {
-if (mode === 'orbit') {
-const a = phase + s * TAU * (0.8 + complexity * 1.1);
-const r = radius * (0.18 + s * 0.82);
-return vertex(
-start[0] + Math.cos(a) * r,
-start[1] + Math.sin(a) * r * 0.68 * Math.sin(phase) + Math.sin(a * 2) * r * 0.23,
-start[2] + Math.sin(a) * r * Math.cos(phase),
-);
-}
-const axis = (i % 44 + 0.5) / 44 + offset;
-const u = warp ? s : axis;
-const v = warp ? axis : s;
+const lane = (i % axisCount + 0.5) / axisCount;
+const point = (s) => {
+const u = warp ? s : lane;
+const v = warp ? lane : s;
 return vertex(
 min[0] + u * span[0],
 min[1] + v * span[1],
 min[2] + span[2] * (0.16 + band * 0.68 + Math.sin((u * 1.2 + v) * TAU * (1 + complexity) + band * 4) * 0.14),
 );
 };
-const ribbonWidth = 0.004 + complexity * 0.013;
-const membrane = mode === 'weave' && i % 6 === 0;
+const cuts = Math.round(steps * 1.4);
 let a = point(0);
-for (let j = 1; j <= length; j++) {
-const b = point(j / length);
-if (open(...a) && insideSegment(open, a, b)) {
-beam(a, b, mode === 'orbit' ? tone * 0.75 + j / length * 0.25 : band, light);
-if (membrane) {
-const c = point((j - 1) / length, ribbonWidth);
-const d = point(j / length, ribbonWidth);
-if (open(...c) && insideSegment(open, c, d) && insideSegment(open, a, c) && insideSegment(open, b, d) && insideSegment(open, b, c)) {
-const color = tint(palette, band * 0.85 + 0.15);
-draw.quad(a, c, b, d, screen ? screen(b, color) : color, light * 0.63);
-}
-}
-}
+for (let j = 1; j <= cuts; j++) {
+const b = point(j / cuts);
+if (open(...a)) link(a, b, band, light, (j - 1) / cuts, j / cuts, phase);
+if (open(...a) && i % 6 === 0 && j % 5 === 0) glow(a, band, light * 0.8, phase);
 a = b;
 }
 continue;
 }
 const grow = mode === 'growth';
-const frequency = (2.5 + complexity * 4.3) / space;
-const paths = [{ p: start, phase, length, branch: 0 }];
-for (const path of paths) {
-let a = path.p;
-for (let k = 0; k < path.length; k++) {
-const [x, y, z] = a;
-const f = path.phase;
-const dx = Math.sin(y * frequency + 0.7) - Math.cos(z * frequency + f * 0.33);
-const dy = Math.sin(z * frequency - 0.4) - Math.cos(x * frequency + f * 0.22) + (grow ? 0.8 : 0);
-const dz = Math.sin(x * frequency + f * 0.22) - Math.cos(y * frequency - 0.7);
-const speed = step / Math.max(0.25, Math.hypot(dx, dy, dz));
-const b = vertex(x + dx * speed, y + dy * speed, z + dz * speed);
-if (!insideSegment(inside, a, b)) break;
-beam(a, b, tone * 0.75 + k / path.length * 0.25, light * (path.branch ? 0.62 : 1));
-if (grow && path.branch === 0 && k > 2 && k % 7 === 0 && random() < 0.35 + complexity * 0.56) {
-paths.push({ p: b, phase: f + (random() - 0.5) * 16, length: Math.round(5 + complexity * 11), branch: 1 });
+const fibres = grow ? 1 : 4 + Math.floor(random() * 5);
+for (let f = 0; f < fibres; f++) {
+const from = f === 0 ? start : vertex(start[0] + (random() - 0.5) * space * 0.03, start[1] + (random() - 0.5) * space * 0.03, start[2] + (random() - 0.5) * space * 0.03);
+if (!inside(...from)) continue;
+const shift = (i % 7) * 0.05;
+if (!grow) {
+const end = follow(from, length, shift, 0, tone, light * (0.75 + 0.25 * random()), phase + f * 0.03, 0.25);
+if (end && f === 0) glow(end, tone, light, phase);
+continue;
+}
+const branches = [{ p: from, length, shift, depth: 0, phase }];
+for (let n = 0; n < branches.length && n < 60; n++) {
+const branch = branches[n];
+let a = branch.p;
+for (let k = 0; k < branch.length; k++) {
+const dir = field(a, branch.shift, 0.9);
+const b = steer(a, dir);
+if (!b) break;
+const taper = 1 - branch.depth * 0.22;
+if (!link(a, b, tone * 0.6 + k / branch.length * 0.4, light * taper, k / branch.length, (k + 1) / branch.length, branch.phase)) break;
+if (k > 3 && k % 6 === 0 && branch.depth < 3 && random() < 0.3 + complexity * 0.5) {
+glow(b, tone, light * 0.9, branch.phase);
+branches.push({ p: b, length: Math.round(branch.length * (0.55 + random() * 0.3)), shift: branch.shift + (random() - 0.5) * 1.8, depth: branch.depth + 1, phase: random() });
 }
 a = b;
+if (k === branch.length - 1) glow(a, tone, light, branch.phase);
 }
 }
+}
+}
+}
+export function drawShell(draw, positions, colors, hide, palette, limit) {
+const count = positions.length / 3;
+const stride = Math.max(1, Math.floor(count / limit));
+const color = new THREE.Color();
+for (let i = 0; i < count; i += stride) {
+if (hide && hide[i] > 0.5) continue;
+color.setRGB(colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2]).lerp(palette[0], 0.45);
+draw.vertex(draw.points, [positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]], color, 0.3);
 }
 }
 function distance(a, b) {

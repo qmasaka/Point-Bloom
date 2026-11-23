@@ -1,13 +1,15 @@
 export const MATERIAL_LAYERS = [
 	{
 		id: 'inners', group: 'Эксперименты', name: 'Внутренности', icon: 'cube-transparent',
-		hint: 'Линии заполняют объём формы. «Экран» окрашивает их кадром.',
-		sound: false, noAmount: true, max: 1, def: { on: false, amount: 1, mode: 'flow', density: 0.53, complexity: 0.55, shell: 'hide' },
+		hint: 'Внутри формы растут светящиеся нити, по ним бегут импульсы. «Экран» окрашивает их кадром.',
+		sound: false, noAmount: true, max: 1, def: { on: false, amount: 1, mode: 'flow', density: 0.7, complexity: 0.55, pulse: 0.7, flow: 1, shell: 'ghost' },
 		extras: [
 			{ key: 'mode', label: 'Рисунок', type: 'select', options: [['flow', 'Течение'], ['orbit', 'Орбиты'], ['growth', 'Ветвление'], ['weave', 'Переплетение']] },
 			{ key: 'density', label: 'Плотность', min: 0, max: 1, step: 0.01 },
 			{ key: 'complexity', label: 'Сложность', min: 0, max: 1, step: 0.01 },
-			{ key: 'shell', label: 'Оболочка', type: 'seg', options: [['show', 'Видна'], ['hide', 'Скрыта']] },
+			{ key: 'pulse', label: 'Импульсы', min: 0, max: 1, step: 0.01 },
+			{ key: 'flow', label: 'Скорость потока', min: 0.2, max: 3, step: 0.05, noNorm: true, unit: ' ×' },
+			{ key: 'shell', label: 'Оболочка', type: 'seg', options: [['show', 'Видна'], ['ghost', 'Призрак'], ['hide', 'Скрыта']] },
 		],
 	},
 	{
