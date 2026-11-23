@@ -1,6 +1,7 @@
 {
   "version": 2,
   "cleanUrls": true,
+  "buildCommand": "node --experimental-vm-modules dev/check-web-imports.mjs",
   "outputDirectory": "web",
   "headers": [
     {

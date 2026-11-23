@@ -444,6 +444,7 @@ def write_vercel_json():
     cfg = {
         "version": 2,
         "cleanUrls": True,
+        "buildCommand": "node --experimental-vm-modules dev/check-web-imports.mjs",
         "outputDirectory": "web",
         "headers": [
             {"source": "/(.*)", "headers": [{"key": k, "value": v} for k, v in headers]},
