@@ -124,12 +124,6 @@ S.kickAt = this._time;
 S.cleanUntil = -1;
 this.app.viewport.invalidate();
 }
-moshClear() {
-const S = this._mosh || (this._mosh = { kickAt: -1e9, nextKick: 0, lastT: 0, lastBeat: -9, above: false, cleanUntil: -1, wasOn: false });
-S.kickAt = -1e9;
-S.cleanUntil = this._time + 0.25;
-this.app.viewport.invalidate();
-}
 moshStyle(L, style) {
 const P = {
 bleed: { trigger: 'always', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, coh: 0.6, void: 1 },

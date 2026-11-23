@@ -78805,12 +78805,8 @@ const FX_LAYERS = [
 { key: 'dshow', label: 'Что видно на форме', type: 'seg', options: [['video', 'Видео'], ['map', 'Карта глубины']], when: ['dsrc', ['bright', 'ai', 'file']] },
 ] },
 { id: 'curl', group: 'Движение', name: 'Вихри и течение', icon: 'tornado', hint: 'Точки плывут. Виды: вихри (точки отрываются от формы), поток с возвратом, кольца (слои вращаются в разные стороны), течение (точки скользят вдоль формы, а силуэт не меняется)', max: 2, def: { on: false, amount: 1, band: 'bass', react: 0.6, scale: 1.8, speed: 1, mode: 'noise', flow: 0.8, fscale: 1.6, fdir: 0 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['noise', 'Вихри: хаотичное движение'], ['stream', 'Поток: движение с возвратом'], ['orbit', 'Кольца: вращение слоёв'], ['surface', 'Течение: скольжение по форме']] }, { key: 'scale', label: 'Масштаб вихрей', min: 0.5, max: 4, step: 0.1, when: ['mode', ['noise', 'stream', 'orbit']] }, { key: 'fscale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1, when: ['mode', ['surface']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'flow', label: 'Направление потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['stream']] }, { key: 'fdir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1, when: ['mode', ['surface']] }] },
-{ id: 'physics', sound: false, group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается, осколки падают на пол с отскоками и собираются обратно. Режим «Крошится» разрушает форму или видео под музыку', max: 2, def: { on: false, amount: 1.0, band: 'none', react: 0, mode: 'drop', gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2, drive: 'all', sens: 1, idle: 0.4, kick: 0.5, chunk: 0.08, fade: 0.6, repeat: 'loop', hold: 3 }, extras: [
+{ id: 'physics', group: 'Движение', name: 'Распад', icon: 'atom', hint: 'Форма раскалывается, осколки падают на пол с отскоками и собираются обратно. Режим «Крошится» разрушает форму или видео под музыку', max: 2, def: { on: false, amount: 1.0, band: 'bass', react: 0.5, mode: 'drop', gravity: 1.2, bounce: 0.3, wind: 0, burst: 1, peel: 0.6, swirl: 0.5, asm: 2.2, idle: 0.4, chunk: 0.08, fade: 0.6, repeat: 'loop', hold: 3 }, extras: [
 { key: 'mode', label: 'Как разрушается', type: 'seg', options: [['drop', 'Целиком'], ['crumble', 'Крошится']] },
-{ type: 'title', label: 'Музыка', open: true },
-{ key: 'drive', label: 'Что крошит', type: 'seg', options: [['all', 'Всё'], ['bass', 'Бас'], ['mid', 'Середина'], ['high', 'Верха']], when: ['mode', ['crumble']] },
-{ key: 'sens', label: 'Чувствительность', min: 0, max: 3, step: 0.05, noNorm: true, unit: ' ×', when: ['mode', ['crumble']] },
-{ key: 'kick', label: 'Удар откалывает', min: 0, max: 1, step: 0.01, when: ['mode', ['crumble']] },
 { key: 'idle', label: 'Крошится само', min: 0, max: 1, step: 0.01, when: ['mode', ['crumble']] },
 { type: 'title', label: 'Осколки', open: true },
 { key: 'chunk', label: 'Размер кусочков', min: 0, max: 0.4, step: 0.01, noNorm: true, unit: ' м', digits: 2, when: ['mode', ['crumble']] },
@@ -78917,12 +78913,11 @@ const FX_LAYERS = [
 { id: 'slice', group: 'Графика', name: 'Срез', icon: 'scan', hint: 'По форме идёт срез. Виды: лазер (линии), рельеф (точки на линиях), развёртка (форма проявляется за плоскостью)', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'relief', speed: 0.5, width: 0.08, count: 4, axis: 'y', lift: 0.25, bounce: 'on', color: 'model' }, extras: [{ key: 'mode', label: 'Вид', type: 'seg', options: [['laser', 'Лазер'], ['relief', 'Рельеф'], ['cut', 'Развёртка']] }, { key: 'count', label: 'Число линий', min: 1, max: 12, step: 1, int: true }, { key: 'speed', label: 'Скорость', min: 0.05, max: 2, step: 0.05 }, { key: 'width', label: 'Толщина', min: 0.003, max: 0.3, step: 0.002 }, { key: 'lift', label: 'Высота рельефа', min: 0, max: 0.8, step: 0.01 }, { key: 'bounce', label: 'Движение', type: 'seg', options: [['on', 'Туда и обратно'], ['off', 'В одну сторону']] }, { key: 'color', label: 'Цвет линии', type: 'color', natural: true }, { key: 'axis', label: 'Ось', type: 'seg', options: [['y', 'Y'], ['x', 'X'], ['z', 'Z'], ['diag', 'Диаг.']] }] },
 { id: 'feedback', sound: false, group: 'Графика', name: 'Следы времени', icon: 'spiral', hint: 'Форма оставляет за собой световой хвост из прошлых кадров. Виды: выдержка, туннель', max: 1, def: { on: false, amount: 0.95, band: 'none', react: 0, mode: 'exposure', tint: 0.5, zoom: 1.004, twist: 0.002 }, extras: [{ key: 'mode', label: 'Вид следа', type: 'seg', options: [['exposure', 'Выдержка'], ['tunnel', 'Туннель']] }, { key: 'tint', label: 'Окрашивание хвоста', min: 0, max: 1, step: 0.05 }, { key: 'zoom', label: 'Зум туннеля', min: 0.98, max: 1.03, step: 0.002, when: ['mode', ['tunnel']] }, { key: 'twist', label: 'Спираль (угол)', min: -0.02, max: 0.02, step: 0.001, when: ['mode', ['tunnel']] }] },
 { id: 'datamosh', group: 'Графика', name: 'Датамош', icon: 'checkerboard', hint: 'Сбой видеокодека как приём: картинка «теряет опорный кадр», и движение размазывает старые пиксели, а блоки ползут и рассыпаются. Работает на любой сцене и на неподвижной картинке', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'bleed', trigger: 'always', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, stale: 0.2, jit: 0.4, coh: 0.6, void: 1, trail: 0.6 }, extras: [
-{ type: 'row', items: [{ label: 'Сломать кадр', act: 'moshKick', icon: 'lightning', primary: true }, { label: 'Чистый кадр', act: 'moshClear', icon: 'broom' }] },
 { key: 'style', label: 'Вид сбоя', type: 'select', options: [['bleed', 'Размазывание', 'движение тянет за собой старые пиксели'], ['blocks', 'Блоки', 'макроблоки залипают и ползут'], ['melt', 'Расплав', 'картинка пластично стекает'], ['trails', 'Световые потёки', 'точки оставляют следы, текущие по движению'], ['broken', 'Битый поток', 'блоки теряют данные: средний цвет, сорванный цвет'], ['scatter', 'Рассыпание', 'кадр крупными пикселями сползает и осыпается']], restyle: 'moshStyle' },
 { type: 'title', label: 'Запуск', open: true },
-{ key: 'trigger', label: 'Когда ломается', type: 'select', options: [['always', 'Непрерывно', 'сбой не кончается'], ['timer', 'По таймеру', 'сбой через равные паузы'], ['beat', 'По биту', 'в такт музыке'], ['cursor', 'Мышью', 'пока водите, кадр размазывается за курсором'], ['manual', 'Кнопкой', 'только «Сломать кадр»'], ] },
+{ key: 'trigger', label: 'Когда ломается', type: 'select', options: [['always', 'Непрерывно', 'сбой не кончается'], ['timer', 'По таймеру', 'сбой через равные паузы'], ['beat', 'По биту', 'в такт музыке'], ['cursor', 'Мышью', 'пока водите, кадр размазывается за курсором'] ] },
 { key: 'period', label: 'Пауза между сбоями, с', min: 0.5, max: 12, step: 0.1, noNorm: true, when: ['trigger', ['timer']] },
-{ key: 'recover', label: 'Сколько держится сбой, с', min: 0.2, max: 10, step: 0.1, noNorm: true, when: ['trigger', ['timer', 'beat', 'manual', 'cursor']] },
+{ key: 'recover', label: 'Сколько держится сбой, с', min: 0.2, max: 10, step: 0.1, noNorm: true, when: ['trigger', ['timer', 'beat', 'cursor']] },
 { type: 'title', label: 'Движение', open: true },
 { key: 'drift', label: 'Снос', min: 0, max: 1, step: 0.05 },
 { key: 'flow', label: 'Вихри', min: 0, max: 1, step: 0.05 },
@@ -86659,8 +86654,6 @@ en: {
 'Растяжение полос': 'Streak stretch',
 'Свечение полос': 'Streak glow',
 'Работает на фото и видео из «Медиа». На видео полосы пересчитываются на каждом кадре.': 'Works on photo and video from Media. On video the streaks are recomputed every frame.',
-'Сломать кадр': 'Break the frame',
-'Чистый кадр': 'Clean frame',
 'Стекание': 'Drip',
 'Шторм': 'Storm',
 'Мышью': 'Mouse',
@@ -86675,7 +86668,6 @@ en: {
 'в такт музыке': 'in time with the music',
 'пока водите, кадр размазывается за курсором': 'while you move, the frame smears after the cursor',
 'Кнопкой': 'Button',
-'только «Сломать кадр»': 'only Break the frame',
 'сбой не кончается': 'the glitch never ends',
 'Куда течёт': 'Where it flows',
 'Снос в эту сторону': 'Drift this way',
@@ -87208,9 +87200,7 @@ en: {
 'Как разрушается': 'How it breaks',
 'Целиком': 'All at once',
 'Крошится': 'Crumbles',
-'Что крошит': 'What crumbles it',
 'Верха': 'Highs',
-'Удар откалывает': 'Beat chips off',
 'Крошится само': 'Crumbles on its own',
 'Размер кусочков': 'Piece size',
 'Сила разлёта': 'Burst strength',
@@ -88078,8 +88068,6 @@ uk: {
 'Растяжение полос': 'Розтягнення смуг',
 'Свечение полос': 'Світіння смуг',
 'Работает на фото и видео из «Медиа». На видео полосы пересчитываются на каждом кадре.': 'Працює на фото й відео з «Медіа». На відео смуги перераховуються на кожному кадрі.',
-'Сломать кадр': 'Зламати кадр',
-'Чистый кадр': 'Чистий кадр',
 'Стекание': 'Стікання',
 'Шторм': 'Шторм',
 'Мышью': 'Мишею',
@@ -88094,7 +88082,6 @@ uk: {
 'в такт музыке': 'у такт музиці',
 'пока водите, кадр размазывается за курсором': 'поки водите, кадр розмазується за курсором',
 'Кнопкой': 'Кнопкою',
-'только «Сломать кадр»': 'тільки «Зламати кадр»',
 'сбой не кончается': 'збій не закінчується',
 'Куда течёт': 'Куди тече',
 'Снос в эту сторону': 'Знос у цей бік',
@@ -88627,9 +88614,7 @@ uk: {
 'Как разрушается': 'Як руйнується',
 'Целиком': 'Цілком',
 'Крошится': 'Кришиться',
-'Что крошит': 'Що кришить',
 'Верха': 'Верхи',
-'Удар откалывает': 'Удар відколює',
 'Крошится само': 'Кришиться сама',
 'Размер кусочков': 'Розмір шматочків',
 'Сила разлёта': 'Сила розльоту',
@@ -89497,8 +89482,6 @@ es: {
 'Растяжение полос': 'Estiramiento de franjas',
 'Свечение полос': 'Brillo de franjas',
 'Работает на фото и видео из «Медиа». На видео полосы пересчитываются на каждом кадре.': 'Funciona con foto y vídeo de Medios. En vídeo las franjas se recalculan en cada fotograma.',
-'Сломать кадр': 'Romper el fotograma',
-'Чистый кадр': 'Fotograma limpio',
 'Стекание': 'Goteo',
 'Шторм': 'Tormenta',
 'Мышью': 'Con el ratón',
@@ -89513,7 +89496,6 @@ es: {
 'в такт музыке': 'al compás de la música',
 'пока водите, кадр размазывается за курсором': 'mientras lo mueves, el fotograma se corre tras el cursor',
 'Кнопкой': 'Con botón',
-'только «Сломать кадр»': 'solo Romper el fotograma',
 'сбой не кончается': 'el fallo no termina',
 'Куда течёт': 'Hacia dónde fluye',
 'Снос в эту сторону': 'Deriva hacia ese lado',
@@ -90046,9 +90028,7 @@ es: {
 'Как разрушается': 'Cómo se rompe',
 'Целиком': 'De golpe',
 'Крошится': 'Se desmigaja',
-'Что крошит': 'Qué la desmigaja',
 'Верха': 'Agudos',
-'Удар откалывает': 'El golpe desprende',
 'Крошится само': 'Se desmigaja sola',
 'Размер кусочков': 'Tamaño de los trozos',
 'Сила разлёта': 'Fuerza de dispersión',
@@ -90916,8 +90896,6 @@ de: {
 'Растяжение полос': 'Streifendehnung',
 'Свечение полос': 'Streifenleuchten',
 'Работает на фото и видео из «Медиа». На видео полосы пересчитываются на каждом кадре.': 'Funktioniert mit Foto und Video aus Medien. Bei Video werden die Streifen in jedem Bild neu berechnet.',
-'Сломать кадр': 'Bild brechen',
-'Чистый кадр': 'Sauberes Bild',
 'Стекание': 'Tropfen',
 'Шторм': 'Sturm',
 'Мышью': 'Mit der Maus',
@@ -90932,7 +90910,6 @@ de: {
 'в такт музыке': 'im Takt der Musik',
 'пока водите, кадр размазывается за курсором': 'solange du bewegst, verschmiert das Bild hinter dem Cursor',
 'Кнопкой': 'Per Knopf',
-'только «Сломать кадр»': 'nur Bild brechen',
 'сбой не кончается': 'der Fehler endet nie',
 'Куда течёт': 'Wohin es fließt',
 'Снос в эту сторону': 'Drift in diese Richtung',
@@ -91465,9 +91442,7 @@ de: {
 'Как разрушается': 'Wie es zerbricht',
 'Целиком': 'Ganz',
 'Крошится': 'Bröckelt',
-'Что крошит': 'Was sie bröckeln lässt',
 'Верха': 'Höhen',
-'Удар откалывает': 'Schlag bricht ab',
 'Крошится само': 'Bröckelt von selbst',
 'Размер кусочков': 'Stückgröße',
 'Сила разлёта': 'Streukraft',
@@ -101708,12 +101683,6 @@ S.kickAt = this._time;
 S.cleanUntil = -1;
 this.app.viewport.invalidate();
 }
-moshClear() {
-const S = this._mosh || (this._mosh = { kickAt: -1e9, nextKick: 0, lastT: 0, lastBeat: -9, above: false, cleanUntil: -1, wasOn: false });
-S.kickAt = -1e9;
-S.cleanUntil = this._time + 0.25;
-this.app.viewport.invalidate();
-}
 moshStyle(L, style) {
 const P = {
 bleed: { trigger: 'always', period: 4, recover: 2.5, block: '16', detail: 0.2, inertia: 0.5, leak: 0.3, smooth: 0.6, drift: 0.3, angle: 270, flow: 0, chroma: 0.25, quant: 0, coh: 0.6, void: 1 },
@@ -103161,12 +103130,12 @@ this._crumble = null;
 if (this.shared) this.shared.uAsm.value = 0;
 }
 _crumbleTick(P, dt, u) {
-const C = this._crumble ||= { times: new Float32Array(BINS).fill(-1), damage: 0, last: 0, phase: 'break', hold: 0, asm: 0, beat: 0 };
+const C = this._crumble ||= { times: new Float32Array(BINS).fill(-1), damage: 0, last: 0, phase: 'break', hold: 0, asm: 0 };
 const level = this.levels || { bass: 0, mid: 0, high: 0, beat: 0 };
-const drive = { all: Math.max(level.bass, level.mid, level.high), bass: level.bass, mid: level.mid, high: level.high }[P.drive] ?? 0;
+const gate = P.amode === 'gate';
+const heard = P.band === 'none' ? 0 : gate ? this._eff(P) / Math.max(0.01, P.amount) : this._bandLevel(P) * Math.min(2, (P.react || 0) * 2);
 if (C.phase === 'break') {
-let rise = dt * (P.idle * 0.08 + drive * P.sens * 0.35);
-if (level.beat > 0.9 && C.beat <= 0.9) rise += P.kick * 0.06;
+const rise = dt * (P.idle * 0.08 + heard * 0.35);
 C.damage = Math.min(1, C.damage + rise);
 const top = Math.min(BINS - 1, Math.floor(C.damage * (BINS - 1)));
 for (let i = C.last; i <= top; i++) C.times[i] = this._time;
@@ -103191,7 +103160,6 @@ C.phase = 'break';
 C.asm = 0;
 }
 }
-C.beat = level.beat;
 const packed = u.uCrumbleT.value;
 for (let i = 0; i < BINS / 4; i++) packed[i].set(C.times[i * 4], C.times[i * 4 + 1], C.times[i * 4 + 2], C.times[i * 4 + 3]);
 u.uCrumble.value.set(this.state.source === 'media' && this.pm?.ready ? 2 : 1, this._time, P.chunk, P.fade ?? 0.6);

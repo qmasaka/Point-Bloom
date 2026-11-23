@@ -13,12 +13,12 @@ this._crumble = null;
 if (this.shared) this.shared.uAsm.value = 0;
 }
 _crumbleTick(P, dt, u) {
-const C = this._crumble ||= { times: new Float32Array(BINS).fill(-1), damage: 0, last: 0, phase: 'break', hold: 0, asm: 0, beat: 0 };
+const C = this._crumble ||= { times: new Float32Array(BINS).fill(-1), damage: 0, last: 0, phase: 'break', hold: 0, asm: 0 };
 const level = this.levels || { bass: 0, mid: 0, high: 0, beat: 0 };
-const drive = { all: Math.max(level.bass, level.mid, level.high), bass: level.bass, mid: level.mid, high: level.high }[P.drive] ?? 0;
+const gate = P.amode === 'gate';
+const heard = P.band === 'none' ? 0 : gate ? this._eff(P) / Math.max(0.01, P.amount) : this._bandLevel(P) * Math.min(2, (P.react || 0) * 2);
 if (C.phase === 'break') {
-let rise = dt * (P.idle * 0.08 + drive * P.sens * 0.35);
-if (level.beat > 0.9 && C.beat <= 0.9) rise += P.kick * 0.06;
+const rise = dt * (P.idle * 0.08 + heard * 0.35);
 C.damage = Math.min(1, C.damage + rise);
 const top = Math.min(BINS - 1, Math.floor(C.damage * (BINS - 1)));
 for (let i = C.last; i <= top; i++) C.times[i] = this._time;
@@ -43,7 +43,6 @@ C.phase = 'break';
 C.asm = 0;
 }
 }
-C.beat = level.beat;
 const packed = u.uCrumbleT.value;
 for (let i = 0; i < BINS / 4; i++) packed[i].set(C.times[i * 4], C.times[i * 4 + 1], C.times[i * 4 + 2], C.times[i * 4 + 3]);
 u.uCrumble.value.set(this.state.source === 'media' && this.pm?.ready ? 2 : 1, this._time, P.chunk, P.fade ?? 0.6);
