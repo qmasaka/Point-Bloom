@@ -3234,15 +3234,14 @@ export function createEffectsPanel(app, root, engine) {
 		countActive();
 		for (const c of cards) {
 			if (c.def.group !== 'Видео') continue;
-			c.folder.hidden = !engine.pm.ready && !engine.hasVoidPrint;
-			if (c.def.id === 'voidPrint') c.card.hidden = !engine.videoLoaded && !engine.hasVoidPrint;
-			else if (['frames', 'slitscan', 'chrono', 'affinity'].includes(c.def.id)) c.card.hidden = !engine.videoLoaded;
+			c.folder.hidden = !engine.pm.ready;
+			if (['frames', 'slitscan', 'chrono', 'affinity'].includes(c.def.id)) c.card.hidden = !engine.videoLoaded;
 			else c.card.hidden = !engine.pm.ready;
 		}
 		{
 			const vc = cards.find((c) => c.def.group === 'Видео');
 			const nm = vc?.fhead.querySelector('.fx-folder-name');
-			if (nm) nm.textContent = engine.pm.ready && !engine.videoLoaded && !engine.hasVoidPrint ? 'Фото' : 'Видео';
+			if (nm) nm.textContent = engine.pm.ready && !engine.videoLoaded ? 'Фото' : 'Видео';
 		}
 		for (const c of cards) if (c.def.group === 'Анимация') c.folder.hidden = !engine.animReady;
 		special.hidden = !cards.some((c) => SPECIAL[c.def.group] && !c.folder.hidden);

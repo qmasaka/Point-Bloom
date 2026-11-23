@@ -26,14 +26,10 @@ const DRAW = {
 		}
 	},
 	affinity: (c, t) => {
-		const wave = Math.sin(t * TAU / 3);
-		for (let i = 0; i < 18; i++) {
-			const f = i / 17;
-			dot(c, -10 + f * 20, -3 + Math.sin(f * Math.PI) * (-3 + wave * 2), 1.05, 0.36 + 0.5 * f);
-			dot(c, -10 + f * 20, 4 - Math.sin(f * Math.PI) * (-1 + wave * 1.5), 1.05, 0.24 + 0.5 * (1 - f));
-		}
-		for (let i = 0; i < 10; i++) for (const k of [-1, 1]) {
-			dot(c, k * (10 + Math.cos(i * 2.4) * 2.8), k * 3 + Math.sin(i * 2.4) * (3.9 + wave), 1.5, 0.65);
+		const p = t * TAU / 3;
+		for (let k = 0; k < 4; k++) for (let i = 0; i < 9; i++) {
+			const f = i / 8;
+			dot(c, -10 + f * 18 + Math.sin(p + k) * 1.6, -7.5 + k * 5 + Math.sin(f * 3 + p + k) * 1.6, 0.7 + f * 0.9, 0.14 + 0.82 * f);
 		}
 	},
 	temporalFabric: (c, t) => {
@@ -43,12 +39,13 @@ const DRAW = {
 			dot(c, (u - 0.5) * 24, (j - 2.5) * (1.6 + wave * 0.62) + wave * 4, 1.2, 0.22 + u * 0.74);
 		}
 	},
-	voidPrint: (c, t) => {
-		for (let j = 2; j >= 0; j--) for (const [x, y] of grid(10, 8, 2.02, 2.03)) {
-			const dx = x - Math.sin(t * 1.9 - j * 0.76) * 4.3;
-			const radius = Math.hypot(dx, y * 0.95);
-			if (radius < 4.3) continue;
-			dot(c, x + (j - 1) * 2.1, y - (j - 1) * 1.3, radius < 5.7 ? 1.55 : 1, (radius < 5.7 ? 0.94 : 0.45) - j * 0.12);
+	contours: (c, t) => {
+		const p = t * TAU / 3;
+		for (let j = 0; j < 5; j++) for (let i = 0; i < 26; i++) {
+			const a = i / 26 * TAU;
+			const wobble = 1 + 0.14 * Math.sin(a * 3 + p + j * 0.7) + 0.08 * Math.cos(a * 2 - p);
+			const r = 2.2 + j * 1.9;
+			dot(c, Math.cos(a) * r * wobble * 1.25, Math.sin(a) * r * wobble * 0.9, j === 2 ? 1.25 : 1, 0.3 + j * 0.14);
 		}
 	},
 	autophagy: (c, t) => {

@@ -14,7 +14,8 @@ export function createMediaBar(app, host) {
 	const pm = mc.live;
 	const isOn = () => (pm.kind === 'video' && pm.el ? pm.playing && !pm.el.paused : pm.playing);
 	const eng = () => app.ui.effectsEngine;
-	const morphOn = () => app.ui.workspace === 'fx' && eng()?.active && (eng().playlist?.length || 0) >= 2;
+	const videoShown = () => (pm.kind === 'video' || pm.kind === 'rec') && mc.present && (eng()?.curKey || eng()?.state.source) === 'media';
+	const morphOn = () => app.ui.workspace === 'fx' && eng()?.active && (eng().playlist?.length || 0) >= 2 && !(videoShown() && eng().state.morphCfg.mode !== 'timer');
 	const mcfg = () => eng().state.morphCfg;
 	const slot = () => Math.max(0.5, mcfg().interval || 4);
 	const mTotal = () => slot() * eng().playlist.length;

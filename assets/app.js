@@ -66605,7 +66605,8 @@ const mc = app.media;
 const pm = mc.live;
 const isOn = () => (pm.kind === 'video' && pm.el ? pm.playing && !pm.el.paused : pm.playing);
 const eng = () => app.ui.effectsEngine;
-const morphOn = () => app.ui.workspace === 'fx' && eng()?.active && (eng().playlist?.length || 0) >= 2;
+const videoShown = () => (pm.kind === 'video' || pm.kind === 'rec') && mc.present && (eng()?.curKey || eng()?.state.source) === 'media';
+const morphOn = () => app.ui.workspace === 'fx' && eng()?.active && (eng().playlist?.length || 0) >= 2 && !(videoShown() && eng().state.morphCfg.mode !== 'timer');
 const mcfg = () => eng().state.morphCfg;
 const slot = () => Math.max(0.5, mcfg().interval || 4);
 const mTotal = () => slot() * eng().playlist.length;
@@ -78301,12 +78302,24 @@ extras: [
 },
 {
 id: 'affinity', group: 'Видео', name: 'Родство', icon: 'share-network',
-hint: 'Объединяет участки видео, которые движутся одинаково. Нужен движущийся кадр.',
-sound: false, noAmount: true, max: 1, def: { on: false, amount: 1, mode: 'clusters', similarity: 0.56, strength: 0.65, source: 'hide' },
+hint: 'Области видео, которые движутся одинаково, объединяются в семьи: светящиеся потоки, паутина связей или пыль. Нужен движущийся кадр.',
+sound: false, noAmount: true, max: 1,
+def: { on: false, amount: 1, mode: 'streams', sensitivity: 0.6, similarity: 0.56, density: 1, length: 1.5, links: 2, bow: 0.3, depth: 0.6, color: 'dir', glow: 1, bead: 1, source: 'hide' },
 extras: [
-{ key: 'mode', label: 'Рисунок', type: 'seg', options: [['clusters', 'Скопления'], ['filaments', 'Нити']] },
+{ key: 'mode', label: 'Рисунок', type: 'select', options: [['streams', 'Потоки', 'Светящиеся следы вдоль движения'], ['family', 'Семьи', 'Паутина связей внутри групп'], ['dust', 'Пыль', 'Облако точек по ходу движения']] },
+{ type: 'title', label: 'Движение', open: true },
+{ key: 'sensitivity', label: 'Чувствительность', min: 0, max: 1, step: 0.01 },
 { key: 'similarity', label: 'Сходство', min: 0, max: 1, step: 0.01 },
-{ key: 'strength', label: 'Сила', min: 0, max: 1, step: 0.01 },
+{ type: 'title', label: 'Рисунок', open: true },
+{ key: 'density', label: 'Плотность', min: 0.1, max: 1, step: 0.01, when: ['mode', ['streams', 'dust']] },
+{ key: 'length', label: 'Длина следа', min: 0.3, max: 3, step: 0.05, noNorm: true, unit: ' ×', when: ['mode', ['streams', 'dust']] },
+{ key: 'links', label: 'Связей у точки', min: 1, max: 4, step: 1, int: true, noNorm: true, when: ['mode', ['family']] },
+{ key: 'bow', label: 'Изгиб связей', min: 0, max: 1, step: 0.01, when: ['mode', ['family']] },
+{ key: 'depth', label: 'Объём', min: 0, max: 1, step: 0.01 },
+{ type: 'title', label: 'Свет и цвет', open: true },
+{ key: 'color', label: 'Цвет', type: 'seg', options: [['dir', 'Направление'], ['group', 'Группы'], ['video', 'Видео']] },
+{ key: 'glow', label: 'Яркость', min: 0.3, max: 2.5, step: 0.05, noNorm: true, unit: ' ×' },
+{ key: 'bead', label: 'Размер точек', min: 0.5, max: 2.5, step: 0.05, noNorm: true, unit: ' ×' },
 { key: 'source', label: 'Исходник', type: 'seg', options: [['show', 'Виден'], ['hide', 'Скрыт']] },
 ],
 },
@@ -78321,14 +78334,25 @@ extras: [
 ],
 },
 {
-id: 'voidPrint', group: 'Видео', name: 'Отпечаток пустоты', icon: 'intersect',
-hint: 'Движущийся силуэт прорезает объём. Отпечаток остаётся после паузы и удаления видео.',
-sound: false, noAmount: true, max: 1, def: { on: false, amount: 1, mode: 'print', depth: 0.72, history: 2.4 },
+id: 'contours', group: 'Видео', name: 'Изолинии', icon: 'perspective',
+hint: 'Яркость кадра превращается в карту высот: светящиеся контуры, как на топографической карте, по слоям в глубину. Работает с фото и видео.',
+sound: false, noAmount: true, max: 1,
+def: { on: false, amount: 1, look: 'both', levels: 10, major: 4, smooth: 0.5, sweep: 0.35, depth: 0.7, order: 'light', color: 'palette', glow: 1, bead: 1, source: 'hide' },
 extras: [
-{ key: 'mode', label: 'Режим', type: 'seg', options: [['cut', 'Вырез'], ['print', 'Отпечаток'], ['negative', 'Негатив']] },
-{ key: 'depth', label: 'Глубина', min: 0.08, max: 1, step: 0.01 },
-{ key: 'history', label: 'История', min: 0.4, max: 4, step: 0.05, noNorm: true, unit: 'с', when: ['mode', ['print', 'negative']] },
-{ type: 'button', label: 'Очистить отпечаток', icon: 'broom', act: 'clearVoidPrint' },
+{ key: 'look', label: 'Вид', type: 'seg', options: [['lines', 'Линии'], ['dots', 'Точки'], ['both', 'Оба']] },
+{ type: 'title', label: 'Уровни', open: true },
+{ key: 'levels', label: 'Уровней', min: 2, max: 32, step: 1, int: true, noNorm: true },
+{ key: 'major', label: 'Яркая каждая', min: 0, max: 8, step: 1, int: true, noNorm: true },
+{ key: 'smooth', label: 'Сглаживание', min: 0, max: 1, step: 0.01 },
+{ key: 'sweep', label: 'Бег уровней', min: 0, max: 2, step: 0.05, noNorm: true, unit: ' ×' },
+{ type: 'title', label: 'Объём', open: true },
+{ key: 'depth', label: 'Глубина слоёв', min: 0, max: 1.6, step: 0.01, noNorm: true, unit: ' ×' },
+{ key: 'order', label: 'Ближе', type: 'seg', options: [['light', 'Светлое'], ['dark', 'Тёмное']] },
+{ type: 'title', label: 'Свет и цвет', open: true },
+{ key: 'color', label: 'Цвет', type: 'seg', options: [['palette', 'Палитра'], ['video', 'Кадр']] },
+{ key: 'glow', label: 'Яркость', min: 0.3, max: 2.5, step: 0.05, noNorm: true, unit: ' ×' },
+{ key: 'bead', label: 'Размер точек', min: 0.5, max: 2.5, step: 0.05, noNorm: true, unit: ' ×' },
+{ key: 'source', label: 'Исходник', type: 'seg', options: [['show', 'Виден'], ['hide', 'Скрыт']] },
 ],
 },
 ];
@@ -78551,7 +78575,7 @@ const FX_LAYERS = [
 ] },
 ];
 const FX_GROUPS = {
-'Видео': ['depth', 'pixelsort', 'frames', 'chrono', 'slitscan', 'affinity', 'voidPrint'],
+'Видео': ['depth', 'pixelsort', 'frames', 'chrono', 'slitscan', 'affinity', 'contours'],
 'Анимация': ['trail', 'temporalFabric'],
 'Движение': ['curl', 'gravity', 'twist'],
 'Звук и ритм': ['spectrum', 'wave', 'blast', 'shoots', 'chladni', 'scope'],
@@ -86764,6 +86788,24 @@ en: {
 'Росту': 'Growth',
 'Высоте': 'Height',
 'Один тон': 'Single tone',
+'Области видео, которые движутся одинаково, объединяются в семьи: светящиеся потоки, паутина связей или пыль. Нужен движущийся кадр.': 'Video areas that move alike join into families: glowing streams, a web of links or dust. Needs a moving frame.',
+'Потоки': 'Streams',
+'Светящиеся следы вдоль движения': 'Glowing trails along the motion',
+'Семьи': 'Families',
+'Паутина связей внутри групп': 'A web of links inside groups',
+'Облако точек по ходу движения': 'A cloud of points along the motion',
+'Связей у точки': 'Links per point',
+'Свет и цвет': 'Light and color',
+'Группы': 'Groups',
+'Изолинии': 'Contour lines',
+'Яркость кадра превращается в карту высот: светящиеся контуры, как на топографической карте, по слоям в глубину. Работает с фото и видео.': 'Frame brightness becomes a height map: glowing contours like on a topographic map, layered in depth. Works with photos and video.',
+'Линии': 'Lines',
+'Уровни': 'Levels',
+'Уровней': 'Levels',
+'Яркая каждая': 'Bright every',
+'Бег уровней': 'Level sweep',
+'Глубина слоёв': 'Layer depth',
+'Ближе': 'Nearer',
 },
 uk: {
 'Внутренности': 'Нутрощі',
@@ -88124,6 +88166,24 @@ uk: {
 'Росту': 'Зростанню',
 'Высоте': 'Висоті',
 'Один тон': 'Один тон',
+'Области видео, которые движутся одинаково, объединяются в семьи: светящиеся потоки, паутина связей или пыль. Нужен движущийся кадр.': 'Ділянки відео, що рухаються однаково, об’єднуються в родини: світні потоки, павутиння зв’язків або пил. Потрібен рухомий кадр.',
+'Потоки': 'Потоки',
+'Светящиеся следы вдоль движения': 'Світні сліди вздовж руху',
+'Семьи': 'Родини',
+'Паутина связей внутри групп': 'Павутиння зв’язків усередині груп',
+'Облако точек по ходу движения': 'Хмара точок за напрямом руху',
+'Связей у точки': 'Зв’язків у точки',
+'Свет и цвет': 'Світло й колір',
+'Группы': 'Групи',
+'Изолинии': 'Ізолінії',
+'Яркость кадра превращается в карту высот: светящиеся контуры, как на топографической карте, по слоям в глубину. Работает с фото и видео.': 'Яскравість кадру стає картою висот: світні контури, як на топографічній карті, шарами вглиб. Працює з фото й відео.',
+'Линии': 'Лінії',
+'Уровни': 'Рівні',
+'Уровней': 'Рівнів',
+'Яркая каждая': 'Яскрава кожна',
+'Бег уровней': 'Біг рівнів',
+'Глубина слоёв': 'Глибина шарів',
+'Ближе': 'Ближче',
 },
 es: {
 'Внутренности': 'Interior',
@@ -89484,6 +89544,24 @@ es: {
 'Росту': 'Crecimiento',
 'Высоте': 'Altura',
 'Один тон': 'Un solo tono',
+'Области видео, которые движутся одинаково, объединяются в семьи: светящиеся потоки, паутина связей или пыль. Нужен движущийся кадр.': 'Las zonas del vídeo que se mueven igual forman familias: flujos luminosos, una red de enlaces o polvo. Necesita un fotograma en movimiento.',
+'Потоки': 'Flujos',
+'Светящиеся следы вдоль движения': 'Estelas luminosas a lo largo del movimiento',
+'Семьи': 'Familias',
+'Паутина связей внутри групп': 'Una red de enlaces dentro de los grupos',
+'Облако точек по ходу движения': 'Una nube de puntos según el movimiento',
+'Связей у точки': 'Enlaces por punto',
+'Свет и цвет': 'Luz y color',
+'Группы': 'Grupos',
+'Изолинии': 'Isolíneas',
+'Яркость кадра превращается в карту высот: светящиеся контуры, как на топографической карте, по слоям в глубину. Работает с фото и видео.': 'El brillo del fotograma se convierte en un mapa de alturas: contornos luminosos como en un mapa topográfico, por capas en profundidad. Funciona con fotos y vídeo.',
+'Линии': 'Líneas',
+'Уровни': 'Niveles',
+'Уровней': 'Niveles',
+'Яркая каждая': 'Resaltar cada',
+'Бег уровней': 'Barrido de niveles',
+'Глубина слоёв': 'Profundidad de capas',
+'Ближе': 'Más cerca',
 },
 de: {
 'Внутренности': 'Innenleben',
@@ -90844,6 +90922,24 @@ de: {
 'Росту': 'Wachstum',
 'Высоте': 'Höhe',
 'Один тон': 'Ein Ton',
+'Области видео, которые движутся одинаково, объединяются в семьи: светящиеся потоки, паутина связей или пыль. Нужен движущийся кадр.': 'Videobereiche mit gleicher Bewegung bilden Familien: leuchtende Ströme, ein Netz aus Verbindungen oder Staub. Braucht ein bewegtes Bild.',
+'Потоки': 'Ströme',
+'Светящиеся следы вдоль движения': 'Leuchtspuren entlang der Bewegung',
+'Семьи': 'Familien',
+'Паутина связей внутри групп': 'Ein Netz aus Verbindungen innerhalb der Gruppen',
+'Облако точек по ходу движения': 'Eine Punktwolke entlang der Bewegung',
+'Связей у точки': 'Verbindungen pro Punkt',
+'Свет и цвет': 'Licht und Farbe',
+'Группы': 'Gruppen',
+'Изолинии': 'Höhenlinien',
+'Яркость кадра превращается в карту высот: светящиеся контуры, как на топографической карте, по слоям в глубину. Работает с фото и видео.': 'Die Helligkeit des Bildes wird zur Höhenkarte: leuchtende Konturen wie auf einer topografischen Karte, in Tiefe geschichtet. Funktioniert mit Fotos und Video.',
+'Линии': 'Linien',
+'Уровни': 'Stufen',
+'Уровней': 'Stufen',
+'Яркая каждая': 'Hell jede',
+'Бег уровней': 'Stufenlauf',
+'Глубина слоёв': 'Schichttiefe',
+'Ближе': 'Näher',
 },
 };
 };
@@ -104272,14 +104368,12 @@ __def(__exports, 'MaterialDrawing', () => MaterialDrawing);
 __def(__exports, 'GROW_TIME', () => GROW_TIME);
 __def(__exports, 'growthCycle', () => growthCycle);
 __def(__exports, 'pulseMaterial', () => pulseMaterial);
+__def(__exports, 'tint', () => tint);
 __def(__exports, 'makeScreenColor', () => makeScreenColor);
 __def(__exports, 'drawInners', () => drawInners);
 __def(__exports, 'drawShell', () => drawShell);
-__def(__exports, 'drawAffinity', () => drawAffinity);
 __def(__exports, 'FabricHistory', () => FabricHistory);
 __def(__exports, 'drawFabric', () => drawFabric);
-__def(__exports, 'voidField', () => voidField);
-__def(__exports, 'drawVoid', () => drawVoid);
 const THREE = __req('vendor/three/build/three.module.js');
 const { clamp } = __req('src/core/util.js');
 const { insideSegment, mediaBounds, seededRandom } = __req('src/effects/engine/material-volume.js');
@@ -104860,72 +104954,6 @@ draw.vertex(draw.points, [positions[i * 3], positions[i * 3 + 1], positions[i * 
 function distance(a, b) {
 return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 }
-function drawAffinity(draw, feed, layer, palette) {
-if (!feed.patches?.length) return;
-const { w, h } = feed;
-const { x, y } = mediaBounds(feed.aspect);
-const threshold = 3.15 - 2.75 * layer.similarity;
-const strength = layer.strength;
-const patches = feed.patches.filter((p) => p.life >= 2 && p.energy > 0.42);
-const groups = [];
-const point = (p, z = 0) => [(p.x / w * 2 - 1) * x, (1 - p.y / h * 2) * y, z];
-for (const p of patches) {
-let chosen = null, best = threshold;
-for (const g of groups) {
-const d = Math.hypot(p.vx - g.vx, p.vy - g.vy, (p.ax - g.ax) * 0.45, (p.ay - g.ay) * 0.45, (p.energy - g.energy) * 0.28);
-if (d < best) {
-best = d;
-chosen = g;
-}
-}
-if (!chosen) {
-chosen = { vx: p.vx, vy: p.vy, ax: p.ax, ay: p.ay, energy: p.energy, points: [] };
-groups.push(chosen);
-}
-chosen.points.push(p);
-}
-for (const g of groups) {
-if (g.points.length < 2) continue;
-const direction = Math.atan2(-g.vy, g.vx) / TAU + 0.5;
-const level = strength * Math.min(1, 0.3 + g.energy * 0.23);
-const color = tint(palette, direction);
-if (layer.mode === 'clusters') {
-const center = g.points.reduce(([x, y], p) => [x + p.x / g.points.length, y + p.y / g.points.length], [0, 0]);
-for (const p of g.points) {
-const base = point(p);
-const gather = level * 0.45;
-base[0] += ((center[0] - p.x) / w * 2 * x) * gather + (g.vx * 0.08 + p.ax * 0.04) * level;
-base[1] -= ((center[1] - p.y) / h * 2 * y) * gather + (g.vy * 0.08 + p.ay * 0.04) * level;
-base[2] = level * (0.22 + g.energy * 0.09);
-for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
-const idx = (p.y + j) * w + p.x + i;
-const k = idx * 4;
-const lum = feed.gray[idx];
-PIXEL.setRGB(feed.rgba[k] / 255, feed.rgba[k + 1] / 255, feed.rgba[k + 2] / 255, THREE.SRGBColorSpace);
-PIXEL.lerp(color, 0.48);
-draw.vertex(draw.points, [base[0] + i * x * 2 / w, base[1] - j * y * 2 / h, base[2] + (lum - 0.45) * level * 0.22], PIXEL, 0.55 + level);
-}
-}
-continue;
-}
-for (const p of g.points) {
-const a = point(p);
-const link = g.points.find((q) => q.y * w + q.x > p.y * w + p.x && Math.hypot(q.x - p.x, q.y - p.y) > 13);
-draw.vertex(draw.points, a, color, 1.05);
-if (!link) continue;
-const b = point(link);
-const reach = distance(a, b);
-let last = a;
-for (let i = 1; i <= 16; i++) {
-const s = i / 16;
-const bow = Math.sin(Math.PI * s) * reach * level;
-const next = [a[0] + (b[0] - a[0]) * s + bow * g.vx * 0.05, a[1] + (b[1] - a[1]) * s - bow * g.vy * 0.05, bow * 0.67];
-draw.segment(last, next, color, 0.5 + s * 0.55);
-last = next;
-}
-}
-}
-}
 class FabricHistory {
 constructor(cloud) {
 const random = seededRandom(0x37af130);
@@ -104993,47 +105021,234 @@ if (t % 3 === 0) draw.segment(c, cur[j], color, 0.39 + age * 0.46);
 }
 }
 }
-function voidField(slices, volume, layer) {
-const last = slices.at(-1);
-if (!last) return null;
-const recent = slices.filter((s) => s.time >= last.time - layer.history);
-const [mx, my, mz] = volume.min;
-const [rx, ry, rz] = volume.max;
-const spanX = rx - mx, spanY = ry - my, spanZ = rz - mz;
-const thickness = spanZ * layer.depth;
-const center = (mz + rz) * 0.5;
-const activeMin = layer.mode === 'cut' ? rz - thickness : center - thickness * 0.5;
-const maskAt = (s, u, v) => s.mask && s.mask[Math.floor(v * s.h) * s.w + Math.floor(u * s.w)] > 0;
-return (x, y, z) => {
-const u = (x - mx) / spanX, v = 1 - (y - my) / spanY, t = (z - activeMin) / thickness;
-if (u < 0 || u >= 1 || v < 0 || v >= 1 || t < 0 || t > 1) return false;
-if (layer.mode === 'cut') return maskAt(last, u, v);
-const idx = Math.min(recent.length - 1, Math.floor(t * recent.length));
-return maskAt(recent[idx], u, v);
 };
+__defs['src/effects/engine/material-video-draw.js'] = function (__exports, __req) {
+'use strict';
+__def(__exports, 'drawContours', () => drawContours);
+__def(__exports, 'drawAffinity', () => drawAffinity);
+const THREE = __req('vendor/three/build/three.module.js');
+const { clamp } = __req('src/core/util.js');
+const { mediaBounds, seededRandom } = __req('src/effects/engine/material-volume.js');
+const { tint } = __req('src/effects/engine/material-drawing.js');
+const TAU = Math.PI * 2;
+const PIXEL = new THREE.Color();
+const at = (x, y, z) => [Math.fround(x), Math.fround(y), Math.fround(z)];
+function sampleColor(feed, u, v) {
+const k = feed.pixel(clamp(u, 0, 1), clamp(v, 0, 1)) * 4;
+PIXEL.setRGB(feed.rgba[k] / 255, feed.rgba[k + 1] / 255, feed.rgba[k + 2] / 255, THREE.SRGBColorSpace);
+return PIXEL.clone().multiplyScalar(1.25).addScalar(0.04);
 }
-function drawVoid(draw, volume, field, layer, palette, inner) {
-const { min, max, inside } = volume;
-const n = 38;
-const d = max.map((v, i) => (v - min[i]) / n);
-const random = seededRandom(0x34e34e);
-const negative = layer.mode === 'negative';
-for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) for (let k = 0; k < n; k++) {
-const x = min[0] + (i + 0.29 + random() * 0.42) * d[0];
-const y = min[1] + (j + 0.29 + random() * 0.42) * d[1];
-const z = min[2] + (k + 0.29 + random() * 0.42) * d[2];
-if (!inside(x, y, z)) continue;
-const cut = !!field(x, y, z);
-if (cut !== negative) continue;
-const edge = !!field(x + d[0], y, z) !== cut || !!field(x - d[0], y, z) !== cut
-|| !!field(x, y + d[1], z) !== cut || !!field(x, y - d[1], z) !== cut
-|| !!field(x, y, z + d[2]) !== cut || !!field(x, y, z - d[2]) !== cut;
-if (inner && !negative && !edge) continue;
-const rim = !inside(x, y, z + d[2]) || !inside(x, y, z - d[2]);
-if (!edge && !rim && random() > (negative ? 0.46 : 0.18)) continue;
-const color = tint(palette, edge || negative ? 0.58 + k / n * 0.41 : k / n * 0.5);
-draw.vertex(draw.points, [x, y, z], color, edge ? 1.08 : rim ? 0.54 : 0.3);
+function smoothGray(source, w, h, passes) {
+let a = Float32Array.from(source);
+let b = new Float32Array(a.length);
+for (let pass = 0; pass < passes; pass++) {
+for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+let sum = 0, count = 0;
+for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+const X = x + dx, Y = y + dy;
+if (X < 0 || Y < 0 || X >= w || Y >= h) continue;
+sum += a[Y * w + X];
+count++;
 }
+b[y * w + x] = sum / count;
+}
+[a, b] = [b, a];
+}
+return a;
+}
+function drawContours(draw, feed, layer, palette, now) {
+if (!feed?.gray) return 0;
+const { w, h } = feed;
+const { x: halfX, y: halfY } = mediaBounds(feed.aspect);
+const gray = smoothGray(feed.gray, w, h, 1 + Math.round(layer.smooth * 3));
+const histogram = new Uint32Array(64);
+for (const v of gray) histogram[Math.min(63, Math.floor(clamp(v, 0, 1) * 64))]++;
+const lowCut = gray.length * 0.02, highCut = gray.length * 0.98;
+let running = 0, low = 0, high = 1;
+for (let i = 0; i < 64; i++) {
+running += histogram[i];
+if (running < lowCut) low = (i + 1) / 64;
+if (running < highCut) high = (i + 1) / 64;
+}
+const range = Math.max(0.12, high - low);
+for (let i = 0; i < gray.length; i++) gray[i] = clamp((gray[i] - low) / range, 0, 1);
+const levels = Math.round(layer.levels);
+const depth = layer.depth;
+const sweep = layer.sweep ? (now * layer.sweep * 0.12) % 1 : 0;
+const dark = layer.order === 'dark';
+const gain = layer.glow;
+const lines = layer.look !== 'dots';
+const dots = layer.look !== 'lines';
+const major = Math.round(layer.major);
+let drawn = 0;
+for (let k = 0; k < levels; k++) {
+const level = clamp((((k + 0.5) / levels + sweep) % 1), 0.03, 0.97);
+const z = (dark ? 0.5 - level : level - 0.5) * depth * 1.2;
+const accent = major > 0 && k % major === 0 ? 1.6 : 1;
+const toneColor = tint(palette, level).clone();
+const point = (i, j, edge, a, b) => {
+const t = (level - a) / (b - a || 1e-6);
+if (edge === 0) return [i + t, j];
+if (edge === 1) return [i + 1, j + t];
+if (edge === 2) return [i + t, j + 1];
+return [i, j + t];
+};
+const emit = (p, q) => {
+const mx = (p[0] + q[0]) * 0.5, my = (p[1] + q[1]) * 0.5;
+const color = layer.color === 'video' ? sampleColor(feed, mx / (w - 1), my / (h - 1)) : toneColor;
+const a = at((p[0] / (w - 1) * 2 - 1) * halfX, (1 - p[1] / (h - 1) * 2) * halfY, z);
+const b = at((q[0] / (w - 1) * 2 - 1) * halfX, (1 - q[1] / (h - 1) * 2) * halfY, z);
+if (lines) draw.segment(a, b, color, (0.5 + 0.3 * level) * accent * gain);
+if (dots) draw.vertex(draw.points, [(a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5, z], color, 0.9 * accent * gain);
+drawn++;
+};
+for (let j = 0; j < h - 1; j++) for (let i = 0; i < w - 1; i++) {
+const a = gray[j * w + i], b = gray[j * w + i + 1], c = gray[(j + 1) * w + i + 1], d = gray[(j + 1) * w + i];
+const index = (a > level ? 8 : 0) | (b > level ? 4 : 0) | (c > level ? 2 : 0) | (d > level ? 1 : 0);
+if (index === 0 || index === 15) continue;
+const top = () => point(i, j, 0, a, b), right = () => point(i, j, 1, b, c), bottom = () => point(i, j, 2, d, c), left = () => point(i, j, 3, a, d);
+const centre = (a + b + c + d) * 0.25 > level;
+switch (index) {
+case 1: case 14: emit(left(), bottom()); break;
+case 2: case 13: emit(bottom(), right()); break;
+case 3: case 12: emit(left(), right()); break;
+case 4: case 11: emit(top(), right()); break;
+case 6: case 9: emit(top(), bottom()); break;
+case 7: case 8: emit(left(), top()); break;
+case 5:
+if (centre) {
+emit(left(), top());
+emit(bottom(), right());
+} else {
+emit(top(), right());
+emit(left(), bottom());
+}
+break;
+default:
+if (centre) {
+emit(top(), right());
+emit(left(), bottom());
+} else {
+emit(left(), top());
+emit(bottom(), right());
+}
+}
+}
+}
+return drawn;
+}
+function drawAffinity(draw, feed, layer, palette) {
+if (!feed.patches?.length) return 0;
+const { w, h } = feed;
+const { x: halfX, y: halfY } = mediaBounds(feed.aspect);
+const random = seededRandom(0x4a7f11);
+const plane = (px, py, z = 0) => at((px / (w - 1) * 2 - 1) * halfX, (1 - py / (h - 1) * 2) * halfY, z);
+const need = 0.14 + (1 - layer.sensitivity) * 0.8;
+const threshold = 3.15 - 2.75 * layer.similarity;
+const patches = feed.patches.filter((p) => p.life >= 2 && p.energy > need);
+const groups = [];
+for (const p of patches) {
+let chosen = null, best = threshold;
+for (const g of groups) {
+const d = Math.hypot(p.vx - g.vx, p.vy - g.vy, (p.ax - g.ax) * 0.45, (p.ay - g.ay) * 0.45, (p.energy - g.energy) * 0.28);
+if (d < best) {
+best = d;
+chosen = g;
+}
+}
+if (!chosen) {
+chosen = { vx: p.vx, vy: p.vy, ax: p.ax, ay: p.ay, energy: p.energy, members: [], id: groups.length };
+groups.push(chosen);
+}
+chosen.members.push(p);
+}
+const gain = layer.glow;
+const colorOf = (p, group) => {
+if (layer.color === 'video') return sampleColor(feed, p.x / (w - 1), p.y / (h - 1));
+if (layer.color === 'group') return tint(palette, ((group.id * 0.37) % 1)).clone();
+return tint(palette, Math.atan2(-p.vy, p.vx) / TAU + 0.5).clone();
+};
+const lift = (p) => layer.depth * Math.min(1, p.energy) * 0.45;
+let drawn = 0;
+if (layer.mode === 'family') {
+for (const g of groups) {
+if (g.members.length < 3) continue;
+const members = g.members.length > 70 ? g.members.filter((_, i) => i % Math.ceil(g.members.length / 70) === 0) : g.members;
+const cx = members.reduce((s, p) => s + p.x, 0) / members.length;
+const cy = members.reduce((s, p) => s + p.y, 0) / members.length;
+const base = colorOf({ x: cx, y: cy, vx: g.vx, vy: g.vy }, g);
+const seen = new Set();
+members.forEach((p, i) => {
+const near = members.map((q, j) => [Math.hypot(q.x - p.x, q.y - p.y), j]).filter(([d, j]) => j !== i && d > 0.1).sort((a, b) => a[0] - b[0]).slice(0, layer.links);
+for (const [d, j] of near) {
+const key = Math.min(i, j) * 1000 + Math.max(i, j);
+if (seen.has(key)) continue;
+seen.add(key);
+const q = members[j];
+const sign = (i + j) % 2 ? 1 : -1;
+const nx = -(q.y - p.y) / d, ny = (q.x - p.x) / d;
+const bend = d * layer.bow * 0.5 * sign;
+const cxm = (p.x + q.x) / 2 + nx * bend, cym = (p.y + q.y) / 2 + ny * bend;
+const color = colorOf(p, g);
+let last = plane(p.x, p.y, lift(p));
+for (let k = 1; k <= 9; k++) {
+const s = k / 9;
+const x = (1 - s) * (1 - s) * p.x + 2 * (1 - s) * s * cxm + s * s * q.x;
+const y = (1 - s) * (1 - s) * p.y + 2 * (1 - s) * s * cym + s * s * q.y;
+const next = plane(x, y, lift(p) * (1 - s) + lift(q) * s);
+draw.segment(last, next, color, 0.55 * gain);
+last = next;
+}
+drawn++;
+}
+draw.vertex(draw.points, plane(p.x, p.y, lift(p)), colorOf(p, g), 1.1 * gain);
+});
+draw.vertex(draw.nodes, plane(cx, cy, layer.depth * 0.45), base, 1.5 * gain);
+}
+return drawn;
+}
+for (const g of groups) {
+for (const p of g.members) {
+if (random() > layer.density) continue;
+const speed = Math.hypot(p.vx, p.vy);
+if (speed < 1e-3) continue;
+const dx = p.vx / speed, dy = -p.vy / speed;
+const reach = layer.length * (0.04 + Math.min(1.4, p.energy) * 0.09);
+const unit = 2 * halfX / (w - 1);
+const color = colorOf(p, g);
+if (layer.mode === 'dust') {
+const count = 4 + Math.round(Math.min(1.5, p.energy) * 6);
+for (let k = 0; k < count; k++) {
+const back = random() * reach * 1.6;
+const jitter = (random() - 0.5) * unit * 5;
+const jx = (random() - 0.5) * unit * 5;
+const base = plane(p.x, p.y, 0);
+draw.vertex(draw.points, at(base[0] - dx * back + jx, base[1] - dy * back + jitter, lift(p) * (0.4 + random())), color, (0.7 + 1.1 * (1 - back / (reach * 1.6))) * gain);
+}
+drawn++;
+continue;
+}
+const nx = -dy, ny = dx;
+const bend = clamp((p.ax * dy - p.ay * dx) * 0.06, -0.5, 0.5) * reach;
+const head = plane(p.x, p.y, lift(p));
+let last = null;
+const steps = 9;
+for (let k = 0; k <= steps; k++) {
+const s = k / steps;
+const back = (1 - s) * reach;
+const arc = Math.sin(Math.PI * s) * bend;
+const point = at(head[0] - dx * back + nx * arc, head[1] - dy * back + ny * arc, head[2]);
+if (last) {
+draw.segment(last, point, color, (0.12 + 0.95 * s ** 1.6) * gain);
+if (k % 2 === 0) draw.vertex(draw.points, point, color, (0.2 + 0.8 * s) * gain);
+}
+last = point;
+}
+if (p.energy > 0.7 && random() < 0.5) draw.vertex(draw.nodes, last, color, 0.9 * gain);
+drawn++;
+}
+}
+return drawn;
 }
 };
 __defs['src/effects/engine/material-video.js'] = function (__exports, __req) {
@@ -105172,7 +105387,8 @@ __defs['src/effects/engine/material-effects.js'] = function (__exports, __req) {
 __def(__exports, 'MaterialPart', () => MaterialPart);
 const THREE = __req('vendor/three/build/three.module.js');
 const { clamp } = __req('src/core/util.js');
-const { FabricHistory, MaterialDrawing, drawAffinity, drawFabric, drawInners, drawShell, drawVoid, growthCycle, makeScreenColor, pulseMaterial, voidField } = __req('src/effects/engine/material-drawing.js');
+const { FabricHistory, MaterialDrawing, drawFabric, drawInners, drawShell, growthCycle, makeScreenColor, pulseMaterial } = __req('src/effects/engine/material-drawing.js');
+const { drawAffinity, drawContours } = __req('src/effects/engine/material-video-draw.js');
 const { MaterialVideo } = __req('src/effects/engine/material-video.js');
 const { makeVolume, mediaBounds } = __req('src/effects/engine/material-volume.js');
 let glowSprite = null;
@@ -105193,14 +105409,15 @@ return glowSprite;
 }
 function makePart(group, id) {
 const common = { vertexColors: true, transparent: true, depthWrite: false };
-const bead = id === 'inners' ? 0.03 : id === 'affinity' ? 0.016 : 0.013;
-const additive = id === 'inners' ? { blending: THREE.AdditiveBlending } : {};
-const sprite = id === 'inners' ? { map: glowTexture(), alphaTest: 0.01 } : {};
+const bead = id === 'inners' ? 0.03 : id === 'affinity' ? 0.02 : id === 'contours' ? 0.018 : 0.013;
+const glowing = id === 'inners' || id === 'affinity' || id === 'contours';
+const additive = glowing ? { blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor } : {};
+const sprite = glowing ? { map: glowTexture(), alphaTest: 0.01 } : {};
 const parts = {
 lines: new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ ...common, ...additive, opacity: 0.84 })),
 faces: new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ ...common, opacity: 0.28, side: THREE.DoubleSide, forceSinglePass: true })),
 points: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, ...additive, ...sprite, size: bead, opacity: 0.9 })),
-nodes: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, ...sprite, size: id === 'inners' ? 0.075 : 0.052, opacity: 0.8, blending: THREE.AdditiveBlending })),
+nodes: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, ...sprite, ...(glowing ? additive : { blending: THREE.AdditiveBlending }), size: glowing ? 0.075 : 0.052, opacity: 0.8 })),
 };
 for (const o of Object.values(parts)) {
 o.frustumCulled = false;
@@ -105250,14 +105467,6 @@ part.key = build ? key : '';
 return Object.values(part.parts).some((x) => x.visible);
 }
 class MaterialPart {
-get hasVoidPrint() {
-return !!this._voidHistory?.slices.length;
-}
-clearVoidPrint() {
-this._voidHistory = null;
-this.app.viewport.invalidate();
-this.emit();
-}
 _disposeMaterialGeometry() {
 const root = this._materialRoot;
 if (root) {
@@ -105302,43 +105511,13 @@ volume.version = (this._materialVolumeVer = (this._materialVolumeVer || 0) + 1);
 this._materialVolumes = { tag, volume, geo: this.geometry };
 return volume;
 }
-_materialRecordVoid(feed, media) {
-const h = this._voidHistory ||= { slices: [], clock: 0, version: 0 };
-const first = h.slices.length === 0;
-if (h.feed === feed.feedId && feed.version === h.lastVersion) return;
-let mask = feed.mask;
-const C = this.state.layers.chrono;
-if (C.on && C.mask === 'person' && this.segmenter?.ready) {
-mask = this.segmenter.mask(feed.el, feed.w, feed.h) || mask;
-}
-const valid = mask?.some(Boolean);
-if (h.feed !== feed.feedId && !valid) return;
-if (h.feed !== feed.feedId) {
-h.slices.length = 0;
-h.mediaVolume = null;
-h.feed = feed.feedId;
-}
-h.lastVersion = feed.version;
-h.clock += feed.delta;
-if (media) {
-const { x, y } = mediaBounds(feed.aspect);
-h.mediaVolume ||= {
-min: [-x, -y, -0.64], max: [x, y, 0.64],
-inside: (px, py, pz) => Math.abs(px) < x && Math.abs(py) < y && Math.abs(pz) < 0.64,
-};
-}
-h.slices.push({ time: h.clock, mask: valid ? mask.slice() : null, w: feed.w, h: feed.h });
-while (h.slices.length > 85 || h.slices[0].time < h.clock - 4.2) h.slices.shift();
-h.version++;
-if (first) this.emit();
-}
 _materialTick(layers, now) {
-const { inners, affinity, temporalFabric, voidPrint, vscreen } = layers;
+const { inners, affinity, temporalFabric, contours, vscreen } = layers;
 const points = this.points;
 this._materialHideSource = false;
-if (!points || !(inners.on || affinity.on || temporalFabric.on || voidPrint.on)) {
+if (!points || !(inners.on || affinity.on || temporalFabric.on || contours.on)) {
 if (this._materialRoot) this._disposeMaterialGeometry();
-this._materialVideo = this._materialScreen = null;
+this._materialVideo = this._materialScreen = this._materialContours = null;
 return;
 }
 const viewport = this.app.viewport;
@@ -105356,23 +105535,22 @@ const palette = [this.shared.uP0.value, this.shared.uP1.value, this.shared.uP2.v
 const pal = this.state.look.palette;
 const media = this.cloudKey?.startsWith('media') && this.pm?.ready && this.pm.count === this.geometry.attributes.aTarget.count ? this.pm : null;
 const video = this.videoReady ? this.pm.el : null;
-const motion = video && (affinity.on || voidPrint.on) ? (this._materialVideo ||= new MaterialVideo()) : null;
-const fresh = motion?.read(video, now);
+const motion = video && affinity.on ? (this._materialVideo ||= new MaterialVideo()) : null;
+motion?.read(video, now);
 if (!motion) this._materialVideo = null;
-if (voidPrint.on && fresh) this._materialRecordVoid(fresh, media);
-const imprint = voidPrint.on && this._voidHistory?.slices.length ? this._voidHistory : null;
-const volume = inners.on || imprint ? this._materialVolume(media) : null;
-const medium = imprint && (media || !this.videoLoaded) ? imprint.mediaVolume || volume : volume;
-const cut = imprint ? voidField(imprint.slices, medium, voidPrint) : null;
+const still = contours.on && media && this.pm.el ? this.pm.el : null;
+const relief = still ? (this._materialContours ||= new MaterialVideo()) : null;
+relief?.read(still, now, false);
+if (!relief) this._materialContours = null;
+const volume = inners.on ? this._materialVolume(media) : null;
+const removed = null;
 const activeScreen = inners.on && this.shared.uScr.value.x > 0.001 ? this._screenSource()?.media : null;
 const screen = activeScreen ? (this._materialScreen ||= new MaterialVideo()) : null;
 if (!screen) this._materialScreen = null;
 screen?.read(activeScreen, now, false);
 const projection = screen && vscreen.mode === 'project' ? Math.floor(now * 12) : 0;
-const maskVer = cut ? [imprint.version, voidPrint.mode, voidPrint.depth, voidPrint.history].join(':') : '';
-const removed = cut && (voidPrint.mode === 'negative' ? (x, y, z) => !cut(x, y, z) : cut);
 const ghost = inners.on && inners.shell === 'ghost';
-const innerShape = [volume?.version, pal, inners.mode, inners.density, inners.complexity, inners.roots, inners.reach, inners.trunk, inners.tips, inners.links, inners.bow, inners.ribs, inners.strands, inners.twist, inners.spread, inners.prune, inners.glow, inners.hue, inners.tone, maskVer,
+const innerShape = [volume?.version, pal, inners.mode, inners.density, inners.complexity, inners.roots, inners.reach, inners.trunk, inners.tips, inners.links, inners.bow, inners.ribs, inners.strands, inners.twist, inners.spread, inners.prune, inners.glow, inners.hue, inners.tone,
 screen?.version, screen && vscreen.mode, screen && vscreen.scale, screen && vscreen.rotate, screen && vscreen.bright, screen && vscreen.mix, projection].join(':');
 const innerKey = innerShape + ':' + (media ? Math.floor(now * 8) : '');
 const hasInner = present(root, 'inners', innerKey, inners.on
@@ -105390,9 +105568,22 @@ const attrs = this.geometry.attributes;
 present(root, 'shell', [ghost, pal, volume?.version, this.cloudKey, attrs.aTarget.count, Math.round(this.morph * 50), anim.has ? Math.floor(anim.time * 12) : 0].join(':'), ghost
 ? (draw) => drawShell(draw, attrs.aTarget.array, attrs.aColor.array, attrs.aHide.array, palette, 16000)
 : null);
-const hasAffinity = present(root, 'affinity', [motion?.version, pal, affinity.mode, affinity.strength, affinity.similarity].join(':'), affinity.on && motion
+const hasAffinity = present(root, 'affinity', motion?.version + ':' + pal + ':' + JSON.stringify(affinity), affinity.on && motion
 ? (draw) => drawAffinity(draw, motion, affinity, palette)
 : null);
+if (hasAffinity) {
+const part = root.userData.affinity;
+part.parts.points.material.size = (affinity.mode === 'dust' ? 0.032 : 0.02) * (affinity.bead ?? 1);
+part.parts.nodes.material.size = 0.06 * (affinity.bead ?? 1);
+}
+const sweepTick = contours.sweep > 0 ? Math.floor(now * 10) : 0;
+const hasContours = present(root, 'contours', relief?.version + ':' + pal + ':' + JSON.stringify(contours) + ':' + sweepTick, contours.on && relief?.gray
+? (draw) => drawContours(draw, relief, contours, palette, now)
+: null);
+if (hasContours) {
+const part = root.userData.contours;
+part.parts.points.material.size = 0.018 * (contours.bead ?? 1);
+}
 const cloud = this._animCloud;
 let fabric = null;
 if (temporalFabric.on && cloud && this._animBuf && anim.has) {
@@ -105403,10 +105594,7 @@ fabric.sample(this._animBuf, anim);
 present(root, 'temporalFabric', [fabric?.version, pal, temporalFabric.mode, temporalFabric.history, temporalFabric.density].join(':'), fabric
 ? (draw) => drawFabric(draw, fabric, temporalFabric, palette)
 : null);
-const hasPrint = present(root, 'voidPrint', [maskVer, volume?.version, pal, inners.on].join(':'), cut
-? (draw) => drawVoid(draw, medium, cut, voidPrint, palette, inners.on)
-: null);
-this._materialHideSource = !!(hasPrint || (hasInner && inners.shell !== 'show') || (hasAffinity && media && affinity.source === 'hide'));
+this._materialHideSource = !!((hasInner && inners.shell !== 'show') || (hasAffinity && media && affinity.source === 'hide') || (hasContours && media && contours.source === 'hide'));
 }
 }
 };
@@ -105900,14 +106088,10 @@ dot(c, x, y, 1.05 + Math.max(0, wave) * 0.5, 0.32 + 0.64 * (i % 6) / 5);
 }
 },
 affinity: (c, t) => {
-const wave = Math.sin(t * TAU / 3);
-for (let i = 0; i < 18; i++) {
-const f = i / 17;
-dot(c, -10 + f * 20, -3 + Math.sin(f * Math.PI) * (-3 + wave * 2), 1.05, 0.36 + 0.5 * f);
-dot(c, -10 + f * 20, 4 - Math.sin(f * Math.PI) * (-1 + wave * 1.5), 1.05, 0.24 + 0.5 * (1 - f));
-}
-for (let i = 0; i < 10; i++) for (const k of [-1, 1]) {
-dot(c, k * (10 + Math.cos(i * 2.4) * 2.8), k * 3 + Math.sin(i * 2.4) * (3.9 + wave), 1.5, 0.65);
+const p = t * TAU / 3;
+for (let k = 0; k < 4; k++) for (let i = 0; i < 9; i++) {
+const f = i / 8;
+dot(c, -10 + f * 18 + Math.sin(p + k) * 1.6, -7.5 + k * 5 + Math.sin(f * 3 + p + k) * 1.6, 0.7 + f * 0.9, 0.14 + 0.82 * f);
 }
 },
 temporalFabric: (c, t) => {
@@ -105917,12 +106101,13 @@ const wave = Math.sin(u * 5 - t * 2 + j * 0.25);
 dot(c, (u - 0.5) * 24, (j - 2.5) * (1.6 + wave * 0.62) + wave * 4, 1.2, 0.22 + u * 0.74);
 }
 },
-voidPrint: (c, t) => {
-for (let j = 2; j >= 0; j--) for (const [x, y] of grid(10, 8, 2.02, 2.03)) {
-const dx = x - Math.sin(t * 1.9 - j * 0.76) * 4.3;
-const radius = Math.hypot(dx, y * 0.95);
-if (radius < 4.3) continue;
-dot(c, x + (j - 1) * 2.1, y - (j - 1) * 1.3, radius < 5.7 ? 1.55 : 1, (radius < 5.7 ? 0.94 : 0.45) - j * 0.12);
+contours: (c, t) => {
+const p = t * TAU / 3;
+for (let j = 0; j < 5; j++) for (let i = 0; i < 26; i++) {
+const a = i / 26 * TAU;
+const wobble = 1 + 0.14 * Math.sin(a * 3 + p + j * 0.7) + 0.08 * Math.cos(a * 2 - p);
+const r = 2.2 + j * 1.9;
+dot(c, Math.cos(a) * r * wobble * 1.25, Math.sin(a) * r * wobble * 0.9, j === 2 ? 1.25 : 1, 0.3 + j * 0.14);
 }
 },
 autophagy: (c, t) => {
@@ -109597,15 +109782,14 @@ modelNote.textContent = kind === 'cloud' ? `Берётся облако точе
 countActive();
 for (const c of cards) {
 if (c.def.group !== 'Видео') continue;
-c.folder.hidden = !engine.pm.ready && !engine.hasVoidPrint;
-if (c.def.id === 'voidPrint') c.card.hidden = !engine.videoLoaded && !engine.hasVoidPrint;
-else if (['frames', 'slitscan', 'chrono', 'affinity'].includes(c.def.id)) c.card.hidden = !engine.videoLoaded;
+c.folder.hidden = !engine.pm.ready;
+if (['frames', 'slitscan', 'chrono', 'affinity'].includes(c.def.id)) c.card.hidden = !engine.videoLoaded;
 else c.card.hidden = !engine.pm.ready;
 }
 {
 const vc = cards.find((c) => c.def.group === 'Видео');
 const nm = vc?.fhead.querySelector('.fx-folder-name');
-if (nm) nm.textContent = engine.pm.ready && !engine.videoLoaded && !engine.hasVoidPrint ? 'Фото' : 'Видео';
+if (nm) nm.textContent = engine.pm.ready && !engine.videoLoaded ? 'Фото' : 'Видео';
 }
 for (const c of cards) if (c.def.group === 'Анимация') c.folder.hidden = !engine.animReady;
 special.hidden = !cards.some((c) => SPECIAL[c.def.group] && !c.folder.hidden);

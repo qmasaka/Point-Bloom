@@ -76,7 +76,7 @@ export function pulseMaterial(part, now, strength, speed, cycle) {
 	}
 }
 
-function tint(palette, v) {
+export function tint(palette, v) {
 	v = clamp(v, 0, 1) * 2;
 	return MIX.copy(palette[Math.min(1, Math.floor(v))]).lerp(palette[v < 1 ? 1 : 2], v < 1 ? v : v - 1);
 }
@@ -601,73 +601,6 @@ function distance(a, b) {
 	return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 }
 
-export function drawAffinity(draw, feed, layer, palette) {
-	if (!feed.patches?.length) return;
-	const { w, h } = feed;
-	const { x, y } = mediaBounds(feed.aspect);
-	const threshold = 3.15 - 2.75 * layer.similarity;
-	const strength = layer.strength;
-	const patches = feed.patches.filter((p) => p.life >= 2 && p.energy > 0.42);
-	const groups = [];
-	const point = (p, z = 0) => [(p.x / w * 2 - 1) * x, (1 - p.y / h * 2) * y, z];
-	for (const p of patches) {
-		let chosen = null, best = threshold;
-		for (const g of groups) {
-			const d = Math.hypot(p.vx - g.vx, p.vy - g.vy, (p.ax - g.ax) * 0.45, (p.ay - g.ay) * 0.45, (p.energy - g.energy) * 0.28);
-			if (d < best) {
-				best = d;
-				chosen = g;
-			}
-		}
-		if (!chosen) {
-			chosen = { vx: p.vx, vy: p.vy, ax: p.ax, ay: p.ay, energy: p.energy, points: [] };
-			groups.push(chosen);
-		}
-		chosen.points.push(p);
-	}
-	for (const g of groups) {
-		if (g.points.length < 2) continue;
-		const direction = Math.atan2(-g.vy, g.vx) / TAU + 0.5;
-		const level = strength * Math.min(1, 0.3 + g.energy * 0.23);
-		const color = tint(palette, direction);
-		if (layer.mode === 'clusters') {
-			const center = g.points.reduce(([x, y], p) => [x + p.x / g.points.length, y + p.y / g.points.length], [0, 0]);
-			for (const p of g.points) {
-				const base = point(p);
-				const gather = level * 0.45;
-				base[0] += ((center[0] - p.x) / w * 2 * x) * gather + (g.vx * 0.08 + p.ax * 0.04) * level;
-				base[1] -= ((center[1] - p.y) / h * 2 * y) * gather + (g.vy * 0.08 + p.ay * 0.04) * level;
-				base[2] = level * (0.22 + g.energy * 0.09);
-				for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
-					const idx = (p.y + j) * w + p.x + i;
-					const k = idx * 4;
-					const lum = feed.gray[idx];
-					PIXEL.setRGB(feed.rgba[k] / 255, feed.rgba[k + 1] / 255, feed.rgba[k + 2] / 255, THREE.SRGBColorSpace);
-					PIXEL.lerp(color, 0.48);
-					draw.vertex(draw.points, [base[0] + i * x * 2 / w, base[1] - j * y * 2 / h, base[2] + (lum - 0.45) * level * 0.22], PIXEL, 0.55 + level);
-				}
-			}
-			continue;
-		}
-		for (const p of g.points) {
-			const a = point(p);
-			const link = g.points.find((q) => q.y * w + q.x > p.y * w + p.x && Math.hypot(q.x - p.x, q.y - p.y) > 13);
-			draw.vertex(draw.points, a, color, 1.05);
-			if (!link) continue;
-			const b = point(link);
-			const reach = distance(a, b);
-			let last = a;
-			for (let i = 1; i <= 16; i++) {
-				const s = i / 16;
-				const bow = Math.sin(Math.PI * s) * reach * level;
-				const next = [a[0] + (b[0] - a[0]) * s + bow * g.vx * 0.05, a[1] + (b[1] - a[1]) * s - bow * g.vy * 0.05, bow * 0.67];
-				draw.segment(last, next, color, 0.5 + s * 0.55);
-				last = next;
-			}
-		}
-	}
-}
-
 export class FabricHistory {
 	constructor(cloud) {
 		const random = seededRandom(0x37af130);
@@ -735,49 +668,5 @@ export function drawFabric(draw, fabric, layer, palette) {
 				if (t % 3 === 0) draw.segment(c, cur[j], color, 0.39 + age * 0.46);
 			}
 		}
-	}
-}
-
-export function voidField(slices, volume, layer) {
-	const last = slices.at(-1);
-	if (!last) return null;
-	const recent = slices.filter((s) => s.time >= last.time - layer.history);
-	const [mx, my, mz] = volume.min;
-	const [rx, ry, rz] = volume.max;
-	const spanX = rx - mx, spanY = ry - my, spanZ = rz - mz;
-	const thickness = spanZ * layer.depth;
-	const center = (mz + rz) * 0.5;
-	const activeMin = layer.mode === 'cut' ? rz - thickness : center - thickness * 0.5;
-	const maskAt = (s, u, v) => s.mask && s.mask[Math.floor(v * s.h) * s.w + Math.floor(u * s.w)] > 0;
-	return (x, y, z) => {
-		const u = (x - mx) / spanX, v = 1 - (y - my) / spanY, t = (z - activeMin) / thickness;
-		if (u < 0 || u >= 1 || v < 0 || v >= 1 || t < 0 || t > 1) return false;
-		if (layer.mode === 'cut') return maskAt(last, u, v);
-		const idx = Math.min(recent.length - 1, Math.floor(t * recent.length));
-		return maskAt(recent[idx], u, v);
-	};
-}
-
-export function drawVoid(draw, volume, field, layer, palette, inner) {
-	const { min, max, inside } = volume;
-	const n = 38;
-	const d = max.map((v, i) => (v - min[i]) / n);
-	const random = seededRandom(0x34e34e);
-	const negative = layer.mode === 'negative';
-	for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) for (let k = 0; k < n; k++) {
-		const x = min[0] + (i + 0.29 + random() * 0.42) * d[0];
-		const y = min[1] + (j + 0.29 + random() * 0.42) * d[1];
-		const z = min[2] + (k + 0.29 + random() * 0.42) * d[2];
-		if (!inside(x, y, z)) continue;
-		const cut = !!field(x, y, z);
-		if (cut !== negative) continue;
-		const edge = !!field(x + d[0], y, z) !== cut || !!field(x - d[0], y, z) !== cut
-			|| !!field(x, y + d[1], z) !== cut || !!field(x, y - d[1], z) !== cut
-			|| !!field(x, y, z + d[2]) !== cut || !!field(x, y, z - d[2]) !== cut;
-		if (inner && !negative && !edge) continue;
-		const rim = !inside(x, y, z + d[2]) || !inside(x, y, z - d[2]);
-		if (!edge && !rim && random() > (negative ? 0.46 : 0.18)) continue;
-		const color = tint(palette, edge || negative ? 0.58 + k / n * 0.41 : k / n * 0.5);
-		draw.vertex(draw.points, [x, y, z], color, edge ? 1.08 : rim ? 0.54 : 0.3);
 	}
 }

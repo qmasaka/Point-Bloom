@@ -210,7 +210,7 @@ export const FX_LAYERS = [
 ] },
 ];
 export const FX_GROUPS = {
-'Видео': ['depth', 'pixelsort', 'frames', 'chrono', 'slitscan', 'affinity', 'voidPrint'],
+'Видео': ['depth', 'pixelsort', 'frames', 'chrono', 'slitscan', 'affinity', 'contours'],
 'Анимация': ['trail', 'temporalFabric'],
 'Движение': ['curl', 'gravity', 'twist'],
 'Звук и ритм': ['spectrum', 'wave', 'blast', 'shoots', 'chladni', 'scope'],

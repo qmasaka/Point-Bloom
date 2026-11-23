@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { clamp } from '../../core/util.js';
-import { FabricHistory, MaterialDrawing, drawAffinity, drawFabric, drawInners, drawShell, drawVoid, growthCycle, makeScreenColor, pulseMaterial, voidField } from './material-drawing.js';
+import { FabricHistory, MaterialDrawing, drawFabric, drawInners, drawShell, growthCycle, makeScreenColor, pulseMaterial } from './material-drawing.js';
+import { drawAffinity, drawContours } from './material-video-draw.js';
 import { MaterialVideo } from './material-video.js';
 import { makeVolume, mediaBounds } from './material-volume.js';
 let glowSprite = null;
@@ -21,14 +22,15 @@ return glowSprite;
 }
 function makePart(group, id) {
 const common = { vertexColors: true, transparent: true, depthWrite: false };
-const bead = id === 'inners' ? 0.03 : id === 'affinity' ? 0.016 : 0.013;
-const additive = id === 'inners' ? { blending: THREE.AdditiveBlending } : {};
-const sprite = id === 'inners' ? { map: glowTexture(), alphaTest: 0.01 } : {};
+const bead = id === 'inners' ? 0.03 : id === 'affinity' ? 0.02 : id === 'contours' ? 0.018 : 0.013;
+const glowing = id === 'inners' || id === 'affinity' || id === 'contours';
+const additive = glowing ? { blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor } : {};
+const sprite = glowing ? { map: glowTexture(), alphaTest: 0.01 } : {};
 const parts = {
 lines: new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ ...common, ...additive, opacity: 0.84 })),
 faces: new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ ...common, opacity: 0.28, side: THREE.DoubleSide, forceSinglePass: true })),
 points: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, ...additive, ...sprite, size: bead, opacity: 0.9 })),
-nodes: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, ...sprite, size: id === 'inners' ? 0.075 : 0.052, opacity: 0.8, blending: THREE.AdditiveBlending })),
+nodes: new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ ...common, ...sprite, ...(glowing ? additive : { blending: THREE.AdditiveBlending }), size: glowing ? 0.075 : 0.052, opacity: 0.8 })),
 };
 for (const o of Object.values(parts)) {
 o.frustumCulled = false;
@@ -78,14 +80,6 @@ part.key = build ? key : '';
 return Object.values(part.parts).some((x) => x.visible);
 }
 export class MaterialPart {
-get hasVoidPrint() {
-return !!this._voidHistory?.slices.length;
-}
-clearVoidPrint() {
-this._voidHistory = null;
-this.app.viewport.invalidate();
-this.emit();
-}
 _disposeMaterialGeometry() {
 const root = this._materialRoot;
 if (root) {
@@ -130,43 +124,13 @@ volume.version = (this._materialVolumeVer = (this._materialVolumeVer || 0) + 1);
 this._materialVolumes = { tag, volume, geo: this.geometry };
 return volume;
 }
-_materialRecordVoid(feed, media) {
-const h = this._voidHistory ||= { slices: [], clock: 0, version: 0 };
-const first = h.slices.length === 0;
-if (h.feed === feed.feedId && feed.version === h.lastVersion) return;
-let mask = feed.mask;
-const C = this.state.layers.chrono;
-if (C.on && C.mask === 'person' && this.segmenter?.ready) {
-mask = this.segmenter.mask(feed.el, feed.w, feed.h) || mask;
-}
-const valid = mask?.some(Boolean);
-if (h.feed !== feed.feedId && !valid) return;
-if (h.feed !== feed.feedId) {
-h.slices.length = 0;
-h.mediaVolume = null;
-h.feed = feed.feedId;
-}
-h.lastVersion = feed.version;
-h.clock += feed.delta;
-if (media) {
-const { x, y } = mediaBounds(feed.aspect);
-h.mediaVolume ||= {
-min: [-x, -y, -0.64], max: [x, y, 0.64],
-inside: (px, py, pz) => Math.abs(px) < x && Math.abs(py) < y && Math.abs(pz) < 0.64,
-};
-}
-h.slices.push({ time: h.clock, mask: valid ? mask.slice() : null, w: feed.w, h: feed.h });
-while (h.slices.length > 85 || h.slices[0].time < h.clock - 4.2) h.slices.shift();
-h.version++;
-if (first) this.emit();
-}
 _materialTick(layers, now) {
-const { inners, affinity, temporalFabric, voidPrint, vscreen } = layers;
+const { inners, affinity, temporalFabric, contours, vscreen } = layers;
 const points = this.points;
 this._materialHideSource = false;
-if (!points || !(inners.on || affinity.on || temporalFabric.on || voidPrint.on)) {
+if (!points || !(inners.on || affinity.on || temporalFabric.on || contours.on)) {
 if (this._materialRoot) this._disposeMaterialGeometry();
-this._materialVideo = this._materialScreen = null;
+this._materialVideo = this._materialScreen = this._materialContours = null;
 return;
 }
 const viewport = this.app.viewport;
@@ -184,23 +148,22 @@ const palette = [this.shared.uP0.value, this.shared.uP1.value, this.shared.uP2.v
 const pal = this.state.look.palette;
 const media = this.cloudKey?.startsWith('media') && this.pm?.ready && this.pm.count === this.geometry.attributes.aTarget.count ? this.pm : null;
 const video = this.videoReady ? this.pm.el : null;
-const motion = video && (affinity.on || voidPrint.on) ? (this._materialVideo ||= new MaterialVideo()) : null;
-const fresh = motion?.read(video, now);
+const motion = video && affinity.on ? (this._materialVideo ||= new MaterialVideo()) : null;
+motion?.read(video, now);
 if (!motion) this._materialVideo = null;
-if (voidPrint.on && fresh) this._materialRecordVoid(fresh, media);
-const imprint = voidPrint.on && this._voidHistory?.slices.length ? this._voidHistory : null;
-const volume = inners.on || imprint ? this._materialVolume(media) : null;
-const medium = imprint && (media || !this.videoLoaded) ? imprint.mediaVolume || volume : volume;
-const cut = imprint ? voidField(imprint.slices, medium, voidPrint) : null;
+const still = contours.on && media && this.pm.el ? this.pm.el : null;
+const relief = still ? (this._materialContours ||= new MaterialVideo()) : null;
+relief?.read(still, now, false);
+if (!relief) this._materialContours = null;
+const volume = inners.on ? this._materialVolume(media) : null;
+const removed = null;
 const activeScreen = inners.on && this.shared.uScr.value.x > 0.001 ? this._screenSource()?.media : null;
 const screen = activeScreen ? (this._materialScreen ||= new MaterialVideo()) : null;
 if (!screen) this._materialScreen = null;
 screen?.read(activeScreen, now, false);
 const projection = screen && vscreen.mode === 'project' ? Math.floor(now * 12) : 0;
-const maskVer = cut ? [imprint.version, voidPrint.mode, voidPrint.depth, voidPrint.history].join(':') : '';
-const removed = cut && (voidPrint.mode === 'negative' ? (x, y, z) => !cut(x, y, z) : cut);
 const ghost = inners.on && inners.shell === 'ghost';
-const innerShape = [volume?.version, pal, inners.mode, inners.density, inners.complexity, inners.roots, inners.reach, inners.trunk, inners.tips, inners.links, inners.bow, inners.ribs, inners.strands, inners.twist, inners.spread, inners.prune, inners.glow, inners.hue, inners.tone, maskVer,
+const innerShape = [volume?.version, pal, inners.mode, inners.density, inners.complexity, inners.roots, inners.reach, inners.trunk, inners.tips, inners.links, inners.bow, inners.ribs, inners.strands, inners.twist, inners.spread, inners.prune, inners.glow, inners.hue, inners.tone,
 screen?.version, screen && vscreen.mode, screen && vscreen.scale, screen && vscreen.rotate, screen && vscreen.bright, screen && vscreen.mix, projection].join(':');
 const innerKey = innerShape + ':' + (media ? Math.floor(now * 8) : '');
 const hasInner = present(root, 'inners', innerKey, inners.on
@@ -218,9 +181,22 @@ const attrs = this.geometry.attributes;
 present(root, 'shell', [ghost, pal, volume?.version, this.cloudKey, attrs.aTarget.count, Math.round(this.morph * 50), anim.has ? Math.floor(anim.time * 12) : 0].join(':'), ghost
 ? (draw) => drawShell(draw, attrs.aTarget.array, attrs.aColor.array, attrs.aHide.array, palette, 16000)
 : null);
-const hasAffinity = present(root, 'affinity', [motion?.version, pal, affinity.mode, affinity.strength, affinity.similarity].join(':'), affinity.on && motion
+const hasAffinity = present(root, 'affinity', motion?.version + ':' + pal + ':' + JSON.stringify(affinity), affinity.on && motion
 ? (draw) => drawAffinity(draw, motion, affinity, palette)
 : null);
+if (hasAffinity) {
+const part = root.userData.affinity;
+part.parts.points.material.size = (affinity.mode === 'dust' ? 0.032 : 0.02) * (affinity.bead ?? 1);
+part.parts.nodes.material.size = 0.06 * (affinity.bead ?? 1);
+}
+const sweepTick = contours.sweep > 0 ? Math.floor(now * 10) : 0;
+const hasContours = present(root, 'contours', relief?.version + ':' + pal + ':' + JSON.stringify(contours) + ':' + sweepTick, contours.on && relief?.gray
+? (draw) => drawContours(draw, relief, contours, palette, now)
+: null);
+if (hasContours) {
+const part = root.userData.contours;
+part.parts.points.material.size = 0.018 * (contours.bead ?? 1);
+}
 const cloud = this._animCloud;
 let fabric = null;
 if (temporalFabric.on && cloud && this._animBuf && anim.has) {
@@ -231,9 +207,6 @@ fabric.sample(this._animBuf, anim);
 present(root, 'temporalFabric', [fabric?.version, pal, temporalFabric.mode, temporalFabric.history, temporalFabric.density].join(':'), fabric
 ? (draw) => drawFabric(draw, fabric, temporalFabric, palette)
 : null);
-const hasPrint = present(root, 'voidPrint', [maskVer, volume?.version, pal, inners.on].join(':'), cut
-? (draw) => drawVoid(draw, medium, cut, voidPrint, palette, inners.on)
-: null);
-this._materialHideSource = !!(hasPrint || (hasInner && inners.shell !== 'show') || (hasAffinity && media && affinity.source === 'hide'));
+this._materialHideSource = !!((hasInner && inners.shell !== 'show') || (hasAffinity && media && affinity.source === 'hide') || (hasContours && media && contours.source === 'hide'));
 }
 }
