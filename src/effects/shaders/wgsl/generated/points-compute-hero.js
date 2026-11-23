@@ -104,6 +104,8 @@ struct Frame {
 	uJelP: vec4f,
 	uPhysics: vec4f,
 	@size(16) uCollapseTime: f32,
+	uCrumble: vec4f,
+	uCrumbleT: array<vec4f, 64>,
 	uBrushHits: array<vec4f, 20>,
 	uPaintP: vec4f,
 	uBrushParam: vec4f,
@@ -1499,28 +1501,52 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 		}
 	}
 	if ((fr.uPhysics.x > 0.001)) {
+		var crumble: bool = (fr.uCrumble.x > 0.5);
+		var chunkSize: f32 = fr.uCrumble.z;
+		var cb: vec3f = (*base);
 		var seed: f32 = hash11(((aIdx * 1234.56) + 17.1));
 		var seed2: f32 = hash11(((aIdx * 2345.67) + 39.3));
 		var seed3: f32 = hash11(((aIdx * 3456.78) + 81.7));
-		var yP: f32 = clamp(((((*base).y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
-		var onset: f32 = (((((1.0 - yP)) * fr.uPhysP.y) * 1.3) + (seed * 0.3));
-		var pt: f32 = max(0.0, (fr.uCollapseTime - onset));
-		var radd: vec3f = normalize(((*base) + vec3f(1e-3)));
-		var tang: vec3f = normalize((vec3f(-(*base).z, 0.0, (*base).x) + vec3f(1e-3, 0.0, 0.0)));
-		var v0: vec3f = ((((radd * ((0.5 + (seed * 1.1)))) + ((tang * fr.uPhysP.z) * ((0.3 + (seed3 * 0.9)))))) * fr.uPhysP.x);
-		var vy0: f32 = (((0.5 + (seed2 * 1.0))) * fr.uPhysP.x);
+		if ((crumble && (chunkSize > 0.004))) {
+			var cell: vec3f = floor(((*base) / chunkSize));
+			cb = (((cell + 0.5)) * chunkSize);
+			var cid: f32 = dot(cell, vec3f(1.0, 57.0, 113.0));
+			seed = hash11(((cid * 1.37) + 17.1));
+			seed2 = hash11(((cid * 2.11) + 39.3));
+			seed3 = hash11(((cid * 3.07) + 81.7));
+		}
+		var yP: f32 = clamp((((cb.y - fr.uYR.x)) / max((fr.uYR.y - fr.uYR.x), 1e-4)), 0.0, 1.0);
+		var live: f32 = 1.0;
+		var pt: f32;
+		if (crumble) {
+			var thr: f32 = clamp(mix(seed, (1.0 - yP), (fr.uPhysP.y * 0.8)), 0.0, 0.999);
+			var bin: i32 = i32((thr * 255.0));
+			var crumbleRow: vec4f = fr.uCrumbleT[(bin / 4)];
+			var lane: i32 = (bin - (((bin / 4)) * 4));
+			var brokeAt: f32 = select((select((select(crumbleRow.w, crumbleRow.z, (lane == 2))), crumbleRow.y, (lane == 1))), crumbleRow.x, (lane == 0));
+			live = select(0.0, 1.0, (brokeAt > -0.5));
+			pt = max(0.0, (fr.uCrumble.y - brokeAt));
+		} else {
+			var onset: f32 = (((((1.0 - yP)) * fr.uPhysP.y) * 1.3) + (seed * 0.3));
+			pt = max(0.0, (fr.uCollapseTime - onset));
+		}
+		var radd: vec3f = normalize((cb + vec3f(1e-3)));
+		var tang: vec3f = normalize((vec3f(-cb.z, 0.0, cb.x) + vec3f(1e-3, 0.0, 0.0)));
+		var speedScale: f32 = select(1.0, 0.45, crumble);
+		var v0: vec3f = (((((radd * ((0.5 + (seed * 1.1)))) + ((tang * fr.uPhysP.z) * ((0.3 + (seed3 * 0.9)))))) * fr.uPhysP.x) * speedScale);
+		var vy0: f32 = ((((0.5 + (seed2 * 1.0))) * fr.uPhysP.x) * speedScale);
 		var g: f32 = (fr.uPhysics.y * 3.8);
 		var floorY: f32 = (fr.uYR.x - 0.04);
 		var drag: f32 = (1.0 - exp((-pt * 1.5)));
-		var pPhys: vec3f = (*base);
+		var pPhys: vec3f = cb;
 		pPhys.x += (((v0.x * drag) / 1.5) + ((fr.uPhysics.w * 0.5) * drag));
 		pPhys.z += ((v0.z * drag) / 1.5);
-		var h0: f32 = max(((*base).y - floorY), 0.0);
+		var h0: f32 = max((cb.y - floorY), 0.0);
 		var vimp: f32 = sqrt(((vy0 * vy0) + ((2.0 * g) * h0)));
 		var t1: f32 = (((vy0 + vimp)) / g);
 		var yy: f32;
 		if ((pt < t1)) {
-			yy = (((*base).y + (vy0 * pt)) - (((0.5 * g) * pt) * pt));
+			yy = ((cb.y + (vy0 * pt)) - (((0.5 * g) * pt) * pt));
 		} else {
 			var tt: f32 = (pt - t1);
 			var vy: f32 = (vimp * fr.uPhysics.z);
@@ -1537,12 +1563,23 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 			yy = (floorY + max(hh, 0.0));
 		}
 		pPhys.y = max(yy, floorY);
-		var spinA: f32 = (((((1.0 - exp((-pt * 1.2)))) * fr.uPhysP.z) * ((seed2 - 0.5))) * 2.0);
-		var sq: vec2f = pPhys.xz;
-		var cs: f32 = cos(spinA);
-		var sn: f32 = sin(spinA);
-		{ let _sw20 = vec2f(((sq.x * cs) - (sq.y * sn)), ((sq.x * sn) + (sq.y * cs))); pPhys = vec3f(_sw20.x, pPhys.y, _sw20.y); }
-		var strength: f32 = min(1.0, fr.uPhysics.x);
+		if (crumble) {
+			var tumble: f32 = (((((1.0 - exp((-pt * 2.2)))) * ((seed2 - 0.5))) * 9.0) * ((0.4 + fr.uPhysP.z)));
+			var ct: f32 = cos(tumble);
+			var st: f32 = sin(tumble);
+			var offset: vec3f = ((*base) - cb);
+			{ let _sw20 = vec2f(((offset.x * ct) - (offset.z * st)), ((offset.x * st) + (offset.z * ct))); offset = vec3f(_sw20.x, offset.y, _sw20.y); }
+			{ let _sw21 = vec2f(((offset.x * ct) - (offset.y * st)), ((offset.x * st) + (offset.y * ct))); offset = vec3f(_sw21.x, _sw21.y, offset.z); }
+			pPhys += offset;
+			pPhys.y = max(pPhys.y, floorY);
+		} else {
+			var spinA: f32 = (((((1.0 - exp((-pt * 1.2)))) * fr.uPhysP.z) * ((seed2 - 0.5))) * 2.0);
+			var sq: vec2f = pPhys.xz;
+			var cs: f32 = cos(spinA);
+			var sn: f32 = sin(spinA);
+			{ let _sw22 = vec2f(((sq.x * cs) - (sq.y * sn)), ((sq.x * sn) + (sq.y * cs))); pPhys = vec3f(_sw22.x, pPhys.y, _sw22.y); }
+		}
+		var strength: f32 = (min(1.0, fr.uPhysics.x) * live);
 		var target_: vec3f = mix(pos, pPhys, strength);
 		if ((fr.uAsm > 0.0)) {
 			var s0: f32 = ((yP * 0.42) + (seed * 0.2));
@@ -1573,7 +1610,7 @@ fn fxDisplace(aOrigin_in: vec3f, aTarget_in: vec3f, aIdx_in: f32, base: ptr<func
 					var ca: f32 = cos(a);
 					var sa: f32 = sin(a);
 					var q: vec2f = (pos.xz - fr.uHand[i].xz);
-					{ let _sw21 = (fr.uHand[i].xz + vec2f(((q.x * ca) - (q.y * sa)), ((q.x * sa) + (q.y * ca)))); pos = vec3f(_sw21.x, pos.y, _sw21.y); }
+					{ let _sw23 = (fr.uHand[i].xz + vec2f(((q.x * ca) - (q.y * sa)), ((q.x * sa) + (q.y * ca)))); pos = vec3f(_sw23.x, pos.y, _sw23.y); }
 					pos.y += (((f * hs) * fr.uHandP.x) * 0.12);
 				} else {
 					pos += ((((normalize((hd + vec3f(1e-3))) * f) * hs) * fr.uHandP.x) * 0.75);

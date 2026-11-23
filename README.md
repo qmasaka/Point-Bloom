@@ -84,7 +84,7 @@ The idea comes from TouchDesigner POPs: a chain of independent operators over a 
 | **Video** | Depth volume, Pixel sort, Storyboard, Motion trail, Slit-scan, Color split, Motion relief |
 | **Motion** | Swirls and flow, Gravity, Deform |
 | **Sound and rhythm** | Spectrum, Waves, Blast, Beat growth, Sound sand (Chladni figures), Oscilloscope |
-| **Destruction** | Decay, Take apart, Dissolve |
+| **Destruction** | Decay (all at once, or crumbling to the music into pieces that fall to the floor), Take apart, Dissolve |
 | **Digital** | Voxels, Glitch, Datamosh |
 | **Graphics** | Shadow on the wall, Slice, Time trails, Echo, Tracking frames |
 | **Control** | Cursor, Brush (watercolor on the shape), Hands (camera) |

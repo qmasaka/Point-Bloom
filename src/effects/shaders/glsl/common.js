@@ -63,6 +63,8 @@ uniform vec4 uJelO[3];
 uniform vec4 uJelP;
 uniform vec4 uPhysics;
 uniform float uCollapseTime;
+uniform vec4 uCrumble;
+uniform vec4 uCrumbleT[64];
 uniform vec4 uBrushHits[20];
 uniform vec4 uPaintP;
 uniform vec4 uBrushParam;
@@ -1284,28 +1286,52 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 	}
 
 	if (uPhysics.x > 0.001) {
+		bool crumble = uCrumble.x > 0.5;
+		float chunkSize = uCrumble.z;
+		vec3 cb = base;
 		float seed = hash11(aIdx * 1234.56 + 17.1);
 		float seed2 = hash11(aIdx * 2345.67 + 39.3);
 		float seed3 = hash11(aIdx * 3456.78 + 81.7);
-		float yP = clamp((base.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
-		float onset = (1.0 - yP) * uPhysP.y * 1.3 + seed * 0.3;
-		float pt = max(0.0, uCollapseTime - onset);
-		vec3 radd = normalize(base + vec3(1e-3));
-		vec3 tang = normalize(vec3(-base.z, 0.0, base.x) + vec3(1e-3, 0.0, 0.0));
-		vec3 v0 = (radd * (0.5 + seed * 1.1) + tang * uPhysP.z * (0.3 + seed3 * 0.9)) * uPhysP.x;
-		float vy0 = (0.5 + seed2 * 1.0) * uPhysP.x;
+		if (crumble && chunkSize > 0.004) {
+			vec3 cell = floor(base / chunkSize);
+			cb = (cell + 0.5) * chunkSize;
+			float cid = dot(cell, vec3(1.0, 57.0, 113.0));
+			seed = hash11(cid * 1.37 + 17.1);
+			seed2 = hash11(cid * 2.11 + 39.3);
+			seed3 = hash11(cid * 3.07 + 81.7);
+		}
+		float yP = clamp((cb.y - uYR.x) / max(uYR.y - uYR.x, 1e-4), 0.0, 1.0);
+		float live = 1.0;
+		float pt;
+		if (crumble) {
+			float thr = clamp(mix(seed, 1.0 - yP, uPhysP.y * 0.8), 0.0, 0.999);
+			int bin = int(thr * 255.0);
+			vec4 crumbleRow = uCrumbleT[bin / 4];
+			int lane = bin - (bin / 4) * 4;
+			float brokeAt = lane == 0 ? crumbleRow.x : (lane == 1 ? crumbleRow.y : (lane == 2 ? crumbleRow.z : crumbleRow.w));
+			live = brokeAt > -0.5 ? 1.0 : 0.0;
+			pt = max(0.0, uCrumble.y - brokeAt);
+		} else {
+			float onset = (1.0 - yP) * uPhysP.y * 1.3 + seed * 0.3;
+			pt = max(0.0, uCollapseTime - onset);
+		}
+		vec3 radd = normalize(cb + vec3(1e-3));
+		vec3 tang = normalize(vec3(-cb.z, 0.0, cb.x) + vec3(1e-3, 0.0, 0.0));
+		float speedScale = crumble ? 0.45 : 1.0;
+		vec3 v0 = (radd * (0.5 + seed * 1.1) + tang * uPhysP.z * (0.3 + seed3 * 0.9)) * uPhysP.x * speedScale;
+		float vy0 = (0.5 + seed2 * 1.0) * uPhysP.x * speedScale;
 		float g = uPhysics.y * 3.8;
 		float floorY = uYR.x - 0.04;
 		float drag = 1.0 - exp(-pt * 1.5);
-		vec3 pPhys = base;
+		vec3 pPhys = cb;
 		pPhys.x += v0.x * drag / 1.5 + uPhysics.w * 0.5 * drag;
 		pPhys.z += v0.z * drag / 1.5;
-		float h0 = max(base.y - floorY, 0.0);
+		float h0 = max(cb.y - floorY, 0.0);
 		float vimp = sqrt(vy0 * vy0 + 2.0 * g * h0);
 		float t1 = (vy0 + vimp) / g;
 		float yy;
 		if (pt < t1) {
-			yy = base.y + vy0 * pt - 0.5 * g * pt * pt;
+			yy = cb.y + vy0 * pt - 0.5 * g * pt * pt;
 		} else {
 			float tt = pt - t1;
 			float vy = vimp * uPhysics.z;
@@ -1323,12 +1349,23 @@ vec3 fxDisplace(vec3 aOrigin, vec3 aTarget, float aIdx, out vec3 base, out float
 		}
 		pPhys.y = max(yy, floorY);
 
-		float spinA = (1.0 - exp(-pt * 1.2)) * uPhysP.z * (seed2 - 0.5) * 2.0;
-		vec2 sq = pPhys.xz;
-		float cs = cos(spinA);
-		float sn = sin(spinA);
-		pPhys.xz = vec2(sq.x * cs - sq.y * sn, sq.x * sn + sq.y * cs);
-		float strength = min(1.0, uPhysics.x);
+		if (crumble) {
+			float tumble = (1.0 - exp(-pt * 2.2)) * (seed2 - 0.5) * 9.0 * (0.4 + uPhysP.z);
+			float ct = cos(tumble);
+			float st = sin(tumble);
+			vec3 offset = base - cb;
+			offset.xz = vec2(offset.x * ct - offset.z * st, offset.x * st + offset.z * ct);
+			offset.xy = vec2(offset.x * ct - offset.y * st, offset.x * st + offset.y * ct);
+			pPhys += offset;
+			pPhys.y = max(pPhys.y, floorY);
+		} else {
+			float spinA = (1.0 - exp(-pt * 1.2)) * uPhysP.z * (seed2 - 0.5) * 2.0;
+			vec2 sq = pPhys.xz;
+			float cs = cos(spinA);
+			float sn = sin(spinA);
+			pPhys.xz = vec2(sq.x * cs - sq.y * sn, sq.x * sn + sq.y * cs);
+		}
+		float strength = min(1.0, uPhysics.x) * live;
 		vec3 target = mix(pos, pPhys, strength);
 		if (uAsm > 0.0) {
 			float s0 = yP * 0.42 + seed * 0.2;

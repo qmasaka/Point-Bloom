@@ -600,6 +600,8 @@ engine.toggleCollapse();
 collapseBtn.querySelector('.btn-label').textContent = engine.isCollapsed ? 'Собрать форму' : 'Разрушить форму';
 },
 });
+collapseBtn.classList.add('fx-collapse');
+collapseBtn.hidden = L.mode === 'crumble';
 body.append(collapseBtn);
 } else if (def.id === 'frames') {
 body.append(h('div', { class: 'field-hint' }, 'Видео раскладывается на кадры, кадры собираются в блок из точек. Текущий кадр рисуется густо, остальные реже. Что сейчас показано, задаёт таймлайн внизу: играйте и перематывайте видео, блок следует за ним. Остальные эффекты работают поверх блока, «Объём по глубине» выдавливает каждый кадр по его карте глубины.'), button({ label: 'Снять кадры заново', icon: 'film-strip', variant: 'secondary', cls: 'btn-block', title: 'Снять кадры с видео заново с текущими настройками', onClick: () => engine.rebuildFramesSoon() }));
@@ -684,6 +686,7 @@ cur = g.box;
 const autoSplit = !def.extras.some((x) => x.type === 'title') && def.extras.filter((x) => x.key).length > 7;
 let ctlN = 0;
 const applyWhen = () => {
+body.querySelector('.fx-collapse')?.toggleAttribute('hidden', L.mode === 'crumble');
 whenList.forEach(([el, w]) => (el.hidden = !w[1].includes(L[w[0]])));
 groups.forEach((g) => {
 const any = [...g.box.children].some((c) => !c.hidden);
@@ -751,7 +754,7 @@ live();
 app.bus.on('fx', refresh);
 refresh();
 } else if (ex.type === 'select') {
-const sl = select({ options: ex.options.map(([value, label, sub]) => ({ value, label, sub })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; after(); } });
+const sl = select({ options: ex.options.map(([value, label, sub]) => ({ value, label, sub })), value: L[ex.key], onChange: (v) => { L[ex.key] = v; if (ex.restyle) { engine[ex.restyle](L, v); for (const [k, ctl] of Object.entries(extraCtl)) if (k !== ex.key) ctl.set(L[k]); amount.set(L.amount); } after(); } });
 extraCtl[ex.key] = sl;
 put(field(ex.label, sl.el, { wide: true }), ex);
 } else if (ex.type === 'button') {
@@ -762,7 +765,7 @@ variant: 'secondary',
 cls: ex.preset ? 'btn-sm' : 'btn-block',
 onClick: () => {
 if (ex.preset) {
-engine[ex.fn || 'moshPreset'](L, ex.preset);
+engine[ex.fn](L, ex.preset);
 for (const [k, ctl] of Object.entries(extraCtl)) ctl.set(L[k]);
 amount.set(L.amount);
 applyWhen();
@@ -782,7 +785,7 @@ variant: it.primary ? 'primary' : 'secondary',
 cls: 'btn-sm',
 onClick: () => {
 if (it.preset) {
-engine[it.fn || ex.fn || 'moshPreset'](L, it.preset);
+engine[it.fn || ex.fn](L, it.preset);
 for (const [k, ctl] of Object.entries(extraCtl)) ctl.set(L[k]);
 amount.set(L.amount);
 row.querySelectorAll('.btn').forEach((b) => b.classList.toggle('is-picked', b === bt));

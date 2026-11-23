@@ -291,7 +291,11 @@ u.uGlitch.value.set(this._eff(L.glitch), L.glitch.slices, L.glitch.drop ?? 0.5, 
 u.uGlitchP.value.set(L.glitch.rgb === 'on' ? 1 : 0, L.glitch.speed, { bands: 0, blocks: 1, scan: 2 }[L.glitch.mode] ?? 0, L.glitch.burst ?? 0.7);
 u.uDisP.value.set({ wind: 0, burn: 1, laser: 2, layers: 3, chunks: 4, sand: 5, vortex: 6, shock: 7 }[L.dissolve.style] ?? 0, 0, 0, 0);
 u.uCursor.value.set(this._eff(L.cursor), L.cursor.radius, { attract: -1, swirl: 2 }[L.cursor.mode] ?? 1, 0);
-{
+if (L.physics.on && L.physics.mode === 'crumble') {
+this._crumbleTick(L.physics, dt, u);
+} else {
+if (this._crumble) this.crumbleReset();
+u.uCrumble.value.x = 0;
 const P = L.physics;
 if (this.isCollapsed && P.on) {
 this.asm = 0;

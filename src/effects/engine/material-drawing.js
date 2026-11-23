@@ -65,6 +65,7 @@ export function pulseMaterial(part, now, strength, speed, cycle, video) {
 		const attribute = object.geometry.attributes.color;
 		if (!attribute || !flow.length) continue;
 		const out = attribute.array;
+		const wide = attribute.itemSize === 4;
 		const count = flow.length / 4;
 		if (refresh) {
 			const position = object.geometry.attributes.position.array;
@@ -91,12 +92,23 @@ export function pulseMaterial(part, now, strength, speed, cycle, video) {
 				k = age <= 0 ? 0 : (k + 2.2 * (age < 0.3 ? Math.exp(-age * 26) : 0)) * Math.min(1, age * 14) * cycle.fade;
 			}
 			const o = i * 3;
-			out[o] = base[o] * k;
-			out[o + 1] = base[o + 1] * k;
-			out[o + 2] = base[o + 2] * k;
+			const r = base[o] * k, g = base[o + 1] * k, b = base[o + 2] * k;
+			if (wide) {
+				const m = Math.max(r, g, b);
+				const q = i * 4;
+				const keep = m > 1 ? 1 : m > 0.0001 ? 1 / m : 0;
+				out[q] = r * keep;
+				out[q + 1] = g * keep;
+				out[q + 2] = b * keep;
+				out[q + 3] = m > 1 ? 1 : m;
+			} else {
+				out[o] = r;
+				out[o + 1] = g;
+				out[o + 2] = b;
+			}
 		}
 		attribute.clearUpdateRanges();
-		attribute.addUpdateRange(0, count * 3);
+		attribute.addUpdateRange(0, count * attribute.itemSize);
 		attribute.needsUpdate = true;
 	}
 }

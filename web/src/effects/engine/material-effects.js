@@ -23,7 +23,7 @@ function makePart(group, id) {
 const common = { vertexColors: true, transparent: true, depthWrite: false };
 const bead = id === 'inners' ? 0.03 : 0.013;
 const glowing = id === 'inners';
-const additive = glowing ? { blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.SrcAlphaFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor } : {};
+const additive = glowing ? { blending: THREE.AdditiveBlending } : {};
 const sprite = glowing ? { map: glowTexture(), alphaTest: 0.01 } : {};
 const parts = {
 lines: new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ ...common, ...additive, opacity: 0.84 })),
@@ -36,7 +36,7 @@ o.frustumCulled = false;
 o.userData.helper = true;
 group.add(o);
 }
-return { parts, key: '', flow: null, base: null };
+return { parts, key: '', flow: null, base: null, wide: glowing };
 }
 function present(root, id, key, build, now = 0, stamp = '') {
 const part = root.userData[id] ||= makePart(root, id);
@@ -56,18 +56,31 @@ const g = object.geometry;
 const data = draw?.[kind];
 const n = data ? data[0].length : 0;
 if (n) {
-if (!g.attributes.position || g.attributes.position.array.length < n) {
-const capacity = 3 * 2 ** Math.ceil(Math.log2(n / 3));
+const stride = part.wide && kind !== 'faces' ? 4 : 3;
+if (!g.attributes.position || g.attributes.position.array.length < n || g.attributes.color?.itemSize !== stride) {
+const capacity = 3 * 2 ** Math.ceil(Math.log2(Math.max(1, n) / 3));
 g.dispose();
-for (const name of ['position', 'color']) g.setAttribute(name, new THREE.BufferAttribute(new Float32Array(capacity), 3).setUsage(THREE.DynamicDrawUsage));
+g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(capacity), 3).setUsage(THREE.DynamicDrawUsage));
+g.setAttribute('color', new THREE.BufferAttribute(new Float32Array((capacity / 3) * stride), stride).setUsage(THREE.DynamicDrawUsage));
 }
-for (const [i, name] of ['position', 'color'].entries()) {
-const a = g.attributes[name];
-a.array.set(data[i]);
-a.clearUpdateRanges();
-a.addUpdateRange(0, n);
-a.needsUpdate = true;
+const position = g.attributes.position;
+position.array.set(data[0]);
+position.clearUpdateRanges();
+position.addUpdateRange(0, n);
+position.needsUpdate = true;
+const color = g.attributes.color;
+if (stride === 4) {
+const source = data[1];
+for (let i = 0; i < n / 3; i++) {
+color.array[i * 4] = source[i * 3];
+color.array[i * 4 + 1] = source[i * 3 + 1];
+color.array[i * 4 + 2] = source[i * 3 + 2];
+color.array[i * 4 + 3] = 1;
 }
+} else color.array.set(data[1]);
+color.clearUpdateRanges();
+color.addUpdateRange(0, (n / 3) * stride);
+color.needsUpdate = true;
 if (data[2]) {
 part.flow[kind] = Float32Array.from(data[2]);
 part.base[kind] = Float32Array.from(data[1]);

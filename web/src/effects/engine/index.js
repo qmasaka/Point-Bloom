@@ -24,6 +24,7 @@ import { LoopPart } from './loop.js';
 import { RecordingPart } from './recording.js';
 import { ScreenPart } from './screen.js';
 import { SlitPart } from './slitscan.js';
+import { CrumblePart } from './crumble.js';
 import { ChladniPart } from './chladni.js';
 import { ShootsPart } from './shoots.js';
 import { ShadowPart } from './shadow.js';
@@ -376,4 +377,4 @@ nav.paintLock = want;
 this.app.viewport.container.classList.toggle('paint-lock', want);
 }
 }
-mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, ChronoPart, PixelSortPart, TrackPickPart, ExperimentsPart, MaterialPart);
+mixin(EffectsEngine, FramesPart, KeyframesPart, SourcePart, BuildPart, LinksPart, ToolsPart, TrackingPart, HistoryPart, ScopeTrailPart, ShaderCachePart, DepthPart, AudioPart, InteractionPart, LoopPart, RecordingPart, ScreenPart, SlitPart, ChladniPart, ShootsPart, ShadowPart, ChronoPart, PixelSortPart, TrackPickPart, ExperimentsPart, MaterialPart, CrumblePart);
