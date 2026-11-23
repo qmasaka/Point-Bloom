@@ -78830,7 +78830,7 @@ const FX_LAYERS = [
 { id: 'blast', group: 'Движение', name: 'Взрыв', icon: 'asterisk', hint: 'Точки отлетают и пружинят обратно, или форма бьётся, как сердце. Виды: взрыв, пульс оболочкой, сжатием, всей формой сразу', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, style: 'burst', decay: 2.2, random: 0.6, period: 1.6, delay: 0.35, pspeed: 1 }, extras: [{ key: 'style', label: 'Вид', type: 'select', options: [['burst', 'Взрыв: разлёт с возвратом'], ['shell', 'Пульс: сферическая оболочка'], ['squash', 'Пульс: сжатие и растяжение'], ['flat', 'Пульс: синхронно всей формой']] }, { key: 'period', label: 'Бьёт сам раз в, с', min: 0.4, max: 5, step: 0.1 }, { key: 'decay', label: 'Возврат (пружина)', min: 0.8, max: 6, step: 0.1, when: ['style', ['burst']] }, { key: 'random', label: 'Разброс направлений', min: 0, max: 1, step: 0.05, when: ['style', ['burst']] }, { key: 'delay', label: 'Задержка к краю', min: 0, max: 1, step: 0.02, when: ['style', ['shell', 'squash']] }, { key: 'pspeed', label: 'Скорость затухания', min: 0.3, max: 3, step: 0.05, when: ['style', ['shell', 'squash', 'flat']] }] },
 { id: 'flow', hidden: true, group: 'Движение', name: 'Течение', icon: 'path', hint: 'Точки скользят вдоль формы по линиям потока, а силуэт не меняется. Настраиваются масштаб, скорость и поворот потока', max: 2, def: { on: false, amount: 1, band: 'none', react: 0, scale: 1.6, speed: 1, dir: 0 }, extras: [{ key: 'scale', label: 'Масштаб течений', min: 0.4, max: 4, step: 0.1 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.05 }, { key: 'dir', label: 'Поворот потока', min: 0, max: 6.28, step: 0.1 }] },
 { id: 'explode', group: 'Разрушение', name: 'Разбор на части', icon: 'cube', hint: 'Форма разъезжается на жёсткие куски, они поворачиваются и возвращаются на место. Настраиваются число кусков, дальность и вращение', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', speed: 0.8, pieces: 40, dist: 1, spin: 0.5, stagger: 0.5 }, extras: [{ key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['hold', 'Всегда разобрана']] }, { key: 'pieces', label: 'Число кусков', min: 6, max: 256, step: 1, int: true }, { key: 'dist', label: 'Как далеко расходятся', min: 0.2, max: 3, step: 0.05 }, { key: 'spin', label: 'Вращение кусков', min: 0, max: 1, step: 0.05 }, { key: 'stagger', label: 'Разброс по времени', min: 0, max: 0.9, step: 0.05 }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1, when: ['mode', ['loop']] }] },
-{ id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Форма исчезает и собирается обратно. Виды: лазерный срез, слои, блоки, песок, воронка, взрыв, горение, ветер, росток', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', dir: 'both', order: 'top', style: 'laser', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.35, scatter: 1, edge: 0.32, glow: 0.35, shrink: 0.85, seed: 'bottom', tendril: 0.6, bud: 0.7 }, extras: [{ type: 'title', label: 'Как растворяется' }, { key: 'style', label: 'Вид', type: 'select', options: [['laser', 'Лазерный срез: сканирующая плоскость'], ['layers', 'Сдвиг слоёв: полосы в стороны'], ['chunks', 'Блочный распад: объёмные кубы'], ['sand', 'Осыпание: частицы на пол'], ['vortex', 'Воронка: закручивание к центру'], ['shock', 'Ударная волна: импульс от центра'], ['burn', 'Испепеление: частицы вверх'], ['wind', 'Сдувание: боковой поток ветра'], ['sprout', 'Прорастание: ветвление формы']] }, { key: 'seed', label: 'Откуда растёт', type: 'select', options: [['bottom', 'Снизу вверх: от основания'], ['point', 'Из точки: случайный фокус'], ['center', 'Из центра: радиально наружу']], when: ['style', ['sprout']] }, { key: 'order', label: 'Откуда начинается', type: 'select', when: ['style', ['laser', 'layers', 'chunks', 'sand', 'vortex', 'shock', 'burn', 'wind']], options: [['top', 'Сверху вниз'], ['bottom', 'Снизу вверх'], ['side', 'Слева направо'], ['center', 'Из центра наружу'], ['edges', 'С краёв к центру'], ['noise', 'Случайные зоны']] }, { type: 'title', label: 'Запуск' }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок']] }, { key: 'dir', label: 'Что дольше', type: 'seg', options: [['both', 'Поровну'], ['out', 'Распад'], ['in', 'Сборка']], when: ['mode', ['loop']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01, when: ['mode', ['slider']] }, { type: 'title', label: 'Движение частиц' }, { key: 'scatter', label: 'Размах движения', min: 0.2, max: 2.5, step: 0.05 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер и закрутка', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Лёгкая турбулентность', min: 0, max: 2, step: 0.05 }, { type: 'title', label: 'Кромка и частицы' }, { key: 'edge', label: 'Ширина кромки распада', min: 0.1, max: 0.7, step: 0.02 }, { key: 'glow', label: 'Свечение кромки', min: 0, max: 1.5, step: 0.05 }, { key: 'shrink', label: 'Мельчание частиц', min: 0, max: 1, step: 0.05 }, { key: 'tendril', label: 'Усики (неровный фронт)', min: 0, max: 1, step: 0.05, when: ['style', ['sprout']] }, { key: 'bud', label: 'Почки на кромке', min: 0, max: 1.5, step: 0.05, when: ['style', ['sprout']] }] },
+{ id: 'dissolve', group: 'Движение', name: 'Растворение', icon: 'snowflake', hint: 'Форма исчезает и собирается обратно. Виды: лазерный срез, слои, блоки, песок, воронка, взрыв, горение, ветер, росток', max: 1, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'loop', idle: 0.4, pace: 1, repeat: 'loop', hold: 2, asm: 2.2, dir: 'both', order: 'top', style: 'laser', speed: 0.8, progress: 0.4, fall: 0.8, wind: 0.5, turb: 0.35, scatter: 1, edge: 0.32, glow: 0.35, shrink: 0.85, seed: 'bottom', tendril: 0.6, bud: 0.7 }, extras: [{ type: 'title', label: 'Как растворяется' }, { key: 'style', label: 'Вид', type: 'select', options: [['laser', 'Лазерный срез: сканирующая плоскость'], ['layers', 'Сдвиг слоёв: полосы в стороны'], ['chunks', 'Блочный распад: объёмные кубы'], ['sand', 'Осыпание: частицы на пол'], ['vortex', 'Воронка: закручивание к центру'], ['shock', 'Ударная волна: импульс от центра'], ['burn', 'Испепеление: частицы вверх'], ['wind', 'Сдувание: боковой поток ветра'], ['sprout', 'Прорастание: ветвление формы']] }, { key: 'seed', label: 'Откуда растёт', type: 'select', options: [['bottom', 'Снизу вверх: от основания'], ['point', 'Из точки: случайный фокус'], ['center', 'Из центра: радиально наружу']], when: ['style', ['sprout']] }, { key: 'order', label: 'Откуда начинается', type: 'select', when: ['style', ['laser', 'layers', 'chunks', 'sand', 'vortex', 'shock', 'burn', 'wind']], options: [['top', 'Сверху вниз'], ['bottom', 'Снизу вверх'], ['side', 'Слева направо'], ['center', 'Из центра наружу'], ['edges', 'С краёв к центру'], ['noise', 'Случайные зоны']] }, { type: 'title', label: 'Запуск' }, { key: 'mode', label: 'Запуск', type: 'seg', options: [['loop', 'Цикл'], ['button', 'Кнопкой'], ['slider', 'Ползунок'], ['music', 'Под музыку']] }, { key: 'dir', label: 'Что дольше', type: 'seg', options: [['both', 'Поровну'], ['out', 'Распад'], ['in', 'Сборка']], when: ['mode', ['loop']] }, { key: 'speed', label: 'Скорость', min: 0.1, max: 3, step: 0.1 }, { key: 'progress', label: 'Прогресс (для ползунка)', min: 0, max: 1, step: 0.01, when: ['mode', ['slider']] }, { key: 'pace', label: 'Сколько отлетает за раз', min: 0.2, max: 4, step: 0.05, noNorm: true, unit: ' ×', when: ['mode', ['music']] }, { key: 'idle', label: 'Растворяется само', min: 0, max: 1, step: 0.01, when: ['mode', ['music']] }, { key: 'repeat', label: 'Потом', type: 'seg', options: [['loop', 'Собирается'], ['hold', 'Лежит']], when: ['mode', ['music']] }, { key: 'hold', label: 'Лежит перед сборкой, с', min: 0, max: 15, step: 0.5, noNorm: true, when: ['mode', ['music']] }, { key: 'asm', label: 'Время сборки, с', min: 0.6, max: 6, step: 0.1, noNorm: true, when: ['mode', ['music']] }, { type: 'title', label: 'Движение частиц' }, { key: 'scatter', label: 'Размах движения', min: 0.2, max: 2.5, step: 0.05 }, { key: 'fall', label: 'Падение вниз', min: 0, max: 2, step: 0.05 }, { key: 'wind', label: 'Ветер и закрутка', min: -2, max: 2, step: 0.1 }, { key: 'turb', label: 'Лёгкая турбулентность', min: 0, max: 2, step: 0.05 }, { type: 'title', label: 'Кромка и частицы' }, { key: 'edge', label: 'Ширина кромки распада', min: 0.1, max: 0.7, step: 0.02 }, { key: 'glow', label: 'Свечение кромки', min: 0, max: 1.5, step: 0.05 }, { key: 'shrink', label: 'Мельчание частиц', min: 0, max: 1, step: 0.05 }, { key: 'tendril', label: 'Усики (неровный фронт)', min: 0, max: 1, step: 0.05, when: ['style', ['sprout']] }, { key: 'bud', label: 'Почки на кромке', min: 0, max: 1.5, step: 0.05, when: ['style', ['sprout']] }] },
 { id: 'voxel', group: 'Движение', name: 'Воксели', icon: 'squares-four', hint: 'Точки превращаются в кубики. Виды: сетка, лего, дыхание, волна, ступени, разлёт. Настраиваются размер и высота', max: 1, def: { on: false, amount: 0.6, band: 'none', react: 1, mode: 'grid', speed: 1, size: 1, height: 1 }, extras: [{ key: 'mode', label: 'Вид', type: 'select', options: [['grid', 'Кубическая сетка: равномерные блоки'], ['lego', 'Столбцы: рельеф разной высоты'], ['breathe', 'Дыхание: пульсирующая сетка'], ['wave', 'Волна: бегущий подъём кубов'], ['stairs', 'Террасы: ступенчатые уровни'], ['scatter', 'Дрожание: вибрация на месте']] }, { key: 'size', label: 'Размер кубиков', min: 0.4, max: 2.5, step: 0.05 }, { key: 'height', label: 'Высота и размах', min: 0, max: 2, step: 0.05, when: ['mode', ['lego', 'wave', 'stairs', 'scatter']] }, { key: 'speed', label: 'Скорость', min: 0.2, max: 3, step: 0.05, when: ['mode', ['lego', 'breathe', 'wave', 'scatter']] }] },
 { id: 'shoots', sound: false, group: 'Звук и ритм', name: 'Рост на ритме', icon: 'tree-structure', hint: 'Участки формы отходят от неё: каждый удар сдвигает участок ещё на шаг дальше', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0, mode: 'slab', trigger: 'both', every: 0.7, auto: 'on', step: 0.08, maxSteps: 16, bassSpeed: 1, stepTime: 0.25, peak: 'hold', quiet: 'stay', active: 2, size: 0.4, edge: 0.4, spread: 0, taper: 0, tiers: 4, shardSize: 0.5, layers: 6, twist: 1, scatter: 1.3, seeds: 14, dir: 'normal', glow: 0.3, wobble: 0.3, sizeUp: 0.15, perBeat: 2, maxLen: 1, decay: 0.08, bassPush: 0.5 }, extras: [
 { key: 'mode', label: 'Форма отхода', type: 'select', options: [['slab', 'Плита', 'участок целым куском'], ['pillar', 'Столб', 'вытягивается колонной или шпилем'], ['terrace', 'Ступени', 'ступенчатая пирамида'], ['shards', 'Осколки', 'колется на куски'], ['peel', 'Слои', 'отходит слой за слоем'], ['screw', 'Винт', 'выкручивается'], ['dust', 'Пыль', 'рассыпается точками'], ['spikes', 'Шипы', 'острые иглы'], ['bulge', 'Бугры', 'мягкие выпуклости'], ['tendril', 'Щупальца', 'извивающиеся отростки']] },
@@ -85802,6 +85802,8 @@ __defs['src/i18n/more.js'] = function (__exports, __req) {
 __def(__exports, 'default', () => __default);
 const __default = {
 en: {
+'Под музыку': 'Under music',
+'Растворяется само': 'Dissolves on its own',
 'Сколько отлетает за раз': 'How many fly off at once',
 'Внутренности': 'Inners',
 'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Lines fill the volume. Screen colors them with the current frame.',
@@ -87217,6 +87219,8 @@ en: {
 'Затухание упавших': 'Fade of fallen pieces',
 },
 uk: {
+'Под музыку': 'Під музику',
+'Растворяется само': 'Розчиняється сама',
 'Сколько отлетает за раз': 'Скільки відлітає за раз',
 'Внутренности': 'Нутрощі',
 'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Лінії заповнюють об’єм форми. «Екран» забарвлює їх поточним кадром.',
@@ -88632,6 +88636,8 @@ uk: {
 'Затухание упавших': 'Згасання впалих',
 },
 es: {
+'Под музыку': 'Con música',
+'Растворяется само': 'Se disuelve sola',
 'Сколько отлетает за раз': 'Cuántos salen a la vez',
 'Внутренности': 'Interior',
 'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Las líneas ocupan el volumen. Pantalla las colorea con el fotograma.',
@@ -90047,6 +90053,8 @@ es: {
 'Затухание упавших': 'Atenuación de los caídos',
 },
 de: {
+'Под музыку': 'Zur Musik',
+'Растворяется само': 'Löst sich von selbst auf',
 'Сколько отлетает за раз': 'Wie viele auf einmal abfliegen',
 'Внутренности': 'Innenleben',
 'Линии заполняют объём формы. «Экран» окрашивает их кадром.': 'Linien füllen das Volumen. Bildschirm färbt sie mit dem aktuellen Bild.',
@@ -102502,8 +102510,9 @@ const tg = this._disTarget ? 1 : 0;
 const v = this._disV || 0;
 this._disV = v + Math.sign(tg - v) * Math.min(Math.abs(tg - v), dt * D.speed * 0.3);
 p = this._disV;
-} else p = D.progress;
-p = p * p * (3 - 2 * p) * Math.min(1, D.band && D.band !== 'none' ? this._eff(D) : D.amount);
+} else if (D.mode === 'music') p = this._dissolveMusicTick(D, dt);
+else p = D.progress;
+p = p * p * (3 - 2 * p) * Math.min(1, D.mode !== 'music' && D.band && D.band !== 'none' ? this._eff(D) : D.amount);
 }
 const hand = this.camTracker?.running && this._handDis && this._time - (this._handsT ?? -9) < 0.4;
 this._disH = (this._disH || 0) + ((hand ? 1 : 0) - (this._disH || 0)) * (1 - Math.exp(-dt * Math.max(0.5, D.speed) * 1.2));
@@ -103133,11 +103142,32 @@ C.asm = 0;
 this._crumble = null;
 if (this.shared) this.shared.uAsm.value = 0;
 }
+_heardLevel(P) {
+if (P.band === 'none') return 0;
+if (P.amode === 'gate') return this._eff(P) / Math.max(0.01, P.amount);
+return this._bandLevel(P) * Math.min(2, (P.react || 0) * 2);
+}
+_dissolveMusicTick(D, dt) {
+const M = this._disMusic ||= { p: 0, phase: 'break', hold: 0 };
+if (M.phase === 'break') {
+M.p = Math.min(1, M.p + dt * (D.idle * 0.08 + this._heardLevel(D) * 0.35) * (D.pace ?? 1));
+if (M.p >= 1) {
+M.phase = 'hold';
+M.hold = 0;
+}
+} else if (M.phase === 'hold') {
+M.hold += dt;
+if (D.repeat === 'loop' && M.hold > D.hold) M.phase = 'asm';
+} else {
+M.p = Math.max(0, M.p - dt / Math.max(0.5, D.asm));
+if (M.p <= 0) M.phase = 'break';
+}
+return M.p;
+}
 _crumbleTick(P, dt, u) {
 const C = this._crumble ||= { times: new Float32Array(BINS).fill(-1), damage: 0, last: 0, phase: 'break', hold: 0, asm: 0 };
 const level = this.levels || { bass: 0, mid: 0, high: 0, beat: 0 };
-const gate = P.amode === 'gate';
-const heard = P.band === 'none' ? 0 : gate ? this._eff(P) / Math.max(0.01, P.amount) : this._bandLevel(P) * Math.min(2, (P.react || 0) * 2);
+const heard = this._heardLevel(P);
 if (C.phase === 'break') {
 const rise = dt * (P.idle * 0.08 + heard * 0.35) * (P.pace ?? 1);
 C.damage = Math.min(1, C.damage + rise);

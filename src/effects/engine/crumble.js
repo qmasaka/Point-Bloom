@@ -14,11 +14,34 @@ export class CrumblePart {
 		if (this.shared) this.shared.uAsm.value = 0;
 	}
 
+	_heardLevel(P) {
+		if (P.band === 'none') return 0;
+		if (P.amode === 'gate') return this._eff(P) / Math.max(0.01, P.amount);
+		return this._bandLevel(P) * Math.min(2, (P.react || 0) * 2);
+	}
+
+	_dissolveMusicTick(D, dt) {
+		const M = this._disMusic ||= { p: 0, phase: 'break', hold: 0 };
+		if (M.phase === 'break') {
+			M.p = Math.min(1, M.p + dt * (D.idle * 0.08 + this._heardLevel(D) * 0.35) * (D.pace ?? 1));
+			if (M.p >= 1) {
+				M.phase = 'hold';
+				M.hold = 0;
+			}
+		} else if (M.phase === 'hold') {
+			M.hold += dt;
+			if (D.repeat === 'loop' && M.hold > D.hold) M.phase = 'asm';
+		} else {
+			M.p = Math.max(0, M.p - dt / Math.max(0.5, D.asm));
+			if (M.p <= 0) M.phase = 'break';
+		}
+		return M.p;
+	}
+
 	_crumbleTick(P, dt, u) {
 		const C = this._crumble ||= { times: new Float32Array(BINS).fill(-1), damage: 0, last: 0, phase: 'break', hold: 0, asm: 0 };
 		const level = this.levels || { bass: 0, mid: 0, high: 0, beat: 0 };
-		const gate = P.amode === 'gate';
-		const heard = P.band === 'none' ? 0 : gate ? this._eff(P) / Math.max(0.01, P.amount) : this._bandLevel(P) * Math.min(2, (P.react || 0) * 2);
+		const heard = this._heardLevel(P);
 		if (C.phase === 'break') {
 			const rise = dt * (P.idle * 0.08 + heard * 0.35) * (P.pace ?? 1);
 			C.damage = Math.min(1, C.damage + rise);
