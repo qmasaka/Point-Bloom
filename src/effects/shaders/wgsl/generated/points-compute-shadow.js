@@ -1880,7 +1880,13 @@ fn main_() {
 	var shiftGlow: f32 = 0.0;
 	if ((fr.uExperimentSim.x > 0.5)) {
 		var field: vec4f = sampleExperimentField(i32(aVis.z), 0);
-		pos += (field.xyz * maskV);
+		var fieldPush: f32 = length(field.xyz);
+		if ((fieldPush > 0.0005)) {
+			var fieldId: i32 = i32(floor(((aIdx * fr.uExperimentView.w) + 0.5)));
+			var fieldVary: f32 = (0.7 + (0.6 * experimentHash(((fieldId * 19) + 5))));
+			var fieldSpray: vec3f = (vec3f(experimentHash(((fieldId * 23) + 1)), experimentHash(((fieldId * 29) + 2)), experimentHash(((fieldId * 31) + 3))) - 0.5);
+			pos += ((((field.xyz * fieldVary) + ((fieldSpray * min(fieldPush, 0.5)) * 0.45))) * maskV);
+		}
 		experimentTint = (field.w * maskV);
 		if ((fr.uChemistry.x > 0.001)) {
 			var colony: f32 = clamp((max(0.0, field.w) * maskV), 0.0, 1.3);
@@ -2118,6 +2124,8 @@ fn main_() {
 			var sg: vec3f = histColor(hx, hy, greenAge);
 			var sb: vec3f = histColor(blueAt.x, blueAt.y, blueAge);
 			var split: vec3f = vec3f(sr.r, sg.g, sb.b);
+			var neutral: vec3f = ((((sr + sg) + sb)) / 3.0);
+			split = (neutral + (((split - neutral)) * ((1.0 - (fr.uTsplit.w * 0.75)))));
 			var splitLum: f32 = dot(split, vec3f(0.3, 0.59, 0.11));
 			split = (mix(vec3f(splitLum), split, fr.uTsplit2.z) * fr.uTsplit2.w);
 			colM = mix(colM, split, min(fr.uTsplit.x, 1.0));
@@ -2125,11 +2133,17 @@ fn main_() {
 		if ((fr.uMrel.x > 0.001)) {
 			var present: vec3f = histColor(hx, hy, 0.0);
 			var energy: f32 = 0.0;
+			var energyMax: f32 = 0.0;
 			for (var i: i32 = 1; (i <= 4); i++) {
 				var past: vec3f = histColor(hx, hy, ((f32(i) * fr.uMrel.w) * 0.25));
-				energy = max(energy, length((present - past)));
+				var pastRight: vec3f = histColor(min((hx + 1), hmax.x), hy, ((f32(i) * fr.uMrel.w) * 0.25));
+				var pastDown: vec3f = histColor(hx, min((hy + 1), hmax.y), ((f32(i) * fr.uMrel.w) * 0.25));
+				var d: f32 = (((length((present - past)) * 0.5) + (length((histColor(min((hx + 1), hmax.x), hy, 0.0) - pastRight)) * 0.25)) + (length((histColor(hx, min((hy + 1), hmax.y), 0.0) - pastDown)) * 0.25));
+				energy += (d * 0.25);
+				energyMax = max(energyMax, d);
 			}
-			energy = clamp((((energy - fr.uMrel2.x)) * fr.uMrel.z), 0.0, 1.0);
+			energy = mix(energy, energyMax, 0.4);
+			energy = (smoothstep(fr.uMrel2.x, (fr.uMrel2.x + (0.12 / max(fr.uMrel.z, 0.3))), energy) * min(1.0, ((energy * fr.uMrel.z) * 1.4)));
 			energy = (((energy * energy) * ((3.0 - (2.0 * energy)))) * min(fr.uMrel.x, 1.0));
 			var liftNormal: vec3f = select(aNormalB, mix(aNormal, aNormalB, fr.uMorph), (fr.uMorph < 0.9999));
 			liftNormal = select(vec3f(0.0, 0.0, 1.0), normalize(liftNormal), (length(liftNormal) > 0.0));

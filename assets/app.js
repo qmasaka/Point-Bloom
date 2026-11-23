@@ -70299,7 +70299,13 @@ fn main_() {
 	var shiftGlow: f32 = 0.0;
 	if ((fr.uExperimentSim.x > 0.5)) {
 		var field: vec4f = sampleExperimentField(i32(aVis.z), 0);
-		pos += (field.xyz * maskV);
+		var fieldPush: f32 = length(field.xyz);
+		if ((fieldPush > 0.0005)) {
+			var fieldId: i32 = i32(floor(((aIdx * fr.uExperimentView.w) + 0.5)));
+			var fieldVary: f32 = (0.7 + (0.6 * experimentHash(((fieldId * 19) + 5))));
+			var fieldSpray: vec3f = (vec3f(experimentHash(((fieldId * 23) + 1)), experimentHash(((fieldId * 29) + 2)), experimentHash(((fieldId * 31) + 3))) - 0.5);
+			pos += ((((field.xyz * fieldVary) + ((fieldSpray * min(fieldPush, 0.5)) * 0.45))) * maskV);
+		}
 		experimentTint = (field.w * maskV);
 		if ((fr.uChemistry.x > 0.001)) {
 			var colony: f32 = clamp((max(0.0, field.w) * maskV), 0.0, 1.3);
@@ -70537,6 +70543,8 @@ fn main_() {
 			var sg: vec3f = histColor(hx, hy, greenAge);
 			var sb: vec3f = histColor(blueAt.x, blueAt.y, blueAge);
 			var split: vec3f = vec3f(sr.r, sg.g, sb.b);
+			var neutral: vec3f = ((((sr + sg) + sb)) / 3.0);
+			split = (neutral + (((split - neutral)) * ((1.0 - (fr.uTsplit.w * 0.75)))));
 			var splitLum: f32 = dot(split, vec3f(0.3, 0.59, 0.11));
 			split = (mix(vec3f(splitLum), split, fr.uTsplit2.z) * fr.uTsplit2.w);
 			colM = mix(colM, split, min(fr.uTsplit.x, 1.0));
@@ -70544,11 +70552,17 @@ fn main_() {
 		if ((fr.uMrel.x > 0.001)) {
 			var present: vec3f = histColor(hx, hy, 0.0);
 			var energy: f32 = 0.0;
+			var energyMax: f32 = 0.0;
 			for (var i: i32 = 1; (i <= 4); i++) {
 				var past: vec3f = histColor(hx, hy, ((f32(i) * fr.uMrel.w) * 0.25));
-				energy = max(energy, length((present - past)));
+				var pastRight: vec3f = histColor(min((hx + 1), hmax.x), hy, ((f32(i) * fr.uMrel.w) * 0.25));
+				var pastDown: vec3f = histColor(hx, min((hy + 1), hmax.y), ((f32(i) * fr.uMrel.w) * 0.25));
+				var d: f32 = (((length((present - past)) * 0.5) + (length((histColor(min((hx + 1), hmax.x), hy, 0.0) - pastRight)) * 0.25)) + (length((histColor(hx, min((hy + 1), hmax.y), 0.0) - pastDown)) * 0.25));
+				energy += (d * 0.25);
+				energyMax = max(energyMax, d);
 			}
-			energy = clamp((((energy - fr.uMrel2.x)) * fr.uMrel.z), 0.0, 1.0);
+			energy = mix(energy, energyMax, 0.4);
+			energy = (smoothstep(fr.uMrel2.x, (fr.uMrel2.x + (0.12 / max(fr.uMrel.z, 0.3))), energy) * min(1.0, ((energy * fr.uMrel.z) * 1.4)));
 			energy = (((energy * energy) * ((3.0 - (2.0 * energy)))) * min(fr.uMrel.x, 1.0));
 			var liftNormal: vec3f = select(aNormalB, mix(aNormal, aNormalB, fr.uMorph), (fr.uMorph < 0.9999));
 			liftNormal = select(vec3f(0.0, 0.0, 1.0), normalize(liftNormal), (length(liftNormal) > 0.0));
@@ -75133,7 +75147,13 @@ fn main_() {
 	var shiftGlow: f32 = 0.0;
 	if ((fr.uExperimentSim.x > 0.5)) {
 		var field: vec4f = sampleExperimentField(i32(aVis.z), 0);
-		pos += (field.xyz * maskV);
+		var fieldPush: f32 = length(field.xyz);
+		if ((fieldPush > 0.0005)) {
+			var fieldId: i32 = i32(floor(((aIdx * fr.uExperimentView.w) + 0.5)));
+			var fieldVary: f32 = (0.7 + (0.6 * experimentHash(((fieldId * 19) + 5))));
+			var fieldSpray: vec3f = (vec3f(experimentHash(((fieldId * 23) + 1)), experimentHash(((fieldId * 29) + 2)), experimentHash(((fieldId * 31) + 3))) - 0.5);
+			pos += ((((field.xyz * fieldVary) + ((fieldSpray * min(fieldPush, 0.5)) * 0.45))) * maskV);
+		}
 		experimentTint = (field.w * maskV);
 		if ((fr.uChemistry.x > 0.001)) {
 			var colony: f32 = clamp((max(0.0, field.w) * maskV), 0.0, 1.3);
@@ -75371,6 +75391,8 @@ fn main_() {
 			var sg: vec3f = histColor(hx, hy, greenAge);
 			var sb: vec3f = histColor(blueAt.x, blueAt.y, blueAge);
 			var split: vec3f = vec3f(sr.r, sg.g, sb.b);
+			var neutral: vec3f = ((((sr + sg) + sb)) / 3.0);
+			split = (neutral + (((split - neutral)) * ((1.0 - (fr.uTsplit.w * 0.75)))));
 			var splitLum: f32 = dot(split, vec3f(0.3, 0.59, 0.11));
 			split = (mix(vec3f(splitLum), split, fr.uTsplit2.z) * fr.uTsplit2.w);
 			colM = mix(colM, split, min(fr.uTsplit.x, 1.0));
@@ -75378,11 +75400,17 @@ fn main_() {
 		if ((fr.uMrel.x > 0.001)) {
 			var present: vec3f = histColor(hx, hy, 0.0);
 			var energy: f32 = 0.0;
+			var energyMax: f32 = 0.0;
 			for (var i: i32 = 1; (i <= 4); i++) {
 				var past: vec3f = histColor(hx, hy, ((f32(i) * fr.uMrel.w) * 0.25));
-				energy = max(energy, length((present - past)));
+				var pastRight: vec3f = histColor(min((hx + 1), hmax.x), hy, ((f32(i) * fr.uMrel.w) * 0.25));
+				var pastDown: vec3f = histColor(hx, min((hy + 1), hmax.y), ((f32(i) * fr.uMrel.w) * 0.25));
+				var d: f32 = (((length((present - past)) * 0.5) + (length((histColor(min((hx + 1), hmax.x), hy, 0.0) - pastRight)) * 0.25)) + (length((histColor(hx, min((hy + 1), hmax.y), 0.0) - pastDown)) * 0.25));
+				energy += (d * 0.25);
+				energyMax = max(energyMax, d);
 			}
-			energy = clamp((((energy - fr.uMrel2.x)) * fr.uMrel.z), 0.0, 1.0);
+			energy = mix(energy, energyMax, 0.4);
+			energy = (smoothstep(fr.uMrel2.x, (fr.uMrel2.x + (0.12 / max(fr.uMrel.z, 0.3))), energy) * min(1.0, ((energy * fr.uMrel.z) * 1.4)));
 			energy = (((energy * energy) * ((3.0 - (2.0 * energy)))) * min(fr.uMrel.x, 1.0));
 			var liftNormal: vec3f = select(aNormalB, mix(aNormal, aNormalB, fr.uMorph), (fr.uMorph < 0.9999));
 			liftNormal = select(vec3f(0.0, 0.0, 1.0), normalize(liftNormal), (length(liftNormal) > 0.0));
@@ -78467,7 +78495,7 @@ extras: [
 { key: 'tips', label: 'Огоньки на узлах', min: 0, max: 1, step: 0.01 },
 { key: 'pulse', label: 'Импульсы', min: 0, max: 1, step: 0.01 },
 { type: 'title', label: 'Цвет', open: true },
-{ key: 'tone', label: 'Цвет по', type: 'seg', options: [['grow', 'Росту'], ['height', 'Высоте'], ['solid', 'Один тон']] },
+{ key: 'tone', label: 'Цвет по', type: 'seg', options: [['grow', 'Росту'], ['height', 'Высоте'], ['solid', 'Один тон'], ['video', 'Видео']] },
 { key: 'hue', label: 'Сдвиг цвета', min: 0, max: 1, step: 0.01 },
 { type: 'title', label: 'Время', open: true },
 { key: 'flow', label: 'Скорость', min: 0.2, max: 3, step: 0.05, noNorm: true, unit: ' ×' },
@@ -78550,13 +78578,14 @@ const FX_LAYERS = [
 { key: 'push', label: 'Время вглубь', min: 0, max: 1, step: 0.05 },
 { type: 'note', text: 'Работает на видео из «Медиа» (не вместе с «Раскадровкой»). Прошлое набирается, пока видео играет. Ступени 0: время течёт плавно.' },
 ] },
-{ id: 'tsplit', group: 'Видео', name: 'Цветоделение', icon: 'swatches', hint: 'Красный, зелёный и синий каналы видео расходятся: каждый берётся из своего момента времени или со своего места. Движение обрастает цветной бахромой, как у призмы', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0.5, mode: 'time', spread: 4, shift: 2, spin: 40, sat: 1.3, gain: 1 }, extras: [
+{ id: 'tsplit', group: 'Видео', name: 'Цветоделение', icon: 'swatches', hint: 'Красный, зелёный и синий каналы видео расходятся: каждый берётся из своего момента времени или со своего места. Движение обрастает цветной бахромой, как у призмы', max: 1.5, def: { on: false, amount: 0.7, band: 'none', react: 0.5, mode: 'time', spread: 2, shift: 1.2, spin: 25, sat: 0.9, gain: 1, soft: 0.6 }, extras: [
 { key: 'mode', label: 'Как расходятся каналы', type: 'seg', options: [['time', 'Во времени'], ['space', 'В пространстве'], ['both', 'Оба']] },
 { type: 'title', label: 'Разнос', open: true },
 { key: 'spread', label: 'Разнос во времени, кадров', min: 1, max: 16, step: 1, int: true, noNorm: true, when: ['mode', ['time', 'both']] },
 { key: 'shift', label: 'Разнос в пространстве, ячеек', min: 0, max: 6, step: 0.1, noNorm: true, when: ['mode', ['space', 'both']] },
 { key: 'spin', label: 'Вращение разноса, градусов в секунду', min: -180, max: 180, step: 5, noNorm: true, when: ['mode', ['space', 'both']] },
 { type: 'title', label: 'Цвет', open: true },
+{ key: 'soft', label: 'Мягкость', min: 0, max: 1, step: 0.01 },
 { key: 'sat', label: 'Насыщенность', min: 0, max: 2, step: 0.05, noNorm: true, unit: ' ×' },
 { key: 'gain', label: 'Яркость', min: 0.5, max: 2, step: 0.05, noNorm: true, unit: ' ×' },
 { type: 'note', text: 'Работает на видео из «Медиа» (не вместе с «Раскадровкой»). Прошлое набирается, пока видео играет.' },
@@ -99244,7 +99273,13 @@ void main() {
 #ifndef HERO
 	if (uExperimentSim.x > 0.5) {
 		vec4 field = sampleExperimentField(int(aVis.z), 0);
-		pos += field.xyz * maskV;
+		float fieldPush = length(field.xyz);
+		if (fieldPush > 0.0005) {
+			int fieldId = int(floor(aIdx * uExperimentView.w + 0.5));
+			float fieldVary = 0.7 + 0.6 * experimentHash(fieldId * 19 + 5);
+			vec3 fieldSpray = vec3(experimentHash(fieldId * 23 + 1), experimentHash(fieldId * 29 + 2), experimentHash(fieldId * 31 + 3)) - 0.5;
+			pos += (field.xyz * fieldVary + fieldSpray * min(fieldPush, 0.5) * 0.45) * maskV;
+		}
 		experimentTint = field.w * maskV;
 		if (uChemistry.x > 0.001) {
 			float colony = clamp(max(0.0, field.w) * maskV, 0.0, 1.3);
@@ -99457,6 +99492,8 @@ void main() {
 			vec3 sg = histColor(hx, hy, greenAge);
 			vec3 sb = histColor(blueAt.x, blueAt.y, blueAge);
 			vec3 split = vec3(sr.r, sg.g, sb.b);
+			vec3 neutral = (sr + sg + sb) / 3.0;
+			split = neutral + (split - neutral) * (1.0 - uTsplit.w * 0.75);
 			float splitLum = dot(split, vec3(0.3, 0.59, 0.11));
 			split = mix(vec3(splitLum), split, uTsplit2.z) * uTsplit2.w;
 			colM = mix(colM, split, min(uTsplit.x, 1.0));
@@ -99464,11 +99501,17 @@ void main() {
 		if (uMrel.x > 0.001) {
 			vec3 present = histColor(hx, hy, 0.0);
 			float energy = 0.0;
+			float energyMax = 0.0;
 			for (int i = 1; i <= 4; i++) {
 				vec3 past = histColor(hx, hy, float(i) * uMrel.w * 0.25);
-				energy = max(energy, length(present - past));
+				vec3 pastRight = histColor(min(hx + 1, hmax.x), hy, float(i) * uMrel.w * 0.25);
+				vec3 pastDown = histColor(hx, min(hy + 1, hmax.y), float(i) * uMrel.w * 0.25);
+				float d = length(present - past) * 0.5 + length(histColor(min(hx + 1, hmax.x), hy, 0.0) - pastRight) * 0.25 + length(histColor(hx, min(hy + 1, hmax.y), 0.0) - pastDown) * 0.25;
+				energy += d * 0.25;
+				energyMax = max(energyMax, d);
 			}
-			energy = clamp((energy - uMrel2.x) * uMrel.z, 0.0, 1.0);
+			energy = mix(energy, energyMax, 0.4);
+			energy = smoothstep(uMrel2.x, uMrel2.x + 0.12 / max(uMrel.z, 0.3), energy) * min(1.0, energy * uMrel.z * 1.4);
 			energy = energy * energy * (3.0 - 2.0 * energy) * min(uMrel.x, 1.0);
 			vec3 liftNormal = uMorph < 0.9999 ? mix(aNormal, aNormalB, uMorph) : aNormalB;
 			liftNormal = length(liftNormal) > 0.0 ? normalize(liftNormal) : vec3(0.0, 0.0, 1.0);
@@ -102702,6 +102745,9 @@ u.uMrel.value.x = er;
 if (es <= 0.001) u.uSlit.value.x = 0;
 if (es <= 0.001 && et <= 0.001 && er <= 0.001) return;
 const need = Math.max(es > 0.001 ? S.frames || 48 : 0, et > 0.001 ? T.spread * 2 + 4 : 0, er > 0.001 ? Math.ceil(R.memory) + 4 : 0);
+const clock = pm.time ?? 0;
+if (this._slit && this._histClock !== undefined && (clock < this._histClock - 0.05 || clock - this._histClock > 0.6)) this._slit.filled = false;
+this._histClock = clock;
 const H = this._ringTick(rgbNew, need);
 if (u.uSlitTex.value !== H.tex) u.uSlitTex.value = H.tex;
 u.uHist.value.set(H.cols, H.rows, H.head, H.M);
@@ -102712,7 +102758,7 @@ u.uSlitG.value.set(H.cols, H.rows, H.cols * H.rows, H.M);
 }
 if (et > 0.001) {
 const angle = (T.spin || 0) * Math.PI / 180 * this._time;
-u.uTsplit.value.set(et, { time: 0, space: 1, both: 2 }[T.mode] ?? 0, T.spread, 0);
+u.uTsplit.value.set(et, { time: 0, space: 1, both: 2 }[T.mode] ?? 0, T.spread, T.soft ?? 0.6);
 u.uTsplit2.value.set(T.shift, angle, T.sat, T.gain);
 }
 if (er > 0.001) {
@@ -103837,6 +103883,14 @@ push(next, other);
 }
 }
 }
+const origin = field.cells[source] * 3;
+for (let i = 0; i < count; i++) {
+const g = dist[i];
+if (!isFinite(g)) continue;
+const at = field.cells[i] * 3;
+const e = Math.hypot(centers[at] - centers[origin], centers[at + 1] - centers[origin + 1], centers[at + 2] - centers[origin + 2]);
+if (g < e * 1.15) dist[i] = e * 0.8 + g * 0.2;
+}
 return dist;
 }
 class ChemistryColonies {
@@ -104713,7 +104767,7 @@ this.nodes = [[], [], []];
 vertex(kind, p, color, light = 1, t = 0, phase = 0, birth = 0) {
 kind[0].push(...p);
 kind[1].push(color.r * light, color.g * light, color.b * light);
-if (kind[2]) kind[2].push(t, phase, birth);
+if (kind[2]) kind[2].push(t, phase, birth, light);
 }
 segment(a, b, color, light = 1, t = 0, tEnd = t, phase = 0, birth = 0, birthEnd = birth) {
 this.vertex(this.lines, a, color, light, t, phase, birth);
@@ -104735,28 +104789,52 @@ const u = elapsed % (grow + HOLD_TIME + FADE_TIME);
 const out = (u - grow - HOLD_TIME) / FADE_TIME;
 return { reveal: Math.min(1.2, u / grow), fade: 1 - Math.min(1, Math.max(0, out)) ** 2 };
 }
-function pulseMaterial(part, now, strength, speed, cycle) {
+const PULSE_PERIOD = 1 / 30;
+const PULSE_TABLE = Float32Array.from({ length: 256 }, (_, i) => Math.exp(-(i / 255) * 7));
+function pulseMaterial(part, now, strength, speed, cycle, video) {
 if (!part?.flow) return;
+const refresh = !!video && part.videoVersion !== video.version;
+if (!refresh && part.lastPulse !== undefined && now - part.lastPulse < PULSE_PERIOD) return;
+part.lastPulse = now;
+if (refresh) part.videoVersion = video.version;
 const reach = 1.6 * strength;
 const floor = 1 - strength * 0.55;
+const travel = now * speed * FLOW_SPEED;
 for (const [kind, flow] of Object.entries(part.flow)) {
 const base = part.base[kind];
-const attribute = part.parts[kind].geometry.attributes.color;
+const object = part.parts[kind];
+const attribute = object.geometry.attributes.color;
 if (!attribute || !flow.length) continue;
 const out = attribute.array;
-const count = flow.length / 3;
-const travel = now * speed * FLOW_SPEED;
+const count = flow.length / 4;
+if (refresh) {
+const position = object.geometry.attributes.position.array;
+const { rgba, w, h, halfX, halfY } = video;
 for (let i = 0; i < count; i++) {
-let d = flow[i * 3 + 1] + travel - flow[i * 3];
-d -= Math.floor(d);
-let k = floor + reach * Math.exp(-d * 7);
-if (cycle) {
-const age = cycle.reveal - flow[i * 3 + 2];
-k = age <= 0 ? 0 : (k + 2.2 * Math.exp(-age * 26)) * Math.min(1, age * 14) * cycle.fade;
+const u = Math.min(0.999, Math.max(0, position[i * 3] / (2 * halfX) + 0.5));
+const v = Math.min(0.999, Math.max(0, 0.5 - position[i * 3 + 1] / (2 * halfY)));
+const k = (Math.floor(v * h) * w + Math.floor(u * w)) * 4;
+const r = rgba[k] / 255, g = rgba[k + 1] / 255, b = rgba[k + 2] / 255;
+const peak = Math.max(r, g, b, 0.04);
+const light = flow[i * 4 + 3] * (0.5 + 0.9 * Math.sqrt(peak)) / peak;
+base[i * 3] = r * light;
+base[i * 3 + 1] = g * light;
+base[i * 3 + 2] = b * light;
 }
-out[i * 3] = base[i * 3] * k;
-out[i * 3 + 1] = base[i * 3 + 1] * k;
-out[i * 3 + 2] = base[i * 3 + 2] * k;
+}
+for (let i = 0; i < count; i++) {
+const j = i * 4;
+let d = flow[j + 1] + travel - flow[j];
+d -= Math.floor(d);
+let k = floor + reach * PULSE_TABLE[(d * 255) | 0];
+if (cycle) {
+const age = cycle.reveal - flow[j + 2];
+k = age <= 0 ? 0 : (k + 2.2 * (age < 0.3 ? Math.exp(-age * 26) : 0)) * Math.min(1, age * 14) * cycle.fade;
+}
+const o = i * 3;
+out[o] = base[o] * k;
+out[o + 1] = base[o + 1] * k;
+out[o + 2] = base[o + 2] * k;
 }
 attribute.clearUpdateRanges();
 attribute.addUpdateRange(0, count * 3);
@@ -104819,7 +104897,7 @@ strands: Math.round(layer.strands ?? 3),
 twist: layer.twist ?? 2,
 spread: layer.spread ?? 0.85,
 prune: layer.prune ?? 0.5,
-glow: layer.glow ?? 1,
+glow: (layer.glow ?? 1) * (layer.tone === 'video' ? 1.8 : 1),
 hue: layer.hue ?? 0,
 tone: layer.tone ?? 'grow',
 };
@@ -105068,21 +105146,29 @@ const on = open(min[0] + (x - 0.5) * cell, min[1] + (y - 0.5) * cell, min[2] + (
 solid[at(x, y, z)] = on ? 1 : 0;
 dist[at(x, y, z)] = on ? 1e9 : 0;
 }
-const offsets = [];
+const ox = [], oy = [], oz = [], ow = [], ob = [];
 for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-if (dx || dy || dz) offsets.push([dx, dy, dz, Math.hypot(dx, dy, dz), dz < 0 || (dz === 0 && (dy < 0 || (dy === 0 && dx < 0)))]);
+if (!dx && !dy && !dz) continue;
+ox.push(dx);
+oy.push(dy);
+oz.push(dz);
+ow.push(Math.hypot(dx, dy, dz));
+ob.push(dz < 0 || (dz === 0 && (dy < 0 || (dy === 0 && dx < 0))));
 }
+const neighbourCount = ox.length;
+const planeStep = nx * ny;
 for (const forward of [true, false]) {
 for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
 const x = forward ? i : nx - 1 - i, y = forward ? j : ny - 1 - j, z = forward ? k : nz - 1 - k;
-const here = at(x, y, z);
+const here = x + nx * y + planeStep * z;
 if (!solid[here]) continue;
 let best = dist[here];
-for (const [dx, dy, dz, w, back] of offsets) {
-if (back !== forward) continue;
-const X = x + dx, Y = y + dy, Z = z + dz;
+for (let n = 0; n < neighbourCount; n++) {
+if (ob[n] !== forward) continue;
+const X = x + ox[n], Y = y + oy[n], Z = z + oz[n];
 if (X < 0 || Y < 0 || Z < 0 || X >= nx || Y >= ny || Z >= nz) continue;
-best = Math.min(best, dist[at(X, Y, Z)] + w);
+const value = dist[X + nx * Y + planeStep * Z] + ow[n];
+if (value < best) best = value;
 }
 dist[here] = best;
 }
@@ -105147,11 +105233,12 @@ const key = keys[0];
 const v = pop();
 if (key > cost[v]) continue;
 const x = v % nx, y = Math.floor(v / nx) % ny, z = Math.floor(v / (nx * ny));
-for (const [dx, dy, dz, w] of offsets) {
-const X = x + dx, Y = y + dy, Z = z + dz;
+for (let q = 0; q < neighbourCount; q++) {
+const X = x + ox[q], Y = y + oy[q], Z = z + oz[q];
 if (X < 0 || Y < 0 || Z < 0 || X >= nx || Y >= ny || Z >= nz) continue;
-const n = at(X, Y, Z);
+const n = X + nx * Y + planeStep * Z;
 if (!solid[n]) continue;
+const w = ow[q];
 const middle = (dist[v] + dist[n]) * 0.5;
 const next = key + w * (1 + 30 * Math.max(0, 1 - middle / thickest) ** 6);
 if (next < cost[n]) {
@@ -105433,7 +105520,9 @@ return { parts, key: '', flow: null, base: null };
 }
 function present(root, id, key, build, now = 0, stamp = '') {
 const part = root.userData[id] ||= makePart(root, id);
+if (build && part.key && part.key !== key && now - (part.built ?? -1) < 0.14) return Object.values(part.parts).some((x) => x.visible);
 if (!build || part.key !== key) {
+if (build) part.built = now;
 if (build && (part.stamp !== stamp || !part.key)) {
 part.stamp = stamp;
 part.started = now;
@@ -105549,20 +105638,24 @@ const projection = screen && vscreen.mode === 'project' ? Math.floor(now * 12) :
 const ghost = inners.on && inners.shell === 'ghost';
 const innerShape = [volume?.version, pal, inners.mode, inners.density, inners.complexity, inners.roots, inners.reach, inners.trunk, inners.tips, inners.links, inners.bow, inners.ribs, inners.strands, inners.twist, inners.spread, inners.prune, inners.glow, inners.hue, inners.tone,
 screen?.version, screen && vscreen.mode, screen && vscreen.scale, screen && vscreen.rotate, screen && vscreen.bright, screen && vscreen.mix, projection].join(':');
-const innerKey = innerShape + ':' + (media ? Math.floor(now * 8) : '');
+const innerKey = innerShape;
 const hasInner = present(root, 'inners', innerKey, inners.on
 ? (draw) => drawInners(draw, volume, inners, palette, removed, screen && makeScreenColor(screen, vscreen, points, viewport, this.shared))
 : null, now, innerShape);
 const anim = this.app.anim;
 const cycle = growthCycle(now, root.userData.inners.started, inners.flow ?? 1, inners.repeat ?? 'loop');
+const colorFeed = hasInner && inners.tone === 'video' && media && this.pm.el ? (this._materialInnerVideo ||= new MaterialVideo()) : null;
+colorFeed?.read(this.pm.el, now);
+if (!colorFeed) this._materialInnerVideo = null;
 if (hasInner) {
 const inner = root.userData.inners;
 inner.parts.points.material.size = 0.03 * (inners.bead ?? 1);
 inner.parts.nodes.material.size = 0.075 * (inners.bead ?? 1);
-pulseMaterial(inner, now, inners.pulse ?? 0.7, inners.flow ?? 1, cycle);
+const frame = colorFeed?.rgba ? { rgba: colorFeed.rgba, w: colorFeed.w, h: colorFeed.h, version: colorFeed.version, halfX: mediaBounds(colorFeed.aspect).x, halfY: mediaBounds(colorFeed.aspect).y } : null;
+pulseMaterial(inner, now, inners.pulse ?? 0.7, inners.flow ?? 1, cycle, frame);
 }
 const attrs = this.geometry.attributes;
-present(root, 'shell', [ghost, pal, volume?.version, this.cloudKey, attrs.aTarget.count, Math.round(this.morph * 50), anim.has ? Math.floor(anim.time * 12) : 0].join(':'), ghost
+present(root, 'shell', [ghost, pal, volume?.version, this.cloudKey, attrs.aTarget.count, Math.round(this.morph * 50), anim.has ? Math.floor(anim.time * 12) : 0, media ? Math.floor(now * 4) : 0].join(':'), ghost
 ? (draw) => drawShell(draw, attrs.aTarget.array, attrs.aColor.array, attrs.aHide.array, palette, 16000)
 : null);
 const cloud = this._animCloud;

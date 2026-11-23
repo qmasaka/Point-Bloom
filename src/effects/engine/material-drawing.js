@@ -19,7 +19,7 @@ export class MaterialDrawing {
 	vertex(kind, p, color, light = 1, t = 0, phase = 0, birth = 0) {
 		kind[0].push(...p);
 		kind[1].push(color.r * light, color.g * light, color.b * light);
-		if (kind[2]) kind[2].push(t, phase, birth);
+		if (kind[2]) kind[2].push(t, phase, birth, light);
 	}
 
 	segment(a, b, color, light = 1, t = 0, tEnd = t, phase = 0, birth = 0, birthEnd = birth) {
@@ -47,28 +47,53 @@ export function growthCycle(now, started, speed, repeat) {
 	return { reveal: Math.min(1.2, u / grow), fade: 1 - Math.min(1, Math.max(0, out)) ** 2 };
 }
 
-export function pulseMaterial(part, now, strength, speed, cycle) {
+const PULSE_PERIOD = 1 / 30;
+const PULSE_TABLE = Float32Array.from({ length: 256 }, (_, i) => Math.exp(-(i / 255) * 7));
+
+export function pulseMaterial(part, now, strength, speed, cycle, video) {
 	if (!part?.flow) return;
+	const refresh = !!video && part.videoVersion !== video.version;
+	if (!refresh && part.lastPulse !== undefined && now - part.lastPulse < PULSE_PERIOD) return;
+	part.lastPulse = now;
+	if (refresh) part.videoVersion = video.version;
 	const reach = 1.6 * strength;
 	const floor = 1 - strength * 0.55;
+	const travel = now * speed * FLOW_SPEED;
 	for (const [kind, flow] of Object.entries(part.flow)) {
 		const base = part.base[kind];
-		const attribute = part.parts[kind].geometry.attributes.color;
+		const object = part.parts[kind];
+		const attribute = object.geometry.attributes.color;
 		if (!attribute || !flow.length) continue;
 		const out = attribute.array;
-		const count = flow.length / 3;
-		const travel = now * speed * FLOW_SPEED;
-		for (let i = 0; i < count; i++) {
-			let d = flow[i * 3 + 1] + travel - flow[i * 3];
-			d -= Math.floor(d);
-			let k = floor + reach * Math.exp(-d * 7);
-			if (cycle) {
-				const age = cycle.reveal - flow[i * 3 + 2];
-				k = age <= 0 ? 0 : (k + 2.2 * Math.exp(-age * 26)) * Math.min(1, age * 14) * cycle.fade;
+		const count = flow.length / 4;
+		if (refresh) {
+			const position = object.geometry.attributes.position.array;
+			const { rgba, w, h, halfX, halfY } = video;
+			for (let i = 0; i < count; i++) {
+				const u = Math.min(0.999, Math.max(0, position[i * 3] / (2 * halfX) + 0.5));
+				const v = Math.min(0.999, Math.max(0, 0.5 - position[i * 3 + 1] / (2 * halfY)));
+				const k = (Math.floor(v * h) * w + Math.floor(u * w)) * 4;
+				const r = rgba[k] / 255, g = rgba[k + 1] / 255, b = rgba[k + 2] / 255;
+				const peak = Math.max(r, g, b, 0.04);
+				const light = flow[i * 4 + 3] * (0.5 + 0.9 * Math.sqrt(peak)) / peak;
+				base[i * 3] = r * light;
+				base[i * 3 + 1] = g * light;
+				base[i * 3 + 2] = b * light;
 			}
-			out[i * 3] = base[i * 3] * k;
-			out[i * 3 + 1] = base[i * 3 + 1] * k;
-			out[i * 3 + 2] = base[i * 3 + 2] * k;
+		}
+		for (let i = 0; i < count; i++) {
+			const j = i * 4;
+			let d = flow[j + 1] + travel - flow[j];
+			d -= Math.floor(d);
+			let k = floor + reach * PULSE_TABLE[(d * 255) | 0];
+			if (cycle) {
+				const age = cycle.reveal - flow[j + 2];
+				k = age <= 0 ? 0 : (k + 2.2 * (age < 0.3 ? Math.exp(-age * 26) : 0)) * Math.min(1, age * 14) * cycle.fade;
+			}
+			const o = i * 3;
+			out[o] = base[o] * k;
+			out[o + 1] = base[o + 1] * k;
+			out[o + 2] = base[o + 2] * k;
 		}
 		attribute.clearUpdateRanges();
 		attribute.addUpdateRange(0, count * 3);
@@ -134,7 +159,7 @@ export function drawInners(draw, volume, layer, palette, removed, screen) {
 		twist: layer.twist ?? 2,
 		spread: layer.spread ?? 0.85,
 		prune: layer.prune ?? 0.5,
-		glow: layer.glow ?? 1,
+		glow: (layer.glow ?? 1) * (layer.tone === 'video' ? 1.8 : 1),
 		hue: layer.hue ?? 0,
 		tone: layer.tone ?? 'grow',
 	};
@@ -390,21 +415,29 @@ export function drawInners(draw, volume, layer, palette, removed, screen) {
 			solid[at(x, y, z)] = on ? 1 : 0;
 			dist[at(x, y, z)] = on ? 1e9 : 0;
 		}
-		const offsets = [];
+		const ox = [], oy = [], oz = [], ow = [], ob = [];
 		for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-			if (dx || dy || dz) offsets.push([dx, dy, dz, Math.hypot(dx, dy, dz), dz < 0 || (dz === 0 && (dy < 0 || (dy === 0 && dx < 0)))]);
+			if (!dx && !dy && !dz) continue;
+			ox.push(dx);
+			oy.push(dy);
+			oz.push(dz);
+			ow.push(Math.hypot(dx, dy, dz));
+			ob.push(dz < 0 || (dz === 0 && (dy < 0 || (dy === 0 && dx < 0))));
 		}
+		const neighbourCount = ox.length;
+		const planeStep = nx * ny;
 		for (const forward of [true, false]) {
 			for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
 				const x = forward ? i : nx - 1 - i, y = forward ? j : ny - 1 - j, z = forward ? k : nz - 1 - k;
-				const here = at(x, y, z);
+				const here = x + nx * y + planeStep * z;
 				if (!solid[here]) continue;
 				let best = dist[here];
-				for (const [dx, dy, dz, w, back] of offsets) {
-					if (back !== forward) continue;
-					const X = x + dx, Y = y + dy, Z = z + dz;
+				for (let n = 0; n < neighbourCount; n++) {
+					if (ob[n] !== forward) continue;
+					const X = x + ox[n], Y = y + oy[n], Z = z + oz[n];
 					if (X < 0 || Y < 0 || Z < 0 || X >= nx || Y >= ny || Z >= nz) continue;
-					best = Math.min(best, dist[at(X, Y, Z)] + w);
+					const value = dist[X + nx * Y + planeStep * Z] + ow[n];
+					if (value < best) best = value;
 				}
 				dist[here] = best;
 			}
@@ -469,11 +502,12 @@ export function drawInners(draw, volume, layer, palette, removed, screen) {
 				const v = pop();
 				if (key > cost[v]) continue;
 				const x = v % nx, y = Math.floor(v / nx) % ny, z = Math.floor(v / (nx * ny));
-				for (const [dx, dy, dz, w] of offsets) {
-					const X = x + dx, Y = y + dy, Z = z + dz;
+				for (let q = 0; q < neighbourCount; q++) {
+					const X = x + ox[q], Y = y + oy[q], Z = z + oz[q];
 					if (X < 0 || Y < 0 || Z < 0 || X >= nx || Y >= ny || Z >= nz) continue;
-					const n = at(X, Y, Z);
+					const n = X + nx * Y + planeStep * Z;
 					if (!solid[n]) continue;
+					const w = ow[q];
 					const middle = (dist[v] + dist[n]) * 0.5;
 					const next = key + w * (1 + 30 * Math.max(0, 1 - middle / thickest) ** 6);
 					if (next < cost[n]) {

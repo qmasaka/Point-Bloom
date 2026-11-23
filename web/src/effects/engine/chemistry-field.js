@@ -76,6 +76,14 @@ push(next, other);
 }
 }
 }
+const origin = field.cells[source] * 3;
+for (let i = 0; i < count; i++) {
+const g = dist[i];
+if (!isFinite(g)) continue;
+const at = field.cells[i] * 3;
+const e = Math.hypot(centers[at] - centers[origin], centers[at + 1] - centers[origin + 1], centers[at + 2] - centers[origin + 2]);
+if (g < e * 1.15) dist[i] = e * 0.8 + g * 0.2;
+}
 return dist;
 }
 export class ChemistryColonies {

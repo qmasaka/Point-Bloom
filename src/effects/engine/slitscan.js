@@ -14,6 +14,9 @@ export class SlitPart {
 		if (es <= 0.001) u.uSlit.value.x = 0;
 		if (es <= 0.001 && et <= 0.001 && er <= 0.001) return;
 		const need = Math.max(es > 0.001 ? S.frames || 48 : 0, et > 0.001 ? T.spread * 2 + 4 : 0, er > 0.001 ? Math.ceil(R.memory) + 4 : 0);
+		const clock = pm.time ?? 0;
+		if (this._slit && this._histClock !== undefined && (clock < this._histClock - 0.05 || clock - this._histClock > 0.6)) this._slit.filled = false;
+		this._histClock = clock;
 		const H = this._ringTick(rgbNew, need);
 		if (u.uSlitTex.value !== H.tex) u.uSlitTex.value = H.tex;
 		u.uHist.value.set(H.cols, H.rows, H.head, H.M);
@@ -24,7 +27,7 @@ export class SlitPart {
 		}
 		if (et > 0.001) {
 			const angle = (T.spin || 0) * Math.PI / 180 * this._time;
-			u.uTsplit.value.set(et, { time: 0, space: 1, both: 2 }[T.mode] ?? 0, T.spread, 0);
+			u.uTsplit.value.set(et, { time: 0, space: 1, both: 2 }[T.mode] ?? 0, T.spread, T.soft ?? 0.6);
 			u.uTsplit2.value.set(T.shift, angle, T.sat, T.gain);
 		}
 		if (er > 0.001) {

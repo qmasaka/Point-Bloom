@@ -40,7 +40,9 @@ return { parts, key: '', flow: null, base: null };
 }
 function present(root, id, key, build, now = 0, stamp = '') {
 const part = root.userData[id] ||= makePart(root, id);
+if (build && part.key && part.key !== key && now - (part.built ?? -1) < 0.14) return Object.values(part.parts).some((x) => x.visible);
 if (!build || part.key !== key) {
+if (build) part.built = now;
 if (build && (part.stamp !== stamp || !part.key)) {
 part.stamp = stamp;
 part.started = now;
@@ -156,20 +158,24 @@ const projection = screen && vscreen.mode === 'project' ? Math.floor(now * 12) :
 const ghost = inners.on && inners.shell === 'ghost';
 const innerShape = [volume?.version, pal, inners.mode, inners.density, inners.complexity, inners.roots, inners.reach, inners.trunk, inners.tips, inners.links, inners.bow, inners.ribs, inners.strands, inners.twist, inners.spread, inners.prune, inners.glow, inners.hue, inners.tone,
 screen?.version, screen && vscreen.mode, screen && vscreen.scale, screen && vscreen.rotate, screen && vscreen.bright, screen && vscreen.mix, projection].join(':');
-const innerKey = innerShape + ':' + (media ? Math.floor(now * 8) : '');
+const innerKey = innerShape;
 const hasInner = present(root, 'inners', innerKey, inners.on
 ? (draw) => drawInners(draw, volume, inners, palette, removed, screen && makeScreenColor(screen, vscreen, points, viewport, this.shared))
 : null, now, innerShape);
 const anim = this.app.anim;
 const cycle = growthCycle(now, root.userData.inners.started, inners.flow ?? 1, inners.repeat ?? 'loop');
+const colorFeed = hasInner && inners.tone === 'video' && media && this.pm.el ? (this._materialInnerVideo ||= new MaterialVideo()) : null;
+colorFeed?.read(this.pm.el, now);
+if (!colorFeed) this._materialInnerVideo = null;
 if (hasInner) {
 const inner = root.userData.inners;
 inner.parts.points.material.size = 0.03 * (inners.bead ?? 1);
 inner.parts.nodes.material.size = 0.075 * (inners.bead ?? 1);
-pulseMaterial(inner, now, inners.pulse ?? 0.7, inners.flow ?? 1, cycle);
+const frame = colorFeed?.rgba ? { rgba: colorFeed.rgba, w: colorFeed.w, h: colorFeed.h, version: colorFeed.version, halfX: mediaBounds(colorFeed.aspect).x, halfY: mediaBounds(colorFeed.aspect).y } : null;
+pulseMaterial(inner, now, inners.pulse ?? 0.7, inners.flow ?? 1, cycle, frame);
 }
 const attrs = this.geometry.attributes;
-present(root, 'shell', [ghost, pal, volume?.version, this.cloudKey, attrs.aTarget.count, Math.round(this.morph * 50), anim.has ? Math.floor(anim.time * 12) : 0].join(':'), ghost
+present(root, 'shell', [ghost, pal, volume?.version, this.cloudKey, attrs.aTarget.count, Math.round(this.morph * 50), anim.has ? Math.floor(anim.time * 12) : 0, media ? Math.floor(now * 4) : 0].join(':'), ghost
 ? (draw) => drawShell(draw, attrs.aTarget.array, attrs.aColor.array, attrs.aHide.array, palette, 16000)
 : null);
 const cloud = this._animCloud;

@@ -397,7 +397,13 @@ void main() {
 #ifndef HERO
 	if (uExperimentSim.x > 0.5) {
 		vec4 field = sampleExperimentField(int(aVis.z), 0);
-		pos += field.xyz * maskV;
+		float fieldPush = length(field.xyz);
+		if (fieldPush > 0.0005) {
+			int fieldId = int(floor(aIdx * uExperimentView.w + 0.5));
+			float fieldVary = 0.7 + 0.6 * experimentHash(fieldId * 19 + 5);
+			vec3 fieldSpray = vec3(experimentHash(fieldId * 23 + 1), experimentHash(fieldId * 29 + 2), experimentHash(fieldId * 31 + 3)) - 0.5;
+			pos += (field.xyz * fieldVary + fieldSpray * min(fieldPush, 0.5) * 0.45) * maskV;
+		}
 		experimentTint = field.w * maskV;
 		if (uChemistry.x > 0.001) {
 			float colony = clamp(max(0.0, field.w) * maskV, 0.0, 1.3);
@@ -610,6 +616,8 @@ void main() {
 			vec3 sg = histColor(hx, hy, greenAge);
 			vec3 sb = histColor(blueAt.x, blueAt.y, blueAge);
 			vec3 split = vec3(sr.r, sg.g, sb.b);
+			vec3 neutral = (sr + sg + sb) / 3.0;
+			split = neutral + (split - neutral) * (1.0 - uTsplit.w * 0.75);
 			float splitLum = dot(split, vec3(0.3, 0.59, 0.11));
 			split = mix(vec3(splitLum), split, uTsplit2.z) * uTsplit2.w;
 			colM = mix(colM, split, min(uTsplit.x, 1.0));
@@ -617,11 +625,17 @@ void main() {
 		if (uMrel.x > 0.001) {
 			vec3 present = histColor(hx, hy, 0.0);
 			float energy = 0.0;
+			float energyMax = 0.0;
 			for (int i = 1; i <= 4; i++) {
 				vec3 past = histColor(hx, hy, float(i) * uMrel.w * 0.25);
-				energy = max(energy, length(present - past));
+				vec3 pastRight = histColor(min(hx + 1, hmax.x), hy, float(i) * uMrel.w * 0.25);
+				vec3 pastDown = histColor(hx, min(hy + 1, hmax.y), float(i) * uMrel.w * 0.25);
+				float d = length(present - past) * 0.5 + length(histColor(min(hx + 1, hmax.x), hy, 0.0) - pastRight) * 0.25 + length(histColor(hx, min(hy + 1, hmax.y), 0.0) - pastDown) * 0.25;
+				energy += d * 0.25;
+				energyMax = max(energyMax, d);
 			}
-			energy = clamp((energy - uMrel2.x) * uMrel.z, 0.0, 1.0);
+			energy = mix(energy, energyMax, 0.4);
+			energy = smoothstep(uMrel2.x, uMrel2.x + 0.12 / max(uMrel.z, 0.3), energy) * min(1.0, energy * uMrel.z * 1.4);
 			energy = energy * energy * (3.0 - 2.0 * energy) * min(uMrel.x, 1.0);
 			vec3 liftNormal = uMorph < 0.9999 ? mix(aNormal, aNormalB, uMorph) : aNormalB;
 			liftNormal = length(liftNormal) > 0.0 ? normalize(liftNormal) : vec3(0.0, 0.0, 1.0);

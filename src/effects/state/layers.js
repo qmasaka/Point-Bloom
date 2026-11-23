@@ -57,13 +57,14 @@ export const FX_LAYERS = [
 		{ key: 'push', label: 'Время вглубь', min: 0, max: 1, step: 0.05 },
 		{ type: 'note', text: 'Работает на видео из «Медиа» (не вместе с «Раскадровкой»). Прошлое набирается, пока видео играет. Ступени 0: время течёт плавно.' },
 	] },
-	{ id: 'tsplit', group: 'Видео', name: 'Цветоделение', icon: 'swatches', hint: 'Красный, зелёный и синий каналы видео расходятся: каждый берётся из своего момента времени или со своего места. Движение обрастает цветной бахромой, как у призмы', max: 1.5, def: { on: false, amount: 1, band: 'none', react: 0.5, mode: 'time', spread: 4, shift: 2, spin: 40, sat: 1.3, gain: 1 }, extras: [
+	{ id: 'tsplit', group: 'Видео', name: 'Цветоделение', icon: 'swatches', hint: 'Красный, зелёный и синий каналы видео расходятся: каждый берётся из своего момента времени или со своего места. Движение обрастает цветной бахромой, как у призмы', max: 1.5, def: { on: false, amount: 0.7, band: 'none', react: 0.5, mode: 'time', spread: 2, shift: 1.2, spin: 25, sat: 0.9, gain: 1, soft: 0.6 }, extras: [
 		{ key: 'mode', label: 'Как расходятся каналы', type: 'seg', options: [['time', 'Во времени'], ['space', 'В пространстве'], ['both', 'Оба']] },
 		{ type: 'title', label: 'Разнос', open: true },
 		{ key: 'spread', label: 'Разнос во времени, кадров', min: 1, max: 16, step: 1, int: true, noNorm: true, when: ['mode', ['time', 'both']] },
 		{ key: 'shift', label: 'Разнос в пространстве, ячеек', min: 0, max: 6, step: 0.1, noNorm: true, when: ['mode', ['space', 'both']] },
 		{ key: 'spin', label: 'Вращение разноса, градусов в секунду', min: -180, max: 180, step: 5, noNorm: true, when: ['mode', ['space', 'both']] },
 		{ type: 'title', label: 'Цвет', open: true },
+		{ key: 'soft', label: 'Мягкость', min: 0, max: 1, step: 0.01 },
 		{ key: 'sat', label: 'Насыщенность', min: 0, max: 2, step: 0.05, noNorm: true, unit: ' ×' },
 		{ key: 'gain', label: 'Яркость', min: 0.5, max: 2, step: 0.05, noNorm: true, unit: ' ×' },
 		{ type: 'note', text: 'Работает на видео из «Медиа» (не вместе с «Раскадровкой»). Прошлое набирается, пока видео играет.' },

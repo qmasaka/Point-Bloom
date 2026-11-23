@@ -28,7 +28,7 @@ export const MATERIAL_LAYERS = [
 			{ key: 'tips', label: 'Огоньки на узлах', min: 0, max: 1, step: 0.01 },
 			{ key: 'pulse', label: 'Импульсы', min: 0, max: 1, step: 0.01 },
 			{ type: 'title', label: 'Цвет', open: true },
-			{ key: 'tone', label: 'Цвет по', type: 'seg', options: [['grow', 'Росту'], ['height', 'Высоте'], ['solid', 'Один тон']] },
+			{ key: 'tone', label: 'Цвет по', type: 'seg', options: [['grow', 'Росту'], ['height', 'Высоте'], ['solid', 'Один тон'], ['video', 'Видео']] },
 			{ key: 'hue', label: 'Сдвиг цвета', min: 0, max: 1, step: 0.01 },
 			{ type: 'title', label: 'Время', open: true },
 			{ key: 'flow', label: 'Скорость', min: 0.2, max: 3, step: 0.05, noNorm: true, unit: ' ×' },
