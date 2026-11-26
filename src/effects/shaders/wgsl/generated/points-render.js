@@ -110,6 +110,7 @@ struct Frame {
 	uPaintP: vec4f,
 	uBrushParam: vec4f,
 	uLookP2: vec4f,
+	uLookP3: vec4f,
 	uDof: vec4f,
 	uHyp: vec4f,
 	uHypP: vec4f,
@@ -222,7 +223,7 @@ fn frag_main_() {
 		var bokeh: f32 = (1.0 - smoothstep(0.16, 0.25, r2));
 		core = mix(core, bokeh, (vCoc * 0.8));
 	}
-	var dofAlpha: f32 = (1.0 / ((1.0 + (vCoc * 1.8))));
+	var dofAlpha: f32 = ((1.0 / ((1.0 + (vCoc * 1.8)))) * clamp((((1.0 - smoothstep((0.5 - (0.4 * fr.uLookP3.z)), 0.5, dm))) * ((1.0 + (0.9 * fr.uLookP3.z)))), 0.0, 1.0));
 	if ((fr.uAdd > 0.5)) {
 		var aura: f32 = pow(core, mix(1.8, 0.7, fr.uGlow));
 		var col: vec3f = ((((((((vColor * ((0.08 + (aura * ((0.2 + (fr.uGlow * 0.28))))))) + ((vColor * vD) * 0.08))) * fr.uDens) * fr.uGhost) * dofAlpha) * sph) * ((1.0 - vDk)));
@@ -466,6 +467,7 @@ struct Frame {
 	uPaintP: vec4f,
 	uBrushParam: vec4f,
 	uLookP2: vec4f,
+	uLookP3: vec4f,
 	uDof: vec4f,
 	uHyp: vec4f,
 	uHypP: vec4f,

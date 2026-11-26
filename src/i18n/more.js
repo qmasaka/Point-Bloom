@@ -1,5 +1,7 @@
 export default {
 	en: {
+		'Дымка вдали': "Distance haze",
+		'Виньетка': "Vignette",
 		'Под музыку': 'Under music',
 		'Растворяется само': 'Dissolves on its own',
 		'Сколько отлетает за раз': 'How many fly off at once',
@@ -1417,6 +1419,8 @@ export default {
 		'Затухание упавших': 'Fade of fallen pieces',
 	},
 	uk: {
+		'Дымка вдали': "Серпанок вдалині",
+		'Виньетка': "Віньєтка",
 		'Под музыку': 'Під музику',
 		'Растворяется само': 'Розчиняється сама',
 		'Сколько отлетает за раз': 'Скільки відлітає за раз',
@@ -2834,6 +2838,8 @@ export default {
 		'Затухание упавших': 'Згасання впалих',
 	},
 	es: {
+		'Дымка вдали': "Bruma lejana",
+		'Виньетка': "Viñeta",
 		'Под музыку': 'Con música',
 		'Растворяется само': 'Se disuelve sola',
 		'Сколько отлетает за раз': 'Cuántos salen a la vez',
@@ -4251,6 +4257,8 @@ export default {
 		'Затухание упавших': 'Atenuación de los caídos',
 	},
 	de: {
+		'Дымка вдали': "Dunst in der Ferne",
+		'Виньетка': "Vignette",
 		'Под музыку': 'Zur Musik',
 		'Растворяется само': 'Löst sich von selbst auf',
 		'Сколько отлетает за раз': 'Wie viele auf einmal abfliegen',

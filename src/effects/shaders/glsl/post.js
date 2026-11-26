@@ -35,6 +35,7 @@ precision highp float;
 uniform sampler2D uTex;
 uniform float uBloom;
 uniform float uAberration;
+uniform float uVignette;
 uniform vec2 uRes;
 varying vec2 vUv;
 void main() {
@@ -69,6 +70,7 @@ void main() {
 		baseCol.rgb += bloom.rgb * uBloom * 0.85;
 	}
 
+	if (uVignette > 0.001) baseCol.rgb *= 1.0 - uVignette * 0.8 * smoothstep(0.3, 0.85, length(dir) * 1.45);
 	gl_FragColor = baseCol;
 	#include <tonemapping_fragment>
 	#include <colorspace_fragment>

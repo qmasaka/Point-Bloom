@@ -52,6 +52,7 @@ uniforms: {
 uTex: { value: null },
 uBloom: { value: 0.0 },
 uAberration: { value: 0.0 },
+uVignette: { value: 0.0 },
 uRes: { value: new THREE.Vector2(1, 1) },
 },
 vertexShader: `
@@ -275,7 +276,7 @@ this.moshHist = false;
 this.outMat.uniforms.uRes.value.set(rw, rh);
 this.hasHistory = false;
 }
-render(scene, camera, feedbackCfg, bloomVal, abVal, mosh, forceBuffer) {
+render(scene, camera, feedbackCfg, bloomVal, abVal, mosh, forceBuffer, vignette = 0) {
 const r = this.renderer;
 const dom = r.domElement;
 const dpr = r.getPixelRatio();
@@ -336,6 +337,7 @@ this.hasHistory = false;
 this.outMat.uniforms.uTex.value = sourceTex;
 this.outMat.uniforms.uBloom.value = bloomVal;
 this.outMat.uniforms.uAberration.value = abVal;
+this.outMat.uniforms.uVignette.value = vignette;
 this.quadScene.clear();
 this.quadScene.add(this.outMesh);
 r.setRenderTarget(null);

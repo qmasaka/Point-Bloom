@@ -7,6 +7,7 @@ uniform float uDens;
 uniform float uGhost;
 uniform float uShape;
 uniform vec3 uGlyph;
+uniform vec4 uLookP3;
 uniform sampler2D uAtlas;
 varying vec3 vColor;
 varying float vD;
@@ -41,7 +42,7 @@ void main() {
 		float bokeh = 1.0 - smoothstep(0.16, 0.25, r2);
 		core = mix(core, bokeh, vCoc * 0.8);
 	}
-	float dofAlpha = 1.0 / (1.0 + vCoc * 1.8);
+	float dofAlpha = 1.0 / (1.0 + vCoc * 1.8) * clamp((1.0 - smoothstep(0.5 - 0.4 * uLookP3.z, 0.5, dm)) * (1.0 + 0.9 * uLookP3.z), 0.0, 1.0);
 	if (uAdd > 0.5) {
 		float aura = pow(core, mix(1.8, 0.7, uGlow));
 		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha * sph * (1.0 - vDk);

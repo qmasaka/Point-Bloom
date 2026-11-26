@@ -1122,6 +1122,9 @@ export function createEffectsPanel(app, root, engine) {
 	const glow = slider({ min: 0, max: 1, step: 0.05, value: st.look.glow, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.glow = v; }, onChange: save });
 	const bright = slider({ min: 0, max: 2, step: 0.05, value: st.look.bright, digits: 2, onInput: (v) => { st.look.bright = v; }, onChange: save });
 	const bloom = slider({ min: 0, max: 1, step: 0.05, value: st.look.bloom || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.bloom = v; }, onChange: save });
+	const fog = slider({ min: 0, max: 1, step: 0.05, value: st.look.fog || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.fog = v; }, onChange: save });
+	const vignette = slider({ min: 0, max: 1, step: 0.05, value: st.look.vignette || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.vignette = v; }, onChange: save });
+	const soft = slider({ min: 0, max: 1, step: 0.05, value: st.look.soft ?? 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.soft = v; }, onChange: save });
 	const aberration = slider({ min: 0, max: 1, step: 0.05, value: st.look.aberration || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.aberration = v; }, onChange: save });
 	const dofOn = switchRow('Глубина резкости (DoF)', { value: st.look.dofOn || false, onChange: (v) => { st.look.dofOn = v; syncDof(); save(); } });
 	const dofDist = slider({ min: 1.5, max: 10, step: 0.1, value: st.look.dofDist || 5.2, digits: 1, unit: ' м', onInput: (v) => { st.look.dofDist = v; }, onChange: save });
@@ -1144,31 +1147,15 @@ export function createEffectsPanel(app, root, engine) {
 	});
 	const fovFx = slider({ noNorm: true, min: 10, max: 100, step: 1, value: rset.fov, digits: 0, unit: '°', onInput: (v) => { rset.fov = v; app.nav.applyCamera(); }, onChange: () => app.saveSettings() });
 	const fpsFx = switchRow('Показывать FPS', { value: rset.fps, onChange: (v) => { rset.fps = v; app.ui.refreshFps(); app.saveSettings(); } });
-	const secLookPts = section('Цвет и форма точек', { key: 'fx-look-pts' }, palettes, field('Цвет точек', colorBy.el), solidRow, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Точки', blend.el, { wide: true }));
-	const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), field('Хром. аберрация', aberration.el));
+	const secLookPts = section('Цвет и форма точек', { key: 'fx-look-pts' }, palettes, field('Цвет точек', colorBy.el), solidRow, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Мягкость края', soft.el), field('Точки', blend.el, { wide: true }));
+	const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), field('Дымка вдали', fog.el), field('Виньетка', vignette.el), field('Хром. аберрация', aberration.el));
 	const secLookCam = section('Камера', { key: 'fx-look-cam' }, field('Поле зрения', fovFx.el), dofOn.el, dofBody, rotate.el, rotSpeedRow);
 	const secLookShow = section('Отображение', { key: 'fx-look-show' }, hudSw.el, hudSpec.el);
 	const secLookPerf = section('Производительность', { key: 'fx-look-perf', open: false }, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), field('Движок отрисовки', backendSeg.el, { wide: true }), backendHint, fpsFx.el, perfHint);
 	const secLookRec = section('Запись анимации', { key: 'fx-look-rec', open: false }, animTimelineOpenBtn, field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
-	const fractal = st.layers.recursiveAnatomy;
-	const labSwitch = switchRow('Фрактал', { value: fractal.on, onChange: (v) => { fractal.on = v; syncLab(); save(); } });
-	const labLevel = slider({ min: 1, max: 3, step: 1, digits: 0, value: fractal.levels, onInput: (v) => { fractal.levels = v; }, onChange: save });
-	const labCopies = slider({ min: 3, max: 12, step: 1, digits: 0, value: fractal.copies, onInput: (v) => { fractal.copies = v; }, onChange: save });
-	const labScale = slider({ min: 0.16, max: 0.46, step: 0.01, digits: 2, unit: ' ×', value: fractal.scale, onInput: (v) => { fractal.scale = v; }, onChange: save });
-	const labBody = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Уровни вложенности', labLevel.el), field('Число копий', labCopies.el), field('Масштаб копии', labScale.el));
-	const syncLab = () => {
-		labSwitch.set(fractal.on);
-		labLevel.set(fractal.levels);
-		labCopies.set(fractal.copies);
-		labScale.set(fractal.scale);
-		labBody.hidden = !fractal.on;
-	};
-	app.bus.on('fx', syncLab);
-	syncLab();
-	const secLab = section('Лаборатория', { key: 'fx-look-lab', open: false }, labSwitch.el, labBody);
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
-	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookPts, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec, secLab]]];
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookPts, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
 	try {
@@ -3278,6 +3265,9 @@ export function createEffectsPanel(app, root, engine) {
 		bright.set(st.look.bright);
 		bloom.set(st.look.bloom || 0);
 		aberration.set(st.look.aberration || 0);
+		fog.set(st.look.fog || 0);
+		vignette.set(st.look.vignette || 0);
+		soft.set(st.look.soft ?? 0);
 		dofOn.set(st.look.dofOn || false);
 		dofDist.set(st.look.dofDist || 5.2);
 		dofRange.set(st.look.dofRange || 1.4);

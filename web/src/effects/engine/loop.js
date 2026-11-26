@@ -346,6 +346,7 @@ u.uSliceM.value.set(2, sl.lift, sl.color === 'model' ? 1 : 0, 0);
 }
 u.uSliceC.value.set(sl.color && sl.color !== 'auto' && sl.color !== 'model' ? sl.color : pal.c[2]);
 u.uLookP2.value.set(0, 0, 0, 0);
+u.uLookP3.value.set(look.fog || 0, this.app.nav.distance, look.soft ?? 0, 0);
 u.uShade.value = look.shade || 0;
 const gm = GLYPH_SETS[look.glyph] ? look.glyph : 'off';
 if (gm !== this._glyphMode) {

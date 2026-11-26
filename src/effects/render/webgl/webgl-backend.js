@@ -42,7 +42,7 @@ export class WebGLBackend extends RenderBackend {
 				this.post.hasHistory = false;
 				return;
 			}
-			this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true);
+			this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true, e.state.look.vignette || 0);
 		} finally {
 			if (points) points.visible = visible;
 		}

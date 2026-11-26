@@ -110,6 +110,7 @@ struct Frame {
 	uPaintP: vec4f,
 	uBrushParam: vec4f,
 	uLookP2: vec4f,
+	uLookP3: vec4f,
 	uDof: vec4f,
 	uHyp: vec4f,
 	uHypP: vec4f,
@@ -2277,6 +2278,10 @@ fn main_() {
 	}
 	vD = disp;
 	var mv: vec4f = (fr.modelViewMatrix * vec4f(pos, 1.0));
+	if ((fr.uLookP3.x > 0.001)) {
+		var fogZ: f32 = (((-mv.z - fr.uLookP3.y)) / max(0.2, (fr.uLookP3.y * 0.45)));
+		vDk = max(vDk, ((fr.uLookP3.x * 0.9) * smoothstep(-0.4, 1.1, fogZ)));
+	}
 	gl_Position = (fr.projectionMatrix * mv);
 	var szNoise: f32 = 1.0;
 	if ((fr.uLookP2.x > 0.001)) {
@@ -2300,6 +2305,7 @@ fn main_() {
 	s *= (1.0 - (0.85 * gHypF));
 	s *= (((((1.0 + (gScopeT * fr.uScopeQ.y)) + ((gScopeG * fr.uScopeQ.z) * 2.5)) + (gDepthG * 0.8))) * ((1.0 - gScopeD)));
 	s *= select(0.73, ((0.73 * fr.uAtt) / max(-mv.z, (fr.uAtt * 0.1))), (fr.uAtt > 0.001));
+	s *= (1.0 + (0.5 * fr.uLookP3.z));
 	gl_PointSize = clamp(((s * experimentScale) * ((1.0 - (0.45 * gCrumbleFade)))), 1.0, 95.0);
 	if (((((((gScopeD > 0.97) || (dkv > 0.97)) || (gDrop > 0.5)) || (gGrow < 0.03)) || (gHypF > 0.97)) || (bite > 0.97))) {
 		gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);

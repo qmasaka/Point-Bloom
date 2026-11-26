@@ -1016,6 +1016,12 @@ void main() {
 	vD = disp;
 	vec4 mv = modelViewMatrix * vec4(pos, 1.0);
 #endif
+#ifndef SHADOW
+	if (uLookP3.x > 0.001) {
+		float fogZ = (-mv.z - uLookP3.y) / max(0.2, uLookP3.y * 0.45);
+		vDk = max(vDk, uLookP3.x * 0.9 * smoothstep(-0.4, 1.1, fogZ));
+	}
+#endif
 	gl_Position = projectionMatrix * mv;
 
 	float szNoise = 1.0;
@@ -1045,6 +1051,7 @@ void main() {
 	s *= (1.0 + gScopeT * uScopeQ.y + gScopeG * uScopeQ.z * 2.5 + gDepthG * 0.8) * (1.0 - gScopeD);
 
 	s *= uAtt > 0.001 ? 0.73 * uAtt / max(-mv.z, uAtt * 0.1) : 0.73;
+	s *= 1.0 + 0.5 * uLookP3.z;
 #ifdef SHADOW
 	s *= mix(1.0, 2.8, uShd.y);
 #endif

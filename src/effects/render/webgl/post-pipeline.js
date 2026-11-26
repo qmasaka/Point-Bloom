@@ -58,6 +58,7 @@ export class PostPipeline {
 				uTex: { value: null },
 				uBloom: { value: 0.0 },
 				uAberration: { value: 0.0 },
+				uVignette: { value: 0.0 },
 				uRes: { value: new THREE.Vector2(1, 1) },
 			},
 			vertexShader: `
@@ -290,7 +291,7 @@ export class PostPipeline {
 		this.hasHistory = false;
 	}
 
-	render(scene, camera, feedbackCfg, bloomVal, abVal, mosh, forceBuffer) {
+	render(scene, camera, feedbackCfg, bloomVal, abVal, mosh, forceBuffer, vignette = 0) {
 		const r = this.renderer;
 		const dom = r.domElement;
 		const dpr = r.getPixelRatio();
@@ -361,6 +362,7 @@ export class PostPipeline {
 			this.outMat.uniforms.uTex.value = sourceTex;
 			this.outMat.uniforms.uBloom.value = bloomVal;
 			this.outMat.uniforms.uAberration.value = abVal;
+			this.outMat.uniforms.uVignette.value = vignette;
 
 			this.quadScene.clear();
 			this.quadScene.add(this.outMesh);
