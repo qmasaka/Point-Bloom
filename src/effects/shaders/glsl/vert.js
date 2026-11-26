@@ -1065,6 +1065,9 @@ void main() {
 
 	s *= uAtt > 0.001 ? 0.73 * uAtt / max(-mv.z, uAtt * 0.1) : 0.73;
 	s *= 1.0 + 0.5 * uLookP3.z;
+#ifndef SHADOW
+	if (uAdd > 0.5) s *= 0.5 + uGlow;
+#endif
 #ifdef SHADOW
 	s *= mix(1.0, 2.8, uShd.y);
 #endif

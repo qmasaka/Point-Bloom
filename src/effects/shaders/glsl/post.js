@@ -61,17 +61,36 @@ void main() {
 	if (uMerge > 0.01) {
 		vec2 mTexel = 1.0 / uRes;
 		float mRad = 1.5 + uMergeR * 9.0;
-		vec4 mAcc = baseCol;
-		for (int i = 0; i < 16; i++) {
+		vec4 mAcc = baseCol * 1.5;
+		vec2 mGrad = vec2(0.0);
+		float mW = 1.5;
+		for (int i = 0; i < 20; i++) {
 			float fi = float(i);
 			float ang = fi * 2.399963;
-			float rr = mRad * sqrt((fi + 0.5) / 16.0);
-			mAcc += texture2D(uTex, vUv + vec2(cos(ang), sin(ang)) * rr * mTexel);
+			float rn = sqrt((fi + 0.5) / 20.0);
+			vec2 mDir = vec2(cos(ang), sin(ang));
+			vec4 mS = texture2D(uTex, vUv + mDir * rn * mRad * mTexel);
+			float wgt = 1.0 - 0.7 * rn;
+			mAcc += mS * wgt;
+			mGrad += mDir * rn * mS.a * wgt;
+			mW += wgt;
 		}
-		mAcc /= 17.0;
-		float mA = smoothstep(0.26, 0.6, mAcc.a);
-		vec3 mCol = mAcc.rgb / max(mAcc.a, 0.02);
-		baseCol = mix(baseCol, vec4(mCol * mA, mA), min(uMerge, 1.0));
+		mAcc /= mW;
+		mGrad /= mW;
+		float mCov = mAcc.a;
+		float mThr = mix(0.5, 0.24, min(uMerge, 1.0));
+		float mFill = smoothstep(mThr - 0.07, mThr + 0.07, mCov);
+		vec3 mBlur = mAcc.rgb / max(mAcc.a, 0.02);
+		vec3 mSharp = baseCol.rgb / max(baseCol.a, 0.02);
+		vec3 mCol = mix(mBlur, mSharp, smoothstep(0.25, 0.85, baseCol.a));
+		float mEdge = smoothstep(0.08, 0.4, mCov) * (1.0 - smoothstep(0.5, 0.92, mCov));
+		vec3 mN = normalize(vec3(-mGrad * 5.0, 1.0));
+		float mLit = dot(mN, normalize(vec3(-0.4, 0.55, 0.75)));
+		float mSpec = pow(max(mLit, 0.0), 22.0);
+		mCol *= 1.0 + (mLit - 0.75) * 0.55 * mEdge * min(uMerge, 1.0);
+		mCol += mSpec * 0.45 * mEdge * min(uMerge, 1.0);
+		float mA = max(baseCol.a, mFill);
+		baseCol = vec4(mCol * mA, mA);
 	}
 	if (uBloom > 0.01) {
 		vec2 texel = 1.0 / uRes;

@@ -112,6 +112,7 @@ struct Frame {
 	uLookP2: vec4f,
 	uLookP3: vec4f,
 	uLookP4: vec4f,
+	@size(16) uGlow: f32,
 	uDof: vec4f,
 	uHyp: vec4f,
 	uHypP: vec4f,
@@ -155,7 +156,6 @@ struct Frame {
 	@size(16) uPx: vec2f,
 	@size(16) uExposure: f32,
 	@size(16) uTone: f32,
-	@size(16) uGlow: f32,
 	@size(16) uDens: f32,
 	@size(16) uGhost: f32,
 	@size(16) uShape: f32,
@@ -2595,6 +2595,9 @@ fn main_() {
 	s *= (((((1.0 + (gScopeT * fr.uScopeQ.y)) + ((gScopeG * fr.uScopeQ.z) * 2.5)) + (gDepthG * 0.8))) * ((1.0 - gScopeD)));
 	s *= select(0.73, ((0.73 * fr.uAtt) / max(-mv.z, (fr.uAtt * 0.1))), (fr.uAtt > 0.001));
 	s *= (1.0 + (0.5 * fr.uLookP3.z));
+	if ((fr.uAdd > 0.5)) {
+		s *= (0.5 + fr.uGlow);
+	}
 	gl_PointSize = clamp(((s * experimentScale) * ((1.0 - (0.45 * gCrumbleFade)))), 1.0, 95.0);
 	if (((((((gScopeD > 0.97) || (dkv > 0.97)) || (gDrop > 0.5)) || (gGrow < 0.03)) || (gHypF > 0.97)) || (bite > 0.97))) {
 		gl_Position = vec4f(2.0, 2.0, 2.0, 1.0);

@@ -1,5 +1,6 @@
 export default {
 	en: {
+		'Сила свечения': "Glow strength",
 		'Настоящие цвета и текстура модели': "The model’s real colors and texture",
 		'Сплошная заливка выбранным цветом': "Solid fill with the chosen color",
 		'Цвет из': "Color from",
@@ -1434,6 +1435,7 @@ export default {
 		'Затухание упавших': 'Fade of fallen pieces',
 	},
 	uk: {
+		'Сила свечения': "Сила світіння",
 		'Настоящие цвета и текстура модели': "Справжні кольори й текстура моделі",
 		'Сплошная заливка выбранным цветом': "Суцільна заливка вибраним кольором",
 		'Цвет из': "Колір з",
@@ -2868,6 +2870,7 @@ export default {
 		'Затухание упавших': 'Згасання впалих',
 	},
 	es: {
+		'Сила свечения': "Intensidad del resplandor",
 		'Настоящие цвета и текстура модели': "Colores y textura reales del modelo",
 		'Сплошная заливка выбранным цветом': "Relleno liso con el color elegido",
 		'Цвет из': "Color desde",
@@ -4302,6 +4305,7 @@ export default {
 		'Затухание упавших': 'Atenuación de los caídos',
 	},
 	de: {
+		'Сила свечения': "Leuchtstärke",
 		'Настоящие цвета и текстура модели': "Echte Farben und Textur des Modells",
 		'Сплошная заливка выбранным цветом': "Einfarbige Füllung mit der gewählten Farbe",
 		'Цвет из': "Farbe aus",

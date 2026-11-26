@@ -398,7 +398,7 @@ export function createEffectsPanel(app, root, engine) {
 			syncAI();
 		}
 	};
-	const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), countHint);
+	const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
 	const secMorph = section('Морфинг', { key: 'fx-morph' }, morphBox);
 
 	const pickers = new Set();
@@ -1075,7 +1075,7 @@ export function createEffectsPanel(app, root, engine) {
 		palBtns.set(p.id, b);
 		palettes.append(b);
 	}
-	const COLOR_SOURCES = [{ value: 'disp', label: 'Палитра', sub: 'Градиент выбранной палитры' }, { value: 'model', label: 'Исходный цвет модели', sub: 'Настоящие цвета и текстура модели' }, { value: 'solid', label: 'Один цвет', sub: 'Сплошная заливка выбранным цветом' }, { value: 'normal', label: 'Нормали', sub: 'Цвет по направлению поверхности' }];
+	const COLOR_SOURCES = [{ value: 'model', label: 'Исходный цвет модели', sub: 'Настоящие цвета и текстура модели' }, { value: 'disp', label: 'Палитра', sub: 'Градиент выбранной палитры' }, { value: 'solid', label: 'Один цвет', sub: 'Сплошная заливка выбранным цветом' }, { value: 'normal', label: 'Нормали', sub: 'Цвет по направлению поверхности' }];
 	const colorSource = (v) => (['height', 'index'].includes(v) ? 'disp' : v);
 	const colorBy = select({ options: COLOR_SOURCES, value: colorSource(st.look.colorBy), onChange: (v) => { engine.setColorBy(v); } });
 	const shapeTiles = h('div', { class: 'shape-grid shape-row', role: 'radiogroup', 'aria-label': 'Форма точек' });
@@ -1140,7 +1140,9 @@ export function createEffectsPanel(app, root, engine) {
 	const dofBody = h('div', { class: 'sec-body', style: { padding: 0 } }, field('Дистанция фокуса', dofDist.el), field('Глубина фокуса', dofRange.el));
 	const syncDof = () => { dofBody.hidden = !st.look.dofOn; };
 	syncDof();
-	const blend = segmented({ options: [{ value: 'normal', label: 'Плотные', title: 'Непрозрачные точки' }, { value: 'add', label: 'Свечение', title: 'Точки складывают свет: ярче в плотных местах' }], value: st.look.blend, onChange: (v) => { st.look.blend = v; save(); } });
+	const blend = segmented({ options: [{ value: 'normal', label: 'Плотные', title: 'Непрозрачные точки' }, { value: 'add', label: 'Свечение', title: 'Точки складывают свет: ярче в плотных местах' }], value: st.look.blend, onChange: (v) => { st.look.blend = v; glowRow.hidden = v !== 'add'; save(); } });
+	const glowRow = field('Сила свечения', glow.el);
+	glowRow.hidden = st.look.blend !== 'add';
 	const rotate = switchRow('Вращать форму', { value: st.look.autoRotate, onChange: (v) => { st.look.autoRotate = v; save(); syncRotate(); } });
 	const rotSpeed = slider({ min: 0.05, max: 1.5, step: 0.05, value: st.look.rotSpeed, digits: 2, onInput: (v) => { st.look.rotSpeed = v; }, onChange: save });
 	const rotSpeedRow = field('Скорость вращения', rotSpeed.el);
@@ -1157,10 +1159,10 @@ export function createEffectsPanel(app, root, engine) {
 	const fpsFx = switchRow('Показывать FPS', { value: rset.fps, onChange: (v) => { rset.fps = v; app.ui.refreshFps(); app.saveSettings(); } });
 	const fxSub = (text) => h('div', { class: 'fx-sub' }, text);
 	const secLookColor = section('Цвет точек', { key: 'fx-look-color' }, field('Цвет из', colorBy.el), palettes, solidRow);
-	const secLookShape = section('Форма точек', { key: 'fx-look-pts' }, field('Форма точек и символы', shapeTiles, { wide: true }), field('Размер точек', size.el), field('Наложение', blend.el, { wide: true }), attSw.el, field('Мягкость края', soft.el));
+	const secLookShape = section('Форма точек', { key: 'fx-look-pts' }, field('Форма точек и символы', shapeTiles, { wide: true }), field('Наложение', blend.el, { wide: true }), glowRow, attSw.el, field('Мягкость края', soft.el));
 	const secLookShine = section('Блеск точек', { key: 'fx-look-shine' }, field('Блик', spec.el), field('Контровый свет', rim.el), field('Перламутр', pearl.el), field('Мерцание', twinkle.el));
 	const secLookMerge = section('Слияние точек', { key: 'fx-look-merge' }, field('Слияние', merge.el), field('Радиус слияния', mergeR.el), h('div', { class: 'field-hint' }, 'Близкие точки сливаются в гладкие капли, как жидкость.'));
-	const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, fxSub('Освещение'), field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), fxSub('Атмосфера'), field('Дымка вдали', fog.el), field('Хром. аберрация', aberration.el), fxSub('Плёнка'), field('Насыщенность', sat.el), field('Зерно', grain.el));
+	const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, fxSub('Освещение'), field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', bloom.el), fxSub('Атмосфера'), field('Дымка вдали', fog.el), field('Хром. аберрация', aberration.el), fxSub('Плёнка'), field('Насыщенность', sat.el), field('Зерно', grain.el));
 	const secLookCam = section('Камера', { key: 'fx-look-cam' }, field('Поле зрения', fovFx.el), dofOn.el, dofBody, rotate.el, rotSpeedRow);
 	const secLookShow = section('Отображение', { key: 'fx-look-show' }, hudSw.el, hudSpec.el);
 	const secLookPerf = section('Производительность', { key: 'fx-look-perf', open: false }, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), field('Движок отрисовки', backendSeg.el, { wide: true }), backendHint, fpsFx.el, perfHint);
@@ -3293,6 +3295,7 @@ export function createEffectsPanel(app, root, engine) {
 		dofRange.set(st.look.dofRange || 1.4);
 		syncDof();
 		blend.set(st.look.blend);
+		glowRow.hidden = st.look.blend !== 'add';
 		const ap = engine.animProgress;
 		animBtn.disabled = !!engine.animBusy;
 		animBtn.querySelector('.btn-label').textContent = ap ? `${ap.stage}: ${Math.round(ap.v * 100)}%` : 'Записать и сохранить';

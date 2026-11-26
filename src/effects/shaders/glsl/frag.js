@@ -51,7 +51,8 @@ void main() {
 	float dofAlpha = 1.0 / (1.0 + vCoc * 1.8) * clamp((1.0 - smoothstep(0.5 - 0.4 * uLookP3.z, 0.5, dm)) * (1.0 + 0.9 * uLookP3.z), 0.0, 1.0);
 	if (uAdd > 0.5) {
 		float aura = pow(core, mix(1.8, 0.7, uGlow));
-		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha * sph * (1.0 - vDk);
+		float sizeK = 0.5 + uGlow;
+		vec3 col = (vColor * (0.08 + aura * (0.2 + uGlow * 0.28)) + vColor * vD * 0.08) * uDens * uGhost * dofAlpha * sph * (1.0 - vDk) / (sizeK * sizeK);
 		float ga = core * uGhost * dofAlpha * (1.0 - vDk);
 
 		if (uFr.x > 0.5) ga *= clamp(dot(vColor, vec3(0.3, 0.59, 0.11)) * 5.0, 0.0, 1.0);

@@ -112,6 +112,7 @@ struct Frame {
 	uLookP2: vec4f,
 	uLookP3: vec4f,
 	uLookP4: vec4f,
+	@size(16) uGlow: f32,
 	uDof: vec4f,
 	uHyp: vec4f,
 	uHypP: vec4f,
@@ -155,7 +156,6 @@ struct Frame {
 	@size(16) uPx: vec2f,
 	@size(16) uExposure: f32,
 	@size(16) uTone: f32,
-	@size(16) uGlow: f32,
 	@size(16) uDens: f32,
 	@size(16) uGhost: f32,
 	@size(16) uShape: f32,
@@ -232,7 +232,8 @@ fn frag_main_() {
 	var dofAlpha: f32 = ((1.0 / ((1.0 + (vCoc * 1.8)))) * clamp((((1.0 - smoothstep((0.5 - (0.4 * fr.uLookP3.z)), 0.5, dm))) * ((1.0 + (0.9 * fr.uLookP3.z)))), 0.0, 1.0));
 	if ((fr.uAdd > 0.5)) {
 		var aura: f32 = pow(core, mix(1.8, 0.7, fr.uGlow));
-		var col: vec3f = ((((((((vColor * ((0.08 + (aura * ((0.2 + (fr.uGlow * 0.28))))))) + ((vColor * vD) * 0.08))) * fr.uDens) * fr.uGhost) * dofAlpha) * sph) * ((1.0 - vDk)));
+		var sizeK: f32 = (0.5 + fr.uGlow);
+		var col: vec3f = (((((((((vColor * ((0.08 + (aura * ((0.2 + (fr.uGlow * 0.28))))))) + ((vColor * vD) * 0.08))) * fr.uDens) * fr.uGhost) * dofAlpha) * sph) * ((1.0 - vDk))) / ((sizeK * sizeK)));
 		var ga: f32 = (((core * fr.uGhost) * dofAlpha) * ((1.0 - vDk)));
 		if ((fr.uFr.x > 0.5)) {
 			ga *= clamp((dot(vColor, vec3f(0.3, 0.59, 0.11)) * 5.0), 0.0, 1.0);
@@ -475,6 +476,7 @@ struct Frame {
 	uLookP2: vec4f,
 	uLookP3: vec4f,
 	uLookP4: vec4f,
+	@size(16) uGlow: f32,
 	uDof: vec4f,
 	uHyp: vec4f,
 	uHypP: vec4f,
@@ -518,7 +520,6 @@ struct Frame {
 	@size(16) uPx: vec2f,
 	@size(16) uExposure: f32,
 	@size(16) uTone: f32,
-	@size(16) uGlow: f32,
 	@size(16) uDens: f32,
 	@size(16) uGhost: f32,
 	@size(16) uShape: f32,
