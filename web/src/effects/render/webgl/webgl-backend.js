@@ -37,7 +37,7 @@ renderer.render(scene, camera);
 this.post.hasHistory = false;
 return;
 }
-this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true, { grain: e.state.look.grain, sat: e.state.look.sat, time: e._time % 100, merge: e.state.look.merge, mergeR: e.state.look.mergeR });
+this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true, { sat: e.state.look.sat, merge: e.state.look.merge, mergeR: e.state.look.mergeR });
 } finally {
 if (points) points.visible = visible;
 }

@@ -80,7 +80,7 @@ export class ShaderCachePart {
 
 	_gradeOn() {
 		const look = this.state.look;
-		return (look.grain || 0) > 0.01 || (look.merge || 0) > 0.01 || Math.abs((look.sat ?? 1) - 1) > 0.01;
+		return (look.merge || 0) > 0.01 || Math.abs((look.sat ?? 1) - 1) > 0.01;
 	}
 
 	_postOn() {

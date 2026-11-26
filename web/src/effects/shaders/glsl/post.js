@@ -34,9 +34,7 @@ precision highp float;
 uniform sampler2D uTex;
 uniform float uBloom;
 uniform float uAberration;
-uniform float uGrain;
 uniform float uSat;
-uniform float uGT;
 uniform float uMerge;
 uniform float uMergeR;
 uniform vec2 uRes;
@@ -109,10 +107,6 @@ void main() {
 
 	float lumP = dot(baseCol.rgb, vec3(0.3, 0.59, 0.11));
 	if (abs(uSat - 1.0) > 0.001) baseCol.rgb = mix(vec3(lumP), baseCol.rgb, uSat);
-	if (uGrain > 0.001) {
-		float gn = fract(sin(dot(vUv * uRes + vec2(uGT * 61.7, uGT * 17.3), vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
-		baseCol.rgb += gn * uGrain * 0.4 * (0.45 + lumP);
-	}
 	gl_FragColor = baseCol;
 	#include <tonemapping_fragment>
 	#include <colorspace_fragment>

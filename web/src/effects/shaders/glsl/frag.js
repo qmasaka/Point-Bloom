@@ -59,7 +59,7 @@ void main() {
 		gl_FragColor = vec4(col + specCol * ga, ga);
 	} else {
 
-		gl_FragColor = vec4(vColor * (uFr.x > 0.5 ? 1.0 : 0.55 + 0.45 * core) * sph + specCol, dofAlpha * (1.0 - vDk));
+		gl_FragColor = vec4(vColor * (uFr.x > 0.5 ? 1.0 : mix(0.55 + 0.45 * core, 1.0, uLookP3.w)) * sph + specCol, dofAlpha * (1.0 - vDk));
 	}
 	#include <tonemapping_fragment>
 	#include <colorspace_fragment>

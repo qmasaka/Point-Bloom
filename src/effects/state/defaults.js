@@ -39,7 +39,7 @@ export function defaultState() {
 			rim: 0,
 			pearl: 0,
 			twinkle: 0,
-			grain: 0,
+			rimOff: 0.7,
 			merge: 0,
 			mergeR: 0.4,
 			sat: 1,

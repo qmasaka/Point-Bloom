@@ -112,6 +112,7 @@ struct Frame {
 	uLookP2: vec4f,
 	uLookP3: vec4f,
 	uLookP4: vec4f,
+	uLookP5: vec4f,
 	@size(16) uGlow: f32,
 	uDof: vec4f,
 	uHyp: vec4f,

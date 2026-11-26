@@ -112,6 +112,7 @@ struct Frame {
 	uLookP2: vec4f,
 	uLookP3: vec4f,
 	uLookP4: vec4f,
+	uLookP5: vec4f,
 	@size(16) uGlow: f32,
 	uDof: vec4f,
 	uHyp: vec4f,
@@ -240,7 +241,7 @@ fn frag_main_() {
 		}
 		gl_FragColor = vec4f((col + (specCol * ga)), ga);
 	} else {
-		gl_FragColor = vec4f((((vColor * (select((0.55 + (0.45 * core)), 1.0, (fr.uFr.x > 0.5)))) * sph) + specCol), (dofAlpha * ((1.0 - vDk))));
+		gl_FragColor = vec4f((((vColor * (select(mix((0.55 + (0.45 * core)), 1.0, fr.uLookP3.w), 1.0, (fr.uFr.x > 0.5)))) * sph) + specCol), (dofAlpha * ((1.0 - vDk))));
 	}
 }
 
@@ -476,6 +477,7 @@ struct Frame {
 	uLookP2: vec4f,
 	uLookP3: vec4f,
 	uLookP4: vec4f,
+	uLookP5: vec4f,
 	@size(16) uGlow: f32,
 	uDof: vec4f,
 	uHyp: vec4f,

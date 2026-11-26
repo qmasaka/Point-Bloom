@@ -1030,8 +1030,8 @@ void main() {
 #endif
 #ifndef SHADOW
 	if (uLookP3.x > 0.001) {
-		float fogZ = (-mv.z - uLookP3.y) / max(0.2, uLookP3.y * 0.45);
-		vDk = max(vDk, uLookP3.x * 0.9 * smoothstep(-0.4, 1.1, fogZ));
+		float fogT = clamp((-mv.z - uLookP3.y) / max(uLookP5.x, 0.05) * 0.5 + 0.5, 0.0, 1.0);
+		vDk = max(vDk, uLookP3.x * 0.92 * smoothstep(0.2, 1.0, fogT));
 	}
 #endif
 	gl_Position = projectionMatrix * mv;

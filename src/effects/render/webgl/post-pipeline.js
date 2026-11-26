@@ -58,9 +58,7 @@ export class PostPipeline {
 				uTex: { value: null },
 				uBloom: { value: 0.0 },
 				uAberration: { value: 0.0 },
-				uGrain: { value: 0.0 },
 				uSat: { value: 1.0 },
-				uGT: { value: 0.0 },
 				uMerge: { value: 0.0 },
 				uMergeR: { value: 0.4 },
 				uRes: { value: new THREE.Vector2(1, 1) },
@@ -366,9 +364,7 @@ export class PostPipeline {
 			this.outMat.uniforms.uTex.value = sourceTex;
 			this.outMat.uniforms.uBloom.value = bloomVal;
 			this.outMat.uniforms.uAberration.value = abVal;
-			this.outMat.uniforms.uGrain.value = grade?.grain || 0;
 			this.outMat.uniforms.uSat.value = grade?.sat ?? 1;
-			this.outMat.uniforms.uGT.value = grade?.time || 0;
 			this.outMat.uniforms.uMerge.value = grade?.merge || 0;
 			this.outMat.uniforms.uMergeR.value = grade?.mergeR ?? 0.4;
 

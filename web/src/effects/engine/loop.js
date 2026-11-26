@@ -346,7 +346,35 @@ u.uSliceM.value.set(2, sl.lift, sl.color === 'model' ? 1 : 0, 0);
 }
 u.uSliceC.value.set(sl.color && sl.color !== 'auto' && sl.color !== 'model' ? sl.color : pal.c[2]);
 u.uLookP2.value.set(0, 0, 0, 0);
-u.uLookP3.value.set(look.fog || 0, this.app.nav.distance, look.soft ?? 0, 0);
+{
+const fb = this._fogBox;
+if (look.fog > 0.001 && this.points && this.geometry) {
+if (!fb || fb.geo !== this.geometry || this._time - fb.t > 0.6) {
+const ta = this.geometry.attributes.aTarget.array;
+const stepP = Math.max(1, Math.floor(ta.length / 3 / 12000)) * 3;
+let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+for (let i = 0; i < ta.length; i += stepP) {
+if (ta[i] < x0) x0 = ta[i];
+if (ta[i] > x1) x1 = ta[i];
+if (ta[i + 1] < y0) y0 = ta[i + 1];
+if (ta[i + 1] > y1) y1 = ta[i + 1];
+if (ta[i + 2] < z0) z0 = ta[i + 2];
+if (ta[i + 2] > z1) z1 = ta[i + 2];
+}
+this._fogBox = { geo: this.geometry, t: this._time, c: new THREE.Vector3((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2), r: Math.max(0.05, Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2) };
+}
+const box = this._fogBox;
+this.points.updateMatrixWorld(true);
+const cam = this.app.viewport.camera;
+const cv = box.c.clone().applyMatrix4(this.points.matrixWorld).applyMatrix4(cam.matrixWorldInverse);
+const sc = this.points.matrixWorld.getMaxScaleOnAxis();
+u.uLookP3.value.set(look.fog, -cv.z, look.soft ?? 0, (look.rimOff ?? 0.7) * Math.min(1, (look.merge || 0) * 4));
+u.uLookP5.value.set(box.r * sc, 0, 0, 0);
+} else {
+u.uLookP3.value.set(0, 1, look.soft ?? 0, (look.rimOff ?? 0.7) * Math.min(1, (look.merge || 0) * 4));
+u.uLookP5.value.set(1, 0, 0, 0);
+}
+}
 u.uLookP4.value.set(look.spec || 0, look.rim || 0, look.pearl || 0, look.twinkle || 0);
 u.uShade.value = look.shade || 0;
 const gm = GLYPH_SETS[look.glyph] ? look.glyph : 'off';

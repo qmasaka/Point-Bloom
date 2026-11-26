@@ -112,6 +112,7 @@ struct Frame {
 	uLookP2: vec4f,
 	uLookP3: vec4f,
 	uLookP4: vec4f,
+	uLookP5: vec4f,
 	@size(16) uGlow: f32,
 	uDof: vec4f,
 	uHyp: vec4f,
@@ -2292,8 +2293,8 @@ fn main_() {
 	vD = disp;
 	var mv: vec4f = (fr.modelViewMatrix * vec4f(pos, 1.0));
 	if ((fr.uLookP3.x > 0.001)) {
-		var fogZ: f32 = (((-mv.z - fr.uLookP3.y)) / max(0.2, (fr.uLookP3.y * 0.45)));
-		vDk = max(vDk, ((fr.uLookP3.x * 0.9) * smoothstep(-0.4, 1.1, fogZ)));
+		var fogT: f32 = clamp((((((-mv.z - fr.uLookP3.y)) / max(fr.uLookP5.x, 0.05)) * 0.5) + 0.5), 0.0, 1.0);
+		vDk = max(vDk, ((fr.uLookP3.x * 0.92) * smoothstep(0.2, 1.0, fogT)));
 	}
 	gl_Position = (fr.projectionMatrix * mv);
 	var szNoise: f32 = 1.0;
