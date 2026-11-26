@@ -2829,17 +2829,33 @@ body {
 }
 .fx-palettes {
 	display: grid;
-	grid-template-columns: repeat(7, minmax(0, 1fr));
+	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: 6px;
 }
 .fx-pal {
-	height: 26px;
-	padding: 0;
+	display: grid;
+	gap: 5px;
+	min-width: 0;
+	padding: 6px 7px 5px;
 	border: 1px solid var(--line-strong);
 	border-radius: var(--r-sm);
+	background: var(--bg-raised);
+	color: var(--text-dim);
+	font-size: 11px;
+	text-align: left;
+}
+.fx-pal-bar {
+	display: block;
+	height: 9px;
+	border-radius: 4px;
+}
+.fx-pal-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 .fx-pal:hover {
-	transform: translateY(-1px);
+	color: var(--text);
 }
 .fx-pal[aria-checked='true'] {
 	outline: 2px solid var(--accent);
@@ -3238,7 +3254,7 @@ body {
 	grid-template-columns: repeat(auto-fill, minmax(24px, 1fr));
 }
 .fx-palettes {
-	grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
 }
 .fx-bg-chip,
 .sw,

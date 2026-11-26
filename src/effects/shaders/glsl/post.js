@@ -38,12 +38,14 @@ uniform float uAberration;
 uniform float uGrain;
 uniform float uSat;
 uniform float uGT;
+uniform float uMerge;
+uniform float uMergeR;
 uniform vec2 uRes;
 varying vec2 vUv;
 void main() {
 	vec2 dir = vUv - vec2(0.5);
 	float distSq = dot(dir, dir);
-	vec2 shift = dir * distSq * uAberration * 0.04;
+	vec2 shift = dir * (0.2 + distSq * 2.0) * uAberration * 0.05;
 
 	vec4 baseCol;
 	if (uAberration > 0.001) {
@@ -56,6 +58,21 @@ void main() {
 		baseCol = texture2D(uTex, vUv);
 	}
 
+	if (uMerge > 0.01) {
+		vec2 mTexel = 1.0 / uRes;
+		float mRad = 1.5 + uMergeR * 9.0;
+		vec4 mAcc = baseCol;
+		for (int i = 0; i < 16; i++) {
+			float fi = float(i);
+			float ang = fi * 2.399963;
+			float rr = mRad * sqrt((fi + 0.5) / 16.0);
+			mAcc += texture2D(uTex, vUv + vec2(cos(ang), sin(ang)) * rr * mTexel);
+		}
+		mAcc /= 17.0;
+		float mA = smoothstep(0.26, 0.6, mAcc.a);
+		vec3 mCol = mAcc.rgb / max(mAcc.a, 0.02);
+		baseCol = mix(baseCol, vec4(mCol * mA, mA), min(uMerge, 1.0));
+	}
 	if (uBloom > 0.01) {
 		vec2 texel = 1.0 / uRes;
 		vec4 bloom = vec4(0.0);
@@ -73,10 +90,10 @@ void main() {
 	}
 
 	float lumP = dot(baseCol.rgb, vec3(0.3, 0.59, 0.11));
-	baseCol.rgb = mix(vec3(lumP), baseCol.rgb, uSat);
+	if (abs(uSat - 1.0) > 0.001) baseCol.rgb = mix(vec3(lumP), baseCol.rgb, uSat);
 	if (uGrain > 0.001) {
 		float gn = fract(sin(dot(vUv * uRes + vec2(uGT * 61.7, uGT * 17.3), vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
-		baseCol.rgb += gn * uGrain * 0.14 * (0.35 + lumP);
+		baseCol.rgb += gn * uGrain * 0.4 * (0.45 + lumP);
 	}
 	gl_FragColor = baseCol;
 	#include <tonemapping_fragment>

@@ -61,6 +61,8 @@ export class PostPipeline {
 				uGrain: { value: 0.0 },
 				uSat: { value: 1.0 },
 				uGT: { value: 0.0 },
+				uMerge: { value: 0.0 },
+				uMergeR: { value: 0.4 },
 				uRes: { value: new THREE.Vector2(1, 1) },
 			},
 			vertexShader: `
@@ -367,6 +369,8 @@ export class PostPipeline {
 			this.outMat.uniforms.uGrain.value = grade?.grain || 0;
 			this.outMat.uniforms.uSat.value = grade?.sat ?? 1;
 			this.outMat.uniforms.uGT.value = grade?.time || 0;
+			this.outMat.uniforms.uMerge.value = grade?.merge || 0;
+			this.outMat.uniforms.uMergeR.value = grade?.mergeR ?? 0.4;
 
 			this.quadScene.clear();
 			this.quadScene.add(this.outMesh);

@@ -72,11 +72,15 @@ this._fxBusy = false;
 fxPreparing() {
 return !this._glDormant && !!this.shared && !!this._fxCur && !this._fxCovered(true);
 }
+_gradeOn() {
+const look = this.state.look;
+return (look.grain || 0) > 0.01 || (look.merge || 0) > 0.01 || Math.abs((look.sat ?? 1) - 1) > 0.01;
+}
 _postOn() {
 const L = this.state.layers;
 const fb = L.feedback;
 const dm = L.datamosh;
-return (this.state.look.bloom || 0) > 0.01 || (this.state.look.aberration || 0) > 0.01 || !!(fb && fb.on && fb.amount > 0.01) || !!(dm && dm.on);
+return this._gradeOn() || (this.state.look.bloom || 0) > 0.01 || (this.state.look.aberration || 0) > 0.01 || !!(fb && fb.on && fb.amount > 0.01) || !!(dm && dm.on);
 }
 _fxSig(set) {
 return [...(set || this._fxCur || [])].sort().join(',');

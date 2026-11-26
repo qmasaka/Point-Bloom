@@ -67187,12 +67187,14 @@ uniform float uAberration;
 uniform float uGrain;
 uniform float uSat;
 uniform float uGT;
+uniform float uMerge;
+uniform float uMergeR;
 uniform vec2 uRes;
 varying vec2 vUv;
 void main() {
 	vec2 dir = vUv - vec2(0.5);
 	float distSq = dot(dir, dir);
-	vec2 shift = dir * distSq * uAberration * 0.04;
+	vec2 shift = dir * (0.2 + distSq * 2.0) * uAberration * 0.05;
 
 	vec4 baseCol;
 	if (uAberration > 0.001) {
@@ -67205,6 +67207,21 @@ void main() {
 		baseCol = texture2D(uTex, vUv);
 	}
 
+	if (uMerge > 0.01) {
+		vec2 mTexel = 1.0 / uRes;
+		float mRad = 1.5 + uMergeR * 9.0;
+		vec4 mAcc = baseCol;
+		for (int i = 0; i < 16; i++) {
+			float fi = float(i);
+			float ang = fi * 2.399963;
+			float rr = mRad * sqrt((fi + 0.5) / 16.0);
+			mAcc += texture2D(uTex, vUv + vec2(cos(ang), sin(ang)) * rr * mTexel);
+		}
+		mAcc /= 17.0;
+		float mA = smoothstep(0.26, 0.6, mAcc.a);
+		vec3 mCol = mAcc.rgb / max(mAcc.a, 0.02);
+		baseCol = mix(baseCol, vec4(mCol * mA, mA), min(uMerge, 1.0));
+	}
 	if (uBloom > 0.01) {
 		vec2 texel = 1.0 / uRes;
 		vec4 bloom = vec4(0.0);
@@ -67222,10 +67239,10 @@ void main() {
 	}
 
 	float lumP = dot(baseCol.rgb, vec3(0.3, 0.59, 0.11));
-	baseCol.rgb = mix(vec3(lumP), baseCol.rgb, uSat);
+	if (abs(uSat - 1.0) > 0.001) baseCol.rgb = mix(vec3(lumP), baseCol.rgb, uSat);
 	if (uGrain > 0.001) {
 		float gn = fract(sin(dot(vUv * uRes + vec2(uGT * 61.7, uGT * 17.3), vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
-		baseCol.rgb += gn * uGrain * 0.14 * (0.35 + lumP);
+		baseCol.rgb += gn * uGrain * 0.4 * (0.45 + lumP);
 	}
 	gl_FragColor = baseCol;
 	#include <tonemapping_fragment>
@@ -67479,6 +67496,8 @@ uAberration: { value: 0.0 },
 uGrain: { value: 0.0 },
 uSat: { value: 1.0 },
 uGT: { value: 0.0 },
+uMerge: { value: 0.0 },
+uMergeR: { value: 0.4 },
 uRes: { value: new THREE.Vector2(1, 1) },
 },
 vertexShader: `
@@ -67766,6 +67785,8 @@ this.outMat.uniforms.uAberration.value = abVal;
 this.outMat.uniforms.uGrain.value = grade?.grain || 0;
 this.outMat.uniforms.uSat.value = grade?.sat ?? 1;
 this.outMat.uniforms.uGT.value = grade?.time || 0;
+this.outMat.uniforms.uMerge.value = grade?.merge || 0;
+this.outMat.uniforms.uMergeR.value = grade?.mergeR ?? 0.4;
 this.quadScene.clear();
 this.quadScene.add(this.outMesh);
 r.setRenderTarget(null);
@@ -67834,7 +67855,7 @@ renderer.render(scene, camera);
 this.post.hasHistory = false;
 return;
 }
-this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true, { grain: e.state.look.grain, sat: e.state.look.sat, time: e._time % 100 });
+this.post.render(scene, camera, fb, bloom, ab, dm && dm.on ? e._moshParams(dm) : null, true, { grain: e.state.look.grain, sat: e.state.look.sat, time: e._time % 100, merge: e.state.look.merge, mergeR: e.state.look.mergeR });
 } finally {
 if (points) points.visible = visible;
 }
@@ -67982,7 +68003,7 @@ const POST_PASSES = {
 ]
 },
 "out": {
-"wgsl": "struct U {\n\t@size(16) uBloom: f32,\n\t@size(16) uAberration: f32,\n\t@size(16) uGrain: f32,\n\t@size(16) uSat: f32,\n\t@size(16) uGT: f32,\n\t@size(16) uRes: vec2f,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uTex: texture_2d<f32>;\n@group(0) @binding(2) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn main_() {\n\tvar dir: vec2f = (vUv - vec2f(0.5));\n\tvar distSq: f32 = dot(dir, dir);\n\tvar shift: vec2f = (((dir * distSq) * u.uAberration) * 0.04);\n\tvar baseCol: vec4f;\n\tif ((u.uAberration > 0.001)) {\n\t\tvar r: f32 = textureSampleLevel(t_uTex, samp, vec2f(((vUv + shift)).x, 1.0 - ((vUv + shift)).y), 0.0).r;\n\t\tvar g: f32 = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).g;\n\t\tvar b: f32 = textureSampleLevel(t_uTex, samp, vec2f(((vUv - shift)).x, 1.0 - ((vUv - shift)).y), 0.0).b;\n\t\tvar a: f32 = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).a;\n\t\tbaseCol = vec4f(r, g, b, a);\n\t} else {\n\t\tbaseCol = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\t}\n\tif ((u.uBloom > 0.01)) {\n\t\tvar texel_: vec2f = (1.0 / u.uRes);\n\t\tvar bloom: vec4f = vec4f(0.0);\n\t\tvar rad: f32 = 3.2;\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(-rad, -rad) * texel_))).x, 1.0 - ((vUv + (vec2f(-rad, -rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(rad, -rad) * texel_))).x, 1.0 - ((vUv + (vec2f(rad, -rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(-rad, rad) * texel_))).x, 1.0 - ((vUv + (vec2f(-rad, rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(rad, rad) * texel_))).x, 1.0 - ((vUv + (vec2f(rad, rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(0.0, (-rad * 1.4)) * texel_))).x, 1.0 - ((vUv + (vec2f(0.0, (-rad * 1.4)) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(0.0, (rad * 1.4)) * texel_))).x, 1.0 - ((vUv + (vec2f(0.0, (rad * 1.4)) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f((-rad * 1.4), 0.0) * texel_))).x, 1.0 - ((vUv + (vec2f((-rad * 1.4), 0.0) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f((rad * 1.4), 0.0) * texel_))).x, 1.0 - ((vUv + (vec2f((rad * 1.4), 0.0) * texel_))).y), 0.0);\n\t\tbloom *= vec4f(0.125);\n\t\t{ let _sw0 = (baseCol.rgb + ((bloom.rgb * u.uBloom) * 0.85)); baseCol = vec4f(_sw0.x, _sw0.y, _sw0.z, baseCol.w); }\n\t}\n\tvar lumP: f32 = dot(baseCol.rgb, vec3f(0.3, 0.59, 0.11));\n\t{ let _sw1 = mix(vec3f(lumP), baseCol.rgb, u.uSat); baseCol = vec4f(_sw1.x, _sw1.y, _sw1.z, baseCol.w); }\n\tif ((u.uGrain > 0.001)) {\n\t\tvar gn: f32 = (fract((sin(dot(((vUv * u.uRes) + vec2f((u.uGT * 61.7), (u.uGT * 17.3))), vec2f(12.9898, 78.233))) * 43758.5453)) - 0.5);\n\t\t{ let _sw2 = (baseCol.rgb + vec3f((((gn * u.uGrain) * 0.14) * ((0.35 + lumP))))); baseCol = vec4f(_sw2.x, _sw2.y, _sw2.z, baseCol.w); }\n\t}\n\tgl_FragColor = baseCol;\n}\n\n\nfn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {\n\tlet startCompression = 0.8 - 0.04;\n\tlet desaturation = 0.15;\n\tvar color = c0 * exposure;\n\tlet x = min(color.r, min(color.g, color.b));\n\tlet offset = select(0.04, x - 6.25 * x * x, x < 0.08);\n\tcolor = color - offset;\n\tlet peak = max(color.r, max(color.g, color.b));\n\tif (peak < startCompression) { return color; }\n\tlet d = 1.0 - startCompression;\n\tlet newPeak = 1.0 - d * d / (peak + d - startCompression);\n\tcolor = color * (newPeak / peak);\n\tlet g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);\n\treturn mix(color, vec3f(newPeak), g);\n}\nfn rrtAndOdtFit(v: vec3f) -> vec3f {\n\tlet a = v * (v + 0.0245786) - 0.000090537;\n\tlet b = v * (0.983729 * v + 0.4329510) + 0.238081;\n\treturn a / b;\n}\nfn toneAces(c0: vec3f, exposure: f32) -> vec3f {\n\tlet inM = mat3x3f(vec3f(0.59719, 0.07600, 0.02840), vec3f(0.35458, 0.90834, 0.13383), vec3f(0.04823, 0.01566, 0.83777));\n\tlet outM = mat3x3f(vec3f(1.60475, -0.10208, -0.00327), vec3f(-0.53108, 1.10813, -0.07276), vec3f(-0.07367, -0.00605, 1.07602));\n\tvar color = c0 * (exposure / 0.6);\n\tcolor = inM * color;\n\tcolor = rrtAndOdtFit(color);\n\tcolor = outM * color;\n\treturn saturate(color);\n}\nfn agxContrast(x: vec3f) -> vec3f {\n\tlet x2 = x * x;\n\tlet x4 = x2 * x2;\n\treturn 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;\n}\nfn toneAgx(c0: vec3f, exposure: f32) -> vec3f {\n\tlet rec2020ToSrgb = mat3x3f(vec3f(1.6605, -0.1246, -0.0182), vec3f(-0.5876, 1.1329, -0.1006), vec3f(-0.0728, -0.0083, 1.1187));\n\tlet srgbToRec2020 = mat3x3f(vec3f(0.6274, 0.0691, 0.0164), vec3f(0.3293, 0.9195, 0.0880), vec3f(0.0433, 0.0113, 0.8956));\n\tlet inset = mat3x3f(vec3f(0.856627153315983, 0.137318972929847, 0.11189821299995), vec3f(0.0951212405381588, 0.761241990602591, 0.0767994186031903), vec3f(0.0482516061458583, 0.101439036467562, 0.811302368396859));\n\tlet outset = mat3x3f(vec3f(1.1271005818144368, -0.1413297634984383, -0.14132976349843826), vec3f(-0.11060664309660323, 1.157823702216272, -0.11060664309660294), vec3f(-0.016493938717834573, -0.016493938717834257, 1.2519364065950405));\n\tlet minEv = -12.47393;\n\tlet maxEv = 4.026069;\n\tvar color = c0 * exposure;\n\tcolor = srgbToRec2020 * color;\n\tcolor = inset * color;\n\tcolor = max(color, vec3f(1e-10));\n\tcolor = log2(color);\n\tcolor = (color - minEv) / (maxEv - minEv);\n\tcolor = clamp(color, vec3f(0.0), vec3f(1.0));\n\tcolor = agxContrast(color);\n\tcolor = outset * color;\n\tcolor = pow(max(vec3f(0.0), color), vec3f(2.2));\n\tcolor = rec2020ToSrgb * color;\n\treturn clamp(color, vec3f(0.0), vec3f(1.0));\n}\nfn toneMap(c: vec3f, exposure: f32, mode: f32) -> vec3f {\n\tif (mode < 0.5) { return c; }\n\tif (mode < 1.5) { return toneNeutral(c, exposure); }\n\tif (mode < 2.5) { return toneAces(c, exposure); }\n\treturn toneAgx(c, exposure);\n}\nfn linearToSrgb(v: vec3f) -> vec3f {\n\treturn select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));\n}\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, u.uExposure, u.uTone)), gl_FragColor.a);\n}\n",
+"wgsl": "struct U {\n\t@size(16) uBloom: f32,\n\t@size(16) uAberration: f32,\n\t@size(16) uGrain: f32,\n\t@size(16) uSat: f32,\n\t@size(16) uGT: f32,\n\t@size(16) uMerge: f32,\n\t@size(16) uMergeR: f32,\n\t@size(16) uRes: vec2f,\n\t@size(16) uTarget: vec2f,\n\t@size(16) uExposure: f32,\n\t@size(16) uTone: f32,\n}\n@group(0) @binding(0) var<uniform> u: U;\n@group(0) @binding(1) var t_uTex: texture_2d<f32>;\n@group(0) @binding(2) var samp: sampler;\nvar<private> vUv: vec2f;\nvar<private> gl_FragColor: vec4f;\nvar<private> gl_FragCoord: vec4f;\n\nfn main_() {\n\tvar dir: vec2f = (vUv - vec2f(0.5));\n\tvar distSq: f32 = dot(dir, dir);\n\tvar shift: vec2f = (((dir * ((0.2 + (distSq * 2.0)))) * u.uAberration) * 0.05);\n\tvar baseCol: vec4f;\n\tif ((u.uAberration > 0.001)) {\n\t\tvar r: f32 = textureSampleLevel(t_uTex, samp, vec2f(((vUv + shift)).x, 1.0 - ((vUv + shift)).y), 0.0).r;\n\t\tvar g: f32 = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).g;\n\t\tvar b: f32 = textureSampleLevel(t_uTex, samp, vec2f(((vUv - shift)).x, 1.0 - ((vUv - shift)).y), 0.0).b;\n\t\tvar a: f32 = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0).a;\n\t\tbaseCol = vec4f(r, g, b, a);\n\t} else {\n\t\tbaseCol = textureSampleLevel(t_uTex, samp, vec2f((vUv).x, 1.0 - (vUv).y), 0.0);\n\t}\n\tif ((u.uMerge > 0.01)) {\n\t\tvar mTexel: vec2f = (1.0 / u.uRes);\n\t\tvar mRad: f32 = (1.5 + (u.uMergeR * 9.0));\n\t\tvar mAcc: vec4f = baseCol;\n\t\tfor (var i: i32 = 0; (i < 16); i++) {\n\t\t\tvar fi: f32 = f32(i);\n\t\t\tvar ang: f32 = (fi * 2.399963);\n\t\t\tvar rr: f32 = (mRad * sqrt((((fi + 0.5)) / 16.0)));\n\t\t\tmAcc += textureSampleLevel(t_uTex, samp, vec2f(((vUv + ((vec2f(cos(ang), sin(ang)) * rr) * mTexel))).x, 1.0 - ((vUv + ((vec2f(cos(ang), sin(ang)) * rr) * mTexel))).y), 0.0);\n\t\t}\n\t\tmAcc /= vec4f(17.0);\n\t\tvar mA: f32 = smoothstep(0.26, 0.6, mAcc.a);\n\t\tvar mCol: vec3f = (mAcc.rgb / max(mAcc.a, 0.02));\n\t\tbaseCol = mix(baseCol, vec4f((mCol * mA), mA), min(u.uMerge, 1.0));\n\t}\n\tif ((u.uBloom > 0.01)) {\n\t\tvar texel_: vec2f = (1.0 / u.uRes);\n\t\tvar bloom: vec4f = vec4f(0.0);\n\t\tvar rad: f32 = 3.2;\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(-rad, -rad) * texel_))).x, 1.0 - ((vUv + (vec2f(-rad, -rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(rad, -rad) * texel_))).x, 1.0 - ((vUv + (vec2f(rad, -rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(-rad, rad) * texel_))).x, 1.0 - ((vUv + (vec2f(-rad, rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(rad, rad) * texel_))).x, 1.0 - ((vUv + (vec2f(rad, rad) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(0.0, (-rad * 1.4)) * texel_))).x, 1.0 - ((vUv + (vec2f(0.0, (-rad * 1.4)) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f(0.0, (rad * 1.4)) * texel_))).x, 1.0 - ((vUv + (vec2f(0.0, (rad * 1.4)) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f((-rad * 1.4), 0.0) * texel_))).x, 1.0 - ((vUv + (vec2f((-rad * 1.4), 0.0) * texel_))).y), 0.0);\n\t\tbloom += textureSampleLevel(t_uTex, samp, vec2f(((vUv + (vec2f((rad * 1.4), 0.0) * texel_))).x, 1.0 - ((vUv + (vec2f((rad * 1.4), 0.0) * texel_))).y), 0.0);\n\t\tbloom *= vec4f(0.125);\n\t\t{ let _sw0 = (baseCol.rgb + ((bloom.rgb * u.uBloom) * 0.85)); baseCol = vec4f(_sw0.x, _sw0.y, _sw0.z, baseCol.w); }\n\t}\n\tvar lumP: f32 = dot(baseCol.rgb, vec3f(0.3, 0.59, 0.11));\n\tif ((abs((u.uSat - 1.0)) > 0.001)) {\n\t\t{ let _sw1 = mix(vec3f(lumP), baseCol.rgb, u.uSat); baseCol = vec4f(_sw1.x, _sw1.y, _sw1.z, baseCol.w); }\n\t}\n\tif ((u.uGrain > 0.001)) {\n\t\tvar gn: f32 = (fract((sin(dot(((vUv * u.uRes) + vec2f((u.uGT * 61.7), (u.uGT * 17.3))), vec2f(12.9898, 78.233))) * 43758.5453)) - 0.5);\n\t\t{ let _sw2 = (baseCol.rgb + vec3f((((gn * u.uGrain) * 0.4) * ((0.45 + lumP))))); baseCol = vec4f(_sw2.x, _sw2.y, _sw2.z, baseCol.w); }\n\t}\n\tgl_FragColor = baseCol;\n}\n\n\nfn toneNeutral(c0: vec3f, exposure: f32) -> vec3f {\n\tlet startCompression = 0.8 - 0.04;\n\tlet desaturation = 0.15;\n\tvar color = c0 * exposure;\n\tlet x = min(color.r, min(color.g, color.b));\n\tlet offset = select(0.04, x - 6.25 * x * x, x < 0.08);\n\tcolor = color - offset;\n\tlet peak = max(color.r, max(color.g, color.b));\n\tif (peak < startCompression) { return color; }\n\tlet d = 1.0 - startCompression;\n\tlet newPeak = 1.0 - d * d / (peak + d - startCompression);\n\tcolor = color * (newPeak / peak);\n\tlet g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);\n\treturn mix(color, vec3f(newPeak), g);\n}\nfn rrtAndOdtFit(v: vec3f) -> vec3f {\n\tlet a = v * (v + 0.0245786) - 0.000090537;\n\tlet b = v * (0.983729 * v + 0.4329510) + 0.238081;\n\treturn a / b;\n}\nfn toneAces(c0: vec3f, exposure: f32) -> vec3f {\n\tlet inM = mat3x3f(vec3f(0.59719, 0.07600, 0.02840), vec3f(0.35458, 0.90834, 0.13383), vec3f(0.04823, 0.01566, 0.83777));\n\tlet outM = mat3x3f(vec3f(1.60475, -0.10208, -0.00327), vec3f(-0.53108, 1.10813, -0.07276), vec3f(-0.07367, -0.00605, 1.07602));\n\tvar color = c0 * (exposure / 0.6);\n\tcolor = inM * color;\n\tcolor = rrtAndOdtFit(color);\n\tcolor = outM * color;\n\treturn saturate(color);\n}\nfn agxContrast(x: vec3f) -> vec3f {\n\tlet x2 = x * x;\n\tlet x4 = x2 * x2;\n\treturn 15.5 * x4 * x2 - 40.14 * x4 * x + 31.96 * x4 - 6.868 * x2 * x + 0.4298 * x2 + 0.1191 * x - 0.00232;\n}\nfn toneAgx(c0: vec3f, exposure: f32) -> vec3f {\n\tlet rec2020ToSrgb = mat3x3f(vec3f(1.6605, -0.1246, -0.0182), vec3f(-0.5876, 1.1329, -0.1006), vec3f(-0.0728, -0.0083, 1.1187));\n\tlet srgbToRec2020 = mat3x3f(vec3f(0.6274, 0.0691, 0.0164), vec3f(0.3293, 0.9195, 0.0880), vec3f(0.0433, 0.0113, 0.8956));\n\tlet inset = mat3x3f(vec3f(0.856627153315983, 0.137318972929847, 0.11189821299995), vec3f(0.0951212405381588, 0.761241990602591, 0.0767994186031903), vec3f(0.0482516061458583, 0.101439036467562, 0.811302368396859));\n\tlet outset = mat3x3f(vec3f(1.1271005818144368, -0.1413297634984383, -0.14132976349843826), vec3f(-0.11060664309660323, 1.157823702216272, -0.11060664309660294), vec3f(-0.016493938717834573, -0.016493938717834257, 1.2519364065950405));\n\tlet minEv = -12.47393;\n\tlet maxEv = 4.026069;\n\tvar color = c0 * exposure;\n\tcolor = srgbToRec2020 * color;\n\tcolor = inset * color;\n\tcolor = max(color, vec3f(1e-10));\n\tcolor = log2(color);\n\tcolor = (color - minEv) / (maxEv - minEv);\n\tcolor = clamp(color, vec3f(0.0), vec3f(1.0));\n\tcolor = agxContrast(color);\n\tcolor = outset * color;\n\tcolor = pow(max(vec3f(0.0), color), vec3f(2.2));\n\tcolor = rec2020ToSrgb * color;\n\treturn clamp(color, vec3f(0.0), vec3f(1.0));\n}\nfn toneMap(c: vec3f, exposure: f32, mode: f32) -> vec3f {\n\tif (mode < 0.5) { return c; }\n\tif (mode < 1.5) { return toneNeutral(c, exposure); }\n\tif (mode < 2.5) { return toneAces(c, exposure); }\n\treturn toneAgx(c, exposure);\n}\nfn linearToSrgb(v: vec3f) -> vec3f {\n\treturn select(pow(v, vec3f(0.41666)) * 1.055 - vec3f(0.055), v * 12.92, v <= vec3f(0.0031308));\n}\n\nstruct VOut {\n\t@builtin(position) pos: vec4f,\n\t@location(0) uv: vec2f,\n}\n\n@vertex\nfn vs(@builtin(vertex_index) vi: u32) -> VOut {\n\tvar p = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));\n\tvar o: VOut;\n\to.pos = vec4f(p[vi], 0.0, 1.0);\n\to.uv = p[vi] * 0.5 + vec2f(0.5);\n\treturn o;\n}\n\n@fragment\nfn fs(in: VOut) -> @location(0) vec4f {\n\tvUv = in.uv;\n\tgl_FragCoord = vec4f(in.pos.x, u.uTarget.y - in.pos.y, in.pos.z, in.pos.w);\n\tmain_();\n\treturn vec4f(linearToSrgb(toneMap(gl_FragColor.rgb, u.uExposure, u.uTone)), gl_FragColor.a);\n}\n",
 "spec": [
 [
 "uBloom",
@@ -68006,6 +68027,16 @@ const POST_PASSES = {
 ],
 [
 "uGT",
+"f32",
+0
+],
+[
+"uMerge",
+"f32",
+0
+],
+[
+"uMergeR",
 "f32",
 0
 ],
@@ -78488,7 +78519,7 @@ const bloom = e.state.look.bloom || 0;
 const ab = e.state.look.aberration || 0;
 const useFb = !!(fb && fb.on && fb.amount > 0.01);
 const useBloom = bloom > 0.01;
-const useAb = ab > 0.01;
+const useAb = ab > 0.01 || e._gradeOn();
 const dm = L.datamosh;
 const mosh = dm && dm.on ? e._moshParams(dm) : null;
 const useMosh = !!(mosh && mosh.on);
@@ -78547,7 +78578,7 @@ src = pong.createView();
 } else {
 this.hasHistory = false;
 }
-post.run(enc, 'out', pts.ctx.getCurrentTexture().createView(), size, { uBloom: bloom, uAberration: ab, uGrain: e.state.look.grain || 0, uSat: e.state.look.sat ?? 1, uGT: e._time % 100, uRes: size, uExposure: common.uExposure, uTone: common.uTone }, { uTex: src });
+post.run(enc, 'out', pts.ctx.getCurrentTexture().createView(), size, { uBloom: bloom, uAberration: ab, uGrain: e.state.look.grain || 0, uSat: e.state.look.sat ?? 1, uGT: e._time % 100, uMerge: e.state.look.merge || 0, uMergeR: e.state.look.mergeR ?? 0.4, uRes: size, uExposure: common.uExposure, uTone: common.uTone }, { uTex: src });
 D.queue.submit([enc.finish()]);
 pts.pickMap();
 }
@@ -79204,6 +79235,8 @@ rim: 0,
 pearl: 0,
 twinkle: 0,
 grain: 0,
+merge: 0,
+mergeR: 0.4,
 sat: 1,
 dofOn: false,
 dofDist: 5.2,
@@ -85902,6 +85935,16 @@ __defs['src/i18n/more.js'] = function (__exports, __req) {
 __def(__exports, 'default', () => __default);
 const __default = {
 en: {
+'Настоящие цвета и текстура модели': "The model’s real colors and texture",
+'Сплошная заливка выбранным цветом': "Solid fill with the chosen color",
+'Цвет из': "Color from",
+'Освещение': "Lighting",
+'Атмосфера': "Atmosphere",
+'Наложение': "Blending",
+'Слияние точек': "Point merging",
+'Слияние': "Merge",
+'Радиус слияния': "Merge radius",
+'Близкие точки сливаются в гладкие капли, как жидкость.': "Nearby points merge into smooth drops, like liquid.",
 'Блик': "Specular",
 'Контровый свет': "Rim light",
 'Перламутр': "Pearl",
@@ -87326,6 +87369,16 @@ en: {
 'Затухание упавших': 'Fade of fallen pieces',
 },
 uk: {
+'Настоящие цвета и текстура модели': "Справжні кольори й текстура моделі",
+'Сплошная заливка выбранным цветом': "Суцільна заливка вибраним кольором",
+'Цвет из': "Колір з",
+'Освещение': "Освітлення",
+'Атмосфера': "Атмосфера",
+'Наложение': "Накладання",
+'Слияние точек': "Злиття точок",
+'Слияние': "Злиття",
+'Радиус слияния': "Радіус злиття",
+'Близкие точки сливаются в гладкие капли, как жидкость.': "Близькі точки зливаються в гладкі краплі, як рідина.",
 'Блик': "Відблиск",
 'Контровый свет': "Контрове світло",
 'Перламутр': "Перламутр",
@@ -88750,6 +88803,16 @@ uk: {
 'Затухание упавших': 'Згасання впалих',
 },
 es: {
+'Настоящие цвета и текстура модели': "Colores y textura reales del modelo",
+'Сплошная заливка выбранным цветом': "Relleno liso con el color elegido",
+'Цвет из': "Color desde",
+'Освещение': "Iluminación",
+'Атмосфера': "Atmósfera",
+'Наложение': "Mezcla",
+'Слияние точек': "Fusión de puntos",
+'Слияние': "Fusión",
+'Радиус слияния': "Radio de fusión",
+'Близкие точки сливаются в гладкие капли, как жидкость.': "Los puntos cercanos se funden en gotas suaves, como un líquido.",
 'Блик': "Brillo",
 'Контровый свет': "Luz de contorno",
 'Перламутр': "Nacarado",
@@ -90174,6 +90237,16 @@ es: {
 'Затухание упавших': 'Atenuación de los caídos',
 },
 de: {
+'Настоящие цвета и текстура модели': "Echte Farben und Textur des Modells",
+'Сплошная заливка выбранным цветом': "Einfarbige Füllung mit der gewählten Farbe",
+'Цвет из': "Farbe aus",
+'Освещение': "Beleuchtung",
+'Атмосфера': "Atmosphäre",
+'Наложение': "Überlagerung",
+'Слияние точек': "Punkte verschmelzen",
+'Слияние': "Verschmelzen",
+'Радиус слияния': "Verschmelzradius",
+'Близкие точки сливаются в гладкие капли, как жидкость.': "Nahe Punkte verschmelzen zu glatten Tropfen wie eine Flüssigkeit.",
 'Блик': "Glanzlicht",
 'Контровый свет': "Konturlicht",
 'Перламутр': "Perlmutt",
@@ -100591,11 +100664,15 @@ this._fxBusy = false;
 fxPreparing() {
 return !this._glDormant && !!this.shared && !!this._fxCur && !this._fxCovered(true);
 }
+_gradeOn() {
+const look = this.state.look;
+return (look.grain || 0) > 0.01 || (look.merge || 0) > 0.01 || Math.abs((look.sat ?? 1) - 1) > 0.01;
+}
 _postOn() {
 const L = this.state.layers;
 const fb = L.feedback;
 const dm = L.datamosh;
-return (this.state.look.bloom || 0) > 0.01 || (this.state.look.aberration || 0) > 0.01 || !!(fb && fb.on && fb.amount > 0.01) || !!(dm && dm.on);
+return this._gradeOn() || (this.state.look.bloom || 0) > 0.01 || (this.state.look.aberration || 0) > 0.01 || !!(fb && fb.on && fb.amount > 0.01) || !!(dm && dm.on);
 }
 _fxSig(set) {
 return [...(set || this._fxCur || [])].sort().join(',');
@@ -107711,7 +107788,7 @@ renderForms();
 syncAI();
 }
 };
-const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
+const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), countHint);
 const secMorph = section('Морфинг', { key: 'fx-morph' }, morphBox);
 const pickers = new Set();
 function levelMeter(L, onThr, onSave) {
@@ -108367,10 +108444,10 @@ reactList.append(pick.el);
 const palettes = h('div', { class: 'fx-palettes', role: 'radiogroup', 'aria-label': 'Палитра' });
 const palBtns = new Map();
 for (const p of FX_PALETTES) {
-const b = h('button', { type: 'button', class: 'fx-pal', role: 'radio', 'aria-label': p.name, 'data-tip': p.name, style: { background: `linear-gradient(90deg, ${p.c[0]}, ${p.c[1]}, ${p.c[2]})` } });
+const b = h('button', { type: 'button', class: 'fx-pal', role: 'radio', 'aria-label': p.name, 'data-tip': p.name }, h('span', { class: 'fx-pal-bar', style: { background: `linear-gradient(90deg, ${p.c[0]}, ${p.c[1]}, ${p.c[2]})` } }), h('span', { class: 'fx-pal-name' }, p.name));
 b.addEventListener('click', () => {
 st.look.palette = p.id;
-if (st.look.colorBy === 'model') st.look.colorBy = 'disp';
+st.look.colorBy = 'disp';
 engine._userColor = true;
 for (const c of cards) {
 if (c.def.extras.some((x) => x.type === 'color' && x.natural) && c.L.color === 'model') {
@@ -108384,7 +108461,9 @@ save();
 palBtns.set(p.id, b);
 palettes.append(b);
 }
-const colorBy = select({ options: COLOR_BY_UI.map((c) => ({ value: c.id, label: c.label, sub: c.title })), value: st.look.colorBy, placeholder: 'Палитра выше', onChange: (v) => { engine.setColorBy(v); } });
+const COLOR_SOURCES = [{ value: 'disp', label: 'Палитра', sub: 'Градиент выбранной палитры' }, { value: 'model', label: 'Исходный цвет модели', sub: 'Настоящие цвета и текстура модели' }, { value: 'solid', label: 'Один цвет', sub: 'Сплошная заливка выбранным цветом' }, { value: 'normal', label: 'Нормали', sub: 'Цвет по направлению поверхности' }];
+const colorSource = (v) => (['height', 'index'].includes(v) ? 'disp' : v);
+const colorBy = select({ options: COLOR_SOURCES, value: colorSource(st.look.colorBy), onChange: (v) => { engine.setColorBy(v); } });
 const shapeTiles = h('div', { class: 'shape-grid shape-row', role: 'radiogroup', 'aria-label': 'Форма точек' });
 const shapeBtns = new Map();
 for (const sh of POINT_SHAPE_LIST) {
@@ -108412,7 +108491,6 @@ shapeTiles.append(b);
 }
 const solidPick = colorField({ value: pset.solidColor, onInput: (v) => { pset.solidColor = v; }, onChange: () => app.saveSettings() });
 const solidRow = field('Свой цвет', solidPick.el);
-const origBtn = button({ label: 'Исходный цвет модели', icon: 'arrow-counter-clockwise', variant: 'secondary', cls: 'btn-block', title: 'Вернуть настоящие цвета и текстуру модели вместо палитры', onClick: () => engine.setColorBy('model') });
 const anim = { format: 'gif', seconds: 4 };
 const animFmt = segmented({ options: [{ value: 'gif', label: 'GIF', title: 'Зацикленная анимация, открывается везде' }, { value: 'mp4', label: 'MP4 со звуком', title: 'Видео в хорошем качестве, открывается везде' }], value: anim.format, onChange: (v) => { anim.format = v; } });
 const animSec = slider({ noNorm: true, min: 1, max: 15, step: 1, value: anim.seconds, digits: 0, unit: ' с', onInput: (v) => { anim.seconds = v; } });
@@ -108439,6 +108517,8 @@ const pearl = slider({ min: 0, max: 1, step: 0.05, value: st.look.pearl || 0, fo
 const twinkle = slider({ min: 0, max: 1, step: 0.05, value: st.look.twinkle || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.twinkle = v; }, onChange: save });
 const grain = slider({ min: 0, max: 1, step: 0.05, value: st.look.grain || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.grain = v; }, onChange: save });
 const sat = slider({ min: 0, max: 2, step: 0.05, value: st.look.sat ?? 1, digits: 2, onInput: (v) => { st.look.sat = v; }, onChange: save });
+const merge = slider({ min: 0, max: 1, step: 0.05, value: st.look.merge || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.merge = v; }, onChange: save });
+const mergeR = slider({ min: 0, max: 1, step: 0.05, value: st.look.mergeR ?? 0.4, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.mergeR = v; }, onChange: save });
 const aberration = slider({ min: 0, max: 1, step: 0.05, value: st.look.aberration || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.aberration = v; }, onChange: save });
 const dofOn = switchRow('Глубина резкости (DoF)', { value: st.look.dofOn || false, onChange: (v) => { st.look.dofOn = v; syncDof(); save(); } });
 const dofDist = slider({ min: 1.5, max: 10, step: 0.1, value: st.look.dofDist || 5.2, digits: 1, unit: ' м', onInput: (v) => { st.look.dofDist = v; }, onChange: save });
@@ -108461,15 +108541,18 @@ onClick: () => toggleAnim(true)
 });
 const fovFx = slider({ noNorm: true, min: 10, max: 100, step: 1, value: rset.fov, digits: 0, unit: '°', onInput: (v) => { rset.fov = v; app.nav.applyCamera(); }, onChange: () => app.saveSettings() });
 const fpsFx = switchRow('Показывать FPS', { value: rset.fps, onChange: (v) => { rset.fps = v; app.ui.refreshFps(); app.saveSettings(); } });
-const secLookPts = section('Цвет и форма точек', { key: 'fx-look-pts' }, palettes, field('Цвет точек', colorBy.el), solidRow, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Мягкость края', soft.el), field('Точки', blend.el, { wide: true }));
+const fxSub = (text) => h('div', { class: 'fx-sub' }, text);
+const secLookColor = section('Цвет точек', { key: 'fx-look-color' }, field('Цвет из', colorBy.el), palettes, solidRow);
+const secLookShape = section('Форма точек', { key: 'fx-look-pts' }, field('Форма точек и символы', shapeTiles, { wide: true }), field('Размер точек', size.el), field('Наложение', blend.el, { wide: true }), attSw.el, field('Мягкость края', soft.el));
 const secLookShine = section('Блеск точек', { key: 'fx-look-shine' }, field('Блик', spec.el), field('Контровый свет', rim.el), field('Перламутр', pearl.el), field('Мерцание', twinkle.el));
-const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), field('Дымка вдали', fog.el), field('Насыщенность', sat.el), field('Зерно', grain.el), field('Хром. аберрация', aberration.el));
+const secLookMerge = section('Слияние точек', { key: 'fx-look-merge' }, field('Слияние', merge.el), field('Радиус слияния', mergeR.el), h('div', { class: 'field-hint' }, 'Близкие точки сливаются в гладкие капли, как жидкость.'));
+const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, fxSub('Освещение'), field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), fxSub('Атмосфера'), field('Дымка вдали', fog.el), field('Хром. аберрация', aberration.el), fxSub('Плёнка'), field('Насыщенность', sat.el), field('Зерно', grain.el));
 const secLookCam = section('Камера', { key: 'fx-look-cam' }, field('Поле зрения', fovFx.el), dofOn.el, dofBody, rotate.el, rotSpeedRow);
 const secLookShow = section('Отображение', { key: 'fx-look-show' }, hudSw.el, hudSpec.el);
 const secLookPerf = section('Производительность', { key: 'fx-look-perf', open: false }, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), field('Движок отрисовки', backendSeg.el, { wide: true }), backendHint, fpsFx.el, perfHint);
 const secLookRec = section('Запись анимации', { key: 'fx-look-rec', open: false }, animTimelineOpenBtn, field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 const secMedia = createMediaPanel(app, null, { fx: true }).section;
-const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookPts, secLookShine, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec]]];
+const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookColor, secLookShape, secLookShine, secLookMerge, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec]]];
 const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 let curTab = 'insp';
 try {
@@ -110460,11 +110543,12 @@ for (const [k, ctl] of Object.entries(c.extraCtl)) ctl.set(c.L[k]);
 c.applyWhen();
 });
 palBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === st.look.palette)));
-colorBy.set(st.look.colorBy);
+colorBy.set(colorSource(st.look.colorBy));
 size.set(pset.size);
 attSw.set(pset.attenuate);
 solidPick.set(pset.solidColor);
 solidRow.hidden = st.look.colorBy !== 'solid';
+palettes.hidden = colorSource(st.look.colorBy) !== 'disp';
 shapeBtns.forEach((b, k) => b.setAttribute('aria-checked', String((st.look.glyph && st.look.glyph !== 'off') ? k === st.look.glyph : k === pset.shape)));
 shade.set(st.look.shade || 0);
 glow.set(st.look.glow);
@@ -110477,6 +110561,8 @@ rim.set(st.look.rim || 0);
 pearl.set(st.look.pearl || 0);
 twinkle.set(st.look.twinkle || 0);
 grain.set(st.look.grain || 0);
+merge.set(st.look.merge || 0);
+mergeR.set(st.look.mergeR ?? 0.4);
 sat.set(st.look.sat ?? 1);
 soft.set(st.look.soft ?? 0);
 dofOn.set(st.look.dofOn || false);

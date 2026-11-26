@@ -40,6 +40,8 @@ export function defaultState() {
 			pearl: 0,
 			twinkle: 0,
 			grain: 0,
+			merge: 0,
+			mergeR: 0.4,
 			sat: 1,
 			dofOn: false,
 			dofDist: 5.2,

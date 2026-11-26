@@ -381,7 +381,7 @@ export class WebGPUBackend extends RenderBackend {
 		const ab = e.state.look.aberration || 0;
 		const useFb = !!(fb && fb.on && fb.amount > 0.01);
 		const useBloom = bloom > 0.01;
-		const useAb = ab > 0.01;
+		const useAb = ab > 0.01 || e._gradeOn();
 		const dm = L.datamosh;
 		const mosh = dm && dm.on ? e._moshParams(dm) : null;
 		const useMosh = !!(mosh && mosh.on);
@@ -440,7 +440,7 @@ export class WebGPUBackend extends RenderBackend {
 		} else {
 			this.hasHistory = false;
 		}
-		post.run(enc, 'out', pts.ctx.getCurrentTexture().createView(), size, { uBloom: bloom, uAberration: ab, uGrain: e.state.look.grain || 0, uSat: e.state.look.sat ?? 1, uGT: e._time % 100, uRes: size, uExposure: common.uExposure, uTone: common.uTone }, { uTex: src });
+		post.run(enc, 'out', pts.ctx.getCurrentTexture().createView(), size, { uBloom: bloom, uAberration: ab, uGrain: e.state.look.grain || 0, uSat: e.state.look.sat ?? 1, uGT: e._time % 100, uMerge: e.state.look.merge || 0, uMergeR: e.state.look.mergeR ?? 0.4, uRes: size, uExposure: common.uExposure, uTone: common.uTone }, { uTex: src });
 		D.queue.submit([enc.finish()]);
 		pts.pickMap();
 	}

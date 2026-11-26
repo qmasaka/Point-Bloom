@@ -398,7 +398,7 @@ export function createEffectsPanel(app, root, engine) {
 			syncAI();
 		}
 	};
-	const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), field('Размер точек', size.el), countHint);
+	const secSource = section('Форма', { key: 'fx-source' }, addModel, modelNote, field('Частиц', count.el), countHint);
 	const secMorph = section('Морфинг', { key: 'fx-morph' }, morphBox);
 
 	const pickers = new Set();
@@ -1058,10 +1058,10 @@ export function createEffectsPanel(app, root, engine) {
 	const palettes = h('div', { class: 'fx-palettes', role: 'radiogroup', 'aria-label': 'Палитра' });
 	const palBtns = new Map();
 	for (const p of FX_PALETTES) {
-		const b = h('button', { type: 'button', class: 'fx-pal', role: 'radio', 'aria-label': p.name, 'data-tip': p.name, style: { background: `linear-gradient(90deg, ${p.c[0]}, ${p.c[1]}, ${p.c[2]})` } });
+		const b = h('button', { type: 'button', class: 'fx-pal', role: 'radio', 'aria-label': p.name, 'data-tip': p.name }, h('span', { class: 'fx-pal-bar', style: { background: `linear-gradient(90deg, ${p.c[0]}, ${p.c[1]}, ${p.c[2]})` } }), h('span', { class: 'fx-pal-name' }, p.name));
 		b.addEventListener('click', () => {
 			st.look.palette = p.id;
-			if (st.look.colorBy === 'model') st.look.colorBy = 'disp';
+			st.look.colorBy = 'disp';
 			engine._userColor = true;
 			for (const c of cards) {
 				if (c.def.extras.some((x) => x.type === 'color' && x.natural) && c.L.color === 'model') {
@@ -1075,7 +1075,9 @@ export function createEffectsPanel(app, root, engine) {
 		palBtns.set(p.id, b);
 		palettes.append(b);
 	}
-	const colorBy = select({ options: COLOR_BY_UI.map((c) => ({ value: c.id, label: c.label, sub: c.title })), value: st.look.colorBy, placeholder: 'Палитра выше', onChange: (v) => { engine.setColorBy(v); } });
+	const COLOR_SOURCES = [{ value: 'disp', label: 'Палитра', sub: 'Градиент выбранной палитры' }, { value: 'model', label: 'Исходный цвет модели', sub: 'Настоящие цвета и текстура модели' }, { value: 'solid', label: 'Один цвет', sub: 'Сплошная заливка выбранным цветом' }, { value: 'normal', label: 'Нормали', sub: 'Цвет по направлению поверхности' }];
+	const colorSource = (v) => (['height', 'index'].includes(v) ? 'disp' : v);
+	const colorBy = select({ options: COLOR_SOURCES, value: colorSource(st.look.colorBy), onChange: (v) => { engine.setColorBy(v); } });
 	const shapeTiles = h('div', { class: 'shape-grid shape-row', role: 'radiogroup', 'aria-label': 'Форма точек' });
 	const shapeBtns = new Map();
 	for (const sh of POINT_SHAPE_LIST) {
@@ -1103,7 +1105,6 @@ export function createEffectsPanel(app, root, engine) {
 	}
 	const solidPick = colorField({ value: pset.solidColor, onInput: (v) => { pset.solidColor = v; }, onChange: () => app.saveSettings() });
 	const solidRow = field('Свой цвет', solidPick.el);
-	const origBtn = button({ label: 'Исходный цвет модели', icon: 'arrow-counter-clockwise', variant: 'secondary', cls: 'btn-block', title: 'Вернуть настоящие цвета и текстуру модели вместо палитры', onClick: () => engine.setColorBy('model') });
 	const anim = { format: 'gif', seconds: 4 };
 	const animFmt = segmented({ options: [{ value: 'gif', label: 'GIF', title: 'Зацикленная анимация, открывается везде' }, { value: 'mp4', label: 'MP4 со звуком', title: 'Видео в хорошем качестве, открывается везде' }], value: anim.format, onChange: (v) => { anim.format = v; } });
 	const animSec = slider({ noNorm: true, min: 1, max: 15, step: 1, value: anim.seconds, digits: 0, unit: ' с', onInput: (v) => { anim.seconds = v; } });
@@ -1130,6 +1131,8 @@ export function createEffectsPanel(app, root, engine) {
 	const twinkle = slider({ min: 0, max: 1, step: 0.05, value: st.look.twinkle || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.twinkle = v; }, onChange: save });
 	const grain = slider({ min: 0, max: 1, step: 0.05, value: st.look.grain || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.grain = v; }, onChange: save });
 	const sat = slider({ min: 0, max: 2, step: 0.05, value: st.look.sat ?? 1, digits: 2, onInput: (v) => { st.look.sat = v; }, onChange: save });
+	const merge = slider({ min: 0, max: 1, step: 0.05, value: st.look.merge || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.merge = v; }, onChange: save });
+	const mergeR = slider({ min: 0, max: 1, step: 0.05, value: st.look.mergeR ?? 0.4, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.mergeR = v; }, onChange: save });
 	const aberration = slider({ min: 0, max: 1, step: 0.05, value: st.look.aberration || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.aberration = v; }, onChange: save });
 	const dofOn = switchRow('Глубина резкости (DoF)', { value: st.look.dofOn || false, onChange: (v) => { st.look.dofOn = v; syncDof(); save(); } });
 	const dofDist = slider({ min: 1.5, max: 10, step: 0.1, value: st.look.dofDist || 5.2, digits: 1, unit: ' м', onInput: (v) => { st.look.dofDist = v; }, onChange: save });
@@ -1152,16 +1155,19 @@ export function createEffectsPanel(app, root, engine) {
 	});
 	const fovFx = slider({ noNorm: true, min: 10, max: 100, step: 1, value: rset.fov, digits: 0, unit: '°', onInput: (v) => { rset.fov = v; app.nav.applyCamera(); }, onChange: () => app.saveSettings() });
 	const fpsFx = switchRow('Показывать FPS', { value: rset.fps, onChange: (v) => { rset.fps = v; app.ui.refreshFps(); app.saveSettings(); } });
-	const secLookPts = section('Цвет и форма точек', { key: 'fx-look-pts' }, palettes, field('Цвет точек', colorBy.el), solidRow, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Мягкость края', soft.el), field('Точки', blend.el, { wide: true }));
+	const fxSub = (text) => h('div', { class: 'fx-sub' }, text);
+	const secLookColor = section('Цвет точек', { key: 'fx-look-color' }, field('Цвет из', colorBy.el), palettes, solidRow);
+	const secLookShape = section('Форма точек', { key: 'fx-look-pts' }, field('Форма точек и символы', shapeTiles, { wide: true }), field('Размер точек', size.el), field('Наложение', blend.el, { wide: true }), attSw.el, field('Мягкость края', soft.el));
 	const secLookShine = section('Блеск точек', { key: 'fx-look-shine' }, field('Блик', spec.el), field('Контровый свет', rim.el), field('Перламутр', pearl.el), field('Мерцание', twinkle.el));
-	const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), field('Дымка вдали', fog.el), field('Насыщенность', sat.el), field('Зерно', grain.el), field('Хром. аберрация', aberration.el));
+	const secLookMerge = section('Слияние точек', { key: 'fx-look-merge' }, field('Слияние', merge.el), field('Радиус слияния', mergeR.el), h('div', { class: 'field-hint' }, 'Близкие точки сливаются в гладкие капли, как жидкость.'));
+	const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, fxSub('Освещение'), field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), fxSub('Атмосфера'), field('Дымка вдали', fog.el), field('Хром. аберрация', aberration.el), fxSub('Плёнка'), field('Насыщенность', sat.el), field('Зерно', grain.el));
 	const secLookCam = section('Камера', { key: 'fx-look-cam' }, field('Поле зрения', fovFx.el), dofOn.el, dofBody, rotate.el, rotSpeedRow);
 	const secLookShow = section('Отображение', { key: 'fx-look-show' }, hudSw.el, hudSpec.el);
 	const secLookPerf = section('Производительность', { key: 'fx-look-perf', open: false }, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), field('Движок отрисовки', backendSeg.el, { wide: true }), backendHint, fpsFx.el, perfHint);
 	const secLookRec = section('Запись анимации', { key: 'fx-look-rec', open: false }, animTimelineOpenBtn, field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
-	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookPts, secLookShine, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec]]];
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookColor, secLookShape, secLookShine, secLookMerge, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
 	try {
@@ -3260,11 +3266,12 @@ export function createEffectsPanel(app, root, engine) {
 			c.applyWhen();
 		});
 		palBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === st.look.palette)));
-		colorBy.set(st.look.colorBy);
+		colorBy.set(colorSource(st.look.colorBy));
 		size.set(pset.size);
 		attSw.set(pset.attenuate);
 		solidPick.set(pset.solidColor);
 		solidRow.hidden = st.look.colorBy !== 'solid';
+		palettes.hidden = colorSource(st.look.colorBy) !== 'disp';
 		shapeBtns.forEach((b, k) => b.setAttribute('aria-checked', String((st.look.glyph && st.look.glyph !== 'off') ? k === st.look.glyph : k === pset.shape)));
 		shade.set(st.look.shade || 0);
 		glow.set(st.look.glow);
@@ -3277,6 +3284,8 @@ export function createEffectsPanel(app, root, engine) {
 		pearl.set(st.look.pearl || 0);
 		twinkle.set(st.look.twinkle || 0);
 		grain.set(st.look.grain || 0);
+		merge.set(st.look.merge || 0);
+		mergeR.set(st.look.mergeR ?? 0.4);
 		sat.set(st.look.sat ?? 1);
 		soft.set(st.look.soft ?? 0);
 		dofOn.set(st.look.dofOn || false);
