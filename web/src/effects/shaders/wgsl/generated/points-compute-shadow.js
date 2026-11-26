@@ -111,6 +111,7 @@ struct Frame {
 	uBrushParam: vec4f,
 	uLookP2: vec4f,
 	uLookP3: vec4f,
+	uLookP4: vec4f,
 	uDof: vec4f,
 	uHyp: vec4f,
 	uHypP: vec4f,
@@ -2271,6 +2272,18 @@ fn main_() {
 		var f: f32 = (0.18 + (1.05 * pow(clamp(((lit * 0.5) + 0.5), 0.0, 1.0), 1.6)));
 		f *= select(1.0, mix(1.0, 0.55, clamp((-nv.z * 1.6), 0.0, 1.0)), (nv.z < 0.0));
 		vColor *= vec3f(mix(1.0, f, fr.uShade));
+	}
+	if (((((fr.uLookP4.y > 0.001) || (fr.uLookP4.z > 0.001))) && (dot(nrmM, nrmM) > 0.01))) {
+		var nvr: vec3f = normalize((fr.normalMatrix * nrmM));
+		var rimF: f32 = pow((1.0 - clamp(abs(nvr.z), 0.0, 1.0)), 2.0);
+		vColor += ((((((vColor * 0.7) + 0.2)) * rimF) * fr.uLookP4.y) * 1.6);
+		var pearl: vec3f = (0.5 + (0.5 * cos((6.2831853 * ((((rimF * 0.9) + (hash11((aIdx * 0.37)) * 0.15)) + vec3f(0.0, 0.33, 0.67)))))));
+		var lumR: f32 = dot(vColor, vec3f(0.3, 0.59, 0.11));
+		vColor = mix(vColor, (pearl * ((0.35 + (lumR * 1.3)))), (fr.uLookP4.z * ((0.25 + (0.65 * rimF)))));
+	}
+	if ((fr.uLookP4.w > 0.001)) {
+		var twk: f32 = pow((0.5 + (0.5 * sin(((fr.uTime * ((1.5 + (hash11((aIdx * 3.1)) * 4.0)))) + (hash11(aIdx) * 40.0))))), 6.0);
+		vColor *= vec3f((1.0 + ((fr.uLookP4.w * 3.0) * twk)));
 	}
 	vGl = clamp(((sqrt(max(dot(vColor, vec3f(0.3, 0.59, 0.11)), 0.0)) * 0.85) + (((hash11((aIdx * 1.7)) - 0.5)) * 0.35)), 0.0, 1.0);
 	if ((fr.uBrushParam.x > 0.001)) {

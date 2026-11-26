@@ -416,7 +416,7 @@ src = pong.createView();
 } else {
 this.hasHistory = false;
 }
-post.run(enc, 'out', pts.ctx.getCurrentTexture().createView(), size, { uBloom: bloom, uAberration: ab, uVignette: e.state.look.vignette || 0, uRes: size, uExposure: common.uExposure, uTone: common.uTone }, { uTex: src });
+post.run(enc, 'out', pts.ctx.getCurrentTexture().createView(), size, { uBloom: bloom, uAberration: ab, uGrain: e.state.look.grain || 0, uSat: e.state.look.sat ?? 1, uGT: e._time % 100, uRes: size, uExposure: common.uExposure, uTone: common.uTone }, { uTex: src });
 D.queue.submit([enc.finish()]);
 pts.pickMap();
 }

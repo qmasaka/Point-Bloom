@@ -22,7 +22,7 @@ export function createFrameUniforms({ count, specTex, pieceTex }) {
 		uMask: U(new THREE.Vector4()), uMaskA: U(new THREE.Vector4()), uMaskShow: U(0),
 		uPhysics: U(new THREE.Vector4()), uCollapseTime: U(0), uCrumble: U(new THREE.Vector4()), uCrumbleT: U(Array.from({ length: 64 }, () => new THREE.Vector4(-1, -1, -1, -1))),
 		uBrushHits: U(Array.from({ length: 20 }, () => new THREE.Vector4(0, 0, 0, -1))), uBrushParam: U(new THREE.Vector4()), uPaintP: U(new THREE.Vector4()),
-		uLookP2: U(new THREE.Vector4()), uLookP3: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
+		uLookP2: U(new THREE.Vector4()), uLookP3: U(new THREE.Vector4()), uLookP4: U(new THREE.Vector4()), uDof: U(new THREE.Vector4()),
 		uHyp: U(new THREE.Vector4()), uHypP: U(new THREE.Vector4()), uCh: U(new THREE.Vector4()), uChA: U(new THREE.Vector4(1, 2, 1, 2)),
 		uShoot: U(new THREE.Vector4()), uShootP: U(new THREE.Vector4()), uShootD: U(new THREE.Vector4()), uShootE: U(new THREE.Vector4()), uShootC: U(new THREE.Vector4()), uShootS: U(Array.from({ length: 24 }, () => new THREE.Vector4())), uShootN: U(Array.from({ length: 24 }, () => new THREE.Vector4(0, 0, 1, 1))), uShootB: U(Array.from({ length: 6 }, () => new THREE.Vector4())),
 		uScr: U(new THREE.Vector4()), uScrP: U(new THREE.Vector4(0, 0.4, 1, 1.78)), uScrTex: U(scrDummy()), uScrD: U(new THREE.Vector4(0, 0.5, 1, 1)), uScrQ: U(new THREE.Vector4()), uScrDep: U(scrDummy()), uScrMTex: U(scrDummy()), uScrMN: U(1),

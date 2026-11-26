@@ -1123,8 +1123,13 @@ export function createEffectsPanel(app, root, engine) {
 	const bright = slider({ min: 0, max: 2, step: 0.05, value: st.look.bright, digits: 2, onInput: (v) => { st.look.bright = v; }, onChange: save });
 	const bloom = slider({ min: 0, max: 1, step: 0.05, value: st.look.bloom || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.bloom = v; }, onChange: save });
 	const fog = slider({ min: 0, max: 1, step: 0.05, value: st.look.fog || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.fog = v; }, onChange: save });
-	const vignette = slider({ min: 0, max: 1, step: 0.05, value: st.look.vignette || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.vignette = v; }, onChange: save });
 	const soft = slider({ min: 0, max: 1, step: 0.05, value: st.look.soft ?? 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.soft = v; }, onChange: save });
+	const spec = slider({ min: 0, max: 1, step: 0.05, value: st.look.spec || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.spec = v; }, onChange: save });
+	const rim = slider({ min: 0, max: 1, step: 0.05, value: st.look.rim || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.rim = v; }, onChange: save });
+	const pearl = slider({ min: 0, max: 1, step: 0.05, value: st.look.pearl || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.pearl = v; }, onChange: save });
+	const twinkle = slider({ min: 0, max: 1, step: 0.05, value: st.look.twinkle || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.twinkle = v; }, onChange: save });
+	const grain = slider({ min: 0, max: 1, step: 0.05, value: st.look.grain || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.grain = v; }, onChange: save });
+	const sat = slider({ min: 0, max: 2, step: 0.05, value: st.look.sat ?? 1, digits: 2, onInput: (v) => { st.look.sat = v; }, onChange: save });
 	const aberration = slider({ min: 0, max: 1, step: 0.05, value: st.look.aberration || 0, format: (v) => Math.round(v * 100) + '%', onInput: (v) => { st.look.aberration = v; }, onChange: save });
 	const dofOn = switchRow('Глубина резкости (DoF)', { value: st.look.dofOn || false, onChange: (v) => { st.look.dofOn = v; syncDof(); save(); } });
 	const dofDist = slider({ min: 1.5, max: 10, step: 0.1, value: st.look.dofDist || 5.2, digits: 1, unit: ' м', onInput: (v) => { st.look.dofDist = v; }, onChange: save });
@@ -1148,14 +1153,15 @@ export function createEffectsPanel(app, root, engine) {
 	const fovFx = slider({ noNorm: true, min: 10, max: 100, step: 1, value: rset.fov, digits: 0, unit: '°', onInput: (v) => { rset.fov = v; app.nav.applyCamera(); }, onChange: () => app.saveSettings() });
 	const fpsFx = switchRow('Показывать FPS', { value: rset.fps, onChange: (v) => { rset.fps = v; app.ui.refreshFps(); app.saveSettings(); } });
 	const secLookPts = section('Цвет и форма точек', { key: 'fx-look-pts' }, palettes, field('Цвет точек', colorBy.el), solidRow, origBtn, field('Форма точек и символы', shapeTiles, { wide: true }), attSw.el, field('Мягкость края', soft.el), field('Точки', blend.el, { wide: true }));
-	const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), field('Дымка вдали', fog.el), field('Виньетка', vignette.el), field('Хром. аберрация', aberration.el));
+	const secLookShine = section('Блеск точек', { key: 'fx-look-shine' }, field('Блик', spec.el), field('Контровый свет', rim.el), field('Перламутр', pearl.el), field('Мерцание', twinkle.el));
+	const secLookLight = section('Свет и фон', { key: 'fx-look-light' }, field('Яркость', bright.el), field('Объём (тень)', shade.el), field('Свечение', glow.el), field('Блум (свечение)', bloom.el), field('Дымка вдали', fog.el), field('Насыщенность', sat.el), field('Зерно', grain.el), field('Хром. аберрация', aberration.el));
 	const secLookCam = section('Камера', { key: 'fx-look-cam' }, field('Поле зрения', fovFx.el), dofOn.el, dofBody, rotate.el, rotSpeedRow);
 	const secLookShow = section('Отображение', { key: 'fx-look-show' }, hudSw.el, hudSpec.el);
 	const secLookPerf = section('Производительность', { key: 'fx-look-perf', open: false }, autoQ.el, field('Лимит кадров', capSeg.el, { wide: true }), field('Движок отрисовки', backendSeg.el, { wide: true }), backendHint, fpsFx.el, perfHint);
 	const secLookRec = section('Запись анимации', { key: 'fx-look-rec', open: false }, animTimelineOpenBtn, field('Формат', animFmt.el, { wide: true }), field('Длина', animSec.el), animBtn, animInfo);
 
 	const secMedia = createMediaPanel(app, null, { fx: true }).section;
-	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookPts, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec]]];
+	const FX_TABS = [['insp', 'Эффект', 'sparkle', [secInsp]], ['source', 'Форма', 'cube', [secSource, secMorph, secMedia]], ['zone', 'Звук', 'equalizer', [secAudio]], ['look', 'Вид', 'sliders-horizontal', [secLookPts, secLookShine, secLookLight, secLookCam, secLookShow, secLookPerf, secLookRec]]];
 	const tabBar = h('div', { class: 'fx-tabs', role: 'tablist', 'aria-label': 'Разделы настроек' });
 	let curTab = 'insp';
 	try {
@@ -3266,7 +3272,12 @@ export function createEffectsPanel(app, root, engine) {
 		bloom.set(st.look.bloom || 0);
 		aberration.set(st.look.aberration || 0);
 		fog.set(st.look.fog || 0);
-		vignette.set(st.look.vignette || 0);
+		spec.set(st.look.spec || 0);
+		rim.set(st.look.rim || 0);
+		pearl.set(st.look.pearl || 0);
+		twinkle.set(st.look.twinkle || 0);
+		grain.set(st.look.grain || 0);
+		sat.set(st.look.sat ?? 1);
 		soft.set(st.look.soft ?? 0);
 		dofOn.set(st.look.dofOn || false);
 		dofDist.set(st.look.dofDist || 5.2);

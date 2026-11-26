@@ -353,6 +353,7 @@ export class LoopPart {
 
 			u.uLookP2.value.set(0, 0, 0, 0);
 			u.uLookP3.value.set(look.fog || 0, this.app.nav.distance, look.soft ?? 0, 0);
+			u.uLookP4.value.set(look.spec || 0, look.rim || 0, look.pearl || 0, look.twinkle || 0);
 			u.uShade.value = look.shade || 0;
 			const gm = GLYPH_SETS[look.glyph] ? look.glyph : 'off';
 			if (gm !== this._glyphMode) {

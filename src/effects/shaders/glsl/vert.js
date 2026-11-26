@@ -711,6 +711,18 @@ void main() {
 		f *= nv.z < 0.0 ? mix(1.0, 0.55, clamp(-nv.z * 1.6, 0.0, 1.0)) : 1.0;
 		vColor *= mix(1.0, f, uShade);
 	}
+	if ((uLookP4.y > 0.001 || uLookP4.z > 0.001) && dot(nrmM, nrmM) > 0.01) {
+		vec3 nvr = normalize(normalMatrix * nrmM);
+		float rimF = pow(1.0 - clamp(abs(nvr.z), 0.0, 1.0), 2.0);
+		vColor += (vColor * 0.7 + 0.2) * rimF * uLookP4.y * 1.6;
+		vec3 pearl = 0.5 + 0.5 * cos(6.2831853 * (rimF * 0.9 + hash11(aIdx * 0.37) * 0.15 + vec3(0.0, 0.33, 0.67)));
+		float lumR = dot(vColor, vec3(0.3, 0.59, 0.11));
+		vColor = mix(vColor, pearl * (0.35 + lumR * 1.3), uLookP4.z * (0.25 + 0.65 * rimF));
+	}
+	if (uLookP4.w > 0.001) {
+		float twk = pow(0.5 + 0.5 * sin(uTime * (1.5 + hash11(aIdx * 3.1) * 4.0) + hash11(aIdx) * 40.0), 6.0);
+		vColor *= 1.0 + uLookP4.w * 3.0 * twk;
+	}
 	vGl = clamp(sqrt(max(dot(vColor, vec3(0.3, 0.59, 0.11)), 0.0)) * 0.85 + (hash11(aIdx * 1.7) - 0.5) * 0.35, 0.0, 1.0);
 
 	if (uBrushParam.x > 0.001) {

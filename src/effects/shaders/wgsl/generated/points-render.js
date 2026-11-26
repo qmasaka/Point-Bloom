@@ -111,6 +111,7 @@ struct Frame {
 	uBrushParam: vec4f,
 	uLookP2: vec4f,
 	uLookP3: vec4f,
+	uLookP4: vec4f,
 	uDof: vec4f,
 	uHyp: vec4f,
 	uHypP: vec4f,
@@ -219,6 +220,11 @@ fn frag_main_() {
 		var n: vec3f = vec3f((c.x * 2.0), (-c.y * 2.0), sqrt(max(0.0, (1.0 - (4.0 * r2)))));
 		sph = (0.4 + (0.75 * max(dot(n, normalize(vec3f(-0.4, 0.6, 0.7))), 0.0)));
 	}
+	var specCol: vec3f = vec3f(0.0);
+	if (((fr.uLookP4.x > 0.001) && (fr.uGlyph.x < 0.5))) {
+		var ns: vec3f = vec3f((c.x * 2.0), (-c.y * 2.0), sqrt(max(0.0, (1.0 - (4.0 * r2)))));
+		specCol = (((mix(vColor, vec3f(1.0), 0.65) * pow(max(dot(ns, normalize(vec3f(-0.35, 0.55, 0.75))), 0.0), 18.0)) * fr.uLookP4.x) * 1.4);
+	}
 	if ((vCoc > 0.01)) {
 		var bokeh: f32 = (1.0 - smoothstep(0.16, 0.25, r2));
 		core = mix(core, bokeh, (vCoc * 0.8));
@@ -231,9 +237,9 @@ fn frag_main_() {
 		if ((fr.uFr.x > 0.5)) {
 			ga *= clamp((dot(vColor, vec3f(0.3, 0.59, 0.11)) * 5.0), 0.0, 1.0);
 		}
-		gl_FragColor = vec4f(col, ga);
+		gl_FragColor = vec4f((col + (specCol * ga)), ga);
 	} else {
-		gl_FragColor = vec4f(((vColor * (select((0.55 + (0.45 * core)), 1.0, (fr.uFr.x > 0.5)))) * sph), (dofAlpha * ((1.0 - vDk))));
+		gl_FragColor = vec4f((((vColor * (select((0.55 + (0.45 * core)), 1.0, (fr.uFr.x > 0.5)))) * sph) + specCol), (dofAlpha * ((1.0 - vDk))));
 	}
 }
 
@@ -468,6 +474,7 @@ struct Frame {
 	uBrushParam: vec4f,
 	uLookP2: vec4f,
 	uLookP3: vec4f,
+	uLookP4: vec4f,
 	uDof: vec4f,
 	uHyp: vec4f,
 	uHypP: vec4f,

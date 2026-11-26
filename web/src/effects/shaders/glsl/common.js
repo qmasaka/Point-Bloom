@@ -73,6 +73,7 @@ uniform vec4 uPaintP;
 uniform vec4 uBrushParam;
 uniform vec4 uLookP2;
 uniform vec4 uLookP3;
+uniform vec4 uLookP4;
 uniform vec4 uDof;
 uniform vec4 uHyp;
 uniform vec4 uHypP;
